@@ -1,0 +1,661 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#090B11">
+<title>Rasswet — Кейсы</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:#090B11;color:#fff;-webkit-font-smoothing:antialiased;
+  min-height:100vh;min-height:100dvh;
+}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{display:block;max-width:100%}
+
+:root{
+  --blue:#236CD9;--blue-light:#2C7CF3;
+  --green:#1EE44C;--gold:#FDA100;
+  --bg:#090B11;--surface:#161923;--surface2:#1A1E2A;
+  --border:rgba(255,255,255,.06);
+  --text-muted:#828AA4;--text-dim:#646C86;
+  --nav-h:72px;--safe-b:env(safe-area-inset-bottom,0px);
+}
+
+/* ===== LOADING ===== */
+.ld-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;transition:opacity .4s;
+}
+.ld-screen.hidden{opacity:0;pointer-events:none}
+.ld-spinner{width:48px;height:48px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ld-text{margin-top:16px;font-size:12px;color:var(--text-dim);letter-spacing:1px;font-weight:600}
+
+/* ===== APP ===== */
+.app{
+  max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;
+  padding-bottom:calc(var(--nav-h) + var(--safe-b));
+}
+
+/* ===== TOP BAR ===== */
+.top-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;position:sticky;top:0;z-index:50;
+  background:rgba(9,11,17,.92);backdrop-filter:blur(12px);
+}
+.top-left{display:flex;align-items:center;gap:8px}
+.online-badge{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(30,228,76,.12);border:1px solid rgba(30,228,76,.2);
+  padding:6px 12px;border-radius:20px;font-size:13px;font-weight:700;color:var(--green);
+}
+.online-badge svg{width:16px;height:16px;fill:var(--green)}
+.top-right{display:flex;align-items:center;gap:6px}
+.bal-box{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;
+}
+.bal-box svg{width:18px;height:18px}
+.deposit-btn{
+  width:38px;height:38px;border-radius:12px;
+  background:rgba(35,108,217,.15);border:1px solid rgba(35,108,217,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:600;color:var(--blue);transition:background .2s;
+}
+.deposit-btn:active{background:rgba(35,108,217,.3)}
+
+/* ===== SUBSCRIPTION BANNER ===== */
+.sub-banner{
+  margin:8px 16px;padding:14px 16px;border-radius:16px;
+  background:linear-gradient(135deg,rgba(35,108,217,.15),rgba(0,152,234,.1));
+  border:1px solid rgba(35,108,217,.2);
+  display:flex;align-items:center;gap:12px;cursor:pointer;
+  transition:background .2s;
+}
+.sub-banner:active{background:rgba(35,108,217,.25)}
+.sub-banner-ava{width:44px;height:44px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid rgba(35,108,217,.4)}
+.sub-banner-ava img{width:100%;height:100%;object-fit:cover}
+.sub-banner-text{flex:1}
+.sub-banner-title{font-size:14px;font-weight:700;margin-bottom:2px}
+.sub-banner-desc{font-size:12px;color:var(--text-muted)}
+.sub-banner-gem{width:32px;height:32px;flex-shrink:0}
+.sub-banner-gem img{width:100%;height:100%;object-fit:contain}
+
+/* ===== WINS FEED ===== */
+.wins-section{padding:8px 0 4px}
+.wins-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 16px;margin-bottom:8px;
+}
+.wins-header h3{font-size:13px;font-weight:600;color:var(--text-muted)}
+.wins-header span{font-size:12px;color:var(--text-dim)}
+.wins-feed{
+  display:flex;gap:8px;overflow-x:auto;padding:0 16px;
+  -ms-overflow-style:none;scrollbar-width:none;
+}
+.wins-feed::-webkit-scrollbar{display:none}
+.win-item{
+  flex-shrink:0;width:60px;text-align:center;cursor:pointer;
+  transition:transform .15s;
+}
+.win-item:active{transform:scale(.95)}
+.win-item-img{
+  width:56px;height:56px;border-radius:12px;overflow:hidden;
+  background:var(--surface);margin:0 auto 4px;
+}
+.win-item-img img{width:100%;height:100%;object-fit:contain}
+.win-item-val{
+  font-size:11px;font-weight:700;color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;gap:3px;
+}
+.win-item-val img{width:12px;height:12px}
+
+/* ===== CASE SECTIONS ===== */
+.case-sections{padding:8px 0}
+.case-section{margin-bottom:8px}
+.case-section-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 16px;
+}
+.section-title{
+  display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;
+}
+.section-title svg{width:20px;height:20px;flex-shrink:0}
+.section-toggle{
+  font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:4px;
+  padding:4px 8px;border-radius:8px;transition:background .2s;
+}
+.section-toggle:active{background:rgba(255,255,255,.06)}
+.section-toggle svg{width:12px;height:12px;transition:transform .3s}
+.case-section.collapsed .section-toggle svg{transform:rotate(-90deg)}
+.case-section.collapsed .cases-grid{display:none}
+
+/* ===== CASES GRID ===== */
+.cases-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+  padding:8px 16px;
+}
+.case-card{
+  background:var(--surface);border-radius:16px;
+  border:1px solid var(--border);overflow:hidden;
+  cursor:pointer;transition:transform .15s,box-shadow .2s;
+  position:relative;
+}
+.case-card:active{transform:scale(.97)}
+.case-badges{position:absolute;top:8px;right:8px;display:flex;gap:4px;z-index:2}
+.case-badge{
+  padding:3px 8px;border-radius:8px;font-size:10px;font-weight:700;
+  background:rgba(253,161,0,.15);color:var(--gold);
+}
+.case-badge.new-badge{background:rgba(30,228,76,.15);color:var(--green)}
+.case-badge.limited{background:rgba(249,105,153,.15);color:#F96999}
+.case-image{
+  width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  padding:12px;background:rgba(255,255,255,.02);
+}
+.case-image img{width:85%;height:85%;object-fit:contain}
+.case-info{padding:8px 12px 12px}
+.case-name{font-size:13px;font-weight:700;margin-bottom:6px;line-height:1.3;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.case-price{
+  display:flex;align-items:center;gap:6px;
+}
+.case-price-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:6px 14px;border-radius:10px;font-size:13px;font-weight:700;
+  background:rgba(35,108,217,.15);border:1px solid rgba(35,108,217,.25);
+  color:var(--blue-light);transition:all .2s;
+}
+.case-price-btn img{width:14px;height:14px}
+.case-free-btn{
+  padding:6px 14px;border-radius:10px;font-size:13px;font-weight:700;
+  background:rgba(30,228,76,.12);border:1px solid rgba(30,228,76,.2);
+  color:var(--green);
+}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:linear-gradient(0deg,#0A0C12 60%,rgba(10,12,18,.95));
+  border-top:1px solid var(--border);padding-bottom:var(--safe-b);
+}
+.bottom-nav-inner{
+  max-width:480px;margin:0 auto;display:flex;justify-content:space-around;
+  align-items:center;height:var(--nav-h);padding:0 8px;
+}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:6px 12px;color:var(--text-dim);transition:color .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.nav-item span{font-size:10px;font-weight:600;letter-spacing:.3px}
+.nav-item.active{color:var(--blue)}
+.nav-icon-wrap{
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s,box-shadow .2s;
+}
+.nav-item.active .nav-icon-wrap{
+  background:linear-gradient(180deg,#2C79FD 0%,#2246E4 46%,#18408F 100%);
+  box-shadow:0 4px 12px rgba(35,108,217,.4);
+}
+.nav-icon-wrap svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+.nav-item.active .nav-icon-wrap svg{stroke:#fff}
+.nav-item.disabled{opacity:.4;pointer-events:none}
+
+/* ===== DEPOSIT OVERLAY ===== */
+.deposit-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:260;
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;
+}
+.deposit-overlay.show{opacity:1;visibility:visible}
+.deposit-sheet{
+  max-width:480px;width:100%;background:var(--surface);border-radius:20px 20px 0 0;
+  padding:20px 20px calc(20px + var(--safe-b));
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.2,.8,.2,1);
+}
+.deposit-overlay.show .deposit-sheet{transform:translateY(0)}
+.drag-handle{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 16px}
+.deposit-option{
+  display:flex;align-items:center;gap:14px;padding:16px;border-radius:14px;
+  background:var(--bg);border:1px solid var(--border);margin-bottom:8px;
+  cursor:pointer;transition:background .2s;
+}
+.deposit-option:active{background:rgba(255,255,255,.06)}
+.deposit-option svg{width:28px;height:28px;flex-shrink:0}
+.deposit-opt-text{flex:1}
+.deposit-opt-text strong{display:block;font-size:14px;font-weight:700}
+.deposit-opt-text span{font-size:12px;color:var(--text-muted)}
+
+/* ===== TOAST ===== */
+.toast{
+  position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);
+  left:50%;transform:translateX(-50%);
+  padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;
+  background:var(--surface2);border:1px solid var(--border);color:#fff;
+  z-index:9000;white-space:nowrap;animation:toastIn .3s ease;
+}
+.toast.ok{border-color:rgba(30,228,76,.3);color:var(--green)}
+.toast.err{border-color:rgba(249,105,153,.3);color:#F96999}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="ld-screen" id="ldScreen">
+  <div class="ld-spinner"></div>
+  <div class="ld-text">RASSWET</div>
+</div>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="online-badge">
+        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2" fill="currentColor" stroke="none"/><circle cx="9" cy="7" r="4" fill="currentColor" stroke="none"/></svg>
+        <span id="onlineVal">0</span>
+      </div>
+    </div>
+    <div class="top-right">
+      <div class="bal-box">
+        <svg viewBox="0 0 24 24"><polygon points="12,2 15,10 24,10 17,15 19,23 12,18 5,23 7,15 0,10 9,10" fill="var(--gold)" stroke="none"/></svg>
+        <span id="balVal">0.00</span>
+      </div>
+      <button class="deposit-btn" onclick="openDeposit()">+</button>
+    </div>
+  </div>
+
+  <!-- SUBSCRIPTION BANNER -->
+  <div class="sub-banner" onclick="window.open('https://t.me/rasswetgifts','_blank')">
+    <div class="sub-banner-ava"><img src="/static/img/ava.png" alt="" onerror="this.parentElement.style.display='none'"></div>
+    <div class="sub-banner-text">
+      <div class="sub-banner-title">Подпишись на канал</div>
+      <div class="sub-banner-desc">Получай бонусы и участвуй в розыгрышах</div>
+    </div>
+    <div class="sub-banner-gem"><img src="/static/img/gem.png" alt="" onerror="this.style.display='none'"></div>
+  </div>
+
+  <!-- WINS FEED -->
+  <div class="wins-section">
+    <div class="wins-header">
+      <h3>Последние выигрыши</h3>
+      <span id="winsCount"></span>
+    </div>
+    <div class="wins-feed" id="winsFeed"></div>
+  </div>
+
+  <!-- CASE SECTIONS -->
+  <div class="case-sections" id="caseSections">
+    <div style="text-align:center;padding:40px;color:var(--text-dim);font-size:13px">Загрузка кейсов...</div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="/crash" class="nav-item">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M4.5 16.5L12 3l7.5 13.5H4.5z" stroke-linejoin="round"/><path d="M12 3v10M8 20h8" stroke-linecap="round"/></svg>
+      </div>
+      <span>Краш</span>
+    </a>
+    <a href="/index" class="nav-item active">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><polyline points="12 3 12 15"/><path d="M8 8l4-5 4 5"/><rect x="3" y="12" width="18" height="2" rx="1"/></svg>
+      </div>
+      <span>Кейсы</span>
+    </a>
+    <a href="#" class="nav-item disabled">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 9 7 12 7s5-3 7.5-3a2.5 2.5 0 010 5H18"/><path d="M5 9h14v8a4 4 0 01-4 4H9a4 4 0 01-4-4V9z"/><path d="M12 9v12"/></svg>
+      </div>
+      <span>Сезон</span>
+    </a>
+    <a href="/profile" class="nav-item">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <span>Профиль</span>
+    </a>
+  </div>
+</nav>
+
+<!-- DEPOSIT OVERLAY -->
+<div class="deposit-overlay" id="depositOverlay" onclick="if(event.target===this)closeDeposit()">
+  <div class="deposit-sheet">
+    <div class="drag-handle"></div>
+    <h3 style="font-size:16px;font-weight:800;margin-bottom:16px">Пополнить баланс</h3>
+    <div class="deposit-option" onclick="depositStars()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><polygon points="12,2 15,10 24,10 17,15 19,23 12,18 5,23 7,15 0,10 9,10"/></svg>
+      <div class="deposit-opt-text"><strong>Telegram Stars</strong><span>Через Telegram</span></div>
+    </div>
+    <div class="deposit-option" onclick="depositTon()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#0098EA" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <div class="deposit-opt-text"><strong>TON</strong><span>Через кошелёк</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let userData = null;
+let allCases = [];
+let caseSections = [];
+let allGifts = [];
+const collapsedSections = new Set();
+
+/* ===== AUTH ===== */
+function isTelegramWebApp(){
+    try { return !!(window.Telegram && Telegram.WebApp && Telegram.WebApp.initData); } catch(e){ return false; }
+}
+
+/* ===== CURRENCY ===== */
+function getCurrencyMode(){
+    try { return localStorage.getItem('rasswet_currency_mode') === 'ton' ? 'ton' : 'stars'; } catch(e){ return 'stars'; }
+}
+function formatMoney(starsValue){
+    var stars = Number(starsValue || 0);
+    if(getCurrencyMode() === 'ton'){
+        var tons = stars / 100;
+        return (Math.round(tons * 100) / 100).toString().replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+    }
+    return String(Math.round(stars));
+}
+function getMoneyIcon(){
+    return getCurrencyMode() === 'ton' ? '/static/img/ton.png' : '/static/img/star.png';
+}
+
+/* ===== UI ===== */
+function updateUI(){
+    if(!userData) return;
+    $('balVal').textContent = formatMoney(userData.balance_stars || 0);
+}
+
+/* ===== CASES ===== */
+async function loadCases(){
+    try{
+        var r = await fetch('/api/cases');
+        var data = await r.json();
+        if(!data.success){ allCases = []; renderCases(); return; }
+        allCases = (data.cases || []).sort(function(a,b){ return (a.display_order||0) - (b.display_order||0); });
+
+        try{
+            var sr = await fetch('/api/case-sections');
+            var sd = await sr.json();
+            if(sd.success) caseSections = sd.sections || [];
+        }catch(e){}
+
+        renderCases();
+    }catch(e){
+        console.error('Cases load error:', e);
+        allCases = [];
+        renderCases();
+    }
+}
+
+function normalizeSectionId(val){ return String(val||'').trim().toLowerCase() || 'other'; }
+
+function resolveCaseSection(c){
+    if(c && c.section) return normalizeSectionId(c.section);
+    if(c && c.promo) return 'promo';
+    if(c && c.free) return 'free';
+    if(c && Number(c.cost||0) === 0) return 'free';
+    return 'other';
+}
+
+function getSectionTitle(sid){
+    var s = normalizeSectionId(sid);
+    var fromAdmin = (caseSections||[]).find(function(x){ return normalizeSectionId(x.id) === s; });
+    if(fromAdmin && fromAdmin.name) return fromAdmin.name;
+    if(s === 'promo') return 'Промо Кейсы';
+    if(s === 'free') return 'Бесплатные';
+    if(s === 'other') return 'Уникальные';
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function getSectionIcon(sid){
+    var s = normalizeSectionId(sid);
+    if(s === 'free') return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1EE44C" stroke-width="2"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>';
+    if(s === 'promo') return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FDA100" stroke-width="2"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/></svg>';
+    return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#828AA4" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>';
+}
+
+function toggleSection(sid){
+    if(collapsedSections.has(sid)) collapsedSections.delete(sid);
+    else collapsedSections.add(sid);
+    renderCases();
+}
+
+function renderCases(){
+    var root = $('caseSections');
+    if(!root) return;
+    if(!allCases.length){
+        root.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-dim);font-size:13px">Нет доступных кейсов</div>';
+        return;
+    }
+
+    var grouped = {};
+    allCases.forEach(function(c){
+        var sid = resolveCaseSection(c);
+        if(!grouped[sid]) grouped[sid] = [];
+        grouped[sid].push(c);
+    });
+
+    var order = (caseSections||[]).slice().sort(function(a,b){ return (a.order||0) - (b.order||0); }).map(function(s){ return normalizeSectionId(s.id); });
+    var dynamic = Object.keys(grouped).filter(function(id){ return order.indexOf(id) === -1; });
+    var ordered = order.concat(dynamic).filter(function(id){ return grouped[id]; });
+
+    root.innerHTML = ordered.map(function(sid){
+        var cases = grouped[sid] || [];
+        var isCollapsed = collapsedSections.has(sid);
+        var moneyIcon = getMoneyIcon();
+
+        var cardsHtml = cases.map(function(c){
+            var isFree = c.cost === 0 || c.promo;
+            var badges = '';
+            if(c.limited) badges += '<span class="case-badge limited">Лимит</span>';
+            if(c.is_new) badges += '<span class="case-badge new-badge">Новинка</span>';
+
+            var costHtml;
+            if(isFree){
+                costHtml = '<span class="case-free-btn">Бесплатно</span>';
+            } else if(c.cost_type === 'tickets'){
+                costHtml = '<span class="case-price-btn"><img src="/static/img/ticket.png">' + Math.round(c.cost||0) + '</span>';
+            } else {
+                costHtml = '<span class="case-price-btn"><img src="' + moneyIcon + '">' + formatMoney(c.cost||0) + '</span>';
+            }
+
+            return '<div class="case-card" onclick="openCase(' + c.id + ')">' +
+                (badges ? '<div class="case-badges">' + badges + '</div>' : '') +
+                '<div class="case-image"><img src="' + (c.image||'') + '" alt="' + (c.name||'') + '" loading="lazy" onerror="this.style.display=\'none\'"></div>' +
+                '<div class="case-info"><div class="case-name">' + (c.name||'') + '</div><div class="case-price">' + costHtml + '</div></div>' +
+            '</div>';
+        }).join('');
+
+        return '<section class="case-section' + (isCollapsed ? ' collapsed' : '') + '">' +
+            '<div class="case-section-header">' +
+                '<div class="section-title">' + getSectionIcon(sid) + getSectionTitle(sid) + '</div>' +
+                '<button class="section-toggle" onclick="toggleSection(\'' + sid + '\')">' +
+                    (isCollapsed ? 'Показать' : 'Свернуть') +
+                    ' <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>' +
+                '</button>' +
+            '</div>' +
+            '<div class="cases-grid">' + cardsHtml + '</div>' +
+        '</section>';
+    }).join('');
+}
+
+function openCase(caseId){
+    window.location.href = '/case/' + caseId;
+}
+
+/* ===== WINS FEED ===== */
+async function loadWinsFeed(){
+    try{
+        var r = await fetch('/api/recent-wins?limit=30');
+        var d = await r.json();
+        if(!d.success || !d.wins || !d.wins.length){ renderEmptyWins(); return; }
+        renderWins(d.wins);
+        var cnt = $('winsCount');
+        if(cnt) cnt.textContent = '(' + d.wins.length + ')';
+    }catch(e){ renderEmptyWins(); }
+}
+
+function renderWins(wins){
+    var feed = $('winsFeed');
+    if(!feed) return;
+    var moneyIcon = getMoneyIcon();
+    feed.innerHTML = wins.slice(0,20).map(function(w){
+        var img = w.gift_image || '/static/img/star.png';
+        /* Try Fragment CDN */
+        if(w.gift_name){
+            var slug = w.gift_name.replace(/\s+/g, '-');
+            img = 'https://fragment.com/file/gifts/' + encodeURIComponent(slug) + '/thumb.webp';
+        }
+        var val = w.gift_value != null ? formatMoney(w.gift_value) : '';
+        var caseId = w.case_id || null;
+        return '<div class="win-item" onclick="' + (caseId ? 'openCase(' + caseId + ')' : '') + '">' +
+            '<div class="win-item-img"><img src="' + img + '" onerror="this.src=\'' + (w.gift_image || '/static/img/star.png') + '\'"></div>' +
+            (val ? '<div class="win-item-val"><img src="' + moneyIcon + '">' + val + '</div>' : '') +
+        '</div>';
+    }).join('');
+}
+
+function renderEmptyWins(){
+    var feed = $('winsFeed');
+    if(feed) feed.innerHTML = '<div style="padding:12px;color:var(--text-dim);font-size:12px">Пока нет выигрышей</div>';
+}
+
+/* ===== DEPOSIT ===== */
+function openDeposit(){ $('depositOverlay').classList.add('show'); }
+function closeDeposit(){ $('depositOverlay').classList.remove('show'); }
+
+function depositStars(){
+    closeDeposit();
+    if(isTelegramWebApp() && Telegram.WebApp.openInvoice){
+        showToast('Открываю оплату...','ok');
+        fetch('/api/stars/create-invoice', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({user_id: userData.id, amount: 100})
+        }).then(function(r){ return r.json(); }).then(function(d){
+            if(d.success && d.invoice_url){
+                Telegram.WebApp.openInvoice(d.invoice_url, function(st){
+                    if(st === 'paid'){
+                        showToast('Оплата получена!','ok');
+                        setTimeout(loadUserData, 1000);
+                    }
+                });
+            } else { showToast(d.error || 'Ошибка','err'); }
+        }).catch(function(){ showToast('Ошибка сети','err'); });
+    } else {
+        showToast('Доступно только в Telegram','err');
+    }
+}
+function depositTon(){ closeDeposit(); showToast('TON пополнение скоро','ok'); }
+
+/* ===== TOAST ===== */
+function showToast(msg, type){
+    document.querySelectorAll('.toast').forEach(function(t){ t.remove(); });
+    var t = document.createElement('div');
+    t.className = 'toast' + (type ? ' ' + type : '');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function(){
+        t.style.opacity = '0'; t.style.transition = 'opacity .3s';
+        setTimeout(function(){ t.remove(); }, 300);
+    }, 2500);
+}
+
+/* ===== USER ===== */
+async function loadUserData(){
+    if(!userData || !userData.id) return;
+    try{
+        var r = await fetch('/api/user/' + userData.id);
+        var d = await r.json();
+        if(d.success){
+            userData = Object.assign({}, userData, d.user);
+            updateUI();
+            try{ localStorage.setItem('rasswet_user', JSON.stringify(userData)); }catch(e){}
+        }
+    }catch(e){}
+}
+
+/* ===== INIT ===== */
+async function initApp(){
+    /* Restore session */
+    try{
+        var saved = localStorage.getItem('rasswet_user');
+        if(saved){ var p = JSON.parse(saved); if(p && p.id) userData = p; }
+    }catch(e){}
+
+    /* Telegram */
+    if(!userData || !userData.id){
+        if(isTelegramWebApp()){
+            try{
+                var tg = Telegram.WebApp;
+                tg.ready(); tg.expand();
+                var u = tg.initDataUnsafe.user;
+                if(u) userData = {id:u.id, first_name:u.first_name, last_name:u.last_name||'', username:u.username||'', photo_url:u.photo_url||'', balance_stars:0};
+            }catch(e){}
+        }
+    }
+
+    /* Auth fallback */
+    if(!userData || !userData.id){
+        try{
+            var r = await fetch('/api/telegram-auth', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    id: window.Telegram?.WebApp?.initDataUnsafe?.user?.id,
+                    first_name: window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name || 'Player'
+                })
+            });
+            var d = await r.json();
+            if(d.success && d.user) userData = d.user;
+        }catch(e){}
+    }
+
+    if(!userData || !userData.id) userData = {id:0, first_name:'Player', balance_stars:0};
+
+    updateUI();
+    if(userData.id) loadUserData();
+
+    /* Default currency mode */
+    if(!localStorage.getItem('rasswet_currency_mode')) localStorage.setItem('rasswet_currency_mode', 'ton');
+
+    /* Load data */
+    loadCases();
+    loadWinsFeed();
+
+    /* Online count via crash status */
+    try{
+        var sr = await fetch('/api/ultimate-crash/simple-status?user_id=' + (userData.id || 0));
+        var sd = await sr.json();
+        if(sd.game && sd.game.online_count) $('onlineVal').textContent = sd.game.online_count;
+    }catch(e){}
+
+    /* Hide loader */
+    $('ldScreen').classList.add('hidden');
+    setTimeout(function(){ $('ldScreen').style.display = 'none'; }, 500);
+
+    /* Periodic refresh */
+    setInterval(loadWinsFeed, 30000);
+    setInterval(loadUserData, 15000);
+}
+
+document.addEventListener('DOMContentLoaded', initApp);
+</script>
+</body>
+</html>

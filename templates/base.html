@@ -1,0 +1,1463 @@
+﻿<!-- NOTIFICATION SYSTEM (base.html) — compact window + sound + smart icons -->
+<style>
+/* ===== NOTIFICATION BELL ===== */
+.notif-bell-btn {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    margin-right: 6px;
+}
+.notif-bell-btn:hover { background: rgba(255,255,255,0.1); }
+.notif-bell-btn img, .notif-bell-btn svg { width: 22px; height: 22px; }
+.notif-bell-btn.has-notif {
+    background: rgba(255,107,107,0.2);
+    box-shadow: 0 0 12px rgba(255,107,107,0.25);
+    animation: bellGlow 2s infinite;
+}
+@keyframes bellGlow {
+    0%,100% { box-shadow: 0 0 8px rgba(255,107,107,0.25); }
+    50% { box-shadow: 0 0 18px rgba(255,107,107,0.4); }
+}
+.notif-bell-dot {
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 8px; height: 8px;
+    background: #ff6b6b;
+    border-radius: 50%;
+    display: none;
+    box-shadow: 0 0 6px rgba(255,107,107,0.6);
+}
+.notif-bell-btn.has-notif .notif-bell-dot { display: block; }
+
+/* ===== COMPACT NOTIFICATION WINDOW ===== */
+.notif-popup-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 99998;
+    animation: fadeInN 0.2s ease;
+}
+.notif-popup-overlay.open { display: block; }
+@keyframes fadeInN { from{opacity:0} to{opacity:1} }
+
+.notif-popup {
+    position: fixed;
+    top: 60px; right: 12px;
+    width: 320px;
+    max-width: calc(100vw - 24px);
+    max-height: 70vh;
+    background: linear-gradient(160deg, #161923, #11141F);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px;
+    z-index: 99999;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: popIn 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.notif-popup.open { display: flex; }
+@keyframes popIn {
+    from { transform: translateY(-10px) scale(0.97); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.notif-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.notif-popup-header h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.notif-popup-header h3 img { width: 20px; height: 20px; }
+.notif-popup-close {
+    width: 28px; height: 28px;
+    border: none;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    color: #8E9AA9;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.notif-popup-close:hover { background: rgba(255,107,107,0.15); color: #fff; }
+.notif-currency-switch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 6px;
+}
+.notif-currency-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.07);
+    border-radius: 9px;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.notif-currency-btn img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+}
+.notif-currency-btn.active {
+    border-color: rgba(0,230,118,0.55);
+    background: rgba(0,230,118,0.12);
+    box-shadow: 0 0 10px rgba(0,230,118,0.22);
+}
+
+.notif-popup-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    max-height: calc(70vh - 52px);
+}
+.notif-popup-body::-webkit-scrollbar { width: 3px; }
+.notif-popup-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+
+.notif-empty {
+    text-align: center;
+    color: rgba(255,255,255,0.35);
+    padding: 30px 16px;
+    font-size: 13px;
+}
+.notif-empty img { width: 36px; height: 36px; opacity: 0.25; margin-bottom: 8px; display: block; margin-left: auto; margin-right: auto; }
+
+/* ===== NOTIFICATION CARD ===== */
+.notif-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+.notif-card:hover { background: rgba(255,255,255,0.06); }
+.notif-card:active { transform: scale(0.98); }
+
+.notif-card-icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+}
+.notif-card-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+.notif-card-icon.ic-gift { background: rgba(35,108,217,0.1); }
+.notif-card-icon.ic-level { background: rgba(46,199,110,0.1); }
+.notif-card-icon.ic-promo { background: rgba(255,107,107,0.1); }
+.notif-card-icon.ic-bonus { background: rgba(255,215,74,0.1); }
+.notif-card-icon.ic-shop { background: rgba(255,215,74,0.1); }
+.notif-card-icon.ic-quest { background: rgba(35,108,217,0.1); }
+.notif-card-icon.ic-case { background: rgba(35,108,217,0.1); }
+.notif-card-icon.ic-default { background: rgba(35,108,217,0.1); }
+
+.notif-card-content { flex: 1; min-width: 0; }
+.notif-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.notif-card-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.notif-card-time {
+    font-size: 10px;
+    color: rgba(255,255,255,0.25);
+    margin-top: 3px;
+}
+.notif-card-reward {
+    font-size: 11px;
+    color: #00e676;
+    font-weight: 600;
+    margin-top: 3px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.notif-card-reward img { width: 13px; height: 13px; }
+
+/* ===== DETAIL MODAL (compact) ===== */
+.notif-detail-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.notif-detail-overlay.open {
+    display: flex;
+    animation: fadeInN 0.2s ease;
+}
+.notif-detail-card {
+    background: linear-gradient(160deg, #1e1e3a 0%, #1a1a2e 50%, #16213e 100%);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 360px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    animation: popIn 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.notif-detail-card::-webkit-scrollbar { width: 3px; }
+.notif-detail-card::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+
+.nd-header {
+    padding: 16px 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.nd-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.nd-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; }
+.nd-header-info { flex: 1; min-width: 0; }
+.nd-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+.nd-time {
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+}
+.nd-close-btn {
+    width: 30px; height: 30px;
+    border: none;
+    background: rgba(255,255,255,0.07);
+    border-radius: 10px;
+    color: rgba(255,255,255,0.5);
+    font-size: 17px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.nd-close-btn:hover { background: rgba(255,59,59,0.25); color: #fff; }
+
+.nd-image { padding: 0 16px 12px; }
+.nd-image img { width: 100%; border-radius: 14px; display: block; }
+
+.nd-body {
+    padding: 0 16px 12px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.6;
+    white-space: pre-line;
+}
+
+.nd-reward-box {
+    margin: 0 16px 12px;
+    background: linear-gradient(135deg, rgba(0,230,118,0.08), rgba(0,176,255,0.08));
+    border: 1px solid rgba(0,230,118,0.15);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.nd-reward-icon {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: rgba(0,230,118,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.nd-reward-icon img { width: 26px; height: 26px; }
+.nd-reward-info { flex: 1; }
+.nd-reward-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+.nd-reward-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: #00e676;
+}
+
+.nd-actions {
+    padding: 4px 16px 16px;
+    display: flex;
+    gap: 8px;
+}
+.nd-btn-primary {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    background: linear-gradient(87.94deg, #2C7CF3 -5.33%, #1AAEF2 100%);
+    color: #fff;
+    transition: all 0.2s;
+}
+.nd-btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.nd-btn-primary.claimed {
+    background: linear-gradient(135deg, #00b894, #00cec9);
+    pointer-events: none;
+}
+.nd-btn-primary.bonus-btn {
+    background: linear-gradient(135deg, #f5576c, #ff6b9d);
+}
+
+/* ===== REWARD COLLECTION SCREEN ===== */
+.reward-screen-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.92);
+    z-index: 200000;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 20px;
+}
+.reward-screen-overlay.open {
+    display: flex;
+    animation: rewardFadeIn 0.4s ease;
+}
+@keyframes rewardFadeIn { from{opacity:0} to{opacity:1} }
+
+.reward-screen-glow {
+    position: absolute;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0;
+    animation: rewardGlowPulse 2s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes rewardGlowPulse {
+    0%,100% { opacity: 0.3; transform: scale(0.9); }
+    50% { opacity: 0.6; transform: scale(1.1); }
+}
+
+.reward-screen-particles {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+.reward-particle {
+    position: absolute;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    animation: particleFly 1.5s ease-out forwards;
+    opacity: 0;
+}
+@keyframes particleFly {
+    0% { opacity: 1; transform: translate(0,0) scale(1); }
+    100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(0); }
+}
+
+.reward-screen-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 340px;
+    width: 100%;
+}
+.reward-screen-badge {
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 16px;
+    opacity: 0; animation: rwSlideUp 0.5s ease 0.2s forwards;
+}
+.reward-screen-image {
+    width: 140px; height: 140px;
+    border-radius: 24px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 0 60px rgba(102,126,234,0.4), 0 20px 40px rgba(0,0,0,0.5);
+    opacity: 0; transform: scale(0.5);
+    animation: rwImgPop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.3s forwards;
+    background: rgba(255,255,255,0.05);
+    display: flex; align-items: center; justify-content: center;
+}
+.reward-screen-image img { width: 100%; height: 100%; object-fit: cover; }
+.reward-screen-image.stars-type {
+    border-radius: 50%;
+    box-shadow: 0 0 60px rgba(255,215,0,0.5), 0 20px 40px rgba(0,0,0,0.5);
+}
+.reward-screen-image.tickets-type {
+    border-radius: 50%;
+    box-shadow: 0 0 60px rgba(138,43,226,0.5), 0 20px 40px rgba(0,0,0,0.5);
+}
+@keyframes rwImgPop { to { opacity:1; transform:scale(1); } }
+
+.reward-screen-title {
+    font-size: 22px; font-weight: 800; color: #fff;
+    margin-bottom: 6px;
+    opacity: 0; animation: rwSlideUp 0.5s ease 0.5s forwards;
+}
+.reward-screen-subtitle {
+    font-size: 14px; color: rgba(255,255,255,0.5);
+    margin-bottom: 20px;
+    opacity: 0; animation: rwSlideUp 0.5s ease 0.6s forwards;
+}
+.reward-screen-amount {
+    font-size: 42px; font-weight: 900;
+    margin-bottom: 8px;
+    opacity: 0; animation: rwSlideUp 0.6s ease 0.5s forwards;
+    display: flex; align-items: center; gap: 12px; justify-content: center;
+}
+.reward-screen-amount img { width: 38px; height: 38px; }
+.reward-screen-amount.stars-color { color: #ffd700; text-shadow: 0 0 20px rgba(255,215,0,0.4); }
+.reward-screen-amount.tickets-color { color: #b388ff; text-shadow: 0 0 20px rgba(138,43,226,0.4); }
+.reward-screen-amount.gift-color { color: #69f0ae; text-shadow: 0 0 20px rgba(0,230,118,0.4); }
+
+.reward-screen-value {
+    font-size: 14px; color: rgba(255,255,255,0.4);
+    margin-bottom: 28px;
+    opacity: 0; animation: rwSlideUp 0.5s ease 0.7s forwards;
+}
+@keyframes rwSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.reward-screen-btn {
+    width: 100%; max-width: 280px;
+    padding: 16px; border: none; border-radius: 16px;
+    font-size: 16px; font-weight: 700; cursor: pointer; color: #fff;
+    background: linear-gradient(87.94deg, #2C7CF3 -5.33%, #1AAEF2 100%);
+    box-shadow: 0 8px 30px rgba(35,108,217,0.3);
+    transition: all 0.3s;
+    opacity: 0; animation: rwSlideUp 0.5s ease 0.9s forwards;
+}
+.reward-screen-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(35,108,217,0.4); }
+.reward-screen-btn:active { transform: scale(0.97); }
+</style>
+
+<!-- NOTIFICATION BELL (injected into header via JS) -->
+<div id="notifBellTemplate" style="display:none">
+    <button class="notif-bell-btn" onclick="toggleNotifPopup()" id="notifBellBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-bell-dot" id="notifBellDot"></span>
+    </button>
+</div>
+
+<!-- COMPACT NOTIFICATION POPUP -->
+<div class="notif-popup-overlay" id="notifPopupOverlay" onclick="closeNotifPopup()"></div>
+<div class="notif-popup" id="notifPopup">
+    <div class="notif-popup-header">
+        <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Уведомления</h3>
+        <div class="notif-currency-switch">
+            <button class="notif-currency-btn" id="currencyBtnStars" onclick="setCurrencyMode('stars')" title="Stars">
+                <img src="/static/img/star.png" alt="Stars" data-currency-static="1">
+            </button>
+            <button class="notif-currency-btn" id="currencyBtnTon" onclick="setCurrencyMode('ton')" title="TON">
+                <img src="/static/img/ton.png" alt="TON" onerror="this.src='/static/img/star.png'" data-currency-static="1">
+            </button>
+        </div>
+        <button class="notif-popup-close" onclick="closeNotifPopup()">&times;</button>
+    </div>
+    <div class="notif-popup-body" id="notifPopupBody">
+        <div class="notif-empty">
+            <img src="/static/img/new.png" alt="">
+            <p>Нет новых уведомлений</p>
+        </div>
+    </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="notif-detail-overlay" id="notifDetailOverlay" onclick="if(event.target===this)closeNotifDetail()">
+    <div class="notif-detail-card" id="notifDetailCard"></div>
+</div>
+
+<!-- REWARD COLLECTION SCREEN -->
+<div class="reward-screen-overlay" id="rewardScreenOverlay" onclick="event.stopPropagation()">
+    <div class="reward-screen-particles" id="rewardParticles"></div>
+    <div class="reward-screen-glow" id="rewardGlow"></div>
+    <div class="reward-screen-content" id="rewardScreenContent"></div>
+</div>
+
+<script>
+(function(){
+    /* ===== GLOBAL GIFT IMAGE RESOLVER ===== */
+    var FRAGMENT_GIFTS_BASE = 'https://fragment.com/file/gifts/';
+    function _toSafeString(v){ return (v === undefined || v === null) ? '' : String(v); }
+    function _isHttpUrl(v){ return /^https?:\/\//i.test(_toSafeString(v)); }
+    function _normalizeGiftImageUrl(v){
+        var s = _toSafeString(v);
+        if(!s) return s;
+        return s.replace(/\.gif(\?.*)?$/i, '.png$1');
+    }
+    function _slugifyGiftName(name){
+        return _toSafeString(name)
+            .replace(/\s*\(Random\)\s*/ig, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '')
+            .trim();
+    }
+    function _loadGiftImageOverrides(){
+        try {
+            var raw = localStorage.getItem('rasswet_gift_image_links') || '{}';
+            var parsed = JSON.parse(raw);
+            return (parsed && typeof parsed === 'object') ? parsed : {};
+        } catch(e){ return {}; }
+    }
+    function _getManualGiftUrl(gift){
+        if(!gift || typeof gift !== 'object') return '';
+        var direct = _normalizeGiftImageUrl(gift.image_link || gift.image_url || gift.external_image || '');
+        if(_isHttpUrl(direct)) return direct;
+
+        var overrides = _loadGiftImageOverrides();
+        var byId = (gift.id !== undefined && gift.id !== null) ? overrides['id:' + gift.id] : '';
+        if(_isHttpUrl(byId)) return byId;
+
+        var name = _toSafeString(gift.name);
+        if(name && _isHttpUrl(overrides[name])) return overrides[name];
+
+        var slug = _slugifyGiftName(name);
+        if(slug && _isHttpUrl(overrides[slug])) return overrides[slug];
+        return '';
+    }
+    function _getFragmentGiftUrl(gift){
+        if(!gift || typeof gift !== 'object') return '';
+        var img = _toSafeString(gift.image || '');
+        if(img && img.indexOf('fragment.com/file/') !== -1) return img;
+        var fragmentUrl = _toSafeString(gift.fragment_url || '');
+        if(_isHttpUrl(fragmentUrl)) return fragmentUrl;
+        var slug = _toSafeString(gift.fragment_slug || gift.fragmentSlug || '').trim();
+        if(!slug) slug = _slugifyGiftName(gift.name);
+        if(!slug) return '';
+        return FRAGMENT_GIFTS_BASE + slug + '/thumb.webp';
+    }
+
+    window.rasswetGiftImage = {
+        resolve: function(gift, fallback){
+            var fb = _normalizeGiftImageUrl(fallback) || '/static/img/default_gift.png';
+            if(!gift || typeof gift !== 'object') return fb;
+            if(gift.type === 'stars_balance') {
+                if(typeof window.rasswetCurrency !== 'undefined' && window.rasswetCurrency.getMode && window.rasswetCurrency.getMode() === 'ton') {
+                    return '/static/img/ton.png';
+                }
+                return _normalizeGiftImageUrl(gift.image) || fb;
+            }
+            var manual = _getManualGiftUrl(gift);
+            if(manual) return manual;
+            var fragment = _getFragmentGiftUrl(gift);
+            if(fragment) return fragment;
+            return _normalizeGiftImageUrl(gift.image) || fb;
+        },
+        onError: function(imgEl, fallback){
+            if(!imgEl) return;
+            var fb = _normalizeGiftImageUrl(fallback) || '/static/img/default_gift.png';
+            imgEl.onerror = null;
+            imgEl.src = fb;
+        }
+    };
+
+    /* Global exit helper used by header buttons */
+    window.exitApp = function() {
+        try {
+            if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.close === 'function') {
+                return window.Telegram.WebApp.close();
+            }
+        } catch (e) {}
+        try {
+            if (typeof logout === 'function') return logout();
+        } catch (e) {}
+        try {
+            if (typeof goBack === 'function') return goBack();
+        } catch (e) {}
+        try { window.location.href = '/'; } catch(e) { console.warn('exitApp fallback failed'); }
+    };
+
+    /* ===== SOUND SYSTEM ===== */
+    var audioCtx = null;
+    function getAudioCtx() {
+        if (!audioCtx) {
+            try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+        }
+        return audioCtx;
+    }
+    function playNotifSound() {
+        /* Vibrate on mobile */
+        try { if(navigator.vibrate) navigator.vibrate([80, 50, 80]); } catch(e){}
+        var ctx = getAudioCtx();
+        if (!ctx) return;
+        try {
+            if(ctx.state === 'suspended') ctx.resume();
+            var t = ctx.currentTime;
+            [660, 880, 1100].forEach(function(freq, i) {
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, t + i * 0.12);
+                gain.gain.linearRampToValueAtTime(0.3, t + i * 0.12 + 0.03);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.12 + 0.35);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(t + i * 0.12);
+                osc.stop(t + i * 0.12 + 0.4);
+            });
+        } catch(e) {}
+    }
+
+    function playRewardSound() {
+        var ctx = getAudioCtx();
+        if (!ctx) return;
+        try {
+            if(ctx.state === 'suspended') ctx.resume();
+            var t = ctx.currentTime;
+            [523, 659, 784, 1047].forEach(function(freq, i) {
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, t + i * 0.15);
+                gain.gain.linearRampToValueAtTime(0.25, t + i * 0.15 + 0.04);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.5);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(t + i * 0.15);
+                osc.stop(t + i * 0.15 + 0.55);
+            });
+        } catch(e) {}
+    }
+
+    /* ===== REWARD SCREEN ===== */
+    function showRewardScreen(info) {
+        var overlay = document.getElementById('rewardScreenOverlay');
+        var content = document.getElementById('rewardScreenContent');
+        var glow = document.getElementById('rewardGlow');
+        var particles = document.getElementById('rewardParticles');
+
+        var imgSrc = '/static/img/reward.png';
+        var title = 'Награда получена!';
+        var subtitle = '';
+        var amountText = '';
+        var amountClass = 'gift-color';
+        var imgClass = '';
+        var glowColor = '102,126,234';
+        var valueText = '';
+        var rtype = info.type || info.reward_type || info.bonus_type || '';
+
+        if (rtype === 'stars') {
+            imgSrc = getCurrencyIcon();
+            title = currencyMode === 'ton' ? 'TON получены!' : 'Звёзды получены!';
+            amountText = '<img src="' + getCurrencyIcon() + '" onerror="this.src=\'/static/img/star.png\'">+' + formatStarsAmount(info.amount || info.data || '0');
+            amountClass = 'stars-color'; imgClass = 'stars-type'; glowColor = '255,215,0';
+        } else if (rtype === 'tickets') {
+            imgSrc = '/static/img/ticket.png';
+            title = 'Билеты получены!';
+            amountText = '<img src="/static/img/ticket.png">+' + (info.amount || info.data || '0');
+            amountClass = 'tickets-color'; imgClass = 'tickets-type'; glowColor = '138,43,226';
+        } else if (rtype === 'gift') {
+            var giftFallback = info.gift_image || '/static/img/gift.png';
+            imgSrc = (window.rasswetGiftImage && window.rasswetGiftImage.resolve)
+                ? window.rasswetGiftImage.resolve({
+                    name: info.gift_name,
+                    image: info.gift_image,
+                    image_url: info.gift_image_url,
+                    image_link: info.gift_image_link,
+                    fragment_url: info.fragment_url,
+                    fragment_slug: info.fragment_slug
+                }, giftFallback)
+                : giftFallback;
+            title = info.gift_name || 'Подарок получен!';
+            subtitle = info.message || '';
+            if (info.gift_value) {
+                valueText = currencyMode === 'ton'
+                    ? ('Стоимость: ' + formatStarsAmount(info.gift_value) + ' TON')
+                    : ('Стоимость: ' + info.gift_value + ' зв.');
+            }
+            glowColor = '0,230,118';
+        } else if (rtype === 'case_stars') {
+            imgSrc = getCurrencyIcon();
+            title = currencyMode === 'ton' ? 'TON кейсов!' : 'Звёзды кейсов!';
+            amountText = '<img src="' + getCurrencyIcon() + '" onerror="this.src=\'/static/img/star2.png\'">+' + formatStarsAmount(info.data || '0');
+            amountClass = 'stars-color'; imgClass = 'stars-type'; glowColor = '255,165,0';
+        } else if (rtype === 'crash_skin') {
+            imgSrc = '/static/img/rocket.png';
+            title = 'Скин разблокирован!';
+            glowColor = '255,87,51';
+        } else if (rtype === 'crash_vip') {
+            imgSrc = '/static/img/vip.png';
+            title = 'VIP активирован!';
+            glowColor = '255,215,0';
+        } else if (rtype === 'background') {
+            imgSrc = '/static/img/reward.png';
+            title = 'Фон разблокирован!';
+            glowColor = '102,126,234';
+        } else if (rtype === 'experience') {
+            imgSrc = '/static/img/new!.png';
+            title = 'Опыт получен!';
+            amountText = '+' + (info.amount || info.data || '0') + ' XP';
+            amountClass = 'gift-color'; glowColor = '0,230,118';
+        }
+
+        if (info.message && !subtitle) subtitle = info.message;
+
+        glow.style.background = 'radial-gradient(circle, rgba(' + glowColor + ',0.4), transparent 70%)';
+
+        /* Particles */
+        particles.innerHTML = '';
+        var cols = ['#ffd700','#ff6b9d','#69f0ae','#448aff','#b388ff','#fff'];
+        for(var p = 0; p < 30; p++) {
+            var dot = document.createElement('div');
+            dot.className = 'reward-particle';
+            dot.style.cssText = 'left:50%;top:50%;background:' + cols[p%cols.length] +
+                ';--px:' + (Math.random()*300-150) + 'px;--py:' + (Math.random()*300-150) +
+                'px;animation-delay:' + (0.3+Math.random()*0.5) + 's;width:' + (4+Math.random()*6) +
+                'px;height:' + (4+Math.random()*6) + 'px;';
+            particles.appendChild(dot);
+        }
+
+        content.innerHTML =
+            '<div class="reward-screen-badge">Получено</div>' +
+            '<div class="reward-screen-image ' + imgClass + '"><img src="' + esc(imgSrc) + '" onerror="window.rasswetGiftImage ? window.rasswetGiftImage.onError(this, \'/static/img/reward.png\') : (this.src=\'/static/img/reward.png\')"></div>' +
+            '<div class="reward-screen-title">' + esc(title) + '</div>' +
+            (subtitle ? '<div class="reward-screen-subtitle">' + esc(subtitle) + '</div>' : '') +
+            (amountText ? '<div class="reward-screen-amount ' + amountClass + '">' + amountText + '</div>' : '') +
+            (valueText ? '<div class="reward-screen-value">' + esc(valueText) + '</div>' : '') +
+            '<div class="reward-tap-hint" style="margin-top:20px;font-size:12px;color:rgba(255,255,255,.4);cursor:pointer" onclick="closeRewardScreen()">Нажмите чтобы продолжить</div>';
+        /* Click anywhere to close */
+        overlay.onclick = function(e) { if(e.target === overlay) closeRewardScreen(); };
+
+        overlay.classList.add('open');
+        playRewardSound();
+        try { if(navigator.vibrate) navigator.vibrate([100,50,100,50,200]); } catch(e){}
+    }
+
+    window.closeRewardScreen = function() {
+        document.getElementById('rewardScreenOverlay').classList.remove('open');
+    };
+
+    /* ===== BELL INJECTION ===== */
+    var bellTpl = document.getElementById('notifBellTemplate');
+    if(!bellTpl) return;
+    var bellBtn = bellTpl.querySelector('.notif-bell-btn').cloneNode(true);
+    bellTpl.remove();
+
+    var target = document.querySelector('.header-btns-right') || document.querySelector('.top-right-btns');
+    if(target) {
+        target.insertBefore(bellBtn, target.firstChild);
+    } else {
+        bellBtn.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9999;';
+        document.body.appendChild(bellBtn);
+    }
+    bellBtn.id = 'notifBellBtn';
+    var dot = bellBtn.querySelector('.notif-bell-dot');
+    if(dot) dot.id = 'notifBellDot';
+
+    /* ===== STATE ===== */
+    var notifItems = [];
+    var notifUserId = null;
+    var prevCount = -1;
+    var _uidRetries = 0;
+    var _serverTimeOffset = 0; /* ms: serverNow - clientNow */
+    var currencyMode = 'stars';
+    var TON_RATE = 100;
+    var _currencyObserver = null;
+    var _currencyApplyTimer = null;
+    var _currencyApplying = false;
+
+    function getUID() {
+        if(notifUserId) return notifUserId;
+        /* Check all common variable names used across pages */
+        if(typeof userData !== 'undefined' && userData && userData.id) { notifUserId = userData.id; return notifUserId; }
+        if(typeof userId !== 'undefined' && userId) { notifUserId = userId; return notifUserId; }
+        if(typeof user_id !== 'undefined' && user_id) { notifUserId = user_id; return notifUserId; }
+        if(typeof currentUserId !== 'undefined' && currentUserId) { notifUserId = currentUserId; return notifUserId; }
+        /* Try window-level */
+        if(window.userData && window.userData.id) { notifUserId = window.userData.id; return notifUserId; }
+        /* Try Telegram WebApp */
+        if(window.Telegram && window.Telegram.WebApp) {
+            var tg = window.Telegram.WebApp;
+            if(tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
+                notifUserId = tg.initDataUnsafe.user.id;
+                return notifUserId;
+            }
+        }
+        return null;
+    }
+
+    function formatStarsAmount(value) {
+        var stars = Number(value || 0);
+        if (currencyMode === 'ton') {
+            var tons = stars / TON_RATE;
+            return (Math.round(tons * 100) / 100).toString().replace(/\.00$/, '').replace(/(\.\d)0$/, '$1').replace('.', ',');
+        }
+        return String(Math.round(stars));
+    }
+
+    function getCurrencyIcon() {
+        return currencyMode === 'ton' ? '/static/img/ton.png' : '/static/img/star.png';
+    }
+
+    window.rasswetCurrency = {
+        getMode: function(){ return currencyMode; },
+        formatFromStars: function(value){ return formatStarsAmount(value); },
+        getIcon: function(){ return getCurrencyIcon(); }
+    };
+
+    function setBalanceElementValue(el, starsValue) {
+        if (!el) return;
+        var stars = Number(starsValue || 0);
+        el.dataset.starsRaw = String(stars);
+        el.textContent = formatStarsAmount(stars);
+    }
+
+    function applyKnownBalances(starsValue) {
+        var bs = document.getElementById('balance-stars') || document.getElementById('balVal');
+        if (bs) setBalanceElementValue(bs, starsValue);
+    }
+
+    function refreshCurrencyButton() {
+        var btnStars = document.getElementById('currencyBtnStars');
+        var btnTon = document.getElementById('currencyBtnTon');
+        if (!btnStars || !btnTon) return;
+        btnStars.classList.toggle('active', currencyMode === 'stars');
+        btnTon.classList.toggle('active', currencyMode === 'ton');
+    }
+
+    function showCurrencySwitchNotice() {
+        var old = document.getElementById('currencySwitchToast');
+        if (old) old.remove();
+        var toast = document.createElement('div');
+        toast.id = 'currencySwitchToast';
+        toast.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:300000;background:rgba(20,20,32,.94);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px 14px;color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.45)';
+        var icon = currencyMode === 'ton' ? '/static/img/ton.png' : '/static/img/star.png';
+        var label = currencyMode === 'ton' ? 'Режим TON включен' : 'Режим Stars включен';
+        toast.innerHTML = '<img src="' + icon + '" style="width:14px;height:14px;object-fit:contain" onerror="this.src=\'/static/img/star.png\'">' + label;
+        document.body.appendChild(toast);
+        setTimeout(function(){
+            if (!toast.parentNode) return;
+            toast.style.transition = 'opacity .22s';
+            toast.style.opacity = '0';
+            setTimeout(function(){ if (toast.parentNode) toast.remove(); }, 240);
+        }, 1200);
+    }
+
+    function applyCurrencyToBoundElements(root) {
+        var scope = root && root.querySelectorAll ? root : document;
+        var nodes = scope.querySelectorAll ? scope.querySelectorAll('[data-stars-raw]') : [];
+        for (var i = 0; i < nodes.length; i++) {
+            var el = nodes[i];
+            if (el.closest && el.closest('[data-currency-manual="1"]')) continue;
+            var raw = Number(el.dataset && el.dataset.starsRaw ? el.dataset.starsRaw : 0);
+            if (isNaN(raw)) raw = 0;
+            el.textContent = formatStarsAmount(raw);
+        }
+    }
+
+    function applyCurrencyToDOM(root) {
+        if (_currencyApplying) return;
+        _currencyApplying = true;
+        try {
+            var scope = root && root.querySelectorAll ? root : document;
+            var imgs = scope.querySelectorAll ? scope.querySelectorAll('img') : [];
+            for (var i = 0; i < imgs.length; i++) {
+                var img = imgs[i];
+                if (img.dataset && img.dataset.currencyStatic === '1') continue;
+                if (img.closest && img.closest('[data-currency-manual="1"]')) continue;
+                var src = img.getAttribute('src') || '';
+                if (!img.dataset.origCurrencySrc && (src.indexOf('/static/img/star.png') !== -1 || src.indexOf('/static/img/star2.png') !== -1 || src.indexOf('/static/img/ton.png') !== -1)) {
+                    img.dataset.origCurrencySrc = src;
+                }
+                if (img.dataset.origCurrencySrc) {
+                    if (currencyMode === 'ton') {
+                        img.setAttribute('src', '/static/img/ton.png');
+                    } else {
+                        img.setAttribute('src', img.dataset.origCurrencySrc);
+                    }
+                }
+            }
+            applyCurrencyToBoundElements(scope);
+        } catch(e) {}
+        _currencyApplying = false;
+    }
+
+    function scheduleCurrencyApply() {
+        if (_currencyApplyTimer) clearTimeout(_currencyApplyTimer);
+        _currencyApplyTimer = setTimeout(function(){ applyCurrencyToDOM(document); }, 80);
+    }
+
+    function initCurrencyObserver() {
+        if (_currencyObserver || !window.MutationObserver) return;
+        _currencyObserver = new MutationObserver(function(){ scheduleCurrencyApply(); });
+        _currencyObserver.observe(document.body || document.documentElement, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
+    }
+
+    function applyCurrencyFromUserData() {
+        try {
+            if (typeof userData !== 'undefined' && userData && userData.balance_stars !== undefined) {
+                applyKnownBalances(userData.balance_stars);
+            }
+        } catch(e) {}
+    }
+
+    function persistCurrencyMode(mode) {
+        var uid = getUID();
+        if (!uid) return;
+        fetch('/api/user/currency-mode', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: uid, mode: mode })
+        }).catch(function(){});
+    }
+
+    function applyCurrencyMode(mode, syncServer) {
+        currencyMode = mode === 'ton' ? 'ton' : 'stars';
+        refreshCurrencyButton();
+        applyCurrencyFromUserData();
+        try { localStorage.setItem('rasswet_currency_mode', currencyMode); } catch(e) {}
+        scheduleCurrencyApply();
+        if (syncServer) persistCurrencyMode(currencyMode);
+    }
+
+    window.setCurrencyMode = function(mode) {
+        var normalized = mode === 'ton' ? 'ton' : 'stars';
+        if (currencyMode === normalized) return;
+        applyCurrencyMode(normalized, true);
+        try { window.dispatchEvent(new CustomEvent('rasswet-currency-change', { detail: { mode: currencyMode } })); } catch(e) {}
+        showCurrencySwitchNotice();
+    };
+
+    window.toggleCurrencyMode = function() {
+        window.setCurrencyMode(currencyMode === 'stars' ? 'ton' : 'stars');
+    };
+
+    function initCurrencyMode() {
+        try {
+            var localMode = localStorage.getItem('rasswet_currency_mode');
+            if (localMode === 'ton' || localMode === 'stars') {
+                applyCurrencyMode(localMode, false);
+            }
+        } catch(e) {}
+        var uid = getUID();
+        if (!uid) {
+            setTimeout(initCurrencyMode, 1200);
+            return;
+        }
+        fetch('/api/user/' + uid)
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if (data && data.success && data.user) {
+                    if (typeof userData !== 'undefined' && userData) {
+                        userData.currency_mode = data.user.currency_mode || 'stars';
+                    }
+                    applyCurrencyMode(data.user.currency_mode || 'stars', false);
+                    if (data.user.balance_stars !== undefined) {
+                        applyKnownBalances(data.user.balance_stars);
+                    }
+                    initCurrencyObserver();
+                    scheduleCurrencyApply();
+                } else {
+                    applyCurrencyMode('stars', false);
+                }
+            })
+            .catch(function(){ applyCurrencyMode('stars', false); });
+    }
+
+    /* ===== SMART ICON MAPPING ===== */
+    function getNotifIcon(item) {
+        if (item.type === 'bonus') {
+            if (item.bonus_type === 'stars') return {img: '/static/img/star.png', cls: 'ic-bonus'};
+            if (item.bonus_type === 'tickets') return {img: '/static/img/ticket.png', cls: 'ic-bonus'};
+            return {img: '/static/img/reward.png', cls: 'ic-bonus'};
+        }
+        if (item.reward_type === 'gift' && item.reward_preview && item.reward_preview.gift_image) {
+            return {img: item.reward_preview.gift_image, cls: 'ic-gift'};
+        }
+        if (item.reward_type === 'crash_skin' || item.reward_type === 'rocket') {
+            var skinId = item.reward_preview && item.reward_preview.skin_id ? item.reward_preview.skin_id : '';
+            return {img: skinId ? ('/static/gifs/' + skinId + '.gif') : '/static/img/rocket.png', cls: 'ic-gift'};
+        }
+        if (item.reward_type === 'background') {
+            return {img: '/static/img/phone.png', cls: 'ic-default'};
+        }
+        var nt = item.notif_type || 'general';
+        if (nt === 'gift_index') {
+            var giftImg = item.image_url || '/static/img/gift.png';
+            return {img: giftImg, cls: 'ic-gift'};
+        }
+        if (nt === 'level_up') return {img: '/static/img/new!.png', cls: 'ic-level'};
+        if (nt === 'promo') return {img: '/static/img/promo.png', cls: 'ic-promo'};
+        if (nt === 'shop_deal') return {img: '/static/img/star.png', cls: 'ic-shop'};
+        if (nt === 'quest') return {img: '/static/img/task.png', cls: 'ic-quest'};
+        if (nt === 'new_case') return {img: '/static/img/cases.png', cls: 'ic-case'};
+        if (item.image_url) return {img: item.image_url, cls: 'ic-default'};
+        return {img: '/static/img/new.png', cls: 'ic-default'};
+    }
+
+    function getRewardLabel(rt, rd) {
+        if (!rt) return '';
+        var parsed = rd;
+        if (typeof rd === 'string') {
+            try { parsed = JSON.parse(rd); } catch(e) { parsed = rd; }
+        }
+        if (rt === 'stars') return '+' + formatStarsAmount(rd) + ' <img src="' + getCurrencyIcon() + '" style="width:13px;height:13px;vertical-align:middle" onerror="this.src=\'/static/img/star.png\'">';
+        if (rt === 'tickets') return '+' + rd + ' <img src="/static/img/ticket.png" style="width:13px;height:13px;vertical-align:middle">';
+        if (rt === 'case_stars') return '+' + formatStarsAmount(rd) + ' <img src="' + getCurrencyIcon() + '" style="width:13px;height:13px;vertical-align:middle" onerror="this.src=\'/static/img/star2.png\'">';
+        if (rt === 'crash_skin') return '<img src="/static/img/rocket.png" style="width:13px;height:13px;vertical-align:middle"> Скин';
+        if (rt === 'rocket') return '<img src="/static/img/rocket.png" style="width:13px;height:13px;vertical-align:middle"> Ракета';
+        if (rt === 'background') return '<img src="/static/img/reward.png" style="width:13px;height:13px;vertical-align:middle"> Фон';
+        if (rt === 'crash_vip') return '<img src="/static/img/vip.png" style="width:13px;height:13px;vertical-align:middle"> VIP';
+        if (rt === 'experience' || rt === 'exp') return '+' + (parsed && parsed.amount ? parsed.amount : rd) + ' XP';
+        if (rt === 'promo_code' || rt === 'promocode') {
+            var code = (parsed && parsed.code) ? parsed.code : rd;
+            var count = (parsed && parsed.count) ? (' x' + parsed.count) : '';
+            return '<img src="/static/img/promo.png" style="width:13px;height:13px;vertical-align:middle"> ' + code + count;
+        }
+        if (rt === 'gift') return '<img src="/static/img/gift.png" style="width:13px;height:13px;vertical-align:middle"> Подарок';
+        return '<img src="/static/img/reward.png" style="width:13px;height:13px;vertical-align:middle"> Награда';
+    }
+
+    function getRewardIcon(rt) {
+        if (rt === 'stars') return getCurrencyIcon();
+        if (rt === 'tickets') return '/static/img/ticket.png';
+        if (rt === 'case_stars') return getCurrencyIcon();
+        if (rt === 'crash_vip') return '/static/img/vip.png';
+        if (rt === 'gift') return '/static/img/gift.png';
+        if (rt === 'crash_skin' || rt === 'rocket') return '/static/img/rocket.png';
+        if (rt === 'background') return '/static/img/phone.png';
+        if (rt === 'promo_code' || rt === 'promocode') return '/static/img/promo.png';
+        return '/static/img/reward.png';
+    }
+
+    /* ===== POLLING ===== */
+    function fetchNotifs() {
+        var uid = getUID();
+        if(!uid) {
+            /* User data not loaded yet — retry with backoff (up to ~30 sec) */
+            _uidRetries++;
+            if(_uidRetries < 20) {
+                setTimeout(fetchNotifs, Math.min(_uidRetries * 1500, 5000));
+            }
+            return;
+        }
+        _uidRetries = 0;
+        fetch('/api/pending-notifications?user_id=' + uid)
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                if(data.success) {
+                    /* Calculate server-client time offset for accurate relative time */
+                    if(data.server_time) {
+                        var srvRaw = String(data.server_time).trim();
+                        if(srvRaw.indexOf('Z') === -1 && srvRaw.indexOf('+') === -1) {
+                            if(srvRaw.indexOf('T') === -1) srvRaw = srvRaw.replace(' ', 'T');
+                            srvRaw += 'Z';
+                        }
+                        var srvMs = new Date(srvRaw).getTime();
+                        if(!isNaN(srvMs)) _serverTimeOffset = srvMs - Date.now();
+                    }
+                    var newItems = data.items || [];
+                    var newCount = newItems.length;
+                    if (newCount > 0 && newCount > prevCount && prevCount >= 0) {
+                        playNotifSound();
+                    }
+                    prevCount = newCount;
+                    notifItems = newItems;
+                    updateBell();
+                    if(document.getElementById('notifPopup').classList.contains('open')) {
+                        renderNotifList();
+                    }
+                }
+            })
+            .catch(function(){});
+    }
+
+    function updateBell() {
+        var btn = document.getElementById('notifBellBtn');
+        if(!btn) return;
+        if(notifItems.length > 0) {
+            btn.classList.add('has-notif');
+        } else {
+            btn.classList.remove('has-notif');
+        }
+    }
+
+    /* Start polling — delay to let page JS load userData */
+    setTimeout(fetchNotifs, 2500);
+    setInterval(fetchNotifs, 30000);
+    setTimeout(initCurrencyMode, 1200);
+
+    /* ===== POPUP TOGGLE ===== */
+    window.toggleNotifPopup = function() {
+        var popup = document.getElementById('notifPopup');
+        var overlay = document.getElementById('notifPopupOverlay');
+        if(popup.classList.contains('open')) {
+            closeNotifPopup();
+        } else {
+            popup.classList.add('open');
+            overlay.classList.add('open');
+            fetchNotifs(); /* refresh on open */
+            renderNotifList();
+        }
+    };
+
+    window.closeNotifPopup = function() {
+        document.getElementById('notifPopup').classList.remove('open');
+        document.getElementById('notifPopupOverlay').classList.remove('open');
+    };
+
+    function renderNotifList() {
+        var body = document.getElementById('notifPopupBody');
+        if(!notifItems.length) {
+            body.innerHTML = '<div class="notif-empty"><img src="/static/img/new.png" alt=""><p>Нет новых уведомлений</p></div>';
+            return;
+        }
+        var html = '';
+        for(var i = 0; i < notifItems.length; i++) {
+            var item = notifItems[i];
+            var icon = getNotifIcon(item);
+            var title = item.type === 'bonus'
+                ? (item.description || getBonusTitle(item))
+                : (item.title || 'Уведомление');
+            var desc = item.type === 'bonus'
+                ? getBonusPreview(item)
+                : (item.message || '').substring(0, 80);
+            var time = fmtTime(item.created_at);
+            var rewardHtml = '';
+            if (item.reward_type) {
+                rewardHtml = '<div class="notif-card-reward"><img src="' + getRewardIcon(item.reward_type) + '">' + getRewardLabel(item.reward_type, item.reward_data) + '</div>';
+            } else if (item.type === 'bonus') {
+                rewardHtml = '<div class="notif-card-reward"><img src="/static/img/reward.png">' + getBonusPreview(item) + '</div>';
+            }
+
+            html += '<div class="notif-card" onclick="openNotifDetail(' + i + ')">' +
+                '<div class="notif-card-icon ' + icon.cls + '"><img src="' + esc(icon.img) + '" onerror="this.src=\'/static/img/new.png\'"></div>' +
+                '<div class="notif-card-content">' +
+                '<div class="notif-card-title">' + esc(title) + '</div>' +
+                '<div class="notif-card-desc">' + esc(desc) + '</div>' +
+                rewardHtml +
+                '<div class="notif-card-time">' + time + '</div>' +
+                '</div></div>';
+        }
+        body.innerHTML = html;
+    }
+
+    /* ===== DETAIL MODAL ===== */
+    window.openNotifDetail = function(idx) {
+        var item = notifItems[idx];
+        if(!item) return;
+        var card = document.getElementById('notifDetailCard');
+        var icon = getNotifIcon(item);
+        var isBonus = item.type === 'bonus';
+
+        var titleText = isBonus ? (item.description || getBonusTitle(item)) : (item.title || 'Уведомление');
+        var bodyText = isBonus ? (item.source || 'Системный бонус') : (item.message || '');
+        var time = fmtTime(item.created_at);
+
+        var h = '<div class="nd-header">' +
+            '<div class="nd-icon ' + icon.cls + '"><img src="' + esc(icon.img) + '" onerror="this.src=\'/static/img/new.png\'"></div>' +
+            '<div class="nd-header-info"><div class="nd-title">' + esc(titleText) + '</div>' +
+            '<div class="nd-time">' + time + '</div></div>' +
+            '<button class="nd-close-btn" onclick="closeNotifDetail()">&times;</button></div>';
+
+        var imgHtml = '';
+        if (!isBonus && item.image_url && item.image_url.trim() && item.notif_type !== 'gift_index') {
+            imgHtml = '<div class="nd-image"><img src="' + esc(item.image_url) + '" onerror="this.parentElement.style.display=\'none\'"></div>';
+        } else if (!isBonus && item.reward_type === 'gift' && item.reward_preview && item.reward_preview.gift_image) {
+            imgHtml = '<div class="nd-image"><img src="' + esc(item.reward_preview.gift_image) + '" onerror="this.parentElement.style.display=\'none\'"></div>';
+        }
+
+        var bHtml = bodyText ? '<div class="nd-body">' + esc(bodyText) + '</div>' : '';
+
+        var rwHtml = '';
+        if (isBonus) {
+            var amt = item.bonus_data || '0';
+            var bonusType = item.bonus_type === 'stars' ? 'Звёзды' : item.bonus_type === 'tickets' ? 'Билеты' : item.bonus_type;
+            rwHtml = '<div class="nd-reward-box">' +
+                '<div class="nd-reward-icon"><img src="' + getRewardIcon(item.bonus_type) + '"></div>' +
+                '<div class="nd-reward-info"><div class="nd-reward-label">' + bonusType + '</div>' +
+                '<div class="nd-reward-value">+' + amt + '</div></div></div>';
+        } else if (item.reward_type) {
+            rwHtml = '<div class="nd-reward-box">' +
+                '<div class="nd-reward-icon"><img src="' + getRewardIcon(item.reward_type) + '"></div>' +
+                '<div class="nd-reward-info"><div class="nd-reward-label">Награда</div>' +
+                '<div class="nd-reward-value">' + getRewardLabel(item.reward_type, item.reward_data) + '</div></div></div>';
+        }
+
+        var actHtml = '<div class="nd-actions">';
+        if (isBonus) {
+            actHtml += '<button class="nd-btn-primary bonus-btn" onclick="claimBonus(' + item.id + ',' + idx + ',this)">Забрать</button>';
+        } else {
+            actHtml += '<button class="nd-btn-primary" onclick="markNotifRead(' + item.id + ',' + idx + ',this)">Прочитано</button>';
+        }
+        actHtml += '</div>';
+
+        card.innerHTML = h + imgHtml + bHtml + rwHtml + actHtml;
+        document.getElementById('notifDetailOverlay').classList.add('open');
+    };
+
+    window.closeNotifDetail = function() {
+        document.getElementById('notifDetailOverlay').classList.remove('open');
+    };
+
+    /* ===== ACTIONS ===== */
+    window.claimBonus = function(bonusId, idx, btn) {
+        var uid = getUID();
+        if(!uid) return;
+        btn.disabled = true;
+        btn.textContent = '...';
+        var item = notifItems[idx];
+        fetch('/api/claim-bonus', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({user_id: uid, bonus_id: bonusId})
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            if(data.success) {
+                btn.textContent = 'Получено!';
+                btn.classList.add('claimed');
+                if(data.new_balance !== undefined) {
+                    applyKnownBalances(data.new_balance);
+                }
+                if(data.new_tickets !== undefined) {
+                    var bt = document.getElementById('balance-tickets');
+                    if(bt) bt.textContent = data.new_tickets;
+                }
+                closeNotifDetail();
+                /* Build reward info */
+                var rw = {
+                    type: item ? item.bonus_type : '',
+                    bonus_type: item ? item.bonus_type : '',
+                    amount: item ? item.bonus_data : '0',
+                    data: item ? item.bonus_data : '0',
+                    message: ''
+                };
+                showRewardScreen(rw);
+                setTimeout(fetchNotifs, 500);
+            } else {
+                btn.textContent = data.error || 'Ошибка';
+                btn.disabled = false;
+            }
+        })
+        .catch(function(){ btn.textContent = 'Ошибка'; btn.disabled = false; });
+    };
+
+    window.markNotifRead = function(notifId, idx, btn) {
+        var uid = getUID();
+        if(!uid) return;
+        if(btn){ btn.disabled = true; btn.textContent = '...'; }
+        var item = notifItems[idx];
+        fetch('/api/mark-notification-read', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({user_id: uid, notification_id: notifId})
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            if(btn){ btn.textContent = 'Готово'; btn.classList.add('claimed'); }
+            if(data.balance_stars !== undefined) {
+                applyKnownBalances(data.balance_stars);
+            }
+            if(data.balance_tickets !== undefined) {
+                var bt = document.getElementById('balance-tickets');
+                if(bt) bt.textContent = data.balance_tickets;
+            }
+            closeNotifDetail();
+            /* Show reward screen if there was a reward */
+            if (data.reward_given && data.reward_given.type) {
+                showRewardScreen({
+                    type: data.reward_given.type,
+                    reward_type: data.reward_given.type,
+                    data: data.reward_given.data,
+                    amount: data.reward_given.data,
+                    gift_name: data.reward_given.gift_name,
+                    gift_image: data.reward_given.gift_image,
+                    gift_value: data.reward_given.gift_value,
+                    message: item ? item.message : ''
+                });
+            } else if (item && item.notif_type === 'gift_index') {
+                showRewardScreen({
+                    type: 'gift',
+                    gift_name: item.title || 'Новый подарок',
+                    gift_image: item.image_url || '/static/img/gift.png',
+                    message: item.message || ''
+                });
+            }
+            setTimeout(fetchNotifs, 500);
+        })
+        .catch(function(){ closeNotifDetail(); });
+    };
+
+    /* ===== HELPERS ===== */
+    function getBonusTitle(item) {
+        if(item.bonus_type === 'stars') return currencyMode === 'ton' ? 'Бонус TON' : 'Бонус звёзд';
+        if(item.bonus_type === 'tickets') return 'Бонус билетов';
+        return 'Награда';
+    }
+    function getBonusPreview(item) {
+        var amt = item.bonus_data || '0';
+        var amountText = item.bonus_type === 'stars' ? formatStarsAmount(amt) : amt;
+        var type = item.bonus_type === 'stars' ? (currencyMode === 'ton' ? 'TON' : 'зв.') : item.bonus_type === 'tickets' ? 'бил.' : item.bonus_type;
+        return '+' + amountText + ' ' + type;
+    }
+    function fmtTime(ts) {
+        if(!ts) return '';
+        try {
+            var raw = String(ts).trim();
+            if(raw.indexOf('Z') === -1 && raw.indexOf('+') === -1 && raw.indexOf('T') === -1) {
+                raw = raw.replace(' ', 'T') + 'Z';
+            } else if(raw.indexOf('Z') === -1 && raw.indexOf('+') === -1) {
+                raw = raw + 'Z';
+            }
+            var d = new Date(raw);
+            if(isNaN(d.getTime())) d = new Date(ts);
+            /* Use server time offset for accurate "ago" calculation */
+            var serverNow = Date.now() + _serverTimeOffset;
+            var diff = (serverNow - d.getTime()) / 1000;
+            if(diff < 0) diff = 0;
+            if(diff < 60) return 'сейчас';
+            if(diff < 3600) return Math.floor(diff/60) + ' мин';
+            if(diff < 86400) return Math.floor(diff/3600) + ' ч';
+            return Math.floor(diff/86400) + ' дн';
+        } catch(e) { return ''; }
+    }
+    function esc(s) {
+        if(!s) return '';
+        var d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+    /* Compatibility wrapper: some templates call openDepositOverlay() */
+    window.openDepositOverlay = function() {
+        try {
+            if (typeof openDepositSelector === 'function') return openDepositSelector();
+        } catch (e) {}
+        // fallback: try to show depositOverlay if present
+        try {
+            var el = document.getElementById('depositOverlay');
+            if (el) return el.classList.add('show');
+        } catch (e) {}
+        console.warn('No deposit selector available');
+    };
+
+})();
+</script>
+<script>
+// Global image error handler: swap missing crown.png and ensure avatar fallback
+document.addEventListener('error', function(e) {
+    var el = e.target;
+    try {
+        if (el && el.tagName === 'IMG') {
+            var src = el.getAttribute('src') || '';
+            if (src.indexOf('/static/img/crown.png') !== -1) {
+                el.onerror = null; el.src = '/static/img/star2.png';
+            } else if (src.indexOf('/static/img/default_avatar.png') !== -1) {
+                // if default avatar failed for some reason, try a safe profile image
+                el.onerror = null; el.src = '/static/img/profil.png';
+            } else {
+                // generic fallback for other missing static assets
+                el.onerror = function() { el.onerror = null; el.src = '/static/img/default_gift.png'; };
+            }
+        }
+    } catch(ignore) {}
+}, true);
+</script>
+<script>
+// Ensure common header elements exist to avoid null deref from page scripts
+function _ensureHeaderEl(id, tag, attrs, insertTo) {
+    if (document.getElementById(id)) return document.getElementById(id);
+    var parent = document.querySelector(insertTo) || document.body;
+    var el = document.createElement(tag || 'div');
+    el.id = id;
+    for (var k in (attrs||{})) el.setAttribute(k, attrs[k]);
+    parent.appendChild(el);
+    return el;
+}
+function ensureCommonHeaderElements() {
+    // Try to find header container
+    var hdr = document.querySelector('.hdr-row') || document.querySelector('.header') || document.querySelector('.top-bar') || document.body;
+    // avatar
+    if (!document.getElementById('user-avatar')) {
+        var img = document.createElement('img'); img.id = 'user-avatar'; img.src = '/static/img/default_avatar.png'; img.alt = 'Avatar'; img.style.width = '44px'; img.style.height = '44px'; img.style.borderRadius = '10px';
+        hdr.insertBefore(img, hdr.firstChild);
+    }
+    // user-name
+    if (!document.getElementById('user-name')) {
+        var un = document.createElement('div'); un.id = 'user-name'; un.className = 'hdr-username'; un.textContent = 'Загрузка...'; hdr.appendChild(un);
+    }
+    // balance-stars
+    if (!document.getElementById('balance-stars')) {
+        var bsWrap = document.createElement('div'); bsWrap.className = 'hdr-bal';
+        var img = document.createElement('img'); img.src = '/static/img/star.png'; img.style.width='16px'; img.style.height='16px'; img.setAttribute('data-currency-static','1');
+        var span = document.createElement('span'); span.id = 'balance-stars'; span.textContent = '0';
+        bsWrap.appendChild(img); bsWrap.appendChild(span); hdr.appendChild(bsWrap);
+    }
+    // balance-tickets
+    if (!document.getElementById('balance-tickets')) {
+        var bt = document.createElement('span'); bt.id = 'balance-tickets'; bt.textContent = '0'; bt.style.display='none'; hdr.appendChild(bt);
+    }
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureCommonHeaderElements);
+else ensureCommonHeaderElements();
+</script>

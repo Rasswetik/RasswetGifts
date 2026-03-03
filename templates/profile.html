@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#090B11">
+<title>Rasswet — Профиль</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:#090B11;color:#fff;-webkit-font-smoothing:antialiased;
+  min-height:100vh;min-height:100dvh;
+}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{display:block;max-width:100%}
+
+:root{
+  --blue:#236CD9;--blue-light:#2C7CF3;
+  --green:#1EE44C;--gold:#FDA100;
+  --bg:#090B11;--surface:#161923;--surface2:#1A1E2A;
+  --border:rgba(255,255,255,.06);
+  --text-muted:#828AA4;--text-dim:#646C86;
+  --nav-h:72px;--safe-b:env(safe-area-inset-bottom,0px);
+}
+
+/* ===== LOADING ===== */
+.ld-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;transition:opacity .4s;
+}
+.ld-screen.hidden{opacity:0;pointer-events:none}
+.ld-spinner{width:48px;height:48px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ld-text{margin-top:16px;font-size:12px;color:var(--text-dim);letter-spacing:1px;font-weight:600}
+
+/* ===== APP ===== */
+.app{
+  max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;
+  padding-bottom:calc(var(--nav-h) + var(--safe-b));
+}
+
+/* ===== TOP BAR ===== */
+.top-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;position:sticky;top:0;z-index:50;
+  background:rgba(9,11,17,.92);backdrop-filter:blur(12px);
+}
+.top-left{display:flex;align-items:center;gap:8px}
+.page-title{font-size:16px;font-weight:800;letter-spacing:.3px}
+.top-right{display:flex;align-items:center;gap:6px}
+.bal-box{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;
+}
+.bal-box svg{width:18px;height:18px}
+.deposit-btn{
+  width:38px;height:38px;border-radius:12px;
+  background:rgba(35,108,217,.15);border:1px solid rgba(35,108,217,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:600;color:var(--blue);transition:background .2s;
+}
+.deposit-btn:active{background:rgba(35,108,217,.3)}
+
+/* ===== SCROLLABLE CONTENT ===== */
+.scroll-content{flex:1;overflow-y:auto;padding:0 16px 20px}
+
+/* ===== AVATAR CARD ===== */
+.avatar-card{
+  display:flex;flex-direction:column;align-items:center;
+  padding:24px 16px 20px;margin-bottom:12px;
+}
+.avatar-ring{
+  width:88px;height:88px;border-radius:50%;
+  background:conic-gradient(var(--blue) var(--progress,0%),rgba(255,255,255,.08) 0);
+  padding:3px;margin-bottom:12px;position:relative;
+}
+.avatar-inner{
+  width:100%;height:100%;border-radius:50%;overflow:hidden;
+  border:3px solid var(--bg);background:var(--surface);
+}
+.avatar-inner img{width:100%;height:100%;object-fit:cover}
+.avatar-level{
+  position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,var(--blue),#1948A0);
+  padding:2px 10px;border-radius:10px;font-size:11px;font-weight:800;
+  border:2px solid var(--bg);white-space:nowrap;
+}
+.user-name{font-size:18px;font-weight:800;margin-bottom:2px}
+.user-handle{font-size:13px;color:var(--text-muted);margin-bottom:14px}
+
+/* ===== LEVEL BAR ===== */
+.level-bar{width:100%;max-width:280px}
+.level-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:5px}
+.level-track{
+  height:8px;border-radius:4px;background:rgba(255,255,255,.06);
+  overflow:hidden;
+}
+.level-fill{
+  height:100%;border-radius:4px;
+  background:linear-gradient(90deg,var(--blue),var(--blue-light));
+  transition:width .6s cubic-bezier(.4,0,.2,1);
+}
+
+/* ===== SECTION ===== */
+.section{
+  background:var(--surface);border-radius:16px;
+  border:1px solid var(--border);margin-bottom:10px;overflow:hidden;
+}
+.section-head{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px;font-size:14px;font-weight:700;
+}
+.section-head svg{width:20px;height:20px;flex-shrink:0;stroke:var(--blue);fill:none;stroke-width:1.8}
+
+/* ===== SETTINGS ===== */
+.setting-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 16px;border-top:1px solid var(--border);
+}
+.setting-label{font-size:13px;color:var(--text-muted)}
+.toggle{
+  width:44px;height:24px;border-radius:12px;
+  background:rgba(255,255,255,.1);position:relative;
+  cursor:pointer;transition:background .2s;
+}
+.toggle.on{background:var(--blue)}
+.toggle-knob{
+  position:absolute;top:2px;left:2px;width:20px;height:20px;
+  border-radius:50%;background:#fff;transition:transform .2s;
+}
+.toggle.on .toggle-knob{transform:translateX(20px)}
+
+/* ===== CURRENCY SWITCH ===== */
+.currency-switch{
+  display:flex;background:rgba(255,255,255,.06);border-radius:10px;overflow:hidden;
+}
+.cur-btn{
+  padding:6px 14px;font-size:12px;font-weight:700;
+  color:var(--text-dim);transition:all .2s;
+}
+.cur-btn.active{background:var(--blue);color:#fff;border-radius:10px}
+
+/* ===== DEPOSIT OPTIONS ===== */
+.dep-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px 16px 14px}
+.dep-card{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:16px 12px;border-radius:14px;
+  background:var(--bg);border:1px solid var(--border);
+  cursor:pointer;transition:background .2s;
+}
+.dep-card:active{background:rgba(255,255,255,.04)}
+.dep-card svg{width:32px;height:32px}
+.dep-card-title{font-size:13px;font-weight:700}
+.dep-card-desc{font-size:11px;color:var(--text-dim);text-align:center}
+
+/* ===== REWARDS ===== */
+.rewards-tabs{
+  display:flex;padding:0 16px 10px;gap:4px;
+}
+.rtab{
+  flex:1;text-align:center;padding:8px 4px;font-size:12px;font-weight:700;
+  color:var(--text-dim);border-radius:10px;transition:all .2s;
+}
+.rtab.active{background:rgba(35,108,217,.15);color:var(--blue-light)}
+.reward-list{padding:0 16px 14px}
+.reward-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px;border-radius:12px;background:var(--bg);
+  border:1px solid var(--border);margin-bottom:6px;
+}
+.reward-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:800;flex-shrink:0;
+}
+.reward-icon.level-icon{background:rgba(35,108,217,.15);color:var(--blue-light)}
+.reward-icon.ref-icon{background:rgba(30,228,76,.12);color:var(--green)}
+.reward-icon.task-icon{background:rgba(253,161,0,.12);color:var(--gold)}
+.reward-info{flex:1;min-width:0}
+.reward-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.reward-sub{font-size:11px;color:var(--text-dim)}
+.reward-progress-track{
+  height:4px;border-radius:2px;background:rgba(255,255,255,.06);
+  margin-top:4px;overflow:hidden;
+}
+.reward-progress-fill{height:100%;border-radius:2px;background:var(--blue);transition:width .4s}
+.reward-btn{
+  padding:6px 14px;border-radius:10px;font-size:12px;font-weight:700;
+  flex-shrink:0;white-space:nowrap;
+}
+.reward-btn.claim{background:var(--green);color:#000}
+.reward-btn.claim:active{opacity:.8}
+.reward-btn.claimed{background:rgba(255,255,255,.06);color:var(--text-dim)}
+.reward-btn.locked{background:rgba(255,255,255,.04);color:var(--text-dim);opacity:.6}
+
+/* ===== REFERRAL SECTION ===== */
+.ref-header{
+  display:flex;align-items:center;gap:12px;
+  padding:0 16px 10px;
+}
+.ref-header img{width:56px;height:56px;border-radius:14px;flex-shrink:0}
+.ref-stats{flex:1}
+.ref-stat-row{display:flex;gap:16px}
+.ref-stat{text-align:center}
+.ref-stat-val{font-size:18px;font-weight:800}
+.ref-stat-label{font-size:11px;color:var(--text-dim)}
+.ref-code-box{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 16px 14px;
+}
+.ref-code{
+  flex:1;padding:10px 14px;border-radius:12px;
+  background:var(--bg);border:1px solid var(--border);
+  font-size:14px;font-weight:700;letter-spacing:1px;
+  text-align:center;color:var(--blue-light);user-select:all;
+}
+.ref-copy-btn{
+  padding:10px 18px;border-radius:12px;
+  background:var(--blue);color:#fff;font-size:13px;font-weight:700;
+  transition:opacity .2s;
+}
+.ref-copy-btn:active{opacity:.8}
+.ref-share-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:12px;margin:0 16px 14px;
+  width:calc(100% - 32px);border-radius:12px;
+  background:rgba(30,228,76,.12);border:1px solid rgba(30,228,76,.2);
+  color:var(--green);font-size:14px;font-weight:700;
+  transition:background .2s;
+}
+.ref-share-btn:active{background:rgba(30,228,76,.2)}
+.ref-share-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ===== ACTION BUTTONS ===== */
+.action-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  margin-bottom:10px;
+}
+.action-card{
+  display:flex;align-items:center;gap:10px;
+  padding:14px;border-radius:14px;
+  background:var(--surface);border:1px solid var(--border);
+  cursor:pointer;transition:background .2s;
+}
+.action-card:active{background:var(--surface2)}
+.action-card svg{width:22px;height:22px;stroke:var(--blue);fill:none;stroke-width:1.8;flex-shrink:0}
+.action-card span{font-size:13px;font-weight:700}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:linear-gradient(0deg,#0A0C12 60%,rgba(10,12,18,.95));
+  border-top:1px solid var(--border);padding-bottom:var(--safe-b);
+}
+.bottom-nav-inner{
+  max-width:480px;margin:0 auto;display:flex;justify-content:space-around;
+  align-items:center;height:var(--nav-h);padding:0 8px;
+}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:6px 12px;color:var(--text-dim);transition:color .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.nav-item span{font-size:10px;font-weight:600;letter-spacing:.3px}
+.nav-item.active{color:var(--blue)}
+.nav-icon-wrap{
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s,box-shadow .2s;
+}
+.nav-item.active .nav-icon-wrap{
+  background:linear-gradient(180deg,#2C79FD 0%,#2246E4 46%,#18408F 100%);
+  box-shadow:0 4px 12px rgba(35,108,217,.4);
+}
+.nav-icon-wrap svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+.nav-item.active .nav-icon-wrap svg{stroke:#fff}
+.nav-item.disabled{opacity:.4;pointer-events:none}
+
+/* ===== DEPOSIT OVERLAY ===== */
+.deposit-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:260;
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;
+}
+.deposit-overlay.show{opacity:1;visibility:visible}
+.deposit-sheet{
+  max-width:480px;width:100%;background:var(--surface);border-radius:20px 20px 0 0;
+  padding:20px 20px calc(20px + var(--safe-b));
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.2,.8,.2,1);
+}
+.deposit-overlay.show .deposit-sheet{transform:translateY(0)}
+.drag-handle{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 16px}
+.deposit-input-group{margin-bottom:14px}
+.deposit-input-group label{display:block;font-size:12px;color:var(--text-muted);margin-bottom:6px}
+.deposit-input{
+  width:100%;padding:12px 14px;border-radius:12px;
+  background:var(--bg);border:1px solid var(--border);
+  color:#fff;font-size:16px;font-weight:700;
+  outline:none;transition:border-color .2s;
+}
+.deposit-input:focus{border-color:var(--blue)}
+.deposit-presets{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.preset-btn{
+  padding:8px 16px;border-radius:10px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  font-size:13px;font-weight:700;color:var(--text-muted);
+  transition:all .2s;
+}
+.preset-btn:active,.preset-btn.active{background:rgba(35,108,217,.15);border-color:rgba(35,108,217,.3);color:var(--blue-light)}
+.deposit-submit{
+  width:100%;padding:14px;border-radius:14px;
+  background:var(--blue);color:#fff;font-size:15px;font-weight:700;
+  transition:opacity .2s;
+}
+.deposit-submit:active{opacity:.8}
+.deposit-submit:disabled{opacity:.4}
+.ton-address-box{
+  padding:12px;border-radius:12px;background:var(--bg);
+  border:1px solid var(--border);margin-bottom:10px;
+  text-align:center;
+}
+.ton-address{
+  font-size:12px;font-weight:600;word-break:break-all;
+  color:var(--blue-light);margin-bottom:8px;
+}
+.ton-copy{
+  padding:8px 20px;border-radius:10px;
+  background:rgba(35,108,217,.15);border:1px solid rgba(35,108,217,.25);
+  color:var(--blue-light);font-size:13px;font-weight:700;
+}
+.ton-rate{font-size:11px;color:var(--text-dim);margin-top:8px;text-align:center}
+.deposit-tab-row{display:flex;gap:4px;margin-bottom:14px}
+.dep-tab{
+  flex:1;padding:10px;border-radius:12px;text-align:center;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  font-size:13px;font-weight:700;color:var(--text-dim);transition:all .2s;
+}
+.dep-tab.active{background:rgba(35,108,217,.15);border-color:rgba(35,108,217,.3);color:var(--blue-light)}
+
+/* ===== TOAST ===== */
+.toast{
+  position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);
+  left:50%;transform:translateX(-50%);
+  padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;
+  background:var(--surface2);border:1px solid var(--border);color:#fff;
+  z-index:9000;white-space:nowrap;animation:toastIn .3s ease;
+}
+.toast.ok{border-color:rgba(30,228,76,.3);color:var(--green)}
+.toast.err{border-color:rgba(249,105,153,.3);color:#F96999}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="ld-screen" id="ldScreen">
+  <div class="ld-spinner"></div>
+  <div class="ld-text">RASSWET</div>
+</div>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="page-title">Профиль</div>
+    </div>
+    <div class="top-right">
+      <div class="bal-box">
+        <svg viewBox="0 0 24 24"><polygon points="12,2 15,10 24,10 17,15 19,23 12,18 5,23 7,15 0,10 9,10" fill="var(--gold)" stroke="none"/></svg>
+        <span id="balVal">0.00</span>
+      </div>
+      <button class="deposit-btn" onclick="openDeposit()">+</button>
+    </div>
+  </div>
+
+  <div class="scroll-content">
+    <!-- AVATAR CARD -->
+    <div class="avatar-card">
+      <div class="avatar-ring" id="avatarRing">
+        <div class="avatar-inner">
+          <img id="userAvatar" src="" alt="">
+        </div>
+        <div class="avatar-level" id="avatarLevel">LV 1</div>
+      </div>
+      <div class="user-name" id="userName">—</div>
+      <div class="user-handle" id="userHandle"></div>
+      <div class="level-bar">
+        <div class="level-labels">
+          <span id="lvlCurrent">Уровень 1</span>
+          <span id="lvlXP">0 / 100 XP</span>
+        </div>
+        <div class="level-track">
+          <div class="level-fill" id="lvlFill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="action-row">
+      <a href="/inventory" class="action-card">
+        <svg viewBox="0 0 24 24"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><rect x="3" y="12" width="18" height="2" rx="1"/><polyline points="12 3 12 12"/><path d="M8 8l4-5 4 5"/></svg>
+        <span>Инвентарь</span>
+      </a>
+      <div class="action-card" onclick="openPromoModal()">
+        <svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 010-4h12V2"/><path d="M4 6v14a2 2 0 002 2h14"/><path d="M18 12a2 2 0 100 4 2 2 0 000-4z"/></svg>
+        <span>Промокод</span>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="section">
+      <div class="section-head">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001.08 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1.08z"/></svg>
+        Настройки
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Вибрация</div>
+        <div class="toggle" id="togVibro" onclick="toggleVibro()">
+          <div class="toggle-knob"></div>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">Валюта</div>
+        <div class="currency-switch">
+          <button class="cur-btn active" id="curStars" onclick="setCurrency('stars')">Stars</button>
+          <button class="cur-btn" id="curTon" onclick="setCurrency('ton')">TON</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEPOSIT SECTION -->
+    <div class="section">
+      <div class="section-head">
+        <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Пополнение
+      </div>
+      <div class="dep-grid">
+        <div class="dep-card" onclick="openDepositStars()">
+          <svg viewBox="0 0 24 24"><polygon points="12,2 15,10 24,10 17,15 19,23 12,18 5,23 7,15 0,10 9,10" fill="var(--gold)" stroke="none"/></svg>
+          <div class="dep-card-title">Telegram Stars</div>
+          <div class="dep-card-desc">Быстро и удобно</div>
+        </div>
+        <div class="dep-card" onclick="openDepositTon()">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 9h20L12 2z" fill="var(--blue)" stroke="none"/><path d="M12 22V9M2 9l10 13M22 9L12 22" stroke="var(--blue)" fill="none" stroke-width="1.5"/></svg>
+          <div class="dep-card-title">TON</div>
+          <div class="dep-card-desc">Через кошелёк</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REWARDS SECTION -->
+    <div class="section">
+      <div class="section-head">
+        <svg viewBox="0 0 24 24"><path d="M12 15l-3 6 1-4-3 1 4-7"/><circle cx="12" cy="8" r="6"/></svg>
+        Награды
+      </div>
+      <div class="rewards-tabs">
+        <button class="rtab active" onclick="switchRewardsTab('levels')">Уровни</button>
+        <button class="rtab" onclick="switchRewardsTab('refs')">Рефералы</button>
+        <button class="rtab" onclick="switchRewardsTab('daily')">Задания</button>
+      </div>
+      <div class="reward-list" id="rewardList">
+        <div style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px">Загрузка...</div>
+      </div>
+    </div>
+
+    <!-- REFERRAL SECTION -->
+    <div class="section">
+      <div class="section-head">
+        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Рефералы
+      </div>
+      <div class="ref-header">
+        <img src="/static/img/ref.png" alt="" onerror="this.style.display='none'">
+        <div class="ref-stats">
+          <div class="ref-stat-row">
+            <div class="ref-stat">
+              <div class="ref-stat-val" id="refCount">0</div>
+              <div class="ref-stat-label">Друзей</div>
+            </div>
+            <div class="ref-stat">
+              <div class="ref-stat-val" id="refEarned">0</div>
+              <div class="ref-stat-label">Заработано</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ref-code-box">
+        <div class="ref-code" id="refCode">—</div>
+        <button class="ref-copy-btn" onclick="copyRefCode()">Копировать</button>
+      </div>
+      <button class="ref-share-btn" onclick="shareRefLink()">
+        <svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        Пригласить друга
+      </button>
+    </div>
+
+  </div><!-- /scroll-content -->
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="/crash" class="nav-item">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M4.5 16.5L12 3l7.5 13.5H4.5z" stroke-linejoin="round"/><path d="M12 3v10M8 20h8" stroke-linecap="round"/></svg>
+      </div>
+      <span>Краш</span>
+    </a>
+    <a href="/index" class="nav-item">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><polyline points="12 3 12 15"/><path d="M8 8l4-5 4 5"/><rect x="3" y="12" width="18" height="2" rx="1"/></svg>
+      </div>
+      <span>Кейсы</span>
+    </a>
+    <a href="#" class="nav-item disabled">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 9 7 12 7s5-3 7.5-3a2.5 2.5 0 010 5H18"/><path d="M5 9h14v8a4 4 0 01-4 4H9a4 4 0 01-4-4V9z"/><path d="M12 9v12"/></svg>
+      </div>
+      <span>Сезон</span>
+    </a>
+    <a href="/profile" class="nav-item active">
+      <div class="nav-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <span>Профиль</span>
+    </a>
+  </div>
+</nav>
+
+<!-- DEPOSIT OVERLAY -->
+<div class="deposit-overlay" id="depositOverlay" onclick="if(event.target===this)closeDeposit()">
+  <div class="deposit-sheet">
+    <div class="drag-handle"></div>
+    <div class="deposit-tab-row">
+      <button class="dep-tab active" id="depTabStars" onclick="switchDepTab('stars')">⭐ Stars</button>
+      <button class="dep-tab" id="depTabTon" onclick="switchDepTab('ton')">💎 TON</button>
+    </div>
+    <div id="depStarsContent">
+      <div class="deposit-input-group">
+        <label>Сумма пополнения (Stars)</label>
+        <input class="deposit-input" id="depStarsInput" type="number" min="10" max="10000" placeholder="100" inputmode="numeric">
+      </div>
+      <div class="deposit-presets">
+        <button class="preset-btn" onclick="setDepAmount(50)">50</button>
+        <button class="preset-btn" onclick="setDepAmount(100)">100</button>
+        <button class="preset-btn" onclick="setDepAmount(250)">250</button>
+        <button class="preset-btn" onclick="setDepAmount(500)">500</button>
+        <button class="preset-btn" onclick="setDepAmount(1000)">1000</button>
+      </div>
+      <button class="deposit-submit" onclick="submitStarsDeposit()">Пополнить</button>
+    </div>
+    <div id="depTonContent" style="display:none">
+      <div class="ton-address-box">
+        <div class="ton-address" id="tonAddr">Загрузка...</div>
+        <button class="ton-copy" onclick="copyTonAddr()">Скопировать адрес</button>
+      </div>
+      <div class="ton-rate">1 TON = 100 Stars</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROMO MODAL -->
+<div id="promoModal" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s">
+  <div style="max-width:340px;width:90%;background:var(--surface);border-radius:20px;padding:24px;text-align:center">
+    <div style="font-size:16px;font-weight:800;margin-bottom:16px">Промокод</div>
+    <input id="promoInput" type="text" placeholder="Введите код" style="width:100%;padding:12px;border-radius:12px;background:var(--bg);border:1px solid var(--border);color:#fff;font-size:15px;font-weight:700;text-align:center;text-transform:uppercase;outline:none;margin-bottom:12px">
+    <button id="promoActivateBtn" onclick="activatePromo()" style="width:100%;padding:14px;border-radius:14px;background:var(--blue);color:#fff;font-size:15px;font-weight:700">Активировать</button>
+    <button onclick="closePromoModal()" style="margin-top:10px;padding:8px;font-size:13px;color:var(--text-dim)">Отмена</button>
+  </div>
+</div>
+
+<script>
+/* ===== GLOBALS ===== */
+let user = null;
+let currencyMode = 'stars';
+let rewardsData = null;
+let currentRewardsTab = 'levels';
+let vibrationEnabled = localStorage.getItem('vibration') !== 'off';
+const BOT_NAME = 'RasswetGiftsBot';
+
+const tg = window.Telegram && Telegram.WebApp;
+if(tg) tg.expand();
+
+/* ===== INIT ===== */
+async function initApp(){
+  try{
+    if(!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user){
+      showToast('Откройте в Telegram','err');
+      return;
+    }
+    const tgUser = tg.initDataUnsafe.user;
+
+    /* Auth */
+    const authR = await fetch('/api/auth',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        id:tgUser.id,
+        first_name:tgUser.first_name||'',
+        last_name:tgUser.last_name||'',
+        username:tgUser.username||'',
+        photo_url:tgUser.photo_url||'',
+        language_code:tgUser.language_code||'ru',
+        start_param: tg.initDataUnsafe.start_param||''
+      })
+    });
+    const authD = await authR.json();
+    if(!authD.success){showToast('Ошибка авторизации','err');return}
+    user = authD.user;
+    currencyMode = (user.currency_mode === 'ton') ? 'ton' : 'stars';
+
+    updateUI();
+    loadRewards();
+    loadRefInfo();
+    loadTonAddress();
+    updateCurrencyUI();
+
+  }catch(e){
+    console.error(e);
+    showToast('Ошибка загрузки','err');
+  }finally{
+    const ld = document.getElementById('ldScreen');
+    ld.classList.add('hidden');
+    setTimeout(()=>ld.remove(),500);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', initApp);
+
+/* ===== UPDATE UI ===== */
+function updateUI(){
+  if(!user) return;
+  /* Avatar */
+  const av = document.getElementById('userAvatar');
+  if(user.photo_url) av.src = user.photo_url;
+  else av.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect fill="%23236CD9" width="80" height="80" rx="40"/><text x="40" y="52" text-anchor="middle" fill="white" font-size="32" font-family="sans-serif">'+(user.first_name||'U').charAt(0)+'</text></svg>';
+
+  /* Name */
+  document.getElementById('userName').textContent = user.first_name || 'Пользователь';
+  document.getElementById('userHandle').textContent = user.username ? '@'+user.username : '';
+
+  /* Balance */
+  updateBalance();
+
+  /* Level */
+  const li = user.level_info;
+  if(li){
+    const lv = li.current_level || 1;
+    const pct = Math.min(Math.max(li.progress_percentage||0,0),100);
+    document.getElementById('avatarLevel').textContent = 'LV ' + lv;
+    document.getElementById('avatarRing').style.setProperty('--progress', pct+'%');
+    document.getElementById('lvlCurrent').textContent = 'Уровень ' + lv;
+    if(li.next_level_info){
+      const curExp = li.experience||0;
+      const nextExp = li.next_level_info.exp_required||0;
+      document.getElementById('lvlXP').textContent = curExp + ' / ' + nextExp + ' XP';
+    } else {
+      document.getElementById('lvlXP').textContent = 'MAX';
+    }
+    document.getElementById('lvlFill').style.width = pct + '%';
+  }
+
+  /* Vibration toggle */
+  document.getElementById('togVibro').classList.toggle('on', vibrationEnabled);
+}
+
+function updateBalance(){
+  if(!user) return;
+  if(currencyMode==='ton'){
+    document.getElementById('balVal').textContent = ((user.balance_stars||0)/100).toFixed(2);
+  } else {
+    document.getElementById('balVal').textContent = formatMoney(user.balance_stars||0);
+  }
+}
+
+function formatMoney(v){
+  v = Number(v)||0;
+  if(v>=1e6) return (v/1e6).toFixed(1)+'M';
+  if(v>=1e3) return (v/1e3).toFixed(1)+'K';
+  return v.toFixed(0);
+}
+
+/* ===== CURRENCY ===== */
+function updateCurrencyUI(){
+  document.getElementById('curStars').classList.toggle('active', currencyMode==='stars');
+  document.getElementById('curTon').classList.toggle('active', currencyMode==='ton');
+  updateBalance();
+}
+
+async function setCurrency(mode){
+  currencyMode = mode;
+  localStorage.setItem('currencyMode', mode);
+  updateCurrencyUI();
+  if(user){
+    fetch('/api/user/currency-mode',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:user.id, mode:mode})
+    }).catch(()=>{});
+  }
+}
+
+/* ===== VIBRATION ===== */
+function toggleVibro(){
+  vibrationEnabled = !vibrationEnabled;
+  localStorage.setItem('vibration', vibrationEnabled ? 'on' : 'off');
+  document.getElementById('togVibro').classList.toggle('on', vibrationEnabled);
+  if(vibrationEnabled) haptic('light');
+}
+
+function haptic(type){
+  if(!vibrationEnabled) return;
+  try{
+    if(tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred(type||'light');
+  }catch(e){}
+}
+
+/* ===== REWARDS ===== */
+async function loadRewards(){
+  if(!user) return;
+  try{
+    const r = await fetch('/api/rewards/info/'+user.id);
+    const d = await r.json();
+    if(d.success){
+      rewardsData = d;
+      renderRewards();
+    }
+  }catch(e){console.error(e)}
+}
+
+function switchRewardsTab(tab){
+  currentRewardsTab = tab;
+  document.querySelectorAll('.rtab').forEach((el,i)=>{
+    el.classList.toggle('active', ['levels','refs','daily'][i]===tab);
+  });
+  renderRewards();
+}
+
+function renderRewards(){
+  const c = document.getElementById('rewardList');
+  if(!rewardsData){c.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px">Загрузка...</div>';return}
+
+  let html = '';
+
+  if(currentRewardsTab === 'levels'){
+    const items = rewardsData.level_rewards || [];
+    if(!items.length){html='<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px">Нет наград</div>';}
+    items.forEach(r=>{
+      const btnClass = r.claimed ? 'claimed' : (r.available ? 'claim' : 'locked');
+      const btnText = r.claimed ? '✓' : (r.available ? 'Забрать' : 'LV '+r.level);
+      html += `<div class="reward-item">
+        <div class="reward-icon level-icon">${r.level}</div>
+        <div class="reward-info">
+          <div class="reward-title">Уровень ${r.level}</div>
+          <div class="reward-sub">${r.stars} Stars</div>
+          ${!r.claimed && !r.available ? '<div class="reward-progress-track"><div class="reward-progress-fill" style="width:'+r.progress+'%"></div></div>':''}
+        </div>
+        <button class="reward-btn ${btnClass}" ${r.available && !r.claimed ? 'onclick="claimReward(\'level\','+r.level+')"':''} ${!r.available && !r.claimed ? 'disabled':''}>${btnText}</button>
+      </div>`;
+    });
+  }
+
+  else if(currentRewardsTab === 'refs'){
+    const items = rewardsData.referral_rewards || [];
+    if(!items.length){html='<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px">Нет наград</div>';}
+    items.forEach(r=>{
+      const btnClass = r.claimed ? 'claimed' : (r.available ? 'claim' : 'locked');
+      const btnText = r.claimed ? '✓' : (r.available ? 'Забрать' : r.current+'/'+r.count);
+      html += `<div class="reward-item">
+        <div class="reward-icon ref-icon">${r.count}</div>
+        <div class="reward-info">
+          <div class="reward-title">${r.count} друзей</div>
+          <div class="reward-sub">${r.stars} Stars</div>
+          ${!r.claimed && !r.available ? '<div class="reward-progress-track"><div class="reward-progress-fill" style="width:'+r.progress+'%"></div></div>':''}
+        </div>
+        <button class="reward-btn ${btnClass}" ${r.available && !r.claimed ? 'onclick="claimReward(\'referral\','+r.count+')"':''} ${!r.available && !r.claimed ? 'disabled':''}>${btnText}</button>
+      </div>`;
+    });
+  }
+
+  else if(currentRewardsTab === 'daily'){
+    const items = rewardsData.daily_tasks || [];
+    if(!items.length){html='<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px">Нет заданий</div>';}
+    items.forEach(t=>{
+      const done = t.completed && t.reward_claimed;
+      const canClaim = t.completed && !t.reward_claimed;
+      const btnClass = done ? 'claimed' : (canClaim ? 'claim' : 'locked');
+      const btnText = done ? '✓' : (canClaim ? 'Забрать' : Math.floor(t.percentage)+'%');
+      html += `<div class="reward-item">
+        <div class="reward-icon task-icon">!</div>
+        <div class="reward-info">
+          <div class="reward-title">${t.description}</div>
+          <div class="reward-sub">${t.reward_stars} Stars</div>
+          ${!done ? '<div class="reward-progress-track"><div class="reward-progress-fill" style="width:'+t.percentage+'%"></div></div>':''}
+        </div>
+        <button class="reward-btn ${btnClass}" ${canClaim ? 'onclick="claimDaily('+t.id+')"':''} ${!canClaim && !done ? 'disabled':''}>${btnText}</button>
+      </div>`;
+    });
+  }
+
+  c.innerHTML = html;
+}
+
+async function claimReward(type, id){
+  haptic('medium');
+  try{
+    const r = await fetch('/api/rewards/claim',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:user.id, reward_type:type, reward_id:id})
+    });
+    const d = await r.json();
+    if(d.success){
+      showToast('Награда получена! +'+d.stars+' Stars','ok');
+      haptic('success');
+      await refreshUser();
+      await loadRewards();
+    } else showToast(d.error||'Ошибка','err');
+  }catch(e){showToast('Ошибка сети','err')}
+}
+
+async function claimDaily(taskId){
+  haptic('medium');
+  try{
+    const r = await fetch('/api/rewards/claim-daily',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:user.id, task_id:taskId})
+    });
+    const d = await r.json();
+    if(d.success){
+      showToast('Награда получена! +'+d.stars+' Stars','ok');
+      haptic('success');
+      await refreshUser();
+      await loadRewards();
+    } else showToast(d.error||'Ошибка','err');
+  }catch(e){showToast('Ошибка сети','err')}
+}
+
+/* ===== REFERRAL ===== */
+async function loadRefInfo(){
+  if(!user) return;
+  try{
+    const r = await fetch('/api/referral-info/'+user.id);
+    const d = await r.json();
+    if(d.success){
+      document.getElementById('refCount').textContent = d.referral_count||0;
+      document.getElementById('refEarned').textContent = formatMoney(d.total_earned_stars||0);
+      document.getElementById('refCode').textContent = d.referral_code||'—';
+    }
+  }catch(e){console.error(e)}
+}
+
+function copyRefCode(){
+  const code = document.getElementById('refCode').textContent;
+  if(!code || code==='—') return;
+  const link = 'https://t.me/'+BOT_NAME+'?start=ref_'+code;
+  navigator.clipboard.writeText(link).then(()=>{
+    showToast('Ссылка скопирована!','ok');
+    haptic('light');
+  }).catch(()=>{
+    /* fallback */
+    const ta = document.createElement('textarea');
+    ta.value = link;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Ссылка скопирована!','ok');
+  });
+}
+
+function shareRefLink(){
+  const code = document.getElementById('refCode').textContent;
+  if(!code || code==='—') return;
+  const link = 'https://t.me/'+BOT_NAME+'?start=ref_'+code;
+  const text = '🎁 Присоединяйся к Rasswet Gifts! Открывай кейсы и выигрывай подарки!';
+  if(tg && tg.openTelegramLink){
+    tg.openTelegramLink('https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent(text));
+  } else {
+    window.open('https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent(text),'_blank');
+  }
+  haptic('light');
+}
+
+/* ===== DEPOSIT ===== */
+let depTab = 'stars';
+
+function openDeposit(){
+  document.getElementById('depositOverlay').classList.add('show');
+  haptic('light');
+}
+function closeDeposit(){
+  document.getElementById('depositOverlay').classList.remove('show');
+}
+function openDepositStars(){
+  depTab='stars';
+  openDeposit();
+  switchDepTab('stars');
+}
+function openDepositTon(){
+  depTab='ton';
+  openDeposit();
+  switchDepTab('ton');
+}
+
+function switchDepTab(t){
+  depTab = t;
+  document.getElementById('depTabStars').classList.toggle('active', t==='stars');
+  document.getElementById('depTabTon').classList.toggle('active', t==='ton');
+  document.getElementById('depStarsContent').style.display = t==='stars' ? '' : 'none';
+  document.getElementById('depTonContent').style.display = t==='ton' ? '' : 'none';
+}
+
+function setDepAmount(v){
+  document.getElementById('depStarsInput').value = v;
+}
+
+async function submitStarsDeposit(){
+  const amount = parseInt(document.getElementById('depStarsInput').value);
+  if(!amount || amount<10 || amount>10000){
+    showToast('Сумма от 10 до 10,000','err');
+    return;
+  }
+  try{
+    const r = await fetch('/api/stars/create-invoice',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:user.id, amount:amount})
+    });
+    const d = await r.json();
+    if(d.success && d.invoice_url){
+      if(tg) tg.openInvoice(d.invoice_url, function(status){
+        if(status==='paid'){
+          showToast('Оплачено! Баланс обновлён','ok');
+          haptic('success');
+          refreshUser();
+        }
+      });
+      closeDeposit();
+    } else showToast(d.error||'Ошибка','err');
+  }catch(e){showToast('Ошибка сети','err')}
+}
+
+let tonAddress = '';
+async function loadTonAddress(){
+  try{
+    const r = await fetch('/api/ton-wallet-address');
+    const d = await r.json();
+    if(d.success){
+      tonAddress = d.address||'';
+      document.getElementById('tonAddr').textContent = tonAddress || 'Не настроен';
+    }
+  }catch(e){}
+}
+
+function copyTonAddr(){
+  if(!tonAddress) return;
+  navigator.clipboard.writeText(tonAddress).then(()=>{
+    showToast('Адрес скопирован!','ok');
+    haptic('light');
+  }).catch(()=>{
+    showToast('Ошибка копирования','err');
+  });
+}
+
+/* ===== PROMO ===== */
+function openPromoModal(){
+  const m = document.getElementById('promoModal');
+  m.style.opacity='1';m.style.visibility='visible';
+  document.getElementById('promoInput').value='';
+  setTimeout(()=>document.getElementById('promoInput').focus(),100);
+  haptic('light');
+}
+function closePromoModal(){
+  const m = document.getElementById('promoModal');
+  m.style.opacity='0';m.style.visibility='hidden';
+}
+document.getElementById('promoModal').addEventListener('click',function(e){
+  if(e.target===this) closePromoModal();
+});
+document.getElementById('promoInput').addEventListener('keypress',function(e){
+  if(e.key==='Enter') activatePromo();
+});
+
+async function activatePromo(){
+  const code = document.getElementById('promoInput').value.trim().toUpperCase();
+  if(!code){showToast('Введите промокод','err');return}
+  const btn = document.getElementById('promoActivateBtn');
+  btn.disabled=true;btn.textContent='Проверка...';
+  try{
+    const r = await fetch('/api/activate-promo',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:user.id, promo_code:code})
+    });
+    const d = await r.json();
+    if(d.success){
+      closePromoModal();
+      showToast('Промокод активирован!','ok');
+      haptic('success');
+      refreshUser();
+    } else {
+      showToast(d.error||'Ошибка','err');
+      btn.disabled=false;btn.textContent='Активировать';
+    }
+  }catch(e){
+    showToast('Ошибка сети','err');
+    btn.disabled=false;btn.textContent='Активировать';
+  }
+}
+
+/* ===== REFRESH USER ===== */
+async function refreshUser(){
+  try{
+    const r = await fetch('/api/user/'+user.id);
+    const d = await r.json();
+    if(d.success){
+      user = d.user;
+      if(user.currency_mode) currencyMode = user.currency_mode==='ton' ? 'ton' : 'stars';
+      updateUI();
+      updateCurrencyUI();
+    }
+  }catch(e){}
+}
+
+/* ===== TOAST ===== */
+function showToast(msg,type){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast'+(type?' '+type:'');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>{
+    t.style.opacity='0';t.style.transform='translateX(-50%) translateY(6px)';
+    t.style.transition='opacity .3s,transform .3s';
+    setTimeout(()=>t.remove(),300);
+  },2500);
+}
+</script>
+</body>
+</html>

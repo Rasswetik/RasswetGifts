@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#090B11">
+<title>Кейс — Rasswet</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
+body{
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:#090B11;color:#fff;-webkit-font-smoothing:antialiased;
+  min-height:100vh;min-height:100dvh;user-select:none;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+img{display:block;max-width:100%}
+
+:root{
+  --blue:#236CD9;--blue-light:#2C7CF3;
+  --green:#1EE44C;--gold:#FDA100;--yellow:#FDBE13;
+  --bg:#090B11;--surface:#161923;--surface2:#1A1E2A;
+  --border:rgba(255,255,255,.06);
+  --text-muted:#828AA4;--text-dim:#646C86;
+  --nav-h:72px;--safe-b:env(safe-area-inset-bottom,0px);
+}
+
+/* ===== LOADING ===== */
+.ld-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:9999;transition:opacity .4s;
+}
+.ld-screen.hidden{opacity:0;pointer-events:none}
+.ld-spinner{width:48px;height:48px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ld-text{margin-top:16px;font-size:12px;color:var(--text-dim);letter-spacing:1px;font-weight:600}
+
+/* ===== APP ===== */
+.app{
+  max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;
+  padding-bottom:calc(var(--nav-h) + var(--safe-b));
+}
+
+/* ===== TOP BAR ===== */
+.top-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;position:sticky;top:0;z-index:50;
+  background:rgba(9,11,17,.92);backdrop-filter:blur(12px);
+}
+.top-left{display:flex;align-items:center;gap:8px}
+.back-btn{
+  width:38px;height:38px;border-radius:12px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;transition:background .2s;
+}
+.back-btn:active{background:rgba(255,255,255,.12)}
+.back-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2}
+.top-right{display:flex;align-items:center;gap:6px}
+.bal-box{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  padding:6px 14px;border-radius:20px;font-size:14px;font-weight:700;
+}
+.bal-box svg{width:18px;height:18px}
+
+/* ===== CASE HEADER ===== */
+.case-hdr{text-align:center;padding:8px 16px 0}
+.case-title{font-size:20px;font-weight:800;margin-bottom:4px}
+.case-meta{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.meta-tag{
+  font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;
+  display:inline-flex;align-items:center;gap:4px;
+}
+.tag-cost{background:rgba(253,190,19,.1);color:var(--yellow);border:1px solid rgba(253,190,19,.2);font-weight:700}
+.tag-limit{background:rgba(253,190,19,.12);color:var(--yellow);border:1px solid rgba(253,190,19,.2)}
+.tag-free{background:rgba(30,228,76,.12);color:var(--green);border:1px solid rgba(30,228,76,.2);font-weight:800}
+.free-timer{
+  font-size:12px;color:var(--gold);font-weight:600;margin-top:6px;display:none;
+  padding:4px 12px;border-radius:8px;background:rgba(253,161,0,.1);border:1px solid rgba(253,161,0,.2);
+}
+.free-timer.active{display:inline-block}
+
+/* ===== CASE IMAGE ===== */
+.case-hero{
+  display:flex;justify-content:center;padding:16px 0;
+}
+.case-hero img{
+  width:180px;height:180px;object-fit:contain;
+  filter:drop-shadow(0 8px 20px rgba(0,0,0,.45)) drop-shadow(0 0 28px rgba(35,108,217,.25));
+  animation:heroGlow 3s ease-in-out infinite;
+}
+@keyframes heroGlow{
+  0%,100%{filter:drop-shadow(0 8px 20px rgba(0,0,0,.45)) drop-shadow(0 0 28px rgba(35,108,217,.25))}
+  50%{filter:drop-shadow(0 8px 20px rgba(0,0,0,.45)) drop-shadow(0 0 45px rgba(35,108,217,.4))}
+}
+
+/* ===== CONTROLS ===== */
+.controls{padding:0 16px 8px;text-align:center}
+.toggles-row{display:flex;justify-content:center;gap:16px;margin-bottom:10px}
+.toggle-item{display:flex;align-items:center;gap:6px}
+.toggle-label{font-size:11px;color:var(--text-muted);font-weight:600}
+.mini-toggle{
+  width:36px;height:20px;background:rgba(255,255,255,.1);border-radius:10px;
+  position:relative;transition:background .2s;
+}
+.mini-toggle.on{background:var(--blue)}
+.mini-toggle .knob{
+  position:absolute;left:2px;top:2px;width:16px;height:16px;
+  background:#fff;border-radius:50%;transition:left .2s;
+}
+.mini-toggle.on .knob{left:18px}
+
+.qty-row{display:flex;gap:6px;justify-content:center;margin-bottom:10px}
+.qty-btn{
+  width:44px;height:44px;border-radius:12px;
+  border:1px solid var(--border);background:var(--surface);
+  font-size:14px;font-weight:700;color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;transition:all .2s;
+}
+.qty-btn.active{
+  background:rgba(35,108,217,.2);border-color:rgba(35,108,217,.3);color:#fff;
+  box-shadow:0 0 12px rgba(35,108,217,.15);
+}
+.qty-btn:disabled{opacity:.3}
+
+.open-btn{
+  width:100%;max-width:320px;height:48px;border-radius:12px;margin:0 auto;
+  background:linear-gradient(135deg,#2C79FD,#236CD9);color:#fff;
+  font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 4px 16px rgba(35,108,217,.35);transition:all .2s;
+}
+.open-btn:active:not(:disabled){transform:scale(.97)}
+.open-btn:disabled{opacity:.5;cursor:default}
+.open-btn.fast{background:linear-gradient(135deg,#34E76A,#1EAA3F);box-shadow:0 4px 16px rgba(30,228,76,.3)}
+.cost-info{font-size:12px;color:rgba(255,255,255,.5);margin-top:6px;text-align:center;display:flex;align-items:center;justify-content:center;gap:4px}
+.cost-info img{width:14px;height:14px}
+
+/* ===== ROULETTE ===== */
+.roulette-wrap{
+  position:relative;margin:8px 16px;border-radius:14px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);background:var(--surface);
+  min-height:200px;display:none;
+}
+.roulette-wrap.show{display:block}
+.roulette-single{height:200px;position:relative;overflow:hidden;display:flex;justify-content:center}
+.roulette-track{
+  display:flex;position:absolute;top:0;left:0;height:100%;will-change:transform;
+  width:max-content;
+}
+.roulette-item{
+  width:140px;height:200px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:8px;position:relative;
+  border-right:1px solid rgba(255,255,255,.05);
+  background:linear-gradient(180deg,rgba(22,25,35,.3) 0%,rgba(9,11,17,.8) 50%,rgba(22,25,35,.3) 100%);
+}
+.roulette-item .r-img{width:90px;height:90px;object-fit:contain;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+.roulette-item .r-val{
+  font-size:11px;font-weight:700;color:var(--text-muted);margin-top:6px;
+  display:flex;align-items:center;gap:3px;
+}
+.roulette-item .r-val img{width:11px;height:11px}
+.roulette-item.winner{
+  background:rgba(253,190,19,.06);
+  border-left:2px solid rgba(253,190,19,.5);border-right:2px solid rgba(253,190,19,.5);
+  box-shadow:inset 0 0 20px rgba(253,190,19,.06);
+}
+.roulette-item.winner .r-img{
+  transform:scale(1.1);
+  filter:drop-shadow(0 0 30px rgba(253,190,19,.4)) brightness(1.08);
+  animation:winGlow 1.5s ease-in-out infinite;
+}
+@keyframes winGlow{
+  0%,100%{filter:drop-shadow(0 0 30px rgba(253,190,19,.4)) brightness(1.08)}
+  50%{filter:drop-shadow(0 0 42px rgba(253,190,19,.55)) brightness(1.15)}
+}
+.roulette-pointer{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:10}
+.roulette-pointer::before{
+  content:'';display:block;width:0;height:0;
+  border-left:12px solid transparent;border-right:12px solid transparent;
+  border-top:20px solid var(--blue);
+  filter:drop-shadow(0 0 14px rgba(35,108,217,.7));
+}
+.roulette-pointer::after{
+  content:'';display:block;position:absolute;bottom:-200px;left:50%;
+  transform:translateX(-50%);width:2px;height:200px;
+  background:linear-gradient(180deg,rgba(35,108,217,.5),transparent);pointer-events:none;
+}
+/* Multi roulette */
+.roulette-multi{display:none;height:280px;position:relative;overflow:hidden}
+.roulette-columns{display:flex;width:100%;height:100%;gap:1px}
+.roulette-col{flex:1;position:relative;overflow:hidden;background:rgba(19,23,34,.6)}
+.roulette-col-track{display:flex;flex-direction:column;position:absolute;top:0;left:0;width:100%;will-change:transform}
+.roulette-col-item{
+  width:100%;height:90px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:6px;border-bottom:1px solid rgba(255,255,255,.05);
+}
+.roulette-col-item .r-img{width:60px;height:60px;object-fit:contain}
+.roulette-col-item .r-val{font-size:9px;font-weight:700;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:2px}
+.roulette-col-item .r-val img{width:9px;height:9px}
+.roulette-col-item.winner{
+  background:rgba(253,190,19,.06);border:1px solid rgba(253,190,19,.4);
+  box-shadow:inset 0 0 12px rgba(253,190,19,.05);
+}
+.roulette-col-item.winner .r-img{transform:scale(1.1);filter:drop-shadow(0 0 24px rgba(253,190,19,.35)) brightness(1.08);animation:winGlow 1.5s ease-in-out infinite}
+.multi-center-line{
+  position:absolute;top:50%;left:0;width:100%;height:2px;transform:translateY(-50%);z-index:10;
+  background:linear-gradient(90deg,transparent,var(--blue),transparent);
+  box-shadow:0 0 20px rgba(35,108,217,.45);
+}
+.roulette-wrap.spinning{border-color:rgba(253,190,19,.2);box-shadow:0 0 30px rgba(253,190,19,.08)}
+
+/* ===== CONGRATS ===== */
+.congrats{display:none;text-align:center;padding:16px;animation:fadeUp .5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.congrats-title{font-size:20px;font-weight:800;margin-bottom:12px}
+.won-card{
+  border-radius:16px;padding:20px 16px;margin:0 auto 12px;
+  max-width:320px;background:var(--surface);border:1px solid rgba(255,255,255,.08);
+  display:flex;flex-direction:column;align-items:center;
+}
+.won-card .won-img{
+  width:120px;height:120px;object-fit:contain;margin-bottom:12px;
+  animation:wonBounce .8s cubic-bezier(.34,1.56,.64,1);
+  filter:drop-shadow(0 8px 25px rgba(0,0,0,.5)) drop-shadow(0 0 28px rgba(35,108,217,.3));
+}
+@keyframes wonBounce{0%{transform:scale(0) rotate(-10deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+.won-card .won-name{font-size:16px;font-weight:700;margin-bottom:4px}
+.won-card .won-val{font-size:14px;color:var(--yellow);font-weight:700;display:flex;align-items:center;gap:4px}
+.won-card .won-val img{width:16px;height:16px}
+.won-stars-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(253,190,19,.15);border:1px solid rgba(253,190,19,.3);
+  padding:4px 12px;border-radius:8px;font-size:11px;font-weight:700;color:var(--yellow);margin-top:8px;
+}
+/* Multi results grid */
+#results-box{display:flex;justify-content:center;flex-wrap:wrap;gap:10px}
+#results-box.multi{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.won-row{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:var(--surface);border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:12px 8px;
+}
+.won-row .won-img{width:70px;height:70px;object-fit:contain}
+.won-row .won-name{font-size:11px;font-weight:600;color:rgba(255,255,255,.8);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.won-row .sell-btn{
+  padding:5px 10px;border-radius:8px;
+  background:rgba(253,161,0,.15);color:var(--gold);
+  font-weight:600;font-size:11px;transition:all .15s;
+  display:flex;align-items:center;gap:3px;
+}
+.won-row .sell-btn:active{background:rgba(253,161,0,.25)}
+.won-row .sell-btn:disabled{opacity:.4}
+.won-row .sell-btn.sold{background:rgba(30,228,76,.1);color:var(--green)}
+.won-row .sell-btn img{width:11px;height:11px}
+
+.win-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.win-btn{
+  padding:12px 24px;border-radius:12px;font-weight:700;font-size:13px;
+  display:flex;align-items:center;gap:6px;transition:all .2s;
+}
+.win-btn.continue{
+  background:linear-gradient(135deg,#2C79FD,#236CD9);color:#fff;
+  box-shadow:0 4px 12px rgba(35,108,217,.3);
+}
+.win-btn.continue:active{transform:scale(.97)}
+.win-btn.sell-all{
+  background:rgba(253,161,0,.2);color:var(--gold);border:1px solid rgba(253,161,0,.2);
+}
+.win-btn.sell-all:active{background:rgba(253,161,0,.3)}
+.win-btn.sell-all:disabled{opacity:.4}
+.win-btn img{width:14px;height:14px}
+
+/* ===== GIFTS GRID ===== */
+.gifts-section{padding:16px}
+.gifts-title{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.gifts-title svg{width:18px;height:18px;stroke:var(--blue);fill:none;stroke-width:2}
+.gifts-grid{display:flex;flex-wrap:wrap;gap:8px}
+.gift-card{
+  flex:0 0 calc(50% - 4px);
+  background:var(--surface);border-radius:14px;padding:12px 10px;
+  text-align:center;border:1px solid rgba(255,255,255,.05);
+  transition:transform .15s;
+}
+.gift-card:active{transform:scale(.97)}
+.gift-card .gc-img{width:90px;height:90px;object-fit:contain;margin:0 auto 6px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+.gift-card .gc-name{font-size:12px;font-weight:600;color:rgba(255,255,255,.85);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gift-card .gc-meta{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:700;color:var(--text-muted)}
+.gift-card .gc-meta img{width:12px;height:12px}
+.gift-card .gc-chance{font-size:10px;color:var(--text-dim);margin-top:3px}
+
+/* ===== PROMO ===== */
+.promo-section{
+  display:none;margin:8px 16px;padding:14px;border-radius:14px;
+  background:rgba(35,108,217,.06);border:1px solid rgba(35,108,217,.15);
+}
+.promo-row{display:flex;gap:8px}
+.promo-input{
+  flex:1;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);color:#fff;font-size:14px;font-weight:500;outline:none;
+  text-transform:uppercase;letter-spacing:1px;
+}
+.promo-input:focus{border-color:rgba(35,108,217,.3)}
+.promo-input::placeholder{color:var(--text-dim);text-transform:none;letter-spacing:0}
+.promo-btn{
+  padding:10px 18px;border-radius:10px;
+  background:linear-gradient(135deg,#2C79FD,#236CD9);color:#fff;font-weight:700;font-size:13px;
+}
+.promo-btn:disabled{opacity:.5}
+.promo-error{color:var(--gold);font-size:12px;margin-top:6px;display:none;text-align:center}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:linear-gradient(0deg,#0A0C12 60%,rgba(10,12,18,.95));
+  border-top:1px solid var(--border);padding-bottom:var(--safe-b);
+}
+.bottom-nav-inner{
+  max-width:480px;margin:0 auto;display:flex;justify-content:space-around;
+  align-items:center;height:var(--nav-h);padding:0 8px;
+}
+.nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:6px 12px;color:var(--text-dim);transition:color .2s;
+  -webkit-tap-highlight-color:transparent;text-decoration:none;
+}
+.nav-item span{font-size:10px;font-weight:600;letter-spacing:.3px}
+.nav-item.active{color:var(--blue)}
+.nav-icon-wrap{
+  width:40px;height:40px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;transition:background .2s,box-shadow .2s;
+}
+.nav-item.active .nav-icon-wrap{
+  background:linear-gradient(180deg,#2C79FD 0%,#2246E4 46%,#18408F 100%);
+  box-shadow:0 4px 12px rgba(35,108,217,.4);
+}
+.nav-icon-wrap svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+.nav-item.active .nav-icon-wrap svg{stroke:#fff}
+.nav-item.disabled{opacity:.4;pointer-events:none}
+
+/* ===== TOAST ===== */
+.toast{
+  position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 16px);
+  left:50%;transform:translateX(-50%);
+  padding:10px 20px;border-radius:12px;font-size:13px;font-weight:600;
+  background:var(--surface2);border:1px solid var(--border);color:#fff;
+  z-index:9000;white-space:nowrap;animation:toastIn .3s ease;
+}
+.toast.ok{border-color:rgba(30,228,76,.3);color:var(--green)}
+.toast.err{border-color:rgba(249,105,153,.3);color:#F96999}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* ===== PARTICLES ===== */
+.particle-container{position:fixed;inset:0;pointer-events:none;z-index:9998;overflow:hidden}
+.particle{
+  position:absolute;border-radius:50%;pointer-events:none;
+  animation:particleFly var(--dur) cubic-bezier(.19,.82,.22,1) forwards;
+  box-shadow:0 0 12px currentColor;mix-blend-mode:screen;will-change:transform,opacity;
+}
+@keyframes particleFly{
+  0%{opacity:0;transform:translate(0,0) scale(.7)}
+  8%{opacity:1}75%{opacity:.4}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.02) rotate(360deg)}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="ld-screen" id="ldScreen">
+  <div class="ld-spinner"></div>
+  <div class="ld-text">RASSWET</div>
+</div>
+
+<div class="app">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-left">
+      <button class="back-btn" onclick="goBack()"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="top-right">
+      <div class="bal-box">
+        <svg viewBox="0 0 24 24"><polygon points="12,2 15,10 24,10 17,15 19,23 12,18 5,23 7,15 0,10 9,10" fill="var(--gold)" stroke="none"/></svg>
+        <span id="balVal">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CASE HEADER -->
+  <div class="case-hdr">
+    <div class="case-title" id="caseName">Загрузка...</div>
+    <div class="case-meta" id="caseMeta"></div>
+    <div class="free-timer" id="freeTimer"></div>
+  </div>
+
+  <!-- CASE HERO IMAGE -->
+  <div class="case-hero" id="caseHero">
+    <img id="caseImage" src="/static/img/cases.png" alt="Кейс">
+  </div>
+
+  <!-- PROMO -->
+  <div class="promo-section" id="promoSection">
+    <div class="promo-row">
+      <input type="text" class="promo-input" id="promoInput" placeholder="Промокод" maxlength="20">
+      <button class="promo-btn" id="promoBtn" onclick="activatePromo()">OK</button>
+    </div>
+    <div class="promo-error" id="promoError"></div>
+  </div>
+
+  <!-- ROULETTE -->
+  <div class="roulette-wrap" id="rouletteWrap">
+    <div class="roulette-single" id="rouletteSingle">
+      <div class="roulette-pointer"></div>
+      <div class="roulette-track" id="rouletteTrack"></div>
+    </div>
+    <div class="roulette-multi" id="rouletteMulti">
+      <div class="multi-center-line"></div>
+      <div class="roulette-columns" id="rouletteColumns"></div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls" id="controls">
+    <div class="toggles-row">
+      <div class="toggle-item">
+        <span class="toggle-label">Демо</span>
+        <button class="mini-toggle" id="tglDemo" onclick="toggleDemo()"><div class="knob"></div></button>
+      </div>
+      <div class="toggle-item">
+        <span class="toggle-label">Быстро</span>
+        <button class="mini-toggle" id="tglFast" onclick="toggleFast()"><div class="knob"></div></button>
+      </div>
+    </div>
+    <div class="qty-row" id="qtyRow">
+      <button class="qty-btn active" data-q="1">x1</button>
+      <button class="qty-btn" data-q="2">x2</button>
+      <button class="qty-btn" data-q="3">x3</button>
+      <button class="qty-btn" data-q="4">x4</button>
+      <button class="qty-btn" data-q="5">x5</button>
+    </div>
+    <button class="open-btn" id="openBtn" onclick="openCase()">Открыть кейс</button>
+    <div class="cost-info" id="costInfo"></div>
+  </div>
+
+  <!-- CONGRATS -->
+  <div class="congrats" id="congrats">
+    <div class="congrats-title" id="congratsTitle"></div>
+    <div id="results-box"></div>
+    <div id="winActions"></div>
+  </div>
+
+  <!-- GIFTS -->
+  <div class="gifts-section" id="giftsSection">
+    <div class="gifts-title">
+      <svg viewBox="0 0 24 24"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/></svg>
+      Что в кейсе?
+    </div>
+    <div class="gifts-grid" id="giftsGrid"></div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <a href="/crash" class="nav-item">
+      <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M4.5 16.5L12 3l7.5 13.5H4.5z" stroke-linejoin="round"/><path d="M12 3v10M8 20h8" stroke-linecap="round"/></svg></div>
+      <span>Краш</span>
+    </a>
+    <a href="/index" class="nav-item active">
+      <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6"/><polyline points="12 3 12 15"/><path d="M8 8l4-5 4 5"/><rect x="3" y="12" width="18" height="2" rx="1"/></svg></div>
+      <span>Кейсы</span>
+    </a>
+    <a href="#" class="nav-item disabled">
+      <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 9 7 12 7s5-3 7.5-3a2.5 2.5 0 010 5H18"/><path d="M5 9h14v8a4 4 0 01-4 4H9a4 4 0 01-4-4V9z"/><path d="M12 9v12"/></svg></div>
+      <span>Сезон</span>
+    </a>
+    <a href="/profile" class="nav-item">
+      <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4-4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <span>Профиль</span>
+    </a>
+  </div>
+</nav>
+
+<script>
+const $=id=>document.getElementById(id);
+let userData=null, caseData=null, currentCaseId=null, wonGifts=[], isAnimating=false, isOpening=false;
+let selectedQty=1, freeCaseOpened=false, promoActivated=false, allGifts=[];
+let fastOpen=localStorage.getItem('cases_fast_open')==='on';
+let demoMode=localStorage.getItem('cases_demo_mode')==='on';
+let rouletteItems=[], animIv=null, curPos=0;
+const FRAGMENT_BASE='https://fragment.com/file/gifts/';
+const TON_RATE=100;
+const spinDur={1:7600,2:8200,3:8800,4:9400,5:10000};
+const pathParts=window.location.pathname.split('/');
+currentCaseId=parseInt(pathParts[pathParts.length-1]);
+
+/* ===== CURRENCY ===== */
+function getCurrMode(){try{return localStorage.getItem('rasswet_currency_mode')==='ton'?'ton':'stars'}catch(e){return'stars'}}
+function fmtMoney(stars){
+  var n=Number(stars||0);
+  if(getCurrMode()==='ton'){var t=n/TON_RATE;return(Math.round(t*100)/100).toString().replace(/\.00$/,'').replace(/(\.\d)0$/,'$1')}
+  return String(Math.round(n));
+}
+function moneyIcon(){return getCurrMode()==='ton'?'/static/img/ton.png':'/static/img/star.png'}
+
+/* ===== GIFT IMAGES ===== */
+function slugify(name){return String(name||'').replace(/\s*\(Random\)\s*/ig,'').toLowerCase().replace(/[^a-z0-9]+/g,'')}
+function giftFallback(g){var s=(g&&g.image)?String(g.image):'/static/img/default_gift.png';return s.replace(/\.gif(\?.*)?$/i,'.png$1')}
+function fragmentImg(g){
+  if(!g||g.type==='stars_balance')return '';
+  var img=String(g.image||'');
+  if(img.indexOf('fragment.com/file/')!==-1)return img;
+  var slug=(g.fragment_slug||g.fragmentSlug||'').toString().trim()||slugify(g.name);
+  return slug?FRAGMENT_BASE+slug+'/thumb.webp':'';
+}
+function giftImg(g){
+  if(g&&g.type==='stars_balance')return getCurrMode()==='ton'?'/static/img/ton.png':giftFallback(g);
+  return fragmentImg(g)||giftFallback(g);
+}
+function getRarity(g){
+  if(g&&g.type==='stars_balance')return 'r-divine';
+  var v=g&&g.value||0;
+  if(v>=10000)return'r-divine';if(v>=5000)return'r-mythical';if(v>=2500)return'r-premium';
+  if(v>=1000)return'r-legendary';if(v>=500)return'r-epic';if(v>=100)return'r-rare';return'r-common';
+}
+function shuffle(a){var b=a.slice();for(var i=b.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=b[i];b[i]=b[j];b[j]=t}return b}
+
+/* ===== AUDIO ===== */
+let audioCtx=null, settingSound=localStorage.getItem('cases_sound')!=='off';
+let soundVol=parseFloat(localStorage.getItem('cases_sound_vol')||'0.5');
+let settingVibration=localStorage.getItem('cases_vibration')==='on';
+function ctx(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx}
+function playClick(){
+  if(!settingSound)return;try{var c=ctx(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);
+  o.type='sine';o.frequency.setValueAtTime(1200,c.currentTime);o.frequency.exponentialRampToValueAtTime(600,c.currentTime+.06);
+  g.gain.setValueAtTime(soundVol*.2,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.06);
+  o.start(c.currentTime);o.stop(c.currentTime+.07)}catch(e){}
+}
+function playCaseOpen(){
+  if(!settingSound)return;try{var c=ctx();
+  var o1=c.createOscillator(),g1=c.createGain();o1.connect(g1);g1.connect(c.destination);
+  o1.type='sawtooth';o1.frequency.setValueAtTime(100,c.currentTime);o1.frequency.exponentialRampToValueAtTime(600,c.currentTime+.4);
+  g1.gain.setValueAtTime(soundVol*.15,c.currentTime);g1.gain.exponentialRampToValueAtTime(.001,c.currentTime+.4);
+  o1.start(c.currentTime);o1.stop(c.currentTime+.45);
+  var o2=c.createOscillator(),g2=c.createGain();o2.connect(g2);g2.connect(c.destination);
+  o2.type='sine';o2.frequency.setValueAtTime(60,c.currentTime);
+  g2.gain.setValueAtTime(soundVol*.25,c.currentTime);g2.gain.exponentialRampToValueAtTime(.001,c.currentTime+.3);
+  o2.start(c.currentTime);o2.stop(c.currentTime+.35)}catch(e){}
+}
+let spinTickIv=null;
+function startSpinTick(dur){
+  if(!settingSound)return;var start=Date.now();
+  spinTickIv=setInterval(function(){try{
+    var prog=Math.min((Date.now()-start)/dur,1),vol=prog<.6?1:Math.max(0,1-(prog-.6)/.4);
+    if(vol<=.01){stopSpinTick();return}
+    var c=ctx(),o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();
+    o.connect(f);f.connect(g);g.connect(c.destination);
+    o.type='sawtooth';var freq=800+Math.random()*200;
+    o.frequency.setValueAtTime(freq,c.currentTime);o.frequency.exponentialRampToValueAtTime(freq*.5,c.currentTime+.015);
+    f.type='highpass';f.frequency.setValueAtTime(400,c.currentTime);
+    g.gain.setValueAtTime(soundVol*.15*vol,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.02);
+    o.start(c.currentTime);o.stop(c.currentTime+.025);
+    if(settingVibration&&navigator.vibrate)navigator.vibrate(3);
+  }catch(e){}},70);
+}
+function stopSpinTick(){if(spinTickIv){clearInterval(spinTickIv);spinTickIv=null}}
+function playWin(isStars){
+  if(!settingSound)return;try{var c=ctx();
+  var notes=isStars?[1047,1175,1319,1568,2093]:[523,659,784,1047];
+  notes.forEach(function(freq,i){
+    var o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);
+    o.type='sine';o.frequency.setValueAtTime(freq,c.currentTime+i*.1);
+    g.gain.setValueAtTime(0,c.currentTime);g.gain.linearRampToValueAtTime(soundVol*.25,c.currentTime+i*.1);
+    g.gain.exponentialRampToValueAtTime(.001,c.currentTime+i*.1+.3);
+    o.start(c.currentTime+i*.1);o.stop(c.currentTime+i*.1+.35);
+  });
+  if(settingVibration&&navigator.vibrate)navigator.vibrate([50,50,100]);}catch(e){}
+}
+
+/* ===== PARTICLES ===== */
+function spawnParticles(x,y,color,count){
+  var c=document.createElement('div');c.className='particle-container';document.body.appendChild(c);
+  for(var i=0;i<(count||25);i++){
+    var p=document.createElement('div');p.className='particle';
+    var sz=Math.random()*8+2,angle=Math.random()*Math.PI*2,dist=Math.random()*350+100,dur=Math.random()*2+1.4;
+    p.style.cssText='width:'+sz+'px;height:'+sz+'px;background:'+(color||'#FDBE13')+';color:'+(color||'#FDBE13')+';left:'+x+'px;top:'+y+'px;--dx:'+(Math.cos(angle)*dist)+'px;--dy:'+(Math.sin(angle)*dist)+'px;--dur:'+dur+'s;animation-delay:'+(Math.random()*.2)+'s';
+    c.appendChild(p);
+  }
+  setTimeout(function(){c.remove()},5000);
+}
+
+/* ===== NAV ===== */
+function goBack(){window.location.href='/index'}
+
+/* ===== UI ===== */
+function updateUI(){
+  if(!userData)return;
+  $('balVal').textContent=fmtMoney(userData.balance_stars||0);
+}
+
+/* ===== DISPLAY CASE ===== */
+function displayCase(){
+  $('caseName').textContent=caseData.name;
+  var img=$('caseImage');if(img){img.src=caseData.image||'/static/img/cases.png';img.onerror=function(){this.src='/static/img/cases.png'}}
+  var meta=$('caseMeta');meta.innerHTML='';
+  if(caseData.limited&&caseData.current_amount!=null){
+    if(caseData.current_amount<=0){meta.innerHTML+='<span class="meta-tag tag-limit">ЛИМИТ ИСЧЕРПАН</span>';$('openBtn').disabled=true;$('openBtn').textContent='ЛИМИТ ИСЧЕРПАН'}
+    else meta.innerHTML+='<span class="meta-tag tag-limit">Осталось: '+caseData.current_amount+'/'+caseData.amount+'</span>';
+  }
+  if(caseData.cost===0)meta.innerHTML+='<span class="meta-tag tag-free">БЕСПЛАТНО</span>';
+  else meta.innerHTML+='<span class="meta-tag tag-cost">'+fmtMoney(caseData.cost)+' <img src="'+(caseData.cost_type==='stars'?moneyIcon():'/static/img/ticket.png')+'" style="width:12px;height:12px;vertical-align:middle"></span>';
+}
+
+function displayGifts(){
+  var grid=$('giftsGrid');if(!caseData||!caseData.gifts_details||!caseData.gifts_details.length){grid.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-dim);width:100%">Нет подарков</div>';return}
+  var sorted=caseData.gifts_details.slice().sort(function(a,b){return(b.value||0)-(a.value||0)});
+  var totalChance=sorted.reduce(function(s,g){return s+Number(g.chance||0)},0);
+  grid.innerHTML=sorted.map(function(g){
+    var isStars=g.type==='stars_balance';
+    var name=isStars?(getCurrMode()==='ton'?fmtMoney(g.value)+' TON':Math.round(g.value)+' Stars'):g.name;
+    var pct=totalChance>0?(Number(g.chance||0)/totalChance*100):0;
+    var fallback=giftFallback(g).replace(/'/g,"\\'");
+    return '<div class="gift-card">'+
+      '<img class="gc-img" src="'+giftImg(g)+'" alt="'+g.name+'" onerror="this.onerror=null;this.src=\''+fallback+'\'">'+
+      '<div class="gc-name">'+name+'</div>'+
+      '<div class="gc-meta"><img src="'+moneyIcon()+'">'+fmtMoney(g.value||0)+'</div>'+
+      '<div class="gc-chance">'+(Math.round(pct*100)/100).toString().replace('.',',')+' %</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ===== TOGGLES ===== */
+function toggleDemo(){demoMode=!demoMode;localStorage.setItem('cases_demo_mode',demoMode?'on':'off');syncToggles();updateOpenBtnText()}
+function toggleFast(){fastOpen=!fastOpen;localStorage.setItem('cases_fast_open',fastOpen?'on':'off');syncToggles();checkBalance()}
+function syncToggles(){
+  var d=$('tglDemo'),f=$('tglFast');
+  if(d){if(demoMode)d.classList.add('on');else d.classList.remove('on')}
+  if(f){if(fastOpen)f.classList.add('on');else f.classList.remove('on')}
+}
+function updateOpenBtnText(){
+  var btn=$('openBtn');if(!btn)return;
+  btn.textContent=(demoMode?'Демо':'Открыть кейс')+(selectedQty>1?' x'+selectedQty:'');
+}
+
+/* ===== QTY ===== */
+function initQty(){
+  document.querySelectorAll('.qty-btn').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      if(isOpening||isAnimating)return;
+      document.querySelectorAll('.qty-btn').forEach(function(b){b.classList.remove('active')});
+      this.classList.add('active');
+      selectedQty=Math.max(1,Math.min(5,parseInt(this.dataset.q)||1));
+      updateCostInfo();checkBalance();updateOpenBtnText();updateRouletteType();
+    });
+  });
+}
+function setQtyEnabled(en){document.querySelectorAll('.qty-btn').forEach(function(b){b.disabled=!en;b.style.opacity=en?'1':'.3'})}
+
+function updateCostInfo(){
+  var el=$('costInfo');
+  if(caseData&&caseData.cost>0&&selectedQty>1){
+    el.innerHTML='Итого: '+fmtMoney(caseData.cost*selectedQty)+' <img src="'+(caseData.cost_type==='stars'?moneyIcon():'/static/img/ticket.png')+'">';
+  }else el.innerHTML='';
+}
+
+function checkBalance(){
+  if(!userData||!caseData)return;
+  var btn=$('openBtn');
+  if(caseData.limited&&caseData.current_amount<=0){btn.disabled=true;btn.textContent='ЛИМИТ ИСЧЕРПАН';return}
+  if(caseData.free&&freeCaseOpened){btn.disabled=true;btn.textContent='ДОСТУПНО ЧЕРЕЗ 24Ч';return}
+  if(caseData.promo&&!promoActivated){btn.disabled=true;btn.textContent='ВВЕДИТЕ ПРОМОКОД';return}
+  if(demoMode){btn.disabled=false;updateOpenBtnText();btn.classList.toggle('fast',fastOpen);return}
+  if(caseData.cost>0&&!caseData.free&&!caseData.promo){
+    var total=caseData.cost*selectedQty;
+    if(caseData.cost_type==='stars'&&(userData.balance_stars||0)<total){btn.disabled=true;btn.textContent='Недостаточно средств'}
+    else if(caseData.cost_type==='tickets'&&(userData.balance_tickets||0)<total){btn.disabled=true;btn.textContent='Недостаточно билетов'}
+    else{btn.disabled=false;updateOpenBtnText()}
+  }else{btn.disabled=false;updateOpenBtnText()}
+  btn.classList.toggle('fast',fastOpen&&!btn.disabled);
+}
+
+function setupInterface(){
+  var qr=$('qtyRow'),ps=$('promoSection');
+  if(caseData.free||caseData.promo){
+    qr.style.display='none';selectedQty=1;
+    if(caseData.promo&&!promoActivated)ps.style.display='block';
+    else ps.style.display='none';
+  }else{qr.style.display='flex';ps.style.display='none';updateCostInfo()}
+}
+
+/* ===== ROULETTE ===== */
+function makeItem(g,cls){
+  var fb=giftFallback(g).replace(/'/g,"\\'");
+  return '<div class="'+(cls||'roulette-item')+'" data-id="'+g.id+'">'+
+    '<img class="r-img" src="'+giftImg(g)+'" alt="'+g.name+'" onerror="this.onerror=null;this.src=\''+fb+'\'">'+
+    '<div class="r-val">'+fmtMoney(g.value||0)+' <img src="'+moneyIcon()+'"></div></div>';
+}
+function initSingleRoulette(){
+  var track=$('rouletteTrack');if(!caseData||!caseData.gifts_details||!caseData.gifts_details.length)return;
+  var items=[];for(var i=0;i<8;i++)items=items.concat(shuffle(caseData.gifts_details.slice()));
+  rouletteItems=items;track.innerHTML=items.map(function(g){return makeItem(g)}).join('');
+  track.style.transition='none';track.style.transform='translateX(0)';
+}
+function initMultiRoulette(){
+  var cols=$('rouletteColumns');cols.innerHTML='';
+  for(var i=0;i<selectedQty;i++){
+    var col=document.createElement('div');col.className='roulette-col';
+    col.innerHTML='<div class="roulette-col-track" id="col-track-'+i+'"></div>';
+    cols.appendChild(col);
+    var track=$('col-track-'+i);if(!caseData||!caseData.gifts_details)continue;
+    var items=[];for(var j=0;j<10;j++)items=items.concat(shuffle(caseData.gifts_details.slice()));
+    track.innerHTML=items.map(function(g){return makeItem(g,'roulette-col-item')}).join('');
+    track.style.transition='none';track.style.transform='translateY(0)';
+  }
+}
+function updateRouletteType(){
+  var s=$('rouletteSingle'),m=$('rouletteMulti');
+  if(selectedQty===1){s.style.display='block';m.style.display='none';initSingleRoulette()}
+  else{s.style.display='none';m.style.display='block';initMultiRoulette()}
+}
+
+/* ===== PROMO ===== */
+async function activatePromo(){
+  if(promoActivated)return;var inp=$('promoInput'),err=$('promoError'),btn=$('promoBtn'),code=inp.value.trim();
+  if(!code){err.textContent='Введите код';err.style.display='block';return}
+  btn.disabled=true;btn.textContent='...';err.style.display='none';
+  try{
+    var r=await fetch('/api/activate-promo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userData.id,case_id:currentCaseId,promo_code:code})});
+    var d=await r.json();
+    if(d.success){promoActivated=true;inp.disabled=true;btn.textContent='✓';$('promoSection').style.display='none';showToast(d.message||'Кейс разблокирован!','ok');checkBalance()}
+    else{err.textContent=d.error||'Неверный код';err.style.display='block';btn.disabled=false;btn.textContent='OK'}
+  }catch(e){err.textContent='Ошибка сети';err.style.display='block';btn.disabled=false;btn.textContent='OK'}
+}
+
+/* ===== OPEN CASE ===== */
+async function openCase(){
+  if(!userData||isAnimating||isOpening)return;
+  if(!demoMode){
+    if(caseData.limited&&caseData.current_amount<=0)return;
+    if(caseData.free&&freeCaseOpened)return;
+    if(caseData.promo&&!promoActivated)return;
+  }
+  selectedQty=Math.max(1,Math.min(5,selectedQty||1));
+  isOpening=true;isAnimating=true;
+  var btn=$('openBtn');btn.disabled=true;btn.textContent='...';setQtyEnabled(false);
+
+  try{
+    wonGifts=[];
+    if(demoMode){
+      var gifts=caseData.gifts_details||[];
+      for(var i=0;i<selectedQty;i++){
+        var totalCh=0;gifts.forEach(function(g){totalCh+=(g.chance||1)});
+        var rnd=Math.random()*totalCh,acc=0,picked=null;
+        for(var j=0;j<gifts.length;j++){acc+=(gifts[j].chance||1);if(rnd<=acc){picked=gifts[j];break}}
+        if(!picked)picked=gifts[Math.floor(Math.random()*gifts.length)];
+        wonGifts.push(Object.assign({},picked,{inventory_id:-1}));
+      }
+    }else{
+      for(var i=0;i<selectedQty;i++){
+        var r=await fetch('/api/open-case',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({user_id:userData.id,case_id:currentCaseId,is_promo:caseData.promo||false,is_free:caseData.free||false})});
+        var d=await r.json();
+        if(d.success){wonGifts.push(d.gift);if(d.case_limits_updated)caseData.current_amount=d.new_case_limit}
+        else throw new Error(d.error||'Error');
+      }
+      if(caseData.cost>0&&!caseData.free&&!caseData.promo){
+        var tc=caseData.cost*selectedQty;
+        if(caseData.cost_type==='stars')userData.balance_stars-=tc;else userData.balance_tickets-=tc;
+      }
+      if(caseData.free){freeCaseOpened=true;startFreeTimer(24)}
+      updateUI();displayCase();
+    }
+    spinAnimate();
+  }catch(e){
+    console.error(e);btn.disabled=false;updateOpenBtnText();
+    isAnimating=false;isOpening=false;setQtyEnabled(true);
+    $('rouletteWrap').classList.remove('spinning','show');
+    $('caseHero').style.display='';
+    showToast('Ошибка: '+e.message,'err');
+  }
+}
+
+function spinAnimate(){
+  $('caseHero').style.display='none';
+  $('rouletteWrap').classList.add('show','spinning');
+  updateRouletteType();
+  if(fastOpen){
+    playCaseOpen();setTimeout(showCongrats,100);return;
+  }
+  var dur=spinDur[selectedQty]||9800;
+  playCaseOpen();startSpinTick(dur);
+  if(selectedQty===1)spinSingle(dur);else spinMulti(dur);
+}
+
+function spinSingle(dur){
+  var track=$('rouletteTrack'),win=wonGifts[0],base=caseData.gifts_details;
+  var items=[],winPos=30;
+  for(var i=0;i<winPos;i++)items.push(base[Math.floor(Math.random()*base.length)]);
+  items.push(win);
+  for(var i=0;i<15;i++)items.push(base[Math.floor(Math.random()*base.length)]);
+  track.style.transition='none';
+  track.innerHTML=items.map(function(g){return makeItem(g)}).join('');
+  requestAnimationFrame(function(){
+    var iw=track.children[0]?track.children[0].getBoundingClientRect().width:140;
+    var cw=track.parentElement.offsetWidth||400;
+    var pos=-(winPos*iw+(iw/2)-cw/2);
+    track.style.transform='translateX(100px)';
+    requestAnimationFrame(function(){
+      track.style.transition='transform '+(dur/1000).toFixed(2)+'s cubic-bezier(0.05,0.72,0.1,1)';
+      track.style.transform='translateX('+pos+'px)';
+      setTimeout(function(){
+        var w=track.children[winPos];if(w)w.classList.add('winner');
+        $('rouletteWrap').classList.remove('spinning');
+      },Math.max(1400,dur-760));
+      setTimeout(showCongrats,dur);
+    });
+  });
+}
+
+function spinMulti(dur){
+  for(var i=0;i<selectedQty;i++){
+    (function(idx){
+      var track=$('col-track-'+idx),base=caseData.gifts_details;
+      var winIdx=20+idx*2,items=[];
+      for(var j=0;j<winIdx;j++)items.push(base[Math.floor(Math.random()*base.length)]);
+      items.push(wonGifts[idx]);
+      for(var j=0;j<15;j++)items.push(base[Math.floor(Math.random()*base.length)]);
+      track.style.transition='none';track.innerHTML=items.map(function(g){return makeItem(g,'roulette-col-item')}).join('');
+      requestAnimationFrame(function(){
+        var ih=track.children[0]?track.children[0].getBoundingClientRect().height:90;
+        var ch=track.parentElement?track.parentElement.getBoundingClientRect().height:280;
+        var pos=(-winIdx*ih+(ch/2-ih/2));
+        var d=dur+Math.random()*700;
+        track.style.transform='translateY(100px)';
+        requestAnimationFrame(function(){
+          track.style.transition='transform '+d+'ms cubic-bezier(0.05,0.74,0.1,1)';
+          track.style.transform='translateY('+pos+'px)';
+          setTimeout(function(){var w=track.children[winIdx];if(w)w.classList.add('winner')},d-400);
+        });
+      });
+    })(i);
+  }
+  setTimeout(function(){$('rouletteWrap').classList.remove('spinning')},dur-400);
+  setTimeout(showCongrats,dur);
+}
+
+var soldGifts={};
+function showCongrats(){
+  stopSpinTick();
+  $('rouletteWrap').classList.remove('spinning');
+  var isStars=wonGifts[0]&&wonGifts[0].type==='stars_balance';
+  playWin(isStars);
+  /* Particles at center */
+  var rect=document.querySelector('.app').getBoundingClientRect();
+  spawnParticles(rect.left+rect.width/2,rect.top+200,isStars?'#FDBE13':'#4F96FF',20);
+  $('rouletteWrap').classList.remove('show');$('rouletteWrap').style.display='none';
+  $('controls').style.display='none';
+  $('congrats').style.display='block';
+  if(wonGifts.length>1)showMultiGifts();else showSingleGift(0);
+  isAnimating=false;isOpening=false;setQtyEnabled(true);
+}
+
+function showSingleGift(idx){
+  var g=wonGifts[idx];var isStars=g.type==='stars_balance';
+  var name=isStars?(getCurrMode()==='ton'?fmtMoney(g.value)+' TON':Math.round(g.value)+' Stars'):g.name;
+  var fb=giftFallback(g).replace(/'/g,"\\'");
+  $('congratsTitle').textContent='Ваш выигрыш';
+  $('results-box').classList.remove('multi');
+  $('results-box').innerHTML='<div class="won-card">'+
+    '<img class="won-img" src="'+giftImg(g)+'" onerror="this.onerror=null;this.src=\''+fb+'\'">'+
+    '<div class="won-name">'+name+'</div>'+
+    '<div class="won-val">'+(g.value?fmtMoney(g.value)+' <img src="'+moneyIcon()+'">':'')+'</div>'+
+    (isStars?'<div class="won-stars-badge">Зачислено на баланс</div>':'')+
+  '</div>';
+  var btns='<div class="win-btns">';
+  btns+='<button class="win-btn continue" onclick="resetView()">Открыть еще</button>';
+  if(!isStars)btns+='<button class="win-btn sell-all" onclick="quickSell(0)">Продать <img src="'+moneyIcon()+'"> '+fmtMoney(g.value||0)+'</button>';
+  btns+='</div>';
+  $('winActions').innerHTML=btns;
+}
+
+function showMultiGifts(){
+  $('congratsTitle').textContent='Ваш выигрыш';
+  $('results-box').classList.add('multi');
+  var html='';
+  wonGifts.forEach(function(g,idx){
+    var isStars=g.type==='stars_balance';
+    var name=isStars?(getCurrMode()==='ton'?fmtMoney(g.value)+' TON':Math.round(g.value)+' Stars'):g.name;
+    var fb=giftFallback(g).replace(/'/g,"\\'");
+    html+='<div class="won-row" id="wr-'+idx+'">'+
+      '<img class="won-img" src="'+giftImg(g)+'" onerror="this.onerror=null;this.src=\''+fb+'\'">'+
+      '<div class="won-name">'+name+'</div>'+
+      (!isStars?'<button class="sell-btn" onclick="sellOne('+idx+',event)">Продать <img src="'+moneyIcon()+'"> '+fmtMoney(g.value||0)+'</button>':'')+
+    '</div>';
+  });
+  $('results-box').innerHTML=html;
+  var totalVal=0;wonGifts.forEach(function(g,i){if(g.type!=='stars_balance'&&!soldGifts[i])totalVal+=(g.value||0)});
+  var btns='<div class="win-btns">';
+  btns+='<button class="win-btn continue" onclick="resetView()">Открыть еще</button>';
+  if(totalVal>0)btns+='<button class="win-btn sell-all" id="sellAllBtn" onclick="sellAll()">Продать все <img src="'+moneyIcon()+'"> '+fmtMoney(totalVal)+'</button>';
+  btns+='</div>';
+  $('winActions').innerHTML=btns;
+}
+
+async function sellOne(idx,e){
+  if(e)e.stopPropagation();var g=wonGifts[idx];
+  if(!g||g.type==='stars_balance'||soldGifts[idx])return;
+  var btn=document.querySelector('#wr-'+idx+' .sell-btn');if(btn){btn.disabled=true;btn.textContent='...'}
+  try{
+    var r=await fetch('/api/sell-gift',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userData.id,gift_id:g.inventory_id})});
+    var d=await r.json();
+    if(d.success){soldGifts[idx]=true;userData.balance_stars=d.new_balance.stars;updateUI();
+      if(btn){btn.textContent='Продано';btn.classList.add('sold')}showToast('Продано!','ok');
+      var unsold=wonGifts.some(function(gg,i){return gg.type!=='stars_balance'&&!soldGifts[i]});
+      if(!unsold){var sb=$('sellAllBtn');if(sb)sb.style.display='none'}
+    }else{showToast(d.error||'Ошибка','err');if(btn){btn.disabled=false;btn.textContent='Продать'}}
+  }catch(e){showToast('Ошибка','err');if(btn){btn.disabled=false;btn.textContent='Продать'}}
+}
+
+async function sellAll(){
+  var sb=$('sellAllBtn');if(sb){sb.disabled=true;sb.textContent='...'}
+  var total=0;
+  for(var i=0;i<wonGifts.length;i++){
+    var g=wonGifts[i];if(g.type==='stars_balance'||soldGifts[i])continue;
+    try{var r=await fetch('/api/sell-gift',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userData.id,gift_id:g.inventory_id})});
+    var d=await r.json();if(d.success){soldGifts[i]=true;total+=g.value||0;
+      var btn=document.querySelector('#wr-'+i+' .sell-btn');if(btn){btn.textContent='Продано';btn.classList.add('sold');btn.disabled=true}}}catch(e){}
+  }
+  if(total>0){loadUserData();showToast('Продано за '+fmtMoney(total)+'!','ok')}
+  if(sb)sb.style.display='none';
+}
+
+async function quickSell(idx){
+  var g=wonGifts[idx];if(!g||g.type==='stars_balance')return;
+  try{var r=await fetch('/api/sell-gift',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userData.id,gift_id:g.inventory_id})});
+  var d=await r.json();if(d.success){userData.balance_stars=d.new_balance.stars;updateUI();showToast('Продано!','ok')}
+  else showToast(d.error||'Ошибка','err')}catch(e){showToast('Ошибка','err')}
+  resetView();
+}
+
+function resetView(){
+  soldGifts={};
+  $('congrats').style.display='none';
+  $('rouletteWrap').style.display='';$('rouletteWrap').classList.remove('show');
+  $('caseHero').style.display='';
+  $('controls').style.display='';
+  isOpening=false;isAnimating=false;selectedQty=1;
+  if(caseData.promo){promoActivated=false;var pi=$('promoInput'),pb=$('promoBtn');if(pi){pi.disabled=false;pi.value=''}if(pb){pb.disabled=false;pb.textContent='OK'}}
+  document.querySelectorAll('.qty-btn').forEach(function(b){b.classList.remove('active');if(b.dataset.q==='1')b.classList.add('active')});
+  var qr=$('qtyRow');if(!caseData.free&&!caseData.promo)qr.style.display='flex';else qr.style.display='none';
+  updateOpenBtnText();checkBalance();loadUserData();loadCaseData();
+}
+
+/* ===== TOAST ===== */
+function showToast(msg,type){
+  document.querySelectorAll('.toast').forEach(function(t){t.remove()});
+  var t=document.createElement('div');t.className='toast'+(type?' '+type:'');t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(function(){t.remove()},300)},2500);
+}
+
+/* ===== USER / DATA ===== */
+async function loadUserData(){
+  if(!userData||!userData.id)return;
+  try{var r=await fetch('/api/user/'+userData.id),d=await r.json();
+  if(d.success){userData=Object.assign({},userData,d.user);updateUI();try{localStorage.setItem('rasswet_user',JSON.stringify(userData))}catch(e){}}
+  }catch(e){}
+}
+async function loadCaseData(){
+  try{var r=await fetch('/api/cases/'+currentCaseId),d=await r.json();
+  if(d.success){caseData=d.case;displayCase();displayGifts();checkBalance();setupInterface();updateOpenBtnText()}
+  else $('caseName').textContent='Ошибка'}catch(e){}
+}
+function startFreeTimer(h){
+  var el=$('freeTimer');el.classList.add('active');
+  var sec=Math.max(0,Math.floor(h*3600));
+  function tick(){
+    if(sec<=0){clearInterval(iv);el.textContent='Можно открыть!';freeCaseOpened=false;checkBalance();return}
+    sec--;var hh=Math.floor(sec/3600),mm=Math.floor(sec%3600/60),ss=sec%60;
+    el.textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+  }
+  tick();var iv=setInterval(tick,1000);
+}
+
+function isTgApp(){try{return !!(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData)}catch(e){return false}}
+
+/* ===== INIT ===== */
+async function initApp(){
+  try{var saved=localStorage.getItem('rasswet_user');if(saved){var p=JSON.parse(saved);if(p&&p.id)userData=p}}catch(e){}
+  if(!userData||!userData.id){
+    if(isTgApp()){try{var tg=Telegram.WebApp;tg.ready();tg.expand();var u=tg.initDataUnsafe.user;
+    if(u)userData={id:u.id,first_name:u.first_name,last_name:u.last_name||'',username:u.username||'',photo_url:u.photo_url||'',balance_stars:0,balance_tickets:0}}catch(e){}}
+  }
+  if(!userData||!userData.id){
+    try{var r=await fetch('/api/telegram-auth',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({id:window.Telegram?.WebApp?.initDataUnsafe?.user?.id,first_name:window.Telegram?.WebApp?.initDataUnsafe?.user?.first_name||'Player'})});
+    var d=await r.json();if(d.success&&d.user)userData=d.user}catch(e){}
+  }
+  if(!userData||!userData.id)userData={id:0,first_name:'Player',balance_stars:0,balance_tickets:0};
+  if(!localStorage.getItem('rasswet_currency_mode'))localStorage.setItem('rasswet_currency_mode','ton');
+  updateUI();
+  await Promise.all([loadCaseData(),loadUserData()]);
+  initQty();syncToggles();
+  /* Check free case history */
+  if(userData.id&&caseData&&caseData.free){
+    try{var r=await fetch('/api/user/'+userData.id+'/case-history/'+currentCaseId),d=await r.json();
+    if(d.success&&d.last_opened){var h=(new Date()-new Date(d.last_opened))/(1e3*60*60);
+    if(h<24){freeCaseOpened=true;startFreeTimer(24-Math.floor(h))}}}catch(e){}
+    checkBalance();
+  }
+  var pi=$('promoInput');if(pi)pi.addEventListener('keypress',function(e){if(e.key==='Enter')activatePromo()});
+  $('ldScreen').classList.add('hidden');setTimeout(function(){$('ldScreen').style.display='none'},500);
+  document.addEventListener('click',function(e){if(e.target.closest('button'))playClick()});
+}
+
+document.addEventListener('DOMContentLoaded',initApp);
+</script>
+</body>
+</html>
