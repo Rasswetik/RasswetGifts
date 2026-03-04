@@ -5333,22 +5333,10 @@
         document.getElementById('rewardScreenOverlay').classList.remove('open');
     };
 
-    /* ===== BELL INJECTION ===== */
+    /* ===== BELL INJECTION - DISABLED ===== */
     var bellTpl = document.getElementById('notifBellTemplate');
-    if(!bellTpl) return;
-    var bellBtn = bellTpl.querySelector('.notif-bell-btn').cloneNode(true);
-    bellTpl.remove();
-
-    var target = document.querySelector('.header-btns-right') || document.querySelector('.top-right-btns');
-    if(target) {
-        target.insertBefore(bellBtn, target.firstChild);
-    } else {
-        bellBtn.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9999;';
-        document.body.appendChild(bellBtn);
-    }
-    bellBtn.id = 'notifBellBtn';
-    var dot = bellBtn.querySelector('.notif-bell-dot');
-    if(dot) dot.id = 'notifBellDot';
+    if(bellTpl) bellTpl.remove();
+    /* Notifications removed */
 
     /* ===== STATE ===== */
     var notifItems = [];
@@ -5682,10 +5670,10 @@
         }
     }
 
-    /* Start polling — delay to let page JS load userData */
-    setTimeout(fetchNotifs, 2500);
-    setInterval(fetchNotifs, 30000);
-    setTimeout(initCurrencyMode, 1200);
+    /* Start polling — DISABLED (notifications removed) */
+    // setTimeout(fetchNotifs, 2500);
+    // setInterval(fetchNotifs, 30000);
+    // setTimeout(initCurrencyMode, 1200);
 
     /* ===== POPUP TOGGLE ===== */
     window.toggleNotifPopup = function() {

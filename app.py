@@ -2056,7 +2056,7 @@ def init_db():
 
             cursor = conn.cursor()
 
-            # Миграция: добавляем total_bet_volume если нет
+            # Миграция: добавляем недостающие колонки
             try:
                 cursor.execute("PRAGMA table_info(users)")
                 columns = [col[1] for col in cursor.fetchall()]
@@ -2066,8 +2066,15 @@ def init_db():
                 if 'is_crash_vip' not in columns:
                     cursor.execute('ALTER TABLE users ADD COLUMN is_crash_vip INTEGER DEFAULT 0')
                     logger.info("✅ Добавлена колонка is_crash_vip")
+                if 'total_loss' not in columns:
+                    cursor.execute('ALTER TABLE users ADD COLUMN total_loss INTEGER DEFAULT 0')
+                    logger.info("✅ Добавлена колонка total_loss")
+                if 'total_crash_bets' not in columns:
+                    cursor.execute('ALTER TABLE users ADD COLUMN total_crash_bets INTEGER DEFAULT 0')
+                    logger.info("✅ Добавлена колонка total_crash_bets")
+                conn.commit()
             except Exception as e:
-                logger.warning(f"⚠️ Миграция total_bet_volume/is_crash_vip: {e}")
+                logger.warning(f"⚠️ Миграция колонок users: {e}")
 
             # Лимиты кейсов
             try:
@@ -15457,6 +15464,20 @@ def api_check_promo_deposit_eligibility():
 def api_level_system():
     """Возвращает систему уровней из БД"""
     return jsonify({'success': True, 'levels': LEVEL_SYSTEM})
+
+
+@app.route('/api/level-rewards', methods=['GET'])
+def api_level_rewards():
+    """Возвращает награды за уровни из levels.json"""
+    try:
+        levels_file = os.path.join(BASE_PATH, 'data', 'levels.json')
+        if os.path.exists(levels_file):
+            with open(levels_file, 'r', encoding='utf-8') as f:
+                levels = json.load(f)
+            return jsonify({'success': True, 'levels': levels})
+        return jsonify({'success': True, 'levels': []})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/pending-notifications', methods=['GET'])

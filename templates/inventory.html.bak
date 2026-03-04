@@ -2,826 +2,591 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Инвентарь - Raswet Gifts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#090B11">
+    <title>Профиль - Raswet Gifts</title>
+    <link rel="icon" type="image/png" href="/static/img/logo.png">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/static/js/telegram-auth.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Poppins:wght@400;500;600;700&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #141414 50%, #1f1f1f 100%);
-            min-height: 100vh;
-            color: white;
-            line-height: 1.6;
-            overflow-x: hidden;
-            padding-bottom: 80px;
+        @font-face{font-display:swap;font-family:'Inter Variable';font-style:normal;font-weight:100 900;src:url(/static/fonts/inter-cyrillic-wght-normal.DqGufNeO.woff2) format("woff2-variations");unicode-range:U+301,U+400-45F,U+490-491,U+4B0-4B1,U+2116}
+        @font-face{font-display:swap;font-family:'Inter Variable';font-style:normal;font-weight:100 900;src:url(/static/fonts/inter-latin-wght-normal.Dx4kXJAl.woff2) format("woff2-variations");unicode-range:U+??,U+131,U+152-153,U+2BB-2BC,U+2C6,U+2DA,U+2DC,U+304,U+308,U+329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --bg:#090B11;--surface:#161923;--surface2:#1A1E2A;--border:rgba(255,255,255,0.05);
+            --blue:#236CD9;--green:#1EE44C;--gold:#FDA100;--pink:#F96999;
+            --text:#fff;--text2:#828AA4;--text3:#646C86;
         }
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background:
-                radial-gradient(circle at 10% 20%, rgba(120, 119, 198, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(255, 119, 198, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 30% 60%, rgba(120, 219, 255, 0.06) 0%, transparent 40%),
-                radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.05) 0%, transparent 40%);
-            z-index: -1;
-            animation: gradientFlow 15s ease infinite alternate;
+        html{font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+        body{
+            font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+            background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;
+            display:flex;flex-direction:column;align-items:center;
         }
-        @keyframes gradientFlow {
-            0% { transform: scale(1) rotate(0deg); }
-            100% { transform: scale(1.1) rotate(180deg); }
-        }
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-image:
-                radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.2) 1px, transparent 0),
-                radial-gradient(1px 1px at 20% 40%, rgba(255,255,255,0.15) 1px, transparent 0),
-                radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,0.1) 1px, transparent 0),
-                radial-gradient(1px 1px at 60% 30%, rgba(255,255,255,0.2) 1px, transparent 0),
-                radial-gradient(1px 1px at 80% 70%, rgba(255,255,255,0.1) 1px, transparent 0),
-                radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.15) 1px, transparent 0);
-            background-size: 200px 200px;
-            z-index: -1;
-            animation: particlesFloat 20s linear infinite;
-        }
-        @keyframes particlesFloat {
-            0% { transform: translateY(0px) translateX(0px); }
-            100% { transform: translateY(-100px) translateX(100px); }
-        }
-        .container {
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 20px 15px;
-            padding-bottom: 30px;
-            position: relative;
-            z-index: 1;
-        }
-        .top-panel {
-            background: linear-gradient(135deg, rgba(26,26,46,0.9) 0%, rgba(22,33,62,0.9) 100%);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            padding: 18px;
-            margin-bottom: 15px;
-            border: 2px solid rgba(255,255,255,0.12);
-            box-shadow: 0 12px 35px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
-        }
-        .user-info-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .user-avatar-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-            min-width: 0;
-        }
-        .user-avatar {
-            width: 45px; height: 45px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: 2px solid rgba(255,255,255,0.2);
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-        .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .user-name {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 800;
-            font-size: 15px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .balance-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        .balance-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2));
-            padding: 6px 10px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .balance-icon { width: 18px; height: 18px; }
-        .balance-value { font-size: 13px; font-weight: 700; color: #ffd700; }
-        .header { text-align: center; margin-bottom: 30px; position: relative; }
-        .header h1 {
-            font-size: 28px;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 900;
-            background: linear-gradient(45deg, #FFD700, #FFA500, #FF8C00, #FFD700);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            background-size: 200% auto;
-            animation: shine 3s linear infinite;
-            margin-bottom: 5px;
-        }
-        @keyframes shine { to { background-position: 200% center; } }
-        .header p { color: #ccc; font-size: 14px; font-weight: 400; }
-        .action-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .btn {
-            padding: 18px 25px;
-            border: none;
-            border-radius: 20px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            position: relative;
-            overflow: hidden;
-            font-family: 'Montserrat', sans-serif;
-        }
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        .btn:hover::before { left: 100%; }
-        .btn-promo {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            box-shadow: 0 5px 20px rgba(102,126,234,0.4);
-        }
-        .btn-sell-all {
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            color: #0a0a0a;
-            box-shadow: 0 5px 20px rgba(255,215,0,0.3);
-        }
-        .btn-admin {
-            background: linear-gradient(135deg, #64ffda, #00bcd4);
-            color: #0a0a0a;
-            box-shadow: 0 5px 20px rgba(100,255,218,0.4);
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102,126,234,0.6);
-        }
-        .btn:active { transform: translateY(0); }
-        .btn-icon { width: 24px; height: 24px; object-fit: contain; }
-        .inventory-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .gift-card {
-            background: linear-gradient(135deg, rgba(26,26,46,0.8), rgba(22,33,62,0.8));
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 18px;
-            padding: 15px;
-            text-align: center;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .gift-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(102,126,234,0.3);
-            background: linear-gradient(135deg, rgba(26,26,46,0.9), rgba(22,33,62,0.9));
-        }
-        .gift-image {
-            width: 80px; height: 80px;
-            object-fit: contain;
-            margin: 0 auto 10px;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.05);
-            padding: 5px;
-        }
-        .gift-name {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            margin-bottom: 5px;
-            color: white;
-            font-size: 14px;
-        }
-        .gift-value {
-            color: #ffd700;
-            font-weight: 700;
-            margin-bottom: 15px;
-            font-size: 15px;
-            font-family: 'Montserrat', sans-serif;
-        }
-        .gift-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-        }
-        .btn-small {
-            padding: 12px 16px;
-            border: none;
-            border-radius: 12px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            flex: 1;
-            font-weight: 700;
-            position: relative;
-            overflow: hidden;
-            font-family: 'Montserrat', sans-serif;
-        }
-        .btn-small::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-        .btn-small:hover::before { left: 100%; }
-        .btn-sell {
-            background: linear-gradient(135deg, #ff416c, #ff4b2b);
-            color: white;
-            box-shadow: 0 3px 10px rgba(255,65,108,0.3);
-        }
-        .btn-withdraw {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            box-shadow: 0 3px 10px rgba(102,126,234,0.3);
-        }
-        .btn-small:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
-        }
-        .btn-small:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-        .empty-inventory {
-            text-align: center;
-            padding: 60px 20px;
-            color: #ccc;
-        }
-        .empty-inventory h3 {
-            font-size: 18px;
-            margin-bottom: 10px;
-            color: #ffd700;
-            font-family: 'Montserrat', sans-serif;
-        }
-        .empty-inventory p { font-family: 'Poppins', sans-serif; }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(5px);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-        .modal-content {
-            background: linear-gradient(135deg, rgba(26,26,46,0.9), rgba(22,33,62,0.9));
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 400px;
-            width: 90%;
-            border: 1px solid rgba(255,255,255,0.12);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        .modal-header { text-align: center; margin-bottom: 20px; }
-        .modal-header h3 {
-            color: #ffd700;
-            font-size: 18px;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-        }
-        .modal-header p { font-family: 'Poppins', sans-serif; }
-        .input-group { margin-bottom: 20px; }
-        .input-group input {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid rgba(255,255,255,0.12);
-            border-radius: 12px;
-            background: rgba(255,255,255,0.08);
-            color: white;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            font-family: 'Poppins', sans-serif;
-        }
-        .input-group input:focus {
-            outline: none;
-            border-color: #ffd700;
-            box-shadow: 0 0 10px rgba(255,215,0,0.3);
-        }
-        .modal-actions { display: flex; gap: 10px; }
-        .btn-cancel {
-            background: rgba(255,255,255,0.08);
-            color: white;
-            flex: 1;
-            font-family: 'Poppins', sans-serif;
-        }
-        .btn-confirm {
-            background: linear-gradient(135deg, #FFD700, #FFA500);
-            color: #0a0a0a;
-            flex: 2;
-            font-family: 'Montserrat', sans-serif;
-        }
-        .loading { text-align: center; padding: 40px; color: #ccc; }
-        .spinner {
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top: 3px solid #ffd700;
-            width: 40px; height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .notification {
-            position: fixed;
-            top: 20px; left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 15px;
-            font-weight: 600;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-            z-index: 10000;
-            animation: slideDown 0.3s ease;
-            max-width: 90%;
-            text-align: center;
-        }
-        @keyframes slideDown { from { transform: translateX(-50%) translateY(-100%); opacity:0; } to { transform: translateX(-50%); opacity:1; } }
-        .withdraw-loading { display: none; text-align: center; padding: 20px; }
-        .withdraw-spinner {
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top: 2px solid #ffd700;
-            width: 20px; height: 20px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        .bottom-nav {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: rgba(20,20,20,0.95);
-            backdrop-filter: blur(20px);
-            padding: 10px 15px;
-            display: flex;
-            justify-content: space-around;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            z-index: 1000;
-        }
-        .nav-item {
-            text-align: center;
-            color: #8892b0;
-            flex: 1;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            padding: 6px 0;
-            border-radius: 10px;
-        }
-        .nav-item.active {
-            color: #667eea;
-            background: rgba(102,126,234,0.1);
-        }
-        .nav-item.disabled { opacity: 0.3; cursor: not-allowed; }
-        .nav-icon { width: 22px; height: 22px; margin: 0 auto 3px; display: block; filter: grayscale(1); transition: all 0.3s ease; }
-        .nav-item.active .nav-icon { filter: grayscale(0); }
-        .nav-text { font-size: 9px; font-weight: 600; font-family: 'Montserrat', sans-serif; }
-        .nav-item.active .nav-text { color: #667eea; }
-        @media (max-width: 768px) {
-            .inventory-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-            .action-buttons { grid-template-columns: 1fr; }
-            .header h1 { font-size: 22px; }
-            .btn { padding: 15px 20px; font-size: 15px; }
-            .btn-icon { width: 20px; height: 20px; }
-            .top-panel { padding: 15px; }
-            .user-info-top { flex-direction: column; gap: 15px; text-align: center; }
-            .balance-container { justify-content: center; }
-        }
+        .page{width:100%;max-width:480px;margin:0 auto;padding:16px 16px 100px;position:relative}
+
+        /* === TOP BAR === */
+        .top-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 0;margin-bottom:16px}
+        .top-bar-left{display:flex;align-items:center;gap:6px}
+        .top-bar-right{display:flex;align-items:center;gap:6px}
+        .top-icon-btn{width:36px;height:36px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;overflow:hidden}
+        .top-icon-btn:hover{background:rgba(255,255,255,.08)}
+        .top-icon-btn svg{width:18px;height:18px;opacity:.7;color:#fff}
+        .top-icon-btn.vibration-off svg{opacity:.3;color:#646C86}
+        .top-icon-btn img.lang-flag{width:22px;height:22px;object-fit:cover;border-radius:4px}
+        .bal-pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:14px;font-weight:700}
+        .bal-pill img{width:16px;height:16px}
+        .bal-plus{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:rgba(255,255,255,.7);font-weight:700;transition:all .2s}
+        .bal-plus:hover{background:rgba(255,255,255,.12)}
+
+        /* === PROFILE SECTION === */
+        .profile-section{display:flex;flex-direction:column;align-items:center;margin-bottom:24px}
+        .avatar-wrap{width:120px;height:120px;border-radius:50%;border:3px solid rgba(255,255,255,.15);overflow:hidden;margin-bottom:14px;background:rgba(255,255,255,.05)}
+        .avatar-wrap img{width:100%;height:100%;object-fit:cover}
+        .profile-name{font-size:22px;font-weight:800;margin-bottom:4px;text-align:center}
+        .profile-level{font-size:14px;color:var(--text2);margin-bottom:14px}
+        .level-bar-wrap{width:100%;max-width:260px;margin-bottom:20px}
+        .level-bar-bg{width:100%;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+        .level-bar-fill{height:100%;background:linear-gradient(90deg,var(--blue),#0098EA);border-radius:3px;transition:width .5s}
+        .level-bar-text{font-size:11px;color:var(--text3);text-align:center;margin-top:4px}
+
+        /* === ACTION BUTTONS === */
+        .action-row{display:flex;gap:10px;width:100%;margin-bottom:24px}
+        .btn-action{flex:1;padding:14px;border-radius:14px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center}
+        .btn-blue{background:var(--blue);color:#fff;box-shadow:0 4px 15px rgba(35,108,217,.3)}
+        .btn-blue:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(35,108,217,.4)}
+        .btn-outline{background:transparent;color:var(--blue);border:1.5px solid var(--blue)}
+        .btn-outline:hover{background:rgba(35,108,217,.1)}
+
+        /* === REFERRAL CARD === */
+        .ref-card{background:linear-gradient(160deg,#161923 0%,#11141F 50%,#151830 100%);border:1px solid rgba(35,108,217,.12);border-radius:18px;padding:18px;margin-bottom:24px;position:relative;overflow:hidden}
+        .ref-card::before{content:'';position:absolute;top:0;right:0;width:200px;height:100%;background:radial-gradient(circle at 80% 50%,rgba(35,108,217,.06) 0%,transparent 70%);pointer-events:none}
+        .ref-card-title{font-size:18px;font-weight:800;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px}
+        .ref-card-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px;max-width:65%}
+        .ref-stats{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+        .ref-stat{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.06);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600}
+        .ref-stat img,.ref-stat svg{width:14px;height:14px;flex-shrink:0}
+        .ref-links{display:flex;gap:16px}
+        .ref-link{font-size:13px;font-weight:600;color:var(--blue);cursor:pointer;background:none;border:none;font-family:inherit}
+        .ref-link:hover{text-decoration:underline}
+        .ref-decor{position:absolute;right:-5px;top:50%;transform:translateY(-50%);width:110px;height:110px;object-fit:contain;opacity:.7;pointer-events:none;filter:drop-shadow(0 0 20px rgba(35,108,217,.15))}
+
+        /* === INVENTORY SECTION === */
+        .section-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+        .inv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px}
+        .inv-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+        .inv-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+        .inv-card-img{width:60px;height:60px;object-fit:contain;margin:0 auto 6px;display:block}
+        .inv-card-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .inv-card-price{display:flex;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:700;color:var(--gold);margin-top:3px}
+        .inv-card-price img{width:12px;height:12px}
+        .inv-empty{text-align:center;padding:40px 20px;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:16px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+        .inv-empty-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px}
+        .inv-empty p{font-size:13px}
+
+        /* === MODAL === */
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:1000;display:none;align-items:center;justify-content:center}
+        .modal-overlay.show{display:flex}
+        .modal-box{background:linear-gradient(160deg,var(--surface),#11141F);border:1px solid var(--border);border-radius:16px;padding:24px;width:90%;max-width:360px}
+        .modal-title{font-size:18px;font-weight:700;color:var(--gold);margin-bottom:6px;text-align:center}
+        .modal-desc{font-size:13px;color:var(--text2);text-align:center;margin-bottom:16px}
+        .modal-input{width:100%;padding:14px;border:2px solid var(--border);border-radius:12px;background:rgba(255,255,255,.06);color:#fff;font-size:15px;font-family:inherit;outline:none;text-transform:uppercase;text-align:center;margin-bottom:14px}
+        .modal-input:focus{border-color:var(--gold)}
+        .modal-btns{display:flex;gap:10px}
+        .modal-btn{flex:1;padding:12px;border-radius:12px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+        .modal-btn-cancel{background:rgba(255,255,255,.06);color:#fff}
+        .modal-btn-confirm{background:linear-gradient(135deg,var(--gold),#FDCF00);color:#090B11}
+        .sell-modal-info{text-align:center;margin-bottom:16px;font-size:14px;color:var(--text2)}
+        .sell-modal-total{font-size:20px;font-weight:800;color:var(--gold);text-align:center;margin-bottom:16px}
+
+        /* === NOTIFICATION === */
+        .notif{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100%);background:var(--blue);color:#fff;padding:12px 24px;border-radius:14px;font-weight:600;font-size:14px;z-index:10000;transition:transform .3s;max-width:90%;text-align:center;box-shadow:0 8px 25px rgba(0,0,0,.4)}
+        .notif.show{transform:translateX(-50%) translateY(0)}
+        .notif.error{background:#e53935}
+
+        /* === BOTTOM NAV === */
+        .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-around;height:64px;background:linear-gradient(0deg,#0A0C12 50%,#0D1019 100%);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom,0px)}
+        .bnav-item{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--text3);text-decoration:none;cursor:pointer;transition:color .2s;padding:8px 16px;border-radius:12px}
+        .bnav-item.active{color:var(--blue);background:rgba(35,108,217,.1)}
+        .bnav-item svg{width:24px;height:24px}
+        .bnav-label{font-size:10px;font-weight:600}
+
+        .admin-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#64ffda,#00bcd4);color:#090B11;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:24px;display:none}
+
+        /* === ITEM MODAL === */
+        .item-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:1001;display:none;align-items:center;justify-content:center}
+        .item-modal-overlay.show{display:flex}
+        .item-modal{background:linear-gradient(160deg,var(--surface),#11141F);border:1px solid var(--border);border-radius:16px;padding:24px;width:90%;max-width:360px;text-align:center}
+        .item-modal img{width:100px;height:100px;object-fit:contain;margin-bottom:12px}
+        .item-modal-name{font-size:18px;font-weight:700;margin-bottom:4px}
+        .item-modal-price{display:flex;align-items:center;justify-content:center;gap:4px;font-size:16px;font-weight:700;color:var(--gold);margin-bottom:16px}
+        .item-modal-price img{width:16px;height:16px}
+        .item-modal-actions{display:flex;gap:10px}
+        .item-modal-btn{flex:1;padding:12px;border-radius:12px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+        .item-modal-sell{background:linear-gradient(135deg,#ff416c,#ff4b2b);color:#fff}
+        .item-modal-withdraw{background:var(--blue);color:#fff}
+        .item-modal-close{background:rgba(255,255,255,.06);color:#fff;margin-top:10px;width:100%;padding:10px;border-radius:10px;border:none;font-family:inherit;font-size:13px;cursor:pointer}
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Верхняя панель пользователя как в старом файле -->
-        <div class="top-panel">
-            <div class="user-info-top">
-                <div class="user-avatar-container">
-                    <img id="userAvatar" src="" alt="Аватар" class="user-avatar">
-                    <div class="user-name" id="userName">Загрузка...</div>
+    <div class="page">
+        <!-- TOP BAR -->
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <div class="top-icon-btn" id="langBtn" onclick="toggleLang()" title="Сменить язык">
+                    <img class="lang-flag" id="langFlag" src="/static/gifs/ru.gif" alt="RU">
                 </div>
-                <div class="balance-container">
-                    <div class="balance-item">
-                        <img src="/static/img/star.png" alt="Звезды" class="balance-icon">
-                        <div class="balance-value" id="userStars">0</div>
-                    </div>
-                    <div class="balance-item">
-                        <img src="/static/img/ticket.png" alt="Билеты" class="balance-icon">
-                        <div class="balance-value" id="userTickets">0</div>
-                    </div>
+                <div class="top-icon-btn" id="vibBtn" onclick="toggleVibration()" title="Вибрация">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
                 </div>
+            </div>
+            <div class="top-bar-right">
+                <div class="bal-pill">
+                    <img src="/static/img/tons/ton_1.svg" alt="TON" id="hdrTonIcon">
+                    <span id="hdrBalance">0.00</span>
+                </div>
+                <div class="bal-plus" onclick="openDeposit()" title="Пополнить">+</div>
             </div>
         </div>
 
-        <div class="header">
-            <h1>Мой инвентарь</h1>
-            <p>Управляйте своими подарками и активируйте промокоды</p>
+        <!-- PROFILE -->
+        <div class="profile-section">
+            <div class="avatar-wrap">
+                <img id="userAvatar" src="/static/img/default_avatar.png" alt="Avatar">
+            </div>
+            <div class="profile-name" id="userName">Загрузка...</div>
+            <div class="profile-level" id="userLevel">1 level</div>
+            <div class="level-bar-wrap">
+                <div class="level-bar-bg"><div class="level-bar-fill" id="levelBar" style="width:0%"></div></div>
+                <div class="level-bar-text" id="levelText">0 / 100 TON</div>
+            </div>
         </div>
 
-        <div class="action-buttons">
-            <button class="btn btn-promo" onclick="showPromoModal()">
-                <img src="/static/img/ticket.png" alt="Промокод" class="btn-icon">
-                Ввести промокод
-            </button>
-            <button class="btn btn-sell-all" onclick="sellAllGifts()">
-                <img src="/static/img/star.png" alt="Продать всё" class="btn-icon">
-                Продать всё
-            </button>
+        <!-- ACTION BUTTONS -->
+        <div class="action-row">
+            <button class="btn-action btn-blue" onclick="openDeposit()">Deposit</button>
+            <button class="btn-action btn-outline" onclick="showPromoModal()">Rewards</button>
         </div>
 
-        <!-- Кнопка админ-панели (только для админа) -->
-        <div id="adminButtonContainer" style="display: none; margin-bottom: 20px;">
-            <button class="btn btn-admin" onclick="openAdminPanel()">
-                Админ панель
-            </button>
+        <!-- ADMIN BUTTON -->
+        <button class="admin-btn" id="adminBtn" onclick="window.location.href='/admin'">Админ панель</button>
+
+        <!-- REFERRAL CARD -->
+        <div class="ref-card">
+            <img class="ref-decor" src="/static/img/sapphire.png" alt="" onerror="this.style.display='none'">
+            <div class="ref-card-title">РЕФЕРАЛЫ</div>
+            <div class="ref-card-desc">Приглашайте друзей и получайте 10% с депозитов ваших друзей!</div>
+            <div class="ref-stats">
+                <div class="ref-stat"><img src="/static/img/tons/ton_1.svg" alt="TON"> Баланс: <span id="refBalance">0.00</span></div>
+                <div class="ref-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Рефералов: <span id="refCount">0</span></div>
+            </div>
+            <div class="ref-links">
+                <button class="ref-link" onclick="inviteFriends()">Пригласить друзей</button>
+                <button class="ref-link" onclick="copyRefLink()">Копировать ссылку</button>
+            </div>
         </div>
 
+        <!-- INVENTORY -->
+        <div class="section-title">Инвентарь</div>
         <div id="inventoryContainer">
-            <div class="loading">
-                <div class="spinner"></div>
-                <p>Загрузка инвентаря...</p>
-            </div>
-        </div>
-
-        <!-- Индикатор загрузки при выводе -->
-        <div id="withdrawLoading" class="withdraw-loading">
-            <div class="withdraw-spinner"></div>
-            <p>Обработка вывода...</p>
-        </div>
-    </div>
-
-    <!-- Модальное окно промокода -->
-    <div id="promoModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Активация промокода</h3>
-                <p>Введите код для получения награды</p>
-            </div>
-            <div class="input-group">
-                <input type="text" id="promoCodeInput" placeholder="Введите промокод" maxlength="20" style="text-transform: uppercase;">
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-cancel" onclick="hidePromoModal()">Отмена</button>
-                <button class="btn btn-confirm" onclick="activatePromoCode()">Активировать</button>
+            <div class="inv-empty">
+                <div class="inv-empty-title">Инвентарь пуст</div>
+                <p>Открывайте кейсы, чтобы получить подарки!</p>
             </div>
         </div>
     </div>
 
-    <!-- Уведомления -->
-    <div id="notification" class="notification"></div>
-
-    <!-- Нижняя панель навигации -->
-    <div class="bottom-nav">
-        <div class="nav-item disabled" onclick="showNotification('Краш временно недоступен', 'error')">
-            <img src="/static/img/conc.png" alt="Краш" class="nav-icon">
-            <div class="nav-text">Краш</div>
-        </div>
-        <div class="nav-item" onclick="window.location.href='/upgrade'">
-            <img src="/static/img/upg.png" alt="Апгрейды" class="nav-icon">
-            <div class="nav-text">Апгрейды</div>
-        </div>
-        <div class="nav-item" onclick="window.location.href='/'">
-            <img src="/static/img/cases.png" alt="Кейсы" class="nav-icon">
-            <div class="nav-text">Кейсы</div>
-        </div>
-        <div class="nav-item" onclick="window.location.href='/ref'">
-            <img src="/static/img/ref.png" alt="Друзья" class="nav-icon">
-            <div class="nav-text">Друзья</div>
-        </div>
-        <div class="nav-item active">
-            <img src="/static/img/profil.png" alt="Инвентарь" class="nav-icon">
-            <div class="nav-text">Инвентарь</div>
+    <!-- PROMO MODAL -->
+    <div class="modal-overlay" id="promoModal">
+        <div class="modal-box">
+            <div class="modal-title">Активация промокода</div>
+            <div class="modal-desc">Введите код для получения награды</div>
+            <input type="text" class="modal-input" id="promoInput" placeholder="Введите промокод" maxlength="20">
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="hidePromoModal()">Отмена</button>
+                <button class="modal-btn modal-btn-confirm" onclick="activatePromo()">Активировать</button>
+            </div>
         </div>
     </div>
+
+    <!-- SELL ALL MODAL -->
+    <div class="modal-overlay" id="sellAllModal">
+        <div class="modal-box">
+            <div class="modal-title">Продать все подарки?</div>
+            <div class="sell-modal-info">Все подарки будут проданы</div>
+            <div class="sell-modal-total" id="sellAllTotal">0.00 TON</div>
+            <div class="modal-btns">
+                <button class="modal-btn modal-btn-cancel" onclick="hideSellAllModal()">Отмена</button>
+                <button class="modal-btn modal-btn-confirm" onclick="confirmSellAll()">Продать</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ITEM DETAIL MODAL -->
+    <div class="item-modal-overlay" id="itemModal">
+        <div class="item-modal">
+            <img id="itemModalImg" src="" alt="">
+            <div class="item-modal-name" id="itemModalName"></div>
+            <div class="item-modal-price"><img src="/static/img/tons/ton_1.svg" id="itemModalTonIcon"> <span id="itemModalPrice">0</span></div>
+            <div class="item-modal-actions">
+                <button class="item-modal-btn item-modal-sell" id="itemModalSellBtn" onclick="sellItem()">Продать</button>
+                <button class="item-modal-btn item-modal-withdraw" id="itemModalWithdrawBtn" onclick="withdrawItem()">Вывести</button>
+            </div>
+            <button class="item-modal-close" onclick="hideItemModal()">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION -->
+    <div class="notif" id="notif"></div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+        <a class="bnav-item" href="/crash">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+            <span class="bnav-label">Краш</span>
+        </a>
+        <a class="bnav-item" href="/index">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8.099c0-.298-.083-.591-.239-.85a1.74 1.74 0 0 0-.65-.62L12.89 3.227a1.84 1.84 0 0 0-1.778 0l-6.222 3.4c-.27.15-.494.364-.65.622A1.64 1.64 0 0 0 4 8.099v6.8c0 .299.083.591.239.85.156.258.38.472.65.621l6.222 3.4a1.84 1.84 0 0 0 1.778 0l6.222-3.4a1.74 1.74 0 0 0 .65-.621c.156-.259.239-.551.239-.85z"/><path d="M4.267 7.249 12 11.499l7.733-4.25M12 20v-8.5"/></svg>
+            <span class="bnav-label">Кейсы</span>
+        </a>
+        <a class="bnav-item" href="/leaderboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+            <span class="bnav-label">Сезон</span>
+        </a>
+        <a class="bnav-item active" href="/inventory">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="bnav-label">Профиль</span>
+        </a>
+    </nav>
 
     <script>
-        let user = null;
-        let inventory = [];
-        const ADMIN_ID = 5257227756; // Ваш ID администратора
+    let user = null;
+    let inventory = [];
+    let selectedItem = null;
+    const ADMIN_ID = 5257227756;
 
-        // Получение данных пользователя
-        async function initUser() {
-            // Авторизация через Telegram
-            const authData = await telegramAuth();
-            if (authData) {
-                try {
-                    const response = await fetch('/api/telegram-auth', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(authData)
-                    });
-                    
-                    const data = await response.json();
-                    if (data.success) {
-                        user = data.user;
-                        updateUserHeader();
-                        
-                        // Показываем кнопку админ-панели если пользователь админ
-                        if (user.id == ADMIN_ID) {
-                            document.getElementById('adminButtonContainer').style.display = 'block';
-                        }
-                        
-                        loadInventory();
-                    }
-                } catch (error) {
-                    console.error('Ошибка инициализации:', error);
-                    showNotification('Ошибка загрузки данных', 'error');
+    /* === LANGUAGE TOGGLE === */
+    let currentLang = localStorage.getItem('app_lang') || 'ru';
+    function initLang() {
+        const flag = document.getElementById('langFlag');
+        if (currentLang === 'en') {
+            flag.src = '/static/gifs/eg.gif';
+            flag.alt = 'EN';
+        } else {
+            flag.src = '/static/gifs/ru.gif';
+            flag.alt = 'RU';
+        }
+    }
+    function toggleLang() {
+        currentLang = currentLang === 'ru' ? 'en' : 'ru';
+        localStorage.setItem('app_lang', currentLang);
+        initLang();
+        vibrateIfOn();
+    }
+
+    /* === VIBRATION TOGGLE === */
+    let vibrationOn = localStorage.getItem('vibration') !== 'off';
+    function initVibration() {
+        const btn = document.getElementById('vibBtn');
+        if (vibrationOn) {
+            btn.classList.remove('vibration-off');
+        } else {
+            btn.classList.add('vibration-off');
+        }
+    }
+    function toggleVibration() {
+        vibrationOn = !vibrationOn;
+        localStorage.setItem('vibration', vibrationOn ? 'on' : 'off');
+        initVibration();
+        if (vibrationOn && navigator.vibrate) navigator.vibrate(50);
+    }
+    function vibrateIfOn() {
+        if (vibrationOn && navigator.vibrate) navigator.vibrate(30);
+    }
+
+    // Init toggles on load
+    document.addEventListener('DOMContentLoaded', function() {
+        initLang();
+        initVibration();
+    });
+
+    /* === TON ICON HELPER === */
+    function getTonIcon(amount) {
+        const v = parseFloat(amount) || 0;
+        if (v >= 20) return '/static/img/tons/ton_5.svg';
+        if (v >= 5) return '/static/img/tons/ton_4.svg';
+        if (v >= 2) return '/static/img/tons/ton_3.svg';
+        if (v >= 1) return '/static/img/tons/ton_2.svg';
+        return '/static/img/tons/ton_1.svg';
+    }
+
+    function starsToTon(stars) {
+        return (Number(stars || 0) / 100);
+    }
+
+    function formatTon(ton) {
+        const v = parseFloat(ton) || 0;
+        if (v === 0) return '0.00';
+        if (v >= 100) return v.toFixed(0);
+        if (v >= 10) return v.toFixed(1);
+        return v.toFixed(2);
+    }
+
+    /* === INIT === */
+    async function initUser() {
+        const authData = await telegramAuth();
+        if (!authData) return;
+        try {
+            const r = await fetch('/api/telegram-auth', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(authData)
+            });
+            const d = await r.json();
+            if (d.success) {
+                user = d.user;
+                updateProfile();
+                loadInventory();
+                if (user.id == ADMIN_ID) {
+                    document.getElementById('adminBtn').style.display = 'block';
                 }
             }
+        } catch (e) {
+            console.error('Init error:', e);
+            showNotif('Ошибка загрузки данных', true);
+        }
+    }
+
+    function updateProfile() {
+        if (!user) return;
+        document.getElementById('userName').textContent = (user.first_name || 'Пользователь') + ' \u00B7 ' + (user.current_level || 1) + ' level';
+        document.getElementById('userLevel').textContent = '';
+
+        if (user.photo_url) {
+            document.getElementById('userAvatar').src = user.photo_url;
         }
 
-        // Обновление верхней панели пользователя
-        function updateUserHeader() {
-            if (user) {
-                document.getElementById('userName').textContent = user.first_name || 'Пользователь';
-                document.getElementById('userStars').textContent = user.balance_stars || 0;
-                document.getElementById('userTickets').textContent = user.balance_tickets || 0;
-                
-                if (user.photo_url) {
-                    document.getElementById('userAvatar').src = user.photo_url;
-                } else {
-                    document.getElementById('userAvatar').src = '/static/img/default_avatar.png';
-                }
+        const balTon = starsToTon(user.balance_stars);
+        document.getElementById('hdrBalance').textContent = formatTon(balTon);
+        document.getElementById('hdrTonIcon').src = getTonIcon(balTon);
+
+        // Level progress
+        const li = user.level_info;
+        if (li) {
+            const pct = li.progress_percent || 0;
+            document.getElementById('levelBar').style.width = pct + '%';
+            const cur = formatTon(starsToTon(li.current_xp || 0));
+            const need = formatTon(starsToTon(li.xp_for_next || 10000));
+            document.getElementById('levelText').textContent = cur + ' / ' + need + ' TON';
+        }
+
+        // Referral info
+        document.getElementById('refBalance').textContent = formatTon(starsToTon(user.total_earned_stars || 0));
+        document.getElementById('refCount').textContent = user.referral_count || 0;
+    }
+
+    /* === INVENTORY === */
+    async function loadInventory() {
+        try {
+            const r = await fetch('/api/inventory/' + user.id);
+            const d = await r.json();
+            if (d.success) {
+                inventory = d.inventory || [];
+                renderInventory();
             }
+        } catch (e) {
+            console.error('Inventory error:', e);
         }
+    }
 
-        // Загрузка инвентаря
-        async function loadInventory() {
-            try {
-                const response = await fetch(`/api/inventory/${user.id}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    inventory = data.inventory;
-                    renderInventory();
-                } else {
-                    showNotification('Ошибка загрузки инвентаря', 'error');
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки инвентаря:', error);
-                showNotification('Ошибка загрузки инвентаря', 'error');
+    function renderInventory() {
+        const c = document.getElementById('inventoryContainer');
+        if (!inventory.length) {
+            c.innerHTML = '<div class="inv-empty"><div class="inv-empty-title">Инвентарь пуст</div><p>Открывайте кейсы, чтобы получить подарки!</p></div>';
+            return;
+        }
+        c.innerHTML = '<div class="inv-grid">' + inventory.map(function(item) {
+            var ton = starsToTon(item.gift_value);
+            return '<div class="inv-card" onclick="openItemModal(' + item.id + ')">' +
+                '<img class="inv-card-img" src="' + item.gift_image + '" alt="' + item.gift_name + '" onerror="this.src=\'/static/img/default_gift.png\'">' +
+                '<div class="inv-card-name">' + item.gift_name + '</div>' +
+                '<div class="inv-card-price"><img src="' + getTonIcon(ton) + '"> ' + formatTon(ton) + '</div>' +
+            '</div>';
+        }).join('') + '</div>';
+    }
+
+    /* === ITEM MODAL === */
+    function openItemModal(itemId) {
+        var item = inventory.find(function(i){return i.id === itemId});
+        if (!item) return;
+        selectedItem = item;
+        var ton = starsToTon(item.gift_value);
+        document.getElementById('itemModalImg').src = item.gift_image;
+        document.getElementById('itemModalName').textContent = item.gift_name;
+        document.getElementById('itemModalPrice').textContent = formatTon(ton);
+        document.getElementById('itemModalTonIcon').src = getTonIcon(ton);
+        document.getElementById('itemModalSellBtn').disabled = item.is_withdrawing;
+        document.getElementById('itemModalWithdrawBtn').disabled = item.is_withdrawing;
+        document.getElementById('itemModal').classList.add('show');
+    }
+
+    function hideItemModal() {
+        document.getElementById('itemModal').classList.remove('show');
+        selectedItem = null;
+    }
+
+    async function sellItem() {
+        if (!selectedItem) return;
+        hideItemModal();
+        try {
+            var r = await fetch('/api/sell-gift', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: user.id, gift_id: selectedItem.id})
+            });
+            var d = await r.json();
+            if (d.success) {
+                showNotif('Подарок продан!');
+                await refreshUserData();
+                loadInventory();
+            } else {
+                showNotif(d.error || 'Ошибка продажи', true);
             }
+        } catch (e) {
+            showNotif('Ошибка продажи', true);
         }
+    }
 
-        // Отображение инвентаря
-        function renderInventory() {
-            const container = document.getElementById('inventoryContainer');
-            
-            if (inventory.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-inventory">
-                        <h3>Инвентарь пуст</h3>
-                        <p>Открывайте кейсы, чтобы получить подарки!</p>
-                    </div>
-                `;
-                return;
+    async function withdrawItem() {
+        if (!selectedItem) return;
+        hideItemModal();
+        try {
+            var r = await fetch('/api/withdraw-gift', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: user.id, gift_id: selectedItem.id})
+            });
+            var d = await r.json();
+            if (d.success) {
+                showNotif('Заявка на вывод создана!');
+                loadInventory();
+            } else {
+                showNotif(d.error || 'Ошибка вывода', true);
             }
-
-            container.innerHTML = `
-                <div class="inventory-grid">
-                    ${inventory.map(item => `
-                        <div class="gift-card" data-id="${item.id}">
-                            <img src="${item.gift_image}" alt="${item.gift_name}" class="gift-image" 
-                                 onerror="this.src='/static/gifs/gifts/default_gift.png'">
-                            <div class="gift-name">${item.gift_name}</div>
-                            <div class="gift-value">${item.gift_value} <img src="/static/img/star.png" style="width:14px;height:14px;vertical-align:middle"></div>
-                            <div class="gift-actions">
-                                <button class="btn-small btn-sell" onclick="sellGift(${item.id})" ${item.is_withdrawing ? 'disabled' : ''}>
-                                    ${item.is_withdrawing ? 'В процессе' : 'Продать'}
-                                </button>
-                                <button class="btn-small btn-withdraw" onclick="withdrawGift(${item.id})" 
-                                        ${item.is_withdrawing ? 'disabled' : ''}>
-                                    ${item.is_withdrawing ? 'В процессе' : 'Вывести'}
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
+        } catch (e) {
+            showNotif('Ошибка вывода', true);
         }
+    }
 
-        // Продажа подарка (РАБОЧАЯ ВЕРСИЯ)
-        async function sellGift(giftId) {
-            if (!confirm('Вы уверены, что хотите продать этот подарок?')) return;
-            
-            try {
-                const response = await fetch('/api/sell-gift', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user_id: user.id,
-                        gift_id: giftId
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    showNotification('Подарок успешно продан!', 'success');
-                    // Обновляем данные пользователя
-                    await updateUserData();
-                    loadInventory(); // Перезагружаем инвентарь
-                } else {
-                    showNotification(data.error || 'Ошибка продажи подарка', 'error');
-                }
-            } catch (error) {
-                console.error('Ошибка продажи:', error);
-                showNotification('Ошибка продажи подарка', 'error');
+    /* === SELL ALL === */
+    function showSellAllModal() {
+        var sellable = inventory.filter(function(i){return !i.is_withdrawing});
+        if (!sellable.length) { showNotif('Нет подарков для продажи', true); return; }
+        var total = sellable.reduce(function(s,i){return s + (i.gift_value || 0)}, 0);
+        document.getElementById('sellAllTotal').textContent = formatTon(starsToTon(total)) + ' TON';
+        document.getElementById('sellAllModal').classList.add('show');
+    }
+
+    function hideSellAllModal() {
+        document.getElementById('sellAllModal').classList.remove('show');
+    }
+
+    async function confirmSellAll() {
+        hideSellAllModal();
+        try {
+            var r = await fetch('/api/sell-all-gifts', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: user.id})
+            });
+            var d = await r.json();
+            if (d.success) {
+                showNotif('Продано ' + d.sold_count + ' предметов!');
+                await refreshUserData();
+                loadInventory();
+            } else {
+                showNotif(d.error || 'Ошибка продажи', true);
             }
+        } catch (e) {
+            showNotif('Ошибка продажи', true);
         }
+    }
 
-        // Продажа всех подарков (РАБОЧАЯ ВЕРСИЯ)
-        async function sellAllGifts() {
-            const sellableGifts = inventory.filter(item => !item.is_withdrawing);
-            if (sellableGifts.length === 0) {
-                showNotification('Нет подарков для продажи', 'error');
-                return;
+    /* === PROMO === */
+    function showPromoModal() {
+        document.getElementById('promoModal').classList.add('show');
+        document.getElementById('promoInput').focus();
+    }
+
+    function hidePromoModal() {
+        document.getElementById('promoModal').classList.remove('show');
+        document.getElementById('promoInput').value = '';
+    }
+
+    async function activatePromo() {
+        var code = document.getElementById('promoInput').value.trim().toUpperCase();
+        if (!code) { showNotif('Введите промокод', true); return; }
+        try {
+            var r = await fetch('/api/use-promo-code', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: user.id, promo_code: code})
+            });
+            var d = await r.json();
+            if (d.success) {
+                showNotif(d.message);
+                hidePromoModal();
+                await refreshUserData();
+            } else {
+                showNotif(d.error || 'Ошибка', true);
             }
-            
-            const totalValue = sellableGifts.reduce((sum, item) => sum + (item.gift_value || 0), 0);
-            
-            if (!confirm(`Хотите продать всё? Общая стоимость: ${totalValue} звёзд`)) return;
-            
-            try {
-                const response = await fetch('/api/sell-all-gifts', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user_id: user.id
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    showNotification(`Продано ${data.sold_count} предметов за ${data.total_value} звезд!`, 'success');
-                    // Обновляем данные пользователя
-                    await updateUserData();
-                    loadInventory(); // Перезагружаем инвентарь
-                } else {
-                    showNotification(data.error || 'Ошибка массовой продажи', 'error');
-                }
-            } catch (error) {
-                console.error('Ошибка массовой продажи:', error);
-                showNotification('Ошибка продажи подарков', 'error');
-            }
+        } catch (e) {
+            showNotif('Ошибка', true);
         }
+    }
 
-        // Обновление данных пользователя
-        async function updateUserData() {
-            try {
-                const response = await fetch(`/api/user/${user.id}`);
-                const data = await response.json();
-                if (data.success) {
-                    user = data.user;
-                    updateUserHeader();
-                }
-            } catch (error) {
-                console.error('Ошибка обновления данных пользователя:', error);
-            }
+    /* === REFERRAL === */
+    function inviteFriends() {
+        if (window.Telegram && window.Telegram.WebApp) {
+            var link = 'https://t.me/rasswetgifts_bot?start=ref_' + (user.referral_code || user.id);
+            window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent('Открывай кейсы и получай подарки!'));
+        } else {
+            copyRefLink();
         }
+    }
 
-        // Вывод подарка с индикатором загрузки
-        async function withdrawGift(giftId) {
-            if (!confirm('Отправить заявку на вывод этого подарка?')) return;
-            
-            // Показываем индикатор загрузки
-            const loadingElement = document.getElementById('withdrawLoading');
-            loadingElement.style.display = 'block';
-            
-            try {
-                const response = await fetch('/api/withdraw-gift', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user_id: user.id,
-                        gift_id: giftId
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    showNotification('Заявка на вывод создана! Ожидайте обработки.', 'success');
-                    loadInventory(); // Перезагружаем инвентарь
-                } else {
-                    showNotification(data.error || 'Ошибка создания заявки', 'error');
-                }
-            } catch (error) {
-                console.error('Ошибка вывода:', error);
-                showNotification('Ошибка создания заявки на вывод', 'error');
-            } finally {
-                // Скрываем индикатор загрузки
-                loadingElement.style.display = 'none';
-            }
-        }
+    function copyRefLink() {
+        var link = 'https://t.me/rasswetgifts_bot?start=ref_' + (user.referral_code || user.id);
+        navigator.clipboard.writeText(link).then(function(){showNotif('Ссылка скопирована!')}).catch(function(){showNotif('Не удалось скопировать', true)});
+    }
 
-        // Промокоды
-        function showPromoModal() {
-            document.getElementById('promoModal').style.display = 'flex';
-            document.getElementById('promoCodeInput').focus();
-        }
+    function openDeposit() {
+        window.location.href = '/index';
+    }
 
-        function hidePromoModal() {
-            document.getElementById('promoModal').style.display = 'none';
-            document.getElementById('promoCodeInput').value = '';
-        }
+    /* === REFRESH USER === */
+    async function refreshUserData() {
+        try {
+            var r = await fetch('/api/user/' + user.id);
+            var d = await r.json();
+            if (d.success) { user = d.user; updateProfile(); }
+        } catch (e) {}
+    }
 
-        async function activatePromoCode() {
-            const promoCode = document.getElementById('promoCodeInput').value.trim().toUpperCase();
-            
-            if (!promoCode) {
-                showNotification('Введите промокод', 'error');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/use-promo-code', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        user_id: user.id,
-                        promo_code: promoCode
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    showNotification(data.message, 'success');
-                    hidePromoModal();
-                    // Обновляем данные пользователя
-                    await updateUserData();
-                } else {
-                    showNotification(data.error, 'error');
-                }
-            } catch (error) {
-                console.error('Ошибка активации промокода:', error);
-                showNotification('Ошибка активации промокода', 'error');
-            }
-        }
+    /* === NOTIFICATION === */
+    function showNotif(msg, isError) {
+        var el = document.getElementById('notif');
+        el.textContent = msg;
+        el.className = 'notif show' + (isError ? ' error' : '');
+        setTimeout(function(){el.classList.remove('show')}, 3000);
+    }
 
-        // Открытие админ-панели
-        function openAdminPanel() {
-            window.location.href = '/admin';
-        }
+    document.getElementById('promoInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') activatePromo();
+    });
 
-        // Уведомления
-        function showNotification(message, type = 'success') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${type} show`;
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-
-        // Обработка Enter в поле промокода
-        document.getElementById('promoCodeInput')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                activatePromoCode();
-            }
-        });
-
-        // Автоматическая инициализация при загрузке
-        document.addEventListener('DOMContentLoaded', initUser);
+    document.addEventListener('DOMContentLoaded', initUser);
     </script>
 </body>
 </html>
