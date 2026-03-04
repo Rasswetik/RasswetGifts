@@ -1279,6 +1279,32 @@
                 background:#1EE44C;color:#000;flex:1;
                 box-shadow:0 4px 20px rgba(30,228,76,.3);
             }
+            /* Quantity selector */
+            .cdm-qty-row{display:flex;gap:8px;padding:0 18px 8px;justify-content:center}
+            .cdm-qty-btn{
+                flex:1;max-width:80px;padding:8px 0;border-radius:12px;border:1px solid rgba(255,255,255,.1);
+                background:rgba(255,255,255,.04);color:rgba(255,255,255,.6);
+                font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;
+                text-align:center;
+            }
+            .cdm-qty-btn.active{background:var(--color-button);color:#fff;border-color:var(--color-button)}
+            /* Result display */
+            .cdm-result-wrap{display:flex;flex-direction:column;align-items:center;padding:20px 18px;gap:14px}
+            .cdm-result-title{font-size:18px;font-weight:800;color:#fff;text-align:center}
+            .cdm-result-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+            .cdm-result-card{
+                width:110px;background:var(--bg-tertiary);border:1px solid var(--border-primary);
+                border-radius:14px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;
+            }
+            .cdm-result-card img{width:70px;height:70px;object-fit:contain}
+            .cdm-result-card .cdm-rname{font-size:11px;font-weight:600;color:rgba(255,255,255,.8);text-align:center}
+            .cdm-result-card .cdm-rval{font-size:12px;font-weight:700;color:#1EE44C;display:flex;align-items:center;gap:3px}
+            .cdm-result-card .cdm-rval img{width:13px;height:13px}
+            .cdm-result-again{
+                padding:14px 40px;border-radius:16px;border:none;
+                background:var(--color-button);color:#fff;font-size:15px;font-weight:800;
+                cursor:pointer;font-family:inherit;transition:all .2s;
+            }
             .deposit-overlay{
                 position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;
                 display:flex;align-items:center;justify-content:center;
@@ -2909,6 +2935,8 @@
             var cdmCurrentPage = 0;
             var cdmDemoMode = false;
             var cdmItemsPerPage = 3;
+            var cdmSelectedQty = 1;
+            var cdmOpening = false;
 
             async function showCaseDetailModal(caseId) {
                 var overlay = document.getElementById('cdmOverlay');
@@ -2927,7 +2955,11 @@
                     cdmCaseData = d.case;
                     cdmCurrentPage = 0;
                     cdmDemoMode = false;
+                    cdmSelectedQty = 1;
+                    cdmOpening = false;
                     document.getElementById('cdmDemoBtn').classList.remove('active');
+                    document.getElementById('cdmResult').style.display = 'none';
+                    document.getElementById('cdmResult').innerHTML = '';
                     renderCdm();
                 } catch(e) {
                     console.error('CDM load error:', e);
@@ -2992,20 +3024,30 @@
                 }).join('');
                 document.getElementById('cdmContents').innerHTML = contentsHtml;
 
+                // Quantity selector (max 3, not for free cases)
+                var qtyHtml = '';
+                if (!isFree) {
+                    for (var q = 1; q <= 3; q++) {
+                        qtyHtml += '<button class="cdm-qty-btn' + (q === cdmSelectedQty ? ' active' : '') + '" onclick="cdmSetQty(' + q + ')">x' + q + '</button>';
+                    }
+                }
+                document.getElementById('cdmQtyRow').innerHTML = qtyHtml;
+
                 // Bottom buttons
                 var bottomHtml = '';
+                var qty = cdmSelectedQty || 1;
                 if (isFree) {
                     bottomHtml = '<button class="cdm-open-btn cdm-free" onclick="cdmOpen()">' +
                         '<span class="cdm-btn-label">Open for free</span>' +
                     '</button>';
                 } else {
                     bottomHtml = '<button class="cdm-open-btn cdm-ton" onclick="cdmOpen()">' +
-                        '<span class="cdm-btn-label">Open for</span>' +
-                        '<span class="cdm-btn-sub">' + formatTon(tonCost) + ' ton</span>' +
+                        '<span class="cdm-btn-label">Open' + (qty > 1 ? ' x' + qty : '') + ' for</span>' +
+                        '<span class="cdm-btn-sub">' + formatTon(tonCost * qty) + ' ton</span>' +
                     '</button>' +
                     '<button class="cdm-open-btn cdm-stars" onclick="cdmOpen()">' +
-                        '<span class="cdm-btn-label">Open for</span>' +
-                        '<span class="cdm-btn-sub">' + starsCost + ' stars</span>' +
+                        '<span class="cdm-btn-label">Open' + (qty > 1 ? ' x' + qty : '') + ' for</span>' +
+                        '<span class="cdm-btn-sub">' + (starsCost * qty) + ' stars</span>' +
                     '</button>';
                 }
                 document.getElementById('cdmBottom').innerHTML = bottomHtml;
@@ -3030,17 +3072,108 @@
                 document.getElementById('cdmDemoBtn').classList.toggle('active', cdmDemoMode);
             }
 
-            function cdmOpen() {
-                if (!cdmCaseData) return;
-                // Navigate to actual case page for opening
-                var overlay = document.getElementById('cdmOverlay');
-                overlay.classList.remove('show');
-                window.location.href = '/case/' + cdmCaseData.id + (cdmDemoMode ? '?demo=1' : '');
+            function cdmSetQty(q) {
+                cdmSelectedQty = Math.max(1, Math.min(3, q));
+                renderCdm();
+            }
+
+            async function cdmOpen() {
+                if (!cdmCaseData || cdmOpening) return;
+                cdmOpening = true;
+                var caseId = cdmCaseData.id;
+                var qty = cdmSelectedQty || 1;
+                var isFree = cdmCaseData.cost === 0 || !!cdmCaseData.promo || !!cdmCaseData.free;
+                if (isFree) qty = 1;
+
+                // Disable buttons
+                var btns = document.querySelectorAll('.cdm-open-btn');
+                btns.forEach(function(b){ b.style.opacity = '.5'; b.style.pointerEvents = 'none'; });
+
+                try {
+                    var body = {
+                        user_id: userData ? userData.id : null,
+                        case_id: caseId,
+                        quantity: qty
+                    };
+                    if (cdmDemoMode) body.demo = true;
+
+                    var r = await fetch('/api/cases/open', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    var d = await r.json();
+
+                    if (!d.success) {
+                        showNotification(d.error || 'Error opening case', 'error');
+                        cdmOpening = false;
+                        btns.forEach(function(b){ b.style.opacity = ''; b.style.pointerEvents = ''; });
+                        return;
+                    }
+
+                    // Show results
+                    var wonGifts = d.won_gifts || d.gifts || [];
+                    var resultEl = document.getElementById('cdmResult');
+                    var html = '<div class="cdm-result-title">You won!</div><div class="cdm-result-grid">';
+                    wonGifts.forEach(function(g) {
+                        var val = (Number(g.value || 0) / 100);
+                        var img = g.image || g.preview_url || '/static/img/default_gift.png';
+                        html += '<div class="cdm-result-card">' +
+                            '<img src="' + img + '" onerror="this.style.opacity=\'0.3\'">' +
+                            '<div class="cdm-rname">' + (g.name || 'Gift') + '</div>' +
+                            (val > 0 ? '<div class="cdm-rval"><img src="' + getTonIcon(val) + '">' + formatTon(val) + '</div>' : '') +
+                        '</div>';
+                    });
+                    html += '</div>';
+                    html += '<button class="cdm-result-again" onclick="cdmResetResult()">Open again</button>';
+                    resultEl.innerHTML = html;
+                    resultEl.style.display = 'flex';
+
+                    // Hide contents/carousel, show result
+                    document.querySelector('.cdm-body').style.display = 'none';
+                    document.querySelector('.cdm-carousel-wrap').style.display = 'none';
+                    document.querySelector('.cdm-arrow').style.display = 'none';
+                    document.getElementById('cdmPages').style.display = 'none';
+                    document.getElementById('cdmQtyRow').style.display = 'none';
+                    document.getElementById('cdmBottom').style.display = 'none';
+
+                    // Refresh balance
+                    if (typeof loadUserData === 'function') loadUserData();
+
+                } catch(e) {
+                    console.error('Case open error:', e);
+                    showNotification('Network error', 'error');
+                } finally {
+                    cdmOpening = false;
+                    btns.forEach(function(b){ b.style.opacity = ''; b.style.pointerEvents = ''; });
+                }
+            }
+
+            function cdmResetResult() {
+                document.getElementById('cdmResult').style.display = 'none';
+                document.getElementById('cdmResult').innerHTML = '';
+                document.querySelector('.cdm-body').style.display = '';
+                document.querySelector('.cdm-carousel-wrap').style.display = '';
+                document.querySelector('.cdm-arrow').style.display = '';
+                document.getElementById('cdmPages').style.display = '';
+                document.getElementById('cdmQtyRow').style.display = '';
+                document.getElementById('cdmBottom').style.display = '';
+                renderCdm();
             }
 
             function closeCdm() {
                 document.getElementById('cdmOverlay').classList.remove('show');
                 cdmCaseData = null;
+                cdmOpening = false;
+                // Reset result view
+                document.getElementById('cdmResult').style.display = 'none';
+                document.getElementById('cdmResult').innerHTML = '';
+                document.querySelector('.cdm-body').style.display = '';
+                document.querySelector('.cdm-carousel-wrap').style.display = '';
+                document.querySelector('.cdm-arrow').style.display = '';
+                document.getElementById('cdmPages').style.display = '';
+                document.getElementById('cdmQtyRow').style.display = '';
+                document.getElementById('cdmBottom').style.display = '';
             }
 
             function cdmOverlayClick(e) {
@@ -4400,6 +4533,8 @@
                 <div class="cdm-section-title">CONTENTS</div>
                 <div class="cdm-contents" id="cdmContents"></div>
             </div>
+            <div class="cdm-result-wrap" id="cdmResult" style="display:none"></div>
+            <div class="cdm-qty-row" id="cdmQtyRow"></div>
             <div class="cdm-bottom" id="cdmBottom"></div>
         </div>
     </div>
