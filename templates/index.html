@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
         <meta http-equiv="expires" content="0">
         <meta name="theme-color" content="#090B11">
-        <title>Rasswet Gifts - Открывай кейсы и получай подарки!</title>
+        <title>Rasswet Gifts - Open cases and win gifts!</title>
         <link rel="icon" type="image/png" href="/static/img/logo.png">
         <link rel="shortcut icon" href="/static/img/logo.png">
         <link rel="apple-touch-icon" sizes="180x180" href="/static/img/logo.png">
@@ -216,7 +216,7 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: var(--color-background);
+                background: #181b24;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -1290,6 +1290,54 @@
             .cdm-qty-btn.active{background:var(--color-button);color:#fff;border-color:var(--color-button)}
             /* Result display */
             .cdm-result-wrap{display:flex;flex-direction:column;align-items:center;padding:20px 18px;gap:14px}
+
+            /* ===== CDM ROULETTE ===== */
+            .cdm-roulette{
+                position:relative;overflow:hidden;
+                height:170px;width:100%;
+                background:var(--bg-secondary);
+                border:1px solid var(--border-gunmetal);
+                border-radius:12px;
+                box-shadow:0 8px 26px rgba(9,11,17,.65),inset 0 1px 0 rgba(255,255,255,.03);
+                display:none;
+                margin:0 0 6px;
+            }
+            .cdm-roulette-single{height:100%;position:relative;overflow:hidden;display:flex;justify-content:center}
+            .cdm-roulette-track{display:flex;position:absolute;top:0;left:0;height:100%;will-change:transform;width:max-content}
+            .cdm-roulette-item{
+                width:130px;height:170px;flex-shrink:0;
+                display:flex;flex-direction:column;align-items:center;justify-content:center;
+                padding:8px;position:relative;
+                border-right:1px solid rgba(255,255,255,.07);
+                background:linear-gradient(180deg,rgba(22,25,35,.3) 0%,rgba(9,11,17,.8) 50%,rgba(22,25,35,.3) 100%);
+                transition:background .3s;
+            }
+            .cdm-roulette-item .r-img{width:75px;height:75px;object-fit:contain;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6));transition:transform .3s,filter .3s}
+            .cdm-roulette-item .r-val{font-size:10px;font-weight:700;color:var(--text-secondary);margin-top:6px;display:flex;align-items:center;gap:3px}
+            .cdm-roulette-item .r-val img{width:10px;height:10px}
+            .cdm-roulette-item.winner{background:rgba(35,108,217,.06);border-left:2px solid rgba(253,190,19,.5);border-right:2px solid rgba(253,190,19,.5);box-shadow:inset 0 0 20px rgba(253,190,19,.06)}
+            .cdm-roulette-item.winner .r-img{transform:scale(1.12);filter:drop-shadow(0 0 30px rgba(253,190,19,.4)) brightness(1.08)!important;animation:cdmWinGlow 1.5s infinite}
+            @keyframes cdmWinGlow{0%,100%{filter:drop-shadow(0 0 30px rgba(253,190,19,.4)) brightness(1.08)}50%{filter:drop-shadow(0 0 42px rgba(253,190,19,.55)) brightness(1.15)}}
+            .cdm-roulette-pointer{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:10}
+            .cdm-roulette-pointer::before{content:'';display:block;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:18px solid #236CD9;filter:drop-shadow(0 0 14px rgba(35,108,217,.7))}
+            .cdm-roulette-pointer::after{content:'';display:block;position:absolute;bottom:-170px;left:50%;transform:translateX(-50%);width:2px;height:170px;background:linear-gradient(180deg,rgba(35,108,217,.55),rgba(35,108,217,.08) 60%,transparent);pointer-events:none}
+            .cdm-roulette.spinning{border-color:rgba(253,190,19,.2);box-shadow:0 8px 40px rgba(9,11,17,.5),0 0 50px rgba(253,190,19,.08)}
+            .cdm-roulette.spinning .cdm-roulette-item .r-img{filter:drop-shadow(0 0 22px rgba(253,190,19,.3)) brightness(1.12)}
+            .cdm-roulette.spinning .cdm-roulette-track{filter:blur(.15px)}
+
+            /* Multi-roulette (x2, x3) */
+            .cdm-roulette-multi{display:none;height:100%;position:relative;overflow:hidden}
+            .cdm-roulette-cols{display:flex;width:100%;height:100%;gap:1px}
+            .cdm-roulette-col{flex:1;position:relative;overflow:hidden;background:var(--bg-tertiary)}
+            .cdm-roulette-col-track{display:flex;flex-direction:column;position:absolute;top:0;left:0;width:100%;will-change:transform}
+            .cdm-roulette-col-item{width:100%;height:80px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px;border-bottom:1px solid var(--border-gunmetal)}
+            .cdm-roulette-col-item .r-img{width:50px;height:50px;object-fit:contain;filter:drop-shadow(0 0 12px rgba(35,108,217,.15))}
+            .cdm-roulette-col-item .r-val{font-size:8px;font-weight:700;color:var(--text-secondary);margin-top:2px;display:flex;align-items:center;gap:2px}
+            .cdm-roulette-col-item .r-val img{width:8px;height:8px}
+            .cdm-roulette-col-item.winner{background:rgba(35,108,217,.06);border:2px solid rgba(253,190,19,.45);box-shadow:inset 0 0 16px rgba(253,190,19,.05)}
+            .cdm-roulette-col-item.winner .r-img{transform:scale(1.1);filter:drop-shadow(0 0 24px rgba(253,190,19,.35)) brightness(1.08)!important;animation:cdmWinGlow 1.5s infinite}
+            .cdm-multi-center{position:absolute;top:50%;left:0;width:100%;height:2px;transform:translateY(-50%);z-index:10;background:linear-gradient(90deg,transparent,var(--color-button),transparent);box-shadow:0 0 20px rgba(35,108,217,.45)}
+
             .cdm-result-title{font-size:18px;font-weight:800;color:#fff;text-align:center}
             .cdm-result-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
             .cdm-result-card{
@@ -1784,30 +1832,30 @@
         <div class="telegram-auth-screen" id="telegram-auth-screen" style="display: none;">
             <div class="telegram-auth-content">
                 <div class="telegram-auth-icon"><img src="/static/img/exit.png" alt="Auth" style="width:48px;height:48px;opacity:.7"></div>
-                <div class="telegram-auth-title">Войдите через Telegram</div>
+                <div class="telegram-auth-title">Sign in via Telegram</div>
                 <div class="telegram-auth-text">
-                    Откройте бота и введите команду:
+                    Open the bot and enter the command:
                 </div>
                 <div class="telegram-auth-steps">
                     <div class="telegram-auth-step">
                         <div class="telegram-auth-step-num">1</div>
-                        <span>Откройте бота <b>@rasswetgifts_bot</b></span>
+                        <span>Open bot <b>@rasswetgifts_bot</b></span>
                     </div>
                     <div class="telegram-auth-step">
                         <div class="telegram-auth-step-num">2</div>
-                        <span>Введите команду:</span>
+                        <span>Enter command:</span>
                     </div>
                 </div>
-                <div class="telegram-auth-code" id="auth-code" onclick="copyAuthCode()" title="Нажмите чтобы скопировать">
-                    /auth ЗАГРУЗКА...
+                <div class="telegram-auth-code" id="auth-code" onclick="copyAuthCode()" title="Click to copy">
+                    /auth LOADING...
                 </div>
                 <a href="https://t.me/rasswetgifts_bot" target="_blank" class="telegram-auth-btn">
                     <svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
-                    Открыть бота
+                    Open bot
                 </a>
                 <div class="auth-status" id="auth-status">
                     <div class="auth-spinner"></div>
-                    Ожидание авторизации...
+                    Waiting for authorization...
                 </div>
             </div>
         </div>
@@ -1818,8 +1866,8 @@
         <!-- ЭКРАН ЗАГРУЗКИ -->
         <div class="loading-screen" id="loading-screen">
             <div class="loading-content">
-                <img src="/static/gifs/loading.gif" alt="Загрузка" class="loading-gif">
-                <div class="loading-title"><span class="loading-dots">Загрузка</span></div>
+                <img src="/static/gifs/loading.gif" alt="Loading" class="loading-gif">
+                <div class="loading-title"><span class="loading-dots">Loading</span></div>
                 <div class="loading-progress">
                     <div class="loading-bar-container">
                         <div class="loading-bar" id="loading-bar"></div>
@@ -1830,10 +1878,10 @@
 
         <!-- УВЕДОМЛЕНИЕ О ПОВЫШЕНИИ УРОВНЯ -->
         <div class="level-up-notification" id="level-up-notification" style="display: none;">
-            <div class="level-up-title">УРОВЕНЬ ПОВЫШЕН!</div>
+            <div class="level-up-title">LEVEL UP!</div>
             <div class="level-up-level" id="level-up-level">1</div>
             <div class="level-up-rewards" id="level-up-rewards"></div>
-            <button class="level-up-close" onclick="closeLevelUpNotification()">Продолжить</button>
+            <button class="level-up-close" onclick="closeLevelUpNotification()">Continue</button>
         </div>
 
         <!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
@@ -1849,21 +1897,21 @@
                             </div>
                             <div class="hdr-spacer"></div>
                             <div class="hdr-balance-pill">
-                                <span id="hdr-bal-icon" style="display:inline-flex;align-items:center;width:16px;height:16px;flex-shrink:0"><img src="/static/img/tons/ton_1.svg" width="16" height="16" alt="TON"></span>
+                                <span id="hdr-bal-icon" style="display:inline-flex;align-items:center;width:16px;height:16px;flex-shrink:0"><img src="/static/img/ton.png" width="16" height="16" alt="TON"></span>
                                 <span id="balance-stars">0</span>
                             </div>
-                            <button class="hdr-deposit-btn" onclick="openDepositOverlay()" title="Пополнить">
+                            <button class="hdr-deposit-btn" onclick="openDepositOverlay()" title="Deposit">
                                 <span>+</span>
                             </button>
                         </div>
                     </div>
 
-                    <!-- БАННЕР ПОДПИСКИ -->
-                    <div class="subscribe-banner" id="subscribe-banner" onclick="window.open('https://t.me/rasswetgifts','_blank')">
+                    <!-- BANNER HIDDEN -->
+                    <div class="subscribe-banner" id="subscribe-banner" style="display:none">
                         <img src="/static/img/ban.svg" alt="" class="subscribe-banner-img" onerror="this.src='/static/img/block.png'">
                         <div class="subscribe-banner-text">
-                            <b>Вам нужно подписаться</b>
-                            <span>Новости, раздачи подарков, промокоды на бесплатные кейсы у нас в канале</span>
+                            <b>You need to subscribe</b>
+                            <span>News, giveaways, promo codes for free cases in our channel</span>
                         </div>
                         <img src="/static/img/sapphire.png" alt="" class="subscribe-banner-decor" onerror="this.style.display='none'">
                     </div>
@@ -1878,8 +1926,8 @@
 
                     <!-- ТАБЫ -->
                     <div class="cases-tabs">
-                        <button class="cases-tab active" data-tab="paid" onclick="switchCasesTab('paid')">Платные</button>
-                        <button class="cases-tab" data-tab="free" onclick="switchCasesTab('free')">Бесплатные</button>
+                        <button class="cases-tab active" data-tab="paid" onclick="switchCasesTab('paid')">Paid</button>
+                        <button class="cases-tab" data-tab="free" onclick="switchCasesTab('free')">Free</button>
                     </div>
 
                     <div class="case-sections" id="case-sections">
@@ -1893,17 +1941,17 @@
         <div class="hub-overlay" id="hubOverlay">
             <div class="hub-modal">
                 <div class="hub-header">
-                    <div class="hub-title"><img src="/static/img/gift.png">Меню</div>
+                    <div class="hub-title"><img src="/static/img/gift.png">Menu</div>
                     <button class="hub-close" onclick="closeHub()"><img src="/static/img/exit.png" alt="close"></button>
                 </div>
                 <div class="hub-tabs">
                     <div class="hub-tab active" onclick="switchHubTab('index')">
                         <img src="/static/img/gift.png" alt="">
-                            <span>Индекс</span>
+                            <span>Index</span>
                     </div>
                     <div class="hub-tab" onclick="switchHubTab('settings')">
                         <img src="/static/img/settings.png" alt="" onerror="this.src='/static/img/star.png'">
-                            <span>Настройки</span>
+                            <span>Settings</span>
                     </div>
                     <div class="hub-tab" onclick="switchHubTab('vip')">
                         <img src="/static/img/crown.png" alt="" onerror="this.src='/static/img/star2.png'">
@@ -1911,34 +1959,34 @@
                     </div>
                     <div class="hub-tab" onclick="switchHubTab('bonuses')">
                         <img src="/static/img/star.png" alt="">
-                            <span>Бонусы</span>
+                            <span>Bonuses</span>
                     </div>
                 </div>
                 <div class="hub-content">
                     <!-- INDEX TAB -->
                     <div class="hub-tab-content active" id="hubTabIndex">
                         <div class="hub-index-search">
-                                <input type="text" id="hubIndexSearch" placeholder="Поиск подарка..." oninput="filterHubIndex()">
+                                <input type="text" id="hubIndexSearch" placeholder="Search gift..." oninput="filterHubIndex()">
                         </div>
                         <div class="hub-index-stats">
                             <div class="hub-index-stat"><span id="hubCollectedCount">0</span>/<span id="hubTotalCount">0</span></div>
                             <div class="hub-index-stat"><span id="hubCollectionPercent">0</span>%</div>
                         </div>
                         <div class="hub-index-grid" id="hubIndexGrid">
-                                <div style="grid-column:1/-1;text-align:center;padding:20px;color:rgba(255,255,255,.4)">Загрузка...</div>
+                                <div style="grid-column:1/-1;text-align:center;padding:20px;color:rgba(255,255,255,.4)">Loading...</div>
                         </div>
                     </div>
 
                     <!-- SETTINGS TAB -->
                     <div class="hub-tab-content" id="hubTabSettings">
                         <div class="hub-settings-section">
-                            <div class="hub-settings-title"><img src="/static/img/settings.png" onerror="this.style.display='none'">Звук</div>
+                            <div class="hub-settings-title"><img src="/static/img/settings.png" onerror="this.style.display='none'">Sound</div>
                             <div class="hub-toggle-row">
                                 <div class="hub-toggle-info">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>
                                     <div>
-                                        <div class="hub-toggle-label">Звуки</div>
-                                        <div class="hub-toggle-desc">Звуковые эффекты</div>
+                                        <div class="hub-toggle-label">Sounds</div>
+                                        <div class="hub-toggle-desc">Sound effects</div>
                                     </div>
                                 </div>
                                 <div class="toggle-switch" id="hubToggleSound" onclick="toggleCaseSound()"></div>
@@ -1954,13 +2002,13 @@
                             </div>
                         </div>
                         <div class="hub-settings-section">
-                            <div class="hub-settings-title"><img src="/static/img/crystal.png" onerror="this.style.display='none'">Отображение</div>
+                            <div class="hub-settings-title"><img src="/static/img/crystal.png" onerror="this.style.display='none'">Display</div>
                             <div class="hub-toggle-row">
                                 <div class="hub-toggle-info">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="3"/><circle cx="8" cy="8" r="2"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg>
                                     <div>
-                                        <div class="hub-toggle-label">Анимации GIF</div>
-                                        <div class="hub-toggle-desc">Анимированные изображения</div>
+                                        <div class="hub-toggle-label">GIF Animations</div>
+                                        <div class="hub-toggle-desc">Animated images</div>
                                     </div>
                                 </div>
                                 <div class="toggle-switch on" id="hubToggleGif" onclick="toggleCaseSetting('gif')"></div>
@@ -1969,8 +2017,8 @@
                                 <div class="hub-toggle-info">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 5.5L18.5 18.5"/><rect x="2" y="8" width="6" height="8" rx="1"/><rect x="16" y="8" width="6" height="8" rx="1"/></svg>
                                     <div>
-                                        <div class="hub-toggle-label">Вибрация</div>
-                                        <div class="hub-toggle-desc">Вибрация при событиях</div>
+                                        <div class="hub-toggle-label">Vibration</div>
+                                        <div class="hub-toggle-desc">Vibrate on events</div>
                                     </div>
                                 </div>
                                 <div class="toggle-switch" id="hubToggleVibration" onclick="toggleCaseSetting('vibration')"></div>
@@ -1983,44 +2031,44 @@
                         <div class="hub-vip-header">
                             <div class="hub-vip-icon"><img src="/static/img/crown.png" alt="" onerror="this.src='/static/img/star2.png'"></div>
                             <div class="hub-vip-title">Crash VIP</div>
-                            <div class="hub-vip-subtitle">Скин, тема, эффекты в Crash</div>
-                            <div class="hub-vip-status" id="hubVipStatus">Загрузка...</div>
+                            <div class="hub-vip-subtitle">Skin, theme, effects in Crash</div>
+                            <div class="hub-vip-status" id="hubVipStatus">Loading...</div>
                         </div>
                         <button class="hub-vip-buy" id="hubVipBuyBtn" onclick="purchaseVipFromHub()" style="display:none">
                             <img src="/static/img/star.png" alt="">
-                            <span id="hubVipBuyText">КУПИТЬ VIP</span>
+                            <span id="hubVipBuyText">BUY VIP</span>
                         </button>
                         <div class="hub-vip-features">
                             <div class="hub-vip-feature">
                                 <img src="/static/img/crown.png" alt="" onerror="this.style.display='none'">
                                 <div class="hub-vip-feature-text">
-                                    <div class="hub-vip-feature-title">Золотая аврора</div>
-                                    <div class="hub-vip-feature-desc">Премиум VIP тема для краша</div>
+                                    <div class="hub-vip-feature-title">Golden Aurora</div>
+                                    <div class="hub-vip-feature-desc">Premium VIP theme for crash</div>
                                 </div>
                             </div>
                             <div class="hub-vip-feature">
                                 <img src="/static/img/star2.png" alt="" onerror="this.style.display='none'">
                                 <div class="hub-vip-feature-text">
-                                    <div class="hub-vip-feature-title">Анимированный фон</div>
-                                    <div class="hub-vip-feature-desc">Динамические частицы</div>
+                                    <div class="hub-vip-feature-title">Animated background</div>
+                                    <div class="hub-vip-feature-desc">Dynamic particles</div>
                                 </div>
                             </div>
                             <div class="hub-vip-feature">
                                 <img src="/static/img/crystal.png" alt="" onerror="this.style.display='none'">
                                 <div class="hub-vip-feature-text">
-                                    <div class="hub-vip-feature-title">Пульсация кнопок</div>
-                                    <div class="hub-vip-feature-desc">Светящиеся кнопки в игре</div>
+                                    <div class="hub-vip-feature-title">Button pulsation</div>
+                                    <div class="hub-vip-feature-desc">Glowing buttons in game</div>
                                 </div>
                             </div>
                         </div>
                         <div class="hub-vip-toggles">
-                            <div class="hub-settings-title" style="margin-top:14px"><img src="/static/img/crown.png" onerror="this.style.display='none'">VIP Настройки</div>
+                            <div class="hub-settings-title" style="margin-top:14px"><img src="/static/img/crown.png" onerror="this.style.display='none'">VIP Settings</div>
                             <div class="hub-toggle-row" id="hubVipThemeRow" style="opacity:0.5;pointer-events:none">
                                 <div class="hub-toggle-info">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
                                     <div>
-                                        <div class="hub-toggle-label">Золотая аврора</div>
-                                        <div class="hub-toggle-desc">Премиум VIP тема</div>
+                                        <div class="hub-toggle-label">Golden Aurora</div>
+                                        <div class="hub-toggle-desc">Premium VIP theme</div>
                                     </div>
                                 </div>
                                 <div class="toggle-switch" id="hubToggleVipTheme" onclick="toggleVipTheme()"></div>
@@ -2029,8 +2077,8 @@
                                 <div class="hub-toggle-info">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42"/></svg>
                                     <div>
-                                        <div class="hub-toggle-label">Анимированный фон</div>
-                                        <div class="hub-toggle-desc">Динамические частицы</div>
+                                        <div class="hub-toggle-label">Animated background</div>
+                                        <div class="hub-toggle-desc">Dynamic particles</div>
                                     </div>
                                 </div>
                                 <div class="toggle-switch" id="hubToggleVipAnimBg" onclick="toggleVipAnimBg()"></div>
@@ -2039,8 +2087,8 @@
                                 <div class="hub-toggle-info">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
                                     <div>
-                                        <div class="hub-toggle-label">Пульсация кнопок</div>
-                                        <div class="hub-toggle-desc">Светящиеся кнопки</div>
+                                        <div class="hub-toggle-label">Button pulsation</div>
+                                        <div class="hub-toggle-desc">Glowing buttons</div>
                                     </div>
                                 </div>
                                 <div class="toggle-switch" id="hubToggleVipPulse" onclick="toggleVipPulse()"></div>
@@ -2050,9 +2098,9 @@
 
                     <!-- BONUSES TAB -->
                     <div class="hub-tab-content" id="hubTabBonuses">
-                        <div class="hub-settings-title" style="margin-bottom:12px"><img src="/static/img/star.png">Ваши бонусы</div>
+                        <div class="hub-settings-title" style="margin-bottom:12px"><img src="/static/img/star.png">Your bonuses</div>
                         <div id="hubBonusesList" style="display:flex;flex-direction:column;gap:8px;">
-                            <div style="text-align:center;color:rgba(255,255,255,.4);padding:20px;font-size:13px;">Загрузка...</div>
+                            <div style="text-align:center;color:rgba(255,255,255,.4);padding:20px;font-size:13px;">Loading...</div>
                         </div>
                     </div>
                 </div>
@@ -2063,7 +2111,7 @@
         <div class="deposit-overlay" id="depositOverlay">
             <div class="deposit-modal">
                 <div class="deposit-header">
-                    <div class="deposit-title">Пополнение</div>
+                    <div class="deposit-title">Deposit</div>
                     <button class="deposit-close" onclick="closeDepositSelector()"><img src="/static/img/exit.png" alt=""></button>
                 </div>
                 <div class="deposit-methods">
@@ -2079,7 +2127,7 @@
                 <div class="deposit-methods-row" style="display:flex;gap:12px;margin-top:12px">
                     <button class="deposit-method-btn" onclick="closeDepositSelector();openSbpDeposit()" style="border:1px solid rgba(0,200,100,0.3);background:rgba(0,200,100,0.08)">
                         <img src="/static/img/sbp.png" alt="SBP" onerror="this.src='/static/img/plus.png'">
-                        <span>СБП</span>
+                        <span>SBP</span>
                     </button>
                 </div>
             </div>
@@ -2089,32 +2137,32 @@
         <div class="deposit-overlay" id="sbpDepositOverlay" style="z-index:10002">
             <div class="deposit-modal" style="max-width:380px">
                 <div class="deposit-header">
-                    <div class="deposit-title"><img src="/static/img/sbp.png" style="width:22px;height:22px;vertical-align:middle;margin-right:6px">Пополнение через СБП</div>
+                    <div class="deposit-title"><img src="/static/img/sbp.png" style="width:22px;height:22px;vertical-align:middle;margin-right:6px">SBP Deposit</div>
                     <button class="deposit-close" onclick="closeSbpDeposit()"><img src="/static/img/exit.png" alt=""></button>
                 </div>
                 <div style="padding:16px;text-align:center">
-                    <div style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:12px">Курс: 1 <img src="/static/img/star.png" style="width:14px;height:14px;vertical-align:middle"> = 1.3 в‚Ѕ</div>
+                    <div style="color:rgba(255,255,255,.5);font-size:13px;margin-bottom:12px">Rate: 1 <img src="/static/img/star.png" style="width:14px;height:14px;vertical-align:middle"> = 1.3 ₽</div>
                     <div style="display:flex;gap:8px;margin-bottom:12px">
-                        <input type="number" id="sbpStarsAmount" class="form-control" placeholder="Кол-во звёзд" min="10" step="10" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;color:#fff;font-size:15px;text-align:center" oninput="updateSbpPrice()">
+                        <input type="number" id="sbpStarsAmount" class="form-control" placeholder="Stars amount" min="10" step="10" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px;color:#fff;font-size:15px;text-align:center" oninput="updateSbpPrice()">
                     </div>
-                    <div id="sbpPriceDisplay" style="font-size:20px;font-weight:700;color:#2EC76E;margin-bottom:10px">0 в‚Ѕ</div>
+                    <div id="sbpPriceDisplay" style="font-size:20px;font-weight:700;color:#2EC76E;margin-bottom:10px">0 ₽</div>
                     <!-- PROMO CODE FOR SBP -->
                     <div style="width:100%;display:flex;gap:8px;align-items:center;margin-bottom:6px">
-                        <input type="text" id="sbpPromoCode" placeholder="Промокод (необязательно)" maxlength="30" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;">
-                        <button onclick="checkDepositPromoFor('sbpPromoCode','sbpPromoStatus')" style="background:rgba(35,108,217,.2);border:1px solid rgba(35,108,217,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Проверить</button>
+                        <input type="text" id="sbpPromoCode" placeholder="Promo code (optional)" maxlength="30" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;">
+                        <button onclick="checkDepositPromoFor('sbpPromoCode','sbpPromoStatus')" style="background:rgba(35,108,217,.2);border:1px solid rgba(35,108,217,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Check</button>
                     </div>
                     <div id="sbpPromoStatus" style="font-size:12px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:none;text-align:center;width:100%;margin-bottom:10px"></div>
                     <button onclick="createSbpPayment()" id="sbpPayBtn" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#00c851,#00b894);color:#fff;font-size:15px;font-weight:700;cursor:pointer">
-                        <img src="/static/img/sbp.png" style="width:18px;height:18px;vertical-align:middle;margin-right:6px">Оплатить через СБП
+                        <img src="/static/img/sbp.png" style="width:18px;height:18px;vertical-align:middle;margin-right:6px">Pay via SBP
                     </button>
                     <div id="sbpStatus" style="margin-top:10px;font-size:12px;color:rgba(255,255,255,.4)"></div>
                     <div id="sbpPendingInfo" style="display:none;margin-top:14px;padding:12px;border-radius:12px;background:rgba(255,200,0,.08);border:1px solid rgba(255,200,0,.2);text-align:left;">
-                        <div style="color:#ffc107;font-weight:600;font-size:13px;margin-bottom:6px;">Заявка создана!</div>
+                        <div style="color:#ffc107;font-weight:600;font-size:13px;margin-bottom:6px;">Request created!</div>
                         <div style="color:rgba(255,255,255,.6);font-size:12px;line-height:1.5;">
-                            Переведите <span id="sbpPendingRub" style="color:#2EC76E;font-weight:700;"></span> на карту/СБП.<br>
-                            После перевода звёзды будут зачислены автоматически или администратором.
+                            Transfer <span id="sbpPendingRub" style="color:#2EC76E;font-weight:700;"></span> via card/SBP.<br>
+                            Stars will be credited automatically or by admin after transfer.
                         </div>
-                        <button onclick="checkSbpPayment()" id="sbpCheckBtn" style="margin-top:10px;width:100%;padding:10px;border-radius:10px;border:1px solid rgba(0,230,118,.3);background:rgba(0,230,118,.1);color:#2EC76E;font-size:13px;font-weight:600;cursor:pointer">Проверить оплату</button>
+                        <button onclick="checkSbpPayment()" id="sbpCheckBtn" style="margin-top:10px;width:100%;padding:10px;border-radius:10px;border:1px solid rgba(0,230,118,.3);background:rgba(0,230,118,.1);color:#2EC76E;font-size:13px;font-weight:600;cursor:pointer">Check payment</button>
                     </div>
                 </div>
             </div>
@@ -2124,16 +2172,16 @@
         <div class="gift-deposit-overlay" id="giftDepositOverlay">
             <div class="gift-deposit-modal">
                 <div class="gift-deposit-header">
-                    <div class="gift-deposit-title">Пополнение подарками</div>
+                    <div class="gift-deposit-title">Gift Deposit</div>
                     <button class="gift-deposit-close" onclick="closeGiftDeposit()"><img src="/static/img/exit.png" alt=""></button>
                 </div>
                 <div class="gift-deposit-content">
                     <div class="gift-deposit-hint">
-                        Отправьте NFT подарок на наш аккаунт в Telegram.<br>
-                        Звёзды начислятся автоматически после передачи.
+                        Send an NFT gift to our Telegram account.<br>
+                        Stars will be credited automatically after transfer.
                     </div>
                     <div class="gift-deposit-list" id="giftDepositList">
-                        <div style="text-align:center;padding:20px;color:rgba(255,255,255,.4);font-size:13px">Загрузка подарков...</div>
+                        <div style="text-align:center;padding:20px;color:rgba(255,255,255,.4);font-size:13px">Loading gifts...</div>
                     </div>
                 </div>
             </div>
@@ -2143,24 +2191,24 @@
         <div class="stars-deposit-overlay" id="starsDepositOverlay">
             <div class="stars-deposit-modal">
                 <div class="stars-deposit-header">
-                    <div class="stars-deposit-title">Пополнение Stars</div>
+                    <div class="stars-deposit-title">Stars Deposit</div>
                     <button class="stars-deposit-close" onclick="closeStarsDeposit()"><img src="/static/img/exit.png" alt=""></button>
                 </div>
                 <div class="stars-deposit-body">
                     <img class="stars-deposit-icon" src="/static/img/star.png" alt="Stars">
-                    <div class="stars-deposit-label">Введите количество звёзд для пополнения.<br>Курс 1:1 вЂ” сколько оплатите, столько получите.</div>
+                    <div class="stars-deposit-label">Enter the amount of Stars to deposit.<br>Rate 1:1 — you get what you pay.</div>
                     <div class="stars-deposit-input-wrap">
                         <input type="number" class="stars-deposit-input" id="starsDepositAmount" placeholder="100" min="1" max="10000" value="100">
                     </div>
                     <!-- PROMO CODE FOR DEPOSIT -->
                     <div style="width:100%;display:flex;gap:8px;align-items:center;">
-                        <input type="text" id="depositPromoCode" placeholder="Промокод (необязательно)" maxlength="30" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;">
-                        <button onclick="checkDepositPromoFor('depositPromoCode','depositPromoStatus')" style="background:rgba(35,108,217,.2);border:1px solid rgba(35,108,217,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Проверить</button>
+                        <input type="text" id="depositPromoCode" placeholder="Promo code (optional)" maxlength="30" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;">
+                        <button onclick="checkDepositPromoFor('depositPromoCode','depositPromoStatus')" style="background:rgba(35,108,217,.2);border:1px solid rgba(35,108,217,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Check</button>
                     </div>
                     <div id="depositPromoStatus" style="font-size:12px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:none;text-align:center;width:100%;"></div>
                     <button class="stars-deposit-pay-btn" id="starsPayBtn" onclick="payWithStars()">
                         <img src="/static/img/star.png" alt="">
-                        Оплатить <span id="starsPayAmount">100</span> Stars
+                        Pay <span id="starsPayAmount">100</span> Stars
                     </button>
                     <div id="starsDepositError" style="color:#ff4444;font-size:12px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:none"></div>
                 </div>
@@ -2171,60 +2219,60 @@
         <div class="ton-overlay" id="tonOverlay">
             <div class="ton-modal">
                 <div class="ton-header">
-                    <div class="ton-title"><img src="/static/img/plus.png" alt="">TON Пополнение</div>
+                    <div class="ton-title"><img src="/static/img/plus.png" alt="">TON Deposit</div>
                     <button class="ton-close" onclick="closeTonModal()"><img src="/static/img/exit.png" alt=""></button>
                 </div>
                 <div class="ton-rate">
                     <div class="ton-rate-val">1 TON = 100 <img src="/static/img/star.png" style="width:20px;height:20px;vertical-align:middle"></div>
-                    <div class="ton-rate-label">Курс обмена</div>
+                    <div class="ton-rate-label">Exchange rate</div>
                 </div>
                 <!-- Step 0: Connect Wallet -->
                 <div class="ton-step" id="tonStep0">
                     <div class="ton-wallet-status">
                         <div class="ton-wallet-icon"><img src="/static/img/plus.png" style="width:48px;height:48px"></div>
-                        <div class="ton-wallet-text">Подключите кошелек для оплаты</div>
+                        <div class="ton-wallet-text">Connect wallet to pay</div>
                     </div>
                     <button class="ton-connect-btn" id="tonConnectBtn" onclick="connectTonWallet()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                        ПОДКЛЮЧИТЬ КОШЕЛЕК
+                        CONNECT WALLET
                     </button>
                 </div>
                 <!-- Step 1: Amount -->
                 <div class="ton-step" id="tonStep1" style="display:none">
                     <div class="ton-connected-wallet" id="tonConnectedWallet">
-                        <div class="ton-wallet-badge" style="color:#2EC76E">Подключен</div>
+                        <div class="ton-wallet-badge" style="color:#2EC76E">Connected</div>
                         <div class="ton-wallet-addr" id="tonUserWallet">---</div>
-                        <button class="ton-disconnect-btn" onclick="disconnectTonWallet()">Отключить</button>
+                        <button class="ton-disconnect-btn" onclick="disconnectTonWallet()">Disconnect</button>
                     </div>
                     <div class="ton-input-wrap">
                         <input type="number" class="ton-input" id="tonAmount" placeholder="TON" min="0.1" step="0.1" value="1" oninput="updateTonPreview()">
                     </div>
-                    <div class="ton-preview">Вы получите: <span id="tonStarsPreview">100</span> <img src="/static/img/star.png" style="width:16px;height:16px;vertical-align:middle"> <span id="tonPreviewHint" style="opacity:.75;font-size:12px">(1 TON)</span></div>
+                    <div class="ton-preview">You will receive: <span id="tonStarsPreview">100</span> <img src="/static/img/star.png" style="width:16px;height:16px;vertical-align:middle"> <span id="tonPreviewHint" style="opacity:.75;font-size:12px">(1 TON)</span></div>
                     <!-- PROMO CODE FOR TON -->
                     <div style="width:100%;display:flex;gap:8px;align-items:center;margin-top:10px">
-                        <input type="text" id="tonPromoCode" placeholder="Промокод (необязательно)" maxlength="30" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;">
-                        <button onclick="checkDepositPromoFor('tonPromoCode','tonPromoStatus')" style="background:rgba(35,108,217,.2);border:1px solid rgba(35,108,217,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Проверить</button>
+                        <input type="text" id="tonPromoCode" placeholder="Promo code (optional)" maxlength="30" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;">
+                        <button onclick="checkDepositPromoFor('tonPromoCode','tonPromoStatus')" style="background:rgba(35,108,217,.2);border:1px solid rgba(35,108,217,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Check</button>
                     </div>
                     <div id="tonPromoStatus" style="font-size:12px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:none;text-align:center;width:100%;margin-top:4px"></div>
-                    <button class="ton-connect-btn" onclick="sendTonPayment()" style="margin-top:10px">ОПЛАТИТЬ</button>
+                    <button class="ton-connect-btn" onclick="sendTonPayment()" style="margin-top:10px">PAY</button>
                 </div>
                 <!-- Step 2: Processing -->
                 <div class="ton-step" id="tonStep2" style="display:none">
                     <div class="ton-processing">
                         <div class="ton-spinner"></div>
-                        <div style="font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;color:rgba(255,255,255,.7)">Обработка транзакции...</div>
-                        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:8px">Подтвердите в кошельке</div>
+                        <div style="font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;color:rgba(255,255,255,.7)">Processing transaction...</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:8px">Confirm in wallet</div>
                     </div>
                 </div>
                 <!-- Step 3: Success -->
                 <div class="ton-step" id="tonStep3" style="display:none">
                     <div class="ton-success">
                         <div style="margin-bottom:12px"><img src="/static/img/star.png" style="width:48px;height:48px"></div>
-                        <div class="ton-success-text">Платеж получен!</div>
-                        <div class="ton-success-amount">+<span id="tonSuccessStars">100</span> звезд</div>
+                        <div class="ton-success-text">Payment received!</div>
+                        <div class="ton-success-amount">+<span id="tonSuccessStars">100</span> stars</div>
                         <div id="tonSuccessHint" style="margin-top:6px;font-size:12px;color:rgba(255,255,255,.55)"></div>
                     </div>
-                    <button class="ton-connect-btn" onclick="closeTonModal()">ЗАКРЫТЬ</button>
+                    <button class="ton-connect-btn" onclick="closeTonModal()">CLOSE</button>
                 </div>
             </div>
         </div>
@@ -2342,6 +2390,26 @@
                 const loadingScreen = document.getElementById('loading-screen');
                 const loadingBar = document.getElementById('loading-bar');
 
+                /* Skip loading screen on subsequent visits within same session */
+                if (sessionStorage.getItem('app_loaded')) {
+                    loadingScreen.style.display = 'none';
+                    document.getElementById('main-app').classList.add('show');
+                    /* Still need to init everything */
+                    try {
+                        await initTelegram();
+                        await loadLevelSystem();
+                        await loadUserData();
+                        await Promise.all([
+                            loadCases().catch(e => console.error(e)),
+                            loadWinsFeed().catch(e => console.error(e))
+                        ]);
+                        if (levelUpPending) setTimeout(showLevelUpNotification, 500);
+                    } catch(e) {
+                        if (e.message !== 'NOT_TELEGRAM') console.error('Init error:', e);
+                    }
+                    return;
+                }
+
                 loadingBar.style.width = '0%';
                 
                 /* Fallback: если загрузка застряла - показать приложение через 10 сек */
@@ -2368,9 +2436,8 @@
                     // 3. Параллельная загрузка всего остального (80%)
                     loadingBar.style.width = '60%';
                     await Promise.all([
-                        loadCases().catch(err => console.error('Ошибка загрузки кейсов:', err)),
-                        loadAllGifts().catch(err => console.error('Ошибка загрузки подарков:', err)),
-                        loadWinsFeed().catch(err => console.error('Ошибка загрузки побед:', err))
+                        loadCases().catch(err => console.error('Error loading cases:', err)),
+                        loadWinsFeed().catch(err => console.error('Error loading wins:', err))
                     ]);
                     
                     // 4. Завершение (100%)
@@ -2381,10 +2448,11 @@
 
                     // Скрываем экран загрузки
                     loadingScreen.classList.add('fade-out');
+                    sessionStorage.setItem('app_loaded', '1');
 
                     setTimeout(() => {
                         document.getElementById('main-app').classList.add('show');
-                        console.log('Приложение загружено!');
+                        console.log('App loaded!');
                         
                         // Проверяем повышение уровня
                         if (levelUpPending) {
@@ -2398,13 +2466,13 @@
                         // Пользователь зашёл не из Telegram вЂ” экран авторизации уже показан
                         return;
                     }
-                    console.error('Критическая ошибка загрузки:', error);
+                    console.error('Critical loading error:', error);
                     loadingBar.style.width = '100%';
                     await sleep(500);
                     loadingScreen.classList.add('fade-out');
                     setTimeout(() => {
                         document.getElementById('main-app').classList.add('show');
-                        showNotification('Ошибка загрузки некоторых данных', 'error');
+                        showNotification('Error loading some data', 'error');
                     }, 500);
                 }
             }
@@ -2437,7 +2505,7 @@
                         startAuthPolling(data.code);
                     }
                 } catch (e) {
-                    document.getElementById('auth-code').textContent = 'Ошибка генерации кода';
+                    document.getElementById('auth-code').textContent = 'Error generating code';
                 }
             }
 
@@ -2446,7 +2514,7 @@
                 navigator.clipboard.writeText(code).then(() => {
                     const el = document.getElementById('auth-code');
                     const original = el.textContent;
-                    el.textContent = 'Скопировано!';
+                    el.textContent = 'Copied!';
                     setTimeout(() => el.textContent = original, 1500);
                 }).catch(() => {});
             }
@@ -2476,7 +2544,7 @@
                             showTelegramAuthScreen();
                         }
                     } catch (e) {
-                        console.error('Ошибка проверки авторизации:', e);
+                        console.error('Verification error авторизации:', e);
                     }
                 }, 2000);
             }
@@ -2489,9 +2557,8 @@
                     await loadUserData();
                     loadingBar.style.width = '60%';
                     await Promise.all([
-                        loadCases().catch(err => console.error('Ошибка загрузки кейсов:', err)),
-                        loadAllGifts().catch(err => console.error('Ошибка загрузки подарков:', err)),
-                        loadWinsFeed().catch(err => console.error('Ошибка загрузки побед:', err))
+                        loadCases().catch(err => console.error('Error loading cases:', err)),
+                        loadWinsFeed().catch(err => console.error('Error loading wins:', err))
                     ]);
                     loadingBar.style.width = '100%';
                     await sleep(300);
@@ -2685,7 +2752,7 @@
                     if (_expEl) _expEl.textContent = `${currentExperience}/${nextLevelInfo.expRequired} XP`;
                     if (_barEl) _barEl.style.width = `${Math.min(progress, 100)}%`;
                 } else {
-                    if (_expEl) _expEl.textContent = 'Максимальный уровень';
+                    if (_expEl) _expEl.textContent = 'Max level';
                     if (_barEl) _barEl.style.width = '100%';
                 }
             }
@@ -2699,16 +2766,16 @@
                 const rewards = [];
                 
                 if (levelInfo.rewardStars > 0) {
-                    rewards.push(`${levelInfo.rewardStars} звезд`);
+                    rewards.push(`${levelInfo.rewardStars} stars`);
                 }
                 if (levelInfo.rewardTickets > 0) {
-                    rewards.push(`${levelInfo.rewardTickets} билетов`);
+                    rewards.push(`${levelInfo.rewardTickets} tickets`);
                 }
                 
                 document.getElementById('level-up-level').textContent = currentUserLevel;
                 document.getElementById('level-up-rewards').textContent = rewards.length > 0 
-                    ? `Награда: ${rewards.join(' и ')}`
-                    : 'Поздравляем с новым уровнем!';
+                    ? `Reward: ${rewards.join(' and ')}`
+                    : 'Congratulations on new level!';
                 
                 const notification = document.getElementById('level-up-notification');
                 notification.style.display = 'block';
@@ -2782,7 +2849,7 @@
                         caseSections = [];
                     }
                     renderCases();
-                    showNotification('Не удалось загрузить кейсы', 'error');
+                    showNotification('Failed to load cases', 'error');
                 }
             }
 
@@ -2820,14 +2887,14 @@
                 const sid = normalizeSectionId(sectionId);
                 const fromAdmin = (caseSections || []).find(s => normalizeSectionId(s.id) === sid);
                 if (fromAdmin && fromAdmin.name) return fromAdmin.name;
-                if (sid === 'promo') return 'Промо Кейсы';
-                if (sid === 'free') return 'Бесплатные Кейсы';
-                if (sid === 'other') return 'Уникальные Кейсы';
-                if (sid === 'ticket' || sid === 'tickets') return 'Кейсы за Билеты';
-                if (sid === 'mix') return 'Микс Кейсы';
-                if (sid === 'nft') return 'Только NFT Кейсы';
-                if (sid === 'allin' || sid === 'all_in' || sid === 'all-in') return 'ALL IN Кейсы';
-                return sid.charAt(0).toUpperCase() + sid.slice(1) + ' Кейсы';
+                if (sid === 'promo') return 'Promo Cases';
+                if (sid === 'free') return 'Free Cases';
+                if (sid === 'other') return 'Unique Cases';
+                if (sid === 'ticket' || sid === 'tickets') return 'Ticket Cases';
+                if (sid === 'mix') return 'Mix Cases';
+                if (sid === 'nft') return 'NFT Only Cases';
+                if (sid === 'allin' || sid === 'all_in' || sid === 'all-in') return 'ALL IN Cases';
+                return sid.charAt(0).toUpperCase() + sid.slice(1) + ' Cases';
             }
 
             function getIndexCurrencyMode() {
@@ -2848,12 +2915,7 @@
             }
 
             function getTonIcon(amount) {
-                const t = Number(amount || 0);
-                if (t >= 20) return '/static/img/tons/ton_5.svg';
-                if (t >= 5) return '/static/img/tons/ton_4.svg';
-                if (t >= 2) return '/static/img/tons/ton_3.svg';
-                if (t >= 1) return '/static/img/tons/ton_2.svg';
-                return '/static/img/tons/ton_1.svg';
+                return '/static/img/ton.png';
             }
 
             function getIndexStarsIcon() {
@@ -2883,7 +2945,7 @@
                 if (!sectionsRoot) return;
 
                 if (!allCases.length) {
-                    sectionsRoot.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--color-text-secondary);font-size:14px;">Нет доступных кейсов</div>';
+                    sectionsRoot.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--color-text-secondary);font-size:14px;">No cases available</div>';
                     return;
                 }
 
@@ -2894,7 +2956,7 @@
                 });
 
                 if (!filtered.length) {
-                    sectionsRoot.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--color-text-secondary);font-size:14px;">Нет кейсов в этой категории</div>';
+                    sectionsRoot.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--color-text-secondary);font-size:14px;">No cases in this category</div>';
                     return;
                 }
 
@@ -2908,7 +2970,7 @@
                     // Price row at top of card
                     var priceRowHtml = '';
                     if (isFree) {
-                        priceRowHtml = '<div class="case-price-row"><span class="case-price-tag" style="color:#1EE44C">Бесплатно</span></div>';
+                        priceRowHtml = '<div class="case-price-row"><span class="case-price-tag" style="color:#1EE44C">Free</span></div>';
                     } else {
                         priceRowHtml = '<div class="case-price-row">' +
                             '<span class="case-price-tag"><img src="' + getTonIcon(tonCost) + '" alt="T">' + formatTon(tonCost) + '</span>' +
@@ -2985,7 +3047,7 @@
                 // Gifts sorted by value desc
                 var gifts = (c.gifts_details || []).slice().sort(function(a,b) { return (b.value||0) - (a.value||0); });
                 if (!gifts.length) {
-                    document.getElementById('cdmCarousel').innerHTML = '<div style="padding:20px;color:rgba(255,255,255,.3);text-align:center;width:100%">Нет подарков</div>';
+                    document.getElementById('cdmCarousel').innerHTML = '<div style="padding:20px;color:rgba(255,255,255,.3);text-align:center;width:100%">No gifts</div>';
                     document.getElementById('cdmContents').innerHTML = '';
                     document.getElementById('cdmPages').innerHTML = '';
                     document.getElementById('cdmBottom').innerHTML = '';
@@ -3111,25 +3173,9 @@
                         return;
                     }
 
-                    // Show results
                     var wonGifts = d.won_gifts || d.gifts || [];
-                    var resultEl = document.getElementById('cdmResult');
-                    var html = '<div class="cdm-result-title">You won!</div><div class="cdm-result-grid">';
-                    wonGifts.forEach(function(g) {
-                        var val = (Number(g.value || 0) / 100);
-                        var img = g.image || g.preview_url || '/static/img/default_gift.png';
-                        html += '<div class="cdm-result-card">' +
-                            '<img src="' + img + '" onerror="this.style.opacity=\'0.3\'">' +
-                            '<div class="cdm-rname">' + (g.name || 'Gift') + '</div>' +
-                            (val > 0 ? '<div class="cdm-rval"><img src="' + getTonIcon(val) + '">' + formatTon(val) + '</div>' : '') +
-                        '</div>';
-                    });
-                    html += '</div>';
-                    html += '<button class="cdm-result-again" onclick="cdmResetResult()">Open again</button>';
-                    resultEl.innerHTML = html;
-                    resultEl.style.display = 'flex';
 
-                    // Hide contents/carousel, show result
+                    // Hide UI, show roulette
                     document.querySelector('.cdm-body').style.display = 'none';
                     document.querySelector('.cdm-carousel-wrap').style.display = 'none';
                     document.querySelector('.cdm-arrow').style.display = 'none';
@@ -3137,21 +3183,191 @@
                     document.getElementById('cdmQtyRow').style.display = 'none';
                     document.getElementById('cdmBottom').style.display = 'none';
 
+                    var rouletteEl = document.getElementById('cdmRoulette');
+                    rouletteEl.style.display = 'block';
+                    rouletteEl.classList.add('spinning');
+
+                    // Trigger haptic
+                    if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback) {
+                        Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+                    }
+
+                    if (qty === 1) {
+                        await cdmSpinSingle(wonGifts[0]);
+                    } else {
+                        await cdmSpinMulti(wonGifts, qty);
+                    }
+
+                    // Spin done — show results
+                    rouletteEl.classList.remove('spinning');
+
+                    // Haptic on win
+                    if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback) {
+                        Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    }
+
+                    // Wait a moment to see the winner, then show result cards
+                    await new Promise(function(ok){ setTimeout(ok, 900); });
+                    rouletteEl.style.display = 'none';
+
+                    cdmShowResult(wonGifts);
+
                     // Refresh balance
                     if (typeof loadUserData === 'function') loadUserData();
 
                 } catch(e) {
                     console.error('Case open error:', e);
                     showNotification('Network error', 'error');
+                    document.getElementById('cdmRoulette').style.display = 'none';
+                    document.getElementById('cdmRoulette').classList.remove('spinning');
                 } finally {
                     cdmOpening = false;
                     btns.forEach(function(b){ b.style.opacity = ''; b.style.pointerEvents = ''; });
                 }
             }
 
+            function cdmMakeRouletteItem(g, cls) {
+                var val = (Number(g.value || 0) / 100);
+                var img = getGiftImg(g);
+                return '<div class="' + (cls || 'cdm-roulette-item') + '">' +
+                    '<img class="r-img" src="' + img + '" onerror="this.style.opacity=\'0.3\'">' +
+                    '<div class="r-val"><img src="' + getTonIcon(val) + '">' + formatTon(val) + '</div>' +
+                '</div>';
+            }
+
+            function cdmSpinSingle(winGift) {
+                return new Promise(function(resolve) {
+                    var track = document.getElementById('cdmRouletteTrack');
+                    var single = document.getElementById('cdmRouletteSingle');
+                    var multi = document.getElementById('cdmRouletteMulti');
+                    var pointer = document.getElementById('cdmRoulettePointer');
+                    single.style.display = 'flex';
+                    multi.style.display = 'none';
+                    pointer.style.display = 'block';
+
+                    var base = cdmCaseData.gifts_details || [];
+                    if (!base.length) base = [winGift];
+                    var items = [];
+                    var winPos = 28 + Math.floor(Math.random() * 5);
+                    for (var i = 0; i < winPos; i++) items.push(base[Math.floor(Math.random() * base.length)]);
+                    items.push(winGift);
+                    for (var i = 0; i < 12; i++) items.push(base[Math.floor(Math.random() * base.length)]);
+
+                    track.style.transition = 'none';
+                    track.innerHTML = items.map(function(g) { return cdmMakeRouletteItem(g); }).join('');
+
+                    requestAnimationFrame(function() {
+                        var sampleItem = track.children[0];
+                        var iw = sampleItem ? sampleItem.getBoundingClientRect().width : 130;
+                        var cw = single.offsetWidth || 340;
+                        var winCenter = winPos * iw + (iw / 2);
+                        var targetOffset = cw / 2;
+                        var pos = -(winCenter - targetOffset);
+                        // Small random offset for realism
+                        pos += (Math.random() - 0.5) * (iw * 0.3);
+                        track.style.transform = 'translateX(100px)';
+
+                        requestAnimationFrame(function() {
+                            var dur = 7500 + Math.random() * 1500;
+                            track.style.transition = 'transform ' + (dur / 1000).toFixed(2) + 's cubic-bezier(0.05, 0.72, 0.1, 1)';
+                            track.style.transform = 'translateX(' + pos + 'px)';
+
+                            // Highlight winner shortly before end
+                            setTimeout(function() {
+                                var winnerEl = track.children[winPos];
+                                if (winnerEl) winnerEl.classList.add('winner');
+                            }, Math.max(1400, dur - 700));
+
+                            setTimeout(resolve, dur + 200);
+                        });
+                    });
+                });
+            }
+
+            function cdmSpinMulti(wonGifts, qty) {
+                return new Promise(function(resolve) {
+                    var single = document.getElementById('cdmRouletteSingle');
+                    var multi = document.getElementById('cdmRouletteMulti');
+                    var pointer = document.getElementById('cdmRoulettePointer');
+                    var colsEl = document.getElementById('cdmRouletteCols');
+                    single.style.display = 'none';
+                    multi.style.display = 'block';
+                    pointer.style.display = 'none'; // multi uses center line instead
+
+                    var base = cdmCaseData.gifts_details || [];
+                    if (!base.length) base = wonGifts;
+
+                    // Build columns HTML
+                    var colsHtml = '';
+                    for (var c = 0; c < qty; c++) {
+                        colsHtml += '<div class="cdm-roulette-col"><div class="cdm-roulette-col-track" id="cdmColTrack' + c + '"></div></div>';
+                    }
+                    colsEl.innerHTML = colsHtml;
+
+                    var baseDur = 7000 + Math.random() * 1500;
+                    var maxDur = 0;
+
+                    for (var c = 0; c < qty; c++) {
+                        (function(idx) {
+                            var colTrack = document.getElementById('cdmColTrack' + idx);
+                            var winIdx = 18 + idx * 2 + Math.floor(Math.random() * 3);
+                            var items = [];
+                            for (var j = 0; j < winIdx; j++) items.push(base[Math.floor(Math.random() * base.length)]);
+                            items.push(wonGifts[idx]);
+                            for (var j = 0; j < 12; j++) items.push(base[Math.floor(Math.random() * base.length)]);
+
+                            colTrack.style.transition = 'none';
+                            colTrack.innerHTML = items.map(function(g) { return cdmMakeRouletteItem(g, 'cdm-roulette-col-item'); }).join('');
+
+                            requestAnimationFrame(function() {
+                                var sample = colTrack.children[0];
+                                var ih = sample ? sample.getBoundingClientRect().height : 80;
+                                var ch = colTrack.parentElement ? colTrack.parentElement.getBoundingClientRect().height : 170;
+                                var pos = (-winIdx * ih + (ch / 2 - ih / 2));
+                                var dur = baseDur + Math.random() * 700;
+                                if (dur > maxDur) maxDur = dur;
+
+                                colTrack.style.transform = 'translateY(100px)';
+                                requestAnimationFrame(function() {
+                                    colTrack.style.transition = 'transform ' + dur + 'ms cubic-bezier(0.05, 0.74, 0.1, 1)';
+                                    colTrack.style.transform = 'translateY(' + pos + 'px)';
+                                    // Highlight winner
+                                    setTimeout(function() {
+                                        var winnerEl = colTrack.children[winIdx];
+                                        if (winnerEl) winnerEl.classList.add('winner');
+                                    }, dur - 400);
+                                });
+                            });
+                        })(c);
+                    }
+
+                    setTimeout(resolve, baseDur + 1200);
+                });
+            }
+
+            function cdmShowResult(wonGifts) {
+                var resultEl = document.getElementById('cdmResult');
+                var html = '<div class="cdm-result-title">You won!</div><div class="cdm-result-grid">';
+                wonGifts.forEach(function(g) {
+                    var val = (Number(g.value || 0) / 100);
+                    var img = g.image || g.preview_url || '/static/img/default_gift.png';
+                    html += '<div class="cdm-result-card">' +
+                        '<img src="' + img + '" onerror="this.style.opacity=\'0.3\'">' +
+                        '<div class="cdm-rname">' + (g.name || 'Gift') + '</div>' +
+                        (val > 0 ? '<div class="cdm-rval"><img src="' + getTonIcon(val) + '">' + formatTon(val) + '</div>' : '') +
+                    '</div>';
+                });
+                html += '</div>';
+                html += '<button class="cdm-result-again" onclick="cdmResetResult()">Open again</button>';
+                resultEl.innerHTML = html;
+                resultEl.style.display = 'flex';
+            }
+
             function cdmResetResult() {
                 document.getElementById('cdmResult').style.display = 'none';
                 document.getElementById('cdmResult').innerHTML = '';
+                document.getElementById('cdmRoulette').style.display = 'none';
+                document.getElementById('cdmRoulette').classList.remove('spinning');
                 document.querySelector('.cdm-body').style.display = '';
                 document.querySelector('.cdm-carousel-wrap').style.display = '';
                 document.querySelector('.cdm-arrow').style.display = '';
@@ -3165,9 +3381,11 @@
                 document.getElementById('cdmOverlay').classList.remove('show');
                 cdmCaseData = null;
                 cdmOpening = false;
-                // Reset result view
+                // Reset result view + roulette
                 document.getElementById('cdmResult').style.display = 'none';
                 document.getElementById('cdmResult').innerHTML = '';
+                document.getElementById('cdmRoulette').style.display = 'none';
+                document.getElementById('cdmRoulette').classList.remove('spinning');
                 document.querySelector('.cdm-body').style.display = '';
                 document.querySelector('.cdm-carousel-wrap').style.display = '';
                 document.querySelector('.cdm-arrow').style.display = '';
@@ -3297,14 +3515,14 @@
                     })
                     .catch(function(e){
                         console.error('Gifts list error:', e);
-                        _$('giftDepositList').innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,60,60,.7);font-size:13px">Ошибка загрузки</div>';
+                        _$('giftDepositList').innerHTML = '<div style="text-align:center;padding:20px;color:rgba(255,60,60,.7);font-size:13px">Loading error</div>';
                     });
             }
 
             /* Stars Deposit */
             function openStarsDeposit() {
                 if (!isTelegramWebApp()) {
-                    showNotification('Пополнение Stars доступно только в Telegram Mini App', 'error');
+                    showNotification('Stars deposit available only in Telegram Mini App', 'error');
                     return;
                 }
                 _$('starsDepositOverlay').classList.add('show');
@@ -3323,7 +3541,7 @@
             function openSbpDeposit() {
                 _$('sbpDepositOverlay').classList.add('show');
                 _$('sbpStarsAmount').value = '';
-                _$('sbpPriceDisplay').textContent = '0 в‚Ѕ';
+                _$('sbpPriceDisplay').textContent = '0 ₽';
                 _$('sbpStatus').textContent = '';
                 _$('sbpPendingInfo').style.display = 'none';
                 _sbpCurrentPaymentId = null;
@@ -3338,17 +3556,17 @@
             function updateSbpPrice() {
                 var stars = parseInt(_$('sbpStarsAmount').value) || 0;
                 var rub = Math.ceil(stars * 1.3);
-                _$('sbpPriceDisplay').textContent = rub + ' в‚Ѕ';
+                _$('sbpPriceDisplay').textContent = rub + ' ₽';
             }
             function createSbpPayment() {
                 var stars = parseInt(_$('sbpStarsAmount').value) || 0;
                 if (stars < 10) {
-                    showNotification('Минимум 10 звёзд', 'error');
+                    showNotification('Minimum 10 stars', 'error');
                     return;
                 }
                 var btn = _$('sbpPayBtn');
                 btn.disabled = true;
-                btn.innerHTML = '<img src="/static/img/sbp.png" style="width:18px;height:18px;vertical-align:middle;margin-right:6px">Создание заявки...';
+                btn.innerHTML = '<img src="/static/img/sbp.png" style="width:18px;height:18px;vertical-align:middle;margin-right:6px">Creating request...';
                 _$('sbpStatus').textContent = '';
                 _$('sbpPendingInfo').style.display = 'none';
                 fetch('/api/sbp/create-payment', {
@@ -3359,34 +3577,34 @@
                 .then(r => r.json())
                 .then(data => {
                     btn.disabled = false;
-                    btn.innerHTML = '<img src="/static/img/sbp.png" style="width:18px;height:18px;vertical-align:middle;margin-right:6px">Оплатить через СБП';
+                    btn.innerHTML = '<img src="/static/img/sbp.png" style="width:18px;height:18px;vertical-align:middle;margin-right:6px">Pay via SBP';
                     if (data.success) {
                         _sbpCurrentPaymentId = data.payment_id;
                         if (data.payment_url) {
                             // Есть CardLink - открываем
                             window.open(data.payment_url, '_blank');
-                            _$('sbpStatus').innerHTML = '<span style="color:#2EC76E">Перенаправляем на оплату...</span>';
+                            _$('sbpStatus').innerHTML = '<span style="color:#2EC76E">Redirecting to payment...</span>';
                         }
                         // Показываем инфо о заявке
-                        _$('sbpPendingRub').textContent = data.amount_rub + ' в‚Ѕ';
+                        _$('sbpPendingRub').textContent = data.amount_rub + ' ₽';
                         _$('sbpPendingInfo').style.display = 'block';
-                        showNotification('Заявка на ' + stars + ' звёзд создана!', 'success');
+                        showNotification('Request for ' + stars + ' stars created!', 'success');
                     } else {
-                        _$('sbpStatus').textContent = data.error || 'Ошибка создания заявки';
-                        showNotification(data.error || 'Ошибка', 'error');
+                        _$('sbpStatus').textContent = data.error || 'Error creating request';
+                        showNotification(data.error || 'Error', 'error');
                     }
                 })
                 .catch(e => {
                     btn.disabled = false;
-                    btn.innerHTML = '<img src="/static/img/sbp.png" style="width:18px;height:18px;vertical-align:middle;margin-right:6px">Оплатить через СБП';
-                    _$('sbpStatus').textContent = 'Ошибка сети';
+                    btn.innerHTML = '<img src="/static/img/sbp.png" style="width:18px;height:18px;vertical-align:middle;margin-right:6px">Pay via SBP';
+                    _$('sbpStatus').textContent = 'Network error';
                 });
             }
             function checkSbpPayment() {
                 if (!_sbpCurrentPaymentId) return;
                 var btn = _$('sbpCheckBtn');
                 btn.disabled = true;
-                btn.textContent = 'Проверяем...';
+                btn.textContent = 'Checking...';
                 fetch('/api/sbp/check-payment', {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
@@ -3395,9 +3613,9 @@
                 .then(r => r.json())
                 .then(data => {
                     btn.disabled = false;
-                    btn.textContent = 'Проверить оплату';
+                    btn.textContent = 'Check payment';
                     if (data.success && data.status === 'completed') {
-                        showNotification('Оплата подтверждена! +' + data.stars + ' звёзд', 'success');
+                        showNotification('Payment confirmed! +' + data.stars + ' stars', 'success');
                         // Apply promo if verified
                         if (depositPromoVerified) {
                             fetch('/api/deposit-promo/apply', {
@@ -3405,7 +3623,7 @@
                                 headers: {'Content-Type': 'application/json'},
                                 body: JSON.stringify({user_id: userId, promo_id: depositPromoVerified.promo_id, deposit_amount: data.stars, bonus_percent: depositPromoVerified.bonus_percent})
                             }).then(function(r){return r.json();}).then(function(pd){
-                                if (pd.success) showNotification('Бонус промокода: +' + pd.bonus_amount + ' звёзд!', 'success');
+                                if (pd.success) showNotification('Promo bonus: +' + pd.bonus_amount + ' stars!', 'success');
                                 depositPromoVerified = null;
                                 var el = _$('sbpPromoCode'); if(el) el.value = '';
                                 var st = _$('sbpPromoStatus'); if(st) st.style.display = 'none';
@@ -3414,12 +3632,12 @@
                         closeSbpDeposit();
                         loadUserData();
                     } else {
-                        _$('sbpStatus').innerHTML = '<span style="color:#ffc107">Ожидает подтверждения администратором</span>';
+                        _$('sbpStatus').innerHTML = '<span style="color:#ffc107">Awaiting admin confirmation</span>';
                     }
                 })
                 .catch(e => {
                     btn.disabled = false;
-                    btn.textContent = 'Проверить оплату';
+                    btn.textContent = 'Check payment';
                 });
             }
             var depositPromoVerified = null; // {code, bonus_percent}
@@ -3443,16 +3661,16 @@
                     if (d.success && d.valid) {
                         depositPromoVerified = {code: code, bonus_percent: d.bonus_percent, promo_id: d.promo_id};
                         statusEl.style.color = '#1EE44C';
-                        statusEl.textContent = 'Промокод действует: +' + d.bonus_percent + '% бонус к депозиту!';
+                        statusEl.textContent = 'Promo code active: +' + d.bonus_percent + '% deposit bonus!';
                         statusEl.style.display = 'block';
                     } else {
                         statusEl.style.color = '#ff6b6b';
-                        statusEl.textContent = d.error || 'Промокод недействителен';
+                        statusEl.textContent = d.error || 'Invalid promo code';
                         statusEl.style.display = 'block';
                     }
                 } catch(e) {
                     statusEl.style.color = '#ff6b6b';
-                    statusEl.textContent = 'Ошибка проверки';
+                    statusEl.textContent = 'Verification error';
                     statusEl.style.display = 'block';
                 }
             }
@@ -3465,14 +3683,14 @@
             function payWithStars() {
                 var amount = parseInt(_$('starsDepositAmount').value) || 0;
                 if (amount < 10 || amount > 10000) {
-                    _$('starsDepositError').textContent = 'Введите сумму от 10 до 10000';
+                    _$('starsDepositError').textContent = 'Enter amount from 10 to 10000';
                     _$('starsDepositError').style.display = 'block';
                     return;
                 }
                 _$('starsDepositError').style.display = 'none';
                 var btn = _$('starsPayBtn');
                 btn.disabled = true;
-                btn.innerHTML = '<img src="/static/img/star.png" alt="" style="width:18px;height:18px"> Создание счёта...';
+                btn.innerHTML = '<img src="/static/img/star.png" alt="" style="width:18px;height:18px"> Creating invoice...';
 
                 fetch('/api/stars/create-invoice', {
                     method: 'POST',
@@ -3494,42 +3712,42 @@
                                             body: JSON.stringify({user_id: userData.id, promo_id: depositPromoVerified.promo_id, deposit_amount: amount, bonus_percent: depositPromoVerified.bonus_percent})
                                         }).then(function(r){return r.json();}).then(function(pd){
                                             if (pd.success) {
-                                                showNotification('Бонус промокода: +' + pd.bonus_amount + ' Stars!', 'success');
+                                                showNotification('Promo bonus: +' + pd.bonus_amount + ' Stars!', 'success');
                                             }
                                             depositPromoVerified = null;
                                             _$('depositPromoCode').value = '';
                                             _$('depositPromoStatus').style.display = 'none';
                                         }).catch(function(){});
                                     }
-                                    showNotification('Оплата прошла! +' + amount + ' Stars', 'success');
+                                    showNotification('Payment successful! +' + amount + ' Stars', 'success');
                                     closeStarsDeposit();
                                     setTimeout(function(){ loadUserData(); }, 1500);
                                 } else if (status === 'cancelled') {
-                                    showNotification('Оплата отменена', 'error');
+                                    showNotification('Payment cancelled', 'error');
                                 } else if (status === 'failed') {
-                                    showNotification('Ошибка оплаты', 'error');
+                                    showNotification('Payment error', 'error');
                                 }
                                 btn.disabled = false;
-                                btn.innerHTML = '<img src="/static/img/star.png" alt="" style="width:18px;height:18px"> Оплатить <span id="starsPayAmount">' + amount + '</span> Stars';
+                                btn.innerHTML = '<img src="/static/img/star.png" alt="" style="width:18px;height:18px"> Pay <span id="starsPayAmount">' + amount + '</span> Stars';
                             });
                         } else {
-                            showNotification('Откройте через Telegram Mini App', 'error');
+                            showNotification('Open via Telegram Mini App', 'error');
                             btn.disabled = false;
-                            btn.innerHTML = '<img src="/static/img/star.png" alt="" style="width:18px;height:18px"> Оплатить <span id="starsPayAmount">' + amount + '</span> Stars';
+                            btn.innerHTML = '<img src="/static/img/star.png" alt="" style="width:18px;height:18px"> Pay <span id="starsPayAmount">' + amount + '</span> Stars';
                         }
                     } else {
-                        _$('starsDepositError').textContent = d.error || 'Ошибка создания счёта';
+                        _$('starsDepositError').textContent = d.error || 'Error creating invoice';
                         _$('starsDepositError').style.display = 'block';
                         btn.disabled = false;
-                        btn.innerHTML = '<img src="/static/img/star.png" alt="" style="width:18px;height:18px"> Оплатить <span id="starsPayAmount">' + amount + '</span> Stars';
+                        btn.innerHTML = '<img src="/static/img/star.png" alt="" style="width:18px;height:18px"> Pay <span id="starsPayAmount">' + amount + '</span> Stars';
                     }
                 })
                 .catch(function(e){
                     console.error('Stars invoice error:', e);
-                    _$('starsDepositError').textContent = 'Ошибка сети';
+                    _$('starsDepositError').textContent = 'Network error';
                     _$('starsDepositError').style.display = 'block';
                     btn.disabled = false;
-                    btn.innerHTML = '<img src="/static/img/star.png" alt="" style="width:18px;height:18px"> Оплатить <span id="starsPayAmount">' + amount + '</span> Stars';
+                    btn.innerHTML = '<img src="/static/img/star.png" alt="" style="width:18px;height:18px"> Pay <span id="starsPayAmount">' + amount + '</span> Stars';
                 });
             }
 
@@ -3549,25 +3767,11 @@
                 var hubOv = _$('hubOverlay');
                 if (hubOv) hubOv.addEventListener('click', function(e){ if(e.target === this) closeHub(); });
 
-                /* ====== UI CLICK SOUND ====== */
+                /* ====== UI CLICK SOUND (DISABLED) ====== */
                 var uiAudioCtx = null;
                 function playClickSound() {
-                    if (localStorage.getItem('cases_sound') === 'off') return;
-                    try {
-                        if (!uiAudioCtx) uiAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                        var vol = parseFloat(localStorage.getItem('cases_sound_vol') || '0.5');
-                        var osc = uiAudioCtx.createOscillator();
-                        var gain = uiAudioCtx.createGain();
-                        osc.connect(gain);
-                        gain.connect(uiAudioCtx.destination);
-                        osc.type = 'sine';
-                        osc.frequency.setValueAtTime(800, uiAudioCtx.currentTime);
-                        osc.frequency.exponentialRampToValueAtTime(400, uiAudioCtx.currentTime + 0.06);
-                        gain.gain.setValueAtTime(vol * 0.15, uiAudioCtx.currentTime);
-                        gain.gain.exponentialRampToValueAtTime(0.001, uiAudioCtx.currentTime + 0.08);
-                        osc.start(uiAudioCtx.currentTime);
-                        osc.stop(uiAudioCtx.currentTime + 0.08);
-                    } catch(e) {}
+                    /* sounds removed */
+                    return;
                 }
                 document.addEventListener('click', function(e) {
                     var el = e.target.closest('button, .case-card, .category-tab, .deposit-btn, .hub-tab, .toggle-switch, .home-btn, .menu-btn, .hub-close, .hub-vip-buy, .hub-music-play, [onclick]');
@@ -3672,7 +3876,7 @@
                     '</div>';
                 }
 
-                grid.innerHTML = html || '<div style="grid-column:1/-1;text-align:center;padding:20px;color:rgba(255,255,255,.4)">Нет подарков</div>';
+                grid.innerHTML = html || '<div style="grid-column:1/-1;text-align:center;padding:20px;color:rgba(255,255,255,.4)">No gifts</div>';
                 _$('hubCollectedCount').textContent = collectedCount;
                 _$('hubTotalCount').textContent = total;
                 _$('hubCollectionPercent').textContent = total > 0 ? Math.round(collectedCount / total * 100) : 0;
@@ -3859,18 +4063,18 @@
                     var statusEl = _$('hubVipStatus');
                     var buyBtn = _$('hubVipBuyBtn');
                     if (d.success && d.is_vip) {
-                        statusEl.textContent = 'АКТИВЕН';
+                        statusEl.textContent = 'ACTIVE';
                         statusEl.className = 'hub-vip-status active';
                         if (buyBtn) buyBtn.style.display = 'none';
                         // Enable VIP toggles
                         enableVipToggles(true);
                     } else {
-                        statusEl.textContent = 'НЕ АКТИВЕН';
+                        statusEl.textContent = 'NOT ACTIVE';
                         statusEl.className = 'hub-vip-status inactive';
                         if (buyBtn) {
                             buyBtn.style.display = 'flex';
                             var price = getVipPriceIndex(collectedGiftsIndex).price;
-                            _$('hubVipBuyText').textContent = 'КУПИТЬ VIP - ' + price + ' Stars';
+                            _$('hubVipBuyText').textContent = 'BUY VIP - ' + price + ' Stars';
                         }
                         enableVipToggles(false);
                     }
@@ -3939,7 +4143,7 @@
                 if (!userData || !userData.id) return;
                 var btn = _$('hubVipBuyBtn');
                 btn.disabled = true;
-                _$('hubVipBuyText').textContent = 'Покупка...';
+                _$('hubVipBuyText').textContent = 'Purchasing...';
                 try {
                     var r = await fetch('/api/crash-vip/purchase', {
                         method: 'POST',
@@ -3948,14 +4152,14 @@
                     });
                     var d = await r.json();
                     if (d.success) {
-                        showNotification('VIP активирован!', 'success');
+                        showNotification('VIP activated!', 'success');
                         loadHubVipStatus();
                         loadUserData();
                     } else {
-                        showNotification(d.error || 'Ошибка покупки', 'error');
+                        showNotification(d.error || 'Purchase error', 'error');
                     }
                 } catch (e) {
-                    showNotification('Ошибка сети', 'error');
+                    showNotification('Network error', 'error');
                 }
                 btn.disabled = false;
             }
@@ -3968,45 +4172,45 @@
             async function loadHubBonuses() {
                 var list = _$('hubBonusesList');
                 if (!list || !userData || !userData.id) return;
-                list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.4);padding:20px;font-size:13px;">Загрузка...</div>';
+                list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.4);padding:20px;font-size:13px;">Loading...</div>';
                 try {
                     var r = await fetch('/api/user-bonuses?user_id=' + userData.id);
                     var d = await r.json();
                     if (!d.success || !d.bonuses || d.bonuses.length === 0) {
-                        list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.4);padding:30px 10px;font-size:13px;"><img src="/static/img/gift.png" style="width:22px;height:22px;vertical-align:middle;"> Бонусов пока нет<br><span style="font-size:11px;opacity:.6">Повышайте уровень, чтобы получать награды!</span></div>';
+                        list.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,.4);padding:30px 10px;font-size:13px;"><img src="/static/img/gift.png" style="width:22px;height:22px;vertical-align:middle;"> No bonuses yet<br><span style="font-size:11px;opacity:.6">Level up to earn rewards!</span></div>';
                         return;
                     }
                     var unclaimed = d.bonuses.filter(function(b) { return !b.is_claimed; });
                     var claimed = d.bonuses.filter(function(b) { return b.is_claimed; });
                     var html = '';
                     if (unclaimed.length > 0) {
-                        html += '<div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Доступные</div>';
+                        html += '<div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Available</div>';
                         unclaimed.forEach(function(b) {
                             html += renderBonusCard(b, false);
                         });
                     }
                     if (claimed.length > 0) {
-                        html += '<div style="font-size:11px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;margin:12px 0 4px;">Полученные</div>';
+                        html += '<div style="font-size:11px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;margin:12px 0 4px;">Claimed</div>';
                         claimed.forEach(function(b) {
                             html += renderBonusCard(b, true);
                         });
                     }
                     list.innerHTML = html;
                 } catch(e) {
-                    list.innerHTML = '<div style="text-align:center;color:#ff6b6b;padding:20px;font-size:13px;">Ошибка загрузки</div>';
+                    list.innerHTML = '<div style="text-align:center;color:#ff6b6b;padding:20px;font-size:13px;">Loading error</div>';
                 }
             }
 
             function renderBonusCard(b, claimed) {
                 var typeIcons = {stars:'/static/img/star.png', tickets:'/static/img/ticket.png', vip:'/static/img/star2.png', free_case:'/static/img/cases.png', experience:'/static/img/crystal.png', gift:'/static/img/gift.png', crash_skin:'/static/img/settings.png', promo_code:'/static/img/promo.gif'};
-                var typeLabels = {stars:'Звёзды', tickets:'Билеты', vip:'VIP', free_case:'Бесплатный кейс', experience:'Опыт', gift:'Подарок', crash_skin:'Скин', promo_code:'Промокод'};
+                var typeLabels = {stars:'Stars', tickets:'Tickets', vip:'VIP', free_case:'Free case', experience:'Experience', gift:'Gift', crash_skin:'Skin', promo_code:'Promo code'};
                 var icon = '<img src="' + (typeIcons[b.bonus_type] || '/static/img/gift.png') + '" style="width:22px;height:22px">';
                 var label = typeLabels[b.bonus_type] || b.bonus_type;
                 var desc = b.description || (label + ': ' + b.bonus_data);
                 var bg = claimed ? 'rgba(255,255,255,.03)' : 'rgba(35,108,217,.1)';
                 var border = claimed ? 'rgba(255,255,255,.06)' : 'rgba(35,108,217,.25)';
-                var btnHtml = claimed ? '<div style="font-size:11px;color:rgba(255,255,255,.3);">вњ“ Получено</div>' :
-                    '<button onclick="claimBonus(' + b.id + ', this)" style="background:#236CD9;border:none;color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;">Забрать</button>';
+                var btnHtml = claimed ? '<div style="font-size:11px;color:rgba(255,255,255,.3);">вњ“ Claimed</div>' :
+                    '<button onclick="claimBonus(' + b.id + ', this)" style="background:#236CD9;border:none;color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;">Claim</button>';
                 return '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;' + (claimed ? 'opacity:.5;' : '') + '">' +
                     '<div style="display:flex;align-items:center;gap:10px;">' +
                     '<div style="font-size:22px;width:32px;text-align:center;">' + icon + '</div>' +
@@ -4025,16 +4229,16 @@
                     });
                     var d = await r.json();
                     if (d.success) {
-                        showNotification(d.message || 'Бонус получен!', 'success');
+                        showNotification(d.message || 'Bonus claimed!', 'success');
                         loadUserData();
                         loadHubBonuses();
                     } else {
-                        showNotification(d.error || 'Ошибка', 'error');
-                        if (btn) { btn.disabled = false; btn.textContent = 'Забрать'; }
+                        showNotification(d.error || 'Error', 'error');
+                        if (btn) { btn.disabled = false; btn.textContent = 'Claim'; }
                     }
                 } catch(e) {
-                    showNotification('Ошибка сети', 'error');
-                    if (btn) { btn.disabled = false; btn.textContent = 'Забрать'; }
+                    showNotification('Network error', 'error');
+                    if (btn) { btn.disabled = false; btn.textContent = 'Claim'; }
                 }
             }
 
@@ -4187,24 +4391,24 @@
 
             async function connectTonWallet() {
                 if (!tonConnectUI) {
-                    showNotification('TonConnect загружается...', 'error');
-                    try { await initTonConnect(); } catch(e) { showNotification('Ошибка инициализации TonConnect', 'error'); return; }
+                    showNotification('TonConnect loading...', 'error');
+                    try { await initTonConnect(); } catch(e) { showNotification('TonConnect initialization error', 'error'); return; }
                 }
-                if (!tonConnectUI) { showNotification('TonConnect недоступен', 'error'); return; }
-                try { await tonConnectUI.openModal(); } catch(e) { showNotification('Ошибка подключения: ' + (e.message || ''), 'error'); }
+                if (!tonConnectUI) { showNotification('TonConnect unavailable', 'error'); return; }
+                try { await tonConnectUI.openModal(); } catch(e) { showNotification('Connection error: ' + (e.message || ''), 'error'); }
             }
 
             async function disconnectTonWallet() {
                 if (tonConnectUI) {
-                    try { await tonConnectUI.disconnect(); connectedWallet = null; updateTonWalletUI(); showNotification('Кошелек отключен', 'success'); }
+                    try { await tonConnectUI.disconnect(); connectedWallet = null; updateTonWalletUI(); showNotification('Wallet disconnected', 'success'); }
                     catch(e) { console.error('Disconnect error:', e); }
                 }
             }
 
             async function sendTonPayment() {
-                if (!connectedWallet) { showNotification('Подключите кошелек', 'error'); return; }
+                if (!connectedWallet) { showNotification('Connect wallet first', 'error'); return; }
                 var amt = parseTonInputValue(_$('tonAmount').value);
-                if (amt < 0.1) { showNotification('Минимум 0.1 TON', 'error'); return; }
+                if (amt < 0.1) { showNotification('Minimum 0.1 TON', 'error'); return; }
                 var normalizedTon = Math.round(amt * 1000000) / 1000000;
                 var stars = Math.floor(amt * 100);
                 var amountNano = Math.floor(normalizedTon * 1000000000).toString();
@@ -4227,7 +4431,7 @@
                     };
                     var result = await tonConnectUI.sendTransaction(transaction);
                     console.log('Transaction sent:', result);
-                    showNotification('Проверка транзакции...', 'success');
+                    showNotification('Checking transaction...', 'success');
 
                     var verified = false;
                     var verifyData = null;
@@ -4253,7 +4457,7 @@
                         }
                         _$('tonStep2').style.display = 'none';
                         _$('tonStep3').style.display = 'block';
-                        showNotification('+' + (verifyData.stars_added || stars) + ' звезд!', 'success');
+                        showNotification('+' + (verifyData.stars_added || stars) + ' stars!', 'success');
                         // Apply promo if verified
                         if (depositPromoVerified) {
                             try {
@@ -4263,7 +4467,7 @@
                                     body: JSON.stringify({user_id: userData.id, promo_id: depositPromoVerified.promo_id, deposit_amount: verifyData.stars_added || stars, bonus_percent: depositPromoVerified.bonus_percent})
                                 });
                                 var pd = await pr.json();
-                                if (pd.success) showNotification('Бонус промокода: +' + pd.bonus_amount + ' звёзд!', 'success');
+                                if (pd.success) showNotification('Promo bonus: +' + pd.bonus_amount + ' stars!', 'success');
                             } catch(pe) {}
                             depositPromoVerified = null;
                             var el = _$('tonPromoCode'); if(el) el.value = '';
@@ -4272,14 +4476,14 @@
                     } else {
                         _$('tonStep2').style.display = 'none';
                         updateTonWalletUI();
-                        showNotification('Транзакция на проверке. Звезды начислятся после подтверждения.', 'success');
+                        showNotification('Transaction pending. Stars will be credited after confirmation.', 'success');
                     }
                 } catch(e) {
                     console.error('Payment error:', e);
                     if (e.message?.includes('reject') || e.message?.includes('cancel')) {
-                        showNotification('Платеж отменен', 'error');
+                        showNotification('Payment cancelled', 'error');
                     } else {
-                        showNotification('Ошибка: ' + (e.message || 'Попробуйте снова'), 'error');
+                        showNotification('Error: ' + (e.message || 'Try again'), 'error');
                     }
                     _$('tonStep2').style.display = 'none';
                     updateTonWalletUI();
@@ -4350,7 +4554,7 @@
 
             function renderEmptyWins() {
                 const winsContainer = document.getElementById('wins-feed');
-                if (winsContainer) winsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--theme-text-secondary); width: 100%;">Пока нет побед. Будьте первым!</div>';
+                if (winsContainer) winsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--theme-text-secondary); width: 100%;">No wins yet. Be the first!</div>';
                 var winsCountEl = document.getElementById('wins-count');
                 if (winsCountEl) winsCountEl.textContent = '(0)';
             }
@@ -4408,8 +4612,8 @@
 
                 if(userIsVipIndex){
                     banner.classList.add('purchased');
-                    document.getElementById('vip-promo-title').textContent = 'Crash VIP активен';
-                    document.getElementById('vip-promo-desc').textContent = 'Нажмите чтобы перейти в Crash';
+                    document.getElementById('vip-promo-title').textContent = 'Crash VIP active';
+                    document.getElementById('vip-promo-desc').textContent = 'Click to go to Crash';
                     document.getElementById('vip-promo-price').style.display = 'none';
                     document.getElementById('vip-progress-bar').style.width = '100%';
                     return;
@@ -4419,12 +4623,12 @@
                 document.getElementById('vip-price-value').textContent = price;
                 const discountEl = document.getElementById('vip-price-discount');
                 if(discount > 0){
-                    discountEl.textContent = '(-' + discount + ' скидка)';
+                    discountEl.textContent = '(-' + discount + ' discount)';
                 } else {
                     discountEl.textContent = '';
                 }
                 document.getElementById('vip-promo-desc').textContent = 
-                    collectedGiftsIndex + '/' + TOTAL_GIFTS_INDEX + ' подарков собрано вЂ” собирай ещё для скидки!';
+                    collectedGiftsIndex + '/' + TOTAL_GIFTS_INDEX + ' gifts collected — collect more for discount!';
                 
                 // Progress bar: % of max discount (100 gifts = full bar)
                 const progressPct = Math.min((collectedGiftsIndex / 100) * 100, 100);
@@ -4446,10 +4650,10 @@
                 notif.innerHTML = 
                     '<img class="gift-discovery-notif-img" src="' + resolvedGiftImage + '" onerror="window.rasswetGiftImage ? window.rasswetGiftImage.onError(this, \'/static/img/star.png\') : (this.src=\'/static/img/star.png\')">' +
                     '<div class="gift-discovery-notif-info">' +
-                        '<div class="gift-discovery-notif-title">рџЋЃ Новый подарок!</div>' +
-                        '<div class="gift-discovery-notif-desc">' + (giftName || 'Подарок') + ' вЂ” VIP: ' + price + ' <img src="/static/img/star.png" style="width:13px;height:13px;vertical-align:middle"> (скидка -' + discount + ')</div>' +
+                        '<div class="gift-discovery-notif-title">🎁 New gift!</div>' +
+                        '<div class="gift-discovery-notif-desc">' + (giftName || 'Gift') + ' — VIP: ' + price + ' <img src="/static/img/star.png" style="width:13px;height:13px;vertical-align:middle"> (discount -' + discount + ')</div>' +
                     '</div>' +
-                    '<button class="gift-discovery-notif-close" onclick="closeGiftDiscoveryNotif(this)">вњ•</button>';
+                    '<button class="gift-discovery-notif-close" onclick="closeGiftDiscoveryNotif(this)">✕</button>';
                 document.body.appendChild(notif);
                 setTimeout(() => notif.classList.add('show'), 50);
                 setTimeout(() => { if(notif.parentNode) closeGiftDiscoveryNotif(notif.querySelector('.gift-discovery-notif-close')); }, 6000);
@@ -4498,19 +4702,19 @@
     <nav class="bottom-nav" id="bottom-nav">
         <a class="bnav-item" href="/crash">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-            <span class="bnav-label">Краш</span>
+            <span class="bnav-label">Crash</span>
         </a>
         <a class="bnav-item active" href="/">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-            <span class="bnav-label">Кейсы</span>
+            <span class="bnav-label">Cases</span>
         </a>
         <a class="bnav-item" href="/leaderboard">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-            <span class="bnav-label">Сезон</span>
+            <span class="bnav-label">Season</span>
         </a>
         <a class="bnav-item" href="/inventory">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span class="bnav-label">Профиль</span>
+            <span class="bnav-label">Profile</span>
         </a>
     </nav>
 
@@ -4534,6 +4738,17 @@
                 <div class="cdm-contents" id="cdmContents"></div>
             </div>
             <div class="cdm-result-wrap" id="cdmResult" style="display:none"></div>
+            <!-- CDM ROULETTE -->
+            <div class="cdm-roulette" id="cdmRoulette">
+                <div class="cdm-roulette-single" id="cdmRouletteSingle">
+                    <div class="cdm-roulette-track" id="cdmRouletteTrack"></div>
+                </div>
+                <div class="cdm-roulette-multi" id="cdmRouletteMulti">
+                    <div class="cdm-roulette-cols" id="cdmRouletteCols"></div>
+                    <div class="cdm-multi-center"></div>
+                </div>
+                <div class="cdm-roulette-pointer" id="cdmRoulettePointer"></div>
+            </div>
             <div class="cdm-qty-row" id="cdmQtyRow"></div>
             <div class="cdm-bottom" id="cdmBottom"></div>
         </div>
@@ -5047,7 +5262,7 @@
 <div class="notif-popup-overlay" id="notifPopupOverlay" onclick="closeNotifPopup()"></div>
 <div class="notif-popup" id="notifPopup">
     <div class="notif-popup-header">
-        <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Уведомления</h3>
+        <h3><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;vertical-align:middle"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>Notifications</h3>
         <div class="notif-currency-switch">
             <button class="notif-currency-btn" id="currencyBtnStars" onclick="setCurrencyMode('stars')" title="Stars">
                 <img src="/static/img/star.png" alt="Stars" data-currency-static="1">
@@ -5061,7 +5276,7 @@
     <div class="notif-popup-body" id="notifPopupBody">
         <div class="notif-empty">
             <img src="/static/img/new.png" alt="">
-            <p>Нет новых уведомлений</p>
+            <p>No new notifications</p>
         </div>
     </div>
 </div>
@@ -5181,7 +5396,7 @@
     }
     function playNotifSound() {
         /* Vibrate on mobile */
-        try { if(navigator.vibrate) navigator.vibrate([80, 50, 80]); } catch(e){}
+        try { if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.impactOccurred('medium'); else if(navigator.vibrate) navigator.vibrate([80, 50, 80]); } catch(e){}
         var ctx = getAudioCtx();
         if (!ctx) return;
         try {
@@ -5233,7 +5448,7 @@
         var particles = document.getElementById('rewardParticles');
 
         var imgSrc = '/static/img/reward.png';
-        var title = 'Награда получена!';
+        var title = 'Reward claimed!';
         var subtitle = '';
         var amountText = '';
         var amountClass = 'gift-color';
@@ -5244,12 +5459,12 @@
 
         if (rtype === 'stars') {
             imgSrc = getCurrencyIcon();
-            title = currencyMode === 'ton' ? 'TON получены!' : 'Звёзды получены!';
+            title = currencyMode === 'ton' ? 'TON received!' : 'Stars received!';
             amountText = '<img src="' + getCurrencyIcon() + '" onerror="this.src=\'/static/img/star.png\'">+' + formatStarsAmount(info.amount || info.data || '0');
             amountClass = 'stars-color'; imgClass = 'stars-type'; glowColor = '255,215,0';
         } else if (rtype === 'tickets') {
             imgSrc = '/static/img/ticket.png';
-            title = 'Билеты получены!';
+            title = 'Tickets received!';
             amountText = '<img src="/static/img/ticket.png">+' + (info.amount || info.data || '0');
             amountClass = 'tickets-color'; imgClass = 'tickets-type'; glowColor = '138,43,226';
         } else if (rtype === 'gift') {
@@ -5264,34 +5479,34 @@
                     fragment_slug: info.fragment_slug
                 }, giftFallback)
                 : giftFallback;
-            title = info.gift_name || 'Подарок получен!';
+            title = info.gift_name || 'Gift received!';
             subtitle = info.message || '';
             if (info.gift_value) {
                 valueText = currencyMode === 'ton'
-                    ? ('Стоимость: ' + formatStarsAmount(info.gift_value) + ' TON')
-                    : ('Стоимость: ' + info.gift_value + ' зв.');
+                    ? ('Value: ' + formatStarsAmount(info.gift_value) + ' TON')
+                    : ('Value: ' + info.gift_value + ' stars');
             }
             glowColor = '0,230,118';
         } else if (rtype === 'case_stars') {
             imgSrc = getCurrencyIcon();
-            title = currencyMode === 'ton' ? 'TON кейсов!' : 'Звёзды кейсов!';
+            title = currencyMode === 'ton' ? 'TON cases!' : 'Stars cases!';
             amountText = '<img src="' + getCurrencyIcon() + '" onerror="this.src=\'/static/img/star2.png\'">+' + formatStarsAmount(info.data || '0');
             amountClass = 'stars-color'; imgClass = 'stars-type'; glowColor = '255,165,0';
         } else if (rtype === 'crash_skin') {
             imgSrc = '/static/img/rocket.png';
-            title = 'Скин разблокирован!';
+            title = 'Skin unlocked!';
             glowColor = '255,87,51';
         } else if (rtype === 'crash_vip') {
             imgSrc = '/static/img/vip.png';
-            title = 'VIP активирован!';
+            title = 'VIP activated!';
             glowColor = '255,215,0';
         } else if (rtype === 'background') {
             imgSrc = '/static/img/reward.png';
-            title = 'Фон разблокирован!';
+            title = 'Background unlocked!';
             glowColor = '102,126,234';
         } else if (rtype === 'experience') {
             imgSrc = '/static/img/new!.png';
-            title = 'Опыт получен!';
+            title = 'Experience received!';
             amountText = '+' + (info.amount || info.data || '0') + ' XP';
             amountClass = 'gift-color'; glowColor = '0,230,118';
         }
@@ -5314,19 +5529,19 @@
         }
 
         content.innerHTML =
-            '<div class="reward-screen-badge">Получено</div>' +
+            '<div class="reward-screen-badge">Claimed</div>' +
             '<div class="reward-screen-image ' + imgClass + '"><img src="' + esc(imgSrc) + '" onerror="window.rasswetGiftImage ? window.rasswetGiftImage.onError(this, \'/static/img/reward.png\') : (this.src=\'/static/img/reward.png\')"></div>' +
             '<div class="reward-screen-title">' + esc(title) + '</div>' +
             (subtitle ? '<div class="reward-screen-subtitle">' + esc(subtitle) + '</div>' : '') +
             (amountText ? '<div class="reward-screen-amount ' + amountClass + '">' + amountText + '</div>' : '') +
             (valueText ? '<div class="reward-screen-value">' + esc(valueText) + '</div>' : '') +
-            '<div class="reward-tap-hint" style="margin-top:20px;font-size:12px;color:rgba(255,255,255,.4);cursor:pointer" onclick="closeRewardScreen()">Нажмите чтобы продолжить</div>';
+            '<div class="reward-tap-hint" style="margin-top:20px;font-size:12px;color:rgba(255,255,255,.4);cursor:pointer" onclick="closeRewardScreen()">Tap to continue</div>';
         /* Click anywhere to close */
         overlay.onclick = function(e) { if(e.target === overlay) closeRewardScreen(); };
 
         overlay.classList.add('open');
         playRewardSound();
-        try { if(navigator.vibrate) navigator.vibrate([100,50,100,50,200]); } catch(e){}
+        try { if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.notificationOccurred('success'); else if(navigator.vibrate) navigator.vibrate([100,50,100,50,200]); } catch(e){}
     }
 
     window.closeRewardScreen = function() {
@@ -5416,7 +5631,7 @@
         toast.id = 'currencySwitchToast';
         toast.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:300000;background:rgba(20,20,32,.94);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px 14px;color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.45)';
         var icon = currencyMode === 'ton' ? '/static/img/ton.png' : '/static/img/star.png';
-        var label = currencyMode === 'ton' ? 'Режим TON включен' : 'Режим Stars включен';
+        var label = currencyMode === 'ton' ? 'TON mode enabled' : 'Stars mode enabled';
         toast.innerHTML = '<img src="' + icon + '" style="width:14px;height:14px;object-fit:contain" onerror="this.src=\'/static/img/star.png\'">' + label;
         document.body.appendChild(toast);
         setTimeout(function(){
@@ -5592,9 +5807,9 @@
         if (rt === 'stars') return '+' + formatStarsAmount(rd) + ' <img src="' + getCurrencyIcon() + '" style="width:13px;height:13px;vertical-align:middle" onerror="this.src=\'/static/img/star.png\'">';
         if (rt === 'tickets') return '+' + rd + ' <img src="/static/img/ticket.png" style="width:13px;height:13px;vertical-align:middle">';
         if (rt === 'case_stars') return '+' + formatStarsAmount(rd) + ' <img src="' + getCurrencyIcon() + '" style="width:13px;height:13px;vertical-align:middle" onerror="this.src=\'/static/img/star2.png\'">';
-        if (rt === 'crash_skin') return '<img src="/static/img/rocket.png" style="width:13px;height:13px;vertical-align:middle"> Скин';
-        if (rt === 'rocket') return '<img src="/static/img/rocket.png" style="width:13px;height:13px;vertical-align:middle"> Ракета';
-        if (rt === 'background') return '<img src="/static/img/reward.png" style="width:13px;height:13px;vertical-align:middle"> Фон';
+        if (rt === 'crash_skin') return '<img src="/static/img/rocket.png" style="width:13px;height:13px;vertical-align:middle"> Skin';
+        if (rt === 'rocket') return '<img src="/static/img/rocket.png" style="width:13px;height:13px;vertical-align:middle"> Rocket';
+        if (rt === 'background') return '<img src="/static/img/reward.png" style="width:13px;height:13px;vertical-align:middle"> Background';
         if (rt === 'crash_vip') return '<img src="/static/img/vip.png" style="width:13px;height:13px;vertical-align:middle"> VIP';
         if (rt === 'experience' || rt === 'exp') return '+' + (parsed && parsed.amount ? parsed.amount : rd) + ' XP';
         if (rt === 'promo_code' || rt === 'promocode') {
@@ -5602,7 +5817,7 @@
             var count = (parsed && parsed.count) ? (' x' + parsed.count) : '';
             return '<img src="/static/img/promo.png" style="width:13px;height:13px;vertical-align:middle"> ' + code + count;
         }
-        if (rt === 'gift') return '<img src="/static/img/gift.png" style="width:13px;height:13px;vertical-align:middle"> Подарок';
+        if (rt === 'gift') return '<img src="/static/img/gift.png" style="width:13px;height:13px;vertical-align:middle"> Gift';
         return '<img src="/static/img/reward.png" style="width:13px;height:13px;vertical-align:middle"> Награда';
     }
 
@@ -5697,7 +5912,7 @@
     function renderNotifList() {
         var body = document.getElementById('notifPopupBody');
         if(!notifItems.length) {
-            body.innerHTML = '<div class="notif-empty"><img src="/static/img/new.png" alt=""><p>Нет новых уведомлений</p></div>';
+            body.innerHTML = '<div class="notif-empty"><img src="/static/img/new.png" alt=""><p>No new notifications</p></div>';
             return;
         }
         var html = '';
@@ -5706,7 +5921,7 @@
             var icon = getNotifIcon(item);
             var title = item.type === 'bonus'
                 ? (item.description || getBonusTitle(item))
-                : (item.title || 'Уведомление');
+                : (item.title || 'Notification');
             var desc = item.type === 'bonus'
                 ? getBonusPreview(item)
                 : (item.message || '').substring(0, 80);
@@ -5738,8 +5953,8 @@
         var icon = getNotifIcon(item);
         var isBonus = item.type === 'bonus';
 
-        var titleText = isBonus ? (item.description || getBonusTitle(item)) : (item.title || 'Уведомление');
-        var bodyText = isBonus ? (item.source || 'Системный бонус') : (item.message || '');
+        var titleText = isBonus ? (item.description || getBonusTitle(item)) : (item.title || 'Notification');
+        var bodyText = isBonus ? (item.source || 'System bonus') : (item.message || '');
         var time = fmtTime(item.created_at);
 
         var h = '<div class="nd-header">' +
@@ -5760,7 +5975,7 @@
         var rwHtml = '';
         if (isBonus) {
             var amt = item.bonus_data || '0';
-            var bonusType = item.bonus_type === 'stars' ? 'Звёзды' : item.bonus_type === 'tickets' ? 'Билеты' : item.bonus_type;
+            var bonusType = item.bonus_type === 'stars' ? 'Stars' : item.bonus_type === 'tickets' ? 'Tickets' : item.bonus_type;
             rwHtml = '<div class="nd-reward-box">' +
                 '<div class="nd-reward-icon"><img src="' + getRewardIcon(item.bonus_type) + '"></div>' +
                 '<div class="nd-reward-info"><div class="nd-reward-label">' + bonusType + '</div>' +
@@ -5774,9 +5989,9 @@
 
         var actHtml = '<div class="nd-actions">';
         if (isBonus) {
-            actHtml += '<button class="nd-btn-primary bonus-btn" onclick="claimBonus(' + item.id + ',' + idx + ',this)">Забрать</button>';
+            actHtml += '<button class="nd-btn-primary bonus-btn" onclick="claimBonus(' + item.id + ',' + idx + ',this)">Claim</button>';
         } else {
-            actHtml += '<button class="nd-btn-primary" onclick="markNotifRead(' + item.id + ',' + idx + ',this)">Прочитано</button>';
+            actHtml += '<button class="nd-btn-primary" onclick="markNotifRead(' + item.id + ',' + idx + ',this)">Read</button>';
         }
         actHtml += '</div>';
 
@@ -5803,7 +6018,7 @@
         .then(function(r){ return r.json(); })
         .then(function(data){
             if(data.success) {
-                btn.textContent = 'Получено!';
+                btn.textContent = 'Claimed!';
                 btn.classList.add('claimed');
                 if(data.new_balance !== undefined) {
                     applyKnownBalances(data.new_balance);
@@ -5824,11 +6039,11 @@
                 showRewardScreen(rw);
                 setTimeout(fetchNotifs, 500);
             } else {
-                btn.textContent = data.error || 'Ошибка';
+                btn.textContent = data.error || 'Error';
                 btn.disabled = false;
             }
         })
-        .catch(function(){ btn.textContent = 'Ошибка'; btn.disabled = false; });
+        .catch(function(){ btn.textContent = 'Error'; btn.disabled = false; });
     };
 
     window.markNotifRead = function(notifId, idx, btn) {
@@ -5843,7 +6058,7 @@
         })
         .then(function(r){ return r.json(); })
         .then(function(data){
-            if(btn){ btn.textContent = 'Готово'; btn.classList.add('claimed'); }
+            if(btn){ btn.textContent = 'Done'; btn.classList.add('claimed'); }
             if(data.balance_stars !== undefined) {
                 applyKnownBalances(data.balance_stars);
             }
@@ -5867,7 +6082,7 @@
             } else if (item && item.notif_type === 'gift_index') {
                 showRewardScreen({
                     type: 'gift',
-                    gift_name: item.title || 'Новый подарок',
+                    gift_name: item.title || 'New gift',
                     gift_image: item.image_url || '/static/img/gift.png',
                     message: item.message || ''
                 });
@@ -5879,14 +6094,14 @@
 
     /* ===== HELPERS ===== */
     function getBonusTitle(item) {
-        if(item.bonus_type === 'stars') return currencyMode === 'ton' ? 'Бонус TON' : 'Бонус звёзд';
-        if(item.bonus_type === 'tickets') return 'Бонус билетов';
-        return 'Награда';
+        if(item.bonus_type === 'stars') return currencyMode === 'ton' ? 'TON Bonus' : 'Stars Bonus';
+        if(item.bonus_type === 'tickets') return 'Tickets Bonus';
+        return 'Reward';
     }
     function getBonusPreview(item) {
         var amt = item.bonus_data || '0';
         var amountText = item.bonus_type === 'stars' ? formatStarsAmount(amt) : amt;
-        var type = item.bonus_type === 'stars' ? (currencyMode === 'ton' ? 'TON' : 'зв.') : item.bonus_type === 'tickets' ? 'бил.' : item.bonus_type;
+        var type = item.bonus_type === 'stars' ? (currencyMode === 'ton' ? 'TON' : 'зв.') : item.bonus_type === 'tickets' ? 'tix' : item.bonus_type;
         return '+' + amountText + ' ' + type;
     }
     function fmtTime(ts) {
@@ -5904,8 +6119,8 @@
             var serverNow = Date.now() + _serverTimeOffset;
             var diff = (serverNow - d.getTime()) / 1000;
             if(diff < 0) diff = 0;
-            if(diff < 60) return 'сейчас';
-            if(diff < 3600) return Math.floor(diff/60) + ' мин';
+            if(diff < 60) return 'now';
+            if(diff < 3600) return Math.floor(diff/60) + ' min';
             if(diff < 86400) return Math.floor(diff/3600) + ' ч';
             return Math.floor(diff/86400) + ' дн';
         } catch(e) { return ''; }
@@ -5972,7 +6187,7 @@ function ensureCommonHeaderElements() {
     }
     // user-name
     if (!document.getElementById('user-name')) {
-        var un = document.createElement('div'); un.id = 'user-name'; un.className = 'hdr-username'; un.textContent = 'Загрузка...'; hdr.appendChild(un);
+        var un = document.createElement('div'); un.id = 'user-name'; un.className = 'hdr-username'; un.textContent = 'Loading...'; hdr.appendChild(un);
     }
     // balance-stars
     if (!document.getElementById('balance-stars')) {

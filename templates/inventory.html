@@ -143,6 +143,9 @@
         .reward-card.unlocked{border-color:rgba(35,108,217,.3);background:rgba(35,108,217,.06)}
         .reward-card-lvl{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;text-align:left}
         .reward-card-img{width:56px;height:56px;object-fit:contain;margin:0 auto;display:block;transition:filter .3s}
+        .reward-card-name{font-size:10px;font-weight:600;color:var(--text2);margin-top:6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+        .reward-card.unlocked .reward-card-name{color:var(--text)}
+        .reward-card-lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;background:rgba(9,11,17,.4);border-radius:14px;pointer-events:none}
         .rewards-close-btn{
             margin:0 20px 20px;padding:14px;border-radius:14px;border:none;
             background:var(--blue);color:#fff;font-family:inherit;font-size:15px;font-weight:700;
@@ -192,7 +195,7 @@
             </div>
             <div class="top-bar-right">
                 <div class="bal-pill">
-                    <img src="/static/img/tons/ton_1.svg" alt="TON" id="hdrTonIcon">
+                    <img src="/static/img/ton.png" alt="TON" id="hdrTonIcon">
                     <span id="hdrBalance">0.00</span>
                 </div>
                 <div class="bal-plus" onclick="openDeposit()" title="Top Up">+</div>
@@ -226,7 +229,7 @@
             <div class="ref-card-title">REFERRALS</div>
             <div class="ref-card-desc">Invite friends and get 10% of your friends' deposits!</div>
             <div class="ref-stats">
-                <div class="ref-stat"><img src="/static/img/tons/ton_1.svg" alt="TON"> Balance: <span id="refBalance">0.00</span></div>
+                <div class="ref-stat"><img src="/static/img/ton.png" alt="TON"> Balance: <span id="refBalance">0.00</span></div>
                 <div class="ref-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Referrals: <span id="refCount">0</span></div>
                 <div class="ref-stat" style="cursor:pointer" onclick="showTerms()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Terms</div>
             </div>
@@ -274,7 +277,7 @@
         <div class="item-modal">
             <img id="itemModalImg" src="" alt="">
             <div class="item-modal-name" id="itemModalName"></div>
-            <div class="item-modal-price"><img src="/static/img/tons/ton_1.svg" id="itemModalTonIcon"> <span id="itemModalPrice">0</span></div>
+            <div class="item-modal-price"><img src="/static/img/ton.png" id="itemModalTonIcon"> <span id="itemModalPrice">0</span></div>
             <div class="item-modal-actions">
                 <button class="item-modal-btn item-modal-sell" id="itemModalSellBtn" onclick="sellItem()">Sell</button>
                 <button class="item-modal-btn item-modal-withdraw" id="itemModalWithdrawBtn" onclick="withdrawItem()">Withdraw</button>
@@ -380,20 +383,22 @@
         vibrationOn = !vibrationOn;
         localStorage.setItem('vibration', vibrationOn ? 'on' : 'off');
         initVibration();
-        if (vibrationOn && navigator.vibrate) navigator.vibrate(50);
+        if (vibrationOn) {
+            try { if (window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) { Telegram.WebApp.HapticFeedback.impactOccurred('medium'); return; } } catch(e){}
+            if (navigator.vibrate) navigator.vibrate(50);
+        }
     }
-    function vibrateIfOn() { if (vibrationOn && navigator.vibrate) navigator.vibrate(30); }
+    function vibrateIfOn() {
+        if (!vibrationOn) return;
+        try { if (window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) { Telegram.WebApp.HapticFeedback.impactOccurred('light'); return; } } catch(e){}
+        if (navigator.vibrate) navigator.vibrate(30);
+    }
 
     document.addEventListener('DOMContentLoaded', function() { initLang(); initVibration(); });
 
     /* === TON HELPERS === */
     function getTonIcon(amount) {
-        var v = parseFloat(amount) || 0;
-        if (v >= 20) return '/static/img/tons/ton_5.svg';
-        if (v >= 5) return '/static/img/tons/ton_4.svg';
-        if (v >= 2) return '/static/img/tons/ton_3.svg';
-        if (v >= 1) return '/static/img/tons/ton_2.svg';
-        return '/static/img/tons/ton_1.svg';
+        return '/static/img/ton.png';
     }
     function starsToTon(stars) { return Number(stars || 0) / 100; }
     function formatTon(ton) {
@@ -418,6 +423,8 @@
             if (d.success) {
                 user = d.user;
                 updateProfile();
+                /* Fetch full user data with level_info */
+                await refreshUserData();
                 loadInventory();
                 loadLevelRewards();
                 if (user.id == ADMIN_ID) document.getElementById('adminBtn').style.display = 'block';
@@ -483,9 +490,18 @@
                 var cls = unlocked ? 'unlocked' : 'locked';
                 var rw = lv.reward || {};
                 var img = rw.image || '/static/img/star.png';
+                var rewardName = rw.name || ('Level ' + lv.level);
+                /* Reward type emoji */
+                var typeIcon = '';
+                if (rw.type === 'ton_bonus') typeIcon = '💎';
+                else if (rw.type === 'free_case') typeIcon = '🎁';
+                else if (rw.type === 'rocket_skin') typeIcon = '🚀';
+                else if (rw.type === 'background') typeIcon = '🎨';
                 return '<div class="reward-card ' + cls + '" onclick="onRewardClick(' + lv.level + ',' + (unlocked?1:0) + ')">' +
                     '<div class="reward-card-lvl">' + lv.level + ' lvl</div>' +
                     '<img class="reward-card-img" src="' + img + '" alt="" onerror="this.src=\'/static/img/star.png\'">' +
+                    '<div class="reward-card-name">' + typeIcon + ' ' + rewardName + '</div>' +
+                    (!unlocked ? '<div class="reward-card-lock">🔒</div>' : '') +
                 '</div>';
             }).join('');
         }

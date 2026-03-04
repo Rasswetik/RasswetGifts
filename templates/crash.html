@@ -6799,7 +6799,7 @@ function doClaim() {
     playSound('cashout');
     
     /* Vibrate */
-    if (settingVibration && navigator.vibrate) navigator.vibrate([50, 30, 80]);
+    if (settingVibration) { try { if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.impactOccurred('medium'); else if(navigator.vibrate) navigator.vibrate([50, 30, 80]); } catch(e){} }
     
     /* Auto-close after 1.5s */
     setTimeout(() => {
@@ -12180,7 +12180,7 @@ document.addEventListener('click', function _initMusicOnce(){
     }
     function playNotifSound() {
         /* Vibrate on mobile */
-        try { if(navigator.vibrate) navigator.vibrate([80, 50, 80]); } catch(e){}
+        try { if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.impactOccurred('medium'); else if(navigator.vibrate) navigator.vibrate([80, 50, 80]); } catch(e){}
         var ctx = getAudioCtx();
         if (!ctx) return;
         try {
@@ -12325,7 +12325,7 @@ document.addEventListener('click', function _initMusicOnce(){
 
         overlay.classList.add('open');
         playRewardSound();
-        try { if(navigator.vibrate) navigator.vibrate([100,50,100,50,200]); } catch(e){}
+        try { if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.notificationOccurred('success'); else if(navigator.vibrate) navigator.vibrate([100,50,100,50,200]); } catch(e){}
     }
 
     window.closeRewardScreen = function() {
