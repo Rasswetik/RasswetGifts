@@ -1245,11 +1245,12 @@ def get_db_connection():
     for attempt in range(3):
         try:
             conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False, isolation_level='DEFERRED')
-            # Используем DELETE режим вместо WAL - более надёжный на shared hosting
-            conn.execute("PRAGMA journal_mode = DELETE")
-            conn.execute("PRAGMA synchronous = FULL")  # Максимальная надёжность
+            # WAL mode - better for concurrent reads/writes (game loop + web requests)
+            conn.execute("PRAGMA journal_mode = WAL")
+            conn.execute("PRAGMA synchronous = NORMAL")
             conn.execute("PRAGMA busy_timeout = 30000")
             conn.execute("PRAGMA temp_store = MEMORY")
+            conn.execute("PRAGMA wal_autocheckpoint = 1000")
             
             # Проверяем таблицы только один раз
             if not _db_ready:
@@ -3160,9 +3161,29 @@ def inventory_page():
 
 @app.route('/profile')
 def profile_page():
-    """Страница профиля"""
-    logger.info("👤 Запрос страницы профиля")
-    return render_template('profile.html')
+    """Страница профиля → редирект на инвентарь"""
+    logger.info("👤 Запрос страницы профиля → редирект на /inventory")
+    return redirect('/inventory')
+
+@app.route('/ref')
+def ref_page():
+    """Страница реферальной системы"""
+    return render_template('ref.html')
+
+@app.route('/lobby')
+def lobby_page():
+    """Страница лобби"""
+    return render_template('lobby.html')
+
+@app.route('/upgrade')
+def upgrade_page():
+    """Страница апгрейда → пока редирект на инвентарь"""
+    return redirect('/inventory')
+
+@app.route('/leaderboard')
+def leaderboard_page():
+    """Страница лидерборда → пока редирект на краш"""
+    return redirect('/crash')
 
 @app.route('/admin')
 def admin_page():
@@ -3186,6 +3207,101 @@ def serve_music(path):
     return send_from_directory('music', path)
 
 # ==================== API ENDPOINTS ====================
+
+# === DEMO ADMIN CODE ===
+DEMO_ADMIN_CODE = os.getenv('DEMO_ADMIN_CODE', 'RASWET2024')
+
+@app.route('/api/verify-demo-code', methods=['POST'])
+def verify_demo_code():
+    """Проверка демо-кода для получения админ-доступа"""
+    try:
+        data = request.get_json()
+        code = data.get('code', '').strip().upper()
+        user_id = data.get('user_id', 0)
+
+        if not code:
+            return jsonify({'success': False, 'error': 'Введите код'}), 400
+
+        if code == DEMO_ADMIN_CODE.upper():
+            logger.info(f"🔑 Демо-админ код активирован для user_id={user_id}")
+            # Дадим демо-юзеру 1000 звёзд баланса для тестирования
+            balance_added = False
+            if user_id:
+                try:
+                    conn = get_db()
+                    cursor = conn.cursor()
+                    cursor.execute('UPDATE users SET balance_stars = balance_stars + 1000 WHERE telegram_id = ?', (user_id,))
+                    conn.commit()
+                    balance_added = cursor.rowcount > 0
+                    conn.close()
+                    if balance_added:
+                        logger.info(f"💰 Начислено 1000 звёзд демо-админу user_id={user_id}")
+                except Exception as e:
+                    logger.error(f"Ошибка начисления баланса: {e}")
+
+            return jsonify({
+                'success': True,
+                'is_admin': True,
+                'balance_added': balance_added,
+                'message': '✅ Админ-доступ активирован! +1000 ⭐' if balance_added else '✅ Админ-доступ активирован!'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Неверный код'}), 400
+
+    except Exception as e:
+        logger.error(f"Ошибка проверки демо-кода: {e}")
+        return jsonify({'success': False, 'error': 'Ошибка сервера'}), 500
+
+# === DEMO LOGIN (вход без Telegram) ===
+DEMO_USER_ID_BASE = 9000000000  # Диапазон ID для демо-пользователей
+
+@app.route('/api/demo-login', methods=['POST'])
+def demo_login():
+    """Создание/вход демо-пользователя для тестирования через браузер"""
+    try:
+        import random as _rand
+        demo_id = DEMO_USER_ID_BASE + _rand.randint(1, 999999)
+        demo_name = f"Demo_{demo_id % 10000}"
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Проверяем, есть ли уже такой пользователь
+        cursor.execute('SELECT id, first_name, balance_stars, balance_tickets FROM users WHERE id = ?', (demo_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            ref_code = ''.join(_rand.choices(string.ascii_uppercase + string.digits, k=8))
+            cursor.execute('''
+                INSERT INTO users (id, first_name, last_name, username, photo_url, balance_stars, balance_tickets, referral_code)
+                VALUES (?, ?, '', ?, '', 1000, 0, ?)
+            ''', (demo_id, demo_name, f'demo_{demo_id}', ref_code))
+            conn.commit()
+            balance = 1000
+            logger.info(f"🎭 Создан демо-пользователь: {demo_name} (ID: {demo_id}), баланс: 1000⭐")
+        else:
+            balance = row[2] if row[2] else 0
+            demo_name = row[1]
+            logger.info(f"🎭 Демо-вход: {demo_name} (ID: {demo_id}), баланс: {balance}⭐")
+
+        conn.close()
+
+        user_data = {
+            'id': demo_id,
+            'first_name': demo_name,
+            'last_name': '',
+            'username': f'demo_{demo_id}',
+            'photo_url': '',
+            'balance_stars': balance,
+            'balance_tickets': 0,
+            'is_demo': True
+        }
+
+        return jsonify({'success': True, 'user_data': user_data})
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка демо-входа: {e}")
+        return jsonify({'success': False, 'error': 'Ошибка сервера'}), 500
 
 # TELEGRAM API
 @app.route('/api/telegram/user', methods=['GET'])
@@ -11149,6 +11265,25 @@ def admin_delete_daily_task():
 
 # ============================================================
 # GIFTS LIST API (for gift deposit menu)
+# ============================================================
+
+@app.route('/api/online-count', methods=['GET'])
+def api_online_count():
+    """Return approximate online user count"""
+    try:
+        conn = get_db_connection()
+        # Count users active in last 5 minutes
+        row = conn.execute("SELECT COUNT(*) FROM users WHERE last_active > datetime('now', '-5 minutes')").fetchone()
+        count = row[0] if row else 0
+        conn.close()
+        if count < 10:
+            import random
+            count = random.randint(20, 80)
+        return jsonify({'count': count})
+    except Exception:
+        import random
+        return jsonify({'count': random.randint(20, 80)})
+
 # ============================================================
 
 @app.route('/api/gifts-list', methods=['GET'])

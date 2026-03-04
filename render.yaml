@@ -3,7 +3,21 @@ services:
     name: rasswet-gifts
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --preload
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.6
+        value: "3.11.6"
+      - key: PORT
+        value: "10000"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WEBSITE_URL
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: ADMIN_ID
+        sync: false
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
