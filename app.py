@@ -2833,25 +2833,10 @@ def start_ultimate_crash_loop():
                         # Сразу переходим в counting
                         cursor.execute('UPDATE ultimate_crash_games SET status = "counting", start_time = CURRENT_TIMESTAMP WHERE id = ?', (game_id,))
                         update_crash_cache(game_id, 'counting', 1.0, target_mult_float, 5.0)
-                        # Generate bot bets at the start of counting
-                        try:
-                            cursor.execute('SELECT COUNT(*) FROM ultimate_crash_bets WHERE game_id = ?', (game_id,))
-                            real_count = cursor.fetchone()[0]
-                            _generate_bot_bets(game_id, real_count)
-                        except Exception:
-                            pass
                     elif status == 'counting':
-                        time_remaining = max(0, 3.0 - elapsed)
+                        time_remaining = max(0, 5.0 - elapsed)
                         update_crash_cache(game_id, 'counting', 1.0, target_mult_float, time_remaining)
-                        if elapsed >= 3:  # 3 секунды отсчёта для ставок
-                            # Re-check bot generation with final real player count
-                            try:
-                                cursor.execute('SELECT COUNT(*) FROM ultimate_crash_bets WHERE game_id = ?', (game_id,))
-                                real_count = cursor.fetchone()[0]
-                                if game_id not in _crash_bots_active:
-                                    _generate_bot_bets(game_id, real_count)
-                            except Exception:
-                                pass
+                        if elapsed >= 5:  # 5 секунд отсчёта для ставок
                             # Lock phase transition to prevent late bets
                             with _crash_phase_lock:
                                 _crash_phase_transitioning = True
@@ -2862,8 +2847,6 @@ def start_ultimate_crash_loop():
                             with _crash_phase_lock:
                                 _crash_phase_transitioning = False
                     elif status == 'flying':
-                        # Process bot cashouts
-                        _process_bot_cashouts(game_id, current_mult_float)
                         # Check for admin force crash
                         admin_ctrl = get_admin_crash_control()
                         if admin_ctrl.get('force_crash'):
@@ -2881,30 +2864,29 @@ def start_ultimate_crash_loop():
                             update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
                             logger.info(f"💥 ADMIN FORCE CRASH на {current_mult_float:.2f}x")
                             conn.commit()
-                            time.sleep(0.2)
+                            time.sleep(0.15)
                             continue
                         
                         # Увеличиваем множитель
 
                         if current_mult_float < target_mult_float:
-                            # Плавная скорость: быстрее на средних/высоких множителях,
-                            # чтобы раунд не затягивался слишком долго
-                            if current_mult_float < 1.3:
-                                base_increment = 0.05
-                            elif current_mult_float < 1.8:
-                                base_increment = 0.08
+                            # Smooth speed: fast enough so rounds feel dynamic
+                            if current_mult_float < 1.5:
+                                base_increment = 0.02
                             elif current_mult_float < 2.5:
-                                base_increment = 0.12
+                                base_increment = 0.04
                             elif current_mult_float < 4.0:
-                                base_increment = 0.18
-                            elif current_mult_float < 6.0:
-                                base_increment = 0.26
+                                base_increment = 0.07
+                            elif current_mult_float < 7.0:
+                                base_increment = 0.12
+                            elif current_mult_float < 15.0:
+                                base_increment = 0.20
                             else:
-                                base_increment = 0.34
+                                base_increment = 0.35
 
-                            speed_boost = current_mult_float * 0.03
+                            speed_boost = current_mult_float * 0.015
                             increment = round(max(base_increment, speed_boost), 2)
-                            increment = min(increment, 1.25)
+                            increment = min(increment, 1.0)
 
                             # Случайный краш
                             crash_chance = 0.01 * (current_mult_float / 10)
@@ -2920,7 +2902,6 @@ def start_ultimate_crash_loop():
                                         WHERE game_id = ? AND status = 'lost' AND user_id = users.id
                                     ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
                                 ''', (game_id, game_id))
-                                _crash_bots_on_crash(game_id)
                                 update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
                                 logger.info(f"💥 Случайный краш на {current_mult_float:.2f}x")
                             else:
@@ -2937,7 +2918,6 @@ def start_ultimate_crash_loop():
                                             WHERE game_id = ? AND status = 'lost' AND user_id = users.id
                                         ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
                                     ''', (game_id, game_id))
-                                    _crash_bots_on_crash(game_id)
                                     update_crash_cache(game_id, 'crashed', target_mult_float, target_mult_float, 0)
                                     logger.info(f"💥 Достигнут целевой множитель {target_mult_float:.2f}x")
                                 else:
@@ -2960,7 +2940,6 @@ def start_ultimate_crash_loop():
                                     WHERE game_id = ? AND status = 'lost' AND user_id = users.id
                                 ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
                             ''', (game_id, game_id))
-                            _crash_bots_on_crash(game_id)
                             update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
                             logger.info(f"💥 Игра #{game_id} завершена на {current_mult_float:.2f}x")
 
@@ -2973,8 +2952,8 @@ def start_ultimate_crash_loop():
                     ''')
                     last_game = cursor.fetchone()
                     if last_game and last_game[1] == 'crashed':
-                        # Wait 1 second after crash before creating new game
-                        time.sleep(1.0)
+                        # Wait 3 seconds after crash so players see the result
+                        time.sleep(3.0)
 
                     target_multiplier = generate_extreme_crash_multiplier()
                     
@@ -2995,15 +2974,11 @@ def start_ultimate_crash_loop():
                         VALUES ('waiting', ?, CURRENT_TIMESTAMP)
                     ''', (target_multiplier,))
                     conn.commit()
-                    # Clean old bot entries (keep last 10 games)
-                    old_ids = [gid for gid in list(_crash_bots_active.keys()) if gid < cursor.lastrowid - 10]
-                    for gid in old_ids:
-                        _crash_bots_active.pop(gid, None)
                     # Clean old user bets cache
                     _cleanup_user_bets_cache()
-                    logger.info(f"🆕 Создана новая Ultimate Crash игра, множитель: {target_multiplier}x")
+                    logger.info(f"🆕 Новая Crash игра, target: {target_multiplier}x")
 
-                time.sleep(0.2)  # Пауза между тиками (быстрый полёт)
+                time.sleep(0.15)  # Tick interval — fast for smooth multiplier
 
             except Exception as e:
                 err_msg = str(e)
@@ -6988,12 +6963,12 @@ def api_gifts():
         file_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
         file_exists = os.path.exists(file_path)
 
-        include_models = request.args.get('models', '1') not in ('0', 'false', 'no')
+        include_models = request.args.get('models', '0') in ('1', 'true', 'yes')
         if include_models:
             gifts = build_full_catalog_with_models(force_refresh=force_reload)
         else:
             gifts = build_fragment_first_gifts_catalog(force_refresh=force_reload)
-        logger.info(f"API gifts: merged gifts total={len(gifts)} (models={'yes' if include_models else 'no'})")
+        logger.info(f"API gifts: total={len(gifts)} (models={'yes' if include_models else 'no'})")
 
         return jsonify({
             'success': True,

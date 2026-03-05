@@ -64,7 +64,7 @@ body.low-power *{
 }
 body.low-power::before,
 body.low-power::after{display:none!important}
-body.low-power .game-field video{opacity:.15!important}
+/* video removed — CSS grid bg only */
 body.low-power .rocket-wrap img{filter:none!important}
 
 /* ===== CONTAINER ===== */
@@ -1045,36 +1045,43 @@ tc-root *{pointer-events:auto}
 /* ===== GAME FIELD ===== */
 .game-field{
     margin:0 12px;border-radius:24px;
-    background:#080C18;
+    background:#060A14;
     border:1px solid rgba(35,108,217,.15);
     position:relative;overflow:hidden;
     min-height:320px;
-    display:flex;flex-direction:column;
+    display:flex;
     align-items:center;justify-content:center;
 }
 
-/* Video background */
-.game-field video{
-    position:absolute;inset:0;
-    width:100%;height:100%;
-    object-fit:cover;
-    z-index:0;
-    opacity:.25;
-    pointer-events:none;
-    will-change:opacity;
-    -webkit-backface-visibility:hidden;
-    backface-visibility:hidden;
-}
-
-/* Grid overlay - always visible blue grid like GiftsBattle */
+/* CSS grid background — no video needed */
 .game-field::before{
     content:'';position:absolute;inset:0;
     background:
-        linear-gradient(rgba(35,108,217,.12) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(35,108,217,.12) 1px,transparent 1px);
-    background-size:40px 40px;pointer-events:none;
-    opacity:1;transition:opacity .8s ease;
+        linear-gradient(rgba(35,108,217,.10) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(35,108,217,.10) 1px,transparent 1px);
+    background-size:36px 36px;pointer-events:none;
     z-index:1;
+}
+
+/* Green trail behind rocket during flight */
+.game-field::after{
+    content:'';position:absolute;
+    left:0;top:50%;transform:translateY(-50%);
+    width:0;height:6px;
+    background:linear-gradient(90deg,transparent,rgba(30,228,76,.5),rgba(30,228,76,.2));
+    border-radius:0 4px 4px 0;
+    z-index:1;
+    transition:width .3s ease;
+    box-shadow:0 0 18px 4px rgba(30,228,76,.15);
+    pointer-events:none;opacity:0;
+}
+.game-field.flying::after{
+    width:38%;opacity:1;
+    animation:trailPulse 1.5s ease-in-out infinite alternate;
+}
+@keyframes trailPulse{
+    0%{width:32%;opacity:.6;filter:blur(2px)}
+    100%{width:42%;opacity:1;filter:blur(4px)}
 }
 .game-field.flying::before{opacity:1}
 
@@ -1103,8 +1110,9 @@ tc-root *{pointer-events:auto}
 /* Rolling multiplier digits */
 .mult-display{
     position:absolute;z-index:5;
+    right:10%;top:50%;transform:translateY(-50%);
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    font-weight:900;font-size:min(72px, 18vw);
+    font-weight:900;font-size:min(56px, 14vw);
     color:rgba(255,255,255,.95);
     display:flex;align-items:center;
     text-shadow:0 0 40px rgba(30,228,76,.3),0 2px 8px rgba(0,0,0,.5);
@@ -1135,14 +1143,14 @@ tc-root *{pointer-events:auto}
 
 /* Rocket */
 .rocket-wrap{
-    position:absolute;top:50%;left:50%;
+    position:absolute;top:50%;left:30%;
     transform:translate(-50%,-50%);
     z-index:2;
     transition: opacity 0.3s ease;
     opacity:1;
 }
 .rocket-wrap img{
-    width:180px;height:180px;object-fit:contain;
+    width:150px;height:150px;object-fit:contain;
     transition: transform 0.2s ease, filter 0.3s ease;
 }
 .rocket-wrap.hide{opacity:0;pointer-events:none}
@@ -3393,9 +3401,6 @@ tc-root *{pointer-events:auto}
 
     <!-- GAME FIELD -->
     <div class="game-field" id="gameField">
-        <video id="bgVideo" autoplay muted loop playsinline>
-            <source src="/static/img/phone.mp4" type="video/mp4">
-        </video>
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="mult-display" id="multDisplay"></div>
         <div class="wait-label" id="waitLabel">Waiting for round</div>
@@ -5234,17 +5239,30 @@ function updateMultDisplay(val){
     
     if(digitCount !== multPrevLen){
         multPrevLen = digitCount;
+        /* When digit count changes (e.g. 9.99→10.00), rebuild DOM and
+           instantly set correct positions (no transition) to avoid the
+           "return to 0" flash bug */
         md.innerHTML = '';
         var di = 0;
         for(var i = 0; i < str.length; i++){
             if(str[i] === '.'){
                 md.appendChild(multDotEl);
             } else {
+                var strip = multDigitPool[di].firstChild;
+                strip.style.transition = 'none';
+                var d = parseInt(str[i]);
+                strip.style.transform = 'translateY(-' + d + 'em)';
                 md.appendChild(multDigitPool[di]);
                 di++;
             }
         }
         md.appendChild(multXEl);
+        /* Force reflow, then restore transition */
+        void md.offsetWidth;
+        for(var j = 0; j < di; j++){
+            multDigitPool[j].firstChild.style.transition = '';
+        }
+        return; /* Transforms already set above */
     }
     
     var di = 0;
@@ -6510,17 +6528,17 @@ function renderHubCustomization(){
             
             if (isUnlocked) {
                 return '<div class="hub-custom-item' + (isActive ? ' active' : '') + '" onclick="openBgPreview(\'' + bg + '\', \'' + (bgItem.name || bg) + '\')">' +
-                    '<video src="/static/img/' + bg + '.mp4" autoplay muted loop playsinline onerror="this.outerHTML=\'<img src=/static/img/' + bg + '.png style=width:44px;height:44px;object-fit:contain onerror=this.src=\\x27/static/img/star2.png\\x27>\'"></video>' +
+                    '<img src="/static/img/' + bg + '.png" style="width:44px;height:44px;object-fit:contain" onerror="this.src=\'/static/img/star2.png\'">' +
                     '<div class="item-name">' + (bgItem.name || bg) + '</div>' +
                 '</div>';
             } else if (canClaim) {
                 return '<div class="hub-custom-item claimable" onclick="openClaimOverlay(\'background\',\'' + bg + '\',\'' + (bgItem.name || bg).replace(/'/g,"\\'") + '\')">' +
-                    '<video src="/static/img/' + bg + '.mp4" autoplay muted loop playsinline onerror="this.outerHTML=\'<img src=/static/img/' + bg + '.png style=width:44px;height:44px;object-fit:contain;filter:brightness(0.8) onerror=this.src=\\x27/static/img/star2.png\\x27>\'" style="filter:brightness(0.8)"></video>' +
+                    '<img src="/static/img/' + bg + '.png" style="width:44px;height:44px;object-fit:contain;filter:brightness(0.8)" onerror="this.src=\'/static/img/star2.png\'">' +
                     '<div class="item-name">' + (bgItem.name || bg) + '</div>' +
                 '</div>';
             } else {
                 return '<div class="hub-custom-item locked" onclick="handleLockedClick(\'background\',\'' + bg + '\',\'' + (bgItem.name || bg).replace(/'/g,"\\'") + '\',\'' + bgItem.access_type + '\',' + (bgItem.requirement || 0) + ')">' +
-                    '<video src="/static/img/' + bg + '.mp4" autoplay muted loop playsinline onerror="this.outerHTML=\'<img src=/static/img/' + bg + '.png style=width:44px;height:44px;object-fit:contain;opacity:.15;filter:grayscale(1) onerror=this.src=\\x27/static/img/star2.png\\x27>\'" style="filter:grayscale(1) brightness(0.4)"></video>' +
+                    '<img src="/static/img/' + bg + '.png" style="width:44px;height:44px;object-fit:contain;opacity:.15;filter:grayscale(1)" onerror="this.src=\'/static/img/star2.png\'">' +
                     '<img class="item-lock-icon" src="/static/img/lock.png" alt="">' +
                     '<div class="item-name">' + (bgItem.name || bg) + '</div>' +
                 '</div>';
@@ -8071,30 +8089,10 @@ function renderSettings(){
         
         return '<div class="settings-item' + (isActive ? ' active' : '') + (!isUnlocked && !canClaim ? ' locked' : '') + (canClaim ? ' claimable' : '') + '" onclick="selectBg(\'' + bg + '\')">' +
             lockImg +
-            '<video muted loop playsinline' + grayStyle + ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'"><source src="/static/img/' + bg + '.mp4" type="video/mp4"></video>' +
-            '<img src="/static/img/' + bg + '.png" alt=""' + grayStyle + ' style="display:none" onerror="this.src=\'/static/img/star2.png\';this.style.opacity=.4">' +
+            '<img src="/static/img/' + bg + '.png" alt=""' + grayStyle + ' onerror="this.src=\'/static/img/star2.png\';this.style.opacity=.4">' +
             '<div class="settings-item-label">' + label + '</div>' +
         '</div>';
     }).join('');
-    
-    /* Play videos + handle video errors for PNG fallback */
-    bgGrid.querySelectorAll('video').forEach(v => {
-        v.play().catch(()=>{});
-        v.addEventListener('error', function(){
-            this.style.display = 'none';
-            const img = this.nextElementSibling;
-            if(img && img.tagName === 'IMG') img.style.display = 'block';
-        });
-        /* Also check if video has no valid source */
-        const src = v.querySelector('source');
-        if(src){
-            src.addEventListener('error', function(){
-                v.style.display = 'none';
-                const img = v.nextElementSibling;
-                if(img && img.tagName === 'IMG') img.style.display = 'block';
-            });
-        }
-    });
     
     /* Render rockets with access check from DB */
     rocketGrid.innerHTML = rocketData.map((rItem, i) => {
@@ -8144,23 +8142,7 @@ function selectBg(bgId){
     currentBg = bgId;
     localStorage.setItem('crash_bg', bgId);
     
-    /* Cross-fade to new video to prevent flicker */
-    const video = $('bgVideo');
-    if(video){
-        var newSrc = '/static/img/' + bgId + '.mp4';
-        /* Fade out, swap, fade in */
-        video.style.transition = 'opacity .25s';
-        video.style.opacity = '0';
-        setTimeout(function(){
-            video.innerHTML = '<source src="' + newSrc + '" type="video/mp4">';
-            video.load();
-            video.play().then(function(){
-                video.style.opacity = '';
-            }).catch(function(){
-                video.style.opacity = '';
-            });
-        }, 250);
-    }
+    /* Video backgrounds removed — using CSS grid bg only */
     
     renderSettings();
     renderHubCustomization();
@@ -8226,7 +8208,7 @@ function openBgPreview(bgId, bgName) {
     previewId = bgId;
     const visual = $('previewVisual');
     const name = $('previewName');
-    visual.innerHTML = '<video src="/static/img/' + bgId + '.mp4" autoplay muted loop playsinline></video>';
+    visual.innerHTML = '<img src="/static/img/' + bgId + '.png" onerror="this.src=\'/static/img/star2.png\'" style="max-width:100%;border-radius:12px">';
     name.textContent = bgName || bgId;
     const applyBtn = $('previewApplyBtn');
     const lockInfo = $('previewLockInfo');
@@ -8263,23 +8245,7 @@ function getRocketGif(){
 function applySettings(){
     console.log('🔧 applySettings: currentBg=' + currentBg + ', currentRocket=' + currentRocket);
     
-    /* Apply background */
-    const video = $('bgVideo');
-    if(video){
-        if(currentBg !== 'phone'){
-            video.innerHTML = '<source src="/static/img/' + currentBg + '.mp4" type="video/mp4">';
-            video.load();
-            console.log('🔧 Loaded video: /static/img/' + currentBg + '.mp4');
-        } else {
-            console.log('🔧 Using default phone background');
-        }
-        /* Pause/play video based on GIF setting */
-        if(settingGif){
-            video.play().catch(()=>{});
-        } else {
-            video.pause();
-        }
-    }
+    /* Video backgrounds removed — CSS grid bg used */
     
     /* Apply rocket */
     const rocketImg = $('rocketWrap')?.querySelector('img');
@@ -9571,12 +9537,7 @@ function toggleSetting(type){
             localStorage.setItem('crash_gif', settingGif ? 'on' : 'off');
             el = $('toggleGif');
             newVal = settingGif;
-            /* Apply immediately to background video */
-            const bgVid = $('bgVideo');
-            if(bgVid){
-                if(settingGif) bgVid.play().catch(()=>{});
-                else bgVid.pause();
-            }
+            /* Video backgrounds removed — no video to pause/play */
             if(!settingGif){
                 showToast('GIF animations disabled', 'ok');
             } else {
@@ -9662,8 +9623,7 @@ function toggleSetting(type){
                 localStorage.setItem('crash_shadows', 'off');
                 localStorage.setItem('crash_gif', 'off');
                 syncToggleUI();
-                const bgv = $('bgVideo');
-                if(bgv) bgv.pause();
+                /* Video backgrounds removed */
             }
             applyOptimizationSettings();
             showToast(settingLowPower ? 'Power saving ON' : 'Power saving OFF', 'ok');
