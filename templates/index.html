@@ -2394,12 +2394,12 @@
                 if (sessionStorage.getItem('app_loaded')) {
                     loadingScreen.style.display = 'none';
                     document.getElementById('main-app').classList.add('show');
-                    /* Still need to init everything */
+                    /* Still need to init everything - parallelize as much as possible */
                     try {
                         await initTelegram();
-                        await loadLevelSystem();
-                        await loadUserData();
                         await Promise.all([
+                            loadLevelSystem().catch(e => console.error(e)),
+                            loadUserData().catch(e => console.error(e)),
                             loadCases().catch(e => console.error(e)),
                             loadWinsFeed().catch(e => console.error(e))
                         ]);
@@ -2412,37 +2412,31 @@
 
                 loadingBar.style.width = '0%';
                 
-                /* Fallback: если загрузка застряла - показать приложение через 10 сек */
+                /* Fallback: если загрузка застряла - показать приложение через 6 сек */
                 const loadingTimeout = setTimeout(() => {
                     console.warn('Loading timeout - forcing app display');
                     loadingScreen.classList.add('fade-out');
                     document.getElementById('main-app').classList.add('show');
-                }, 10000);
+                }, 6000);
                 
-                // Простая последовательная загрузка с обработкой ошибок
+                // Optimized parallel loading
                 try {
-                    // 1. Инициализация Telegram (20%)
+                    // 1. Telegram init (must be first)
                     loadingBar.style.width = '20%';
                     await initTelegram();
                     
-                    // 2. Загрузка системы уровней из БД (35%)
-                    loadingBar.style.width = '35%';
-                    await loadLevelSystem();
-
-                    // 3. Загрузка данных пользователя (50%)
-                    loadingBar.style.width = '50%';
-                    await loadUserData();
-                    
-                    // 3. Параллельная загрузка всего остального (80%)
-                    loadingBar.style.width = '60%';
+                    // 2. Everything else in parallel
+                    loadingBar.style.width = '40%';
                     await Promise.all([
+                        loadLevelSystem().catch(err => console.error('Level system error:', err)),
+                        loadUserData().catch(err => console.error('User data error:', err)),
                         loadCases().catch(err => console.error('Error loading cases:', err)),
                         loadWinsFeed().catch(err => console.error('Error loading wins:', err))
                     ]);
                     
-                    // 4. Завершение (100%)
+                    // 3. Done
                     loadingBar.style.width = '100%';
-                    await sleep(300);
+                    await sleep(150);
                     
                     clearTimeout(loadingTimeout);
 
@@ -2696,7 +2690,7 @@
                 }
             }
 
-            var _ICON_TON = '<img src="/static/img/tons/ton_1.svg" width="14" height="14" alt="TON">';
+            var _ICON_TON = '<img src="/static/img/ton.png" width="14" height="14" alt="TON">';
 
             function updateUserUI() {
                 if (!userData) return;
@@ -2810,20 +2804,11 @@
 
             async function loadCases() {
                 try {
-                    let data = null;
-                    try {
-                        data = await fetchJsonWithTimeout('/api/cases', 12000);
-                    } catch (firstError) {
-                        console.warn('Cases load first attempt failed, retrying...', firstError);
-                        data = await fetchJsonWithTimeout('/api/cases', 12000);
-                    }
-
-                    let sectionsData = { success: false, sections: [] };
-                    try {
-                        sectionsData = await fetchJsonWithTimeout('/api/case-sections', 8000);
-                    } catch (sectionError) {
-                        console.warn('Case sections load skipped:', sectionError);
-                    }
+                    /* Load cases and sections in parallel */
+                    const [data, sectionsData] = await Promise.all([
+                        fetchJsonWithTimeout('/api/cases', 5000).catch(e => { console.warn('Cases retry...', e); return fetchJsonWithTimeout('/api/cases', 5000); }),
+                        fetchJsonWithTimeout('/api/case-sections', 4000).catch(() => ({ success: false, sections: [] }))
+                    ]);
 
                     if (data.success) {
                         allCases = data.cases || [];

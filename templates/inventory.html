@@ -145,7 +145,6 @@
         .reward-card-img{width:56px;height:56px;object-fit:contain;margin:0 auto;display:block;transition:filter .3s}
         .reward-card-name{font-size:10px;font-weight:600;color:var(--text2);margin-top:6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
         .reward-card.unlocked .reward-card-name{color:var(--text)}
-        .reward-card-lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;background:rgba(9,11,17,.4);border-radius:14px;pointer-events:none}
         .rewards-close-btn{
             margin:0 20px 20px;padding:14px;border-radius:14px;border:none;
             background:var(--blue);color:#fff;font-family:inherit;font-size:15px;font-weight:700;
@@ -482,26 +481,21 @@
         document.getElementById('rewardsUserLevel').textContent = userLvl + ' lvl';
 
         var grid = document.getElementById('rewardsGrid');
-        if (!levelRewards.length) {
+        /* Filter to TON-only rewards for now */
+        var tonRewards = levelRewards.filter(function(lv){ return lv.reward && lv.reward.type === 'ton_bonus'; });
+        if (!tonRewards.length) {
             grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:20px">No rewards available</div>';
         } else {
-            grid.innerHTML = levelRewards.map(function(lv) {
+            grid.innerHTML = tonRewards.map(function(lv) {
                 var unlocked = userLvl >= lv.level;
                 var cls = unlocked ? 'unlocked' : 'locked';
                 var rw = lv.reward || {};
-                var img = rw.image || '/static/img/star.png';
-                var rewardName = rw.name || ('Level ' + lv.level);
-                /* Reward type emoji */
-                var typeIcon = '';
-                if (rw.type === 'ton_bonus') typeIcon = '💎';
-                else if (rw.type === 'free_case') typeIcon = '🎁';
-                else if (rw.type === 'rocket_skin') typeIcon = '🚀';
-                else if (rw.type === 'background') typeIcon = '🎨';
+                var img = rw.image || '/static/img/ton.png';
+                var rewardName = rw.name || ('+TON');
                 return '<div class="reward-card ' + cls + '" onclick="onRewardClick(' + lv.level + ',' + (unlocked?1:0) + ')">' +
                     '<div class="reward-card-lvl">' + lv.level + ' lvl</div>' +
-                    '<img class="reward-card-img" src="' + img + '" alt="" onerror="this.src=\'/static/img/star.png\'">' +
-                    '<div class="reward-card-name">' + typeIcon + ' ' + rewardName + '</div>' +
-                    (!unlocked ? '<div class="reward-card-lock">🔒</div>' : '') +
+                    '<img class="reward-card-img" src="' + img + '" alt="" onerror="this.src=\'/static/img/ton.png\'">' +
+                    '<div class="reward-card-name">' + rewardName + '</div>' +
                 '</div>';
             }).join('');
         }
