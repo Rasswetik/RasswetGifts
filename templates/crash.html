@@ -1061,6 +1061,9 @@ tc-root *{pointer-events:auto}
     z-index:0;
     opacity:.25;
     pointer-events:none;
+    will-change:opacity;
+    -webkit-backface-visibility:hidden;
+    backface-visibility:hidden;
 }
 
 /* Grid overlay - always visible blue grid like GiftsBattle */
@@ -1115,7 +1118,7 @@ tc-root *{pointer-events:auto}
 }
 .mult-digit-strip{
     display:flex;flex-direction:column;
-    transition:transform .25s cubic-bezier(.15,.6,.2,1);
+    transition:transform .08s ease-out;
     will-change:transform;
 }
 .mult-digit-strip span{
@@ -5164,12 +5167,18 @@ function updateRocketImage(){
 }
 
 /* ============================================================
-   RENDER LOOP — smooth rocket movement (no delays)
+   RENDER LOOP — client-side interpolation for smooth hundredths
    ============================================================ */
 let lastRenderStatus = null;
 let lastRocketUpdateTime = 0;
 const ROCKET_UPDATE_INTERVAL = 200; /* ms - throttle rocket image updates */
 let lastMultStr = '';
+
+/* Client-side interpolation state */
+let multGrowthRate = 0;       /* multiplier units per ms */
+let prevServMult = 1.0;       /* previous poll server value */
+let lastPollTimestamp = 0;    /* performance.now() of last poll */
+let lastFrameTime = 0;        /* for frame delta calc */
 
 /* Build rolling digit DOM for the multiplier display */
 function initMultDisplay(){
@@ -5185,7 +5194,6 @@ var multXEl = null;
 var multPrevLen = 0;
 
 function ensureMultSlots(md, count){
-    /* Ensure we have exactly 'count' digit-wrap elements, plus dot and x */
     while(multDigitPool.length < count){
         var wrap = document.createElement('span');
         wrap.className = 'mult-digit-wrap';
@@ -5218,14 +5226,12 @@ function updateMultDisplay(val){
     if(str === lastMultStr) return;
     lastMultStr = str;
     
-    /* Count digits (exclude dot) */
     var digitCount = 0;
     for(var i = 0; i < str.length; i++){
         if(str[i] !== '.') digitCount++;
     }
     ensureMultSlots(md, digitCount);
     
-    /* Rebuild DOM only if structure changed (different digit count) */
     if(digitCount !== multPrevLen){
         multPrevLen = digitCount;
         md.innerHTML = '';
@@ -5241,7 +5247,6 @@ function updateMultDisplay(val){
         md.appendChild(multXEl);
     }
     
-    /* Update transforms on existing strips - CSS transition handles animation */
     var di = 0;
     for(var i = 0; i < str.length; i++){
         if(str[i] !== '.'){
@@ -5253,17 +5258,42 @@ function updateMultDisplay(val){
     }
 }
 
-function render(){
-    if(status === 'flying'){
-        /* Smooth catch-up to server value — faster lerp */
-        const diff = servMult - dispMult;
-        if(Math.abs(diff) > 0.001){
-            dispMult += diff * 0.25;
-        } else {
-            dispMult = servMult;
+/* Called from updStatus when a new server multiplier arrives */
+function onNewServerMult(newMult){
+    var now = performance.now();
+    if(lastPollTimestamp > 0 && newMult > prevServMult){
+        var elapsed = now - lastPollTimestamp;
+        if(elapsed > 50){ /* avoid divide-by-tiny-number */
+            multGrowthRate = (newMult - prevServMult) / elapsed;
         }
+    }
+    prevServMult = newMult;
+    lastPollTimestamp = now;
+    /* If display is behind server, don't snap — let render() catch up smoothly.
+       If display is ahead (overshoot), gently pull back. */
+    if(dispMult > newMult + 0.02){
+        dispMult = newMult; /* snap back to prevent showing wrong value */
+    }
+}
 
-        /* Rocket stays in center — no movement */
+function render(){
+    var now = performance.now();
+    var dt = lastFrameTime > 0 ? (now - lastFrameTime) : 16;
+    if(dt > 100) dt = 100; /* clamp to avoid huge jumps after tab-switch */
+    lastFrameTime = now;
+
+    if(status === 'flying'){
+        /* Client-side interpolation: continuously increment using growth rate */
+        if(multGrowthRate > 0){
+            dispMult += multGrowthRate * dt;
+            /* Don't run too far ahead of last known server value.
+               Allow up to ~600ms of extrapolation beyond last poll. */
+            var maxExtrapolation = prevServMult + multGrowthRate * 600;
+            if(dispMult > maxExtrapolation) dispMult = maxExtrapolation;
+        }
+        /* Ensure display never falls below 1.0 */
+        if(dispMult < 1.0) dispMult = 1.0;
+
         const rw = $('rocketWrap');
         if(rw && !rw.classList.contains('flying')) rw.classList.add('flying');
 
@@ -5271,15 +5301,12 @@ function render(){
         $('coeffBox').textContent = dispMult.toFixed(2) + 'x';
         updateMultDisplay(dispMult);
         
-        /* Show rolling multiplier, hide countdown */
         var md = $('multDisplay');
         if(md && !md.classList.contains('active')) md.classList.add('active');
         
-        /* Update bet info display in game field */
         updateBetInfoDisplay();
 
         /* Throttled rocket image update */
-        var now = performance.now();
         if(now - lastRocketUpdateTime >= ROCKET_UPDATE_INTERVAL){
             lastRocketUpdateTime = now;
             updateRocketImage();
@@ -5294,10 +5321,8 @@ function render(){
             }
         }
         
-        /* Update bets display with current potential wins */
         updateActiveBetsDisplay();
     } else {
-        /* Reset to rocket when not flying */
         if(lastRenderStatus === 'flying'){
             updateRocketImage();
         }
@@ -5327,6 +5352,9 @@ async function updStatus(){
         servMult = parseFloat(g.current_multiplier) || 1.0;
         const tr = g.time_remaining || 0;
         lastTimeRemaining = tr;
+
+        /* Feed new server multiplier to interpolation engine */
+        if(status === 'flying') onNewServerMult(servMult);
 
         /* Only update hasBet from server if we haven't cashed out this round */
         if(d.user_bet && d.user_bet.status === 'active'){
@@ -5385,6 +5413,11 @@ async function updStatus(){
                 cashedOut = false;  /* Reset cashout flag */
                 cashedOutBetAmt = 0;
                 betPlacedOptimistic = false;
+                /* Reset interpolation state */
+                multGrowthRate = 0;
+                prevServMult = 1.0;
+                lastPollTimestamp = 0;
+                lastFrameTime = 0;
                 /* Reset rocket image to selected rocket - force GIF restart */
                 const rwReset = $('rocketWrap');
                 if(rwReset) {
@@ -8111,12 +8144,22 @@ function selectBg(bgId){
     currentBg = bgId;
     localStorage.setItem('crash_bg', bgId);
     
-    /* Update video source */
+    /* Cross-fade to new video to prevent flicker */
     const video = $('bgVideo');
     if(video){
-        video.innerHTML = '<source src="/static/img/' + bgId + '.mp4" type="video/mp4">';
-        video.load();
-        video.play().catch(()=>{});
+        var newSrc = '/static/img/' + bgId + '.mp4';
+        /* Fade out, swap, fade in */
+        video.style.transition = 'opacity .25s';
+        video.style.opacity = '0';
+        setTimeout(function(){
+            video.innerHTML = '<source src="' + newSrc + '" type="video/mp4">';
+            video.load();
+            video.play().then(function(){
+                video.style.opacity = '';
+            }).catch(function(){
+                video.style.opacity = '';
+            });
+        }, 250);
     }
     
     renderSettings();
@@ -9375,21 +9418,8 @@ function toggleRepeat(){
     showToast(musicRepeat ? 'Track repeat on' : 'Track repeat off', 'ok');
 }
 
-/* Settings Tab Switching */
-function switchSettingsTab(tab){
-    playSound('click');
-    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.settings-tab-content').forEach(c => c.classList.remove('active'));
-    
-    if(tab === 'main'){
-        document.querySelector('.settings-tab:first-child').classList.add('active');
-        $('settingsTabMain').classList.add('active');
-    } else if(tab === 'vip'){
-        document.querySelector('.settings-tab.vip-tab').classList.add('active');
-        $('settingsTabVip').classList.add('active');
-        updateVipSettingsUI();
-    }
-}
+/* Settings Tab Switching — handled by the switchSettingsTab() defined earlier (line ~8005) */
+/* (duplicate removed — old version only knew 'main'/'vip' and overrode the new one) */
 
 /* VIP Theme Functions */
 function updateVipSettingsUI(){
