@@ -58,6 +58,112 @@ fragment_cache = None
 fragment_cache_time = None
 fragment_models_cache = {}
 fragment_models_cache_time = {}
+
+# ── Manual gift prices in TON (override Fragment/local prices) ──────────────
+MANUAL_GIFT_PRICES_TON = {
+    'ufc strike': 15.3,
+    'valentine box': 11.7,
+    'victory medal': 4.98,
+    'vintage cigar': 33.9,
+    'voodoo doll': 30.9,
+    'westside sign': 111.9,
+    'whip cupcake': 4.4,
+    'winter wreath': 4.49,
+    'witch hat': 6.29,
+    'xmas stocking': 4.33,
+    'swag bag': 5.19,
+    'swiss watch': 55.8,
+    'tama gadget': 4.65,
+    'top hat': 12.8,
+    'toy bear': 44.9,
+    'trapped heart': 14.5,
+    'moon': 5.64,
+    'mousse cake': 4.96,
+    'nail bracelet': 145.9,
+    'neko helmet': 41.1,
+    'party sparkler': 4.3,
+    'perfume bottle': 97.9,
+    'pet snake': 4.55,
+    'precious peach': 438,
+    'pretty posy': 4.7,
+    'rare bird': 29.9,
+    'record': 5.61,
+    'restless jar': 11.3,
+    'sakura flower': 48.9,
+    'santa hat': 12.5,
+    'scared cat': 4.5,
+    'sharp tongue': 5.08,
+    'signet ring': 5.48,
+    'skull flower': 7.2,
+    'sky stilettos': 5.49,
+    'sleigh bell': 5.83,
+    'snake box': 6.17,
+    'loot bag': 162.9,
+    'love candle': 12.3,
+    'love potion': 17,
+    'low rider': 52,
+    'lunar snake': 4.3,
+    'lush bouquet': 6.55,
+    'mad pumpkin': 13.8,
+    'magic potion': 80.9,
+    'mighty arm': 171.9,
+    'mini oscar': 103.7,
+    'money pot': 4.66,
+    'ion gem': 98.5,
+    'ionic dryer': 18.7,
+    'jack-in-the-box': 4.94,
+    'jelly bunny': 8.03,
+    'jester hat': 4.83,
+    'jolly chimp': 7.3,
+    'joyful bundle': 7.11,
+    "khabib's papakha": 25.9,
+    'kissed frog': 67.8,
+    'light sword': 6.3,
+    'lol pop': 4.5,
+    'hanging star': 9.93,
+    'happy brownie': 4.65,
+    'heroic helmet': 255.7,
+    'hex pot': 4.99,
+    'holiday drink': 4.4,
+    'homemade cake': 5.06,
+    'hypno lollipop': 4.84,
+    'ice cream': 4.44,
+    'input key': 6.19,
+    'instant ramen': 4.38,
+    'desk calendar': 6.78,
+    "durov's cap": 708,
+    'jingle bells': 9.53,
+    'plush pepe': 7999,
+    'heart locket': 2199,
+    'artisan brick': 97.7,
+    'astral shard': 199.9,
+    'b-day candle': 4.3,
+    'berry box': 8.81,
+    'big year': 4.72,
+    'bling binky': 35.3,
+    'bonded ring': 58.2,
+    'bow tie': 6.3,
+    'bunny muffin': 8.28,
+    'candy cane': 4.31,
+    'clover pin': 4.7,
+    'cookie heart': 4.95,
+    'crystal ball': 12,
+    'cupid charm': 22.5,
+    'diamond ring': 29.4,
+    'easter egg': 5.63,
+    'electric skull': 33.9,
+    'eternal candle': 6.58,
+    'eternal rose': 29.4,
+    'evil eye': 7.94,
+    'faith amulet': 4.7,
+    'flying broom': 14,
+    'fresh socks': 4.43,
+    'gem signet': 72.3,
+    'genie lamp': 50,
+    'ginger cookie': 4.9,
+}
+# Build a slug-keyed version for matching by fragment_slug
+_MANUAL_PRICES_BY_SLUG = {re.sub(r'[^a-z0-9]+', '', k): v for k, v in MANUAL_GIFT_PRICES_TON.items()}
 _fragment_http_session = None
 fragment_last_error = None
 
@@ -366,57 +472,67 @@ def _get_bot_bets_for_api(game_id):
 
 # Система уровней (50 уровней)
 LEVEL_SYSTEM = [
-    {"level": 1, "exp_required": 0, "reward_stars": 0, "reward_tickets": 0},
-    {"level": 2, "exp_required": 100, "reward_stars": 10, "reward_tickets": 1},
-    {"level": 3, "exp_required": 300, "reward_stars": 25, "reward_tickets": 2},
-    {"level": 4, "exp_required": 600, "reward_stars": 50, "reward_tickets": 3},
-    {"level": 5, "exp_required": 1000, "reward_stars": 100, "reward_tickets": 5},
-    {"level": 6, "exp_required": 1500, "reward_stars": 150, "reward_tickets": 7},
-    {"level": 7, "exp_required": 2100, "reward_stars": 200, "reward_tickets": 10},
-    {"level": 8, "exp_required": 2800, "reward_stars": 250, "reward_tickets": 12},
-    {"level": 9, "exp_required": 3600, "reward_stars": 300, "reward_tickets": 15},
-    {"level": 10, "exp_required": 4500, "reward_stars": 400, "reward_tickets": 20},
-    {"level": 11, "exp_required": 5500, "reward_stars": 500, "reward_tickets": 25},
-    {"level": 12, "exp_required": 6600, "reward_stars": 600, "reward_tickets": 30},
-    {"level": 13, "exp_required": 7800, "reward_stars": 700, "reward_tickets": 35},
-    {"level": 14, "exp_required": 9100, "reward_stars": 800, "reward_tickets": 40},
-    {"level": 15, "exp_required": 10500, "reward_stars": 900, "reward_tickets": 45},
-    {"level": 16, "exp_required": 12000, "reward_stars": 1000, "reward_tickets": 50},
-    {"level": 17, "exp_required": 13600, "reward_stars": 1100, "reward_tickets": 55},
-    {"level": 18, "exp_required": 15300, "reward_stars": 1200, "reward_tickets": 60},
-    {"level": 19, "exp_required": 17100, "reward_stars": 1300, "reward_tickets": 65},
-    {"level": 20, "exp_required": 19000, "reward_stars": 1500, "reward_tickets": 70},
-    {"level": 21, "exp_required": 21500, "reward_stars": 1600, "reward_tickets": 75},
-    {"level": 22, "exp_required": 24000, "reward_stars": 1700, "reward_tickets": 80},
-    {"level": 23, "exp_required": 27000, "reward_stars": 1800, "reward_tickets": 85},
-    {"level": 24, "exp_required": 30000, "reward_stars": 1900, "reward_tickets": 90},
-    {"level": 25, "exp_required": 34000, "reward_stars": 2000, "reward_tickets": 100},
-    {"level": 26, "exp_required": 38000, "reward_stars": 2200, "reward_tickets": 110},
-    {"level": 27, "exp_required": 42500, "reward_stars": 2400, "reward_tickets": 120},
-    {"level": 28, "exp_required": 47500, "reward_stars": 2600, "reward_tickets": 130},
-    {"level": 29, "exp_required": 53000, "reward_stars": 2800, "reward_tickets": 140},
-    {"level": 30, "exp_required": 59000, "reward_stars": 3000, "reward_tickets": 150},
-    {"level": 31, "exp_required": 66000, "reward_stars": 3200, "reward_tickets": 160},
-    {"level": 32, "exp_required": 73000, "reward_stars": 3400, "reward_tickets": 170},
-    {"level": 33, "exp_required": 81000, "reward_stars": 3600, "reward_tickets": 180},
-    {"level": 34, "exp_required": 90000, "reward_stars": 3800, "reward_tickets": 190},
-    {"level": 35, "exp_required": 100000, "reward_stars": 4000, "reward_tickets": 200},
-    {"level": 36, "exp_required": 112000, "reward_stars": 4300, "reward_tickets": 220},
-    {"level": 37, "exp_required": 125000, "reward_stars": 4600, "reward_tickets": 240},
-    {"level": 38, "exp_required": 140000, "reward_stars": 4900, "reward_tickets": 260},
-    {"level": 39, "exp_required": 156000, "reward_stars": 5200, "reward_tickets": 280},
-    {"level": 40, "exp_required": 175000, "reward_stars": 5500, "reward_tickets": 300},
-    {"level": 41, "exp_required": 195000, "reward_stars": 5800, "reward_tickets": 320},
-    {"level": 42, "exp_required": 218000, "reward_stars": 6100, "reward_tickets": 340},
-    {"level": 43, "exp_required": 243000, "reward_stars": 6400, "reward_tickets": 360},
-    {"level": 44, "exp_required": 270000, "reward_stars": 6700, "reward_tickets": 380},
-    {"level": 45, "exp_required": 300000, "reward_stars": 7000, "reward_tickets": 400},
-    {"level": 46, "exp_required": 335000, "reward_stars": 7500, "reward_tickets": 430},
-    {"level": 47, "exp_required": 375000, "reward_stars": 8000, "reward_tickets": 460},
-    {"level": 48, "exp_required": 420000, "reward_stars": 8500, "reward_tickets": 490},
-    {"level": 49, "exp_required": 470000, "reward_stars": 9000, "reward_tickets": 520},
-    {"level": 50, "exp_required": 525000, "reward_stars": 10000, "reward_tickets": 600}
+    # 25 уровней: нечётные = скин ракеты, чётные = крейт
+    {"level": 1,  "exp_required": 0,      "reward_stars": 0,    "reward_tickets": 0,   "reward_rocket": "crash",       "reward_crate": None},
+    {"level": 2,  "exp_required": 100,    "reward_stars": 10,   "reward_tickets": 1,   "reward_rocket": None,          "reward_crate": "starter_crate"},
+    {"level": 3,  "exp_required": 300,    "reward_stars": 25,   "reward_tickets": 2,   "reward_rocket": "pencil",      "reward_crate": None},
+    {"level": 4,  "exp_required": 600,    "reward_stars": 50,   "reward_tickets": 3,   "reward_rocket": None,          "reward_crate": "bronze_crate"},
+    {"level": 5,  "exp_required": 1000,   "reward_stars": 100,  "reward_tickets": 5,   "reward_rocket": "banana",      "reward_crate": None},
+    {"level": 6,  "exp_required": 1500,   "reward_stars": 150,  "reward_tickets": 7,   "reward_rocket": None,          "reward_crate": "silver_crate"},
+    {"level": 7,  "exp_required": 2100,   "reward_stars": 200,  "reward_tickets": 10,  "reward_rocket": "plane",       "reward_crate": None},
+    {"level": 8,  "exp_required": 2800,   "reward_stars": 250,  "reward_tickets": 12,  "reward_rocket": None,          "reward_crate": "gold_crate"},
+    {"level": 9,  "exp_required": 3600,   "reward_stars": 300,  "reward_tickets": 15,  "reward_rocket": "dog",         "reward_crate": None},
+    {"level": 10, "exp_required": 4500,   "reward_stars": 400,  "reward_tickets": 20,  "reward_rocket": None,          "reward_crate": "platinum_crate"},
+    {"level": 11, "exp_required": 5500,   "reward_stars": 500,  "reward_tickets": 25,  "reward_rocket": "cat",         "reward_crate": None},
+    {"level": 12, "exp_required": 6600,   "reward_stars": 600,  "reward_tickets": 30,  "reward_rocket": None,          "reward_crate": "diamond_crate"},
+    {"level": 13, "exp_required": 7800,   "reward_stars": 700,  "reward_tickets": 35,  "reward_rocket": "rabbit",      "reward_crate": None},
+    {"level": 14, "exp_required": 9100,   "reward_stars": 800,  "reward_tickets": 40,  "reward_rocket": None,          "reward_crate": "cosmic_crate"},
+    {"level": 15, "exp_required": 10500,  "reward_stars": 900,  "reward_tickets": 45,  "reward_rocket": "smesh",       "reward_crate": None},
+    {"level": 16, "exp_required": 12000,  "reward_stars": 1000, "reward_tickets": 50,  "reward_rocket": None,          "reward_crate": "nebula_crate"},
+    {"level": 17, "exp_required": 13600,  "reward_stars": 1100, "reward_tickets": 55,  "reward_rocket": "scorpion",    "reward_crate": None},
+    {"level": 18, "exp_required": 15300,  "reward_stars": 1200, "reward_tickets": 60,  "reward_rocket": None,          "reward_crate": "stellar_crate"},
+    {"level": 19, "exp_required": 17100,  "reward_stars": 1300, "reward_tickets": 65,  "reward_rocket": "telegram",    "reward_crate": None},
+    {"level": 20, "exp_required": 19000,  "reward_stars": 1500, "reward_tickets": 70,  "reward_rocket": None,          "reward_crate": "galactic_crate"},
+    {"level": 21, "exp_required": 21500,  "reward_stars": 1600, "reward_tickets": 75,  "reward_rocket": "ice",         "reward_crate": None},
+    {"level": 22, "exp_required": 24000,  "reward_stars": 1700, "reward_tickets": 80,  "reward_rocket": None,          "reward_crate": "legendary_crate"},
+    {"level": 23, "exp_required": 27000,  "reward_stars": 1800, "reward_tickets": 85,  "reward_rocket": "unicorn",     "reward_crate": None},
+    {"level": 24, "exp_required": 30000,  "reward_stars": 1900, "reward_tickets": 90,  "reward_rocket": None,          "reward_crate": "supreme_crate"},
+    {"level": 25, "exp_required": 34000,  "reward_stars": 2000, "reward_tickets": 100, "reward_rocket": "goldenplane",  "reward_crate": "supreme_crate"},
 ]
+
+# Карта названий ракет для отображения
+ROCKET_NAMES = {
+    'crash': 'Ракета',
+    'pencil': 'Карандаш',
+    'banana': 'Банан',
+    'plane': 'Самолёт',
+    'dog': 'Собака',
+    'cat': 'Кот',
+    'rabbit': 'Кролик',
+    'smesh': 'Смешарик',
+    'scorpion': 'Скорпион',
+    'telegram': 'Телеграм',
+    'ice': 'Лёд',
+    'unicorn': 'Единорог',
+    'TonTheMoon': 'TON Moon',
+    'goldenplane': 'Золотой Самолёт',
+}
+
+# Карта крейтов за уровни
+LEVEL_CRATES = {
+    'starter_crate':   {'name': 'Starter Crate',   'image': '/static/img/crates/starter.png',   'items': [('stars', '50', 'Stars x50', 40, 'common'), ('stars', '150', 'Stars x150', 30, 'uncommon'), ('tickets', '5', 'Tickets x5', 20, 'rare'), ('stars', '300', 'Stars x300', 10, 'epic')]},
+    'bronze_crate':    {'name': 'Bronze Crate',     'image': '/static/img/crates/bronze.png',    'items': [('stars', '100', 'Stars x100', 35, 'common'), ('stars', '250', 'Stars x250', 30, 'uncommon'), ('tickets', '10', 'Tickets x10', 20, 'rare'), ('stars', '500', 'Stars x500', 15, 'epic')]},
+    'silver_crate':    {'name': 'Silver Crate',     'image': '/static/img/crates/silver.png',    'items': [('stars', '200', 'Stars x200', 35, 'common'), ('stars', '400', 'Stars x400', 25, 'uncommon'), ('tickets', '15', 'Tickets x15', 25, 'rare'), ('stars', '800', 'Stars x800', 15, 'epic')]},
+    'gold_crate':      {'name': 'Gold Crate',       'image': '/static/img/crates/gold.png',      'items': [('stars', '300', 'Stars x300', 30, 'common'), ('stars', '600', 'Stars x600', 25, 'uncommon'), ('tickets', '20', 'Tickets x20', 25, 'rare'), ('stars', '1200', 'Stars x1200', 20, 'epic')]},
+    'platinum_crate':  {'name': 'Platinum Crate',   'image': '/static/img/crates/platinum.png',  'items': [('stars', '400', 'Stars x400', 25, 'common'), ('stars', '800', 'Stars x800', 25, 'uncommon'), ('tickets', '30', 'Tickets x30', 25, 'rare'), ('stars', '1500', 'Stars x1500', 25, 'epic')]},
+    'diamond_crate':   {'name': 'Diamond Crate',    'image': '/static/img/crates/diamond.png',   'items': [('stars', '500', 'Stars x500', 25, 'common'), ('stars', '1000', 'Stars x1000', 25, 'uncommon'), ('tickets', '40', 'Tickets x40', 25, 'rare'), ('stars', '2000', 'Stars x2000', 25, 'epic')]},
+    'cosmic_crate':    {'name': 'Cosmic Crate',     'image': '/static/img/crates/cosmic.png',    'items': [('stars', '700', 'Stars x700', 20, 'common'), ('stars', '1500', 'Stars x1500', 25, 'uncommon'), ('tickets', '50', 'Tickets x50', 30, 'rare'), ('stars', '3000', 'Stars x3000', 25, 'epic')]},
+    'nebula_crate':    {'name': 'Nebula Crate',     'image': '/static/img/crates/nebula.png',    'items': [('stars', '1000', 'Stars x1000', 20, 'common'), ('stars', '2000', 'Stars x2000', 25, 'uncommon'), ('tickets', '60', 'Tickets x60', 25, 'rare'), ('stars', '4000', 'Stars x4000', 30, 'epic')]},
+    'stellar_crate':   {'name': 'Stellar Crate',    'image': '/static/img/crates/stellar.png',   'items': [('stars', '1500', 'Stars x1500', 20, 'common'), ('stars', '3000', 'Stars x3000', 25, 'uncommon'), ('tickets', '80', 'Tickets x80', 25, 'rare'), ('stars', '5000', 'Stars x5000', 30, 'epic')]},
+    'galactic_crate':  {'name': 'Galactic Crate',   'image': '/static/img/crates/galactic.png',  'items': [('stars', '2000', 'Stars x2000', 15, 'common'), ('stars', '4000', 'Stars x4000', 25, 'uncommon'), ('tickets', '100', 'Tickets x100', 25, 'rare'), ('stars', '7000', 'Stars x7000', 35, 'epic')]},
+    'legendary_crate': {'name': 'Legendary Crate',  'image': '/static/img/crates/legendary.png', 'items': [('stars', '3000', 'Stars x3000', 15, 'common'), ('stars', '5000', 'Stars x5000', 20, 'uncommon'), ('tickets', '120', 'Tickets x120', 30, 'rare'), ('stars', '10000', 'Stars x10000', 35, 'epic')]},
+    'supreme_crate':   {'name': 'Supreme Crate',    'image': '/static/img/crates/supreme.png',   'items': [('stars', '5000', 'Stars x5000', 10, 'uncommon'), ('tickets', '150', 'Tickets x150', 25, 'rare'), ('stars', '15000', 'Stars x15000', 35, 'epic'), ('stars', '25000', 'Stars x25000', 30, 'legendary')]},
+}
 
 def _sync_levels_from_db():
     """Загружает уровни из БД. Если пусто — заполняет из LEVEL_SYSTEM по умолчанию."""
@@ -862,6 +978,21 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
                 'fragment_price_ton': None,
                 'source': 'local'
             })
+
+    # 3) Apply manual TON price overrides
+    for item in merged:
+        name_raw = str(item.get('name') or '').strip()
+        # Strip "(Random)" suffix for matching
+        name_clean = re.sub(r'\s*\(random\)\s*$', '', name_raw, flags=re.IGNORECASE).strip().lower()
+        slug = (item.get('fragment_slug') or '').strip().lower()
+        slug_key = re.sub(r'[^a-z0-9]+', '', slug) if slug else ''
+
+        manual_ton = MANUAL_GIFT_PRICES_TON.get(name_clean)
+        if manual_ton is None and slug_key:
+            manual_ton = _MANUAL_PRICES_BY_SLUG.get(slug_key)
+        if manual_ton is not None:
+            item['fragment_price_ton'] = manual_ton
+            item['value'] = int(round(manual_ton * FRAGMENT_TON_RATE))
 
     merged.sort(key=lambda x: float(x.get('value', 0) or 0), reverse=True)
     return merged
@@ -2254,6 +2385,33 @@ def add_experience(user_id, exp_amount, reason=""):
                                  (reward_tickets, reward_tickets, user_id))
                     level_up_rewards.append(f"{reward_tickets}🎫")
 
+                # Награда ракетой (нечётные уровни)
+                reward_rocket = next_level_info.get("reward_rocket")
+                if reward_rocket and new_level > 1:
+                    try:
+                        cursor.execute('''INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source)
+                            VALUES (?, 'rocket', ?, 'level_reward')''', (user_id, reward_rocket))
+                        rocket_display = ROCKET_NAMES.get(reward_rocket, reward_rocket)
+                        level_up_rewards.append(f"🚀 {rocket_display}")
+                    except Exception as re:
+                        logger.warning(f"Rocket reward error: {re}")
+
+                # Награда крейтом (чётные уровни)
+                reward_crate_key = next_level_info.get("reward_crate")
+                if reward_crate_key:
+                    try:
+                        crate_id = _get_level_crate_id(reward_crate_key)
+                        if crate_id:
+                            crate_info = LEVEL_CRATES.get(reward_crate_key, {})
+                            crate_name = crate_info.get('name', reward_crate_key)
+                            crate_image = crate_info.get('image', '')
+                            cursor.execute('''INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value, is_withdrawing, crate_id, crate_name, crate_image)
+                                VALUES (?, 0, ?, ?, 0, 0, ?, ?, ?)''',
+                                (user_id, crate_name, crate_image, crate_id, crate_name, crate_image))
+                            level_up_rewards.append(f"📦 {crate_name}")
+                    except Exception as ce:
+                        logger.warning(f"Crate reward error: {ce}")
+
                 # Записываем в историю
                 cursor.execute('''
                     INSERT INTO level_history (user_id, old_level, new_level, experience_gained, reason)
@@ -2265,6 +2423,8 @@ def add_experience(user_id, exp_amount, reason=""):
                     'new_level': new_level,
                     'reward_stars': reward_stars,
                     'reward_tickets': reward_tickets,
+                    'reward_rocket': reward_rocket,
+                    'reward_crate': reward_crate_key,
                     'rewards_text': ', '.join(level_up_rewards)
                 }
 
@@ -2275,6 +2435,11 @@ def add_experience(user_id, exp_amount, reason=""):
                         reward_desc += f'+{reward_stars} ⭐'
                     if reward_tickets > 0:
                         reward_desc += f' +{reward_tickets} 🎫'
+                    if reward_rocket and new_level > 1:
+                        reward_desc += f' 🚀 {ROCKET_NAMES.get(reward_rocket, reward_rocket)}'
+                    if reward_crate_key:
+                        crate_info = LEVEL_CRATES.get(reward_crate_key, {})
+                        reward_desc += f' 📦 {crate_info.get("name", reward_crate_key)}'
                     cursor.execute('''INSERT INTO admin_notifications 
                         (title, message, image_url, notif_type, target_user_id, reward_type, reward_data)
                         VALUES (?, ?, ?, 'level_up', ?, ?, ?)''',
@@ -2286,7 +2451,7 @@ def add_experience(user_id, exp_amount, reason=""):
                 except Exception as ne:
                     logger.warning(f"Level notif error: {ne}")
 
-                logger.info(f"🎉 Пользователь {user_id} достиг уровня {new_level}! Награда: {reward_stars}⭐, {reward_tickets}🎫")
+                logger.info(f"🎉 Пользователь {user_id} достиг уровня {new_level}! Награды: {', '.join(level_up_rewards)}")
             else:
                 break
 
@@ -2609,6 +2774,203 @@ def process_referral(referred_user_id, referral_code):
         logger.error(f"Ошибка обработки реферала: {e}")
         return False
 
+# ============================================================
+# AI RTP — Per-Player Crash Probability System
+# ============================================================
+# Each player carries an individual "luck profile". The house
+# maintains a target RTP (Return To Player) of ~85%. If a player
+# is significantly ahead (net positive), the system increases the
+# probability of crashing before that player can profit further.
+# Conversely, if a player has big losses, the system becomes more
+# lenient (higher multipliers allowed).
+#
+# The system works in two layers:
+#   1) Pre-round: adjust target_multiplier based on who has bet
+#   2) Mid-round: dynamic crash trigger if high-profit players
+#      would extract too much from a cashout
+# ============================================================
+
+TARGET_RTP = 0.85  # 85% RTP target
+RTP_HARD_FLOOR = 0.70  # Never let a player's effective RTP exceed this floor 
+RTP_CHECK_INTERVAL = 5  # Re-evaluate every N games
+
+def get_player_crash_stats(user_id, conn=None):
+    """Get a player's crash game lifetime stats"""
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    try:
+        cursor = conn.cursor()
+        # Total wagered in crash
+        cursor.execute('''SELECT COALESCE(SUM(bet_amount), 0) 
+                         FROM ultimate_crash_bets WHERE user_id = ?''', (user_id,))
+        total_wagered = cursor.fetchone()[0]
+        
+        # Total won (cashed out)
+        cursor.execute('''SELECT COALESCE(SUM(win_amount), 0) 
+                         FROM ultimate_crash_bets 
+                         WHERE user_id = ? AND status = 'cashed_out' ''', (user_id,))
+        total_won = cursor.fetchone()[0]
+        
+        # Recent performance (last 20 games)
+        cursor.execute('''SELECT bet_amount, COALESCE(win_amount, 0), status 
+                         FROM ultimate_crash_bets 
+                         WHERE user_id = ? 
+                         ORDER BY id DESC LIMIT 20''', (user_id,))
+        recent = cursor.fetchall()
+        recent_wagered = sum(r[0] for r in recent) if recent else 0
+        recent_won = sum(r[1] for r in recent) if recent else 0
+        
+        if close_conn:
+            conn.close()
+        
+        net_profit = total_won - total_wagered
+        player_rtp = (total_won / total_wagered) if total_wagered > 0 else 1.0
+        recent_rtp = (recent_won / recent_wagered) if recent_wagered > 0 else 1.0
+        
+        return {
+            'total_wagered': total_wagered,
+            'total_won': total_won,
+            'net_profit': net_profit,
+            'player_rtp': player_rtp,
+            'recent_rtp': recent_rtp,
+            'games_played': len(recent)
+        }
+    except Exception as e:
+        if close_conn:
+            try: conn.close()
+            except: pass
+        return {'total_wagered': 0, 'total_won': 0, 'net_profit': 0, 
+                'player_rtp': 1.0, 'recent_rtp': 1.0, 'games_played': 0}
+
+
+def ai_adjust_target_multiplier(base_target, game_id, conn=None):
+    """Adjust the pre-generated crash target based on active bettors.
+    
+    If the round's bettors are mostly profitable players, 
+    lower the target to recoup. If bettors are mostly in deficit,
+    allow the original (or even higher) target.
+    """
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''SELECT user_id, bet_amount FROM ultimate_crash_bets 
+                         WHERE game_id = ? AND status = 'active' ''', (game_id,))
+        bets = cursor.fetchall()
+        
+        if not bets:
+            if close_conn: conn.close()
+            return base_target
+        
+        # Calculate weighted "luck pressure" from all bettors
+        total_bet_value = sum(b[1] for b in bets)
+        luck_pressure = 0.0  # Positive = bettors are winning too much
+        
+        for user_id, bet_amount in bets:
+            if user_id < 0:  # Skip bots
+                continue
+            stats = get_player_crash_stats(user_id, conn)
+            if stats['total_wagered'] < 100:  # Not enough data
+                continue
+            
+            weight = bet_amount / max(total_bet_value, 1)
+            player_excess = stats['player_rtp'] - TARGET_RTP
+            
+            # Weight recent performance more heavily
+            recent_excess = stats['recent_rtp'] - TARGET_RTP
+            combined_excess = player_excess * 0.4 + recent_excess * 0.6
+            
+            luck_pressure += combined_excess * weight
+        
+        if close_conn: conn.close()
+        
+        # Apply adjustment
+        if luck_pressure > 0.15:
+            # Players are too profitable — reduce target
+            reduction = min(0.6, luck_pressure * 1.5)
+            adjusted = max(1.01, base_target * (1 - reduction))
+            logger.debug(f"🎯 AI RTP: Reducing target {base_target:.2f}x → {adjusted:.2f}x (pressure: {luck_pressure:.2f})")
+            return round(adjusted, 2)
+        elif luck_pressure < -0.2:
+            # Players are losing too much — allow higher target
+            boost = min(0.4, abs(luck_pressure) * 0.8)
+            adjusted = base_target * (1 + boost)
+            logger.debug(f"🎯 AI RTP: Boosting target {base_target:.2f}x → {adjusted:.2f}x (pressure: {luck_pressure:.2f})")
+            return round(adjusted, 2)
+        
+        return base_target
+        
+    except Exception as e:
+        logger.error(f"AI RTP adjust error: {e}")
+        if close_conn:
+            try: conn.close()
+            except: pass
+        return base_target
+
+
+def ai_should_force_crash(game_id, current_mult, conn=None):
+    """Check if the game should crash NOW based on player cashout potential.
+    
+    Called during flight on each tick. If a highly profitable player
+    stands to gain disproportionately, trigger an early crash.
+    Returns True to force crash, False to continue.
+    """
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''SELECT user_id, bet_amount FROM ultimate_crash_bets 
+                         WHERE game_id = ? AND status = 'active' ''', (game_id,))
+        active_bets = cursor.fetchall()
+        
+        if not active_bets:
+            if close_conn: conn.close()
+            return False
+        
+        for user_id, bet_amount in active_bets:
+            if user_id < 0:
+                continue
+            potential_win = bet_amount * current_mult
+            
+            stats = get_player_crash_stats(user_id, conn)
+            # Only intervene for players with meaningful history
+            if stats['total_wagered'] < 200:
+                continue
+            
+            # If this player's RTP is already high AND this win would push it higher
+            if stats['player_rtp'] > 1.1 and potential_win > bet_amount * 2:
+                # Probability of forcing crash scales with how profitable the player is
+                excess_rtp = stats['player_rtp'] - TARGET_RTP
+                crash_prob = min(0.35, excess_rtp * 0.3)
+                
+                # Higher potential wins increase crash probability
+                if potential_win > 500:
+                    crash_prob += 0.05
+                if potential_win > 2000:
+                    crash_prob += 0.10
+                
+                if random.random() < crash_prob:
+                    if close_conn: conn.close()
+                    logger.info(f"🎯 AI RTP: Force crash at {current_mult:.2f}x — player {user_id} RTP={stats['player_rtp']:.2f}, prob={crash_prob:.2f}")
+                    return True
+        
+        if close_conn: conn.close()
+        return False
+        
+    except Exception as e:
+        logger.error(f"AI force crash check error: {e}")
+        if close_conn:
+            try: conn.close()
+            except: pass
+        return False
+
+
 def generate_extreme_crash_multiplier():
     """Генерация экстремального множителя для Ultimate Crash с учётом баланса сайта"""
     # Calculate site profit/loss from deposits vs withdrawals + crash results
@@ -2828,6 +3190,16 @@ def start_ultimate_crash_loop():
                         time_remaining = max(0, 5.0 - elapsed)
                         update_crash_cache(game_id, 'counting', 1.0, target_mult_float, time_remaining)
                         if elapsed >= 5:  # 5 секунд отсчёта для ставок
+                            # AI RTP: Adjust target multiplier based on who bet this round
+                            try:
+                                adjusted_target = ai_adjust_target_multiplier(target_mult_float, game_id, conn)
+                                if adjusted_target != target_mult_float:
+                                    target_mult_float = adjusted_target
+                                    cursor.execute('UPDATE ultimate_crash_games SET target_multiplier = ? WHERE id = ?',
+                                                 (adjusted_target, game_id))
+                            except Exception as ai_e:
+                                logger.error(f"AI RTP pre-round error: {ai_e}")
+                            
                             # Lock phase transition to prevent late bets
                             with _crash_phase_lock:
                                 _crash_phase_transitioning = True
@@ -2861,6 +3233,25 @@ def start_ultimate_crash_loop():
                         # Увеличиваем множитель
 
                         if current_mult_float < target_mult_float:
+                            # AI RTP check — force crash if profitable players would extract too much
+                            if current_mult_float > 1.5 and tick_counter % 3 == 0:
+                                if ai_should_force_crash(game_id, current_mult_float, conn):
+                                    cursor.execute('UPDATE ultimate_crash_games SET status = "crashed" WHERE id = ?', (game_id,))
+                                    cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (game_id, current_mult_float))
+                                    cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (game_id,))
+                                    cursor.execute('''
+                                        UPDATE users SET total_loss = total_loss + (
+                                            SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
+                                            WHERE game_id = ? AND status = 'lost' AND user_id = users.id
+                                        ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
+                                    ''', (game_id, game_id))
+                                    _crash_bots_on_crash(game_id)
+                                    update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
+                                    logger.info(f"💥 AI RTP CRASH на {current_mult_float:.2f}x")
+                                    conn.commit()
+                                    time.sleep(0.10)
+                                    continue
+                            
                             # Aggressive acceleration: fast after 1.1x
                             if current_mult_float < 1.1:
                                 base_increment = 0.03
@@ -3181,100 +3572,17 @@ def serve_music(path):
 
 # ==================== API ENDPOINTS ====================
 
-# === DEMO ADMIN CODE ===
-DEMO_ADMIN_CODE = os.getenv('DEMO_ADMIN_CODE', 'RASWET2024')
+# === DEMO LOGIN (DISABLED) ===
+# Demo login has been removed for security.
+@app.route('/api/demo-login', methods=['POST'])
+def demo_login():
+    """Demo login disabled"""
+    return jsonify({'success': False, 'error': 'Demo login is disabled'}), 403
 
 @app.route('/api/verify-demo-code', methods=['POST'])
 def verify_demo_code():
-    """Проверка демо-кода для получения админ-доступа"""
-    try:
-        data = request.get_json()
-        code = data.get('code', '').strip().upper()
-        user_id = data.get('user_id', 0)
-
-        if not code:
-            return jsonify({'success': False, 'error': 'Введите код'}), 400
-
-        if code == DEMO_ADMIN_CODE.upper():
-            logger.info(f"🔑 Демо-админ код активирован для user_id={user_id}")
-            # Дадим демо-юзеру 1000 звёзд баланса для тестирования
-            balance_added = False
-            if user_id:
-                try:
-                    conn = get_db()
-                    cursor = conn.cursor()
-                    cursor.execute('UPDATE users SET balance_stars = balance_stars + 1000 WHERE telegram_id = ?', (user_id,))
-                    conn.commit()
-                    balance_added = cursor.rowcount > 0
-                    conn.close()
-                    if balance_added:
-                        logger.info(f"💰 Начислено 1000 звёзд демо-админу user_id={user_id}")
-                except Exception as e:
-                    logger.error(f"Ошибка начисления баланса: {e}")
-
-            return jsonify({
-                'success': True,
-                'is_admin': True,
-                'balance_added': balance_added,
-                'message': '✅ Админ-доступ активирован! +1000 ⭐' if balance_added else '✅ Админ-доступ активирован!'
-            })
-        else:
-            return jsonify({'success': False, 'error': 'Неверный код'}), 400
-
-    except Exception as e:
-        logger.error(f"Ошибка проверки демо-кода: {e}")
-        return jsonify({'success': False, 'error': 'Ошибка сервера'}), 500
-
-# === DEMO LOGIN (вход без Telegram) ===
-DEMO_USER_ID_BASE = 9000000000  # Диапазон ID для демо-пользователей
-
-@app.route('/api/demo-login', methods=['POST'])
-def demo_login():
-    """Создание/вход демо-пользователя для тестирования через браузер"""
-    try:
-        import random as _rand
-        demo_id = DEMO_USER_ID_BASE + _rand.randint(1, 999999)
-        demo_name = f"Demo_{demo_id % 10000}"
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Проверяем, есть ли уже такой пользователь
-        cursor.execute('SELECT id, first_name, balance_stars, balance_tickets FROM users WHERE id = ?', (demo_id,))
-        row = cursor.fetchone()
-
-        if not row:
-            ref_code = ''.join(_rand.choices(string.ascii_uppercase + string.digits, k=8))
-            cursor.execute('''
-                INSERT INTO users (id, first_name, last_name, username, photo_url, balance_stars, balance_tickets, referral_code)
-                VALUES (?, ?, '', ?, '', 1000, 0, ?)
-            ''', (demo_id, demo_name, f'demo_{demo_id}', ref_code))
-            conn.commit()
-            balance = 1000
-            logger.info(f"🎭 Создан демо-пользователь: {demo_name} (ID: {demo_id}), баланс: 1000⭐")
-        else:
-            balance = row[2] if row[2] else 0
-            demo_name = row[1]
-            logger.info(f"🎭 Демо-вход: {demo_name} (ID: {demo_id}), баланс: {balance}⭐")
-
-        conn.close()
-
-        user_data = {
-            'id': demo_id,
-            'first_name': demo_name,
-            'last_name': '',
-            'username': f'demo_{demo_id}',
-            'photo_url': '',
-            'balance_stars': balance,
-            'balance_tickets': 0,
-            'is_demo': True
-        }
-
-        return jsonify({'success': True, 'user_data': user_data})
-
-    except Exception as e:
-        logger.error(f"❌ Ошибка демо-входа: {e}")
-        return jsonify({'success': False, 'error': 'Ошибка сервера'}), 500
+    """Demo code verification disabled"""
+    return jsonify({'success': False, 'error': 'Demo codes are disabled'}), 403
 
 # TELEGRAM API
 @app.route('/api/telegram/user', methods=['GET'])
@@ -5212,7 +5520,7 @@ def open_case():
                              (total_cost, user_id))
 
         won_gifts = []
-        gifts = load_gifts()
+        gifts = build_fragment_first_gifts_catalog() or load_gifts()
 
         for _ in range(quantity):
             if case.get('gifts'):
@@ -5401,7 +5709,7 @@ def open_case_single():
                              (case['cost'], user_id))
 
         # Выбор подарка
-        gifts = load_gifts()
+        gifts = build_fragment_first_gifts_catalog() or load_gifts()
         won_gift = None
         is_stars_balance = False
 
@@ -5934,13 +6242,23 @@ def admin_init_db():
         # Добавляем дефолтные кастомизации
         try:
             cursor.execute('''
-                INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default)
-                VALUES ('rocket', 'crash', 'Ракета', 0, 1)
+                INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default, access_type, requirement)
+                VALUES ('background', 'phone', 'Космос', 0, 1, 'free', 0)
             ''')
-            cursor.execute('''
-                INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default)
-                VALUES ('background', 'phone', 'Космос', 0, 1)
-            ''')
+            # Регистрируем ракеты из LEVEL_SYSTEM
+            for lvl_info in LEVEL_SYSTEM:
+                rocket_id = lvl_info.get('reward_rocket')
+                if not rocket_id:
+                    continue
+                rocket_name = ROCKET_NAMES.get(rocket_id, rocket_id)
+                lvl_num = lvl_info['level']
+                is_default = 1 if lvl_num == 1 else 0
+                access = 'free' if lvl_num == 1 else 'level'
+                req = 0 if lvl_num == 1 else lvl_num
+                cursor.execute('''
+                    INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default, access_type, requirement)
+                    VALUES ('rocket', ?, ?, 0, ?, ?, ?)
+                ''', (rocket_id, rocket_name, is_default, access, req))
             conn.commit()
         except Exception as e:
             logger.warning(f"Ошибка добавления дефолтных кастомизаций: {e}")
@@ -9327,13 +9645,26 @@ def crash_customizations():
         
         # Добавляем дефолтные если их нет
         cursor.execute('''
-            INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default, access_type)
-            VALUES ('rocket', 'crash', 'Ракета', 0, 1, 'free')
+            INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default, access_type, requirement)
+            VALUES ('background', 'phone', 'Космос', 0, 1, 'free', 0)
         ''')
-        cursor.execute('''
-            INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default, access_type)
-            VALUES ('background', 'phone', 'Космос', 0, 1, 'free')
-        ''')
+        
+        # Регистрируем все ракеты из LEVEL_SYSTEM с уровневым доступом
+        # Сначала удаляем старые ракеты чтобы обновить access_type
+        cursor.execute("DELETE FROM crash_customizations WHERE item_type = 'rocket'")
+        for lvl_info in LEVEL_SYSTEM:
+            rocket_id = lvl_info.get('reward_rocket')
+            if not rocket_id:
+                continue
+            rocket_name = ROCKET_NAMES.get(rocket_id, rocket_id)
+            lvl_num = lvl_info['level']
+            is_default = 1 if lvl_num == 1 else 0
+            access = 'free' if lvl_num == 1 else 'level'
+            req = 0 if lvl_num == 1 else lvl_num
+            cursor.execute('''
+                INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default, access_type, requirement)
+                VALUES ('rocket', ?, ?, 0, ?, ?, ?)
+            ''', (rocket_id, rocket_name, is_default, access, req))
         conn.commit()
         
         # Получаем ракеты с условиями доступа
@@ -11242,20 +11573,15 @@ def admin_delete_daily_task():
 
 @app.route('/api/online-count', methods=['GET'])
 def api_online_count():
-    """Return approximate online user count"""
+    """Return real online user count — users active in last 5 minutes"""
     try:
         conn = get_db_connection()
-        # Count users active in last 5 minutes
         row = conn.execute("SELECT COUNT(*) FROM users WHERE last_active > datetime('now', '-5 minutes')").fetchone()
         count = row[0] if row else 0
         conn.close()
-        if count < 10:
-            import random
-            count = random.randint(20, 80)
         return jsonify({'count': count})
     except Exception:
-        import random
-        return jsonify({'count': random.randint(20, 80)})
+        return jsonify({'count': 0})
 
 # ============================================================
 
@@ -12457,9 +12783,64 @@ def init_crates_tables(cursor=None):
         conn.commit()
         conn.close()
 
+
+def init_level_crates():
+    """Создаёт крейты для наград за уровни из LEVEL_CRATES, если их ещё нет"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        init_crates_tables(cursor)
+        conn.commit()
+        
+        for crate_key, crate_data in LEVEL_CRATES.items():
+            # Проверяем, есть ли уже крейт с таким названием
+            cursor.execute("SELECT id FROM crates WHERE name = ?", (crate_data['name'],))
+            existing = cursor.fetchone()
+            if existing:
+                continue
+            
+            # Создаём крейт
+            cursor.execute('''
+                INSERT INTO crates (name, description, image, price, currency, is_active, sort_order)
+                VALUES (?, ?, ?, 0, 'free', 1, ?)
+            ''', (crate_data['name'], f'Level reward crate: {crate_key}', crate_data['image'], 0))
+            crate_id = cursor.lastrowid
+            
+            # Добавляем предметы крейта
+            for item_type, item_id, item_name, chance, rarity in crate_data['items']:
+                cursor.execute('''
+                    INSERT INTO crate_items (crate_id, item_type, item_id, item_name, chance, rarity)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (crate_id, item_type, item_id, item_name, chance, rarity))
+            
+            logger.info(f"📦 Создан крейт уровня: {crate_data['name']} (id={crate_id})")
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.error(f"❌ Ошибка создания крейтов уровней: {e}")
+
+
+def _get_level_crate_id(crate_key):
+    """Получает ID крейта по ключу из LEVEL_CRATES"""
+    crate_data = LEVEL_CRATES.get(crate_key)
+    if not crate_data:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM crates WHERE name = ?", (crate_data['name'],))
+        row = cursor.fetchone()
+        conn.close()
+        return row[0] if row else None
+    except:
+        return None
+
+
 # Initialize on import
 try:
     init_crates_tables()
+    init_level_crates()
 except:
     pass
 
@@ -13804,6 +14185,17 @@ def _lazy_init():
             start_nft_monitor()
         except Exception as e:
             logger.error(f"❌ Не удалось запустить NFT Monitor: {e}")
+        # Pre-fetch Fragment catalog in background
+        try:
+            def _prefetch_fragment():
+                try:
+                    catalog = fetch_fragment_gifts_catalog(force_refresh=True)
+                    logger.info(f"📦 Fragment catalog pre-fetched: {len(catalog or [])} gifts")
+                except Exception as fe:
+                    logger.warning(f"⚠️ Fragment pre-fetch failed: {fe}")
+            threading.Thread(target=_prefetch_fragment, daemon=True).start()
+        except Exception as e:
+            logger.warning(f"⚠️ Fragment pre-fetch thread failed: {e}")
         _app_initialized = True
         logger.info("✅ Приложение инициализировано")
 
@@ -15779,6 +16171,35 @@ def api_toggle_admin_notification():
         conn.commit()
         conn.close()
         return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/crash/levels')
+def api_crash_levels():
+    """Публичный API для получения информации об уровнях и наградах"""
+    try:
+        levels = []
+        for lvl in LEVEL_SYSTEM:
+            entry = {
+                'level': lvl['level'],
+                'exp_required': lvl['exp_required'],
+                'reward_stars': lvl['reward_stars'],
+                'reward_tickets': lvl['reward_tickets'],
+            }
+            rocket = lvl.get('reward_rocket')
+            if rocket:
+                entry['reward_rocket'] = rocket
+                entry['reward_rocket_name'] = ROCKET_NAMES.get(rocket, rocket)
+                entry['reward_rocket_image'] = f'/static/gifs/rockets/{rocket}.gif'
+            crate_key = lvl.get('reward_crate')
+            if crate_key and crate_key in LEVEL_CRATES:
+                ci = LEVEL_CRATES[crate_key]
+                entry['reward_crate'] = crate_key
+                entry['reward_crate_name'] = ci['name']
+                entry['reward_crate_image'] = ci['image']
+            levels.append(entry)
+        return jsonify({'success': True, 'levels': levels, 'max_level': len(LEVEL_SYSTEM)})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 

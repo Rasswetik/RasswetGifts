@@ -92,21 +92,7 @@
             content: ''; flex: 1; height: 1px;
             background: rgba(255,255,255,0.1);
         }
-        .tg-demo-btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-            width: 100%; padding: 14px 24px; border-radius: 15px; border: none;
-            background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7);
-            font-size: 16px; font-weight: 600; cursor: pointer;
-            transition: all 0.3s ease; border: 1.5px solid rgba(255,255,255,0.1);
-        }
-        .tg-demo-btn:hover {
-            background: rgba(255,255,255,0.15); color: #fff;
-            border-color: rgba(255,255,255,0.2);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-        }
-        .tg-demo-btn:active { transform: scale(0.97); }
-        .tg-demo-btn svg { width: 20px; height: 20px; opacity: 0.7; }
+
     `;
     document.head.appendChild(authStyles);
 
@@ -159,11 +145,6 @@
                     <div class="tg-auth-spinner"></div>
                     Ожидание авторизации...
                 </div>
-                <div class="tg-auth-divider">или</div>
-                <button class="tg-demo-btn" id="tg-demo-btn" onclick="">
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                    Демо-вход
-                </button>
             </div>
         `;
         document.body.appendChild(overlay);
@@ -185,32 +166,9 @@
     var _authResolve = null;
     var _authPollingInterval = null;
 
-    async function doDemoLogin(overlay) {
-        var btn = document.getElementById('tg-demo-btn');
-        if (btn) { btn.disabled = true; btn.textContent = 'Загрузка...'; }
-        try {
-            var resp = await fetch('/api/demo-login', { method: 'POST', headers: {'Content-Type': 'application/json'} });
-            var data = await resp.json();
-            if (data.success && data.user_data) {
-                localStorage.setItem('rasswet_user', JSON.stringify(data.user_data));
-                if (_authPollingInterval) { clearInterval(_authPollingInterval); _authPollingInterval = null; }
-                overlay.remove();
-                if (_authResolve) { _authResolve(data.user_data); _authResolve = null; }
-            } else {
-                if (btn) { btn.disabled = false; btn.textContent = 'Ошибка. Попробуйте снова'; }
-            }
-        } catch(e) {
-            if (btn) { btn.disabled = false; btn.textContent = 'Ошибка сети'; }
-        }
-    }
-
     async function startBrowserAuth(onSuccess) {
         _authResolve = onSuccess;
         const overlay = createAuthOverlay();
-
-        // Wire up demo button
-        var demoBtn = document.getElementById('tg-demo-btn');
-        if (demoBtn) { demoBtn.onclick = function(){ doDemoLogin(overlay); }; }
 
         try {
             const resp = await fetch('/api/generate-auth-code', { method: 'POST' });

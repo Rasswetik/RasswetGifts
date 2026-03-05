@@ -1,1040 +1,331 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Реферальная система - Rasswet Gifts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0E1015">
+    <title>Referral System - Rasswet Gifts</title>
+    <link rel="icon" type="image/png" href="/static/img/logo.png">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/static/js/telegram-auth.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Poppins:wght@400;500;600;700&display=swap');
+        @font-face{font-display:swap;font-family:'Inter Variable';font-style:normal;font-weight:100 900;src:url(/static/fonts/inter-cyrillic-wght-normal.DqGufNeO.woff2) format("woff2-variations");unicode-range:U+301,U+400-45F,U+490-491,U+4B0-4B1,U+2116}
+        @font-face{font-display:swap;font-family:'Inter Variable';font-style:normal;font-weight:100 900;src:url(/static/fonts/inter-latin-wght-normal.Dx4kXJAl.woff2) format("woff2-variations");unicode-range:U+??,U+131,U+152-153,U+2BB-2BC,U+2C6,U+2DA,U+2DC,U+304,U+308,U+329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #0a0a0a 0%, #141414 50%, #1f1f1f 100%);
-            min-height: 100vh;
-            color: white;
-            line-height: 1.6;
-            overflow-x: hidden;
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --bg:#0E1015;--surface:rgba(255,255,255,.04);--surface2:rgba(255,255,255,.06);
+            --border:rgba(255,255,255,.06);
+            --accent:#6B7A8D;--accent2:#556270;--accent-light:#8CA0BE;--accent-hi:#A0B0C4;
+            --text:#fff;--text2:#8A92A6;--text3:#646C86;
         }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+        html{font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+        body{
+            font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+            background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;
+        }
+        body::before{
+            content:'';position:fixed;top:0;left:0;width:100%;height:100%;
             background:
-                radial-gradient(circle at 10% 20%, rgba(120, 119, 198, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(255, 119, 198, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 30% 60%, rgba(120, 219, 255, 0.06) 0%, transparent 40%),
-                radial-gradient(circle at 70% 30%, rgba(255, 215, 0, 0.05) 0%, transparent 40%);
-            z-index: -1;
-            animation: gradientFlow 15s ease infinite alternate;
-        }
-
-        @keyframes gradientFlow {
-            0% { transform: scale(1) rotate(0deg); }
-            100% { transform: scale(1.1) rotate(180deg); }
-        }
-
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-image:
-                radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.2) 1px, transparent 0),
-                radial-gradient(1px 1px at 20% 40%, rgba(255,255,255,0.15) 1px, transparent 0),
-                radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,0.1) 1px, transparent 0),
-                radial-gradient(1px 1px at 60% 30%, rgba(255,255,255,0.2) 1px, transparent 0),
-                radial-gradient(1px 1px at 80% 70%, rgba(255,255,255,0.1) 1px, transparent 0),
-                radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.15) 1px, transparent 0);
-            background-size: 200px 200px;
-            z-index: -1;
-            animation: particlesFloat 20s linear infinite;
-        }
-
-        @keyframes particlesFloat {
-            0% { transform: translateY(0px) translateX(0px); }
-            100% { transform: translateY(-100px) translateX(100px); }
-        }
-
-        /* ========== LOADING SCREEN ========== */
-        .loading-screen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: linear-gradient(135deg, #0a0a0a 0%, #141414 50%, #1f1f1f 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
-        }
-
-        .loading-screen.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-
-        .loading-spinner {
-            width: 50px; height: 50px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top: 3px solid #ffd700;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .loading-text {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 16px;
-            color: rgba(255,255,255,0.7);
-        }
-
-        .container {
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 20px 15px;
-            padding-bottom: 30px;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* ========== HEADER ========== */
-        .header {
-            background: linear-gradient(135deg, rgba(26,26,46,0.9) 0%, rgba(22,33,62,0.9) 100%);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            padding: 18px;
-            margin-bottom: 15px;
-            border: 2px solid rgba(255,255,255,0.12);
-            box-shadow: 0 12px 35px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
-            animation: fadeInDown 0.6s ease;
-        }
-
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-            min-width: 0;
-        }
-
-        .avatar {
-            width: 45px; height: 45px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: 2px solid rgba(255,255,255,0.2);
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-        .user-name {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 800;
-            font-size: 15px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .balance-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-
-        .balance-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            background: linear-gradient(135deg, rgba(102,126,234,0.2), rgba(118,75,162,0.2));
-            padding: 6px 10px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .balance-icon { width: 18px; height: 18px; }
-
-        /* ========== BACK BUTTON ========== */
-        .back-button {
-            background: linear-gradient(135deg, rgba(102,126,234,0.3), rgba(118,75,162,0.3));
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 15px;
-            padding: 12px 15px;
-            color: white;
-            cursor: pointer;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            font-family: 'Poppins', sans-serif;
-            font-size: 14px;
-            font-weight: 600;
-            animation: fadeInDown 0.7s ease;
-        }
-
-        .back-button:hover {
-            background: rgba(255,255,255,0.15);
-            transform: translateX(-3px);
-        }
-
-        /* ========== SECTIONS ========== */
-        .section {
-            background: linear-gradient(135deg, rgba(26,26,46,0.8) 0%, rgba(22,33,62,0.8) 100%);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            padding: 22px;
-            margin-bottom: 15px;
-            border: 2px solid rgba(255,255,255,0.1);
-            box-shadow: 0 12px 35px rgba(0,0,0,0.4);
-            animation: fadeInUp 0.6s ease both;
-        }
-
-        .section:nth-child(3) { animation-delay: 0.1s; }
-        .section:nth-child(4) { animation-delay: 0.15s; }
-        .section:nth-child(5) { animation-delay: 0.2s; }
-        .section:nth-child(6) { animation-delay: 0.25s; }
-        .section:nth-child(7) { animation-delay: 0.3s; }
-        .section:nth-child(8) { animation-delay: 0.35s; }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(25px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .section-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 20px;
-            font-weight: 900;
-            margin-bottom: 18px;
-            text-align: center;
-            background: linear-gradient(45deg, #FFD700, #FFA500, #FF8C00, #FFD700);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            background-size: 200% auto;
-            animation: shine 3s linear infinite;
-        }
-
-        @keyframes shine { to { background-position: 200% center; } }
-
-        /* ========== REFERRAL LINK ========== */
-        .referral-link-container {
-            background: linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%);
-            border-radius: 20px;
-            padding: 22px;
-            text-align: center;
-            margin-bottom: 15px;
-            border: 1px solid rgba(102,126,234,0.3);
-        }
-
-        .referral-label {
-            font-size: 13px;
-            color: rgba(255,255,255,0.6);
-            margin-bottom: 8px;
-            font-weight: 500;
-        }
-
-        .referral-code {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 26px;
-            font-weight: 900;
-            color: #ffd700;
-            margin: 8px 0;
-            word-break: break-all;
-            text-shadow: 0 0 20px rgba(255,215,0,0.3);
-        }
-
-        .referral-url {
-            background: rgba(0,0,0,0.3);
-            border-radius: 12px;
-            padding: 10px 14px;
-            margin: 10px 0;
-            font-size: 11px;
-            word-break: break-all;
-            border: 1px solid rgba(255,255,255,0.08);
-            color: rgba(255,255,255,0.7);
-        }
-
-        .copy-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            border-radius: 15px;
-            padding: 14px 24px;
-            color: white;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
-            margin-top: 10px;
-            box-shadow: 0 6px 20px rgba(102,126,234,0.4);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .copy-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(102,126,234,0.6);
-        }
-
-        .copy-btn.copied {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            box-shadow: 0 6px 20px rgba(76,175,80,0.4);
-        }
-
-        .copy-btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .copy-btn:hover::before { left: 100%; }
-
-        /* ========== STATS GRID ========== */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 5px;
-        }
-
-        .stat-item {
-            background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(118,75,162,0.1));
-            border-radius: 18px;
-            padding: 18px 14px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.08);
-            transition: all 0.3s ease;
-        }
-
-        .stat-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-            border-color: rgba(255,215,0,0.3);
-        }
-
-        .stat-value {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 28px;
-            font-weight: 900;
-            color: #ffd700;
-            margin-bottom: 4px;
-            text-shadow: 0 0 15px rgba(255,215,0,0.2);
-        }
-
-        .stat-label {
-            font-size: 11px;
-            color: rgba(255,255,255,0.5);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* ========== BONUS SECTION ========== */
-        .bonus-section {
-            background: linear-gradient(135deg, rgba(255,215,0,0.08) 0%, rgba(255,165,0,0.08) 100%);
-            border-radius: 20px;
-            padding: 22px;
-            text-align: center;
-            border: 1px solid rgba(255,215,0,0.25);
-            margin-bottom: 15px;
-            animation: fadeInUp 0.6s ease both;
-            animation-delay: 0.15s;
-        }
-
-        .bonus-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 18px;
-            font-weight: 800;
-            color: #ffd700;
-            margin-bottom: 10px;
-        }
-
-        .bonus-description {
-            font-size: 13px;
-            color: rgba(255,255,255,0.65);
-            margin-bottom: 18px;
-            line-height: 1.5;
-        }
-
-        .bonus-description strong {
-            color: #ffd700;
-        }
-
-        .claim-bonus-btn {
-            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
-            border: none;
-            border-radius: 15px;
-            padding: 16px 24px;
-            color: #0a0a0a;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 800;
-            font-size: 15px;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
-            box-shadow: 0 6px 20px rgba(255,215,0,0.3);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .claim-bonus-btn:hover:not(:disabled) {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(255,215,0,0.5);
-        }
-
-        .claim-bonus-btn:disabled {
-            background: linear-gradient(135deg, #444, #555);
-            color: #999;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        /* ========== PROMO INPUT ========== */
-        .promo-input-container {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .promo-input {
-            flex: 1;
-            background: rgba(255,255,255,0.08);
-            border: 2px solid rgba(102,126,234,0.3);
-            border-radius: 15px;
-            padding: 14px 18px;
-            color: white;
-            font-size: 14px;
-            font-family: 'Poppins', sans-serif;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        .promo-input::placeholder { color: rgba(255,255,255,0.35); }
-
-        .promo-input:focus {
-            border-color: #ffd700;
-            box-shadow: 0 0 20px rgba(255,215,0,0.2);
-            background: rgba(255,255,255,0.12);
-        }
-
-        .activate-promo-btn {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            border: none;
-            border-radius: 15px;
-            padding: 14px 20px;
-            color: white;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-            box-shadow: 0 4px 15px rgba(76,175,80,0.3);
-        }
-
-        .activate-promo-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(76,175,80,0.5);
-        }
-
-        .activate-promo-btn:disabled {
-            background: linear-gradient(135deg, #444, #555);
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        .promo-hint {
-            font-size: 11px;
-            color: rgba(255,255,255,0.4);
-            text-align: center;
-        }
-
-        /* ========== REFERRALS LIST ========== */
-        .referrals-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .referrals-list::-webkit-scrollbar { width: 4px; }
-        .referrals-list::-webkit-scrollbar-track { background: transparent; }
-        .referrals-list::-webkit-scrollbar-thumb { background: rgba(102,126,234,0.4); border-radius: 2px; }
-
-        .referral-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px;
-            background: linear-gradient(135deg, rgba(102,126,234,0.08), rgba(118,75,162,0.08));
-            border-radius: 16px;
-            margin-bottom: 8px;
-            border: 1px solid rgba(255,255,255,0.06);
-            transition: all 0.3s ease;
-        }
-
-        .referral-item:hover {
-            background: linear-gradient(135deg, rgba(102,126,234,0.15), rgba(118,75,162,0.15));
-            transform: translateX(5px);
-            border-color: rgba(255,215,0,0.2);
-        }
-
-        .referral-avatar {
-            width: 42px; height: 42px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: 2px solid rgba(255,255,255,0.15);
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-
-        .referral-avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-        .referral-info { flex: 1; min-width: 0; }
-
-        .referral-name {
-            font-weight: 600;
-            font-size: 14px;
-            margin-bottom: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .referral-date {
-            font-size: 11px;
-            color: rgba(255,255,255,0.4);
-        }
-
-        .reward-icon {
-            width: 22px; height: 22px;
-            margin-right: 6px;
-            vertical-align: middle;
-        }
-
-        .reward-info {
-            flex: 1;
-        }
-
-        .reward-amount {
-            font-weight: 700;
-            font-size: 14px;
-        }
-
-        .reward-description {
-            font-size: 12px;
-            color: rgba(255,255,255,0.5);
-        }
-
-        .reward-date {
-            font-size: 11px;
-            color: rgba(255,255,255,0.35);
-        }
-
-        .empty-state {
-            text-align: center;
-            color: rgba(255,255,255,0.4);
-            padding: 35px 20px;
-            font-size: 13px;
-        }
-
-        .empty-state-icon {
-            width: 50px;
-            height: 50px;
-            margin: 0 auto 12px;
-            opacity: 0.3;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 50%;
-        }
-
-        /* ========== NOTIFICATION ========== */
-        .notification {
-            position: fixed;
-            top: 20px; left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 14px 28px;
-            border-radius: 18px;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 14px;
-            z-index: 10000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            animation: slideDown 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
-            max-width: 90%;
-            text-align: center;
-        }
-
-        @keyframes slideDown {
-            from { transform: translateX(-50%) translateY(-120%); opacity: 0; }
-            to { transform: translateX(-50%); opacity: 1; }
-        }
-
-        .notification.error {
-            background: linear-gradient(135deg, #ff6b6b, #ff4757);
-        }
-
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 380px) {
-            .balance-item { padding: 5px 8px; font-size: 12px; }
-            .balance-icon { width: 16px; height: 16px; }
-            .stats-grid { grid-template-columns: 1fr; }
-            .promo-input-container { flex-direction: column; }
-            .stat-value { font-size: 24px; }
-            .section-title { font-size: 18px; }
-        }
+                radial-gradient(circle at 20% 50%,rgba(140,150,170,.04) 0%,transparent 50%),
+                radial-gradient(circle at 80% 50%,rgba(140,150,170,.03) 0%,transparent 50%);
+            z-index:-1;pointer-events:none;
+        }
+
+        /* Loading */
+        .loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s,visibility .4s}
+        .loading-screen.hidden{opacity:0;visibility:hidden}
+        .loading-spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.08);border-top-color:var(--accent-light);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:14px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .loading-text{font-weight:700;font-size:14px;color:var(--text2)}
+
+        .container{max-width:480px;margin:0 auto;padding:20px 16px 100px;position:relative;z-index:1}
+
+        /* Header */
+        .header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px 16px;background:linear-gradient(160deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:16px}
+        .avatar{width:42px;height:42px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.1);flex-shrink:0;background:var(--surface)}
+        .avatar img{width:100%;height:100%;object-fit:cover}
+        .user-name{font-weight:700;font-size:15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .bal-pill{display:flex;align-items:center;gap:5px;background:rgba(107,122,141,.12);border:1px solid rgba(107,122,141,.2);border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700;flex-shrink:0}
+        .bal-pill img{width:15px;height:15px}
+
+        /* Back btn */
+        .back-btn{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 16px;color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:16px;transition:all .2s;width:100%;text-align:left}
+        .back-btn:hover{background:var(--surface2)}
+
+        /* Section */
+        .section{background:linear-gradient(160deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:14px;animation:fadeUp .5s ease both}
+        .section:nth-child(4){animation-delay:.05s}
+        .section:nth-child(5){animation-delay:.1s}
+        .section:nth-child(6){animation-delay:.15s}
+        .section:nth-child(7){animation-delay:.2s}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+        .section-title{font-size:17px;font-weight:800;text-align:center;margin-bottom:16px;color:var(--accent-hi);letter-spacing:.3px;text-transform:uppercase}
+
+        /* Referral link */
+        .ref-link-box{background:rgba(107,122,141,.08);border-radius:16px;padding:20px;text-align:center;margin-bottom:14px;border:1px solid rgba(107,122,141,.15)}
+        .ref-label{font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:500}
+        .ref-code{font-size:24px;font-weight:900;color:var(--accent-hi);margin:6px 0;word-break:break-all}
+        .ref-url{background:rgba(0,0,0,.2);border-radius:10px;padding:10px 12px;margin:10px 0;font-size:11px;word-break:break-all;border:1px solid rgba(255,255,255,.04);color:var(--text2)}
+        .copy-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;margin-top:8px;transition:all .2s;box-shadow:0 4px 15px rgba(107,122,141,.25)}
+        .copy-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(107,122,141,.35)}
+        .copy-btn.copied{background:linear-gradient(135deg,#2e7d32,#388e3c)}
+
+        /* Stats */
+        .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:4px}
+        .stat-item{background:rgba(107,122,141,.06);border-radius:14px;padding:16px 12px;text-align:center;border:1px solid rgba(255,255,255,.04);transition:all .2s}
+        .stat-item:hover{transform:translateY(-2px);border-color:rgba(107,122,141,.2)}
+        .stat-value{font-size:26px;font-weight:900;color:var(--accent-hi);margin-bottom:2px}
+        .stat-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+
+        /* Bonus */
+        .bonus-section{background:rgba(107,122,141,.06);border-radius:16px;padding:20px;text-align:center;border:1px solid rgba(107,122,141,.15);margin-bottom:14px}
+        .bonus-title{font-size:16px;font-weight:800;color:var(--accent-hi);margin-bottom:8px}
+        .bonus-desc{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5}
+        .bonus-desc strong{color:var(--accent-hi)}
+        .claim-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s}
+        .claim-btn:hover:not(:disabled){transform:translateY(-2px)}
+        .claim-btn:disabled{background:linear-gradient(135deg,#3a3f4a,#4a4f5a);color:#888;cursor:not-allowed}
+
+        /* Promo */
+        .promo-row{display:flex;gap:8px;margin-bottom:10px}
+        .promo-input{flex:1;background:rgba(255,255,255,.06);border:2px solid rgba(107,122,141,.2);border-radius:14px;padding:12px 16px;color:#fff;font-size:14px;font-family:inherit;outline:none;transition:all .2s}
+        .promo-input:focus{border-color:rgba(107,122,141,.5)}
+        .promo-input::placeholder{color:rgba(255,255,255,.25)}
+        .promo-btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:14px;padding:12px 18px;color:#fff;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;transition:all .2s}
+        .promo-btn:hover:not(:disabled){transform:translateY(-2px)}
+        .promo-btn:disabled{opacity:.5;cursor:not-allowed}
+        .promo-hint{font-size:11px;color:var(--text3);text-align:center}
+
+        /* Referral list */
+        .ref-list{max-height:300px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+        .ref-item{display:flex;align-items:center;gap:12px;padding:12px;background:rgba(107,122,141,.04);border-radius:14px;margin-bottom:6px;border:1px solid rgba(255,255,255,.03);transition:all .2s}
+        .ref-item:hover{background:rgba(107,122,141,.08);transform:translateX(4px)}
+        .ref-avatar{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.1);overflow:hidden;flex-shrink:0;background:var(--surface)}
+        .ref-avatar img{width:100%;height:100%;object-fit:cover}
+        .ref-info{flex:1;min-width:0}
+        .ref-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .ref-date{font-size:11px;color:var(--text3)}
+        .empty-state{text-align:center;color:var(--text3);padding:30px 16px;font-size:13px}
+
+        /* Notification */
+        .notif{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-120%);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:12px 24px;border-radius:14px;font-weight:600;font-size:14px;z-index:10000;transition:transform .3s,opacity .3s;max-width:90%;text-align:center;box-shadow:0 8px 25px rgba(0,0,0,.4);opacity:0;pointer-events:none}
+        .notif.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+        .notif.error{background:linear-gradient(135deg,#E53935,#D32F2F)}
+
+        /* Bottom nav */
+        .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:4000;background:linear-gradient(180deg,rgba(18,20,26,.95),rgba(14,16,21,.98));border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;padding:6px 10px calc(env(safe-area-inset-bottom,8px) + 6px);gap:2px;backdrop-filter:blur(20px)}
+        .bnav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 12px;border-radius:14px;background:transparent;border:none;color:rgba(255,255,255,.3);font-family:inherit;font-weight:600;font-size:12px;cursor:pointer;transition:all .25s;text-decoration:none;flex:1;max-width:120px;position:relative}
+        .bnav-item svg{width:22px;height:22px;flex-shrink:0;stroke:currentColor;fill:none}
+        .bnav-item span{font-size:10px;font-weight:700;letter-spacing:.3px}
+        .bnav-item.active{background:rgba(255,255,255,.07);color:#C8D0DC}
+        .bnav-item.active::before{content:'';position:absolute;top:0;left:25%;right:25%;height:2px;border-radius:0 0 2px 2px;background:linear-gradient(90deg,#6B7A8D,#8CA0BE)}
+        .bnav-item.disabled{opacity:.3;pointer-events:none;cursor:default}
+
+        @media(max-width:380px){.container{padding:16px 12px 90px}.stats-grid{grid-template-columns:1fr}.promo-row{flex-direction:column}.stat-value{font-size:22px}}
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div class="loading-screen" id="loading-screen">
+    <div class="loading-screen" id="loadingScreen">
         <div class="loading-spinner"></div>
-        <div class="loading-text">Загрузка...</div>
+        <div class="loading-text">Loading...</div>
     </div>
 
     <div class="container">
-        <!-- Header -->
         <div class="header">
-            <div class="header-top">
-                <div class="user-info">
-                    <div class="avatar">
-                        <img id="user-avatar" src="/static/img/default_avatar.png" alt="Avatar">
-                    </div>
-                    <div class="user-name" id="user-name">Загрузка...</div>
-                </div>
-                <div class="balance-container">
-                    <div class="balance-item">
-                        <img src="/static/img/star.png" alt="Stars" class="balance-icon">
-                        <span id="balance-stars">0</span>
-                    </div>
-                    <div class="balance-item">
-                        <img src="/static/img/ticket.png" alt="Tickets" class="balance-icon">
-                        <span id="balance-tickets">0</span>
-                    </div>
-                </div>
-            </div>
+            <div class="avatar"><img id="userAvatar" src="/static/img/default_avatar.png" alt=""></div>
+            <div class="user-name" id="userName">Loading...</div>
+            <div class="bal-pill"><img src="/static/img/ton.png" alt="TON"><span id="balTon">0.00</span></div>
         </div>
 
-        <button class="back-button" onclick="goBack()">← Назад</button>
+        <button class="back-btn" onclick="window.location.href='/crash'">&larr; Back</button>
 
-        <!-- Referral System -->
         <div class="section">
-            <div class="section-title">Реферальная система</div>
-            
-            <div class="referral-link-container">
-                <div class="referral-label">Ваш реферальный код</div>
-                <div class="referral-code" id="referral-code">---</div>
-                <div class="referral-url" id="referral-url"></div>
-                <button class="copy-btn" onclick="copyReferralLink()" id="copy-btn">
-                    Скопировать ссылку
-                </button>
+            <div class="section-title">Referral System</div>
+            <div class="ref-link-box">
+                <div class="ref-label">Your referral code</div>
+                <div class="ref-code" id="refCode">---</div>
+                <div class="ref-url" id="refUrl"></div>
+                <button class="copy-btn" id="copyBtn" onclick="copyRefLink()">Copy link</button>
             </div>
-
             <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-value" id="referral-count">0</div>
-                    <div class="stat-label">Приглашено друзей</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="earned-tickets">0</div>
-                    <div class="stat-label">Заработано билетов</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="earned-stars">0</div>
-                    <div class="stat-label">Заработано звезд</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="total-earned">0</div>
-                    <div class="stat-label">Общий заработок</div>
-                </div>
+                <div class="stat-item"><div class="stat-value" id="refCount">0</div><div class="stat-label">Friends invited</div></div>
+                <div class="stat-item"><div class="stat-value" id="earnedTickets">0</div><div class="stat-label">Tickets earned</div></div>
+                <div class="stat-item"><div class="stat-value" id="earnedTon">0</div><div class="stat-label">TON earned</div></div>
+                <div class="stat-item"><div class="stat-value" id="totalEarned">0</div><div class="stat-label">Total earned</div></div>
             </div>
         </div>
 
-        <!-- Bonus -->
         <div class="bonus-section">
-            <div class="bonus-title">Бонус за приглашение друзей</div>
-            <div class="bonus-description">
-                Пригласите 3 друзей и получите бонус <strong>500 звезд</strong>!
-                За каждого приглашенного друга вы получаете <strong>1 билет</strong>.
-            </div>
-            <button class="claim-bonus-btn" id="claim-bonus-btn" onclick="claimReferralBonus()">
-                Получить бонус (500 <img src="/static/img/star.png" style="width:16px;height:16px;vertical-align:middle;">)
-            </button>
+            <div class="bonus-title">Invite Bonus</div>
+            <div class="bonus-desc">Invite 3 friends and get <strong>5 TON</strong> bonus! Each friend earns you <strong>1 ticket</strong>.</div>
+            <button class="claim-btn" id="claimBtn" onclick="claimBonus()">Claim bonus (5 TON)</button>
         </div>
 
-        <!-- Promo Code -->
         <div class="section">
-            <div class="section-title">Активация промокода</div>
-            
-            <div class="promo-input-container">
-                <input type="text" class="promo-input" id="promo-input" placeholder="Введите промокод" maxlength="20">
-                <button class="activate-promo-btn" id="activate-promo-btn" onclick="activatePromoCode()">
-                    Активировать
-                </button>
+            <div class="section-title">Promo Code</div>
+            <div class="promo-row">
+                <input type="text" class="promo-input" id="promoInput" placeholder="Enter promo code" maxlength="20">
+                <button class="promo-btn" id="promoBtn" onclick="activatePromo()">Activate</button>
             </div>
-            
-            <div class="promo-hint">Введите промокод для получения бонусных звезд или билетов</div>
+            <div class="promo-hint">Enter a promo code to receive bonus TON or tickets</div>
         </div>
 
-        <!-- Referrals List -->
         <div class="section">
-            <div class="section-title">Ваши рефералы</div>
-            <div class="referrals-list" id="referrals-list">
-                <div class="empty-state">
-                    <div class="empty-state-icon"></div>
-                    <div>Загрузка...</div>
-                </div>
-            </div>
+            <div class="section-title">Your Referrals</div>
+            <div class="ref-list" id="refList"><div class="empty-state">Loading...</div></div>
         </div>
 
-        <!-- Rewards History -->
         <div class="section">
-            <div class="section-title">История наград</div>
-            <div id="rewards-history">
-                <div class="empty-state">
-                    <div class="empty-state-icon"></div>
-                    <div>Загрузка...</div>
-                </div>
-            </div>
+            <div class="section-title">Rewards History</div>
+            <div id="rewardsHistory"><div class="empty-state">Loading...</div></div>
         </div>
     </div>
 
-    <script>
-        let userData = null;
-        let referralData = null;
+    <div class="notif" id="notif"></div>
 
-        function goBack() {
-            window.location.href = '/';
-        }
-
-        function hideLoading() {
-            const ls = document.getElementById('loading-screen');
-            ls.classList.add('hidden');
-            setTimeout(() => { ls.style.display = 'none'; }, 500);
-        }
-
-        function showNotification(message, isError = false) {
-            const n = document.createElement('div');
-            n.className = 'notification' + (isError ? ' error' : '');
-            n.textContent = message;
-            document.body.appendChild(n);
-            setTimeout(() => {
-                n.style.opacity = '0';
-                n.style.transition = 'opacity 0.3s ease';
-                setTimeout(() => n.remove(), 300);
-            }, 3000);
-        }
-
-        async function initTelegramApp() {
-            try {
-                await loadUserData();
-                await loadReferralData();
-                initEventHandlers();
-            } catch (e) {
-                console.error('Init error:', e);
-            }
-            hideLoading();
-        }
-
-        async function loadUserData() {
-            try {
-                const authData = await telegramAuth();
-                if (authData) {
-                    userData = authData;
-                    const response = await fetch('/api/user/' + userData.id);
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.success) {
-                            userData.balance_stars = data.user.balance_stars;
-                            userData.balance_tickets = data.user.balance_tickets;
-                        }
-                    }
-                }
-                updateUI(userData);
-            } catch (error) {
-                console.error('Error loading user data:', error);
-            }
-        }
-
-        function updateUI(data) {
-            if (!data) return;
-            document.getElementById('user-name').textContent = data.first_name || 'Гость';
-            document.getElementById('balance-stars').textContent = data.balance_stars || 0;
-            document.getElementById('balance-tickets').textContent = data.balance_tickets || 0;
-            const av = document.getElementById('user-avatar');
-            if (data.photo_url) {
-                av.src = data.photo_url;
-                av.onerror = function() { av.src = '/static/img/default_avatar.png'; };
-            }
-        }
-
-        async function loadReferralData() {
-            try {
-                if (!userData || !userData.id) throw new Error('User data missing');
-
-                const response = await fetch('/api/referral-info/' + userData.id);
-                if (!response.ok) throw new Error('Failed to load referral data');
-
-                const data = await response.json();
-                if (data.success) {
-                    referralData = data;
-                    displayReferralData();
-                } else {
-                    throw new Error(data.error || 'Error');
-                }
-            } catch (error) {
-                console.error('Referral data error:', error);
-                document.getElementById('referrals-list').innerHTML =
-                    '<div class="empty-state"><div class="empty-state-icon"></div><div>Ошибка загрузки</div></div>';
-                document.getElementById('rewards-history').innerHTML =
-                    '<div class="empty-state"><div class="empty-state-icon"></div><div>Ошибка загрузки</div></div>';
-            }
-        }
-
-        function displayReferralData() {
-            if (!referralData) return;
-
-            document.getElementById('referral-code').textContent = referralData.referral_code;
-            
-            const referralUrl = 'https://t.me/your_bot_name?start=ref_' + referralData.referral_code;
-            document.getElementById('referral-url').textContent = referralUrl;
-
-            document.getElementById('referral-count').textContent = referralData.referral_count;
-            document.getElementById('earned-tickets').textContent = referralData.total_earned_tickets;
-            document.getElementById('earned-stars').textContent = referralData.total_earned_stars;
-            document.getElementById('total-earned').textContent =
-                referralData.total_earned_stars + referralData.total_earned_tickets * 10;
-
-            const bonusBtn = document.getElementById('claim-bonus-btn');
-            if (referralData.referral_bonus_claimed) {
-                bonusBtn.disabled = true;
-                bonusBtn.textContent = 'Бонус получен';
-            } else if (referralData.referral_count >= 3) {
-                bonusBtn.disabled = false;
-                bonusBtn.innerHTML = 'Получить бонус (500 <img src="/static/img/star.png" style="width:16px;height:16px;vertical-align:middle;">)';
-            } else {
-                bonusBtn.disabled = true;
-                bonusBtn.textContent = 'Нужно пригласить ' + (3 - referralData.referral_count) + ' друзей';
-            }
-
-            displayReferralsList();
-            displayRewardsHistory();
-        }
-
-        function displayReferralsList() {
-            const referralsList = document.getElementById('referrals-list');
-            
-            if (!referralData.referrals || referralData.referrals.length === 0) {
-                referralsList.innerHTML =
-                    '<div class="empty-state">' +
-                        '<div class="empty-state-icon"></div>' +
-                        '<div>У вас пока нет приглашенных друзей</div>' +
-                        '<div style="font-size:11px;margin-top:8px;color:rgba(255,255,255,0.3);">Приглашайте друзей по реферальной ссылке!</div>' +
-                    '</div>';
-                return;
-            }
-
-            referralsList.innerHTML = referralData.referrals.map(function(referral) {
-                return '<div class="referral-item">' +
-                    '<div class="referral-avatar">' +
-                        '<img src="' + (referral.photo_url || '/static/img/default_avatar.png') + '" alt="' + referral.name + '" onerror="this.src=\'/static/img/default_avatar.png\'">' +
-                    '</div>' +
-                    '<div class="referral-info">' +
-                        '<div class="referral-name">' + referral.name + '</div>' +
-                        '<div class="referral-date">Присоединился: ' + formatDate(referral.date) + '</div>' +
-                    '</div>' +
-                '</div>';
-            }).join('');
-        }
-
-        function displayRewardsHistory() {
-            const rewardsHistory = document.getElementById('rewards-history');
-            
-            if (!referralData.rewards_history || referralData.rewards_history.length === 0) {
-                rewardsHistory.innerHTML =
-                    '<div class="empty-state">' +
-                        '<div class="empty-state-icon"></div>' +
-                        '<div>История наград пуста</div>' +
-                    '</div>';
-                return;
-            }
-
-            rewardsHistory.innerHTML = referralData.rewards_history.map(function(reward) {
-                var icon = reward.type === 'stars' ? '/static/img/star.png' : '/static/img/ticket.png';
-                var label = reward.type === 'stars' ? 'звезд' : 'билетов';
-                return '<div class="referral-item">' +
-                    '<img class="reward-icon" src="' + icon + '" alt="' + reward.type + '">' +
-                    '<div class="reward-info">' +
-                        '<div class="reward-amount">+' + reward.amount + ' ' + label + '</div>' +
-                        '<div class="reward-description">' + reward.description + '</div>' +
-                        '<div class="reward-date">' + formatDate(reward.date) + '</div>' +
-                    '</div>' +
-                '</div>';
-            }).join('');
-        }
-
-        function formatDate(dateString) {
-            var date = new Date(dateString);
-            return date.toLocaleDateString('ru-RU', {
-                day: '2-digit', month: '2-digit', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            });
-        }
-
-        function copyReferralLink() {
-            var referralUrl = document.getElementById('referral-url').textContent;
-            
-            navigator.clipboard.writeText(referralUrl).then(function() {
-                var copyBtn = document.getElementById('copy-btn');
-                copyBtn.textContent = 'Скопировано!';
-                copyBtn.classList.add('copied');
-                showNotification('Реферальная ссылка скопирована!');
-                
-                setTimeout(function() {
-                    copyBtn.textContent = 'Скопировать ссылку';
-                    copyBtn.classList.remove('copied');
-                }, 2000);
-            }).catch(function(err) {
-                console.error('Copy error:', err);
-                showNotification('Ошибка копирования', true);
-            });
-        }
-
-        async function claimReferralBonus() {
-            try {
-                var bonusBtn = document.getElementById('claim-bonus-btn');
-                bonusBtn.disabled = true;
-                bonusBtn.textContent = 'Загрузка...';
-
-                var response = await fetch('/api/claim-referral-bonus', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userData.id })
-                });
-
-                var result = await response.json();
-                
-                if (result.success) {
-                    showNotification('Поздравляем! Вы получили бонус 500 звезд!');
-                    userData.balance_stars = result.new_balance.stars;
-                    userData.balance_tickets = result.new_balance.tickets;
-                    await loadReferralData();
-                    updateUI(userData);
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                console.error('Bonus error:', error);
-                showNotification(error.message || 'Ошибка получения бонуса', true);
-                var bonusBtn = document.getElementById('claim-bonus-btn');
-                bonusBtn.disabled = false;
-                bonusBtn.innerHTML = 'Получить бонус (500 <img src="/static/img/star.png" style="width:16px;height:16px;vertical-align:middle;">)';
-            }
-        }
-
-        async function activatePromoCode() {
-            var promoInput = document.getElementById('promo-input');
-            var promoCode = promoInput.value.trim().toUpperCase();
-            
-            if (!promoCode) { showNotification('Введите промокод', true); return; }
-            if (promoCode.length < 4) { showNotification('Промокод слишком короткий', true); return; }
-
-            try {
-                var activateBtn = document.getElementById('activate-promo-btn');
-                activateBtn.disabled = true;
-                activateBtn.textContent = 'Активация...';
-
-                var response = await fetch('/api/use-promo-code', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userData.id, promo_code: promoCode })
-                });
-
-                var result = await response.json();
-                
-                if (result.success) {
-                    var msg = 'Промокод активирован!';
-                    if (result.rewards) {
-                        var parts = [];
-                        if (result.rewards.stars > 0) parts.push(result.rewards.stars + ' звезд');
-                        if (result.rewards.tickets > 0) parts.push(result.rewards.tickets + ' билетов');
-                        if (parts.length) msg += ' Получено: ' + parts.join(' и ');
-                    }
-                    showNotification(msg);
-                    userData.balance_stars = result.new_balance.stars;
-                    userData.balance_tickets = result.new_balance.tickets;
-                    updateUI(userData);
-                    promoInput.value = '';
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                console.error('Promo error:', error);
-                showNotification(error.message || 'Ошибка активации промокода', true);
-            } finally {
-                var activateBtn = document.getElementById('activate-promo-btn');
-                activateBtn.disabled = false;
-                activateBtn.textContent = 'Активировать';
-            }
-        }
-
-        function initEventHandlers() {
-            document.getElementById('promo-input').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') activatePromoCode();
-            });
-            document.getElementById('promo-input').addEventListener('input', function() {
-                this.value = this.value.toUpperCase();
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', initTelegramApp);
-    </script>
-
-    <!-- BOTTOM NAV -->
-    <style>
-    .bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:100;display:flex;justify-content:space-around;align-items:center;padding:10px 8px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(0deg,#0A0C12 50%,#0D1019 100%);border-top:1px solid rgba(255,255,255,.05)}
-    .bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#828AA4;text-decoration:none;cursor:pointer;transition:color .2s;padding:8px 0;border-radius:12px}
-    .bnav-item:hover,.bnav-item.active{color:#fff}
-    .bnav-item.active{background:rgba(35,108,217,.12);color:#4B8EE8}
-    .bnav-item svg{width:24px;height:24px;flex-shrink:0}
-    .bnav-label{font-size:10px;font-weight:600}
-    </style>
     <nav class="bottom-nav">
-        <a class="bnav-item" href="/crash"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg><span class="bnav-label">Краш</span></a>
-        <a class="bnav-item" href="/"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg><span class="bnav-label">Кейсы</span></a>
-        <a class="bnav-item" href="/leaderboard"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg><span class="bnav-label">Сезон</span></a>
-        <a class="bnav-item" href="/inventory"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="bnav-label">Профиль</span></a>
+        <a class="bnav-item" href="/crash">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+            <span>Crash</span>
+        </a>
+        <a class="bnav-item disabled" onclick="return false" href="javascript:void(0)">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+            <span>Cases</span>
+        </a>
+        <a class="bnav-item disabled" onclick="return false" href="javascript:void(0)">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+            <span>Leaders</span>
+        </a>
+        <a class="bnav-item" href="/inventory">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Profile</span>
+        </a>
     </nav>
+
+    <script>
+    var userData = null, referralData = null;
+    function starsToTon(s){ return Number(s||0)/100; }
+    function fmtTon(v){ v=parseFloat(v)||0; if(!v)return '0.00'; if(v>=100)return v.toFixed(0); if(v>=10)return v.toFixed(1); return v.toFixed(2); }
+
+    function hideLoading(){ var ls=document.getElementById('loadingScreen'); ls.classList.add('hidden'); setTimeout(function(){ls.style.display='none'},400); }
+
+    function showNotif(msg,err){
+        var el=document.getElementById('notif');
+        el.textContent=msg; el.className='notif'+(err?' error':'');
+        void el.offsetWidth; el.classList.add('show');
+        clearTimeout(el._t); el._t=setTimeout(function(){el.classList.remove('show')},3000);
+    }
+
+    async function init(){
+        try{
+            var auth = await telegramAuth();
+            if(auth){ userData=auth; var r=await fetch('/api/user/'+userData.id); var d=await r.json(); if(d.success){userData.balance_stars=d.user.balance_stars;userData.balance_tickets=d.user.balance_tickets;} }
+            updateUI();
+            await loadReferralData();
+        }catch(e){console.error('Init:',e);}
+        hideLoading();
+        document.getElementById('promoInput').addEventListener('keypress',function(e){if(e.key==='Enter')activatePromo()});
+        document.getElementById('promoInput').addEventListener('input',function(){this.value=this.value.toUpperCase()});
+    }
+
+    function updateUI(){
+        if(!userData)return;
+        document.getElementById('userName').textContent=userData.first_name||'User';
+        document.getElementById('balTon').textContent=fmtTon(starsToTon(userData.balance_stars));
+        var av=document.getElementById('userAvatar');
+        if(userData.photo_url){av.src=userData.photo_url;av.onerror=function(){av.src='/static/img/default_avatar.png'}}
+    }
+
+    async function loadReferralData(){
+        try{
+            if(!userData||!userData.id)return;
+            var r=await fetch('/api/referral-info/'+userData.id); var d=await r.json();
+            if(d.success){referralData=d;displayData();}
+        }catch(e){
+            document.getElementById('refList').innerHTML='<div class="empty-state">Error loading</div>';
+            document.getElementById('rewardsHistory').innerHTML='<div class="empty-state">Error loading</div>';
+        }
+    }
+
+    function displayData(){
+        if(!referralData)return;
+        document.getElementById('refCode').textContent=referralData.referral_code;
+        var url='https://t.me/rasswetgifts_bot?start=ref_'+referralData.referral_code;
+        document.getElementById('refUrl').textContent=url;
+        document.getElementById('refCount').textContent=referralData.referral_count;
+        document.getElementById('earnedTickets').textContent=referralData.total_earned_tickets||0;
+        document.getElementById('earnedTon').textContent=fmtTon(starsToTon(referralData.total_earned_stars));
+        var total=starsToTon(referralData.total_earned_stars)+(referralData.total_earned_tickets||0)*0.1;
+        document.getElementById('totalEarned').textContent=fmtTon(total);
+
+        var btn=document.getElementById('claimBtn');
+        if(referralData.referral_bonus_claimed){btn.disabled=true;btn.textContent='Bonus claimed';}
+        else if(referralData.referral_count>=3){btn.disabled=false;btn.textContent='Claim bonus (5 TON)';}
+        else{btn.disabled=true;btn.textContent='Need '+(3-referralData.referral_count)+' more friends';}
+
+        renderRefList();renderRewards();
+    }
+
+    function renderRefList(){
+        var el=document.getElementById('refList');
+        if(!referralData.referrals||!referralData.referrals.length){el.innerHTML='<div class="empty-state">No referrals yet. Invite friends!</div>';return;}
+        el.innerHTML=referralData.referrals.map(function(r){
+            return '<div class="ref-item"><div class="ref-avatar"><img src="'+(r.photo_url||'/static/img/default_avatar.png')+'" onerror="this.src=\'/static/img/default_avatar.png\'"></div><div class="ref-info"><div class="ref-name">'+r.name+'</div><div class="ref-date">Joined: '+fmtDate(r.date)+'</div></div></div>';
+        }).join('');
+    }
+
+    function renderRewards(){
+        var el=document.getElementById('rewardsHistory');
+        if(!referralData.rewards_history||!referralData.rewards_history.length){el.innerHTML='<div class="empty-state">No rewards yet</div>';return;}
+        el.innerHTML=referralData.rewards_history.map(function(rw){
+            var icon=rw.type==='stars'?'/static/img/ton.png':'/static/img/ticket.png';
+            var label=rw.type==='stars'?'TON':'tickets';
+            var val=rw.type==='stars'?fmtTon(starsToTon(rw.amount)):rw.amount;
+            return '<div class="ref-item"><img src="'+icon+'" style="width:22px;height:22px;flex-shrink:0"><div class="ref-info"><div class="ref-name">+'+val+' '+label+'</div><div class="ref-date">'+rw.description+'</div><div class="ref-date">'+fmtDate(rw.date)+'</div></div></div>';
+        }).join('');
+    }
+
+    function fmtDate(s){var d=new Date(s);return d.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+
+    function copyRefLink(){
+        var url=document.getElementById('refUrl').textContent;
+        navigator.clipboard.writeText(url).then(function(){
+            var btn=document.getElementById('copyBtn');btn.textContent='Copied!';btn.classList.add('copied');
+            showNotif('Referral link copied!');
+            setTimeout(function(){btn.textContent='Copy link';btn.classList.remove('copied')},2000);
+        }).catch(function(){showNotif('Copy failed',true)});
+    }
+
+    async function claimBonus(){
+        try{
+            var btn=document.getElementById('claimBtn');btn.disabled=true;btn.textContent='Loading...';
+            var r=await fetch('/api/claim-referral-bonus',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userData.id})});
+            var d=await r.json();
+            if(d.success){showNotif('Bonus claimed! +5 TON');userData.balance_stars=d.new_balance.stars;updateUI();await loadReferralData();}
+            else throw new Error(d.error);
+        }catch(e){showNotif(e.message||'Error claiming bonus',true);var btn=document.getElementById('claimBtn');btn.disabled=false;btn.textContent='Claim bonus (5 TON)';}
+    }
+
+    async function activatePromo(){
+        var code=document.getElementById('promoInput').value.trim().toUpperCase();
+        if(!code){showNotif('Enter promo code',true);return;}
+        if(code.length<4){showNotif('Code too short',true);return;}
+        try{
+            var btn=document.getElementById('promoBtn');btn.disabled=true;btn.textContent='...';
+            var r=await fetch('/api/use-promo-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userData.id,promo_code:code})});
+            var d=await r.json();
+            if(d.success){
+                var msg='Promo activated!';
+                if(d.rewards){var parts=[];if(d.rewards.stars>0)parts.push(fmtTon(starsToTon(d.rewards.stars))+' TON');if(d.rewards.tickets>0)parts.push(d.rewards.tickets+' tickets');if(parts.length)msg+=' Got: '+parts.join(' and ');}
+                showNotif(msg);userData.balance_stars=d.new_balance.stars;updateUI();document.getElementById('promoInput').value='';
+            }else throw new Error(d.error);
+        }catch(e){showNotif(e.message||'Error activating',true);}
+        finally{var btn=document.getElementById('promoBtn');btn.disabled=false;btn.textContent='Activate';}
+    }
+
+    document.addEventListener('DOMContentLoaded',init);
+    </script>
 </body>
 </html>

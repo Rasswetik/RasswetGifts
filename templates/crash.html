@@ -16,7 +16,7 @@
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    background:#0A0E1A;
+    background:#0E1015;
     color:#fff;
     -webkit-font-smoothing:antialiased;
     min-height:100vh;
@@ -26,8 +26,8 @@ body{
 body::before{
     content:'';position:fixed;top:0;left:0;width:100%;height:100%;
     background:
-        radial-gradient(circle at 20% 50%,rgba(35,108,217,.06) 0%,transparent 50%),
-        radial-gradient(circle at 80% 50%,rgba(35,108,217,.04) 0%,transparent 50%);
+        radial-gradient(circle at 20% 50%,rgba(140,150,170,.04) 0%,transparent 50%),
+        radial-gradient(circle at 80% 50%,rgba(140,150,170,.03) 0%,transparent 50%);
     z-index:-1;
 }
 body::after{display:none}
@@ -83,63 +83,106 @@ body.low-power .rocket-wrap img{filter:none!important}
 /* ===== BOTTOM NAV ===== */
 .bottom-nav{
     position:fixed;bottom:0;left:0;right:0;z-index:4000;
-    background:#111522;
-    border-top:1px solid rgba(35,108,217,.1);
+    background:linear-gradient(180deg,rgba(18,20,26,.95),rgba(14,16,21,.98));
+    border-top:1px solid rgba(255,255,255,.06);
     display:flex;align-items:center;justify-content:center;
-    padding:8px 12px 12px;
-    gap:4px;
+    padding:6px 10px calc(env(safe-area-inset-bottom,8px) + 6px);
+    gap:2px;
+    backdrop-filter:blur(20px);
 }
 .bottom-nav-item{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-    padding:8px 16px;
-    border-radius:16px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    padding:8px 12px;
+    border-radius:14px;
     background:transparent;
     border:none;
-    color:rgba(255,255,255,.35);
+    color:rgba(255,255,255,.3);
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     font-weight:600;font-size:12px;
     cursor:pointer;
     transition:all .25s ease;
     text-decoration:none;
     flex:1;
-    max-width:120px;
+    max-width:100px;
+    position:relative;
 }
 .bottom-nav-item svg{
-    width:20px;height:20px;
+    width:22px;height:22px;
     flex-shrink:0;
     stroke:currentColor;
     fill:none;
+    transition:transform .25s ease;
 }
-.bottom-nav-item span{font-size:10px;font-weight:600}
+.bottom-nav-item span{font-size:10px;font-weight:700;letter-spacing:.3px}
 .bottom-nav-item.active{
-    background:rgba(35,108,217,.12);
-    color:#4B8EE8;
+    background:rgba(255,255,255,.07);
+    color:#C8D0DC;
+}
+.bottom-nav-item.disabled{
+    opacity:.3;
+    pointer-events:none;
+    cursor:default;
+}
+.bottom-nav-item.active svg{transform:scale(1.1)}
+.bottom-nav-item.active::after{
+    content:'';position:absolute;top:-1px;left:25%;right:25%;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(200,208,220,.5),transparent);
+    border-radius:1px;
 }
 .bottom-nav-item:not(.active):hover{
-    color:rgba(255,255,255,.55);
+    color:rgba(255,255,255,.5);
 }
 
 /* ===== LOADING ===== */
 .ld-screen{
-    position:fixed;inset:0;background:#090B11;
+    position:fixed;inset:0;background:#0C0E14;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     z-index:9999;transition:opacity .5s,visibility .5s;
+    overflow:hidden;
 }
 .ld-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
-.ld-gif{
-    width:120px;height:120px;object-fit:contain;margin-bottom:20px;
+/* Grid of animated colored panels */
+.ld-panels{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+    width:260px;margin-bottom:32px;
 }
-.ld-txt{
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:12px;
-    color:rgba(255,255,255,.4);letter-spacing:2px;
+.ld-panel{
+    width:76px;height:76px;border-radius:16px;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;
+    animation:ldPanelPulse 2s ease-in-out infinite alternate;
+}
+.ld-panel:nth-child(1){background:linear-gradient(135deg,#2E4A7A,#1A2D52);animation-delay:0s}
+.ld-panel:nth-child(2){background:linear-gradient(135deg,#2D6B4F,#1A4030);animation-delay:.12s}
+.ld-panel:nth-child(3){background:linear-gradient(135deg,#7A2E4A,#521A2D);animation-delay:.24s}
+.ld-panel:nth-child(4){background:linear-gradient(135deg,#4A2E7A,#2D1A52);animation-delay:.08s}
+.ld-panel:nth-child(5){background:linear-gradient(135deg,#7A6B2E,#524A1A);animation-delay:.2s}
+.ld-panel:nth-child(6){background:linear-gradient(135deg,#2E6B7A,#1A4A52);animation-delay:.04s}
+.ld-panel:nth-child(7){background:linear-gradient(135deg,#6B2E2E,#4A1A1A);animation-delay:.16s}
+.ld-panel:nth-child(8){background:linear-gradient(135deg,#2E7A3D,#1A5226);animation-delay:.28s}
+.ld-panel:nth-child(9){background:linear-gradient(135deg,#3D2E7A,#261A52);animation-delay:.1s}
+@keyframes ldPanelPulse{
+    0%{transform:scale(1);box-shadow:0 0 0 rgba(255,255,255,0)}
+    100%{transform:scale(1.04);box-shadow:0 0 25px rgba(255,255,255,.06)}
+}
+.ld-panel img{
+    width:54px;height:54px;object-fit:contain;
+    opacity:0;transition:opacity .4s ease,transform .4s ease;
+    transform:scale(.7);
+}
+.ld-panel img.show{
+    opacity:1;transform:scale(1);
+}
+.ld-panel img.hide{
+    opacity:0;transform:scale(.5) rotate(10deg);
 }
 .ld-progress{
-    width:200px;height:4px;background:rgba(255,255,255,.1);border-radius:2px;
-    margin-top:16px;overflow:hidden;
+    width:200px;height:3px;background:rgba(255,255,255,.06);border-radius:2px;
+    overflow:hidden;
 }
 .ld-progress-bar{
-    height:100%;background:linear-gradient(90deg,#236CD9,#4B8EE8);width:0%;
-    transition:width .3s ease;
+    height:100%;background:linear-gradient(90deg,#6B7A8D,#9AA8B8);width:0%;
+    transition:width .3s ease;border-radius:2px;
 }
 
 /* ===== TOP BAR ===== */
@@ -178,18 +221,18 @@ body.low-power .rocket-wrap img{filter:none!important}
 .bal-pill-crash{
     display:flex;align-items:center;gap:6px;
     padding:6px 12px;border-radius:20px;
-    background:rgba(35,108,217,.1);
-    border:1px solid rgba(35,108,217,.25);
+    background:rgba(120,135,160,.1);
+    border:1px solid rgba(120,135,160,.25);
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     font-weight:700;font-size:13px;color:#fff;
     backdrop-filter:blur(5px);
 }
 .bal-plus-crash{
     width:28px;height:28px;border-radius:50%;border:none;
-    background:rgba(35,108,217,.3);color:#7BB5FF;
+    background:rgba(120,135,160,.3);color:#A0B0C4;
     font-size:16px;font-weight:700;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
-    transition:all .2s;border:1px solid rgba(35,108,217,.45);
+    transition:all .2s;border:1px solid rgba(120,135,160,.45);
 }
 .bal-plus-crash:active{transform:scale(.9)}
 
@@ -210,13 +253,13 @@ body.low-power .rocket-wrap img{filter:none!important}
 /* Settings Button */
 .settings-btn{
     width:42px;height:42px;border-radius:14px;border:none;
-    background:rgba(35,108,217,.15);cursor:pointer;
+    background:rgba(120,135,160,.15);cursor:pointer;
     display:flex;align-items:center;justify-content:center;
     transition:all .3s cubic-bezier(.175,.885,.32,1.275);
-    border:1px solid rgba(35,108,217,.25);
+    border:1px solid rgba(120,135,160,.25);
     backdrop-filter:blur(10px);
 }
-.settings-btn:hover{background:rgba(35,108,217,.25);transform:scale(1.08)}
+.settings-btn:hover{background:rgba(120,135,160,.25);transform:scale(1.08)}
 .settings-btn:active{transform:scale(.92)}
 .settings-btn img{width:20px;height:20px;opacity:.8;transition:transform .5s}
 .settings-btn:hover img{transform:rotate(90deg)}
@@ -224,14 +267,14 @@ body.low-power .rocket-wrap img{filter:none!important}
 /* Hub Button */
 .hub-btn{
     width:46px;height:46px;border-radius:14px;border:none;
-    background:linear-gradient(135deg,rgba(35,108,217,.2),rgba(253,161,0,.15));cursor:pointer;
+    background:linear-gradient(135deg,rgba(120,135,160,.2),rgba(253,161,0,.15));cursor:pointer;
     display:flex;align-items:center;justify-content:center;
     transition:all .3s cubic-bezier(.175,.885,.32,1.275);
     border:1px solid rgba(253,161,0,.25);
     backdrop-filter:blur(10px);
-    box-shadow:0 4px 15px rgba(35,108,217,.2);
+    box-shadow:0 4px 15px rgba(120,135,160,.2);
 }
-.hub-btn:hover{background:linear-gradient(135deg,rgba(35,108,217,.3),rgba(253,161,0,.25));transform:scale(1.08)}
+.hub-btn:hover{background:linear-gradient(135deg,rgba(120,135,160,.3),rgba(253,161,0,.25));transform:scale(1.08)}
 .hub-btn:active{transform:scale(.92)}
 .hub-btn img{width:22px;height:22px;transition:transform .3s}
 .hub-btn:hover img{transform:scale(1.15) rotate(-10deg)}
@@ -257,9 +300,24 @@ body.low-power .rocket-wrap img{filter:none!important}
 .settings-overlay.show .settings-modal{transform:translateY(0)}
 .stab{flex:1;padding:10px 8px;border:none;background:transparent;color:rgba(255,255,255,.5);font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:13px;border-radius:9px;cursor:pointer;transition:all .2s}
 .stab:hover{color:rgba(255,255,255,.7)}
-.stab.active{background:rgba(35,108,217,.25);color:#fff}
-.vib-toggle-btn.vib-off{opacity:.4}
-.vib-toggle-btn.vib-off svg{opacity:.4}
+.stab.active{background:rgba(120,135,160,.25);color:#fff}
+/* Vibration phone button */
+.vib-toggle-btn{position:relative}
+.vib-toggle-btn.vib-on{border-color:rgba(120,135,160,.5)!important;background:rgba(120,135,160,.15)!important}
+.vib-toggle-btn.vib-on .vib-phone-svg{stroke:#8CA0BE}
+.vib-toggle-btn.vib-on .vib-waves{opacity:1!important}
+.vib-toggle-btn.vib-off{opacity:.5}
+.vib-toggle-btn.vib-off svg{opacity:.5}
+@keyframes vibWave{0%{height:8px;opacity:.3}100%{height:16px;opacity:.7}}
+@keyframes vibShake{0%,100%{transform:rotate(0)}15%{transform:rotate(-8deg)}30%{transform:rotate(8deg)}45%{transform:rotate(-5deg)}60%{transform:rotate(5deg)}75%{transform:rotate(-2deg)}90%{transform:rotate(2deg)}}
+.vib-toggle-btn.vib-shake .vib-phone-svg{animation:vibShake .5s ease}
+/* Lock overlay for locked skins */
+.skin-lock-overlay{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(8,11,20,.65);border-radius:12px;
+    z-index:2;
+}
 .settings-header{
     display:flex;align-items:center;justify-content:space-between;
     padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06);
@@ -302,19 +360,19 @@ body.low-power .rocket-wrap img{filter:none!important}
 }
 .settings-item:hover{background:rgba(255,255,255,.08)}
 .settings-item.active{
-    border-color:rgba(35,108,217,.6);
-    background:rgba(35,108,217,.15);
+    border-color:rgba(120,135,160,.6);
+    background:rgba(120,135,160,.15);
 }
 .settings-item.locked{
     opacity:.5;cursor:pointer;
 }
 .settings-item.claimable{
     opacity:.85;cursor:pointer;
-    border-color:rgba(35,108,217,.4);
+    border-color:rgba(120,135,160,.4);
     animation:claimPulseSettings 2s ease-in-out infinite;
 }
-@keyframes claimPulseSettings{0%,100%{box-shadow:0 0 0 rgba(35,108,217,0)}50%{box-shadow:0 0 10px rgba(35,108,217,.3)}}
-.settings-item.claimable:hover{opacity:1;border-color:rgba(35,108,217,.6)}
+@keyframes claimPulseSettings{0%,100%{box-shadow:0 0 0 rgba(120,135,160,0)}50%{box-shadow:0 0 10px rgba(120,135,160,.3)}}
+.settings-item.claimable:hover{opacity:1;border-color:rgba(120,135,160,.6)}
 .settings-item .lock-icon{
     position:absolute;top:4px;right:4px;width:16px;height:16px;
 }
@@ -328,7 +386,7 @@ body.low-power .rocket-wrap img{filter:none!important}
     font-size:10px;color:rgba(255,255,255,.5);margin-top:6px;
     font-weight:600;
 }
-.settings-item.active .settings-item-label{color:#236CD9}
+.settings-item.active .settings-item-label{color:#6B7A8D}
 
 /* Unlock notification banner */
 .unlock-notif{
@@ -377,10 +435,10 @@ body.low-power .rocket-wrap img{filter:none!important}
 .claim-subtitle{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:24px}
 .claim-btn{
     padding:14px 40px;border-radius:14px;border:none;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
     color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;
     font-size:14px;cursor:pointer;
-    box-shadow:0 4px 20px rgba(35,108,217,.4);
+    box-shadow:0 4px 20px rgba(120,135,160,.4);
     transition:all .3s;
 }
 .claim-btn:hover{transform:scale(1.05)}
@@ -413,7 +471,7 @@ body.low-power .rocket-wrap img{filter:none!important}
 .progress-popup-bar{
     height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:6px;
 }
-.progress-popup-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#236CD9,#1B5AB5);transition:width .5s ease}
+.progress-popup-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#6B7A8D,#556270);transition:width .5s ease}
 .progress-popup-text{font-size:11px;color:rgba(255,255,255,.5);text-align:right}
 
 
@@ -479,12 +537,12 @@ svg.toggle-icon{
     box-shadow:0 2px 8px rgba(0,0,0,.4);
 }
 .toggle-switch.on{
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
-    box-shadow:0 0 20px rgba(35,108,217,.4);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
+    box-shadow:0 0 20px rgba(120,135,160,.4);
 }
 .toggle-switch.on::after{
     left:27px;
-    box-shadow:0 2px 8px rgba(35,108,217,.5);
+    box-shadow:0 2px 8px rgba(120,135,160,.5);
 }
 
 /* TON Modal */
@@ -773,12 +831,12 @@ tc-root *{pointer-events:auto}
 .gift-deposit-item-price img{width:14px;height:14px}
 .gift-deposit-send-btn{
     width:100%;padding:16px;border-radius:16px;border:none;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
     color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:15px;
     cursor:pointer;transition:all .2s;
-    box-shadow:0 8px 25px rgba(35,108,217,.3);
+    box-shadow:0 8px 25px rgba(120,135,160,.3);
 }
-.gift-deposit-send-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(35,108,217,.4)}
+.gift-deposit-send-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(120,135,160,.4)}
 .gift-deposit-send-btn:active{transform:scale(.97)}
 
 /* Admin Panel - Lobby Style */
@@ -1009,7 +1067,7 @@ tc-root *{pointer-events:auto}
 }
 .admin-crate-item-tag{
     padding:3px 8px;border-radius:6px;font-size:9px;font-weight:600;
-    background:rgba(35,108,217,.15);color:rgba(255,255,255,.6);
+    background:rgba(120,135,160,.15);color:rgba(255,255,255,.6);
 }
 .admin-crate-actions{display:flex;gap:4px}
 
@@ -1025,7 +1083,7 @@ tc-root *{pointer-events:auto}
 /* Admin notification banner */
 .admin-promo-banner{
     position:fixed;top:0;left:0;right:0;z-index:9999;
-    background:linear-gradient(135deg,#236CD9 0%,#1B5AB5 50%,#f093fb 100%);
+    background:linear-gradient(135deg,#6B7A8D 0%,#556270 50%,#f093fb 100%);
     color:#fff;padding:14px 20px;
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:14px;
     display:flex;align-items:center;justify-content:space-between;
@@ -1045,74 +1103,70 @@ tc-root *{pointer-events:auto}
 /* ===== GAME FIELD ===== */
 .game-field{
     margin:0 12px;border-radius:24px;
-    background:radial-gradient(ellipse at 50% 0%,#0d1b3e 0%,#060A14 60%,#020408 100%);
-    border:1px solid rgba(35,108,217,.18);
+    background:radial-gradient(ellipse at 50% 0%,#161A24 0%,#0F1218 60%,#0B0D12 100%);
+    border:1px solid rgba(255,255,255,.06);
     position:relative;overflow:hidden;
     min-height:320px;
     display:flex;
     align-items:center;justify-content:center;
+    flex-direction:column;
 }
 
-/* Animated grid + stars background */
+/* Animated grid background — speed controlled by --grid-speed CSS variable */
 .game-field::before{
     content:'';position:absolute;inset:0;
     background:
-        radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,.5) 50%, transparent 100%),
-        radial-gradient(1px 1px at 60% 15%, rgba(255,255,255,.4) 50%, transparent 100%),
-        radial-gradient(1.2px 1.2px at 75% 65%, rgba(255,255,255,.35) 50%, transparent 100%),
-        radial-gradient(1px 1px at 10% 80%, rgba(255,255,255,.3) 50%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 45% 50%, rgba(255,255,255,.25) 50%, transparent 100%),
-        radial-gradient(1px 1px at 85% 40%, rgba(255,255,255,.4) 50%, transparent 100%),
-        radial-gradient(1px 1px at 35% 90%, rgba(255,255,255,.3) 50%, transparent 100%),
-        radial-gradient(1.2px 1.2px at 90% 85%, rgba(255,255,255,.35) 50%, transparent 100%),
-        linear-gradient(rgba(35,108,217,.07) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(35,108,217,.07) 1px,transparent 1px);
-    background-size:100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,100% 100%,40px 40px,40px 40px;
+        radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,.35) 50%, transparent 100%),
+        radial-gradient(1px 1px at 60% 15%, rgba(255,255,255,.25) 50%, transparent 100%),
+        radial-gradient(1.2px 1.2px at 75% 65%, rgba(255,255,255,.2) 50%, transparent 100%),
+        radial-gradient(1px 1px at 10% 80%, rgba(255,255,255,.2) 50%, transparent 100%),
+        radial-gradient(1.5px 1.5px at 45% 50%, rgba(255,255,255,.15) 50%, transparent 100%),
+        radial-gradient(1px 1px at 85% 40%, rgba(255,255,255,.25) 50%, transparent 100%),
+        radial-gradient(1px 1px at 35% 90%, rgba(255,255,255,.2) 50%, transparent 100%),
+        radial-gradient(1.2px 1.2px at 90% 85%, rgba(255,255,255,.2) 50%, transparent 100%);
+    background-size:100% 100%;
     pointer-events:none;z-index:1;
     animation:starsFlicker 4s ease-in-out infinite alternate;
 }
+/* Animated grid overlay — separate element for movement */
+.game-field .grid-overlay{
+    position:absolute;inset:0;pointer-events:none;z-index:1;
+    background:
+        linear-gradient(rgba(120,140,170,.05) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(120,140,170,.05) 1px,transparent 1px);
+    background-size:40px 40px;
+    animation:gridScroll var(--grid-speed, 8s) linear infinite;
+}
+@keyframes gridScroll{
+    0%{background-position:0 0}
+    100%{background-position:0 40px}
+}
 @keyframes starsFlicker{
-    0%{opacity:.7}
-    50%{opacity:1}
-    100%{opacity:.8}
+    0%{opacity:.5}
+    50%{opacity:.8}
+    100%{opacity:.6}
 }
 
-/* Green trail behind rocket during flight */
-.game-field::after{
-    content:'';position:absolute;
-    left:0;top:50%;transform:translateY(-50%);
-    width:0;height:6px;
-    background:linear-gradient(90deg,transparent,rgba(30,228,76,.5),rgba(30,228,76,.2));
-    border-radius:0 4px 4px 0;
-    z-index:1;
-    transition:width .3s ease;
-    box-shadow:0 0 18px 4px rgba(30,228,76,.15);
-    pointer-events:none;opacity:0;
-}
-.game-field.flying::after{
-    width:var(--trail-w, 38%);opacity:1;
-    animation:trailPulse 1.5s ease-in-out infinite alternate;
-}
-@keyframes trailPulse{
-    0%{opacity:.6;filter:blur(2px)}
-    100%{opacity:1;filter:blur(4px)}
-}
+/* Trail removed - clean flight */
+.game-field::after{display:none}
+.game-field.flying::after{display:none}
+
 .game-field.flying::before{opacity:1}
 
-/* Ambient glow during flight */
+/* Subtle glow during flight */
 .game-field.flying{
-    box-shadow:inset 0 0 60px rgba(30,228,76,.05), 0 0 30px rgba(35,108,217,.1);
+    box-shadow:inset 0 0 60px rgba(120,140,170,.03), 0 0 30px rgba(120,140,170,.05);
 }
 
 /* Big countdown filling the field */
 .countdown-display{
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:900;
     font-size:min(220px, 45vw);
-    color:rgba(255,255,255,.9);
+    color:rgba(255,255,255,.85);
     position:absolute;
     z-index:4;
     user-select:none;line-height:1;
-    text-shadow:0 0 80px rgba(255,255,255,.2), 0 0 40px rgba(35,108,217,.3);
+    text-shadow:0 0 60px rgba(255,255,255,.15), 0 0 30px rgba(160,175,200,.2);
     opacity:0;
     pointer-events:none;
 }
@@ -1129,12 +1183,12 @@ tc-root *{pointer-events:auto}
 /* Rolling multiplier digits */
 .mult-display{
     position:absolute;z-index:5;
-    right:10%;top:50%;transform:translateY(-50%);
+    left:50%;top:18%;transform:translateX(-50%);
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     font-weight:900;font-size:min(56px, 14vw);
     color:rgba(255,255,255,.95);
     display:flex;align-items:center;
-    text-shadow:0 0 40px rgba(30,228,76,.3),0 2px 8px rgba(0,0,0,.5);
+    text-shadow:0 0 40px rgba(30,228,76,.2),0 2px 8px rgba(0,0,0,.5);
     opacity:0;pointer-events:none;transition:opacity .3s;
     line-height:1;
 }
@@ -1145,7 +1199,7 @@ tc-root *{pointer-events:auto}
 }
 .mult-digit-strip{
     display:flex;flex-direction:column;
-    transition:transform .08s ease-out;
+    transition:transform .18s cubic-bezier(.4,0,.2,1);
     will-change:transform;
 }
 .mult-digit-strip span{
@@ -1162,7 +1216,7 @@ tc-root *{pointer-events:auto}
 
 /* Rocket */
 .rocket-wrap{
-    position:absolute;top:50%;left:30%;
+    position:absolute;top:55%;left:50%;
     transform:translate(-50%,-50%);
     z-index:2;
     transition: opacity 0.3s ease;
@@ -1311,12 +1365,12 @@ tc-root *{pointer-events:auto}
 .gift-detail-status.collected{color:#1EE44C}
 .gift-detail-btn{
     width:100%;padding:14px;border-radius:14px;border:none;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
     color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:14px;
     cursor:pointer;transition:all .2s;
-    box-shadow:0 8px 25px rgba(35,108,217,.3);
+    box-shadow:0 8px 25px rgba(120,135,160,.3);
 }
-.gift-detail-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(35,108,217,.4)}
+.gift-detail-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(120,135,160,.4)}
 .gift-detail-btn:disabled{opacity:.5;cursor:default;transform:none}
 
 /* Bet for Gift Modal */
@@ -1330,11 +1384,11 @@ tc-root *{pointer-events:auto}
 }
 .bet-for-gift-input{
     width:100%;padding:14px;border-radius:12px;
-    border:2px solid rgba(35,108,217,.3);background:rgba(35,108,217,.08);
+    border:2px solid rgba(120,135,160,.3);background:rgba(120,135,160,.08);
     color:#fff;font-size:16px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;
     outline:none;text-align:center;margin-bottom:12px;
 }
-.bet-for-gift-input:focus{border-color:rgba(35,108,217,.6)}
+.bet-for-gift-input:focus{border-color:rgba(120,135,160,.6)}
 .bet-for-gift-calc{
     background:rgba(30,228,76,.1);border:1px solid rgba(30,228,76,.2);
     border-radius:12px;padding:12px;margin-bottom:12px;
@@ -1518,7 +1572,7 @@ tc-root *{pointer-events:auto}
 .preview-modal{
     background:linear-gradient(145deg,rgba(40,40,60,.95),rgba(30,30,45,.95));
     border-radius:24px;padding:30px;text-align:center;
-    border:1px solid rgba(35,108,217,.3);
+    border:1px solid rgba(120,135,160,.3);
     box-shadow:0 20px 60px rgba(0,0,0,.5);
     transform:scale(.9);transition:transform .3s;
     max-width:320px;width:90%;
@@ -1537,11 +1591,11 @@ tc-root *{pointer-events:auto}
     color:#fff;margin-bottom:24px;
 }
 .preview-apply-btn{
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
     color:#fff;border:none;border-radius:14px;
     padding:14px 40px;font-size:14px;font-weight:700;
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;cursor:pointer;
-    box-shadow:0 4px 20px rgba(35,108,217,.4);
+    box-shadow:0 4px 20px rgba(120,135,160,.4);
     transition:transform .2s,box-shadow .2s;
 }
 .preview-apply-btn:active{transform:scale(.95)}
@@ -1566,21 +1620,22 @@ tc-root *{pointer-events:auto}
 }
 .history-scroll::-webkit-scrollbar{display:none}
 .h-pill{
-    padding:6px 12px;border-radius:10px;
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:12px;
+    padding:4px 10px;border-radius:8px;
+    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:11px;
     white-space:nowrap;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    line-height:1.2;
     transition:transform .2s,box-shadow .2s;
-    backdrop-filter:blur(5px);
     animation:pillFadeIn .4s ease both;
 }
 @keyframes pillFadeIn{0%{opacity:0;transform:scale(.8) translateX(-10px)}100%{opacity:1;transform:scale(1) translateX(0)}}
 .h-pill:nth-child(2){animation-delay:.05s}.h-pill:nth-child(3){animation-delay:.1s}.h-pill:nth-child(4){animation-delay:.15s}.h-pill:nth-child(5){animation-delay:.2s}
 .h-pill:hover{transform:scale(1.08);box-shadow:0 4px 12px rgba(0,0,0,.3)}
 .h-pill:active{transform:scale(.95)}
-.h-pill.low{background:rgba(35,108,217,.08);color:#5B9BF3;border:1px solid rgba(35,108,217,.2)}
-.h-pill.mid{background:rgba(30,228,76,.1);color:#1EE44C;border:1px solid rgba(30,228,76,.2)}
-.h-pill.high{background:rgba(30,228,76,.15);color:#1EE44C;border:1px solid rgba(30,228,76,.3)}
-.h-pill.mega{background:rgba(124,77,255,.15);color:#B88AFF;border:1px solid rgba(124,77,255,.25)}
+.h-pill.low{background:rgba(140,160,190,.08);color:#8CA0BE;border:1px solid rgba(140,160,190,.15)}
+.h-pill.mid{background:rgba(30,228,76,.08);color:#1EE44C;border:1px solid rgba(30,228,76,.15)}
+.h-pill.high{background:rgba(30,228,76,.12);color:#1EE44C;border:1px solid rgba(30,228,76,.2)}
+.h-pill.mega{background:rgba(124,77,255,.12);color:#B88AFF;border:1px solid rgba(124,77,255,.2)}
 
 /* Current coeff box */
 .coeff-box{
@@ -1646,14 +1701,15 @@ tc-root *{pointer-events:auto}
     width:100%;padding:18px;border-radius:20px;border:none;
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:16px;
     cursor:pointer;position:relative;overflow:hidden;
-    background:linear-gradient(135deg,rgba(35,108,217,.95),rgba(27,90,181,.95));
+    background:linear-gradient(135deg,rgba(120,135,160,.9),rgba(90,105,130,.9));
     color:#fff;
-    box-shadow:0 12px 35px rgba(35,108,217,.3),inset 0 1px 1px rgba(255,255,255,.15);
+    box-shadow:0 12px 35px rgba(100,115,140,.25),inset 0 1px 1px rgba(255,255,255,.15);
     letter-spacing:1px;text-transform:uppercase;
-    border:2px solid rgba(255,255,255,.15);
+    border:2px solid rgba(255,255,255,.1);
+    transition:all .2s ease;
 }
-.place-bet-btn:disabled{opacity:.35;cursor:default;transform:none!important;box-shadow:0 6px 20px rgba(35,108,217,.15)}
-.place-bet-btn:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(35,108,217,.4)}
+.place-bet-btn:disabled{opacity:.35;cursor:default;transform:none!important;box-shadow:0 6px 20px rgba(100,115,140,.1)}
+.place-bet-btn:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(100,115,140,.3)}
 .place-bet-btn:not(:disabled):active{transform:scale(.98)}
 .place-bet-btn::after{
     content:'';position:absolute;top:-2px;left:-2px;right:-2px;bottom:-2px;
@@ -1673,15 +1729,23 @@ tc-root *{pointer-events:auto}
     width:100%;padding:18px;border-radius:20px;border:none;
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:16px;
     cursor:pointer;position:relative;overflow:hidden;
-    background:linear-gradient(135deg,rgba(30,228,76,.95),rgba(24,184,62,.95));
+    background:linear-gradient(135deg,rgba(30,228,76,.9),rgba(24,184,62,.9));
     color:#061510;
-    box-shadow:0 12px 35px rgba(30,228,76,.3),inset 0 1px 1px rgba(255,255,255,.15);
+    box-shadow:0 12px 35px rgba(30,228,76,.25),inset 0 1px 1px rgba(255,255,255,.15);
     display:none;
-    letter-spacing:1px;text-transform:uppercase;border:2px solid rgba(255,255,255,.15);
+    letter-spacing:1px;text-transform:uppercase;border:2px solid rgba(255,255,255,.1);
+    transition:all .2s ease;
 }
 .cashout-btn:disabled{opacity:.35;cursor:default}
-.cashout-btn:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(30,228,76,.4)}
+.cashout-btn:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(30,228,76,.35)}
 .cashout-btn:not(:disabled):active{transform:scale(.98)}
+/* Red CRASH state after crash */
+.cashout-btn.crash-state{
+    background:linear-gradient(135deg,rgba(220,60,80,.9),rgba(180,40,60,.9));
+    color:#fff;
+    box-shadow:0 12px 35px rgba(220,60,80,.25);
+    cursor:default;pointer-events:none;
+}
 
 /* ===== BET MODAL ===== */
 .modal-overlay{
@@ -1706,16 +1770,16 @@ tc-root *{pointer-events:auto}
 
 .stars-bet-section{display:block}
 .bet-input-wrap{display:flex;gap:8px;margin-bottom:14px}
-.bet-input-wrap input{flex:1;padding:16px 20px;border-radius:16px;border:2px solid rgba(35,108,217,.3);background:rgba(35,108,217,.08);color:#fff;font-size:18px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;outline:none;transition:all .15s;text-align:center}
-.bet-input-wrap input:focus{border-color:rgba(35,108,217,.6);background:rgba(35,108,217,.12);box-shadow:0 0 20px rgba(35,108,217,.2)}
+.bet-input-wrap input{flex:1;padding:16px 20px;border-radius:16px;border:2px solid rgba(120,135,160,.3);background:rgba(120,135,160,.08);color:#fff;font-size:18px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;outline:none;transition:all .15s;text-align:center}
+.bet-input-wrap input:focus{border-color:rgba(120,135,160,.6);background:rgba(120,135,160,.12);box-shadow:0 0 20px rgba(120,135,160,.2)}
 .bet-input-wrap input::placeholder{color:rgba(255,255,255,.3);font-weight:600}
-.confirm-bet-btn{width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#236CD9,#1B5AB5);color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .15s;border:2px solid rgba(255,255,255,.1);box-shadow:0 8px 25px rgba(35,108,217,.3)}
-.confirm-bet-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(35,108,217,.4)}
+.confirm-bet-btn{width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#6B7A8D,#556270);color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .15s;border:2px solid rgba(255,255,255,.1);box-shadow:0 8px 25px rgba(120,135,160,.3)}
+.confirm-bet-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(120,135,160,.4)}
 .confirm-bet-btn:active{transform:scale(.97)}
 
 .inv-bet-section{display:none}
 /* Selected gifts summary */
-.selected-summary{display:none;background:linear-gradient(135deg,rgba(35,108,217,.15),rgba(27,90,181,.15));border-radius:14px;padding:12px 16px;margin-bottom:12px;border:1px solid rgba(35,108,217,.3)}
+.selected-summary{display:none;background:linear-gradient(135deg,rgba(120,135,160,.15),rgba(27,90,181,.15));border-radius:14px;padding:12px 16px;margin-bottom:12px;border:1px solid rgba(120,135,160,.3)}
 .selected-summary.show{display:flex;align-items:center;justify-content:space-between}
 .selected-info{display:flex;flex-direction:column;gap:2px}
 .selected-count{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:13px;color:#fff}
@@ -1728,9 +1792,9 @@ tc-root *{pointer-events:auto}
 .inv-grid::-webkit-scrollbar{width:4px}
 .inv-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px}
 .inv-card{background:linear-gradient(135deg,rgba(30,30,50,.8),rgba(20,20,40,.8));border-radius:16px;padding:12px 8px;text-align:center;cursor:pointer;border:2px solid rgba(255,255,255,.08);transition:all .2s;position:relative}
-.inv-card:hover{border-color:rgba(35,108,217,.4);background:linear-gradient(135deg,rgba(40,40,70,.9),rgba(30,30,60,.9));transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
-.inv-card.selected{border-color:#236CD9;background:linear-gradient(135deg,rgba(35,108,217,.2),rgba(27,90,181,.2));box-shadow:0 0 20px rgba(35,108,217,.3)}
-.inv-card.selected::after{content:'';position:absolute;top:6px;right:6px;width:20px;height:20px;background:#236CD9;border-radius:50%;background-image:url('/static/img/star.png');background-size:12px;background-position:center;background-repeat:no-repeat}
+.inv-card:hover{border-color:rgba(120,135,160,.4);background:linear-gradient(135deg,rgba(40,40,70,.9),rgba(30,30,60,.9));transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.inv-card.selected{border-color:#6B7A8D;background:linear-gradient(135deg,rgba(120,135,160,.2),rgba(27,90,181,.2));box-shadow:0 0 20px rgba(120,135,160,.3)}
+.inv-card.selected::after{content:'';position:absolute;top:6px;right:6px;width:20px;height:20px;background:#6B7A8D;border-radius:50%;background-image:url('/static/img/star.png');background-size:12px;background-position:center;background-repeat:no-repeat}
 .inv-card img{width:52px;height:52px;object-fit:contain;margin-bottom:6px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.3));image-rendering:auto}
 .inv-card:hover img{transform:scale(1.05)}
 .inv-card .inv-name{font-size:10px;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
@@ -1738,9 +1802,9 @@ tc-root *{pointer-events:auto}
 .inv-card .inv-val img{width:12px;height:12px}
 .inv-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px}
 /* Confirm button for gifts */
-.confirm-gifts-btn{width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#236CD9,#1B5AB5);color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .2s;box-shadow:0 8px 25px rgba(35,108,217,.3);margin-top:12px;display:none}
+.confirm-gifts-btn{width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#6B7A8D,#556270);color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .2s;box-shadow:0 8px 25px rgba(120,135,160,.3);margin-top:12px;display:none}
 .confirm-gifts-btn.show{display:block}
-.confirm-gifts-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(35,108,217,.4)}
+.confirm-gifts-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(120,135,160,.4)}
 .confirm-gifts-btn:disabled{opacity:.5;cursor:default;transform:none}
 
 /* ===== BETS LIST ===== */
@@ -1763,6 +1827,7 @@ tc-root *{pointer-events:auto}
 .bet-amt{font-size:13px;color:rgba(255,255,255,.4);font-weight:600;display:flex;align-items:center;gap:4px}
 .bet-amt img{width:18px;height:18px;object-fit:contain}
 .bet-amt .bet-gift-icon{width:22px;height:22px;object-fit:contain;border-radius:4px}
+.bet-amt .bet-amt-val{transition:transform .15s ease;display:inline-block}
 .bet-row.lost .bet-amt{color:#F96999}
 .bet-row.lost .bet-amt img,.bet-row.lost .bet-gift-icon{filter:grayscale(100%) brightness(0.5)}
 .bet-row.won .bet-amt{color:#1EE44C}
@@ -1791,6 +1856,14 @@ tc-root *{pointer-events:auto}
 .bet-status.active{color:rgba(255,193,7,.8)}
 .bet-status.won{color:#1EE44C}
 .bet-status.lost{color:rgba(249,105,153,.7)}
+.bet-right-col{display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:70px}
+.bet-win-amt{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:14px;color:rgba(255,193,7,.8)}
+.bet-win-amt.won{color:#1EE44C}
+.bet-win-amt.lost{color:rgba(249,105,153,.7)}
+.bet-coef-badge{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:10px;padding:2px 7px;border-radius:6px;letter-spacing:.3px}
+.bet-coef-badge.active{background:rgba(255,193,7,.12);color:rgba(255,193,7,.8)}
+.bet-coef-badge.won{background:rgba(30,228,76,.15);color:#1EE44C}
+.bet-coef-badge.lost{background:rgba(249,105,153,.1);color:rgba(249,105,153,.7)}
 .no-bets{text-align:center;padding:40px;color:rgba(255,255,255,.2);font-size:14px}
 
 /* ===== WIN POPUP (compact) ===== */
@@ -1832,7 +1905,10 @@ tc-root *{pointer-events:auto}
     color:#1EE44C;
     text-shadow:0 0 16px rgba(30,228,76,.3);
 }
-.win-stars-layout .win-star-label{display:none}
+.win-stars-layout .win-star-label{
+    font-family:'Inter Variable','Inter',sans-serif;font-weight:600;font-size:11px;
+    color:rgba(255,255,255,.3);margin-left:-4px;
+}
 /* Gift layout: info LEFT, gift RIGHT */
 .win-gift-layout{
     display:flex;align-items:center;gap:12px;padding:4px 0;
@@ -1862,6 +1938,29 @@ tc-root *{pointer-events:auto}
     text-shadow:0 0 10px rgba(30,228,76,.2);
 }
 .win-gift-stars img{width:18px;height:18px}
+/* Dual layout: TON left + Gift right */
+.win-dual-layout{
+    display:flex;gap:10px;padding:4px 0;
+}
+.win-dual-card{
+    flex:1;background:rgba(255,255,255,.04);border-radius:14px;
+    padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;
+    border:1px solid rgba(139,163,204,.1);
+}
+.win-ton-card{border-color:rgba(120,135,160,.2);background:rgba(120,135,160,.06)}
+.win-gift-card{border-color:rgba(30,228,76,.15);background:rgba(30,228,76,.04)}
+.win-dual-icon{width:48px;height:48px;object-fit:contain;border-radius:8px}
+.win-dual-amt{
+    font-family:'Inter Variable','Inter',sans-serif;font-weight:800;font-size:14px;
+    color:#fff;text-align:center;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;
+}
+.win-ton-card .win-dual-amt{color:#8CA0BE}
+.win-gift-card .win-dual-amt{font-size:11px;color:rgba(255,255,255,.8)}
+.win-dual-label{
+    font-family:'Inter Variable','Inter',sans-serif;font-weight:600;font-size:10px;
+    color:rgba(255,255,255,.3);display:flex;align-items:center;gap:3px;
+}
 .win-mult{
     text-align:center;margin-top:10px;
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:11px;
@@ -1944,15 +2043,15 @@ tc-root *{pointer-events:auto}
 .hub-tab:hover img{opacity:.6}
 .hub-tab.active{
     color:#fff;
-    background:linear-gradient(135deg,rgba(35,108,217,.2),rgba(27,90,181,.15));
-    box-shadow:0 0 12px rgba(35,108,217,.15);
+    background:linear-gradient(135deg,rgba(120,135,160,.2),rgba(27,90,181,.15));
+    box-shadow:0 0 12px rgba(120,135,160,.15);
 }
 .hub-tab.active::after{
     content:'';position:absolute;bottom:0;left:25%;right:25%;
     height:2px;border-radius:1px;
-    background:linear-gradient(90deg,#236CD9,#1B5AB5);
+    background:linear-gradient(90deg,#6B7A8D,#556270);
 }
-.hub-tab.active img{opacity:1;filter:drop-shadow(0 0 4px rgba(35,108,217,.4))}
+.hub-tab.active img{opacity:1;filter:drop-shadow(0 0 4px rgba(120,135,160,.4))}
 
 /* Hub Content */
 .hub-content{
@@ -2076,11 +2175,11 @@ tc-root *{pointer-events:auto}
 .hub-custom-item.locked:hover{background:rgba(255,255,255,.03);opacity:.65}
 .hub-custom-item.claimable{
     opacity:.85;cursor:pointer;
-    border-color:rgba(35,108,217,.4);
+    border-color:rgba(120,135,160,.4);
     animation:claimPulse 2s ease-in-out infinite;
 }
-@keyframes claimPulse{0%,100%{box-shadow:0 0 0 rgba(35,108,217,0)}50%{box-shadow:0 0 12px rgba(35,108,217,.3)}}
-.hub-custom-item.claimable:hover{opacity:1;border-color:rgba(35,108,217,.6)}
+@keyframes claimPulse{0%,100%{box-shadow:0 0 0 rgba(120,135,160,0)}50%{box-shadow:0 0 12px rgba(120,135,160,.3)}}
+.hub-custom-item.claimable:hover{opacity:1;border-color:rgba(120,135,160,.6)}
 .hub-custom-item img,.hub-custom-item video{
     width:44px;height:44px;object-fit:contain;border-radius:8px;
 }
@@ -2133,15 +2232,15 @@ tc-root *{pointer-events:auto}
 .hub-range::-webkit-slider-thumb{
     -webkit-appearance:none;appearance:none;
     width:16px;height:16px;border-radius:50%;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
-    cursor:pointer;box-shadow:0 2px 6px rgba(35,108,217,.5);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
+    cursor:pointer;box-shadow:0 2px 6px rgba(120,135,160,.5);
     transition:transform .15s;
 }
 .hub-range::-webkit-slider-thumb:active{transform:scale(1.2)}
 .hub-range::-moz-range-thumb{
     width:16px;height:16px;border-radius:50%;border:none;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
-    cursor:pointer;box-shadow:0 2px 6px rgba(35,108,217,.5);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
+    cursor:pointer;box-shadow:0 2px 6px rgba(120,135,160,.5);
 }
 
 /* Toggle Switch - Hub uses same style as main */
@@ -2159,7 +2258,7 @@ tc-root *{pointer-events:auto}
     display:flex;align-items:flex-end;gap:2px;height:20px;padding:0 4px;
 }
 .hub-music-eq span{
-    width:3px;background:linear-gradient(to top,#236CD9,#1B5AB5);border-radius:2px;
+    width:3px;background:linear-gradient(to top,#6B7A8D,#556270);border-radius:2px;
     animation:hubEqBar 0.5s ease-in-out infinite alternate;
 }
 .hub-music-eq span:nth-child(1){height:8px;animation-delay:0s}
@@ -2191,11 +2290,11 @@ tc-root *{pointer-events:auto}
 .hub-music-controls button svg{width:14px;height:14px}
 .hub-music-controls .hub-music-play{
     width:40px;height:40px;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
     color:#fff;
 }
 .hub-music-controls .hub-music-play:hover{
-    transform:scale(1.05);box-shadow:0 4px 15px rgba(35,108,217,.4);
+    transform:scale(1.05);box-shadow:0 4px 15px rgba(120,135,160,.4);
 }
 
 /* Hub VIP Tab - Darker */
@@ -2227,13 +2326,13 @@ tc-root *{pointer-events:auto}
 }
 .hub-vip-buy{
     width:100%;padding:14px;border-radius:12px;border:none;
-    background:linear-gradient(135deg,#236CD9 0%,#1B5AB5 100%);
+    background:linear-gradient(135deg,#6B7A8D 0%,#556270 100%);
     color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:13px;
     cursor:pointer;transition:all .25s;margin-top:12px;
     display:flex;align-items:center;justify-content:center;gap:8px;
-    box-shadow:0 4px 15px rgba(35,108,217,.25);
+    box-shadow:0 4px 15px rgba(120,135,160,.25);
 }
-.hub-vip-buy:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(35,108,217,.35)}
+.hub-vip-buy:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(120,135,160,.35)}
 .hub-vip-buy:active{transform:translateY(0)}
 .hub-vip-buy:disabled{opacity:.5;cursor:default;transform:none;box-shadow:none}
 .hub-vip-buy img{width:18px;height:18px}
@@ -2269,15 +2368,15 @@ tc-root *{pointer-events:auto}
     text-transform:uppercase;
 }
 .promo-input-wrap input::placeholder{color:rgba(255,255,255,.2);text-transform:none}
-.promo-input-wrap input:focus{border-color:rgba(35,108,217,.4);background:rgba(255,255,255,.06)}
+.promo-input-wrap input:focus{border-color:rgba(120,135,160,.4);background:rgba(255,255,255,.06)}
 .promo-activate-btn{
     padding:0 20px;border-radius:12px;border:none;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
     color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:12px;
     cursor:pointer;transition:all .2s;white-space:nowrap;
-    box-shadow:0 4px 15px rgba(35,108,217,.25);
+    box-shadow:0 4px 15px rgba(120,135,160,.25);
 }
-.promo-activate-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(35,108,217,.4)}
+.promo-activate-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(120,135,160,.4)}
 .promo-activate-btn:active{transform:translateY(0)}
 .promo-activate-btn:disabled{opacity:.5;cursor:default;transform:none}
 .promo-result{
@@ -2338,7 +2437,7 @@ tc-root *{pointer-events:auto}
 .quest-progress-bar{
     height:6px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden;margin-bottom:6px;
 }
-.quest-progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#236CD9,#1B5AB5);transition:width .5s ease}
+.quest-progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#6B7A8D,#556270);transition:width .5s ease}
 .quest-card.completed .quest-progress-fill{background:linear-gradient(90deg,#18B83E,#1EE44C)}
 .quest-progress-text{
     display:flex;justify-content:space-between;align-items:center;
@@ -2616,7 +2715,7 @@ tc-root *{pointer-events:auto}
     height:8px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden;margin-bottom:6px;
 }
 .quest-detail-progress-fill{
-    height:100%;border-radius:4px;background:linear-gradient(90deg,#236CD9,#1B5AB5);
+    height:100%;border-radius:4px;background:linear-gradient(90deg,#6B7A8D,#556270);
     transition:width .5s ease;
 }
 .quest-detail-progress.completed .quest-detail-progress-fill{
@@ -2675,7 +2774,7 @@ tc-root *{pointer-events:auto}
     background:rgba(30,228,76,.1);border:1px solid rgba(30,228,76,.2);color:#1EE44C;
 }
 .quest-detail-status.in-progress{
-    background:rgba(35,108,217,.1);border:1px solid rgba(35,108,217,.2);color:#8a9cf0;
+    background:rgba(120,135,160,.1);border:1px solid rgba(120,135,160,.2);color:#8a9cf0;
 }
 
 /* ===== QUEST COMPLETION OVERLAY ===== */
@@ -2742,9 +2841,9 @@ tc-root *{pointer-events:auto}
 .quest-notif{
     position:fixed;top:-80px;left:50%;transform:translateX(-50%);
     width:calc(100% - 24px);max-width:380px;z-index:9999;
-    background:rgba(18,18,30,.96);border:1px solid rgba(35,108,217,.35);
+    background:rgba(18,18,30,.96);border:1px solid rgba(120,135,160,.35);
     border-radius:14px;padding:12px 14px;
-    box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px rgba(35,108,217,.15);
+    box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px rgba(120,135,160,.15);
     backdrop-filter:blur(16px);
     transition:top .45s cubic-bezier(.34,1.56,.64,1);
 }
@@ -2753,7 +2852,7 @@ tc-root *{pointer-events:auto}
 .quest-notif-icon{
     width:34px;height:34px;border-radius:8px;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
-    background:rgba(35,108,217,.15);overflow:hidden;
+    background:rgba(120,135,160,.15);overflow:hidden;
 }
 .quest-notif-icon img{width:100%;height:100%;object-fit:contain}
 .quest-notif-info{flex:1;min-width:0}
@@ -2761,7 +2860,7 @@ tc-root *{pointer-events:auto}
 .quest-notif-desc{font-size:9px;color:rgba(255,255,255,.45);margin-top:1px}
 .quest-notif-badge{
     font-size:10px;font-weight:800;padding:3px 8px;border-radius:6px;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);color:#fff;flex-shrink:0;
+    background:linear-gradient(135deg,#6B7A8D,#556270);color:#fff;flex-shrink:0;
 }
 .quest-notif-badge.done{background:linear-gradient(135deg,#18B83E,#1EE44C);animation:questClaimPulse 1.5s ease-in-out infinite}
 .quest-notif-bar{
@@ -2769,7 +2868,7 @@ tc-root *{pointer-events:auto}
 }
 .quest-notif-fill{
     height:100%;border-radius:3px;
-    background:linear-gradient(90deg,#236CD9,#1B5AB5);
+    background:linear-gradient(90deg,#6B7A8D,#556270);
     width:0%;transition:width 1s cubic-bezier(.22,1,.36,1);
 }
 .quest-notif-fill.done{background:linear-gradient(90deg,#18B83E,#1EE44C)}
@@ -2781,7 +2880,7 @@ tc-root *{pointer-events:auto}
     100%{background-position:200% 0}
 }
 .quest-notif-fill.animating{
-    background:linear-gradient(90deg,#236CD9 0%,#a78bfa 50%,#236CD9 100%);
+    background:linear-gradient(90deg,#6B7A8D 0%,#a78bfa 50%,#6B7A8D 100%);
     background-size:200% 100%;
     animation:questNotifShine 1.2s ease-in-out;
 }
@@ -2876,7 +2975,7 @@ tc-root *{pointer-events:auto}
     color:#fff;font-size:14px;outline:none;transition:all .2s;
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
-.catalog-search input:focus{border-color:rgba(35,108,217,.4);background:rgba(255,255,255,.06)}
+.catalog-search input:focus{border-color:rgba(120,135,160,.4);background:rgba(255,255,255,.06)}
 .catalog-search input::placeholder{color:rgba(255,255,255,.3)}
 .catalog-stats{
     padding:0 18px 12px;display:flex;gap:10px;flex-wrap:wrap;
@@ -2902,7 +3001,7 @@ tc-root *{pointer-events:auto}
     border:1.5px solid rgba(255,255,255,.06);
     transition:all .2s;
 }
-.catalog-card:hover{border-color:rgba(35,108,217,.3);transform:translateY(-2px)}
+.catalog-card:hover{border-color:rgba(120,135,160,.3);transform:translateY(-2px)}
 .catalog-card.collected{
     background:linear-gradient(135deg,rgba(30,228,76,.08),rgba(0,150,80,.05));
     border-color:rgba(30,228,76,.2);
@@ -3002,13 +3101,13 @@ tc-root *{pointer-events:auto}
 
 /* Button pulse animation */
 .btn-pulse{animation:btnPulse 2s ease-in-out infinite}
-@keyframes btnPulse{0%,100%{box-shadow:0 0 0 0 rgba(35,108,217,.4)}50%{box-shadow:0 0 0 10px rgba(35,108,217,0)}}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 0 0 rgba(120,135,160,.4)}50%{box-shadow:0 0 0 10px rgba(120,135,160,0)}}
 
 /* Settings tab navigation */
 .settings-tabs{display:flex;gap:4px;margin-bottom:16px;padding:3px;background:rgba(255,255,255,.04);border-radius:12px}
 .settings-tab{flex:1;padding:10px 8px;border:none;background:transparent;color:rgba(255,255,255,.5);font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:11px;border-radius:9px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;justify-content:center}
 .settings-tab:hover{background:rgba(255,255,255,.06);color:#fff}
-.settings-tab.active{background:linear-gradient(135deg,rgba(35,108,217,.3),rgba(27,90,181,.2));color:#fff}
+.settings-tab.active{background:linear-gradient(135deg,rgba(120,135,160,.3),rgba(27,90,181,.2));color:#fff}
 .settings-tab img{width:14px;height:14px}
 .settings-tab.vip-tab{color:rgba(138,43,226,.8)}
 .settings-tab.vip-tab.active{background:linear-gradient(135deg,rgba(138,43,226,.3),rgba(75,0,130,.2));color:#b380ff}
@@ -3029,15 +3128,26 @@ tc-root *{pointer-events:auto}
 /* Music progress bar */
 .music-progress-wrap{display:flex;align-items:center;gap:8px;padding:0 2px;margin:8px 0}
 .music-progress-bar{flex:1;height:4px;background:rgba(255,255,255,.1);border-radius:2px;cursor:pointer;position:relative;overflow:hidden}
-.music-progress-fill{height:100%;background:linear-gradient(90deg,#236CD9,#1B5AB5);border-radius:2px;width:0%;transition:width .1s linear}
+.music-progress-fill{height:100%;background:linear-gradient(90deg,#6B7A8D,#556270);border-radius:2px;width:0%;transition:width .1s linear}
 .music-progress-bar:hover .music-progress-fill{background:linear-gradient(90deg,#8a9cf0,#9164c4)}
 .music-time{font-size:9px;color:rgba(255,255,255,.4);font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-width:32px}
 .music-time.current{text-align:right}
 .music-time.total{text-align:left}
 
+@media(max-width:600px){
+    .game-field{
+        margin:0 8px;border-radius:20px;
+        aspect-ratio:1/1;min-height:auto;
+    }
+    .rocket-wrap img{width:120px;height:120px}
+    .mult-display{top:12%;font-size:min(48px,12vw)}
+    .top-bar{margin-bottom:4px}
+}
 @media(max-width:400px){
     .countdown-display{font-size:min(180px,40vw)}
-    .game-field{min-height:260px}
+    .game-field{aspect-ratio:1/1;min-height:auto;margin:0 6px;border-radius:16px}
+    .rocket-wrap img{width:100px;height:100px}
+    .mult-display{top:10%;font-size:min(40px,11vw)}
     .top-bar{padding:8px 12px}
     .bal-pill-crash{padding:5px 10px;font-size:12px}
     .bal-box img{width:14px;height:14px}
@@ -3077,8 +3187,8 @@ tc-root *{pointer-events:auto}
 /* Track list scrollbar */
 #musicTrackList::-webkit-scrollbar{width:4px}
 #musicTrackList::-webkit-scrollbar-track{background:transparent}
-#musicTrackList::-webkit-scrollbar-thumb{background:rgba(35,108,217,.3);border-radius:2px}
-.music-track-item:hover{background:rgba(35,108,217,.1)!important}
+#musicTrackList::-webkit-scrollbar-thumb{background:rgba(120,135,160,.3);border-radius:2px}
+.music-track-item:hover{background:rgba(120,135,160,.1)!important}
 
 /* Crate cards in hub */
 .crate-section{margin-top:16px}
@@ -3091,20 +3201,20 @@ tc-root *{pointer-events:auto}
 .crate-card{
     width:calc(50% - 4px);background:linear-gradient(135deg,rgba(30,30,60,.9),rgba(20,20,50,.95));
     border-radius:14px;padding:12px;cursor:pointer;
-    border:1px solid rgba(35,108,217,.2);transition:all .3s;
+    border:1px solid rgba(120,135,160,.2);transition:all .3s;
     display:flex;flex-direction:column;align-items:center;gap:6px;
     position:relative;overflow:hidden;
 }
 .crate-card:active{transform:scale(.96)}
 .crate-card::before{
     content:'';position:absolute;inset:0;
-    background:radial-gradient(ellipse at center,rgba(35,108,217,.08),transparent);
+    background:radial-gradient(ellipse at center,rgba(120,135,160,.08),transparent);
     opacity:0;transition:opacity .3s;
 }
 .crate-card:hover::before{opacity:1}
 .crate-card-img{
     width:64px;height:64px;object-fit:contain;
-    filter:drop-shadow(0 4px 12px rgba(35,108,217,.3));
+    filter:drop-shadow(0 4px 12px rgba(120,135,160,.3));
     position:relative;z-index:1;
 }
 .crate-card-name{
@@ -3132,14 +3242,14 @@ tc-root *{pointer-events:auto}
 .crate-title{
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:20px;
     color:#fff;text-align:center;margin-bottom:20px;
-    text-shadow:0 0 30px rgba(35,108,217,.6);
+    text-shadow:0 0 30px rgba(120,135,160,.6);
 }
 .crate-roulette-container{
     width:min(90vw, 360px);height:130px;overflow:hidden;
     border-radius:16px;position:relative;
     background:linear-gradient(180deg,rgba(20,20,50,.95),rgba(30,25,60,.95));
-    border:2px solid rgba(35,108,217,.4);
-    box-shadow:0 0 60px rgba(35,108,217,.25),inset 0 0 40px rgba(0,0,0,.4);
+    border:2px solid rgba(120,135,160,.4);
+    box-shadow:0 0 60px rgba(120,135,160,.25),inset 0 0 40px rgba(0,0,0,.4);
 }
 .crate-roulette-strip{
     display:flex;flex-direction:row;
@@ -3177,9 +3287,9 @@ tc-root *{pointer-events:auto}
     position:absolute;left:50%;top:0;bottom:0;width:120px;
     transform:translateX(-50%);
     pointer-events:none;z-index:3;
-    border-left:2px solid rgba(35,108,217,.7);
-    border-right:2px solid rgba(35,108,217,.7);
-    box-shadow:inset 0 0 30px rgba(35,108,217,.08);
+    border-left:2px solid rgba(120,135,160,.7);
+    border-right:2px solid rgba(120,135,160,.7);
+    box-shadow:inset 0 0 30px rgba(120,135,160,.08);
 }
 .crate-roulette-pointer::before,.crate-roulette-pointer::after{
     content:'';position:absolute;left:50%;transform:translateX(-50%);
@@ -3188,14 +3298,14 @@ tc-root *{pointer-events:auto}
 .crate-roulette-pointer::before{
     top:-2px;
     border-left:10px solid transparent;border-right:10px solid transparent;
-    border-top:14px solid #236CD9;
-    filter:drop-shadow(0 2px 6px rgba(35,108,217,.5));
+    border-top:14px solid #6B7A8D;
+    filter:drop-shadow(0 2px 6px rgba(120,135,160,.5));
 }
 .crate-roulette-pointer::after{
     bottom:-2px;
     border-left:10px solid transparent;border-right:10px solid transparent;
-    border-bottom:14px solid #236CD9;
-    filter:drop-shadow(0 -2px 6px rgba(35,108,217,.5));
+    border-bottom:14px solid #6B7A8D;
+    filter:drop-shadow(0 -2px 6px rgba(120,135,160,.5));
 }
 .crate-roulette-container::before,.crate-roulette-container::after{
     content:'';position:absolute;top:0;bottom:0;width:50px;z-index:2;pointer-events:none;
@@ -3207,11 +3317,11 @@ tc-root *{pointer-events:auto}
     right:0;background:linear-gradient(-90deg,rgba(20,20,50,.95),transparent);
 }
 .crate-roulette-item.winner{
-    background:radial-gradient(ellipse at center, rgba(35,108,217,.15), transparent);
+    background:radial-gradient(ellipse at center, rgba(120,135,160,.15), transparent);
 }
 .crate-roulette-item.winner::before{
-    background:rgba(35,108,217,.08);
-    box-shadow:0 0 20px rgba(35,108,217,.1);
+    background:rgba(120,135,160,.08);
+    box-shadow:0 0 20px rgba(120,135,160,.1);
 }
 .crate-result{
     margin-top:24px;text-align:center;opacity:0;
@@ -3220,7 +3330,7 @@ tc-root *{pointer-events:auto}
 .crate-result.show{opacity:1;transform:scale(1) translateY(0)}
 .crate-result-text{
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:18px;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5,#236CD9);
+    background:linear-gradient(135deg,#6B7A8D,#556270,#6B7A8D);
     background-size:200% 100%;animation:rouletteShine 2s linear infinite;
     -webkit-background-clip:text;-webkit-text-fill-color:transparent;
     margin-bottom:14px;
@@ -3235,11 +3345,11 @@ tc-root *{pointer-events:auto}
 .crate-result-rarity.legendary{color:#FDA100}
 .crate-close-btn{
     margin-top:12px;padding:12px 40px;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
     border:none;border-radius:14px;color:#fff;
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:15px;
     cursor:pointer;transition:transform .15s,box-shadow .15s;
-    box-shadow:0 4px 20px rgba(35,108,217,.3);
+    box-shadow:0 4px 20px rgba(120,135,160,.3);
 }
 .crate-close-btn:active{transform:scale(.95)}
 
@@ -3254,19 +3364,19 @@ tc-root *{pointer-events:auto}
 .roulette-title{
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:22px;
     color:#fff;text-align:center;margin-bottom:24px;
-    text-shadow:0 0 30px rgba(35,108,217,.6);
+    text-shadow:0 0 30px rgba(120,135,160,.6);
     animation:rouletteTitlePulse 2s ease-in-out infinite;
 }
 @keyframes rouletteTitlePulse{
-    0%,100%{text-shadow:0 0 20px rgba(35,108,217,.4)}
-    50%{text-shadow:0 0 40px rgba(35,108,217,.8),0 0 60px rgba(253,161,0,.3)}
+    0%,100%{text-shadow:0 0 20px rgba(120,135,160,.4)}
+    50%{text-shadow:0 0 40px rgba(120,135,160,.8),0 0 60px rgba(253,161,0,.3)}
 }
 .roulette-container{
     width:min(90vw, 360px);height:130px;overflow:hidden;
     border-radius:16px;position:relative;
     background:linear-gradient(180deg,rgba(20,20,50,.95),rgba(30,25,60,.95));
-    border:2px solid rgba(35,108,217,.4);
-    box-shadow:0 0 60px rgba(35,108,217,.25),inset 0 0 40px rgba(0,0,0,.4);
+    border:2px solid rgba(120,135,160,.4);
+    box-shadow:0 0 60px rgba(120,135,160,.25),inset 0 0 40px rgba(0,0,0,.4);
 }
 .roulette-strip{
     display:flex;flex-direction:row;
@@ -3351,11 +3461,11 @@ tc-root *{pointer-events:auto}
 @keyframes rouletteShine{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .roulette-close-btn{
     margin-top:12px;padding:12px 40px;
-    background:linear-gradient(135deg,#236CD9,#1B5AB5);
+    background:linear-gradient(135deg,#6B7A8D,#556270);
     border:none;border-radius:14px;color:#fff;
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:15px;
     cursor:pointer;transition:transform .15s,box-shadow .15s;
-    box-shadow:0 4px 20px rgba(35,108,217,.3);
+    box-shadow:0 4px 20px rgba(120,135,160,.3);
 }
 .roulette-close-btn:active{transform:scale(.95)}
 </style>
@@ -3390,8 +3500,17 @@ tc-root *{pointer-events:auto}
 </div>
 
 <div class="ld-screen" id="ldScreen">
-    <img class="ld-gif" id="ldGif" src="/static/gifs/crash.gif" alt="">
-    <div class="ld-txt">CRASH</div>
+    <div class="ld-panels" id="ldPanels">
+        <div class="ld-panel"><img src="" alt=""></div>
+        <div class="ld-panel"><img src="" alt=""></div>
+        <div class="ld-panel"><img src="" alt=""></div>
+        <div class="ld-panel"><img src="" alt=""></div>
+        <div class="ld-panel"><img src="" alt=""></div>
+        <div class="ld-panel"><img src="" alt=""></div>
+        <div class="ld-panel"><img src="" alt=""></div>
+        <div class="ld-panel"><img src="" alt=""></div>
+        <div class="ld-panel"><img src="" alt=""></div>
+    </div>
     <div class="ld-progress"><div class="ld-progress-bar" id="ldProgressBar"></div></div>
 </div>
 
@@ -3405,7 +3524,7 @@ tc-root *{pointer-events:auto}
                 <span id="onlineCount">0</span>
             </div>
             <button class="settings-btn-sm" onclick="openSettings()" title="Settings">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8BA3CC" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
             <button class="admin-btn-sm" id="adminBtn" onclick="openAdminPanel()" style="display:none">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -3425,11 +3544,12 @@ tc-root *{pointer-events:auto}
 
     <!-- GAME FIELD -->
     <div class="game-field" id="gameField">
+        <div class="grid-overlay" id="gridOverlay"></div>
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="mult-display" id="multDisplay"></div>
         <div class="wait-label" id="waitLabel">Waiting for round</div>
         <div class="rocket-wrap hide" id="rocketWrap">
-            <img src="/static/gifs/crash.gif" alt="">
+            <img src="/static/gifs/rockets/crash.gif" alt="">
         </div>
         <div class="boom-wrap" id="boomWrap">
             <img src="/static/gifs/boom.gif" alt="">
@@ -3568,7 +3688,7 @@ tc-root *{pointer-events:auto}
             <!-- PROMO CODE FOR SBP -->
             <div style="width:100%;display:flex;gap:8px;align-items:center;margin-bottom:6px">
                 <input type="text" id="sbpPromoCode" placeholder="Promo code (optional)" maxlength="30" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;">
-                <button onclick="checkDepositPromoFor('sbpPromoCode','sbpPromoStatus')" style="background:rgba(35,108,217,.2);border:1px solid rgba(35,108,217,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Check</button>
+                <button onclick="checkDepositPromoFor('sbpPromoCode','sbpPromoStatus')" style="background:rgba(120,135,160,.2);border:1px solid rgba(120,135,160,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Check</button>
             </div>
             <div id="sbpPromoStatus" style="font-size:12px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:none;text-align:center;width:100%;margin-bottom:10px"></div>
             <button onclick="createSbpPayment()" id="sbpPayBtn" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#00c851,#00b894);color:#fff;font-size:15px;font-weight:700;cursor:pointer">
@@ -3622,7 +3742,7 @@ tc-root *{pointer-events:auto}
             <!-- PROMO CODE FOR DEPOSIT -->
             <div style="width:100%;display:flex;gap:8px;align-items:center;">
                 <input type="text" id="depositPromoCode" placeholder="Promo code (optional)" maxlength="30" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;">
-                <button onclick="checkDepositPromoFor('depositPromoCode','depositPromoStatus')" style="background:rgba(35,108,217,.2);border:1px solid rgba(35,108,217,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Check</button>
+                <button onclick="checkDepositPromoFor('depositPromoCode','depositPromoStatus')" style="background:rgba(120,135,160,.2);border:1px solid rgba(120,135,160,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Check</button>
             </div>
             <div id="depositPromoStatus" style="font-size:12px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:none;text-align:center;width:100%;"></div>
             <button class="stars-deposit-pay-btn" id="starsPayBtn" onclick="payWithStars()">
@@ -3673,7 +3793,7 @@ tc-root *{pointer-events:auto}
             <!-- PROMO CODE FOR TON -->
             <div style="width:100%;display:flex;gap:8px;align-items:center;margin-top:10px">
                 <input type="text" id="tonPromoCode" placeholder="Promo code (optional)" maxlength="30" style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;outline:none;">
-                <button onclick="checkDepositPromoFor('tonPromoCode','tonPromoStatus')" style="background:rgba(35,108,217,.2);border:1px solid rgba(35,108,217,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Check</button>
+                <button onclick="checkDepositPromoFor('tonPromoCode','tonPromoStatus')" style="background:rgba(120,135,160,.2);border:1px solid rgba(120,135,160,.3);border-radius:10px;padding:10px 14px;color:#fff;font-size:12px;cursor:pointer;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:600;white-space:nowrap;">Check</button>
             </div>
             <div id="tonPromoStatus" style="font-size:12px;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:none;text-align:center;width:100%;margin-top:4px"></div>
             <button class="ton-connect-btn" onclick="sendTonPayment()" style="margin-top:10px">PAY</button>
@@ -3942,45 +4062,26 @@ tc-root *{pointer-events:auto}
     <div class="settings-modal">
         <div class="settings-handle" style="width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:12px auto 0"></div>
         <div class="settings-header" style="border-bottom:none;padding:12px 18px 8px;justify-content:space-between">
-            <div class="settings-tab-bar" style="display:flex;align-items:center;gap:0;background:rgba(255,255,255,.06);border-radius:12px;padding:3px;flex:1">
-                <button class="stab active" data-tab="settings" onclick="switchSettingsTab('settings')">Settings</button>
-                <button class="stab" data-tab="skin" onclick="switchSettingsTab('skin')">Skin</button>
-                <button class="stab" data-tab="bg" onclick="switchSettingsTab('bg')">Bg</button>
+            <div style="font-family:'Inter Variable','Inter',sans-serif;font-weight:800;font-size:16px;color:#fff;display:flex;align-items:center;gap:8px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8BA3CC" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                Skins
             </div>
-            <button class="vib-toggle-btn" id="settingsVibBtn" onclick="toggleSetting('vibration');syncToggleUI()" title="Vibration" style="width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:10px;flex-shrink:0;transition:all .2s">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            <button class="vib-toggle-btn" id="settingsVibBtn" onclick="toggleVibBtn()" title="Vibration" style="width:42px;height:42px;border-radius:12px;border:1px solid rgba(139,163,204,.2);background:rgba(139,163,204,.06);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:10px;flex-shrink:0;transition:all .3s;position:relative;overflow:hidden">
+                <svg class="vib-phone-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8BA3CC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                <div class="vib-waves" style="position:absolute;inset:0;pointer-events:none;opacity:0">
+                    <span style="position:absolute;left:-2px;top:50%;transform:translateY(-50%);width:4px;height:12px;background:#8BA3CC;border-radius:2px;animation:vibWave .3s ease infinite alternate"></span>
+                    <span style="position:absolute;right:-2px;top:50%;transform:translateY(-50%);width:4px;height:12px;background:#8BA3CC;border-radius:2px;animation:vibWave .3s ease infinite alternate .15s"></span>
+                </div>
             </button>
         </div>
         <div class="settings-content">
-            <!-- SETTINGS TAB -->
-            <div class="settings-tab-content active" id="settingsTabMain">
-                <div class="settings-toggles">
-                    <div class="toggle-row">
-                        <div class="toggle-info">
-                            <svg class="toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5.5 5.5L18.5 18.5"/><rect x="2" y="8" width="6" height="8" rx="1"/><rect x="16" y="8" width="6" height="8" rx="1"/></svg>
-                            <div>
-                                <div class="toggle-label">Vibration</div>
-                                <div class="toggle-desc">Vibration on events</div>
-                            </div>
-                        </div>
-                        <div class="toggle-switch" id="toggleVibration" onclick="toggleSetting('vibration')"></div>
-                    </div>
-                </div>
-            </div>
-            <!-- SKIN TAB -->
-            <div class="settings-tab-content" id="settingsTabSkin">
+            <div class="settings-tab-content active" id="settingsTabSkin">
                 <div class="settings-section">
                     <div class="settings-grid" id="rocketGrid"></div>
                 </div>
             </div>
-            <!-- BG TAB -->
-            <div class="settings-tab-content" id="settingsTabBg">
-                <div class="settings-section">
-                    <div class="settings-grid" id="bgGrid"></div>
-                </div>
-            </div>
         </div>
-        <button class="settings-close-btn" onclick="closeSettings()" style="margin:0 18px 18px;padding:14px;border-radius:14px;border:none;background:var(--blue,#236CD9);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;width:calc(100% - 36px)">close</button>
+        <button class="settings-close-btn" onclick="closeSettings()" style="margin:0 18px 18px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#1e3a6e,#6B7A8D);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;width:calc(100% - 36px);border:1px solid rgba(120,135,160,.3)">close</button>
     </div>
 </div>
 
@@ -4066,7 +4167,7 @@ tc-root *{pointer-events:auto}
                 </div>
                 <!-- Rockets Section -->
                 <div class="hub-custom-section">
-                    <div class="hub-custom-title"><img src="/static/gifs/crash.gif">Rocket</div>
+                    <div class="hub-custom-title"><img src="/static/gifs/rockets/crash.gif">Rocket</div>
                     <div class="hub-custom-grid" id="hubRocketGrid"></div>
                 </div>
 
@@ -4560,7 +4661,8 @@ function normalizeCrashGiftImageUrl(url){
     if(!url) return '';
     const src = String(url).trim();
     if(!src) return '';
-    return src.replace(/\.gif(\?.*)?$/i, '.png$1');
+    /* Keep original extension — we have both .png and .gif locally, fragment provides .webp */
+    return src;
 }
 
 function resolveCrashGiftImage(gift, fallback){
@@ -4646,7 +4748,7 @@ let unlockedBackgrounds = [...backgrounds]; /* All backgrounds unlocked */
 let settingGif = localStorage.getItem('crash_gif') !== 'off';
 let settingGiftImg = localStorage.getItem('crash_gift_img') !== 'off';
 let settingSound = localStorage.getItem('crash_sound') === 'on';
-let settingVibration = localStorage.getItem('crash_vibration') === 'on';
+let settingVibration = localStorage.getItem('crash_vibration') !== 'off';
 
 /* Optimization Settings (default: all on except lowPower) */
 let settingParticles = localStorage.getItem('crash_particles') !== 'off';
@@ -4934,8 +5036,25 @@ async function loadCrashCustomizations() {
 function checkAccessCondition(item) {
     const accessType = item.access_type || 'free';
     if (accessType === 'free') return true;
-    /* Locked items — check if user has unlocked via quests/promo */
-    return userUnlockedPromos.includes(item.id);
+    /* Handle multiple conditions (OR logic) */
+    const conditions = accessType.split(',');
+    for (const cond of conditions) {
+        const c = cond.trim();
+        if (c === 'free') return true;
+        if (c === 'level') {
+            const req = item.requirement || 0;
+            if ((userLevel || 1) >= req) return true;
+        }
+        if (c === 'promo_only' && userUnlockedPromos.includes(item.id)) return true;
+        if (c === 'vip' && userIsVip) return true;
+        if (c === 'bet_volume') {
+            if ((userBetVolume || 0) >= (item.requirement || 0)) return true;
+        }
+        if (c === 'wager') {
+            if ((userWagerCompleted || 0) >= (item.requirement || 0)) return true;
+        }
+    }
+    return false;
 }
 
 /* Get access condition description */
@@ -5023,6 +5142,33 @@ document.addEventListener('touchstart', function initAudioOnceTouch(){
 async function loadCrashGifts(){
     const progressBar = $('ldProgressBar');
     const ldTxt = document.querySelector('.ld-txt');
+    const ldPanels = document.querySelectorAll('.ld-panel img');
+    
+    /* Loading panel animation — cycle random gift PNGs in panels */
+    let ldAnimInterval = null;
+    let ldPhase = 'gifts'; /* 'gifts' then 'skins' */
+    function animateLdPanels(){
+        ldPanels.forEach(function(img, i){
+            setTimeout(function(){
+                img.classList.remove('show');
+                img.classList.add('hide');
+                setTimeout(function(){
+                    if(ldPhase === 'gifts' && allCatalogGifts.length > 0){
+                        var rg = allCatalogGifts[Math.floor(Math.random()*allCatalogGifts.length)];
+                        img.src = resolveCrashGiftImage(rg, '/static/img/star.png');
+                    } else if(ldPhase === 'skins' && rocketsData.length > 0){
+                        var rs = rocketsData[Math.floor(Math.random()*rocketsData.length)];
+                        img.src = rs.id === 'crash' ? '/static/gifs/rockets/crash.gif' : '/static/gifs/rockets/' + rs.id + '.gif';
+                    } else {
+                        img.src = '/static/img/star.png';
+                    }
+                    img.onerror = function(){ this.src = '/static/img/star.png'; };
+                    img.classList.remove('hide');
+                    img.classList.add('show');
+                }, 300);
+            }, i * 120);
+        });
+    }
     
     try{
         if(ldTxt) ldTxt.textContent = 'LOADING...';
@@ -5035,6 +5181,10 @@ async function loadCrashGifts(){
         
         console.log('📦 Gifts loaded:', allCatalogGifts.length);
         
+        /* Start panel animation with gift PNGs */
+        animateLdPanels();
+        ldAnimInterval = setInterval(animateLdPanels, 1800);
+        
         /* Preload gift images in background (non-blocking) */
         preloadGiftsInBackground();
         
@@ -5045,19 +5195,22 @@ async function loadCrashGifts(){
         /* Check VIP status */
         try{ await checkVipStatus(); }catch(e){ console.warn('VIP status:', e); }
         
-        if(progressBar) progressBar.style.width = '100%';
+        if(progressBar) progressBar.style.width = '80%';
         
-        /* Swap rocket to boom.gif for loading finish effect */
-        const ldGifEl = $('ldGif');
-        if(ldGifEl){
-            ldGifEl.src = '/static/gifs/boom.gif';
-        }
-        const ldTxtEl = document.querySelector('.ld-txt');
-        if(ldTxtEl) ldTxtEl.textContent = 'READY!';
-        /* Brief pause so user sees the boom */
-        await new Promise(r => setTimeout(r, 600));
+        /* Switch to skins phase */
+        ldPhase = 'skins';
+        animateLdPanels();
+        
+        await new Promise(r => setTimeout(r, 1200));
+        
+        if(progressBar) progressBar.style.width = '100%';
+        if(ldTxt) ldTxt.textContent = 'READY!';
+        
+        await new Promise(r => setTimeout(r, 400));
     }catch(e){
         console.error('Error in loadCrashGifts:', e);
+    } finally {
+        if(ldAnimInterval) clearInterval(ldAnimInterval);
     }
 }
 
@@ -5371,11 +5524,11 @@ function render(){
             rw.style.animationDuration = glowDur.toFixed(2) + 's';
         }
 
-        /* Dynamic trail width based on multiplier */
+        /* Dynamic grid speed based on multiplier — faster at higher coefficients */
         var gf2 = $('gameField');
         if(gf2){
-            var tw = Math.min(70, 25 + (dispMult - 1) * 8);
-            gf2.style.setProperty('--trail-w', tw + '%');
+            var gridS = Math.max(0.5, 8.0 - (dispMult - 1) * 1.2);
+            gf2.style.setProperty('--grid-speed', gridS.toFixed(1) + 's');
         }
 
         /* Live coeff display - both small pill and big rolling display */
@@ -5413,6 +5566,8 @@ function render(){
             var elapsed = (performance.now() - lastTrTimestamp) / 1000;
             var clientTr = Math.max(0, lastTimeRemaining - elapsed);
             var sec = Math.ceil(clientTr);
+            if(sec > 5) sec = 5; /* Clamp to max 5 */
+            if(sec <= 0 && clientTr <= 0) sec = 0;
             var label = sec > 0 ? String(sec) : 'GO';
             if(countdownShown !== label){
                 countdownShown = label;
@@ -5496,11 +5651,10 @@ async function updStatus(){
             wl.style.opacity = '0';
             rw.classList.add('hide');
             rw.classList.remove('flying');
-            /* Reset rocket tilt & trail */
+            /* Reset rocket tilt */
             var rImg = rw.querySelector('img');
             if(rImg) rImg.style.transform = '';
             rw.style.animationDuration = '';
-            gf.style.removeProperty('--trail-w');
             if(md){ md.classList.remove('active','crashed-anim'); lastMultStr=''; multPrevLen=0; }
             /* Keep boom visible until boomUntil timer expires */
             if(Date.now() >= boomUntil) bm.classList.remove('show');
@@ -5578,9 +5732,29 @@ async function updStatus(){
 
         /* ---- FLYING ---- */
         } else if(status === 'flying'){
-            cd.className = 'countdown-display';
-            cd.textContent = '';
-            countdownShown = -1;
+            /* Show "GO" briefly if transitioning from countdown */
+            if(prevSt === 'counting' || prevSt === 'waiting'){
+                if(countdownShown !== 'GO'){
+                    var cdGo = $('cdDisplay');
+                    if(cdGo){
+                        cdGo.textContent = 'GO';
+                        cdGo.classList.remove('active');
+                        void cdGo.offsetWidth;
+                        cdGo.classList.add('active');
+                    }
+                    countdownShown = 'GO';
+                    /* Clear "GO" after 400ms */
+                    setTimeout(function(){
+                        var cdClear = $('cdDisplay');
+                        if(cdClear){ cdClear.className = 'countdown-display'; cdClear.textContent = ''; }
+                        countdownShown = -1;
+                    }, 400);
+                }
+            } else {
+                cd.className = 'countdown-display';
+                cd.textContent = '';
+                countdownShown = -1;
+            }
             wl.style.opacity = '0';
             rw.classList.remove('hide');
             bm.classList.remove('show');
@@ -5603,7 +5777,8 @@ async function updStatus(){
                 pb.style.display = 'none';
                 cb.style.display = 'block';
                 cb.disabled = false;
-                cb.textContent = 'CASHOUT ' + formatCrashMoney(pw);
+                cb.className = 'cashout-btn';
+                cb.textContent = 'COLLECT';
             } else {
                 pb.style.display = 'block';
                 pb.disabled = false;
@@ -5620,11 +5795,10 @@ async function updStatus(){
         } else if(status === 'crashed'){
             cd.className = 'countdown-display';
             cd.textContent = '';
-            /* Reset rocket tilt & trail */
+            /* Reset rocket tilt */
             var rCImg = rw.querySelector('img');
             if(rCImg) rCImg.style.transform = '';
             rw.style.animationDuration = '';
-            gf.style.removeProperty('--trail-w');
             countdownShown = -1;
             wl.style.opacity = '0';
             rw.classList.add('hide');
@@ -5697,11 +5871,11 @@ async function updStatus(){
                 tryShowPendingRoulette();
             }
 
-            pb.style.display = 'block';
-            pb.disabled = true;
-            pb.style.pointerEvents = '';
-            pb.innerHTML = '<span class="btn-text">NEW ROUND...</span>';
-            cb.style.display = 'none';
+            pb.style.display = 'none';
+            cb.style.display = 'block';
+            cb.disabled = true;
+            cb.className = 'cashout-btn crash-state';
+            cb.textContent = 'CRASH ' + servMult.toFixed(2) + 'x';
             hasBet = false; betAmt = 0;
         }
     }catch(e){ console.error('updStatus err:', e); }
@@ -6136,25 +6310,47 @@ function showWin(d){
     var m = parseFloat(d.multiplier).toFixed(2);
     var content = $('winContent');
     var mult = $('winMult');
+    var winTon = d.win_amount ? starsToTon(d.win_amount) : 0;
     
     if(d.gift){
         /* Check if this is a new collection item */
         var giftId = d.gift.id || d.gift.name;
         var isNewToCollection = !previousCollectedIds.has(giftId);
         
-        /* Gift win: star info LEFT, gift GIF RIGHT */
         var starsDiff = d.star_difference || 0;
-        var moneyIcon = getCrashMoneyIcon();
-        content.innerHTML = 
-            '<div class="win-title">WIN!</div>' +
-            '<div class="win-gift-layout">' +
-                '<div class="win-gift-info">' +
-                    '<div class="win-gift-name">' + d.gift.name + '</div>' +
-                    '<div class="win-gift-value"><img src="' + moneyIcon + '"> ' + formatCrashMoney(d.gift.value || 0) + '</div>' +
-                    (starsDiff > 0 ? '<div class="win-gift-stars"><img src="' + moneyIcon + '"> +' + formatCrashMoney(starsDiff) + '</div>' : '') +
-                '</div>' +
-                '<img class="win-gift-img" src="' + resolveCrashGiftImage(d.gift, '/static/img/star.png') + '" alt="" onerror="this.src=\'/static/img/star.png\'">' +
-            '</div>';
+        var diffTon = starsToTon(starsDiff);
+        var giftTon = starsToTon(d.gift.value || 0);
+        
+        /* If there's a TON surplus on top of gift — show dual panel layout */
+        if(starsDiff > 0){
+            content.innerHTML = 
+                '<div class="win-title">WIN!</div>' +
+                '<div class="win-dual-layout">' +
+                    /* Left: TON bonus */
+                    '<div class="win-dual-card win-ton-card">' +
+                        '<img class="win-dual-icon" src="' + getTonIcon(diffTon) + '" alt="">' +
+                        '<div class="win-dual-amt">+' + formatTon(diffTon) + '</div>' +
+                        '<div class="win-dual-label">TON</div>' +
+                    '</div>' +
+                    /* Right: Gift */
+                    '<div class="win-dual-card win-gift-card">' +
+                        '<img class="win-dual-icon" src="' + resolveCrashGiftImage(d.gift, '/static/img/star.png') + '" alt="" onerror="this.src=\'/static/img/star.png\'">' +
+                        '<div class="win-dual-amt">' + d.gift.name + '</div>' +
+                        '<div class="win-dual-label"><img src="' + getTonIcon(giftTon) + '" style="width:12px;height:12px;vertical-align:middle"> ' + formatTon(giftTon) + '</div>' +
+                    '</div>' +
+                '</div>';
+        } else {
+            /* Gift only — centered gift display */
+            content.innerHTML = 
+                '<div class="win-title">WIN!</div>' +
+                '<div class="win-gift-layout">' +
+                    '<div class="win-gift-info">' +
+                        '<div class="win-gift-name">' + d.gift.name + '</div>' +
+                        '<div class="win-gift-value"><img src="' + getTonIcon(giftTon) + '"> ' + formatTon(giftTon) + ' TON</div>' +
+                    '</div>' +
+                    '<img class="win-gift-img" src="' + resolveCrashGiftImage(d.gift, '/static/img/star.png') + '" alt="" onerror="this.src=\'/static/img/star.png\'">' +
+                '</div>';
+        }
         
         /* Show unlock notification for new collection items */
         if(isNewToCollection){
@@ -6164,18 +6360,20 @@ function showWin(d){
             }, 1500);
         }
     } else {
-        /* Stars only: title + big star icon + amount */
-        var onlyMoneyIcon = getCrashMoneyIcon();
+        /* TON only win — big TON SVG by amount + amount text */
+        var tonIcon = getTonIcon(winTon);
         content.innerHTML = 
             '<div class="win-title">WIN!</div>' +
             '<div class="win-stars-layout">' +
-                '<img class="win-star-icon" src="' + onlyMoneyIcon + '" alt="">' +
-                '<div class="win-star-amount">+' + formatCrashMoney(d.win_amount || 0) + '</div>' +
-                '<div class="win-star-label">' + (getCrashCurrencyMode() === 'ton' ? 'TON credited' : 'stars credited') + '</div>' +
+                '<img class="win-star-icon" src="' + tonIcon + '" alt="">' +
+                '<div class="win-star-amount">+' + formatTon(winTon) + '</div>' +
+                '<div class="win-star-label">TON</div>' +
             '</div>';
     }
     mult.textContent = 'x' + m;
     $('winOverlay').classList.add('show');
+    /* Vibrate on win display */
+    triggerVibration([30, 20, 60]);
 }
 function closeWin(){ $('winOverlay').classList.remove('show'); }
 
@@ -6285,28 +6483,28 @@ async function loadBets(){
                 ? '<img src="' + b.photo_url + '" alt="">'
                 : ini;
 
-            var stCls = 'active', stTxt = '';
-            var giftIcon = '/static/img/star.png';
-            var displayAmt = b.bet_amount;
+            var stCls = 'active', stTxt = '', coefBadge = '';
+            var giftIcon = getBetGiftIcon(b.bet_amount);
+            var betAmtDisplay = formatCrashMoney(b.bet_amount);
+            var rightDisplay = '';
             var isFreshCashout = newCashouts.some(function(c){ return c.id === b.id; });
             
             if(b.status === 'cashed_out'){
                 stCls = 'won' + (isFreshCashout ? ' cashout-flash' : '');
                 var mx = b.cashout_multiplier ? parseFloat(b.cashout_multiplier).toFixed(2) : '?';
-                stTxt = 'x' + mx + ' +' + formatCrashMoney(b.win_amount || 0);
-                giftIcon = getBetGiftIcon(b.win_amount || b.bet_amount);
-                displayAmt = b.win_amount || b.bet_amount;
+                coefBadge = '<span class="bet-coef-badge won">x' + mx + '</span>';
+                rightDisplay = '+' + formatCrashMoney(b.win_amount || 0);
             } else if(b.status === 'lost'){
-                stCls = 'lost'; stTxt = 'X';
-                /* Show what they could have won at crash */
-                var lostAmt = Math.floor(b.bet_amount * (servMult || 1));
-                giftIcon = getBetGiftIcon(lostAmt);
-                displayAmt = '-' + formatCrashMoney(lostAmt);
+                stCls = 'lost';
+                var crashMx = servMult ? parseFloat(servMult).toFixed(2) : '?';
+                coefBadge = '<span class="bet-coef-badge lost">x' + crashMx + '</span>';
+                rightDisplay = '-' + formatCrashMoney(b.bet_amount);
             } else {
                 /* Active bet - show potential win based on current multiplier */
                 var potentialWin = Math.floor(b.bet_amount * (dispMult || 1));
-                giftIcon = getBetGiftIcon(potentialWin);
-                displayAmt = formatCrashMoney(potentialWin);
+                var curMx = dispMult ? dispMult.toFixed(2) : '1.00';
+                coefBadge = '<span class="bet-coef-badge active">x' + curMx + '</span>';
+                rightDisplay = formatCrashMoney(potentialWin);
             }
 
             return '<div class="bet-row ' + stCls + '" data-bet-id="' + b.id + '" data-bet-amount="' + b.bet_amount + '" data-status="' + b.status + '">' +
@@ -6314,10 +6512,13 @@ async function loadBets(){
                     '<div class="bet-avatar">' + avatar + '</div>' +
                     '<div class="bet-info">' +
                         '<div class="bet-name">' + name + '</div>' +
-                        '<div class="bet-amt"><img class="bet-gift-icon" src="' + giftIcon + '" onerror="this.onerror=null;this.src=\'' + getCrashMoneyIcon() + '\'"><span class="bet-amt-val">' + displayAmt + '</span></div>' +
+                        '<div class="bet-amt"><img class="bet-gift-icon" src="' + giftIcon + '" onerror="this.onerror=null;this.src=\'' + getCrashMoneyIcon() + '\'"><span class="bet-amt-val">' + betAmtDisplay + '</span></div>' +
                     '</div>' +
                 '</div>' +
-                '<div class="bet-status ' + stCls + '">' + stTxt + '</div>' +
+                '<div class="bet-right-col">' +
+                    '<div class="bet-win-amt ' + stCls + '">' + rightDisplay + '</div>' +
+                    coefBadge +
+                '</div>' +
             '</div>';
         }).join('');
 
@@ -6354,17 +6555,11 @@ function updateActiveBetsDisplay(){
     rows.forEach(function(row){
         var betAmt = parseInt(row.getAttribute('data-bet-amount')) || 0;
         var potentialWin = Math.floor(betAmt * dispMult);
-        var iconEl = row.querySelector('.bet-gift-icon');
-        var valEl = row.querySelector('.bet-amt-val');
-        if(iconEl && valEl){
-            var gift = getAchievableGift(potentialWin);
-            var newSrc = gift ? resolveCrashGiftImage(gift, getCrashMoneyIcon()) : getCrashMoneyIcon();
-            /* Only update src if changed — prevents GIF restart */
-            if(iconEl.src !== newSrc && !iconEl.src.endsWith(newSrc)){
-                iconEl.src = newSrc;
-            }
-            valEl.textContent = formatCrashMoney(potentialWin);
-        }
+        var curMx = dispMult ? dispMult.toFixed(2) : '1.00';
+        var winEl = row.querySelector('.bet-win-amt');
+        var coefEl = row.querySelector('.bet-coef-badge');
+        if(winEl) winEl.textContent = formatCrashMoney(potentialWin);
+        if(coefEl) coefEl.textContent = 'x' + curMx;
     });
 }
 
@@ -6633,19 +6828,19 @@ function renderHubCustomization(){
             
             if (isUnlocked) {
                 return '<div class="hub-custom-item' + (isActive ? ' active' : '') + '" onclick="openRocketPreview(\'' + r + '\', \'' + (rItem.name || r) + '\')">' +
-                    '<img src="/static/gifs/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.4;this.style.objectFit=\'contain\'" alt="">' +
+                    '<img src="/static/gifs/rockets/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.4;this.style.objectFit=\'contain\'" alt="">' +
                     '<div class="item-name">' + (rItem.name || r) + '</div>' +
                 '</div>';
             } else if (canClaim) {
                 return '<div class="hub-custom-item claimable" onclick="openClaimOverlay(\'rocket\',\'' + r + '\',\'' + (rItem.name || r).replace(/'/g,"\\'") + '\')">' +
-                    '<img src="/static/gifs/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.4;this.style.objectFit=\'contain\'" alt="" style="filter:brightness(0.8)">' +
+                    '<img src="/static/gifs/rockets/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.4;this.style.objectFit=\'contain\'" alt="" style="filter:brightness(0.8)">' +
                     '<div class="item-name">' + (rItem.name || r) + '</div>' +
                 '</div>';
             } else {
-                return '<div class="hub-custom-item locked" onclick="handleLockedClick(\'rocket\',\'' + r + '\',\'' + (rItem.name || r).replace(/'/g,"\\'") + '\',\'' + rItem.access_type + '\',' + (rItem.requirement || 0) + ')">' +
-                    '<img src="/static/gifs/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.15;this.style.objectFit=\'contain\'" alt="" style="filter:grayscale(1) brightness(0.5)">' +
-                    '<img class="item-lock-icon" src="/static/img/lock.png" alt="">' +
-                    '<div class="item-name">' + (rItem.name || r) + '</div>' +
+                return '<div class="hub-custom-item locked" onclick="handleLockedClick(\'rocket\',\'' + r + '\',\'' + (rItem.name || r).replace(/'/g,"\\'") + '\',\'' + rItem.access_type + '\',' + (rItem.requirement || 0) + ')" style="position:relative">' +
+                    '<div class="skin-lock-overlay"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' +
+                    '<img src="/static/gifs/rockets/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.15;this.style.objectFit=\'contain\'" alt="" style="filter:grayscale(1) brightness(0.3);opacity:.4">' +
+                    '<div class="item-name" style="color:rgba(90,106,138,.6)">' + (rItem.name || r) + '</div>' +
                 '</div>';
             }
         }).join('');
@@ -6667,7 +6862,7 @@ function openLockedRocketPreview(rocketId, rocketName, accessType, requirement){
     previewId = null;
     const visual = $('previewVisual');
     const name = $('previewName');
-    visual.innerHTML = '<img src="/static/gifs/' + rocketId + '.gif" style="filter:grayscale(.6) brightness(.7)" onerror="this.src=\'/static/gifs/crash.gif\'">';
+    visual.innerHTML = '<img src="/static/gifs/rockets/' + rocketId + '.gif" style="filter:grayscale(.6) brightness(.7)" onerror="this.src=\'/static/gifs/rockets/crash.gif\'">';
     name.textContent = rocketName || rocketId;
     
     /* Hide apply button, show lock info */
@@ -6783,7 +6978,7 @@ function showUnlockNotif(type, id, name) {
     if (!notif) return;
     
     if (type === 'rocket') {
-        img.src = '/static/gifs/' + id + '.gif';
+        img.src = '/static/gifs/rockets/' + id + '.gif';
     } else {
         /* Background — use a video poster or fallback */
         img.src = '/static/img/exit.png';
@@ -6841,7 +7036,7 @@ function openClaimOverlay(type, id, name) {
     
     /* Set visual */
     if (type === 'rocket') {
-        visual.innerHTML = '<img src="/static/gifs/' + id + '.gif" onerror="this.src=\'/static/gifs/crash.gif\'">';
+        visual.innerHTML = '<img src="/static/gifs/rockets/' + id + '.gif" onerror="this.src=\'/static/gifs/rockets/crash.gif\'">';
     } else {
         visual.innerHTML = '<video src="/static/img/' + id + '.mp4" autoplay muted loop playsinline></video>';
     }
@@ -6863,7 +7058,7 @@ function doClaim() {
     markAsClaimed(claimId);
     
     /* Particle burst */
-    const colors = ['#FDA100', '#236CD9', '#1B5AB5', '#F96999', '#48dbfb', '#fff'];
+    const colors = ['#FDA100', '#6B7A8D', '#556270', '#F96999', '#48dbfb', '#fff'];
     for (let i = 0; i < 30; i++) {
         const p = document.createElement('div');
         p.className = 'claim-particle';
@@ -7180,7 +7375,7 @@ function renderHubQuests(){
             function _mediaTagFor(rtype, id, name){
                 id = id || '';
                 if(rtype === 'rocket'){
-                    return '<img src="/static/gifs/' + id + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\'" style="width:20px;height:20px;border-radius:4px">';
+                    return '<img src="/static/gifs/rockets/' + id + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\'" style="width:20px;height:20px;border-radius:4px">';
                 } else if(rtype === 'background'){
                     /* Try png first (thumbnail), fallback to mp4 poster, then star */
                     return '<img src="/static/img/' + id + '.png" onerror="this.onerror=null;this.src=\'/static/img/star2.png\'" style="width:20px;height:20px;border-radius:4px;object-fit:cover">';
@@ -7308,7 +7503,7 @@ function renderShopDeals(){
                         itemsHtml += '<div class="shop-deal-item' + owned + '"><video src="/static/img/' + bgId + '.mp4" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML=\'<img src=/static/img/' + bgId + '.png style=width:100%;height:100%;object-fit:cover onerror=this.src=\\x27/static/img/star.png\\x27>\'"></div>';
                     } else {
                         let src = '/static/img/star.png';
-                        if(it.type === 'rocket') src = '/static/gifs/' + (it.item_id||'crash') + '.gif';
+                        if(it.type === 'rocket') src = '/static/gifs/rockets/' + (it.item_id||'crash') + '.gif';
                         else if(it.type === 'vip') src = '/static/img/crown.png';
                         else if(it.type === 'crate') src = it.image || '/static/img/star2.png';
                         else if(it.type === 'stars') src = '/static/img/star.png';
@@ -7392,7 +7587,7 @@ function openShopDetail(dealId){
             let mediaHtml = '';
             let name = it.name || it.type;
             if(it.type === 'rocket'){
-                mediaHtml = '<img src="/static/gifs/' + (it.item_id||'crash') + '.gif" onerror="this.src=\'/static/img/star.png\'">';
+                mediaHtml = '<img src="/static/gifs/rockets/' + (it.item_id||'crash') + '.gif" onerror="this.src=\'/static/img/star.png\'">';
             } else if(it.type === 'background'){
                 const bgId = it.item_id || 'phone';
                 mediaHtml = '<video src="/static/img/' + bgId + '.mp4" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover" onerror="this.outerHTML=\'<img src=/static/img/' + bgId + '.png style=width:100%;height:100%;object-fit:cover onerror=this.src=\\x27/static/img/star.png\\x27>\'"></video>';
@@ -7532,7 +7727,7 @@ function showShopPurchaseComplete(data, dealId){
                 mediaHtml = '<video src="/static/img/' + bgId + '.mp4" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;border-radius:10px" onerror="this.outerHTML=\'<img src=/static/img/' + bgId + '.png style=width:100%;height:100%;object-fit:cover;border-radius:10px onerror=this.src=\\x27/static/img/star.png\\x27>\'"></video>';
             } else {
                 let src = '/static/img/star.png';
-                if(it.type === 'rocket') src = '/static/gifs/' + (it.item_id||'crash') + '.gif';
+                if(it.type === 'rocket') src = '/static/gifs/rockets/' + (it.item_id||'crash') + '.gif';
                 else if(it.type === 'vip') src = '/static/img/crown.png';
                 else if(it.type === 'crate') src = it.image || '/static/img/star2.png';
                 else if(it.type === 'tickets') src = '/static/img/ticket.png';
@@ -7617,7 +7812,7 @@ function openQuestDetail(questId){
     if(q.reward_type === 'multi' && q.rewards && q.rewards.length){
         rewardCards = q.rewards.map(function(r){
             let src = '';
-            if(r.type === 'rocket') src = '/static/gifs/' + (r.item_id || 'crash') + '.gif';
+            if(r.type === 'rocket') src = '/static/gifs/rockets/' + (r.item_id || 'crash') + '.gif';
             else if(r.type === 'background') src = '/static/img/' + (r.item_id || 'phone') + '.mp4';
             else if(r.type === 'stars') src = '/static/img/star.png';
             else if(r.type === 'tickets') src = '/static/img/ticket.png';
@@ -7627,7 +7822,7 @@ function openQuestDetail(questId){
         }).join('');
     } else {
         let src = '';
-        if(q.reward_type === 'rocket') src = '/static/gifs/' + (q.reward_data || 'crash') + '.gif';
+        if(q.reward_type === 'rocket') src = '/static/gifs/rockets/' + (q.reward_data || 'crash') + '.gif';
         else if(q.reward_type === 'background') src = '/static/img/' + (q.reward_data || 'phone') + '.mp4';
         else if(q.reward_type === 'stars') src = '/static/img/star.png';
         else if(q.reward_type === 'tickets') src = '/static/img/ticket.png';
@@ -7740,7 +7935,7 @@ function showQuestComplete(q, result){
     if(q.reward_type === 'multi' && q.rewards && q.rewards.length){
         cards = q.rewards.map(function(r){
             let src = '';
-            if(r.type === 'rocket') src = '/static/gifs/' + (r.item_id||'crash') + '.gif';
+            if(r.type === 'rocket') src = '/static/gifs/rockets/' + (r.item_id||'crash') + '.gif';
             else if(r.type === 'background') src = '/static/img/' + (r.item_id||'phone') + '.mp4';
             else if(r.type === 'stars') src = '/static/img/star.png';
             else if(r.type === 'tickets') src = '/static/img/ticket.png';
@@ -7750,7 +7945,7 @@ function showQuestComplete(q, result){
         }).join('');
     } else {
         let src = '';
-        if(q.reward_type === 'rocket') src = '/static/gifs/' + (q.reward_data||'crash') + '.gif';
+        if(q.reward_type === 'rocket') src = '/static/gifs/rockets/' + (q.reward_data||'crash') + '.gif';
         else if(q.reward_type === 'background') src = '/static/img/' + (q.reward_data||'phone') + '.mp4';
         else if(q.reward_type === 'stars') src = '/static/img/star.png';
         else if(q.reward_type === 'tickets') src = '/static/img/ticket.png';
@@ -8121,7 +8316,10 @@ function openSettings(){
     renderSettings();
     /* Update vib button state */
     var vb = $('settingsVibBtn');
-    if(vb) vb.classList.toggle('vib-off', !settingVibration);
+    if(vb){
+        vb.classList.toggle('vib-on', settingVibration);
+        vb.classList.toggle('vib-off', !settingVibration);
+    }
 }
 
 function closeSettings(){
@@ -8129,11 +8327,24 @@ function closeSettings(){
     $('settingsOverlay').classList.remove('show');
 }
 
+/* Vibration phone button toggle with shake animation */
+function toggleVibBtn(){
+    toggleSetting('vibration');
+    syncToggleUI();
+    var vb = $('settingsVibBtn');
+    if(vb){
+        vb.classList.toggle('vib-on', settingVibration);
+        vb.classList.toggle('vib-off', !settingVibration);
+        /* Shake animation */
+        vb.classList.remove('vib-shake');
+        void vb.offsetWidth;
+        vb.classList.add('vib-shake');
+        setTimeout(function(){ vb.classList.remove('vib-shake'); }, 550);
+    }
+}
+
 function switchSettingsTab(tab){
-    document.querySelectorAll('.stab').forEach(function(b){b.classList.toggle('active', b.getAttribute('data-tab')===tab)});
-    $('settingsTabMain').style.display = tab === 'settings' ? 'block' : 'none';
-    $('settingsTabSkin').style.display = tab === 'skin' ? 'block' : 'none';
-    $('settingsTabBg').style.display = tab === 'bg' ? 'block' : 'none';
+    /* No tabs needed — skins only */
 }
 
 document.addEventListener('DOMContentLoaded', function(){
@@ -8145,47 +8356,36 @@ document.addEventListener('DOMContentLoaded', function(){
     }
 });
 
+/* Gray lock SVG string for locked skins */
+var lockSvgHtml = '<div class="skin-lock-overlay"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>';
+
 function renderSettings(){
-    const bgGrid = $('bgGrid');
     const rocketGrid = $('rocketGrid');
+    if(!rocketGrid) return;
     
-    /* If data not loaded yet, use fallback */
-    const bgData = backgroundsData.length > 0 ? backgroundsData : backgrounds.map(id => ({id, name: id, access_type: 'free', requirement: 0}));
     const rocketData = rocketsData.length > 0 ? rocketsData : rockets.map(id => ({id, name: id, access_type: 'free', requirement: 0}));
     
-    /* Render backgrounds with access check from DB */
-    bgGrid.innerHTML = bgData.map((bgItem, i) => {
-        const bg = bgItem.id;
-        const isActive = currentBg === bg;
-        const isUnlocked = checkAccessCondition(bgItem);
-        const canClaim = !isUnlocked && isReadyToClaim(bgItem);
-        const label = bgItem.name || bg;
-        const lockImg = (isUnlocked || canClaim) ? '' : '<img class="lock-icon" src="/static/img/lock.png" alt="">';
-        const grayStyle = (!isUnlocked && !canClaim) ? ' style="filter:grayscale(1)brightness(0.5)"' : (canClaim ? ' style="filter:brightness(0.8)"' : '');
-        
-        return '<div class="settings-item' + (isActive ? ' active' : '') + (!isUnlocked && !canClaim ? ' locked' : '') + (canClaim ? ' claimable' : '') + '" onclick="selectBg(\'' + bg + '\')">' +
-            lockImg +
-            '<img src="/static/img/' + bg + '.png" alt=""' + grayStyle + ' onerror="this.src=\'/static/img/star2.png\';this.style.opacity=.4">' +
-            '<div class="settings-item-label">' + label + '</div>' +
-        '</div>';
-    }).join('');
-    
-    /* Render rockets with access check from DB */
     rocketGrid.innerHTML = rocketData.map((rItem, i) => {
         const r = rItem.id;
         const isActive = currentRocket === r;
         const isUnlocked = checkAccessCondition(rItem);
         const canClaim = !isUnlocked && isReadyToClaim(rItem);
         const label = rItem.name || r;
-        const lockImg = (isUnlocked || canClaim) ? '' : '<img class="lock-icon" src="/static/img/lock.png" alt="">';
-        const src = r === 'crash' ? '/static/gifs/crash.gif' : '/static/gifs/' + r + '.gif';
-        const grayStyle = (!isUnlocked && !canClaim) ? ' style="filter:grayscale(1)brightness(0.5)"' : (canClaim ? ' style="filter:brightness(0.8)"' : '');
+        const src = r === 'crash' ? '/static/gifs/rockets/crash.gif' : '/static/gifs/rockets/' + r + '.gif';
         
-        return '<div class="settings-item' + (isActive ? ' active' : '') + (!isUnlocked && !canClaim ? ' locked' : '') + (canClaim ? ' claimable' : '') + '" onclick="selectRocket(\'' + r + '\')">' +
-            lockImg +
-            '<img src="' + src + '" alt="" onerror="this.src=\'/static/gifs/crash.gif\'"' + grayStyle + '>' +
-            '<div class="settings-item-label">' + label + '</div>' +
-        '</div>';
+        /* Unlocked: show GIF preview. Locked: show lock SVG overlay */
+        if(isUnlocked || canClaim){
+            return '<div class="settings-item' + (isActive ? ' active' : '') + (canClaim ? ' claimable' : '') + '" onclick="selectRocket(\'' + r + '\')" style="position:relative">' +
+                '<img src="' + src + '" alt="" onerror="this.src=\'/static/gifs/rockets/crash.gif\'">' +
+                '<div class="settings-item-label">' + label + '</div>' +
+            '</div>';
+        } else {
+            return '<div class="settings-item locked" onclick="selectRocket(\'' + r + '\')" style="position:relative">' +
+                lockSvgHtml +
+                '<img src="' + src + '" alt="" style="filter:grayscale(1) brightness(0.3);opacity:.4" onerror="this.src=\'/static/gifs/rockets/crash.gif\'">' +
+                '<div class="settings-item-label" style="color:rgba(90,106,138,.6)">' + label + '</div>' +
+            '</div>';
+        }
     }).join('');
     
 
@@ -8270,7 +8470,7 @@ function openRocketPreview(rocketId, rocketName) {
     previewId = rocketId;
     const visual = $('previewVisual');
     const name = $('previewName');
-    visual.innerHTML = '<img src="/static/gifs/' + rocketId + '.gif" onerror="this.src=\'/static/gifs/crash.gif\'">';
+    visual.innerHTML = '<img src="/static/gifs/rockets/' + rocketId + '.gif" onerror="this.src=\'/static/gifs/rockets/crash.gif\'">';
     name.textContent = rocketName || rocketId;
     const applyBtn = $('previewApplyBtn');
     const lockInfo = $('previewLockInfo');
@@ -8319,8 +8519,7 @@ function applyBackground(bgId){
 }
 
 function getRocketGif(){
-    if(currentRocket === 'crash') return '/static/gifs/crash.gif';
-    return '/static/gifs/' + currentRocket + '.gif';
+    return '/static/gifs/rockets/' + currentRocket + '.gif';
 }
 
 /* Apply saved settings on load */
@@ -9272,8 +9471,8 @@ function highlightTrack(idx){
     if(!list) return;
     list.querySelectorAll('.music-track-item').forEach((el, i) => {
         if(i === idx){
-            el.style.background = 'rgba(35,108,217,.15)';
-            el.style.borderColor = 'rgba(35,108,217,.4)';
+            el.style.background = 'rgba(120,135,160,.15)';
+            el.style.borderColor = 'rgba(120,135,160,.4)';
         } else {
             el.style.background = 'rgba(255,255,255,.03)';
             el.style.borderColor = 'transparent';
@@ -9285,7 +9484,7 @@ function renderTrackList(){
     const list = $('musicTrackList');
     if(!list) return;
     list.innerHTML = MUSIC_PLAYLIST.map((t, i) => 
-        '<div class="music-track-item" onclick="selectTrack(' + i + ')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;margin:3px 0;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all .2s;' + (i === currentTrackIdx ? 'background:rgba(35,108,217,.15);border-color:rgba(35,108,217,.4)' : 'background:rgba(255,255,255,.03)') + '">' +
+        '<div class="music-track-item" onclick="selectTrack(' + i + ')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;margin:3px 0;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:all .2s;' + (i === currentTrackIdx ? 'background:rgba(120,135,160,.15);border-color:rgba(120,135,160,.4)' : 'background:rgba(255,255,255,.03)') + '">' +
             '<span style="font-size:10px;color:rgba(255,255,255,.3);min-width:16px">' + (i + 1) + '</span>' +
             '<div style="flex:1;overflow:hidden">' +
                 '<div style="font-size:11px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + t.title + '</div>' +
@@ -9920,7 +10119,7 @@ function showRoulette(winIdx){
             } while(Math.abs(i - winPosition) <= 2 && rIdx === winIdx);
         }
         const rName = rockets[rIdx];
-        const src = rIdx === 0 ? '/static/gifs/crash.gif' : '/static/gifs/' + rName + '.gif';
+        const src = rIdx === 0 ? '/static/gifs/rockets/crash.gif' : '/static/gifs/rockets/' + rName + '.gif';
         const label = rIdx === 0 ? 'Standard' : ('Rocket ' + rIdx);
         items.push({src, label, idx: rIdx, isWinner: i === winPosition});
     }
@@ -10000,7 +10199,7 @@ function showRoulette(winIdx){
             localStorage.setItem('crash_rocket', currentRocket);
             const rocketImg = $('rocketWrap')?.querySelector('img');
             if(rocketImg){
-                rocketImg.src = winIdx === 0 ? '/static/gifs/crash.gif' : '/static/gifs/' + rockets[winIdx] + '.gif';
+                rocketImg.src = winIdx === 0 ? '/static/gifs/rockets/crash.gif' : '/static/gifs/rockets/' + rockets[winIdx] + '.gif';
             }
             
             triggerVibration([100, 50, 200, 50, 100]);
@@ -10107,7 +10306,7 @@ async function openCrate(crateId){
 }
 
 function getCrateItemSrc(item){
-    if(item.item_type === 'rocket') return '/static/gifs/' + (item.item_id || 'crash') + '.gif';
+    if(item.item_type === 'rocket') return '/static/gifs/rockets/' + (item.item_id || 'crash') + '.gif';
     if(item.item_type === 'background') return '/static/img/' + (item.item_id || 'phone') + '.mp4';
     if(item.item_type === 'stars') return '/static/img/star.png';
     if(item.item_type === 'tickets') return '/static/img/ticket.png';
@@ -10228,7 +10427,7 @@ function showCrateRoulette(crate, wonItem, allItems, rewardDesc){
             try{ playSound('roulette_win'); }catch(e){}
             
             const winEl = strip.querySelector('.crate-roulette-item.winner');
-            if(winEl) winEl.style.background = 'radial-gradient(ellipse at center, rgba(35,108,217,.2), transparent)';
+            if(winEl) winEl.style.background = 'radial-gradient(ellipse at center, rgba(120,135,160,.2), transparent)';
             
             const rarityNames = {common:'Common',rare:'Rare',epic:'Epic',legendary:'Legendary'};
             resultRarity.textContent = rarityNames[wonItem.rarity] || 'Common';
@@ -11749,14 +11948,14 @@ document.addEventListener('click', function _initMusicOnce(){
     background: rgba(255,255,255,0.06);
 }
 .notif-card-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
-.notif-card-icon.ic-gift { background: rgba(35,108,217,0.1); }
+.notif-card-icon.ic-gift { background: rgba(120,135,160,0.1); }
 .notif-card-icon.ic-level { background: rgba(46,199,110,0.1); }
 .notif-card-icon.ic-promo { background: rgba(255,107,107,0.1); }
 .notif-card-icon.ic-bonus { background: rgba(255,215,74,0.1); }
 .notif-card-icon.ic-shop { background: rgba(255,215,74,0.1); }
-.notif-card-icon.ic-quest { background: rgba(35,108,217,0.1); }
-.notif-card-icon.ic-case { background: rgba(35,108,217,0.1); }
-.notif-card-icon.ic-default { background: rgba(35,108,217,0.1); }
+.notif-card-icon.ic-quest { background: rgba(120,135,160,0.1); }
+.notif-card-icon.ic-case { background: rgba(120,135,160,0.1); }
+.notif-card-icon.ic-default { background: rgba(120,135,160,0.1); }
 
 .notif-card-content { flex: 1; min-width: 0; }
 .notif-card-title {
@@ -12061,11 +12260,11 @@ document.addEventListener('click', function _initMusicOnce(){
     padding: 16px; border: none; border-radius: 16px;
     font-size: 16px; font-weight: 700; cursor: pointer; color: #fff;
     background: linear-gradient(87.94deg, #2C7CF3 -5.33%, #1AAEF2 100%);
-    box-shadow: 0 8px 30px rgba(35,108,217,0.3);
+    box-shadow: 0 8px 30px rgba(120,135,160,0.3);
     transition: all 0.3s;
     opacity: 0; animation: rwSlideUp 0.5s ease 0.9s forwards;
 }
-.reward-screen-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(35,108,217,0.4); }
+.reward-screen-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(120,135,160,0.4); }
 .reward-screen-btn:active { transform: scale(0.97); }
 </style>
 
@@ -12593,7 +12792,7 @@ document.addEventListener('click', function _initMusicOnce(){
         }
         if (item.reward_type === 'crash_skin' || item.reward_type === 'rocket') {
             var skinId = item.reward_preview && item.reward_preview.skin_id ? item.reward_preview.skin_id : '';
-            return {img: skinId ? ('/static/gifs/' + skinId + '.gif') : '/static/img/rocket.png', cls: 'ic-gift'};
+            return {img: skinId ? ('/static/gifs/rockets/' + skinId + '.gif') : '/static/img/rocket.png', cls: 'ic-gift'};
         }
         if (item.reward_type === 'background') {
             return {img: '/static/img/phone.png', cls: 'ic-default'};
@@ -13028,13 +13227,13 @@ else ensureCommonHeaderElements();
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
         <span>Crash</span>
     </a>
-    <a class="bottom-nav-item" href="/">
+    <a class="bottom-nav-item disabled" onclick="return false" href="javascript:void(0)">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
         <span>Cases</span>
     </a>
-    <a class="bottom-nav-item" href="/leaderboard">
+    <a class="bottom-nav-item disabled" onclick="return false" href="javascript:void(0)">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-        <span>Season</span>
+        <span>Leaders</span>
     </a>
     <a class="bottom-nav-item" href="/inventory">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>

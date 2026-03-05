@@ -21,8 +21,8 @@
         :root{
             /* === GB Semantic Color Tokens (exact from giftsbattle.com JS bundle) === */
             /* bg */
-            --color-background:#090B11;
-            --bg-primary:#090B11;
+            --color-background:#0E1015;
+            --bg-primary:#0E1015;
             --bg-secondary:#161923;
             --bg-tertiary:#131722;
             --bg-quaternary:#11141F;
@@ -43,7 +43,7 @@
             --text-blue-gray:#646C86;
             --text-pink:#F96999;
             /* button */
-            --color-button:#236CD9;
+            --color-button:#6B7A8D;
             --color-button-text:#FFFFFF;
             --color-button-green:#1EE44C;
             /* border */
@@ -56,14 +56,14 @@
             --border-midnight-graphite:#232735;
             --border-charcoal-indigo:#323951;
             --border-cyan:#252938;
-            --border-blue:#236CD9;
+            --border-blue:#6B7A8D;
             /* glow */
             --glow-green:#1EE44C;
-            --glow-blue:#4F96FF;
+            --glow-blue:#8CA0BE;
             /* gradients */
             --gradient-layout-header:linear-gradient(180deg, #0A0C12 50%, #0D1019 100%);
             --gradient-border-gray:linear-gradient(90deg, rgba(130,138,164,0) 0%, rgba(130,138,164,0.15) 50.5%, rgba(130,138,164,0) 100%);
-            --gradient-nav-button:linear-gradient(180deg, #2C79FD 0%, #2246E4 46.31%, #18408F 100%);
+            --gradient-nav-button:linear-gradient(180deg, #6B7A8D 0%, #556270 46.31%, #3E4A56 100%);
             --gradient-live-trade:linear-gradient(180deg, #161923 0%, #202432 100%);
             /* shadows */
             --shadow-btn-blue-inner:inset 0px -15px 40px -5px rgba(30,163,242,0.2);
@@ -1576,27 +1576,31 @@
 
         /* GB theme overrides consolidated into base styles above */
 
-        /* ===== MOBILE BOTTOM NAV — 4 items, no labels ===== */
+        /* ===== MOBILE BOTTOM NAV — 2 items, gray glassmorphism ===== */
         .mob-nav{
             position:fixed;z-index:100;left:0;right:0;bottom:0;
-            display:flex;justify-content:space-around;align-items:center;
-            padding:10px 8px calc(12px + env(safe-area-inset-bottom, 0px));
-            background:linear-gradient(0deg, #0A0C12 50%, #0D1019 100%);
-            border-top:1px solid rgba(255,255,255,0.05);
+            display:flex;justify-content:center;align-items:center;gap:2px;
+            padding:6px 10px calc(env(safe-area-inset-bottom, 8px) + 6px);
+            background:linear-gradient(180deg,rgba(18,20,26,.95),rgba(14,16,21,.98));
+            border-top:1px solid rgba(255,255,255,.06);
+            backdrop-filter:blur(20px);
         }
         .mob-nav-item{
-            flex:1;
-            display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-            color:var(--text-secondary, #828AA4);
+            flex:1;max-width:120px;
+            display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+            color:rgba(255,255,255,.3);
             text-decoration:none;
-            transition:color .15s;
-            padding:8px 0;
-            border-radius:12px;
+            transition:all .25s ease;
+            padding:8px 12px;
+            border-radius:14px;
+            position:relative;
         }
-        .mob-nav-item:hover,.mob-nav-item.active{color:#fff}
-        .mob-nav-item.active{background:rgba(35,108,217,.12);color:#4B8EE8}
-        .mob-nav-item svg{width:24px;height:24px}
-        .mob-nav-label{font-size:10px;font-weight:600}
+        .mob-nav-item:hover{color:rgba(255,255,255,.6)}
+        .mob-nav-item.active{background:rgba(255,255,255,.07);color:#C8D0DC}
+        .mob-nav-item.active::before{content:'';position:absolute;top:0;left:25%;right:25%;height:2px;border-radius:0 0 2px 2px;background:linear-gradient(90deg,#6B7A8D,#8CA0BE)}
+        .mob-nav-item svg{width:22px;height:22px}
+        .mob-nav-label{font-size:10px;font-weight:700;letter-spacing:.3px}
+        .mob-nav-item.disabled{opacity:.3;pointer-events:none;cursor:default}
         /* Hide on desktop */
         @media(min-width:860px){
             .mob-nav{display:none}
@@ -1745,19 +1749,19 @@
     <nav class="mob-nav" id="mob-nav">
         <a href="/crash" class="mob-nav-item">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-            <span class="mob-nav-label">Краш</span>
+            <span class="mob-nav-label">Crash</span>
         </a>
-        <a href="/" class="mob-nav-item active">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-            <span class="mob-nav-label">Кейсы</span>
+        <a class="mob-nav-item active disabled" onclick="return false" href="javascript:void(0)">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+            <span class="mob-nav-label">Cases</span>
         </a>
-        <a href="/leaderboard" class="mob-nav-item">
+        <a class="mob-nav-item disabled" onclick="return false" href="javascript:void(0)">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-            <span class="mob-nav-label">Сезон</span>
+            <span class="mob-nav-label">Leaders</span>
         </a>
         <a href="/inventory" class="mob-nav-item">
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span class="mob-nav-label">Профиль</span>
+            <span class="mob-nav-label">Profile</span>
         </a>
     </nav>
 
