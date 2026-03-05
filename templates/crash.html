@@ -4573,7 +4573,9 @@ async function loadGiftsFromAPI(){
     if(grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px"><img src="/static/gifs/loading.gif" style="width:48px;height:48px"><div style="color:rgba(255,255,255,.4);margin-top:8px;font-size:12px">Loading gifts...</div></div>';
     
     try {
-        const r = await fetch('/api/gifts-list?refresh=1');
+        const ac = new AbortController();
+        setTimeout(() => ac.abort(), 8000);
+        const r = await fetch('/api/gifts-list', {signal: ac.signal});
         if(r.ok){
             const d = await r.json();
             if(d.success && d.gifts && d.gifts.length > 0){
@@ -4769,11 +4771,11 @@ async function initTelegramApp() {
     /* Check if user is admin */
     checkAdmin();
 
-    /* 6. Load customizations from DB */
-    await loadCrashCustomizations();
+    /* 6. Load customizations from DB (non-blocking, 5s timeout) */
+    try { await Promise.race([loadCrashCustomizations(), new Promise((_,r) => setTimeout(() => r('timeout'), 5000))]); } catch(e){ console.warn('Customizations load skipped:', e); }
 
-    /* 7. Load gifts for achievable display */
-    await loadCrashGifts();
+    /* 7. Load gifts for achievable display (non-blocking, 10s timeout) */
+    try { await Promise.race([loadCrashGifts(), new Promise((_,r) => setTimeout(() => r('timeout'), 10000))]); } catch(e){ console.warn('Gifts load skipped:', e); }
 
     /* 7. Start game polling */
     updStatus();
@@ -4851,7 +4853,9 @@ async function loadCrashCustomizations() {
         /* Load user's promo-unlocked customizations first */
         if (userData && userData.id) {
             try {
-                const uResp = await fetch('/api/user-customizations/' + userData.id);
+                const acU = new AbortController();
+                setTimeout(() => acU.abort(), 5000);
+                const uResp = await fetch('/api/user-customizations/' + userData.id, {signal: acU.signal});
                 const uData = await uResp.json();
                 if (uData.success) {
                     userUnlockedPromos = [...(uData.rockets || []), ...(uData.backgrounds || [])];
@@ -4862,7 +4866,9 @@ async function loadCrashCustomizations() {
             }
         }
         
-        const r = await fetch('/api/crash/customizations');
+        const acC = new AbortController();
+        setTimeout(() => acC.abort(), 5000);
+        const r = await fetch('/api/crash/customizations', {signal: acC.signal});
         const d = await r.json();
         
         if (d.success) {
