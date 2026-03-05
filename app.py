@@ -1996,17 +1996,16 @@ def init_db():
 
         # Проверяем здоровье существующей БД
         if os.path.exists(DB_PATH):
-            # Проверяем размер файла — пустой/крошечный файл = не настоящая БД
             try:
                 file_size = os.path.getsize(DB_PATH)
-                if file_size < 100:  # Минимальный заголовок SQLite = 100 байт
+                if file_size < 100:
                     logger.error(f"❌ БД файл слишком маленький ({file_size} байт), удаляем")
                     _nuke_db()
                 else:
-                    # Быстрая проверка: просто пробуем прочитать таблицы (без integrity_check!)
                     c = None
                     try:
                         c = sqlite3.connect(DB_PATH, timeout=5)
+                        c.execute("PRAGMA busy_timeout = 5000")
                         tables = c.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
                         table_names = {r[0] for r in tables}
                         if len(table_names) < 3:
@@ -2014,15 +2013,16 @@ def init_db():
                             c.close()
                             c = None
                             _nuke_db()
+                        else:
+                            c.close()
+                            c = None
                     except Exception as e:
                         logger.error(f"❌ БД нечитаема: {e}, удаляем")
-                        _nuke_db()
-                    finally:
                         if c:
-                            try:
-                                c.close()
-                            except:
-                                pass
+                            try: c.close()
+                            except: pass
+                            c = None
+                        _nuke_db()
             except Exception as e:
                 logger.error(f"❌ Ошибка проверки файла БД: {e}")
                 _nuke_db()
@@ -2030,22 +2030,13 @@ def init_db():
         # Создаём / дополняем
         conn = None
         try:
-            # Удаляем WAL файлы если есть - они могут быть причиной проблем
-            for ext in ['-wal', '-shm']:
-                p = DB_PATH + ext
-                if os.path.exists(p):
-                    try:
-                        os.remove(p)
-                        logger.info(f"🗑️ Удалён WAL файл: {p}")
-                    except:
-                        pass
-            
             conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
-            # Используем DELETE режим - более надёжный на shared hosting
-            conn.execute("PRAGMA journal_mode = DELETE")
-            conn.execute("PRAGMA synchronous = FULL")
+            # WAL mode — consistent with get_db_connection()
+            conn.execute("PRAGMA journal_mode = WAL")
+            conn.execute("PRAGMA synchronous = NORMAL")
             conn.execute("PRAGMA busy_timeout = 30000")
             conn.execute("PRAGMA temp_store = MEMORY")
+            conn.execute("PRAGMA wal_autocheckpoint = 1000")
             logger.info("📊 Создание таблиц...")
 
             if not _create_all_tables(conn):
