@@ -2864,29 +2864,31 @@ def start_ultimate_crash_loop():
                             update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
                             logger.info(f"💥 ADMIN FORCE CRASH на {current_mult_float:.2f}x")
                             conn.commit()
-                            time.sleep(0.15)
+                            time.sleep(0.10)
                             continue
                         
                         # Увеличиваем множитель
 
                         if current_mult_float < target_mult_float:
-                            # Smooth speed: fast enough so rounds feel dynamic
-                            if current_mult_float < 1.5:
-                                base_increment = 0.02
-                            elif current_mult_float < 2.5:
-                                base_increment = 0.04
-                            elif current_mult_float < 4.0:
-                                base_increment = 0.07
-                            elif current_mult_float < 7.0:
-                                base_increment = 0.12
-                            elif current_mult_float < 15.0:
-                                base_increment = 0.20
+                            # Aggressive acceleration: fast after 1.1x
+                            if current_mult_float < 1.1:
+                                base_increment = 0.03
+                            elif current_mult_float < 1.5:
+                                base_increment = 0.06
+                            elif current_mult_float < 2.0:
+                                base_increment = 0.10
+                            elif current_mult_float < 3.0:
+                                base_increment = 0.16
+                            elif current_mult_float < 5.0:
+                                base_increment = 0.25
+                            elif current_mult_float < 10.0:
+                                base_increment = 0.40
                             else:
-                                base_increment = 0.35
+                                base_increment = 0.60
 
-                            speed_boost = current_mult_float * 0.015
+                            speed_boost = current_mult_float * 0.025
                             increment = round(max(base_increment, speed_boost), 2)
-                            increment = min(increment, 1.0)
+                            increment = min(increment, 2.0)
 
                             # Случайный краш
                             crash_chance = 0.01 * (current_mult_float / 10)
@@ -2978,7 +2980,7 @@ def start_ultimate_crash_loop():
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 Новая Crash игра, target: {target_multiplier}x")
 
-                time.sleep(0.15)  # Tick interval — fast for smooth multiplier
+                time.sleep(0.10)  # Tick interval — fast for smooth multiplier
 
             except Exception as e:
                 err_msg = str(e)
@@ -3109,19 +3111,17 @@ def check_auth_code():
 
 @app.route('/')
 def root_page():
-    """Перенаправление на краш"""
-    return redirect('/crash')
+    """Главная страница кейсов"""
+    return render_template('index.html')
 
 @app.route('/crash')
 def crash_page():
     """Страница игры Краш"""
-    logger.info("🎮 Запрос страницы игры Краш")
     return render_template('crash.html')
 
 @app.route('/index')
 def index():
-    """Главная страница кейсов"""
-    logger.info("📄 Запрос главной страницы")
+    """Главная страница кейсов (алиас)"""
     return render_template('index.html')
 
 @app.route('/cases')
@@ -11273,7 +11273,7 @@ def api_gifts_list():
     """Return gifts catalog for UI: originals + all models from Fragment cache"""
     try:
         force_refresh = request.args.get('refresh', '0') in ('1', 'true', 'yes')
-        include_models = request.args.get('models', '1') not in ('0', 'false', 'no')
+        include_models = request.args.get('models', '0') not in ('0', 'false', 'no')
         if include_models:
             merged = build_full_catalog_with_models(force_refresh=force_refresh)
         else:

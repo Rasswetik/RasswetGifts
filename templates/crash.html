@@ -1076,14 +1076,18 @@ tc-root *{pointer-events:auto}
     pointer-events:none;opacity:0;
 }
 .game-field.flying::after{
-    width:38%;opacity:1;
+    width:var(--trail-w, 38%);opacity:1;
     animation:trailPulse 1.5s ease-in-out infinite alternate;
 }
 @keyframes trailPulse{
-    0%{width:32%;opacity:.6;filter:blur(2px)}
-    100%{width:42%;opacity:1;filter:blur(4px)}
+    0%{opacity:.6;filter:blur(2px)}
+    100%{opacity:1;filter:blur(4px)}
 }
 .game-field.flying::before{opacity:1}
+
+/* Video background mode — hide grid lines, show video */
+.game-field.video-bg::before{background:none}
+.bg-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;border-radius:24px;opacity:.8}
 
 /* Big countdown filling the field */
 .countdown-display{
@@ -1151,11 +1155,15 @@ tc-root *{pointer-events:auto}
 }
 .rocket-wrap img{
     width:150px;height:150px;object-fit:contain;
-    transition: transform 0.2s ease, filter 0.3s ease;
+    transition: transform 0.4s ease, filter 0.3s ease;
 }
 .rocket-wrap.hide{opacity:0;pointer-events:none}
 .rocket-wrap.flying{
     animation:rocketGlow 1s ease-in-out infinite alternate;
+}
+/* Tilt rocket right during flight */
+.rocket-wrap.flying img{
+    transform:rotate(25deg);
 }
 /* Анимация смены gift */
 .rocket-wrap.gift-change img{
@@ -3366,8 +3374,8 @@ tc-root *{pointer-events:auto}
 </div>
 
 <div class="ld-screen" id="ldScreen">
-    <img class="ld-gif" src="/static/gifs/loading.gif" alt="">
-    <div class="ld-txt">LOADING GIFTS</div>
+    <img class="ld-gif" id="ldGif" src="/static/gifs/crash.gif" alt="">
+    <div class="ld-txt">CRASH</div>
     <div class="ld-progress"><div class="ld-progress-bar" id="ldProgressBar"></div></div>
 </div>
 
@@ -3519,7 +3527,7 @@ tc-root *{pointer-events:auto}
                 <span>Stars</span>
             </button>
         </div>
-        <div class="deposit-methods-row" style="display:flex;gap:12px;margin-top:12px">
+        <div class="deposit-methods-row" style="display:none">
             <button class="deposit-method-btn" onclick="closeDepositSelector();openSbpDeposit()" style="border:1px solid rgba(0,200,100,0.3);background:rgba(0,200,100,0.08)">
                 <img src="/static/img/sbp.png" alt="SBP" onerror="this.src='/static/img/plus.png'">
                 <span>SBP</span>
@@ -4508,6 +4516,7 @@ let prevBetStatuses = {}; /* track previous statuses for cashout detection */
 let betsGeneration = 0; /* Incremented on new round to discard stale loadBets responses */
 let countdownShown = -1;
 let lastTimeRemaining = 99;
+let lastTrTimestamp = 0; /* When we received the last time_remaining */
 let autoCashoutDone = false;
 let boomUntil = 0; /* Timestamp until boom.gif stays visible */
 
@@ -5015,6 +5024,16 @@ async function loadCrashGifts(){
         try{ await checkVipStatus(); }catch(e){ console.warn('VIP status:', e); }
         
         if(progressBar) progressBar.style.width = '100%';
+        
+        /* Swap rocket to boom.gif for loading finish effect */
+        const ldGifEl = $('ldGif');
+        if(ldGifEl){
+            ldGifEl.src = '/static/gifs/boom.gif';
+        }
+        const ldTxtEl = document.querySelector('.ld-txt');
+        if(ldTxtEl) ldTxtEl.textContent = 'READY!';
+        /* Brief pause so user sees the boom */
+        await new Promise(r => setTimeout(r, 600));
     }catch(e){
         console.error('Error in loadCrashGifts:', e);
     }
@@ -5315,6 +5334,28 @@ function render(){
         const rw = $('rocketWrap');
         if(rw && !rw.classList.contains('flying')) rw.classList.add('flying');
 
+        /* Dynamic rocket tilt & speed feel based on multiplier */
+        if(rw){
+            const rImg = rw.querySelector('img');
+            if(rImg){
+                /* Tilt from 15deg at 1x to 30deg at 5x+ */
+                var tilt = Math.min(30, 15 + (dispMult - 1) * 4);
+                /* Scale slightly at high multipliers for speed feel */
+                var sc = Math.min(1.15, 1 + (dispMult - 1) * 0.02);
+                rImg.style.transform = 'rotate(' + tilt.toFixed(1) + 'deg) scale(' + sc.toFixed(2) + ')';
+            }
+            /* Speed up glow animation at high multipliers */
+            var glowDur = Math.max(0.3, 1.0 - (dispMult - 1) * 0.08);
+            rw.style.animationDuration = glowDur.toFixed(2) + 's';
+        }
+
+        /* Dynamic trail width based on multiplier */
+        var gf2 = $('gameField');
+        if(gf2){
+            var tw = Math.min(70, 25 + (dispMult - 1) * 8);
+            gf2.style.setProperty('--trail-w', tw + '%');
+        }
+
         /* Live coeff display - both small pill and big rolling display */
         $('coeffBox').textContent = dispMult.toFixed(2) + 'x';
         updateMultDisplay(dispMult);
@@ -5344,6 +5385,25 @@ function render(){
         if(lastRenderStatus === 'flying'){
             updateRocketImage();
         }
+        
+        /* Client-side countdown interpolation for smooth 5,4,3,2,1,GO */
+        if(status === 'counting' || status === 'waiting'){
+            var elapsed = (performance.now() - lastTrTimestamp) / 1000;
+            var clientTr = Math.max(0, lastTimeRemaining - elapsed);
+            var sec = Math.ceil(clientTr);
+            var label = sec > 0 ? String(sec) : 'GO';
+            if(countdownShown !== label){
+                countdownShown = label;
+                var cd = $('cdDisplay');
+                if(cd){
+                    cd.textContent = label;
+                    cd.classList.remove('active');
+                    void cd.offsetWidth;
+                    cd.classList.add('active');
+                    if(label !== 'GO') playSound('countdown');
+                }
+            }
+        }
     }
     lastRenderStatus = status;
     requestAnimationFrame(render);
@@ -5370,6 +5430,7 @@ async function updStatus(){
         servMult = parseFloat(g.current_multiplier) || 1.0;
         const tr = g.time_remaining || 0;
         lastTimeRemaining = tr;
+        lastTrTimestamp = performance.now();
 
         /* Feed new server multiplier to interpolation engine */
         if(status === 'flying') onNewServerMult(servMult);
@@ -5413,6 +5474,11 @@ async function updStatus(){
             wl.style.opacity = '0';
             rw.classList.add('hide');
             rw.classList.remove('flying');
+            /* Reset rocket tilt & trail */
+            var rImg = rw.querySelector('img');
+            if(rImg) rImg.style.transform = '';
+            rw.style.animationDuration = '';
+            gf.style.removeProperty('--trail-w');
             if(md){ md.classList.remove('active','crashed-anim'); lastMultStr=''; multPrevLen=0; }
             /* Keep boom visible until boomUntil timer expires */
             if(Date.now() >= boomUntil) bm.classList.remove('show');
@@ -5472,23 +5538,7 @@ async function updStatus(){
                 }
             }
 
-            /* Big number countdown: 5, 4, 3, 2, 1, GO */
-            const sec = Math.ceil(tr);
-            const label = sec > 0 ? String(sec) : 'GO';
-            if(countdownShown !== label){
-                countdownShown = label;
-                cd.textContent = label;
-                /* Remove and re-add class to trigger animation only on number change */
-                cd.classList.remove('active');
-                void cd.offsetWidth; /* Force reflow */
-                cd.classList.add('active');
-                /* Sound on countdown */
-                if(label === 'GO'){
-                    /* Flight sound removed */
-                } else {
-                    playSound('countdown');
-                }
-            }
+            /* Countdown is now handled in render() for smooth interpolation */
 
             pb.style.display = 'block';
             pb.style.pointerEvents = ''; /* Reset pointer events */
@@ -5548,6 +5598,11 @@ async function updStatus(){
         } else if(status === 'crashed'){
             cd.className = 'countdown-display';
             cd.textContent = '';
+            /* Reset rocket tilt & trail */
+            var rCImg = rw.querySelector('img');
+            if(rCImg) rCImg.style.transform = '';
+            rw.style.animationDuration = '';
+            gf.style.removeProperty('--trail-w');
             countdownShown = -1;
             wl.style.opacity = '0';
             rw.classList.add('hide');
@@ -5556,10 +5611,9 @@ async function updStatus(){
             coeff.className = 'coeff-box crashed';
             coeff.textContent = servMult.toFixed(2) + 'x';
             
-            /* Show crashed multiplier with red color */
+            /* Hide multiplier display on crash — only boom visible */
             if(md){
-                updateMultDisplay(servMult);
-                md.classList.add('active','crashed-anim');
+                md.classList.remove('active','crashed-anim');
             }
             
             /* Hide bet info display on crash */
@@ -8142,7 +8196,8 @@ function selectBg(bgId){
     currentBg = bgId;
     localStorage.setItem('crash_bg', bgId);
     
-    /* Video backgrounds removed — using CSS grid bg only */
+    /* Apply background: 'grid' = CSS grid (default), others = video */
+    applyBackground(bgId);
     
     renderSettings();
     renderHubCustomization();
@@ -8236,6 +8291,31 @@ function applyPreview() {
 }
 
 /* Get current rocket GIF path */
+/* Apply background: grid=CSS grid default, others=mp4 video in game-field */
+function applyBackground(bgId){
+    const gf = $('gameField');
+    if(!gf) return;
+    /* Remove existing video bg if any */
+    var oldVid = gf.querySelector('.bg-video');
+    if(oldVid) oldVid.remove();
+    
+    if(bgId === 'grid' || !bgId){
+        /* Default CSS grid — show ::before grid lines */
+        gf.classList.remove('video-bg');
+    } else {
+        /* Video background */
+        gf.classList.add('video-bg');
+        var vid = document.createElement('video');
+        vid.className = 'bg-video';
+        vid.autoplay = true; vid.muted = true; vid.loop = true; vid.playsInline = true;
+        vid.setAttribute('playsinline','');
+        vid.innerHTML = '<source src="/static/img/' + bgId + '.mp4" type="video/mp4">';
+        gf.insertBefore(vid, gf.firstChild);
+        vid.play().catch(function(){});
+        if(!settingGif) vid.pause();
+    }
+}
+
 function getRocketGif(){
     if(currentRocket === 'crash') return '/static/gifs/crash.gif';
     return '/static/gifs/' + currentRocket + '.gif';
@@ -8243,18 +8323,16 @@ function getRocketGif(){
 
 /* Apply saved settings on load */
 function applySettings(){
-    console.log('🔧 applySettings: currentBg=' + currentBg + ', currentRocket=' + currentRocket);
-    
-    /* Video backgrounds removed — CSS grid bg used */
+    /* Apply background */
+    applyBackground(currentBg);
     
     /* Apply rocket */
     const rocketImg = $('rocketWrap')?.querySelector('img');
     const rg = getRocketGif();
     lastRocketSrc = rg;
-    console.log('🔧 Rocket GIF: ' + rg);
     if(rocketImg){
         rocketImg.src = rg;
-        rocketImg.onerror = function(){ console.error('❌ Failed to load rocket:', rg); };
+        rocketImg.onerror = function(){ console.error('Failed to load rocket:', rg); };
     }
     
     /* Sync toggle UI */
@@ -9537,7 +9615,12 @@ function toggleSetting(type){
             localStorage.setItem('crash_gif', settingGif ? 'on' : 'off');
             el = $('toggleGif');
             newVal = settingGif;
-            /* Video backgrounds removed — no video to pause/play */
+            /* Pause/play background video if present */
+            var bgVid = $('gameField')?.querySelector('.bg-video');
+            if(bgVid){
+                if(settingGif) bgVid.play().catch(function(){});
+                else bgVid.pause();
+            }
             if(!settingGif){
                 showToast('GIF animations disabled', 'ok');
             } else {
@@ -9613,7 +9696,6 @@ function toggleSetting(type){
             el = $('toggleLowPower');
             newVal = settingLowPower;
             if(settingLowPower){
-                /* Turn off all intensive effects */
                 settingParticles = false;
                 settingBlur = false;
                 settingShadows = false;
@@ -9623,7 +9705,8 @@ function toggleSetting(type){
                 localStorage.setItem('crash_shadows', 'off');
                 localStorage.setItem('crash_gif', 'off');
                 syncToggleUI();
-                /* Video backgrounds removed */
+                var bgvLP = $('gameField')?.querySelector('.bg-video');
+                if(bgvLP) bgvLP.pause();
             }
             applyOptimizationSettings();
             showToast(settingLowPower ? 'Power saving ON' : 'Power saving OFF', 'ok');
@@ -10669,7 +10752,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const overlay = $('tonOverlay');
     if(overlay){
         overlay.addEventListener('click', function(e){
-            if(e.target === this) closeTonModal();
+            if(e.target === thi3) closeTonModal();
         });
     }
     /* Initialize TonConnect after page load */
