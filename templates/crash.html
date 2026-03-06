@@ -76,7 +76,7 @@ body.low-power .rocket-wrap img{filter:none!important}
     flex-direction:column;
     position:relative;
     padding-bottom:80px;
-    padding-top:calc(env(safe-area-inset-top, 0px) + 45px);
+    padding-top:calc(env(safe-area-inset-top, 20px) + 60px);
 }
 @media(min-width:768px){ .container{max-width:480px} }
 @media(min-width:1100px){ .container{max-width:480px} }
@@ -1923,29 +1923,47 @@ tc-root *{pointer-events:auto}
 .bets-list{display:flex;flex-direction:column;gap:6px;max-height:350px;overflow-y:auto}
 .bets-list::-webkit-scrollbar{width:4px}
 .bets-list::-webkit-scrollbar-thumb{background:rgba(107,122,141,.3);border-radius:4px}
-.bet-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:12px;background:rgba(26,30,42,.8);border:1px solid rgba(107,122,141,.1);animation:betSlideIn .4s cubic-bezier(.34,1.56,.64,1) both;transform-origin:top}
+.bet-row{display:flex;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(26,30,42,.8);border:1px solid rgba(107,122,141,.1);animation:betSlideIn .4s cubic-bezier(.34,1.56,.64,1) both;transform-origin:top;gap:10px}
 @keyframes betSlideIn{0%{opacity:0;transform:translateX(-30px) scale(.95)}100%{opacity:1;transform:translateX(0) scale(1)}}
 .bet-row:nth-child(1){animation-delay:0s}.bet-row:nth-child(2){animation-delay:.03s}.bet-row:nth-child(3){animation-delay:.06s}.bet-row:nth-child(4){animation-delay:.09s}.bet-row:nth-child(5){animation-delay:.12s}
 .bet-row:hover{background:rgba(40,50,70,.9);border-color:rgba(107,122,141,.2);transition:all .2s}
-.bet-left{display:flex;align-items:center;gap:8px}
-.bet-avatar{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#2a3040,#3a4558);display:flex;align-items:center;justify-content:center;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:13px;overflow:hidden;flex-shrink:0;border:1px solid rgba(107,122,141,.2)}
-.bet-avatar img{width:100%;height:100%;object-fit:cover}
-.bet-info{display:flex;flex-direction:column;gap:1px}
-.bet-name{font-weight:700;font-size:13px;color:#fff;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bet-amt{font-size:12px;color:rgba(140,160,190,.9);font-weight:600;display:flex;align-items:center;gap:4px}
-.bet-amt img{width:16px;height:16px;object-fit:contain}
-.bet-amt .bet-gift-icon{width:20px;height:20px;object-fit:contain;border-radius:4px}
-.bet-amt .bet-amt-val{transition:transform .15s ease;display:inline-block}
-.bet-row.lost .bet-amt{color:#F96999}
-.bet-row.lost .bet-amt img,.bet-row.lost .bet-gift-icon{filter:grayscale(100%) brightness(0.5)}
-.bet-row.won .bet-amt{color:#1EE44C}
-.bet-row.won .bet-amt img,.bet-row.won .bet-gift-icon{filter:drop-shadow(0 0 4px rgba(30,228,76,.4))}
+.bet-row.won{background:rgba(30,228,76,.08);border-color:rgba(30,228,76,.2)}
+.bet-row.lost{background:rgba(249,105,153,.06);border-color:rgba(249,105,153,.15)}
 .bet-row.won.cashout-flash{animation:cashoutGlow .8s ease-out}
 @keyframes cashoutGlow{
     0%{background:rgba(30,228,76,.25);box-shadow:0 0 20px rgba(30,228,76,.3)}
     30%{background:rgba(30,228,76,.15);box-shadow:0 0 12px rgba(30,228,76,.2)}
-    100%{background:rgba(255,255,255,.03);box-shadow:none}
+    100%{background:rgba(30,228,76,.08);box-shadow:none}
 }
+.bet-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.bet-avatar{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#2a3040,#3a4558);display:flex;align-items:center;justify-content:center;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:13px;overflow:hidden;flex-shrink:0;border:1px solid rgba(107,122,141,.2)}
+.bet-avatar img{width:100%;height:100%;object-fit:cover}
+.bet-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bet-name{font-weight:700;font-size:13px;color:#fff;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bet-amt{font-size:12px;color:rgba(140,160,190,.9);font-weight:600;display:flex;align-items:center;gap:4px}
+.bet-amt img{width:14px;height:14px;object-fit:contain;flex-shrink:0}
+.bet-amt .bet-amt-val{transition:transform .15s ease;display:inline-block}
+/* Coefficient badge with SVG arrows */
+.bet-coef{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.bet-coef-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(107,122,141,.15);border:1px solid rgba(107,122,141,.2)}
+.bet-coef-icon svg{width:12px;height:12px}
+.bet-coef.active .bet-coef-icon{background:rgba(255,193,7,.12);border-color:rgba(255,193,7,.25)}
+.bet-coef.active .bet-coef-icon svg{stroke:#ffc107}
+.bet-coef.won .bet-coef-icon{background:rgba(30,228,76,.15);border-color:rgba(30,228,76,.3)}
+.bet-coef.won .bet-coef-icon svg{stroke:#1EE44C}
+.bet-coef.lost .bet-coef-icon{background:rgba(249,105,153,.1);border-color:rgba(249,105,153,.2)}
+.bet-coef.lost .bet-coef-icon svg{stroke:#F96999}
+.bet-coef-val{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:12px;color:rgba(140,160,190,.8)}
+.bet-coef.active .bet-coef-val{color:rgba(255,193,7,.8)}
+.bet-coef.won .bet-coef-val{color:#1EE44C}
+.bet-coef.lost .bet-coef-val{color:#F96999}
+/* Right side - win amount with icon */
+.bet-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.bet-win-icon{width:24px;height:24px;object-fit:contain;flex-shrink:0;border-radius:4px}
+.bet-win-amt{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:13px;color:rgba(255,193,7,.8)}
+.bet-row.won .bet-win-amt{color:#1EE44C}
+.bet-row.lost .bet-win-amt{color:#F96999}
+.bet-row.lost .bet-win-icon{filter:grayscale(80%) brightness(0.6)}
 /* Floating cashout notification */
 .cashout-float{
     position:fixed;z-index:7000;pointer-events:none;
@@ -1959,19 +1977,6 @@ tc-root *{pointer-events:auto}
     60%{opacity:1;transform:translateY(-40px) scale(1.1)}
     100%{opacity:0;transform:translateY(-80px) scale(.8)}
 }
-.bet-row.active .bet-amt{color:#ffc107}
-.bet-status{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:14px;min-width:70px;text-align:right}
-.bet-status.active{color:rgba(255,193,7,.8)}
-.bet-status.won{color:#1EE44C}
-.bet-status.lost{color:rgba(249,105,153,.7)}
-.bet-right-col{display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:70px}
-.bet-win-amt{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:14px;color:rgba(255,193,7,.8)}
-.bet-win-amt.won{color:#1EE44C}
-.bet-win-amt.lost{color:rgba(249,105,153,.7)}
-.bet-coef-badge{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:10px;padding:2px 7px;border-radius:6px;letter-spacing:.3px}
-.bet-coef-badge.active{background:rgba(255,193,7,.12);color:rgba(255,193,7,.8)}
-.bet-coef-badge.won{background:rgba(30,228,76,.15);color:#1EE44C}
-.bet-coef-badge.lost{background:rgba(249,105,153,.1);color:rgba(249,105,153,.7)}
 .no-bets{text-align:center;padding:40px;color:rgba(255,255,255,.2);font-size:14px}
 
 /* ===== WIN POPUP (compact) ===== */
@@ -3253,14 +3258,14 @@ tc-root *{pointer-events:auto}
         margin:0 8px;border-radius:20px;
         aspect-ratio:1/1;min-height:auto;
     }
-    .rocket-wrap img{width:160px;height:160px}
+    .rocket-wrap img{width:200px;height:200px}
     .mult-display{top:12%;font-size:min(48px,12vw)}
     .top-bar{margin-bottom:4px}
 }
 @media(max-width:400px){
     .countdown-display{font-size:min(180px,40vw)}
     .game-field{aspect-ratio:1/1;min-height:auto;margin:0 6px;border-radius:16px}
-    .rocket-wrap img{width:140px;height:140px}
+    .rocket-wrap img{width:180px;height:180px}
     .mult-display{top:10%;font-size:min(40px,11vw)}
     .top-bar{padding:8px 12px}
     .bal-pill-crash{padding:5px 10px;font-size:12px}
@@ -3718,7 +3723,7 @@ tc-root *{pointer-events:auto}
         </div>
         <div class="stars-bet-section" id="starsSec">
             <div class="bet-input-wrap">
-                <input type="number" id="betInput" placeholder="Enter amount (min. 25)" min="25" step="1" inputmode="numeric">
+                <input type="number" id="betInput" placeholder="Enter TON amount (min. 0.1)" min="0.1" step="0.01" inputmode="decimal">
             </div>
             <div class="auto-cashout-row">
                 <label class="auto-cashout-toggle">
@@ -4178,7 +4183,7 @@ tc-root *{pointer-events:auto}
         <div class="settings-header" style="border-bottom:none;padding:12px 18px 8px;justify-content:space-between">
             <div style="font-family:'Inter Variable','Inter',sans-serif;font-weight:800;font-size:16px;color:#fff;display:flex;align-items:center;gap:8px">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8BA3CC" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                Skins
+                Customization
             </div>
             <button class="vib-toggle-btn" id="settingsVibBtn" onclick="toggleVibBtn()" title="Vibration" style="width:42px;height:42px;border-radius:12px;border:1px solid rgba(139,163,204,.2);background:rgba(139,163,204,.06);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:10px;flex-shrink:0;transition:all .3s;position:relative;overflow:hidden">
                 <svg class="vib-phone-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8BA3CC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
@@ -4188,10 +4193,28 @@ tc-root *{pointer-events:auto}
                 </div>
             </button>
         </div>
+        <!-- Settings Tabs -->
+        <div class="settings-tabs" style="display:flex;gap:8px;padding:0 18px 12px">
+            <button class="settings-tab-btn active" id="settingsTabBtnSkin" onclick="switchSettingsTab('skin')" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid rgba(120,135,160,.3);background:rgba(120,135,160,.15);color:#fff;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 9h9l-7 5 3 9-8-6-8 6 3-9-7-5h9l3-9z"/></svg>
+                Skin
+            </button>
+            <button class="settings-tab-btn" id="settingsTabBtnBg" onclick="switchSettingsTab('bg')" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid rgba(120,135,160,.2);background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .2s">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                Bg
+            </button>
+        </div>
         <div class="settings-content">
+            <!-- SKIN TAB -->
             <div class="settings-tab-content active" id="settingsTabSkin">
                 <div class="settings-section">
                     <div class="settings-grid" id="rocketGrid"></div>
+                </div>
+            </div>
+            <!-- BG TAB -->
+            <div class="settings-tab-content" id="settingsTabBg" style="display:none">
+                <div class="settings-section">
+                    <div class="settings-grid" id="bgGrid"></div>
                 </div>
             </div>
         </div>
@@ -4908,8 +4931,8 @@ function refreshBetCurrencyUI(){
         if(savedBetAmount){
             input.value = starsToBetInputValue(savedBetAmount);
         }
-        input.placeholder = 'Enter TON amount (min. 0.25)';
-        input.min = '0.25';
+        input.placeholder = 'Enter TON amount (min. 0.1)';
+        input.min = '0.1';
         input.step = '0.01';
         input.inputMode = 'decimal';
     }
@@ -6631,28 +6654,35 @@ async function loadBets(){
                 ? '<img src="' + b.photo_url + '" alt="">'
                 : ini;
 
-            var stCls = 'active', stTxt = '', coefBadge = '';
-            var giftIcon = getBetGiftIcon(b.bet_amount);
+            var stCls = 'active', coefCls = 'active';
+            var tonIcon = getCrashMoneyIcon();
             var betAmtDisplay = formatCrashMoney(b.bet_amount);
-            var rightDisplay = '';
+            var winDisplay = '', winIcon = tonIcon, coefVal = '1.00';
             var isFreshCashout = newCashouts.some(function(c){ return c.id === b.id; });
+            
+            /* SVG arrows icon for coefficient */
+            var arrowsSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l5-5 5 5"/><path d="M7 11l5-5 5 5"/></svg>';
             
             if(b.status === 'cashed_out'){
                 stCls = 'won' + (isFreshCashout ? ' cashout-flash' : '');
-                var mx = b.cashout_multiplier ? parseFloat(b.cashout_multiplier).toFixed(2) : '?';
-                coefBadge = '<span class="bet-coef-badge won">x' + mx + '</span>';
-                rightDisplay = '+' + formatCrashMoney(b.win_amount || 0);
+                coefCls = 'won';
+                coefVal = b.cashout_multiplier ? parseFloat(b.cashout_multiplier).toFixed(2) : '?';
+                winDisplay = '+' + formatCrashMoney(b.win_amount || 0);
+                /* Show gift icon if won a gift, otherwise ton */
+                var gift = getAchievableGift(b.win_amount || 0);
+                if(gift){
+                    winIcon = resolveCrashGiftImage(gift, tonIcon);
+                }
             } else if(b.status === 'lost'){
                 stCls = 'lost';
-                var crashMx = servMult ? parseFloat(servMult).toFixed(2) : '?';
-                coefBadge = '<span class="bet-coef-badge lost">x' + crashMx + '</span>';
-                rightDisplay = '-' + formatCrashMoney(b.bet_amount);
+                coefCls = 'lost';
+                coefVal = servMult ? parseFloat(servMult).toFixed(2) : '?';
+                winDisplay = '-' + formatCrashMoney(b.bet_amount);
             } else {
-                /* Active bet - show potential win based on current multiplier */
+                /* Active bet */
                 var potentialWin = Math.floor(b.bet_amount * (dispMult || 1));
-                var curMx = dispMult ? dispMult.toFixed(2) : '1.00';
-                coefBadge = '<span class="bet-coef-badge active">x' + curMx + '</span>';
-                rightDisplay = formatCrashMoney(potentialWin);
+                coefVal = dispMult ? dispMult.toFixed(2) : '1.00';
+                winDisplay = formatCrashMoney(potentialWin);
             }
 
             return '<div class="bet-row ' + stCls + '" data-bet-id="' + b.id + '" data-bet-amount="' + b.bet_amount + '" data-status="' + b.status + '">' +
@@ -6660,12 +6690,16 @@ async function loadBets(){
                     '<div class="bet-avatar">' + avatar + '</div>' +
                     '<div class="bet-info">' +
                         '<div class="bet-name">' + name + '</div>' +
-                        '<div class="bet-amt"><img class="bet-gift-icon" src="' + giftIcon + '" onerror="this.onerror=null;this.src=\'' + getCrashMoneyIcon() + '\'"><span class="bet-amt-val">' + betAmtDisplay + '</span></div>' +
+                        '<div class="bet-amt"><img src="' + tonIcon + '"><span class="bet-amt-val">' + betAmtDisplay + '</span></div>' +
                     '</div>' +
                 '</div>' +
-                '<div class="bet-right-col">' +
-                    '<div class="bet-win-amt ' + stCls + '">' + rightDisplay + '</div>' +
-                    coefBadge +
+                '<div class="bet-coef ' + coefCls + '">' +
+                    '<div class="bet-coef-icon">' + arrowsSvg + '</div>' +
+                    '<span class="bet-coef-val">x' + coefVal + '</span>' +
+                '</div>' +
+                '<div class="bet-right">' +
+                    '<img class="bet-win-icon" src="' + winIcon + '">' +
+                    '<span class="bet-win-amt">' + winDisplay + '</span>' +
                 '</div>' +
             '</div>';
         }).join('');
@@ -6705,7 +6739,7 @@ function updateActiveBetsDisplay(){
         var potentialWin = Math.floor(betAmt * dispMult);
         var curMx = dispMult ? dispMult.toFixed(2) : '1.00';
         var winEl = row.querySelector('.bet-win-amt');
-        var coefEl = row.querySelector('.bet-coef-badge');
+        var coefEl = row.querySelector('.bet-coef-val');
         if(winEl) winEl.textContent = formatCrashMoney(potentialWin);
         if(coefEl) coefEl.textContent = 'x' + curMx;
     });
@@ -8510,7 +8544,34 @@ function toggleVibBtn(){
 }
 
 function switchSettingsTab(tab){
-    /* No tabs needed — skins only */
+    const skinBtn = $('settingsTabBtnSkin');
+    const bgBtn = $('settingsTabBtnBg');
+    const skinTab = $('settingsTabSkin');
+    const bgTab = $('settingsTabBg');
+    
+    if(tab === 'skin'){
+        skinBtn.classList.add('active');
+        skinBtn.style.background = 'rgba(120,135,160,.15)';
+        skinBtn.style.borderColor = 'rgba(120,135,160,.3)';
+        skinBtn.style.color = '#fff';
+        bgBtn.classList.remove('active');
+        bgBtn.style.background = 'rgba(255,255,255,.04)';
+        bgBtn.style.borderColor = 'rgba(120,135,160,.2)';
+        bgBtn.style.color = 'rgba(255,255,255,.5)';
+        skinTab.style.display = 'block';
+        bgTab.style.display = 'none';
+    } else {
+        bgBtn.classList.add('active');
+        bgBtn.style.background = 'rgba(120,135,160,.15)';
+        bgBtn.style.borderColor = 'rgba(120,135,160,.3)';
+        bgBtn.style.color = '#fff';
+        skinBtn.classList.remove('active');
+        skinBtn.style.background = 'rgba(255,255,255,.04)';
+        skinBtn.style.borderColor = 'rgba(120,135,160,.2)';
+        skinBtn.style.color = 'rgba(255,255,255,.5)';
+        skinTab.style.display = 'none';
+        bgTab.style.display = 'block';
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function(){
@@ -8525,35 +8586,69 @@ document.addEventListener('DOMContentLoaded', function(){
 /* Gray lock SVG string for locked skins */
 var lockSvgHtml = '<div class="skin-lock-overlay"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>';
 
+/* Fixed 11 rocket slots and 5 background slots */
+var ROCKET_SLOTS = ['crash', 'cat', 'dog', 'banana', 'plane', 'rabbit', 'ice', 'unicorn', 'goldenplane', 'telegram', 'TonTheMoon'];
+var BG_SLOTS = ['grid', 'cosmic', 'rainbow', 'aurora', 'neon'];
+var BG_DISPLAY_NAMES = {grid: 'Сетка', cosmic: 'Космос', rainbow: 'Радуга', aurora: 'Аврора', neon: 'Неон'};
+
 function renderSettings(){
     const rocketGrid = $('rocketGrid');
-    if(!rocketGrid) return;
+    const bgGrid = $('bgGrid');
     
-    const rocketData = rocketsData.length > 0 ? rocketsData : rockets.map(id => ({id, name: id, access_type: 'free', requirement: 0}));
+    /* Render 11 rocket slots */
+    if(rocketGrid){
+        rocketGrid.innerHTML = ROCKET_SLOTS.map(rocketId => {
+            const rItem = rocketsData.find(r => r.id === rocketId) || {id: rocketId, name: rocketId, access_type: 'level', requirement: 99};
+            const isActive = currentRocket === rocketId;
+            const isUnlocked = checkAccessCondition(rItem);
+            const canClaim = !isUnlocked && isReadyToClaim(rItem);
+            const label = rItem.name || rocketId;
+            const src = '/static/gifs/rockets/' + rocketId + '.gif';
+            
+            if(isUnlocked || canClaim){
+                return '<div class="settings-item' + (isActive ? ' active' : '') + (canClaim ? ' claimable' : '') + '" onclick="selectRocket(\'' + rocketId + '\')">' +
+                    '<img src="' + src + '" alt="" onerror="this.src=\'/static/gifs/rockets/crash.gif\'">' +
+                    '<div class="settings-item-label">' + label + '</div>' +
+                '</div>';
+            } else {
+                return '<div class="settings-item locked" onclick="selectRocket(\'' + rocketId + '\')">' +
+                    '<div class="locked-empty-slot" style="width:48px;height:48px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:rgba(90,106,138,.1);border-radius:10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' +
+                    '<div class="settings-item-label" style="color:rgba(90,106,138,.6)">' + label + '</div>' +
+                '</div>';
+            }
+        }).join('');
+    }
     
-    rocketGrid.innerHTML = rocketData.map((rItem, i) => {
-        const r = rItem.id;
-        const isActive = currentRocket === r;
-        const isUnlocked = checkAccessCondition(rItem);
-        const canClaim = !isUnlocked && isReadyToClaim(rItem);
-        const label = rItem.name || r;
-        const src = r === 'crash' ? '/static/gifs/rockets/crash.gif' : '/static/gifs/rockets/' + r + '.gif';
-        
-        /* Unlocked: show GIF preview. Locked: show lock SVG overlay */
-        if(isUnlocked || canClaim){
-            return '<div class="settings-item' + (isActive ? ' active' : '') + (canClaim ? ' claimable' : '') + '" onclick="selectRocket(\'' + r + '\')" style="position:relative">' +
-                '<img src="' + src + '" alt="" onerror="this.src=\'/static/gifs/rockets/crash.gif\'">' +
-                '<div class="settings-item-label">' + label + '</div>' +
-            '</div>';
-        } else {
-            return '<div class="settings-item locked" onclick="selectRocket(\'' + r + '\')" style="position:relative">' +
-                '<div class="locked-empty-slot" style="width:48px;height:48px;margin:0 auto"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' +
-                '<div class="settings-item-label" style="color:rgba(90,106,138,.6)">' + label + '</div>' +
-            '</div>';
-        }
-    }).join('');
-    
-
+    /* Render 5 background slots */
+    if(bgGrid){
+        bgGrid.innerHTML = BG_SLOTS.map(bgId => {
+            const bgItem = backgroundsData.find(b => b.id === bgId) || {id: bgId, name: BG_DISPLAY_NAMES[bgId] || bgId, access_type: bgId === 'grid' ? 'free' : 'level', requirement: 99};
+            const isActive = currentBg === bgId;
+            const isUnlocked = checkAccessCondition(bgItem);
+            const canClaim = !isUnlocked && isReadyToClaim(bgItem);
+            const label = BG_DISPLAY_NAMES[bgId] || bgItem.name || bgId;
+            
+            if(isUnlocked || canClaim){
+                /* For unlocked backgrounds, show a color preview */
+                let previewStyle = 'width:48px;height:48px;margin:0 auto;border-radius:10px;';
+                if(bgId === 'grid') previewStyle += 'background:linear-gradient(135deg,#1a1f2e,#252b3d);';
+                else if(bgId === 'cosmic') previewStyle += 'background:linear-gradient(135deg,#1a0a2e,#3d1a5c);';
+                else if(bgId === 'rainbow') previewStyle += 'background:linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff);';
+                else if(bgId === 'aurora') previewStyle += 'background:linear-gradient(135deg,#1a3a4a,#2d5a6a,#1a5a3a);';
+                else if(bgId === 'neon') previewStyle += 'background:linear-gradient(135deg,#0a0a1a,#1a0a2a);box-shadow:inset 0 0 10px rgba(255,0,255,.3);';
+                
+                return '<div class="settings-item' + (isActive ? ' active' : '') + (canClaim ? ' claimable' : '') + '" onclick="selectBg(\'' + bgId + '\')">' +
+                    '<div style="' + previewStyle + '"></div>' +
+                    '<div class="settings-item-label">' + label + '</div>' +
+                '</div>';
+            } else {
+                return '<div class="settings-item locked" onclick="selectBg(\'' + bgId + '\')">' +
+                    '<div class="locked-empty-slot" style="width:48px;height:48px;margin:0 auto;display:flex;align-items:center;justify-content:center;background:rgba(90,106,138,.1);border-radius:10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' +
+                    '<div class="settings-item-label" style="color:rgba(90,106,138,.6)">' + label + '</div>' +
+                '</div>';
+            }
+        }).join('');
+    }
 }
 
 /* Format volume for display */

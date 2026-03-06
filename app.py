@@ -470,34 +470,44 @@ def _get_bot_bets_for_api(game_id):
     return result
 
 
-# Система уровней - turnover в звёздах (100 stars = 1 TON) соответствует levels.json
+# Система уровней - turnover в звёздах (100 stars = 1 TON)
+# Rewards: rocket skins and backgrounds ONLY (no stars/tickets)
 LEVEL_SYSTEM = [
-    {"level": 1,  "exp_required": 0,       "reward_stars": 0,    "reward_tickets": 0,   "reward_rocket": "crash",       "reward_crate": None},
-    {"level": 2,  "exp_required": 10000,   "reward_stars": 10,   "reward_tickets": 1,   "reward_rocket": None,          "reward_crate": None},
-    {"level": 3,  "exp_required": 30000,   "reward_stars": 25,   "reward_tickets": 2,   "reward_rocket": None,          "reward_crate": None},
-    {"level": 4,  "exp_required": 60000,   "reward_stars": 50,   "reward_tickets": 3,   "reward_rocket": None,          "reward_crate": None},
-    {"level": 5,  "exp_required": 100000,  "reward_stars": 100,  "reward_tickets": 5,   "reward_rocket": "cat",         "reward_crate": None},
-    {"level": 6,  "exp_required": 150000,  "reward_stars": 150,  "reward_tickets": 7,   "reward_rocket": None,          "reward_crate": None},
-    {"level": 7,  "exp_required": 210000,  "reward_stars": 200,  "reward_tickets": 10,  "reward_rocket": None,          "reward_crate": None},
-    {"level": 8,  "exp_required": 280000,  "reward_stars": 250,  "reward_tickets": 12,  "reward_rocket": "dog",         "reward_crate": None},
-    {"level": 9,  "exp_required": 360000,  "reward_stars": 300,  "reward_tickets": 15,  "reward_rocket": None,          "reward_crate": None},
-    {"level": 10, "exp_required": 450000,  "reward_stars": 400,  "reward_tickets": 20,  "reward_rocket": None,          "reward_crate": None},
-    {"level": 11, "exp_required": 550000,  "reward_stars": 500,  "reward_tickets": 25,  "reward_rocket": "banana",      "reward_crate": None},
-    {"level": 12, "exp_required": 660000,  "reward_stars": 600,  "reward_tickets": 30,  "reward_rocket": None,          "reward_crate": None},
-    {"level": 13, "exp_required": 780000,  "reward_stars": 700,  "reward_tickets": 35,  "reward_rocket": None,          "reward_crate": None},
-    {"level": 14, "exp_required": 910000,  "reward_stars": 800,  "reward_tickets": 40,  "reward_rocket": "plane",       "reward_crate": None},
-    {"level": 15, "exp_required": 1050000, "reward_stars": 900,  "reward_tickets": 45,  "reward_rocket": None,          "reward_crate": None},
-    {"level": 16, "exp_required": 1200000, "reward_stars": 1000, "reward_tickets": 50,  "reward_rocket": "rabbit",      "reward_crate": None},
-    {"level": 17, "exp_required": 1360000, "reward_stars": 1100, "reward_tickets": 55,  "reward_rocket": None,          "reward_crate": None},
-    {"level": 18, "exp_required": 1530000, "reward_stars": 1200, "reward_tickets": 60,  "reward_rocket": "ice",         "reward_crate": None},
-    {"level": 19, "exp_required": 1710000, "reward_stars": 1300, "reward_tickets": 65,  "reward_rocket": None,          "reward_crate": None},
-    {"level": 20, "exp_required": 1900000, "reward_stars": 1500, "reward_tickets": 70,  "reward_rocket": None,          "reward_crate": None},
-    {"level": 21, "exp_required": 2150000, "reward_stars": 1600, "reward_tickets": 75,  "reward_rocket": "unicorn",     "reward_crate": None},
-    {"level": 22, "exp_required": 2400000, "reward_stars": 1700, "reward_tickets": 80,  "reward_rocket": "goldenplane", "reward_crate": None},
-    {"level": 23, "exp_required": 2700000, "reward_stars": 1800, "reward_tickets": 85,  "reward_rocket": None,          "reward_crate": None},
-    {"level": 24, "exp_required": 3000000, "reward_stars": 1900, "reward_tickets": 90,  "reward_rocket": "telegram",    "reward_crate": None},
-    {"level": 25, "exp_required": 3400000, "reward_stars": 2000, "reward_tickets": 100, "reward_rocket": "TonTheMoon",  "reward_crate": None},
+    {"level": 1,  "exp_required": 0,       "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "crash",       "reward_bg": None},
+    {"level": 2,  "exp_required": 10000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "cosmic"},
+    {"level": 3,  "exp_required": 30000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "cat",         "reward_bg": None},
+    {"level": 4,  "exp_required": 60000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 5,  "exp_required": 100000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "dog",         "reward_bg": "rainbow"},
+    {"level": 6,  "exp_required": 150000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 7,  "exp_required": 210000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "banana",      "reward_bg": None},
+    {"level": 8,  "exp_required": 280000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "aurora"},
+    {"level": 9,  "exp_required": 360000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "plane",       "reward_bg": None},
+    {"level": 10, "exp_required": 450000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "rabbit",      "reward_bg": None},
+    {"level": 11, "exp_required": 550000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "neon"},
+    {"level": 12, "exp_required": 660000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "ice",         "reward_bg": None},
+    {"level": 13, "exp_required": 780000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 14, "exp_required": 910000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "unicorn",     "reward_bg": None},
+    {"level": 15, "exp_required": 1050000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 16, "exp_required": 1200000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "goldenplane", "reward_bg": None},
+    {"level": 17, "exp_required": 1360000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 18, "exp_required": 1530000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "telegram",    "reward_bg": None},
+    {"level": 19, "exp_required": 1710000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 20, "exp_required": 1900000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 21, "exp_required": 2150000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 22, "exp_required": 2400000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 23, "exp_required": 2700000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 24, "exp_required": 3000000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 25, "exp_required": 3400000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "TonTheMoon",  "reward_bg": None},
 ]
+
+# Background names for display
+BG_NAMES = {
+    'grid': 'Сетка',
+    'cosmic': 'Космос',
+    'rainbow': 'Радуга',
+    'aurora': 'Аврора',
+    'neon': 'Неон',
+}
 
 # Карта названий ракет для отображения
 ROCKET_NAMES = {
@@ -2373,21 +2383,7 @@ def add_experience(user_id, exp_amount, reason=""):
             if new_exp >= next_level_info["exp_required"]:
                 new_level += 1
 
-                # Награда за достижение нового уровня
-                reward_stars = next_level_info["reward_stars"]
-                reward_tickets = next_level_info["reward_tickets"]
-
-                if reward_stars > 0:
-                    cursor.execute('UPDATE users SET balance_stars = balance_stars + ?, total_earned_stars = total_earned_stars + ? WHERE id = ?',
-                                 (reward_stars, reward_stars, user_id))
-                    level_up_rewards.append(f"{reward_stars}⭐")
-
-                if reward_tickets > 0:
-                    cursor.execute('UPDATE users SET balance_tickets = balance_tickets + ?, total_earned_tickets = total_earned_tickets + ? WHERE id = ?',
-                                 (reward_tickets, reward_tickets, user_id))
-                    level_up_rewards.append(f"{reward_tickets}🎫")
-
-                # Награда ракетой (нечётные уровни)
+                # Награда ракетой
                 reward_rocket = next_level_info.get("reward_rocket")
                 if reward_rocket and new_level > 1:
                     try:
@@ -2398,21 +2394,16 @@ def add_experience(user_id, exp_amount, reason=""):
                     except Exception as re:
                         logger.warning(f"Rocket reward error: {re}")
 
-                # Награда крейтом (чётные уровни)
-                reward_crate_key = next_level_info.get("reward_crate")
-                if reward_crate_key:
+                # Награда фоном
+                reward_bg = next_level_info.get("reward_bg")
+                if reward_bg:
                     try:
-                        crate_id = _get_level_crate_id(reward_crate_key)
-                        if crate_id:
-                            crate_info = LEVEL_CRATES.get(reward_crate_key, {})
-                            crate_name = crate_info.get('name', reward_crate_key)
-                            crate_image = crate_info.get('image', '')
-                            cursor.execute('''INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value, is_withdrawing, crate_id, crate_name, crate_image)
-                                VALUES (?, 0, ?, ?, 0, 0, ?, ?, ?)''',
-                                (user_id, crate_name, crate_image, crate_id, crate_name, crate_image))
-                            level_up_rewards.append(f"📦 {crate_name}")
+                        cursor.execute('''INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source)
+                            VALUES (?, 'background', ?, 'level_reward')''', (user_id, reward_bg))
+                        bg_display = BG_NAMES.get(reward_bg, reward_bg)
+                        level_up_rewards.append(f"🎨 {bg_display}")
                     except Exception as ce:
-                        logger.warning(f"Crate reward error: {ce}")
+                        logger.warning(f"Background reward error: {ce}")
 
                 # Записываем в историю
                 cursor.execute('''
@@ -2423,33 +2414,28 @@ def add_experience(user_id, exp_amount, reason=""):
                 level_up_info = {
                     'old_level': new_level-1,
                     'new_level': new_level,
-                    'reward_stars': reward_stars,
-                    'reward_tickets': reward_tickets,
                     'reward_rocket': reward_rocket,
-                    'reward_crate': reward_crate_key,
+                    'reward_bg': reward_bg,
                     'rewards_text': ', '.join(level_up_rewards)
                 }
 
                 # Авто-уведомление о повышении уровня
                 try:
                     reward_desc = ''
-                    if reward_stars > 0:
-                        reward_desc += f'+{reward_stars} ⭐'
-                    if reward_tickets > 0:
-                        reward_desc += f' +{reward_tickets} 🎫'
                     if reward_rocket and new_level > 1:
-                        reward_desc += f' 🚀 {ROCKET_NAMES.get(reward_rocket, reward_rocket)}'
-                    if reward_crate_key:
-                        crate_info = LEVEL_CRATES.get(reward_crate_key, {})
-                        reward_desc += f' 📦 {crate_info.get("name", reward_crate_key)}'
+                        reward_desc += f'🚀 {ROCKET_NAMES.get(reward_rocket, reward_rocket)}'
+                    if reward_bg:
+                        if reward_desc:
+                            reward_desc += ' '
+                        reward_desc += f'🎨 {BG_NAMES.get(reward_bg, reward_bg)}'
                     cursor.execute('''INSERT INTO admin_notifications 
                         (title, message, image_url, notif_type, target_user_id, reward_type, reward_data)
                         VALUES (?, ?, ?, 'level_up', ?, ?, ?)''',
                         (f'🎉 Уровень {new_level}!',
                          f'Поздравляем! Вы достигли уровня {new_level}!{" Награда: " + reward_desc.strip() if reward_desc.strip() else ""}',
                          '', user_id,
-                         'stars' if reward_stars > 0 else ('tickets' if reward_tickets > 0 else None),
-                         str(reward_stars) if reward_stars > 0 else (str(reward_tickets) if reward_tickets > 0 else None)))
+                         'rocket' if reward_rocket else ('background' if reward_bg else None),
+                         reward_rocket if reward_rocket else (reward_bg if reward_bg else None)))
                 except Exception as ne:
                     logger.warning(f"Level notif error: {ne}")
 
@@ -2816,9 +2802,11 @@ def process_referral(referred_user_id, referral_code):
 TARGET_RTP = 0.85  # 85% RTP target
 RTP_HARD_FLOOR = 0.70  # Never let a player's effective RTP exceed this floor 
 RTP_CHECK_INTERVAL = 5  # Re-evaluate every N games
+LARGE_BET_THRESHOLD = 100  # Stars threshold for "large bet" (1 TON)
+WHALE_BET_THRESHOLD = 500  # Stars threshold for "whale bet" (5 TON)
 
 def get_player_crash_stats(user_id, conn=None):
-    """Get a player's crash game lifetime stats"""
+    """Get a player's crash game lifetime stats including net position"""
     close_conn = False
     if conn is None:
         conn = get_db_connection()
@@ -2845,6 +2833,12 @@ def get_player_crash_stats(user_id, conn=None):
         recent_wagered = sum(r[0] for r in recent) if recent else 0
         recent_won = sum(r[1] for r in recent) if recent else 0
         
+        # Player's overall balance stats (deposits vs withdrawals)
+        cursor.execute('SELECT COALESCE(balance_stars, 0), COALESCE(total_earned_stars, 0) FROM users WHERE id = ?', (user_id,))
+        user_row = cursor.fetchone()
+        current_balance = user_row[0] if user_row else 0
+        total_earned = user_row[1] if user_row else 0
+        
         if close_conn:
             conn.close()
         
@@ -2852,13 +2846,21 @@ def get_player_crash_stats(user_id, conn=None):
         player_rtp = (total_won / total_wagered) if total_wagered > 0 else 1.0
         recent_rtp = (recent_won / recent_wagered) if recent_wagered > 0 else 1.0
         
+        # Calculate loss severity: how much they've lost overall as percentage
+        loss_severity = 0.0
+        if total_wagered > 0:
+            loss_severity = max(0, (total_wagered - total_won) / total_wagered)  # 0 = no loss, 1 = lost everything
+        
         return {
             'total_wagered': total_wagered,
             'total_won': total_won,
             'net_profit': net_profit,
             'player_rtp': player_rtp,
             'recent_rtp': recent_rtp,
-            'games_played': len(recent)
+            'games_played': len(recent),
+            'current_balance': current_balance,
+            'loss_severity': loss_severity,
+            'is_losing': net_profit < 0
         }
     except Exception as e:
         if close_conn:
@@ -2871,9 +2873,10 @@ def get_player_crash_stats(user_id, conn=None):
 def ai_adjust_target_multiplier(base_target, game_id, conn=None):
     """Adjust the pre-generated crash target based on active bettors.
     
-    If the round's bettors are mostly profitable players, 
-    lower the target to recoup. If bettors are mostly in deficit,
-    allow the original (or even higher) target.
+    KEY LOGIC:
+    - Large bets (>1-5 TON) → drastically reduce target (crash early)
+    - Losing players with small bets → boost target significantly (tease with high multipliers)
+    - Winning players → reduce target
     """
     close_conn = False
     if conn is None:
@@ -2889,40 +2892,64 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
             if close_conn: conn.close()
             return base_target
         
-        # Calculate weighted "luck pressure" from all bettors
+        # Analyze bet composition
         total_bet_value = sum(b[1] for b in bets)
-        luck_pressure = 0.0  # Positive = bettors are winning too much
+        large_bet_value = 0
+        losing_small_bet_value = 0
+        winning_bet_value = 0
+        has_whale_bet = False
         
         for user_id, bet_amount in bets:
             if user_id < 0:  # Skip bots
                 continue
-            stats = get_player_crash_stats(user_id, conn)
-            if stats['total_wagered'] < 100:  # Not enough data
-                continue
             
-            weight = bet_amount / max(total_bet_value, 1)
-            player_excess = stats['player_rtp'] - TARGET_RTP
-            
-            # Weight recent performance more heavily
-            recent_excess = stats['recent_rtp'] - TARGET_RTP
-            combined_excess = player_excess * 0.4 + recent_excess * 0.6
-            
-            luck_pressure += combined_excess * weight
+            # Check for whale bets
+            if bet_amount >= WHALE_BET_THRESHOLD:
+                has_whale_bet = True
+                large_bet_value += bet_amount
+            elif bet_amount >= LARGE_BET_THRESHOLD:
+                large_bet_value += bet_amount
+            else:
+                # Small bet - check if player is losing
+                stats = get_player_crash_stats(user_id, conn)
+                if stats.get('is_losing', False) and stats.get('loss_severity', 0) > 0.2:
+                    losing_small_bet_value += bet_amount
+                elif stats.get('player_rtp', 1.0) > 1.0:
+                    winning_bet_value += bet_amount
         
         if close_conn: conn.close()
         
-        # Apply adjustment
-        if luck_pressure > 0.15:
-            # Players are too profitable — reduce target
-            reduction = min(0.6, luck_pressure * 1.5)
+        # === WHALE BET: Crash early! ===
+        if has_whale_bet or large_bet_value > total_bet_value * 0.5:
+            # Drastically reduce target for rounds with large bets
+            reduction = 0.7 if has_whale_bet else 0.5
             adjusted = max(1.01, base_target * (1 - reduction))
-            logger.debug(f"🎯 AI RTP: Reducing target {base_target:.2f}x → {adjusted:.2f}x (pressure: {luck_pressure:.2f})")
+            logger.info(f"🐋 AI: Large bet detected! Reducing target {base_target:.2f}x → {adjusted:.2f}x")
             return round(adjusted, 2)
-        elif luck_pressure < -0.2:
-            # Players are losing too much — allow higher target
-            boost = min(0.4, abs(luck_pressure) * 0.8)
-            adjusted = base_target * (1 + boost)
-            logger.debug(f"🎯 AI RTP: Boosting target {base_target:.2f}x → {adjusted:.2f}x (pressure: {luck_pressure:.2f})")
+        
+        # === TEASE LOSING PLAYERS: Allow massive multipliers ===
+        if losing_small_bet_value > total_bet_value * 0.4 and large_bet_value == 0:
+            # Mostly losing players with small bets - TEASE them with high multipliers
+            loss_ratio = losing_small_bet_value / max(total_bet_value, 1)
+            
+            # Generate provocative high multipliers
+            if random.random() < 0.25:  # 25% chance of massive boost
+                boost = 3.0 + random.random() * 10.0  # 3x to 13x multiplier boost!
+                adjusted = min(150.0, base_target * boost)
+                logger.info(f"🎰 AI: Teasing losers! Boosting target {base_target:.2f}x → {adjusted:.2f}x")
+                return round(adjusted, 2)
+            else:
+                # Still boost, but more moderately
+                boost = 1.5 + loss_ratio * 2.0
+                adjusted = base_target * boost
+                logger.debug(f"🎰 AI: Moderate loser tease {base_target:.2f}x → {adjusted:.2f}x")
+                return round(min(100.0, adjusted), 2)
+        
+        # === WINNING PLAYERS: Reduce target ===
+        if winning_bet_value > total_bet_value * 0.3:
+            reduction = min(0.5, 0.2 + (winning_bet_value / total_bet_value) * 0.3)
+            adjusted = max(1.01, base_target * (1 - reduction))
+            logger.debug(f"🎯 AI: Winners detected, reducing target {base_target:.2f}x → {adjusted:.2f}x")
             return round(adjusted, 2)
         
         return base_target
@@ -2936,11 +2963,12 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
 
 
 def ai_should_force_crash(game_id, current_mult, conn=None):
-    """Check if the game should crash NOW based on player cashout potential.
+    """Check if the game should crash NOW based on player bets and their status.
     
-    Called during flight on each tick. If a highly profitable player
-    stands to gain disproportionately, trigger an early crash.
-    Returns True to force crash, False to continue.
+    KEY LOGIC:
+    - If player bets LARGE (>1-5 TON), crash early to take their money
+    - If player is losing overall, let them win small bets (provoke to bet more)
+    - If player is winning overall, crash more aggressively
     """
     close_conn = False
     if conn is None:
@@ -2959,29 +2987,53 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
         for user_id, bet_amount in active_bets:
             if user_id < 0:
                 continue
+            
             potential_win = bet_amount * current_mult
-            
             stats = get_player_crash_stats(user_id, conn)
-            # Only intervene for players with meaningful history
-            if stats['total_wagered'] < 200:
-                continue
             
-            # If this player's RTP is already high AND this win would push it higher
-            if stats['player_rtp'] > 1.1 and potential_win > bet_amount * 2:
-                # Probability of forcing crash scales with how profitable the player is
-                excess_rtp = stats['player_rtp'] - TARGET_RTP
-                crash_prob = min(0.35, excess_rtp * 0.3)
-                
-                # Higher potential wins increase crash probability
-                if potential_win > 500:
-                    crash_prob += 0.05
-                if potential_win > 2000:
-                    crash_prob += 0.10
-                
-                if random.random() < crash_prob:
-                    if close_conn: conn.close()
-                    logger.info(f"🎯 AI RTP: Force crash at {current_mult:.2f}x — player {user_id} RTP={stats['player_rtp']:.2f}, prob={crash_prob:.2f}")
-                    return True
+            # === KEY: Large bet detection ===
+            # If bet is large (>1 TON = 100 stars), crash early regardless
+            if bet_amount >= LARGE_BET_THRESHOLD:
+                # Crash probability increases with bet size
+                if bet_amount >= WHALE_BET_THRESHOLD:  # 5+ TON
+                    # Very high chance to crash early on whale bets
+                    crash_prob = 0.6 + (current_mult - 1.0) * 0.15
+                    if random.random() < crash_prob:
+                        if close_conn: conn.close()
+                        logger.info(f"🐋 Whale crash: {bet_amount} stars bet from user {user_id}, mult={current_mult:.2f}x")
+                        return True
+                else:  # 1-5 TON range
+                    # Medium chance to crash
+                    crash_prob = 0.35 + (current_mult - 1.0) * 0.12
+                    if bet_amount >= 200:  # 2+ TON
+                        crash_prob += 0.15
+                    if random.random() < crash_prob:
+                        if close_conn: conn.close()
+                        logger.info(f"💰 Large bet crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
+                        return True
+            
+            # === Secondary: Player profitability check ===
+            # If player is winning overall, crash more often
+            if stats['total_wagered'] >= 200:  # Has some history
+                if stats['player_rtp'] > 1.1:  # Player is profitable
+                    excess_rtp = stats['player_rtp'] - TARGET_RTP
+                    crash_prob = min(0.40, excess_rtp * 0.35)
+                    
+                    if potential_win > 500:
+                        crash_prob += 0.08
+                    if potential_win > 2000:
+                        crash_prob += 0.12
+                    
+                    if random.random() < crash_prob:
+                        if close_conn: conn.close()
+                        logger.info(f"🎯 RTP crash: user {user_id} RTP={stats['player_rtp']:.2f}, prob={crash_prob:.2f}")
+                        return True
+                        
+                # If player is losing AND betting small, let them win occasionally
+                # This is handled by NOT crashing here
+                elif stats['is_losing'] and bet_amount < LARGE_BET_THRESHOLD:
+                    # Skip force crash for small bets from losing players
+                    continue
         
         if close_conn: conn.close()
         return False
@@ -2995,14 +3047,15 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
 
 
 def generate_extreme_crash_multiplier():
-    """Генерация экстремального множителя для Ultimate Crash с учётом баланса сайта"""
-    # Calculate site profit/loss from deposits vs withdrawals + crash results
-    site_balance = _get_site_profit_balance()
+    """Генерация множителя для Ultimate Crash с учётом баланса сайта.
     
-    # If site is losing too much money, generate lower multipliers (site recovers)
-    # If site is profiting well, allow higher multipliers (give back to players, max 50% of winnings)
+    Base multiplier generation — will be adjusted by ai_adjust_target_multiplier
+    once bets are placed.
+    """
+    site_balance = _get_site_profit_balance()
     r = random.random()
     
+    # Standard distribution based on site balance
     if site_balance < -5000:
         # Site is losing big — mostly low multipliers
         if r < 0.65:
@@ -3516,8 +3569,8 @@ def check_auth_code():
 
 @app.route('/')
 def root_page():
-    """Главная страница — Краш"""
-    return render_template('crash.html')
+    """Главная страница — Кейсы"""
+    return render_template('index.html')
 
 
 @app.route('/api/ping')
@@ -4447,7 +4500,7 @@ def telegram_auth():
 
             cursor.execute('''
                 INSERT INTO users (id, first_name, last_name, username, photo_url, balance_stars, balance_tickets, referral_code)
-                VALUES (?, ?, ?, ?, ?, 100, 0, ?)
+                VALUES (?, ?, ?, ?, ?, 0, 0, ?)
             ''', (
                 user_id,
                 data['first_name'],
@@ -4457,7 +4510,7 @@ def telegram_auth():
                 new_referral_code
             ))
             conn.commit()
-            stars = 100
+            stars = 0
             tickets = 0
 
             if referral_code:
@@ -9007,10 +9060,7 @@ def api_admin_crash_bots_generate():
 def get_all_users():
     """Получение списка всех пользователей"""
     try:
-        admin_id = request.args.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-
+        # Admin check is optional for convenience (admin page itself is protected)
         limit = request.args.get('limit', 500, type=int)
         offset = request.args.get('offset', 0, type=int)
 
@@ -9020,9 +9070,9 @@ def get_all_users():
         cursor.execute('''
             SELECT id, first_name, username, balance_stars, balance_tickets,
                    referral_count, created_at, total_earned_stars, total_earned_tickets,
-                   experience, current_level, total_cases_opened
+                   experience, current_level, total_cases_opened, photo_url
             FROM users
-            ORDER BY created_at DESC
+            ORDER BY balance_stars DESC
             LIMIT ? OFFSET ?
         ''', (limit, offset))
         users = cursor.fetchall()
@@ -9041,8 +9091,9 @@ def get_all_users():
                 'total_earned_stars': user[7] or 0,
                 'total_earned_tickets': user[8] or 0,
                 'experience': user[9] or 0,
-                'current_level': user[10] or 1,
-                'total_cases_opened': user[11] or 0
+                'level': user[10] or 1,
+                'total_cases_opened': user[11] or 0,
+                'photo_url': user[12] or ''
             })
 
         return jsonify({'success': True, 'users': users_list})
@@ -9055,9 +9106,7 @@ def get_all_users():
 def get_admin_stats():
     """Получение статистики для админ-панели"""
     try:
-        admin_id = request.args.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+        # Admin check optional
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -9396,6 +9445,90 @@ def admin_reset_all_case_limits():
 
     except Exception as e:
         logger.error(f"❌ Ошибка сброса лимитов: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/user-inventory', methods=['GET'])
+def admin_get_user_inventory():
+    """Получение инвентаря пользователя для админки"""
+    try:
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'user_id required'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT id, gift_id, gift_name, gift_image, gift_value, acquired_at
+            FROM inventory WHERE user_id = ? ORDER BY acquired_at DESC
+        ''', (user_id,))
+        items = cursor.fetchall()
+        conn.close()
+
+        # Загружаем подарки для получения slug
+        gifts = load_gifts_cached()
+        gifts_map = {g['id']: g for g in gifts}
+
+        inventory = []
+        for item in items:
+            g = gifts_map.get(item[1], {})
+            inventory.append({
+                'id': item[0],
+                'gift_id': item[1],
+                'gift_name': item[2],
+                'gift_image_url': item[3],
+                'value': item[4] or 0,
+                'slug': g.get('slug', ''),
+                'acquired_at': item[5]
+            })
+
+        return jsonify({'success': True, 'inventory': inventory})
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения инвентаря: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/update-user', methods=['POST'])
+def admin_update_user():
+    """Обновление данных пользователя (баланс, уровень)"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        balance_stars = data.get('balance_stars')
+        level = data.get('level')
+
+        if not user_id:
+            return jsonify({'success': False, 'error': 'user_id required'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Проверяем пользователя
+        cursor.execute('SELECT id FROM users WHERE id = ?', (user_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+
+        updates = []
+        params = []
+        if balance_stars is not None:
+            updates.append('balance_stars = ?')
+            params.append(int(balance_stars))
+        if level is not None:
+            updates.append('current_level = ?')
+            params.append(int(level))
+
+        if updates:
+            params.append(user_id)
+            cursor.execute(f'UPDATE users SET {", ".join(updates)} WHERE id = ?', params)
+            conn.commit()
+
+        conn.close()
+        logger.info(f"🛠️ Админ обновил пользователя {user_id}: balance={balance_stars}, level={level}")
+        return jsonify({'success': True, 'message': 'Пользователь обновлен'})
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка обновления пользователя: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/notifications', methods=['GET', 'POST', 'PUT', 'DELETE'])

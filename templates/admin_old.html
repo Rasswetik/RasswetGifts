@@ -1,0 +1,3465 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель - Raswet Gifts</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #8b5cf6;
+            --primary-dark: #7c3aed;
+            --secondary-color: #1e293b;
+            --accent-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --border-color: #334155;
+            --sidebar-width: 280px;
+            --header-height: 70px;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            color: var(--text-light);
+            line-height: 1.5;
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            padding-top: calc(20px + env(safe-area-inset-top, 0px));
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        .sidebar-header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .sidebar-header .admin-badge {
+            background: var(--accent-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        .nav-section {
+            margin-bottom: 30px;
+        }
+
+        .nav-section h3 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-light);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .nav-item:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: var(--shadow);
+        }
+
+        .nav-item i {
+            margin-right: 12px;
+            font-size: 1.2rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 15px;
+            padding-top: calc(15px + env(safe-area-inset-top, 0px));
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header h2 {
+            color: var(--text-light);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary-color);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card h3 {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: 5px;
+        }
+
+        .stat-change {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .content-section {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .section-header h3 {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            font-weight: 700;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -3px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--accent-color), #0da271);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -3px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #dc2626);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -3px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning-color), #d97706);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -3px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, var(--info-color), #2563eb);
+            color: white;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -3px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.8rem;
+        }
+
+        .btn-back {
+            background: var(--text-muted);
+            color: white;
+        }
+
+        .btn-back:hover {
+            background: #64748b;
+            transform: translateY(-2px);
+        }
+
+        /* Tables */
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--border-radius);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background: #2d3748;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table tr:hover {
+            background: #2d3748;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-rejected {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        /* Forms */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            transition: var(--transition);
+            background: #2d3748;
+            color: var(--text-light);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+        }
+
+        .form-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            max-width: 95%;
+            width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            color: var(--danger-color);
+        }
+
+        .modal-body {
+            padding: 0 20px 20px;
+        }
+
+        /* Gift Preview */
+        .gift-preview {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .gift-image {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin: 0 auto 10px;
+        }
+
+        /* Gift Selection Styles */
+        .gift-item {
+            background: #2d3748;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gift-item:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+        }
+
+        .gift-item.selected {
+            border-color: var(--accent-color);
+            background: linear-gradient(135deg, #2d3748, #374151);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .gift-item.selected::before {
+            content: "✓";
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--accent-color);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .gift-item-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+            margin: 0 auto 10px;
+            background: #1e293b;
+            padding: 5px;
+        }
+
+        .gift-item-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .gift-item-value {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Gift List */
+        .gift-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        /* Search */
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background: #2d3748;
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: var(--transition);
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* File Upload */
+        .file-upload {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 30px 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: #2d3748;
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+            background: #374151;
+        }
+
+        .file-upload i {
+            font-size: 2rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        /* Mobile Menu */
+        .mobile-menu-btn {
+            display: none;
+            background: var(--primary-color);
+            border: none;
+            font-size: 1.2rem;
+            color: white;
+            cursor: pointer;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            box-shadow: var(--shadow);
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Loading */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #374151;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* User Selection */
+        .user-select-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .user-card {
+            background: #2d3748;
+            border-radius: var(--border-radius);
+            padding: 15px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid transparent;
+        }
+
+        .user-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .user-card.selected {
+            border-color: var(--accent-color);
+            background: linear-gradient(135deg, #2d3748, #374151);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .user-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Notification Builder */
+        .notification-preview {
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin: 20px 0;
+            background: white;
+            color: #1e293b;
+            position: relative;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .notification-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .notification-pages {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+
+        .notification-page {
+            padding: 8px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .notification-page.active {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .page-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        /* Responsive - Mobile First Redesign */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                width: 260px;
+                padding: 15px;
+                padding-top: calc(60px + env(safe-area-inset-top, 0px));
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 8px;
+                padding-top: calc(60px + env(safe-area-inset-top, 0px));
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+                position: fixed;
+                top: calc(12px + env(safe-area-inset-top, 0px));
+                left: 12px;
+                z-index: 1100;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .stat-card {
+                padding: 12px;
+                border-radius: 10px;
+            }
+
+            .stat-value {
+                font-size: 1.2rem;
+            }
+
+            .stat-card h3 {
+                font-size: 0.7rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+                padding: 12px;
+                border-radius: 10px;
+                margin-bottom: 10px;
+            }
+
+            .header h2 {
+                font-size: 1.1rem;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+                margin-bottom: 12px;
+            }
+
+            .section-header h3 {
+                font-size: 1rem;
+            }
+
+            .content-section {
+                padding: 12px;
+                border-radius: 10px;
+                margin-bottom: 12px;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10px;
+                max-height: 85vh;
+                overflow-y: auto;
+            }
+
+            .data-table {
+                font-size: 0.75rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px 5px;
+            }
+
+            .btn {
+                padding: 10px 16px;
+                font-size: 0.8rem;
+                border-radius: 8px;
+            }
+
+            .btn i {
+                font-size: 0.9rem;
+            }
+
+            .gift-list {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 8px;
+            }
+
+            .user-select-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-item {
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+
+            .sidebar-header h1 {
+                font-size: 1.2rem;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+
+            .tab {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+                flex: 1;
+                text-align: center;
+                min-width: 80px;
+            }
+
+            .form-control {
+                padding: 10px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+
+            .stat-card {
+                padding: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .stat-card h3 {
+                margin-bottom: 0;
+            }
+
+            .stat-value {
+                font-size: 1rem;
+                margin-bottom: 0;
+            }
+
+            .stat-change {
+                display: none;
+            }
+
+            .content-section {
+                padding: 10px;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+                padding: 12px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                text-align: center;
+                width: 100%;
+            }
+
+            .gift-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .header h2 {
+                font-size: 1rem;
+            }
+
+            .modal-content {
+                border-radius: 16px 16px 0 0;
+                margin: 0;
+                margin-top: auto;
+                width: 100%;
+                max-height: 90vh;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 6px 4px;
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Icons */
+        .icon {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            background: currentColor;
+            mask-size: cover;
+            -webkit-mask-size: cover;
+        }
+
+        .icon-users { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M16.5 12c1.38 0 2.49-1.12 2.49-2.5S17.88 7 16.5 7 14 8.12 14 9.5s1.12 2.5 2.5 2.5zM9 11c1.66 0 2.99-1.34 2.99-3S10.66 5 9 5 6 6.34 6 8s1.34 3 3 3zm7.5 3c-1.83 0-5.5.92-5.5 2.75V19h11v-2.25c0-1.83-3.67-2.75-5.5-2.75zM9 13c-2.33 0-7 1.17-7 3.5V19h7v-2.25c0-.85.33-2.34 2.37-3.47C10.5 13.1 9.66 13 9 13z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-gift { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-case { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 6V4h-4v2h4zM4 8v11h16V8H4zm16-2c1.11 0 2 .89 2 2v11c0 1.11-.89 2-2 2H4c-1.11 0-2-.89-2-2l.01-11c0-1.11.88-2 1.99-2h4V4c0-1.11.89-2 2-2h4c1.11 0 2 .89 2 2v2h4z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-withdraw { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-balance { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05.82 1.87 2.65 1.87 1.96 0 2.4-.98 2.4-1.59 0-.83-.44-1.61-2.67-2.14-2.48-.6-4.18-1.62-4.18-3.67 0-1.72 1.39-2.84 3.11-3.21V4h2.67v1.95c1.86.45 2.79 1.86 2.85 3.39H14.3c-.05-1.11-.64-1.87-2.22-1.87-1.5 0-2.4.68-2.4 1.64 0 .84.65 1.39 2.67 1.91s4.18 1.39 4.18 3.91c-.01 1.78-1.18 2.73-3.12 3.16z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-promo { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-settings { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-plus { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-edit { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-delete { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-image { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-refresh { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-home { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z' fill='white'/%3E%3C/svg%3E"); }
+        .icon-notification { mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z' fill='white'/%3E%3C/svg%3E"); }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu Button -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+        ☰
+    </button>
+
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>Raswet Gifts</h1>
+                <div class="admin-badge">Администратор</div>
+            </div>
+
+            <div class="nav-section">
+                <h3>Основное</h3>
+                <a class="nav-item active" data-tab="dashboard">
+                    <i class="icon icon-case"></i>
+                    <span>Дашборд</span>
+                </a>
+                <a class="nav-item" data-tab="users">
+                    <i class="icon icon-users"></i>
+                    <span>Пользователи</span>
+                </a>
+                <a class="nav-item" onclick="goToMainPage()">
+                    <i class="icon icon-home"></i>
+                    <span>На главную</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>Управление</h3>
+                <a class="nav-item" data-tab="cases">
+                    <i class="icon icon-case"></i>
+                    <span>Кейсы</span>
+                </a>
+                <a class="nav-item" data-tab="gifts">
+                    <i class="icon icon-gift"></i>
+                    <span>Подарки</span>
+                </a>
+                <a class="nav-item" data-tab="withdrawals">
+                    <i class="icon icon-withdraw"></i>
+                    <span>Выводы</span>
+                </a>
+                <a class="nav-item" data-tab="inventory">
+                    <i class="icon icon-gift"></i>
+                    <span>Инвентарь</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <h3>Настройки</h3>
+                <a class="nav-item" data-tab="limits">
+                    <i class="icon icon-settings"></i>
+                    <span>Лимиты кейсов</span>
+                </a>
+                <a class="nav-item" data-tab="promocodes">
+                    <i class="icon icon-promo"></i>
+                    <span>Промокоды</span>
+                </a>
+                <a class="nav-item" data-tab="notifications">
+                    <i class="icon icon-notification"></i>
+                    <span>Оповещения</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Tab -->
+            <div class="tab-content active" id="dashboard">
+                <div class="header">
+                    <div class="header-left">
+                        <h2>Дашборд</h2>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="loadStats()">
+                            <i class="icon icon-refresh"></i>
+                            Обновить
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-grid" id="statsGrid">
+                    <!-- Stats will be loaded here -->
+                </div>
+
+                <div class="content-section">
+                    <h3>Быстрые действия</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 15px;">
+                        <button class="btn btn-primary" onclick="showTab('cases')">
+                            <i class="icon icon-case"></i>
+                            Управление кейсами
+                        </button>
+                        <button class="btn btn-success" onclick="showTab('gifts')">
+                            <i class="icon icon-gift"></i>
+                            Управление подарками
+                        </button>
+                        <button class="btn btn-warning" onclick="showTab('withdrawals')">
+                            <i class="icon icon-withdraw"></i>
+                            Заявки на вывод
+                        </button>
+                        <button class="btn btn-info" onclick="showTab('promocodes')">
+                            <i class="icon icon-promo"></i>
+                            Промокоды
+                        </button>
+                        <button class="btn btn-primary" onclick="showTab('notifications')">
+                            <i class="icon icon-notification"></i>
+                            Оповещения
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div class="tab-content" id="users">
+                <div class="header">
+                    <div class="header-left">
+                        <button class="btn btn-back" onclick="showTab('dashboard')">
+                            ← Назад
+                        </button>
+                        <h2>Пользователи</h2>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="loadUsers()">
+                            <i class="icon icon-refresh"></i>
+                            Обновить
+                        </button>
+                        <button class="btn btn-success" onclick="showBalanceModal()">
+                            <i class="icon icon-balance"></i>
+                            Редактировать баланс
+                        </button>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="table-container">
+                        <table class="data-table" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Имя</th>
+                                    <th>Username</th>
+                                    <th>Звезды</th>
+                                    <th>Билеты</th>
+                                    <th>Уровень</th>
+                                    <th>Рефералы</th>
+                                    <th>Дата</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <!-- Users will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cases Tab -->
+            <div class="tab-content" id="cases">
+                <div class="header">
+                    <div class="header-left">
+                        <button class="btn btn-back" onclick="showTab('dashboard')">
+                            ← Назад
+                        </button>
+                        <h2>Управление кейсами</h2>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="loadCases()">
+                            <i class="icon icon-refresh"></i>
+                            Обновить
+                        </button>
+                        <button class="btn btn-success" onclick="showCaseModal()">
+                            <i class="icon icon-plus"></i>
+                            Добавить кейс
+                        </button>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="table-container">
+                        <table class="data-table" id="casesTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Название</th>
+                                    <th>Стоимость</th>
+                                    <th>Тип</th>
+                                    <th>Уровень</th>
+                                    <th>Лимит</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="casesTableBody">
+                                <!-- Cases will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gifts Tab -->
+            <div class="tab-content" id="gifts">
+                <div class="header">
+                    <div class="header-left">
+                        <button class="btn btn-back" onclick="showTab('dashboard')">
+                            ← Назад
+                        </button>
+                        <h2>Управление подарками</h2>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="loadGifts()">
+                            <i class="icon icon-refresh"></i>
+                            Обновить
+                        </button>
+                        <button class="btn btn-success" onclick="showGiftModal()">
+                            <i class="icon icon-plus"></i>
+                            Добавить подарок
+                        </button>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="table-container">
+                        <table class="data-table" id="giftsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Изображение</th>
+                                    <th>Название</th>
+                                    <th>Стоимость</th>
+                                    <th>Категория</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="giftsTableBody">
+                                <!-- Gifts will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Withdrawals Tab -->
+            <div class="tab-content" id="withdrawals">
+                <div class="header">
+                    <div class="header-left">
+                        <button class="btn btn-back" onclick="showTab('dashboard')">
+                            ← Назад
+                        </button>
+                        <h2>Управление выводами</h2>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="loadWithdrawals()">
+                            <i class="icon icon-refresh"></i>
+                            Обновить
+                        </button>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="tabs">
+                        <div class="tab active" data-status="all">Все</div>
+                        <div class="tab" data-status="pending">Ожидание</div>
+                        <div class="tab" data-status="approved">Одобрены</div>
+                        <div class="tab" data-status="rejected">Отклонены</div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table" id="withdrawalsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Пользователь</th>
+                                    <th>Подарок</th>
+                                    <th>Стоимость</th>
+                                    <th>Статус</th>
+                                    <th>Дата</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="withdrawalsTableBody">
+                                <!-- Withdrawals will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory Tab -->
+            <div class="tab-content" id="inventory">
+                <div class="header">
+                    <div class="header-left">
+                        <button class="btn btn-back" onclick="showTab('dashboard')">
+                            ← Назад
+                        </button>
+                        <h2>Управление инвентарем</h2>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="inventoryUserId">ID пользователя</label>
+                            <input type="number" id="inventoryUserId" class="form-control" placeholder="Введите ID пользователя">
+                        </div>
+                        <div class="form-group">
+                            <label for="inventoryUserName">Имя пользователя</label>
+                            <input type="text" id="inventoryUserName" class="form-control" readonly>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <button class="btn btn-success" onclick="getUserInventory()">
+                            Найти инвентарь
+                        </button>
+                        <button class="btn btn-primary" onclick="showAddGiftModal()">
+                            <i class="icon icon-plus"></i>
+                            Добавить подарок
+                        </button>
+                    </div>
+
+                    <div id="inventoryContainer">
+                        <!-- Инвентарь будет загружен здесь -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Limits Tab -->
+            <div class="tab-content" id="limits">
+                <div class="header">
+                    <div class="header-left">
+                        <button class="btn btn-back" onclick="showTab('dashboard')">
+                            ← Назад
+                        </button>
+                        <h2>Лимиты кейсов</h2>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="loadCaseLimits()">
+                            <i class="icon icon-refresh"></i>
+                            Обновить
+                        </button>
+                        <button class="btn btn-success" onclick="resetAllLimits()">
+                            <i class="icon icon-refresh"></i>
+                            Сбросить все
+                        </button>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="table-container">
+                        <table class="data-table" id="limitsTable">
+                            <thead>
+                                <tr>
+                                    <th>Кейс</th>
+                                    <th>Текущий</th>
+                                    <th>Максимум</th>
+                                    <th>Процент</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="limitsTableBody">
+                                <!-- Limits will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Promocodes Tab -->
+            <div class="tab-content" id="promocodes">
+                <div class="header">
+                    <div class="header-left">
+                        <button class="btn btn-back" onclick="showTab('dashboard')">
+                            ← Назад
+                        </button>
+                        <h2>Управление промокодами</h2>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="loadPromoCodes()">
+                            <i class="icon icon-refresh"></i>
+                            Обновить
+                        </button>
+                        <button class="btn btn-success" onclick="showPromoCodeModal()">
+                            <i class="icon icon-plus"></i>
+                            Создать промокод
+                        </button>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="table-container">
+                        <table class="data-table" id="promocodesTable">
+                            <thead>
+                                <tr>
+                                    <th>Код</th>
+                                    <th>Награда</th>
+                                    <th>Использований</th>
+                                    <th>Лимит</th>
+                                    <th>Срок</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="promocodesTableBody">
+                                <!-- Promocodes will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications Tab -->
+            <div class="tab-content" id="notifications">
+                <div class="header">
+                    <div class="header-left">
+                        <button class="btn btn-back" onclick="showTab('dashboard')">
+                            ← Назад
+                        </button>
+                        <h2>Управление оповещениями</h2>
+                    </div>
+                    <div>
+                        <button class="btn btn-primary" onclick="loadNotifications()">
+                            <i class="icon icon-refresh"></i>
+                            Обновить
+                        </button>
+                        <button class="btn btn-success" onclick="showNotificationModal()">
+                            <i class="icon icon-plus"></i>
+                            Создать оповещение
+                        </button>
+                    </div>
+                </div>
+
+                <div class="content-section">
+                    <div class="table-container">
+                        <table class="data-table" id="notificationsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Заголовок</th>
+                                    <th>Страницы</th>
+                                    <th>Статус</th>
+                                    <th>Создано</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody id="notificationsTableBody">
+                                <!-- Notifications will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Case Modal -->
+    <div class="modal" id="caseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="caseModalTitle">Добавить кейс</h3>
+                <button class="modal-close" onclick="closeCaseModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="caseForm">
+                    <input type="hidden" id="caseId">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="caseName">Название кейса</label>
+                            <input type="text" id="caseName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="caseCost">Стоимость</label>
+                            <input type="number" id="caseCost" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="caseCostType">Тип стоимости</label>
+                            <select id="caseCostType" class="form-control" required>
+                                <option value="stars">Звезды</option>
+                                <option value="tickets">Билеты</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="caseRequiredLevel">Требуемый уровень</label>
+                            <input type="number" id="caseRequiredLevel" class="form-control" value="1" min="1">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="caseLimited">Лимитированный</label>
+                            <select id="caseLimited" class="form-control">
+                                <option value="false">Нет</option>
+                                <option value="true">Да</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="caseAmount">Лимит</label>
+                            <input type="number" id="caseAmount" class="form-control" value="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="caseDescription">Описание</label>
+                        <textarea id="caseDescription" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="caseImage">Изображение</label>
+                        <input type="text" id="caseImage" class="form-control" placeholder="URL изображения">
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-success" style="flex: 1;">
+                            Сохранить
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="closeCaseModal()">
+                            Отмена
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gift Modal -->
+    <div class="modal" id="giftModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="giftModalTitle">Добавить подарок</h3>
+                <button class="modal-close" onclick="closeGiftModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="giftForm">
+                    <input type="hidden" id="giftId">
+                    
+                    <div class="gift-preview" id="giftPreview" style="display: none;">
+                        <img id="giftPreviewImage" class="gift-image" src="" alt="Превью">
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="giftName">Название подарка</label>
+                            <input type="text" id="giftName" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="giftValue">Стоимость</label>
+                            <input type="number" id="giftValue" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="giftCategory">Категория</label>
+                        <input type="text" id="giftCategory" class="form-control" value="other">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="giftDescription">Описание</label>
+                        <textarea id="giftDescription" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Изображение подарка</label>
+                        <div class="file-upload" onclick="document.getElementById('giftImageUpload').click()">
+                            <i class="icon icon-image"></i>
+                            <div>Нажмите для загрузки</div>
+                            <input type="file" id="giftImageUpload" accept="image/*" onchange="handleGiftImageUpload(this)">
+                        </div>
+                        <div class="form-text" id="giftImageText">Изображение не выбрано</div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-success" style="flex: 1;">
+                            Сохранить
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="closeGiftModal()">
+                            Отмена
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Case Gifts Modal -->
+    <div class="modal" id="caseGiftsModal">
+        <div class="modal-content" style="width: 700px; max-width: 95vw;">
+            <div class="modal-header">
+                <h3 id="caseGiftsModalTitle">Подарки в кейсе</h3>
+                <button class="modal-close" onclick="closeCaseGiftsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Поиск -->
+                <div class="form-group">
+                    <label>Поиск подарков</label>
+                    <input type="text" id="giftSearch" class="search-input" placeholder="Введите название подарка..." onkeyup="filterGifts()">
+                </div>
+
+                <!-- Список подарков -->
+                <div style="margin-bottom: 20px;">
+                    <h4>Выберите подарок для добавления:</h4>
+                    <div class="gift-list" id="giftList" style="max-height: 300px; overflow-y: auto; padding: 10px; background: #1e293b; border-radius: var(--border-radius);">
+                        <!-- Подарки будут загружены здесь -->
+                    </div>
+                </div>
+
+                <!-- Секция выбора шанса -->
+                <div id="selectedGiftSection" style="display: none; margin: 20px 0; padding: 20px; background: #2d3748; border-radius: var(--border-radius); border-left: 4px solid var(--accent-color);">
+                    <h4 style="margin-bottom: 15px;">Настройка шанса выпадения</h4>
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <strong>Выбранный подарок:</strong> 
+                            <span id="selectedGiftName" style="color: var(--accent-color);"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="giftChance">Шанс выпадения (%)</label>
+                        <input type="number" id="giftChance" class="form-control" min="0" max="100" step="0.1" value="1" 
+                               style="font-size: 1.1rem; font-weight: bold; text-align: center;">
+                        <div class="form-text">От 0% до 100%. Сумма всех шансов в кейсе должна быть 100%</div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-success" onclick="addGiftToCase()" style="flex: 1;">
+                            ✅ Добавить в кейс
+                        </button>
+                        <button class="btn btn-danger" onclick="clearSelectedGift()">
+                            ❌ Отмена
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Текущие подарки в кейсе -->
+                <div id="caseGiftsList" style="margin-top: 25px; border-top: 2px solid var(--border-color); padding-top: 20px;">
+                    <h4>Текущие подарки в кейсе:</h4>
+                    <div id="currentCaseGifts" style="margin-top: 15px;">
+                        <!-- Текущие подарки кейса -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Gift to Inventory Modal -->
+    <div class="modal" id="addGiftModal">
+        <div class="modal-content" style="width: 600px;">
+            <div class="modal-header">
+                <h3>Добавить подарок в инвентарь</h3>
+                <button class="modal-close" onclick="closeAddGiftModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Поиск подарков</label>
+                    <input type="text" id="inventoryGiftSearch" class="search-input" placeholder="Введите название подарка..." onkeyup="filterInventoryGifts()">
+                </div>
+
+                <div class="gift-list" id="inventoryGiftList">
+                    <!-- Подарки для добавления в инвентарь -->
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="giftQuantity">Количество</label>
+                    <input type="number" id="giftQuantity" class="form-control" value="1" min="1" max="100">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-success" onclick="addGiftToUserInventory()" style="flex: 1;">
+                        Добавить в инвентарь
+                    </button>
+                    <button class="btn btn-danger" onclick="closeAddGiftModal()">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promo Code Modal -->
+    <div class="modal" id="promoCodeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Создать промокод</h3>
+                <button class="modal-close" onclick="closePromoCodeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="promoCodeForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="promoCode">Код промокода</label>
+                            <input type="text" id="promoCode" class="form-control" placeholder="Оставьте пустым для автогенерации">
+                        </div>
+                        <div class="form-group">
+                            <label for="promoMaxUses">Макс. использований</label>
+                            <input type="number" id="promoMaxUses" class="form-control" value="1" min="1">
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="promoExpiresDays">Срок действия (дней)</label>
+                            <input type="number" id="promoExpiresDays" class="form-control" value="30" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="promoType">Тип награды</label>
+                            <select id="promoType" class="form-control" onchange="togglePromoRewards()">
+                                <option value="stars">Звезды</option>
+                                <option value="tickets">Билеты</option>
+                                <option value="free_case">Бесплатный кейс</option>
+                                <option value="discount">Скидка</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="promoRewardSection">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="promoRewardAmount">Количество награды</label>
+                                <input type="number" id="promoRewardAmount" class="form-control" value="0" min="0">
+                            </div>
+                            <div class="form-group" id="promoCaseSection" style="display: none;">
+                                <label for="promoCaseId">ID кейса</label>
+                                <input type="number" id="promoCaseId" class="form-control" placeholder="ID кейса для бесплатного открытия">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-success" style="flex: 1;">
+                            Создать промокод
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="closePromoCodeModal()">
+                            Отмена
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balance Edit Modal -->
+    <div class="modal" id="balanceModal">
+        <div class="modal-content" style="width: 500px;">
+            <div class="modal-header">
+                <h3>Редактировать баланс пользователя</h3>
+                <button class="modal-close" onclick="closeBalanceModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Выберите пользователя:</label>
+                    <div class="user-select-grid" id="userSelectGrid" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Users will be loaded here -->
+                    </div>
+                </div>
+
+                <div id="balanceForm" style="display: none;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="userStars">Звезды</label>
+                            <input type="number" id="userStars" class="form-control" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="userTickets">Билеты</label>
+                            <input type="number" id="userTickets" class="form-control" min="0">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn btn-success" onclick="updateUserBalance()" style="flex: 1;">
+                            Сохранить изменения
+                        </button>
+                        <button class="btn btn-danger" onclick="closeBalanceModal()">
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Modal -->
+    <div class="modal" id="notificationModal">
+        <div class="modal-content" style="width: 800px; max-width: 95vw;">
+            <div class="modal-header">
+                <h3 id="notificationModalTitle">Создать оповещение</h3>
+                <button class="modal-close" onclick="closeNotificationModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="notificationForm">
+                    <input type="hidden" id="notificationId">
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="notificationTitle">Заголовок оповещения</label>
+                            <input type="text" id="notificationTitle" class="form-control" placeholder="Введите заголовок">
+                        </div>
+                        <div class="form-group">
+                            <label for="notificationWidth">Ширина окна (%)</label>
+                            <input type="number" id="notificationWidth" class="form-control" value="80" min="50" max="100">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Страницы оповещения</label>
+                        <div class="notification-pages" id="notificationPages">
+                            <div class="notification-page active" data-page="1">Страница 1</div>
+                        </div>
+                        <div class="page-controls">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="addNotificationPage()">
+                                <i class="icon icon-plus"></i> Добавить страницу
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="removeNotificationPage()">
+                                <i class="icon icon-delete"></i> Удалить страницу
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Page Content -->
+                    <div id="pageContent1" class="page-content active">
+                        <div class="form-group">
+                            <label for="pageTitle1">Заголовок страницы</label>
+                            <input type="text" id="pageTitle1" class="form-control" placeholder="Заголовок страницы">
+                        </div>
+                        <div class="form-group">
+                            <label for="pageText1">Текст страницы</label>
+                            <textarea id="pageText1" class="form-control" rows="3" placeholder="Текст страницы"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Изображение/GIF для страницы</label>
+                            <div class="file-upload" onclick="document.getElementById('pageImage1').click()">
+                                <i class="icon icon-image"></i>
+                                <div>Нажмите для загрузки изображения/GIF</div>
+                                <input type="file" id="pageImage1" accept="image/*,image/gif" onchange="handlePageImageUpload(this, 1)">
+                            </div>
+                            <div class="form-text" id="pageImageText1">Изображение не выбрано</div>
+                        </div>
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="form-group">
+                        <label>Предпросмотр:</label>
+                        <div class="notification-preview" id="notificationPreview" style="width: 80%;">
+                            <button class="notification-close">&times;</button>
+                            <h4 id="previewTitle">Заголовок оповещения</h4>
+                            <div id="previewContent">
+                                <p>Содержимое оповещения...</p>
+                            </div>
+                            <div class="page-controls">
+                                <button class="btn btn-sm" onclick="changePreviewPage(-1)">←</button>
+                                <span>Страница 1 из 1</span>
+                                <button class="btn btn-sm" onclick="changePreviewPage(1)">→</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-success" style="flex: 1;">
+                            Сохранить оповещение
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="previewNotification()">
+                            Обновить предпросмотр
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="closeNotificationModal()">
+                            Отмена
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Telegram Web App initialization
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        const ADMIN_ID = 5257227756;
+        const API_BASE = '/api/admin';
+
+        // Global variables
+        let currentEditingCaseId = null;
+        let selectedGiftForCase = null;
+        let selectedGiftForInventory = null;
+        let currentInventoryUserId = null;
+        let selectedUserForBalance = null;
+        let currentNotificationPages = 1;
+        let currentPreviewPage = 1;
+
+        // Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (this.getAttribute('data-tab')) {
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    showTab(this.getAttribute('data-tab'));
+                }
+            });
+        });
+
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                if (this.getAttribute('data-status')) {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    loadWithdrawals(this.getAttribute('data-status'));
+                }
+            });
+        });
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabName).classList.add('active');
+            
+            // Load data for the tab
+            switch(tabName) {
+                case 'dashboard':
+                    loadStats();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'cases':
+                    loadCases();
+                    break;
+                case 'gifts':
+                    loadGifts();
+                    break;
+                case 'withdrawals':
+                    loadWithdrawals();
+                    break;
+                case 'inventory':
+                    // Ждем пока пользователь введет ID
+                    break;
+                case 'limits':
+                    loadCaseLimits();
+                    break;
+                case 'promocodes':
+                    loadPromoCodes();
+                    break;
+                case 'notifications':
+                    loadNotifications();
+                    break;
+            }
+        }
+
+        function goToMainPage() {
+            window.location.href = '/';
+        }
+
+        // Mobile menu
+        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const mobileBtn = document.getElementById('mobileMenuBtn');
+            if (!sidebar.contains(event.target) && !mobileBtn.contains(event.target)) {
+                sidebar.classList.remove('active');
+            }
+        });
+
+        // Case Management
+        function showCaseModal(caseData = null) {
+            const modal = document.getElementById('caseModal');
+            const title = document.getElementById('caseModalTitle');
+            const form = document.getElementById('caseForm');
+            
+            if (caseData) {
+                title.textContent = 'Редактировать кейс';
+                document.getElementById('caseId').value = caseData.id;
+                document.getElementById('caseName').value = caseData.name;
+                document.getElementById('caseCost').value = caseData.cost;
+                document.getElementById('caseCostType').value = caseData.cost_type;
+                document.getElementById('caseRequiredLevel').value = caseData.required_level || 1;
+                document.getElementById('caseLimited').value = caseData.limited ? 'true' : 'false';
+                document.getElementById('caseAmount').value = caseData.amount || 0;
+                document.getElementById('caseDescription').value = caseData.description || '';
+                document.getElementById('caseImage').value = caseData.image || '';
+            } else {
+                title.textContent = 'Добавить кейс';
+                form.reset();
+                document.getElementById('caseId').value = '';
+                document.getElementById('caseRequiredLevel').value = 1;
+                document.getElementById('caseLimited').value = 'false';
+                document.getElementById('caseAmount').value = 0;
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeCaseModal() {
+            document.getElementById('caseModal').style.display = 'none';
+        }
+
+        // Gift Management
+        function showGiftModal(giftData = null) {
+            const modal = document.getElementById('giftModal');
+            const title = document.getElementById('giftModalTitle');
+            const form = document.getElementById('giftForm');
+            const preview = document.getElementById('giftPreview');
+            
+            if (giftData) {
+                title.textContent = 'Редактировать подарок';
+                document.getElementById('giftId').value = giftData.id;
+                document.getElementById('giftName').value = giftData.name;
+                document.getElementById('giftValue').value = giftData.value;
+                document.getElementById('giftCategory').value = giftData.category || 'other';
+                document.getElementById('giftDescription').value = giftData.description || '';
+                
+                if (giftData.image) {
+                    preview.style.display = 'block';
+                    document.getElementById('giftPreviewImage').src = giftData.image;
+                    document.getElementById('giftImageText').textContent = 'Изображение загружено';
+                }
+            } else {
+                title.textContent = 'Добавить подарок';
+                form.reset();
+                document.getElementById('giftId').value = '';
+                document.getElementById('giftCategory').value = 'other';
+                preview.style.display = 'none';
+                document.getElementById('giftImageText').textContent = 'Изображение не выбрано';
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function closeGiftModal() {
+            document.getElementById('giftModal').style.display = 'none';
+        }
+
+        function handleGiftImageUpload(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('giftPreview');
+                    preview.style.display = 'block';
+                    document.getElementById('giftPreviewImage').src = e.target.result;
+                    document.getElementById('giftImageText').textContent = `Файл: ${file.name}`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Balance Management
+        function showBalanceModal() {
+            loadUsersForBalance();
+            document.getElementById('balanceModal').style.display = 'block';
+        }
+
+        function closeBalanceModal() {
+            document.getElementById('balanceModal').style.display = 'none';
+            selectedUserForBalance = null;
+            document.getElementById('balanceForm').style.display = 'none';
+        }
+
+        async function loadUsersForBalance() {
+            const userSelectGrid = document.getElementById('userSelectGrid');
+            userSelectGrid.innerHTML = '<div class="loading"></div>';
+            
+            const data = await makeRequest(`${API_BASE}/users`);
+            if (data && data.users) {
+                userSelectGrid.innerHTML = data.users.map(user => `
+                    <div class="user-card" onclick="selectUserForBalance(${user.id})" data-user-id="${user.id}">
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                ${user.first_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="user-details">
+                                <div class="user-name">${user.first_name}</div>
+                                <div class="user-meta">
+                                    @${user.username || 'нет username'} | ID: ${user.id}
+                                </div>
+                                <div class="user-meta">
+                                    Stars: ${user.balance_stars} | Tickets: ${user.balance_tickets}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function selectUserForBalance(userId) {
+            const users = window.usersData || [];
+            const user = users.find(u => u.id === userId);
+            if (user) {
+                selectedUserForBalance = user;
+                
+                // Убираем выделение у всех пользователей
+                document.querySelectorAll('#userSelectGrid .user-card').forEach(card => {
+                    card.classList.remove('selected');
+                });
+                
+                // Выделяем выбранного пользователя
+                const selectedCard = document.querySelector(`#userSelectGrid .user-card[data-user-id="${userId}"]`);
+                if (selectedCard) {
+                    selectedCard.classList.add('selected');
+                }
+                
+                // Показываем форму редактирования баланса
+                document.getElementById('balanceForm').style.display = 'block';
+                document.getElementById('userStars').value = user.balance_stars;
+                document.getElementById('userTickets').value = user.balance_tickets;
+            }
+        }
+
+        async function updateUserBalance() {
+            if (!selectedUserForBalance) {
+                showError('Выберите пользователя');
+                return;
+            }
+
+            const stars = parseInt(document.getElementById('userStars').value) || 0;
+            const tickets = parseInt(document.getElementById('userTickets').value) || 0;
+
+            const data = await makeRequest(`${API_BASE}/update-user-balance`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    user_id: selectedUserForBalance.id,
+                    balance_stars: stars,
+                    balance_tickets: tickets,
+                    admin_id: ADMIN_ID
+                })
+            });
+
+            if (data) {
+                showSuccess('Баланс пользователя обновлен!');
+                closeBalanceModal();
+                loadUsers();
+            }
+        }
+
+        // Notification Management
+        function showNotificationModal(notificationData = null) {
+            const modal = document.getElementById('notificationModal');
+            const title = document.getElementById('notificationModalTitle');
+            
+            if (notificationData) {
+                title.textContent = 'Редактировать оповещение';
+                document.getElementById('notificationId').value = notificationData.id;
+                document.getElementById('notificationTitle').value = notificationData.title;
+                document.getElementById('notificationWidth').value = notificationData.width || 80;
+                
+                // Загрузка страниц оповещения
+                loadNotificationPages(notificationData.pages || []);
+            } else {
+                title.textContent = 'Создать оповещение';
+                document.getElementById('notificationForm').reset();
+                document.getElementById('notificationId').value = '';
+                document.getElementById('notificationWidth').value = 80;
+                resetNotificationPages();
+            }
+            
+            modal.style.display = 'block';
+            previewNotification();
+        }
+
+        function closeNotificationModal() {
+            document.getElementById('notificationModal').style.display = 'none';
+        }
+
+        function addNotificationPage() {
+            currentNotificationPages++;
+            const pagesContainer = document.getElementById('notificationPages');
+            const newPage = document.createElement('div');
+            newPage.className = 'notification-page';
+            newPage.setAttribute('data-page', currentNotificationPages);
+            newPage.textContent = `Страница ${currentNotificationPages}`;
+            newPage.onclick = function() { showNotificationPage(currentNotificationPages); };
+            pagesContainer.appendChild(newPage);
+
+            // Создаем контент для новой страницы
+            const pageContent = document.createElement('div');
+            pageContent.id = `pageContent${currentNotificationPages}`;
+            pageContent.className = 'page-content';
+            pageContent.innerHTML = `
+                <div class="form-group">
+                    <label for="pageTitle${currentNotificationPages}">Заголовок страницы</label>
+                    <input type="text" id="pageTitle${currentNotificationPages}" class="form-control" placeholder="Заголовок страницы">
+                </div>
+                <div class="form-group">
+                    <label for="pageText${currentNotificationPages}">Текст страницы</label>
+                    <textarea id="pageText${currentNotificationPages}" class="form-control" rows="3" placeholder="Текст страницы"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Изображение/GIF для страницы</label>
+                    <div class="file-upload" onclick="document.getElementById('pageImage${currentNotificationPages}').click()">
+                        <i class="icon icon-image"></i>
+                        <div>Нажмите для загрузки изображения/GIF</div>
+                        <input type="file" id="pageImage${currentNotificationPages}" accept="image/*,image/gif" onchange="handlePageImageUpload(this, ${currentNotificationPages})">
+                    </div>
+                    <div class="form-text" id="pageImageText${currentNotificationPages}">Изображение не выбрано</div>
+                </div>
+            `;
+            document.querySelector('.modal-body').insertBefore(pageContent, document.getElementById('notificationForm').querySelector('.form-group:last-child'));
+
+            showNotificationPage(currentNotificationPages);
+            previewNotification();
+        }
+
+        function removeNotificationPage() {
+            if (currentNotificationPages <= 1) {
+                showError('Должна остаться хотя бы одна страница');
+                return;
+            }
+
+            const currentPage = document.querySelector('.notification-page.active').getAttribute('data-page');
+            document.querySelector(`.notification-page[data-page="${currentPage}"]`).remove();
+            document.getElementById(`pageContent${currentPage}`).remove();
+
+            currentNotificationPages--;
+            
+            // Обновляем нумерацию оставшихся страниц
+            const pages = document.querySelectorAll('.notification-page');
+            pages.forEach((page, index) => {
+                const pageNum = index + 1;
+                page.setAttribute('data-page', pageNum);
+                page.textContent = `Страница ${pageNum}`;
+                
+                const content = document.getElementById(`pageContent${pageNum}`);
+                if (content) {
+                    content.id = `pageContent${pageNum}`;
+                    content.querySelector(`#pageTitle${pageNum}`).id = `pageTitle${pageNum}`;
+                    content.querySelector(`#pageText${pageNum}`).id = `pageText${pageNum}`;
+                    content.querySelector(`#pageImage${pageNum}`).id = `pageImage${pageNum}`;
+                    content.querySelector(`#pageImageText${pageNum}`).id = `pageImageText${pageNum}`;
+                }
+            });
+
+            showNotificationPage(1);
+            previewNotification();
+        }
+
+        function showNotificationPage(pageNumber) {
+            document.querySelectorAll('.notification-page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.querySelectorAll('.page-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            document.querySelector(`.notification-page[data-page="${pageNumber}"]`).classList.add('active');
+            document.getElementById(`pageContent${pageNumber}`).classList.add('active');
+            currentPreviewPage = pageNumber;
+        }
+
+        function handlePageImageUpload(input, pageNumber) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById(`pageImageText${pageNumber}`).textContent = `Файл: ${file.name}`;
+                    previewNotification();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function resetNotificationPages() {
+            currentNotificationPages = 1;
+            const pagesContainer = document.getElementById('notificationPages');
+            pagesContainer.innerHTML = '<div class="notification-page active" data-page="1">Страница 1</div>';
+            
+            // Удаляем все дополнительные страницы контента
+            document.querySelectorAll('.page-content').forEach(content => {
+                if (content.id !== 'pageContent1') {
+                    content.remove();
+                }
+            });
+            
+            // Сбрасываем первую страницу
+            document.getElementById('pageTitle1').value = '';
+            document.getElementById('pageText1').value = '';
+            document.getElementById('pageImage1').value = '';
+            document.getElementById('pageImageText1').textContent = 'Изображение не выбрано';
+            
+            showNotificationPage(1);
+        }
+
+        function previewNotification() {
+            const preview = document.getElementById('notificationPreview');
+            const title = document.getElementById('notificationTitle').value || 'Заголовок оповещения';
+            const width = document.getElementById('notificationWidth').value || 80;
+            
+            preview.style.width = `${width}%`;
+            document.getElementById('previewTitle').textContent = title;
+            
+            // Показываем контент текущей страницы
+            const pageTitle = document.getElementById(`pageTitle${currentPreviewPage}`).value || '';
+            const pageText = document.getElementById(`pageText${currentPreviewPage}`).value || '';
+            const pageImage = document.getElementById(`pageImage${currentPreviewPage}`).files[0];
+            
+            let contentHTML = '';
+            if (pageTitle) {
+                contentHTML += `<h5>${pageTitle}</h5>`;
+            }
+            if (pageText) {
+                contentHTML += `<p>${pageText}</p>`;
+            }
+            if (pageImage) {
+                contentHTML += `<img src="${URL.createObjectURL(pageImage)}" style="max-width: 100%; border-radius: 8px; margin: 10px 0;">`;
+            }
+            
+            document.getElementById('previewContent').innerHTML = contentHTML || '<p>Содержимое оповещения...</p>';
+            
+            // Обновляем навигацию
+            const pageControls = preview.querySelector('.page-controls');
+            pageControls.innerHTML = `
+                <button class="btn btn-sm" onclick="changePreviewPage(-1)" ${currentPreviewPage === 1 ? 'disabled' : ''}>←</button>
+                <span>Страница ${currentPreviewPage} из ${currentNotificationPages}</span>
+                <button class="btn btn-sm" onclick="changePreviewPage(1)" ${currentPreviewPage === currentNotificationPages ? 'disabled' : ''}>→</button>
+            `;
+        }
+
+        function changePreviewPage(direction) {
+            const newPage = currentPreviewPage + direction;
+            if (newPage >= 1 && newPage <= currentNotificationPages) {
+                currentPreviewPage = newPage;
+                showNotificationPage(newPage);
+                previewNotification();
+            }
+        }
+
+        async function saveNotification() {
+            const notificationData = {
+                id: document.getElementById('notificationId').value || null,
+                title: document.getElementById('notificationTitle').value,
+                width: parseInt(document.getElementById('notificationWidth').value) || 80,
+                pages: []
+            };
+
+            // Собираем данные всех страниц
+            for (let i = 1; i <= currentNotificationPages; i++) {
+                const pageTitle = document.getElementById(`pageTitle${i}`).value;
+                const pageText = document.getElementById(`pageText${i}`).value;
+                const pageImage = document.getElementById(`pageImage${i}`).files[0];
+                
+                let imageData = null;
+                if (pageImage) {
+                    imageData = await readFileAsDataURL(pageImage);
+                }
+
+                notificationData.pages.push({
+                    title: pageTitle,
+                    text: pageText,
+                    image: imageData
+                });
+            }
+
+            const url = notificationData.id ? `${API_BASE}/notifications` : `${API_BASE}/create-notification`;
+            const method = notificationData.id ? 'PUT' : 'POST';
+
+            const data = await makeRequest(url, {
+                method: method,
+                body: JSON.stringify({ ...notificationData, admin_id: ADMIN_ID })
+            });
+
+            if (data) {
+                showSuccess(notificationData.id ? 'Оповещение обновлено!' : 'Оповещение создано!');
+                closeNotificationModal();
+                loadNotifications();
+            }
+        }
+
+        function readFileAsDataURL(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    resolve(e.target.result);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Case Gifts Management
+        function showCaseGiftsModal(caseId) {
+            currentEditingCaseId = caseId;
+            const modal = document.getElementById('caseGiftsModal');
+            const cases = window.casesData || [];
+            const caseData = cases.find(c => c.id === caseId);
+            
+            if (caseData) {
+                document.getElementById('caseGiftsModalTitle').textContent = `Подарки в кейсе: ${caseData.name}`;
+            }
+            
+            clearSelectedGift();
+            loadAllGiftsForCase();
+            loadCurrentCaseGifts(caseId);
+            modal.style.display = 'block';
+            
+            setTimeout(() => {
+                document.getElementById('giftSearch').focus();
+            }, 100);
+        }
+
+        function closeCaseGiftsModal() {
+            document.getElementById('caseGiftsModal').style.display = 'none';
+            currentEditingCaseId = null;
+            selectedGiftForCase = null;
+        }
+
+        function selectGiftForCase(giftId) {
+            const gifts = window.giftsData || [];
+            const gift = gifts.find(g => g.id === giftId);
+            
+            if (gift) {
+                selectedGiftForCase = gift;
+                
+                document.querySelectorAll('#giftList .gift-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                
+                const selectedItem = document.querySelector(`#giftList .gift-item[data-gift-id="${giftId}"]`);
+                if (selectedItem) {
+                    selectedItem.classList.add('selected');
+                }
+                
+                const selectedSection = document.getElementById('selectedGiftSection');
+                if (selectedSection) {
+                    selectedSection.style.display = 'block';
+                    document.getElementById('selectedGiftName').textContent = gift.name;
+                    document.getElementById('giftChance').value = 1;
+                }
+            }
+        }
+
+        async function addGiftToCase() {
+            if (!selectedGiftForCase || !currentEditingCaseId) {
+                showError('Выберите подарок из списка');
+                return;
+            }
+
+            const chanceInput = document.getElementById('giftChance');
+            const chance = parseFloat(chanceInput.value);
+            
+            if (isNaN(chance) || chance < 0 || chance > 100) {
+                showError('Шанс должен быть числом от 0 до 100%');
+                return;
+            }
+
+            const addButton = document.querySelector('#selectedGiftSection button');
+            const originalText = addButton.innerHTML;
+            addButton.innerHTML = '<div class="loading"></div> Добавление...';
+            addButton.disabled = true;
+
+            try {
+                const data = await makeRequest(`/api/admin/case-gifts/${currentEditingCaseId}`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'add_gift',
+                        gift_id: selectedGiftForCase.id,
+                        chance: chance,
+                        admin_id: ADMIN_ID
+                    })
+                });
+
+                if (data) {
+                    showSuccess(`Подарок "${selectedGiftForCase.name}" добавлен в кейс с шансом ${chance}%!`);
+                    clearSelectedGift();
+                    loadCurrentCaseGifts(currentEditingCaseId);
+                    loadAllGiftsForCase(); // Обновляем список доступных подарков
+                }
+            } catch (error) {
+                console.error('Ошибка добавления подарка:', error);
+            } finally {
+                addButton.innerHTML = originalText;
+                addButton.disabled = false;
+            }
+        }
+
+        function clearSelectedGift() {
+            selectedGiftForCase = null;
+            const selectedSection = document.getElementById('selectedGiftSection');
+            if (selectedSection) {
+                selectedSection.style.display = 'none';
+            }
+            document.querySelectorAll('#giftList .gift-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+        }
+
+        function filterGifts() {
+            const searchTerm = document.getElementById('giftSearch').value.toLowerCase().trim();
+            const giftItems = document.querySelectorAll('#giftList .gift-item');
+            
+            let visibleCount = 0;
+            
+            giftItems.forEach(item => {
+                const giftName = item.querySelector('.gift-item-name').textContent.toLowerCase();
+                if (giftName.includes(searchTerm) || searchTerm === '') {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            const giftList = document.getElementById('giftList');
+            const noResults = giftList.querySelector('.no-results');
+            
+            if (visibleCount === 0 && searchTerm !== '') {
+                if (!noResults) {
+                    const noResultsDiv = document.createElement('div');
+                    noResultsDiv.className = 'no-results';
+                    noResultsDiv.innerHTML = '<div style="text-align: center; padding: 30px; color: var(--text-muted);">Не найдено подарков по запросу "' + searchTerm + '"</div>';
+                    giftList.appendChild(noResultsDiv);
+                }
+            } else if (noResults) {
+                noResults.remove();
+            }
+        }
+
+        async function loadAllGiftsForCase() {
+            const giftList = document.getElementById('giftList');
+            giftList.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading"></div><div style="margin-top: 10px;">Загрузка подарков...</div></div>';
+            
+            try {
+                const allGiftsData = await makeRequest('/api/gifts');
+                const currentCaseGiftsData = await makeRequest(`/api/admin/case-gifts/${currentEditingCaseId}`);
+                
+                if (allGiftsData && allGiftsData.gifts) {
+                    window.giftsData = allGiftsData.gifts;
+                    
+                    // Получаем ID уже добавленных подарков
+                    const existingGiftIds = [];
+                    if (currentCaseGiftsData && currentCaseGiftsData.success && currentCaseGiftsData.case_gifts) {
+                        existingGiftIds.push(...currentCaseGiftsData.case_gifts.map(gift => gift.id));
+                    }
+                    
+                    // Фильтруем подарки - показываем только те, которых еще нет в кейсе
+                    const availableGifts = allGiftsData.gifts.filter(gift => !existingGiftIds.includes(gift.id));
+                    
+                    if (availableGifts.length === 0) {
+                        giftList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Все подарки уже добавлены в кейс</div>';
+                        return;
+                    }
+                    
+                    giftList.innerHTML = availableGifts.map(gift => {
+                        const fragmentFallback = gift.fragment_slug ? 'https://fragment.com/file/gifts/' + gift.fragment_slug + '/thumb.webp' : '/static/gifs/gifts/default_gift.png';
+                        const onerrorHandler = 'this.onerror=function(){this.src=&quot;/static/gifs/gifts/default_gift.png&quot;};this.src=&quot;' + fragmentFallback + '&quot;';
+                        return `
+                        <div class="gift-item" onclick="selectGiftForCase(${gift.id})" data-gift-id="${gift.id}">
+                            <img src="${gift.image || '/static/gifs/gifts/default_gift.png'}" 
+                                 class="gift-item-image" 
+                                 alt="${gift.name}"
+                                 onerror="${onerrorHandler}">
+                            <div class="gift-item-name">${gift.name}</div>
+                            <div class="gift-item-value">${formatTon(gift.value)} TON</div>
+                        </div>
+                    `}).join('');
+                } else {
+                    giftList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger-color);">Ошибка загрузки подарков</div>';
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки подарков:', error);
+                giftList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger-color);">Ошибка: ' + error.message + '</div>';
+            }
+        }
+
+        async function loadCurrentCaseGifts(caseId) {
+            const currentGiftsDiv = document.getElementById('currentCaseGifts');
+            currentGiftsDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading"></div></div>';
+            
+            const data = await makeRequest(`/api/admin/case-gifts/${caseId}`);
+            if (data && data.success) {
+                const gifts = data.case_gifts || [];
+                if (gifts.length === 0) {
+                    currentGiftsDiv.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">В этом кейсе пока нет подарков</p>';
+                } else {
+                    currentGiftsDiv.innerHTML = `
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            ${gifts.map(gift => `
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #2d3748; margin: 8px 0; border-radius: var(--border-radius); border-left: 4px solid var(--primary-color);">
+                                    <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                                        <img src="${gift.image || '/static/gifs/gifts/default_gift.png'}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
+                                        <div>
+                                            <strong>${gift.name}</strong>
+                                            <div style="font-size: 0.8rem; color: var(--text-muted);">Стоимость: ${formatTon(gift.value)} TON</div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <input type="number" 
+                                               value="${gift.chance}" 
+                                               min="0" max="100" step="0.1" 
+                                               onchange="updateGiftChance(${caseId}, ${gift.id}, this.value)" 
+                                               style="width: 80px; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; background: #374151; color: white;">
+                                        <span style="font-size: 0.8rem; color: var(--text-muted);">%</span>
+                                        <button class="btn btn-sm btn-danger" onclick="removeGiftFromCase(${caseId}, ${gift.id})" title="Удалить из кейса">
+                                            <i class="icon icon-delete"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div style="margin-top: 15px; padding: 10px; background: var(--primary-color); border-radius: var(--border-radius); text-align: center;">
+                            <strong>Общий шанс: ${gifts.reduce((sum, gift) => sum + parseFloat(gift.chance), 0).toFixed(1)}%</strong>
+                        </div>
+                    `;
+                }
+            } else {
+                currentGiftsDiv.innerHTML = '<p style="color: var(--danger-color);">Ошибка загрузки подарков кейса</p>';
+            }
+        }
+
+        async function updateGiftChance(caseId, giftId, newChance) {
+            const chance = parseFloat(newChance);
+            if (isNaN(chance) || chance < 0 || chance > 100) {
+                showError('Шанс должен быть от 0 до 100%');
+                return;
+            }
+
+            const data = await makeRequest(`/api/admin/case-gifts/${caseId}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'update_chance',
+                    gift_id: giftId,
+                    chance: chance,
+                    admin_id: ADMIN_ID
+                })
+            });
+
+            if (data) {
+                showSuccess('Шанс обновлен!');
+                loadCurrentCaseGifts(caseId);
+            }
+        }
+
+        async function removeGiftFromCase(caseId, giftId) {
+            if (!confirm('Удалить этот подарок из кейса?')) return;
+
+            const data = await makeRequest(`/api/admin/case-gifts/${caseId}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'remove_gift',
+                    gift_id: giftId,
+                    admin_id: ADMIN_ID
+                })
+            });
+
+            if (data) {
+                showSuccess('Подарок удален из кейса!');
+                loadCurrentCaseGifts(caseId);
+                loadAllGiftsForCase(); // Обновляем список доступных подарков
+            }
+        }
+
+        // Inventory Management
+        function showAddGiftModal() {
+            if (!currentInventoryUserId) {
+                showError('Сначала найдите пользователя');
+                return;
+            }
+            loadAllGiftsForInventory();
+            document.getElementById('addGiftModal').style.display = 'block';
+        }
+
+        function closeAddGiftModal() {
+            document.getElementById('addGiftModal').style.display = 'none';
+            selectedGiftForInventory = null;
+        }
+
+        function filterInventoryGifts() {
+            const searchTerm = document.getElementById('inventoryGiftSearch').value.toLowerCase();
+            const giftItems = document.querySelectorAll('#inventoryGiftList .gift-item');
+            
+            giftItems.forEach(item => {
+                const giftName = item.querySelector('.gift-item-name').textContent.toLowerCase();
+                if (giftName.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function selectGiftForInventory(giftId) {
+            const gifts = window.giftsData || [];
+            const gift = gifts.find(g => g.id === giftId);
+            if (gift) {
+                selectedGiftForInventory = gift;
+                
+                document.querySelectorAll('#inventoryGiftList .gift-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                
+                const selectedItem = document.querySelector(`#inventoryGiftList .gift-item[data-gift-id="${giftId}"]`);
+                if (selectedItem) {
+                    selectedItem.classList.add('selected');
+                }
+            }
+        }
+
+        async function loadAllGiftsForInventory() {
+            const giftList = document.getElementById('inventoryGiftList');
+            giftList.innerHTML = '<div class="loading"></div>';
+            
+            const data = await makeRequest('/api/gifts');
+            if (data && data.gifts) {
+                giftList.innerHTML = data.gifts.map(gift => `
+                    <div class="gift-item" onclick="selectGiftForInventory(${gift.id})" data-gift-id="${gift.id}">
+                        <img src="${gift.image || '/static/gifs/gifts/default_gift.png'}" class="gift-item-image" alt="${gift.name}">
+                        <div class="gift-item-name">${gift.name}</div>
+                        <div class="gift-item-value">${formatTon(gift.value)} TON</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function addGiftToUserInventory() {
+            if (!selectedGiftForInventory || !currentInventoryUserId) {
+                showError('Выберите подарок и пользователя');
+                return;
+            }
+
+            const quantity = parseInt(document.getElementById('giftQuantity').value) || 1;
+
+            const data = await makeRequest(`${API_BASE}/add-inventory-item`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    user_id: currentInventoryUserId,
+                    gift_id: selectedGiftForInventory.id,
+                    quantity: quantity,
+                    admin_id: ADMIN_ID
+                })
+            });
+
+            if (data) {
+                showSuccess(`Подарок добавлен в инвентарь пользователя! (x${quantity})`);
+                closeAddGiftModal();
+                getUserInventory();
+            }
+        }
+
+        async function getUserInventory() {
+            const userId = document.getElementById('inventoryUserId').value;
+            if (!userId) {
+                showError('Введите ID пользователя');
+                return;
+            }
+
+            currentInventoryUserId = userId;
+
+            const userData = await makeRequest(`/api/user/${userId}`);
+            if (userData && userData.user) {
+                document.getElementById('inventoryUserName').value = `${userData.user.first_name} (${userData.user.username || 'нет username'})`;
+                
+                const inventoryData = await makeRequest(`/api/inventory/${userId}`);
+                const container = document.getElementById('inventoryContainer');
+                
+                if (inventoryData && inventoryData.inventory) {
+                    const inventory = inventoryData.inventory;
+                    if (inventory.length === 0) {
+                        container.innerHTML = '<p>Инвентарь пользователя пуст</p>';
+                    } else {
+                        container.innerHTML = `
+                            <h4>Инвентарь пользователя (${inventory.length} предметов):</h4>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Подарок</th>
+                                            <th>Изображение</th>
+                                            <th>Стоимость</th>
+                                            <th>Дата получения</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${inventory.map(item => `
+                                            <tr>
+                                                <td>${item.gift_name}</td>
+                                                <td>
+                                                    ${item.gift_image ? `<img src="${item.gift_image}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">` : '-'}
+                                                </td>
+                                                <td>${item.gift_value} Stars</td>
+                                                <td>${new Date(item.received_at).toLocaleDateString()}</td>
+                                                <td>
+                                                    <button class="btn btn-sm btn-danger" onclick="removeFromInventory(${item.id})">
+                                                        <i class="icon icon-delete"></i> Удалить
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+                }
+            } else {
+                showError('Пользователь не найден');
+            }
+        }
+
+        async function removeFromInventory(inventoryId) {
+            if (!confirm('Удалить этот предмет из инвентаря?')) return;
+
+            const data = await makeRequest(`${API_BASE}/remove-inventory-item`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    inventory_id: inventoryId,
+                    admin_id: ADMIN_ID
+                })
+            });
+
+            if (data) {
+                showSuccess('Предмет удален из инвентаря!');
+                getUserInventory();
+            }
+        }
+
+        // Promo Code Management
+        function showPromoCodeModal() {
+            document.getElementById('promoCodeModal').style.display = 'block';
+        }
+
+        function closePromoCodeModal() {
+            document.getElementById('promoCodeModal').style.display = 'none';
+            document.getElementById('promoCodeForm').reset();
+        }
+
+        function togglePromoRewards() {
+            const promoType = document.getElementById('promoType').value;
+            const caseSection = document.getElementById('promoCaseSection');
+            const rewardAmount = document.getElementById('promoRewardAmount');
+            
+            if (promoType === 'free_case') {
+                caseSection.style.display = 'block';
+                rewardAmount.placeholder = 'Не требуется для бесплатного кейса';
+                rewardAmount.value = 0;
+                rewardAmount.disabled = true;
+            } else {
+                caseSection.style.display = 'none';
+                rewardAmount.disabled = false;
+                if (promoType === 'stars') {
+                    rewardAmount.placeholder = 'Количество звезд';
+                } else if (promoType === 'tickets') {
+                    rewardAmount.placeholder = 'Количество билетов';
+                } else if (promoType === 'discount') {
+                    rewardAmount.placeholder = 'Процент скидки';
+                }
+            }
+        }
+
+        // Form submissions
+        document.getElementById('caseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveCase();
+        });
+
+        document.getElementById('giftForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveGift();
+        });
+
+        document.getElementById('promoCodeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            createPromoCode();
+        });
+
+        document.getElementById('notificationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveNotification();
+        });
+
+        // TON conversion helper
+        const STARS_PER_TON = 100;
+        function formatTon(stars) {
+            const ton = stars / STARS_PER_TON;
+            return ton >= 0.01 ? ton.toFixed(2) : ton.toFixed(3);
+        }
+
+        // API Functions
+        async function makeRequest(url, options = {}) {
+            try {
+                const params = new URLSearchParams();
+                params.append('admin_id', ADMIN_ID);
+                
+                const fullUrl = url.includes('?') ? `${url}&${params}` : `${url}?${params}`;
+                
+                const response = await fetch(fullUrl, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error || 'Unknown error');
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Request failed:', error);
+                showError('Ошибка: ' + error.message);
+                return null;
+            }
+        }
+
+        function showError(message) {
+            alert('❌ ' + message);
+        }
+
+        function showSuccess(message) {
+            alert('✅ ' + message);
+        }
+
+        // Load Stats
+        async function loadStats() {
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = '<div class="stat-card"><div class="loading"></div></div>'.repeat(4);
+            
+            const data = await makeRequest(`${API_BASE}/stats`);
+            if (data) {
+                const stats = data.stats;
+                statsGrid.innerHTML = `
+                    <div class="stat-card">
+                        <h3>Всего пользователей</h3>
+                        <div class="stat-value">${stats.total_users}</div>
+                        <div class="stat-change">Активных: ${stats.total_users}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Всего звезд</h3>
+                        <div class="stat-value">${stats.total_stars}</div>
+                        <div class="stat-change">В системе</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Всего билетов</h3>
+                        <div class="stat-value">${stats.total_tickets}</div>
+                        <div class="stat-change">В системе</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Открыто кейсов</h3>
+                        <div class="stat-value">${stats.total_cases_opened}</div>
+                        <div class="stat-change">За всё время</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Load Users
+        async function loadUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;"><div class="loading"></div></td></tr>';
+            
+            const data = await makeRequest(`${API_BASE}/users`);
+            if (data && data.users) {
+                window.usersData = data.users;
+                tbody.innerHTML = data.users.map(user => `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.first_name}</td>
+                        <td>${user.username || '-'}</td>
+                        <td>${user.balance_stars}</td>
+                        <td>${user.balance_tickets}</td>
+                        <td>${user.current_level}</td>
+                        <td>${user.referral_count}</td>
+                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Load Cases
+        async function loadCases() {
+            const tbody = document.getElementById('casesTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><div class="loading"></div></td></tr>';
+            
+            const data = await makeRequest('/api/cases');
+            if (data && data.cases) {
+                window.casesData = data.cases;
+                tbody.innerHTML = data.cases.map(caseItem => `
+                    <tr>
+                        <td>${caseItem.id}</td>
+                        <td>${caseItem.name}</td>
+                        <td>${caseItem.cost}</td>
+                        <td>${caseItem.cost_type === 'stars' ? 'Stars' : 'Tickets'}</td>
+                        <td>${caseItem.required_level || 1}</td>
+                        <td>${caseItem.limited ? (caseItem.current_amount || caseItem.amount) + '/' + caseItem.amount : '∞'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="showCaseModal(${JSON.stringify(caseItem).replace(/"/g, '&quot;')})">
+                                <i class="icon icon-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-info" onclick="showCaseGiftsModal(${caseItem.id})">
+                                Подарки
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCase(${caseItem.id})">
+                                <i class="icon icon-delete"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Load Gifts
+        async function loadGifts() {
+            const tbody = document.getElementById('giftsTableBody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><div class="loading"></div></td></tr>';
+            
+            const data = await makeRequest('/api/gifts');
+            if (data && data.gifts) {
+                window.giftsData = data.gifts;
+                tbody.innerHTML = data.gifts.map(gift => `
+                    <tr>
+                        <td>${gift.id}</td>
+                        <td>
+                            ${gift.image ? `<img src="${gift.image}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">` : '-'}
+                        </td>
+                        <td>${gift.name}</td>
+                        <td>${gift.value}</td>
+                        <td>${gift.category || 'other'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="showGiftModal(${JSON.stringify(gift).replace(/"/g, '&quot;')})">
+                                <i class="icon icon-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteGift(${gift.id})">
+                                <i class="icon icon-delete"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Load Withdrawals
+        async function loadWithdrawals(status = 'all') {
+            const tbody = document.getElementById('withdrawalsTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><div class="loading"></div></td></tr>';
+            
+            const data = await makeRequest(`/api/admin/withdrawals?status=${status}`);
+            if (data && data.withdrawals) {
+                tbody.innerHTML = data.withdrawals.map(withdrawal => `
+                    <tr>
+                        <td>${withdrawal.id}</td>
+                        <td>${withdrawal.user_first_name} (${withdrawal.telegram_username || 'нет username'})</td>
+                        <td>${withdrawal.gift_name}</td>
+                        <td>${withdrawal.gift_value}</td>
+                        <td>
+                            <span class="status-badge status-${withdrawal.status}">
+                                ${withdrawal.status === 'pending' ? 'Ожидание' : 
+                                  withdrawal.status === 'approved' ? 'Одобрен' : 'Отклонен'}
+                            </span>
+                        </td>
+                        <td>${new Date(withdrawal.created_at).toLocaleDateString()}</td>
+                        <td>
+                            ${withdrawal.status === 'pending' ? `
+                                <button class="btn btn-sm btn-success" onclick="updateWithdrawalStatus(${withdrawal.id}, 'approved')">✓</button>
+                                <button class="btn btn-sm btn-danger" onclick="updateWithdrawalStatus(${withdrawal.id}, 'rejected')">✗</button>
+                            ` : `
+                                <button class="btn btn-sm btn-warning" onclick="updateWithdrawalStatus(${withdrawal.id}, 'pending')">⟳</button>
+                            `}
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Load Case Limits
+        async function loadCaseLimits() {
+            const tbody = document.getElementById('limitsTableBody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><div class="loading"></div></td></tr>';
+            
+            const data = await makeRequest(`${API_BASE}/case-limits`);
+            if (data && data.case_limits) {
+                tbody.innerHTML = data.case_limits.map(limit => `
+                    <tr>
+                        <td>${limit.name}</td>
+                        <td>${limit.current_amount}</td>
+                        <td>${limit.max_amount}</td>
+                        <td>${limit.percentage}%</td>
+                        <td>
+                            <span class="status-badge ${limit.available ? 'status-approved' : 'status-pending'}">
+                                ${limit.available ? 'Доступен' : 'Ограничен'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-success" onclick="resetCaseLimit(${limit.id})">Сбросить</button>
+                            <button class="btn btn-sm btn-primary" onclick="updateCaseLimitModal(${limit.id}, '${limit.name}')">Изменить</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Load Promo Codes
+        async function loadPromoCodes() {
+            const tbody = document.getElementById('promocodesTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;"><div class="loading"></div></td></tr>';
+            
+            const data = await makeRequest(`${API_BASE}/promo-codes`);
+            if (data && data.promo_codes) {
+                tbody.innerHTML = data.promo_codes.map(promo => `
+                    <tr>
+                        <td><strong>${promo.code}</strong></td>
+                        <td>
+                            ${promo.reward_stars > 0 ? `${promo.reward_stars} Stars` : ''}
+                            ${promo.reward_tickets > 0 ? `${promo.reward_tickets} Tickets` : ''}
+                            ${promo.reward_stars === 0 && promo.reward_tickets === 0 ? 'Бесплатный кейс' : ''}
+                        </td>
+                        <td>${promo.used_count}/${promo.max_uses}</td>
+                        <td>${promo.max_uses === 0 ? '∞' : promo.max_uses}</td>
+                        <td>${promo.expires_at ? new Date(promo.expires_at).toLocaleDateString() : 'Бессрочно'}</td>
+                        <td>
+                            <span class="status-badge ${promo.is_active ? 'status-approved' : 'status-pending'}">
+                                ${promo.is_active ? 'Активен' : 'Неактивен'}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="deletePromoCode(${promo.id})">
+                                <i class="icon icon-delete"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Load Notifications
+        async function loadNotifications() {
+            const tbody = document.getElementById('notificationsTableBody');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><div class="loading"></div></td></tr>';
+            
+            const data = await makeRequest(`${API_BASE}/notifications`);
+            if (data && data.notifications) {
+                tbody.innerHTML = data.notifications.map(notification => `
+                    <tr>
+                        <td>${notification.id}</td>
+                        <td>${notification.title}</td>
+                        <td>${notification.pages ? notification.pages.length : 1}</td>
+                        <td>
+                            <span class="status-badge ${notification.is_active ? 'status-approved' : 'status-pending'}">
+                                ${notification.is_active ? 'Активно' : 'Неактивно'}
+                            </span>
+                        </td>
+                        <td>${new Date(notification.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="showNotificationModal(${JSON.stringify(notification).replace(/"/g, '&quot;')})">
+                                <i class="icon icon-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-${notification.is_active ? 'warning' : 'success'}" onclick="toggleNotification(${notification.id}, ${!notification.is_active})">
+                                ${notification.is_active ? 'Деактивировать' : 'Активировать'}
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteNotification(${notification.id})">
+                                <i class="icon icon-delete"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        // Save Case
+        async function saveCase() {
+            const caseData = {
+                id: document.getElementById('caseId').value || null,
+                name: document.getElementById('caseName').value,
+                cost: parseInt(document.getElementById('caseCost').value),
+                cost_type: document.getElementById('caseCostType').value,
+                required_level: parseInt(document.getElementById('caseRequiredLevel').value) || 1,
+                limited: document.getElementById('caseLimited').value === 'true',
+                amount: parseInt(document.getElementById('caseAmount').value) || 0,
+                description: document.getElementById('caseDescription').value,
+                image: document.getElementById('caseImage').value
+            };
+
+            const url = caseData.id ? `${API_BASE}/cases` : `${API_BASE}/create-case`;
+            const method = caseData.id ? 'PUT' : 'POST';
+
+            const data = await makeRequest(url, {
+                method: method,
+                body: JSON.stringify({ ...caseData, admin_id: ADMIN_ID })
+            });
+
+            if (data) {
+                showSuccess(caseData.id ? 'Кейс обновлен!' : 'Кейс создан!');
+                closeCaseModal();
+                loadCases();
+            }
+        }
+
+        // Save Gift
+        async function saveGift() {
+            const giftData = {
+                id: document.getElementById('giftId').value || null,
+                name: document.getElementById('giftName').value,
+                value: parseInt(document.getElementById('giftValue').value),
+                category: document.getElementById('giftCategory').value,
+                description: document.getElementById('giftDescription').value,
+                image: document.getElementById('giftPreviewImage').src || ''
+            };
+
+            const data = await makeRequest(`${API_BASE}/gifts-management`, {
+                method: giftData.id ? 'PUT' : 'POST',
+                body: JSON.stringify({ ...giftData, admin_id: ADMIN_ID })
+            });
+
+            if (data) {
+                showSuccess(giftData.id ? 'Подарок обновлен!' : 'Подарок создан!');
+                closeGiftModal();
+                loadGifts();
+            }
+        }
+
+        // Create Promo Code
+        async function createPromoCode() {
+            const promoData = {
+                code: document.getElementById('promoCode').value.trim(),
+                max_uses: parseInt(document.getElementById('promoMaxUses').value) || 1,
+                expires_days: parseInt(document.getElementById('promoExpiresDays').value) || 30,
+                promo_type: document.getElementById('promoType').value
+            };
+
+            if (promoData.promo_type === 'stars') {
+                promoData.reward_stars = parseInt(document.getElementById('promoRewardAmount').value) || 0;
+                promoData.reward_tickets = 0;
+            } else if (promoData.promo_type === 'tickets') {
+                promoData.reward_tickets = parseInt(document.getElementById('promoRewardAmount').value) || 0;
+                promoData.reward_stars = 0;
+            } else if (promoData.promo_type === 'free_case') {
+                promoData.reward_stars = 0;
+                promoData.reward_tickets = 0;
+                promoData.free_case_id = parseInt(document.getElementById('promoCaseId').value) || null;
+            } else if (promoData.promo_type === 'discount') {
+                promoData.discount_percent = parseInt(document.getElementById('promoRewardAmount').value) || 0;
+            }
+
+            const data = await makeRequest(`${API_BASE}/promo-codes`, {
+                method: 'POST',
+                body: JSON.stringify({ ...promoData, admin_id: ADMIN_ID })
+            });
+
+            if (data) {
+                showSuccess('Промокод создан!');
+                closePromoCodeModal();
+                loadPromoCodes();
+            }
+        }
+
+        // Delete Case
+        async function deleteCase(id) {
+            if (!confirm('Вы уверены, что хотите удалить этот кейс?')) return;
+
+            const data = await makeRequest(`${API_BASE}/cases`, {
+                method: 'DELETE',
+                body: JSON.stringify({ id, admin_id: ADMIN_ID })
+            });
+
+            if (data) {
+                showSuccess('Кейс удален!');
+                loadCases();
+            }
+        }
+
+        // Delete Gift
+        async function deleteGift(id) {
+            if (!confirm('Вы уверены, что хотите удалить этот подарок?')) return;
+
+            const data = await makeRequest(`${API_BASE}/gifts-management`, {
+                method: 'DELETE',
+                body: JSON.stringify({ id, admin_id: ADMIN_ID })
+            });
+
+            if (data) {
+                showSuccess('Подарок удален!');
+                loadGifts();
+            }
+        }
+
+        // Delete Promo Code
+        async function deletePromoCode(id) {
+            if (!confirm('Вы уверены, что хотите удалить этот промокод?')) return;
+
+            const data = await makeRequest(`${API_BASE}/promo-codes`, {
+                method: 'DELETE',
+                body: JSON.stringify({ id, admin_id: ADMIN_ID })
+            });
+
+            if (data) {
+                showSuccess('Промокод удален!');
+                loadPromoCodes();
+            }
+        }
+
+        // Delete Notification
+        async function deleteNotification(id) {
+            if (!confirm('Вы уверены, что хотите удалить это оповещение?')) return;
+
+            const data = await makeRequest(`${API_BASE}/notifications`, {
+                method: 'DELETE',
+                body: JSON.stringify({ id, admin_id: ADMIN_ID })
+            });
+
+            if (data) {
+                showSuccess('Оповещение удалено!');
+                loadNotifications();
+            }
+        }
+
+        // Toggle Notification
+        async function toggleNotification(id, isActive) {
+            const data = await makeRequest(`${API_BASE}/toggle-notification`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    notification_id: id,
+                    is_active: isActive,
+                    admin_id: ADMIN_ID
+                })
+            });
+
+            if (data) {
+                showSuccess(`Оповещение ${isActive ? 'активировано' : 'деактивировано'}!`);
+                loadNotifications();
+            }
+        }
+
+        // Update Withdrawal Status
+        async function updateWithdrawalStatus(id, status) {
+            const data = await makeRequest(`${API_BASE}/update-withdrawal-status`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    withdrawal_id: id,
+                    status: status,
+                    admin_id: ADMIN_ID
+                })
+            });
+
+            if (data) {
+                showSuccess(`Статус вывода обновлен на: ${status}`);
+                loadWithdrawals();
+            }
+        }
+
+        // Case Limits Management
+        async function resetCaseLimit(id) {
+            const data = await makeRequest(`${API_BASE}/reset-case-limit`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    case_id: id,
+                    admin_id: ADMIN_ID
+                })
+            });
+
+            if (data) {
+                showSuccess('Лимит кейса сброшен!');
+                loadCaseLimits();
+            }
+        }
+
+        async function resetAllLimits() {
+            if (!confirm('Сбросить все лимиты кейсов?')) return;
+
+            const data = await makeRequest(`${API_BASE}/reset-case-limits`, {
+                method: 'POST',
+                body: JSON.stringify({ admin_id: ADMIN_ID })
+            });
+
+            if (data) {
+                showSuccess('Все лимиты сброшены!');
+                loadCaseLimits();
+            }
+        }
+
+        function updateCaseLimitModal(id, name) {
+            const newLimit = prompt(`Введите новый лимит для кейса "${name}":`);
+            if (newLimit !== null) {
+                updateCaseLimit(id, parseInt(newLimit));
+            }
+        }
+
+        async function updateCaseLimit(id, limit) {
+            const data = await makeRequest(`${API_BASE}/update-case-limit`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    case_id: id,
+                    limit: limit,
+                    admin_id: ADMIN_ID
+                })
+            });
+
+            if (data) {
+                showSuccess('Лимит кейса обновлен!');
+                loadCaseLimits();
+            }
+        }
+
+        // Load Notification Pages
+        function loadNotificationPages(pages) {
+            resetNotificationPages();
+            
+            pages.forEach((page, index) => {
+                const pageNum = index + 1;
+                if (pageNum > 1) {
+                    addNotificationPage();
+                }
+                
+                document.getElementById(`pageTitle${pageNum}`).value = page.title || '';
+                document.getElementById(`pageText${pageNum}`).value = page.text || '';
+                
+                if (page.image) {
+                    document.getElementById(`pageImageText${pageNum}`).textContent = 'Изображение загружено';
+                    // Для предпросмотра можно установить изображение
+                }
+            });
+            
+            showNotificationPage(1);
+            previewNotification();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+        });
+    </script>
+</body>
+</html>
