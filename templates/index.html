@@ -278,7 +278,7 @@
         /* ═══════════ IDLE ROULETTE ═══════════ */
         .roulette-wrap{
             position:relative;
-            height:140px;margin:0 -16px 20px;
+            height:168px;margin:0 -16px 20px;
             background:rgba(0,0,0,.25);
             overflow:hidden;
         }
@@ -294,7 +294,7 @@
             100%{transform:translateX(-50%)}
         }
         .roulette-item{
-            flex-shrink:0;width:100px;height:120px;
+            flex-shrink:0;width:100px;height:148px;
             background:rgba(255,255,255,.04);
             border:1px solid var(--border);
             border-radius:14px;
@@ -303,7 +303,7 @@
             justify-content:space-between;
             position:relative;
         }
-        .roulette-item img{width:55px;height:55px;object-fit:contain;flex-shrink:0}
+        .roulette-item img{width:65px;height:65px;object-fit:contain;flex-shrink:0}
         .roulette-item-price{
             position:absolute;top:4px;right:4px;
             display:flex;align-items:center;gap:2px;
@@ -463,7 +463,7 @@
             touch-action:none;
         }
         .slider-thumb:active{cursor:grabbing;box-shadow:0 0 20px rgba(0,152,234,.5)}
-        .slider-thumb img{width:24px;height:24px}
+        .slider-thumb img{width:24px;height:24px;pointer-events:none;user-select:none;-webkit-user-drag:none}
 
         /* ═══════════ CONTENTS SECTION ═══════════ */
         .contents{margin-top:24px}
@@ -675,7 +675,7 @@
                             Свайпни для открытия
                         </div>
                         <div class="slider-thumb" id="sliderThumb">
-                            <img src="/static/img/ton.png" alt="">
+                            <img src="/static/img/ton.png" alt="" draggable="false" ondragstart="return false">
                         </div>
                     </div>
                 </div>
@@ -727,6 +727,42 @@
     <script>
         const $ = id => document.getElementById(id);
         const tg = window.Telegram?.WebApp;
+        
+        // Gift prices in TON
+        const GIFT_PRICES = {
+            "UFC Strike":15.3,"Valentine Box":11.7,"Victory Medal":4.98,"Vintage Cigar":33.9,
+            "Voodoo Doll":30.9,"Westside Sign":111.9,"Whip Cupcake":4.4,"Winter Wreath":4.49,
+            "Witch Hat":6.29,"Xmas Stocking":4.33,"Swag Bag":5.19,"Swiss Watch":55.8,
+            "Tama Gadget":4.65,"Top Hat":12.8,"Toy Bear":44.9,"Trapped Heart":14.5,
+            "Moon":5.64,"Mousse Cake":4.96,"Nail Bracelet":145.9,"Neko Helmet":41.1,
+            "Party Sparkler":4.3,"Perfume Bottle":97.9,"Pet Snake":4.55,"Precious Peach":438,
+            "Pretty Posy":4.7,"Rare Bird":29.9,"Record":5.61,"Restless Jar":11.3,
+            "Sakura Flower":48.9,"Santa Hat":12.5,"Scared Cat":4.5,"Sharp Tongue":5.08,
+            "Signet Ring":5.48,"Skull Flower":7.2,"Sky Stilettos":5.49,"Sleigh Bell":5.83,
+            "Snake Box":6.17,"Loot Bag":162.9,"Love Candle":12.3,"Love Potion":17,
+            "Low Rider":52,"Lunar Snake":4.3,"Lush Bouquet":6.55,"Mad Pumpkin":13.8,
+            "Magic Potion":80.9,"Mighty Arm":171.9,"Mini Oscar":103.7,"Money Pot":4.66,
+            "Ion Gem":98.5,"Ionic Dryer":18.7,"Jack-in-the-Box":4.94,"Jelly Bunny":8.03,
+            "Jester Hat":4.83,"Jolly Chimp":7.3,"Joyful Bundle":7.11,"Khabib's Papakha":25.9,
+            "Kissed Frog":67.8,"Light Sword":6.3,"Lol Pop":4.5,"Hanging Star":9.93,
+            "Happy Brownie":4.65,"Heroic Helmet":255.7,"Hex Pot":4.99,"Holiday Drink":4.4,
+            "Homemade Cake":5.06,"Hypno Lollipop":4.84,"Ice Cream":4.44,"Input Key":6.19,
+            "Instant Ramen":4.38,"Desk Calendar":6.78,"Durov's Cap":708,"Jingle Bells":9.53,
+            "Plush Pepe":7999,"Heart Locket":2199,"Artisan Brick":97.7,"Astral Shard":199.9,
+            "B-Day Candle":4.3,"Berry Box":8.81,"Big Year":4.72,"Bling Binky":35.3,
+            "Bonded Ring":58.2,"Bow Tie":6.3,"Bunny Muffin":8.28,"Candy Cane":4.31,
+            "Clover Pin":4.7,"Cookie Heart":4.95,"Crystal Ball":12,"Cupid Charm":22.5,
+            "Diamond Ring":29.4,"Easter Egg":5.63,"Electric Skull":33.9,"Eternal Candle":6.58,
+            "Eternal Rose":29.4,"Evil Eye":7.94,"Faith Amulet":4.7,"Flying Broom":14,
+            "Fresh Socks":4.43,"Gem Signet":72.3,"Genie Lamp":50,"Ginger Cookie":4.9
+        };
+        
+        function getGiftPrice(gift) {
+            const name = gift.name || '';
+            if (GIFT_PRICES[name]) return GIFT_PRICES[name];
+            // Fallback to g.value converted from stars
+            return starsToTon(gift.value || 0);
+        }
         
         let allCases = [];
         let currentTab = 'paid';
@@ -967,7 +1003,7 @@
             const rouletteItems = [];
             for (let i = 0; i < 30; i++) {
                 const g = gifts[i % gifts.length];
-                const gPrice = starsToTon(g.value || 0);
+                const gPrice = getGiftPrice(g);
                 const gName = g.name || 'Подарок';
                 rouletteItems.push(`
                     <div class="roulette-item">
@@ -989,7 +1025,7 @@
 
             // Contents with names
             $('contentsGrid').innerHTML = gifts.map(g => {
-                const gPrice = starsToTon(g.value || 0);
+                const gPrice = getGiftPrice(g);
                 const gName = g.name || 'Подарок';
                 return `
                     <div class="content-item">
@@ -1182,7 +1218,7 @@
             items[42] = wonGift;
 
             track.innerHTML = items.map(g => {
-                const gPrice = starsToTon(g.value || 0);
+                const gPrice = getGiftPrice(g);
                 const gName = g.name || 'Подарок';
                 return `
                     <div class="roulette-item">
@@ -1222,7 +1258,7 @@
             // Show win section in modal
             $('modalWinImg').src = gift.image || '/static/img/gift.png';
             $('modalWinName').textContent = gift.name || 'Подарок';
-            $('modalWinValue').querySelector('span').textContent = formatTon(starsToTon(gift.value || 0));
+            $('modalWinValue').querySelector('span').textContent = formatTon(getGiftPrice(gift));
             $('modalWin').style.display = 'block';
             
             isOpening = false;
