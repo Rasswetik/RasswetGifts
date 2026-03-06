@@ -766,13 +766,47 @@
         
         function getGiftImage(gift) {
             const img = gift.image || '';
-            // Fragment URLs often blocked - use local proxy or default
+            
+            // Slug to local file mapping
+            const SLUG_MAP = {
+                'toybear': 'Toy_Bear.gif', 'petsnake': 'Pet_Snake.png', 'hangingstar': 'hstarr.gif',
+                'heartlocket': 'hl.gif', 'vintagecigar': 'vintage_cigar.gif', 'westsidesign': 'Westside_Sign.gif',
+                'whipcupcake': 'Whip_Cupcake.gif', 'winterwreath': 'WInterWreath.png', 'xmasstocking': 'Xmas_Stocking.gif',
+                'swisswatch': 'swiss_watch.png', 'nekohelmet': 'Neko_Helmet.png', 'moussecake': 'Mousse_Cake.gif',
+                'nailbracelet': 'Nail_Bracelet.gif', 'partysparkler': 'PartySparkler.png', 'perfumebottle': 'perfume_bottle.gif',
+                'preciouspeach': 'PreciousPeach.png', 'rarebird': 'rb.png', 'recordplayer': 'Record_Player.png',
+                'sakuraflower': 'Sakura_Flower.png', 'santahat': 'santahat.png', 'scaredcat': 'scared_cat.gif',
+                'sharptongue': 'Sharp_Tongue.gif', 'signetring': 'Signet_Ring.gif', 'skullflower': 'sr.png',
+                'skystillettos': 'Sky_Stilettos.gif', 'sleighbell': 'SleighBell.png', 'snakebox': 'mp.png',
+                'lootbag': 'Loot_Bag.gif', 'lovecandle': 'Love_candle.gif', 'lovepotion': 'rinf.gif',
+                'lowrider': 'bb.png', 'lunarsnake': 'LunarSnake.png', 'lushbouquet': 'pp.png',
+                'madpumpkin': 'mad_pumpkin.png', 'magicpotion': 'Magic_Potion.gif', 'mightyarm': 'Mighty_Arm.gif',
+                'minioscar': 'Mini_Oscar.gif', 'moneypot': 'mp.png', 'iongem': 'Ion_Gem.gif',
+                'ionicdryer': 'ionic_dryer.gif', 'jackinthebox': 'star.gif', 'jellybunny': 'Jelly_Bunny.png',
+                'jesterhat': 'cap.png', 'jollychump': 'star.gif', 'joyfulbundle': 'star.gif',
+                'khabibspapakha': 'cap.gif', 'kissedfrog': 'Kissed_Frog.gif', 'lightsword': 'light_sword.gif',
+                'lolpop': 'lolpop.gif', 'happybrownie': 'Happy_Brownie.png', 'heroichelmet': 'heroic_helmet.gif',
+                'hexpot': 'star.gif', 'holidaydrink': 'Holiday_Drink.png', 'homemadecake': 'hmcake.gif',
+                'hypnolollipop': 'lolpop.gif', 'icecream': 'ice_cream.gif', 'inputkey': 'input_key.gif',
+                'instantramen': 'ramen.png', 'deskcalendar': 'calendar.gif', 'durovcap': 'cap.gif',
+                'jinglebells': 'JingleBells.png', 'plushpepe': 'pepe.gif', 'artisanbrick': 'Artisan_Brick.gif',
+                'astralshard': 'Astral_Shard.png', 'bdaycandle': 'BDCandle.png', 'berrybox': 'star.gif',
+                'bigyear': 'Big_Year.png', 'blingbinky': 'star.gif', 'bondedring': 'Bonded_Ring.gif',
+                'bowtie': 'bow_tie.gif', 'bunnymuffin': 'star.gif', 'candycane': 'CandyCane.png',
+                'cloverpin': 'clover_pin.gif', 'cookieheart': 'CookieHeart.png', 'crystalball': 'Crystal_Ball.png',
+                'cupidcharm': 'Cupid_Charm.png', 'diamondring': 'Diamond_Ring.png', 'easteregg': 'star.gif',
+                'electricskull': 'electric_skull.gif', 'eternalcandle': 'Eternal_Candle.png', 'eternalrose': 'EternalRose.png',
+                'evileye': 'star.gif', 'faithamulet': 'Faith_Amulet.png', 'flyingbroom': 'star.gif',
+                'freshsocks': 'Socks.gif', 'gemsignet': 'star.gif', 'genielamp': 'Genie_Lamp.gif',
+                'gingercookie': 'Ginger_Cookie.png', 'voodoodoll': 'voodoo_doll.png', 'trappedheart': 'Valentine_heart.png',
+                'plushpepe': 'Plush_Pepe.png', 'record': 'Record_Player.png', 'swagbag': 'star.gif'
+            };
+            
+            // Fragment URLs - map to local
             if (img.includes('fragment.com/file')) {
-                // Try to get slug from image URL or gift
                 const slug = gift.fragment_slug || img.split('/gifts/')[1]?.split('/')[0] || '';
-                if (slug) {
-                    // Try local gif/png
-                    return '/static/gifs/gifts/' + slug + '.gif';
+                if (slug && SLUG_MAP[slug.toLowerCase()]) {
+                    return '/static/gifs/gifts/' + SLUG_MAP[slug.toLowerCase()];
                 }
             }
             if (img && !img.startsWith('http')) return img;
