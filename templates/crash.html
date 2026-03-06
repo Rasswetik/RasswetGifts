@@ -76,7 +76,7 @@ body.low-power .rocket-wrap img{filter:none!important}
     flex-direction:column;
     position:relative;
     padding-bottom:80px;
-    padding-top:env(safe-area-inset-top,24px);
+    padding-top:calc(env(safe-area-inset-top, 0px) + 45px);
 }
 @media(min-width:768px){ .container{max-width:480px} }
 @media(min-width:1100px){ .container{max-width:480px} }
@@ -1322,7 +1322,7 @@ tc-root *{pointer-events:auto}
     opacity:1;
 }
 .rocket-wrap img{
-    width:200px;height:200px;object-fit:contain;
+    width:260px;height:260px;object-fit:contain;
     transition: filter 0.3s ease, transform 0.2s ease;
     will-change: transform;
     image-rendering: -webkit-optimize-contrast;
@@ -5720,8 +5720,8 @@ function render(){
                     cd.classList.add('active');
                     if(label !== 'GO'){
                         playSound('countdown');
-                        /* Vibration on each countdown number */
-                        triggerVibration([40]);
+                        /* Vibration on each countdown number - stronger pulse */
+                        triggerVibration([80, 30, 80]);
                     }
                 }
             }
@@ -5888,8 +5888,8 @@ async function updStatus(){
                         cdGo.classList.add('active');
                     }
                     countdownShown = 'GO';
-                    /* Stronger vibration at game start */
-                    triggerVibration([80, 40, 80]);
+                    /* Stronger vibration at game start - triple pulse */
+                    triggerVibration([120, 50, 120, 50, 150]);
                     /* Clear "GO" after 400ms */
                     setTimeout(function(){
                         var cdClear = $('cdDisplay');
@@ -5983,8 +5983,8 @@ async function updStatus(){
                 /* Sound on crash */
                 playSound('crash');
                 
-                /* Vibration on crash - longer and stronger */
-                triggerVibration([120, 60, 120, 60, 150]);
+                /* Vibration on crash - much longer and stronger pulse */
+                triggerVibration([200, 80, 200, 80, 200, 80, 250]);
                 
                 if(hasBet) showToast('Crashed at ' + servMult.toFixed(2) + 'x!', 'err');
                 
@@ -6033,6 +6033,7 @@ async function updStatus(){
    ============================================================ */
 function openBetModal(){
     playSound('click');
+    triggerVibration([50]);
     /* If there's a pending bet, cancel it instead of opening modal */
     if(pendingBet){
         cancelPendingBet();
@@ -6043,7 +6044,7 @@ function openBetModal(){
     $('betModal').classList.add('show');
     loadInventory();
 }
-function closeBetModal(){ playSound('click'); $('betModal').classList.remove('show'); }
+function closeBetModal(){ playSound('click'); triggerVibration([30]); $('betModal').classList.remove('show'); }
 
 function cancelPendingBet(){
     if(!pendingBet) return;
@@ -13435,8 +13436,12 @@ else ensureCommonHeaderElements();
             if(el && d.count!==undefined) el.textContent=d.count;
         }).catch(()=>{});
     }
+    function keepAlive(){
+        fetch('/api/ping').catch(()=>{});
+    }
     fetchOnline();
     setInterval(fetchOnline, 30000);
+    setInterval(keepAlive, 60000); /* Ping every minute to prevent Render sleep */
 })();
 </script>
 </body>

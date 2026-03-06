@@ -2578,16 +2578,19 @@
                         return;
                     }
                     
-                    giftList.innerHTML = availableGifts.map(gift => `
+                    giftList.innerHTML = availableGifts.map(gift => {
+                        const fragmentFallback = gift.fragment_slug ? 'https://fragment.com/file/gifts/' + gift.fragment_slug + '/thumb.webp' : '/static/gifs/gifts/default_gift.png';
+                        const onerrorHandler = 'this.onerror=function(){this.src=&quot;/static/gifs/gifts/default_gift.png&quot;};this.src=&quot;' + fragmentFallback + '&quot;';
+                        return `
                         <div class="gift-item" onclick="selectGiftForCase(${gift.id})" data-gift-id="${gift.id}">
                             <img src="${gift.image || '/static/gifs/gifts/default_gift.png'}" 
                                  class="gift-item-image" 
                                  alt="${gift.name}"
-                                 onerror="this.src='/static/gifs/gifts/default_gift.png'">
+                                 onerror="${onerrorHandler}">
                             <div class="gift-item-name">${gift.name}</div>
-                            <div class="gift-item-value">${gift.value || 0} Stars</div>
+                            <div class="gift-item-value">${formatTon(gift.value)} TON</div>
                         </div>
-                    `).join('');
+                    `}).join('');
                 } else {
                     giftList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--danger-color);">Ошибка загрузки подарков</div>';
                 }
@@ -2615,7 +2618,7 @@
                                         <img src="${gift.image || '/static/gifs/gifts/default_gift.png'}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">
                                         <div>
                                             <strong>${gift.name}</strong>
-                                            <div style="font-size: 0.8rem; color: var(--text-muted);">Стоимость: ${gift.value} Stars</div>
+                                            <div style="font-size: 0.8rem; color: var(--text-muted);">Стоимость: ${formatTon(gift.value)} TON</div>
                                         </div>
                                     </div>
                                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -2740,7 +2743,7 @@
                     <div class="gift-item" onclick="selectGiftForInventory(${gift.id})" data-gift-id="${gift.id}">
                         <img src="${gift.image || '/static/gifs/gifts/default_gift.png'}" class="gift-item-image" alt="${gift.name}">
                         <div class="gift-item-name">${gift.name}</div>
-                        <div class="gift-item-value">${gift.value} Stars</div>
+                        <div class="gift-item-value">${formatTon(gift.value)} TON</div>
                     </div>
                 `).join('');
             }
@@ -2902,6 +2905,13 @@
             e.preventDefault();
             saveNotification();
         });
+
+        // TON conversion helper
+        const STARS_PER_TON = 100;
+        function formatTon(stars) {
+            const ton = stars / STARS_PER_TON;
+            return ton >= 0.01 ? ton.toFixed(2) : ton.toFixed(3);
+        }
 
         // API Functions
         async function makeRequest(url, options = {}) {

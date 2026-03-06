@@ -2453,6 +2453,27 @@ def add_experience(user_id, exp_amount, reason=""):
                 except Exception as ne:
                     logger.warning(f"Level notif error: {ne}")
 
+                # Send Telegram bot message about level up
+                try:
+                    import threading
+                    def send_level_up_msg():
+                        try:
+                            tg_send(user_id, 
+                                f"🎉 <b>Уровень повышен!</b>\n\n"
+                                f"Вы достигли <b>{new_level} уровня</b>!\n"
+                                f"{'Награда: ' + reward_desc.strip() if reward_desc.strip() else ''}\n\n"
+                                f"📱 Заберите награду в профиле!",
+                                parse_mode='HTML',
+                                reply_markup={'inline_keyboard': [[
+                                    {'text': '🎁 Открыть профиль', 'web_app': {'url': f'{WEBSITE_URL}/inventory'}}
+                                ]]}
+                            )
+                        except Exception as tge:
+                            logger.warning(f"Level up TG msg error: {tge}")
+                    threading.Thread(target=send_level_up_msg, daemon=True).start()
+                except Exception as te:
+                    logger.warning(f"Level up thread error: {te}")
+
                 logger.info(f"🎉 Пользователь {user_id} достиг уровня {new_level}! Награды: {', '.join(level_up_rewards)}")
             else:
                 break
