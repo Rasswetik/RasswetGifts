@@ -5756,12 +5756,33 @@ def open_case_single():
         case_id = data['case_id']
         is_promo = data.get('is_promo', False)
         is_free = data.get('is_free', False)
+        promo_code = data.get('promo_code', '').strip().upper()
 
         cases = load_cases()
         case = next((c for c in cases if c['id'] == case_id), None)
 
         if not case:
             return jsonify({'success': False, 'error': 'Кейс не найден'})
+
+        # Проверка промокода для promo-кейсов
+        if case.get('promo') and is_promo:
+            if not promo_code:
+                return jsonify({'success': False, 'error': 'Требуется промокод'})
+            case_data, promo_item = _find_embedded_case_promo(case_id, promo_code)
+            if not promo_item:
+                return jsonify({'success': False, 'error': 'Неверный промокод'})
+            # Проверяем использование промокода
+            conn_check = get_db_connection()
+            cursor_check = conn_check.cursor()
+            cursor_check.execute('''SELECT id FROM used_promo_codes 
+                WHERE user_id = ? AND promo_code_id = ?''', 
+                (user_id, promo_item.get('id', promo_code)))
+            already_used = cursor_check.fetchone()
+            conn_check.close()
+            if already_used:
+                return jsonify({'success': False, 'error': 'Промокод уже использован'})
+        elif case.get('promo') and not is_promo:
+            return jsonify({'success': False, 'error': 'Требуется промокод для открытия'})
 
         if case.get('limited'):
             current_limit = get_case_limit(case_id)
@@ -5900,6 +5921,19 @@ def open_case_single():
 
         conn.commit()
         conn.close()
+
+        # Записываем использование промокода
+        if case.get('promo') and is_promo and promo_code:
+            try:
+                pconn = get_db_connection()
+                pconn.execute('''INSERT OR IGNORE INTO used_promo_codes 
+                    (user_id, promo_code_id, used_at)
+                    VALUES (?, ?, CURRENT_TIMESTAMP)''', 
+                    (user_id, promo_code))
+                pconn.commit()
+                pconn.close()
+            except:
+                pass
 
         # Добавляем опыт через систему уровней (может повысить уровень)
         level_result = add_experience(user_id, exp_gained, f'case_open:{case_id}')
@@ -9176,6 +9210,22 @@ def get_admin_stats():
 
     except Exception as e:
         logger.error(f"❌ Ошибка получения статистики: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/used-promos', methods=['GET'])
+def get_admin_used_promos():
+    """Получение использованных промокодов"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT user_id, case_id, promo_code, used_at FROM used_promo_codes ORDER BY used_at DESC LIMIT 100')
+        rows = cursor.fetchall()
+        conn.close()
+        
+        promos = [{'user_id': r[0], 'case_id': r[1], 'promo_code': r[2], 'used_at': r[3]} for r in rows]
+        return jsonify({'success': True, 'promos': promos})
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения промокодов: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/stats-optimized', methods=['GET'])
