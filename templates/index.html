@@ -801,14 +801,17 @@
         async function loadUser() {
             if (!userId) {
                 console.log('No user ID yet');
+                $('balanceDisplay').textContent = '0,00';
                 return;
             }
             try {
-                const res = await fetch('/api/user?user_id=' + userId);
+                const res = await fetch('/api/user/' + userId);
                 const data = await res.json();
                 if (data.success && data.user) {
                     userBalance = data.user.balance_stars || 0;
                     $('balanceDisplay').textContent = formatTon(starsToTon(userBalance));
+                } else {
+                    $('balanceDisplay').textContent = '0,00';
                 }
             } catch (e) {
                 console.error('User load error:', e);
@@ -942,7 +945,7 @@
             $('modalName').textContent = currentCase.name || 'Кейс';
             $('modalPrice').querySelector('span').textContent = formatTon(price);
 
-            const gifts = currentCase.gifts || [];
+            const gifts = currentCase.gifts_details || currentCase.gifts || [];
             
             if (!gifts.length) {
                 $('idleTrack').innerHTML = '<div style="padding:20px;color:#828AA4;text-align:center;">Нет подарков</div>';
@@ -1113,7 +1116,7 @@
             
             const spinRoulette = $('spinRoulette');
             const spinTrack = $('spinTrack');
-            const gifts = currentCase.gifts || [];
+            const gifts = currentCase.gifts_details || currentCase.gifts || [];
             
             // Generate items
             const items = [];
