@@ -91,24 +91,6 @@
             padding:calc(env(safe-area-inset-top,0) + 72px) 16px 100px;
         }
 
-        /* ═══════════ PROMO BANNER ═══════════ */
-        .promo{
-            display:flex;align-items:center;gap:12px;
-            padding:12px 16px;
-            background:linear-gradient(135deg,rgba(0,152,234,.15),rgba(139,92,246,.15));
-            border:1px solid rgba(0,152,234,.2);
-            border-radius:16px;
-            margin-bottom:16px;
-            cursor:pointer;
-            transition:transform .2s;
-        }
-        .promo:hover{transform:translateY(-2px)}
-        .promo-icon{font-size:24px}
-        .promo-text{flex:1}
-        .promo-title{font-size:13px;font-weight:700}
-        .promo-desc{font-size:11px;color:var(--text-2);margin-top:2px}
-        .promo-img{width:60px;height:60px;object-fit:contain}
-
         /* ═══════════ LIVE FEED ═══════════ */
         .feed{
             display:flex;align-items:center;gap:10px;
@@ -608,16 +590,6 @@
 
     <!-- MAIN -->
     <main class="main" id="mainApp">
-        <!-- PROMO BANNER -->
-        <div class="promo" onclick="window.open('https://t.me/rasswetgifts','_blank')">
-            <div class="promo-icon">🎁</div>
-            <div class="promo-text">
-                <div class="promo-title">Подпишись на канал</div>
-                <div class="promo-desc">Новости, раздачи и промокоды</div>
-            </div>
-            <img src="/static/img/gift.png" alt="" class="promo-img">
-        </div>
-
         <!-- LIVE FEED -->
         <div class="feed">
             <div class="feed-dot"></div>
@@ -710,7 +682,7 @@
     <div class="win-overlay" id="winOverlay">
         <div class="win-confetti"></div>
         <div class="win-card">
-            <div class="win-badge">🎉 Поздравляем!</div>
+            <div class="win-badge">Поздравляем!</div>
             <img class="win-img" id="winImg" src="" alt="">
             <div class="win-name" id="winName"></div>
             <div class="win-value" id="winValue">
@@ -813,19 +785,26 @@
             try {
                 const res = await fetch('/api/cases');
                 const data = await res.json();
-                if (data.success) {
-                    allCases = data.cases || [];
+                if (data.success && data.cases) {
+                    allCases = data.cases;
                     allCases.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
                     renderCases();
+                } else {
+                    $('casesContainer').innerHTML = '<div class="empty"><p>Ошибка загрузки кейсов</p></div>';
                 }
             } catch (e) {
                 console.error('Cases load error:', e);
+                $('casesContainer').innerHTML = '<div class="empty"><p>Ошибка подключения</p></div>';
             }
         }
 
         async function loadUser() {
+            if (!userId) {
+                console.log('No user ID yet');
+                return;
+            }
             try {
-                const res = await fetch('/api/user');
+                const res = await fetch('/api/user?user_id=' + userId);
                 const data = await res.json();
                 if (data.success && data.user) {
                     userBalance = data.user.balance_stars || 0;
@@ -833,6 +812,7 @@
                 }
             } catch (e) {
                 console.error('User load error:', e);
+                $('balanceDisplay').textContent = '0,00';
             }
         }
 
@@ -840,11 +820,14 @@
             try {
                 const res = await fetch('/api/recent-wins?limit=20');
                 const data = await res.json();
-                if (data.success && data.wins) {
+                if (data.success && data.wins && data.wins.length) {
                     renderFeed(data.wins);
+                } else {
+                    $('feedTrack').innerHTML = '';
                 }
             } catch (e) {
                 console.error('Feed load error:', e);
+                $('feedTrack').innerHTML = '';
             }
         }
 
@@ -961,6 +944,16 @@
 
             const gifts = currentCase.gifts || [];
             
+            if (!gifts.length) {
+                $('idleTrack').innerHTML = '<div style="padding:20px;color:#828AA4;text-align:center;">Нет подарков</div>';
+                $('contentsGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#828AA4;padding:20px;">Загрузка...</div>';
+                $('idleRoulette').style.display = 'block';
+                $('spinRoulette').classList.remove('active');
+                $('sliderWrap').style.display = 'block';
+                $('contentsSection').style.display = 'block';
+                return;
+            }
+            
             // Idle roulette
             const idleItems = [];
             for (let i = 0; i < 20; i++) {
@@ -1067,7 +1060,8 @@
             if (!currentCase || isOpening) return;
             
             if (!userId) {
-                showToast('Авторизуйтесь через Telegram', 'err');
+                showToast('Откройте через Telegram', 'err');
+                resetSlider();
                 return;
             }
 
@@ -1086,6 +1080,7 @@
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
+                        user_id: userId,
                         case_id: currentCase.id,
                         quantity: 1
                     })
