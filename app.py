@@ -3493,8 +3493,8 @@ def check_auth_code():
 
 @app.route('/')
 def root_page():
-    """Главная страница кейсов"""
-    return render_template('index.html')
+    """Главная страница — Краш"""
+    return render_template('crash.html')
 
 @app.route('/crash')
 def crash_page():

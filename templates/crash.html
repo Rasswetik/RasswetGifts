@@ -1187,12 +1187,12 @@ tc-root *{pointer-events:auto}
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     font-weight:900;font-size:min(56px, 14vw);
     color:rgba(255,255,255,.95);
-    display:flex;align-items:center;
+    display:none!important;align-items:center;
     text-shadow:0 0 40px rgba(30,228,76,.2),0 2px 8px rgba(0,0,0,.5);
     opacity:0;pointer-events:none;transition:opacity .3s;
     line-height:1;
 }
-.mult-display.active{opacity:1}
+.mult-display.active{opacity:0;display:none!important}
 .mult-display.crashed-anim{color:#F96999;text-shadow:0 0 40px rgba(249,105,153,.4)}
 .mult-digit-wrap{
     display:inline-block;overflow:hidden;height:1em;position:relative;
@@ -1223,7 +1223,7 @@ tc-root *{pointer-events:auto}
     opacity:1;
 }
 .rocket-wrap img{
-    width:150px;height:150px;object-fit:contain;
+    width:220px;height:220px;object-fit:contain;
     transition: filter 0.3s ease;
     will-change: transform;
 }
@@ -2171,8 +2171,15 @@ tc-root *{pointer-events:auto}
     border-color:rgba(255,255,255,.2);
     background:rgba(255,255,255,.06);
 }
-.hub-custom-item.locked{opacity:.5;cursor:pointer}
-.hub-custom-item.locked:hover{background:rgba(255,255,255,.03);opacity:.65}
+.hub-custom-item.locked{opacity:.7;cursor:pointer}
+.hub-custom-item.locked:hover{background:rgba(255,255,255,.03);opacity:.8}
+.locked-empty-slot{
+    width:44px;height:44px;border-radius:8px;
+    background:rgba(255,255,255,.04);
+    border:1px dashed rgba(90,106,138,.3);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto;
+}
 .hub-custom-item.claimable{
     opacity:.85;cursor:pointer;
     border-color:rgba(120,135,160,.4);
@@ -3139,15 +3146,15 @@ tc-root *{pointer-events:auto}
         margin:0 8px;border-radius:20px;
         aspect-ratio:1/1;min-height:auto;
     }
-    .rocket-wrap img{width:120px;height:120px}
-    .mult-display{top:12%;font-size:min(48px,12vw)}
+    .rocket-wrap img{width:180px;height:180px}
+    .mult-display{display:none!important}
     .top-bar{margin-bottom:4px}
 }
 @media(max-width:400px){
     .countdown-display{font-size:min(180px,40vw)}
     .game-field{aspect-ratio:1/1;min-height:auto;margin:0 6px;border-radius:16px}
-    .rocket-wrap img{width:100px;height:100px}
-    .mult-display{top:10%;font-size:min(40px,11vw)}
+    .rocket-wrap img{width:140px;height:140px}
+    .mult-display{display:none!important}
     .top-bar{padding:8px 12px}
     .bal-pill-crash{padding:5px 10px;font-size:12px}
     .bal-box img{width:14px;height:14px}
@@ -6838,8 +6845,7 @@ function renderHubCustomization(){
                 '</div>';
             } else {
                 return '<div class="hub-custom-item locked" onclick="handleLockedClick(\'rocket\',\'' + r + '\',\'' + (rItem.name || r).replace(/'/g,"\\'") + '\',\'' + rItem.access_type + '\',' + (rItem.requirement || 0) + ')" style="position:relative">' +
-                    '<div class="skin-lock-overlay"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' +
-                    '<img src="/static/gifs/rockets/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.15;this.style.objectFit=\'contain\'" alt="" style="filter:grayscale(1) brightness(0.3);opacity:.4">' +
+                    '<div class="locked-empty-slot"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' +
                     '<div class="item-name" style="color:rgba(90,106,138,.6)">' + (rItem.name || r) + '</div>' +
                 '</div>';
             }
@@ -6851,8 +6857,11 @@ function renderHubCustomization(){
 
 /* Show locked item info */
 function showLockedItemInfo(accessType, requirement) {
-    let message = 'Complete quest to unlock';
-    return message;
+    if (accessType === 'level') return 'Требуется уровень ' + requirement;
+    if (accessType === 'vip') return 'Только для VIP';
+    if (accessType === 'bet_volume') return 'Объём ставок: ' + requirement;
+    if (accessType === 'wager') return 'Вейджер: ' + requirement;
+    return 'Заблокировано';
 }
 
 /* Locked rocket preview - without activate button */
@@ -6920,7 +6929,11 @@ function markAsClaimed(itemId) {
 /* Handle click on locked item — show progress popup for trackable types */
 function handleLockedClick(type, id, name, accessType, requirement) {
     playSound('click');
-    showToast('Complete quest to unlock', 'err');
+    var msg = 'Заблокировано';
+    if (accessType === 'level') msg = 'Требуется уровень ' + requirement;
+    else if (accessType === 'vip') msg = 'Только для VIP';
+    else if (accessType === 'bet_volume') msg = 'Нужен объём ставок: ' + requirement;
+    showToast(msg, 'err');
     if (type === 'rocket') {
         openLockedRocketPreview(id, name, accessType, requirement);
     } else {
@@ -8381,8 +8394,7 @@ function renderSettings(){
             '</div>';
         } else {
             return '<div class="settings-item locked" onclick="selectRocket(\'' + r + '\')" style="position:relative">' +
-                lockSvgHtml +
-                '<img src="' + src + '" alt="" style="filter:grayscale(1) brightness(0.3);opacity:.4" onerror="this.src=\'/static/gifs/rockets/crash.gif\'">' +
+                '<div class="locked-empty-slot" style="width:48px;height:48px;margin:0 auto"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' +
                 '<div class="settings-item-label" style="color:rgba(90,106,138,.6)">' + label + '</div>' +
             '</div>';
         }
