@@ -3634,8 +3634,8 @@ def upgrade_page():
 
 @app.route('/leaderboard')
 def leaderboard_page():
-    """Страница лидерборда → пока редирект на краш"""
-    return redirect('/crash')
+    """Страница лидерборда"""
+    return render_template('leaderboard.html')
 
 @app.route('/admin')
 def admin_page():

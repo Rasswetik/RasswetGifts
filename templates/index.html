@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#090B11">
-    <title>Rasswet Gifts - Cases</title>
+    <title>Rasswet Gifts - Кейсы</title>
     <link rel="icon" type="image/png" href="/static/img/logo.png">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -21,7 +21,7 @@
             --border:rgba(255,255,255,.05);
             --text:#fff;
             --text-2:#828AA4;
-            --primary:#6B7A8D;
+            --primary:#0098EA;
             --accent:#1EE44C;
             --gold:#FDA100;
             --blue:#0098EA;
@@ -91,63 +91,76 @@
             padding:calc(env(safe-area-inset-top,0) + 72px) 16px 100px;
         }
 
+        /* ═══════════ PROMO BANNER ═══════════ */
+        .promo{
+            display:flex;align-items:center;gap:12px;
+            padding:12px 16px;
+            background:linear-gradient(135deg,rgba(0,152,234,.15),rgba(139,92,246,.15));
+            border:1px solid rgba(0,152,234,.2);
+            border-radius:16px;
+            margin-bottom:16px;
+            cursor:pointer;
+            transition:transform .2s;
+        }
+        .promo:hover{transform:translateY(-2px)}
+        .promo-icon{font-size:24px}
+        .promo-text{flex:1}
+        .promo-title{font-size:13px;font-weight:700}
+        .promo-desc{font-size:11px;color:var(--text-2);margin-top:2px}
+        .promo-img{width:60px;height:60px;object-fit:contain}
+
         /* ═══════════ LIVE FEED ═══════════ */
         .feed{
-            display:flex;align-items:center;gap:8px;
+            display:flex;align-items:center;gap:10px;
             margin-bottom:16px;
-            padding:10px 12px;
-            background:var(--surface);
-            border:1px solid var(--border);
-            border-radius:14px;
             overflow:hidden;
         }
-        .feed-badge{
-            padding:4px 10px;border-radius:8px;
-            background:linear-gradient(135deg,#e53935,#ff5252);
-            font-size:10px;font-weight:700;text-transform:uppercase;
+        .feed-dot{
+            width:8px;height:8px;border-radius:50%;
+            background:var(--accent);
+            animation:blink 2s ease-in-out infinite;
             flex-shrink:0;
-            animation:pulse 2s ease-in-out infinite;
         }
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+        .feed-label{
+            font-size:11px;font-weight:700;color:#e53935;
+            text-transform:uppercase;flex-shrink:0;
+        }
         .feed-scroll{
-            flex:1;display:flex;gap:10px;
-            overflow-x:auto;
-            -webkit-overflow-scrolling:touch;
-            scrollbar-width:none;
-            animation:scrollFeed 20s linear infinite;
+            flex:1;display:flex;gap:8px;
+            overflow:hidden;
         }
-        .feed-scroll::-webkit-scrollbar{display:none}
-        @keyframes scrollFeed{
+        .feed-track{
+            display:flex;gap:8px;
+            animation:feedScroll 30s linear infinite;
+        }
+        @keyframes feedScroll{
             0%{transform:translateX(0)}
             100%{transform:translateX(-50%)}
         }
         .feed-item{
-            display:flex;align-items:center;gap:6px;
-            padding:6px 10px;
-            background:rgba(255,255,255,.04);
-            border-radius:10px;
-            flex-shrink:0;
-            transition:transform .2s;
+            width:36px;height:36px;
+            background:rgba(255,255,255,.06);
+            border-radius:8px;
+            padding:4px;flex-shrink:0;
         }
-        .feed-item:hover{transform:scale(1.05)}
-        .feed-item img{width:28px;height:28px;border-radius:6px}
-        .feed-item span{font-size:11px;font-weight:600;color:var(--text-2);white-space:nowrap}
+        .feed-item img{width:100%;height:100%;object-fit:contain;border-radius:4px}
 
         /* ═══════════ TABS ═══════════ */
         .tabs{
-            display:flex;gap:8px;margin-bottom:16px;
+            display:flex;gap:12px;margin-bottom:16px;
         }
         .tab{
-            flex:1;padding:12px;border-radius:12px;border:none;
-            background:rgba(255,255,255,.04);
+            padding:8px 0;border:none;background:transparent;
             color:var(--text-2);
-            font-family:inherit;font-size:14px;font-weight:700;
-            cursor:pointer;transition:all .2s;
+            font-family:inherit;font-size:16px;font-weight:700;
+            cursor:pointer;transition:color .2s;
+            position:relative;
         }
-        .tab.active{
-            background:linear-gradient(135deg,var(--primary),#556270);
-            color:#fff;
-            box-shadow:0 4px 20px rgba(107,122,141,.25);
+        .tab.active{color:var(--text)}
+        .tab.active::after{
+            content:'';position:absolute;bottom:0;left:0;right:0;
+            height:2px;background:var(--primary);border-radius:1px;
         }
 
         /* ═══════════ CASES GRID ═══════════ */
@@ -159,63 +172,64 @@
 
         .case{
             position:relative;
-            background:linear-gradient(160deg,#1E2330,#161923);
-            border:1px solid var(--border);
-            border-radius:16px;
-            padding:12px;
-            display:flex;flex-direction:column;align-items:center;
+            border-radius:20px;
+            overflow:hidden;
             cursor:pointer;
             transition:transform .2s,box-shadow .2s;
-            overflow:hidden;
         }
-        .case:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
-        .case.g-green{background:linear-gradient(160deg,#1A4A22,#0D2A14);border-color:rgba(30,228,76,.2)}
-        .case.g-blue{background:linear-gradient(160deg,#1A3560,#0D1830);border-color:rgba(35,108,217,.2)}
-        .case.g-purple{background:linear-gradient(160deg,#3A1A60,#1A0C30);border-color:rgba(139,92,246,.2)}
-        .case.g-orange{background:linear-gradient(160deg,#4A3018,#2A180C);border-color:rgba(253,161,0,.2)}
-        .case.g-red{background:linear-gradient(160deg,#4A1A1A,#2A0C0C);border-color:rgba(239,68,68,.2)}
-        .case.g-cyan{background:linear-gradient(160deg,#1A3840,#0D1E24);border-color:rgba(6,182,212,.2)}
-        .case.g-pink{background:linear-gradient(160deg,#4A1A35,#2A0C1E);border-color:rgba(249,105,153,.2)}
-
-        .case-badges{position:absolute;top:8px;right:8px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
-        .case-badge{
-            padding:4px 8px;border-radius:8px;
-            font-size:10px;font-weight:700;
-            background:rgba(130,138,164,.18);color:var(--text-2);
+        .case:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.5)}
+        
+        .case-glow{
+            position:absolute;inset:0;
+            border-radius:20px;
+            padding:2px;
+            background:linear-gradient(160deg,rgba(255,255,255,.15),transparent 60%);
         }
-        .case-badge.free{background:linear-gradient(135deg,#19A93A,#1EE44C);color:#090B11}
-        .case-badge.limited{background:linear-gradient(135deg,#e65c00,#ff7043)}
-        .case-badge.new{background:rgba(0,152,234,.2);color:var(--blue)}
+        .case-inner{
+            background:linear-gradient(160deg,#1E2330,#12151C);
+            border-radius:18px;
+            padding:12px;
+            height:100%;
+            display:flex;flex-direction:column;
+        }
 
+        .case.g-yellow .case-glow{background:linear-gradient(160deg,rgba(253,190,19,.4),transparent 60%)}
+        .case.g-yellow .case-inner{background:linear-gradient(160deg,#3D3520,#1A1A14)}
+        .case.g-blue .case-glow{background:linear-gradient(160deg,rgba(0,152,234,.4),transparent 60%)}
+        .case.g-blue .case-inner{background:linear-gradient(160deg,#1A3050,#0D1524)}
+        .case.g-purple .case-glow{background:linear-gradient(160deg,rgba(139,92,246,.4),transparent 60%)}
+        .case.g-purple .case-inner{background:linear-gradient(160deg,#2A1A50,#14102A)}
+        .case.g-green .case-glow{background:linear-gradient(160deg,rgba(30,228,76,.4),transparent 60%)}
+        .case.g-green .case-inner{background:linear-gradient(160deg,#1A4028,#0D1A14)}
+        .case.g-orange .case-glow{background:linear-gradient(160deg,rgba(255,120,50,.4),transparent 60%)}
+        .case.g-orange .case-inner{background:linear-gradient(160deg,#402818,#1A140D)}
+        .case.g-red .case-glow{background:linear-gradient(160deg,rgba(239,68,68,.4),transparent 60%)}
+        .case.g-red .case-inner{background:linear-gradient(160deg,#401A1A,#1A0D0D)}
+
+        .case-prices{
+            display:flex;align-items:center;gap:8px;
+            margin-bottom:8px;
+        }
         .case-price{
             display:flex;align-items:center;gap:4px;
-            align-self:flex-start;
-            margin-bottom:6px;
-            font-size:13px;font-weight:700;
+            font-size:12px;font-weight:700;
         }
-        .case-price img{width:14px;height:14px}
+        .case-price img{width:12px;height:12px}
+        .case-price.ton{color:var(--blue)}
         .case-price.stars{color:#FDBE13}
+        .case-price.stars img{filter:brightness(0) saturate(100%) invert(82%) sepia(46%) saturate(1000%) hue-rotate(359deg) brightness(103%) contrast(103%)}
 
         .case-img{
-            width:100%;aspect-ratio:1/1;
-            display:flex;align-items:center;justify-content:center;
-            padding:8px;
+            flex:1;display:flex;align-items:center;justify-content:center;
+            padding:8px;min-height:100px;
         }
         .case-img img{
-            width:100%;max-width:120px;height:auto;
+            width:100%;max-width:110px;height:auto;
             object-fit:contain;
-            transition:transform .2s;
+            transition:transform .3s;
+            filter:drop-shadow(0 8px 16px rgba(0,0,0,.4));
         }
-        .case:hover .case-img img{transform:scale(1.08)}
-
-        .case-name{
-            font-size:12px;font-weight:600;
-            color:var(--text-2);
-            text-align:center;
-            margin-top:4px;
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-            width:100%;
-        }
+        .case:hover .case-img img{transform:scale(1.1) rotate(-2deg)}
 
         /* ═══════════ BOTTOM NAV ═══════════ */
         .bnav{
@@ -236,13 +250,12 @@
         .bnav a.active{color:var(--text);background:rgba(255,255,255,.08)}
         .bnav a svg{width:24px;height:24px}
         .bnav a span{font-size:10px;font-weight:600}
-        .bnav a.disabled{opacity:.3;pointer-events:none}
 
         /* ═══════════ CASE MODAL ═══════════ */
         .modal-overlay{
             position:fixed;inset:0;
-            background:rgba(0,0,0,.7);
-            backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+            background:rgba(0,0,0,.85);
+            backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
             z-index:200;
             opacity:0;visibility:hidden;
             transition:opacity .3s,visibility .3s;
@@ -252,124 +265,263 @@
         .modal{
             position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);
             z-index:201;width:100%;max-width:480px;
-            max-height:90vh;
+            max-height:92vh;
             background:var(--surface);
             border-radius:24px 24px 0 0;
-            padding:12px 16px 24px;
-            overflow-y:auto;
+            overflow:hidden;
             transition:transform .35s cubic-bezier(.32,.72,0,1);
         }
         .modal-overlay.open .modal{transform:translateX(-50%) translateY(0)}
 
+        .modal-scroll{
+            max-height:92vh;overflow-y:auto;
+            padding:12px 16px calc(env(safe-area-inset-bottom,0) + 24px);
+        }
+
         .modal-handle{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 16px}
 
-        .modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+        .modal-hdr{
+            display:flex;align-items:center;justify-content:space-between;
+            margin-bottom:20px;
+        }
+        .modal-name{font-size:18px;font-weight:700}
         .modal-price{
             display:flex;align-items:center;gap:6px;
-            padding:8px 16px;border-radius:12px;
-            background:rgba(253,190,19,.1);border:1px solid rgba(253,190,19,.2);
-            font-size:15px;font-weight:700;color:#FDBE13;
+            padding:8px 14px;border-radius:12px;
+            background:rgba(0,152,234,.12);border:1px solid rgba(0,152,234,.25);
+            font-size:15px;font-weight:700;color:var(--blue);
         }
         .modal-price img{width:18px;height:18px}
-        .modal-demo{
-            padding:8px 16px;border-radius:12px;border:1px solid var(--border);
-            background:transparent;color:var(--text-2);
-            font-family:inherit;font-size:13px;font-weight:600;
-            cursor:pointer;transition:all .2s;
-        }
-        .modal-demo:hover{background:rgba(255,255,255,.06)}
 
-        .modal-section{margin-top:20px}
-        .modal-section-title{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
-
-        .modal-contents{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-        .modal-content-item{
-            background:rgba(255,255,255,.04);border:1px solid var(--border);
-            border-radius:12px;padding:8px;
-            display:flex;flex-direction:column;align-items:center;
-            text-align:center;
-        }
-        .modal-content-item img{width:100%;aspect-ratio:1/1;object-fit:contain;border-radius:8px}
-        .modal-content-item .chance{font-size:10px;font-weight:600;color:var(--accent);margin-top:4px}
-        .modal-content-item .name{font-size:9px;color:var(--text-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
-
-        .modal-qty{
-            display:flex;align-items:center;justify-content:center;gap:12px;
-            margin:20px 0;
-        }
-        .modal-qty span{font-size:14px;font-weight:600;color:var(--text-2)}
-        .modal-qty-btns{display:flex;gap:6px}
-        .modal-qty-btn{
-            width:44px;height:36px;border-radius:10px;border:1px solid var(--border);
-            background:rgba(255,255,255,.04);
-            color:var(--text);font-family:inherit;font-size:13px;font-weight:700;
-            cursor:pointer;transition:all .2s;
-        }
-        .modal-qty-btn.active{background:linear-gradient(135deg,var(--primary),#556270);border-color:transparent}
-
-        .modal-open-btn{
-            width:100%;padding:16px;border-radius:14px;border:none;
-            background:linear-gradient(135deg,var(--primary),#556270);
-            color:#fff;font-family:inherit;font-size:16px;font-weight:700;
-            cursor:pointer;
-            display:flex;align-items:center;justify-content:center;gap:8px;
-            transition:transform .2s,box-shadow .2s;
-        }
-        .modal-open-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(107,122,141,.35)}
-        .modal-open-btn img{width:20px;height:20px}
-
-        /* ═══════════ ROULETTE ═══════════ */
-        .roulette{
+        /* ═══════════ IDLE ROULETTE ═══════════ */
+        .idle-roulette{
             position:relative;
-            height:140px;margin:20px -16px;
-            background:rgba(0,0,0,.3);
+            height:120px;margin:0 -16px 20px;
+            background:rgba(0,0,0,.25);
             overflow:hidden;
-            display:none;
         }
-        .roulette.active{display:block}
-        .roulette-track{
-            display:flex;gap:8px;
+        .idle-track{
+            display:flex;gap:10px;
+            padding:10px 0;
+            animation:idleScroll 15s linear infinite;
+        }
+        @keyframes idleScroll{
+            0%{transform:translateX(0)}
+            100%{transform:translateX(-50%)}
+        }
+        .idle-item{
+            flex-shrink:0;width:100px;height:100px;
+            background:rgba(255,255,255,.04);
+            border:1px solid var(--border);
+            border-radius:14px;
+            padding:8px;
+            display:flex;flex-direction:column;align-items:center;
+            justify-content:center;
+            position:relative;
+        }
+        .idle-item img{width:60px;height:60px;object-fit:contain}
+        .idle-item-price{
+            position:absolute;top:6px;left:6px;
+            display:flex;align-items:center;gap:3px;
+            padding:3px 6px;border-radius:6px;
+            background:rgba(0,152,234,.15);
+            font-size:10px;font-weight:700;color:var(--blue);
+        }
+        .idle-item-price img{width:10px;height:10px}
+        .idle-pointer{
+            position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+            width:3px;height:90%;
+            background:linear-gradient(180deg,var(--primary),transparent 90%);
+            z-index:5;
+        }
+        .idle-pointer::before{
+            content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+            border:6px solid transparent;border-top:10px solid var(--primary);
+        }
+
+        /* ═══════════ SPIN ROULETTE ═══════════ */
+        .spin-roulette{
+            display:none;
+            position:relative;
+            height:120px;margin:0 -16px 20px;
+            background:rgba(0,0,0,.25);
+            overflow:hidden;
+        }
+        .spin-roulette.active{display:block}
+        .spin-track{
+            display:flex;gap:10px;
+            padding:10px;
             position:absolute;top:50%;transform:translateY(-50%);
-            padding:0 50%;
             will-change:transform;
         }
-        .roulette-item{
+        .spin-item{
             flex-shrink:0;width:100px;height:100px;
-            background:rgba(255,255,255,.06);border:2px solid var(--border);
-            border-radius:14px;padding:8px;
+            background:rgba(255,255,255,.04);
+            border:1px solid var(--border);
+            border-radius:14px;
+            padding:8px;
             display:flex;align-items:center;justify-content:center;
         }
-        .roulette-item img{width:80px;height:80px;object-fit:contain}
-        .roulette-pointer{
-            position:absolute;top:0;left:50%;transform:translateX(-50%);
-            width:4px;height:100%;
-            background:linear-gradient(180deg,var(--gold),transparent 80%);
-            z-index:10;
+        .spin-item img{width:70px;height:70px;object-fit:contain}
+        .spin-pointer{
+            position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+            width:3px;height:90%;
+            background:linear-gradient(180deg,var(--accent),transparent 90%);
+            z-index:5;
         }
-        .roulette-pointer::before{
-            content:'';position:absolute;top:-2px;left:50%;transform:translateX(-50%);
-            border:8px solid transparent;border-top:12px solid var(--gold);
+        .spin-pointer::before{
+            content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);
+            border:6px solid transparent;border-top:10px solid var(--accent);
         }
 
-        /* ═══════════ RESULT ═══════════ */
-        .result{
-            display:none;flex-direction:column;align-items:center;
-            padding:24px;text-align:center;
+        /* ═══════════ SLIDE TO OPEN ═══════════ */
+        .slider-wrap{
+            margin:20px 0;
+            position:relative;
         }
-        .result.show{display:flex}
-        .result-title{font-size:14px;font-weight:600;color:var(--accent);margin-bottom:12px}
-        .result-img{width:140px;height:140px;object-fit:contain;border-radius:16px;margin-bottom:12px;animation:winPop .5s ease}
-        @keyframes winPop{0%{transform:scale(0);opacity:0}50%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
-        .result-name{font-size:18px;font-weight:700;margin-bottom:4px}
-        .result-value{font-size:14px;color:var(--gold);font-weight:600}
-        .result-btns{display:flex;gap:10px;margin-top:20px;width:100%}
-        .result-btn{
-            flex:1;padding:14px;border-radius:12px;border:1px solid var(--border);
+        .slider{
+            position:relative;
+            height:56px;
+            background:linear-gradient(90deg,rgba(0,152,234,.2),rgba(0,152,234,.1));
+            border:1px solid rgba(0,152,234,.3);
+            border-radius:28px;
+            overflow:hidden;
+        }
+        .slider-bg{
+            position:absolute;inset:0;
+            background:linear-gradient(90deg,var(--primary),#0077CC);
+            transform:scaleX(0);
+            transform-origin:left;
+            transition:transform .1s;
+        }
+        .slider-text{
+            position:absolute;inset:0;
+            display:flex;align-items:center;justify-content:center;
+            gap:8px;
+            font-size:15px;font-weight:700;color:rgba(255,255,255,.6);
+            pointer-events:none;
+            z-index:2;
+        }
+        .slider-text svg{width:20px;height:20px;animation:slideArrow 1.5s ease-in-out infinite}
+        @keyframes slideArrow{
+            0%,100%{transform:translateX(0);opacity:.6}
+            50%{transform:translateX(8px);opacity:1}
+        }
+        .slider-thumb{
+            position:absolute;top:4px;left:4px;
+            width:48px;height:48px;
+            background:linear-gradient(135deg,var(--primary),#0077CC);
+            border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            cursor:grab;
+            z-index:3;
+            transition:box-shadow .2s;
+            touch-action:none;
+        }
+        .slider-thumb:active{cursor:grabbing;box-shadow:0 0 20px rgba(0,152,234,.5)}
+        .slider-thumb img{width:24px;height:24px}
+
+        /* ═══════════ CONTENTS SECTION ═══════════ */
+        .contents{margin-top:24px}
+        .contents-title{
+            font-size:13px;font-weight:700;color:var(--text-2);
+            text-transform:uppercase;letter-spacing:.5px;
+            margin-bottom:12px;
+        }
+        .contents-grid{
+            display:grid;
+            grid-template-columns:repeat(3,1fr);
+            gap:10px;
+        }
+        .content-item{
+            background:rgba(255,255,255,.03);
+            border:1px solid var(--border);
+            border-radius:14px;
+            padding:10px;
+            text-align:center;
+        }
+        .content-item img{
+            width:100%;aspect-ratio:1/1;
+            object-fit:contain;
+            border-radius:8px;
+            margin-bottom:8px;
+        }
+        .content-price{
+            display:flex;align-items:center;justify-content:center;gap:4px;
+            font-size:12px;font-weight:700;color:var(--blue);
+        }
+        .content-price img{width:12px;height:12px}
+
+        /* ═══════════ WIN RESULT ═══════════ */
+        .win-overlay{
+            position:fixed;inset:0;
+            background:rgba(0,0,0,.9);
+            backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+            z-index:300;
+            display:none;align-items:center;justify-content:center;
+            flex-direction:column;
+            padding:24px;
+        }
+        .win-overlay.show{display:flex}
+        .win-confetti{
+            position:absolute;inset:0;
+            background:radial-gradient(circle at 50% 30%,rgba(30,228,76,.15),transparent 60%);
+            pointer-events:none;
+        }
+        .win-card{
+            position:relative;z-index:1;
+            width:100%;max-width:320px;
+            background:var(--surface);
+            border:1px solid var(--border);
+            border-radius:24px;
+            padding:32px 24px;
+            text-align:center;
+            animation:winPop .5s cubic-bezier(.34,1.56,.64,1);
+        }
+        @keyframes winPop{
+            0%{transform:scale(0) rotate(-10deg);opacity:0}
+            100%{transform:scale(1) rotate(0);opacity:1}
+        }
+        .win-badge{
+            display:inline-flex;align-items:center;gap:6px;
+            padding:8px 16px;border-radius:20px;
+            background:linear-gradient(135deg,var(--accent),#19A93A);
+            color:#090B11;font-size:12px;font-weight:700;
+            margin-bottom:20px;
+        }
+        .win-img{
+            width:140px;height:140px;
+            object-fit:contain;
+            margin:0 auto 16px;
+            filter:drop-shadow(0 8px 24px rgba(30,228,76,.3));
+            animation:winFloat 2s ease-in-out infinite;
+        }
+        @keyframes winFloat{
+            0%,100%{transform:translateY(0)}
+            50%{transform:translateY(-8px)}
+        }
+        .win-name{font-size:20px;font-weight:700;margin-bottom:8px}
+        .win-value{
+            display:inline-flex;align-items:center;gap:6px;
+            padding:8px 16px;border-radius:12px;
+            background:rgba(0,152,234,.12);
+            font-size:16px;font-weight:700;color:var(--blue);
+        }
+        .win-value img{width:18px;height:18px}
+        .win-btns{
+            display:flex;gap:10px;
+            margin-top:24px;
+        }
+        .win-btn{
+            flex:1;padding:14px;border-radius:14px;
+            border:1px solid var(--border);
             background:rgba(255,255,255,.04);
-            color:var(--text);font-family:inherit;font-size:14px;font-weight:600;
+            color:var(--text);
+            font-family:inherit;font-size:14px;font-weight:600;
             cursor:pointer;transition:all .2s;
         }
-        .result-btn.primary{
+        .win-btn:hover{background:rgba(255,255,255,.08)}
+        .win-btn.primary{
             background:linear-gradient(135deg,var(--accent),#19A93A);
             border:none;color:#090B11;
         }
@@ -377,9 +529,9 @@
         /* ═══════════ DEPOSIT OVERLAY ═══════════ */
         .deposit-overlay{
             position:fixed;inset:0;
-            background:rgba(0,0,0,.8);
-            backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-            z-index:300;
+            background:rgba(0,0,0,.85);
+            backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+            z-index:400;
             display:none;align-items:flex-end;justify-content:center;
         }
         .deposit-overlay.open{display:flex}
@@ -397,9 +549,8 @@
             background:rgba(255,255,255,.04);
             text-align:center;cursor:pointer;transition:all .2s;
         }
-        .deposit-amt:hover,.deposit-amt.selected{border-color:var(--gold);background:rgba(253,161,0,.1)}
-        .deposit-amt-val{font-size:18px;font-weight:700;color:var(--gold)}
-        .deposit-amt-stars{font-size:11px;color:var(--text-2);margin-top:4px}
+        .deposit-amt:hover,.deposit-amt.selected{border-color:var(--blue);background:rgba(0,152,234,.1)}
+        .deposit-amt-val{font-size:18px;font-weight:700;color:var(--blue)}
         .deposit-btn{
             width:100%;padding:16px;border-radius:14px;border:none;
             background:linear-gradient(135deg,#0098EA,#0077CC);
@@ -444,7 +595,7 @@
     <!-- HEADER -->
     <header class="header">
         <div class="h-online">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/></svg>
             <span id="onlineCount">0</span>
         </div>
         <div class="h-spacer"></div>
@@ -457,16 +608,29 @@
 
     <!-- MAIN -->
     <main class="main" id="mainApp">
+        <!-- PROMO BANNER -->
+        <div class="promo" onclick="window.open('https://t.me/rasswetgifts','_blank')">
+            <div class="promo-icon">🎁</div>
+            <div class="promo-text">
+                <div class="promo-title">Подпишись на канал</div>
+                <div class="promo-desc">Новости, раздачи и промокоды</div>
+            </div>
+            <img src="/static/img/gift.png" alt="" class="promo-img">
+        </div>
+
         <!-- LIVE FEED -->
         <div class="feed">
-            <div class="feed-badge">Live</div>
-            <div class="feed-scroll" id="feedScroll"></div>
+            <div class="feed-dot"></div>
+            <div class="feed-label">Live</div>
+            <div class="feed-scroll">
+                <div class="feed-track" id="feedTrack"></div>
+            </div>
         </div>
 
         <!-- TABS -->
         <div class="tabs">
-            <button class="tab active" data-tab="paid" onclick="switchTab('paid')">Paid</button>
-            <button class="tab" data-tab="free" onclick="switchTab('free')">Free</button>
+            <button class="tab active" data-tab="paid" onclick="switchTab('paid')">Платные</button>
+            <button class="tab" data-tab="free" onclick="switchTab('free')">Бесплатные</button>
         </div>
 
         <!-- CASES -->
@@ -477,63 +641,86 @@
     <nav class="bnav">
         <a href="/crash">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-            <span>Crash</span>
+            <span>Краш</span>
         </a>
         <a href="/cases" class="active">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-            <span>Cases</span>
+            <span>Кейсы</span>
         </a>
-        <a href="#" class="disabled">
+        <a href="/leaderboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-            <span>Leaders</span>
+            <span>Топ</span>
         </a>
         <a href="/inventory">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>Profile</span>
+            <span>Профиль</span>
         </a>
     </nav>
 
     <!-- CASE MODAL -->
     <div class="modal-overlay" id="caseModal">
         <div class="modal">
-            <div class="modal-handle"></div>
-            <div class="modal-hdr">
-                <div class="modal-price" id="modalPrice">
-                    <img src="/static/img/ton.png" alt="">
-                    <span>0</span>
+            <div class="modal-scroll">
+                <div class="modal-handle"></div>
+                
+                <div class="modal-hdr">
+                    <div class="modal-name" id="modalName">Кейс</div>
+                    <div class="modal-price" id="modalPrice">
+                        <img src="/static/img/ton.png" alt="">
+                        <span>0</span>
+                    </div>
                 </div>
-                <button class="modal-demo" onclick="runDemo()">Demo</button>
-            </div>
-            <div class="roulette" id="roulette">
-                <div class="roulette-track" id="rouletteTrack"></div>
-                <div class="roulette-pointer"></div>
-            </div>
-            <div class="result" id="result">
-                <div class="result-title">🎉 You won!</div>
-                <img class="result-img" id="resultImg" src="" alt="">
-                <div class="result-name" id="resultName"></div>
-                <div class="result-value" id="resultValue"></div>
-                <div class="result-btns">
-                    <button class="result-btn" onclick="closeModal()">Close</button>
-                    <button class="result-btn primary" onclick="sellWin()">Sell</button>
+
+                <!-- IDLE ROULETTE (before open) -->
+                <div class="idle-roulette" id="idleRoulette">
+                    <div class="idle-track" id="idleTrack"></div>
+                    <div class="idle-pointer"></div>
+                </div>
+
+                <!-- SPIN ROULETTE (during open) -->
+                <div class="spin-roulette" id="spinRoulette">
+                    <div class="spin-track" id="spinTrack"></div>
+                    <div class="spin-pointer"></div>
+                </div>
+
+                <!-- SLIDE TO OPEN -->
+                <div class="slider-wrap" id="sliderWrap">
+                    <div class="slider" id="slider">
+                        <div class="slider-bg" id="sliderBg"></div>
+                        <div class="slider-text">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                            Свайпни для открытия
+                        </div>
+                        <div class="slider-thumb" id="sliderThumb">
+                            <img src="/static/img/ton.png" alt="">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONTENTS -->
+                <div class="contents" id="contentsSection">
+                    <div class="contents-title">Что в кейсе?</div>
+                    <div class="contents-grid" id="contentsGrid"></div>
                 </div>
             </div>
-            <div class="modal-section" id="modalContentsSection">
-                <div class="modal-section-title">Contents</div>
-                <div class="modal-contents" id="modalContents"></div>
-            </div>
-            <div class="modal-qty" id="modalQty">
-                <span>Quantity:</span>
-                <div class="modal-qty-btns">
-                    <button class="modal-qty-btn active" data-qty="1" onclick="setQty(1)">1</button>
-                    <button class="modal-qty-btn" data-qty="3" onclick="setQty(3)">3</button>
-                    <button class="modal-qty-btn" data-qty="5" onclick="setQty(5)">5</button>
-                </div>
-            </div>
-            <button class="modal-open-btn" id="modalOpenBtn" onclick="openCase()">
+        </div>
+    </div>
+
+    <!-- WIN RESULT -->
+    <div class="win-overlay" id="winOverlay">
+        <div class="win-confetti"></div>
+        <div class="win-card">
+            <div class="win-badge">🎉 Поздравляем!</div>
+            <img class="win-img" id="winImg" src="" alt="">
+            <div class="win-name" id="winName"></div>
+            <div class="win-value" id="winValue">
                 <img src="/static/img/ton.png" alt="">
-                <span>Open</span>
-            </button>
+                <span>0</span>
+            </div>
+            <div class="win-btns">
+                <button class="win-btn" onclick="closeWin()">Закрыть</button>
+                <button class="win-btn primary" onclick="sellWin()">Продать</button>
+            </div>
         </div>
     </div>
 
@@ -541,36 +728,30 @@
     <div class="deposit-overlay" id="depositOverlay" onclick="closeDeposit(event)">
         <div class="deposit-sheet" onclick="event.stopPropagation()">
             <div class="deposit-handle"></div>
-            <div class="deposit-title">Deposit TON</div>
+            <div class="deposit-title">Пополнить баланс</div>
             <div class="deposit-amounts" id="depositAmounts">
                 <div class="deposit-amt" data-ton="1" onclick="selectDeposit(this)">
                     <div class="deposit-amt-val">1 TON</div>
-                    <div class="deposit-amt-stars">100 ⭐</div>
                 </div>
                 <div class="deposit-amt" data-ton="5" onclick="selectDeposit(this)">
                     <div class="deposit-amt-val">5 TON</div>
-                    <div class="deposit-amt-stars">500 ⭐</div>
                 </div>
                 <div class="deposit-amt selected" data-ton="10" onclick="selectDeposit(this)">
                     <div class="deposit-amt-val">10 TON</div>
-                    <div class="deposit-amt-stars">1000 ⭐</div>
                 </div>
                 <div class="deposit-amt" data-ton="25" onclick="selectDeposit(this)">
                     <div class="deposit-amt-val">25 TON</div>
-                    <div class="deposit-amt-stars">2500 ⭐</div>
                 </div>
                 <div class="deposit-amt" data-ton="50" onclick="selectDeposit(this)">
                     <div class="deposit-amt-val">50 TON</div>
-                    <div class="deposit-amt-stars">5000 ⭐</div>
                 </div>
                 <div class="deposit-amt" data-ton="100" onclick="selectDeposit(this)">
                     <div class="deposit-amt-val">100 TON</div>
-                    <div class="deposit-amt-stars">10000 ⭐</div>
                 </div>
             </div>
             <button class="deposit-btn" onclick="processDeposit()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                Pay with TON
+                Оплатить через TON
             </button>
         </div>
     </div>
@@ -585,11 +766,11 @@
         let allCases = [];
         let currentTab = 'paid';
         let currentCase = null;
-        let currentQty = 1;
         let userId = null;
         let userBalance = 0;
         let selectedDeposit = 10;
         let lastWonGift = null;
+        let isOpening = false;
 
         document.addEventListener('DOMContentLoaded', init);
 
@@ -622,6 +803,7 @@
                 setTimeout(() => $('loader').classList.add('hide'), 300);
             }
 
+            initSlider();
             updateOnline();
             setInterval(updateOnline, 30000);
             setInterval(loadFeed, 15000);
@@ -681,19 +863,18 @@
         }
 
         function formatTon(ton) {
-            return (Math.round(Number(ton) * 100) / 100).toString().replace('.', ',');
+            const val = Math.round(Number(ton) * 100) / 100;
+            return val.toFixed(2).replace('.', ',');
         }
 
         function renderFeed(wins) {
-            const container = $('feedScroll');
-            // Duplicate for infinite scroll effect
+            const track = $('feedTrack');
             const items = [...wins, ...wins].map(w => `
                 <div class="feed-item">
                     <img src="${w.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
-                    <span>${w.gift_name || 'Gift'}</span>
                 </div>
             `).join('');
-            container.innerHTML = items;
+            track.innerHTML = items;
         }
 
         function switchTab(tab) {
@@ -705,10 +886,9 @@
         }
 
         function getGradient(caseItem) {
-            const cost = Number(caseItem.cost || 0);
-            if (cost === 0) return 'g-green';
-            const grads = ['g-blue', 'g-purple', 'g-orange', 'g-cyan', 'g-pink', 'g-red'];
-            return grads[(caseItem.id || 0) % grads.length];
+            const id = caseItem.id || 0;
+            const grads = ['g-yellow', 'g-blue', 'g-purple', 'g-green', 'g-orange', 'g-red'];
+            return grads[id % grads.length];
         }
 
         function renderCases() {
@@ -724,7 +904,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
                         </svg>
-                        <p>No cases available</p>
+                        <p>Нет доступных кейсов</p>
                     </div>
                 `;
                 return;
@@ -734,20 +914,21 @@
                 <div class="cases">
                     ${filtered.map(c => {
                         const grad = getGradient(c);
-                        const price = starsToTon(c.cost || 0);
-                        const isFree = c.cost === 0;
+                        const priceTon = starsToTon(c.cost || 0);
                         return `
                             <div class="case ${grad}" onclick="openCaseModal(${c.id})">
-                                ${c.is_new ? '<div class="case-badges"><span class="case-badge new">New</span></div>' : ''}
-                                ${isFree ? '<div class="case-badges"><span class="case-badge free">Free</span></div>' : ''}
-                                <div class="case-price${c.cost_type === 'stars' ? ' stars' : ''}">
-                                    <img src="/static/img/ton.png" alt="">
-                                    ${formatTon(price)}
+                                <div class="case-glow"></div>
+                                <div class="case-inner">
+                                    <div class="case-prices">
+                                        <div class="case-price ton">
+                                            <img src="/static/img/ton.png" alt="">
+                                            ${formatTon(priceTon)}
+                                        </div>
+                                    </div>
+                                    <div class="case-img">
+                                        <img src="${c.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
+                                    </div>
                                 </div>
-                                <div class="case-img">
-                                    <img src="${c.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
-                                </div>
-                                <div class="case-name">${c.name || 'Case'}</div>
                             </div>
                         `;
                     }).join('')}
@@ -761,12 +942,13 @@
                 const data = await res.json();
                 if (data.success && data.case) {
                     currentCase = data.case;
-                    currentQty = 1;
+                    isOpening = false;
                     renderModal();
                     $('caseModal').classList.add('open');
+                    resetSlider();
                 }
             } catch (e) {
-                showToast('Failed to load case', 'err');
+                showToast('Ошибка загрузки кейса', 'err');
             }
         }
 
@@ -774,61 +956,130 @@
             if (!currentCase) return;
             
             const price = starsToTon(currentCase.cost || 0);
+            $('modalName').textContent = currentCase.name || 'Кейс';
             $('modalPrice').querySelector('span').textContent = formatTon(price);
 
             const gifts = currentCase.gifts || [];
-            $('modalContents').innerHTML = gifts.map(g => `
-                <div class="modal-content-item">
-                    <img src="${g.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
-                    <div class="chance">${(g.chance || 0).toFixed(1)}%</div>
-                    <div class="name">${g.name || 'Gift'}</div>
-                </div>
-            `).join('');
+            
+            // Idle roulette
+            const idleItems = [];
+            for (let i = 0; i < 20; i++) {
+                const g = gifts[i % gifts.length];
+                const gPrice = starsToTon(g.value || 0);
+                idleItems.push(`
+                    <div class="idle-item">
+                        <div class="idle-item-price">
+                            <img src="/static/img/ton.png" alt="">
+                            ${formatTon(gPrice)}
+                        </div>
+                        <img src="${g.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
+                    </div>
+                `);
+            }
+            $('idleTrack').innerHTML = idleItems.join('') + idleItems.join('');
+
+            // Contents
+            $('contentsGrid').innerHTML = gifts.map(g => {
+                const gPrice = starsToTon(g.value || 0);
+                return `
+                    <div class="content-item">
+                        <img src="${g.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
+                        <div class="content-price">
+                            <img src="/static/img/ton.png" alt="">
+                            ${formatTon(gPrice)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
             // Reset state
-            $('roulette').classList.remove('active');
-            $('result').classList.remove('show');
-            $('modalQty').style.display = 'flex';
-            $('modalOpenBtn').style.display = 'flex';
-            $('modalContentsSection').style.display = 'block';
+            $('idleRoulette').style.display = 'block';
+            $('spinRoulette').classList.remove('active');
+            $('sliderWrap').style.display = 'block';
+            $('contentsSection').style.display = 'block';
+        }
+
+        // SLIDER LOGIC
+        function initSlider() {
+            const thumb = $('sliderThumb');
+            const slider = $('slider');
+            const bg = $('sliderBg');
             
-            updateQtyBtns();
-            updateOpenBtn();
+            let startX = 0;
+            let currentX = 0;
+            let isDragging = false;
+            const maxX = () => slider.offsetWidth - thumb.offsetWidth - 8;
+
+            function onStart(e) {
+                if (isOpening) return;
+                isDragging = true;
+                startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                thumb.style.transition = 'none';
+                bg.style.transition = 'none';
+            }
+
+            function onMove(e) {
+                if (!isDragging) return;
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const diff = clientX - startX;
+                currentX = Math.max(0, Math.min(diff, maxX()));
+                thumb.style.left = (4 + currentX) + 'px';
+                bg.style.transform = `scaleX(${currentX / maxX()})`;
+            }
+
+            function onEnd() {
+                if (!isDragging) return;
+                isDragging = false;
+                thumb.style.transition = 'left .3s';
+                bg.style.transition = 'transform .3s';
+
+                if (currentX >= maxX() * 0.9) {
+                    // Успешный свайп - открываем кейс
+                    thumb.style.left = (4 + maxX()) + 'px';
+                    bg.style.transform = 'scaleX(1)';
+                    openCase();
+                } else {
+                    // Возврат
+                    thumb.style.left = '4px';
+                    bg.style.transform = 'scaleX(0)';
+                }
+                currentX = 0;
+            }
+
+            thumb.addEventListener('mousedown', onStart);
+            thumb.addEventListener('touchstart', onStart, {passive: true});
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('touchmove', onMove, {passive: true});
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchend', onEnd);
         }
 
-        function setQty(qty) {
-            currentQty = qty;
-            updateQtyBtns();
-            updateOpenBtn();
-        }
-
-        function updateQtyBtns() {
-            document.querySelectorAll('.modal-qty-btn').forEach(btn => {
-                btn.classList.toggle('active', parseInt(btn.dataset.qty) === currentQty);
-            });
-        }
-
-        function updateOpenBtn() {
-            if (!currentCase) return;
-            const total = starsToTon((currentCase.cost || 0) * currentQty);
-            $('modalOpenBtn').innerHTML = `
-                <img src="/static/img/ton.png" alt="">
-                <span>Open ${currentQty > 1 ? currentQty + 'x ' : ''}(${formatTon(total)} TON)</span>
-            `;
+        function resetSlider() {
+            const thumb = $('sliderThumb');
+            const bg = $('sliderBg');
+            thumb.style.transition = 'none';
+            bg.style.transition = 'none';
+            thumb.style.left = '4px';
+            bg.style.transform = 'scaleX(0)';
         }
 
         async function openCase() {
-            if (!currentCase || !userId) {
-                showToast('Please authorize', 'err');
+            if (!currentCase || isOpening) return;
+            
+            if (!userId) {
+                showToast('Авторизуйтесь через Telegram', 'err');
                 return;
             }
 
-            const totalCost = (currentCase.cost || 0) * currentQty;
+            const totalCost = currentCase.cost || 0;
             if (userBalance < totalCost) {
-                showToast('Insufficient balance', 'err');
+                showToast('Недостаточно средств', 'err');
                 openDeposit();
+                resetSlider();
                 return;
             }
+
+            isOpening = true;
 
             try {
                 const res = await fetch('/api/cases/open', {
@@ -836,86 +1087,93 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         case_id: currentCase.id,
-                        quantity: currentQty
+                        quantity: 1
                     })
                 });
                 const data = await res.json();
                 if (data.success) {
                     userBalance = data.new_balance || userBalance - totalCost;
                     $('balanceDisplay').textContent = formatTon(starsToTon(userBalance));
-                    runRoulette(data.won_gifts || data.won_gift);
+                    runSpinRoulette(data.won_gifts || [data.won_gift]);
                 } else {
-                    showToast(data.error || 'Failed to open case', 'err');
+                    showToast(data.error || 'Ошибка открытия', 'err');
+                    isOpening = false;
+                    resetSlider();
                 }
             } catch (e) {
-                showToast('Network error', 'err');
+                showToast('Ошибка сети', 'err');
+                isOpening = false;
+                resetSlider();
             }
         }
 
-        function runRoulette(wonGift) {
-            $('modalQty').style.display = 'none';
-            $('modalOpenBtn').style.display = 'none';
-            $('modalContentsSection').style.display = 'none';
+        function runSpinRoulette(wonGifts) {
+            const wonGift = Array.isArray(wonGifts) ? wonGifts[0] : wonGifts;
+            lastWonGift = wonGift;
+
+            // Hide idle, show spin
+            $('idleRoulette').style.display = 'none';
+            $('sliderWrap').style.display = 'none';
+            $('contentsSection').style.display = 'none';
             
-            const roulette = $('roulette');
-            const track = $('rouletteTrack');
+            const spinRoulette = $('spinRoulette');
+            const spinTrack = $('spinTrack');
             const gifts = currentCase.gifts || [];
             
-            let items = [];
+            // Generate items
+            const items = [];
             for (let i = 0; i < 50; i++) {
                 const g = gifts[Math.floor(Math.random() * gifts.length)];
                 items.push(g);
             }
-            const winner = Array.isArray(wonGift) ? wonGift[0] : wonGift;
-            items[42] = winner;
-            lastWonGift = winner;
+            // Place winner at position 42
+            items[42] = wonGift;
 
-            track.innerHTML = items.map(g => `
-                <div class="roulette-item">
+            spinTrack.innerHTML = items.map(g => `
+                <div class="spin-item">
                     <img src="${g.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
                 </div>
             `).join('');
 
-            roulette.classList.add('active');
-            track.style.transition = 'none';
-            track.style.transform = 'translateX(0)';
+            spinRoulette.classList.add('active');
+            spinTrack.style.transition = 'none';
+            spinTrack.style.transform = 'translateX(0)';
 
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    const itemWidth = 108;
+                    const itemWidth = 110; // 100px + 10px gap
                     const offset = itemWidth * 42 + itemWidth / 2;
-                    track.style.transition = 'transform 5s cubic-bezier(.12,.84,.18,1)';
-                    track.style.transform = `translateX(calc(50% - ${offset}px))`;
+                    spinTrack.style.transition = 'transform 5s cubic-bezier(.08,.82,.17,1)';
+                    spinTrack.style.transform = `translateX(calc(50% - ${offset}px))`;
                 });
             });
 
-            setTimeout(() => showResult(winner), 5200);
+            setTimeout(() => showWinResult(wonGift), 5300);
         }
 
-        function showResult(gift) {
-            $('roulette').classList.remove('active');
-            $('resultImg').src = gift.image || '/static/img/gift.png';
-            $('resultName').textContent = gift.name || 'Gift';
-            $('resultValue').textContent = gift.value ? formatTon(starsToTon(gift.value)) + ' TON' : '';
-            $('result').classList.add('show');
+        function showWinResult(gift) {
+            closeModal();
+            
+            $('winImg').src = gift.image || '/static/img/gift.png';
+            $('winName').textContent = gift.name || 'Подарок';
+            $('winValue').querySelector('span').textContent = formatTon(starsToTon(gift.value || 0));
+            $('winOverlay').classList.add('show');
+        }
+
+        function closeWin() {
+            $('winOverlay').classList.remove('show');
+            isOpening = false;
+            lastWonGift = null;
         }
 
         async function sellWin() {
-            showToast('Gift added to inventory', 'ok');
-            closeModal();
-        }
-
-        function runDemo() {
-            if (!currentCase) return;
-            const gifts = currentCase.gifts || [];
-            const randomGift = gifts[Math.floor(Math.random() * gifts.length)];
-            runRoulette(randomGift);
+            showToast('Добавлено в инвентарь', 'ok');
+            closeWin();
         }
 
         function closeModal() {
             $('caseModal').classList.remove('open');
             currentCase = null;
-            lastWonGift = null;
         }
 
         $('caseModal').addEventListener('click', e => {
@@ -938,7 +1196,7 @@
         }
 
         async function processDeposit() {
-            showToast('Deposit coming soon', 'ok');
+            showToast('Депозит скоро будет доступен', 'ok');
             closeDeposit();
         }
 
