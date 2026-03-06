@@ -470,34 +470,33 @@ def _get_bot_bets_for_api(game_id):
     return result
 
 
-# Система уровней (50 уровней)
+# Система уровней - turnover в звёздах (100 stars = 1 TON) соответствует levels.json
 LEVEL_SYSTEM = [
-    # 25 уровней: нечётные = скин ракеты, чётные = крейт
-    {"level": 1,  "exp_required": 0,      "reward_stars": 0,    "reward_tickets": 0,   "reward_rocket": "crash",       "reward_crate": None},
-    {"level": 2,  "exp_required": 100,    "reward_stars": 10,   "reward_tickets": 1,   "reward_rocket": None,          "reward_crate": "starter_crate"},
-    {"level": 3,  "exp_required": 300,    "reward_stars": 25,   "reward_tickets": 2,   "reward_rocket": "pencil",      "reward_crate": None},
-    {"level": 4,  "exp_required": 600,    "reward_stars": 50,   "reward_tickets": 3,   "reward_rocket": None,          "reward_crate": "bronze_crate"},
-    {"level": 5,  "exp_required": 1000,   "reward_stars": 100,  "reward_tickets": 5,   "reward_rocket": "banana",      "reward_crate": None},
-    {"level": 6,  "exp_required": 1500,   "reward_stars": 150,  "reward_tickets": 7,   "reward_rocket": None,          "reward_crate": "silver_crate"},
-    {"level": 7,  "exp_required": 2100,   "reward_stars": 200,  "reward_tickets": 10,  "reward_rocket": "plane",       "reward_crate": None},
-    {"level": 8,  "exp_required": 2800,   "reward_stars": 250,  "reward_tickets": 12,  "reward_rocket": None,          "reward_crate": "gold_crate"},
-    {"level": 9,  "exp_required": 3600,   "reward_stars": 300,  "reward_tickets": 15,  "reward_rocket": "dog",         "reward_crate": None},
-    {"level": 10, "exp_required": 4500,   "reward_stars": 400,  "reward_tickets": 20,  "reward_rocket": None,          "reward_crate": "platinum_crate"},
-    {"level": 11, "exp_required": 5500,   "reward_stars": 500,  "reward_tickets": 25,  "reward_rocket": "cat",         "reward_crate": None},
-    {"level": 12, "exp_required": 6600,   "reward_stars": 600,  "reward_tickets": 30,  "reward_rocket": None,          "reward_crate": "diamond_crate"},
-    {"level": 13, "exp_required": 7800,   "reward_stars": 700,  "reward_tickets": 35,  "reward_rocket": "rabbit",      "reward_crate": None},
-    {"level": 14, "exp_required": 9100,   "reward_stars": 800,  "reward_tickets": 40,  "reward_rocket": None,          "reward_crate": "cosmic_crate"},
-    {"level": 15, "exp_required": 10500,  "reward_stars": 900,  "reward_tickets": 45,  "reward_rocket": "smesh",       "reward_crate": None},
-    {"level": 16, "exp_required": 12000,  "reward_stars": 1000, "reward_tickets": 50,  "reward_rocket": None,          "reward_crate": "nebula_crate"},
-    {"level": 17, "exp_required": 13600,  "reward_stars": 1100, "reward_tickets": 55,  "reward_rocket": "scorpion",    "reward_crate": None},
-    {"level": 18, "exp_required": 15300,  "reward_stars": 1200, "reward_tickets": 60,  "reward_rocket": None,          "reward_crate": "stellar_crate"},
-    {"level": 19, "exp_required": 17100,  "reward_stars": 1300, "reward_tickets": 65,  "reward_rocket": "telegram",    "reward_crate": None},
-    {"level": 20, "exp_required": 19000,  "reward_stars": 1500, "reward_tickets": 70,  "reward_rocket": None,          "reward_crate": "galactic_crate"},
-    {"level": 21, "exp_required": 21500,  "reward_stars": 1600, "reward_tickets": 75,  "reward_rocket": "ice",         "reward_crate": None},
-    {"level": 22, "exp_required": 24000,  "reward_stars": 1700, "reward_tickets": 80,  "reward_rocket": None,          "reward_crate": "legendary_crate"},
-    {"level": 23, "exp_required": 27000,  "reward_stars": 1800, "reward_tickets": 85,  "reward_rocket": "unicorn",     "reward_crate": None},
-    {"level": 24, "exp_required": 30000,  "reward_stars": 1900, "reward_tickets": 90,  "reward_rocket": None,          "reward_crate": "supreme_crate"},
-    {"level": 25, "exp_required": 34000,  "reward_stars": 2000, "reward_tickets": 100, "reward_rocket": "goldenplane",  "reward_crate": "supreme_crate"},
+    {"level": 1,  "exp_required": 0,       "reward_stars": 0,    "reward_tickets": 0,   "reward_rocket": "crash",       "reward_crate": None},
+    {"level": 2,  "exp_required": 10000,   "reward_stars": 10,   "reward_tickets": 1,   "reward_rocket": None,          "reward_crate": None},
+    {"level": 3,  "exp_required": 30000,   "reward_stars": 25,   "reward_tickets": 2,   "reward_rocket": None,          "reward_crate": None},
+    {"level": 4,  "exp_required": 60000,   "reward_stars": 50,   "reward_tickets": 3,   "reward_rocket": None,          "reward_crate": None},
+    {"level": 5,  "exp_required": 100000,  "reward_stars": 100,  "reward_tickets": 5,   "reward_rocket": "cat",         "reward_crate": None},
+    {"level": 6,  "exp_required": 150000,  "reward_stars": 150,  "reward_tickets": 7,   "reward_rocket": None,          "reward_crate": None},
+    {"level": 7,  "exp_required": 210000,  "reward_stars": 200,  "reward_tickets": 10,  "reward_rocket": None,          "reward_crate": None},
+    {"level": 8,  "exp_required": 280000,  "reward_stars": 250,  "reward_tickets": 12,  "reward_rocket": "dog",         "reward_crate": None},
+    {"level": 9,  "exp_required": 360000,  "reward_stars": 300,  "reward_tickets": 15,  "reward_rocket": None,          "reward_crate": None},
+    {"level": 10, "exp_required": 450000,  "reward_stars": 400,  "reward_tickets": 20,  "reward_rocket": None,          "reward_crate": None},
+    {"level": 11, "exp_required": 550000,  "reward_stars": 500,  "reward_tickets": 25,  "reward_rocket": "banana",      "reward_crate": None},
+    {"level": 12, "exp_required": 660000,  "reward_stars": 600,  "reward_tickets": 30,  "reward_rocket": None,          "reward_crate": None},
+    {"level": 13, "exp_required": 780000,  "reward_stars": 700,  "reward_tickets": 35,  "reward_rocket": None,          "reward_crate": None},
+    {"level": 14, "exp_required": 910000,  "reward_stars": 800,  "reward_tickets": 40,  "reward_rocket": "plane",       "reward_crate": None},
+    {"level": 15, "exp_required": 1050000, "reward_stars": 900,  "reward_tickets": 45,  "reward_rocket": None,          "reward_crate": None},
+    {"level": 16, "exp_required": 1200000, "reward_stars": 1000, "reward_tickets": 50,  "reward_rocket": "rabbit",      "reward_crate": None},
+    {"level": 17, "exp_required": 1360000, "reward_stars": 1100, "reward_tickets": 55,  "reward_rocket": None,          "reward_crate": None},
+    {"level": 18, "exp_required": 1530000, "reward_stars": 1200, "reward_tickets": 60,  "reward_rocket": "ice",         "reward_crate": None},
+    {"level": 19, "exp_required": 1710000, "reward_stars": 1300, "reward_tickets": 65,  "reward_rocket": None,          "reward_crate": None},
+    {"level": 20, "exp_required": 1900000, "reward_stars": 1500, "reward_tickets": 70,  "reward_rocket": None,          "reward_crate": None},
+    {"level": 21, "exp_required": 2150000, "reward_stars": 1600, "reward_tickets": 75,  "reward_rocket": "unicorn",     "reward_crate": None},
+    {"level": 22, "exp_required": 2400000, "reward_stars": 1700, "reward_tickets": 80,  "reward_rocket": "goldenplane", "reward_crate": None},
+    {"level": 23, "exp_required": 2700000, "reward_stars": 1800, "reward_tickets": 85,  "reward_rocket": None,          "reward_crate": None},
+    {"level": 24, "exp_required": 3000000, "reward_stars": 1900, "reward_tickets": 90,  "reward_rocket": "telegram",    "reward_crate": None},
+    {"level": 25, "exp_required": 3400000, "reward_stars": 2000, "reward_tickets": 100, "reward_rocket": "TonTheMoon",  "reward_crate": None},
 ]
 
 # Карта названий ракет для отображения
@@ -3877,6 +3876,12 @@ def ultimate_crash_place_bet():
         if cache_key in _user_bets_cache:
             del _user_bets_cache[cache_key]
 
+        # Add experience based on bet amount (turnover) - 1:1
+        try:
+            add_experience(user_id, bet_amount, f"Crash bet {bet_amount}")
+        except:
+            pass
+
         # Update daily tasks
         try:
             update_daily_task_progress(user_id, 'crash_bets', 1)
@@ -4275,9 +4280,8 @@ def ultimate_crash_cashout_simple():
 
         conn.close()
 
-        # Добавляем опыт через функцию (чтобы уровни обновлялись) — outside transaction
-        exp_gained = max(5, win_amount // 50)
-        add_experience(user_id, exp_gained, f"Crash x{current_mult:.2f}")
+        # Experience based on bet (1:1 turnover) - now added on bet placement, not cashout
+        # exp_gained = bet_amount (removed - exp is added when placing bet)
 
         # Формируем ответ
         response = {
@@ -5627,7 +5631,7 @@ def open_case():
                 VALUES (?, ?, CURRENT_TIMESTAMP)
             ''', (case_id, new_amount))
 
-        exp_gained = max(5, case['cost'] // 10 * quantity)
+        exp_gained = total_cost  # 1:1 turnover - case cost = experience
         cursor.execute('UPDATE users SET experience = experience + ? WHERE id = ?',
                      (exp_gained, user_id))
 
@@ -5815,8 +5819,8 @@ def open_case_single():
                 VALUES (?, ?, CURRENT_TIMESTAMP)
             ''', (case_id, new_case_limit))
 
-        # Опыт - используем add_experience для корректного повышения уровня
-        exp_gained = max(5, case['cost'] // 10)
+        # Опыт - 1:1 turnover
+        exp_gained = case['cost']
         cursor.execute('UPDATE users SET total_cases_opened = total_cases_opened + 1 WHERE id = ?',
                      (user_id,))
 

@@ -354,7 +354,7 @@
         applyTranslations();
     }
 
-    async function loadLevelRewards() { try { var r = await fetch('/api/level-rewards'); var d = await r.json(); if (d.success) levelRewards = d.levels || []; } catch (e) {} }
+    async function loadLevelRewards() { try { var r = await fetch('/api/level-rewards'); var d = await r.json(); if (d.success) { levelRewards = d.levels || []; console.log('Loaded rewards:', levelRewards.length); } } catch (e) { console.error('Load rewards error:', e); } }
 
     function openRewardsModal() {
         vibrateIfOn();
@@ -362,8 +362,9 @@
         document.getElementById('rewardsUserLevel').textContent = userLvl + ' lvl';
         var grid = document.getElementById('rewardsGrid');
         var allRewards = levelRewards.filter(function(lv){ return lv.reward; });
+        console.log('Filtered rewards:', allRewards.length);
         if (!allRewards.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:20px">No rewards available</div>'; }
-        else { grid.innerHTML = allRewards.map(function(lv) { var unlocked = userLvl >= lv.level; var cls = unlocked ? 'unlocked' : 'locked'; var rw = lv.reward || {}; var img = rw.image || '/static/img/ton.png'; var fallbackImg = rw.type === 'rocket_skin' ? '/static/gifs/rockets/crash.gif' : '/static/img/ton.png'; return '<div class="reward-card ' + cls + '" onclick="onRewardClick(' + lv.level + ',' + (unlocked?1:0) + ')"><div class="reward-card-lvl">' + lv.level + ' lvl</div><img class="reward-card-img" src="' + img + '" alt="" onerror="this.src=\'' + fallbackImg + '\'"></div>'; }).join(''); }
+        else { grid.innerHTML = allRewards.map(function(lv) { var unlocked = userLvl >= lv.level; var cls = unlocked ? 'unlocked' : 'locked'; var rw = lv.reward || {}; var img = rw.image || '/static/img/ton.png'; var fallbackImg = rw.type === 'rocket_skin' ? '/static/gifs/rockets/crash.gif' : '/static/img/ton.png'; return '<div class="reward-card ' + cls + '" onclick="onRewardClick(' + lv.level + ',' + (unlocked?1:0) + ')"><div class="reward-card-lvl">' + lv.level + ' lvl</div><img class="reward-card-img" src="' + img + '" alt="" onerror="this.onerror=null;this.src=\'' + fallbackImg + '\'"></div>'; }).join(''); }
         document.getElementById('rewardsOverlay').classList.add('show');
     }
     function closeRewardsModal() { document.getElementById('rewardsOverlay').classList.remove('show'); }
@@ -374,7 +375,12 @@
     function renderInventory() {
         var c = document.getElementById('inventoryContainer');
         if (!inventory.length) { c.innerHTML = '<div class="inv-empty">' + t('emptyInv') + '</div>'; return; }
-        c.innerHTML = '<div class="inv-grid">' + inventory.map(function(item) { var ton = starsToTon(item.gift_value); return '<div class="inv-card" onclick="openItemModal(' + item.id + ')"><img class="inv-card-img" src="' + item.gift_image + '" alt="' + item.gift_name + '" onerror="this.src=\'/static/img/default_gift.png\'"><div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; }).join('') + '</div>';
+        c.innerHTML = '<div class="inv-grid">' + inventory.map(function(item) { 
+            var ton = starsToTon(item.gift_value); 
+            var fragmentFallback = item.fragment_slug ? 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp' : '/static/img/default_gift.png'; 
+            var onerrorHandler = "this.onerror=function(){this.src=&quot;/static/img/default_gift.png&quot;};this.src=&quot;" + fragmentFallback + "&quot;";
+            return '<div class="inv-card" onclick="openItemModal(' + item.id + ')"><img class="inv-card-img" src="' + item.gift_image + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '"><div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; 
+        }).join('') + '</div>';
     }
 
     function openItemModal(itemId) { var item = inventory.find(function(i){return i.id === itemId}); if (!item) return; selectedItem = item; vibrateIfOn(); var ton = starsToTon(item.gift_value); document.getElementById('itemModalImg').src = item.gift_image; document.getElementById('itemModalName').textContent = item.gift_name; document.getElementById('itemModalPrice').textContent = formatTon(ton); document.getElementById('itemModalSellBtn').textContent = t('sell'); document.getElementById('itemModalWithdrawBtn').textContent = t('withdraw'); document.getElementById('itemModalSellBtn').disabled = item.is_withdrawing; document.getElementById('itemModalWithdrawBtn').disabled = item.is_withdrawing; document.getElementById('itemModal').classList.add('show'); }

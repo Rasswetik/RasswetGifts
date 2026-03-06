@@ -9191,29 +9191,37 @@ function initAudio(){
     }
 }
 
-/* Vibration helper function - works on Telegram and browsers */
+/* Vibration helper function - works on Telegram and browsers - STRONG */
 function triggerVibration(pattern){
     if(!settingVibration) return;
     
-    /* Try Telegram WebApp haptic feedback first */
+    /* Try Telegram WebApp haptic feedback first - always strong */
     try{
         if(typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
             const hf = Telegram.WebApp.HapticFeedback;
-            if(Array.isArray(pattern)){
-                /* Complex pattern - use impact */
-                if(pattern.length >= 3) hf.impactOccurred('heavy');
-                else hf.impactOccurred('medium');
-            } else {
-                hf.impactOccurred('light');
+            /* Always use heavy impact for better feedback */
+            hf.impactOccurred('heavy');
+            /* For very important events, trigger multiple times */
+            if(Array.isArray(pattern) && pattern.length >= 4){
+                setTimeout(function(){ hf.impactOccurred('heavy'); }, 100);
+                setTimeout(function(){ hf.impactOccurred('rigid'); }, 200);
+            } else if(Array.isArray(pattern) && pattern.length >= 2){
+                setTimeout(function(){ hf.impactOccurred('medium'); }, 80);
             }
             return;
         }
     }catch(e){}
     
-    /* Fallback to standard Web Vibration API */
+    /* Fallback to standard Web Vibration API - stronger pattern */
     try{
         if(navigator.vibrate){
-            navigator.vibrate(pattern);
+            /* Double the pattern values for stronger feeling */
+            if(Array.isArray(pattern)){
+                var strongPattern = pattern.map(function(v){ return Math.min(v * 2, 300); });
+                navigator.vibrate(strongPattern);
+            } else {
+                navigator.vibrate(Math.min(pattern * 2, 300));
+            }
         }
     }catch(e){
         console.log('Vibration not supported');
