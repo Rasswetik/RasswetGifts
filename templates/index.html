@@ -198,8 +198,6 @@
         }
         .case-price img{width:12px;height:12px}
         .case-price.ton{color:var(--blue)}
-        .case-price.stars{color:#FDBE13}
-        .case-price.stars img{filter:brightness(0) saturate(100%) invert(82%) sepia(46%) saturate(1000%) hue-rotate(359deg) brightness(103%) contrast(103%)}
 
         .case-img{
             flex:1;display:flex;align-items:center;justify-content:center;
@@ -294,30 +292,29 @@
             100%{transform:translateX(-50%)}
         }
         .roulette-item{
-            flex-shrink:0;width:100px;height:148px;
+            flex-shrink:0;width:110px;height:150px;
             background:rgba(255,255,255,.04);
             border:1px solid var(--border);
             border-radius:14px;
-            padding:8px;
+            padding:10px;
             display:flex;flex-direction:column;align-items:center;
             justify-content:space-between;
-            position:relative;
         }
-        .roulette-item img{width:65px;height:65px;object-fit:contain;flex-shrink:0}
-        .roulette-item-price{
-            position:absolute;top:4px;right:4px;
-            display:flex;align-items:center;gap:2px;
-            padding:2px 5px;border-radius:5px;
-            background:rgba(0,152,234,.15);
-            font-size:9px;font-weight:700;color:var(--blue);
-        }
-        .roulette-item-price img{width:9px;height:9px}
         .roulette-item-name{
-            font-size:9px;font-weight:600;color:var(--text-2);
+            font-size:10px;font-weight:600;color:var(--text);
             text-align:center;line-height:1.2;
             max-width:100%;overflow:hidden;
             display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+            min-height:24px;
         }
+        .roulette-item img{width:60px;height:60px;object-fit:contain}
+        .roulette-item-price{
+            display:flex;align-items:center;gap:3px;
+            padding:4px 8px;border-radius:8px;
+            background:rgba(0,152,234,.12);
+            font-size:10px;font-weight:700;color:var(--blue);
+        }
+        .roulette-item-price img{width:12px;height:12px}
         .roulette-pointer{
             position:absolute;top:0;left:50%;transform:translateX(-50%);
             width:3px;height:100%;
@@ -475,31 +472,37 @@
         .contents-grid{
             display:grid;
             grid-template-columns:repeat(2,1fr);
-            gap:10px;
+            gap:12px;
         }
         .content-item{
-            background:rgba(255,255,255,.03);
+            background:rgba(255,255,255,.04);
             border:1px solid var(--border);
-            border-radius:14px;
-            padding:12px;
-            text-align:center;
-        }
-        .content-item img{
-            width:100%;aspect-ratio:1/1;
-            object-fit:contain;
-            border-radius:8px;
-            margin-bottom:8px;
+            border-radius:16px;
+            padding:14px;
+            display:flex;flex-direction:column;
+            align-items:center;
         }
         .content-item-name{
-            font-size:11px;font-weight:600;color:var(--text);
-            margin-bottom:6px;
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+            font-size:12px;font-weight:600;color:var(--text);
+            margin-bottom:10px;
+            text-align:center;
+            line-height:1.3;
+            min-height:32px;
+            display:flex;align-items:center;justify-content:center;
+        }
+        .content-item img{
+            width:90px;height:90px;
+            object-fit:contain;
+            margin-bottom:10px;
         }
         .content-price{
-            display:flex;align-items:center;justify-content:center;gap:4px;
-            font-size:13px;font-weight:700;color:var(--blue);
+            display:flex;align-items:center;justify-content:center;gap:5px;
+            padding:6px 12px;
+            background:rgba(0,152,234,.1);
+            border-radius:10px;
+            font-size:14px;font-weight:700;color:var(--blue);
         }
-        .content-price img{width:14px;height:14px}
+        .content-price img{width:16px;height:16px}
 
         /* ═══════════ DEPOSIT OVERLAY ═══════════ */
         .deposit-overlay{
@@ -766,50 +769,8 @@
         
         function getGiftImage(gift) {
             const img = gift.image || '';
-            
-            // Slug to local file mapping
-            const SLUG_MAP = {
-                'toybear': 'Toy_Bear.gif', 'petsnake': 'Pet_Snake.png', 'hangingstar': 'hstarr.gif',
-                'heartlocket': 'hl.gif', 'vintagecigar': 'vintage_cigar.gif', 'westsidesign': 'Westside_Sign.gif',
-                'whipcupcake': 'Whip_Cupcake.gif', 'winterwreath': 'WInterWreath.png', 'xmasstocking': 'Xmas_Stocking.gif',
-                'swisswatch': 'swiss_watch.png', 'nekohelmet': 'Neko_Helmet.png', 'moussecake': 'Mousse_Cake.gif',
-                'nailbracelet': 'Nail_Bracelet.gif', 'partysparkler': 'PartySparkler.png', 'perfumebottle': 'perfume_bottle.gif',
-                'preciouspeach': 'PreciousPeach.png', 'rarebird': 'rb.png', 'recordplayer': 'Record_Player.png',
-                'sakuraflower': 'Sakura_Flower.png', 'santahat': 'santahat.png', 'scaredcat': 'scared_cat.gif',
-                'sharptongue': 'Sharp_Tongue.gif', 'signetring': 'Signet_Ring.gif', 'skullflower': 'sr.png',
-                'skystillettos': 'Sky_Stilettos.gif', 'sleighbell': 'SleighBell.png', 'snakebox': 'mp.png',
-                'lootbag': 'Loot_Bag.gif', 'lovecandle': 'Love_candle.gif', 'lovepotion': 'rinf.gif',
-                'lowrider': 'bb.png', 'lunarsnake': 'LunarSnake.png', 'lushbouquet': 'pp.png',
-                'madpumpkin': 'mad_pumpkin.png', 'magicpotion': 'Magic_Potion.gif', 'mightyarm': 'Mighty_Arm.gif',
-                'minioscar': 'Mini_Oscar.gif', 'moneypot': 'mp.png', 'iongem': 'Ion_Gem.gif',
-                'ionicdryer': 'ionic_dryer.gif', 'jackinthebox': 'star.gif', 'jellybunny': 'Jelly_Bunny.png',
-                'jesterhat': 'cap.png', 'jollychump': 'star.gif', 'joyfulbundle': 'star.gif',
-                'khabibspapakha': 'cap.gif', 'kissedfrog': 'Kissed_Frog.gif', 'lightsword': 'light_sword.gif',
-                'lolpop': 'lolpop.gif', 'happybrownie': 'Happy_Brownie.png', 'heroichelmet': 'heroic_helmet.gif',
-                'hexpot': 'star.gif', 'holidaydrink': 'Holiday_Drink.png', 'homemadecake': 'hmcake.gif',
-                'hypnolollipop': 'lolpop.gif', 'icecream': 'ice_cream.gif', 'inputkey': 'input_key.gif',
-                'instantramen': 'ramen.png', 'deskcalendar': 'calendar.gif', 'durovcap': 'cap.gif',
-                'jinglebells': 'JingleBells.png', 'plushpepe': 'pepe.gif', 'artisanbrick': 'Artisan_Brick.gif',
-                'astralshard': 'Astral_Shard.png', 'bdaycandle': 'BDCandle.png', 'berrybox': 'star.gif',
-                'bigyear': 'Big_Year.png', 'blingbinky': 'star.gif', 'bondedring': 'Bonded_Ring.gif',
-                'bowtie': 'bow_tie.gif', 'bunnymuffin': 'star.gif', 'candycane': 'CandyCane.png',
-                'cloverpin': 'clover_pin.gif', 'cookieheart': 'CookieHeart.png', 'crystalball': 'Crystal_Ball.png',
-                'cupidcharm': 'Cupid_Charm.png', 'diamondring': 'Diamond_Ring.png', 'easteregg': 'star.gif',
-                'electricskull': 'electric_skull.gif', 'eternalcandle': 'Eternal_Candle.png', 'eternalrose': 'EternalRose.png',
-                'evileye': 'star.gif', 'faithamulet': 'Faith_Amulet.png', 'flyingbroom': 'star.gif',
-                'freshsocks': 'Socks.gif', 'gemsignet': 'star.gif', 'genielamp': 'Genie_Lamp.gif',
-                'gingercookie': 'Ginger_Cookie.png', 'voodoodoll': 'voodoo_doll.png', 'trappedheart': 'Valentine_heart.png',
-                'plushpepe': 'Plush_Pepe.png', 'record': 'Record_Player.png', 'swagbag': 'star.gif'
-            };
-            
-            // Fragment URLs - map to local
-            if (img.includes('fragment.com/file')) {
-                const slug = gift.fragment_slug || img.split('/gifts/')[1]?.split('/')[0] || '';
-                if (slug && SLUG_MAP[slug.toLowerCase()]) {
-                    return '/static/gifs/gifts/' + SLUG_MAP[slug.toLowerCase()];
-                }
-            }
-            if (img && !img.startsWith('http')) return img;
+            // Use Fragment URLs directly - they should work
+            // onerror handler on img elements will fallback to default
             if (img) return img;
             return '/static/img/gift.png';
         }
@@ -1058,20 +1019,20 @@
                 return;
             }
             
-            // Roulette items with names
+            // Roulette items with names (name top, img center, price bottom)
             const rouletteItems = [];
             for (let i = 0; i < 30; i++) {
                 const g = gifts[i % gifts.length];
                 const gPrice = getGiftPrice(g);
-                const gName = g.name || 'Подарок';
+                const gName = (g.name || 'Подарок').replace(' (Random)', '');
                 rouletteItems.push(`
                     <div class="roulette-item">
+                        <div class="roulette-item-name">${escapeHtml(gName)}</div>
+                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                         <div class="roulette-item-price">
                             <img src="/static/img/ton.png" alt="">
                             ${formatTon(gPrice)}
                         </div>
-                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
-                        <div class="roulette-item-name">${escapeHtml(gName)}</div>
                     </div>
                 `);
             }
@@ -1082,17 +1043,17 @@
             track.style.transition = 'none';
             track.style.transform = 'translateX(0)';
 
-            // Contents with names
+            // Contents with names (name top, img center, price bottom)
             $('contentsGrid').innerHTML = gifts.map(g => {
                 const gPrice = getGiftPrice(g);
-                const gName = g.name || 'Подарок';
+                const gName = (g.name || 'Подарок').replace(' (Random)', '');
                 return `
                     <div class="content-item">
-                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                         <div class="content-item-name">${escapeHtml(gName)}</div>
+                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                         <div class="content-price">
                             <img src="/static/img/ton.png" alt="">
-                            ${formatTon(gPrice)}
+                            ${formatTon(gPrice)} TON
                         </div>
                     </div>
                 `;
@@ -1278,15 +1239,15 @@
 
             track.innerHTML = items.map(g => {
                 const gPrice = getGiftPrice(g);
-                const gName = g.name || 'Подарок';
+                const gName = (g.name || 'Подарок').replace(' (Random)', '');
                 return `
                     <div class="roulette-item">
+                        <div class="roulette-item-name">${escapeHtml(gName)}</div>
+                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                         <div class="roulette-item-price">
                             <img src="/static/img/ton.png" alt="">
                             ${formatTon(gPrice)}
                         </div>
-                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
-                        <div class="roulette-item-name">${escapeHtml(gName)}</div>
                     </div>
                 `;
             }).join('');
@@ -1296,16 +1257,16 @@
 
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    const itemWidth = 110; // 100px + 10px gap
+                    const itemWidth = 120; // 110px + 10px gap
                     const wrap = $('rouletteWrap');
                     const centerOffset = wrap.offsetWidth / 2;
                     const targetPos = itemWidth * 42 + itemWidth / 2;
-                    track.style.transition = 'transform 5s cubic-bezier(.08,.82,.17,1)';
+                    track.style.transition = 'transform 4s cubic-bezier(.1,.9,.2,1)';
                     track.style.transform = `translateX(${centerOffset - targetPos}px)`;
                 });
             });
 
-            setTimeout(() => showWinResultInModal(wonGift), 5300);
+            setTimeout(() => showWinResultInModal(wonGift), 4300);
         }
 
         function showWinResultInModal(gift) {
