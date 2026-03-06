@@ -769,8 +769,14 @@
         
         function getGiftImage(gift) {
             const img = gift.image || '';
-            // Use Fragment URLs directly - they should work
-            // onerror handler on img elements will fallback to default
+            // If it's a Fragment URL, use it directly
+            // The browser will load from fragment.com
+            if (img && img.includes('fragment.com')) {
+                return img;
+            }
+            // Local paths
+            if (img && img.startsWith('/')) return img;
+            // Other URLs
             if (img) return img;
             return '/static/img/gift.png';
         }
@@ -1222,7 +1228,9 @@
             const wonGift = Array.isArray(wonGifts) ? wonGifts[0] : wonGifts;
             lastWonGift = wonGift;
             
-            const gifts = currentCase.gifts_details || currentCase.gifts || [];
+            // Filter out stars_balance gifts
+            const allGifts = currentCase.gifts_details || currentCase.gifts || [];
+            const gifts = allGifts.filter(g => g.type !== 'stars_balance');
             const track = $('rouletteTrack');
             
             // Stop idle animation
@@ -1232,7 +1240,7 @@
             // Generate spin items with winner at position 42
             const items = [];
             for (let i = 0; i < 50; i++) {
-                const g = gifts[Math.floor(Math.random() * gifts.length)];
+                const g = gifts.length ? gifts[Math.floor(Math.random() * gifts.length)] : wonGift;
                 items.push(g);
             }
             items[42] = wonGift;
