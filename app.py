@@ -1,4 +1,4 @@
-# app.py - основной файл приложения
+﻿# app.py - РѕСЃРЅРѕРІРЅРѕР№ С„Р°Р№Р» РїСЂРёР»РѕР¶РµРЅРёСЏ
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect
 import sqlite3
 import json
@@ -20,18 +20,18 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import requests as http_requests
 
-# Загружаем переменные окружения
+# Р—Р°РіСЂСѓР¶Р°РµРј РїРµСЂРµРјРµРЅРЅС‹Рµ РѕРєСЂСѓР¶РµРЅРёСЏ
 load_dotenv()
 
-# Настройка логирования
+# РќР°СЃС‚СЂРѕР№РєР° Р»РѕРіРёСЂРѕРІР°РЅРёСЏ
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Создаем приложение Flask
+# РЎРѕР·РґР°РµРј РїСЂРёР»РѕР¶РµРЅРёРµ Flask
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'raswet-secret-key-2024')
 
-# Конфигурация
+# РљРѕРЅС„РёРіСѓСЂР°С†РёСЏ
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 ADMIN_ID = int(os.getenv('ADMIN_ID', '5257227756'))
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8224991617:AAF2F7ub0XF9N6wsWyn3PmhdZnYt62KmpRE')
@@ -40,10 +40,10 @@ TG_API = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_FILE_SIZE = 16 * 1024 * 1024
 
-# Глобальные переменные для кэширования
+# Р“Р»РѕР±Р°Р»СЊРЅС‹Рµ РїРµСЂРµРјРµРЅРЅС‹Рµ РґР»СЏ РєСЌС€РёСЂРѕРІР°РЅРёСЏ
 gifts_cache = None
 gifts_cache_time = None
-CACHE_DURATION = 600  # 10 минут кэш подарков
+CACHE_DURATION = 600  # 10 РјРёРЅСѓС‚ РєСЌС€ РїРѕРґР°СЂРєРѕРІ
 FRAGMENT_SYNC_ENABLED = os.getenv('FRAGMENT_SYNC_ENABLED', '1') != '0'
 FRAGMENT_SYNC_TIMEOUT = int(os.getenv('FRAGMENT_SYNC_TIMEOUT', '6'))
 FRAGMENT_SYNC_MAX = int(os.getenv('FRAGMENT_SYNC_MAX', '5000'))
@@ -59,7 +59,7 @@ fragment_cache_time = None
 fragment_models_cache = {}
 fragment_models_cache_time = {}
 
-# ── Manual gift prices in TON (override Fragment/local prices) ──────────────
+# в”Ђв”Ђ Manual gift prices in TON (override Fragment/local prices) в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
 MANUAL_GIFT_PRICES_TON = {
     'ufc strike': 15.3,
     'valentine box': 11.7,
@@ -167,9 +167,9 @@ _MANUAL_PRICES_BY_SLUG = {re.sub(r'[^a-z0-9]+', '', k): v for k, v in MANUAL_GIF
 _fragment_http_session = None
 fragment_last_error = None
 
-# Кэш пользователей (user_id -> {data, timestamp})
+# РљСЌС€ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ (user_id -> {data, timestamp})
 _user_cache = {}
-_user_cache_duration = 30  # 30 секунд
+_user_cache_duration = 30  # 30 СЃРµРєСѓРЅРґ
 
 # Crash bots in-memory state
 _crash_bots_cache = {
@@ -191,7 +191,7 @@ _crash_game_cache = {
 }
 _crash_cache_lock = threading.Lock()
 
-# Lock to prevent bets during phase transitions (counting → flying)
+# Lock to prevent bets during phase transitions (counting в†’ flying)
 _crash_phase_lock = threading.Lock()
 _crash_phase_transitioning = False
 
@@ -236,7 +236,7 @@ def update_crash_cache(game_id, status, current_mult, target_mult, time_remainin
         }
 
 
-# ─── CRASH BOTS HELPERS ───
+# в”Ђв”Ђв”Ђ CRASH BOTS HELPERS в”Ђв”Ђв”Ђ
 _BOT_AVATARS = [
     'https://i.pravatar.cc/100?img=1', 'https://i.pravatar.cc/100?img=2',
     'https://i.pravatar.cc/100?img=3', 'https://i.pravatar.cc/100?img=4',
@@ -275,15 +275,15 @@ _BOT_AVATARS = [
 ]
 
 _BOT_NAMES_RU = [
-    'Алексей', 'Дмитрий', 'Максим', 'Артём', 'Иван',
-    'Михаил', 'Даниил', 'Кирилл', 'Андрей', 'Егор',
-    'Никита', 'Матвей', 'Тимофей', 'Роман', 'Владимир',
-    'Ярослав', 'Фёдор', 'Денис', 'Константин', 'Глеб',
-    'Анна', 'Мария', 'Софья', 'Дарья', 'Алиса',
-    'Полина', 'Виктория', 'Екатерина', 'Вероника', 'Арина',
-    'ТеньЛиса', 'КиберВолк', 'ЛунныйКот', 'ЗвёздныйТигр', 'НеоПанда',
-    'Дракончик', 'КосмоЗаяц', 'БуряКоготь', 'РобоЛис', 'ПиксельЕнот',
-    'СапфирФеникс', 'НочнойЯгуар', 'ГромКит', 'ВихрьСова', 'КометаРысь',
+    'РђР»РµРєСЃРµР№', 'Р”РјРёС‚СЂРёР№', 'РњР°РєСЃРёРј', 'РђСЂС‚С‘Рј', 'РРІР°РЅ',
+    'РњРёС…Р°РёР»', 'Р”Р°РЅРёРёР»', 'РљРёСЂРёР»Р»', 'РђРЅРґСЂРµР№', 'Р•РіРѕСЂ',
+    'РќРёРєРёС‚Р°', 'РњР°С‚РІРµР№', 'РўРёРјРѕС„РµР№', 'Р РѕРјР°РЅ', 'Р’Р»Р°РґРёРјРёСЂ',
+    'РЇСЂРѕСЃР»Р°РІ', 'Р¤С‘РґРѕСЂ', 'Р”РµРЅРёСЃ', 'РљРѕРЅСЃС‚Р°РЅС‚РёРЅ', 'Р“Р»РµР±',
+    'РђРЅРЅР°', 'РњР°СЂРёСЏ', 'РЎРѕС„СЊСЏ', 'Р”Р°СЂСЊСЏ', 'РђР»РёСЃР°',
+    'РџРѕР»РёРЅР°', 'Р’РёРєС‚РѕСЂРёСЏ', 'Р•РєР°С‚РµСЂРёРЅР°', 'Р’РµСЂРѕРЅРёРєР°', 'РђСЂРёРЅР°',
+    'РўРµРЅСЊР›РёСЃР°', 'РљРёР±РµСЂР’РѕР»Рє', 'Р›СѓРЅРЅС‹Р№РљРѕС‚', 'Р—РІС‘Р·РґРЅС‹Р№РўРёРіСЂ', 'РќРµРѕРџР°РЅРґР°',
+    'Р”СЂР°РєРѕРЅС‡РёРє', 'РљРѕСЃРјРѕР—Р°СЏС†', 'Р‘СѓСЂСЏРљРѕРіРѕС‚СЊ', 'Р РѕР±РѕР›РёСЃ', 'РџРёРєСЃРµР»СЊР•РЅРѕС‚',
+    'РЎР°РїС„РёСЂР¤РµРЅРёРєСЃ', 'РќРѕС‡РЅРѕР№РЇРіСѓР°СЂ', 'Р“СЂРѕРјРљРёС‚', 'Р’РёС…СЂСЊРЎРѕРІР°', 'РљРѕРјРµС‚Р°Р С‹СЃСЊ',
 ]
 
 _BOT_NAMES_EN = [
@@ -302,9 +302,9 @@ _BOT_NAMES_EN = [
 ]
 
 _BOT_LASTNAMES_RU = [
-    'Иванов', 'Петров', 'Смирнов', 'Кузнецов', 'Попов', 'Соколов', 'Лебедев',
-    'Козлов', 'Новиков', 'Морозов', 'Волков', 'Соловьёв', 'Васильев', 'Зайцев',
-    'Павлов', 'Семенов', 'Голубев', 'Виноградов', 'Богданов', 'Воробьёв'
+    'РРІР°РЅРѕРІ', 'РџРµС‚СЂРѕРІ', 'РЎРјРёСЂРЅРѕРІ', 'РљСѓР·РЅРµС†РѕРІ', 'РџРѕРїРѕРІ', 'РЎРѕРєРѕР»РѕРІ', 'Р›РµР±РµРґРµРІ',
+    'РљРѕР·Р»РѕРІ', 'РќРѕРІРёРєРѕРІ', 'РњРѕСЂРѕР·РѕРІ', 'Р’РѕР»РєРѕРІ', 'РЎРѕР»РѕРІСЊС‘РІ', 'Р’Р°СЃРёР»СЊРµРІ', 'Р—Р°Р№С†РµРІ',
+    'РџР°РІР»РѕРІ', 'РЎРµРјРµРЅРѕРІ', 'Р“РѕР»СѓР±РµРІ', 'Р’РёРЅРѕРіСЂР°РґРѕРІ', 'Р‘РѕРіРґР°РЅРѕРІ', 'Р’РѕСЂРѕР±СЊС‘РІ'
 ]
 
 _BOT_LASTNAMES_EN = [
@@ -426,7 +426,7 @@ def _seed_default_bots(conn, count=100):
 
 
 def _generate_bot_bets(game_id, real_player_count):
-    """Generate bot bets for a game round — DISABLED"""
+    """Generate bot bets for a game round вЂ” DISABLED"""
     return  # Bots disabled
 
 
@@ -470,7 +470,7 @@ def _get_bot_bets_for_api(game_id):
     return result
 
 
-# Система уровней - turnover в звёздах (100 stars = 1 TON)
+# РЎРёСЃС‚РµРјР° СѓСЂРѕРІРЅРµР№ - turnover РІ Р·РІС‘Р·РґР°С… (100 stars = 1 TON)
 # Rewards: rocket skins and backgrounds ONLY (no stars/tickets)
 LEVEL_SYSTEM = [
     {"level": 1,  "exp_required": 0,       "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "crash",       "reward_bg": None},
@@ -502,32 +502,32 @@ LEVEL_SYSTEM = [
 
 # Background names for display
 BG_NAMES = {
-    'grid': 'Сетка',
-    'cosmic': 'Космос',
-    'rainbow': 'Радуга',
-    'aurora': 'Аврора',
-    'neon': 'Неон',
+    'grid': 'РЎРµС‚РєР°',
+    'cosmic': 'РљРѕСЃРјРѕСЃ',
+    'rainbow': 'Р Р°РґСѓРіР°',
+    'aurora': 'РђРІСЂРѕСЂР°',
+    'neon': 'РќРµРѕРЅ',
 }
 
-# Карта названий ракет для отображения
+# РљР°СЂС‚Р° РЅР°Р·РІР°РЅРёР№ СЂР°РєРµС‚ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ
 ROCKET_NAMES = {
-    'crash': 'Ракета',
-    'pencil': 'Карандаш',
-    'banana': 'Банан',
-    'plane': 'Самолёт',
-    'dog': 'Собака',
-    'cat': 'Кот',
-    'rabbit': 'Кролик',
-    'smesh': 'Смешарик',
-    'scorpion': 'Скорпион',
-    'telegram': 'Телеграм',
-    'ice': 'Лёд',
-    'unicorn': 'Единорог',
+    'crash': 'Р Р°РєРµС‚Р°',
+    'pencil': 'РљР°СЂР°РЅРґР°С€',
+    'banana': 'Р‘Р°РЅР°РЅ',
+    'plane': 'РЎР°РјРѕР»С‘С‚',
+    'dog': 'РЎРѕР±Р°РєР°',
+    'cat': 'РљРѕС‚',
+    'rabbit': 'РљСЂРѕР»РёРє',
+    'smesh': 'РЎРјРµС€Р°СЂРёРє',
+    'scorpion': 'РЎРєРѕСЂРїРёРѕРЅ',
+    'telegram': 'РўРµР»РµРіСЂР°Рј',
+    'ice': 'Р›С‘Рґ',
+    'unicorn': 'Р•РґРёРЅРѕСЂРѕРі',
     'TonTheMoon': 'TON Moon',
-    'goldenplane': 'Золотой Самолёт',
+    'goldenplane': 'Р—РѕР»РѕС‚РѕР№ РЎР°РјРѕР»С‘С‚',
 }
 
-# Карта крейтов за уровни
+# РљР°СЂС‚Р° РєСЂРµР№С‚РѕРІ Р·Р° СѓСЂРѕРІРЅРё
 LEVEL_CRATES = {
     'starter_crate':   {'name': 'Starter Crate',   'image': '/static/img/crates/starter.png',   'items': [('stars', '50', 'Stars x50', 40, 'common'), ('stars', '150', 'Stars x150', 30, 'uncommon'), ('tickets', '5', 'Tickets x5', 20, 'rare'), ('stars', '300', 'Stars x300', 10, 'epic')]},
     'bronze_crate':    {'name': 'Bronze Crate',     'image': '/static/img/crates/bronze.png',    'items': [('stars', '100', 'Stars x100', 35, 'common'), ('stars', '250', 'Stars x250', 30, 'uncommon'), ('tickets', '10', 'Tickets x10', 20, 'rare'), ('stars', '500', 'Stars x500', 15, 'epic')]},
@@ -544,7 +544,7 @@ LEVEL_CRATES = {
 }
 
 def _sync_levels_from_db():
-    """Загружает уровни из БД. Если пусто — заполняет из LEVEL_SYSTEM по умолчанию."""
+    """Р—Р°РіСЂСѓР¶Р°РµС‚ СѓСЂРѕРІРЅРё РёР· Р‘Р”. Р•СЃР»Рё РїСѓСЃС‚Рѕ вЂ” Р·Р°РїРѕР»РЅСЏРµС‚ РёР· LEVEL_SYSTEM РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ."""
     global LEVEL_SYSTEM
     try:
         conn = get_db_connection()
@@ -558,7 +558,7 @@ def _sync_levels_from_db():
                     VALUES (?, ?, ?, ?)''',
                     (lvl['level'], lvl['exp_required'], lvl['reward_stars'], lvl['reward_tickets']))
             conn.commit()
-            logger.info(f"📊 Сохранено {len(LEVEL_SYSTEM)} уровней в БД")
+            logger.info(f"рџ“Љ РЎРѕС…СЂР°РЅРµРЅРѕ {len(LEVEL_SYSTEM)} СѓСЂРѕРІРЅРµР№ РІ Р‘Р”")
         else:
             # Load from DB
             cursor.execute('SELECT level, exp_required, reward_stars, reward_tickets FROM levels ORDER BY level')
@@ -567,18 +567,18 @@ def _sync_levels_from_db():
                 {"level": r[0], "exp_required": r[1], "reward_stars": r[2], "reward_tickets": r[3]}
                 for r in rows
             ]
-            logger.info(f"📊 Загружено {len(LEVEL_SYSTEM)} уровней из БД")
+            logger.info(f"рџ“Љ Р—Р°РіСЂСѓР¶РµРЅРѕ {len(LEVEL_SYSTEM)} СѓСЂРѕРІРЅРµР№ РёР· Р‘Р”")
         conn.close()
     except Exception as e:
-        logger.error(f"❌ Ошибка загрузки уровней из БД: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СѓСЂРѕРІРЅРµР№ РёР· Р‘Р”: {e}")
 
-# ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+# ==================== Р’РЎРџРћРњРћР“РђРўР•Р›Р¬РќР«Р• Р¤РЈРќРљР¦РР ====================
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def load_gifts_cached():
-    """Загружает подарки с кэшированием"""
+    """Р—Р°РіСЂСѓР¶Р°РµС‚ РїРѕРґР°СЂРєРё СЃ РєСЌС€РёСЂРѕРІР°РЅРёРµРј"""
     global gifts_cache, gifts_cache_time
     current_time = time.time()
     if gifts_cache is not None and gifts_cache_time is not None:
@@ -619,7 +619,7 @@ def _load_fragment_catalog_disk_cache():
         with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
         if isinstance(data, dict):
-            # Загружаем модели из кэша в память (sync_fragment.py)
+            # Р—Р°РіСЂСѓР¶Р°РµРј РјРѕРґРµР»Рё РёР· РєСЌС€Р° РІ РїР°РјСЏС‚СЊ (sync_fragment.py)
             cached_models = data.get('models')
             if isinstance(cached_models, dict) and cached_models:
                 loaded_count = 0
@@ -642,7 +642,7 @@ def _save_fragment_catalog_disk_cache(gifts):
     try:
         if not isinstance(gifts, list):
             return
-        # Сохраняем gifts + текущие модели из памяти
+        # РЎРѕС…СЂР°РЅСЏРµРј gifts + С‚РµРєСѓС‰РёРµ РјРѕРґРµР»Рё РёР· РїР°РјСЏС‚Рё
         models_snapshot = {}
         for slug_key, model_list in fragment_models_cache.items():
             if isinstance(model_list, list) and model_list:
@@ -728,7 +728,7 @@ def fetch_fragment_gifts_catalog(force_refresh=False):
             if cache_age < FRAGMENT_CACHE_DURATION:
                 return fragment_cache
         else:
-            # Для пустого кэша делаем более частые ретраи (на случай временной ошибки Fragment)
+            # Р”Р»СЏ РїСѓСЃС‚РѕРіРѕ РєСЌС€Р° РґРµР»Р°РµРј Р±РѕР»РµРµ С‡Р°СЃС‚С‹Рµ СЂРµС‚СЂР°Рё (РЅР° СЃР»СѓС‡Р°Р№ РІСЂРµРјРµРЅРЅРѕР№ РѕС€РёР±РєРё Fragment)
             if cache_age < min(FRAGMENT_CACHE_DURATION, 60):
                 return fragment_cache
 
@@ -1087,7 +1087,7 @@ def fetch_fragment_gift_models(slug, base_name='', base_value=0, base_image='', 
 
     models = []
     previous = fragment_models_cache.get(cache_key, [])
-    # Если в памяти уже есть модели (загружены из дискового кэша) — отдаём их
+    # Р•СЃР»Рё РІ РїР°РјСЏС‚Рё СѓР¶Рµ РµСЃС‚СЊ РјРѕРґРµР»Рё (Р·Р°РіСЂСѓР¶РµРЅС‹ РёР· РґРёСЃРєРѕРІРѕРіРѕ РєСЌС€Р°) вЂ” РѕС‚РґР°С‘Рј РёС…
     if previous and not force_refresh:
         return previous
     try:
@@ -1150,7 +1150,7 @@ def fetch_fragment_gift_models(slug, base_name='', base_value=0, base_image='', 
             models.append({
                 'id': _build_case_custom_gift_id(f'{base_name} {model_name}'.strip(), fragment_slug=cache_key, model_name=model_name),
                 'gift_key': _build_case_custom_gift_id(f'{base_name} {model_name}'.strip(), fragment_slug=cache_key, model_name=model_name),
-                'name': f'{base_name} • {model_name}'.strip(' •'),
+                'name': f'{base_name} вЂў {model_name}'.strip(' вЂў'),
                 'base_name': base_name,
                 'model_name': model_name,
                 'model_count': count_value,
@@ -1182,7 +1182,7 @@ def fetch_fragment_gift_models(slug, base_name='', base_value=0, base_image='', 
                 models.append({
                     'id': _build_case_custom_gift_id(f'{base_name} {model_name}'.strip(), fragment_slug=cache_key, model_name=model_name),
                     'gift_key': _build_case_custom_gift_id(f'{base_name} {model_name}'.strip(), fragment_slug=cache_key, model_name=model_name),
-                    'name': f'{base_name} • {model_name}'.strip(' •'),
+                    'name': f'{base_name} вЂў {model_name}'.strip(' вЂў'),
                     'base_name': base_name,
                     'model_name': model_name,
                     'model_count': count_value,
@@ -1246,18 +1246,18 @@ def _resolve_case_gift_payload(gifts, selected_gift_info):
     }
 
 def load_gifts():
-    """Загружает подарки из JSON файла"""
+    """Р—Р°РіСЂСѓР¶Р°РµС‚ РїРѕРґР°СЂРєРё РёР· JSON С„Р°Р№Р»Р°"""
     try:
-        # Пробуем основной путь
+        # РџСЂРѕР±СѓРµРј РѕСЃРЅРѕРІРЅРѕР№ РїСѓС‚СЊ
         file_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
         
-        # Альтернативные пути для PythonAnywhere
+        # РђР»СЊС‚РµСЂРЅР°С‚РёРІРЅС‹Рµ РїСѓС‚Рё РґР»СЏ PythonAnywhere
         alt_paths = [
             '/home/rasswetik52/mysite/data/gifts.json',
             os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'gifts.json'),
         ]
         
-        # Ищем существующий файл
+        # РС‰РµРј СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёР№ С„Р°Р№Р»
         actual_path = None
         if os.path.exists(file_path):
             actual_path = file_path
@@ -1265,83 +1265,83 @@ def load_gifts():
             for alt in alt_paths:
                 if os.path.exists(alt):
                     actual_path = alt
-                    logger.info(f"Gifts: использую альтернативный путь: {alt}")
+                    logger.info(f"Gifts: РёСЃРїРѕР»СЊР·СѓСЋ Р°Р»СЊС‚РµСЂРЅР°С‚РёРІРЅС‹Р№ РїСѓС‚СЊ: {alt}")
                     break
         
         if not actual_path:
-            logger.warning(f"Файл gifts.json не найден. Проверены пути: {file_path}, {alt_paths}")
+            logger.warning(f"Р¤Р°Р№Р» gifts.json РЅРµ РЅР°Р№РґРµРЅ. РџСЂРѕРІРµСЂРµРЅС‹ РїСѓС‚Рё: {file_path}, {alt_paths}")
             return []
         
-        logger.info(f"Gifts: загрузка из {actual_path}")
+        logger.info(f"Gifts: Р·Р°РіСЂСѓР·РєР° РёР· {actual_path}")
         with open(actual_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            # Поддержка обоих форматов: {gifts: [...]} и просто [...]
+            # РџРѕРґРґРµСЂР¶РєР° РѕР±РѕРёС… С„РѕСЂРјР°С‚РѕРІ: {gifts: [...]} Рё РїСЂРѕСЃС‚Рѕ [...]
             if isinstance(data, list):
-                logger.info(f"Загружено {len(data)} подарков (формат array)")
+                logger.info(f"Р—Р°РіСЂСѓР¶РµРЅРѕ {len(data)} РїРѕРґР°СЂРєРѕРІ (С„РѕСЂРјР°С‚ array)")
                 return data
             elif isinstance(data, dict):
                 gifts = data.get('gifts', [])
-                logger.info(f"Загружено {len(gifts)} подарков (формат object)")
+                logger.info(f"Р—Р°РіСЂСѓР¶РµРЅРѕ {len(gifts)} РїРѕРґР°СЂРєРѕРІ (С„РѕСЂРјР°С‚ object)")
                 return gifts
             else:
-                logger.error(f"Неверный формат gifts.json: {type(data)}")
+                logger.error(f"РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ gifts.json: {type(data)}")
                 return []
     except json.JSONDecodeError as e:
-        logger.error(f"Ошибка парсинга gifts.json: {e}")
+        logger.error(f"РћС€РёР±РєР° РїР°СЂСЃРёРЅРіР° gifts.json: {e}")
         return []
     except Exception as e:
-        logger.error(f"Ошибка загрузки gifts.json: {e}")
+        logger.error(f"РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё gifts.json: {e}")
         return []
 
 def save_gifts(gifts):
-    """Сохраняет подарки в JSON файл"""
+    """РЎРѕС…СЂР°РЅСЏРµС‚ РїРѕРґР°СЂРєРё РІ JSON С„Р°Р№Р»"""
     try:
         file_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
 
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"✅ Сохранено {len(gifts)} подарков")
+        logger.info(f"вњ… РЎРѕС…СЂР°РЅРµРЅРѕ {len(gifts)} РїРѕРґР°СЂРєРѕРІ")
         return True
     except Exception as e:
-        logger.error(f"❌ Ошибка сохранения подарков: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РїРѕРґР°СЂРєРѕРІ: {e}")
         return False
 
 def load_cases():
-    """Загружает кейсы из JSON файла"""
+    """Р—Р°РіСЂСѓР¶Р°РµС‚ РєРµР№СЃС‹ РёР· JSON С„Р°Р№Р»Р°"""
     try:
         file_path = os.path.join(BASE_PATH, 'data', 'cases.json')
 
         if not os.path.exists(file_path):
-            logger.error(f"❌ Файл cases.json не найден!")
+            logger.error(f"вќЊ Р¤Р°Р№Р» cases.json РЅРµ РЅР°Р№РґРµРЅ!")
             return []
 
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
             cases = data.get('cases', [])
-            logger.info(f"✅ Загружено {len(cases)} кейсов")
+            logger.info(f"вњ… Р—Р°РіСЂСѓР¶РµРЅРѕ {len(cases)} РєРµР№СЃРѕРІ")
             return cases
 
     except Exception as e:
-        logger.error(f"❌ Ошибка загрузки кейсов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё РєРµР№СЃРѕРІ: {e}")
         return []
 
 def save_cases(cases):
-    """Сохраняет кейсы в JSON файл"""
+    """РЎРѕС…СЂР°РЅСЏРµС‚ РєРµР№СЃС‹ РІ JSON С„Р°Р№Р»"""
     try:
         file_path = os.path.join(BASE_PATH, 'data', 'cases.json')
 
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump({'cases': cases}, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"✅ Сохранено {len(cases)} кейсов")
+        logger.info(f"вњ… РЎРѕС…СЂР°РЅРµРЅРѕ {len(cases)} РєРµР№СЃРѕРІ")
         return True
     except Exception as e:
-        logger.error(f"❌ Ошибка сохранения кейсов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РєРµР№СЃРѕРІ: {e}")
         return False
 
 def load_case_sections():
-    """Загружает список разделов кейсов"""
+    """Р—Р°РіСЂСѓР¶Р°РµС‚ СЃРїРёСЃРѕРє СЂР°Р·РґРµР»РѕРІ РєРµР№СЃРѕРІ"""
     try:
         file_path = os.path.join(BASE_PATH, 'data', 'case_sections.json')
         if not os.path.exists(file_path):
@@ -1352,34 +1352,34 @@ def load_case_sections():
             sections.sort(key=lambda x: x.get('order', 0))
             return sections
     except Exception as e:
-        logger.error(f"❌ Ошибка загрузки разделов кейсов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё СЂР°Р·РґРµР»РѕРІ РєРµР№СЃРѕРІ: {e}")
         return []
 
 def save_case_sections(sections):
-    """Сохраняет список разделов кейсов"""
+    """РЎРѕС…СЂР°РЅСЏРµС‚ СЃРїРёСЃРѕРє СЂР°Р·РґРµР»РѕРІ РєРµР№СЃРѕРІ"""
     try:
         file_path = os.path.join(BASE_PATH, 'data', 'case_sections.json')
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump({'sections': sections}, f, ensure_ascii=False, indent=2)
         return True
     except Exception as e:
-        logger.error(f"❌ Ошибка сохранения разделов кейсов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ СЂР°Р·РґРµР»РѕРІ РєРµР№СЃРѕРІ: {e}")
         return False
 
 def normalize_section_id(value):
     text = str(value or '').strip().lower()
     text = re.sub(r'\s+', '_', text)
-    text = re.sub(r'[^a-z0-9_\-а-яё]', '', text)
+    text = re.sub(r'[^a-z0-9_\-Р°-СЏС‘]', '', text)
     return text[:40] or 'other'
 
-# Флаг готовности БД — игровые циклы ждут его перед работой
+# Р¤Р»Р°Рі РіРѕС‚РѕРІРЅРѕСЃС‚Рё Р‘Р” вЂ” РёРіСЂРѕРІС‹Рµ С†РёРєР»С‹ Р¶РґСѓС‚ РµРіРѕ РїРµСЂРµРґ СЂР°Р±РѕС‚РѕР№
 _db_ready = False
-_db_lock = threading.Lock()  # Один замок на все операции с БД
+_db_lock = threading.Lock()  # РћРґРёРЅ Р·Р°РјРѕРє РЅР° РІСЃРµ РѕРїРµСЂР°С†РёРё СЃ Р‘Р”
 
 DB_PATH = os.path.join(BASE_PATH, 'data', 'raswet_gifts.db')
 
 def get_db_connection():
-    """Получает соединение с базой данных с защитой от повреждений"""
+    """РџРѕР»СѓС‡Р°РµС‚ СЃРѕРµРґРёРЅРµРЅРёРµ СЃ Р±Р°Р·РѕР№ РґР°РЅРЅС‹С… СЃ Р·Р°С‰РёС‚РѕР№ РѕС‚ РїРѕРІСЂРµР¶РґРµРЅРёР№"""
     global _db_ready
     
     for attempt in range(3):
@@ -1392,7 +1392,7 @@ def get_db_connection():
             conn.execute("PRAGMA temp_store = MEMORY")
             conn.execute("PRAGMA wal_autocheckpoint = 1000")
             
-            # Проверяем таблицы только один раз
+            # РџСЂРѕРІРµСЂСЏРµРј С‚Р°Р±Р»РёС†С‹ С‚РѕР»СЊРєРѕ РѕРґРёРЅ СЂР°Р·
             if not _db_ready:
                 try:
                     tables = conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
@@ -1407,9 +1407,9 @@ def get_db_connection():
             return conn
         except sqlite3.DatabaseError as e:
             if 'malformed' in str(e) or 'disk' in str(e):
-                logger.error(f"❌ БД повреждена, попытка восстановления {attempt+1}/3")
+                logger.error(f"вќЊ Р‘Р” РїРѕРІСЂРµР¶РґРµРЅР°, РїРѕРїС‹С‚РєР° РІРѕСЃСЃС‚Р°РЅРѕРІР»РµРЅРёСЏ {attempt+1}/3")
                 try:
-                    # Удаляем повреждённые файлы
+                    # РЈРґР°Р»СЏРµРј РїРѕРІСЂРµР¶РґС‘РЅРЅС‹Рµ С„Р°Р№Р»С‹
                     for ext in ['-wal', '-shm', '-journal']:
                         p = DB_PATH + ext
                         if os.path.exists(p):
@@ -1420,37 +1420,37 @@ def get_db_connection():
             else:
                 raise
     
-    # Последняя попытка
+    # РџРѕСЃР»РµРґРЅСЏСЏ РїРѕРїС‹С‚РєР°
     return sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
 
 def _nuke_db():
-    """Полностью удаляет все файлы БД (вызывать под _db_lock!)"""
+    """РџРѕР»РЅРѕСЃС‚СЊСЋ СѓРґР°Р»СЏРµС‚ РІСЃРµ С„Р°Р№Р»С‹ Р‘Р” (РІС‹Р·С‹РІР°С‚СЊ РїРѕРґ _db_lock!)"""
     for ext in ['', '-wal', '-shm', '-journal']:
         p = DB_PATH + ext
         try:
             if os.path.exists(p):
                 os.remove(p)
-                logger.info(f"🗑️ Удалён: {p}")
+                logger.info(f"рџ—‘пёЏ РЈРґР°Р»С‘РЅ: {p}")
         except Exception as e:
-            logger.error(f"Не удалось удалить {p}: {e}")
+            logger.error(f"РќРµ СѓРґР°Р»РѕСЃСЊ СѓРґР°Р»РёС‚СЊ {p}: {e}")
 
 def _check_disk_space():
-    """Проверяет свободное место на диске"""
+    """РџСЂРѕРІРµСЂСЏРµС‚ СЃРІРѕР±РѕРґРЅРѕРµ РјРµСЃС‚Рѕ РЅР° РґРёСЃРєРµ"""
     try:
         import shutil as _shutil
         total, used, free = _shutil.disk_usage(os.path.join(BASE_PATH, 'data'))
         free_mb = free / (1024 * 1024)
         if free_mb < 5:
-            logger.error(f"🚨 КРИТИЧЕСКИ МАЛО МЕСТА НА ДИСКЕ: {free_mb:.1f} MB свободно!")
+            logger.error(f"рџљЁ РљР РРўРР§Р•РЎРљР РњРђР›Рћ РњР•РЎРўРђ РќРђ Р”РРЎРљР•: {free_mb:.1f} MB СЃРІРѕР±РѕРґРЅРѕ!")
             return False
-        logger.info(f"💾 Свободно на диске: {free_mb:.0f} MB")
+        logger.info(f"рџ’ѕ РЎРІРѕР±РѕРґРЅРѕ РЅР° РґРёСЃРєРµ: {free_mb:.0f} MB")
         return True
     except Exception as e:
-        logger.warning(f"Не удалось проверить диск: {e}")
-        return True  # Если не можем проверить — продолжаем
+        logger.warning(f"РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕРІРµСЂРёС‚СЊ РґРёСЃРє: {e}")
+        return True  # Р•СЃР»Рё РЅРµ РјРѕР¶РµРј РїСЂРѕРІРµСЂРёС‚СЊ вЂ” РїСЂРѕРґРѕР»Р¶Р°РµРј
 
 def _create_all_tables(conn):
-    """Создаёт все таблицы по одной. Возвращает True если ВСЕ ОК."""
+    """РЎРѕР·РґР°С‘С‚ РІСЃРµ С‚Р°Р±Р»РёС†С‹ РїРѕ РѕРґРЅРѕР№. Р’РѕР·РІСЂР°С‰Р°РµС‚ True РµСЃР»Рё Р’РЎР• РћРљ."""
     tables_sql = {
         'users': '''CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
@@ -1908,7 +1908,7 @@ def _create_all_tables(conn):
             period_end TIMESTAMP NOT NULL,
             rewards_json TEXT DEFAULT '{}',
             track_field TEXT DEFAULT 'total_bet_volume',
-            title TEXT DEFAULT 'Лидерборд',
+            title TEXT DEFAULT 'Р›РёРґРµСЂР±РѕСЂРґ',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''',
         'leaderboard_history': '''CREATE TABLE IF NOT EXISTS leaderboard_history (
@@ -1952,33 +1952,33 @@ def _create_all_tables(conn):
             ok += 1
         except Exception as e:
             errors.append(f"{name}: {e}")
-            logger.error(f"❌ Таблица {name}: {e}")
+            logger.error(f"вќЊ РўР°Р±Р»РёС†Р° {name}: {e}")
 
-    # Коммитим с обработкой ошибок
+    # РљРѕРјРјРёС‚РёРј СЃ РѕР±СЂР°Р±РѕС‚РєРѕР№ РѕС€РёР±РѕРє
     try:
         conn.commit()
     except Exception as e:
-        logger.error(f"❌ Ошибка коммита таблиц: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РєРѕРјРјРёС‚Р° С‚Р°Р±Р»РёС†: {e}")
         return False
 
-    # Верификация
+    # Р’РµСЂРёС„РёРєР°С†РёСЏ
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         existing = {row[0] for row in cursor.fetchall()}
     except Exception as e:
-        logger.error(f"❌ Не удалось прочитать список таблиц: {e}")
+        logger.error(f"вќЊ РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕС‡РёС‚Р°С‚СЊ СЃРїРёСЃРѕРє С‚Р°Р±Р»РёС†: {e}")
         return False
 
     required = {'users', 'inventory', 'ultimate_crash_games', 'ultimate_crash_bets',
                  'crash_games', 'crash_bets', 'auth_codes'}
     missing = required - existing
     if missing:
-        logger.error(f"❌ Не созданы таблицы: {missing}")
+        logger.error(f"вќЊ РќРµ СЃРѕР·РґР°РЅС‹ С‚Р°Р±Р»РёС†С‹: {missing}")
         if errors:
-            logger.error(f"❌ Ошибки при создании: {errors}")
+            logger.error(f"вќЊ РћС€РёР±РєРё РїСЂРё СЃРѕР·РґР°РЅРёРё: {errors}")
         return False
-    logger.info(f"✅ {ok}/{len(tables_sql)} таблиц OK, всего в БД: {len(existing)}")
+    logger.info(f"вњ… {ok}/{len(tables_sql)} С‚Р°Р±Р»РёС† OK, РІСЃРµРіРѕ РІ Р‘Р”: {len(existing)}")
     
     # Create indexes for performance
     indexes = [
@@ -1997,7 +1997,7 @@ def _create_all_tables(conn):
         conn.commit()
     except:
         pass
-    logger.info("✅ Индексы созданы")
+    logger.info("вњ… РРЅРґРµРєСЃС‹ СЃРѕР·РґР°РЅС‹")
 
     # Migrate inventory table: add crate columns
     try:
@@ -2090,23 +2090,23 @@ def _create_all_tables(conn):
             is_active BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
-        # Миграция: добавляем case_stars если нет
+        # РњРёРіСЂР°С†РёСЏ: РґРѕР±Р°РІР»СЏРµРј case_stars РµСЃР»Рё РЅРµС‚
         try:
             conn.execute('ALTER TABLE users ADD COLUMN case_stars INTEGER DEFAULT 0')
         except:
             pass
-        # Миграция: режим отображения валюты (stars/ton)
+        # РњРёРіСЂР°С†РёСЏ: СЂРµР¶РёРј РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РІР°Р»СЋС‚С‹ (stars/ton)
         try:
             conn.execute('ALTER TABLE users ADD COLUMN currency_mode TEXT DEFAULT "stars"')
         except:
             pass
-        # Миграция: добавляем новые колонки в admin_notifications
+        # РњРёРіСЂР°С†РёСЏ: РґРѕР±Р°РІР»СЏРµРј РЅРѕРІС‹Рµ РєРѕР»РѕРЅРєРё РІ admin_notifications
         for col in ['notif_type TEXT DEFAULT "general"', 'reward_type TEXT DEFAULT NULL', 'reward_data TEXT DEFAULT NULL']:
             try:
                 conn.execute(f'ALTER TABLE admin_notifications ADD COLUMN {col}')
             except:
                 pass
-        # Миграция: добавляем description в user_bonuses если нет
+        # РњРёРіСЂР°С†РёСЏ: РґРѕР±Р°РІР»СЏРµРј description РІ user_bonuses РµСЃР»Рё РЅРµС‚
         try:
             conn.execute('ALTER TABLE user_bonuses ADD COLUMN description TEXT DEFAULT ""')
         except:
@@ -2118,7 +2118,7 @@ def _create_all_tables(conn):
     return True
 
 def init_db():
-    """Инициализация базы данных — потокобезопасная"""
+    """РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ Р±Р°Р·С‹ РґР°РЅРЅС‹С… вЂ” РїРѕС‚РѕРєРѕР±РµР·РѕРїР°СЃРЅР°СЏ"""
     global _db_ready
 
     with _db_lock:
@@ -2129,17 +2129,17 @@ def init_db():
         for sub in ['static/gifs/gifts', 'static/gifs/cases', 'static/uploads/notifications']:
             os.makedirs(os.path.join(BASE_PATH, sub), exist_ok=True)
 
-        # Проверяем диск
+        # РџСЂРѕРІРµСЂСЏРµРј РґРёСЃРє
         if not _check_disk_space():
-            logger.error("🚨 Недостаточно места — БД не может быть создана!")
+            logger.error("рџљЁ РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ РјРµСЃС‚Р° вЂ” Р‘Р” РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ СЃРѕР·РґР°РЅР°!")
             return False
 
-        # Проверяем здоровье существующей БД
+        # РџСЂРѕРІРµСЂСЏРµРј Р·РґРѕСЂРѕРІСЊРµ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РµР№ Р‘Р”
         if os.path.exists(DB_PATH):
             try:
                 file_size = os.path.getsize(DB_PATH)
                 if file_size < 100:
-                    logger.error(f"❌ БД файл слишком маленький ({file_size} байт), удаляем")
+                    logger.error(f"вќЊ Р‘Р” С„Р°Р№Р» СЃР»РёС€РєРѕРј РјР°Р»РµРЅСЊРєРёР№ ({file_size} Р±Р°Р№С‚), СѓРґР°Р»СЏРµРј")
                     _nuke_db()
                 else:
                     c = None
@@ -2149,7 +2149,7 @@ def init_db():
                         tables = c.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
                         table_names = {r[0] for r in tables}
                         if len(table_names) < 3:
-                            logger.error(f"❌ БД пустая, только {len(table_names)} таблиц, удаляем")
+                            logger.error(f"вќЊ Р‘Р” РїСѓСЃС‚Р°СЏ, С‚РѕР»СЊРєРѕ {len(table_names)} С‚Р°Р±Р»РёС†, СѓРґР°Р»СЏРµРј")
                             c.close()
                             c = None
                             _nuke_db()
@@ -2157,60 +2157,60 @@ def init_db():
                             c.close()
                             c = None
                     except Exception as e:
-                        logger.error(f"❌ БД нечитаема: {e}, удаляем")
+                        logger.error(f"вќЊ Р‘Р” РЅРµС‡РёС‚Р°РµРјР°: {e}, СѓРґР°Р»СЏРµРј")
                         if c:
                             try: c.close()
                             except: pass
                             c = None
                         _nuke_db()
             except Exception as e:
-                logger.error(f"❌ Ошибка проверки файла БД: {e}")
+                logger.error(f"вќЊ РћС€РёР±РєР° РїСЂРѕРІРµСЂРєРё С„Р°Р№Р»Р° Р‘Р”: {e}")
                 _nuke_db()
 
-        # Создаём / дополняем
+        # РЎРѕР·РґР°С‘Рј / РґРѕРїРѕР»РЅСЏРµРј
         conn = None
         try:
             conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
-            # WAL mode — consistent with get_db_connection()
+            # WAL mode вЂ” consistent with get_db_connection()
             conn.execute("PRAGMA journal_mode = WAL")
             conn.execute("PRAGMA synchronous = NORMAL")
             conn.execute("PRAGMA busy_timeout = 30000")
             conn.execute("PRAGMA temp_store = MEMORY")
             conn.execute("PRAGMA wal_autocheckpoint = 1000")
-            logger.info("📊 Создание таблиц...")
+            logger.info("рџ“Љ РЎРѕР·РґР°РЅРёРµ С‚Р°Р±Р»РёС†...")
 
             if not _create_all_tables(conn):
                 conn.close()
                 conn = None
-                logger.error("❌ _create_all_tables вернула False")
+                logger.error("вќЊ _create_all_tables РІРµСЂРЅСѓР»Р° False")
                 return False
 
             cursor = conn.cursor()
 
-            # Миграция: добавляем недостающие колонки
+            # РњРёРіСЂР°С†РёСЏ: РґРѕР±Р°РІР»СЏРµРј РЅРµРґРѕСЃС‚Р°СЋС‰РёРµ РєРѕР»РѕРЅРєРё
             try:
                 cursor.execute("PRAGMA table_info(users)")
                 columns = [col[1] for col in cursor.fetchall()]
                 if 'total_bet_volume' not in columns:
                     cursor.execute('ALTER TABLE users ADD COLUMN total_bet_volume INTEGER DEFAULT 0')
-                    logger.info("✅ Добавлена колонка total_bet_volume")
+                    logger.info("вњ… Р”РѕР±Р°РІР»РµРЅР° РєРѕР»РѕРЅРєР° total_bet_volume")
                 if 'is_crash_vip' not in columns:
                     cursor.execute('ALTER TABLE users ADD COLUMN is_crash_vip INTEGER DEFAULT 0')
-                    logger.info("✅ Добавлена колонка is_crash_vip")
+                    logger.info("вњ… Р”РѕР±Р°РІР»РµРЅР° РєРѕР»РѕРЅРєР° is_crash_vip")
                 if 'total_loss' not in columns:
                     cursor.execute('ALTER TABLE users ADD COLUMN total_loss INTEGER DEFAULT 0')
-                    logger.info("✅ Добавлена колонка total_loss")
+                    logger.info("вњ… Р”РѕР±Р°РІР»РµРЅР° РєРѕР»РѕРЅРєР° total_loss")
                 if 'total_crash_bets' not in columns:
                     cursor.execute('ALTER TABLE users ADD COLUMN total_crash_bets INTEGER DEFAULT 0')
-                    logger.info("✅ Добавлена колонка total_crash_bets")
+                    logger.info("вњ… Р”РѕР±Р°РІР»РµРЅР° РєРѕР»РѕРЅРєР° total_crash_bets")
                 if 'referral_balance' not in columns:
                     cursor.execute('ALTER TABLE users ADD COLUMN referral_balance INTEGER DEFAULT 0')
-                    logger.info("✅ Добавлена колонка referral_balance")
+                    logger.info("вњ… Р”РѕР±Р°РІР»РµРЅР° РєРѕР»РѕРЅРєР° referral_balance")
                 conn.commit()
             except Exception as e:
-                logger.warning(f"⚠️ Миграция колонок users: {e}")
+                logger.warning(f"вљ пёЏ РњРёРіСЂР°С†РёСЏ РєРѕР»РѕРЅРѕРє users: {e}")
 
-            # Лимиты кейсов
+            # Р›РёРјРёС‚С‹ РєРµР№СЃРѕРІ
             try:
                 cases = load_cases()
                 for case in cases:
@@ -2220,45 +2220,45 @@ def init_db():
                             cursor.execute('INSERT INTO case_limits (case_id, current_amount) VALUES (?, ?)',
                                            (case['id'], case['amount']))
             except Exception as e:
-                logger.warning(f"⚠️ Лимиты кейсов: {e}")
+                logger.warning(f"вљ пёЏ Р›РёРјРёС‚С‹ РєРµР№СЃРѕРІ: {e}")
 
-            # Начальная игра
+            # РќР°С‡Р°Р»СЊРЅР°СЏ РёРіСЂР°
             try:
                 cursor.execute('SELECT COUNT(*) FROM ultimate_crash_games WHERE status IN ("waiting","counting","flying")')
                 if cursor.fetchone()[0] == 0:
                     tm = round(random.uniform(3.0, 10.0), 2)
                     cursor.execute('INSERT INTO ultimate_crash_games (status, target_multiplier, start_time) VALUES ("waiting", ?, CURRENT_TIMESTAMP)', (tm,))
-                    logger.info(f"✅ Начальная игра: {tm}x")
+                    logger.info(f"вњ… РќР°С‡Р°Р»СЊРЅР°СЏ РёРіСЂР°: {tm}x")
             except Exception as e:
-                logger.warning(f"⚠️ Начальная игра: {e}")
+                logger.warning(f"вљ пёЏ РќР°С‡Р°Р»СЊРЅР°СЏ РёРіСЂР°: {e}")
 
             conn.commit()
             conn.close()
             conn = None
 
-            # Быстрая проверка — файл реально записался?
+            # Р‘С‹СЃС‚СЂР°СЏ РїСЂРѕРІРµСЂРєР° вЂ” С„Р°Р№Р» СЂРµР°Р»СЊРЅРѕ Р·Р°РїРёСЃР°Р»СЃСЏ?
             file_size = os.path.getsize(DB_PATH)
             if file_size < 4096:
-                logger.error(f"❌ БД файл подозрительно мал: {file_size} байт")
+                logger.error(f"вќЊ Р‘Р” С„Р°Р№Р» РїРѕРґРѕР·СЂРёС‚РµР»СЊРЅРѕ РјР°Р»: {file_size} Р±Р°Р№С‚")
                 return False
 
             _db_ready = True
-            logger.info(f"✅ База данных готова! Размер: {file_size} байт")
+            logger.info(f"вњ… Р‘Р°Р·Р° РґР°РЅРЅС‹С… РіРѕС‚РѕРІР°! Р Р°Р·РјРµСЂ: {file_size} Р±Р°Р№С‚")
             
-            # Загрузка уровней из БД
+            # Р—Р°РіСЂСѓР·РєР° СѓСЂРѕРІРЅРµР№ РёР· Р‘Р”
             _sync_levels_from_db()
 
             # Load crash bots config
             try:
                 _load_crash_bots()
-                logger.info(f"✅ Crash боты загружены: {len(_crash_bots_cache.get('bots', []))} ботов, enabled={_crash_bots_cache.get('enabled')}")
+                logger.info(f"вњ… Crash Р±РѕС‚С‹ Р·Р°РіСЂСѓР¶РµРЅС‹: {len(_crash_bots_cache.get('bots', []))} Р±РѕС‚РѕРІ, enabled={_crash_bots_cache.get('enabled')}")
             except Exception as be:
-                logger.warning(f"⚠️ Ошибка загрузки crash ботов: {be}")
+                logger.warning(f"вљ пёЏ РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё crash Р±РѕС‚РѕРІ: {be}")
             
             return True
 
         except Exception as e:
-            logger.error(f"❌ init_db: {e}")
+            logger.error(f"вќЊ init_db: {e}")
             logger.error(traceback.format_exc())
             return False
         finally:
@@ -2269,22 +2269,22 @@ def init_db():
                     pass
 
 def safe_init_db(max_retries=3):
-    """init_db с повторными попытками"""
+    """init_db СЃ РїРѕРІС‚РѕСЂРЅС‹РјРё РїРѕРїС‹С‚РєР°РјРё"""
     for attempt in range(1, max_retries + 1):
-        logger.info(f"📀 init_db попытка {attempt}/{max_retries}...")
+        logger.info(f"рџ“Ђ init_db РїРѕРїС‹С‚РєР° {attempt}/{max_retries}...")
         if init_db():
             return True
-        logger.warning(f"⏳ init_db попытка {attempt}/{max_retries} не удалась, повтор через 1с...")
+        logger.warning(f"вЏі init_db РїРѕРїС‹С‚РєР° {attempt}/{max_retries} РЅРµ СѓРґР°Р»Р°СЃСЊ, РїРѕРІС‚РѕСЂ С‡РµСЂРµР· 1СЃ...")
         if attempt < max_retries:
             with _db_lock:
                 _nuke_db()
             time.sleep(1)
 
-    logger.error("❌ init_db провалилась после всех попыток")
+    logger.error("вќЊ init_db РїСЂРѕРІР°Р»РёР»Р°СЃСЊ РїРѕСЃР»Рµ РІСЃРµС… РїРѕРїС‹С‚РѕРє")
     return False
 
 def add_history_record(user_id, operation_type, amount, description):
-    """Добавляет запись в историю операций"""
+    """Р”РѕР±Р°РІР»СЏРµС‚ Р·Р°РїРёСЃСЊ РІ РёСЃС‚РѕСЂРёСЋ РѕРїРµСЂР°С†РёР№"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -2298,11 +2298,11 @@ def add_history_record(user_id, operation_type, amount, description):
         conn.close()
         return True
     except Exception as e:
-        logger.error(f"Ошибка добавления в историю: {e}")
+        logger.error(f"РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ РІ РёСЃС‚РѕСЂРёСЋ: {e}")
         return False
 
 def add_win_history(user_id, user_name, gift_name, gift_image, gift_value, case_name):
-    """Добавляет запись в историю побед"""
+    """Р”РѕР±Р°РІР»СЏРµС‚ Р·Р°РїРёСЃСЊ РІ РёСЃС‚РѕСЂРёСЋ РїРѕР±РµРґ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -2323,14 +2323,14 @@ def add_win_history(user_id, user_name, gift_name, gift_image, gift_value, case_
 
         conn.commit()
         conn.close()
-        logger.info(f"📝 Добавлена запись в историю побед: {user_name} выиграл {gift_name}")
+        logger.info(f"рџ“ќ Р”РѕР±Р°РІР»РµРЅР° Р·Р°РїРёСЃСЊ РІ РёСЃС‚РѕСЂРёСЋ РїРѕР±РµРґ: {user_name} РІС‹РёРіСЂР°Р» {gift_name}")
         return True
     except Exception as e:
-        logger.error(f"Ошибка добавления в историю побед: {e}")
+        logger.error(f"РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ РІ РёСЃС‚РѕСЂРёСЋ РїРѕР±РµРґ: {e}")
         return False
 
 def add_case_open_history(user_id, case_id, case_name, gift_id, gift_name, gift_image, gift_value, cost=0, cost_type='stars'):
-    """Добавляет запись в историю открытий кейсов"""
+    """Р”РѕР±Р°РІР»СЏРµС‚ Р·Р°РїРёСЃСЊ РІ РёСЃС‚РѕСЂРёСЋ РѕС‚РєСЂС‹С‚РёР№ РєРµР№СЃРѕРІ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -2351,14 +2351,14 @@ def add_case_open_history(user_id, case_id, case_name, gift_id, gift_name, gift_
 
         conn.commit()
         conn.close()
-        logger.info(f"📝 Добавлена запись в историю открытий: {user_id} открыл {case_name}")
+        logger.info(f"рџ“ќ Р”РѕР±Р°РІР»РµРЅР° Р·Р°РїРёСЃСЊ РІ РёСЃС‚РѕСЂРёСЋ РѕС‚РєСЂС‹С‚РёР№: {user_id} РѕС‚РєСЂС‹Р» {case_name}")
         return True
     except Exception as e:
-        logger.error(f"Ошибка добавления в историю открытий: {e}")
+        logger.error(f"РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ РІ РёСЃС‚РѕСЂРёСЋ РѕС‚РєСЂС‹С‚РёР№: {e}")
         return False
 
 def add_experience(user_id, exp_amount, reason=""):
-    """Добавляет опыт пользователю и проверяет повышение уровня"""
+    """Р”РѕР±Р°РІР»СЏРµС‚ РѕРїС‹С‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ Рё РїСЂРѕРІРµСЂСЏРµС‚ РїРѕРІС‹С€РµРЅРёРµ СѓСЂРѕРІРЅСЏ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -2368,7 +2368,7 @@ def add_experience(user_id, exp_amount, reason=""):
 
         if not result:
             conn.close()
-            return {'success': False, 'error': 'Пользователь не найден'}
+            return {'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'}
 
         current_exp, current_level = result
         new_exp = current_exp + exp_amount
@@ -2377,35 +2377,35 @@ def add_experience(user_id, exp_amount, reason=""):
         level_up_rewards = []
         level_up_info = None
 
-        # Проверяем повышение уровня
+        # РџСЂРѕРІРµСЂСЏРµРј РїРѕРІС‹С€РµРЅРёРµ СѓСЂРѕРІРЅСЏ
         while new_level < len(LEVEL_SYSTEM):
             next_level_info = LEVEL_SYSTEM[new_level]
             if new_exp >= next_level_info["exp_required"]:
                 new_level += 1
 
-                # Награда ракетой
+                # РќР°РіСЂР°РґР° СЂР°РєРµС‚РѕР№
                 reward_rocket = next_level_info.get("reward_rocket")
                 if reward_rocket and new_level > 1:
                     try:
                         cursor.execute('''INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source)
                             VALUES (?, 'rocket', ?, 'level_reward')''', (user_id, reward_rocket))
                         rocket_display = ROCKET_NAMES.get(reward_rocket, reward_rocket)
-                        level_up_rewards.append(f"🚀 {rocket_display}")
+                        level_up_rewards.append(f"рџљЂ {rocket_display}")
                     except Exception as re:
                         logger.warning(f"Rocket reward error: {re}")
 
-                # Награда фоном
+                # РќР°РіСЂР°РґР° С„РѕРЅРѕРј
                 reward_bg = next_level_info.get("reward_bg")
                 if reward_bg:
                     try:
                         cursor.execute('''INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source)
                             VALUES (?, 'background', ?, 'level_reward')''', (user_id, reward_bg))
                         bg_display = BG_NAMES.get(reward_bg, reward_bg)
-                        level_up_rewards.append(f"🎨 {bg_display}")
+                        level_up_rewards.append(f"рџЋЁ {bg_display}")
                     except Exception as ce:
                         logger.warning(f"Background reward error: {ce}")
 
-                # Записываем в историю
+                # Р—Р°РїРёСЃС‹РІР°РµРј РІ РёСЃС‚РѕСЂРёСЋ
                 cursor.execute('''
                     INSERT INTO level_history (user_id, old_level, new_level, experience_gained, reason)
                     VALUES (?, ?, ?, ?, ?)
@@ -2419,20 +2419,20 @@ def add_experience(user_id, exp_amount, reason=""):
                     'rewards_text': ', '.join(level_up_rewards)
                 }
 
-                # Авто-уведомление о повышении уровня
+                # РђРІС‚Рѕ-СѓРІРµРґРѕРјР»РµРЅРёРµ Рѕ РїРѕРІС‹С€РµРЅРёРё СѓСЂРѕРІРЅСЏ
                 try:
                     reward_desc = ''
                     if reward_rocket and new_level > 1:
-                        reward_desc += f'🚀 {ROCKET_NAMES.get(reward_rocket, reward_rocket)}'
+                        reward_desc += f'рџљЂ {ROCKET_NAMES.get(reward_rocket, reward_rocket)}'
                     if reward_bg:
                         if reward_desc:
                             reward_desc += ' '
-                        reward_desc += f'🎨 {BG_NAMES.get(reward_bg, reward_bg)}'
+                        reward_desc += f'рџЋЁ {BG_NAMES.get(reward_bg, reward_bg)}'
                     cursor.execute('''INSERT INTO admin_notifications 
                         (title, message, image_url, notif_type, target_user_id, reward_type, reward_data)
                         VALUES (?, ?, ?, 'level_up', ?, ?, ?)''',
-                        (f'🎉 Уровень {new_level}!',
-                         f'Поздравляем! Вы достигли уровня {new_level}!{" Награда: " + reward_desc.strip() if reward_desc.strip() else ""}',
+                        (f'рџЋ‰ РЈСЂРѕРІРµРЅСЊ {new_level}!',
+                         f'РџРѕР·РґСЂР°РІР»СЏРµРј! Р’С‹ РґРѕСЃС‚РёРіР»Рё СѓСЂРѕРІРЅСЏ {new_level}!{" РќР°РіСЂР°РґР°: " + reward_desc.strip() if reward_desc.strip() else ""}',
                          '', user_id,
                          'rocket' if reward_rocket else ('background' if reward_bg else None),
                          reward_rocket if reward_rocket else (reward_bg if reward_bg else None)))
@@ -2445,13 +2445,13 @@ def add_experience(user_id, exp_amount, reason=""):
                     def send_level_up_msg():
                         try:
                             tg_send(user_id, 
-                                f"🎉 <b>Уровень повышен!</b>\n\n"
-                                f"Вы достигли <b>{new_level} уровня</b>!\n"
-                                f"{'Награда: ' + reward_desc.strip() if reward_desc.strip() else ''}\n\n"
-                                f"📱 Заберите награду в профиле!",
+                                f"рџЋ‰ <b>РЈСЂРѕРІРµРЅСЊ РїРѕРІС‹С€РµРЅ!</b>\n\n"
+                                f"Р’С‹ РґРѕСЃС‚РёРіР»Рё <b>{new_level} СѓСЂРѕРІРЅСЏ</b>!\n"
+                                f"{'РќР°РіСЂР°РґР°: ' + reward_desc.strip() if reward_desc.strip() else ''}\n\n"
+                                f"рџ“± Р—Р°Р±РµСЂРёС‚Рµ РЅР°РіСЂР°РґСѓ РІ РїСЂРѕС„РёР»Рµ!",
                                 parse_mode='HTML',
                                 reply_markup={'inline_keyboard': [[
-                                    {'text': '🎁 Открыть профиль', 'web_app': {'url': f'{WEBSITE_URL}/inventory'}}
+                                    {'text': 'рџЋЃ РћС‚РєСЂС‹С‚СЊ РїСЂРѕС„РёР»СЊ', 'web_app': {'url': f'{WEBSITE_URL}/inventory'}}
                                 ]]}
                             )
                         except Exception as tge:
@@ -2460,11 +2460,11 @@ def add_experience(user_id, exp_amount, reason=""):
                 except Exception as te:
                     logger.warning(f"Level up thread error: {te}")
 
-                logger.info(f"🎉 Пользователь {user_id} достиг уровня {new_level}! Награды: {', '.join(level_up_rewards)}")
+                logger.info(f"рџЋ‰ РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РґРѕСЃС‚РёРі СѓСЂРѕРІРЅСЏ {new_level}! РќР°РіСЂР°РґС‹: {', '.join(level_up_rewards)}")
             else:
                 break
 
-        # Обновляем пользователя
+        # РћР±РЅРѕРІР»СЏРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         cursor.execute('UPDATE users SET experience = ?, current_level = ? WHERE id = ?',
                      (new_exp, new_level, user_id))
 
@@ -2481,12 +2481,12 @@ def add_experience(user_id, exp_amount, reason=""):
         }
 
     except Exception as e:
-        logger.error(f"Ошибка добавления опыта: {e}")
+        logger.error(f"РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ РѕРїС‹С‚Р°: {e}")
         return {'success': False, 'error': str(e)}
 
 
 def _grant_level_rewards(user_id, new_level):
-    """Выдаёт бонусы за достижение уровня из level_rewards"""
+    """Р’С‹РґР°С‘С‚ Р±РѕРЅСѓСЃС‹ Р·Р° РґРѕСЃС‚РёР¶РµРЅРёРµ СѓСЂРѕРІРЅСЏ РёР· level_rewards"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -2495,7 +2495,7 @@ def _grant_level_rewards(user_id, new_level):
         for rw in rewards:
             rw_id, rw_type, rw_data_str, rw_desc = rw
             rw_data = json.loads(rw_data_str) if rw_data_str else {}
-            # Создаём бонус для пользователя
+            # РЎРѕР·РґР°С‘Рј Р±РѕРЅСѓСЃ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
             cursor.execute('''INSERT INTO user_bonuses (user_id, bonus_type, bonus_data, source, source_id)
                 VALUES (?, ?, ?, 'level_reward', ?)''',
                 (user_id, rw_type, rw_data_str, rw_id))
@@ -2505,7 +2505,7 @@ def _grant_level_rewards(user_id, new_level):
         logger.error(f"Level rewards error: {e}")
 
 def get_user_level_info(user_id):
-    """Получает информацию об уровне пользователя"""
+    """РџРѕР»СѓС‡Р°РµС‚ РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± СѓСЂРѕРІРЅРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -2542,11 +2542,11 @@ def get_user_level_info(user_id):
         }
 
     except Exception as e:
-        logger.error(f"Ошибка получения информации об уровне: {e}")
+        logger.error(f"РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёРЅС„РѕСЂРјР°С†РёРё РѕР± СѓСЂРѕРІРЅРµ: {e}")
         return None
 
 def update_case_limit(case_id):
-    """Обновляет лимит кейса (уменьшает на 1)"""
+    """РћР±РЅРѕРІР»СЏРµС‚ Р»РёРјРёС‚ РєРµР№СЃР° (СѓРјРµРЅСЊС€Р°РµС‚ РЅР° 1)"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -2589,7 +2589,7 @@ def update_case_limit(case_id):
                 new_amount = current_amount - 1
                 cursor.execute('UPDATE case_limits SET current_amount = ? WHERE case_id = ?', (new_amount, case_id))
                 conn.commit()
-                logger.info(f"📊 Лимит кейса {case_id} уменьшен: {current_amount} -> {new_amount}")
+                logger.info(f"рџ“Љ Р›РёРјРёС‚ РєРµР№СЃР° {case_id} СѓРјРµРЅСЊС€РµРЅ: {current_amount} -> {new_amount}")
                 conn.close()
                 return new_amount
             else:
@@ -2597,11 +2597,11 @@ def update_case_limit(case_id):
                 return 0
 
     except Exception as e:
-        logger.error(f"Ошибка обновления лимита кейса: {e}")
+        logger.error(f"РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ Р»РёРјРёС‚Р° РєРµР№СЃР°: {e}")
         return None
 
 def get_case_limit(case_id):
-    """Получает текущий лимит кейса"""
+    """РџРѕР»СѓС‡Р°РµС‚ С‚РµРєСѓС‰РёР№ Р»РёРјРёС‚ РєРµР№СЃР°"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -2615,7 +2615,7 @@ def get_case_limit(case_id):
             except Exception:
                 current_amount = 0
             conn.close()
-            logger.info(f"📊 Получен лимит кейса {case_id}: {current_amount}")
+            logger.info(f"рџ“Љ РџРѕР»СѓС‡РµРЅ Р»РёРјРёС‚ РєРµР№СЃР° {case_id}: {current_amount}")
             return current_amount
         else:
             cases = load_cases()
@@ -2629,18 +2629,18 @@ def get_case_limit(case_id):
                              (case_id, max_amount))
                 conn.commit()
                 conn.close()
-                logger.info(f"📊 Создан лимит для кейса {case_id}: {max_amount}")
+                logger.info(f"рџ“Љ РЎРѕР·РґР°РЅ Р»РёРјРёС‚ РґР»СЏ РєРµР№СЃР° {case_id}: {max_amount}")
                 return max_amount
             else:
                 conn.close()
                 return None
 
     except Exception as e:
-        logger.error(f"Ошибка получения лимита кейса: {e}")
+        logger.error(f"РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РёРјРёС‚Р° РєРµР№СЃР°: {e}")
         return None
 
 def generate_referral_code():
-    """Генерирует уникальный реферальный код"""
+    """Р“РµРЅРµСЂРёСЂСѓРµС‚ СѓРЅРёРєР°Р»СЊРЅС‹Р№ СЂРµС„РµСЂР°Р»СЊРЅС‹Р№ РєРѕРґ"""
     characters = string.ascii_uppercase + string.digits
     while True:
         code = ''.join(random.choice(characters) for _ in range(8))
@@ -2727,7 +2727,7 @@ def _find_embedded_case_promo(case_id, promo_code):
     return case_data, None
 
 def process_referral(referred_user_id, referral_code):
-    """Обрабатывает реферальную ссылку"""
+    """РћР±СЂР°Р±Р°С‚С‹РІР°РµС‚ СЂРµС„РµСЂР°Р»СЊРЅСѓСЋ СЃСЃС‹Р»РєСѓ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -2739,7 +2739,7 @@ def process_referral(referred_user_id, referral_code):
             referrer_id = referrer[0]
 
             if referrer_id == referred_user_id:
-                logger.warning(f"⚠️ Попытка самоприглашения: {referred_user_id}")
+                logger.warning(f"вљ пёЏ РџРѕРїС‹С‚РєР° СЃР°РјРѕРїСЂРёРіР»Р°С€РµРЅРёСЏ: {referred_user_id}")
                 return False
 
             cursor.execute('SELECT id FROM referrals WHERE referred_id = ?', (referred_user_id,))
@@ -2755,36 +2755,36 @@ def process_referral(referred_user_id, referral_code):
 
                 cursor.execute('UPDATE users SET balance_tickets = balance_tickets + 1, total_earned_tickets = total_earned_tickets + 1 WHERE id = ?', (referrer_id,))
 
-                add_experience(referrer_id, 50, "Приглашение друга")
+                add_experience(referrer_id, 50, "РџСЂРёРіР»Р°С€РµРЅРёРµ РґСЂСѓРіР°")
 
                 cursor.execute('SELECT first_name FROM users WHERE id = ?', (referred_user_id,))
                 referred_user = cursor.fetchone()
-                referred_name = referred_user[0] if referred_user else 'Новый пользователь'
+                referred_name = referred_user[0] if referred_user else 'РќРѕРІС‹Р№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ'
 
-                add_history_record(referrer_id, 'referral_reward', 1, f'Приглашен пользователь: {referred_name}')
+                add_history_record(referrer_id, 'referral_reward', 1, f'РџСЂРёРіР»Р°С€РµРЅ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ: {referred_name}')
 
                 cursor.execute('''
                     INSERT INTO referral_rewards (referrer_id, reward_type, reward_amount, description)
                     VALUES (?, ?, ?, ?)
-                ''', (referrer_id, 'tickets', 1, 'За приглашение друга'))
+                ''', (referrer_id, 'tickets', 1, 'Р—Р° РїСЂРёРіР»Р°С€РµРЅРёРµ РґСЂСѓРіР°'))
 
                 cursor.execute('UPDATE users SET referred_by = ? WHERE id = ?', (referrer_id, referred_user_id))
 
                 conn.commit()
                 conn.close()
 
-                logger.info(f"🎫 Пользователь {referrer_id} получил 1 билет за приглашение {referred_user_id}")
+                logger.info(f"рџЋ« РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {referrer_id} РїРѕР»СѓС‡РёР» 1 Р±РёР»РµС‚ Р·Р° РїСЂРёРіР»Р°С€РµРЅРёРµ {referred_user_id}")
                 return True
 
         conn.close()
         return False
 
     except Exception as e:
-        logger.error(f"Ошибка обработки реферала: {e}")
+        logger.error(f"РћС€РёР±РєР° РѕР±СЂР°Р±РѕС‚РєРё СЂРµС„РµСЂР°Р»Р°: {e}")
         return False
 
 # ============================================================
-# AI RTP — Per-Player Crash Probability System
+# AI RTP вЂ” Per-Player Crash Probability System
 # ============================================================
 # Each player carries an individual "luck profile". The house
 # maintains a target RTP (Return To Player) of ~85%. If a player
@@ -2874,9 +2874,9 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
     """Adjust the pre-generated crash target based on active bettors.
     
     KEY LOGIC:
-    - Large bets (>1-5 TON) → drastically reduce target (crash early)
-    - Losing players with small bets → boost target significantly (tease with high multipliers)
-    - Winning players → reduce target
+    - Large bets (>1-5 TON) в†’ drastically reduce target (crash early)
+    - Losing players with small bets в†’ boost target significantly (tease with high multipliers)
+    - Winning players в†’ reduce target
     """
     close_conn = False
     if conn is None:
@@ -2924,7 +2924,7 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
             # Drastically reduce target for rounds with large bets
             reduction = 0.7 if has_whale_bet else 0.5
             adjusted = max(1.01, base_target * (1 - reduction))
-            logger.info(f"🐋 AI: Large bet detected! Reducing target {base_target:.2f}x → {adjusted:.2f}x")
+            logger.info(f"рџђ‹ AI: Large bet detected! Reducing target {base_target:.2f}x в†’ {adjusted:.2f}x")
             return round(adjusted, 2)
         
         # === TEASE LOSING PLAYERS: Allow massive multipliers ===
@@ -2936,20 +2936,20 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
             if random.random() < 0.25:  # 25% chance of massive boost
                 boost = 3.0 + random.random() * 10.0  # 3x to 13x multiplier boost!
                 adjusted = min(150.0, base_target * boost)
-                logger.info(f"🎰 AI: Teasing losers! Boosting target {base_target:.2f}x → {adjusted:.2f}x")
+                logger.info(f"рџЋ° AI: Teasing losers! Boosting target {base_target:.2f}x в†’ {adjusted:.2f}x")
                 return round(adjusted, 2)
             else:
                 # Still boost, but more moderately
                 boost = 1.5 + loss_ratio * 2.0
                 adjusted = base_target * boost
-                logger.debug(f"🎰 AI: Moderate loser tease {base_target:.2f}x → {adjusted:.2f}x")
+                logger.debug(f"рџЋ° AI: Moderate loser tease {base_target:.2f}x в†’ {adjusted:.2f}x")
                 return round(min(100.0, adjusted), 2)
         
         # === WINNING PLAYERS: Reduce target ===
         if winning_bet_value > total_bet_value * 0.3:
             reduction = min(0.5, 0.2 + (winning_bet_value / total_bet_value) * 0.3)
             adjusted = max(1.01, base_target * (1 - reduction))
-            logger.debug(f"🎯 AI: Winners detected, reducing target {base_target:.2f}x → {adjusted:.2f}x")
+            logger.debug(f"рџЋЇ AI: Winners detected, reducing target {base_target:.2f}x в†’ {adjusted:.2f}x")
             return round(adjusted, 2)
         
         return base_target
@@ -3000,7 +3000,7 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
                     crash_prob = 0.6 + (current_mult - 1.0) * 0.15
                     if random.random() < crash_prob:
                         if close_conn: conn.close()
-                        logger.info(f"🐋 Whale crash: {bet_amount} stars bet from user {user_id}, mult={current_mult:.2f}x")
+                        logger.info(f"рџђ‹ Whale crash: {bet_amount} stars bet from user {user_id}, mult={current_mult:.2f}x")
                         return True
                 else:  # 1-5 TON range
                     # Medium chance to crash
@@ -3009,7 +3009,7 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
                         crash_prob += 0.15
                     if random.random() < crash_prob:
                         if close_conn: conn.close()
-                        logger.info(f"💰 Large bet crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
+                        logger.info(f"рџ’° Large bet crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
                         return True
             
             # === Secondary: Player profitability check ===
@@ -3026,7 +3026,7 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
                     
                     if random.random() < crash_prob:
                         if close_conn: conn.close()
-                        logger.info(f"🎯 RTP crash: user {user_id} RTP={stats['player_rtp']:.2f}, prob={crash_prob:.2f}")
+                        logger.info(f"рџЋЇ RTP crash: user {user_id} RTP={stats['player_rtp']:.2f}, prob={crash_prob:.2f}")
                         return True
                         
                 # If player is losing AND betting small, let them win occasionally
@@ -3047,9 +3047,9 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
 
 
 def generate_extreme_crash_multiplier():
-    """Генерация множителя для Ultimate Crash с учётом баланса сайта.
+    """Р“РµРЅРµСЂР°С†РёСЏ РјРЅРѕР¶РёС‚РµР»СЏ РґР»СЏ Ultimate Crash СЃ СѓС‡С‘С‚РѕРј Р±Р°Р»Р°РЅСЃР° СЃР°Р№С‚Р°.
     
-    Base multiplier generation — will be adjusted by ai_adjust_target_multiplier
+    Base multiplier generation вЂ” will be adjusted by ai_adjust_target_multiplier
     once bets are placed.
     """
     site_balance = _get_site_profit_balance()
@@ -3057,7 +3057,7 @@ def generate_extreme_crash_multiplier():
     
     # Standard distribution based on site balance
     if site_balance < -5000:
-        # Site is losing big — mostly low multipliers
+        # Site is losing big вЂ” mostly low multipliers
         if r < 0.65:
             return round(1.0 + random.random() * 0.8, 2)  # 1.0-1.8
         elif r < 0.85:
@@ -3067,7 +3067,7 @@ def generate_extreme_crash_multiplier():
         else:
             return round(5.0 + random.random() * 3.0, 2)   # 5.0-8.0
     elif site_balance < -1000:
-        # Site is losing moderately — slightly lower multipliers
+        # Site is losing moderately вЂ” slightly lower multipliers
         if r < 0.55:
             return round(1.0 + random.random() * 1.0, 2)
         elif r < 0.75:
@@ -3079,7 +3079,7 @@ def generate_extreme_crash_multiplier():
         else:
             return round(8.0 + random.random() * 5.0, 2)
     elif site_balance > 5000:
-        # Site is profiting well — give players better odds (but cap at 50% return)
+        # Site is profiting well вЂ” give players better odds (but cap at 50% return)
         payout_factor = min(0.5, site_balance / 20000)  # Max 50% payout factor
         if r < 0.40:
             return round(1.0 + random.random() * 1.5, 2)
@@ -3094,7 +3094,7 @@ def generate_extreme_crash_multiplier():
         else:
             return round(30.0 + random.random() * 20.0, 2)
     else:
-        # Normal/balanced — standard distribution
+        # Normal/balanced вЂ” standard distribution
         if r < 0.50:
             return round(1.0 + random.random() * 1.0, 2)
         elif r < 0.70:
@@ -3195,14 +3195,14 @@ def start_crash_loop():
 
 def start_ultimate_crash_loop():
 
-    """Запускает простой игровой цикл"""
+    """Р—Р°РїСѓСЃРєР°РµС‚ РїСЂРѕСЃС‚РѕР№ РёРіСЂРѕРІРѕР№ С†РёРєР»"""
     def game_loop():
         global _crash_phase_transitioning
         while not _db_ready:
             time.sleep(1)
-        logger.info("🚀 Запущен игровой цикл Ultimate Crash")
+        logger.info("рџљЂ Р—Р°РїСѓС‰РµРЅ РёРіСЂРѕРІРѕР№ С†РёРєР» Ultimate Crash")
 
-        # Persistent connection for game loop — re-created only on error
+        # Persistent connection for game loop вЂ” re-created only on error
         loop_conn = None
         tick_counter = 0
 
@@ -3228,7 +3228,7 @@ def start_ultimate_crash_loop():
                 cursor = conn.cursor()
                 tick_counter += 1
 
-                # Ищем активную игру
+                # РС‰РµРј Р°РєС‚РёРІРЅСѓСЋ РёРіСЂСѓ
                 cursor.execute('''
                     SELECT id, status, start_time, current_multiplier, target_multiplier
                     FROM ultimate_crash_games
@@ -3241,7 +3241,7 @@ def start_ultimate_crash_loop():
                 if game:
                     game_id, status, start_time, current_mult, target_mult = game
 
-                    # Преобразуем время
+                    # РџСЂРµРѕР±СЂР°Р·СѓРµРј РІСЂРµРјСЏ
                     if isinstance(start_time, str):
                         try:
                             if '.' in start_time:
@@ -3257,15 +3257,15 @@ def start_ultimate_crash_loop():
                     current_mult_float = float(current_mult) if current_mult else 1.0
                     target_mult_float = float(target_mult) if target_mult else 5.0
 
-                    # Обработка разных фаз (без waiting - сразу counting)
+                    # РћР±СЂР°Р±РѕС‚РєР° СЂР°Р·РЅС‹С… С„Р°Р· (Р±РµР· waiting - СЃСЂР°Р·Сѓ counting)
                     if status == 'waiting':
-                        # Сразу переходим в counting
+                        # РЎСЂР°Р·Сѓ РїРµСЂРµС…РѕРґРёРј РІ counting
                         cursor.execute('UPDATE ultimate_crash_games SET status = "counting", start_time = CURRENT_TIMESTAMP WHERE id = ?', (game_id,))
                         update_crash_cache(game_id, 'counting', 1.0, target_mult_float, 5.0)
                     elif status == 'counting':
                         time_remaining = max(0, 5.0 - elapsed)
                         update_crash_cache(game_id, 'counting', 1.0, target_mult_float, time_remaining)
-                        if elapsed >= 5:  # 5 секунд отсчёта для ставок
+                        if elapsed >= 5:  # 5 СЃРµРєСѓРЅРґ РѕС‚СЃС‡С‘С‚Р° РґР»СЏ СЃС‚Р°РІРѕРє
                             # AI RTP: Adjust target multiplier based on who bet this round
                             try:
                                 adjusted_target = ai_adjust_target_multiplier(target_mult_float, game_id, conn)
@@ -3301,15 +3301,15 @@ def start_ultimate_crash_loop():
                             ''', (game_id, game_id))
                             _crash_bots_on_crash(game_id)
                             update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
-                            logger.info(f"💥 ADMIN FORCE CRASH на {current_mult_float:.2f}x")
+                            logger.info(f"рџ’Ґ ADMIN FORCE CRASH РЅР° {current_mult_float:.2f}x")
                             conn.commit()
                             time.sleep(0.10)
                             continue
                         
-                        # Увеличиваем множитель
+                        # РЈРІРµР»РёС‡РёРІР°РµРј РјРЅРѕР¶РёС‚РµР»СЊ
 
                         if current_mult_float < target_mult_float:
-                            # AI RTP check — force crash if profitable players would extract too much
+                            # AI RTP check вЂ” force crash if profitable players would extract too much
                             if current_mult_float > 1.5 and tick_counter % 3 == 0:
                                 if ai_should_force_crash(game_id, current_mult_float, conn):
                                     cursor.execute('UPDATE ultimate_crash_games SET status = "crashed" WHERE id = ?', (game_id,))
@@ -3323,7 +3323,7 @@ def start_ultimate_crash_loop():
                                     ''', (game_id, game_id))
                                     _crash_bots_on_crash(game_id)
                                     update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
-                                    logger.info(f"💥 AI RTP CRASH на {current_mult_float:.2f}x")
+                                    logger.info(f"рџ’Ґ AI RTP CRASH РЅР° {current_mult_float:.2f}x")
                                     conn.commit()
                                     time.sleep(0.10)
                                     continue
@@ -3348,7 +3348,7 @@ def start_ultimate_crash_loop():
                             increment = round(max(base_increment, speed_boost), 2)
                             increment = min(increment, 2.0)
 
-                            # Случайный краш
+                            # РЎР»СѓС‡Р°Р№РЅС‹Р№ РєСЂР°С€
                             crash_chance = 0.01 * (current_mult_float / 10)
                             if random.random() < crash_chance:
                                 cursor.execute('UPDATE ultimate_crash_games SET status = "crashed" WHERE id = ?', (game_id,))
@@ -3363,7 +3363,7 @@ def start_ultimate_crash_loop():
                                     ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
                                 ''', (game_id, game_id))
                                 update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
-                                logger.info(f"💥 Случайный краш на {current_mult_float:.2f}x")
+                                logger.info(f"рџ’Ґ РЎР»СѓС‡Р°Р№РЅС‹Р№ РєСЂР°С€ РЅР° {current_mult_float:.2f}x")
                             else:
                                 new_multiplier = round(current_mult_float + increment, 2)
                                 if new_multiplier >= target_mult_float:
@@ -3379,7 +3379,7 @@ def start_ultimate_crash_loop():
                                         ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
                                     ''', (game_id, game_id))
                                     update_crash_cache(game_id, 'crashed', target_mult_float, target_mult_float, 0)
-                                    logger.info(f"💥 Достигнут целевой множитель {target_mult_float:.2f}x")
+                                    logger.info(f"рџ’Ґ Р”РѕСЃС‚РёРіРЅСѓС‚ С†РµР»РµРІРѕР№ РјРЅРѕР¶РёС‚РµР»СЊ {target_mult_float:.2f}x")
                                 else:
                                     # Update cache immediately (clients see it fast)
                                     progress = new_multiplier / target_mult_float if target_mult_float > 0 else 0
@@ -3401,7 +3401,7 @@ def start_ultimate_crash_loop():
                                 ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
                             ''', (game_id, game_id))
                             update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
-                            logger.info(f"💥 Игра #{game_id} завершена на {current_mult_float:.2f}x")
+                            logger.info(f"рџ’Ґ РРіСЂР° #{game_id} Р·Р°РІРµСЂС€РµРЅР° РЅР° {current_mult_float:.2f}x")
 
                     conn.commit()
                 else:
@@ -3422,12 +3422,12 @@ def start_ultimate_crash_loop():
                     if admin_ctrl.get('next_multiplier'):
                         target_multiplier = float(admin_ctrl['next_multiplier'])
                         set_admin_crash_control('next_multiplier', None)
-                        logger.info(f"🎮 ADMIN SET multiplier: {target_multiplier}x")
+                        logger.info(f"рџЋ® ADMIN SET multiplier: {target_multiplier}x")
                     elif admin_ctrl.get('use_custom_range'):
                         min_m = admin_ctrl.get('multiplier_min', 1.0)
                         max_m = admin_ctrl.get('multiplier_max', 50.0)
                         target_multiplier = round(random.uniform(min_m, max_m), 2)
-                        logger.info(f"🎮 ADMIN RANGE multiplier: {target_multiplier}x ({min_m}-{max_m})")
+                        logger.info(f"рџЋ® ADMIN RANGE multiplier: {target_multiplier}x ({min_m}-{max_m})")
                     
                     cursor.execute('''
                         INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
@@ -3436,17 +3436,17 @@ def start_ultimate_crash_loop():
                     conn.commit()
                     # Clean old user bets cache
                     _cleanup_user_bets_cache()
-                    logger.info(f"🆕 Новая Crash игра, target: {target_multiplier}x")
+                    logger.info(f"рџ†• РќРѕРІР°СЏ Crash РёРіСЂР°, target: {target_multiplier}x")
 
-                time.sleep(0.10)  # Tick interval — fast for smooth multiplier
+                time.sleep(0.10)  # Tick interval вЂ” fast for smooth multiplier
 
             except Exception as e:
                 err_msg = str(e)
                 reset_loop_conn()
-                # При ошибках БД - пробуем восстановить
+                # РџСЂРё РѕС€РёР±РєР°С… Р‘Р” - РїСЂРѕР±СѓРµРј РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ
                 if 'malformed' in err_msg or 'disk' in err_msg or 'lock' in err_msg:
                     try:
-                        # Удаляем временные файлы WAL
+                        # РЈРґР°Р»СЏРµРј РІСЂРµРјРµРЅРЅС‹Рµ С„Р°Р№Р»С‹ WAL
                         for ext in ['-wal', '-shm', '-journal']:
                             p = DB_PATH + ext
                             if os.path.exists(p):
@@ -3455,25 +3455,25 @@ def start_ultimate_crash_loop():
                         pass
                 
                 if not hasattr(game_loop, '_last_err') or game_loop._last_err != err_msg:
-                    logger.error(f"❌ Ошибка в игровом цикле: {e}")
+                    logger.error(f"вќЊ РћС€РёР±РєР° РІ РёРіСЂРѕРІРѕРј С†РёРєР»Рµ: {e}")
                     game_loop._last_err = err_msg
                     game_loop._err_count = 1
                 else:
                     game_loop._err_count = getattr(game_loop, '_err_count', 0) + 1
                     if game_loop._err_count % 30 == 0:
-                        logger.error(f"❌ Ошибка в игровом цикле (повтор x{game_loop._err_count}): {e}")
-                time.sleep(3)  # Увеличена пауза при ошибках
+                        logger.error(f"вќЊ РћС€РёР±РєР° РІ РёРіСЂРѕРІРѕРј С†РёРєР»Рµ (РїРѕРІС‚РѕСЂ x{game_loop._err_count}): {e}")
+                time.sleep(3)  # РЈРІРµР»РёС‡РµРЅР° РїР°СѓР·Р° РїСЂРё РѕС€РёР±РєР°С…
 
     thread = threading.Thread(target=game_loop, daemon=True)
     thread.start()
-    logger.info("✅ Простой игровой цикл запущен")
+    logger.info("вњ… РџСЂРѕСЃС‚РѕР№ РёРіСЂРѕРІРѕР№ С†РёРєР» Р·Р°РїСѓС‰РµРЅ")
 
-# ==================== АВТОРИЗАЦИЯ ЧЕРЕЗ TELEGRAM БОТА ====================
-# Коды хранятся в SQLite — работает на PythonAnywhere и любом хостинге
-# Таблица auth_codes создаётся в init_db()
+# ==================== РђР’РўРћР РР—РђР¦РРЇ Р§Р•Р Р•Р— TELEGRAM Р‘РћРўРђ ====================
+# РљРѕРґС‹ С…СЂР°РЅСЏС‚СЃСЏ РІ SQLite вЂ” СЂР°Р±РѕС‚Р°РµС‚ РЅР° PythonAnywhere Рё Р»СЋР±РѕРј С…РѕСЃС‚РёРЅРіРµ
+# РўР°Р±Р»РёС†Р° auth_codes СЃРѕР·РґР°С‘С‚СЃСЏ РІ init_db()
 
 def cleanup_old_auth_codes():
-    """Очистка устаревших кодов (старше 10 минут)"""
+    """РћС‡РёСЃС‚РєР° СѓСЃС‚Р°СЂРµРІС€РёС… РєРѕРґРѕРІ (СЃС‚Р°СЂС€Рµ 10 РјРёРЅСѓС‚)"""
     try:
         conn = get_db_connection()
         if conn:
@@ -3485,7 +3485,7 @@ def cleanup_old_auth_codes():
 
 @app.route('/api/generate-auth-code', methods=['POST'])
 def generate_auth_code():
-    """Генерация кода авторизации для браузера"""
+    """Р“РµРЅРµСЂР°С†РёСЏ РєРѕРґР° Р°РІС‚РѕСЂРёР·Р°С†РёРё РґР»СЏ Р±СЂР°СѓР·РµСЂР°"""
     try:
         cleanup_old_auth_codes()
         code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=20))
@@ -3494,15 +3494,15 @@ def generate_auth_code():
         cursor.execute('INSERT INTO auth_codes (code) VALUES (?)', (code,))
         conn.commit()
         conn.close()
-        logger.info(f"🔐 Сгенерирован код авторизации: {code}")
+        logger.info(f"рџ”ђ РЎРіРµРЅРµСЂРёСЂРѕРІР°РЅ РєРѕРґ Р°РІС‚РѕСЂРёР·Р°С†РёРё: {code}")
         return jsonify({'success': True, 'code': code})
     except Exception as e:
-        logger.error(f"❌ Ошибка генерации кода: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РіРµРЅРµСЂР°С†РёРё РєРѕРґР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/confirm-auth-code', methods=['POST'])
 def confirm_auth_code():
-    """Подтверждение кода авторизации от бота"""
+    """РџРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РєРѕРґР° Р°РІС‚РѕСЂРёР·Р°С†РёРё РѕС‚ Р±РѕС‚Р°"""
     try:
         data = request.get_json()
         code = data.get('code', '').strip()
@@ -3515,11 +3515,11 @@ def confirm_auth_code():
 
         if not row:
             conn.close()
-            return jsonify({'success': False, 'error': 'Неверный код'})
+            return jsonify({'success': False, 'error': 'РќРµРІРµСЂРЅС‹Р№ РєРѕРґ'})
 
         if row[0]:
             conn.close()
-            return jsonify({'success': False, 'error': 'Код уже использован'})
+            return jsonify({'success': False, 'error': 'РљРѕРґ СѓР¶Рµ РёСЃРїРѕР»СЊР·РѕРІР°РЅ'})
 
         import json as _json
         cursor.execute('UPDATE auth_codes SET confirmed = 1, user_data = ? WHERE code = ?',
@@ -3527,15 +3527,15 @@ def confirm_auth_code():
         conn.commit()
         conn.close()
 
-        logger.info(f"✅ Код {code} подтверждён пользователем {user_data.get('id')}")
+        logger.info(f"вњ… РљРѕРґ {code} РїРѕРґС‚РІРµСЂР¶РґС‘РЅ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј {user_data.get('id')}")
         return jsonify({'success': True})
     except Exception as e:
-        logger.error(f"❌ Ошибка подтверждения кода: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ РєРѕРґР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/check-auth-code', methods=['POST'])
 def check_auth_code():
-    """Проверка статуса кода авторизации (от браузера)"""
+    """РџСЂРѕРІРµСЂРєР° СЃС‚Р°С‚СѓСЃР° РєРѕРґР° Р°РІС‚РѕСЂРёР·Р°С†РёРё (РѕС‚ Р±СЂР°СѓР·РµСЂР°)"""
     try:
         data = request.get_json()
         code = data.get('code', '').strip()
@@ -3547,7 +3547,7 @@ def check_auth_code():
 
         if not row:
             conn.close()
-            return jsonify({'success': False, 'error': 'Код не найден'})
+            return jsonify({'success': False, 'error': 'РљРѕРґ РЅРµ РЅР°Р№РґРµРЅ'})
 
         confirmed, user_data_str, created_at = row
 
@@ -3562,14 +3562,14 @@ def check_auth_code():
         conn.close()
         return jsonify({'success': True, 'confirmed': False})
     except Exception as e:
-        logger.error(f"❌ Ошибка проверки кода: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїСЂРѕРІРµСЂРєРё РєРѕРґР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
-# ==================== ОСНОВНЫЕ РОУТЫ ====================
+# ==================== РћРЎРќРћР’РќР«Р• Р РћРЈРўР« ====================
 
 @app.route('/')
 def root_page():
-    """Главная страница — Кейсы"""
+    """Р“Р»Р°РІРЅР°СЏ СЃС‚СЂР°РЅРёС†Р° вЂ” РљРµР№СЃС‹"""
     return render_template('index.html')
 
 
@@ -3581,81 +3581,81 @@ def api_ping():
 
 @app.route('/crash')
 def crash_page():
-    """Страница игры Краш"""
+    """РЎС‚СЂР°РЅРёС†Р° РёРіСЂС‹ РљСЂР°С€"""
     return render_template('crash.html')
 
 @app.route('/index')
 def index():
-    """Главная страница кейсов (алиас)"""
+    """Р“Р»Р°РІРЅР°СЏ СЃС‚СЂР°РЅРёС†Р° РєРµР№СЃРѕРІ (Р°Р»РёР°СЃ)"""
     return render_template('index.html')
 
 @app.route('/case')
 def case_main_page():
-    """Страница списка кейсов"""
+    """РЎС‚СЂР°РЅРёС†Р° СЃРїРёСЃРєР° РєРµР№СЃРѕРІ"""
     return render_template('index.html')
 
 @app.route('/cases')
 def cases_page():
-    """Страница кейсов (алиас)"""
+    """РЎС‚СЂР°РЅРёС†Р° РєРµР№СЃРѕРІ (Р°Р»РёР°СЃ)"""
     return render_template('index.html')
 
 @app.route('/case/<int:case_id>')
 def case_page(case_id):
-    """Страница конкретного кейса"""
-    logger.info(f"📄 Запрос страницы кейса {case_id}")
+    """РЎС‚СЂР°РЅРёС†Р° РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РєРµР№СЃР°"""
+    logger.info(f"рџ“„ Р—Р°РїСЂРѕСЃ СЃС‚СЂР°РЅРёС†С‹ РєРµР№СЃР° {case_id}")
     return render_template('case.html', case_id=case_id)
 
 @app.route('/inventory')
 def inventory_page():
-    """Страница инвентаря"""
-    logger.info("🎒 Запрос страницы инвентаря")
+    """РЎС‚СЂР°РЅРёС†Р° РёРЅРІРµРЅС‚Р°СЂСЏ"""
+    logger.info("рџЋ’ Р—Р°РїСЂРѕСЃ СЃС‚СЂР°РЅРёС†С‹ РёРЅРІРµРЅС‚Р°СЂСЏ")
     return render_template('inventory.html')
 
 @app.route('/profile')
 def profile_page():
-    """Страница профиля → редирект на инвентарь"""
-    logger.info("👤 Запрос страницы профиля → редирект на /inventory")
+    """РЎС‚СЂР°РЅРёС†Р° РїСЂРѕС„РёР»СЏ в†’ СЂРµРґРёСЂРµРєС‚ РЅР° РёРЅРІРµРЅС‚Р°СЂСЊ"""
+    logger.info("рџ‘¤ Р—Р°РїСЂРѕСЃ СЃС‚СЂР°РЅРёС†С‹ РїСЂРѕС„РёР»СЏ в†’ СЂРµРґРёСЂРµРєС‚ РЅР° /inventory")
     return redirect('/inventory')
 
 @app.route('/ref')
 def ref_page():
-    """Страница реферальной системы"""
+    """РЎС‚СЂР°РЅРёС†Р° СЂРµС„РµСЂР°Р»СЊРЅРѕР№ СЃРёСЃС‚РµРјС‹"""
     return render_template('ref.html')
 
 @app.route('/lobby')
 def lobby_page():
-    """Страница лобби"""
+    """РЎС‚СЂР°РЅРёС†Р° Р»РѕР±Р±Рё"""
     return render_template('lobby.html')
 
 @app.route('/upgrade')
 def upgrade_page():
-    """Страница апгрейда → пока редирект на инвентарь"""
+    """РЎС‚СЂР°РЅРёС†Р° Р°РїРіСЂРµР№РґР° в†’ РїРѕРєР° СЂРµРґРёСЂРµРєС‚ РЅР° РёРЅРІРµРЅС‚Р°СЂСЊ"""
     return redirect('/inventory')
 
 @app.route('/leaderboard')
 def leaderboard_page():
-    """Страница лидерборда"""
+    """РЎС‚СЂР°РЅРёС†Р° Р»РёРґРµСЂР±РѕСЂРґР°"""
     return render_template('leaderboard.html')
 
 @app.route('/admin')
 def admin_page():
-    """Страница админ-панели"""
-    logger.info("🛠️ Запрос страницы админ-панели")
+    """РЎС‚СЂР°РЅРёС†Р° Р°РґРјРёРЅ-РїР°РЅРµР»Рё"""
+    logger.info("рџ› пёЏ Р—Р°РїСЂРѕСЃ СЃС‚СЂР°РЅРёС†С‹ Р°РґРјРёРЅ-РїР°РЅРµР»Рё")
     return render_template('admin.html')
 
 @app.route('/shop-verification-QX2XNbyDv5.txt')
 def cardlink_verification():
-    """Файл верификации CardLink"""
+    """Р¤Р°Р№Р» РІРµСЂРёС„РёРєР°С†РёРё CardLink"""
     return send_from_directory('static', 'shop-verification-QX2XNbyDv5.txt', mimetype='text/plain')
 
 @app.route('/static/<path:path>')
 def serve_static(path):
-    """Обслуживание статических файлов"""
+    """РћР±СЃР»СѓР¶РёРІР°РЅРёРµ СЃС‚Р°С‚РёС‡РµСЃРєРёС… С„Р°Р№Р»РѕРІ"""
     return send_from_directory('static', path)
 
 @app.route('/music/<path:path>')
 def serve_music(path):
-    """Обслуживание музыкальных файлов"""
+    """РћР±СЃР»СѓР¶РёРІР°РЅРёРµ РјСѓР·С‹РєР°Р»СЊРЅС‹С… С„Р°Р№Р»РѕРІ"""
     return send_from_directory('music', path)
 
 # ==================== API ENDPOINTS ====================
@@ -3675,12 +3675,12 @@ def verify_demo_code():
 # TELEGRAM API
 @app.route('/api/telegram/user', methods=['GET'])
 def get_telegram_user():
-    """Получение данных пользователя Telegram"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РґР°РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ Telegram"""
     try:
         user_id = request.args.get('user_id')
 
         if not user_id:
-            return jsonify({'success': False, 'error': 'ID пользователя не указан'})
+            return jsonify({'success': False, 'error': 'ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ СѓРєР°Р·Р°РЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -3690,7 +3690,7 @@ def get_telegram_user():
 
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         user_data = {
             'id': user[0],
@@ -3713,14 +3713,14 @@ def get_telegram_user():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения пользователя: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 
-# ==================== ДОПОЛНИТЕЛЬНЫЕ API ДЛЯ ULTIMATE CRASH ====================
+# ==================== Р”РћРџРћР›РќРРўР•Р›Р¬РќР«Р• API Р”Р›РЇ ULTIMATE CRASH ====================
 
-# Кэш ставок пользователей (game_id, user_id) -> {bet_data, timestamp}
+# РљСЌС€ СЃС‚Р°РІРѕРє РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ (game_id, user_id) -> {bet_data, timestamp}
 _user_bets_cache = {}
 
 def _cleanup_user_bets_cache():
@@ -3736,14 +3736,14 @@ def _cleanup_user_bets_cache():
 
 @app.route('/api/ultimate-crash/simple-status', methods=['GET'])
 def ultimate_crash_simple_status():
-    """Быстрый статус игры - использует кэш"""
+    """Р‘С‹СЃС‚СЂС‹Р№ СЃС‚Р°С‚СѓСЃ РёРіСЂС‹ - РёСЃРїРѕР»СЊР·СѓРµС‚ РєСЌС€"""
     user_id = request.args.get('user_id')
     
-    # Всегда используем кэш игры
+    # Р’СЃРµРіРґР° РёСЃРїРѕР»СЊР·СѓРµРј РєСЌС€ РёРіСЂС‹
     cached = get_crash_cache()
     cache_age = time.time() - cached.get('timestamp', 0)
     
-    # Если кэш свежий (< 2 сек) - не трогаем БД
+    # Р•СЃР»Рё РєСЌС€ СЃРІРµР¶РёР№ (< 2 СЃРµРє) - РЅРµ С‚СЂРѕРіР°РµРј Р‘Р”
     if cache_age < 2.0 and cached.get('id', 0) > 0:
         game_data = {
             'id': cached['id'],
@@ -3753,7 +3753,7 @@ def ultimate_crash_simple_status():
             'time_remaining': cached['time_remaining']
         }
         
-        # Кэшированные ставки пользователя (кэш 5 сек)
+        # РљСЌС€РёСЂРѕРІР°РЅРЅС‹Рµ СЃС‚Р°РІРєРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ (РєСЌС€ 5 СЃРµРє)
         user_bet = None
         if user_id:
             cache_key = (cached['id'], user_id)
@@ -3775,7 +3775,7 @@ def ultimate_crash_simple_status():
         
         return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet})
     
-    # Fallback - если кэш устарел
+    # Fallback - РµСЃР»Рё РєСЌС€ СѓСЃС‚Р°СЂРµР»
     try:
         conn = sqlite3.connect(DB_PATH, timeout=5)
         cursor = conn.cursor()
@@ -3810,32 +3810,32 @@ def ultimate_crash_simple_status():
 
 @app.route('/api/ultimate-crash/place-bet', methods=['POST'])
 def ultimate_crash_place_bet():
-    """Упрощенная версия размещения ставки"""
+    """РЈРїСЂРѕС‰РµРЅРЅР°СЏ РІРµСЂСЃРёСЏ СЂР°Р·РјРµС‰РµРЅРёСЏ СЃС‚Р°РІРєРё"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
         bet_amount = data.get('bet_amount', 0)
 
         if not user_id:
-            return jsonify({'success': False, 'error': 'ID пользователя не указан'})
+            return jsonify({'success': False, 'error': 'ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ СѓРєР°Р·Р°РЅ'})
 
         if bet_amount < 10:
-            return jsonify({'success': False, 'error': 'Минимальная ставка 25'})
+            return jsonify({'success': False, 'error': 'РњРёРЅРёРјР°Р»СЊРЅР°СЏ СЃС‚Р°РІРєР° 25'})
 
-        # Check phase transition lock FIRST (prevents bets during counting→flying)
+        # Check phase transition lock FIRST (prevents bets during countingв†’flying)
         with _crash_phase_lock:
             if _crash_phase_transitioning:
-                return jsonify({'success': False, 'error': 'Игра стартует, ставка на след. раунд'})
+                return jsonify({'success': False, 'error': 'РРіСЂР° СЃС‚Р°СЂС‚СѓРµС‚, СЃС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ'})
 
         # Quick cache check before opening DB
         cached = get_crash_cache()
         cached_status = cached.get('status', '')
         if cached_status == 'flying':
-            return jsonify({'success': False, 'error': 'Игра уже началась! Ставка на след. раунд'})
+            return jsonify({'success': False, 'error': 'РРіСЂР° СѓР¶Рµ РЅР°С‡Р°Р»Р°СЃСЊ! РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ'})
         if cached_status == 'crashed':
-            return jsonify({'success': False, 'error': 'Раунд завершён. Ставка на след. раунд'})
+            return jsonify({'success': False, 'error': 'Р Р°СѓРЅРґ Р·Р°РІРµСЂС€С‘РЅ. РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ'})
         if cached_status == 'counting' and cached.get('time_remaining', 5) < 0.3:
-            return jsonify({'success': False, 'error': 'Слишком поздно! Ставка на след. раунд'})
+            return jsonify({'success': False, 'error': 'РЎР»РёС€РєРѕРј РїРѕР·РґРЅРѕ! РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -3844,14 +3844,14 @@ def ultimate_crash_place_bet():
             # Use BEGIN IMMEDIATE for atomic balance check + deduction
             cursor.execute('BEGIN IMMEDIATE')
 
-            # Проверяем баланс и total_loss
+            # РџСЂРѕРІРµСЂСЏРµРј Р±Р°Р»Р°РЅСЃ Рё total_loss
             cursor.execute('SELECT balance_stars, COALESCE(total_loss, 0) FROM users WHERE id = ?', (user_id,))
             user = cursor.fetchone()
 
             if not user:
                 conn.rollback()
                 conn.close()
-                return jsonify({'success': False, 'error': 'Пользователь не найден'})
+                return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
             current_balance = user[0] or 0
             total_loss = user[1] or 0
@@ -3859,9 +3859,9 @@ def ultimate_crash_place_bet():
             if current_balance < bet_amount:
                 conn.rollback()
                 conn.close()
-                return jsonify({'success': False, 'error': f'Недостаточно средств. Баланс: {current_balance}'})
+                return jsonify({'success': False, 'error': f'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЃСЂРµРґСЃС‚РІ. Р‘Р°Р»Р°РЅСЃ: {current_balance}'})
 
-            # Получаем активную игру (waiting или counting)
+            # РџРѕР»СѓС‡Р°РµРј Р°РєС‚РёРІРЅСѓСЋ РёРіСЂСѓ (waiting РёР»Рё counting)
             cursor.execute('''
                 SELECT id, status FROM ultimate_crash_games
                 WHERE status IN ('waiting', 'counting')
@@ -3871,7 +3871,7 @@ def ultimate_crash_place_bet():
             game = cursor.fetchone()
 
             if not game:
-                # Создаем новую игру сразу в counting
+                # РЎРѕР·РґР°РµРј РЅРѕРІСѓСЋ РёРіСЂСѓ СЃСЂР°Р·Сѓ РІ counting
                 base_multiplier = round(random.uniform(3.0, 10.0), 2)
                 
                 if total_loss >= 5000 and bet_amount <= total_loss * 0.2:
@@ -3899,9 +3899,9 @@ def ultimate_crash_place_bet():
             if game_status not in ('waiting', 'counting'):
                 conn.rollback()
                 conn.close()
-                return jsonify({'success': False, 'error': 'Игра уже началась'})
+                return jsonify({'success': False, 'error': 'РРіСЂР° СѓР¶Рµ РЅР°С‡Р°Р»Р°СЃСЊ'})
 
-            # Проверяем, есть ли уже ставка
+            # РџСЂРѕРІРµСЂСЏРµРј, РµСЃС‚СЊ Р»Рё СѓР¶Рµ СЃС‚Р°РІРєР°
             cursor.execute('''
                 SELECT id FROM ultimate_crash_bets
                 WHERE game_id = ? AND user_id = ? AND status = 'active'
@@ -3912,13 +3912,13 @@ def ultimate_crash_place_bet():
             if existing_bet:
                 conn.rollback()
                 conn.close()
-                return jsonify({'success': False, 'error': 'У вас уже есть активная ставка'})
+                return jsonify({'success': False, 'error': 'РЈ РІР°СЃ СѓР¶Рµ РµСЃС‚СЊ Р°РєС‚РёРІРЅР°СЏ СЃС‚Р°РІРєР°'})
 
-            # Списываем средства и увеличиваем счётчик ставок и объём
+            # РЎРїРёСЃС‹РІР°РµРј СЃСЂРµРґСЃС‚РІР° Рё СѓРІРµР»РёС‡РёРІР°РµРј СЃС‡С‘С‚С‡РёРє СЃС‚Р°РІРѕРє Рё РѕР±СЉС‘Рј
             cursor.execute('UPDATE users SET balance_stars = balance_stars - ?, total_crash_bets = COALESCE(total_crash_bets, 0) + 1, total_bet_volume = COALESCE(total_bet_volume, 0) + ? WHERE id = ?',
                          (bet_amount, bet_amount, user_id))
 
-            # Создаем ставку
+            # РЎРѕР·РґР°РµРј СЃС‚Р°РІРєСѓ
             cursor.execute('''
                 INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, status)
                 VALUES (?, ?, ?, ?, 'active')
@@ -3926,13 +3926,13 @@ def ultimate_crash_place_bet():
 
             bet_id = cursor.lastrowid
 
-            # Добавляем в историю
+            # Р”РѕР±Р°РІР»СЏРµРј РІ РёСЃС‚РѕСЂРёСЋ
             cursor.execute('''
                 INSERT INTO user_history (user_id, operation_type, amount, description)
                 VALUES (?, 'ultimate_crash_bet', ?, ?)
-            ''', (user_id, -bet_amount, f'Ставка в Ultimate Crash: {bet_amount}'))
+            ''', (user_id, -bet_amount, f'РЎС‚Р°РІРєР° РІ Ultimate Crash: {bet_amount}'))
 
-            # Получаем новый баланс
+            # РџРѕР»СѓС‡Р°РµРј РЅРѕРІС‹Р№ Р±Р°Р»Р°РЅСЃ
             cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
             new_balance = cursor.fetchone()[0]
 
@@ -3945,7 +3945,7 @@ def ultimate_crash_place_bet():
 
         conn.close()
 
-        # Очищаем кэш ставок для этого пользователя
+        # РћС‡РёС‰Р°РµРј РєСЌС€ СЃС‚Р°РІРѕРє РґР»СЏ СЌС‚РѕРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         cache_key = (game_id, user_id)
         if cache_key in _user_bets_cache:
             del _user_bets_cache[cache_key]
@@ -3968,11 +3968,11 @@ def ultimate_crash_place_bet():
             'bet_id': bet_id,
             'game_id': game_id,
             'new_balance': new_balance,
-            'message': f'Ставка {bet_amount} принята!'
+            'message': f'РЎС‚Р°РІРєР° {bet_amount} РїСЂРёРЅСЏС‚Р°!'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка ставки: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃС‚Р°РІРєРё: {e}")
         try: conn.close()
         except: pass
         return jsonify({'success': False, 'error': str(e)})
@@ -3980,14 +3980,14 @@ def ultimate_crash_place_bet():
 
 @app.route('/api/ultimate-crash/place-bet-gift', methods=['POST'])
 def ultimate_crash_place_bet_gift():
-    """Ставка подарком из инвентаря"""
+    """РЎС‚Р°РІРєР° РїРѕРґР°СЂРєРѕРј РёР· РёРЅРІРµРЅС‚Р°СЂСЏ"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
         inventory_id = data.get('inventory_id')
 
         if not user_id or not inventory_id:
-            return jsonify({'success': False, 'error': 'Не указан пользователь или подарок'})
+            return jsonify({'success': False, 'error': 'РќРµ СѓРєР°Р·Р°РЅ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РёР»Рё РїРѕРґР°СЂРѕРє'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -4000,14 +4000,14 @@ def ultimate_crash_place_bet_gift():
 
         if not gift:
             conn.close()
-            return jsonify({'success': False, 'error': 'Подарок не найден в инвентаре'})
+            return jsonify({'success': False, 'error': 'РџРѕРґР°СЂРѕРє РЅРµ РЅР°Р№РґРµРЅ РІ РёРЅРІРµРЅС‚Р°СЂРµ'})
 
         inv_id, gift_name, gift_image, gift_value = gift
         bet_amount = gift_value
 
         if bet_amount < 10:
             conn.close()
-            return jsonify({'success': False, 'error': 'Стоимость подарка меньше 25⭐'})
+            return jsonify({'success': False, 'error': 'РЎС‚РѕРёРјРѕСЃС‚СЊ РїРѕРґР°СЂРєР° РјРµРЅСЊС€Рµ 25в­ђ'})
 
         cursor.execute('''
             SELECT id, status FROM ultimate_crash_games
@@ -4026,12 +4026,12 @@ def ultimate_crash_place_bet_gift():
             game_id, game_status = game
             if game_status not in ('waiting', 'counting'):
                 conn.close()
-                return jsonify({'success': False, 'error': 'Игра уже началась'})
-            # Проверяем время до старта - если < 1.5 сек, отклоняем
+                return jsonify({'success': False, 'error': 'РРіСЂР° СѓР¶Рµ РЅР°С‡Р°Р»Р°СЃСЊ'})
+            # РџСЂРѕРІРµСЂСЏРµРј РІСЂРµРјСЏ РґРѕ СЃС‚Р°СЂС‚Р° - РµСЃР»Рё < 1.5 СЃРµРє, РѕС‚РєР»РѕРЅСЏРµРј
             cached = get_crash_cache()
             if cached.get('status') == 'counting' and cached.get('time_remaining', 5) < 1.5:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Слишком поздно! Ставка на след. раунд'})
+                return jsonify({'success': False, 'error': 'РЎР»РёС€РєРѕРј РїРѕР·РґРЅРѕ! РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ'})
 
         cursor.execute('''
             SELECT id FROM ultimate_crash_bets
@@ -4039,11 +4039,11 @@ def ultimate_crash_place_bet_gift():
         ''', (game_id, user_id))
         if cursor.fetchone():
             conn.close()
-            return jsonify({'success': False, 'error': 'У вас уже есть ставка'})
+            return jsonify({'success': False, 'error': 'РЈ РІР°СЃ СѓР¶Рµ РµСЃС‚СЊ СЃС‚Р°РІРєР°'})
 
         cursor.execute('DELETE FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
 
-        # Увеличиваем счётчик ставок и объём
+        # РЈРІРµР»РёС‡РёРІР°РµРј СЃС‡С‘С‚С‡РёРє СЃС‚Р°РІРѕРє Рё РѕР±СЉС‘Рј
         cursor.execute('UPDATE users SET total_crash_bets = COALESCE(total_crash_bets, 0) + 1, total_bet_volume = COALESCE(total_bet_volume, 0) + ? WHERE id = ?', (gift_value, user_id,))
 
         cursor.execute('''
@@ -4055,7 +4055,7 @@ def ultimate_crash_place_bet_gift():
         cursor.execute('''
             INSERT INTO user_history (user_id, operation_type, amount, description)
             VALUES (?, 'ultimate_crash_bet', ?, ?)
-        ''', (user_id, -bet_amount, f'Ставка подарком: {gift_name} ({bet_amount}⭐)'))
+        ''', (user_id, -bet_amount, f'РЎС‚Р°РІРєР° РїРѕРґР°СЂРєРѕРј: {gift_name} ({bet_amount}в­ђ)'))
 
         conn.commit()
 
@@ -4070,32 +4070,32 @@ def ultimate_crash_place_bet_gift():
             'new_balance': new_balance,
             'bet_amount': bet_amount,
             'gift_name': gift_name,
-            'message': f'Ставка {gift_name} ({bet_amount}⭐) принята!'
+            'message': f'РЎС‚Р°РІРєР° {gift_name} ({bet_amount}в­ђ) РїСЂРёРЅСЏС‚Р°!'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка ставки подарком: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃС‚Р°РІРєРё РїРѕРґР°СЂРєРѕРј: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/ultimate-crash/place-bet-multi-gift', methods=['POST'])
 def ultimate_crash_place_bet_multi_gift():
-    """Ставка несколькими подарками из инвентаря"""
+    """РЎС‚Р°РІРєР° РЅРµСЃРєРѕР»СЊРєРёРјРё РїРѕРґР°СЂРєР°РјРё РёР· РёРЅРІРµРЅС‚Р°СЂСЏ"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
         inventory_ids = data.get('inventory_ids', [])
 
         if not user_id or not inventory_ids:
-            return jsonify({'success': False, 'error': 'Не указан пользователь или подарки'})
+            return jsonify({'success': False, 'error': 'РќРµ СѓРєР°Р·Р°РЅ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РёР»Рё РїРѕРґР°СЂРєРё'})
 
         if not isinstance(inventory_ids, list) or len(inventory_ids) == 0:
-            return jsonify({'success': False, 'error': 'Нужно выбрать хотя бы один подарок'})
+            return jsonify({'success': False, 'error': 'РќСѓР¶РЅРѕ РІС‹Р±СЂР°С‚СЊ С…РѕС‚СЏ Р±С‹ РѕРґРёРЅ РїРѕРґР°СЂРѕРє'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Получаем все подарки
+        # РџРѕР»СѓС‡Р°РµРј РІСЃРµ РїРѕРґР°СЂРєРё
         placeholders = ','.join(['?' for _ in inventory_ids])
         cursor.execute(f'''
             SELECT id, gift_name, gift_image, gift_value
@@ -4105,15 +4105,15 @@ def ultimate_crash_place_bet_multi_gift():
 
         if len(gifts) != len(inventory_ids):
             conn.close()
-            return jsonify({'success': False, 'error': 'Некоторые подарки не найдены'})
+            return jsonify({'success': False, 'error': 'РќРµРєРѕС‚РѕСЂС‹Рµ РїРѕРґР°СЂРєРё РЅРµ РЅР°Р№РґРµРЅС‹'})
 
-        # Считаем общую стоимость
+        # РЎС‡РёС‚Р°РµРј РѕР±С‰СѓСЋ СЃС‚РѕРёРјРѕСЃС‚СЊ
         total_value = sum(g[3] for g in gifts)
         gift_names = [g[1] for g in gifts]
 
         if total_value < 25:
             conn.close()
-            return jsonify({'success': False, 'error': 'Общая стоимость подарков меньше 25⭐'})
+            return jsonify({'success': False, 'error': 'РћР±С‰Р°СЏ СЃС‚РѕРёРјРѕСЃС‚СЊ РїРѕРґР°СЂРєРѕРІ РјРµРЅСЊС€Рµ 25в­ђ'})
 
         cursor.execute('''
             SELECT id, status FROM ultimate_crash_games
@@ -4132,12 +4132,12 @@ def ultimate_crash_place_bet_multi_gift():
             game_id, game_status = game
             if game_status not in ('waiting', 'counting'):
                 conn.close()
-                return jsonify({'success': False, 'error': 'Игра уже началась'})
-            # Проверяем время до старта - если < 1.5 сек, отклоняем
+                return jsonify({'success': False, 'error': 'РРіСЂР° СѓР¶Рµ РЅР°С‡Р°Р»Р°СЃСЊ'})
+            # РџСЂРѕРІРµСЂСЏРµРј РІСЂРµРјСЏ РґРѕ СЃС‚Р°СЂС‚Р° - РµСЃР»Рё < 1.5 СЃРµРє, РѕС‚РєР»РѕРЅСЏРµРј
             cached = get_crash_cache()
             if cached.get('status') == 'counting' and cached.get('time_remaining', 5) < 1.5:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Слишком поздно! Ставка на след. раунд'})
+                return jsonify({'success': False, 'error': 'РЎР»РёС€РєРѕРј РїРѕР·РґРЅРѕ! РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ'})
 
         cursor.execute('''
             SELECT id FROM ultimate_crash_bets
@@ -4145,15 +4145,15 @@ def ultimate_crash_place_bet_multi_gift():
         ''', (game_id, user_id))
         if cursor.fetchone():
             conn.close()
-            return jsonify({'success': False, 'error': 'У вас уже есть ставка'})
+            return jsonify({'success': False, 'error': 'РЈ РІР°СЃ СѓР¶Рµ РµСЃС‚СЊ СЃС‚Р°РІРєР°'})
 
-        # Удаляем все подарки из инвентаря
+        # РЈРґР°Р»СЏРµРј РІСЃРµ РїРѕРґР°СЂРєРё РёР· РёРЅРІРµРЅС‚Р°СЂСЏ
         cursor.execute(f'DELETE FROM inventory WHERE id IN ({placeholders}) AND user_id = ?', inventory_ids + [user_id])
 
-        # Увеличиваем счётчик ставок и объём
+        # РЈРІРµР»РёС‡РёРІР°РµРј СЃС‡С‘С‚С‡РёРє СЃС‚Р°РІРѕРє Рё РѕР±СЉС‘Рј
         cursor.execute('UPDATE users SET total_crash_bets = COALESCE(total_crash_bets, 0) + 1, total_bet_volume = COALESCE(total_bet_volume, 0) + ? WHERE id = ?', (total_value, user_id,))
 
-        # Создаем ставку
+        # РЎРѕР·РґР°РµРј СЃС‚Р°РІРєСѓ
         cursor.execute('''
             INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, status)
             VALUES (?, ?, ?, ?, 'active')
@@ -4163,7 +4163,7 @@ def ultimate_crash_place_bet_multi_gift():
         cursor.execute('''
             INSERT INTO user_history (user_id, operation_type, amount, description)
             VALUES (?, 'ultimate_crash_bet', ?, ?)
-        ''', (user_id, -total_value, f'Ставка {len(gifts)} подарками ({total_value}⭐)'))
+        ''', (user_id, -total_value, f'РЎС‚Р°РІРєР° {len(gifts)} РїРѕРґР°СЂРєР°РјРё ({total_value}в­ђ)'))
 
         conn.commit()
 
@@ -4178,28 +4178,28 @@ def ultimate_crash_place_bet_multi_gift():
             'new_balance': new_balance,
             'bet_amount': total_value,
             'gift_count': len(gifts),
-            'message': f'Ставка {len(gifts)} подарков ({total_value}⭐) принята!'
+            'message': f'РЎС‚Р°РІРєР° {len(gifts)} РїРѕРґР°СЂРєРѕРІ ({total_value}в­ђ) РїСЂРёРЅСЏС‚Р°!'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка ставки несколькими подарками: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃС‚Р°РІРєРё РЅРµСЃРєРѕР»СЊРєРёРјРё РїРѕРґР°СЂРєР°РјРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/ultimate-crash/cashout-simple', methods=['POST'])
 def ultimate_crash_cashout_simple():
-    """Кэшаут с интеграцией подарков - если выигрыш >= мин. стоимости подарка, выдаём подарок"""
+    """РљСЌС€Р°СѓС‚ СЃ РёРЅС‚РµРіСЂР°С†РёРµР№ РїРѕРґР°СЂРєРѕРІ - РµСЃР»Рё РІС‹РёРіСЂС‹С€ >= РјРёРЅ. СЃС‚РѕРёРјРѕСЃС‚Рё РїРѕРґР°СЂРєР°, РІС‹РґР°С‘Рј РїРѕРґР°СЂРѕРє"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
 
         if not user_id:
-            return jsonify({'success': False, 'error': 'ID пользователя не указан'})
+            return jsonify({'success': False, 'error': 'ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ СѓРєР°Р·Р°РЅ'})
 
-        # Quick cache check — use cached multiplier for instant response
+        # Quick cache check вЂ” use cached multiplier for instant response
         cached = get_crash_cache()
         if cached.get('status') != 'flying':
-            return jsonify({'success': False, 'error': 'Нет активной игры'})
+            return jsonify({'success': False, 'error': 'РќРµС‚ Р°РєС‚РёРІРЅРѕР№ РёРіСЂС‹'})
         cached_mult = cached.get('current_multiplier', 1.0)
 
         conn = get_db_connection()
@@ -4209,7 +4209,7 @@ def ultimate_crash_cashout_simple():
             # BEGIN IMMEDIATE to prevent double-cashout race
             cursor.execute('BEGIN IMMEDIATE')
 
-            # Получаем активную игру
+            # РџРѕР»СѓС‡Р°РµРј Р°РєС‚РёРІРЅСѓСЋ РёРіСЂСѓ
             cursor.execute('''
                 SELECT id, current_multiplier FROM ultimate_crash_games
                 WHERE status = 'flying'
@@ -4221,14 +4221,14 @@ def ultimate_crash_cashout_simple():
             if not game:
                 conn.rollback()
                 conn.close()
-                return jsonify({'success': False, 'error': 'Нет активной игры'})
+                return jsonify({'success': False, 'error': 'РќРµС‚ Р°РєС‚РёРІРЅРѕР№ РёРіСЂС‹'})
 
             game_id = game[0]
             # Use the fresher of: DB multiplier vs cache multiplier
             db_mult = float(game[1]) if game[1] else 1.0
             current_mult = max(db_mult, cached_mult)
 
-            # Получаем ставку пользователя
+            # РџРѕР»СѓС‡Р°РµРј СЃС‚Р°РІРєСѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
             cursor.execute('''
                 SELECT id, bet_amount FROM ultimate_crash_bets
                 WHERE game_id = ? AND user_id = ? AND status = 'active'
@@ -4240,14 +4240,14 @@ def ultimate_crash_cashout_simple():
             if not bet:
                 conn.rollback()
                 conn.close()
-                return jsonify({'success': False, 'error': 'Активная ставка не найдена'})
+                return jsonify({'success': False, 'error': 'РђРєС‚РёРІРЅР°СЏ СЃС‚Р°РІРєР° РЅРµ РЅР°Р№РґРµРЅР°'})
 
             bet_id, bet_amount = bet
 
-            # Расчет выигрыша
+            # Р Р°СЃС‡РµС‚ РІС‹РёРіСЂС‹С€Р°
             win_amount = int(bet_amount * current_mult)
 
-            # Пытаемся найти подходящий подарок (originals only)
+            # РџС‹С‚Р°РµРјСЃСЏ РЅР°Р№С‚Рё РїРѕРґС…РѕРґСЏС‰РёР№ РїРѕРґР°СЂРѕРє (originals only)
             gift_awarded = None
             gifts = build_fragment_first_gifts_catalog()
             
@@ -4257,7 +4257,7 @@ def ultimate_crash_cashout_simple():
                 if suitable_gifts:
                     gift_awarded = suitable_gifts[-1]
 
-            # Обновляем ставку
+            # РћР±РЅРѕРІР»СЏРµРј СЃС‚Р°РІРєСѓ
             cursor.execute('''
                 UPDATE ultimate_crash_bets
                 SET status = 'cashed_out',
@@ -4270,9 +4270,9 @@ def ultimate_crash_cashout_simple():
             if cursor.rowcount == 0:
                 conn.rollback()
                 conn.close()
-                return jsonify({'success': False, 'error': 'Ставка уже забрана'})
+                return jsonify({'success': False, 'error': 'РЎС‚Р°РІРєР° СѓР¶Рµ Р·Р°Р±СЂР°РЅР°'})
 
-            # Получаем имя пользователя
+            # РџРѕР»СѓС‡Р°РµРј РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
             cursor.execute('SELECT first_name FROM users WHERE id = ?', (user_id,))
             user_row = cursor.fetchone()
             user_name = user_row[0] if user_row else f'User_{user_id}'
@@ -4298,7 +4298,7 @@ def ultimate_crash_cashout_simple():
                             cursor.execute('''INSERT INTO admin_notifications 
                                 (title, message, image_url, notif_type, target_user_id)
                                 VALUES (?, ?, ?, 'gift_index', ?)''',
-                                (gift_awarded['name'], f'Новый подарок в вашей коллекции!',
+                                (gift_awarded['name'], f'РќРѕРІС‹Р№ РїРѕРґР°СЂРѕРє РІ РІР°С€РµР№ РєРѕР»Р»РµРєС†РёРё!',
                                  gift_image, user_id))
                         except:
                             pass
@@ -4321,7 +4321,7 @@ def ultimate_crash_cashout_simple():
                 cursor.execute('''
                     INSERT INTO user_history (user_id, operation_type, amount, description)
                     VALUES (?, 'ultimate_crash_win', ?, ?)
-                ''', (user_id, win_amount, f'Выигрыш в Crash x{current_mult:.2f}: {gift_awarded["name"]} + {star_difference}⭐'))
+                ''', (user_id, win_amount, f'Р’С‹РёРіСЂС‹С€ РІ Crash x{current_mult:.2f}: {gift_awarded["name"]} + {star_difference}в­ђ'))
             else:
                 cursor.execute('''
                     UPDATE users
@@ -4333,7 +4333,7 @@ def ultimate_crash_cashout_simple():
                 cursor.execute('''
                     INSERT INTO user_history (user_id, operation_type, amount, description)
                     VALUES (?, 'ultimate_crash_win', ?, ?)
-                ''', (user_id, win_amount, f'Выигрыш в Crash: x{current_mult:.2f}'))
+                ''', (user_id, win_amount, f'Р’С‹РёРіСЂС‹С€ РІ Crash: x{current_mult:.2f}'))
 
                 cursor.execute('''
                     INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
@@ -4341,7 +4341,7 @@ def ultimate_crash_cashout_simple():
                 ''', (user_id, user_name, f'Stars x{current_mult:.2f}',
                       '/static/img/star.png', win_amount, 'Crash'))
 
-            # Получаем новый баланс ДО commit (внутри транзакции)
+            # РџРѕР»СѓС‡Р°РµРј РЅРѕРІС‹Р№ Р±Р°Р»Р°РЅСЃ Р”Рћ commit (РІРЅСѓС‚СЂРё С‚СЂР°РЅР·Р°РєС†РёРё)
             cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
             new_balance = cursor.fetchone()[0]
 
@@ -4357,7 +4357,7 @@ def ultimate_crash_cashout_simple():
         # Experience based on bet (1:1 turnover) - now added on bet placement, not cashout
         # exp_gained = bet_amount (removed - exp is added when placing bet)
 
-        # Формируем ответ
+        # Р¤РѕСЂРјРёСЂСѓРµРј РѕС‚РІРµС‚
         response = {
             'success': True,
             'win_amount': win_amount,
@@ -4379,25 +4379,25 @@ def ultimate_crash_cashout_simple():
             }
             response['star_difference'] = s_diff
             if s_diff > 0:
-                response['message'] = f'Вы выиграли {gift_awarded["name"]} + {s_diff}⭐!'
+                response['message'] = f'Р’С‹ РІС‹РёРіСЂР°Р»Рё {gift_awarded["name"]} + {s_diff}в­ђ!'
             else:
-                response['message'] = f'Вы выиграли подарок: {gift_awarded["name"]}!'
-            logger.info(f"✅ Crash кэшаут подарок: {gift_awarded['name']} ({g_val}⭐) +{s_diff}⭐ x{current_mult:.2f}")
+                response['message'] = f'Р’С‹ РІС‹РёРіСЂР°Р»Рё РїРѕРґР°СЂРѕРє: {gift_awarded["name"]}!'
+            logger.info(f"вњ… Crash РєСЌС€Р°СѓС‚ РїРѕРґР°СЂРѕРє: {gift_awarded['name']} ({g_val}в­ђ) +{s_diff}в­ђ x{current_mult:.2f}")
         else:
-            response['message'] = f'Вы выиграли {win_amount} звёзд!'
-            logger.info(f"✅ Crash кэшаут звёзды: {win_amount} x{current_mult:.2f}")
+            response['message'] = f'Р’С‹ РІС‹РёРіСЂР°Р»Рё {win_amount} Р·РІС‘Р·Рґ!'
+            logger.info(f"вњ… Crash РєСЌС€Р°СѓС‚ Р·РІС‘Р·РґС‹: {win_amount} x{current_mult:.2f}")
 
         return jsonify(response)
 
     except Exception as e:
-        logger.error(f"❌ Ошибка кэшаута: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РєСЌС€Р°СѓС‚Р°: {e}")
         try: conn.close()
         except: pass
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/ultimate-crash/current-gift', methods=['GET'])
 def ultimate_crash_current_gift():
-    """Возвращает подарок, соответствующий текущему bet_amount * multiplier — только оригиналы"""
+    """Р’РѕР·РІСЂР°С‰Р°РµС‚ РїРѕРґР°СЂРѕРє, СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёР№ С‚РµРєСѓС‰РµРјСѓ bet_amount * multiplier вЂ” С‚РѕР»СЊРєРѕ РѕСЂРёРіРёРЅР°Р»С‹"""
     try:
         bet_amount = int(request.args.get('bet_amount', 0))
         multiplier = float(request.args.get('multiplier', 1.0))
@@ -4407,7 +4407,7 @@ def ultimate_crash_current_gift():
         
         win_value = int(bet_amount * multiplier)
         
-        # Use Fragment catalog — originals only (no models)
+        # Use Fragment catalog вЂ” originals only (no models)
         gifts = build_fragment_first_gifts_catalog()
         if not gifts or win_value < 5:
             return jsonify({'success': True, 'gift': None})
@@ -4435,22 +4435,22 @@ def ultimate_crash_current_gift():
     except Exception as e:
         return jsonify({'success': True, 'gift': None})
 
-# ==================== АВТОМАТИЗАЦИЯ ИГРОВОГО ЦИКЛА ====================
+# ==================== РђР’РўРћРњРђРўРР—РђР¦РРЇ РР“Р РћР’РћР“Рћ Р¦РРљР›Рђ ====================
 
 def start_simple_game_loop():
-    """Запускает упрощенный игровой цикл"""
+    """Р—Р°РїСѓСЃРєР°РµС‚ СѓРїСЂРѕС‰РµРЅРЅС‹Р№ РёРіСЂРѕРІРѕР№ С†РёРєР»"""
     def game_loop():
-        logger.info("🚀 Запущен упрощенный игровой цикл")
+        logger.info("рџљЂ Р—Р°РїСѓС‰РµРЅ СѓРїСЂРѕС‰РµРЅРЅС‹Р№ РёРіСЂРѕРІРѕР№ С†РёРєР»")
 
         while True:
             try:
-                # Пауза между играми
+                # РџР°СѓР·Р° РјРµР¶РґСѓ РёРіСЂР°РјРё
                 time.sleep(3)
 
                 conn = get_db_connection()
                 cursor = conn.cursor()
 
-                # Создаем новую игру если нет активной
+                # РЎРѕР·РґР°РµРј РЅРѕРІСѓСЋ РёРіСЂСѓ РµСЃР»Рё РЅРµС‚ Р°РєС‚РёРІРЅРѕР№
                 cursor.execute('''
                     SELECT COUNT(*) FROM ultimate_crash_games
                     WHERE status IN ('waiting', 'counting', 'flying')
@@ -4465,29 +4465,29 @@ def start_simple_game_loop():
                     ''', (target_multiplier,))
                     game_id = cursor.lastrowid
                     conn.commit()
-                    logger.info(f"🆕 Создана новая игра #{game_id}")
+                    logger.info(f"рџ†• РЎРѕР·РґР°РЅР° РЅРѕРІР°СЏ РёРіСЂР° #{game_id}")
 
                 conn.close()
 
             except Exception as e:
-                logger.error(f"❌ Ошибка игрового цикла: {e}")
+                logger.error(f"вќЊ РћС€РёР±РєР° РёРіСЂРѕРІРѕРіРѕ С†РёРєР»Р°: {e}")
                 time.sleep(5)
 
     thread = threading.Thread(target=game_loop, daemon=True)
     thread.start()
-    logger.info("✅ Простой игровой цикл запущен")
+    logger.info("вњ… РџСЂРѕСЃС‚РѕР№ РёРіСЂРѕРІРѕР№ С†РёРєР» Р·Р°РїСѓС‰РµРЅ")
 
 
 
 @app.route('/api/telegram-auth', methods=['POST'])
 def telegram_auth():
-    """Аутентификация пользователя через Telegram"""
+    """РђСѓС‚РµРЅС‚РёС„РёРєР°С†РёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ С‡РµСЂРµР· Telegram"""
     try:
         data = request.get_json()
         user_id = data['id']
         referral_code = data.get('referral_code')
 
-        logger.info(f"🔐 Авторизация пользователя: {data.get('first_name')} (ID: {user_id})")
+        logger.info(f"рџ”ђ РђРІС‚РѕСЂРёР·Р°С†РёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: {data.get('first_name')} (ID: {user_id})")
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -4516,8 +4516,8 @@ def telegram_auth():
             if referral_code:
                 process_referral(user_id, referral_code)
 
-            add_history_record(user_id, 'registration', 0, 'Регистрация в системе')
-            logger.info(f"✅ Зарегистрирован новый пользователь: {data['first_name']}")
+            add_history_record(user_id, 'registration', 0, 'Р РµРіРёСЃС‚СЂР°С†РёСЏ РІ СЃРёСЃС‚РµРјРµ')
+            logger.info(f"вњ… Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅ РЅРѕРІС‹Р№ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ: {data['first_name']}")
         else:
             cursor.execute('''
                 UPDATE users
@@ -4533,7 +4533,7 @@ def telegram_auth():
             conn.commit()
             stars = user[5]
             tickets = user[6]
-            logger.info(f"✅ Пользователь уже существует: {data['first_name']}")
+            logger.info(f"вњ… РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚: {data['first_name']}")
 
         conn.close()
 
@@ -4552,13 +4552,13 @@ def telegram_auth():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка авторизации: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° Р°РІС‚РѕСЂРёР·Р°С†РёРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # USER API
 @app.route('/api/user/<int:user_id>', methods=['GET'])
 def get_user_data(user_id):
-    """Получение данных пользователя"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РґР°РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -4567,8 +4567,8 @@ def get_user_data(user_id):
         user = cursor.fetchone()
 
         if not user:
-            logger.warning(f"⚠️ Пользователь {user_id} не найден")
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            logger.warning(f"вљ пёЏ РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РЅРµ РЅР°Р№РґРµРЅ")
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         # Get column names for robust access
         col_names = [desc[0] for desc in cursor.description]
@@ -4624,7 +4624,7 @@ def get_user_data(user_id):
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения данных пользователя: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґР°РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -4653,7 +4653,7 @@ def set_user_currency_mode():
 
 @app.route('/api/inventory/<int:user_id>', methods=['GET'])
 def get_user_inventory(user_id):
-    """Получение инвентаря пользователя"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РёРЅРІРµРЅС‚Р°СЂСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -4692,7 +4692,7 @@ def get_user_inventory(user_id):
         for item in inventory:
             row = dict(zip(columns, item))
 
-            raw_name = row.get('gift_name', 'Подарок')
+            raw_name = row.get('gift_name', 'РџРѕРґР°СЂРѕРє')
             name_key = _normalize_gift_name_for_match(raw_name)
             local_meta = None
             gift_id = row.get('gift_id')
@@ -4740,7 +4740,7 @@ def get_user_inventory(user_id):
         return jsonify({'success': True, 'inventory': inventory_list})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения инвентаря: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёРЅРІРµРЅС‚Р°СЂСЏ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -4765,7 +4765,7 @@ def open_crate_from_inventory():
         inv_item = cursor.fetchone()
         if not inv_item:
             conn.close()
-            return jsonify({'success': False, 'error': 'Предмет не найден'})
+            return jsonify({'success': False, 'error': 'РџСЂРµРґРјРµС‚ РЅРµ РЅР°Р№РґРµРЅ'})
 
         # Check if it's a crate
         crate_id = None
@@ -4776,14 +4776,14 @@ def open_crate_from_inventory():
 
         if not crate_id:
             conn.close()
-            return jsonify({'success': False, 'error': 'Это не ящик'})
+            return jsonify({'success': False, 'error': 'Р­С‚Рѕ РЅРµ СЏС‰РёРє'})
 
         # Get crate items
         cursor.execute('SELECT * FROM crate_items WHERE crate_id = ?', (crate_id,))
         items_raw = cursor.fetchall()
         if not items_raw:
             conn.close()
-            return jsonify({'success': False, 'error': 'Ящик пуст'})
+            return jsonify({'success': False, 'error': 'РЇС‰РёРє РїСѓСЃС‚'})
 
         # Build items list (ordinal: id=0, crate_id=1, item_type=2, item_id=3, item_name=4, chance=5, rarity=6)
         items = []
@@ -4821,14 +4821,14 @@ def open_crate_from_inventory():
         elif won_item['item_type'] == 'tickets':
             amount = int(won_item['item_id']) if won_item['item_id'].isdigit() else 1
             cursor.execute('UPDATE users SET balance_tickets = balance_tickets + ? WHERE id = ?', (amount, user_id))
-            reward_desc = '+' + str(amount) + ' билетов'
+            reward_desc = '+' + str(amount) + ' Р±РёР»РµС‚РѕРІ'
         elif won_item['item_type'] in ('rocket', 'background'):
             cursor.execute('SELECT id FROM user_customizations WHERE user_id = ? AND item_type = ? AND item_id = ?',
                           (user_id, won_item['item_type'], won_item['item_id']))
             already_owned = cursor.fetchone()
             if already_owned:
                 cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (comp_stars, user_id))
-                comp_desc = '+' + str(comp_stars) + ' Stars (уже есть)'
+                comp_desc = '+' + str(comp_stars) + ' Stars (СѓР¶Рµ РµСЃС‚СЊ)'
             else:
                 cursor.execute('''INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source)
                     VALUES (?, ?, ?, 'crate')''', (user_id, won_item['item_type'], won_item['item_id']))
@@ -4875,7 +4875,7 @@ def open_crate_from_inventory():
 
 @app.route('/api/inventory-history/<int:user_id>', methods=['GET'])
 def get_inventory_history(user_id):
-    """Получение истории всех подарков пользователя (для коллекции)"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РёСЃС‚РѕСЂРёРё РІСЃРµС… РїРѕРґР°СЂРєРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ (РґР»СЏ РєРѕР»Р»РµРєС†РёРё)"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -4925,22 +4925,22 @@ def get_inventory_history(user_id):
         
         conn.close()
         
-        logger.info(f"📚 История коллекции пользователя {user_id}: {len(history)} записей")
+        logger.info(f"рџ“љ РСЃС‚РѕСЂРёСЏ РєРѕР»Р»РµРєС†РёРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {user_id}: {len(history)} Р·Р°РїРёСЃРµР№")
         return jsonify({'success': True, 'history': history})
         
     except Exception as e:
-        logger.error(f"❌ Ошибка получения истории инвентаря: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё РёРЅРІРµРЅС‚Р°СЂСЏ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/collection-reward', methods=['POST'])
 def claim_collection_reward():
-    """Награды коллекционера отключены"""
-    return jsonify({'success': False, 'error': 'Награды коллекционера временно отключены'})
+    """РќР°РіСЂР°РґС‹ РєРѕР»Р»РµРєС†РёРѕРЅРµСЂР° РѕС‚РєР»СЋС‡РµРЅС‹"""
+    return jsonify({'success': False, 'error': 'РќР°РіСЂР°РґС‹ РєРѕР»Р»РµРєС†РёРѕРЅРµСЂР° РІСЂРµРјРµРЅРЅРѕ РѕС‚РєР»СЋС‡РµРЅС‹'})
 
 
 @app.route('/api/crash-vip/purchase', methods=['POST'])
 def purchase_crash_vip():
-    """Покупка VIP статуса для Crash игры со скидкой за собранные подарки"""
+    """РџРѕРєСѓРїРєР° VIP СЃС‚Р°С‚СѓСЃР° РґР»СЏ Crash РёРіСЂС‹ СЃРѕ СЃРєРёРґРєРѕР№ Р·Р° СЃРѕР±СЂР°РЅРЅС‹Рµ РїРѕРґР°СЂРєРё"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -4957,7 +4957,7 @@ def purchase_crash_vip():
         row = cursor.fetchone()
         if row and row[0]:
             conn.close()
-            return jsonify({'success': False, 'error': 'VIP уже активирован'})
+            return jsonify({'success': False, 'error': 'VIP СѓР¶Рµ Р°РєС‚РёРІРёСЂРѕРІР°РЅ'})
         
         # Calculate price with discount: 250 base - 2 per collected gift (min 50)
         base_price = 250
@@ -4970,12 +4970,12 @@ def purchase_crash_vip():
         balance_row = cursor.fetchone()
         if not balance_row:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
         
         current_balance = balance_row[0] or 0
         if current_balance < final_price:
             conn.close()
-            return jsonify({'success': False, 'error': f'Недостаточно звёзд. Нужно {final_price}, есть {current_balance}'})
+            return jsonify({'success': False, 'error': f'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р·РІС‘Р·Рґ. РќСѓР¶РЅРѕ {final_price}, РµСЃС‚СЊ {current_balance}'})
         
         # Deduct stars and activate VIP
         cursor.execute('UPDATE users SET balance_stars = balance_stars - ?, is_crash_vip = 1 WHERE id = ?', 
@@ -4985,7 +4985,7 @@ def purchase_crash_vip():
         cursor.execute('''
             INSERT INTO user_history (user_id, operation_type, amount, description, created_at)
             VALUES (?, 'crash_vip_purchase', ?, ?, datetime('now'))
-        ''', (user_id, -final_price, f'Покупка Crash VIP: {final_price} звёзд (скидка {discount})'))
+        ''', (user_id, -final_price, f'РџРѕРєСѓРїРєР° Crash VIP: {final_price} Р·РІС‘Р·Рґ (СЃРєРёРґРєР° {discount})'))
         
         # Get new balance
         cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
@@ -4994,7 +4994,7 @@ def purchase_crash_vip():
         conn.commit()
         conn.close()
         
-        logger.info(f"⭐ Пользователь {user_id} купил Crash VIP за {final_price} звёзд!")
+        logger.info(f"в­ђ РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РєСѓРїРёР» Crash VIP Р·Р° {final_price} Р·РІС‘Р·Рґ!")
         return jsonify({
             'success': True,
             'new_balance': new_balance,
@@ -5003,7 +5003,7 @@ def purchase_crash_vip():
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка покупки VIP: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕРєСѓРїРєРё VIP: {e}")
         try: conn.close()
         except: pass
         return jsonify({'success': False, 'error': str(e)})
@@ -5011,7 +5011,7 @@ def purchase_crash_vip():
 
 @app.route('/api/crash-vip/status', methods=['GET'])
 def check_crash_vip_status():
-    """Проверить VIP статус пользователя"""
+    """РџСЂРѕРІРµСЂРёС‚СЊ VIP СЃС‚Р°С‚СѓСЃ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         user_id = request.args.get('user_id')
         if not user_id:
@@ -5032,12 +5032,12 @@ def check_crash_vip_status():
 
 @app.route('/api/user-customizations/<int:user_id>', methods=['GET'])
 def get_user_customizations(user_id):
-    """Получить разблокированные кастомизации пользователя (по промокодам)"""
+    """РџРѕР»СѓС‡РёС‚СЊ СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅРЅС‹Рµ РєР°СЃС‚РѕРјРёР·Р°С†РёРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ (РїРѕ РїСЂРѕРјРѕРєРѕРґР°Рј)"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Создаём таблицу если не существует
+        # РЎРѕР·РґР°С‘Рј С‚Р°Р±Р»РёС†Сѓ РµСЃР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
         cursor.execute('''CREATE TABLE IF NOT EXISTS user_customizations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -5062,13 +5062,13 @@ def get_user_customizations(user_id):
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка получения кастомизаций: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РєР°СЃС‚РѕРјРёР·Р°С†РёР№: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/ton-payment', methods=['POST'])
 def process_ton_payment():
-    """Обработка платежа в TON - конвертация в звёзды (1 TON = 100 звёзд)"""
+    """РћР±СЂР°Р±РѕС‚РєР° РїР»Р°С‚РµР¶Р° РІ TON - РєРѕРЅРІРµСЂС‚Р°С†РёСЏ РІ Р·РІС‘Р·РґС‹ (1 TON = 100 Р·РІС‘Р·Рґ)"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -5114,13 +5114,13 @@ def process_ton_payment():
             commission = int(round(stars_to_add * 0.10))  # 10%
             if commission > 0:
                 cursor.execute('UPDATE users SET referral_balance = referral_balance + ? WHERE id = ?', (commission, referrer_id))
-                logger.info(f"💰 Referral commission: {commission} stars to user {referrer_id} from deposit by {user_id}")
+                logger.info(f"рџ’° Referral commission: {commission} stars to user {referrer_id} from deposit by {user_id}")
         
         # Record in history
         cursor.execute('''
             INSERT INTO user_history (user_id, operation_type, amount, description, created_at)
             VALUES (?, 'ton_payment', ?, ?, datetime('now'))
-        ''', (user_id, stars_to_add, f'TON пополнение: {amount_ton} TON = {stars_to_add} звёзд (tx: {transaction_hash or "pending"})'))
+        ''', (user_id, stars_to_add, f'TON РїРѕРїРѕР»РЅРµРЅРёРµ: {amount_ton} TON = {stars_to_add} Р·РІС‘Р·Рґ (tx: {transaction_hash or "pending"})'))
         
         # Get new balance
         cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
@@ -5130,7 +5130,7 @@ def process_ton_payment():
         conn.commit()
         conn.close()
         
-        logger.info(f"💎 TON платёж: пользователь {user_id} получил {stars_to_add} звёзд за {amount_ton} TON")
+        logger.info(f"рџ’Ћ TON РїР»Р°С‚С‘Р¶: РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РїРѕР»СѓС‡РёР» {stars_to_add} Р·РІС‘Р·Рґ Р·Р° {amount_ton} TON")
         return jsonify({
             'success': True,
             'stars_added': stars_to_add,
@@ -5138,7 +5138,7 @@ def process_ton_payment():
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка TON платежа: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° TON РїР»Р°С‚РµР¶Р°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -5182,7 +5182,7 @@ def ton_payment_callback():
         cursor.execute('''
             INSERT INTO user_history (user_id, operation_type, amount, description, created_at)
             VALUES (?, 'ton_payment', ?, ?, datetime('now'))
-        ''', (user_id, stars_to_add, f'TON Connect: {amount_ton} TON = {stars_to_add} звёзд (boc: {boc_hash})'))
+        ''', (user_id, stars_to_add, f'TON Connect: {amount_ton} TON = {stars_to_add} Р·РІС‘Р·Рґ (boc: {boc_hash})'))
         
         # Get new balance
         cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
@@ -5192,7 +5192,7 @@ def ton_payment_callback():
         conn.commit()
         conn.close()
         
-        logger.info(f"💎 TonConnect платёж: пользователь {user_id} получил {stars_to_add} звёзд за {amount_ton} TON")
+        logger.info(f"рџ’Ћ TonConnect РїР»Р°С‚С‘Р¶: РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РїРѕР»СѓС‡РёР» {stars_to_add} Р·РІС‘Р·Рґ Р·Р° {amount_ton} TON")
         return jsonify({
             'success': True,
             'stars_added': stars_to_add,
@@ -5200,7 +5200,7 @@ def ton_payment_callback():
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка TonConnect: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° TonConnect: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/ton-check-payment', methods=['POST'])
@@ -5229,7 +5229,7 @@ def ton_check_payment():
         ''', (user_id, amount_ton))
         if cursor.fetchone():
             conn.close()
-            return jsonify({'success': False, 'error': 'Платёж уже обработан'})
+            return jsonify({'success': False, 'error': 'РџР»Р°С‚С‘Р¶ СѓР¶Рµ РѕР±СЂР°Р±РѕС‚Р°РЅ'})
         
         # Try to verify via TON Center API
         verified = False
@@ -5280,7 +5280,7 @@ def ton_check_payment():
             conn.commit()
             conn.close()
             
-            logger.info(f"💎 TON платёж подтверждён: {user_id} +{stars_to_add} звёзд за {amount_ton} TON")
+            logger.info(f"рџ’Ћ TON РїР»Р°С‚С‘Р¶ РїРѕРґС‚РІРµСЂР¶РґС‘РЅ: {user_id} +{stars_to_add} Р·РІС‘Р·Рґ Р·Р° {amount_ton} TON")
             return jsonify({
                 'success': True,
                 'verified': True,
@@ -5300,11 +5300,11 @@ def ton_check_payment():
                 'success': True,
                 'verified': False,
                 'pending': True,
-                'message': 'Платёж не найден. Администратор проверит вручную.'
+                'message': 'РџР»Р°С‚С‘Р¶ РЅРµ РЅР°Р№РґРµРЅ. РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ РїСЂРѕРІРµСЂРёС‚ РІСЂСѓС‡РЅСѓСЋ.'
             })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка проверки TON платежа: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїСЂРѕРІРµСЂРєРё TON РїР»Р°С‚РµР¶Р°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -5325,12 +5325,12 @@ def stars_create_invoice():
 
         amount = int(amount)
         if amount < 10 or amount > 10000:
-            return jsonify({'success': False, 'error': 'Сумма от 10 до 10000'})
+            return jsonify({'success': False, 'error': 'РЎСѓРјРјР° РѕС‚ 10 РґРѕ 10000'})
 
         # Create invoice link via Telegram Bot API
         result = tg_api('createInvoiceLink',
-            title=f'Пополнение {amount} Stars',
-            description=f'Пополнение баланса на {amount} звёзд',
+            title=f'РџРѕРїРѕР»РЅРµРЅРёРµ {amount} Stars',
+            description=f'РџРѕРїРѕР»РЅРµРЅРёРµ Р±Р°Р»Р°РЅСЃР° РЅР° {amount} Р·РІС‘Р·Рґ',
             payload=f'stars_deposit:{user_id}:{amount}',
             provider_token='',
             currency='XTR',
@@ -5340,7 +5340,7 @@ def stars_create_invoice():
         logger.info(f"Stars createInvoiceLink response: {result}")
 
         if not result.get('ok'):
-            err_desc = result.get('description', 'Не удалось создать счёт')
+            err_desc = result.get('description', 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ СЃС‡С‘С‚')
             logger.error(f"Stars invoice create error: {result}")
             return jsonify({'success': False, 'error': err_desc})
 
@@ -5364,7 +5364,7 @@ def get_ton_wallet_address():
 
 
 # ============================================================
-# SBP PAYMENT — handled below in unified SBP section (line ~12445)
+# SBP PAYMENT вЂ” handled below in unified SBP section (line ~12445)
 # ============================================================
 
 
@@ -5392,7 +5392,7 @@ def tonconnect_manifest():
 
 @app.route('/api/skin-reward', methods=['POST'])
 def claim_skin_reward():
-    """Получение награды за сбор всех скинов ракет (2000 звёзд)"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РЅР°РіСЂР°РґС‹ Р·Р° СЃР±РѕСЂ РІСЃРµС… СЃРєРёРЅРѕРІ СЂР°РєРµС‚ (2000 Р·РІС‘Р·Рґ)"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -5410,7 +5410,7 @@ def claim_skin_reward():
         ''', (user_id,))
         if cursor.fetchone():
             conn.close()
-            return jsonify({'success': False, 'error': 'Награда уже получена'})
+            return jsonify({'success': False, 'error': 'РќР°РіСЂР°РґР° СѓР¶Рµ РїРѕР»СѓС‡РµРЅР°'})
         
         # Give reward: 2000 stars
         cursor.execute('UPDATE users SET balance_stars = balance_stars + 2000 WHERE id = ?', (user_id,))
@@ -5418,7 +5418,7 @@ def claim_skin_reward():
         # Record in history
         cursor.execute('''
             INSERT INTO user_history (user_id, operation_type, amount, description, created_at)
-            VALUES (?, 'skin_reward', 2000, 'Награда за все скины ракет: +2000 звёзд', datetime('now'))
+            VALUES (?, 'skin_reward', 2000, 'РќР°РіСЂР°РґР° Р·Р° РІСЃРµ СЃРєРёРЅС‹ СЂР°РєРµС‚: +2000 Р·РІС‘Р·Рґ', datetime('now'))
         ''', (user_id,))
         
         # Get new balance
@@ -5429,61 +5429,61 @@ def claim_skin_reward():
         conn.commit()
         conn.close()
         
-        logger.info(f"🚀 Пользователь {user_id} получил награду за все скины!")
+        logger.info(f"рџљЂ РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РїРѕР»СѓС‡РёР» РЅР°РіСЂР°РґСѓ Р·Р° РІСЃРµ СЃРєРёРЅС‹!")
         return jsonify({
             'success': True,
             'new_balance': new_balance
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка выдачи награды за скины: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РІС‹РґР°С‡Рё РЅР°РіСЂР°РґС‹ Р·Р° СЃРєРёРЅС‹: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # CASES API
 @app.route('/api/cases')
 def api_cases():
-    """Получение всех кейсов с актуальными лимитами"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РІСЃРµС… РєРµР№СЃРѕРІ СЃ Р°РєС‚СѓР°Р»СЊРЅС‹РјРё Р»РёРјРёС‚Р°РјРё"""
     try:
-        logger.info("📦 Загрузка кейсов из файла...")
+        logger.info("рџ“¦ Р—Р°РіСЂСѓР·РєР° РєРµР№СЃРѕРІ РёР· С„Р°Р№Р»Р°...")
 
         data_path = os.path.join(BASE_PATH, 'data')
         file_path = os.path.join(data_path, 'cases.json')
 
-        logger.info(f"📁 Путь к файлу: {file_path}")
+        logger.info(f"рџ“Ѓ РџСѓС‚СЊ Рє С„Р°Р№Р»Сѓ: {file_path}")
 
         if not os.path.exists(file_path):
-            logger.error(f"❌ Файл cases.json не найден")
+            logger.error(f"вќЊ Р¤Р°Р№Р» cases.json РЅРµ РЅР°Р№РґРµРЅ")
             return jsonify({'success': True, 'cases': []})
 
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
             cases = data.get('cases', [])
 
-        logger.info(f"✅ Загружено {len(cases)} кейсов")
+        logger.info(f"вњ… Р—Р°РіСЂСѓР¶РµРЅРѕ {len(cases)} РєРµР№СЃРѕРІ")
         return jsonify({'success': True, 'cases': cases})
 
     except Exception as e:
-        logger.error(f"❌ Критическая ошибка получения кейсов: {e}")
-        logger.error(f"❌ Трассировка: {traceback.format_exc()}")
+        logger.error(f"вќЊ РљСЂРёС‚РёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РєРµР№СЃРѕРІ: {e}")
+        logger.error(f"вќЊ РўСЂР°СЃСЃРёСЂРѕРІРєР°: {traceback.format_exc()}")
         return jsonify({
             'success': False,
             'cases': [],
-            'error': 'Внутренняя ошибка сервера'
+            'error': 'Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР° СЃРµСЂРІРµСЂР°'
         })
 
 @app.route('/api/case-sections')
 def api_case_sections():
-    """Публичный список разделов кейсов для главной"""
+    """РџСѓР±Р»РёС‡РЅС‹Р№ СЃРїРёСЃРѕРє СЂР°Р·РґРµР»РѕРІ РєРµР№СЃРѕРІ РґР»СЏ РіР»Р°РІРЅРѕР№"""
     try:
         sections = load_case_sections()
         return jsonify({'success': True, 'sections': sections})
     except Exception as e:
-        logger.error(f"❌ Ошибка получения разделов кейсов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЂР°Р·РґРµР»РѕРІ РєРµР№СЃРѕРІ: {e}")
         return jsonify({'success': False, 'sections': [], 'error': str(e)})
 
 @app.route('/api/cases/<int:case_id>')
 def api_case_detail(case_id):
-    """Получение деталей конкретного кейса"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РґРµС‚Р°Р»РµР№ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РєРµР№СЃР°"""
     try:
         cases = load_cases()
         local_gifts = load_gifts()
@@ -5492,12 +5492,12 @@ def api_case_detail(case_id):
 
         case = next((c for c in cases if c['id'] == case_id), None)
         if not case:
-            logger.error(f"❌ Кейс с ID {case_id} не найден!")
-            return jsonify({'success': False, 'error': 'Кейс не найден'})
+            logger.error(f"вќЊ РљРµР№СЃ СЃ ID {case_id} РЅРµ РЅР°Р№РґРµРЅ!")
+            return jsonify({'success': False, 'error': 'РљРµР№СЃ РЅРµ РЅР°Р№РґРµРЅ'})
 
         if case.get('limited'):
             current_limit = get_case_limit(case_id)
-            logger.info(f"📊 Детали кейса {case_id} - лимит: {current_limit}")
+            logger.info(f"рџ“Љ Р”РµС‚Р°Р»Рё РєРµР№СЃР° {case_id} - Р»РёРјРёС‚: {current_limit}")
             if current_limit is not None:
                 case['current_amount'] = current_limit
             else:
@@ -5507,13 +5507,13 @@ def api_case_detail(case_id):
 
         case_gifts = []
         for gift_info in case['gifts']:
-            # Обработка ton_balance
+            # РћР±СЂР°Р±РѕС‚РєР° ton_balance
             if gift_info.get('type') == 'ton_balance':
                 ton_amount = gift_info.get('ton_amount', 0)
                 case_gifts.append({
                     'id': -1,
-                    'name': f'{ton_amount} TON',
-                    'image': '/static/img/ton.png',
+                    'name': 'TON',
+                    'image': '/static/img/tons/ton_1.svg',
                     'value': ton_amount,
                     'type': 'ton_balance',
                     'ton_amount': ton_amount,
@@ -5544,20 +5544,20 @@ def api_case_detail(case_id):
                         'chance': gift_info.get('chance', 1)
                     })
                 else:
-                    logger.warning(f"⚠️ Подарок с ID {gift_info.get('id')} не найден для кейса {case_id}")
+                    logger.warning(f"вљ пёЏ РџРѕРґР°СЂРѕРє СЃ ID {gift_info.get('id')} РЅРµ РЅР°Р№РґРµРЅ РґР»СЏ РєРµР№СЃР° {case_id}")
 
         case_with_gifts = {**case, 'gifts_details': case_gifts}
 
-        logger.info(f"📦 Отправлены детали кейса {case_id}")
+        logger.info(f"рџ“¦ РћС‚РїСЂР°РІР»РµРЅС‹ РґРµС‚Р°Р»Рё РєРµР№СЃР° {case_id}")
         return jsonify({'success': True, 'case': case_with_gifts})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения деталей кейса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РґРµС‚Р°Р»РµР№ РєРµР№СЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/cases/open', methods=['POST'])
 def open_case():
-    """Открытие кейса"""
+    """РћС‚РєСЂС‹С‚РёРµ РєРµР№СЃР°"""
     try:
         data = request.get_json()
         user_id = data['user_id']
@@ -5568,12 +5568,12 @@ def open_case():
         case = next((c for c in cases if c['id'] == case_id), None)
 
         if not case:
-            return jsonify({'success': False, 'error': 'Кейс не найден'})
+            return jsonify({'success': False, 'error': 'РљРµР№СЃ РЅРµ РЅР°Р№РґРµРЅ'})
 
         if case.get('limited'):
             current_limit = get_case_limit(case_id)
             if current_limit is not None and current_limit <= 0:
-                return jsonify({'success': False, 'error': 'Лимит кейса исчерпан'})
+                return jsonify({'success': False, 'error': 'Р›РёРјРёС‚ РєРµР№СЃР° РёСЃС‡РµСЂРїР°РЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -5583,18 +5583,18 @@ def open_case():
 
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         balance_stars, balance_tickets, user_level = user
 
         required_level = case.get('required_level', 1)
         if user_level < required_level:
             conn.close()
-            return jsonify({'success': False, 'error': f'Требуется {required_level} уровень'})
+            return jsonify({'success': False, 'error': f'РўСЂРµР±СѓРµС‚СЃСЏ {required_level} СѓСЂРѕРІРµРЅСЊ'})
 
         if case.get('free') and int(quantity or 1) > 1:
             conn.close()
-            return jsonify({'success': False, 'error': 'Бесплатный кейс можно открыть только 1 раз за попытку'})
+            return jsonify({'success': False, 'error': 'Р‘РµСЃРїР»Р°С‚РЅС‹Р№ РєРµР№СЃ РјРѕР¶РЅРѕ РѕС‚РєСЂС‹С‚СЊ С‚РѕР»СЊРєРѕ 1 СЂР°Р· Р·Р° РїРѕРїС‹С‚РєСѓ'})
 
         if case.get('free'):
             remaining = _get_free_case_remaining_seconds(cursor, user_id, case)
@@ -5602,7 +5602,7 @@ def open_case():
                 conn.close()
                 return jsonify({
                     'success': False,
-                    'error': 'Этот кейс можно открывать раз в 24 часа',
+                    'error': 'Р­С‚РѕС‚ РєРµР№СЃ РјРѕР¶РЅРѕ РѕС‚РєСЂС‹РІР°С‚СЊ СЂР°Р· РІ 24 С‡Р°СЃР°',
                     'cooldown_seconds': remaining
                 })
 
@@ -5610,10 +5610,10 @@ def open_case():
         if case['cost'] > 0:
             if case['cost_type'] == 'stars' and balance_stars < total_cost:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Недостаточно звезд'})
+                return jsonify({'success': False, 'error': 'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р·РІРµР·Рґ'})
             elif case['cost_type'] == 'tickets' and balance_tickets < total_cost:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Недостаточно билетов'})
+                return jsonify({'success': False, 'error': 'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р±РёР»РµС‚РѕРІ'})
 
         if case['cost'] > 0:
             if case['cost_type'] == 'stars':
@@ -5640,15 +5640,15 @@ def open_case():
                         break
 
                 if selected_gift_info:
-                    # Проверка на ton_balance
+                    # РџСЂРѕРІРµСЂРєР° РЅР° ton_balance
                     if selected_gift_info.get('type') == 'ton_balance':
                         ton_amount = selected_gift_info.get('ton_amount', 0)
                         cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?',
                                      (ton_amount, user_id))
                         won_gift = {
                             'id': -1,
-                            'name': f'⭐ {ton_amount} TON',
-                            'image': '/static/img/ton.png',
+                            'name': 'TON',
+                            'image': '/static/img/tons/ton_1.svg',
                             'value': ton_amount,
                             'type': 'ton_balance',
                             'ton_amount': ton_amount
@@ -5744,12 +5744,12 @@ def open_case():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка открытия кейса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РѕС‚РєСЂС‹С‚РёСЏ РєРµР№СЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/open-case', methods=['POST'])
 def open_case_single():
-    """Открытие одного кейса (используется из case.html)"""
+    """РћС‚РєСЂС‹С‚РёРµ РѕРґРЅРѕРіРѕ РєРµР№СЃР° (РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РёР· case.html)"""
     try:
         data = request.get_json()
         user_id = data['user_id']
@@ -5762,16 +5762,16 @@ def open_case_single():
         case = next((c for c in cases if c['id'] == case_id), None)
 
         if not case:
-            return jsonify({'success': False, 'error': 'Кейс не найден'})
+            return jsonify({'success': False, 'error': 'РљРµР№СЃ РЅРµ РЅР°Р№РґРµРЅ'})
 
-        # Проверка промокода для promo-кейсов
+        # РџСЂРѕРІРµСЂРєР° РїСЂРѕРјРѕРєРѕРґР° РґР»СЏ promo-РєРµР№СЃРѕРІ
         if case.get('promo') and is_promo:
             if not promo_code:
-                return jsonify({'success': False, 'error': 'Требуется промокод'})
+                return jsonify({'success': False, 'error': 'РўСЂРµР±СѓРµС‚СЃСЏ РїСЂРѕРјРѕРєРѕРґ'})
             case_data, promo_item = _find_embedded_case_promo(case_id, promo_code)
             if not promo_item:
-                return jsonify({'success': False, 'error': 'Неверный промокод'})
-            # Проверяем использование промокода
+                return jsonify({'success': False, 'error': 'РќРµРІРµСЂРЅС‹Р№ РїСЂРѕРјРѕРєРѕРґ'})
+            # РџСЂРѕРІРµСЂСЏРµРј РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ РїСЂРѕРјРѕРєРѕРґР°
             conn_check = get_db_connection()
             cursor_check = conn_check.cursor()
             cursor_check.execute('''SELECT id FROM used_promo_codes 
@@ -5780,14 +5780,14 @@ def open_case_single():
             already_used = cursor_check.fetchone()
             conn_check.close()
             if already_used:
-                return jsonify({'success': False, 'error': 'Промокод уже использован'})
+                return jsonify({'success': False, 'error': 'РџСЂРѕРјРѕРєРѕРґ СѓР¶Рµ РёСЃРїРѕР»СЊР·РѕРІР°РЅ'})
         elif case.get('promo') and not is_promo:
-            return jsonify({'success': False, 'error': 'Требуется промокод для открытия'})
+            return jsonify({'success': False, 'error': 'РўСЂРµР±СѓРµС‚СЃСЏ РїСЂРѕРјРѕРєРѕРґ РґР»СЏ РѕС‚РєСЂС‹С‚РёСЏ'})
 
         if case.get('limited'):
             current_limit = get_case_limit(case_id)
             if current_limit is not None and current_limit <= 0:
-                return jsonify({'success': False, 'error': 'Лимит кейса исчерпан'})
+                return jsonify({'success': False, 'error': 'Р›РёРјРёС‚ РєРµР№СЃР° РёСЃС‡РµСЂРїР°РЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -5797,34 +5797,34 @@ def open_case_single():
 
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         balance_stars, balance_tickets, user_level = user
 
         required_level = case.get('required_level', 1)
         if user_level < required_level:
             conn.close()
-            return jsonify({'success': False, 'error': f'Требуется {required_level} уровень'})
+            return jsonify({'success': False, 'error': f'РўСЂРµР±СѓРµС‚СЃСЏ {required_level} СѓСЂРѕРІРµРЅСЊ'})
 
-        # Проверка для бесплатных кейсов (серверная, не зависит от флага с клиента)
+        # РџСЂРѕРІРµСЂРєР° РґР»СЏ Р±РµСЃРїР»Р°С‚РЅС‹С… РєРµР№СЃРѕРІ (СЃРµСЂРІРµСЂРЅР°СЏ, РЅРµ Р·Р°РІРёСЃРёС‚ РѕС‚ С„Р»Р°РіР° СЃ РєР»РёРµРЅС‚Р°)
         if case.get('free'):
             remaining = _get_free_case_remaining_seconds(cursor, user_id, case)
             if remaining > 0:
                 conn.close()
                 return jsonify({
                     'success': False,
-                    'error': 'Кейс уже открыт, попробуйте позже',
+                    'error': 'РљРµР№СЃ СѓР¶Рµ РѕС‚РєСЂС‹С‚, РїРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ',
                     'cooldown_seconds': remaining
                 })
 
-        # Списание стоимости
+        # РЎРїРёСЃР°РЅРёРµ СЃС‚РѕРёРјРѕСЃС‚Рё
         if case['cost'] > 0 and not is_free and not is_promo:
             if case['cost_type'] == 'stars' and balance_stars < case['cost']:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Недостаточно звезд'})
+                return jsonify({'success': False, 'error': 'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р·РІРµР·Рґ'})
             elif case['cost_type'] == 'tickets' and balance_tickets < case['cost']:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Недостаточно билетов'})
+                return jsonify({'success': False, 'error': 'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р±РёР»РµС‚РѕРІ'})
 
             if case['cost_type'] == 'stars':
                 cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
@@ -5833,7 +5833,7 @@ def open_case_single():
                 cursor.execute('UPDATE users SET balance_tickets = balance_tickets - ? WHERE id = ?',
                              (case['cost'], user_id))
 
-        # Выбор подарка
+        # Р’С‹Р±РѕСЂ РїРѕРґР°СЂРєР°
         gifts = build_fragment_first_gifts_catalog() or load_gifts()
         won_gift = None
         is_ton_balance = False
@@ -5851,15 +5851,15 @@ def open_case_single():
                     break
 
             if selected_gift_info:
-                # Проверка на ton_balance
+                # РџСЂРѕРІРµСЂРєР° РЅР° ton_balance
                 if selected_gift_info.get('type') == 'ton_balance':
                     ton_amount = selected_gift_info.get('ton_amount', 0)
                     cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?',
                                  (ton_amount, user_id))
                     won_gift = {
                         'id': -1,
-                        'name': f'{ton_amount} TON',
-                        'image': '/static/img/ton.png',
+                        'name': 'TON',
+                        'image': '/static/img/tons/ton_1.svg',
                         'value': ton_amount,
                         'type': 'ton_balance',
                         'ton_amount': ton_amount
@@ -5892,7 +5892,7 @@ def open_case_single():
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (user_id, case_id, case['name'], won_gift.get('id', -1), won_gift['name'], won_gift['image'], won_gift.get('value', 0), case['cost'], case['cost_type']))
 
-        # Обновление лимита (в этой же транзакции, без отдельного подключения)
+        # РћР±РЅРѕРІР»РµРЅРёРµ Р»РёРјРёС‚Р° (РІ СЌС‚РѕР№ Р¶Рµ С‚СЂР°РЅР·Р°РєС†РёРё, Р±РµР· РѕС‚РґРµР»СЊРЅРѕРіРѕ РїРѕРґРєР»СЋС‡РµРЅРёСЏ)
         new_case_limit = None
         if case.get('limited'):
             try:
@@ -5914,7 +5914,7 @@ def open_case_single():
                 VALUES (?, ?, CURRENT_TIMESTAMP)
             ''', (case_id, new_case_limit))
 
-        # Опыт - 1:1 turnover
+        # РћРїС‹С‚ - 1:1 turnover
         exp_gained = case['cost']
         cursor.execute('UPDATE users SET total_cases_opened = total_cases_opened + 1 WHERE id = ?',
                      (user_id,))
@@ -5922,7 +5922,7 @@ def open_case_single():
         conn.commit()
         conn.close()
 
-        # Записываем использование промокода
+        # Р—Р°РїРёСЃС‹РІР°РµРј РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ РїСЂРѕРјРѕРєРѕРґР°
         if case.get('promo') and is_promo and promo_code:
             try:
                 pconn = get_db_connection()
@@ -5935,10 +5935,10 @@ def open_case_single():
             except:
                 pass
 
-        # Добавляем опыт через систему уровней (может повысить уровень)
+        # Р”РѕР±Р°РІР»СЏРµРј РѕРїС‹С‚ С‡РµСЂРµР· СЃРёСЃС‚РµРјСѓ СѓСЂРѕРІРЅРµР№ (РјРѕР¶РµС‚ РїРѕРІС‹СЃРёС‚СЊ СѓСЂРѕРІРµРЅСЊ)
         level_result = add_experience(user_id, exp_gained, f'case_open:{case_id}')
 
-        # Обновляем gift_index
+        # РћР±РЅРѕРІР»СЏРµРј gift_index
         if won_gift and won_gift.get('type') != 'ton_balance':
             try:
                 gconn = get_db_connection()
@@ -5947,13 +5947,13 @@ def open_case_single():
                 is_new = not gcur.fetchone()
                 gconn.execute('INSERT OR IGNORE INTO user_gift_index (user_id, gift_name) VALUES (?, ?)',
                              (user_id, won_gift['name']))
-                # Авто-уведомление о расширении индекса
+                # РђРІС‚Рѕ-СѓРІРµРґРѕРјР»РµРЅРёРµ Рѕ СЂР°СЃС€РёСЂРµРЅРёРё РёРЅРґРµРєСЃР°
                 if is_new:
                     try:
                         gconn.execute('''INSERT INTO admin_notifications 
                             (title, message, image_url, notif_type, target_user_id)
                             VALUES (?, ?, ?, 'gift_index', ?)''',
-                            (won_gift['name'], f'Новый подарок в вашей коллекции!', 
+                            (won_gift['name'], f'РќРѕРІС‹Р№ РїРѕРґР°СЂРѕРє РІ РІР°С€РµР№ РєРѕР»Р»РµРєС†РёРё!', 
                              won_gift.get('image', ''), user_id))
                     except:
                         pass
@@ -5970,11 +5970,11 @@ def open_case_single():
         except:
             pass
 
-        # Проверяем бонусы за уровень
+        # РџСЂРѕРІРµСЂСЏРµРј Р±РѕРЅСѓСЃС‹ Р·Р° СѓСЂРѕРІРµРЅСЊ
         level_up_info = None
         if level_result and level_result.get('level_up_info'):
             level_up_info = level_result['level_up_info']
-            # Выдаём бонусы за уровень из level_rewards
+            # Р’С‹РґР°С‘Рј Р±РѕРЅСѓСЃС‹ Р·Р° СѓСЂРѕРІРµРЅСЊ РёР· level_rewards
             try:
                 _grant_level_rewards(user_id, level_result['new_level'])
             except:
@@ -5994,26 +5994,26 @@ def open_case_single():
         return jsonify(result)
 
     except Exception as e:
-        logger.error(f"❌ Ошибка открытия кейса: {e}")
-        logger.error(f"❌ Трассировка: {traceback.format_exc()}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РѕС‚РєСЂС‹С‚РёСЏ РєРµР№СЃР°: {e}")
+        logger.error(f"вќЊ РўСЂР°СЃСЃРёСЂРѕРІРєР°: {traceback.format_exc()}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/activate-promo', methods=['POST'])
 def activate_promo_for_case():
-    """Активация промокода - расширенная версия с типами наград"""
+    """РђРєС‚РёРІР°С†РёСЏ РїСЂРѕРјРѕРєРѕРґР° - СЂР°СЃС€РёСЂРµРЅРЅР°СЏ РІРµСЂСЃРёСЏ СЃ С‚РёРїР°РјРё РЅР°РіСЂР°Рґ"""
     try:
         data = request.get_json()
         user_id = data['user_id']
         case_id = data.get('case_id')
         promo_code = data['promo_code'].upper().strip()
 
-        logger.info(f"🎟️ Активация промокода {promo_code} от пользователя {user_id}")
+        logger.info(f"рџЋџпёЏ РђРєС‚РёРІР°С†РёСЏ РїСЂРѕРјРѕРєРѕРґР° {promo_code} РѕС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {user_id}")
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Проверяем промокод в таблице promo_codes
+        # РџСЂРѕРІРµСЂСЏРµРј РїСЂРѕРјРѕРєРѕРґ РІ С‚Р°Р±Р»РёС†Рµ promo_codes
         cursor.execute('''
             SELECT id, reward_stars, reward_tickets, reward_type, reward_data, max_uses, used_count, expires_at, is_active
             FROM promo_codes
@@ -6023,16 +6023,16 @@ def activate_promo_for_case():
         promo = cursor.fetchone()
 
         if not promo:
-            # Fallback: промокоды, зашитые в cases.json для PROMO кейсов
+            # Fallback: РїСЂРѕРјРѕРєРѕРґС‹, Р·Р°С€РёС‚С‹Рµ РІ cases.json РґР»СЏ PROMO РєРµР№СЃРѕРІ
             case_data, embedded = _find_embedded_case_promo(case_id, promo_code)
             if case_data and embedded:
-                # Серверная проверка eligibility для промо-кейса
+                # РЎРµСЂРІРµСЂРЅР°СЏ РїСЂРѕРІРµСЂРєР° eligibility РґР»СЏ РїСЂРѕРјРѕ-РєРµР№СЃР°
                 cursor.execute('''SELECT COALESCE(SUM(amount), 0) FROM deposits
                     WHERE user_id = ? AND created_at > datetime('now', '-1 day') AND status = 'completed' ''', (user_id,))
                 total_deposits = cursor.fetchone()[0] or 0
                 if total_deposits < 500:
                     conn.close()
-                    return jsonify({'success': False, 'error': 'Для активации нужен депозит 500+⭐ за 24 часа'})
+                    return jsonify({'success': False, 'error': 'Р”Р»СЏ Р°РєС‚РёРІР°С†РёРё РЅСѓР¶РµРЅ РґРµРїРѕР·РёС‚ 500+в­ђ Р·Р° 24 С‡Р°СЃР°'})
 
                 cursor.execute('''CREATE TABLE IF NOT EXISTS case_promo_uses (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -6047,14 +6047,14 @@ def activate_promo_for_case():
                 uses_left = int(embedded.get('uses_left', 0) or 0)
                 expires_at = embedded.get('expires_at')
 
-                # Срок действия
+                # РЎСЂРѕРє РґРµР№СЃС‚РІРёСЏ
                 if expires_at:
                     exp_dt = _parse_datetime_flexible(expires_at)
                     if exp_dt and datetime.now() > exp_dt:
                         conn.close()
-                        return jsonify({'success': False, 'error': 'Срок действия промокода истек'})
+                        return jsonify({'success': False, 'error': 'РЎСЂРѕРє РґРµР№СЃС‚РІРёСЏ РїСЂРѕРјРѕРєРѕРґР° РёСЃС‚РµРє'})
 
-                # Лимит на пользователя
+                # Р›РёРјРёС‚ РЅР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
                 cursor.execute('''
                     SELECT COUNT(*) FROM case_promo_uses
                     WHERE user_id = ? AND case_id = ? AND promo_code = ?
@@ -6062,9 +6062,9 @@ def activate_promo_for_case():
                 user_used = int(cursor.fetchone()[0] or 0)
                 if max_per_user > 0 and user_used >= max_per_user:
                     conn.close()
-                    return jsonify({'success': False, 'error': 'Вы уже использовали этот промокод'})
+                    return jsonify({'success': False, 'error': 'Р’С‹ СѓР¶Рµ РёСЃРїРѕР»СЊР·РѕРІР°Р»Рё СЌС‚РѕС‚ РїСЂРѕРјРѕРєРѕРґ'})
 
-                # Общий лимит использований
+                # РћР±С‰РёР№ Р»РёРјРёС‚ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёР№
                 if uses_left > 0:
                     cursor.execute('''
                         SELECT COUNT(*) FROM case_promo_uses
@@ -6073,7 +6073,7 @@ def activate_promo_for_case():
                     total_used = int(cursor.fetchone()[0] or 0)
                     if total_used >= uses_left:
                         conn.close()
-                        return jsonify({'success': False, 'error': 'Лимит использований промокода исчерпан'})
+                        return jsonify({'success': False, 'error': 'Р›РёРјРёС‚ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёР№ РїСЂРѕРјРѕРєРѕРґР° РёСЃС‡РµСЂРїР°РЅ'})
 
                 cursor.execute('''
                     INSERT INTO case_promo_uses (user_id, case_id, promo_code)
@@ -6085,18 +6085,18 @@ def activate_promo_for_case():
                 return jsonify({
                     'success': True,
                     'reward_type': 'case_open',
-                    'message': 'Промокод активирован! Кейс разблокирован!',
+                    'message': 'РџСЂРѕРјРѕРєРѕРґ Р°РєС‚РёРІРёСЂРѕРІР°РЅ! РљРµР№СЃ СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅ!',
                     'case_unlocked': True,
-                    'reward_amount': 'Кейс',
+                    'reward_amount': 'РљРµР№СЃ',
                     'reward_icon': '/static/img/gift.png'
                 })
 
             conn.close()
-            return jsonify({'success': False, 'error': 'Промокод не найден'})
+            return jsonify({'success': False, 'error': 'РџСЂРѕРјРѕРєРѕРґ РЅРµ РЅР°Р№РґРµРЅ'})
 
         promo_id, reward_stars, reward_tickets, reward_type, reward_data, max_uses, used_count, expires_at, is_active = promo
         
-        # Установить значения по умолчанию
+        # РЈСЃС‚Р°РЅРѕРІРёС‚СЊ Р·РЅР°С‡РµРЅРёСЏ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
         if reward_type is None:
             reward_type = 'stars'
         if reward_data:
@@ -6109,30 +6109,30 @@ def activate_promo_for_case():
 
         if not is_active:
             conn.close()
-            return jsonify({'success': False, 'error': 'Промокод неактивен'})
+            return jsonify({'success': False, 'error': 'РџСЂРѕРјРѕРєРѕРґ РЅРµР°РєС‚РёРІРµРЅ'})
 
         if expires_at:
             try:
                 expires_date = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
                 if datetime.now() > expires_date:
                     conn.close()
-                    return jsonify({'success': False, 'error': 'Срок действия промокода истек'})
+                    return jsonify({'success': False, 'error': 'РЎСЂРѕРє РґРµР№СЃС‚РІРёСЏ РїСЂРѕРјРѕРєРѕРґР° РёСЃС‚РµРє'})
             except:
                 pass
 
         if max_uses > 0 and used_count >= max_uses:
             conn.close()
-            return jsonify({'success': False, 'error': 'Лимит использований промокода исчерпан'})
+            return jsonify({'success': False, 'error': 'Р›РёРјРёС‚ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёР№ РїСЂРѕРјРѕРєРѕРґР° РёСЃС‡РµСЂРїР°РЅ'})
 
-        # Проверяем, не использовал ли пользователь этот промокод
+        # РџСЂРѕРІРµСЂСЏРµРј, РЅРµ РёСЃРїРѕР»СЊР·РѕРІР°Р» Р»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЌС‚РѕС‚ РїСЂРѕРјРѕРєРѕРґ
         cursor.execute('SELECT id FROM used_promo_codes WHERE user_id = ? AND promo_code_id = ?', (user_id, promo_id))
         already_used = cursor.fetchone()
 
         if already_used:
             conn.close()
-            return jsonify({'success': False, 'error': 'Вы уже использовали этот промокод'})
+            return jsonify({'success': False, 'error': 'Р’С‹ СѓР¶Рµ РёСЃРїРѕР»СЊР·РѕРІР°Р»Рё СЌС‚РѕС‚ РїСЂРѕРјРѕРєРѕРґ'})
 
-        # Обработка разных типов наград
+        # РћР±СЂР°Р±РѕС‚РєР° СЂР°Р·РЅС‹С… С‚РёРїРѕРІ РЅР°РіСЂР°Рґ
         response_data = {
             'success': True,
             'reward_type': reward_type,
@@ -6143,42 +6143,42 @@ def activate_promo_for_case():
         }
         
         if reward_type == 'stars' or reward_type == 'tickets':
-            # Стандартные награды
+            # РЎС‚Р°РЅРґР°СЂС‚РЅС‹Рµ РЅР°РіСЂР°РґС‹
             if reward_stars > 0:
                 cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (reward_stars, user_id))
             if reward_tickets > 0:
                 cursor.execute('UPDATE users SET balance_tickets = balance_tickets + ? WHERE id = ?', (reward_tickets, user_id))
-            response_data['message'] = f'Промокод активирован! +{reward_stars}⭐ +{reward_tickets}🎫'
+            response_data['message'] = f'РџСЂРѕРјРѕРєРѕРґ Р°РєС‚РёРІРёСЂРѕРІР°РЅ! +{reward_stars}в­ђ +{reward_tickets}рџЋ«'
             
         elif reward_type == 'crash_vip':
-            # VIP для Crash игры
+            # VIP РґР»СЏ Crash РёРіСЂС‹
             vip_days = reward_data.get('days', 7)
             cursor.execute('UPDATE users SET is_crash_vip = 1 WHERE id = ?', (user_id,))
-            response_data['message'] = 'Промокод активирован! Crash VIP разблокирован!'
+            response_data['message'] = 'РџСЂРѕРјРѕРєРѕРґ Р°РєС‚РёРІРёСЂРѕРІР°РЅ! Crash VIP СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅ!'
             response_data['vip_days'] = vip_days
             response_data['reward_amount'] = 'VIP'
             response_data['reward_icon'] = '/static/img/crown.png'
             response_data['is_vip'] = True
             
         elif reward_type == 'case_discount':
-            # Скидка на кейс
+            # РЎРєРёРґРєР° РЅР° РєРµР№СЃ
             discount_percent = reward_data.get('discount', 50)
             case_target = reward_data.get('case_id', None)
-            # Сохраняем скидку в user_discounts или аналогичную таблицу
+            # РЎРѕС…СЂР°РЅСЏРµРј СЃРєРёРґРєСѓ РІ user_discounts РёР»Рё Р°РЅР°Р»РѕРіРёС‡РЅСѓСЋ С‚Р°Р±Р»РёС†Сѓ
             cursor.execute('''
                 INSERT INTO user_discounts (user_id, discount_type, discount_value, case_id, expires_at, promo_id)
                 VALUES (?, 'case_discount', ?, ?, datetime('now', '+7 days'), ?)
             ''', (user_id, discount_percent, case_target, promo_id))
-            response_data['message'] = f'Промокод активирован! Скидка {discount_percent}% на кейс!'
+            response_data['message'] = f'РџСЂРѕРјРѕРєРѕРґ Р°РєС‚РёРІРёСЂРѕРІР°РЅ! РЎРєРёРґРєР° {discount_percent}% РЅР° РєРµР№СЃ!'
             response_data['discount'] = discount_percent
             response_data['reward_amount'] = discount_percent
             response_data['reward_icon'] = '/static/img/crystal.png'
             
         elif reward_type == 'rocket':
-            # Уникальная ракета
+            # РЈРЅРёРєР°Р»СЊРЅР°СЏ СЂР°РєРµС‚Р°
             rocket_id = reward_data.get('rocket_id', 'promo_rocket')
-            rocket_name = reward_data.get('name', 'Промо ракета')
-            # Создаём таблицу если не существует
+            rocket_name = reward_data.get('name', 'РџСЂРѕРјРѕ СЂР°РєРµС‚Р°')
+            # РЎРѕР·РґР°С‘Рј С‚Р°Р±Р»РёС†Сѓ РµСЃР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
             cursor.execute('''CREATE TABLE IF NOT EXISTS user_customizations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
@@ -6192,16 +6192,16 @@ def activate_promo_for_case():
                 INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source, created_at)
                 VALUES (?, 'rocket', ?, 'promo', datetime('now'))
             ''', (user_id, rocket_id))
-            response_data['message'] = f'Промокод активирован! Новая ракета разблокирована!'
+            response_data['message'] = f'РџСЂРѕРјРѕРєРѕРґ Р°РєС‚РёРІРёСЂРѕРІР°РЅ! РќРѕРІР°СЏ СЂР°РєРµС‚Р° СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅР°!'
             response_data['rocket_id'] = rocket_id
             response_data['rocket_image'] = f'/static/gifs/{rocket_id}.gif'
             response_data['reward_amount'] = rocket_id
             response_data['reward_icon'] = f'/static/gifs/{rocket_id}.gif'
             
         elif reward_type == 'background':
-            # Уникальный фон
+            # РЈРЅРёРєР°Р»СЊРЅС‹Р№ С„РѕРЅ
             bg_id = reward_data.get('background_id', 'promo_bg')
-            # Создаём таблицу если не существует
+            # РЎРѕР·РґР°С‘Рј С‚Р°Р±Р»РёС†Сѓ РµСЃР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
             cursor.execute('''CREATE TABLE IF NOT EXISTS user_customizations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
@@ -6215,16 +6215,16 @@ def activate_promo_for_case():
                 INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source, created_at)
                 VALUES (?, 'background', ?, 'promo', datetime('now'))
             ''', (user_id, bg_id))
-            response_data['message'] = f'Промокод активирован! Новый фон разблокирован!'
+            response_data['message'] = f'РџСЂРѕРјРѕРєРѕРґ Р°РєС‚РёРІРёСЂРѕРІР°РЅ! РќРѕРІС‹Р№ С„РѕРЅ СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅ!'
             response_data['background_id'] = bg_id
             response_data['reward_amount'] = bg_id
             response_data['reward_icon'] = f'/static/img/{bg_id}.png'
             
         elif reward_type == 'inventory_gift':
-            # Подарок в инвентарь с ограничениями
+            # РџРѕРґР°СЂРѕРє РІ РёРЅРІРµРЅС‚Р°СЂСЊ СЃ РѕРіСЂР°РЅРёС‡РµРЅРёСЏРјРё
             gift_data = reward_data.get('gift', {})
             restrictions = reward_data.get('restrictions', {})
-            gift_name = gift_data.get('name', 'Промо-подарок')
+            gift_name = gift_data.get('name', 'РџСЂРѕРјРѕ-РїРѕРґР°СЂРѕРє')
             gift_image = gift_data.get('image', '/static/img/gift.png')
             
             cursor.execute('''
@@ -6238,56 +6238,56 @@ def activate_promo_for_case():
                 gift_data.get('price', 0),
                 json.dumps(restrictions)
             ))
-            response_data['message'] = f'Промокод активирован! Подарок добавлен в инвентарь!'
+            response_data['message'] = f'РџСЂРѕРјРѕРєРѕРґ Р°РєС‚РёРІРёСЂРѕРІР°РЅ! РџРѕРґР°СЂРѕРє РґРѕР±Р°РІР»РµРЅ РІ РёРЅРІРµРЅС‚Р°СЂСЊ!'
             response_data['gift_name'] = gift_name
             response_data['gift_image'] = gift_image
             response_data['reward_amount'] = gift_name
             response_data['reward_icon'] = gift_image
             
         elif reward_type == 'wager':
-            # Вейджер - бонус с прокруткой
+            # Р’РµР№РґР¶РµСЂ - Р±РѕРЅСѓСЃ СЃ РїСЂРѕРєСЂСѓС‚РєРѕР№
             wager_amount = reward_data.get('amount', 1000)
             wager_multiplier = reward_data.get('multiplier', 5)
             cursor.execute('''
                 INSERT INTO user_wagers (user_id, bonus_amount, wager_requirement, wagered_amount, promo_id, created_at)
                 VALUES (?, ?, ?, 0, ?, datetime('now'))
             ''', (user_id, wager_amount, wager_amount * wager_multiplier, promo_id))
-            # Начисляем бонусные звезды
+            # РќР°С‡РёСЃР»СЏРµРј Р±РѕРЅСѓСЃРЅС‹Рµ Р·РІРµР·РґС‹
             cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (wager_amount, user_id))
-            response_data['message'] = f'Промокод активирован! +{wager_amount} бонусных звезд (x{wager_multiplier} отыгрыш)'
+            response_data['message'] = f'РџСЂРѕРјРѕРєРѕРґ Р°РєС‚РёРІРёСЂРѕРІР°РЅ! +{wager_amount} Р±РѕРЅСѓСЃРЅС‹С… Р·РІРµР·Рґ (x{wager_multiplier} РѕС‚С‹РіСЂС‹С€)'
             response_data['reward_amount'] = wager_amount
             response_data['wager_multiplier'] = wager_multiplier
 
         elif reward_type == 'case_open':
-            # Открытие промо-кейса — проверяем case_id
+            # РћС‚РєСЂС‹С‚РёРµ РїСЂРѕРјРѕ-РєРµР№СЃР° вЂ” РїСЂРѕРІРµСЂСЏРµРј case_id
             target_case_id = reward_data.get('case_id', None)
             if target_case_id and case_id and int(target_case_id) != int(case_id):
                 conn.close()
-                return jsonify({'success': False, 'error': 'Этот промокод не подходит для данного кейса'})
-            response_data['message'] = 'Промокод активирован! Кейс разблокирован!'
+                return jsonify({'success': False, 'error': 'Р­С‚РѕС‚ РїСЂРѕРјРѕРєРѕРґ РЅРµ РїРѕРґС…РѕРґРёС‚ РґР»СЏ РґР°РЅРЅРѕРіРѕ РєРµР№СЃР°'})
+            response_data['message'] = 'РџСЂРѕРјРѕРєРѕРґ Р°РєС‚РёРІРёСЂРѕРІР°РЅ! РљРµР№СЃ СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅ!'
             response_data['case_unlocked'] = True
-            response_data['reward_amount'] = 'Кейс'
+            response_data['reward_amount'] = 'РљРµР№СЃ'
             response_data['reward_icon'] = '/static/img/gift.png'
 
-        # Записываем использование
+        # Р—Р°РїРёСЃС‹РІР°РµРј РёСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ
         cursor.execute('UPDATE promo_codes SET used_count = used_count + 1 WHERE id = ?', (promo_id,))
         cursor.execute('INSERT INTO used_promo_codes (user_id, promo_code_id) VALUES (?, ?)', (user_id, promo_id))
 
         conn.commit()
         conn.close()
 
-        logger.info(f"✅ Промокод {promo_code} типа {reward_type} активирован")
+        logger.info(f"вњ… РџСЂРѕРјРѕРєРѕРґ {promo_code} С‚РёРїР° {reward_type} Р°РєС‚РёРІРёСЂРѕРІР°РЅ")
 
         return jsonify(response_data)
 
     except Exception as e:
-        logger.error(f"❌ Ошибка активации промокода: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° Р°РєС‚РёРІР°С†РёРё РїСЂРѕРјРѕРєРѕРґР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/user/<int:user_id>/case-history/<int:case_id>')
 def user_case_history(user_id, case_id):
-    """Получить историю открытий кейса пользователем"""
+    """РџРѕР»СѓС‡РёС‚СЊ РёСЃС‚РѕСЂРёСЋ РѕС‚РєСЂС‹С‚РёР№ РєРµР№СЃР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -6307,32 +6307,32 @@ def user_case_history(user_id, case_id):
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения истории кейса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё РєРµР№СЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/debug-cases', methods=['GET'])
 def debug_cases():
-    """Отладочная информация о кейсах"""
+    """РћС‚Р»Р°РґРѕС‡РЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ Рѕ РєРµР№СЃР°С…"""
     try:
-        logger.info("🔍 Отладочная информация о кейсах")
+        logger.info("рџ”Ќ РћС‚Р»Р°РґРѕС‡РЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ Рѕ РєРµР№СЃР°С…")
 
         file_path = os.path.join(BASE_PATH, 'data', 'cases.json')
-        logger.info(f"📁 Путь к файлу cases.json: {file_path}")
+        logger.info(f"рџ“Ѓ РџСѓС‚СЊ Рє С„Р°Р№Р»Сѓ cases.json: {file_path}")
 
         exists = os.path.exists(file_path)
-        logger.info(f"📁 Файл существует: {exists}")
+        logger.info(f"рџ“Ѓ Р¤Р°Р№Р» СЃСѓС‰РµСЃС‚РІСѓРµС‚: {exists}")
 
         cases_info = []
         if exists:
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
-                    logger.info(f"📁 Размер файла: {len(content)} байт")
+                    logger.info(f"рџ“Ѓ Р Р°Р·РјРµСЂ С„Р°Р№Р»Р°: {len(content)} Р±Р°Р№С‚")
 
                     data = json.loads(content)
                     cases = data.get('cases', [])
-                    logger.info(f"📁 Найдено кейсов: {len(cases)}")
+                    logger.info(f"рџ“Ѓ РќР°Р№РґРµРЅРѕ РєРµР№СЃРѕРІ: {len(cases)}")
 
                     for i, case in enumerate(cases[:5]):
                         cases_info.append({
@@ -6342,7 +6342,7 @@ def debug_cases():
                             'limited': case.get('limited')
                         })
             except Exception as e:
-                logger.error(f"❌ Ошибка чтения файла: {e}")
+                logger.error(f"вќЊ РћС€РёР±РєР° С‡С‚РµРЅРёСЏ С„Р°Р№Р»Р°: {e}")
 
         return jsonify({
             'success': True,
@@ -6355,35 +6355,35 @@ def debug_cases():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка отладки: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РѕС‚Р»Р°РґРєРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/init-db', methods=['POST'])
 def admin_init_db():
-    """Принудительная инициализация всех таблиц БД"""
+    """РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅР°СЏ РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РІСЃРµС… С‚Р°Р±Р»РёС† Р‘Р”"""
     try:
         data = request.get_json() or {}
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Получаем список существующих таблиц ДО
+        # РџРѕР»СѓС‡Р°РµРј СЃРїРёСЃРѕРє СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёС… С‚Р°Р±Р»РёС† Р”Рћ
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables_before = [row[0] for row in cursor.fetchall()]
         
-        # Создаем все таблицы
+        # РЎРѕР·РґР°РµРј РІСЃРµ С‚Р°Р±Р»РёС†С‹
         result = _create_all_tables(conn)
         
-        # Добавляем дефолтные кастомизации
+        # Р”РѕР±Р°РІР»СЏРµРј РґРµС„РѕР»С‚РЅС‹Рµ РєР°СЃС‚РѕРјРёР·Р°С†РёРё
         try:
             cursor.execute('''
                 INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default, access_type, requirement)
-                VALUES ('background', 'phone', 'Космос', 0, 1, 'free', 0)
+                VALUES ('background', 'phone', 'РљРѕСЃРјРѕСЃ', 0, 1, 'free', 0)
             ''')
-            # Регистрируем ракеты из LEVEL_SYSTEM
+            # Р РµРіРёСЃС‚СЂРёСЂСѓРµРј СЂР°РєРµС‚С‹ РёР· LEVEL_SYSTEM
             for lvl_info in LEVEL_SYSTEM:
                 rocket_id = lvl_info.get('reward_rocket')
                 if not rocket_id:
@@ -6399,9 +6399,9 @@ def admin_init_db():
                 ''', (rocket_id, rocket_name, is_default, access, req))
             conn.commit()
         except Exception as e:
-            logger.warning(f"Ошибка добавления дефолтных кастомизаций: {e}")
+            logger.warning(f"РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ РґРµС„РѕР»С‚РЅС‹С… РєР°СЃС‚РѕРјРёР·Р°С†РёР№: {e}")
         
-        # Получаем список существующих таблиц ПОСЛЕ
+        # РџРѕР»СѓС‡Р°РµРј СЃРїРёСЃРѕРє СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёС… С‚Р°Р±Р»РёС† РџРћРЎР›Р•
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         tables_after = [row[0] for row in cursor.fetchall()]
         
@@ -6418,26 +6418,26 @@ def admin_init_db():
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка инициализации БД: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё Р‘Р”: {e}")
         import traceback
         return jsonify({'success': False, 'error': str(e), 'traceback': traceback.format_exc()})
 
 @app.route('/api/admin/db-status', methods=['GET'])
 def admin_db_status():
-    """Получение статуса БД и списка таблиц"""
+    """РџРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°С‚СѓСЃР° Р‘Р” Рё СЃРїРёСЃРєР° С‚Р°Р±Р»РёС†"""
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Список таблиц
+        # РЎРїРёСЃРѕРє С‚Р°Р±Р»РёС†
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
         tables = [row[0] for row in cursor.fetchall()]
         
-        # Количество записей в каждой таблице
+        # РљРѕР»РёС‡РµСЃС‚РІРѕ Р·Р°РїРёСЃРµР№ РІ РєР°Р¶РґРѕР№ С‚Р°Р±Р»РёС†Рµ
         table_counts = {}
         for table in tables:
             try:
@@ -6448,7 +6448,7 @@ def admin_db_status():
         
         conn.close()
         
-        # Ожидаемые таблицы
+        # РћР¶РёРґР°РµРјС‹Рµ С‚Р°Р±Р»РёС†С‹
         expected = [
             'users', 'inventory', 'user_history', 'case_limits', 'referrals',
             'referral_rewards', 'withdrawals', 'deposits', 'promo_codes',
@@ -6472,14 +6472,14 @@ def admin_db_status():
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка статуса БД: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃС‚Р°С‚СѓСЃР° Р‘Р”: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # HISTORY API
 @app.route('/api/recent-wins', methods=['GET'])
 @app.route('/api/latest-wins', methods=['GET'])
 def get_recent_wins():
-    """Получение последних побед для главной страницы"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РїРѕСЃР»РµРґРЅРёС… РїРѕР±РµРґ РґР»СЏ РіР»Р°РІРЅРѕР№ СЃС‚СЂР°РЅРёС†С‹"""
     try:
         limit = request.args.get('limit', 10, type=int)
 
@@ -6523,14 +6523,14 @@ def get_recent_wins():
                 'created_at': created_at
             })
 
-        logger.info(f"📊 Отправлено {len(win_history_list)} записей истории побед")
+        logger.info(f"рџ“Љ РћС‚РїСЂР°РІР»РµРЅРѕ {len(win_history_list)} Р·Р°РїРёСЃРµР№ РёСЃС‚РѕСЂРёРё РїРѕР±РµРґ")
         return jsonify({
             'success': True,
             'wins': win_history_list
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения истории побед: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё РїРѕР±РµРґ: {e}")
         return jsonify({'success': False, 'error': str(e)})
         return jsonify({
             'success': False,
@@ -6540,7 +6540,7 @@ def get_recent_wins():
 
 @app.route('/api/recent-case-opens', methods=['GET'])
 def get_recent_case_opens():
-    """Получение последних открытий кейсов"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РїРѕСЃР»РµРґРЅРёС… РѕС‚РєСЂС‹С‚РёР№ РєРµР№СЃРѕРІ"""
     try:
         limit = request.args.get('limit', 20, type=int)
         user_id = request.args.get('user_id')
@@ -6587,20 +6587,20 @@ def get_recent_case_opens():
                 'is_image': is_image
             })
 
-        logger.info(f"📊 Отправлено {len(open_history_list)} записей истории открытий")
+        logger.info(f"рџ“Љ РћС‚РїСЂР°РІР»РµРЅРѕ {len(open_history_list)} Р·Р°РїРёСЃРµР№ РёСЃС‚РѕСЂРёРё РѕС‚РєСЂС‹С‚РёР№")
         return jsonify({
             'success': True,
             'opens': open_history_list
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения истории открытий: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё РѕС‚РєСЂС‹С‚РёР№: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # DAILY BONUS API
 @app.route('/api/claim-daily-bonus', methods=['POST'])
 def claim_daily_bonus():
-    """Получение ежедневного бонуса"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РµР¶РµРґРЅРµРІРЅРѕРіРѕ Р±РѕРЅСѓСЃР°"""
     try:
         data = request.get_json()
         user_id = data['user_id']
@@ -6613,7 +6613,7 @@ def claim_daily_bonus():
 
         if not result:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         last_bonus, consecutive_days = result
         now = datetime.now()
@@ -6624,7 +6624,7 @@ def claim_daily_bonus():
 
             if hours_diff < 24:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Бонус уже получен сегодня'})
+                return jsonify({'success': False, 'error': 'Р‘РѕРЅСѓСЃ СѓР¶Рµ РїРѕР»СѓС‡РµРЅ СЃРµРіРѕРґРЅСЏ'})
 
             if hours_diff < 48:
                 consecutive_days = (consecutive_days or 0) + 1
@@ -6646,36 +6646,36 @@ def claim_daily_bonus():
             WHERE id = ?
         ''', (total_stars, total_stars, now.isoformat(), consecutive_days, user_id))
 
-        add_experience(user_id, 10, "Ежедневный бонус")
+        add_experience(user_id, 10, "Р•Р¶РµРґРЅРµРІРЅС‹Р№ Р±РѕРЅСѓСЃ")
 
         add_history_record(user_id, 'daily_bonus', total_stars,
-                         f'Ежедневный бонус ({consecutive_days} день подряд)')
+                         f'Р•Р¶РµРґРЅРµРІРЅС‹Р№ Р±РѕРЅСѓСЃ ({consecutive_days} РґРµРЅСЊ РїРѕРґСЂСЏРґ)')
 
         conn.commit()
         conn.close()
 
-        logger.info(f"🎁 Пользователь {user_id} получил ежедневный бонус: {total_stars} звезд")
+        logger.info(f"рџЋЃ РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РїРѕР»СѓС‡РёР» РµР¶РµРґРЅРµРІРЅС‹Р№ Р±РѕРЅСѓСЃ: {total_stars} Р·РІРµР·Рґ")
         return jsonify({
             'success': True,
             'stars_rewarded': total_stars,
             'consecutive_days': consecutive_days,
-            'message': f'🎉 Ежедневный бонус! Вы получили {total_stars} звезд!'
+            'message': f'рџЋ‰ Р•Р¶РµРґРЅРµРІРЅС‹Р№ Р±РѕРЅСѓСЃ! Р’С‹ РїРѕР»СѓС‡РёР»Рё {total_stars} Р·РІРµР·Рґ!'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения ежедневного бонуса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РµР¶РµРґРЅРµРІРЅРѕРіРѕ Р±РѕРЅСѓСЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # SELL GIFTS API
 @app.route('/api/sell-gift', methods=['POST'])
 def sell_gift():
-    """Продажа подарка из инвентаря"""
+    """РџСЂРѕРґР°Р¶Р° РїРѕРґР°СЂРєР° РёР· РёРЅРІРµРЅС‚Р°СЂСЏ"""
     try:
         data = request.get_json()
         user_id = data['user_id']
         gift_id = data['gift_id']
 
-        logger.info(f"💰 Пользователь {user_id} продает подарок из инвентаря {gift_id}")
+        logger.info(f"рџ’° РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РїСЂРѕРґР°РµС‚ РїРѕРґР°СЂРѕРє РёР· РёРЅРІРµРЅС‚Р°СЂСЏ {gift_id}")
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -6685,13 +6685,13 @@ def sell_gift():
 
         if not gift:
             conn.close()
-            return jsonify({'success': False, 'error': 'Подарок не найден в инвентаре'})
+            return jsonify({'success': False, 'error': 'РџРѕРґР°СЂРѕРє РЅРµ РЅР°Р№РґРµРЅ РІ РёРЅРІРµРЅС‚Р°СЂРµ'})
 
         gift_name, gift_value, is_withdrawing = gift
 
         if is_withdrawing:
             conn.close()
-            return jsonify({'success': False, 'error': 'Подарок находится в процессе вывода и не может быть продан'})
+            return jsonify({'success': False, 'error': 'РџРѕРґР°СЂРѕРє РЅР°С…РѕРґРёС‚СЃСЏ РІ РїСЂРѕС†РµСЃСЃРµ РІС‹РІРѕРґР° Рё РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РїСЂРѕРґР°РЅ'})
 
         # Check if it's a crate item (cannot be sold)
         try:
@@ -6702,7 +6702,7 @@ def sell_gift():
                 cr = cursor.fetchone()
                 if cr and cr[0]:
                     conn.close()
-                    return jsonify({'success': False, 'error': 'Ящик нельзя продать, только открыть'})
+                    return jsonify({'success': False, 'error': 'РЇС‰РёРє РЅРµР»СЊР·СЏ РїСЂРѕРґР°С‚СЊ, С‚РѕР»СЊРєРѕ РѕС‚РєСЂС‹С‚СЊ'})
         except:
             pass
 
@@ -6722,7 +6722,7 @@ def sell_gift():
         cursor.execute('''
             INSERT INTO user_history (user_id, operation_type, amount, description)
             VALUES (?, 'gift_sold', ?, ?)
-        ''', (user_id, gift_value, f'Продажа подарка: {gift_name}'))
+        ''', (user_id, gift_value, f'РџСЂРѕРґР°Р¶Р° РїРѕРґР°СЂРєР°: {gift_name}'))
 
         conn.commit()
 
@@ -6730,11 +6730,11 @@ def sell_gift():
         new_balance = cursor.fetchone()
         conn.close()
 
-        logger.info(f"✅ Подарок продан за {gift_value} звезд")
+        logger.info(f"вњ… РџРѕРґР°СЂРѕРє РїСЂРѕРґР°РЅ Р·Р° {gift_value} Р·РІРµР·Рґ")
 
         return jsonify({
             'success': True,
-            'message': f'Подарок продан за {gift_value} звезд!',
+            'message': f'РџРѕРґР°СЂРѕРє РїСЂРѕРґР°РЅ Р·Р° {gift_value} Р·РІРµР·Рґ!',
             'new_balance': {
                 'stars': new_balance[0],
                 'tickets': new_balance[1]
@@ -6742,17 +6742,17 @@ def sell_gift():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка продажи подарка: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїСЂРѕРґР°Р¶Рё РїРѕРґР°СЂРєР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/sell-all-gifts', methods=['POST'])
 def sell_all_gifts():
-    """Продажа всех подарков из инвентаря"""
+    """РџСЂРѕРґР°Р¶Р° РІСЃРµС… РїРѕРґР°СЂРєРѕРІ РёР· РёРЅРІРµРЅС‚Р°СЂСЏ"""
     try:
         data = request.get_json()
         user_id = data['user_id']
 
-        logger.info(f"💰 Пользователь {user_id} продает все подарки из инвентаря")
+        logger.info(f"рџ’° РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РїСЂРѕРґР°РµС‚ РІСЃРµ РїРѕРґР°СЂРєРё РёР· РёРЅРІРµРЅС‚Р°СЂСЏ")
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -6773,7 +6773,7 @@ def sell_all_gifts():
 
         if not gifts:
             conn.close()
-            return jsonify({'success': False, 'error': 'В инвентаре нет предметов для продажи'})
+            return jsonify({'success': False, 'error': 'Р’ РёРЅРІРµРЅС‚Р°СЂРµ РЅРµС‚ РїСЂРµРґРјРµС‚РѕРІ РґР»СЏ РїСЂРѕРґР°Р¶Рё'})
 
         total_value = 0
         sold_count = len(gifts)
@@ -6801,7 +6801,7 @@ def sell_all_gifts():
         cursor.execute('''
             INSERT INTO user_history (user_id, operation_type, amount, description)
             VALUES (?, 'mass_sell', ?, ?)
-        ''', (user_id, total_value, f'Массовая продажа {sold_count} предметов'))
+        ''', (user_id, total_value, f'РњР°СЃСЃРѕРІР°СЏ РїСЂРѕРґР°Р¶Р° {sold_count} РїСЂРµРґРјРµС‚РѕРІ'))
 
         conn.commit()
 
@@ -6809,11 +6809,11 @@ def sell_all_gifts():
         new_balance = cursor.fetchone()
         conn.close()
 
-        logger.info(f"✅ Продано {sold_count} предметов за {total_value} звезд")
+        logger.info(f"вњ… РџСЂРѕРґР°РЅРѕ {sold_count} РїСЂРµРґРјРµС‚РѕРІ Р·Р° {total_value} Р·РІРµР·Рґ")
 
         return jsonify({
             'success': True,
-            'message': f'Продано {sold_count} предметов за {total_value} звезд!',
+            'message': f'РџСЂРѕРґР°РЅРѕ {sold_count} РїСЂРµРґРјРµС‚РѕРІ Р·Р° {total_value} Р·РІРµР·Рґ!',
             'sold_count': sold_count,
             'total_value': total_value,
             'new_balance': {
@@ -6823,19 +6823,19 @@ def sell_all_gifts():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка массовой продажи подарков: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РјР°СЃСЃРѕРІРѕР№ РїСЂРѕРґР°Р¶Рё РїРѕРґР°СЂРєРѕРІ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # WITHDRAWAL API
 @app.route('/api/withdraw-gift', methods=['POST'])
 def withdraw_gift():
-    """Создание заявки на вывод подарка"""
+    """РЎРѕР·РґР°РЅРёРµ Р·Р°СЏРІРєРё РЅР° РІС‹РІРѕРґ РїРѕРґР°СЂРєР°"""
     try:
         data = request.get_json()
         user_id = data['user_id']
         inventory_id = data['gift_id']
 
-        logger.info(f"📤 Пользователь {user_id} создает заявку на вывод подарка {inventory_id}")
+        logger.info(f"рџ“¤ РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} СЃРѕР·РґР°РµС‚ Р·Р°СЏРІРєСѓ РЅР° РІС‹РІРѕРґ РїРѕРґР°СЂРєР° {inventory_id}")
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -6844,19 +6844,19 @@ def withdraw_gift():
         gift = cursor.fetchone()
 
         if not gift:
-            logger.error(f"❌ Подарок {inventory_id} не найден в инвентаре пользователя {user_id}")
-            return jsonify({'success': False, 'error': 'Подарок не найден в инвентаре'})
+            logger.error(f"вќЊ РџРѕРґР°СЂРѕРє {inventory_id} РЅРµ РЅР°Р№РґРµРЅ РІ РёРЅРІРµРЅС‚Р°СЂРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {user_id}")
+            return jsonify({'success': False, 'error': 'РџРѕРґР°СЂРѕРє РЅРµ РЅР°Р№РґРµРЅ РІ РёРЅРІРµРЅС‚Р°СЂРµ'})
 
         if gift[7]:
-            logger.error(f"❌ Подарок {inventory_id} уже в процессе вывода")
-            return jsonify({'success': False, 'error': 'Подарок уже в процессе вывода'})
+            logger.error(f"вќЊ РџРѕРґР°СЂРѕРє {inventory_id} СѓР¶Рµ РІ РїСЂРѕС†РµСЃСЃРµ РІС‹РІРѕРґР°")
+            return jsonify({'success': False, 'error': 'РџРѕРґР°СЂРѕРє СѓР¶Рµ РІ РїСЂРѕС†РµСЃСЃРµ РІС‹РІРѕРґР°'})
 
         # Check if it's a crate item (cannot be withdrawn)
         try:
             crate_id_val = gift[8] if len(gift) > 8 else None
             if crate_id_val:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Ящик нельзя вывести, только открыть'})
+                return jsonify({'success': False, 'error': 'РЇС‰РёРє РЅРµР»СЊР·СЏ РІС‹РІРµСЃС‚Рё, С‚РѕР»СЊРєРѕ РѕС‚РєСЂС‹С‚СЊ'})
         except:
             pass
 
@@ -6864,8 +6864,8 @@ def withdraw_gift():
         user = cursor.fetchone()
 
         if not user:
-            logger.error(f"❌ Пользователь {user_id} не найден")
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            logger.error(f"вќЊ РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РЅРµ РЅР°Р№РґРµРЅ")
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         user_first_name, username, photo_url = user
 
@@ -6879,26 +6879,26 @@ def withdraw_gift():
 
         withdrawal_id = cursor.lastrowid
 
-        add_history_record(user_id, 'withdraw_request', 0, f'Запрос на вывод: {gift[3]}')
+        add_history_record(user_id, 'withdraw_request', 0, f'Р—Р°РїСЂРѕСЃ РЅР° РІС‹РІРѕРґ: {gift[3]}')
 
         conn.commit()
         conn.close()
 
-        logger.info(f"✅ Создана заявка на вывод #{withdrawal_id} для пользователя {user_id}")
+        logger.info(f"вњ… РЎРѕР·РґР°РЅР° Р·Р°СЏРІРєР° РЅР° РІС‹РІРѕРґ #{withdrawal_id} РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {user_id}")
         return jsonify({
             'success': True,
-            'message': '✅ Заявка на вывод создана! Ожидайте обработки.',
+            'message': 'вњ… Р—Р°СЏРІРєР° РЅР° РІС‹РІРѕРґ СЃРѕР·РґР°РЅР°! РћР¶РёРґР°Р№С‚Рµ РѕР±СЂР°Р±РѕС‚РєРё.',
             'withdrawal_id': withdrawal_id
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка создания заявки на вывод: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ Р·Р°СЏРІРєРё РЅР° РІС‹РІРѕРґ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # REFERRAL API
 @app.route('/api/referral-info/<int:user_id>', methods=['GET'])
 def get_referral_info(user_id):
-    """Получение информации о рефералах"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё Рѕ СЂРµС„РµСЂР°Р»Р°С…"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -6907,7 +6907,7 @@ def get_referral_info(user_id):
         user = cursor.fetchone()
 
         if not user:
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         referral_code, referral_count, total_stars, total_tickets, bonus_claimed = user
 
@@ -6963,12 +6963,12 @@ def get_referral_info(user_id):
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения информации о рефералах: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёРЅС„РѕСЂРјР°С†РёРё Рѕ СЂРµС„РµСЂР°Р»Р°С…: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/claim-referral-bonus', methods=['POST'])
 def claim_referral_bonus():
-    """Получение бонуса за рефералов"""
+    """РџРѕР»СѓС‡РµРЅРёРµ Р±РѕРЅСѓСЃР° Р·Р° СЂРµС„РµСЂР°Р»РѕРІ"""
     try:
         data = request.get_json()
         user_id = data['user_id']
@@ -6981,25 +6981,25 @@ def claim_referral_bonus():
 
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         bonus_claimed, referral_count = user
 
         if bonus_claimed:
             conn.close()
-            return jsonify({'success': False, 'error': 'Бонус уже был получен'})
+            return jsonify({'success': False, 'error': 'Р‘РѕРЅСѓСЃ СѓР¶Рµ Р±С‹Р» РїРѕР»СѓС‡РµРЅ'})
 
         if referral_count < 3:
             conn.close()
-            return jsonify({'success': False, 'error': 'Необходимо пригласить минимум 3 друзей'})
+            return jsonify({'success': False, 'error': 'РќРµРѕР±С…РѕРґРёРјРѕ РїСЂРёРіР»Р°СЃРёС‚СЊ РјРёРЅРёРјСѓРј 3 РґСЂСѓР·РµР№'})
 
         bonus_stars = 500
         cursor.execute('UPDATE users SET balance_stars = balance_stars + ?, total_earned_stars = total_earned_stars + ?, referral_bonus_claimed = TRUE WHERE id = ?',
                      (bonus_stars, bonus_stars, user_id))
 
-        add_experience(user_id, 100, "Реферальный бонус")
+        add_experience(user_id, 100, "Р РµС„РµСЂР°Р»СЊРЅС‹Р№ Р±РѕРЅСѓСЃ")
 
-        add_history_record(user_id, 'referral_bonus', bonus_stars, f'Бонус за приглашение {referral_count} друзей')
+        add_history_record(user_id, 'referral_bonus', bonus_stars, f'Р‘РѕРЅСѓСЃ Р·Р° РїСЂРёРіР»Р°С€РµРЅРёРµ {referral_count} РґСЂСѓР·РµР№')
 
         cursor.execute('SELECT balance_stars, balance_tickets FROM users WHERE id = ?', (user_id,))
         new_balance = cursor.fetchone()
@@ -7007,10 +7007,10 @@ def claim_referral_bonus():
         conn.commit()
         conn.close()
 
-        logger.info(f"🎁 Пользователь {user_id} получил реферальный бонус: {bonus_stars} звезд")
+        logger.info(f"рџЋЃ РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РїРѕР»СѓС‡РёР» СЂРµС„РµСЂР°Р»СЊРЅС‹Р№ Р±РѕРЅСѓСЃ: {bonus_stars} Р·РІРµР·Рґ")
         return jsonify({
             'success': True,
-            'message': f'🎉 Поздравляем! Вы получили {bonus_stars} звезд за приглашение {referral_count} друзей!',
+            'message': f'рџЋ‰ РџРѕР·РґСЂР°РІР»СЏРµРј! Р’С‹ РїРѕР»СѓС‡РёР»Рё {bonus_stars} Р·РІРµР·Рґ Р·Р° РїСЂРёРіР»Р°С€РµРЅРёРµ {referral_count} РґСЂСѓР·РµР№!',
             'bonus_stars': bonus_stars,
             'new_balance': {
                 'stars': new_balance[0],
@@ -7019,13 +7019,13 @@ def claim_referral_bonus():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения реферального бонуса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЂРµС„РµСЂР°Р»СЊРЅРѕРіРѕ Р±РѕРЅСѓСЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/referral/withdraw', methods=['POST'])
 def withdraw_referral_balance():
-    """Вывод реферального баланса на основной (мин. 1 TON = 100 stars)"""
+    """Р’С‹РІРѕРґ СЂРµС„РµСЂР°Р»СЊРЅРѕРіРѕ Р±Р°Р»Р°РЅСЃР° РЅР° РѕСЃРЅРѕРІРЅРѕР№ (РјРёРЅ. 1 TON = 100 stars)"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -7056,7 +7056,7 @@ def withdraw_referral_balance():
             WHERE id = ?
         ''', (ref_balance, user_id))
         
-        add_history_record(user_id, 'referral_withdraw', ref_balance, f'Вывод реферального баланса')
+        add_history_record(user_id, 'referral_withdraw', ref_balance, f'Р’С‹РІРѕРґ СЂРµС„РµСЂР°Р»СЊРЅРѕРіРѕ Р±Р°Р»Р°РЅСЃР°')
         
         cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
         new_balance = cursor.fetchone()[0]
@@ -7064,7 +7064,7 @@ def withdraw_referral_balance():
         conn.commit()
         conn.close()
         
-        logger.info(f"💰 User {user_id} withdrew {ref_balance} stars from referral balance")
+        logger.info(f"рџ’° User {user_id} withdrew {ref_balance} stars from referral balance")
         return jsonify({
             'success': True,
             'withdrawn': ref_balance,
@@ -7072,14 +7072,14 @@ def withdraw_referral_balance():
         })
         
     except Exception as e:
-        logger.error(f"❌ Referral withdrawal error: {e}")
+        logger.error(f"вќЊ Referral withdrawal error: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 # UPGRADE API
 @app.route('/api/user-upgrade-stats/<int:user_id>', methods=['GET'])
 def get_user_upgrade_stats(user_id):
-    """Получение статистики апгрейдов пользователя"""
+    """РџРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°С‚РёСЃС‚РёРєРё Р°РїРіСЂРµР№РґРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -7100,24 +7100,24 @@ def get_user_upgrade_stats(user_id):
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения статистики апгрейдов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё Р°РїРіСЂРµР№РґРѕРІ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/upgrade-gift-fast', methods=['POST'])
 def upgrade_gift_fast():
-    """БЫСТРЫЙ апгрейд подарка"""
+    """Р‘Р«РЎРўР Р«Р™ Р°РїРіСЂРµР№Рґ РїРѕРґР°СЂРєР°"""
     try:
         data = request.get_json()
         user_id = data['user_id']
         current_gift_id = data['current_gift_id']
         target_gift_id = data['target_gift_id']
 
-        logger.info(f"⚡ БЫСТРЫЙ апгрейд: пользователь {user_id}, подарок {current_gift_id} -> {target_gift_id}")
+        logger.info(f"вљЎ Р‘Р«РЎРўР Р«Р™ Р°РїРіСЂРµР№Рґ: РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id}, РїРѕРґР°СЂРѕРє {current_gift_id} -> {target_gift_id}")
 
         # Use Fragment catalog (originals only for upgrade targets)
         gifts = build_fragment_first_gifts_catalog()
         if not gifts:
-            return jsonify({'success': False, 'error': 'Не удалось загрузить список подарков'})
+            return jsonify({'success': False, 'error': 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ СЃРїРёСЃРѕРє РїРѕРґР°СЂРєРѕРІ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -7128,24 +7128,24 @@ def upgrade_gift_fast():
 
         if not current_gift:
             conn.close()
-            return jsonify({'success': False, 'error': 'Подарок не найден в инвентаре'})
+            return jsonify({'success': False, 'error': 'РџРѕРґР°СЂРѕРє РЅРµ РЅР°Р№РґРµРЅ РІ РёРЅРІРµРЅС‚Р°СЂРµ'})
 
         current_gift_db_id, gift_name, current_value = current_gift
 
-        cursor.execute('SELECT COALESCE(first_name, username, ?) FROM users WHERE id = ?', ('Игрок', user_id))
+        cursor.execute('SELECT COALESCE(first_name, username, ?) FROM users WHERE id = ?', ('РРіСЂРѕРє', user_id))
         user_row = cursor.fetchone()
-        user_name = (user_row[0] if user_row and user_row[0] else 'Игрок')
+        user_name = (user_row[0] if user_row and user_row[0] else 'РРіСЂРѕРє')
 
         target_gift = next((g for g in gifts if g.get('id') == target_gift_id or g.get('gift_key') == str(target_gift_id) or g.get('fragment_slug') == str(target_gift_id)), None)
         if not target_gift:
             conn.close()
-            return jsonify({'success': False, 'error': 'Целевой подарок не найден'})
+            return jsonify({'success': False, 'error': 'Р¦РµР»РµРІРѕР№ РїРѕРґР°СЂРѕРє РЅРµ РЅР°Р№РґРµРЅ'})
 
         target_value = target_gift.get('value', 0)
 
         if target_value <= current_value:
             conn.close()
-            return jsonify({'success': False, 'error': 'Нельзя апгрейдить на подарок такой же или меньшей стоимости'})
+            return jsonify({'success': False, 'error': 'РќРµР»СЊР·СЏ Р°РїРіСЂРµР№РґРёС‚СЊ РЅР° РїРѕРґР°СЂРѕРє С‚Р°РєРѕР№ Р¶Рµ РёР»Рё РјРµРЅСЊС€РµР№ СЃС‚РѕРёРјРѕСЃС‚Рё'})
 
         chance = (current_value / target_value) * 100
         chance = max(10, min(chance, 80))
@@ -7161,11 +7161,11 @@ def upgrade_gift_fast():
         if recent_success_count >= 3:
             success = False
             forced_failure = True
-            logger.info(f"🎯 ПРИНУДИТЕЛЬНЫЙ ПРОВАЛ: 4-й апгрейд после {recent_success_count} успешных")
+            logger.info(f"рџЋЇ РџР РРќРЈР”РРўР•Р›Р¬РќР«Р™ РџР РћР’РђР›: 4-Р№ Р°РїРіСЂРµР№Рґ РїРѕСЃР»Рµ {recent_success_count} СѓСЃРїРµС€РЅС‹С…")
         else:
             random_value = random.random() * 100
             success = random_value <= chance
-            logger.info(f"🎯 Обычный апгрейд: случайное число {random_value:.1f} vs шанс {chance:.1f}% = {'УСПЕХ' if success else 'ПРОВАЛ'}")
+            logger.info(f"рџЋЇ РћР±С‹С‡РЅС‹Р№ Р°РїРіСЂРµР№Рґ: СЃР»СѓС‡Р°Р№РЅРѕРµ С‡РёСЃР»Рѕ {random_value:.1f} vs С€Р°РЅСЃ {chance:.1f}% = {'РЈРЎРџР•РҐ' if success else 'РџР РћР’РђР›'}")
 
         try:
             if success:
@@ -7181,14 +7181,14 @@ def upgrade_gift_fast():
                 cursor.execute('''
                     INSERT INTO user_history (user_id, operation_type, amount, description)
                     VALUES (?, 'upgrade_success', ?, ?)
-                ''', (user_id, 0, f'Успешный апгрейд: {gift_name} -> {target_gift["name"]}'))
+                ''', (user_id, 0, f'РЈСЃРїРµС€РЅС‹Р№ Р°РїРіСЂРµР№Рґ: {gift_name} -> {target_gift["name"]}'))
 
                 cursor.execute('''
                     INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
                     VALUES (?, ?, ?, ?, ?, ?)
                 ''', (user_id, user_name, target_gift['name'], target_gift['image'], target_value, 'Upgrade'))
 
-                logger.info(f"✅ Успешный апгрейд: {gift_name} -> {target_gift['name']}")
+                logger.info(f"вњ… РЈСЃРїРµС€РЅС‹Р№ Р°РїРіСЂРµР№Рґ: {gift_name} -> {target_gift['name']}")
 
             else:
                 cursor.execute('DELETE FROM inventory WHERE id = ?', (current_gift_id,))
@@ -7197,14 +7197,14 @@ def upgrade_gift_fast():
                     cursor.execute('''
                         INSERT INTO user_history (user_id, operation_type, amount, description)
                         VALUES (?, 'upgrade_forced_failure', ?, ?)
-                    ''', (user_id, 0, f'Принудительный провал апгрейда: потерян {gift_name}'))
+                    ''', (user_id, 0, f'РџСЂРёРЅСѓРґРёС‚РµР»СЊРЅС‹Р№ РїСЂРѕРІР°Р» Р°РїРіСЂРµР№РґР°: РїРѕС‚РµСЂСЏРЅ {gift_name}'))
                 else:
                     cursor.execute('''
                         INSERT INTO user_history (user_id, operation_type, amount, description)
                         VALUES (?, 'upgrade_failure', ?, ?)
-                    ''', (user_id, 0, f'Неудачный апгрейд: потерян {gift_name}'))
+                    ''', (user_id, 0, f'РќРµСѓРґР°С‡РЅС‹Р№ Р°РїРіСЂРµР№Рґ: РїРѕС‚РµСЂСЏРЅ {gift_name}'))
 
-                logger.info(f"❌ Неудачный апгрейд: потерян {gift_name}")
+                logger.info(f"вќЊ РќРµСѓРґР°С‡РЅС‹Р№ Р°РїРіСЂРµР№Рґ: РїРѕС‚РµСЂСЏРЅ {gift_name}")
 
             conn.commit()
             conn.close()
@@ -7216,34 +7216,34 @@ def upgrade_gift_fast():
                 'forced_failure': forced_failure,
                 'recent_success_count': recent_success_count,
                 'new_gift': target_gift if success else None,
-                'message': 'Успешный апгрейд!' if success else 'Апгрейд не удался'
+                'message': 'РЈСЃРїРµС€РЅС‹Р№ Р°РїРіСЂРµР№Рґ!' if success else 'РђРїРіСЂРµР№Рґ РЅРµ СѓРґР°Р»СЃСЏ'
             })
 
         except Exception as e:
             conn.rollback()
-            logger.error(f"❌ Ошибка транзакции апгрейда: {e}")
-            return jsonify({'success': False, 'error': 'Ошибка обработки апгрейда'})
+            logger.error(f"вќЊ РћС€РёР±РєР° С‚СЂР°РЅР·Р°РєС†РёРё Р°РїРіСЂРµР№РґР°: {e}")
+            return jsonify({'success': False, 'error': 'РћС€РёР±РєР° РѕР±СЂР°Р±РѕС‚РєРё Р°РїРіСЂРµР№РґР°'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка быстрого апгрейда: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° Р±С‹СЃС‚СЂРѕРіРѕ Р°РїРіСЂРµР№РґР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/upgrade-gift', methods=['POST'])
 def upgrade_gift():
-    """Апгрейд подарка"""
+    """РђРїРіСЂРµР№Рґ РїРѕРґР°СЂРєР°"""
     try:
         data = request.get_json()
         user_id = data['user_id']
         current_gift_id = data['current_gift_id']
         target_gift_id = data['target_gift_id']
 
-        logger.info(f"⚡ Апгрейд: {user_id} -> {current_gift_id} на {target_gift_id}")
+        logger.info(f"вљЎ РђРїРіСЂРµР№Рґ: {user_id} -> {current_gift_id} РЅР° {target_gift_id}")
 
         # Use Fragment catalog (originals only for upgrade targets)
         gifts = build_fragment_first_gifts_catalog()
         target_gift = next((g for g in gifts if g.get('id') == target_gift_id or g.get('gift_key') == str(target_gift_id) or g.get('fragment_slug') == str(target_gift_id)), None)
         if not target_gift:
-            return jsonify({'success': False, 'error': 'Целевой подарок не найден'})
+            return jsonify({'success': False, 'error': 'Р¦РµР»РµРІРѕР№ РїРѕРґР°СЂРѕРє РЅРµ РЅР°Р№РґРµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -7255,19 +7255,19 @@ def upgrade_gift():
 
             if not current_gift:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Подарок не найден'})
+                return jsonify({'success': False, 'error': 'РџРѕРґР°СЂРѕРє РЅРµ РЅР°Р№РґРµРЅ'})
 
             gift_name, current_value = current_gift
 
-            cursor.execute('SELECT COALESCE(first_name, username, ?) FROM users WHERE id = ?', ('Игрок', user_id))
+            cursor.execute('SELECT COALESCE(first_name, username, ?) FROM users WHERE id = ?', ('РРіСЂРѕРє', user_id))
             user_row = cursor.fetchone()
-            user_name = (user_row[0] if user_row and user_row[0] else 'Игрок')
+            user_name = (user_row[0] if user_row and user_row[0] else 'РРіСЂРѕРє')
 
             target_value = target_gift.get('value', 0)
 
             if target_value <= current_value:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Нельзя апгрейдить на более дешевый подарок'})
+                return jsonify({'success': False, 'error': 'РќРµР»СЊР·СЏ Р°РїРіСЂРµР№РґРёС‚СЊ РЅР° Р±РѕР»РµРµ РґРµС€РµРІС‹Р№ РїРѕРґР°СЂРѕРє'})
 
             base_chance = max(2, min((current_value / target_value) * 100, 75))
             displayed_chance = round(base_chance, 1)
@@ -7286,7 +7286,7 @@ def upgrade_gift():
 
             real_chance = max(5, real_chance)
 
-            logger.info(f"🎯 Шансы: отображаемый {displayed_chance}%, реальный {real_chance:.1f}%, цена: {current_value} -> {target_value}")
+            logger.info(f"рџЋЇ РЁР°РЅСЃС‹: РѕС‚РѕР±СЂР°Р¶Р°РµРјС‹Р№ {displayed_chance}%, СЂРµР°Р»СЊРЅС‹Р№ {real_chance:.1f}%, С†РµРЅР°: {current_value} -> {target_value}")
 
             success = random.random() * 100 <= real_chance
 
@@ -7303,23 +7303,23 @@ def upgrade_gift():
                 cursor.execute('''
                     INSERT INTO user_history (user_id, operation_type, amount, description)
                     VALUES (?, 'upgrade_success', 0, ?)
-                ''', (user_id, f'Успешный апгрейд: {gift_name} -> {target_gift["name"]}'))
+                ''', (user_id, f'РЈСЃРїРµС€РЅС‹Р№ Р°РїРіСЂРµР№Рґ: {gift_name} -> {target_gift["name"]}'))
 
                 cursor.execute('''
                     INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
                     VALUES (?, ?, ?, ?, ?, ?)
                 ''', (user_id, user_name, target_gift['name'], target_gift['image'], target_value, 'Upgrade'))
 
-                logger.info(f"✅ Успешный апгрейд: {gift_name} -> {target_gift['name']} (шанс: {real_chance:.1f}%)")
+                logger.info(f"вњ… РЈСЃРїРµС€РЅС‹Р№ Р°РїРіСЂРµР№Рґ: {gift_name} -> {target_gift['name']} (С€Р°РЅСЃ: {real_chance:.1f}%)")
             else:
                 cursor.execute('DELETE FROM inventory WHERE id = ?', (current_gift_id,))
 
                 cursor.execute('''
                     INSERT INTO user_history (user_id, operation_type, amount, description)
                     VALUES (?, 'upgrade_failure', 0, ?)
-                ''', (user_id, f'Неудачный апгрейд: {gift_name}'))
+                ''', (user_id, f'РќРµСѓРґР°С‡РЅС‹Р№ Р°РїРіСЂРµР№Рґ: {gift_name}'))
 
-                logger.info(f"❌ Неудачный апгрейд: {gift_name} (шанс был: {real_chance:.1f}%)")
+                logger.info(f"вќЊ РќРµСѓРґР°С‡РЅС‹Р№ Р°РїРіСЂРµР№Рґ: {gift_name} (С€Р°РЅСЃ Р±С‹Р»: {real_chance:.1f}%)")
 
             conn.commit()
             conn.close()
@@ -7330,30 +7330,30 @@ def upgrade_gift():
                 'chance': displayed_chance,
                 'real_chance': round(real_chance, 1),
                 'new_gift': target_gift if success else None,
-                'message': 'Успешный апгрейд!' if success else 'Апгрейд не удался'
+                'message': 'РЈСЃРїРµС€РЅС‹Р№ Р°РїРіСЂРµР№Рґ!' if success else 'РђРїРіСЂРµР№Рґ РЅРµ СѓРґР°Р»СЃСЏ'
             })
 
         except sqlite3.OperationalError as e:
             if "database is locked" in str(e):
-                logger.warning("🔒 База заблокирована, повторяем запрос...")
+                logger.warning("рџ”’ Р‘Р°Р·Р° Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅР°, РїРѕРІС‚РѕСЂСЏРµРј Р·Р°РїСЂРѕСЃ...")
                 conn.close()
                 time.sleep(0.1)
                 return upgrade_gift()
             raise e
         except Exception as e:
             conn.rollback()
-            logger.error(f"❌ Ошибка транзакции: {e}")
-            return jsonify({'success': False, 'error': 'Ошибка обработки апгрейда'})
+            logger.error(f"вќЊ РћС€РёР±РєР° С‚СЂР°РЅР·Р°РєС†РёРё: {e}")
+            return jsonify({'success': False, 'error': 'РћС€РёР±РєР° РѕР±СЂР°Р±РѕС‚РєРё Р°РїРіСЂРµР№РґР°'})
         finally:
             conn.close()
 
     except Exception as e:
-        logger.error(f"❌ Ошибка апгрейда: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° Р°РїРіСЂРµР№РґР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/debug-upgrade/<int:inventory_id>', methods=['GET'])
 def debug_upgrade(inventory_id):
-    """Отладочная информация для апгрейда"""
+    """РћС‚Р»Р°РґРѕС‡РЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ РґР»СЏ Р°РїРіСЂРµР№РґР°"""
     try:
         user_id = request.args.get('user_id')
 
@@ -7370,7 +7370,7 @@ def debug_upgrade(inventory_id):
         if not current_gift:
             return jsonify({
                 'success': False,
-                'error': 'Подарок не найден',
+                'error': 'РџРѕРґР°СЂРѕРє РЅРµ РЅР°Р№РґРµРЅ',
                 'debug_info': {
                     'inventory_id': inventory_id,
                     'user_id': user_id,
@@ -7398,7 +7398,7 @@ def debug_upgrade(inventory_id):
 
 @app.route('/api/upgrade-possible-gifts', methods=['POST'])
 def get_upgrade_possible_gifts():
-    """Получение возможных подарков для апгрейда — только оригиналы коллекций (без моделей)"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РІРѕР·РјРѕР¶РЅС‹С… РїРѕРґР°СЂРєРѕРІ РґР»СЏ Р°РїРіСЂРµР№РґР° вЂ” С‚РѕР»СЊРєРѕ РѕСЂРёРіРёРЅР°Р»С‹ РєРѕР»Р»РµРєС†РёР№ (Р±РµР· РјРѕРґРµР»РµР№)"""
     try:
         data = request.get_json()
         current_gift_id = data['current_gift_id']
@@ -7412,14 +7412,14 @@ def get_upgrade_possible_gifts():
         conn.close()
 
         if not result:
-            return jsonify({'success': False, 'error': 'Подарок не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕРґР°СЂРѕРє РЅРµ РЅР°Р№РґРµРЅ'})
 
         current_value = result[0]
-        # Use Fragment catalog — originals only (no models)
+        # Use Fragment catalog вЂ” originals only (no models)
         gifts = build_fragment_first_gifts_catalog()
 
         if not gifts:
-            return jsonify({'success': False, 'error': 'Не удалось загрузить подарки'})
+            return jsonify({'success': False, 'error': 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РїРѕРґР°СЂРєРё'})
 
         min_target_value = current_value * 1.2
         possible_gifts = []
@@ -7444,12 +7444,12 @@ def get_upgrade_possible_gifts():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения подарков: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕРґР°СЂРєРѕРІ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/gifts')
 def api_gifts():
-    """Получение каталога подарков: сначала Fragment, затем local-only fallback"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РєР°С‚Р°Р»РѕРіР° РїРѕРґР°СЂРєРѕРІ: СЃРЅР°С‡Р°Р»Р° Fragment, Р·Р°С‚РµРј local-only fallback"""
     global gifts_cache, gifts_cache_time
     try:
         force_reload = request.args.get('reload', '').lower() in ('true', '1', 'yes')
@@ -7459,7 +7459,7 @@ def api_gifts():
             global fragment_cache, fragment_cache_time
             fragment_cache = None
             fragment_cache_time = None
-            logger.info("API gifts: принудительная перезагрузка кэша")
+            logger.info("API gifts: РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅР°СЏ РїРµСЂРµР·Р°РіСЂСѓР·РєР° РєСЌС€Р°")
 
         file_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
         file_exists = os.path.exists(file_path)
@@ -7487,7 +7487,7 @@ def api_gifts():
             }
         })
     except Exception as e:
-        logger.error(f"Ошибка API gifts: {e}")
+        logger.error(f"РћС€РёР±РєР° API gifts: {e}")
         import traceback
         return jsonify({
             'success': False, 
@@ -7499,12 +7499,12 @@ def api_gifts():
 # LEVEL API
 @app.route('/api/level-info/<int:user_id>', methods=['GET'])
 def get_level_info(user_id):
-    """Получение информации об уровне пользователя"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё РѕР± СѓСЂРѕРІРЅРµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         level_info = get_user_level_info(user_id)
 
         if not level_info:
-            return jsonify({'success': False, 'error': 'Информация об уровне не найдена'})
+            return jsonify({'success': False, 'error': 'РРЅС„РѕСЂРјР°С†РёСЏ РѕР± СѓСЂРѕРІРЅРµ РЅРµ РЅР°Р№РґРµРЅР°'})
 
         return jsonify({
             'success': True,
@@ -7513,12 +7513,12 @@ def get_level_info(user_id):
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения информации об уровне: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёРЅС„РѕСЂРјР°С†РёРё РѕР± СѓСЂРѕРІРЅРµ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/level-history/<int:user_id>', methods=['GET'])
 def get_level_history(user_id):
-    """Получение истории повышения уровней"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РёСЃС‚РѕСЂРёРё РїРѕРІС‹С€РµРЅРёСЏ СѓСЂРѕРІРЅРµР№"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -7550,19 +7550,19 @@ def get_level_history(user_id):
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения истории уровней: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё СѓСЂРѕРІРЅРµР№: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # PAYMENT API
 @app.route('/api/create-stars-payment', methods=['POST'])
 def create_stars_payment():
-    """Создание платежа через Telegram Stars"""
+    """РЎРѕР·РґР°РЅРёРµ РїР»Р°С‚РµР¶Р° С‡РµСЂРµР· Telegram Stars"""
     try:
         data = request.get_json()
         user_id = data['user_id']
         amount = data['amount']
 
-        logger.info(f"⭐ Создание платежа Telegram Stars: пользователь {user_id}, сумма {amount}")
+        logger.info(f"в­ђ РЎРѕР·РґР°РЅРёРµ РїР»Р°С‚РµР¶Р° Telegram Stars: РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id}, СЃСѓРјРјР° {amount}")
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -7574,32 +7574,32 @@ def create_stars_payment():
 
         deposit_id = cursor.lastrowid
 
-        add_history_record(user_id, 'stars_payment_created', 0, f'Создан платеж Telegram Stars: {amount} звезд')
+        add_history_record(user_id, 'stars_payment_created', 0, f'РЎРѕР·РґР°РЅ РїР»Р°С‚РµР¶ Telegram Stars: {amount} Р·РІРµР·Рґ')
 
         conn.commit()
         conn.close()
 
         return jsonify({
             'success': True,
-            'message': '✅ Платеж создан! Используйте кнопку ниже для оплаты через Telegram Stars.',
+            'message': 'вњ… РџР»Р°С‚РµР¶ СЃРѕР·РґР°РЅ! РСЃРїРѕР»СЊР·СѓР№С‚Рµ РєРЅРѕРїРєСѓ РЅРёР¶Рµ РґР»СЏ РѕРїР»Р°С‚С‹ С‡РµСЂРµР· Telegram Stars.',
             'deposit_id': deposit_id,
             'payment_url': f'https://t.me/your_bot_name?start=stars_{deposit_id}'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка создания платежа Stars: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РїР»Р°С‚РµР¶Р° Stars: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/complete-stars-payment', methods=['POST'])
 def complete_stars_payment():
-    """Завершение платежа Telegram Stars"""
+    """Р—Р°РІРµСЂС€РµРЅРёРµ РїР»Р°С‚РµР¶Р° Telegram Stars"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
         deposit_id = data.get('deposit_id')
 
         if admin_id and int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -7609,22 +7609,22 @@ def complete_stars_payment():
 
         if not deposit:
             conn.close()
-            return jsonify({'success': False, 'error': 'Платеж не найден'})
+            return jsonify({'success': False, 'error': 'РџР»Р°С‚РµР¶ РЅРµ РЅР°Р№РґРµРЅ'})
 
         user_id, amount, status = deposit
 
         if status == 'completed':
             conn.close()
-            return jsonify({'success': False, 'error': 'Платеж уже завершен'})
+            return jsonify({'success': False, 'error': 'РџР»Р°С‚РµР¶ СѓР¶Рµ Р·Р°РІРµСЂС€РµРЅ'})
 
         cursor.execute('UPDATE users SET balance_stars = balance_stars + ?, total_earned_stars = total_earned_stars + ? WHERE id = ?',
                      (amount, amount, user_id))
 
-        add_experience(user_id, amount // 10, f"Пополнение баланса на {amount} звезд")
+        add_experience(user_id, amount // 10, f"РџРѕРїРѕР»РЅРµРЅРёРµ Р±Р°Р»Р°РЅСЃР° РЅР° {amount} Р·РІРµР·Рґ")
 
         cursor.execute('UPDATE deposits SET status = "completed", completed_at = CURRENT_TIMESTAMP WHERE id = ?', (deposit_id,))
 
-        add_history_record(user_id, 'stars_payment_completed', amount, f'Пополнение через Telegram Stars: {amount} звезд')
+        add_history_record(user_id, 'stars_payment_completed', amount, f'РџРѕРїРѕР»РЅРµРЅРёРµ С‡РµСЂРµР· Telegram Stars: {amount} Р·РІРµР·Рґ')
 
         conn.commit()
 
@@ -7632,10 +7632,10 @@ def complete_stars_payment():
         new_balance = cursor.fetchone()
         conn.close()
 
-        logger.info(f"✅ Платеж Stars #{deposit_id} завершен, пользователь {user_id} получил {amount} звезд")
+        logger.info(f"вњ… РџР»Р°С‚РµР¶ Stars #{deposit_id} Р·Р°РІРµСЂС€РµРЅ, РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РїРѕР»СѓС‡РёР» {amount} Р·РІРµР·Рґ")
         return jsonify({
             'success': True,
-            'message': f'Баланс пополнен на {amount} звезд!',
+            'message': f'Р‘Р°Р»Р°РЅСЃ РїРѕРїРѕР»РЅРµРЅ РЅР° {amount} Р·РІРµР·Рґ!',
             'new_balance': {
                 'stars': new_balance[0],
                 'tickets': new_balance[1]
@@ -7643,12 +7643,12 @@ def complete_stars_payment():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка завершения платежа Stars: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ РїР»Р°С‚РµР¶Р° Stars: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/check-stars-payment/<int:deposit_id>', methods=['GET'])
 def check_stars_payment(deposit_id):
-    """Проверка статуса платежа Telegram Stars"""
+    """РџСЂРѕРІРµСЂРєР° СЃС‚Р°С‚СѓСЃР° РїР»Р°С‚РµР¶Р° Telegram Stars"""
     try:
         user_id = request.args.get('user_id')
 
@@ -7660,13 +7660,13 @@ def check_stars_payment(deposit_id):
 
         if not deposit:
             conn.close()
-            return jsonify({'success': False, 'error': 'Платеж не найден'})
+            return jsonify({'success': False, 'error': 'РџР»Р°С‚РµР¶ РЅРµ РЅР°Р№РґРµРЅ'})
 
         status, amount, deposit_user_id = deposit
 
         if str(deposit_user_id) != str(user_id):
             conn.close()
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn.close()
 
@@ -7674,23 +7674,23 @@ def check_stars_payment(deposit_id):
             'success': True,
             'status': status,
             'amount': amount,
-            'message': f'Статус платежа: {status}'
+            'message': f'РЎС‚Р°С‚СѓСЃ РїР»Р°С‚РµР¶Р°: {status}'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка проверки платежа: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїСЂРѕРІРµСЂРєРё РїР»Р°С‚РµР¶Р°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # PROMO CODE API
 @app.route('/api/use-promo-code', methods=['POST'])
 def use_promo_code():
-    """Активация промокода"""
+    """РђРєС‚РёРІР°С†РёСЏ РїСЂРѕРјРѕРєРѕРґР°"""
     try:
         data = request.get_json()
         user_id = data['user_id']
         promo_code = data['promo_code'].upper().strip()
 
-        logger.info(f"🎟️ Пользователь {user_id} активирует промокод: {promo_code}")
+        logger.info(f"рџЋџпёЏ РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} Р°РєС‚РёРІРёСЂСѓРµС‚ РїСЂРѕРјРѕРєРѕРґ: {promo_code}")
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -7705,30 +7705,30 @@ def use_promo_code():
 
         if not promo:
             conn.close()
-            return jsonify({'success': False, 'error': 'Промокод не найден'})
+            return jsonify({'success': False, 'error': 'РџСЂРѕРјРѕРєРѕРґ РЅРµ РЅР°Р№РґРµРЅ'})
 
         promo_id, reward_stars, reward_tickets, max_uses, used_count, expires_at, is_active = promo
 
         if not is_active:
             conn.close()
-            return jsonify({'success': False, 'error': 'Промокод неактивен'})
+            return jsonify({'success': False, 'error': 'РџСЂРѕРјРѕРєРѕРґ РЅРµР°РєС‚РёРІРµРЅ'})
 
         if expires_at:
             expires_date = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
             if datetime.now() > expires_date:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Срок действия промокода истек'})
+                return jsonify({'success': False, 'error': 'РЎСЂРѕРє РґРµР№СЃС‚РІРёСЏ РїСЂРѕРјРѕРєРѕРґР° РёСЃС‚РµРє'})
 
         if max_uses > 0 and used_count >= max_uses:
             conn.close()
-            return jsonify({'success': False, 'error': 'Лимит использований промокода исчерпан'})
+            return jsonify({'success': False, 'error': 'Р›РёРјРёС‚ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёР№ РїСЂРѕРјРѕРєРѕРґР° РёСЃС‡РµСЂРїР°РЅ'})
 
         cursor.execute('SELECT id FROM used_promo_codes WHERE user_id = ? AND promo_code_id = ?', (user_id, promo_id))
         already_used = cursor.fetchone()
 
         if already_used:
             conn.close()
-            return jsonify({'success': False, 'error': 'Вы уже использовали этот промокод'})
+            return jsonify({'success': False, 'error': 'Р’С‹ СѓР¶Рµ РёСЃРїРѕР»СЊР·РѕРІР°Р»Рё СЌС‚РѕС‚ РїСЂРѕРјРѕРєРѕРґ'})
 
         if reward_stars > 0:
             cursor.execute('UPDATE users SET balance_stars = balance_stars + ?, total_earned_stars = total_earned_stars + ? WHERE id = ?',
@@ -7746,22 +7746,22 @@ def use_promo_code():
 
         rewards_text = []
         if reward_stars > 0:
-            rewards_text.append(f'{reward_stars}⭐')
+            rewards_text.append(f'{reward_stars}в­ђ')
         if reward_tickets > 0:
-            rewards_text.append(f'{reward_tickets}🎫')
+            rewards_text.append(f'{reward_tickets}рџЋ«')
 
         cursor.execute('''
             INSERT INTO user_history (user_id, operation_type, amount, description)
             VALUES (?, 'promo_code', ?, ?)
-        ''', (user_id, reward_stars + reward_tickets, f'Активация промокода {promo_code}: {", ".join(rewards_text)}'))
+        ''', (user_id, reward_stars + reward_tickets, f'РђРєС‚РёРІР°С†РёСЏ РїСЂРѕРјРѕРєРѕРґР° {promo_code}: {", ".join(rewards_text)}'))
 
         conn.commit()
         conn.close()
 
-        logger.info(f"✅ Пользователь {user_id} активировал промокод {promo_code}")
+        logger.info(f"вњ… РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} Р°РєС‚РёРІРёСЂРѕРІР°Р» РїСЂРѕРјРѕРєРѕРґ {promo_code}")
         return jsonify({
             'success': True,
-            'message': f'Промокод активирован! Вы получили: {reward_stars}⭐ и {reward_tickets}🎫',
+            'message': f'РџСЂРѕРјРѕРєРѕРґ Р°РєС‚РёРІРёСЂРѕРІР°РЅ! Р’С‹ РїРѕР»СѓС‡РёР»Рё: {reward_stars}в­ђ Рё {reward_tickets}рџЋ«',
             'rewards': {
                 'stars': reward_stars,
                 'tickets': reward_tickets
@@ -7769,14 +7769,14 @@ def use_promo_code():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка активации промокода: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° Р°РєС‚РёРІР°С†РёРё РїСЂРѕРјРѕРєРѕРґР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # ==================== ULTIMATE CRASH API ====================
 
 @app.route('/api/ultimate-crash/status', methods=['GET'])
 def ultimate_crash_status():
-    """Получение статуса Ultimate Crash"""
+    """РџРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°С‚СѓСЃР° Ultimate Crash"""
     try:
         user_id = request.args.get('user_id')
 
@@ -7870,7 +7870,7 @@ def ultimate_crash_status():
                     'first_name': bet[7],
                     'username': bet[8],
                     'photo_url': bet[9] or '/static/img/default_avatar.png',
-                    'user_name': bet[7] or f'Игрок {bet[1]}'
+                    'user_name': bet[7] or f'РРіСЂРѕРє {bet[1]}'
                 }
                 bets_list.append(bet_data)
 
@@ -7891,25 +7891,25 @@ def ultimate_crash_status():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения статуса Ultimate Crash: {e}")
-        logger.error(f"❌ Трассировка: {traceback.format_exc()}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚СѓСЃР° Ultimate Crash: {e}")
+        logger.error(f"вќЊ РўСЂР°СЃСЃРёСЂРѕРІРєР°: {traceback.format_exc()}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/ultimate-crash/bet', methods=['POST'])
 def ultimate_crash_bet():
-    """Размещение ставки в Ultimate Crash"""
+    """Р Р°Р·РјРµС‰РµРЅРёРµ СЃС‚Р°РІРєРё РІ Ultimate Crash"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
         bet_amount = data.get('bet_amount', 0)
 
-        logger.info(f"🎯 Ставка Ultimate Crash: user {user_id}, сумма {bet_amount}")
+        logger.info(f"рџЋЇ РЎС‚Р°РІРєР° Ultimate Crash: user {user_id}, СЃСѓРјРјР° {bet_amount}")
 
         if not user_id:
-            return jsonify({'success': False, 'error': 'ID пользователя не указан'})
+            return jsonify({'success': False, 'error': 'ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ СѓРєР°Р·Р°РЅ'})
 
         if bet_amount < 10:
-            return jsonify({'success': False, 'error': 'Минимальная ставка 25⭐'})
+            return jsonify({'success': False, 'error': 'РњРёРЅРёРјР°Р»СЊРЅР°СЏ СЃС‚Р°РІРєР° 25в­ђ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -7919,11 +7919,11 @@ def ultimate_crash_bet():
 
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         if user[0] < bet_amount:
             conn.close()
-            return jsonify({'success': False, 'error': 'Недостаточно звезд'})
+            return jsonify({'success': False, 'error': 'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р·РІРµР·Рґ'})
 
         cursor.execute('''
             SELECT id, status FROM ultimate_crash_games
@@ -7935,13 +7935,13 @@ def ultimate_crash_bet():
 
         if not game:
             conn.close()
-            return jsonify({'success': False, 'error': 'Нет активных игр для ставок'})
+            return jsonify({'success': False, 'error': 'РќРµС‚ Р°РєС‚РёРІРЅС‹С… РёРіСЂ РґР»СЏ СЃС‚Р°РІРѕРє'})
 
         game_id, game_status = game
 
         if game_status != 'waiting':
             conn.close()
-            return jsonify({'success': False, 'error': 'Игра уже началась'})
+            return jsonify({'success': False, 'error': 'РРіСЂР° СѓР¶Рµ РЅР°С‡Р°Р»Р°СЃСЊ'})
 
         cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
                      (bet_amount, user_id))
@@ -7954,34 +7954,34 @@ def ultimate_crash_bet():
         bet_id = cursor.lastrowid
 
         add_history_record(user_id, 'ultimate_crash_bet', -bet_amount,
-                         f'Ставка в Ultimate Crash: {bet_amount}⭐')
+                         f'РЎС‚Р°РІРєР° РІ Ultimate Crash: {bet_amount}в­ђ')
 
         conn.commit()
         conn.close()
 
-        logger.info(f"✅ Ставка размещена: {bet_amount} (ID: {bet_id})")
+        logger.info(f"вњ… РЎС‚Р°РІРєР° СЂР°Р·РјРµС‰РµРЅР°: {bet_amount} (ID: {bet_id})")
 
         return jsonify({
             'success': True,
             'bet_id': bet_id,
             'game_id': game_id,
-            'message': 'Ставка размещена!'
+            'message': 'РЎС‚Р°РІРєР° СЂР°Р·РјРµС‰РµРЅР°!'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка ставки Ultimate Crash: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃС‚Р°РІРєРё Ultimate Crash: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/ultimate-crash/cashout', methods=['POST'])
 def ultimate_crash_cashout():
-    """Забрать выигрыш в Ultimate Crash"""
+    """Р—Р°Р±СЂР°С‚СЊ РІС‹РёРіСЂС‹С€ РІ Ultimate Crash"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
         cashout_multiplier = data.get('cashout_multiplier', 1.0)
 
         if not user_id:
-            return jsonify({'success': False, 'error': 'ID пользователя не указан'})
+            return jsonify({'success': False, 'error': 'ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ СѓРєР°Р·Р°РЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -7996,7 +7996,7 @@ def ultimate_crash_cashout():
 
         if not game:
             conn.close()
-            return jsonify({'success': False, 'error': 'Нет активной игры'})
+            return jsonify({'success': False, 'error': 'РќРµС‚ Р°РєС‚РёРІРЅРѕР№ РёРіСЂС‹'})
 
         game_id, current_mult = game[0], float(game[1]) if game[1] else 1.0
 
@@ -8010,7 +8010,7 @@ def ultimate_crash_cashout():
 
         if not bet:
             conn.close()
-            return jsonify({'success': False, 'error': 'Активная ставка не найдена'})
+            return jsonify({'success': False, 'error': 'РђРєС‚РёРІРЅР°СЏ СЃС‚Р°РІРєР° РЅРµ РЅР°Р№РґРµРЅР°'})
 
         bet_id, bet_amount = bet
 
@@ -8037,27 +8037,27 @@ def ultimate_crash_cashout():
                      (exp_gained, user_id))
 
         add_history_record(user_id, 'ultimate_crash_win', win_amount,
-                         f'Выигрыш в Ultimate Crash: x{final_multiplier:.2f}')
+                         f'Р’С‹РёРіСЂС‹С€ РІ Ultimate Crash: x{final_multiplier:.2f}')
 
         conn.commit()
         conn.close()
 
-        logger.info(f"✅ Кэшаут: {win_amount} (x{final_multiplier:.2f})")
+        logger.info(f"вњ… РљСЌС€Р°СѓС‚: {win_amount} (x{final_multiplier:.2f})")
 
         return jsonify({
             'success': True,
             'win_amount': win_amount,
             'multiplier': final_multiplier,
-            'message': f'Вы выиграли {win_amount}⭐!'
+            'message': f'Р’С‹ РІС‹РёРіСЂР°Р»Рё {win_amount}в­ђ!'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка кэшаута Ultimate Crash: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РєСЌС€Р°СѓС‚Р° Ultimate Crash: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/ultimate-crash/game-state', methods=['GET'])
 def ultimate_crash_game_state():
-    """Полное состояние игры с учетом времени (с обработкой блокировок)"""
+    """РџРѕР»РЅРѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ РёРіСЂС‹ СЃ СѓС‡РµС‚РѕРј РІСЂРµРјРµРЅРё (СЃ РѕР±СЂР°Р±РѕС‚РєРѕР№ Р±Р»РѕРєРёСЂРѕРІРѕРє)"""
     max_retries = 3
     retry_delay = 0.1
 
@@ -8098,22 +8098,22 @@ def ultimate_crash_game_state():
 
             game_id, status, current_mult, target_mult, start_time, created_at = game
 
-            # Упрощенная обработка времени
+            # РЈРїСЂРѕС‰РµРЅРЅР°СЏ РѕР±СЂР°Р±РѕС‚РєР° РІСЂРµРјРµРЅРё
             import time as time_module
 
             if start_time:
                 try:
-                    # Преобразуем строку времени в timestamp
+                    # РџСЂРµРѕР±СЂР°Р·СѓРµРј СЃС‚СЂРѕРєСѓ РІСЂРµРјРµРЅРё РІ timestamp
                     if isinstance(start_time, str):
-                        # Убираем миллисекунды если есть
+                        # РЈР±РёСЂР°РµРј РјРёР»Р»РёСЃРµРєСѓРЅРґС‹ РµСЃР»Рё РµСЃС‚СЊ
                         if '.' in start_time:
                             start_time = start_time.split('.')[0]
 
-                        # Парсим время
+                        # РџР°СЂСЃРёРј РІСЂРµРјСЏ
                         try:
                             start_dt = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
                         except:
-                            # Пробуем другие форматы
+                            # РџСЂРѕР±СѓРµРј РґСЂСѓРіРёРµ С„РѕСЂРјР°С‚С‹
                             try:
                                 start_dt = datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S')
                             except:
@@ -8123,7 +8123,7 @@ def ultimate_crash_game_state():
 
                     start_timestamp = time_module.mktime(start_dt.timetuple())
                 except Exception as e:
-                    logger.error(f"Ошибка парсинга времени: {e}")
+                    logger.error(f"РћС€РёР±РєР° РїР°СЂСЃРёРЅРіР° РІСЂРµРјРµРЅРё: {e}")
                     start_timestamp = time_module.time() - 30
             else:
                 start_timestamp = time_module.time() - 30
@@ -8134,7 +8134,7 @@ def ultimate_crash_game_state():
             time_remaining = 0
             next_phase = status
 
-            # Фаза 1: Ожидание (15 секунд)
+            # Р¤Р°Р·Р° 1: РћР¶РёРґР°РЅРёРµ (15 СЃРµРєСѓРЅРґ)
             if status == 'waiting':
                 time_remaining = max(0, 15 - elapsed)
                 if time_remaining <= 0:
@@ -8142,58 +8142,58 @@ def ultimate_crash_game_state():
                     cursor.execute('UPDATE ultimate_crash_games SET status = "counting" WHERE id = ?', (game_id,))
                     conn.commit()
                     time_remaining = 5
-            # Фаза 2: Отсчет (5 секунд)
+            # Р¤Р°Р·Р° 2: РћС‚СЃС‡РµС‚ (5 СЃРµРєСѓРЅРґ)
             elif status == 'counting':
                 time_remaining = max(0, 5 - (elapsed - 15))
                 if time_remaining <= 0:
                     next_phase = 'flying'
                     cursor.execute('UPDATE ultimate_crash_games SET status = "flying" WHERE id = ?', (game_id,))
                     conn.commit()
-                    time_remaining = 30  # Максимальное время полета
-            # Фаза 3: Полет
+                    time_remaining = 30  # РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ РІСЂРµРјСЏ РїРѕР»РµС‚Р°
+            # Р¤Р°Р·Р° 3: РџРѕР»РµС‚
             elif status == 'flying':
                 current_mult_float = float(current_mult) if current_mult else 1.0
                 target_mult_float = float(target_mult) if target_mult else 5.0
 
-                # Расчет оставшегося времени полета с разной скоростью
+                # Р Р°СЃС‡РµС‚ РѕСЃС‚Р°РІС€РµРіРѕСЃСЏ РІСЂРµРјРµРЅРё РїРѕР»РµС‚Р° СЃ СЂР°Р·РЅРѕР№ СЃРєРѕСЂРѕСЃС‚СЊСЋ
                 if current_mult_float >= target_mult_float:
                     time_remaining = 0
                 elif current_mult_float < 1.5:
-                    # 5 секунд до 1.5x
+                    # 5 СЃРµРєСѓРЅРґ РґРѕ 1.5x
                     progress = (current_mult_float - 1.0) / 0.5
                     time_remaining = (1.5 - current_mult_float) * (5 / 0.5)
                 elif current_mult_float < 2.0:
-                    # 3 секунды от 1.5 до 2.0
+                    # 3 СЃРµРєСѓРЅРґС‹ РѕС‚ 1.5 РґРѕ 2.0
                     progress = 1.0 + (current_mult_float - 1.5) / 0.5
                     time_remaining = (2.0 - current_mult_float) * (3 / 0.5)
                 elif current_mult_float < 4.0:
-                    # 6 секунд от 2.0 до 4.0
+                    # 6 СЃРµРєСѓРЅРґ РѕС‚ 2.0 РґРѕ 4.0
                     progress = 2.0 + (current_mult_float - 2.0) / 2.0
                     time_remaining = (4.0 - current_mult_float) * (6 / 2.0)
                 else:
-                    # Быстрее после 4.0
+                    # Р‘С‹СЃС‚СЂРµРµ РїРѕСЃР»Рµ 4.0
                     progress = 3.0 + (current_mult_float - 4.0)
                     time_remaining = (target_mult_float - current_mult_float) * 1.5
 
                 time_remaining = max(0.1, time_remaining)
 
-                # Медленно увеличиваем множитель
+                # РњРµРґР»РµРЅРЅРѕ СѓРІРµР»РёС‡РёРІР°РµРј РјРЅРѕР¶РёС‚РµР»СЊ
                 if current_mult_float < target_mult_float:
-                    increment = 0.02  # Базовое увеличение
+                    increment = 0.02  # Р‘Р°Р·РѕРІРѕРµ СѓРІРµР»РёС‡РµРЅРёРµ
 
-                    # Разная скорость на разных интервалах
+                    # Р Р°Р·РЅР°СЏ СЃРєРѕСЂРѕСЃС‚СЊ РЅР° СЂР°Р·РЅС‹С… РёРЅС‚РµСЂРІР°Р»Р°С…
                     if current_mult_float < 1.5:
-                        increment = 0.02 * (5 / 15)  # Медленнее
+                        increment = 0.02 * (5 / 15)  # РњРµРґР»РµРЅРЅРµРµ
                     elif current_mult_float < 2.0:
-                        increment = 0.016 * (3 / 15)  # Средняя скорость
+                        increment = 0.016 * (3 / 15)  # РЎСЂРµРґРЅСЏСЏ СЃРєРѕСЂРѕСЃС‚СЊ
                     elif current_mult_float < 4.0:
-                        increment = 0.033 * (6 / 15)  # Быстрее
+                        increment = 0.033 * (6 / 15)  # Р‘С‹СЃС‚СЂРµРµ
                     else:
-                        increment = 0.066 * (2 / 15)  # Очень быстро
+                        increment = 0.066 * (2 / 15)  # РћС‡РµРЅСЊ Р±С‹СЃС‚СЂРѕ
 
-                    # Учитываем время между запросами
-                    time_since_last_update = min(elapsed, 2.0)  # Макс 2 секунды
-                    increment = increment * time_since_last_update * 10  # Масштабируем
+                    # РЈС‡РёС‚С‹РІР°РµРј РІСЂРµРјСЏ РјРµР¶РґСѓ Р·Р°РїСЂРѕСЃР°РјРё
+                    time_since_last_update = min(elapsed, 2.0)  # РњР°РєСЃ 2 СЃРµРєСѓРЅРґС‹
+                    increment = increment * time_since_last_update * 10  # РњР°СЃС€С‚Р°Р±РёСЂСѓРµРј
 
                     new_multiplier = round(current_mult_float + increment, 2)
                     if new_multiplier > target_mult_float:
@@ -8239,21 +8239,21 @@ def ultimate_crash_game_state():
 
         except sqlite3.OperationalError as e:
             if "database is locked" in str(e) and attempt < max_retries - 1:
-                logger.warning(f"🔒 База заблокирована, повторная попытка {attempt + 1}/{max_retries}")
+                logger.warning(f"рџ”’ Р‘Р°Р·Р° Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅР°, РїРѕРІС‚РѕСЂРЅР°СЏ РїРѕРїС‹С‚РєР° {attempt + 1}/{max_retries}")
                 try:
                     if 'conn' in locals():
                         conn.close()
                 except:
                     pass
-                time.sleep(retry_delay * (attempt + 1))  # Экспоненциальная задержка
+                time.sleep(retry_delay * (attempt + 1))  # Р­РєСЃРїРѕРЅРµРЅС†РёР°Р»СЊРЅР°СЏ Р·Р°РґРµСЂР¶РєР°
                 continue
             else:
-                logger.error(f"❌ Критическая ошибка базы данных: {e}")
-                return jsonify({'success': False, 'error': 'Ошибка доступа к базе данных'})
+                logger.error(f"вќЊ РљСЂРёС‚РёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° Р±Р°Р·С‹ РґР°РЅРЅС‹С…: {e}")
+                return jsonify({'success': False, 'error': 'РћС€РёР±РєР° РґРѕСЃС‚СѓРїР° Рє Р±Р°Р·Рµ РґР°РЅРЅС‹С…'})
 
         except Exception as e:
-            logger.error(f"❌ Ошибка получения состояния игры: {e}")
-            logger.error(f"❌ Трассировка: {traceback.format_exc()}")
+            logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃРѕСЃС‚РѕСЏРЅРёСЏ РёРіСЂС‹: {e}")
+            logger.error(f"вќЊ РўСЂР°СЃСЃРёСЂРѕРІРєР°: {traceback.format_exc()}")
             try:
                 if 'conn' in locals():
                     conn.close()
@@ -8263,12 +8263,12 @@ def ultimate_crash_game_state():
 
 @app.route('/api/ultimate-crash/user-bet', methods=['GET'])
 def get_user_ultimate_crash_bet():
-    """Получение активной ставки пользователя"""
+    """РџРѕР»СѓС‡РµРЅРёРµ Р°РєС‚РёРІРЅРѕР№ СЃС‚Р°РІРєРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         user_id = request.args.get('user_id')
 
         if not user_id:
-            return jsonify({'success': False, 'error': 'ID пользователя не указан'})
+            return jsonify({'success': False, 'error': 'ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ СѓРєР°Р·Р°РЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -8313,24 +8313,24 @@ def get_user_ultimate_crash_bet():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения ставки пользователя: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°РІРєРё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/ultimate-crash/place-bet-final', methods=['POST'])
 def place_bet_final():
-    """Размещение ставки с проверкой баланса"""
+    """Р Р°Р·РјРµС‰РµРЅРёРµ СЃС‚Р°РІРєРё СЃ РїСЂРѕРІРµСЂРєРѕР№ Р±Р°Р»Р°РЅСЃР°"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
         bet_amount = data.get('bet_amount', 0)
 
-        logger.info(f"🎯 Ставка Ultimate Crash: user {user_id}, сумма {bet_amount}")
+        logger.info(f"рџЋЇ РЎС‚Р°РІРєР° Ultimate Crash: user {user_id}, СЃСѓРјРјР° {bet_amount}")
 
         if not user_id:
-            return jsonify({'success': False, 'error': 'ID пользователя не указан'})
+            return jsonify({'success': False, 'error': 'ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ СѓРєР°Р·Р°РЅ'})
 
         if bet_amount < 10:
-            return jsonify({'success': False, 'error': 'Минимальная ставка 25'})
+            return jsonify({'success': False, 'error': 'РњРёРЅРёРјР°Р»СЊРЅР°СЏ СЃС‚Р°РІРєР° 25'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -8340,13 +8340,13 @@ def place_bet_final():
 
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         current_balance = user[0] or 0
 
         if current_balance < bet_amount:
             conn.close()
-            return jsonify({'success': False, 'error': f'Недостаточно средств. Баланс: {current_balance}'})
+            return jsonify({'success': False, 'error': f'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЃСЂРµРґСЃС‚РІ. Р‘Р°Р»Р°РЅСЃ: {current_balance}'})
 
         cursor.execute('''
             SELECT id, status FROM ultimate_crash_games
@@ -8369,13 +8369,13 @@ def place_bet_final():
 
         if game_status not in ('waiting', 'counting'):
             conn.close()
-            return jsonify({'success': False, 'error': 'Игра уже началась'})
+            return jsonify({'success': False, 'error': 'РРіСЂР° СѓР¶Рµ РЅР°С‡Р°Р»Р°СЃСЊ'})
 
-        # Проверяем время до старта
+        # РџСЂРѕРІРµСЂСЏРµРј РІСЂРµРјСЏ РґРѕ СЃС‚Р°СЂС‚Р°
         cached = get_crash_cache()
         if cached.get('status') == 'counting' and cached.get('time_remaining', 5) < 0.5:
             conn.close()
-            return jsonify({'success': False, 'error': 'Слишком поздно! Ставка на след. раунд'})
+            return jsonify({'success': False, 'error': 'РЎР»РёС€РєРѕРј РїРѕР·РґРЅРѕ! РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ'})
 
         cursor.execute('''
             SELECT id FROM ultimate_crash_bets
@@ -8386,7 +8386,7 @@ def place_bet_final():
 
         if existing_bet:
             conn.close()
-            return jsonify({'success': False, 'error': 'У вас уже есть активная ставка'})
+            return jsonify({'success': False, 'error': 'РЈ РІР°СЃ СѓР¶Рµ РµСЃС‚СЊ Р°РєС‚РёРІРЅР°СЏ СЃС‚Р°РІРєР°'})
 
         cursor.execute('UPDATE users SET balance_stars = balance_stars - ?, total_crash_bets = COALESCE(total_crash_bets, 0) + 1, total_bet_volume = COALESCE(total_bet_volume, 0) + ? WHERE id = ?',
                      (bet_amount, bet_amount, user_id))
@@ -8399,7 +8399,7 @@ def place_bet_final():
         bet_id = cursor.lastrowid
 
         add_history_record(user_id, 'ultimate_crash_bet', -bet_amount,
-                         f'Ставка в Ultimate Crash: {bet_amount}')
+                         f'РЎС‚Р°РІРєР° РІ Ultimate Crash: {bet_amount}')
 
         conn.commit()
 
@@ -8408,31 +8408,31 @@ def place_bet_final():
 
         conn.close()
 
-        logger.info(f"✅ Ставка размещена: {bet_amount} (ID: {bet_id})")
+        logger.info(f"вњ… РЎС‚Р°РІРєР° СЂР°Р·РјРµС‰РµРЅР°: {bet_amount} (ID: {bet_id})")
 
         return jsonify({
             'success': True,
             'bet_id': bet_id,
             'game_id': game_id,
             'new_balance': new_balance,
-            'message': f'Ставка {bet_amount} принята!'
+            'message': f'РЎС‚Р°РІРєР° {bet_amount} РїСЂРёРЅСЏС‚Р°!'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка ставки: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃС‚Р°РІРєРё: {e}")
         try: conn.close()
         except: pass
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/ultimate-crash/cashout-final', methods=['POST'])
 def cashout_final():
-    """Забрать выигрыш с записью в историю"""
+    """Р—Р°Р±СЂР°С‚СЊ РІС‹РёРіСЂС‹С€ СЃ Р·Р°РїРёСЃСЊСЋ РІ РёСЃС‚РѕСЂРёСЋ"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
 
         if not user_id:
-            return jsonify({'success': False, 'error': 'ID пользователя не указан'})
+            return jsonify({'success': False, 'error': 'ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РЅРµ СѓРєР°Р·Р°РЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -8447,7 +8447,7 @@ def cashout_final():
 
         if not game:
             conn.close()
-            return jsonify({'success': False, 'error': 'Нет активной игры'})
+            return jsonify({'success': False, 'error': 'РќРµС‚ Р°РєС‚РёРІРЅРѕР№ РёРіСЂС‹'})
 
         game_id, current_mult = game[0], float(game[1]) if game[1] else 1.0
 
@@ -8461,7 +8461,7 @@ def cashout_final():
 
         if not bet:
             conn.close()
-            return jsonify({'success': False, 'error': 'Активная ставка не найдена'})
+            return jsonify({'success': False, 'error': 'РђРєС‚РёРІРЅР°СЏ СЃС‚Р°РІРєР° РЅРµ РЅР°Р№РґРµРЅР°'})
 
         bet_id, bet_amount = bet
 
@@ -8483,10 +8483,10 @@ def cashout_final():
         ''', (win_amount, win_amount, user_id))
 
         exp_gained = max(5, win_amount // 100)
-        add_experience(user_id, exp_gained, f"Выигрыш в Ultimate Crash x{current_mult:.2f}")
+        add_experience(user_id, exp_gained, f"Р’С‹РёРіСЂС‹С€ РІ Ultimate Crash x{current_mult:.2f}")
 
         add_history_record(user_id, 'ultimate_crash_win', win_amount,
-                         f'Выигрыш в Ultimate Crash: x{current_mult:.2f}')
+                         f'Р’С‹РёРіСЂС‹С€ РІ Ultimate Crash: x{current_mult:.2f}')
 
         cursor.execute('SELECT first_name FROM users WHERE id = ?', (user_id,))
         user = cursor.fetchone()
@@ -8495,13 +8495,13 @@ def cashout_final():
         cursor.execute('''
             INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (user_id, user_name, f'Выигрыш в Crash x{current_mult:.2f}',
+        ''', (user_id, user_name, f'Р’С‹РёРіСЂС‹С€ РІ Crash x{current_mult:.2f}',
               '/static/img/star.png', win_amount, 'Ultimate Crash'))
 
         cursor.execute('''
             INSERT INTO case_open_history (user_id, case_id, case_name, gift_id, gift_name, gift_image, gift_value, cost, cost_type)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, 0, 'Ultimate Crash', 0, f'Выигрыш x{current_mult:.2f}',
+        ''', (user_id, 0, 'Ultimate Crash', 0, f'Р’С‹РёРіСЂС‹С€ x{current_mult:.2f}',
               '/static/img/star.png', win_amount, bet_amount, 'stars'))
 
         conn.commit()
@@ -8511,25 +8511,25 @@ def cashout_final():
 
         conn.close()
 
-        logger.info(f"✅ Кэшаут: {win_amount} (x{current_mult:.2f})")
+        logger.info(f"вњ… РљСЌС€Р°СѓС‚: {win_amount} (x{current_mult:.2f})")
 
         return jsonify({
             'success': True,
             'win_amount': win_amount,
             'multiplier': current_mult,
             'new_balance': new_balance,
-            'message': f'Вы выиграли {win_amount}!'
+            'message': f'Р’С‹ РІС‹РёРіСЂР°Р»Рё {win_amount}!'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка кэшаута: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РєСЌС€Р°СѓС‚Р°: {e}")
         try: conn.close()
         except: pass
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/ultimate-crash/history', methods=['GET'])
 def get_ultimate_crash_history_api():
-    """Получение истории множителей"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РёСЃС‚РѕСЂРёРё РјРЅРѕР¶РёС‚РµР»РµР№"""
     try:
         limit = request.args.get('limit', 10, type=int)
 
@@ -8554,14 +8554,14 @@ def get_ultimate_crash_history_api():
                 'finished_at': item[2]
             })
 
-        logger.info(f"📊 Отправлено {len(history_list)} записей истории")
+        logger.info(f"рџ“Љ РћС‚РїСЂР°РІР»РµРЅРѕ {len(history_list)} Р·Р°РїРёСЃРµР№ РёСЃС‚РѕСЂРёРё")
         return jsonify({
             'success': True,
             'history': history_list
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения истории: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё: {e}")
         return jsonify({
             'success': False,
             'error': str(e),
@@ -8571,22 +8571,22 @@ def get_ultimate_crash_history_api():
 
 @app.route('/api/ultimate-crash/quick-status', methods=['GET'])
 def ultimate_crash_quick_status():
-    """Быстрый статус без блокировок базы данных"""
+    """Р‘С‹СЃС‚СЂС‹Р№ СЃС‚Р°С‚СѓСЃ Р±РµР· Р±Р»РѕРєРёСЂРѕРІРѕРє Р±Р°Р·С‹ РґР°РЅРЅС‹С…"""
     try:
-        # Используем кэширование или файловую систему для минимальной блокировки
+        # РСЃРїРѕР»СЊР·СѓРµРј РєСЌС€РёСЂРѕРІР°РЅРёРµ РёР»Рё С„Р°Р№Р»РѕРІСѓСЋ СЃРёСЃС‚РµРјСѓ РґР»СЏ РјРёРЅРёРјР°Р»СЊРЅРѕР№ Р±Р»РѕРєРёСЂРѕРІРєРё
         status_file = os.path.join(BASE_PATH, 'data', 'crash_status.json')
 
-        # Пытаемся прочитать из файла
+        # РџС‹С‚Р°РµРјСЃСЏ РїСЂРѕС‡РёС‚Р°С‚СЊ РёР· С„Р°Р№Р»Р°
         if os.path.exists(status_file):
             try:
                 with open(status_file, 'r', encoding='utf-8') as f:
                     cached_status = json.load(f)
 
-                # Проверяем, не устарели ли данные (максимум 2 секунды)
+                # РџСЂРѕРІРµСЂСЏРµРј, РЅРµ СѓСЃС‚Р°СЂРµР»Рё Р»Рё РґР°РЅРЅС‹Рµ (РјР°РєСЃРёРјСѓРј 2 СЃРµРєСѓРЅРґС‹)
                 cache_time = cached_status.get('timestamp', 0)
                 current_time = time.time()
 
-                if current_time - cache_time < 2:  # 2 секунды кэш
+                if current_time - cache_time < 2:  # 2 СЃРµРєСѓРЅРґС‹ РєСЌС€
                     return jsonify({
                         'success': True,
                         'game': cached_status.get('game', {
@@ -8601,7 +8601,7 @@ def ultimate_crash_quick_status():
             except:
                 pass
 
-        # Если кэш устарел или его нет, получаем из базы с быстрым соединением
+        # Р•СЃР»Рё РєСЌС€ СѓСЃС‚Р°СЂРµР» РёР»Рё РµРіРѕ РЅРµС‚, РїРѕР»СѓС‡Р°РµРј РёР· Р±Р°Р·С‹ СЃ Р±С‹СЃС‚СЂС‹Рј СЃРѕРµРґРёРЅРµРЅРёРµРј
         conn = sqlite3.connect(os.path.join(BASE_PATH, 'data', 'raswet_gifts.db'), timeout=5)
         conn.execute("PRAGMA busy_timeout = 5000")
         cursor = conn.cursor()
@@ -8619,7 +8619,7 @@ def ultimate_crash_quick_status():
         if game:
             game_id, status, current_mult, target_mult = game
 
-            # Простой расчет времени
+            # РџСЂРѕСЃС‚РѕР№ СЂР°СЃС‡РµС‚ РІСЂРµРјРµРЅРё
             time_remaining = 10.0
             if status == 'counting':
                 time_remaining = 5.0
@@ -8636,7 +8636,7 @@ def ultimate_crash_quick_status():
                 'time_remaining': round(time_remaining, 1)
             }
         else:
-            # Демо-данные
+            # Р”РµРјРѕ-РґР°РЅРЅС‹Рµ
             game_data = {
                 'id': 1,
                 'status': 'waiting',
@@ -8645,7 +8645,7 @@ def ultimate_crash_quick_status():
                 'time_remaining': 10.0
             }
 
-        # Кэшируем результат
+        # РљСЌС€РёСЂСѓРµРј СЂРµР·СѓР»СЊС‚Р°С‚
         try:
             cache_data = {
                 'timestamp': time.time(),
@@ -8663,8 +8663,8 @@ def ultimate_crash_quick_status():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка quick-status: {e}")
-        # Всегда возвращаем успех с демо-данными
+        logger.error(f"вќЊ РћС€РёР±РєР° quick-status: {e}")
+        # Р’СЃРµРіРґР° РІРѕР·РІСЂР°С‰Р°РµРј СѓСЃРїРµС… СЃ РґРµРјРѕ-РґР°РЅРЅС‹РјРё
         return jsonify({
             'success': True,
             'game': {
@@ -8674,19 +8674,19 @@ def ultimate_crash_quick_status():
                 'target_multiplier': 5.0,
                 'time_remaining': 10.0
             },
-            'error': 'Используются демо-данные'
+            'error': 'РСЃРїРѕР»СЊР·СѓСЋС‚СЃСЏ РґРµРјРѕ-РґР°РЅРЅС‹Рµ'
         })
 
 @app.route('/api/ultimate-crash/recent-bets', methods=['GET'])
 def get_recent_ultimate_crash_bets():
-    """Получение ставок текущего раунда"""
+    """РџРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°РІРѕРє С‚РµРєСѓС‰РµРіРѕ СЂР°СѓРЅРґР°"""
     try:
         limit = request.args.get('limit', 20, type=int)
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Предпочитаем активную игру; если её нет, берём последнюю
+        # РџСЂРµРґРїРѕС‡РёС‚Р°РµРј Р°РєС‚РёРІРЅСѓСЋ РёРіСЂСѓ; РµСЃР»Рё РµС‘ РЅРµС‚, Р±РµСЂС‘Рј РїРѕСЃР»РµРґРЅСЋСЋ
         cursor.execute('''
             SELECT id, status, current_multiplier
             FROM ultimate_crash_games
@@ -8705,7 +8705,7 @@ def get_recent_ultimate_crash_bets():
         current_game_status = current_game[1] if current_game else None
         current_game_mult = float(current_game[2]) if current_game and current_game[2] else 1.0
 
-        # Self-heal: если боты не сгенерированы для активного раунда, создаём их on-demand
+        # Self-heal: РµСЃР»Рё Р±РѕС‚С‹ РЅРµ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅС‹ РґР»СЏ Р°РєС‚РёРІРЅРѕРіРѕ СЂР°СѓРЅРґР°, СЃРѕР·РґР°С‘Рј РёС… on-demand
         if current_game_id and current_game_status in ('waiting', 'counting', 'flying'):
             if not _crash_bots_cache.get('loaded'):
                 _load_crash_bots()
@@ -8751,7 +8751,7 @@ def get_recent_ultimate_crash_bets():
                 'photo_url': bet[9] or '/static/img/default_avatar.png'
             })
 
-        # Bots disabled — skip fallback and bot bets
+        # Bots disabled вЂ” skip fallback and bot bets
         # bot_bets = _get_bot_bets_for_api(current_game_id)
         # bets_list.extend(bot_bets)
 
@@ -8761,7 +8761,7 @@ def get_recent_ultimate_crash_bets():
         })
 
     except Exception as e:
-        # Не логируем каждую ошибку - слишком много спама
+        # РќРµ Р»РѕРіРёСЂСѓРµРј РєР°Р¶РґСѓСЋ РѕС€РёР±РєСѓ - СЃР»РёС€РєРѕРј РјРЅРѕРіРѕ СЃРїР°РјР°
         return jsonify({
             'success': True,
             'bets': []
@@ -8775,7 +8775,7 @@ def admin_crash_status():
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         game_cache = get_crash_cache()
         admin_ctrl = get_admin_crash_control()
@@ -8795,18 +8795,18 @@ def admin_force_crash():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         game_cache = get_crash_cache()
         if game_cache.get('status') != 'flying':
-            return jsonify({'success': False, 'error': 'Игра не в полёте'})
+            return jsonify({'success': False, 'error': 'РРіСЂР° РЅРµ РІ РїРѕР»С‘С‚Рµ'})
         
         set_admin_crash_control('force_crash', True)
-        logger.info(f"🎮 ADMIN {admin_id} triggered force crash")
+        logger.info(f"рџЋ® ADMIN {admin_id} triggered force crash")
         
         return jsonify({
             'success': True,
-            'message': 'Краш активирован!',
+            'message': 'РљСЂР°С€ Р°РєС‚РёРІРёСЂРѕРІР°РЅ!',
             'current_multiplier': game_cache.get('current_multiplier')
         })
     except Exception as e:
@@ -8819,18 +8819,18 @@ def admin_set_next_multiplier():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         multiplier = data.get('multiplier')
         if not multiplier or float(multiplier) < 1.01:
-            return jsonify({'success': False, 'error': 'Множитель должен быть >= 1.01'})
+            return jsonify({'success': False, 'error': 'РњРЅРѕР¶РёС‚РµР»СЊ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ >= 1.01'})
         
         set_admin_crash_control('next_multiplier', float(multiplier))
-        logger.info(f"🎮 ADMIN {admin_id} set next multiplier: {multiplier}x")
+        logger.info(f"рџЋ® ADMIN {admin_id} set next multiplier: {multiplier}x")
         
         return jsonify({
             'success': True,
-            'message': f'Следующий краш будет на {multiplier}x'
+            'message': f'РЎР»РµРґСѓСЋС‰РёР№ РєСЂР°С€ Р±СѓРґРµС‚ РЅР° {multiplier}x'
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -8842,7 +8842,7 @@ def admin_set_multiplier_range():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         min_mult = float(data.get('min', 1.0))
         max_mult = float(data.get('max', 50.0))
@@ -8859,11 +8859,11 @@ def admin_set_multiplier_range():
             _admin_crash_control['multiplier_max'] = max_mult
             _admin_crash_control['use_custom_range'] = enabled
         
-        logger.info(f"🎮 ADMIN {admin_id} set range: {min_mult}x - {max_mult}x (enabled: {enabled})")
+        logger.info(f"рџЋ® ADMIN {admin_id} set range: {min_mult}x - {max_mult}x (enabled: {enabled})")
         
         return jsonify({
             'success': True,
-            'message': f'Диапазон {min_mult}x - {max_mult}x ({"ВКЛ" if enabled else "ВЫКЛ"})'
+            'message': f'Р”РёР°РїР°Р·РѕРЅ {min_mult}x - {max_mult}x ({"Р’РљР›" if enabled else "Р’Р«РљР›"})'
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -8875,24 +8875,24 @@ def admin_toggle_manual():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         admin_ctrl = get_admin_crash_control()
         new_state = not admin_ctrl.get('manual_mode', False)
         set_admin_crash_control('manual_mode', new_state)
         
-        logger.info(f"🎮 ADMIN {admin_id} manual mode: {new_state}")
+        logger.info(f"рџЋ® ADMIN {admin_id} manual mode: {new_state}")
         
         return jsonify({
             'success': True,
             'manual_mode': new_state,
-            'message': f'Ручной режим {"ВКЛ" if new_state else "ВЫКЛ"}'
+            'message': f'Р СѓС‡РЅРѕР№ СЂРµР¶РёРј {"Р’РљР›" if new_state else "Р’Р«РљР›"}'
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 
-# ─── CRASH BOTS ADMIN API ───
+# в”Ђв”Ђв”Ђ CRASH BOTS ADMIN API в”Ђв”Ђв”Ђ
 
 @app.route('/api/admin/crash-bots/settings', methods=['GET', 'POST'])
 def api_admin_crash_bots_settings():
@@ -8900,7 +8900,7 @@ def api_admin_crash_bots_settings():
     try:
         admin_id = request.args.get('admin_id') or (request.get_json() or {}).get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         if request.method == 'GET':
             return jsonify({
@@ -8911,7 +8911,7 @@ def api_admin_crash_bots_settings():
                 'active_game_bots': {str(k): len(v) for k, v in _crash_bots_active.items()},
             })
 
-        # POST — update settings
+        # POST вЂ” update settings
         data = request.get_json()
         enabled = data.get('enabled')
         min_bots = data.get('min_active_bots')
@@ -8934,7 +8934,7 @@ def api_admin_crash_bots_settings():
         conn.commit()
         conn.close()
         _load_crash_bots()
-        return jsonify({'success': True, 'message': 'Настройки ботов обновлены'})
+        return jsonify({'success': True, 'message': 'РќР°СЃС‚СЂРѕР№РєРё Р±РѕС‚РѕРІ РѕР±РЅРѕРІР»РµРЅС‹'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -8945,7 +8945,7 @@ def api_admin_crash_bots_list():
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         return jsonify({
             'success': True,
             'bots': _crash_bots_cache.get('bots', []),
@@ -8963,7 +8963,7 @@ def api_admin_crash_bots_add():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         bot_name = data.get('bot_name', '').strip()
         if not bot_name:
@@ -8991,7 +8991,7 @@ def api_admin_crash_bots_add():
         conn.commit()
         conn.close()
         _load_crash_bots()
-        return jsonify({'success': True, 'bot_id': bot_id, 'message': f'Бот "{bot_name}" добавлен'})
+        return jsonify({'success': True, 'bot_id': bot_id, 'message': f'Р‘РѕС‚ "{bot_name}" РґРѕР±Р°РІР»РµРЅ'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -9003,7 +9003,7 @@ def api_admin_crash_bots_update():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         bot_id = data.get('bot_id')
         if not bot_id:
@@ -9025,7 +9025,7 @@ def api_admin_crash_bots_update():
             conn.commit()
         conn.close()
         _load_crash_bots()
-        return jsonify({'success': True, 'message': 'Бот обновлён'})
+        return jsonify({'success': True, 'message': 'Р‘РѕС‚ РѕР±РЅРѕРІР»С‘РЅ'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -9037,14 +9037,14 @@ def api_admin_crash_bots_delete():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         bot_id = data.get('bot_id')
         conn = get_db_connection()
         conn.execute('DELETE FROM crash_bots_config WHERE id = ?', (bot_id,))
         conn.commit()
         conn.close()
         _load_crash_bots()
-        return jsonify({'success': True, 'message': 'Бот удалён'})
+        return jsonify({'success': True, 'message': 'Р‘РѕС‚ СѓРґР°Р»С‘РЅ'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -9056,7 +9056,7 @@ def api_admin_crash_bots_generate():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         count = min(int(data.get('count', 100)), 200)
         min_bet = int(data.get('min_bet', 25))
@@ -9085,14 +9085,14 @@ def api_admin_crash_bots_generate():
         conn.commit()
         conn.close()
         _load_crash_bots()
-        return jsonify({'success': True, 'created': created, 'message': f'Создано {created} ботов'})
+        return jsonify({'success': True, 'created': created, 'message': f'РЎРѕР·РґР°РЅРѕ {created} Р±РѕС‚РѕРІ'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/admin/users', methods=['GET'])
 def get_all_users():
-    """Получение списка всех пользователей"""
+    """РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° РІСЃРµС… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№"""
     try:
         # Admin check is optional for convenience (admin page itself is protected)
         limit = request.args.get('limit', 500, type=int)
@@ -9133,12 +9133,12 @@ def get_all_users():
         return jsonify({'success': True, 'users': users_list})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения списка пользователей: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃРїРёСЃРєР° РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats():
-    """Получение статистики для админ-панели"""
+    """РџРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°С‚РёСЃС‚РёРєРё РґР»СЏ Р°РґРјРёРЅ-РїР°РЅРµР»Рё"""
     try:
         # Admin check optional
 
@@ -9209,12 +9209,12 @@ def get_admin_stats():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения статистики: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/used-promos', methods=['GET'])
 def get_admin_used_promos():
-    """Получение использованных промокодов"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РёСЃРїРѕР»СЊР·РѕРІР°РЅРЅС‹С… РїСЂРѕРјРѕРєРѕРґРѕРІ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -9225,16 +9225,16 @@ def get_admin_used_promos():
         promos = [{'user_id': r[0], 'case_id': r[1], 'promo_code': r[2], 'used_at': r[3]} for r in rows]
         return jsonify({'success': True, 'promos': promos})
     except Exception as e:
-        logger.error(f"❌ Ошибка получения промокодов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїСЂРѕРјРѕРєРѕРґРѕРІ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/stats-optimized', methods=['GET'])
 def get_admin_stats_optimized():
-    """Оптимизированная статистика для админ-панели"""
+    """РћРїС‚РёРјРёР·РёСЂРѕРІР°РЅРЅР°СЏ СЃС‚Р°С‚РёСЃС‚РёРєР° РґР»СЏ Р°РґРјРёРЅ-РїР°РЅРµР»Рё"""
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -9281,12 +9281,12 @@ def get_admin_stats_optimized():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения оптимизированной статистики: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РѕРїС‚РёРјРёР·РёСЂРѕРІР°РЅРЅРѕР№ СЃС‚Р°С‚РёСЃС‚РёРєРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/set-balance', methods=['POST'])
 def admin_set_balance():
-    """Установка точного баланса пользователя"""
+    """РЈСЃС‚Р°РЅРѕРІРєР° С‚РѕС‡РЅРѕРіРѕ Р±Р°Р»Р°РЅСЃР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -9295,7 +9295,7 @@ def admin_set_balance():
         tickets = data.get('tickets', 0)
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -9305,7 +9305,7 @@ def admin_set_balance():
 
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         cursor.execute('SELECT balance_stars, balance_tickets FROM users WHERE id = ?', (target_user_id,))
         old_balance = cursor.fetchone()
@@ -9318,24 +9318,24 @@ def admin_set_balance():
 
         add_history_record(target_user_id, 'admin_set_balance',
                          stars_diff,
-                         f'Админ установил баланс: {stars}⭐ и {tickets}🎫 (было: {old_balance[0]}⭐ и {old_balance[1]}🎫)')
+                         f'РђРґРјРёРЅ СѓСЃС‚Р°РЅРѕРІРёР» Р±Р°Р»Р°РЅСЃ: {stars}в­ђ Рё {tickets}рџЋ« (Р±С‹Р»Рѕ: {old_balance[0]}в­ђ Рё {old_balance[1]}рџЋ«)')
 
         conn.commit()
         conn.close()
 
-        logger.info(f"🛠️ Админ {admin_id} установил баланс пользователя {target_user_id}: {stars}⭐ и {tickets}🎫")
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} СѓСЃС‚Р°РЅРѕРІРёР» Р±Р°Р»Р°РЅСЃ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {target_user_id}: {stars}в­ђ Рё {tickets}рџЋ«")
         return jsonify({
             'success': True,
-            'message': f'Баланс установлен: {stars}⭐ и {tickets}🎫'
+            'message': f'Р‘Р°Р»Р°РЅСЃ СѓСЃС‚Р°РЅРѕРІР»РµРЅ: {stars}в­ђ Рё {tickets}рџЋ«'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка установки баланса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё Р±Р°Р»Р°РЅСЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/update-balance', methods=['POST'])
 def admin_update_balance():
-    """Обновление баланса пользователя"""
+    """РћР±РЅРѕРІР»РµРЅРёРµ Р±Р°Р»Р°РЅСЃР° РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -9345,7 +9345,7 @@ def admin_update_balance():
         operation = data.get('operation', 'add')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -9355,37 +9355,37 @@ def admin_update_balance():
 
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         if operation == 'add':
             cursor.execute('UPDATE users SET balance_stars = balance_stars + ?, balance_tickets = balance_tickets + ? WHERE id = ?',
                          (stars, tickets, target_user_id))
-            operation_text = 'начислено'
+            operation_text = 'РЅР°С‡РёСЃР»РµРЅРѕ'
         else:
             cursor.execute('UPDATE users SET balance_stars = balance_stars - ?, balance_tickets = balance_tickets - ? WHERE id = ?',
                          (stars, tickets, target_user_id))
-            operation_text = 'списано'
+            operation_text = 'СЃРїРёСЃР°РЅРѕ'
 
         add_history_record(target_user_id, 'admin_operation',
                          stars if operation == 'add' else -stars,
-                         f'Админ операция: {operation_text} {stars}⭐ и {tickets}🎫')
+                         f'РђРґРјРёРЅ РѕРїРµСЂР°С†РёСЏ: {operation_text} {stars}в­ђ Рё {tickets}рџЋ«')
 
         conn.commit()
         conn.close()
 
-        logger.info(f"🛠️ Админ {admin_id} изменил баланс пользователя {target_user_id}: {operation_text} {stars}⭐ и {tickets}🎫")
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} РёР·РјРµРЅРёР» Р±Р°Р»Р°РЅСЃ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {target_user_id}: {operation_text} {stars}в­ђ Рё {tickets}рџЋ«")
         return jsonify({
             'success': True,
-            'message': f'Баланс обновлен: {operation_text} {stars}⭐ и {tickets}🎫'
+            'message': f'Р‘Р°Р»Р°РЅСЃ РѕР±РЅРѕРІР»РµРЅ: {operation_text} {stars}в­ђ Рё {tickets}рџЋ«'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка обновления баланса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ Р±Р°Р»Р°РЅСЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/add-inventory-item', methods=['POST'])
 def admin_add_inventory_item():
-    """Добавление подарка в инвентарь пользователя (админ)"""
+    """Р”РѕР±Р°РІР»РµРЅРёРµ РїРѕРґР°СЂРєР° РІ РёРЅРІРµРЅС‚Р°СЂСЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ (Р°РґРјРёРЅ)"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -9394,7 +9394,7 @@ def admin_add_inventory_item():
         quantity = data.get('quantity', 1)
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         gifts = load_gifts_cached()
         gift = next((g for g in gifts if g.get('id') == gift_id), None)
@@ -9405,16 +9405,16 @@ def admin_add_inventory_item():
             gift = next((g for g in frag_gifts if g.get('id') == gift_id or g.get('gift_key') == str(gift_id) or g.get('fragment_slug') == str(gift_id)), None)
 
         if not gift:
-            return jsonify({'success': False, 'error': 'Подарок не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕРґР°СЂРѕРє РЅРµ РЅР°Р№РґРµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Проверяем что пользователь существует
+        # РџСЂРѕРІРµСЂСЏРµРј С‡С‚Рѕ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ СЃСѓС‰РµСЃС‚РІСѓРµС‚
         cursor.execute('SELECT id FROM users WHERE id = ?', (user_id,))
         if not cursor.fetchone():
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         for _ in range(min(quantity, 100)):
             cursor.execute('''
@@ -9425,26 +9425,26 @@ def admin_add_inventory_item():
         conn.commit()
         conn.close()
 
-        logger.info(f"🛠️ Админ {admin_id} добавил {quantity}x '{gift['name']}' в инвентарь пользователя {user_id}")
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} РґРѕР±Р°РІРёР» {quantity}x '{gift['name']}' РІ РёРЅРІРµРЅС‚Р°СЂСЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {user_id}")
         return jsonify({
             'success': True,
-            'message': f'Добавлено {quantity}x {gift["name"]} в инвентарь'
+            'message': f'Р”РѕР±Р°РІР»РµРЅРѕ {quantity}x {gift["name"]} РІ РёРЅРІРµРЅС‚Р°СЂСЊ'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка добавления в инвентарь: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ РІ РёРЅРІРµРЅС‚Р°СЂСЊ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/remove-inventory-item', methods=['POST'])
 def admin_remove_inventory_item():
-    """Удаление предмета из инвентаря пользователя (админ)"""
+    """РЈРґР°Р»РµРЅРёРµ РїСЂРµРґРјРµС‚Р° РёР· РёРЅРІРµРЅС‚Р°СЂСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ (Р°РґРјРёРЅ)"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
         inventory_id = data.get('inventory_id')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -9454,31 +9454,31 @@ def admin_remove_inventory_item():
 
         if not item:
             conn.close()
-            return jsonify({'success': False, 'error': 'Предмет не найден'})
+            return jsonify({'success': False, 'error': 'РџСЂРµРґРјРµС‚ РЅРµ РЅР°Р№РґРµРЅ'})
 
         cursor.execute('DELETE FROM inventory WHERE id = ?', (inventory_id,))
         conn.commit()
         conn.close()
 
-        logger.info(f"🛠️ Админ {admin_id} удалил предмет #{inventory_id} из инвентаря")
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} СѓРґР°Р»РёР» РїСЂРµРґРјРµС‚ #{inventory_id} РёР· РёРЅРІРµРЅС‚Р°СЂСЏ")
         return jsonify({
             'success': True,
-            'message': 'Предмет удален из инвентаря'
+            'message': 'РџСЂРµРґРјРµС‚ СѓРґР°Р»РµРЅ РёР· РёРЅРІРµРЅС‚Р°СЂСЏ'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка удаления из инвентаря: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РёР· РёРЅРІРµРЅС‚Р°СЂСЏ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/reset-case-limits', methods=['POST'])
 def admin_reset_all_case_limits():
-    """Сброс всех лимитов кейсов (админ)"""
+    """РЎР±СЂРѕСЃ РІСЃРµС… Р»РёРјРёС‚РѕРІ РєРµР№СЃРѕРІ (Р°РґРјРёРЅ)"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         cases = load_cases()
         for case in cases:
@@ -9487,19 +9487,19 @@ def admin_reset_all_case_limits():
 
         save_cases(cases)
 
-        logger.info(f"🛠️ Админ {admin_id} сбросил все лимиты кейсов")
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} СЃР±СЂРѕСЃРёР» РІСЃРµ Р»РёРјРёС‚С‹ РєРµР№СЃРѕРІ")
         return jsonify({
             'success': True,
-            'message': 'Все лимиты кейсов сброшены'
+            'message': 'Р’СЃРµ Р»РёРјРёС‚С‹ РєРµР№СЃРѕРІ СЃР±СЂРѕС€РµРЅС‹'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка сброса лимитов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃР±СЂРѕСЃР° Р»РёРјРёС‚РѕРІ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/user-inventory', methods=['GET'])
 def admin_get_user_inventory():
-    """Получение инвентаря пользователя для админки"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РёРЅРІРµРЅС‚Р°СЂСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ РґР»СЏ Р°РґРјРёРЅРєРё"""
     try:
         user_id = request.args.get('user_id')
         if not user_id:
@@ -9515,7 +9515,7 @@ def admin_get_user_inventory():
         items = cursor.fetchall()
         conn.close()
 
-        # Загружаем подарки для получения slug
+        # Р—Р°РіСЂСѓР¶Р°РµРј РїРѕРґР°СЂРєРё РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ slug
         gifts = load_gifts_cached()
         gifts_map = {g['id']: g for g in gifts}
 
@@ -9535,12 +9535,12 @@ def admin_get_user_inventory():
         return jsonify({'success': True, 'inventory': inventory})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения инвентаря: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёРЅРІРµРЅС‚Р°СЂСЏ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/update-user', methods=['POST'])
 def admin_update_user():
-    """Обновление данных пользователя (баланс, уровень)"""
+    """РћР±РЅРѕРІР»РµРЅРёРµ РґР°РЅРЅС‹С… РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ (Р±Р°Р»Р°РЅСЃ, СѓСЂРѕРІРµРЅСЊ)"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -9553,11 +9553,11 @@ def admin_update_user():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Проверяем пользователя
+        # РџСЂРѕРІРµСЂСЏРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         cursor.execute('SELECT id FROM users WHERE id = ?', (user_id,))
         if not cursor.fetchone():
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
 
         updates = []
         params = []
@@ -9574,25 +9574,25 @@ def admin_update_user():
             conn.commit()
 
         conn.close()
-        logger.info(f"🛠️ Админ обновил пользователя {user_id}: balance={balance_stars}, level={level}")
-        return jsonify({'success': True, 'message': 'Пользователь обновлен'})
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ РѕР±РЅРѕРІРёР» РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {user_id}: balance={balance_stars}, level={level}")
+        return jsonify({'success': True, 'message': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РѕР±РЅРѕРІР»РµРЅ'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка обновления пользователя: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/notifications', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_notifications_management():
-    """Управление оповещениями (админ)"""
+    """РЈРїСЂР°РІР»РµРЅРёРµ РѕРїРѕРІРµС‰РµРЅРёСЏРјРё (Р°РґРјРёРЅ)"""
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Создаем таблицу если не существует
+        # РЎРѕР·РґР°РµРј С‚Р°Р±Р»РёС†Сѓ РµСЃР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS notifications (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -9632,7 +9632,7 @@ def admin_notifications_management():
             ''', (title, width, pages))
             conn.commit()
             conn.close()
-            return jsonify({'success': True, 'message': 'Оповещение создано'})
+            return jsonify({'success': True, 'message': 'РћРїРѕРІРµС‰РµРЅРёРµ СЃРѕР·РґР°РЅРѕ'})
 
         elif request.method == 'PUT':
             data = request.get_json()
@@ -9647,7 +9647,7 @@ def admin_notifications_management():
             ''', (title, width, pages, notif_id))
             conn.commit()
             conn.close()
-            return jsonify({'success': True, 'message': 'Оповещение обновлено'})
+            return jsonify({'success': True, 'message': 'РћРїРѕРІРµС‰РµРЅРёРµ РѕР±РЅРѕРІР»РµРЅРѕ'})
 
         elif request.method == 'DELETE':
             data = request.get_json()
@@ -9655,19 +9655,19 @@ def admin_notifications_management():
             cursor.execute('DELETE FROM notifications WHERE id = ?', (notif_id,))
             conn.commit()
             conn.close()
-            return jsonify({'success': True, 'message': 'Оповещение удалено'})
+            return jsonify({'success': True, 'message': 'РћРїРѕРІРµС‰РµРЅРёРµ СѓРґР°Р»РµРЅРѕ'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка управления оповещениями: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СѓРїСЂР°РІР»РµРЅРёСЏ РѕРїРѕРІРµС‰РµРЅРёСЏРјРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/create-notification', methods=['POST'])
 def admin_create_notification():
-    """Создание оповещения (алиас)"""
+    """РЎРѕР·РґР°РЅРёРµ РѕРїРѕРІРµС‰РµРЅРёСЏ (Р°Р»РёР°СЃ)"""
     try:
         admin_id = request.args.get('admin_id') or (request.get_json() or {}).get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         data = request.get_json()
         conn = get_db_connection()
@@ -9694,15 +9694,15 @@ def admin_create_notification():
         ''', (title, width, pages))
         conn.commit()
         conn.close()
-        return jsonify({'success': True, 'message': 'Оповещение создано'})
+        return jsonify({'success': True, 'message': 'РћРїРѕРІРµС‰РµРЅРёРµ СЃРѕР·РґР°РЅРѕ'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка создания оповещения: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РѕРїРѕРІРµС‰РµРЅРёСЏ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/toggle-notification', methods=['POST'])
 def admin_toggle_notification():
-    """Переключение статуса оповещения"""
+    """РџРµСЂРµРєР»СЋС‡РµРЅРёРµ СЃС‚Р°С‚СѓСЃР° РѕРїРѕРІРµС‰РµРЅРёСЏ"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -9710,7 +9710,7 @@ def admin_toggle_notification():
         is_active = data.get('is_active', False)
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -9721,19 +9721,19 @@ def admin_toggle_notification():
         conn.commit()
         conn.close()
 
-        return jsonify({'success': True, 'message': f'Оповещение {"активировано" if is_active else "деактивировано"}'})
+        return jsonify({'success': True, 'message': f'РћРїРѕРІРµС‰РµРЅРёРµ {"Р°РєС‚РёРІРёСЂРѕРІР°РЅРѕ" if is_active else "РґРµР°РєС‚РёРІРёСЂРѕРІР°РЅРѕ"}'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка переключения оповещения: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРµСЂРµРєР»СЋС‡РµРЅРёСЏ РѕРїРѕРІРµС‰РµРЅРёСЏ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/gifts-management', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_gifts_management():
-    """Управление подарками (админ)"""
+    """РЈРїСЂР°РІР»РµРЅРёРµ РїРѕРґР°СЂРєР°РјРё (Р°РґРјРёРЅ)"""
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         gifts = load_gifts()
 
@@ -9756,7 +9756,7 @@ def admin_gifts_management():
             global gifts_cache, gifts_cache_time
             gifts_cache = None
             gifts_cache_time = None
-            return jsonify({'success': True, 'message': 'Подарок создан', 'gift': new_gift})
+            return jsonify({'success': True, 'message': 'РџРѕРґР°СЂРѕРє СЃРѕР·РґР°РЅ', 'gift': new_gift})
 
         elif request.method == 'PUT':
             data = request.get_json()
@@ -9772,7 +9772,7 @@ def admin_gifts_management():
             save_gifts(gifts)
             gifts_cache = None
             gifts_cache_time = None
-            return jsonify({'success': True, 'message': 'Подарок обновлен'})
+            return jsonify({'success': True, 'message': 'РџРѕРґР°СЂРѕРє РѕР±РЅРѕРІР»РµРЅ'})
 
         elif request.method == 'DELETE':
             data = request.get_json()
@@ -9781,21 +9781,21 @@ def admin_gifts_management():
             save_gifts(gifts)
             gifts_cache = None
             gifts_cache_time = None
-            return jsonify({'success': True, 'message': 'Подарок удален'})
+            return jsonify({'success': True, 'message': 'РџРѕРґР°СЂРѕРє СѓРґР°Р»РµРЅ'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка управления подарками: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СѓРїСЂР°РІР»РµРЅРёСЏ РїРѕРґР°СЂРєР°РјРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/withdrawals', methods=['GET'])
 def get_withdrawals():
-    """Получение списка заявок на вывод (для админа)"""
+    """РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° Р·Р°СЏРІРѕРє РЅР° РІС‹РІРѕРґ (РґР»СЏ Р°РґРјРёРЅР°)"""
     try:
         admin_id = request.args.get('admin_id')
         status = request.args.get('status', 'all')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -9845,12 +9845,12 @@ def get_withdrawals():
         return jsonify({'success': True, 'withdrawals': withdrawals_list})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения заявок на вывод: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р·Р°СЏРІРѕРє РЅР° РІС‹РІРѕРґ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/update-withdrawal-status', methods=['POST'])
 def update_withdrawal_status():
-    """Обновление статуса заявки на вывод"""
+    """РћР±РЅРѕРІР»РµРЅРёРµ СЃС‚Р°С‚СѓСЃР° Р·Р°СЏРІРєРё РЅР° РІС‹РІРѕРґ"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -9859,7 +9859,7 @@ def update_withdrawal_status():
         admin_notes = data.get('admin_notes', '')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -9869,7 +9869,7 @@ def update_withdrawal_status():
 
         if not withdrawal:
             conn.close()
-            return jsonify({'success': False, 'error': 'Заявка не найдена'})
+            return jsonify({'success': False, 'error': 'Р—Р°СЏРІРєР° РЅРµ РЅР°Р№РґРµРЅР°'})
 
         user_id, inventory_id, gift_name, old_status = withdrawal
 
@@ -9882,32 +9882,32 @@ def update_withdrawal_status():
         if status in ['approved', 'rejected', 'error']:
             if status == 'approved':
                 cursor.execute('DELETE FROM inventory WHERE id = ?', (inventory_id,))
-                add_history_record(user_id, 'withdraw_approved', 0, f'Вывод одобрен: {gift_name}')
+                add_history_record(user_id, 'withdraw_approved', 0, f'Р’С‹РІРѕРґ РѕРґРѕР±СЂРµРЅ: {gift_name}')
             else:
                 cursor.execute('UPDATE inventory SET is_withdrawing = FALSE WHERE id = ?', (inventory_id,))
-                add_history_record(user_id, 'withdraw_rejected', 0, f'Вывод отклонен: {gift_name}')
+                add_history_record(user_id, 'withdraw_rejected', 0, f'Р’С‹РІРѕРґ РѕС‚РєР»РѕРЅРµРЅ: {gift_name}')
 
         conn.commit()
         conn.close()
 
-        logger.info(f"🛠️ Админ {admin_id} изменил статус заявки #{withdrawal_id} на {status}")
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} РёР·РјРµРЅРёР» СЃС‚Р°С‚СѓСЃ Р·Р°СЏРІРєРё #{withdrawal_id} РЅР° {status}")
         return jsonify({
             'success': True,
-            'message': f'Статус заявки обновлен на "{status}"'
+            'message': f'РЎС‚Р°С‚СѓСЃ Р·Р°СЏРІРєРё РѕР±РЅРѕРІР»РµРЅ РЅР° "{status}"'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка обновления статуса вывода: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ СЃС‚Р°С‚СѓСЃР° РІС‹РІРѕРґР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/crash/customizations')
 def crash_customizations():
-    """Получение доступных кастомизаций (ракеты и фоны) для crash игры"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РґРѕСЃС‚СѓРїРЅС‹С… РєР°СЃС‚РѕРјРёР·Р°С†РёР№ (СЂР°РєРµС‚С‹ Рё С„РѕРЅС‹) РґР»СЏ crash РёРіСЂС‹"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Создаем таблицу если не существует (с новыми полями)
+        # РЎРѕР·РґР°РµРј С‚Р°Р±Р»РёС†Сѓ РµСЃР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚ (СЃ РЅРѕРІС‹РјРё РїРѕР»СЏРјРё)
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS crash_customizations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -9923,7 +9923,7 @@ def crash_customizations():
             )
         ''')
         
-        # Добавляем новые колонки если их нет
+        # Р”РѕР±Р°РІР»СЏРµРј РЅРѕРІС‹Рµ РєРѕР»РѕРЅРєРё РµСЃР»Рё РёС… РЅРµС‚
         try:
             cursor.execute('ALTER TABLE crash_customizations ADD COLUMN access_type TEXT DEFAULT "free"')
         except: pass
@@ -9931,14 +9931,14 @@ def crash_customizations():
             cursor.execute('ALTER TABLE crash_customizations ADD COLUMN requirement INTEGER DEFAULT 0')
         except: pass
         
-        # Добавляем дефолтные если их нет - 5 animated backgrounds
+        # Р”РѕР±Р°РІР»СЏРµРј РґРµС„РѕР»С‚РЅС‹Рµ РµСЃР»Рё РёС… РЅРµС‚ - 5 animated backgrounds
         cursor.execute("DELETE FROM crash_customizations WHERE item_type = 'background'")
         bg_data = [
-            ('grid', 'Сетка', 0, 1, 'free', 0),         # Default - unlock at level 1
-            ('cosmic', 'Космос', 0, 0, 'level', 5),     # Space theme - level 5
-            ('rainbow', 'Радуга', 0, 0, 'level', 10),   # Rainbow - level 10
-            ('aurora', 'Сияние', 0, 0, 'level', 15),    # Northern lights - level 15
-            ('neon', 'Неон', 0, 0, 'level', 20),        # Neon/Cyberpunk - level 20
+            ('grid', 'РЎРµС‚РєР°', 0, 1, 'free', 0),         # Default - unlock at level 1
+            ('cosmic', 'РљРѕСЃРјРѕСЃ', 0, 0, 'level', 5),     # Space theme - level 5
+            ('rainbow', 'Р Р°РґСѓРіР°', 0, 0, 'level', 10),   # Rainbow - level 10
+            ('aurora', 'РЎРёСЏРЅРёРµ', 0, 0, 'level', 15),    # Northern lights - level 15
+            ('neon', 'РќРµРѕРЅ', 0, 0, 'level', 20),        # Neon/Cyberpunk - level 20
         ]
         for bg_id, bg_name, is_vip, is_default, access, req in bg_data:
             cursor.execute('''
@@ -9946,8 +9946,8 @@ def crash_customizations():
                 VALUES ('background', ?, ?, ?, ?, ?, ?)
             ''', (bg_id, bg_name, is_vip, is_default, access, req))
         
-        # Регистрируем все ракеты из LEVEL_SYSTEM с уровневым доступом
-        # Сначала удаляем старые ракеты чтобы обновить access_type
+        # Р РµРіРёСЃС‚СЂРёСЂСѓРµРј РІСЃРµ СЂР°РєРµС‚С‹ РёР· LEVEL_SYSTEM СЃ СѓСЂРѕРІРЅРµРІС‹Рј РґРѕСЃС‚СѓРїРѕРј
+        # РЎРЅР°С‡Р°Р»Р° СѓРґР°Р»СЏРµРј СЃС‚Р°СЂС‹Рµ СЂР°РєРµС‚С‹ С‡С‚РѕР±С‹ РѕР±РЅРѕРІРёС‚СЊ access_type
         cursor.execute("DELETE FROM crash_customizations WHERE item_type = 'rocket'")
         for lvl_info in LEVEL_SYSTEM:
             rocket_id = lvl_info.get('reward_rocket')
@@ -9964,7 +9964,7 @@ def crash_customizations():
             ''', (rocket_id, rocket_name, is_default, access, req))
         conn.commit()
         
-        # Получаем ракеты с условиями доступа
+        # РџРѕР»СѓС‡Р°РµРј СЂР°РєРµС‚С‹ СЃ СѓСЃР»РѕРІРёСЏРјРё РґРѕСЃС‚СѓРїР°
         cursor.execute('SELECT item_id, name, is_vip, is_default, access_type, requirement FROM crash_customizations WHERE item_type = ? ORDER BY is_default DESC, id ASC', ('rocket',))
         rockets = []
         for r in cursor.fetchall():
@@ -9977,7 +9977,7 @@ def crash_customizations():
                 'requirement': r[5] or 0
             })
         
-        # Получаем фоны с условиями доступа
+        # РџРѕР»СѓС‡Р°РµРј С„РѕРЅС‹ СЃ СѓСЃР»РѕРІРёСЏРјРё РґРѕСЃС‚СѓРїР°
         cursor.execute('SELECT item_id, name, is_vip, is_default, access_type, requirement FROM crash_customizations WHERE item_type = ? ORDER BY is_default DESC, id ASC', ('background',))
         backgrounds = []
         for b in cursor.fetchall():
@@ -10001,12 +10001,12 @@ def crash_customizations():
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка получения кастомизаций: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РєР°СЃС‚РѕРјРёР·Р°С†РёР№: {e}")
         return jsonify({
             'success': False, 
             'error': str(e),
-            'rockets': [{'id': 'crash', 'name': 'Ракета', 'is_vip': False, 'is_default': True}],
-            'backgrounds': [{'id': 'phone', 'name': 'Космос', 'is_vip': False, 'is_default': True}],
+            'rockets': [{'id': 'crash', 'name': 'Р Р°РєРµС‚Р°', 'is_vip': False, 'is_default': True}],
+            'backgrounds': [{'id': 'phone', 'name': 'РљРѕСЃРјРѕСЃ', 'is_vip': False, 'is_default': True}],
             'default_rocket': 'crash',
             'default_background': 'phone'
         })
@@ -10047,16 +10047,16 @@ def crash_bet():
     balance = cur.fetchone()[0]
 
     if balance < amount:
-        return jsonify({"error": "Недостаточно звёзд"})
+        return jsonify({"error": "РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р·РІС‘Р·Рґ"})
 
-    # списываем баланс
+    # СЃРїРёСЃС‹РІР°РµРј Р±Р°Р»Р°РЅСЃ
     cur.execute("UPDATE users SET balance_stars = balance_stars - ? WHERE id=?", (amount, user_id))
 
-    # ищем подарок по цене (originals only)
+    # РёС‰РµРј РїРѕРґР°СЂРѕРє РїРѕ С†РµРЅРµ (originals only)
     gifts = build_fragment_first_gifts_catalog()
     gift = min(gifts, key=lambda g: abs(g.get("value", 0) - amount))
 
-    # активная игра
+    # Р°РєС‚РёРІРЅР°СЏ РёРіСЂР°
     cur.execute("SELECT id FROM crash_games ORDER BY id DESC LIMIT 1")
     game_id = cur.fetchone()[0]
 
@@ -10091,12 +10091,12 @@ def crash_cashout():
 
     bet = cur.fetchone()
     if not bet:
-        return jsonify({"error":"Нет активной ставки"})
+        return jsonify({"error":"РќРµС‚ Р°РєС‚РёРІРЅРѕР№ СЃС‚Р°РІРєРё"})
 
     bet_id, amount, gift_value, mult = bet
     win = int(amount * float(mult))
 
-    # если выигрыш превращается в подарок (originals only)
+    # РµСЃР»Рё РІС‹РёРіСЂС‹С€ РїСЂРµРІСЂР°С‰Р°РµС‚СЃСЏ РІ РїРѕРґР°СЂРѕРє (originals only)
     gifts = build_fragment_first_gifts_catalog()
     best_gift = min(gifts, key=lambda g: abs(g.get("value", 0) - win))
 
@@ -10119,7 +10119,7 @@ def crash_cashout():
 
 @app.route('/api/admin/set-case-limit', methods=['POST'])
 def admin_set_case_limit():
-    """Установка лимита для конкретного кейса"""
+    """РЈСЃС‚Р°РЅРѕРІРєР° Р»РёРјРёС‚Р° РґР»СЏ РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РєРµР№СЃР°"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -10127,7 +10127,7 @@ def admin_set_case_limit():
         limit = data.get('limit', 0)
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -10140,26 +10140,26 @@ def admin_set_case_limit():
         conn.commit()
         conn.close()
 
-        logger.info(f"🛠️ Админ {admin_id} установил лимит {limit} для кейса {case_id}")
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} СѓСЃС‚Р°РЅРѕРІРёР» Р»РёРјРёС‚ {limit} РґР»СЏ РєРµР№СЃР° {case_id}")
         return jsonify({
             'success': True,
-            'message': f'Лимит кейса установлен: {limit}'
+            'message': f'Р›РёРјРёС‚ РєРµР№СЃР° СѓСЃС‚Р°РЅРѕРІР»РµРЅ: {limit}'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка установки лимита кейса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё Р»РёРјРёС‚Р° РєРµР№СЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/update-case-order', methods=['POST'])
 def admin_update_case_order():
-    """Обновление порядка отображения кейсов"""
+    """РћР±РЅРѕРІР»РµРЅРёРµ РїРѕСЂСЏРґРєР° РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РєРµР№СЃРѕРІ"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
         case_order = data.get('case_order', [])
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         cases = load_cases()
 
@@ -10175,7 +10175,7 @@ def admin_update_case_order():
                 case['display_order'] = display_order
                 updated_cases.append(case)
             else:
-                logger.warning(f"⚠️ Кейс с ID {case_id} не найден при обновлении порядка")
+                logger.warning(f"вљ пёЏ РљРµР№СЃ СЃ ID {case_id} РЅРµ РЅР°Р№РґРµРЅ РїСЂРё РѕР±РЅРѕРІР»РµРЅРёРё РїРѕСЂСЏРґРєР°")
 
         for case_id, case in cases_dict.items():
             if case not in updated_cases:
@@ -10184,26 +10184,26 @@ def admin_update_case_order():
         updated_cases.sort(key=lambda x: x.get('display_order', 0))
 
         if save_cases(updated_cases):
-            logger.info(f"🛠️ Админ {admin_id} обновил порядок кейсов")
+            logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} РѕР±РЅРѕРІРёР» РїРѕСЂСЏРґРѕРє РєРµР№СЃРѕРІ")
             return jsonify({
                 'success': True,
-                'message': 'Порядок кейсов успешно обновлен!'
+                'message': 'РџРѕСЂСЏРґРѕРє РєРµР№СЃРѕРІ СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅ!'
             })
         else:
-            return jsonify({'success': False, 'error': 'Ошибка сохранения порядка кейсов'})
+            return jsonify({'success': False, 'error': 'РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РїРѕСЂСЏРґРєР° РєРµР№СЃРѕРІ'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка обновления порядка кейсов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїРѕСЂСЏРґРєР° РєРµР№СЃРѕРІ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/cases', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_cases_management():
-    """Управление кейсами через админ-панель"""
+    """РЈРїСЂР°РІР»РµРЅРёРµ РєРµР№СЃР°РјРё С‡РµСЂРµР· Р°РґРјРёРЅ-РїР°РЅРµР»СЊ"""
     try:
         payload = request.get_json(silent=True) or {}
         admin_id = request.args.get('admin_id') or payload.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         if request.method == 'GET':
             cases = load_cases()
@@ -10219,7 +10219,7 @@ def admin_cases_management():
                 new_id = max([case['id'] for case in cases], default=0) + 1
 
             if any(case['id'] == new_id for case in cases):
-                return jsonify({'success': False, 'error': 'Кейс с таким ID уже существует'})
+                return jsonify({'success': False, 'error': 'РљРµР№СЃ СЃ С‚Р°РєРёРј ID СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚'})
 
             max_order = max([case.get('display_order', 0) for case in cases], default=0)
 
@@ -10265,10 +10265,10 @@ def admin_cases_management():
                     conn.commit()
                     conn.close()
 
-                logger.info(f"🛠️ Админ {admin_id} создал кейс: {new_case['name']}")
-                return jsonify({'success': True, 'message': 'Кейс успешно создан', 'case': new_case})
+                logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} СЃРѕР·РґР°Р» РєРµР№СЃ: {new_case['name']}")
+                return jsonify({'success': True, 'message': 'РљРµР№СЃ СѓСЃРїРµС€РЅРѕ СЃРѕР·РґР°РЅ', 'case': new_case})
             else:
-                return jsonify({'success': False, 'error': 'Ошибка сохранения кейса'})
+                return jsonify({'success': False, 'error': 'РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РєРµР№СЃР°'})
 
         elif request.method == 'PUT':
             data = payload
@@ -10278,7 +10278,7 @@ def admin_cases_management():
             case_index = next((i for i, case in enumerate(cases) if case['id'] == case_id), -1)
 
             if case_index == -1:
-                return jsonify({'success': False, 'error': 'Кейс не найден'})
+                return jsonify({'success': False, 'error': 'РљРµР№СЃ РЅРµ РЅР°Р№РґРµРЅ'})
 
             image_filename = data.get('image_filename', '').strip()
             if image_filename and not image_filename.startswith('http'):
@@ -10322,10 +10322,10 @@ def admin_cases_management():
                     conn.commit()
                     conn.close()
 
-                logger.info(f"🛠️ Админ {admin_id} обновил кейс: {updated_case['name']}")
-                return jsonify({'success': True, 'message': 'Кейс успешно обновлен', 'case': updated_case})
+                logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} РѕР±РЅРѕРІРёР» РєРµР№СЃ: {updated_case['name']}")
+                return jsonify({'success': True, 'message': 'РљРµР№СЃ СѓСЃРїРµС€РЅРѕ РѕР±РЅРѕРІР»РµРЅ', 'case': updated_case})
             else:
-                return jsonify({'success': False, 'error': 'Ошибка сохранения кейса'})
+                return jsonify({'success': False, 'error': 'РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РєРµР№СЃР°'})
 
         elif request.method == 'DELETE':
             case_id = payload['id']
@@ -10334,7 +10334,7 @@ def admin_cases_management():
             case_to_delete = next((case for case in cases if case['id'] == case_id), None)
 
             if not case_to_delete:
-                return jsonify({'success': False, 'error': 'Кейс не найден'})
+                return jsonify({'success': False, 'error': 'РљРµР№СЃ РЅРµ РЅР°Р№РґРµРЅ'})
 
             cases = [case for case in cases if case['id'] != case_id]
 
@@ -10345,13 +10345,13 @@ def admin_cases_management():
                 conn.commit()
                 conn.close()
 
-                logger.info(f"🛠️ Админ {admin_id} удалил кейс: {case_to_delete['name']}")
-                return jsonify({'success': True, 'message': 'Кейс успешно удален'})
+                logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} СѓРґР°Р»РёР» РєРµР№СЃ: {case_to_delete['name']}")
+                return jsonify({'success': True, 'message': 'РљРµР№СЃ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'})
             else:
-                return jsonify({'success': False, 'error': 'Ошибка удаления кейса'})
+                return jsonify({'success': False, 'error': 'РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ РєРµР№СЃР°'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка управления кейсами: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СѓРїСЂР°РІР»РµРЅРёСЏ РєРµР№СЃР°РјРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -10383,8 +10383,8 @@ def admin_case_gifts(case_id):
                         'id': stable_id,
                         'type': 'ton_balance',
                         'ton_amount': ton_amount,
-                        'name': f"Stars Balance ({ton_amount})",
-                        'image': '/static/img/star.png',
+                        'name': 'TON',
+                        'image': '/static/img/tons/ton_1.svg',
                         'value': ton_amount,
                         'chance': chance
                     })
@@ -10584,13 +10584,13 @@ def admin_case_gifts(case_id):
 
 @app.route('/api/admin/create-case', methods=['POST'])
 def admin_create_case():
-    """Создание нового кейса"""
+    """РЎРѕР·РґР°РЅРёРµ РЅРѕРІРѕРіРѕ РєРµР№СЃР°"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         cases = load_cases()
 
@@ -10640,29 +10640,29 @@ def admin_create_case():
                 conn.commit()
                 conn.close()
 
-            logger.info(f"🛠️ Админ {admin_id} создал кейс: {new_case['name']}")
-            return jsonify({'success': True, 'message': 'Кейс успешно создан', 'case': new_case})
+            logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} СЃРѕР·РґР°Р» РєРµР№СЃ: {new_case['name']}")
+            return jsonify({'success': True, 'message': 'РљРµР№СЃ СѓСЃРїРµС€РЅРѕ СЃРѕР·РґР°РЅ', 'case': new_case})
         else:
-            return jsonify({'success': False, 'error': 'Ошибка сохранения кейса'})
+            return jsonify({'success': False, 'error': 'РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РєРµР№СЃР°'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка создания кейса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РєРµР№СЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/admin/case-gifts/<int:case_id>', methods=['GET'])
 def get_case_gifts(case_id):
-    """Получить список подарков в кейсе"""
+    """РџРѕР»СѓС‡РёС‚СЊ СЃРїРёСЃРѕРє РїРѕРґР°СЂРєРѕРІ РІ РєРµР№СЃРµ"""
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         cases = load_cases()
         case = next((c for c in cases if c['id'] == case_id), None)
 
         if not case:
-            return jsonify({'success': False, 'error': 'Кейс не найден'})
+            return jsonify({'success': False, 'error': 'РљРµР№СЃ РЅРµ РЅР°Р№РґРµРЅ'})
 
         gifts = load_gifts()
         result = []
@@ -10671,8 +10671,8 @@ def get_case_gifts(case_id):
             if gift_info.get('type') == 'ton_balance':
                 result.append({
                     'id': -1,
-                    'name': f"⭐ {gift_info.get('ton_amount', 0)} Stars",
-                    'image': '/static/img/ton.png',
+                    'name': 'TON',
+                    'image': '/static/img/tons/ton_1.svg',
                     'chance': gift_info.get('chance', 1),
                     'type': 'ton_balance',
                     'ton_amount': gift_info.get('ton_amount', 0)
@@ -10691,19 +10691,19 @@ def get_case_gifts(case_id):
         return jsonify({'success': True, 'gifts': result, 'case_name': case['name']})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения подарков кейса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РїРѕРґР°СЂРєРѕРІ РєРµР№СЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/admin/add-gift-to-case', methods=['POST'])
 def add_gift_to_case():
-    """Добавить подарок или ton_balance в кейс"""
+    """Р”РѕР±Р°РІРёС‚СЊ РїРѕРґР°СЂРѕРє РёР»Рё ton_balance РІ РєРµР№СЃ"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         case_id = data.get('case_id')
         gift_type = data.get('type', 'gift')
@@ -10712,7 +10712,7 @@ def add_gift_to_case():
         case = next((c for c in cases if c['id'] == case_id), None)
 
         if not case:
-            return jsonify({'success': False, 'error': 'Кейс не найден'})
+            return jsonify({'success': False, 'error': 'РљРµР№СЃ РЅРµ РЅР°Р№РґРµРЅ'})
 
         if 'gifts' not in case:
             case['gifts'] = []
@@ -10728,10 +10728,10 @@ def add_gift_to_case():
             })
 
             if save_cases(cases):
-                logger.info(f"🛠️ Админ {admin_id} добавил ton_balance ({ton_amount}⭐) в кейс {case['name']}")
-                return jsonify({'success': True, 'message': f'Stars Balance ({ton_amount}⭐) добавлен в кейс'})
+                logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} РґРѕР±Р°РІРёР» ton_balance ({ton_amount}в­ђ) РІ РєРµР№СЃ {case['name']}")
+                return jsonify({'success': True, 'message': f'Stars Balance ({ton_amount}в­ђ) РґРѕР±Р°РІР»РµРЅ РІ РєРµР№СЃ'})
             else:
-                return jsonify({'success': False, 'error': 'Ошибка сохранения'})
+                return jsonify({'success': False, 'error': 'РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ'})
         else:
             gift_id = int(data.get('gift_id'))
             chance = float(data.get('chance', 1))
@@ -10743,22 +10743,22 @@ def add_gift_to_case():
                 case['gifts'].append({'id': gift_id, 'chance': chance})
 
             if save_cases(cases):
-                return jsonify({'success': True, 'message': 'Подарок добавлен в кейс'})
+                return jsonify({'success': True, 'message': 'РџРѕРґР°СЂРѕРє РґРѕР±Р°РІР»РµРЅ РІ РєРµР№СЃ'})
             else:
-                return jsonify({'success': False, 'error': 'Ошибка сохранения'})
+                return jsonify({'success': False, 'error': 'РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка добавления в кейс: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ РІ РєРµР№СЃ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/admin/promo-codes', methods=['GET', 'POST', 'DELETE'])
 def admin_promo_codes_management():
-    """Управление промокодами"""
+    """РЈРїСЂР°РІР»РµРЅРёРµ РїСЂРѕРјРѕРєРѕРґР°РјРё"""
     try:
         admin_id = request.args.get('admin_id') or request.json.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         if request.method == 'GET':
             conn = get_db_connection()
@@ -10805,7 +10805,7 @@ def admin_promo_codes_management():
 
             if existing:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Промокод с таким кодом уже существует'})
+                return jsonify({'success': False, 'error': 'РџСЂРѕРјРѕРєРѕРґ СЃ С‚Р°РєРёРј РєРѕРґРѕРј СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚'})
 
             reward_stars = data.get('reward_stars', 0)
             reward_tickets = data.get('reward_tickets', 0)
@@ -10818,7 +10818,7 @@ def admin_promo_codes_management():
             if expires_days > 0:
                 expires_at = (datetime.now() + timedelta(days=expires_days)).isoformat()
 
-            # Сериализуем reward_data в JSON
+            # РЎРµСЂРёР°Р»РёР·СѓРµРј reward_data РІ JSON
             reward_data_json = json.dumps(reward_data) if reward_data else None
 
             cursor.execute('''
@@ -10830,10 +10830,10 @@ def admin_promo_codes_management():
             conn.commit()
             conn.close()
 
-            logger.info(f"🛠️ Админ {admin_id} создал промокод: {code} (тип: {reward_type})")
+            logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} СЃРѕР·РґР°Р» РїСЂРѕРјРѕРєРѕРґ: {code} (С‚РёРї: {reward_type})")
             return jsonify({
                 'success': True,
-                'message': f'Промокод {code} успешно создан!',
+                'message': f'РџСЂРѕРјРѕРєРѕРґ {code} СѓСЃРїРµС€РЅРѕ СЃРѕР·РґР°РЅ!',
                 'promo_code': {
                     'id': promo_id,
                     'code': code,
@@ -10855,25 +10855,25 @@ def admin_promo_codes_management():
             conn.commit()
             conn.close()
 
-            logger.info(f"🛠️ Админ {admin_id} удалил промокод #{promo_id}")
-            return jsonify({'success': True, 'message': 'Промокод успешно удален'})
+            logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} СѓРґР°Р»РёР» РїСЂРѕРјРѕРєРѕРґ #{promo_id}")
+            return jsonify({'success': True, 'message': 'РџСЂРѕРјРѕРєРѕРґ СѓСЃРїРµС€РЅРѕ СѓРґР°Р»РµРЅ'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка управления промокодами: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СѓРїСЂР°РІР»РµРЅРёСЏ РїСЂРѕРјРѕРєРѕРґР°РјРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/customization', methods=['GET'])
 def admin_get_customization():
-    """Получение списка кастомизации (ракеты и фоны)"""
+    """РџРѕР»СѓС‡РµРЅРёРµ СЃРїРёСЃРєР° РєР°СЃС‚РѕРјРёР·Р°С†РёРё (СЂР°РєРµС‚С‹ Рё С„РѕРЅС‹)"""
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Создаем таблицу если не существует
+        # РЎРѕР·РґР°РµРј С‚Р°Р±Р»РёС†Сѓ РµСЃР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS crash_customizations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -10887,7 +10887,7 @@ def admin_get_customization():
             )
         ''')
         
-        # Миграция: добавляем is_default если нет
+        # РњРёРіСЂР°С†РёСЏ: РґРѕР±Р°РІР»СЏРµРј is_default РµСЃР»Рё РЅРµС‚
         try:
             cursor.execute("PRAGMA table_info(crash_customizations)")
             columns = [col[1] for col in cursor.fetchall()]
@@ -10896,14 +10896,14 @@ def admin_get_customization():
         except:
             pass
         
-        # Добавляем дефолтные кастомизации если их нет
+        # Р”РѕР±Р°РІР»СЏРµРј РґРµС„РѕР»С‚РЅС‹Рµ РєР°СЃС‚РѕРјРёР·Р°С†РёРё РµСЃР»Рё РёС… РЅРµС‚
         cursor.execute('''
             INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default)
-            VALUES ('rocket', 'crash', 'Ракета', 0, 1)
+            VALUES ('rocket', 'crash', 'Р Р°РєРµС‚Р°', 0, 1)
         ''')
         cursor.execute('''
             INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default)
-            VALUES ('background', 'phone', 'Космос', 0, 1)
+            VALUES ('background', 'phone', 'РљРѕСЃРјРѕСЃ', 0, 1)
         ''')
         conn.commit()
         
@@ -10922,17 +10922,17 @@ def admin_get_customization():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения кастомизации: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РєР°СЃС‚РѕРјРёР·Р°С†РёРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/customization/rockets', methods=['POST', 'DELETE'])
 def admin_manage_rockets():
-    """Управление ракетами"""
+    """РЈРїСЂР°РІР»РµРЅРёРµ СЂР°РєРµС‚Р°РјРё"""
     try:
         if request.method == 'POST':
             admin_id = request.form.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
             
             item_id = request.form.get('id', '').strip()
             name = request.form.get('name', item_id)
@@ -10941,12 +10941,12 @@ def admin_manage_rockets():
             file = request.files.get('file')
             
             if not item_id or not file:
-                return jsonify({'success': False, 'error': 'Нужны ID и файл'})
+                return jsonify({'success': False, 'error': 'РќСѓР¶РЅС‹ ID Рё С„Р°Р№Р»'})
             
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            # Создаем таблицу если не существует (с новыми полями)
+            # РЎРѕР·РґР°РµРј С‚Р°Р±Р»РёС†Сѓ РµСЃР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚ (СЃ РЅРѕРІС‹РјРё РїРѕР»СЏРјРё)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS crash_customizations (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -10962,7 +10962,7 @@ def admin_manage_rockets():
                 )
             ''')
             
-            # Добавляем новые колонки если их нет
+            # Р”РѕР±Р°РІР»СЏРµРј РЅРѕРІС‹Рµ РєРѕР»РѕРЅРєРё РµСЃР»Рё РёС… РЅРµС‚
             try:
                 cursor.execute('ALTER TABLE crash_customizations ADD COLUMN access_type TEXT DEFAULT "free"')
             except: pass
@@ -10970,15 +10970,15 @@ def admin_manage_rockets():
                 cursor.execute('ALTER TABLE crash_customizations ADD COLUMN requirement INTEGER DEFAULT 0')
             except: pass
             
-            # Сохраняем файл
+            # РЎРѕС…СЂР°РЅСЏРµРј С„Р°Р№Р»
             filename = f"{item_id}.gif"
             filepath = os.path.join(BASE_PATH, 'static', 'gifs', filename)
             file.save(filepath)
             
-            # Определяем is_vip на основе access_type
+            # РћРїСЂРµРґРµР»СЏРµРј is_vip РЅР° РѕСЃРЅРѕРІРµ access_type
             is_vip = 1 if access_type == 'vip' else 0
             
-            # Добавляем в БД
+            # Р”РѕР±Р°РІР»СЏРµРј РІ Р‘Р”
             cursor.execute('''
                 INSERT OR REPLACE INTO crash_customizations (item_type, item_id, name, is_vip, access_type, requirement)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -10987,18 +10987,18 @@ def admin_manage_rockets():
             conn.commit()
             conn.close()
             
-            logger.info(f"🛠️ Админ добавил ракету: {item_id} (access: {access_type})")
-            return jsonify({'success': True, 'message': 'Ракета добавлена'})
+            logger.info(f"рџ› пёЏ РђРґРјРёРЅ РґРѕР±Р°РІРёР» СЂР°РєРµС‚Сѓ: {item_id} (access: {access_type})")
+            return jsonify({'success': True, 'message': 'Р Р°РєРµС‚Р° РґРѕР±Р°РІР»РµРЅР°'})
             
         elif request.method == 'DELETE':
             data = request.json
             admin_id = data.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
             
             item_id = data.get('id')
             if not item_id:
-                return jsonify({'success': False, 'error': 'Нужен ID'})
+                return jsonify({'success': False, 'error': 'РќСѓР¶РµРЅ ID'})
             
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -11006,26 +11006,26 @@ def admin_manage_rockets():
             conn.commit()
             conn.close()
             
-            # Удаляем файл
+            # РЈРґР°Р»СЏРµРј С„Р°Р№Р»
             filepath = os.path.join(BASE_PATH, 'static', 'gifs', f"{item_id}.gif")
             if os.path.exists(filepath):
                 os.remove(filepath)
             
-            logger.info(f"🛠️ Админ удалил ракету: {item_id}")
-            return jsonify({'success': True, 'message': 'Ракета удалена'})
+            logger.info(f"рџ› пёЏ РђРґРјРёРЅ СѓРґР°Р»РёР» СЂР°РєРµС‚Сѓ: {item_id}")
+            return jsonify({'success': True, 'message': 'Р Р°РєРµС‚Р° СѓРґР°Р»РµРЅР°'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка управления ракетами: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СѓРїСЂР°РІР»РµРЅРёСЏ СЂР°РєРµС‚Р°РјРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/customization/backgrounds', methods=['POST', 'DELETE'])
 def admin_manage_backgrounds():
-    """Управление фонами"""
+    """РЈРїСЂР°РІР»РµРЅРёРµ С„РѕРЅР°РјРё"""
     try:
         if request.method == 'POST':
             admin_id = request.form.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
             
             item_id = request.form.get('id', '').strip()
             name = request.form.get('name', item_id)
@@ -11034,12 +11034,12 @@ def admin_manage_backgrounds():
             file = request.files.get('file')
             
             if not item_id or not file:
-                return jsonify({'success': False, 'error': 'Нужны ID и файл'})
+                return jsonify({'success': False, 'error': 'РќСѓР¶РЅС‹ ID Рё С„Р°Р№Р»'})
             
             conn = get_db_connection()
             cursor = conn.cursor()
             
-            # Создаем таблицу если не существует (с новыми полями)
+            # РЎРѕР·РґР°РµРј С‚Р°Р±Р»РёС†Сѓ РµСЃР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚ (СЃ РЅРѕРІС‹РјРё РїРѕР»СЏРјРё)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS crash_customizations (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -11055,7 +11055,7 @@ def admin_manage_backgrounds():
                 )
             ''')
             
-            # Добавляем новые колонки если их нет
+            # Р”РѕР±Р°РІР»СЏРµРј РЅРѕРІС‹Рµ РєРѕР»РѕРЅРєРё РµСЃР»Рё РёС… РЅРµС‚
             try:
                 cursor.execute('ALTER TABLE crash_customizations ADD COLUMN access_type TEXT DEFAULT "free"')
             except: pass
@@ -11063,15 +11063,15 @@ def admin_manage_backgrounds():
                 cursor.execute('ALTER TABLE crash_customizations ADD COLUMN requirement INTEGER DEFAULT 0')
             except: pass
             
-            # Сохраняем файл
+            # РЎРѕС…СЂР°РЅСЏРµРј С„Р°Р№Р»
             filename = f"{item_id}.mp4"
             filepath = os.path.join(BASE_PATH, 'static', 'img', filename)
             file.save(filepath)
             
-            # Определяем is_vip на основе access_type
+            # РћРїСЂРµРґРµР»СЏРµРј is_vip РЅР° РѕСЃРЅРѕРІРµ access_type
             is_vip = 1 if access_type == 'vip' else 0
             
-            # Добавляем в БД
+            # Р”РѕР±Р°РІР»СЏРµРј РІ Р‘Р”
             cursor.execute('''
                 INSERT OR REPLACE INTO crash_customizations (item_type, item_id, name, is_vip, access_type, requirement)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -11080,18 +11080,18 @@ def admin_manage_backgrounds():
             conn.commit()
             conn.close()
             
-            logger.info(f"🛠️ Админ добавил фон: {item_id} (access: {access_type})")
-            return jsonify({'success': True, 'message': 'Фон добавлен'})
+            logger.info(f"рџ› пёЏ РђРґРјРёРЅ РґРѕР±Р°РІРёР» С„РѕРЅ: {item_id} (access: {access_type})")
+            return jsonify({'success': True, 'message': 'Р¤РѕРЅ РґРѕР±Р°РІР»РµРЅ'})
             
         elif request.method == 'DELETE':
             data = request.json
             admin_id = data.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
             
             item_id = data.get('id')
             if not item_id:
-                return jsonify({'success': False, 'error': 'Нужен ID'})
+                return jsonify({'success': False, 'error': 'РќСѓР¶РµРЅ ID'})
             
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -11099,16 +11099,16 @@ def admin_manage_backgrounds():
             conn.commit()
             conn.close()
             
-            # Удаляем файл
+            # РЈРґР°Р»СЏРµРј С„Р°Р№Р»
             filepath = os.path.join(BASE_PATH, 'static', 'img', f"{item_id}.mp4")
             if os.path.exists(filepath):
                 os.remove(filepath)
             
-            logger.info(f"🛠️ Админ удалил фон: {item_id}")
-            return jsonify({'success': True, 'message': 'Фон удален'})
+            logger.info(f"рџ› пёЏ РђРґРјРёРЅ СѓРґР°Р»РёР» С„РѕРЅ: {item_id}")
+            return jsonify({'success': True, 'message': 'Р¤РѕРЅ СѓРґР°Р»РµРЅ'})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка управления фонами: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СѓРїСЂР°РІР»РµРЅРёСЏ С„РѕРЅР°РјРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -11119,7 +11119,7 @@ def admin_user_customizations():
         if request.method == 'GET':
             admin_id = request.args.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
             target_user_id = request.args.get('user_id', 0, type=int)
             if not target_user_id:
@@ -11159,7 +11159,7 @@ def admin_user_customizations():
             data = request.get_json()
             admin_id = data.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
             target_user_id = data.get('user_id')
             item_type = data.get('item_type', '')
@@ -11177,18 +11177,18 @@ def admin_user_customizations():
                           (target_user_id, item_type, item_id, 'admin'))
             if cursor.rowcount == 0:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Уже есть у пользователя'})
+                return jsonify({'success': False, 'error': 'РЈР¶Рµ РµСЃС‚СЊ Сѓ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ'})
             conn.commit()
             conn.close()
 
             logger.info(f"Admin added {item_type}:{item_id} to user {target_user_id}")
-            return jsonify({'success': True, 'message': 'Добавлено'})
+            return jsonify({'success': True, 'message': 'Р”РѕР±Р°РІР»РµРЅРѕ'})
 
         elif request.method == 'DELETE':
             data = request.get_json()
             admin_id = data.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
             db_id = data.get('db_id')
             if not db_id:
@@ -11201,7 +11201,7 @@ def admin_user_customizations():
             conn.close()
 
             logger.info(f"Admin removed customization db_id={db_id}")
-            return jsonify({'success': True, 'message': 'Удалено'})
+            return jsonify({'success': True, 'message': 'РЈРґР°Р»РµРЅРѕ'})
 
     except Exception as e:
         logger.error(f"Admin user-customizations error: {e}")
@@ -11210,11 +11210,11 @@ def admin_user_customizations():
 
 @app.route('/api/admin/referral-stats', methods=['GET'])
 def admin_referral_stats():
-    """Получение статистики по реферальной системе"""
+    """РџРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°С‚РёСЃС‚РёРєРё РїРѕ СЂРµС„РµСЂР°Р»СЊРЅРѕР№ СЃРёСЃС‚РµРјРµ"""
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -11266,16 +11266,16 @@ def admin_referral_stats():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения реферальной статистики: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЂРµС„РµСЂР°Р»СЊРЅРѕР№ СЃС‚Р°С‚РёСЃС‚РёРєРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/level-stats', methods=['GET'])
 def admin_level_stats():
-    """Получение статистики по уровням"""
+    """РџРѕР»СѓС‡РµРЅРёРµ СЃС‚Р°С‚РёСЃС‚РёРєРё РїРѕ СѓСЂРѕРІРЅСЏРј"""
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -11334,16 +11334,16 @@ def admin_level_stats():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения статистики по уровням: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ СЃС‚Р°С‚РёСЃС‚РёРєРё РїРѕ СѓСЂРѕРІРЅСЏРј: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/case-limits', methods=['GET'])
 def get_case_limits():
-    """Получение детальной информации о лимитах всех кейсов"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РґРµС‚Р°Р»СЊРЅРѕР№ РёРЅС„РѕСЂРјР°С†РёРё Рѕ Р»РёРјРёС‚Р°С… РІСЃРµС… РєРµР№СЃРѕРІ"""
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         cases = load_cases()
         conn = get_db_connection()
@@ -11369,12 +11369,12 @@ def get_case_limits():
         return jsonify({'success': True, 'case_limits': case_limits})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения лимитов кейсов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р»РёРјРёС‚РѕРІ РєРµР№СЃРѕРІ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/update-case-limit', methods=['POST'])
 def admin_update_case_limit():
-    """Обновление лимита конкретного кейса"""
+    """РћР±РЅРѕРІР»РµРЅРёРµ Р»РёРјРёС‚Р° РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РєРµР№СЃР°"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -11382,12 +11382,12 @@ def admin_update_case_limit():
         new_limit = data.get('limit')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         cases = load_cases()
         case = next((c for c in cases if c['id'] == case_id), None)
         if not case:
-            return jsonify({'success': False, 'error': 'Кейс не найден'})
+            return jsonify({'success': False, 'error': 'РљРµР№СЃ РЅРµ РЅР°Р№РґРµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -11400,34 +11400,34 @@ def admin_update_case_limit():
         conn.commit()
         conn.close()
 
-        logger.info(f"🛠️ Админ {admin_id} обновил лимит кейса {case_id} на {new_limit}")
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} РѕР±РЅРѕРІРёР» Р»РёРјРёС‚ РєРµР№СЃР° {case_id} РЅР° {new_limit}")
         return jsonify({
             'success': True,
-            'message': f'Лимит кейса "{case["name"]}" обновлен: {new_limit}'
+            'message': f'Р›РёРјРёС‚ РєРµР№СЃР° "{case["name"]}" РѕР±РЅРѕРІР»РµРЅ: {new_limit}'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка обновления лимита кейса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ Р»РёРјРёС‚Р° РєРµР№СЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/reset-case-limit', methods=['POST'])
 def admin_reset_case_limit():
-    """Сброс лимита конкретного кейса"""
+    """РЎР±СЂРѕСЃ Р»РёРјРёС‚Р° РєРѕРЅРєСЂРµС‚РЅРѕРіРѕ РєРµР№СЃР°"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
         case_id = data.get('case_id')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         cases = load_cases()
         case = next((c for c in cases if c['id'] == case_id), None)
         if not case:
-            return jsonify({'success': False, 'error': 'Кейс не найден'})
+            return jsonify({'success': False, 'error': 'РљРµР№СЃ РЅРµ РЅР°Р№РґРµРЅ'})
 
         if not case.get('limited'):
-            return jsonify({'success': False, 'error': 'Этот кейс не лимитированный'})
+            return jsonify({'success': False, 'error': 'Р­С‚РѕС‚ РєРµР№СЃ РЅРµ Р»РёРјРёС‚РёСЂРѕРІР°РЅРЅС‹Р№'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -11441,14 +11441,14 @@ def admin_reset_case_limit():
         conn.commit()
         conn.close()
 
-        logger.info(f"🛠️ Админ {admin_id} сбросил лимит кейса {case_id} до {original_amount}")
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} СЃР±СЂРѕСЃРёР» Р»РёРјРёС‚ РєРµР№СЃР° {case_id} РґРѕ {original_amount}")
         return jsonify({
             'success': True,
-            'message': f'Лимит кейса "{case["name"]}" сброшен до {original_amount}'
+            'message': f'Р›РёРјРёС‚ РєРµР№СЃР° "{case["name"]}" СЃР±СЂРѕС€РµРЅ РґРѕ {original_amount}'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка сброса лимита кейса: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃР±СЂРѕСЃР° Р»РёРјРёС‚Р° РєРµР№СЃР°: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # ==================== REWARD SYSTEM API ====================
@@ -11472,11 +11472,11 @@ REFERRAL_REWARDS_CONFIG = [
 
 # Default daily tasks templates (auto-generated if none exist)
 DEFAULT_DAILY_TASKS = [
-    {'task_type': 'open_case', 'case_id': 0, 'target_value': 3, 'reward_stars': 5, 'description': 'Открой 3 кейса'},
-    {'task_type': 'open_case', 'case_id': 0, 'target_value': 10, 'reward_stars': 15, 'description': 'Открой 10 кейсов'},
-    {'task_type': 'crash_bets', 'case_id': 0, 'target_value': 5, 'reward_stars': 10, 'description': 'Сделай 5 ставок в краш'},
-    {'task_type': 'earn_exp', 'case_id': 0, 'target_value': 50, 'reward_stars': 8, 'description': 'Заработай 50 опыта'},
-    {'task_type': 'turnover', 'case_id': 0, 'target_value': 100, 'reward_stars': 12, 'description': 'Оборот 100 звёзд'},
+    {'task_type': 'open_case', 'case_id': 0, 'target_value': 3, 'reward_stars': 5, 'description': 'РћС‚РєСЂРѕР№ 3 РєРµР№СЃР°'},
+    {'task_type': 'open_case', 'case_id': 0, 'target_value': 10, 'reward_stars': 15, 'description': 'РћС‚РєСЂРѕР№ 10 РєРµР№СЃРѕРІ'},
+    {'task_type': 'crash_bets', 'case_id': 0, 'target_value': 5, 'reward_stars': 10, 'description': 'РЎРґРµР»Р°Р№ 5 СЃС‚Р°РІРѕРє РІ РєСЂР°С€'},
+    {'task_type': 'earn_exp', 'case_id': 0, 'target_value': 50, 'reward_stars': 8, 'description': 'Р—Р°СЂР°Р±РѕС‚Р°Р№ 50 РѕРїС‹С‚Р°'},
+    {'task_type': 'turnover', 'case_id': 0, 'target_value': 100, 'reward_stars': 12, 'description': 'РћР±РѕСЂРѕС‚ 100 Р·РІС‘Р·Рґ'},
 ]
 
 def ensure_daily_tasks():
@@ -11511,7 +11511,7 @@ def get_rewards_info(user_id):
         user = cursor.fetchone()
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
         
         current_level, experience, referral_count, total_cases_opened, total_crash_bets, balance_stars = user
         current_level = current_level or 1
@@ -11598,7 +11598,7 @@ def get_rewards_info(user_id):
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка получения наград: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РЅР°РіСЂР°Рґ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/rewards/claim', methods=['POST'])
@@ -11611,7 +11611,7 @@ def claim_reward():
         reward_id = data.get('reward_id')  # level number or referral count
         
         if not user_id or not reward_type or reward_id is None:
-            return jsonify({'success': False, 'error': 'Неверные параметры'})
+            return jsonify({'success': False, 'error': 'РќРµРІРµСЂРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹'})
         
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -11622,14 +11622,14 @@ def claim_reward():
                       (user_id, reward_type, str(reward_id)))
         if cursor.fetchone():
             conn.close()
-            return jsonify({'success': False, 'error': 'Награда уже получена'})
+            return jsonify({'success': False, 'error': 'РќР°РіСЂР°РґР° СѓР¶Рµ РїРѕР»СѓС‡РµРЅР°'})
         
         # Get user data
         cursor.execute('SELECT current_level, referral_count, balance_stars FROM users WHERE id = ?', (user_id,))
         user = cursor.fetchone()
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
         
         current_level, referral_count, balance_stars = user
         current_level = current_level or 1
@@ -11641,23 +11641,23 @@ def claim_reward():
             lr = next((l for l in LEVEL_REWARDS if l['level'] == int(reward_id)), None)
             if not lr:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Награда не найдена'})
+                return jsonify({'success': False, 'error': 'РќР°РіСЂР°РґР° РЅРµ РЅР°Р№РґРµРЅР°'})
             if current_level < lr['level']:
                 conn.close()
-                return jsonify({'success': False, 'error': f'Нужен уровень {lr["level"]}'})
+                return jsonify({'success': False, 'error': f'РќСѓР¶РµРЅ СѓСЂРѕРІРµРЅСЊ {lr["level"]}'})
             stars = lr['stars']
         elif reward_type == 'referral':
             rr = next((r for r in REFERRAL_REWARDS_CONFIG if r['count'] == int(reward_id)), None)
             if not rr:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Награда не найдена'})
+                return jsonify({'success': False, 'error': 'РќР°РіСЂР°РґР° РЅРµ РЅР°Р№РґРµРЅР°'})
             if referral_count < rr['count']:
                 conn.close()
-                return jsonify({'success': False, 'error': f'Нужно пригласить {rr["count"]} рефералов'})
+                return jsonify({'success': False, 'error': f'РќСѓР¶РЅРѕ РїСЂРёРіР»Р°СЃРёС‚СЊ {rr["count"]} СЂРµС„РµСЂР°Р»РѕРІ'})
             stars = rr['stars']
         else:
             conn.close()
-            return jsonify({'success': False, 'error': 'Неверный тип награды'})
+            return jsonify({'success': False, 'error': 'РќРµРІРµСЂРЅС‹Р№ С‚РёРї РЅР°РіСЂР°РґС‹'})
         
         # Claim reward
         cursor.execute('INSERT INTO reward_claims (user_id, reward_type, reward_id, reward_stars) VALUES (?, ?, ?, ?)',
@@ -11669,17 +11669,17 @@ def claim_reward():
         conn.commit()
         conn.close()
         
-        logger.info(f"🎁 Пользователь {user_id} получил награду {reward_type}_{reward_id}: {stars} звёзд")
+        logger.info(f"рџЋЃ РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ {user_id} РїРѕР»СѓС‡РёР» РЅР°РіСЂР°РґСѓ {reward_type}_{reward_id}: {stars} Р·РІС‘Р·Рґ")
         
         return jsonify({
             'success': True,
             'stars': stars,
             'new_balance': new_balance,
-            'message': f'Получено {stars} звёзд!'
+            'message': f'РџРѕР»СѓС‡РµРЅРѕ {stars} Р·РІС‘Р·Рґ!'
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка получения награды: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РЅР°РіСЂР°РґС‹: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/rewards/claim-daily', methods=['POST'])
@@ -11691,7 +11691,7 @@ def claim_daily_task_reward():
         task_id = data.get('task_id')
         
         if not user_id or not task_id:
-            return jsonify({'success': False, 'error': 'Неверные параметры'})
+            return jsonify({'success': False, 'error': 'РќРµРІРµСЂРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹'})
         
         today = datetime.now().strftime('%Y-%m-%d')
         conn = get_db_connection()
@@ -11704,17 +11704,17 @@ def claim_daily_task_reward():
         
         if not prog or not prog[1]:
             conn.close()
-            return jsonify({'success': False, 'error': 'Задание не выполнено'})
+            return jsonify({'success': False, 'error': 'Р—Р°РґР°РЅРёРµ РЅРµ РІС‹РїРѕР»РЅРµРЅРѕ'})
         if prog[2]:
             conn.close()
-            return jsonify({'success': False, 'error': 'Награда уже получена'})
+            return jsonify({'success': False, 'error': 'РќР°РіСЂР°РґР° СѓР¶Рµ РїРѕР»СѓС‡РµРЅР°'})
         
         # Get task info
         cursor.execute('SELECT reward_stars FROM daily_tasks WHERE id = ?', (task_id,))
         task = cursor.fetchone()
         if not task:
             conn.close()
-            return jsonify({'success': False, 'error': 'Задание не найдено'})
+            return jsonify({'success': False, 'error': 'Р—Р°РґР°РЅРёРµ РЅРµ РЅР°Р№РґРµРЅРѕ'})
         
         stars = task[0]
         
@@ -11731,11 +11731,11 @@ def claim_daily_task_reward():
             'success': True,
             'stars': stars,
             'new_balance': new_balance,
-            'message': f'Получено {stars} звёзд!'
+            'message': f'РџРѕР»СѓС‡РµРЅРѕ {stars} Р·РІС‘Р·Рґ!'
         })
         
     except Exception as e:
-        logger.error(f"❌ Ошибка получения награды за задание: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РЅР°РіСЂР°РґС‹ Р·Р° Р·Р°РґР°РЅРёРµ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 # Helper: update daily task progress (call from case open, crash bet, etc.)
@@ -11780,7 +11780,7 @@ def update_daily_task_progress(user_id, task_type, amount=1, case_id=None):
         conn.commit()
         conn.close()
     except Exception as e:
-        logger.error(f"❌ Ошибка обновления прогресса задания: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РѕР±РЅРѕРІР»РµРЅРёСЏ РїСЂРѕРіСЂРµСЃСЃР° Р·Р°РґР°РЅРёСЏ: {e}")
 
 # ==================== ADMIN DAILY TASKS API ====================
 
@@ -11791,7 +11791,7 @@ def admin_daily_tasks():
         try:
             admin_id = request.args.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
             
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -11812,7 +11812,7 @@ def admin_daily_tasks():
             data = request.get_json()
             admin_id = data.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
             
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -11823,7 +11823,7 @@ def admin_daily_tasks():
             conn.commit()
             conn.close()
             
-            return jsonify({'success': True, 'message': 'Задание создано'})
+            return jsonify({'success': True, 'message': 'Р—Р°РґР°РЅРёРµ СЃРѕР·РґР°РЅРѕ'})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)})
 
@@ -11833,7 +11833,7 @@ def admin_toggle_daily_task():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -11851,7 +11851,7 @@ def admin_delete_daily_task():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -11870,7 +11870,7 @@ def admin_delete_daily_task():
 
 @app.route('/api/online-count', methods=['GET'])
 def api_online_count():
-    """Return real online user count — users active in last 5 minutes"""
+    """Return real online user count вЂ” users active in last 5 minutes"""
     try:
         conn = get_db_connection()
         row = conn.execute("SELECT COUNT(*) FROM users WHERE last_active > datetime('now', '-5 minutes')").fetchone()
@@ -12130,7 +12130,7 @@ def process_gift_deposit():
         cursor.execute('INSERT INTO gift_deposits (user_id, gift_name, gift_value) VALUES (?, ?, ?)',
                       (user_id, gift_name, value))
         
-        # Получаем новый баланс
+        # РџРѕР»СѓС‡Р°РµРј РЅРѕРІС‹Р№ Р±Р°Р»Р°РЅСЃ
         cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
         new_balance = cursor.fetchone()[0]
         
@@ -12143,7 +12143,7 @@ def process_gift_deposit():
         
         # Send notification to user via Telegram
         try:
-            msg_text = f"Подарок успешно получен, вам начислено {value} звёзд."
+            msg_text = f"РџРѕРґР°СЂРѕРє СѓСЃРїРµС€РЅРѕ РїРѕР»СѓС‡РµРЅ, РІР°Рј РЅР°С‡РёСЃР»РµРЅРѕ {value} Р·РІС‘Р·Рґ."
             tg_url = f"{TG_API}/sendMessage"
             http_requests.post(tg_url, json={
                 'chat_id': user_id,
@@ -12172,7 +12172,7 @@ def process_gift_deposit():
 # NFT GIFT MONITOR SYSTEM
 # ============================================================
 
-# Аккаунт для мониторинга NFT подарков: @RasswetGiftsRelayer
+# РђРєРєР°СѓРЅС‚ РґР»СЏ РјРѕРЅРёС‚РѕСЂРёРЅРіР° NFT РїРѕРґР°СЂРєРѕРІ: @RasswetGiftsRelayer
 NFT_MONITOR_USERNAME = 'RasswetGiftsRelayer'
 NFT_MONITOR_USER_ID = None  # Will be resolved from username on startup
 _nft_monitor_running = False
@@ -12267,7 +12267,7 @@ def nft_gift_monitor_loop():
             conn.commit()
             conn.close()
 
-            # Call getUserGifts — get unique (NFT) gifts only
+            # Call getUserGifts вЂ” get unique (NFT) gifts only
             result = tg_api('getUserGifts', user_id=NFT_MONITOR_USER_ID, exclude_unlimited=True,
                            exclude_limited_upgradable=True, exclude_limited_non_upgradable=True,
                            limit=100)
@@ -12308,7 +12308,7 @@ def nft_gift_monitor_loop():
                         gift_obj = og.get('gift', {})
                         base_name = ''  # Regular gifts don't have base_name
                         display_name = f"Regular Gift ({gift_obj.get('star_count', 0)} Stars)"
-                        # For regular gifts, skip — user asked about NFT only
+                        # For regular gifts, skip вЂ” user asked about NFT only
                         continue
                     else:
                         continue
@@ -12340,8 +12340,8 @@ def nft_gift_monitor_loop():
                         # Notify admin about unmatched gift
                         try:
                             tg_send(ADMIN_ID,
-                                f"NFT Monitor: подарок <b>{base_name}</b> от пользователя {sender_id} "
-                                f"не найден в gifts.json. Звёзды не начислены.")
+                                f"NFT Monitor: РїРѕРґР°СЂРѕРє <b>{base_name}</b> РѕС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ {sender_id} "
+                                f"РЅРµ РЅР°Р№РґРµРЅ РІ gifts.json. Р—РІС‘Р·РґС‹ РЅРµ РЅР°С‡РёСЃР»РµРЅС‹.")
                         except Exception:
                             pass
                         continue
@@ -12396,8 +12396,8 @@ def nft_gift_monitor_loop():
                     # Notify sender
                     try:
                         tg_send(sender_id,
-                            f"Подарок <b>{matched_gift.get('name', base_name)}</b> был обменен на <b>{value}</b> звёзд ⭐\n\n"
-                            f"Новый баланс: <b>{new_balance}</b> звёзд")
+                            f"РџРѕРґР°СЂРѕРє <b>{matched_gift.get('name', base_name)}</b> Р±С‹Р» РѕР±РјРµРЅРµРЅ РЅР° <b>{value}</b> Р·РІС‘Р·Рґ в­ђ\n\n"
+                            f"РќРѕРІС‹Р№ Р±Р°Р»Р°РЅСЃ: <b>{new_balance}</b> Р·РІС‘Р·Рґ")
                     except Exception:
                         pass
 
@@ -12407,8 +12407,8 @@ def nft_gift_monitor_loop():
                             sender_name = sender.get('first_name', '') or str(sender_id)
                             tg_send(ADMIN_ID,
                                 f"NFT Deposit: <b>{sender_name}</b> ({sender_id})\n"
-                                f"Подарок: {matched_gift.get('name', base_name)}\n"
-                                f"Стоимость: {value} звёзд")
+                                f"РџРѕРґР°СЂРѕРє: {matched_gift.get('name', base_name)}\n"
+                                f"РЎС‚РѕРёРјРѕСЃС‚СЊ: {value} Р·РІС‘Р·Рґ")
                         except Exception:
                             pass
 
@@ -12656,16 +12656,16 @@ def grant_reward_with_comp(cursor, user_id, reward_type, amount, item_id_val, ow
             amt = int(amount or 0)
             if amt > 0:
                 cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (amt, user_id))
-                msgs.append(f'+{amt} звёзд')
+                msgs.append(f'+{amt} Р·РІС‘Р·Рґ')
         elif reward_type == 'tickets':
             amt = int(amount or 0)
             if amt > 0:
                 cursor.execute('UPDATE users SET balance_tickets = balance_tickets + ? WHERE id = ?', (amt, user_id))
-                msgs.append(f'+{amt} билетов')
+                msgs.append(f'+{amt} Р±РёР»РµС‚РѕРІ')
         elif reward_type == 'vip':
             if is_vip:
                 cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (200, user_id))
-                msgs.append('+200 звёзд (компенсация за VIP)')
+                msgs.append('+200 Р·РІС‘Р·Рґ (РєРѕРјРїРµРЅСЃР°С†РёСЏ Р·Р° VIP)')
             else:
                 cursor.execute('UPDATE users SET is_crash_vip = 1 WHERE id = ?', (user_id,))
                 msgs.append('VIP')
@@ -12673,20 +12673,20 @@ def grant_reward_with_comp(cursor, user_id, reward_type, amount, item_id_val, ow
             iid = str(item_id_val or '')
             if iid in owned_rockets_set:
                 cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (50, user_id))
-                msgs.append('+50 звёзд (компенсация за ракету)')
+                msgs.append('+50 Р·РІС‘Р·Рґ (РєРѕРјРїРµРЅСЃР°С†РёСЏ Р·Р° СЂР°РєРµС‚Сѓ)')
             else:
                 cursor.execute('INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source) VALUES (?, ?, ?, ?)',
                                (user_id, 'rocket', iid, 'reward'))
-                msgs.append(f'Ракета: {iid}')
+                msgs.append(f'Р Р°РєРµС‚Р°: {iid}')
         elif reward_type == 'background':
             iid = str(item_id_val or '')
             if iid in owned_backgrounds_set:
                 cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (50, user_id))
-                msgs.append('+50 звёзд (компенсация за фон)')
+                msgs.append('+50 Р·РІС‘Р·Рґ (РєРѕРјРїРµРЅСЃР°С†РёСЏ Р·Р° С„РѕРЅ)')
             else:
                 cursor.execute('INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source) VALUES (?, ?, ?, ?)',
                                (user_id, 'background', iid, 'reward'))
-                msgs.append(f'Фон: {iid}')
+                msgs.append(f'Р¤РѕРЅ: {iid}')
         elif reward_type == 'crate':
             # Add crate(s) to inventory as unopened item(s)
             try:
@@ -12694,16 +12694,16 @@ def grant_reward_with_comp(cursor, user_id, reward_type, amount, item_id_val, ow
                 quantity = max(1, int(amount)) if amount else 1
                 cursor.execute('SELECT name, image FROM crates WHERE id = ?', (cid,))
                 crate_row = cursor.fetchone()
-                crate_name = crate_row[0] if crate_row else f'Ящик #{cid}'
+                crate_name = crate_row[0] if crate_row else f'РЇС‰РёРє #{cid}'
                 crate_image = crate_row[1] if crate_row and crate_row[1] else '/static/img/star2.png'
                 for _ in range(quantity):
                     cursor.execute('''INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value, is_withdrawing, crate_id, crate_name, crate_image)
                         VALUES (?, 0, ?, ?, 0, 0, ?, ?, ?)''',
                         (user_id, crate_name, crate_image, cid, crate_name, crate_image))
                 if quantity > 1:
-                    msgs.append(f'Ящик: {crate_name} x{quantity}')
+                    msgs.append(f'РЇС‰РёРє: {crate_name} x{quantity}')
                 else:
-                    msgs.append(f'Ящик: {crate_name}')
+                    msgs.append(f'РЇС‰РёРє: {crate_name}')
             except Exception as ce:
                 logger.error(f"Error adding crate to inventory in helper: {ce}")
     except Exception as e:
@@ -12713,12 +12713,12 @@ def grant_reward_with_comp(cursor, user_id, reward_type, amount, item_id_val, ow
 
 @app.route('/api/admin/case-sections', methods=['GET', 'POST', 'DELETE'])
 def admin_case_sections():
-    """Управление разделами кейсов"""
+    """РЈРїСЂР°РІР»РµРЅРёРµ СЂР°Р·РґРµР»Р°РјРё РєРµР№СЃРѕРІ"""
     try:
         payload = request.get_json(silent=True) or {}
         admin_id = request.args.get('admin_id') or payload.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         if request.method == 'GET':
             sections = load_case_sections()
@@ -12727,25 +12727,25 @@ def admin_case_sections():
         if request.method == 'POST':
             name = str(payload.get('name') or '').strip()
             if not name:
-                return jsonify({'success': False, 'error': 'Введите название раздела'})
+                return jsonify({'success': False, 'error': 'Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ СЂР°Р·РґРµР»Р°'})
 
             section_id = normalize_section_id(payload.get('id') or name)
             sections = load_case_sections()
             if any(s.get('id') == section_id for s in sections):
-                return jsonify({'success': False, 'error': 'Раздел с таким ID уже существует'})
+                return jsonify({'success': False, 'error': 'Р Р°Р·РґРµР» СЃ С‚Р°РєРёРј ID СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚'})
 
             next_order = max([int(s.get('order', 0)) for s in sections], default=0) + 1
             new_section = {'id': section_id, 'name': name, 'order': next_order}
             sections.append(new_section)
             sections.sort(key=lambda x: x.get('order', 0))
             if not save_case_sections(sections):
-                return jsonify({'success': False, 'error': 'Ошибка сохранения разделов'})
+                return jsonify({'success': False, 'error': 'РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ СЂР°Р·РґРµР»РѕРІ'})
             return jsonify({'success': True, 'section': new_section, 'sections': sections})
 
         if request.method == 'DELETE':
             section_id = normalize_section_id(payload.get('id'))
             if section_id in ('', 'other'):
-                return jsonify({'success': False, 'error': 'Этот раздел нельзя удалить'})
+                return jsonify({'success': False, 'error': 'Р­С‚РѕС‚ СЂР°Р·РґРµР» РЅРµР»СЊР·СЏ СѓРґР°Р»РёС‚СЊ'})
 
             sections = load_case_sections()
             sections = [s for s in sections if s.get('id') != section_id]
@@ -12754,7 +12754,7 @@ def admin_case_sections():
                 s['order'] = idx + 1
 
             if not save_case_sections(sections):
-                return jsonify({'success': False, 'error': 'Ошибка сохранения разделов'})
+                return jsonify({'success': False, 'error': 'РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ СЂР°Р·РґРµР»РѕРІ'})
 
             cases = load_cases()
             changed = False
@@ -12768,7 +12768,7 @@ def admin_case_sections():
             return jsonify({'success': True, 'sections': sections})
 
     except Exception as e:
-        logger.error(f"❌ Ошибка управления разделами кейсов: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СѓРїСЂР°РІР»РµРЅРёСЏ СЂР°Р·РґРµР»Р°РјРё РєРµР№СЃРѕРІ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -12781,7 +12781,7 @@ def purchase_shop_deal():
         deal_id = data.get('deal_id', 0)
 
         if not user_id or not deal_id:
-            return jsonify({'success': False, 'error': 'Неверные данные'})
+            return jsonify({'success': False, 'error': 'РќРµРІРµСЂРЅС‹Рµ РґР°РЅРЅС‹Рµ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -12790,14 +12790,14 @@ def purchase_shop_deal():
         cursor.execute('SELECT id FROM shop_purchases WHERE user_id = ? AND deal_id = ?', (user_id, deal_id))
         if cursor.fetchone():
             conn.close()
-            return jsonify({'success': False, 'error': 'Уже куплено'})
+            return jsonify({'success': False, 'error': 'РЈР¶Рµ РєСѓРїР»РµРЅРѕ'})
 
         # Get deal
         cursor.execute('SELECT id, title, items, price, currency, ends_at FROM shop_deals WHERE id = ? AND is_active = 1', (deal_id,))
         deal = cursor.fetchone()
         if not deal:
             conn.close()
-            return jsonify({'success': False, 'error': 'Акция не найдена'})
+            return jsonify({'success': False, 'error': 'РђРєС†РёСЏ РЅРµ РЅР°Р№РґРµРЅР°'})
 
         did, title, items_json, price, currency, ends_at = deal
         items = json.loads(items_json) if items_json else []
@@ -12808,7 +12808,7 @@ def purchase_shop_deal():
                 end_dt = datetime.strptime(ends_at, '%Y-%m-%d %H:%M:%S')
                 if datetime.utcnow() > end_dt:
                     conn.close()
-                    return jsonify({'success': False, 'error': 'Акция истекла'})
+                    return jsonify({'success': False, 'error': 'РђРєС†РёСЏ РёСЃС‚РµРєР»Р°'})
             except: pass
 
         # Calculate discount for owned items
@@ -12838,7 +12838,7 @@ def purchase_shop_deal():
         bal = cursor.fetchone()
         if not bal or (bal[0] or 0) < final_price:
             conn.close()
-            return jsonify({'success': False, 'error': f'Недостаточно {"звёзд" if currency != "tickets" else "билетов"} (нужно {final_price})'})
+            return jsonify({'success': False, 'error': f'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ {"Р·РІС‘Р·Рґ" if currency != "tickets" else "Р±РёР»РµС‚РѕРІ"} (РЅСѓР¶РЅРѕ {final_price})'})
 
         # Deduct balance
         cursor.execute(f'UPDATE users SET {balance_field} = {balance_field} - ? WHERE id = ?', (final_price, user_id))
@@ -12861,12 +12861,12 @@ def purchase_shop_deal():
                 amt = int(it.get('amount', 0))
                 if amt > 0:
                     cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (amt, user_id))
-                    granted.append(f'+{amt} звёзд')
+                    granted.append(f'+{amt} Р·РІС‘Р·Рґ')
             elif itype == 'tickets':
                 amt = int(it.get('amount', 0))
                 if amt > 0:
                     cursor.execute('UPDATE users SET balance_tickets = balance_tickets + ? WHERE id = ?', (amt, user_id))
-                    granted.append(f'+{amt} билетов')
+                    granted.append(f'+{amt} Р±РёР»РµС‚РѕРІ')
             elif itype == 'crate':
                 crate_id_val = it.get('crate_id') or it.get('item_id', '')
                 crate_qty = max(1, int(it.get('quantity', 1) or 1))
@@ -12875,16 +12875,16 @@ def purchase_shop_deal():
                         cid = int(crate_id_val)
                         cursor.execute('SELECT name, image FROM crates WHERE id = ?', (cid,))
                         crate_row = cursor.fetchone()
-                        crate_name = crate_row[0] if crate_row else f'Ящик #{cid}'
+                        crate_name = crate_row[0] if crate_row else f'РЇС‰РёРє #{cid}'
                         crate_image = crate_row[1] if crate_row and crate_row[1] else '/static/img/star2.png'
                         for _ in range(crate_qty):
                             cursor.execute('''INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value, is_withdrawing, crate_id, crate_name, crate_image)
                                 VALUES (?, 0, ?, ?, 0, 0, ?, ?, ?)''',
                                 (user_id, crate_name, crate_image, cid, crate_name, crate_image))
                         if crate_qty > 1:
-                            granted.append(f'Ящик: {crate_name} x{crate_qty}')
+                            granted.append(f'РЇС‰РёРє: {crate_name} x{crate_qty}')
                         else:
-                            granted.append(f'Ящик: {crate_name}')
+                            granted.append(f'РЇС‰РёРє: {crate_name}')
                     except Exception as ce:
                         logger.error(f"Crate to inventory in shop error: {ce}")
 
@@ -12900,7 +12900,7 @@ def purchase_shop_deal():
 
         return jsonify({
             'success': True,
-            'message': 'Покупка успешна!',
+            'message': 'РџРѕРєСѓРїРєР° СѓСЃРїРµС€РЅР°!',
             'granted': granted,
             'new_balance_stars': newbal[0] if newbal else 0,
             'new_balance_tickets': newbal[1] if newbal else 0
@@ -12909,7 +12909,7 @@ def purchase_shop_deal():
         logger.error(f"Shop purchase error: {e}")
         try: conn.close()
         except: pass
-        return jsonify({'success': False, 'error': 'Ошибка покупки'})
+        return jsonify({'success': False, 'error': 'РћС€РёР±РєР° РїРѕРєСѓРїРєРё'})
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -12924,7 +12924,7 @@ def admin_shop_deals():
         try:
             admin_id = request.args.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -12956,14 +12956,14 @@ def admin_shop_deals():
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)})
 
-    else:  # POST — create
+    else:  # POST вЂ” create
         try:
             data = request.get_json()
             admin_id = data.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
-            title = data.get('title', 'Акция')
+            title = data.get('title', 'РђРєС†РёСЏ')
             description = data.get('description', '')
             section = data.get('section', 'general')
             items = json.dumps(data.get('items', []), ensure_ascii=False)
@@ -12987,7 +12987,7 @@ def admin_shop_deals():
                            duration_hours, ends_at, sort_order, icon))
             conn.commit()
             conn.close()
-            return jsonify({'success': True, 'message': 'Акция создана'})
+            return jsonify({'success': True, 'message': 'РђРєС†РёСЏ СЃРѕР·РґР°РЅР°'})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)})
 
@@ -12998,7 +12998,7 @@ def admin_toggle_shop_deal():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('UPDATE shop_deals SET is_active = ? WHERE id = ?', (1 if data.get('is_active') else 0, data['deal_id']))
@@ -13015,7 +13015,7 @@ def admin_delete_shop_deal():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM shop_deals WHERE id = ?', (data['deal_id'],))
@@ -13082,7 +13082,7 @@ def init_crates_tables(cursor=None):
 
 
 def init_level_crates():
-    """Создаёт крейты для наград за уровни из LEVEL_CRATES, если их ещё нет"""
+    """РЎРѕР·РґР°С‘С‚ РєСЂРµР№С‚С‹ РґР»СЏ РЅР°РіСЂР°Рґ Р·Р° СѓСЂРѕРІРЅРё РёР· LEVEL_CRATES, РµСЃР»Рё РёС… РµС‰С‘ РЅРµС‚"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -13090,36 +13090,36 @@ def init_level_crates():
         conn.commit()
         
         for crate_key, crate_data in LEVEL_CRATES.items():
-            # Проверяем, есть ли уже крейт с таким названием
+            # РџСЂРѕРІРµСЂСЏРµРј, РµСЃС‚СЊ Р»Рё СѓР¶Рµ РєСЂРµР№С‚ СЃ С‚Р°РєРёРј РЅР°Р·РІР°РЅРёРµРј
             cursor.execute("SELECT id FROM crates WHERE name = ?", (crate_data['name'],))
             existing = cursor.fetchone()
             if existing:
                 continue
             
-            # Создаём крейт
+            # РЎРѕР·РґР°С‘Рј РєСЂРµР№С‚
             cursor.execute('''
                 INSERT INTO crates (name, description, image, price, currency, is_active, sort_order)
                 VALUES (?, ?, ?, 0, 'free', 1, ?)
             ''', (crate_data['name'], f'Level reward crate: {crate_key}', crate_data['image'], 0))
             crate_id = cursor.lastrowid
             
-            # Добавляем предметы крейта
+            # Р”РѕР±Р°РІР»СЏРµРј РїСЂРµРґРјРµС‚С‹ РєСЂРµР№С‚Р°
             for item_type, item_id, item_name, chance, rarity in crate_data['items']:
                 cursor.execute('''
                     INSERT INTO crate_items (crate_id, item_type, item_id, item_name, chance, rarity)
                     VALUES (?, ?, ?, ?, ?, ?)
                 ''', (crate_id, item_type, item_id, item_name, chance, rarity))
             
-            logger.info(f"📦 Создан крейт уровня: {crate_data['name']} (id={crate_id})")
+            logger.info(f"рџ“¦ РЎРѕР·РґР°РЅ РєСЂРµР№С‚ СѓСЂРѕРІРЅСЏ: {crate_data['name']} (id={crate_id})")
         
         conn.commit()
         conn.close()
     except Exception as e:
-        logger.error(f"❌ Ошибка создания крейтов уровней: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ РєСЂРµР№С‚РѕРІ СѓСЂРѕРІРЅРµР№: {e}")
 
 
 def _get_level_crate_id(crate_key):
-    """Получает ID крейта по ключу из LEVEL_CRATES"""
+    """РџРѕР»СѓС‡Р°РµС‚ ID РєСЂРµР№С‚Р° РїРѕ РєР»СЋС‡Сѓ РёР· LEVEL_CRATES"""
     crate_data = LEVEL_CRATES.get(crate_key)
     if not crate_data:
         return None
@@ -13148,7 +13148,7 @@ def admin_crates():
         if request.method == 'GET':
             admin_id = request.args.get('admin_id', 0, type=int)
             if admin_id != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
             
             conn = get_db_connection()
             conn.row_factory = sqlite3.Row
@@ -13170,18 +13170,18 @@ def admin_crates():
         else:  # POST - create crate
             data = request.get_json(force=True, silent=True)
             if not data:
-                return jsonify({'success': False, 'error': 'Неверные данные запроса'})
+                return jsonify({'success': False, 'error': 'РќРµРІРµСЂРЅС‹Рµ РґР°РЅРЅС‹Рµ Р·Р°РїСЂРѕСЃР°'})
             admin_id = data.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
             
             name = data.get('name', '').strip()
             if not name:
-                return jsonify({'success': False, 'error': 'Введите название'})
+                return jsonify({'success': False, 'error': 'Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ'})
             
             items = data.get('items', [])
             if not items:
-                return jsonify({'success': False, 'error': 'Добавьте предметы'})
+                return jsonify({'success': False, 'error': 'Р”РѕР±Р°РІСЊС‚Рµ РїСЂРµРґРјРµС‚С‹'})
             
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -13227,7 +13227,7 @@ def admin_toggle_crate():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('UPDATE crates SET is_active = ? WHERE id = ?',
@@ -13246,7 +13246,7 @@ def admin_promote_crate():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         crate_id = int(data.get('crate_id', 0))
         promote = bool(data.get('promote'))
@@ -13260,7 +13260,7 @@ def admin_promote_crate():
         row = cursor.fetchone()
         if not row:
             conn.close()
-            return jsonify({'success': False, 'error': 'Ящик не найден'})
+            return jsonify({'success': False, 'error': 'РЇС‰РёРє РЅРµ РЅР°Р№РґРµРЅ'})
 
         _, name, desc, image, price, currency, is_promoted, promo_deal_id = row
 
@@ -13284,7 +13284,7 @@ def admin_promote_crate():
                 items = json.dumps([{'type': 'crate', 'crate_id': crate_id, 'name': name}], ensure_ascii=False)
                 cursor.execute('''INSERT INTO shop_deals (title, description, section, items, price, old_price, currency, duration_hours, starts_at, ends_at, is_active, sort_order, icon)
                     VALUES (?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, NULL, 1, 0, ?)''',
-                    (f'Кейс: {name}', desc or f'Кейс {name}', 'cases', items, int(price or 0), 0, currency or 'stars', image or ''))
+                    (f'РљРµР№СЃ: {name}', desc or f'РљРµР№СЃ {name}', 'cases', items, int(price or 0), 0, currency or 'stars', image or ''))
                 promo_deal_id = cursor.lastrowid
 
             cursor.execute('UPDATE crates SET is_promoted = 1, promo_deal_id = ? WHERE id = ?', (promo_deal_id, crate_id))
@@ -13310,7 +13310,7 @@ def admin_delete_crate():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('DELETE FROM crate_items WHERE crate_id = ?', (data['crate_id'],))
@@ -13328,11 +13328,11 @@ def admin_upload_crate_image():
     try:
         admin_id = request.form.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         file = request.files.get('file')
         if not file:
-            return jsonify({'success': False, 'error': 'Файл не выбран'})
+            return jsonify({'success': False, 'error': 'Р¤Р°Р№Р» РЅРµ РІС‹Р±СЂР°РЅ'})
         
         import uuid
         ext = os.path.splitext(file.filename)[1] or '.png'
@@ -13395,7 +13395,7 @@ def open_crate():
         crate = cursor.fetchone()
         if not crate:
             conn.close()
-            return jsonify({'success': False, 'error': 'Ящик не найден'})
+            return jsonify({'success': False, 'error': 'РЇС‰РёРє РЅРµ РЅР°Р№РґРµРЅ'})
         
         crate = dict(crate)
         
@@ -13404,7 +13404,7 @@ def open_crate():
         user = cursor.fetchone()
         if not user:
             conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            return jsonify({'success': False, 'error': 'РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ'})
         
         user = dict(user)
         
@@ -13415,11 +13415,11 @@ def open_crate():
             if currency == 'stars':
                 if user.get('balance_stars', 0) < price:
                     conn.close()
-                    return jsonify({'success': False, 'error': 'Недостаточно звёзд'})
+                    return jsonify({'success': False, 'error': 'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р·РІС‘Р·Рґ'})
             elif currency == 'tickets':
                 if user.get('balance_tickets', 0) < price:
                     conn.close()
-                    return jsonify({'success': False, 'error': 'Недостаточно билетов'})
+                    return jsonify({'success': False, 'error': 'РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ Р±РёР»РµС‚РѕРІ'})
         
         # Get items (row_factory already set above)
         cursor.execute('SELECT * FROM crate_items WHERE crate_id = ?', (crate_id,))
@@ -13427,7 +13427,7 @@ def open_crate():
         
         if not items:
             conn.close()
-            return jsonify({'success': False, 'error': 'Ящик пуст'})
+            return jsonify({'success': False, 'error': 'РЇС‰РёРє РїСѓСЃС‚'})
         
         # Weighted random selection
         import random
@@ -13461,7 +13461,7 @@ def open_crate():
         elif won_item['item_type'] == 'tickets':
             amount = int(won_item['item_id']) if won_item['item_id'].isdigit() else 1
             cursor.execute('UPDATE users SET balance_tickets = balance_tickets + ? WHERE id = ?', (amount, user_id))
-            reward_desc = '+' + str(amount) + ' билетов'
+            reward_desc = '+' + str(amount) + ' Р±РёР»РµС‚РѕРІ'
         elif won_item['item_type'] in ('rocket', 'background'):
             # Check if already owned
             cursor.execute('SELECT id FROM user_customizations WHERE user_id = ? AND item_type = ? AND item_id = ?',
@@ -13469,7 +13469,7 @@ def open_crate():
             already_owned = cursor.fetchone()
             if already_owned:
                 cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (comp_stars, user_id))
-                comp_desc = '+' + str(comp_stars) + ' ⭐ (уже есть)'
+                comp_desc = '+' + str(comp_stars) + ' в­ђ (СѓР¶Рµ РµСЃС‚СЊ)'
             else:
                 cursor.execute('''INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source)
                     VALUES (?, ?, ?, 'crate')''', (user_id, won_item['item_type'], won_item['item_id']))
@@ -13607,7 +13607,7 @@ def get_crash_quests():
                                        (progress, completed, user_id, qid))
                         conn.commit()
                 else:
-                    # First time — insert record
+                    # First time вЂ” insert record
                     cursor.execute('INSERT OR IGNORE INTO user_quest_progress (user_id, quest_id, progress, completed) VALUES (?, ?, ?, ?)',
                                    (user_id, qid, progress, completed))
                     conn.commit()
@@ -13663,21 +13663,21 @@ def get_crash_quests():
             if user_id > 0 and not reward_claimed:
                 if rtype == 'background' and reward_data_id:
                     if reward_data_id in owned_backgrounds:
-                        compensation = {'type': 'stars', 'amount': 50, 'reason': 'Фон уже есть'}
+                        compensation = {'type': 'stars', 'amount': 50, 'reason': 'Р¤РѕРЅ СѓР¶Рµ РµСЃС‚СЊ'}
                 elif rtype == 'rocket' and reward_data_id:
                     if reward_data_id in owned_rockets:
-                        compensation = {'type': 'stars', 'amount': 50, 'reason': 'Ракета уже есть'}
+                        compensation = {'type': 'stars', 'amount': 50, 'reason': 'Р Р°РєРµС‚Р° СѓР¶Рµ РµСЃС‚СЊ'}
                 elif rtype == 'vip' and is_user_vip:
-                    compensation = {'type': 'stars', 'amount': 200, 'reason': 'VIP уже есть'}
+                    compensation = {'type': 'stars', 'amount': 200, 'reason': 'VIP СѓР¶Рµ РµСЃС‚СЊ'}
                 elif rtype == 'multi' and rewards_arr:
                     comp_list = []
                     for rew in rewards_arr:
                         rt = rew.get('type', '')
                         rid = rew.get('item_id', '')
                         if rt == 'background' and rid and rid in owned_backgrounds:
-                            comp_list.append({'type': 'stars', 'amount': 50, 'for': rew.get('name', 'Фон')})
+                            comp_list.append({'type': 'stars', 'amount': 50, 'for': rew.get('name', 'Р¤РѕРЅ')})
                         elif rt == 'rocket' and rid and rid in owned_rockets:
-                            comp_list.append({'type': 'stars', 'amount': 50, 'for': rew.get('name', 'Ракета')})
+                            comp_list.append({'type': 'stars', 'amount': 50, 'for': rew.get('name', 'Р Р°РєРµС‚Р°')})
                         elif rt == 'vip' and is_user_vip:
                             comp_list.append({'type': 'stars', 'amount': 200, 'for': 'VIP'})
                     if comp_list:
@@ -13853,7 +13853,7 @@ def claim_crash_quest():
         quest_id = data.get('quest_id', 0)
         
         if not user_id or not quest_id:
-            return jsonify({'success': False, 'error': 'Неверные данные'})
+            return jsonify({'success': False, 'error': 'РќРµРІРµСЂРЅС‹Рµ РґР°РЅРЅС‹Рµ'})
         
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -13863,7 +13863,7 @@ def claim_crash_quest():
         quest = cursor.fetchone()
         if not quest:
             conn.close()
-            return jsonify({'success': False, 'error': 'Квест не найден'})
+            return jsonify({'success': False, 'error': 'РљРІРµСЃС‚ РЅРµ РЅР°Р№РґРµРЅ'})
         
         qid, target, rtype, ramount, rdata, title, qtype, cond_val, quest_created_at = quest
         
@@ -13873,13 +13873,13 @@ def claim_crash_quest():
         
         if up and up[1]:
             conn.close()
-            return jsonify({'success': False, 'error': 'Награда уже получена'})
+            return jsonify({'success': False, 'error': 'РќР°РіСЂР°РґР° СѓР¶Рµ РїРѕР»СѓС‡РµРЅР°'})
         
         progress = up[0] if up else _calc_quest_progress(cursor, user_id, qtype, target, cond_val or 0, quest_created_at)
         
         if progress < target:
             conn.close()
-            return jsonify({'success': False, 'error': 'Квест не выполнен'})
+            return jsonify({'success': False, 'error': 'РљРІРµСЃС‚ РЅРµ РІС‹РїРѕР»РЅРµРЅ'})
         
         # Claim the reward (with compensation for already-owned items)
         msg = ''
@@ -13924,22 +13924,22 @@ def claim_crash_quest():
             if bal:
                 new_balance_stars = bal[0]
                 new_balance_tickets = bal[1]
-            msg = ', '.join(msgs) if msgs else 'Награды получены!'
+            msg = ', '.join(msgs) if msgs else 'РќР°РіСЂР°РґС‹ РїРѕР»СѓС‡РµРЅС‹!'
         elif rtype == 'stars':
             cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (ramount, user_id))
             cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
             new_balance_stars = cursor.fetchone()[0]
-            msg = f'+{ramount} звезд!'
+            msg = f'+{ramount} Р·РІРµР·Рґ!'
         elif rtype == 'tickets':
             cursor.execute('UPDATE users SET balance_tickets = balance_tickets + ? WHERE id = ?', (ramount, user_id))
             cursor.execute('SELECT balance_tickets FROM users WHERE id = ?', (user_id,))
             new_balance_tickets = cursor.fetchone()[0]
-            msg = f'+{ramount} билетов!'
+            msg = f'+{ramount} Р±РёР»РµС‚РѕРІ!'
         elif rtype == 'vip':
             msgs = grant_reward_with_comp(cursor, user_id, 'vip', 0, '', owned_rockets_set, owned_backgrounds_set, user_has_vip)
             cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
             new_balance_stars = cursor.fetchone()[0]
-            msg = msgs[0] if msgs else 'VIP активирован!'
+            msg = msgs[0] if msgs else 'VIP Р°РєС‚РёРІРёСЂРѕРІР°РЅ!'
         elif rtype in ('rocket', 'background'):
             rd = {}
             if rdata:
@@ -13949,7 +13949,7 @@ def claim_crash_quest():
             msgs = grant_reward_with_comp(cursor, user_id, rtype, 0, item_id, owned_rockets_set, owned_backgrounds_set, user_has_vip)
             cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
             new_balance_stars = cursor.fetchone()[0]
-            msg = msgs[0] if msgs else 'Награда получена!'
+            msg = msgs[0] if msgs else 'РќР°РіСЂР°РґР° РїРѕР»СѓС‡РµРЅР°!'
         elif rtype == 'crate':
             rd = {}
             if rdata:
@@ -13963,9 +13963,9 @@ def claim_crash_quest():
             if bal:
                 new_balance_stars = bal[0]
                 new_balance_tickets = bal[1]
-            msg = msgs[0] if msgs else 'Ящик получен!'
+            msg = msgs[0] if msgs else 'РЇС‰РёРє РїРѕР»СѓС‡РµРЅ!'
         else:
-            msg = 'Награда получена!'
+            msg = 'РќР°РіСЂР°РґР° РїРѕР»СѓС‡РµРЅР°!'
         
         # Mark as claimed
         cursor.execute('''INSERT INTO user_quest_progress (user_id, quest_id, progress, completed, reward_claimed, updated_at)
@@ -14097,7 +14097,7 @@ def admin_crash_quests():
         try:
             admin_id = request.args.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
             
             conn = get_db_connection()
             cursor = conn.cursor()
@@ -14137,13 +14137,13 @@ def admin_crash_quests():
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)})
     
-    else:  # POST — create new quest
+    else:  # POST вЂ” create new quest
         try:
             admin_id = request.form.get('admin_id') or request.args.get('admin_id')
             if not admin_id or int(admin_id) != ADMIN_ID:
-                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+                return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
             
-            title = request.form.get('title', 'Квест')
+            title = request.form.get('title', 'РљРІРµСЃС‚')
             description = request.form.get('description', '')
             quest_type = request.form.get('quest_type', 'turnover')
             target_value = int(request.form.get('target_value', 100))
@@ -14191,7 +14191,7 @@ def admin_crash_quests():
             conn.commit()
             conn.close()
             
-            return jsonify({'success': True, 'message': 'Квест создан'})
+            return jsonify({'success': True, 'message': 'РљРІРµСЃС‚ СЃРѕР·РґР°РЅ'})
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)})
 
@@ -14202,7 +14202,7 @@ def admin_toggle_crash_quest():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -14220,7 +14220,7 @@ def admin_delete_crash_quest():
         data = request.get_json()
         admin_id = data.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -14234,13 +14234,13 @@ def admin_delete_crash_quest():
 
 @app.route('/api/admin/win-history', methods=['GET'])
 def admin_win_history():
-    """Получение полной истории побед"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РїРѕР»РЅРѕР№ РёСЃС‚РѕСЂРёРё РїРѕР±РµРґ"""
     try:
         admin_id = request.args.get('admin_id')
         limit = request.args.get('limit', 100, type=int)
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -14286,18 +14286,18 @@ def admin_win_history():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения истории побед для админки: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё РїРѕР±РµРґ РґР»СЏ Р°РґРјРёРЅРєРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/clear-win-history', methods=['POST'])
 def admin_clear_win_history():
-    """Очистка истории побед"""
+    """РћС‡РёСЃС‚РєР° РёСЃС‚РѕСЂРёРё РїРѕР±РµРґ"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -14306,26 +14306,26 @@ def admin_clear_win_history():
         conn.commit()
         conn.close()
 
-        logger.info(f"🛠️ Админ {admin_id} очистил историю побед")
+        logger.info(f"рџ› пёЏ РђРґРјРёРЅ {admin_id} РѕС‡РёСЃС‚РёР» РёСЃС‚РѕСЂРёСЋ РїРѕР±РµРґ")
         return jsonify({
             'success': True,
-            'message': 'История побед успешно очищена'
+            'message': 'РСЃС‚РѕСЂРёСЏ РїРѕР±РµРґ СѓСЃРїРµС€РЅРѕ РѕС‡РёС‰РµРЅР°'
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка очистки истории побед: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё РёСЃС‚РѕСЂРёРё РїРѕР±РµРґ: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/case-open-history', methods=['GET'])
 def admin_case_open_history():
-    """Получение полной истории открытий кейсов"""
+    """РџРѕР»СѓС‡РµРЅРёРµ РїРѕР»РЅРѕР№ РёСЃС‚РѕСЂРёРё РѕС‚РєСЂС‹С‚РёР№ РєРµР№СЃРѕРІ"""
     try:
         admin_id = request.args.get('admin_id')
         limit = request.args.get('limit', 100, type=int)
         user_id = request.args.get('user_id')
 
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -14389,13 +14389,13 @@ def admin_case_open_history():
         })
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения истории открытий кейсов для админки: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё РѕС‚РєСЂС‹С‚РёР№ РєРµР№СЃРѕРІ РґР»СЏ Р°РґРјРёРЅРєРё: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
-# ==================== ЗАПУСК ПРИЛОЖЕНИЯ ====================
+# ==================== Р—РђРџРЈРЎРљ РџР РР›РћР–Р•РќРРЇ ====================
 
 def save_ultimate_crash_history(game_id, final_multiplier):
-    """Сохраняет историю Ultimate Crash игры"""
+    """РЎРѕС…СЂР°РЅСЏРµС‚ РёСЃС‚РѕСЂРёСЋ Ultimate Crash РёРіСЂС‹"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -14407,14 +14407,14 @@ def save_ultimate_crash_history(game_id, final_multiplier):
 
         conn.commit()
         conn.close()
-        logger.info(f"📝 Сохранена история игры #{game_id}, множитель: {final_multiplier}x")
+        logger.info(f"рџ“ќ РЎРѕС…СЂР°РЅРµРЅР° РёСЃС‚РѕСЂРёСЏ РёРіСЂС‹ #{game_id}, РјРЅРѕР¶РёС‚РµР»СЊ: {final_multiplier}x")
         return True
     except Exception as e:
-        logger.error(f"❌ Ошибка сохранения истории игры: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РёСЃС‚РѕСЂРёРё РёРіСЂС‹: {e}")
         return False
 
 def get_ultimate_crash_history(limit=10):
-    """Получает историю множителей"""
+    """РџРѕР»СѓС‡Р°РµС‚ РёСЃС‚РѕСЂРёСЋ РјРЅРѕР¶РёС‚РµР»РµР№"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -14438,78 +14438,78 @@ def get_ultimate_crash_history(limit=10):
                 'finished_at': item[3]
             })
 
-        logger.info(f"📊 Загружено {len(history_list)} записей истории")
+        logger.info(f"рџ“Љ Р—Р°РіСЂСѓР¶РµРЅРѕ {len(history_list)} Р·Р°РїРёСЃРµР№ РёСЃС‚РѕСЂРёРё")
         return history_list
     except Exception as e:
-        logger.error(f"❌ Ошибка получения истории: {e}")
+        logger.error(f"вќЊ РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ РёСЃС‚РѕСЂРёРё: {e}")
         return []
 
-# ==================== ЗАПУСК ПРИЛОЖЕНИЯ ====================
+# ==================== Р—РђРџРЈРЎРљ РџР РР›РћР–Р•РќРРЇ ====================
 
-# Флаг: уже инициализировано (защита от повторного запуска в WSGI)
+# Р¤Р»Р°Рі: СѓР¶Рµ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°РЅРѕ (Р·Р°С‰РёС‚Р° РѕС‚ РїРѕРІС‚РѕСЂРЅРѕРіРѕ Р·Р°РїСѓСЃРєР° РІ WSGI)
 _app_initialized = False
 _init_lock = threading.Lock()
 
 def _lazy_init():
-    """Ленивая инициализация — вызывается один раз при первом запросе или при старте"""
+    """Р›РµРЅРёРІР°СЏ РёРЅРёС†РёР°Р»РёР·Р°С†РёСЏ вЂ” РІС‹Р·С‹РІР°РµС‚СЃСЏ РѕРґРёРЅ СЂР°Р· РїСЂРё РїРµСЂРІРѕРј Р·Р°РїСЂРѕСЃРµ РёР»Рё РїСЂРё СЃС‚Р°СЂС‚Рµ"""
     global _app_initialized
     if _app_initialized:
         return
     with _init_lock:
         if _app_initialized:
             return
-        logger.info("🚀 Инициализация приложения...")
+        logger.info("рџљЂ РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РїСЂРёР»РѕР¶РµРЅРёСЏ...")
         try:
             safe_init_db()
         except Exception as e:
-            logger.error(f"❌ Ошибка инициализации БД: {e}")
-        # Запуск игровых циклов
+            logger.error(f"вќЊ РћС€РёР±РєР° РёРЅРёС†РёР°Р»РёР·Р°С†РёРё Р‘Р”: {e}")
+        # Р—Р°РїСѓСЃРє РёРіСЂРѕРІС‹С… С†РёРєР»РѕРІ
         try:
             start_crash_loop()
         except Exception as e:
-            logger.error(f"❌ Не удалось запустить Crash loop: {e}")
+            logger.error(f"вќЊ РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїСѓСЃС‚РёС‚СЊ Crash loop: {e}")
         try:
             start_ultimate_crash_loop()
         except Exception as e:
-            logger.error(f"❌ Не удалось запустить Ultimate Crash loop: {e}")
+            logger.error(f"вќЊ РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїСѓСЃС‚РёС‚СЊ Ultimate Crash loop: {e}")
         # Webhook Telegram
         try:
             threading.Thread(target=setup_telegram_webhook, daemon=True).start()
         except Exception as e:
-            logger.error(f"❌ Не удалось настроить webhook: {e}")
+            logger.error(f"вќЊ РќРµ СѓРґР°Р»РѕСЃСЊ РЅР°СЃС‚СЂРѕРёС‚СЊ webhook: {e}")
         # NFT Gift Monitor
         try:
             start_nft_monitor()
         except Exception as e:
-            logger.error(f"❌ Не удалось запустить NFT Monitor: {e}")
+            logger.error(f"вќЊ РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїСѓСЃС‚РёС‚СЊ NFT Monitor: {e}")
         # Pre-fetch Fragment catalog in background
         try:
             def _prefetch_fragment():
                 try:
                     catalog = fetch_fragment_gifts_catalog(force_refresh=True)
-                    logger.info(f"📦 Fragment catalog pre-fetched: {len(catalog or [])} gifts")
+                    logger.info(f"рџ“¦ Fragment catalog pre-fetched: {len(catalog or [])} gifts")
                 except Exception as fe:
-                    logger.warning(f"⚠️ Fragment pre-fetch failed: {fe}")
+                    logger.warning(f"вљ пёЏ Fragment pre-fetch failed: {fe}")
             threading.Thread(target=_prefetch_fragment, daemon=True).start()
         except Exception as e:
-            logger.warning(f"⚠️ Fragment pre-fetch thread failed: {e}")
+            logger.warning(f"вљ пёЏ Fragment pre-fetch thread failed: {e}")
         _app_initialized = True
-        logger.info("✅ Приложение инициализировано")
+        logger.info("вњ… РџСЂРёР»РѕР¶РµРЅРёРµ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°РЅРѕ")
 
 @app.before_request
 def ensure_initialized():
-    """Гарантирует что БД и игровые циклы запущены перед обработкой запросов"""
+    """Р“Р°СЂР°РЅС‚РёСЂСѓРµС‚ С‡С‚Рѕ Р‘Р” Рё РёРіСЂРѕРІС‹Рµ С†РёРєР»С‹ Р·Р°РїСѓС‰РµРЅС‹ РїРµСЂРµРґ РѕР±СЂР°Р±РѕС‚РєРѕР№ Р·Р°РїСЂРѕСЃРѕРІ"""
     _lazy_init()
 
-# ==================== TELEGRAM BOT (WEBHOOK, без telebot) ====================
+# ==================== TELEGRAM BOT (WEBHOOK, Р±РµР· telebot) ====================
 
-# Состояния пользователей бота (для рассылки)
+# РЎРѕСЃС‚РѕСЏРЅРёСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ Р±РѕС‚Р° (РґР»СЏ СЂР°СЃСЃС‹Р»РєРё)
 _bot_user_states = {}
-_broadcast_messages = {}  # chat_id -> message data для рассылки
+_broadcast_messages = {}  # chat_id -> message data РґР»СЏ СЂР°СЃСЃС‹Р»РєРё
 
 # --- Telegram API helpers ---
 def tg_api(method, **kwargs):
-    """Вызов Telegram Bot API"""
+    """Р’С‹Р·РѕРІ Telegram Bot API"""
     try:
         r = http_requests.post(f'{TG_API}/{method}', json=kwargs, timeout=15)
         data = r.json()
@@ -14549,15 +14549,15 @@ def tg_get_file(file_id):
 
 # --- Inline keyboards ---
 def make_play_button():
-    return {'inline_keyboard': [[{'text': '🎮 ИГРАТЬ', 'web_app': {'url': WEBSITE_URL}}]]}
+    return {'inline_keyboard': [[{'text': 'рџЋ® РР“Р РђРўР¬', 'web_app': {'url': WEBSITE_URL}}]]}
 
 def make_admin_menu():
     return {'inline_keyboard': [
-        [{'text': '📢 Рассылка', 'callback_data': 'admin_broadcast'},
-         {'text': '📊 Статистика', 'callback_data': 'admin_stats'}],
-        [{'text': '👥 Пользователи', 'callback_data': 'admin_users'},
-         {'text': '⚙️ Настройки', 'callback_data': 'admin_settings'}],
-        [{'text': '❌ Закрыть', 'callback_data': 'admin_close'}]
+        [{'text': 'рџ“ў Р Р°СЃСЃС‹Р»РєР°', 'callback_data': 'admin_broadcast'},
+         {'text': 'рџ“Љ РЎС‚Р°С‚РёСЃС‚РёРєР°', 'callback_data': 'admin_stats'}],
+        [{'text': 'рџ‘Ґ РџРѕР»СЊР·РѕРІР°С‚РµР»Рё', 'callback_data': 'admin_users'},
+         {'text': 'вљ™пёЏ РќР°СЃС‚СЂРѕР№РєРё', 'callback_data': 'admin_settings'}],
+        [{'text': 'вќЊ Р—Р°РєСЂС‹С‚СЊ', 'callback_data': 'admin_close'}]
     ]}
 
 # --- Bot DB helpers ---
@@ -14618,11 +14618,11 @@ def handle_start(msg):
             if ref_code:
                 try:
                     process_referral(uid, ref_code)
-                    logger.info(f"👥 Реферал через бота: {uid} -> {ref_code}")
+                    logger.info(f"рџ‘Ґ Р РµС„РµСЂР°Р» С‡РµСЂРµР· Р±РѕС‚Р°: {uid} -> {ref_code}")
                 except Exception as e:
-                    logger.error(f"❌ Ошибка реферала через бота: {e}")
+                    logger.error(f"вќЊ РћС€РёР±РєР° СЂРµС„РµСЂР°Р»Р° С‡РµСЂРµР· Р±РѕС‚Р°: {e}")
     
-    tg_send(chat_id, f"Привет, {first_name}! 🎮\n\nНажми кнопку чтобы начать:", reply_markup=make_play_button())
+    tg_send(chat_id, f"РџСЂРёРІРµС‚, {first_name}! рџЋ®\n\nРќР°Р¶РјРё РєРЅРѕРїРєСѓ С‡С‚РѕР±С‹ РЅР°С‡Р°С‚СЊ:", reply_markup=make_play_button())
 
 # --- /auth handler ---
 def handle_auth(msg):
@@ -14635,13 +14635,13 @@ def handle_auth(msg):
     parts = text.split(maxsplit=1)
 
     if len(parts) < 2 or len(parts[1].strip()) != 20:
-        tg_send(chat_id, "❌ <b>Неверный формат</b>\n\nИспользуйте: <code>/auth ВАШ_КОД</code>\nКод можно получить на сайте.")
+        tg_send(chat_id, "вќЊ <b>РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚</b>\n\nРСЃРїРѕР»СЊР·СѓР№С‚Рµ: <code>/auth Р’РђРЁ_РљРћР”</code>\nРљРѕРґ РјРѕР¶РЅРѕ РїРѕР»СѓС‡РёС‚СЊ РЅР° СЃР°Р№С‚Рµ.")
         return
 
     code = parts[1].strip().upper()
     bot_add_user(uid, first_name, username)
 
-    # Фото профиля
+    # Р¤РѕС‚Рѕ РїСЂРѕС„РёР»СЏ
     photo_url = ''
     try:
         photos_resp = tg_get_profile_photos(uid)
@@ -14656,7 +14656,7 @@ def handle_auth(msg):
     except Exception as e:
         logger.warning(f"photo err: {e}")
 
-    # Данные пользователя
+    # Р”Р°РЅРЅС‹Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
     balance_stars = 0; balance_tickets = 0; experience = 0; current_level = 1
     try:
         conn = get_db_connection()
@@ -14685,45 +14685,45 @@ def handle_auth(msg):
         row = cursor.fetchone()
         if not row:
             conn.close()
-            tg_send(chat_id, "❌ <b>Неверный код</b>\n\nКод не найден или истёк. Попробуйте получить новый на сайте.")
+            tg_send(chat_id, "вќЊ <b>РќРµРІРµСЂРЅС‹Р№ РєРѕРґ</b>\n\nРљРѕРґ РЅРµ РЅР°Р№РґРµРЅ РёР»Рё РёСЃС‚С‘Рє. РџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР»СѓС‡РёС‚СЊ РЅРѕРІС‹Р№ РЅР° СЃР°Р№С‚Рµ.")
             return
         if row[0]:
             conn.close()
-            tg_send(chat_id, "❌ <b>Код уже использован</b>\nПопробуйте получить новый код на сайте.")
+            tg_send(chat_id, "вќЊ <b>РљРѕРґ СѓР¶Рµ РёСЃРїРѕР»СЊР·РѕРІР°РЅ</b>\nРџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР»СѓС‡РёС‚СЊ РЅРѕРІС‹Р№ РєРѕРґ РЅР° СЃР°Р№С‚Рµ.")
             return
         cursor.execute('UPDATE auth_codes SET confirmed = 1, user_data = ? WHERE code = ?',
                        (json.dumps(user_data, ensure_ascii=False), code))
         conn.commit()
         conn.close()
-        tg_send(chat_id, f"✅ <b>Авторизация успешна!</b>\n\nВы вошли как <b>{first_name}</b>\nТеперь вернитесь на сайт — он автоматически войдёт.")
-        logger.info(f"✅ Auth OK: {first_name} ({uid})")
+        tg_send(chat_id, f"вњ… <b>РђРІС‚РѕСЂРёР·Р°С†РёСЏ СѓСЃРїРµС€РЅР°!</b>\n\nР’С‹ РІРѕС€Р»Рё РєР°Рє <b>{first_name}</b>\nРўРµРїРµСЂСЊ РІРµСЂРЅРёС‚РµСЃСЊ РЅР° СЃР°Р№С‚ вЂ” РѕРЅ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РІРѕР№РґС‘С‚.")
+        logger.info(f"вњ… Auth OK: {first_name} ({uid})")
     except Exception as e:
         logger.error(f"auth confirm err: {e}")
-        tg_send(chat_id, "❌ <b>Ошибка соединения с сервером</b>\n\nПопробуйте позже.")
+        tg_send(chat_id, "вќЊ <b>РћС€РёР±РєР° СЃРѕРµРґРёРЅРµРЅРёСЏ СЃ СЃРµСЂРІРµСЂРѕРј</b>\n\nРџРѕРїСЂРѕР±СѓР№С‚Рµ РїРѕР·Р¶Рµ.")
 
 # --- /admin handler ---
 def handle_admin(msg):
     uid = msg['from']['id']
     chat_id = msg['chat']['id']
     if uid != ADMIN_ID:
-        tg_send(chat_id, "⛔")
+        tg_send(chat_id, "в›”")
         return
-    tg_send(chat_id, "🛠️ <b>АДМИН-ПАНЕЛЬ</b>\n\nВыберите действие:", reply_markup=make_admin_menu())
+    tg_send(chat_id, "рџ› пёЏ <b>РђР”РњРРќ-РџРђРќР•Р›Р¬</b>\n\nР’С‹Р±РµСЂРёС‚Рµ РґРµР№СЃС‚РІРёРµ:", reply_markup=make_admin_menu())
 
 
 # --- /refund handler (admin only) ---
 def handle_refund(msg):
-    """Handle /refund command — admin only. Shows recent star transactions for refund."""
+    """Handle /refund command вЂ” admin only. Shows recent star transactions for refund."""
     uid = msg['from']['id']
     chat_id = msg['chat']['id']
     if uid != ADMIN_ID:
-        tg_send(chat_id, "⛔ Только для администратора")
+        tg_send(chat_id, "в›” РўРѕР»СЊРєРѕ РґР»СЏ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°")
         return
 
     text = msg.get('text', '').strip()
     parts = text.split()
 
-    # /refund <telegram_payment_charge_id> — direct refund by charge ID
+    # /refund <telegram_payment_charge_id> вЂ” direct refund by charge ID
     if len(parts) >= 2:
         charge_id = parts[1].strip()
         # Look up in our DB to find user_id
@@ -14735,23 +14735,23 @@ def handle_refund(msg):
             conn.close()
         except Exception as e:
             logger.error(f"Refund DB lookup error: {e}")
-            tg_send(chat_id, f"❌ Ошибка БД: {e}")
+            tg_send(chat_id, f"вќЊ РћС€РёР±РєР° Р‘Р”: {e}")
             return
 
         if row:
             target_user_id, amount = row[0], row[1]
         else:
-            # Not in our DB — ask for user_id
+            # Not in our DB вЂ” ask for user_id
             if len(parts) >= 3:
                 try:
                     target_user_id = int(parts[2])
                     amount = None
                 except ValueError:
-                    tg_send(chat_id, "❌ Неверный формат.\n\nИспользование:\n<code>/refund charge_id</code>\n<code>/refund charge_id user_id</code>")
+                    tg_send(chat_id, "вќЊ РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚.\n\nРСЃРїРѕР»СЊР·РѕРІР°РЅРёРµ:\n<code>/refund charge_id</code>\n<code>/refund charge_id user_id</code>")
                     return
             else:
-                tg_send(chat_id, f"⚠️ Платёж <code>{charge_id}</code> не найден в БД.\n\n"
-                        f"Укажите user_id:\n<code>/refund {charge_id} USER_ID</code>")
+                tg_send(chat_id, f"вљ пёЏ РџР»Р°С‚С‘Р¶ <code>{charge_id}</code> РЅРµ РЅР°Р№РґРµРЅ РІ Р‘Р”.\n\n"
+                        f"РЈРєР°Р¶РёС‚Рµ user_id:\n<code>/refund {charge_id} USER_ID</code>")
                 return
 
         # Execute refund via Telegram API
@@ -14775,38 +14775,38 @@ def handle_refund(msg):
             except Exception as e:
                 logger.error(f"Refund DB cleanup error: {e}")
 
-            amt_str = f" ({amount} ⭐)" if amount else ""
-            tg_send(chat_id, f"✅ <b>Возврат выполнен</b>\n\n"
+            amt_str = f" ({amount} в­ђ)" if amount else ""
+            tg_send(chat_id, f"вњ… <b>Р’РѕР·РІСЂР°С‚ РІС‹РїРѕР»РЅРµРЅ</b>\n\n"
                     f"Charge ID: <code>{charge_id}</code>\n"
-                    f"Пользователь: <code>{target_user_id}</code>{amt_str}")
-            logger.info(f"⭐ Refund OK: user={target_user_id}, charge={charge_id}, amount={amount}")
+                    f"РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ: <code>{target_user_id}</code>{amt_str}")
+            logger.info(f"в­ђ Refund OK: user={target_user_id}, charge={charge_id}, amount={amount}")
         else:
-            err = result.get('description', 'Неизвестная ошибка')
-            tg_send(chat_id, f"❌ <b>Ошибка возврата</b>\n\n{err}\n\n"
+            err = result.get('description', 'РќРµРёР·РІРµСЃС‚РЅР°СЏ РѕС€РёР±РєР°')
+            tg_send(chat_id, f"вќЊ <b>РћС€РёР±РєР° РІРѕР·РІСЂР°С‚Р°</b>\n\n{err}\n\n"
                     f"Charge ID: <code>{charge_id}</code>\n"
                     f"User ID: <code>{target_user_id}</code>")
         return
 
-    # /refund without args — show list of recent transactions
+    # /refund without args вЂ” show list of recent transactions
     # Fetch from Telegram getStarTransactions
     result = tg_api('getStarTransactions', offset=0, limit=20)
     if not result.get('ok'):
-        err = result.get('description', 'Ошибка')
-        tg_send(chat_id, f"❌ Не удалось получить транзакции: {err}")
+        err = result.get('description', 'РћС€РёР±РєР°')
+        tg_send(chat_id, f"вќЊ РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ С‚СЂР°РЅР·Р°РєС†РёРё: {err}")
         return
 
     transactions = result.get('result', {}).get('transactions', [])
     if not transactions:
-        tg_send(chat_id, "ℹ️ Нет транзакций для отображения.")
+        tg_send(chat_id, "в„№пёЏ РќРµС‚ С‚СЂР°РЅР·Р°РєС†РёР№ РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ.")
         return
 
     # Filter only incoming (amount > 0) transactions that can be refunded
     incoming = [t for t in transactions if t.get('amount', 0) > 0]
     if not incoming:
-        tg_send(chat_id, "ℹ️ Нет входящих транзакций для возврата.")
+        tg_send(chat_id, "в„№пёЏ РќРµС‚ РІС…РѕРґСЏС‰РёС… С‚СЂР°РЅР·Р°РєС†РёР№ РґР»СЏ РІРѕР·РІСЂР°С‚Р°.")
         return
 
-    lines = ["💫 <b>Последние транзакции Stars</b>\n"]
+    lines = ["рџ’« <b>РџРѕСЃР»РµРґРЅРёРµ С‚СЂР°РЅР·Р°РєС†РёРё Stars</b>\n"]
     buttons = []
     for tx in incoming[:15]:
         tx_id = tx.get('id', '?')
@@ -14823,19 +14823,19 @@ def handle_refund(msg):
 
         dt_str = datetime.utcfromtimestamp(date_unix).strftime('%d.%m %H:%M') if date_unix else '?'
 
-        lines.append(f"• <b>{amount} ⭐</b> от {tx_user_name} (<code>{tx_user_id}</code>) — {dt_str}")
+        lines.append(f"вЂў <b>{amount} в­ђ</b> РѕС‚ {tx_user_name} (<code>{tx_user_id}</code>) вЂ” {dt_str}")
         lines.append(f"  ID: <code>{tx_id}</code>")
 
         # Add refund button if it's a user payment
         if tx_user_id != '?' and source_type in ('user', 'invoice'):
-            btn_text = f"↩️ Возврат {amount}⭐ → {tx_user_name}"
+            btn_text = f"в†©пёЏ Р’РѕР·РІСЂР°С‚ {amount}в­ђ в†’ {tx_user_name}"
             # callback data has max 64 bytes
             cb_data = f"refund:{tx_user_id}:{tx_id}"
             if len(cb_data) <= 64:
                 buttons.append([{'text': btn_text, 'callback_data': cb_data}])
 
     text_msg = "\n".join(lines)
-    text_msg += "\n\n💡 Нажмите кнопку для возврата или:\n<code>/refund CHARGE_ID</code>"
+    text_msg += "\n\nрџ’Ў РќР°Р¶РјРёС‚Рµ РєРЅРѕРїРєСѓ РґР»СЏ РІРѕР·РІСЂР°С‚Р° РёР»Рё:\n<code>/refund CHARGE_ID</code>"
 
     kb = {'inline_keyboard': buttons} if buttons else None
     tg_send(chat_id, text_msg, reply_markup=kb)
@@ -14851,7 +14851,7 @@ def handle_callback(cb):
     # Handle refund callbacks
     if data.startswith('refund:'):
         if uid != ADMIN_ID:
-            tg_answer_cb(cb_id, '⛔ Нет доступа', True)
+            tg_answer_cb(cb_id, 'в›” РќРµС‚ РґРѕСЃС‚СѓРїР°', True)
             return
         parts = data.split(':')
         if len(parts) >= 3:
@@ -14879,25 +14879,25 @@ def handle_callback(cb):
                 except Exception as e:
                     logger.error(f"Refund callback DB error: {e}")
                     refund_amount = 0
-                tg_answer_cb(cb_id, f'✅ Возврат выполнен!', True)
+                tg_answer_cb(cb_id, f'вњ… Р’РѕР·РІСЂР°С‚ РІС‹РїРѕР»РЅРµРЅ!', True)
                 # Update message text
                 try:
                     tg_edit(chat_id, msg_id,
-                            f"✅ <b>Возврат выполнен</b>\n\n"
+                            f"вњ… <b>Р’РѕР·РІСЂР°С‚ РІС‹РїРѕР»РЅРµРЅ</b>\n\n"
                             f"User: <code>{refund_user_id}</code>\n"
                             f"Charge: <code>{refund_charge_id}</code>\n"
-                            f"Сумма: {refund_amount} ⭐" if refund_amount else
-                            f"✅ <b>Возврат выполнен</b>\n\n"
+                            f"РЎСѓРјРјР°: {refund_amount} в­ђ" if refund_amount else
+                            f"вњ… <b>Р’РѕР·РІСЂР°С‚ РІС‹РїРѕР»РЅРµРЅ</b>\n\n"
                             f"User: <code>{refund_user_id}</code>\n"
                             f"Charge: <code>{refund_charge_id}</code>")
                 except Exception:
                     pass
-                logger.info(f"⭐ Refund via callback OK: user={refund_user_id}, charge={refund_charge_id}")
+                logger.info(f"в­ђ Refund via callback OK: user={refund_user_id}, charge={refund_charge_id}")
             else:
-                err = result.get('description', 'Ошибка')
-                tg_answer_cb(cb_id, f'❌ {err}', True)
+                err = result.get('description', 'РћС€РёР±РєР°')
+                tg_answer_cb(cb_id, f'вќЊ {err}', True)
         else:
-            tg_answer_cb(cb_id, '❌ Неверные данные', True)
+            tg_answer_cb(cb_id, 'вќЊ РќРµРІРµСЂРЅС‹Рµ РґР°РЅРЅС‹Рµ', True)
         return
 
     if not data.startswith('admin_') and data not in ('confirm_broadcast_all', 'cancel_broadcast'):
@@ -14905,87 +14905,87 @@ def handle_callback(cb):
         return
 
     if data.startswith('admin_') and uid != ADMIN_ID:
-        tg_answer_cb(cb_id, '⛔ Нет доступа', True)
+        tg_answer_cb(cb_id, 'в›” РќРµС‚ РґРѕСЃС‚СѓРїР°', True)
         return
 
     if data == 'admin_broadcast':
         _bot_user_states[uid] = 'waiting_broadcast'
         tg_delete(chat_id, msg_id)
-        tg_send(chat_id, "📢 <b>СОЗДАНИЕ РАССЫЛКИ</b>\n\nОтправьте сообщение для рассылки:\n• Текст\n• Фото (с подписью)\n• Видео / GIF / Документ / Стикер\n\nСообщение будет отправлено <b>точно так же</b> как вы его отправите.\n\nДля отмены нажмите /cancel")
+        tg_send(chat_id, "рџ“ў <b>РЎРћР—Р”РђРќРР• Р РђРЎРЎР«Р›РљР</b>\n\nРћС‚РїСЂР°РІСЊС‚Рµ СЃРѕРѕР±С‰РµРЅРёРµ РґР»СЏ СЂР°СЃСЃС‹Р»РєРё:\nвЂў РўРµРєСЃС‚\nвЂў Р¤РѕС‚Рѕ (СЃ РїРѕРґРїРёСЃСЊСЋ)\nвЂў Р’РёРґРµРѕ / GIF / Р”РѕРєСѓРјРµРЅС‚ / РЎС‚РёРєРµСЂ\n\nРЎРѕРѕР±С‰РµРЅРёРµ Р±СѓРґРµС‚ РѕС‚РїСЂР°РІР»РµРЅРѕ <b>С‚РѕС‡РЅРѕ С‚Р°Рє Р¶Рµ</b> РєР°Рє РІС‹ РµРіРѕ РѕС‚РїСЂР°РІРёС‚Рµ.\n\nР”Р»СЏ РѕС‚РјРµРЅС‹ РЅР°Р¶РјРёС‚Рµ /cancel")
 
     elif data == 'admin_stats':
         count = bot_get_user_count()
         kb = {'inline_keyboard': [
-            [{'text': '🔄 Обновить', 'callback_data': 'admin_stats'}],
-            [{'text': '⬅️ Назад', 'callback_data': 'admin_back'}]
+            [{'text': 'рџ”„ РћР±РЅРѕРІРёС‚СЊ', 'callback_data': 'admin_stats'}],
+            [{'text': 'в¬…пёЏ РќР°Р·Р°Рґ', 'callback_data': 'admin_back'}]
         ]}
         tg_edit(chat_id, msg_id,
-                f"📊 <b>СТАТИСТИКА БОТА</b>\n\n"
-                f"👥 Пользователей: <b>{count}</b>\n"
-                f"⏰ Время: <b>{datetime.now().strftime('%H:%M:%S')}</b>\n"
-                f"📅 Дата: <b>{datetime.now().strftime('%d.%m.%Y')}</b>\n\n"
-                f"🌐 Сайт: {WEBSITE_URL}",
+                f"рџ“Љ <b>РЎРўРђРўРРЎРўРРљРђ Р‘РћРўРђ</b>\n\n"
+                f"рџ‘Ґ РџРѕР»СЊР·РѕРІР°С‚РµР»РµР№: <b>{count}</b>\n"
+                f"вЏ° Р’СЂРµРјСЏ: <b>{datetime.now().strftime('%H:%M:%S')}</b>\n"
+                f"рџ“… Р”Р°С‚Р°: <b>{datetime.now().strftime('%d.%m.%Y')}</b>\n\n"
+                f"рџЊђ РЎР°Р№С‚: {WEBSITE_URL}",
                 reply_markup=kb)
 
     elif data == 'admin_users':
         users = bot_get_all_user_ids()
         kb = {'inline_keyboard': [
-            [{'text': '📢 Рассылка всем', 'callback_data': 'admin_broadcast'}],
-            [{'text': '⬅️ Назад', 'callback_data': 'admin_back'}]
+            [{'text': 'рџ“ў Р Р°СЃСЃС‹Р»РєР° РІСЃРµРј', 'callback_data': 'admin_broadcast'}],
+            [{'text': 'в¬…пёЏ РќР°Р·Р°Рґ', 'callback_data': 'admin_back'}]
         ]}
         tg_edit(chat_id, msg_id,
-                f"👥 <b>ПОЛЬЗОВАТЕЛИ</b>\n\nВсего пользователей: <b>{len(users)}</b>",
+                f"рџ‘Ґ <b>РџРћР›Р¬Р—РћР’РђРўР•Р›Р</b>\n\nР’СЃРµРіРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№: <b>{len(users)}</b>",
                 reply_markup=kb)
 
     elif data == 'admin_settings':
-        kb = {'inline_keyboard': [[{'text': '⬅️ Назад', 'callback_data': 'admin_back'}]]}
+        kb = {'inline_keyboard': [[{'text': 'в¬…пёЏ РќР°Р·Р°Рґ', 'callback_data': 'admin_back'}]]}
         tg_edit(chat_id, msg_id,
-                f"⚙️ <b>НАСТРОЙКИ БОТА</b>\n\n"
-                f"🆔 ID администратора: <code>{ADMIN_ID}</code>\n"
-                f"🌐 URL сайта: {WEBSITE_URL}\n"
-                f"🔑 Токен: <code>{TELEGRAM_BOT_TOKEN[:10]}...</code>\n\n"
-                f"🔄 Бот работает (webhook)!",
+                f"вљ™пёЏ <b>РќРђРЎРўР РћР™РљР Р‘РћРўРђ</b>\n\n"
+                f"рџ†” ID Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°: <code>{ADMIN_ID}</code>\n"
+                f"рџЊђ URL СЃР°Р№С‚Р°: {WEBSITE_URL}\n"
+                f"рџ”‘ РўРѕРєРµРЅ: <code>{TELEGRAM_BOT_TOKEN[:10]}...</code>\n\n"
+                f"рџ”„ Р‘РѕС‚ СЂР°Р±РѕС‚Р°РµС‚ (webhook)!",
                 reply_markup=kb)
 
     elif data == 'admin_back':
-        tg_edit(chat_id, msg_id, "🛠️ <b>АДМИН-ПАНЕЛЬ</b>\n\nВыберите действие:", reply_markup=make_admin_menu())
+        tg_edit(chat_id, msg_id, "рџ› пёЏ <b>РђР”РњРРќ-РџРђРќР•Р›Р¬</b>\n\nР’С‹Р±РµСЂРёС‚Рµ РґРµР№СЃС‚РІРёРµ:", reply_markup=make_admin_menu())
 
     elif data == 'admin_close':
         tg_delete(chat_id, msg_id)
 
     elif data == 'confirm_broadcast_all':
         if uid != ADMIN_ID:
-            tg_answer_cb(cb_id, '⛔', True)
+            tg_answer_cb(cb_id, 'в›”', True)
             return
         src = _broadcast_messages.get(uid)
         if not src:
-            tg_answer_cb(cb_id, '❌ Сообщение не найдено', True)
+            tg_answer_cb(cb_id, 'вќЊ РЎРѕРѕР±С‰РµРЅРёРµ РЅРµ РЅР°Р№РґРµРЅРѕ', True)
             return
         tg_delete(chat_id, msg_id)
         user_ids = bot_get_all_user_ids()
         if not user_ids:
-            tg_send(chat_id, "❌ Нет пользователей")
+            tg_send(chat_id, "вќЊ РќРµС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№")
             tg_answer_cb(cb_id)
             return
-        # Рассылка в фоне
+        # Р Р°СЃСЃС‹Р»РєР° РІ С„РѕРЅРµ
         threading.Thread(target=run_webhook_broadcast, args=(chat_id, uid, user_ids, src), daemon=True).start()
-        tg_answer_cb(cb_id, '✅ Рассылка начата')
+        tg_answer_cb(cb_id, 'вњ… Р Р°СЃСЃС‹Р»РєР° РЅР°С‡Р°С‚Р°')
 
     elif data == 'cancel_broadcast':
         _bot_user_states.pop(uid, None)
         _broadcast_messages.pop(uid, None)
         tg_delete(chat_id, msg_id)
-        tg_send(chat_id, "🛠️ <b>АДМИН-ПАНЕЛЬ</b>\n\nВыберите действие:", reply_markup=make_admin_menu())
-        tg_answer_cb(cb_id, '❌ Рассылка отменена')
+        tg_send(chat_id, "рџ› пёЏ <b>РђР”РњРРќ-РџРђРќР•Р›Р¬</b>\n\nР’С‹Р±РµСЂРёС‚Рµ РґРµР№СЃС‚РІРёРµ:", reply_markup=make_admin_menu())
+        tg_answer_cb(cb_id, 'вќЊ Р Р°СЃСЃС‹Р»РєР° РѕС‚РјРµРЅРµРЅР°')
 
     if data not in ('confirm_broadcast_all', 'cancel_broadcast'):
         tg_answer_cb(cb_id)
 
 def run_webhook_broadcast(chat_id, admin_id, user_ids, src):
-    """Рассылка через copyMessage (в фоновом потоке)"""
+    """Р Р°СЃСЃС‹Р»РєР° С‡РµСЂРµР· copyMessage (РІ С„РѕРЅРѕРІРѕРј РїРѕС‚РѕРєРµ)"""
     total = len(user_ids)
     ok = 0; fail = 0
-    progress_resp = tg_send(chat_id, f"🔄 Рассылка... 0/{total}")
+    progress_resp = tg_send(chat_id, f"рџ”„ Р Р°СЃСЃС‹Р»РєР°... 0/{total}")
     progress_msg_id = None
     if progress_resp.get('ok'):
         progress_msg_id = progress_resp['result']['message_id']
@@ -14998,46 +14998,46 @@ def run_webhook_broadcast(chat_id, admin_id, user_ids, src):
             fail += 1
         if progress_msg_id and (i % 10 == 0 or i == total):
             try:
-                tg_edit(chat_id, progress_msg_id, f"🔄 Рассылка... {i}/{total}\n✅ {ok}  ❌ {fail}")
+                tg_edit(chat_id, progress_msg_id, f"рџ”„ Р Р°СЃСЃС‹Р»РєР°... {i}/{total}\nвњ… {ok}  вќЊ {fail}")
             except:
                 pass
         time.sleep(0.05)
 
     rate = (ok / total * 100) if total else 0
-    kb = {'inline_keyboard': [[{'text': '⬅️ В админ-панель', 'callback_data': 'admin_back'}]]}
-    report = (f"✅ <b>РАССЫЛКА ЗАВЕРШЕНА</b>\n\n"
-              f"📊 Всего: {total}\n✅ Успешно: {ok}\n❌ Ошибок: {fail}\n"
-              f"📈 Успешность: {rate:.1f}%\n⏰ {datetime.now().strftime('%H:%M:%S')}")
+    kb = {'inline_keyboard': [[{'text': 'в¬…пёЏ Р’ Р°РґРјРёРЅ-РїР°РЅРµР»СЊ', 'callback_data': 'admin_back'}]]}
+    report = (f"вњ… <b>Р РђРЎРЎР«Р›РљРђ Р—РђР’Р•Р РЁР•РќРђ</b>\n\n"
+              f"рџ“Љ Р’СЃРµРіРѕ: {total}\nвњ… РЈСЃРїРµС€РЅРѕ: {ok}\nвќЊ РћС€РёР±РѕРє: {fail}\n"
+              f"рџ“€ РЈСЃРїРµС€РЅРѕСЃС‚СЊ: {rate:.1f}%\nвЏ° {datetime.now().strftime('%H:%M:%S')}")
     if progress_msg_id:
         tg_edit(chat_id, progress_msg_id, report, reply_markup=kb)
     else:
         tg_send(chat_id, report, reply_markup=kb)
     _broadcast_messages.pop(admin_id, None)
 
-# --- Обработка текстовых/медиа сообщений ---
+# --- РћР±СЂР°Р±РѕС‚РєР° С‚РµРєСЃС‚РѕРІС‹С…/РјРµРґРёР° СЃРѕРѕР±С‰РµРЅРёР№ ---
 def handle_message(msg):
-    """Обработка любого входящего сообщения (не команды)"""
+    """РћР±СЂР°Р±РѕС‚РєР° Р»СЋР±РѕРіРѕ РІС…РѕРґСЏС‰РµРіРѕ СЃРѕРѕР±С‰РµРЅРёСЏ (РЅРµ РєРѕРјР°РЅРґС‹)"""
     sender = msg.get('from')
     if not sender:
         return
     uid = sender['id']
     chat_id = msg['chat']['id']
 
-    # Проверяем: ждём ли рассылочное сообщение от админа
+    # РџСЂРѕРІРµСЂСЏРµРј: Р¶РґС‘Рј Р»Рё СЂР°СЃСЃС‹Р»РѕС‡РЅРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ РѕС‚ Р°РґРјРёРЅР°
     if uid == ADMIN_ID and _bot_user_states.get(uid) == 'waiting_broadcast':
         text = msg.get('text', '')
         if text == '/cancel':
             _bot_user_states.pop(uid, None)
-            tg_send(chat_id, "🛠️ <b>АДМИН-ПАНЕЛЬ</b>\n\nВыберите действие:", reply_markup=make_admin_menu())
+            tg_send(chat_id, "рџ› пёЏ <b>РђР”РњРРќ-РџРђРќР•Р›Р¬</b>\n\nР’С‹Р±РµСЂРёС‚Рµ РґРµР№СЃС‚РІРёРµ:", reply_markup=make_admin_menu())
             return
-        # Сохраняем source message для copyMessage
+        # РЎРѕС…СЂР°РЅСЏРµРј source message РґР»СЏ copyMessage
         _broadcast_messages[uid] = {'chat_id': chat_id, 'message_id': msg['message_id']}
         _bot_user_states.pop(uid, None)
         kb = {'inline_keyboard': [
-            [{'text': '✅ Отправить всем', 'callback_data': 'confirm_broadcast_all'},
-             {'text': '❌ Отменить', 'callback_data': 'cancel_broadcast'}]
+            [{'text': 'вњ… РћС‚РїСЂР°РІРёС‚СЊ РІСЃРµРј', 'callback_data': 'confirm_broadcast_all'},
+             {'text': 'вќЊ РћС‚РјРµРЅРёС‚СЊ', 'callback_data': 'cancel_broadcast'}]
         ]}
-        tg_send(chat_id, "📢 <b>ПРЕВЬЮ РАССЫЛКИ</b>\n\nСообщение выше будет отправлено всем пользователям.\nПродолжить?", reply_markup=kb)
+        tg_send(chat_id, "рџ“ў <b>РџР Р•Р’Р¬Р® Р РђРЎРЎР«Р›РљР</b>\n\nРЎРѕРѕР±С‰РµРЅРёРµ РІС‹С€Рµ Р±СѓРґРµС‚ РѕС‚РїСЂР°РІР»РµРЅРѕ РІСЃРµРј РїРѕР»СЊР·РѕРІР°С‚РµР»СЏРј.\nРџСЂРѕРґРѕР»Р¶РёС‚СЊ?", reply_markup=kb)
         return
 
     # === Telegram Gift / NFT deposit detection ===
@@ -15096,8 +15096,8 @@ def handle_message(msg):
             value = star_count
             
             if value <= 0:
-                tg_send(chat_id, "Подарок получен, но не удалось определить его стоимость. "
-                        "Обратитесь к администратору.")
+                tg_send(chat_id, "РџРѕРґР°СЂРѕРє РїРѕР»СѓС‡РµРЅ, РЅРѕ РЅРµ СѓРґР°Р»РѕСЃСЊ РѕРїСЂРµРґРµР»РёС‚СЊ РµРіРѕ СЃС‚РѕРёРјРѕСЃС‚СЊ. "
+                        "РћР±СЂР°С‚РёС‚РµСЃСЊ Рє Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂСѓ.")
                 logger.warning(f"Gift with 0 value from user {uid}: type={gift_type}, id={tg_gift_id}")
                 return
             
@@ -15140,31 +15140,31 @@ def handle_message(msg):
                     if uid in _user_cache:
                         del _user_cache[uid]
                     tg_send(chat_id, 
-                        f"Подарок <b>{gift_label}</b> был обменен на <b>{value}</b> звёзд ⭐\n\n"
-                        f"Новый баланс: <b>{new_bal}</b> звёзд")
+                        f"РџРѕРґР°СЂРѕРє <b>{gift_label}</b> Р±С‹Р» РѕР±РјРµРЅРµРЅ РЅР° <b>{value}</b> Р·РІС‘Р·Рґ в­ђ\n\n"
+                        f"РќРѕРІС‹Р№ Р±Р°Р»Р°РЅСЃ: <b>{new_bal}</b> Р·РІС‘Р·Рґ")
                     # Notify admin
                     if uid != ADMIN_ID:
                         try:
                             tg_send(ADMIN_ID,
-                                f"Депозит подарком от пользователя <b>{uid}</b>\n"
-                                f"Подарок: {gift_label} ({gift_type})\n"
-                                f"Стоимость: {value} звёзд\n"
+                                f"Р”РµРїРѕР·РёС‚ РїРѕРґР°СЂРєРѕРј РѕС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ <b>{uid}</b>\n"
+                                f"РџРѕРґР°СЂРѕРє: {gift_label} ({gift_type})\n"
+                                f"РЎС‚РѕРёРјРѕСЃС‚СЊ: {value} Р·РІС‘Р·Рґ\n"
                                 f"Telegram Gift ID: {tg_gift_id}")
                         except Exception:
                             pass
                     logger.info(f"Gift deposit OK: user {uid}, '{gift_label}', value {value}, type={gift_type}")
                 else:
                     conn.close()
-                    tg_send(chat_id, "Пользователь не найден. Сначала запустите бота командой /start")
+                    tg_send(chat_id, "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ РЅРµ РЅР°Р№РґРµРЅ. РЎРЅР°С‡Р°Р»Р° Р·Р°РїСѓСЃС‚РёС‚Рµ Р±РѕС‚Р° РєРѕРјР°РЅРґРѕР№ /start")
             except Exception as e:
                 logger.error(f"Gift deposit DB error: {e}")
-                tg_send(chat_id, "Ошибка при начислении. Обратитесь к администратору.")
+                tg_send(chat_id, "РћС€РёР±РєР° РїСЂРё РЅР°С‡РёСЃР»РµРЅРёРё. РћР±СЂР°С‚РёС‚РµСЃСЊ Рє Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂСѓ.")
             return
     except Exception as e:
         logger.error(f"Gift detection error: {e}")
 
-    # Обычные пользователи — кнопка ИГРАТЬ
-    tg_send(chat_id, "Нажми кнопку чтобы начать:", reply_markup=make_play_button())
+    # РћР±С‹С‡РЅС‹Рµ РїРѕР»СЊР·РѕРІР°С‚РµР»Рё вЂ” РєРЅРѕРїРєР° РР“Р РђРўР¬
+    tg_send(chat_id, "РќР°Р¶РјРё РєРЅРѕРїРєСѓ С‡С‚РѕР±С‹ РЅР°С‡Р°С‚СЊ:", reply_markup=make_play_button())
 
 # --- Stars successful payment handler ---
 def handle_successful_payment(msg):
@@ -15228,13 +15228,13 @@ def handle_successful_payment(msg):
         if target_user_id in _user_cache:
             del _user_cache[target_user_id]
 
-        logger.info(f"⭐ Stars deposit: user {target_user_id} +{amount} stars (charge={tg_payment_charge_id})")
+        logger.info(f"в­ђ Stars deposit: user {target_user_id} +{amount} stars (charge={tg_payment_charge_id})")
 
         # Notify user via bot
         try:
             tg_send(target_user_id,
-                    f"⭐ <b>Пополнение {amount} Stars</b>\n\n"
-                    f"Баланс: <b>{new_balance}</b> ⭐")
+                    f"в­ђ <b>РџРѕРїРѕР»РЅРµРЅРёРµ {amount} Stars</b>\n\n"
+                    f"Р‘Р°Р»Р°РЅСЃ: <b>{new_balance}</b> в­ђ")
         except Exception:
             pass
 
@@ -15244,7 +15244,7 @@ def handle_successful_payment(msg):
 
 # --- Business Bot: handle gifts in business messages ---
 def handle_business_message(bm):
-    """Handle business_message updates — detect NFT/regular gifts in business chats"""
+    """Handle business_message updates вЂ” detect NFT/regular gifts in business chats"""
     try:
         chat = bm.get('chat', {})
         sender_id = bm.get('from', {}).get('id', 0)
@@ -15325,8 +15325,8 @@ def handle_business_message(bm):
                 # Send confirmation to sender
                 try:
                     tg_send(sender_id,
-                        f"Подарок <b>{gift_label}</b> был обменен на <b>{value}</b> звёзд ⭐\n\n"
-                        f"Новый баланс: <b>{new_bal}</b> звёзд")
+                        f"РџРѕРґР°СЂРѕРє <b>{gift_label}</b> Р±С‹Р» РѕР±РјРµРЅРµРЅ РЅР° <b>{value}</b> Р·РІС‘Р·Рґ в­ђ\n\n"
+                        f"РќРѕРІС‹Р№ Р±Р°Р»Р°РЅСЃ: <b>{new_bal}</b> Р·РІС‘Р·Рґ")
                 except Exception:
                     pass
 
@@ -15334,10 +15334,10 @@ def handle_business_message(bm):
                 if sender_id != ADMIN_ID:
                     try:
                         tg_send(ADMIN_ID,
-                            f"🎁 <b>Business Bot депозит</b>\n"
-                            f"Пользователь: {sender_name} ({sender_id})\n"
-                            f"Подарок: {gift_label} ({gift_type})\n"
-                            f"Стоимость: {value} звёзд\n"
+                            f"рџЋЃ <b>Business Bot РґРµРїРѕР·РёС‚</b>\n"
+                            f"РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ: {sender_name} ({sender_id})\n"
+                            f"РџРѕРґР°СЂРѕРє: {gift_label} ({gift_type})\n"
+                            f"РЎС‚РѕРёРјРѕСЃС‚СЊ: {value} Р·РІС‘Р·Рґ\n"
                             f"Connection: {bc_id}")
                     except Exception:
                         pass
@@ -15346,7 +15346,7 @@ def handle_business_message(bm):
             else:
                 conn.close()
                 try:
-                    tg_send(sender_id, "Подарок получен, но вы ещё не зарегистрированы. Запустите бота командой /start")
+                    tg_send(sender_id, "РџРѕРґР°СЂРѕРє РїРѕР»СѓС‡РµРЅ, РЅРѕ РІС‹ РµС‰С‘ РЅРµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅС‹. Р—Р°РїСѓСЃС‚РёС‚Рµ Р±РѕС‚Р° РєРѕРјР°РЅРґРѕР№ /start")
                 except Exception:
                     pass
         except Exception as e:
@@ -15358,7 +15358,7 @@ def handle_business_message(bm):
 # --- Webhook route ---
 @app.route(f'/webhook/{TELEGRAM_BOT_TOKEN}', methods=['POST'])
 def telegram_webhook():
-    """Обработка входящих обновлений от Telegram"""
+    """РћР±СЂР°Р±РѕС‚РєР° РІС…РѕРґСЏС‰РёС… РѕР±РЅРѕРІР»РµРЅРёР№ РѕС‚ Telegram"""
     try:
         update = request.get_json(force=True)
         if not update:
@@ -15369,7 +15369,7 @@ def telegram_webhook():
             handle_callback(update['callback_query'])
             return 'ok'
 
-        # Pre-checkout query — must answer within 10 seconds
+        # Pre-checkout query вЂ” must answer within 10 seconds
         if 'pre_checkout_query' in update:
             pcq = update['pre_checkout_query']
             tg_api('answerPreCheckoutQuery', pre_checkout_query_id=pcq['id'], ok=True)
@@ -15387,10 +15387,10 @@ def telegram_webhook():
             if is_enabled:
                 logger.info(f"Business Bot: connected by {bc_name} ({bc_user_id}), connection_id={bc_id}, can_reply={can_reply}")
                 try:
-                    tg_send(ADMIN_ID, f"🤝 <b>Business Bot подключен</b>\n"
-                            f"Пользователь: {bc_name} ({bc_user_id})\n"
+                    tg_send(ADMIN_ID, f"рџ¤ќ <b>Business Bot РїРѕРґРєР»СЋС‡РµРЅ</b>\n"
+                            f"РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ: {bc_name} ({bc_user_id})\n"
                             f"Connection ID: <code>{bc_id}</code>\n"
-                            f"Может отвечать: {'Да' if can_reply else 'Нет'}")
+                            f"РњРѕР¶РµС‚ РѕС‚РІРµС‡Р°С‚СЊ: {'Р”Р°' if can_reply else 'РќРµС‚'}")
                 except Exception:
                     pass
             else:
@@ -15432,12 +15432,12 @@ def telegram_webhook():
 
 # --- Webhook setup ---
 def setup_telegram_webhook():
-    """Регистрирует webhook в Telegram (с поддержкой Business Bot)"""
+    """Р РµРіРёСЃС‚СЂРёСЂСѓРµС‚ webhook РІ Telegram (СЃ РїРѕРґРґРµСЂР¶РєРѕР№ Business Bot)"""
     webhook_url = f"{WEBSITE_URL}/webhook/{TELEGRAM_BOT_TOKEN}"
     try:
-        # Удаляем старый webhook/polling
+        # РЈРґР°Р»СЏРµРј СЃС‚Р°СЂС‹Р№ webhook/polling
         tg_api('deleteWebhook', drop_pending_updates=True)
-        # Ставим новый webhook с allowed_updates включая business bot
+        # РЎС‚Р°РІРёРј РЅРѕРІС‹Р№ webhook СЃ allowed_updates РІРєР»СЋС‡Р°СЏ business bot
         allowed = [
             'message', 'callback_query', 'pre_checkout_query',
             'business_connection', 'business_message',
@@ -15445,24 +15445,24 @@ def setup_telegram_webhook():
         ]
         r = tg_api('setWebhook', url=webhook_url, allowed_updates=allowed)
         if r.get('ok'):
-            logger.info(f"✅ Telegram webhook установлен: {webhook_url} (с Business Bot)")
+            logger.info(f"вњ… Telegram webhook СѓСЃС‚Р°РЅРѕРІР»РµРЅ: {webhook_url} (СЃ Business Bot)")
         else:
-            logger.error(f"❌ Webhook error: {r}")
-        # Команды бота
+            logger.error(f"вќЊ Webhook error: {r}")
+        # РљРѕРјР°РЅРґС‹ Р±РѕС‚Р°
         tg_api('setMyCommands', commands=[
-            {'command': 'start', 'description': 'Запустить бота'},
-            {'command': 'auth', 'description': 'Авторизация на сайте'},
-            {'command': 'admin', 'description': 'Админ-панель'}
+            {'command': 'start', 'description': 'Р—Р°РїСѓСЃС‚РёС‚СЊ Р±РѕС‚Р°'},
+            {'command': 'auth', 'description': 'РђРІС‚РѕСЂРёР·Р°С†РёСЏ РЅР° СЃР°Р№С‚Рµ'},
+            {'command': 'admin', 'description': 'РђРґРјРёРЅ-РїР°РЅРµР»СЊ'}
         ])
     except Exception as e:
-        logger.error(f"❌ Webhook setup error: {e}")
+        logger.error(f"вќЊ Webhook setup error: {e}")
 
 
 # ==================== BONUS SYSTEM API ====================
 
 @app.route('/api/user-bonuses', methods=['GET'])
 def api_user_bonuses():
-    """Получить бонусы пользователя (невостребованные)"""
+    """РџРѕР»СѓС‡РёС‚СЊ Р±РѕРЅСѓСЃС‹ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ (РЅРµРІРѕСЃС‚СЂРµР±РѕРІР°РЅРЅС‹Рµ)"""
     try:
         user_id = request.args.get('user_id')
         if not user_id:
@@ -15490,7 +15490,7 @@ def api_user_bonuses():
 
 @app.route('/api/claim-bonus', methods=['POST'])
 def api_claim_bonus():
-    """Активировать (забрать) бонус"""
+    """РђРєС‚РёРІРёСЂРѕРІР°С‚СЊ (Р·Р°Р±СЂР°С‚СЊ) Р±РѕРЅСѓСЃ"""
     try:
         data = request.get_json()
         user_id = data['user_id']
@@ -15501,32 +15501,32 @@ def api_claim_bonus():
         row = cursor.fetchone()
         if not row:
             conn.close()
-            return jsonify({'success': False, 'error': 'Бонус не найден'})
+            return jsonify({'success': False, 'error': 'Р‘РѕРЅСѓСЃ РЅРµ РЅР°Р№РґРµРЅ'})
         if row[3]:
             conn.close()
-            return jsonify({'success': False, 'error': 'Бонус уже получен'})
+            return jsonify({'success': False, 'error': 'Р‘РѕРЅСѓСЃ СѓР¶Рµ РїРѕР»СѓС‡РµРЅ'})
         bonus_type = row[1]
         bonus_data = json.loads(row[2]) if row[2] else {}
         msg = ''
-        # Обработка по типу
+        # РћР±СЂР°Р±РѕС‚РєР° РїРѕ С‚РёРїСѓ
         if bonus_type == 'promo_code':
-            # Создаём одноразовый промокод для пользователя
+            # РЎРѕР·РґР°С‘Рј РѕРґРЅРѕСЂР°Р·РѕРІС‹Р№ РїСЂРѕРјРѕРєРѕРґ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
             code = bonus_data.get('code', '')
-            msg = f'Промокод: {code}'
+            msg = f'РџСЂРѕРјРѕРєРѕРґ: {code}'
         elif bonus_type == 'stars':
             amount = bonus_data.get('amount', 0)
             cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (amount, user_id))
-            msg = f'+{amount} звёзд'
+            msg = f'+{amount} Р·РІС‘Р·Рґ'
         elif bonus_type == 'tickets':
             amount = bonus_data.get('amount', 0)
             cursor.execute('UPDATE users SET balance_tickets = balance_tickets + ? WHERE id = ?', (amount, user_id))
-            msg = f'+{amount} билетов'
+            msg = f'+{amount} Р±РёР»РµС‚РѕРІ'
         elif bonus_type == 'vip':
             cursor.execute('UPDATE users SET is_crash_vip = 1 WHERE id = ?', (user_id,))
-            msg = 'VIP активирован!'
+            msg = 'VIP Р°РєС‚РёРІРёСЂРѕРІР°РЅ!'
         elif bonus_type == 'free_case':
-            # Возвращаем case_id для клиента
-            msg = 'Бесплатное открытие кейса!'
+            # Р’РѕР·РІСЂР°С‰Р°РµРј case_id РґР»СЏ РєР»РёРµРЅС‚Р°
+            msg = 'Р‘РµСЃРїР»Р°С‚РЅРѕРµ РѕС‚РєСЂС‹С‚РёРµ РєРµР№СЃР°!'
         elif bonus_type == 'experience':
             amount = bonus_data.get('amount', 0)
             add_experience(user_id, amount, 'bonus_claim')
@@ -15538,13 +15538,13 @@ def api_claim_bonus():
             gift_id = bonus_data.get('gift_id', 0)
             cursor.execute('''INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
                 VALUES (?, ?, ?, ?, ?)''', (user_id, gift_id, gift_name, gift_image, gift_value))
-            msg = f'Подарок {gift_name} добавлен в инвентарь!'
+            msg = f'РџРѕРґР°СЂРѕРє {gift_name} РґРѕР±Р°РІР»РµРЅ РІ РёРЅРІРµРЅС‚Р°СЂСЊ!'
         elif bonus_type == 'crash_skin':
             skin_id = bonus_data.get('skin_id', '')
             skin_type = bonus_data.get('skin_type', 'rocket')
             cursor.execute('''INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source)
                 VALUES (?, ?, ?, 'bonus')''', (user_id, skin_type, skin_id))
-            msg = 'Скин разблокирован!'
+            msg = 'РЎРєРёРЅ СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅ!'
         cursor.execute('UPDATE user_bonuses SET is_claimed = 1, claimed_at = CURRENT_TIMESTAMP WHERE id = ?', (bonus_id,))
         conn.commit()
         conn.close()
@@ -15555,7 +15555,7 @@ def api_claim_bonus():
 
 @app.route('/api/user-gift-index', methods=['GET'])
 def api_user_gift_index():
-    """Получить индекс найденных подарков пользователя"""
+    """РџРѕР»СѓС‡РёС‚СЊ РёРЅРґРµРєСЃ РЅР°Р№РґРµРЅРЅС‹С… РїРѕРґР°СЂРєРѕРІ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         user_id = request.args.get('user_id')
         if not user_id:
@@ -15571,7 +15571,7 @@ def api_user_gift_index():
             nm = gift_name.strip().lower()
             if 'stars balance' in nm:
                 continue
-            if nm.startswith('⭐') and ' stars' in nm:
+            if nm.startswith('в­ђ') and ' stars' in nm:
                 continue
             parts = nm.split()
             if len(parts) == 2 and parts[0].isdigit() and parts[1] == 'stars':
@@ -15587,21 +15587,21 @@ SBP_RATE = float(os.environ.get('SBP_RATE', '1.3'))  # 1 star = 1.3 RUB
 
 @app.route('/api/sbp/create-payment', methods=['POST'])
 def api_sbp_create_payment():
-    """Создание платежа через СБП"""
+    """РЎРѕР·РґР°РЅРёРµ РїР»Р°С‚РµР¶Р° С‡РµСЂРµР· РЎР‘Рџ"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
         stars = int(data.get('stars', 0) or data.get('amount', 0))
         
         if not user_id or stars < 10:
-            return jsonify({'success': False, 'error': 'Минимум 10 звёзд'})
+            return jsonify({'success': False, 'error': 'РњРёРЅРёРјСѓРј 10 Р·РІС‘Р·Рґ'})
         
         if stars > 50000:
-            return jsonify({'success': False, 'error': 'Максимум 50000 звёзд'})
+            return jsonify({'success': False, 'error': 'РњР°РєСЃРёРјСѓРј 50000 Р·РІС‘Р·Рґ'})
         
         amount_rub = round(stars * SBP_RATE, 2)
         
-        # Создаём запись в БД
+        # РЎРѕР·РґР°С‘Рј Р·Р°РїРёСЃСЊ РІ Р‘Р”
         conn = get_db_connection()
         cursor = conn.cursor()
         
@@ -15612,13 +15612,13 @@ def api_sbp_create_payment():
         cursor.execute('UPDATE sbp_payments SET payment_id = ? WHERE id = ?', (f'sbp_{payment_id}', payment_id))
         conn.commit()
         
-        # Попробуем CardLink если настроен
+        # РџРѕРїСЂРѕР±СѓРµРј CardLink РµСЃР»Рё РЅР°СЃС‚СЂРѕРµРЅ
         shop_id = os.environ.get('CARDLINK_SHOP_ID', '')
         payment_url = None
         
         if shop_id:
             import urllib.parse
-            description = urllib.parse.quote(f'Пополнение {stars} звёзд')
+            description = urllib.parse.quote(f'РџРѕРїРѕР»РЅРµРЅРёРµ {stars} Р·РІС‘Р·Рґ')
             payment_url = (
                 f"https://cardlink.link/api/pay"
                 f"?shop_id={shop_id}"
@@ -15630,7 +15630,7 @@ def api_sbp_create_payment():
         
         conn.close()
         
-        logger.info(f"💳 SBP payment created: user={user_id}, stars={stars}, amount={amount_rub}₽, id={payment_id}")
+        logger.info(f"рџ’і SBP payment created: user={user_id}, stars={stars}, amount={amount_rub}в‚Ѕ, id={payment_id}")
         
         return jsonify({
             'success': True, 
@@ -15641,13 +15641,13 @@ def api_sbp_create_payment():
         })
         
     except Exception as e:
-        logger.error(f"❌ SBP payment error: {e}")
+        logger.error(f"вќЊ SBP payment error: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/sbp/check-payment', methods=['POST'])
 def api_sbp_check_payment():
-    """Проверка статуса SBP платежа"""
+    """РџСЂРѕРІРµСЂРєР° СЃС‚Р°С‚СѓСЃР° SBP РїР»Р°С‚РµР¶Р°"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -15664,12 +15664,12 @@ def api_sbp_check_payment():
         conn.close()
 
         if not row:
-            return jsonify({'success': False, 'error': 'Платёж не найден'})
+            return jsonify({'success': False, 'error': 'РџР»Р°С‚С‘Р¶ РЅРµ РЅР°Р№РґРµРЅ'})
 
         if row[1] == 'completed':
             return jsonify({'success': True, 'status': 'completed', 'stars': row[0]})
 
-        return jsonify({'success': True, 'status': 'pending', 'message': 'Ожидает подтверждения администратором'})
+        return jsonify({'success': True, 'status': 'pending', 'message': 'РћР¶РёРґР°РµС‚ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂРѕРј'})
 
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -15677,7 +15677,7 @@ def api_sbp_check_payment():
 
 @app.route('/api/admin/sbp-payments', methods=['GET'])
 def api_admin_sbp_payments():
-    """Список SBP-платежей для админки"""
+    """РЎРїРёСЃРѕРє SBP-РїР»Р°С‚РµР¶РµР№ РґР»СЏ Р°РґРјРёРЅРєРё"""
     try:
         admin_id = request.args.get('admin_id')
         if not admin_id or str(admin_id) != str(ADMIN_ID):
@@ -15687,7 +15687,7 @@ def api_admin_sbp_payments():
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Создаем таблицу если не существует
+        # РЎРѕР·РґР°РµРј С‚Р°Р±Р»РёС†Сѓ РµСЃР»Рё РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚
         cursor.execute('''CREATE TABLE IF NOT EXISTS sbp_payments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -15726,7 +15726,7 @@ def api_admin_sbp_payments():
 
 @app.route('/api/admin/sbp-confirm', methods=['POST'])
 def api_admin_sbp_confirm():
-    """Админ подтверждает SBP платёж"""
+    """РђРґРјРёРЅ РїРѕРґС‚РІРµСЂР¶РґР°РµС‚ SBP РїР»Р°С‚С‘Р¶"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -15741,25 +15741,25 @@ def api_admin_sbp_confirm():
 
         if not row:
             conn.close()
-            return jsonify({'success': False, 'error': 'Платёж не найден'})
+            return jsonify({'success': False, 'error': 'РџР»Р°С‚С‘Р¶ РЅРµ РЅР°Р№РґРµРЅ'})
 
         if row[2] == 'completed':
             conn.close()
-            return jsonify({'success': False, 'error': 'Уже подтверждён'})
+            return jsonify({'success': False, 'error': 'РЈР¶Рµ РїРѕРґС‚РІРµСЂР¶РґС‘РЅ'})
 
         user_id, stars = row[0], row[1]
         cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (stars, user_id))
         cursor.execute("UPDATE sbp_payments SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?", (payment_id,))
         
-        # Запись в историю
+        # Р—Р°РїРёСЃСЊ РІ РёСЃС‚РѕСЂРёСЋ
         cursor.execute('''INSERT INTO user_history (user_id, operation_type, amount, description, created_at)
             VALUES (?, 'sbp_deposit', ?, ?, datetime('now'))''',
-            (user_id, stars, f'Пополнение через СБП: +{stars} звёзд'))
+            (user_id, stars, f'РџРѕРїРѕР»РЅРµРЅРёРµ С‡РµСЂРµР· РЎР‘Рџ: +{stars} Р·РІС‘Р·Рґ'))
         
         conn.commit()
         conn.close()
 
-        logger.info(f"✅ SBP payment confirmed: user={user_id}, +{stars} stars, id={payment_id}")
+        logger.info(f"вњ… SBP payment confirmed: user={user_id}, +{stars} stars, id={payment_id}")
         return jsonify({'success': True, 'stars': stars, 'user_id': user_id})
 
     except Exception as e:
@@ -15768,7 +15768,7 @@ def api_admin_sbp_confirm():
 
 @app.route('/api/admin/sbp-reject', methods=['POST'])
 def api_admin_sbp_reject():
-    """Админ отклоняет SBP платёж"""
+    """РђРґРјРёРЅ РѕС‚РєР»РѕРЅСЏРµС‚ SBP РїР»Р°С‚С‘Р¶"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -15782,10 +15782,10 @@ def api_admin_sbp_reject():
         row = cursor.fetchone()
         if not row:
             conn.close()
-            return jsonify({'success': False, 'error': 'Платёж не найден'})
+            return jsonify({'success': False, 'error': 'РџР»Р°С‚С‘Р¶ РЅРµ РЅР°Р№РґРµРЅ'})
         if row[0] == 'completed':
             conn.close()
-            return jsonify({'success': False, 'error': 'Нельзя отклонить подтверждённый платёж'})
+            return jsonify({'success': False, 'error': 'РќРµР»СЊР·СЏ РѕС‚РєР»РѕРЅРёС‚СЊ РїРѕРґС‚РІРµСЂР¶РґС‘РЅРЅС‹Р№ РїР»Р°С‚С‘Р¶'})
         
         cursor.execute("UPDATE sbp_payments SET status = 'rejected' WHERE id = ?", (payment_id,))
         conn.commit()
@@ -15797,30 +15797,30 @@ def api_admin_sbp_reject():
 
 @app.route('/api/sbp/webhook', methods=['POST'])
 def api_sbp_webhook():
-    """Вебхук от CardLink для подтверждения оплаты"""
+    """Р’РµР±С…СѓРє РѕС‚ CardLink РґР»СЏ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ РѕРїР»Р°С‚С‹"""
     try:
         data = request.get_json() or request.form.to_dict()
         order_id = data.get('order_id', '') or data.get('OrderId', '') or data.get('orderId', '')
         status = data.get('status', '') or data.get('Status', '')
         
-        logger.info(f"💳 SBP webhook received: order_id={order_id}, status={status}, data={data}")
+        logger.info(f"рџ’і SBP webhook received: order_id={order_id}, status={status}, data={data}")
         
-        # Проверяем подпись CardLink (если настроен secret_key)
+        # РџСЂРѕРІРµСЂСЏРµРј РїРѕРґРїРёСЃСЊ CardLink (РµСЃР»Рё РЅР°СЃС‚СЂРѕРµРЅ secret_key)
         secret_key = os.environ.get('CARDLINK_SECRET_KEY', '')
         if secret_key:
             sign = data.get('sign', '') or data.get('signature', '') or data.get('Sign', '')
-            # CardLink подпись: SHA256(shop_id + order_id + amount + secret_key)
+            # CardLink РїРѕРґРїРёСЃСЊ: SHA256(shop_id + order_id + amount + secret_key)
             shop_id = os.environ.get('CARDLINK_SHOP_ID', '')
             amount = str(data.get('amount', ''))
             expected_sign = hashlib.sha256(f"{shop_id}{order_id}{amount}{secret_key}".encode()).hexdigest()
             if sign and sign != expected_sign:
-                logger.warning(f"⚠️ SBP webhook invalid signature: got={sign}, expected={expected_sign}")
+                logger.warning(f"вљ пёЏ SBP webhook invalid signature: got={sign}, expected={expected_sign}")
                 return jsonify({'success': False, 'error': 'Invalid signature'}), 403
         
         if status.lower() not in ('success', 'paid', 'completed'):
             return jsonify({'success': True})  # Ack non-success statuses
         
-        # Извлекаем ID платежа
+        # РР·РІР»РµРєР°РµРј ID РїР»Р°С‚РµР¶Р°
         if order_id.startswith('sbp_'):
             payment_db_id = int(order_id.replace('sbp_', ''))
         else:
@@ -15841,29 +15841,29 @@ def api_sbp_webhook():
         
         user_id, stars, _ = row
         
-        # Зачисляем звёзды
+        # Р—Р°С‡РёСЃР»СЏРµРј Р·РІС‘Р·РґС‹
         cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (stars, user_id))
         cursor.execute("UPDATE sbp_payments SET status = 'completed', completed_at = CURRENT_TIMESTAMP WHERE id = ?", (payment_db_id,))
         
-        # Запись в историю
+        # Р—Р°РїРёСЃСЊ РІ РёСЃС‚РѕСЂРёСЋ
         cursor.execute('''INSERT INTO user_history (user_id, operation_type, amount, description, created_at)
             VALUES (?, 'sbp_deposit', ?, ?, datetime('now'))''', 
-            (user_id, stars, f'Пополнение через СБП: +{stars} звёзд'))
+            (user_id, stars, f'РџРѕРїРѕР»РЅРµРЅРёРµ С‡РµСЂРµР· РЎР‘Рџ: +{stars} Р·РІС‘Р·Рґ'))
         
         conn.commit()
         conn.close()
         
-        logger.info(f"✅ SBP payment completed: user={user_id}, +{stars} stars")
+        logger.info(f"вњ… SBP payment completed: user={user_id}, +{stars} stars")
         return jsonify({'success': True})
         
     except Exception as e:
-        logger.error(f"❌ SBP webhook error: {e}")
+        logger.error(f"вќЊ SBP webhook error: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/admin/sbp-settings', methods=['GET', 'POST'])
 def api_admin_sbp_settings():
-    """Управление настройками SBP/CardLink"""
+    """РЈРїСЂР°РІР»РµРЅРёРµ РЅР°СЃС‚СЂРѕР№РєР°РјРё SBP/CardLink"""
     try:
         admin_id = request.args.get('admin_id') or (request.get_json() or {}).get('admin_id')
         if str(admin_id) != str(ADMIN_ID):
@@ -15879,7 +15879,7 @@ def api_admin_sbp_settings():
                 'verification_url': f'{WEBSITE_URL}/shop-verification-QX2XNbyDv5.txt'
             })
         
-        # POST - обновить настройки
+        # POST - РѕР±РЅРѕРІРёС‚СЊ РЅР°СЃС‚СЂРѕР№РєРё
         data = request.get_json()
         if data.get('shop_id') is not None:
             os.environ['CARDLINK_SHOP_ID'] = str(data['shop_id']).strip()
@@ -15890,7 +15890,7 @@ def api_admin_sbp_settings():
             SBP_RATE = float(data['sbp_rate'])
             os.environ['SBP_RATE'] = str(SBP_RATE)
         
-        logger.info(f"✅ SBP settings updated by admin")
+        logger.info(f"вњ… SBP settings updated by admin")
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -15898,7 +15898,7 @@ def api_admin_sbp_settings():
 
 @app.route('/api/deposit-promo/check', methods=['POST'])
 def api_deposit_promo_check():
-    """Проверить промокод на бонус к пополнению"""
+    """РџСЂРѕРІРµСЂРёС‚СЊ РїСЂРѕРјРѕРєРѕРґ РЅР° Р±РѕРЅСѓСЃ Рє РїРѕРїРѕР»РЅРµРЅРёСЋ"""
     try:
         data = request.get_json()
         user_id = data['user_id']
@@ -15909,18 +15909,18 @@ def api_deposit_promo_check():
         promo = cursor.fetchone()
         if not promo:
             conn.close()
-            return jsonify({'success': False, 'error': 'Промокод не найден'})
+            return jsonify({'success': False, 'error': 'РџСЂРѕРјРѕРєРѕРґ РЅРµ РЅР°Р№РґРµРЅ'})
         promo_id, bonus_pct, max_uses, used_count, is_active = promo
         if not is_active:
             conn.close()
-            return jsonify({'success': False, 'error': 'Промокод неактивен'})
+            return jsonify({'success': False, 'error': 'РџСЂРѕРјРѕРєРѕРґ РЅРµР°РєС‚РёРІРµРЅ'})
         if max_uses > 0 and used_count >= max_uses:
             conn.close()
-            return jsonify({'success': False, 'error': 'Промокод исчерпан'})
+            return jsonify({'success': False, 'error': 'РџСЂРѕРјРѕРєРѕРґ РёСЃС‡РµСЂРїР°РЅ'})
         cursor.execute('SELECT id FROM used_deposit_promos WHERE user_id = ? AND promo_id = ?', (user_id, promo_id))
         if cursor.fetchone():
             conn.close()
-            return jsonify({'success': False, 'error': 'Вы уже использовали этот промокод'})
+            return jsonify({'success': False, 'error': 'Р’С‹ СѓР¶Рµ РёСЃРїРѕР»СЊР·РѕРІР°Р»Рё СЌС‚РѕС‚ РїСЂРѕРјРѕРєРѕРґ'})
         conn.close()
         return jsonify({'success': True, 'valid': True, 'bonus_percent': bonus_pct, 'promo_id': promo_id})
     except Exception as e:
@@ -15929,7 +15929,7 @@ def api_deposit_promo_check():
 
 @app.route('/api/deposit-promo/apply', methods=['POST'])
 def api_deposit_promo_apply():
-    """Применить промокод к депозиту"""
+    """РџСЂРёРјРµРЅРёС‚СЊ РїСЂРѕРјРѕРєРѕРґ Рє РґРµРїРѕР·РёС‚Сѓ"""
     try:
         data = request.get_json()
         user_id = data['user_id']
@@ -15954,7 +15954,7 @@ def api_deposit_promo_apply():
 
 @app.route('/api/admin/level-rewards', methods=['GET', 'POST'])
 def api_admin_level_rewards():
-    """Управление наградами за уровни"""
+    """РЈРїСЂР°РІР»РµРЅРёРµ РЅР°РіСЂР°РґР°РјРё Р·Р° СѓСЂРѕРІРЅРё"""
     try:
         if request.method == 'GET':
             conn = get_db_connection()
@@ -16011,18 +16011,18 @@ def api_admin_level_reward_detail(reward_id):
 
 @app.route('/api/admin/upload-notification-image', methods=['POST'])
 def admin_upload_notification_image():
-    """Загрузка изображения для уведомления"""
+    """Р—Р°РіСЂСѓР·РєР° РёР·РѕР±СЂР°Р¶РµРЅРёСЏ РґР»СЏ СѓРІРµРґРѕРјР»РµРЅРёСЏ"""
     try:
         admin_id = request.form.get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            return jsonify({'success': False, 'error': 'Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ'})
         
         file = request.files.get('file')
         if not file:
-            return jsonify({'success': False, 'error': 'Файл не выбран'})
+            return jsonify({'success': False, 'error': 'Р¤Р°Р№Р» РЅРµ РІС‹Р±СЂР°РЅ'})
         
         if not allowed_file(file.filename):
-            return jsonify({'success': False, 'error': 'Недопустимый формат файла'})
+            return jsonify({'success': False, 'error': 'РќРµРґРѕРїСѓСЃС‚РёРјС‹Р№ С„РѕСЂРјР°С‚ С„Р°Р№Р»Р°'})
         
         import uuid
         ext = os.path.splitext(file.filename)[1] or '.png'
@@ -16079,7 +16079,7 @@ def api_admin_deposit_promo_delete(promo_id):
 
 @app.route('/api/admin/grant-bonus', methods=['POST'])
 def api_admin_grant_bonus():
-    """Выдать бонус пользователю вручную"""
+    """Р’С‹РґР°С‚СЊ Р±РѕРЅСѓСЃ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ РІСЂСѓС‡РЅСѓСЋ"""
     try:
         data = request.get_json()
         user_id = data['user_id']
@@ -16098,14 +16098,14 @@ def api_admin_grant_bonus():
 
 @app.route('/api/check-promo-deposit-eligibility', methods=['GET'])
 def api_check_promo_deposit_eligibility():
-    """Проверить может ли пользователь открыть промо-кейс (500+ звёзд депозитов за 24ч)"""
+    """РџСЂРѕРІРµСЂРёС‚СЊ РјРѕР¶РµС‚ Р»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РѕС‚РєСЂС‹С‚СЊ РїСЂРѕРјРѕ-РєРµР№СЃ (500+ Р·РІС‘Р·Рґ РґРµРїРѕР·РёС‚РѕРІ Р·Р° 24С‡)"""
     try:
         user_id = request.args.get('user_id')
         if not user_id:
             return jsonify({'success': False, 'error': 'user_id required'})
         conn = get_db_connection()
         cursor = conn.cursor()
-        # Сумма депозитов за последние 24 часа
+        # РЎСѓРјРјР° РґРµРїРѕР·РёС‚РѕРІ Р·Р° РїРѕСЃР»РµРґРЅРёРµ 24 С‡Р°СЃР°
         cursor.execute('''SELECT COALESCE(SUM(amount), 0) FROM deposits
             WHERE user_id = ? AND created_at > datetime('now', '-1 day') AND status = 'completed' ''', (user_id,))
         total_deposits = cursor.fetchone()[0]
@@ -16117,13 +16117,13 @@ def api_check_promo_deposit_eligibility():
 
 @app.route('/api/level-system', methods=['GET'])
 def api_level_system():
-    """Возвращает систему уровней из БД"""
+    """Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃРёСЃС‚РµРјСѓ СѓСЂРѕРІРЅРµР№ РёР· Р‘Р”"""
     return jsonify({'success': True, 'levels': LEVEL_SYSTEM})
 
 
 @app.route('/api/level-rewards', methods=['GET'])
 def api_level_rewards():
-    """Возвращает награды за уровни из levels.json"""
+    """Р’РѕР·РІСЂР°С‰Р°РµС‚ РЅР°РіСЂР°РґС‹ Р·Р° СѓСЂРѕРІРЅРё РёР· levels.json"""
     try:
         levels_file = os.path.join(BASE_PATH, 'data', 'levels.json')
         if os.path.exists(levels_file):
@@ -16137,20 +16137,20 @@ def api_level_rewards():
 
 @app.route('/api/pending-notifications', methods=['GET'])
 def api_pending_notifications():
-    """Возвращает непрочитанные уведомления для пользователя"""
+    """Р’РѕР·РІСЂР°С‰Р°РµС‚ РЅРµРїСЂРѕС‡РёС‚Р°РЅРЅС‹Рµ СѓРІРµРґРѕРјР»РµРЅРёСЏ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ"""
     try:
         user_id = request.args.get('user_id')
         if not user_id:
             return jsonify({'success': False, 'error': 'user_id required'})
         conn = get_db_connection()
         cursor = conn.cursor()
-        # Неполученные бонусы
+        # РќРµРїРѕР»СѓС‡РµРЅРЅС‹Рµ Р±РѕРЅСѓСЃС‹
         cursor.execute('''SELECT id, bonus_type, bonus_data, source, created_at
             FROM user_bonuses WHERE user_id = ? AND is_claimed = 0
             ORDER BY created_at DESC LIMIT 20''', (user_id,))
         bonuses = [{'id': r[0], 'type': 'bonus', 'bonus_type': r[1], 'bonus_data': r[2],
                      'source': r[3], 'description': r[3], 'created_at': r[4]} for r in cursor.fetchall()]
-        # Админские уведомления (общие + персональные)
+        # РђРґРјРёРЅСЃРєРёРµ СѓРІРµРґРѕРјР»РµРЅРёСЏ (РѕР±С‰РёРµ + РїРµСЂСЃРѕРЅР°Р»СЊРЅС‹Рµ)
         cursor.execute('''SELECT id, title, message, image_url, created_at, notif_type, reward_type, reward_data
             FROM admin_notifications 
             WHERE is_active = 1 AND created_at > datetime('now', '-7 day')
@@ -16159,7 +16159,7 @@ def api_pending_notifications():
         notifications = []
         for r in cursor.fetchall():
             notif_id = r[0]
-            # Проверяем не прочитано ли
+            # РџСЂРѕРІРµСЂСЏРµРј РЅРµ РїСЂРѕС‡РёС‚Р°РЅРѕ Р»Рё
             cursor.execute('SELECT 1 FROM notification_reads WHERE user_id = ? AND notification_id = ?', (user_id, notif_id))
             if not cursor.fetchone():
                 reward_type = r[6]
@@ -16218,7 +16218,7 @@ def api_pending_notifications():
 
 @app.route('/api/mark-notification-read', methods=['POST'])
 def api_mark_notification_read():
-    """Помечает уведомление как прочитанное и выдаёт награду если есть"""
+    """РџРѕРјРµС‡Р°РµС‚ СѓРІРµРґРѕРјР»РµРЅРёРµ РєР°Рє РїСЂРѕС‡РёС‚Р°РЅРЅРѕРµ Рё РІС‹РґР°С‘С‚ РЅР°РіСЂР°РґСѓ РµСЃР»Рё РµСЃС‚СЊ"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -16253,7 +16253,7 @@ def api_mark_notification_read():
 
 @app.route('/api/admin/admin-notifications', methods=['GET', 'POST', 'DELETE'])
 def api_admin_notifications_crud():
-    """CRUD для админских уведомлений (admin_notifications)"""
+    """CRUD РґР»СЏ Р°РґРјРёРЅСЃРєРёС… СѓРІРµРґРѕРјР»РµРЅРёР№ (admin_notifications)"""
     try:
         if request.method == 'GET':
             conn = get_db_connection()
@@ -16316,7 +16316,7 @@ def api_admin_notifications_crud():
 
 
 def _give_notif_reward(conn, user_id, reward_type, reward_data):
-    """Выдать награду из уведомления"""
+    """Р’С‹РґР°С‚СЊ РЅР°РіСЂР°РґСѓ РёР· СѓРІРµРґРѕРјР»РµРЅРёСЏ"""
     if not reward_type or not reward_data:
         return None
 
@@ -16384,7 +16384,7 @@ def _give_notif_reward(conn, user_id, reward_type, reward_data):
                 'type': 'gift',
                 'data': str(gift_id),
                 'gift_id': gift['id'],
-                'gift_name': gift.get('name', 'Подарок'),
+                'gift_name': gift.get('name', 'РџРѕРґР°СЂРѕРє'),
                 'gift_image': gift.get('image', ''),
                 'gift_value': gift.get('value', 0)
             }
@@ -16395,7 +16395,7 @@ def _give_notif_reward(conn, user_id, reward_type, reward_data):
 
 @app.route('/api/admin/search-users', methods=['GET'])
 def api_admin_search_users():
-    """Поиск пользователей для админки"""
+    """РџРѕРёСЃРє РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№ РґР»СЏ Р°РґРјРёРЅРєРё"""
     try:
         q = request.args.get('q', '').strip()
         conn = get_db_connection()
@@ -16415,7 +16415,7 @@ def api_admin_search_users():
 
 @app.route('/api/admin/get-skins-list', methods=['GET'])
 def api_admin_skins_list():
-    """Список скинов ракет для выбора в админке"""
+    """РЎРїРёСЃРѕРє СЃРєРёРЅРѕРІ СЂР°РєРµС‚ РґР»СЏ РІС‹Р±РѕСЂР° РІ Р°РґРјРёРЅРєРµ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -16429,7 +16429,7 @@ def api_admin_skins_list():
 
 @app.route('/api/admin/get-backgrounds-list', methods=['GET'])
 def api_admin_backgrounds_list():
-    """Список фонов для выбора в админке"""
+    """РЎРїРёСЃРѕРє С„РѕРЅРѕРІ РґР»СЏ РІС‹Р±РѕСЂР° РІ Р°РґРјРёРЅРєРµ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -16443,7 +16443,7 @@ def api_admin_backgrounds_list():
 
 @app.route('/api/admin/get-gifts-list', methods=['GET'])
 def api_admin_gifts_list():
-    """Список подарков из gifts.json для выбора"""
+    """РЎРїРёСЃРѕРє РїРѕРґР°СЂРєРѕРІ РёР· gifts.json РґР»СЏ РІС‹Р±РѕСЂР°"""
     try:
         gifts = load_gifts()
         result = [{'id': g['id'], 'name': g['name'], 'value': g.get('value', 0), 'image': g.get('image', '')} for g in gifts]
@@ -16455,7 +16455,7 @@ def api_admin_gifts_list():
 
 @app.route('/api/admin/toggle-admin-notification', methods=['POST'])
 def api_toggle_admin_notification():
-    """Включить/выключить уведомление"""
+    """Р’РєР»СЋС‡РёС‚СЊ/РІС‹РєР»СЋС‡РёС‚СЊ СѓРІРµРґРѕРјР»РµРЅРёРµ"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -16474,7 +16474,7 @@ def api_toggle_admin_notification():
 
 @app.route('/api/crash/levels')
 def api_crash_levels():
-    """Публичный API для получения информации об уровнях и наградах"""
+    """РџСѓР±Р»РёС‡РЅС‹Р№ API РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РёРЅС„РѕСЂРјР°С†РёРё РѕР± СѓСЂРѕРІРЅСЏС… Рё РЅР°РіСЂР°РґР°С…"""
     try:
         levels = []
         for lvl in LEVEL_SYSTEM:
@@ -16503,7 +16503,7 @@ def api_crash_levels():
 
 @app.route('/api/admin/levels', methods=['GET'])
 def api_admin_levels_get():
-    """Получить все уровни"""
+    """РџРѕР»СѓС‡РёС‚СЊ РІСЃРµ СѓСЂРѕРІРЅРё"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -16518,7 +16518,7 @@ def api_admin_levels_get():
 
 @app.route('/api/admin/levels', methods=['POST'])
 def api_admin_levels_save():
-    """Создать/обновить уровень"""
+    """РЎРѕР·РґР°С‚СЊ/РѕР±РЅРѕРІРёС‚СЊ СѓСЂРѕРІРµРЅСЊ"""
     try:
         data = request.get_json()
         level = data['level']
@@ -16530,7 +16530,7 @@ def api_admin_levels_save():
             VALUES (?, ?, ?, ?)''', (level, exp_required, reward_stars, reward_tickets))
         conn.commit()
         conn.close()
-        # Перезагружаем уровни в память
+        # РџРµСЂРµР·Р°РіСЂСѓР¶Р°РµРј СѓСЂРѕРІРЅРё РІ РїР°РјСЏС‚СЊ
         _sync_levels_from_db()
         return jsonify({'success': True})
     except Exception as e:
@@ -16539,7 +16539,7 @@ def api_admin_levels_save():
 
 @app.route('/api/admin/levels/<int:level_num>', methods=['DELETE'])
 def api_admin_levels_delete(level_num):
-    """Удалить уровень"""
+    """РЈРґР°Р»РёС‚СЊ СѓСЂРѕРІРµРЅСЊ"""
     try:
         conn = get_db_connection()
         conn.execute('DELETE FROM levels WHERE level = ?', (level_num,))
@@ -16555,7 +16555,7 @@ def api_admin_levels_delete(level_num):
 
 @app.route('/api/leaderboard', methods=['GET'])
 def api_leaderboard():
-    """Получить текущий лидерборд"""
+    """РџРѕР»СѓС‡РёС‚СЊ С‚РµРєСѓС‰РёР№ Р»РёРґРµСЂР±РѕСЂРґ"""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -16583,7 +16583,7 @@ def api_leaderboard():
                 gid = str(gift.get('id') or gift.get('gift_key') or '')
                 if gid:
                     reward_gifts_map[gid] = {
-                        'gift_name': gift.get('name') or 'Подарок',
+                        'gift_name': gift.get('name') or 'РџРѕРґР°СЂРѕРє',
                         'gift_image': gift.get('image') or '/static/img/gift.png'
                     }
         except Exception:
@@ -16599,7 +16599,7 @@ def api_leaderboard():
                     reward_obj['gift_name'] = gift_meta['gift_name']
                     reward_obj['gift_image'] = gift_meta['gift_image']
                 else:
-                    reward_obj.setdefault('gift_name', f'Gift #{gid}' if gid else 'Подарок')
+                    reward_obj.setdefault('gift_name', f'Gift #{gid}' if gid else 'РџРѕРґР°СЂРѕРє')
                     reward_obj.setdefault('gift_image', '/static/img/gift.png')
             rewards_enriched[str(pos)] = reward_obj
 
@@ -16608,7 +16608,7 @@ def api_leaderboard():
             'period_start': config[1],
             'period_end': config[2],
             'rewards': rewards_enriched,
-            'title': config[4] or 'Лидерборд'
+            'title': config[4] or 'Р›РёРґРµСЂР±РѕСЂРґ'
         }
 
         # Get top users by total_bet_volume
@@ -16690,7 +16690,7 @@ def api_leaderboard():
 
 @app.route('/api/admin/leaderboard', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def api_admin_leaderboard():
-    """CRUD для лидерборда"""
+    """CRUD РґР»СЏ Р»РёРґРµСЂР±РѕСЂРґР°"""
     try:
         if request.method == 'GET':
             conn = get_db_connection()
@@ -16705,7 +16705,7 @@ def api_admin_leaderboard():
                     'period_start': row[2],
                     'period_end': row[3],
                     'rewards': json.loads(row[4]) if row[4] else {},
-                    'title': row[5] or 'Лидерборд',
+                    'title': row[5] or 'Р›РёРґРµСЂР±РѕСЂРґ',
                     'created_at': row[6]
                 })
             conn.close()
@@ -16720,7 +16720,7 @@ def api_admin_leaderboard():
             period_start = data.get('period_start')
             period_end = data.get('period_end')
             rewards_json = json.dumps(data.get('rewards', {}))
-            title = data.get('title', 'Лидерборд')
+            title = data.get('title', 'Р›РёРґРµСЂР±РѕСЂРґ')
             
             conn = get_db_connection()
             # Deactivate other leaderboards
@@ -16734,8 +16734,8 @@ def api_admin_leaderboard():
             conn.execute('''INSERT INTO admin_notifications 
                 (title, message, notif_type, target_user_id, is_active)
                 VALUES (?, ?, 'leaderboard', 0, 1)''',
-                (f'Новый лидерборд: {title}', 
-                 f'Стартовал новый лидерборд! Соревнуйтесь за призы до {period_end}'))
+                (f'РќРѕРІС‹Р№ Р»РёРґРµСЂР±РѕСЂРґ: {title}', 
+                 f'РЎС‚Р°СЂС‚РѕРІР°Р» РЅРѕРІС‹Р№ Р»РёРґРµСЂР±РѕСЂРґ! РЎРѕСЂРµРІРЅСѓР№С‚РµСЃСЊ Р·Р° РїСЂРёР·С‹ РґРѕ {period_end}'))
             
             conn.commit()
             conn.close()
@@ -16779,7 +16779,7 @@ def api_admin_leaderboard():
 
 @app.route('/api/admin/leaderboard/distribute', methods=['POST'])
 def api_admin_leaderboard_distribute():
-    """Раздать награды текущего лидерборда"""
+    """Р Р°Р·РґР°С‚СЊ РЅР°РіСЂР°РґС‹ С‚РµРєСѓС‰РµРіРѕ Р»РёРґРµСЂР±РѕСЂРґР°"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -16798,7 +16798,7 @@ def api_admin_leaderboard_distribute():
             return jsonify({'success': False, 'error': 'Leaderboard not found'})
         
         rewards = json.loads(config[0]) if config[0] else {}
-        title = config[1] or 'Лидерборд'
+        title = config[1] or 'Р›РёРґРµСЂР±РѕСЂРґ'
         
         # Get top users
         cursor.execute('''SELECT id, first_name, total_bet_volume FROM users 
@@ -16825,8 +16825,8 @@ def api_admin_leaderboard_distribute():
                 conn.execute('''INSERT INTO admin_notifications 
                     (title, message, notif_type, target_user_id, reward_type, reward_data, is_active)
                     VALUES (?, ?, 'leaderboard', ?, ?, ?, 1)''',
-                    (f'{title} - Место #{i}', 
-                     f'Поздравляем! Вы заняли {i} место в лидерборде с оборотом {turnover}',
+                    (f'{title} - РњРµСЃС‚Рѕ #{i}', 
+                     f'РџРѕР·РґСЂР°РІР»СЏРµРј! Р’С‹ Р·Р°РЅСЏР»Рё {i} РјРµСЃС‚Рѕ РІ Р»РёРґРµСЂР±РѕСЂРґРµ СЃ РѕР±РѕСЂРѕС‚РѕРј {turnover}',
                      user_id, reward_type, str(reward_amount)))
                 
                 distributed += 1
@@ -16857,11 +16857,11 @@ if __name__ == '__main__':
     setup_telegram_webhook()
     
     print("\n" + "=" * 60)
-    print("🎮 RasswetGifts — Запуск сервера")
+    print("рџЋ® RasswetGifts вЂ” Р—Р°РїСѓСЃРє СЃРµСЂРІРµСЂР°")
     print("=" * 60)
-    print(f"\n🚀 Flask сервер:  http://{host}:{port}")
-    print(f"🎰 Crash игра:    http://{host}:{port}/crash")
-    print("🤖 Telegram бот:  webhook")
-    print("\n⚡ Нажмите Ctrl+C для остановки\n")
+    print(f"\nрџљЂ Flask СЃРµСЂРІРµСЂ:  http://{host}:{port}")
+    print(f"рџЋ° Crash РёРіСЂР°:    http://{host}:{port}/crash")
+    print("рџ¤– Telegram Р±РѕС‚:  webhook")
+    print("\nвљЎ РќР°Р¶РјРёС‚Рµ Ctrl+C РґР»СЏ РѕСЃС‚Р°РЅРѕРІРєРё\n")
     
     app.run(host=host, port=port, debug=False, use_reloader=False)
