@@ -769,6 +769,11 @@
         }
         
         function getGiftImage(gift) {
+            // TON balance gifts show TON icon
+            if (gift.type === 'ton_balance') {
+                return '/static/img/ton.png';
+            }
+            
             const img = gift.image || '';
             const slug = gift.fragment_slug || '';
             
@@ -1275,9 +1280,9 @@
             const wonGift = Array.isArray(wonGifts) ? wonGifts[0] : wonGifts;
             lastWonGift = wonGift;
             
-            // Filter out stars_balance gifts
+            // Get all gifts including ton_balance
             const allGifts = currentCase.gifts_details || currentCase.gifts || [];
-            const gifts = allGifts.filter(g => g.type !== 'stars_balance');
+            const gifts = allGifts;
             const track = $('rouletteTrack');
             
             // Stop idle animation

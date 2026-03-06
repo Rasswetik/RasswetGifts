@@ -1203,7 +1203,7 @@ def fetch_fragment_gift_models(slug, base_name='', base_value=0, base_image='', 
 def _resolve_case_gift_payload(gifts, selected_gift_info):
     """Resolve a case gift entry to a full gift dict.
     Searches local gifts, Fragment catalog (originals + models), and falls back to gift_info fields."""
-    if not selected_gift_info or selected_gift_info.get('type') == 'stars_balance':
+    if not selected_gift_info or selected_gift_info.get('type') == 'ton_balance':
         return None
 
     target_id = selected_gift_info.get('id')
@@ -1749,7 +1749,7 @@ def _create_all_tables(conn):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             ton_amount REAL NOT NULL,
-            stars_amount INTEGER NOT NULL,
+            ton_amount INTEGER NOT NULL,
             tx_hash TEXT,
             status TEXT DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -4287,7 +4287,7 @@ def ultimate_crash_cashout_simple():
                     VALUES (?, ?, ?, ?, ?)
                 ''', (user_id, gift_awarded['id'], gift_awarded['name'], gift_image, gift_awarded.get('value', 0)))
 
-                if gift_awarded.get('type') != 'stars_balance':
+                if gift_awarded.get('type') != 'ton_balance':
                     cursor.execute('SELECT 1 FROM user_gift_index WHERE user_id = ? AND gift_name = ?', (user_id, gift_awarded['name']))
                     is_new_gift = not cursor.fetchone()
                     cursor.execute('INSERT OR IGNORE INTO user_gift_index (user_id, gift_name) VALUES (?, ?)',
@@ -5268,7 +5268,7 @@ def ton_check_payment():
             
             # Record payment
             cursor.execute('''
-                INSERT INTO ton_payments (user_id, ton_amount, stars_amount, tx_hash, status, confirmed_at)
+                INSERT INTO ton_payments (user_id, ton_amount, ton_amount, tx_hash, status, confirmed_at)
                 VALUES (?, ?, ?, ?, 'confirmed', datetime('now'))
             ''', (user_id, amount_ton, stars_to_add, tx_hash))
             
@@ -5290,7 +5290,7 @@ def ton_check_payment():
         else:
             # Payment not found yet - create pending record for admin verification
             cursor.execute('''
-                INSERT OR IGNORE INTO ton_payments (user_id, ton_amount, stars_amount, status)
+                INSERT OR IGNORE INTO ton_payments (user_id, ton_amount, ton_amount, status)
                 VALUES (?, ?, ?, 'pending')
             ''', (user_id, amount_ton, stars_to_add))
             conn.commit()
@@ -5507,16 +5507,16 @@ def api_case_detail(case_id):
 
         case_gifts = []
         for gift_info in case['gifts']:
-            # Обработка stars_balance
-            if gift_info.get('type') == 'stars_balance':
-                stars_amount = gift_info.get('stars_amount', 0)
+            # Обработка ton_balance
+            if gift_info.get('type') == 'ton_balance':
+                ton_amount = gift_info.get('ton_amount', 0)
                 case_gifts.append({
                     'id': -1,
-                    'name': f'{stars_amount} Stars',
-                    'image': '/static/img/stars_prize.png',
-                    'value': stars_amount,
-                    'type': 'stars_balance',
-                    'stars_amount': stars_amount,
+                    'name': f'{ton_amount} TON',
+                    'image': '/static/img/ton.png',
+                    'value': ton_amount,
+                    'type': 'ton_balance',
+                    'ton_amount': ton_amount,
                     'chance': gift_info.get('chance', 1)
                 })
             else:
@@ -5640,18 +5640,18 @@ def open_case():
                         break
 
                 if selected_gift_info:
-                    # Проверка на stars_balance
-                    if selected_gift_info.get('type') == 'stars_balance':
-                        stars_amount = selected_gift_info.get('stars_amount', 0)
+                    # Проверка на ton_balance
+                    if selected_gift_info.get('type') == 'ton_balance':
+                        ton_amount = selected_gift_info.get('ton_amount', 0)
                         cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?',
-                                     (stars_amount, user_id))
+                                     (ton_amount, user_id))
                         won_gift = {
                             'id': -1,
-                            'name': f'⭐ {stars_amount} Stars',
-                            'image': '/static/img/stars_prize.png',
-                            'value': stars_amount,
-                            'type': 'stars_balance',
-                            'stars_amount': stars_amount
+                            'name': f'⭐ {ton_amount} TON',
+                            'image': '/static/img/ton.png',
+                            'value': ton_amount,
+                            'type': 'ton_balance',
+                            'ton_amount': ton_amount
                         }
                         won_gifts.append(won_gift)
 
@@ -5836,7 +5836,7 @@ def open_case_single():
         # Выбор подарка
         gifts = build_fragment_first_gifts_catalog() or load_gifts()
         won_gift = None
-        is_stars_balance = False
+        is_ton_balance = False
 
         if case.get('gifts'):
             total_chance = sum(gift.get('chance', 1) for gift in case['gifts'])
@@ -5851,20 +5851,20 @@ def open_case_single():
                     break
 
             if selected_gift_info:
-                # Проверка на stars_balance
-                if selected_gift_info.get('type') == 'stars_balance':
-                    stars_amount = selected_gift_info.get('stars_amount', 0)
+                # Проверка на ton_balance
+                if selected_gift_info.get('type') == 'ton_balance':
+                    ton_amount = selected_gift_info.get('ton_amount', 0)
                     cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?',
-                                 (stars_amount, user_id))
+                                 (ton_amount, user_id))
                     won_gift = {
                         'id': -1,
-                        'name': f'{stars_amount} Stars',
-                        'image': '/static/img/stars_prize.png',
-                        'value': stars_amount,
-                        'type': 'stars_balance',
-                        'stars_amount': stars_amount
+                        'name': f'{ton_amount} TON',
+                        'image': '/static/img/ton.png',
+                        'value': ton_amount,
+                        'type': 'ton_balance',
+                        'ton_amount': ton_amount
                     }
-                    is_stars_balance = True
+                    is_ton_balance = True
                 else:
                     gift = _resolve_case_gift_payload(gifts, selected_gift_info)
                     if gift:
@@ -5873,7 +5873,7 @@ def open_case_single():
         if not won_gift and gifts:
             won_gift = random.choice(gifts)
 
-        if won_gift and not is_stars_balance:
+        if won_gift and not is_ton_balance:
             inv_gift_id = won_gift.get('id') if isinstance(won_gift.get('id'), int) else None
             cursor.execute('''
                 INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
@@ -5939,7 +5939,7 @@ def open_case_single():
         level_result = add_experience(user_id, exp_gained, f'case_open:{case_id}')
 
         # Обновляем gift_index
-        if won_gift and won_gift.get('type') != 'stars_balance':
+        if won_gift and won_gift.get('type') != 'ton_balance':
             try:
                 gconn = get_db_connection()
                 gcur = gconn.cursor()
@@ -10374,18 +10374,18 @@ def admin_case_gifts(case_id):
             gifts_map = {str(g['id']): g for g in all_gifts if g.get('id') is not None}
             
             for cg in case_obj.get('gifts', []):
-                # Handle stars_balance type
-                if cg.get('type') == 'stars_balance':
-                    stars_amount = int(cg.get('stars_amount', 0) or 0)
+                # Handle ton_balance type
+                if cg.get('type') == 'ton_balance':
+                    ton_amount = int(cg.get('ton_amount', 0) or 0)
                     chance = float(cg.get('chance', 0) or 0)
-                    stable_id = f"stars_balance:{stars_amount}:{chance}"
+                    stable_id = f"ton_balance:{ton_amount}:{chance}"
                     case_gifts.append({
                         'id': stable_id,
-                        'type': 'stars_balance',
-                        'stars_amount': stars_amount,
-                        'name': f"Stars Balance ({stars_amount})",
+                        'type': 'ton_balance',
+                        'ton_amount': ton_amount,
+                        'name': f"Stars Balance ({ton_amount})",
                         'image': '/static/img/star.png',
-                        'value': stars_amount,
+                        'value': ton_amount,
                         'chance': chance
                     })
                     continue
@@ -10419,21 +10419,21 @@ def admin_case_gifts(case_id):
                 gift_type = data.get('type', 'gift')
                 chance = float(data.get('chance', 10))
                 
-                # Handle stars_balance type
-                if gift_type == 'stars_balance':
-                    stars_amount = int(data.get('stars_amount', 0))
-                    if stars_amount <= 0:
+                # Handle ton_balance type
+                if gift_type == 'ton_balance':
+                    ton_amount = int(data.get('ton_amount', 0))
+                    if ton_amount <= 0:
                         return jsonify({'success': False, 'error': 'Invalid stars amount'})
                     
                     gifts_list = case_obj.get('gifts', [])
                     gifts_list.append({
-                        'type': 'stars_balance',
-                        'stars_amount': stars_amount,
+                        'type': 'ton_balance',
+                        'ton_amount': ton_amount,
                         'chance': chance
                     })
                     case_obj['gifts'] = gifts_list
                     save_cases(cases)
-                    return jsonify({'success': True, 'message': f'Stars Balance ({stars_amount}) added'})
+                    return jsonify({'success': True, 'message': f'Stars Balance ({ton_amount}) added'})
                 
                 gift_id = data.get('gift_id')
 
@@ -10500,7 +10500,7 @@ def admin_case_gifts(case_id):
                 
                 gifts_list = case_obj.get('gifts', [])
                 gift_id_str = str(gift_id)
-                if gift_id_str.startswith('stars_balance:'):
+                if gift_id_str.startswith('ton_balance:'):
                     try:
                         _, stars_part, old_chance_part = gift_id_str.split(':', 2)
                         stars_part_i = int(float(stars_part))
@@ -10509,9 +10509,9 @@ def admin_case_gifts(case_id):
                         stars_part_i = None
                         old_chance_f = None
                     for g in gifts_list:
-                        if g.get('type') != 'stars_balance':
+                        if g.get('type') != 'ton_balance':
                             continue
-                        if stars_part_i is not None and int(g.get('stars_amount', 0) or 0) != stars_part_i:
+                        if stars_part_i is not None and int(g.get('ton_amount', 0) or 0) != stars_part_i:
                             continue
                         if old_chance_f is not None and abs(float(g.get('chance', 0) or 0) - old_chance_f) > 1e-9:
                             continue
@@ -10536,7 +10536,7 @@ def admin_case_gifts(case_id):
                 gifts_list = case_obj.get('gifts', [])
                 gift_id_str = str(gift_id)
 
-                if gift_id_str.startswith('stars_balance:'):
+                if gift_id_str.startswith('ton_balance:'):
                     try:
                         _, stars_part, chance_part = gift_id_str.split(':', 2)
                         stars_part_i = int(float(stars_part))
@@ -10547,19 +10547,19 @@ def admin_case_gifts(case_id):
                     removed = False
                     new_gifts = []
                     for g in gifts_list:
-                        if not removed and g.get('type') == 'stars_balance':
-                            same_stars = stars_part_i is None or int(g.get('stars_amount', 0) or 0) == stars_part_i
+                        if not removed and g.get('type') == 'ton_balance':
+                            same_stars = stars_part_i is None or int(g.get('ton_amount', 0) or 0) == stars_part_i
                             same_chance = chance_part_f is None or abs(float(g.get('chance', 0) or 0) - chance_part_f) <= 1e-9
                             if same_stars and same_chance:
                                 removed = True
                                 continue
                         new_gifts.append(g)
                     case_obj['gifts'] = new_gifts
-                elif gift_id is None or gift_id_str.lower() in ('none', 'null', 'stars_balance'):
+                elif gift_id is None or gift_id_str.lower() in ('none', 'null', 'ton_balance'):
                     removed = False
                     new_gifts = []
                     for g in gifts_list:
-                        if not removed and g.get('type') == 'stars_balance':
+                        if not removed and g.get('type') == 'ton_balance':
                             removed = True
                             continue
                         new_gifts.append(g)
@@ -10668,14 +10668,14 @@ def get_case_gifts(case_id):
         result = []
 
         for gift_info in case.get('gifts', []):
-            if gift_info.get('type') == 'stars_balance':
+            if gift_info.get('type') == 'ton_balance':
                 result.append({
                     'id': -1,
-                    'name': f"⭐ {gift_info.get('stars_amount', 0)} Stars",
-                    'image': '/static/img/stars_prize.png',
+                    'name': f"⭐ {gift_info.get('ton_amount', 0)} Stars",
+                    'image': '/static/img/ton.png',
                     'chance': gift_info.get('chance', 1),
-                    'type': 'stars_balance',
-                    'stars_amount': gift_info.get('stars_amount', 0)
+                    'type': 'ton_balance',
+                    'ton_amount': gift_info.get('ton_amount', 0)
                 })
             else:
                 gift = next((g for g in gifts if g['id'] == gift_info['id']), None)
@@ -10697,7 +10697,7 @@ def get_case_gifts(case_id):
 
 @app.route('/api/admin/add-gift-to-case', methods=['POST'])
 def add_gift_to_case():
-    """Добавить подарок или stars_balance в кейс"""
+    """Добавить подарок или ton_balance в кейс"""
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -10717,26 +10717,26 @@ def add_gift_to_case():
         if 'gifts' not in case:
             case['gifts'] = []
 
-        if gift_type == 'stars_balance':
-            stars_amount = int(data.get('stars_amount', 0))
+        if gift_type == 'ton_balance':
+            ton_amount = int(data.get('ton_amount', 0))
             chance = float(data.get('chance', 1))
 
             case['gifts'].append({
-                'type': 'stars_balance',
-                'stars_amount': stars_amount,
+                'type': 'ton_balance',
+                'ton_amount': ton_amount,
                 'chance': chance
             })
 
             if save_cases(cases):
-                logger.info(f"🛠️ Админ {admin_id} добавил stars_balance ({stars_amount}⭐) в кейс {case['name']}")
-                return jsonify({'success': True, 'message': f'Stars Balance ({stars_amount}⭐) добавлен в кейс'})
+                logger.info(f"🛠️ Админ {admin_id} добавил ton_balance ({ton_amount}⭐) в кейс {case['name']}")
+                return jsonify({'success': True, 'message': f'Stars Balance ({ton_amount}⭐) добавлен в кейс'})
             else:
                 return jsonify({'success': False, 'error': 'Ошибка сохранения'})
         else:
             gift_id = int(data.get('gift_id'))
             chance = float(data.get('chance', 1))
 
-            existing = next((g for g in case['gifts'] if g.get('id') == gift_id and g.get('type') != 'stars_balance'), None)
+            existing = next((g for g in case['gifts'] if g.get('id') == gift_id and g.get('type') != 'ton_balance'), None)
             if existing:
                 existing['chance'] = chance
             else:
