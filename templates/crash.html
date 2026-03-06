@@ -1323,26 +1323,35 @@ tc-root *{pointer-events:auto}
 }
 .rocket-wrap img{
     width:200px;height:200px;object-fit:contain;
-    transition: filter 0.3s ease;
+    transition: filter 0.3s ease, transform 0.2s ease;
     will-change: transform;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
 }
 .rocket-wrap.hide{opacity:0;pointer-events:none}
 .rocket-wrap.flying{
     animation:rocketGlow 1s ease-in-out infinite alternate;
 }
-/* Tilt rocket right during flight */
+/* Tilt rocket right during flight - smoother angle */
 .rocket-wrap.flying img{
-    transform:rotate(25deg);
+    transform:rotate(18deg);
+}
+/* Gift showing - no tilt, keep upright */
+.rocket-wrap.showing-gift img{
+    transform:rotate(0deg) !important;
+}
+.rocket-wrap.flying.showing-gift img{
+    transform:scale(1.05) !important;
 }
 /* Анимация смены gift */
 .rocket-wrap.gift-change img{
     animation: giftPop 0.4s cubic-bezier(.34,1.56,.64,1) forwards;
 }
 @keyframes giftPop{
-    0%{transform:scale(0.2) rotate(-10deg);opacity:0}
-    40%{transform:scale(1.2) rotate(5deg);opacity:1}
-    70%{transform:scale(0.95) rotate(-2deg)}
-    100%{transform:scale(1) rotate(0deg);opacity:1}
+    0%{transform:scale(0.2);opacity:0}
+    40%{transform:scale(1.15);opacity:1}
+    70%{transform:scale(0.98)}
+    100%{transform:scale(1);opacity:1}
 }
 /* Серый фильтр после кэшаута */
 .rocket-wrap.cashed-out img{
@@ -1909,23 +1918,23 @@ tc-root *{pointer-events:auto}
 /* ===== BETS LIST ===== */
 .bets-section{padding:10px 12px 24px}
 .bets-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.bets-title{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:15px;color:rgba(255,255,255,.7);letter-spacing:.5px}
-.bets-count{font-size:13px;color:rgba(255,255,255,.3);font-weight:600}
-.bets-list{display:flex;flex-direction:column;gap:4px;max-height:350px;overflow-y:auto}
-.bets-list::-webkit-scrollbar{width:3px}
-.bets-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
-.bet-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.03);animation:betSlideIn .4s cubic-bezier(.34,1.56,.64,1) both;transform-origin:top}
+.bets-title{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:14px;color:#fff;letter-spacing:.3px}
+.bets-count{font-size:12px;color:rgba(140,160,190,.8);font-weight:700;background:rgba(107,122,141,.15);padding:3px 10px;border-radius:10px}
+.bets-list{display:flex;flex-direction:column;gap:6px;max-height:350px;overflow-y:auto}
+.bets-list::-webkit-scrollbar{width:4px}
+.bets-list::-webkit-scrollbar-thumb{background:rgba(107,122,141,.3);border-radius:4px}
+.bet-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:12px;background:rgba(26,30,42,.8);border:1px solid rgba(107,122,141,.1);animation:betSlideIn .4s cubic-bezier(.34,1.56,.64,1) both;transform-origin:top}
 @keyframes betSlideIn{0%{opacity:0;transform:translateX(-30px) scale(.95)}100%{opacity:1;transform:translateX(0) scale(1)}}
 .bet-row:nth-child(1){animation-delay:0s}.bet-row:nth-child(2){animation-delay:.03s}.bet-row:nth-child(3){animation-delay:.06s}.bet-row:nth-child(4){animation-delay:.09s}.bet-row:nth-child(5){animation-delay:.12s}
-.bet-row:hover{background:rgba(255,255,255,.06);transform:scale(1.01);transition:all .2s}
-.bet-left{display:flex;align-items:center;gap:10px}
-.bet-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#333,#555);display:flex;align-items:center;justify-content:center;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:14px;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,.08)}
+.bet-row:hover{background:rgba(40,50,70,.9);border-color:rgba(107,122,141,.2);transition:all .2s}
+.bet-left{display:flex;align-items:center;gap:8px}
+.bet-avatar{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#2a3040,#3a4558);display:flex;align-items:center;justify-content:center;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:13px;overflow:hidden;flex-shrink:0;border:1px solid rgba(107,122,141,.2)}
 .bet-avatar img{width:100%;height:100%;object-fit:cover}
-.bet-info{display:flex;flex-direction:column;gap:2px}
-.bet-name{font-weight:600;font-size:14px;color:rgba(255,255,255,.8);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bet-amt{font-size:13px;color:rgba(255,255,255,.4);font-weight:600;display:flex;align-items:center;gap:4px}
-.bet-amt img{width:18px;height:18px;object-fit:contain}
-.bet-amt .bet-gift-icon{width:22px;height:22px;object-fit:contain;border-radius:4px}
+.bet-info{display:flex;flex-direction:column;gap:1px}
+.bet-name{font-weight:700;font-size:13px;color:#fff;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bet-amt{font-size:12px;color:rgba(140,160,190,.9);font-weight:600;display:flex;align-items:center;gap:4px}
+.bet-amt img{width:16px;height:16px;object-fit:contain}
+.bet-amt .bet-gift-icon{width:20px;height:20px;object-fit:contain;border-radius:4px}
 .bet-amt .bet-amt-val{transition:transform .15s ease;display:inline-block}
 .bet-row.lost .bet-amt{color:#F96999}
 .bet-row.lost .bet-amt img,.bet-row.lost .bet-gift-icon{filter:grayscale(100%) brightness(0.5)}
@@ -2254,46 +2263,45 @@ tc-root *{pointer-events:auto}
 }
 .hub-custom-title img{width:16px;height:16px;opacity:.7}
 .hub-custom-grid{
-    display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
-    max-height:180px;overflow-y:auto;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
+    max-height:220px;overflow-y:auto;
     scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;
 }
 .hub-custom-grid::-webkit-scrollbar{width:3px}
 .hub-custom-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
 .hub-custom-item{
-    background:rgba(255,255,255,.02);border-radius:12px;padding:10px;
+    background:rgba(255,255,255,.02);border-radius:10px;padding:6px;
     text-align:center;cursor:pointer;border:1.5px solid transparent;
     transition:all .2s cubic-bezier(.4,0,.2,1);position:relative;
+    aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
 }
-.hub-custom-item:hover{background:rgba(255,255,255,.04);transform:scale(1.02)}
+.hub-custom-item:hover{background:rgba(255,255,255,.04);transform:scale(1.04)}
 .hub-custom-item.active{
-    border-color:rgba(255,255,255,.2);
-    background:rgba(255,255,255,.06);
+    border-color:rgba(107,122,141,.5);
+    background:rgba(107,122,141,.15);
+    box-shadow:0 0 12px rgba(107,122,141,.25);
 }
-.hub-custom-item.locked{opacity:.5;cursor:not-allowed;pointer-events:none}
-.hub-custom-item.locked:hover{background:rgba(255,255,255,.03);opacity:.5}
+.hub-custom-item.locked{opacity:1;cursor:default;pointer-events:auto;background:rgba(30,35,50,.5);border:1px dashed rgba(90,106,138,.25)}
+.hub-custom-item.locked:hover{background:rgba(30,35,50,.6)}
 .locked-empty-slot{
-    width:44px;height:44px;border-radius:8px;
-    background:rgba(255,255,255,.04);
-    border:1px dashed rgba(90,106,138,.3);
+    width:100%;height:100%;min-height:48px;border-radius:8px;
+    background:rgba(40,45,60,.6);
+    border:1px dashed rgba(90,106,138,.35);
     display:flex;align-items:center;justify-content:center;
-    margin:0 auto;
 }
+.locked-empty-slot svg{opacity:.4}
 .hub-custom-item.claimable{
-    opacity:.85;cursor:pointer;
-    border-color:rgba(120,135,160,.4);
+    opacity:.9;cursor:pointer;
+    border-color:rgba(107,122,141,.5);
     animation:claimPulse 2s ease-in-out infinite;
 }
-@keyframes claimPulse{0%,100%{box-shadow:0 0 0 rgba(120,135,160,0)}50%{box-shadow:0 0 12px rgba(120,135,160,.3)}}
-.hub-custom-item.claimable:hover{opacity:1;border-color:rgba(120,135,160,.6)}
+@keyframes claimPulse{0%,100%{box-shadow:0 0 0 rgba(107,122,141,0)}50%{box-shadow:0 0 14px rgba(107,122,141,.4)}}
+.hub-custom-item.claimable:hover{opacity:1;border-color:rgba(107,122,141,.7)}
 .hub-custom-item img,.hub-custom-item video{
-    width:44px;height:44px;object-fit:contain;border-radius:8px;
+    width:100%;height:100%;max-width:52px;max-height:52px;object-fit:contain;border-radius:6px;
 }
-.hub-custom-item .item-name{
-    font-size:9px;color:rgba(255,255,255,.4);margin-top:6px;
-    font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.hub-custom-item.active .item-name{color:#fff}
+.hub-custom-item .item-name{display:none}
+.hub-custom-item.active .item-name{display:none}
 .hub-custom-item .item-lock-icon{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-60%);
     width:28px;height:28px;object-fit:contain;
@@ -5450,6 +5458,8 @@ function updateRocketImage(){
                     lastRocketSrc = giftImage;
                     rocketImg.src = giftImage;
                 }
+                /* Add showing-gift class for upright display */
+                rocketWrap.classList.add('showing-gift');
                 
                 /* Запускаеm анимацию после смены src */
                 rocketWrap.classList.remove('gift-change');
@@ -5469,12 +5479,14 @@ function updateRocketImage(){
                     rocketImg.src = rg;
                 }
             }
+            /* Remove showing-gift class when back to rocket */
+            rocketWrap.classList.remove('showing-gift');
             /* Убираеm серый только если не после кэшаута */
             if(!isGrayscale) rocketWrap.classList.remove('cashed-out');
         }
     } else {
         /* Нет ставки или не летит - возвращаеm ракету */
-        rocketWrap.classList.remove('cashed-out', 'gift-change');
+        rocketWrap.classList.remove('cashed-out', 'gift-change', 'showing-gift');
         if(lastGiftId !== null){
             lastGiftId = null;
             currentAchievableGift = null;
@@ -5635,12 +5647,18 @@ function render(){
         /* Dynamic rocket tilt & speed feel based on multiplier */
         if(rw){
             const rImg = rw.querySelector('img');
-            if(rImg){
-                /* Tilt from 15deg at 1x to 30deg at 5x+ */
-                var tilt = Math.min(30, 15 + (dispMult - 1) * 4);
+            /* Check if showing gift (PNG) - no tilt for gifts */
+            const isShowingGift = rw.classList.contains('showing-gift');
+            if(rImg && !isShowingGift){
+                /* Tilt from 12deg at 1x to 22deg at 5x+ - smoother angle */
+                var tilt = Math.min(22, 12 + (dispMult - 1) * 2.5);
                 /* Scale slightly at high multipliers for speed feel */
-                var sc = Math.min(1.15, 1 + (dispMult - 1) * 0.02);
+                var sc = Math.min(1.12, 1 + (dispMult - 1) * 0.015);
                 rImg.style.transform = 'rotate(' + tilt.toFixed(1) + 'deg) scale(' + sc.toFixed(2) + ')';
+            } else if(rImg && isShowingGift){
+                /* Gift stays upright with slight scale */
+                var sc = Math.min(1.08, 1 + (dispMult - 1) * 0.01);
+                rImg.style.transform = 'scale(' + sc.toFixed(2) + ')';
             }
             /* Speed up glow animation at high multipliers */
             var glowDur = Math.max(0.3, 1.0 - (dispMult - 1) * 0.08);
@@ -6946,32 +6964,44 @@ function renderHubCustomization(){
         }).join('');
     }
     
-    /* Render rockets with access check */
+    /* Render rockets with access check - always show 14 slots */
     const rocketGrid = $('hubRocketGrid');
     if(rocketGrid){
-        rocketGrid.innerHTML = rData.map((rItem, i) => {
+        const TOTAL_SLOTS = 14;
+        let rocketHtml = '';
+        
+        /* First render actual rockets */
+        for(let i = 0; i < rData.length && i < TOTAL_SLOTS; i++){
+            const rItem = rData[i];
             const r = rItem.id;
             const isActive = currentRocket === r;
             const isUnlocked = checkAccessCondition(rItem);
             const canClaim = !isUnlocked && isReadyToClaim(rItem);
             
             if (isUnlocked) {
-                return '<div class="hub-custom-item' + (isActive ? ' active' : '') + '" onclick="openRocketPreview(\'' + r + '\', \'' + (rItem.name || r) + '\')">' +
-                    '<img src="/static/gifs/rockets/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.4;this.style.objectFit=\'contain\'" alt="">' +
-                    '<div class="item-name">' + (rItem.name || r) + '</div>' +
+                rocketHtml += '<div class="hub-custom-item' + (isActive ? ' active' : '') + '" onclick="openRocketPreview(\'' + r + '\', \'' + (rItem.name || r) + '\')">' +
+                    '<img src="/static/gifs/rockets/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.4" alt="">' +
                 '</div>';
             } else if (canClaim) {
-                return '<div class="hub-custom-item claimable" onclick="openClaimOverlay(\'rocket\',\'' + r + '\',\'' + (rItem.name || r).replace(/'/g,"\\'") + '\')">' +
-                    '<img src="/static/gifs/rockets/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.4;this.style.objectFit=\'contain\'" alt="" style="filter:brightness(0.8)">' +
-                    '<div class="item-name">' + (rItem.name || r) + '</div>' +
+                rocketHtml += '<div class="hub-custom-item claimable" onclick="openClaimOverlay(\'rocket\',\'' + r + '\',\'' + (rItem.name || r).replace(/'/g,"\\'") + '\')">' +
+                    '<img src="/static/gifs/rockets/' + r + '.gif" onerror="this.onerror=null;this.src=\'/static/img/star2.png\';this.style.opacity=.4" alt="" style="filter:brightness(0.7) blur(1px)">' +
                 '</div>';
             } else {
-                return '<div class="hub-custom-item locked" onclick="handleLockedClick(\'rocket\',\'' + r + '\',\'' + (rItem.name || r).replace(/'/g,"\\'") + '\',\'' + rItem.access_type + '\',' + (rItem.requirement || 0) + ')" style="position:relative">' +
-                    '<div class="locked-empty-slot"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' +
-                    '<div class="item-name" style="color:rgba(90,106,138,.6)">' + (rItem.name || r) + '</div>' +
+                rocketHtml += '<div class="hub-custom-item locked" onclick="handleLockedClick(\'rocket\',\'' + r + '\',\'' + (rItem.name || r).replace(/'/g,"\\'") + '\',\'' + rItem.access_type + '\',' + (rItem.requirement || 0) + ')">' +
+                    '<div class="locked-empty-slot"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' +
                 '</div>';
             }
-        }).join('');
+        }
+        
+        /* Fill remaining slots with empty locked placeholders */
+        const remaining = TOTAL_SLOTS - Math.min(rData.length, TOTAL_SLOTS);
+        for(let i = 0; i < remaining; i++){
+            rocketHtml += '<div class="hub-custom-item locked">' +
+                '<div class="locked-empty-slot"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5a6a8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>' +
+            '</div>';
+        }
+        
+        rocketGrid.innerHTML = rocketHtml;
     }
     
 

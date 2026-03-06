@@ -3516,6 +3516,11 @@ def index():
     """Главная страница кейсов (алиас)"""
     return render_template('index.html')
 
+@app.route('/case')
+def case_main_page():
+    """Страница списка кейсов"""
+    return render_template('index.html')
+
 @app.route('/cases')
 def cases_page():
     """Страница кейсов (алиас)"""
