@@ -474,32 +474,32 @@
         }
         .contents-grid{
             display:grid;
-            grid-template-columns:repeat(3,1fr);
+            grid-template-columns:repeat(2,1fr);
             gap:10px;
         }
         .content-item{
             background:rgba(255,255,255,.03);
             border:1px solid var(--border);
             border-radius:14px;
-            padding:10px;
+            padding:12px;
             text-align:center;
         }
         .content-item img{
             width:100%;aspect-ratio:1/1;
             object-fit:contain;
             border-radius:8px;
-            margin-bottom:6px;
+            margin-bottom:8px;
         }
         .content-item-name{
-            font-size:10px;font-weight:600;color:var(--text);
-            margin-bottom:4px;
+            font-size:11px;font-weight:600;color:var(--text);
+            margin-bottom:6px;
             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
         }
         .content-price{
             display:flex;align-items:center;justify-content:center;gap:4px;
-            font-size:12px;font-weight:700;color:var(--blue);
+            font-size:13px;font-weight:700;color:var(--blue);
         }
-        .content-price img{width:12px;height:12px}
+        .content-price img{width:14px;height:14px}
 
         /* ═══════════ DEPOSIT OVERLAY ═══════════ */
         .deposit-overlay{
@@ -758,10 +758,26 @@
         };
         
         function getGiftPrice(gift) {
-            const name = gift.name || '';
+            const name = (gift.name || '').replace(' (Random)', '');
             if (GIFT_PRICES[name]) return GIFT_PRICES[name];
-            // Fallback to g.value converted from stars
-            return starsToTon(gift.value || 0);
+            // Value is already in TON, no conversion needed
+            return Number(gift.value || 0);
+        }
+        
+        function getGiftImage(gift) {
+            const img = gift.image || '';
+            // Fragment URLs often blocked - use local proxy or default
+            if (img.includes('fragment.com/file')) {
+                // Try to get slug from image URL or gift
+                const slug = gift.fragment_slug || img.split('/gifts/')[1]?.split('/')[0] || '';
+                if (slug) {
+                    // Try local gif/png
+                    return '/static/gifs/gifts/' + slug + '.gif';
+                }
+            }
+            if (img && !img.startsWith('http')) return img;
+            if (img) return img;
+            return '/static/img/gift.png';
         }
         
         let allCases = [];
@@ -780,8 +796,17 @@
                 tg.expand();
                 tg.setHeaderColor('#090B11');
                 tg.setBackgroundColor('#090B11');
+                tg.ready();
                 userId = tg.initDataUnsafe?.user?.id;
             }
+            
+            // Fallback for testing outside Telegram
+            if (!userId) {
+                const params = new URLSearchParams(window.location.search);
+                userId = params.get('user_id') || null;
+            }
+            
+            console.log('Init userId:', userId);
 
             const bar = $('loaderBar');
             let progress = 0;
@@ -798,7 +823,7 @@
                 clearInterval(interval);
                 setTimeout(() => $('loader').classList.add('hide'), 300);
             } catch (e) {
-                console.error(e);
+                console.error('Init error:', e);
                 clearInterval(interval);
                 bar.style.width = '100%';
                 setTimeout(() => $('loader').classList.add('hide'), 300);
@@ -1011,7 +1036,7 @@
                             <img src="/static/img/ton.png" alt="">
                             ${formatTon(gPrice)}
                         </div>
-                        <img src="${g.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
+                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                         <div class="roulette-item-name">${escapeHtml(gName)}</div>
                     </div>
                 `);
@@ -1029,7 +1054,7 @@
                 const gName = g.name || 'Подарок';
                 return `
                     <div class="content-item">
-                        <img src="${g.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
+                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                         <div class="content-item-name">${escapeHtml(gName)}</div>
                         <div class="content-price">
                             <img src="/static/img/ton.png" alt="">
@@ -1226,7 +1251,7 @@
                             <img src="/static/img/ton.png" alt="">
                             ${formatTon(gPrice)}
                         </div>
-                        <img src="${g.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
+                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                         <div class="roulette-item-name">${escapeHtml(gName)}</div>
                     </div>
                 `;
@@ -1256,7 +1281,7 @@
             $('contentsSection').style.display = 'none';
             
             // Show win section in modal
-            $('modalWinImg').src = gift.image || '/static/img/gift.png';
+            $('modalWinImg').src = getGiftImage(gift);
             $('modalWinName').textContent = gift.name || 'Подарок';
             $('modalWinValue').querySelector('span').textContent = formatTon(getGiftPrice(gift));
             $('modalWin').style.display = 'block';
