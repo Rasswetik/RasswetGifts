@@ -496,13 +496,14 @@
             margin-bottom:10px;
         }
         .content-price{
-            display:flex;align-items:center;justify-content:center;gap:5px;
-            padding:6px 12px;
-            background:rgba(0,152,234,.1);
-            border-radius:10px;
+            display:inline-flex;align-items:center;justify-content:center;gap:6px;
+            padding:8px 16px;
+            background:rgba(0,152,234,.12);
+            border-radius:12px;
             font-size:14px;font-weight:700;color:var(--blue);
+            white-space:nowrap;
         }
-        .content-price img{width:16px;height:16px}
+        .content-price img{width:16px;height:16px;flex-shrink:0}
 
         /* ═══════════ DEPOSIT OVERLAY ═══════════ */
         .deposit-overlay{
@@ -769,14 +770,60 @@
         
         function getGiftImage(gift) {
             const img = gift.image || '';
-            // If it's a Fragment URL, use it directly
-            // The browser will load from fragment.com
-            if (img && img.includes('fragment.com')) {
-                return img;
+            const slug = gift.fragment_slug || '';
+            
+            // Local fallback mapping for common gifts
+            const LOCAL_MAP = {
+                'toybear': '/static/gifs/gifts/Toy_Bear.gif',
+                'moon': '/static/gifs/gifts/star.gif',
+                'moussecake': '/static/gifs/gifts/Mousse_Cake.gif',
+                'petsnake': '/static/gifs/gifts/Pet_Snake.png',
+                'heartlocket': '/static/gifs/gifts/hl.gif',
+                'vintagecigar': '/static/gifs/gifts/vintage_cigar.gif',
+                'jinglebells': '/static/gifs/gifts/JingleBells.png',
+                'hangingstar': '/static/gifs/gifts/hstarr.gif',
+                'crystalball': '/static/gifs/gifts/Crystal_Ball.png',
+                'bdaycandle': '/static/gifs/gifts/BDCandle.png',
+                'icecream': '/static/gifs/gifts/ice_cream.gif',
+                'lushbouquet': '/static/gifs/gifts/pp.png',
+                'jellybunny': '/static/gifs/gifts/Jelly_Bunny.png',
+                'holidaydrink': '/static/gifs/gifts/Holiday_Drink.png',
+                'xmasstocking': '/static/gifs/gifts/Xmas_Stocking.gif',
+                'westsidesign': '/static/gifs/gifts/Westside_Sign.gif',
+                'nekohelmet': '/static/gifs/gifts/Neko_Helmet.png',
+                'sakuraflower': '/static/gifs/gifts/Sakura_Flower.png',
+                'nailbracelet': '/static/gifs/gifts/Nail_Bracelet.gif',
+                'lootbag': '/static/gifs/gifts/Loot_Bag.gif',
+                'mightyarm': '/static/gifs/gifts/Mighty_Arm.gif',
+                'minioscar': '/static/gifs/gifts/Mini_Oscar.gif',
+                'magicpotion': '/static/gifs/gifts/Magic_Potion.gif',
+                'genielamp': '/static/gifs/gifts/Genie_Lamp.gif',
+                'kissedfrog': '/static/gifs/gifts/Kissed_Frog.gif',
+                'perfumebottle': '/static/gifs/gifts/perfume_bottle.gif',
+                'heroichelmet': '/static/gifs/gifts/heroic_helmet.gif',
+                'iongem': '/static/gifs/gifts/Ion_Gem.gif',
+                'electricskull': '/static/gifs/gifts/electric_skull.gif',
+                'bondedring': '/static/gifs/gifts/Bonded_Ring.gif',
+                'eternalrose': '/static/gifs/gifts/EternalRose.png',
+                'diamondring': '/static/gifs/gifts/Diamond_Ring.png',
+                'cupidcharm': '/static/gifs/gifts/Cupid_Charm.png'
+            };
+            
+            // Try local mapping first
+            if (slug && LOCAL_MAP[slug.toLowerCase()]) {
+                return LOCAL_MAP[slug.toLowerCase()];
             }
-            // Local paths
+            
+            // Extract slug from Fragment URL
+            if (img && img.includes('fragment.com/file/gifts/')) {
+                const extractedSlug = img.split('/gifts/')[1]?.split('/')[0];
+                if (extractedSlug && LOCAL_MAP[extractedSlug.toLowerCase()]) {
+                    return LOCAL_MAP[extractedSlug.toLowerCase()];
+                }
+            }
+            
+            // Use original image (Fragment URL or other)
             if (img && img.startsWith('/')) return img;
-            // Other URLs
             if (img) return img;
             return '/static/img/gift.png';
         }
