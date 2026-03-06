@@ -33,7 +33,7 @@
                 radial-gradient(circle at 80% 50%,rgba(140,150,170,.03) 0%,transparent 50%);
             z-index:-1;pointer-events:none;
         }
-        .page{width:100%;max-width:480px;margin:0 auto;padding:0 12px 80px;position:relative;min-height:100vh;display:flex;flex-direction:column}
+        .page{width:100%;max-width:480px;margin:0 auto;padding:env(safe-area-inset-top,24px) 12px 80px;position:relative;min-height:100vh;display:flex;flex-direction:column}
 
         /* === TOP BAR === */
         .top-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:4px}
@@ -219,13 +219,14 @@
             <div class="ref-card-title">REFERRALS</div>
             <div class="ref-card-desc">Invite friends and get 10% of your friends' deposits!</div>
             <div class="ref-stats">
-                <div class="ref-stat"><img src="/static/img/ton.png" alt="TON"> Balance: <span id="refBalance">0.00</span></div>
-                <div class="ref-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Referrals: <span id="refCount">0</span></div>
-                <div class="ref-stat" style="cursor:pointer" onclick="showTerms()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Terms</div>
+                <div class="ref-stat"><img src="/static/img/ton.png" alt="TON"> <span id="refBalance">0.00</span> TON</div>
+                <div class="ref-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> <span id="refCount">0</span></div>
+                <div class="ref-stat" style="cursor:pointer" onclick="showTerms()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
             </div>
             <div class="ref-links">
                 <button class="ref-link" onclick="inviteFriends()">Invite friends</button>
                 <button class="ref-link" onclick="copyRefLink()">Copy link</button>
+                <button class="ref-link" id="refWithdrawBtn" onclick="withdrawRefBalance()" style="color:var(--green)">Withdraw</button>
             </div>
         </div>
 
@@ -279,7 +280,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
             <span class="bnav-label">Crash</span>
         </a>
-        <a class="bnav-item disabled" onclick="return false" href="javascript:void(0)">
+        <a class="bnav-item" href="/case">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
             <span class="bnav-label">Cases</span>
         </a>
@@ -348,7 +349,7 @@
             var need = li.next_level_info ? formatTon(starsToTon(li.next_level_info.exp_required || 10000)) : 'MAX';
             document.getElementById('levelText').textContent = cur + ' / ' + need + ' TON';
         }
-        document.getElementById('refBalance').textContent = formatTon(starsToTon(user.total_earned_stars || 0));
+        document.getElementById('refBalance').textContent = formatTon(starsToTon(user.referral_balance || 0));
         document.getElementById('refCount').textContent = user.referral_count || 0;
         applyTranslations();
     }
@@ -360,9 +361,9 @@
         var userLvl = (user && user.current_level) || 1;
         document.getElementById('rewardsUserLevel').textContent = userLvl + ' lvl';
         var grid = document.getElementById('rewardsGrid');
-        var tonRewards = levelRewards.filter(function(lv){ return lv.reward && lv.reward.type === 'ton_bonus'; });
-        if (!tonRewards.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:20px">No rewards available</div>'; }
-        else { grid.innerHTML = tonRewards.map(function(lv) { var unlocked = userLvl >= lv.level; var cls = unlocked ? 'unlocked' : 'locked'; var rw = lv.reward || {}; var img = rw.image || '/static/img/ton.png'; return '<div class="reward-card ' + cls + '" onclick="onRewardClick(' + lv.level + ',' + (unlocked?1:0) + ')"><div class="reward-card-lvl">' + lv.level + ' lvl</div><img class="reward-card-img" src="' + img + '" alt="" onerror="this.src=\'/static/img/ton.png\'"><div class="reward-card-name">' + (rw.name || '+TON') + '</div></div>'; }).join(''); }
+        var allRewards = levelRewards.filter(function(lv){ return lv.reward; });
+        if (!allRewards.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:20px">No rewards available</div>'; }
+        else { grid.innerHTML = allRewards.map(function(lv) { var unlocked = userLvl >= lv.level; var cls = unlocked ? 'unlocked' : 'locked'; var rw = lv.reward || {}; var img = rw.image || '/static/img/ton.png'; var fallbackImg = rw.type === 'rocket_skin' ? '/static/gifs/rockets/crash.gif' : '/static/img/ton.png'; return '<div class="reward-card ' + cls + '" onclick="onRewardClick(' + lv.level + ',' + (unlocked?1:0) + ')"><div class="reward-card-lvl">' + lv.level + ' lvl</div><img class="reward-card-img" src="' + img + '" alt="" onerror="this.src=\'' + fallbackImg + '\'"><div class="reward-card-name">' + (rw.name || 'Reward') + '</div></div>'; }).join(''); }
         document.getElementById('rewardsOverlay').classList.add('show');
     }
     function closeRewardsModal() { document.getElementById('rewardsOverlay').classList.remove('show'); }
@@ -389,6 +390,21 @@
     function copyRefLink() { var link = 'https://t.me/rasswetgifts_bot?start=ref_' + (user.referral_code || user.id); navigator.clipboard.writeText(link).then(function(){showNotif(t('linkCopied'))}).catch(function(){showNotif('Failed to copy', true)}); }
     function showTerms() { showNotif(t('refDesc')); }
     function openDeposit() { window.location.href = '/crash'; }
+    
+    async function withdrawRefBalance() {
+        if (!user) return;
+        var refBal = starsToTon(user.referral_balance || 0);
+        if (refBal < 1) { showNotif(currentLang === 'ru' ? 'Минимум 1 TON для вывода' : 'Minimum 1 TON to withdraw', true); return; }
+        vibrateIfOn();
+        try {
+            var r = await fetch('/api/referral/withdraw', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: user.id}) });
+            var d = await r.json();
+            if (d.success) {
+                showNotif(currentLang === 'ru' ? 'Переведено на баланс!' : 'Transferred to balance!');
+                await refreshUserData();
+            } else { showNotif(d.error || 'Error', true); }
+        } catch (e) { showNotif('Error', true); }
+    }
 
     async function refreshUserData() { try { var r = await fetch('/api/user/' + user.id); var d = await r.json(); if (d.success) { user = d.user; updateProfile(); } } catch (e) {} }
 

@@ -126,6 +126,7 @@
         /* ===== CONTAINER ===== */
         .container{
             width:100%;max-width:480px;margin:0 auto;padding:16px 16px 30px;position:relative;z-index:1;
+            padding-top:calc(16px + env(safe-area-inset-top, 0px));
         }
 
         /* ===== HEADER (GB exact: layoutHeader gradient, separator below) ===== */
@@ -906,6 +907,119 @@
         }
         .open-btn:not(:disabled):active{transform:translateY(1px)}
 
+        /* ===== SWIPE-TO-OPEN SLIDER ===== */
+        .swipe-slider-container{
+            width:100%;
+            max-width:340px;
+            margin:0 auto;
+            position:relative;
+        }
+        .swipe-slider{
+            position:relative;
+            width:100%;
+            height:60px;
+            border-radius:16px;
+            background:linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            border:2px solid var(--border-gunmetal);
+            overflow:hidden;
+            touch-action:none;
+            user-select:none;
+            cursor:grab;
+        }
+        .swipe-slider.disabled{
+            opacity:0.5;
+            pointer-events:none;
+        }
+        .swipe-slider-track{
+            position:absolute;
+            inset:0;
+            display:flex;
+            align-items:center;
+            padding-left:60px;
+            padding-right:16px;
+        }
+        /* Animated ribbon/shimmer effect */
+        .swipe-slider-ribbon{
+            position:absolute;
+            top:0;left:-100%;
+            width:50%;height:100%;
+            background:linear-gradient(90deg, 
+                transparent 0%,
+                rgba(255,255,255,0.03) 25%,
+                rgba(107,122,141,0.15) 50%,
+                rgba(255,255,255,0.03) 75%,
+                transparent 100%
+            );
+            animation:ribbonSlide 2.5s ease-in-out infinite;
+            pointer-events:none;
+        }
+        @keyframes ribbonSlide{
+            0%{left:-50%;opacity:0}
+            20%{opacity:1}
+            80%{opacity:1}
+            100%{left:100%;opacity:0}
+        }
+        .swipe-slider-text{
+            flex:1;
+            text-align:center;
+            font-size:14px;
+            font-weight:700;
+            color:var(--text-secondary);
+            letter-spacing:0.5px;
+            text-transform:uppercase;
+            transition:opacity 0.3s;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:8px;
+        }
+        .swipe-slider-text img{
+            width:16px;height:16px;
+        }
+        .swipe-slider-handle{
+            position:absolute;
+            top:4px;left:4px;
+            width:52px;height:52px;
+            border-radius:12px;
+            background:linear-gradient(180deg, #6B7A8D 0%, #556270 50%, #3E4A56 100%);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            box-shadow:0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.15);
+            cursor:grab;
+            z-index:2;
+            transition:box-shadow 0.2s, transform 0.1s;
+        }
+        .swipe-slider-handle:active{
+            cursor:grabbing;
+        }
+        .swipe-slider-handle svg{
+            width:24px;height:24px;
+            color:#fff;
+            opacity:0.9;
+        }
+        .swipe-slider-handle.dragging{
+            box-shadow:0 6px 20px rgba(0,0,0,0.5), 0 0 30px rgba(107,122,141,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+            transform:scale(1.05);
+        }
+        .swipe-slider.success .swipe-slider-handle{
+            background:linear-gradient(180deg, #34E76A 0%, #1EAA3F 50%, #168832 100%);
+            box-shadow:0 4px 20px rgba(30,228,76,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .swipe-slider.success{
+            border-color:rgba(30,228,76,0.5);
+        }
+        .swipe-slider-progress{
+            position:absolute;
+            top:0;left:0;
+            height:100%;
+            width:0;
+            background:linear-gradient(90deg, rgba(107,122,141,0.2) 0%, rgba(107,122,141,0.35) 100%);
+            border-radius:14px 0 0 14px;
+            pointer-events:none;
+            transition:width 0.05s linear;
+        }
+
         /* ===== WIN ACTIONS (GB exact) ===== */
         .win-actions{text-align:center;margin-top:16px}
         .tap-hint{
@@ -1247,11 +1361,9 @@
         .notif.error{background:linear-gradient(rgba(253,161,0,.24),rgba(253,161,0,.24)),var(--bg-primary);color:#fff;border:1px solid var(--text-warning)}
         @keyframes notifIn{from{transform:translateX(-50%) translateY(-100%);opacity:0}to{transform:translateX(-50%);opacity:1}}
 
-        /* ===== LOADING (GB exact) ===== */
+        /* ===== LOADING (GB exact) - HIDDEN IMMEDIATELY ===== */
         .loading-screen{
-            position:fixed;inset:0;background:var(--bg-primary);
-            display:flex;flex-direction:column;align-items:center;justify-content:center;
-            z-index:9999;transition:opacity .4s,visibility .4s;
+            display:none !important;
         }
         .loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
         .loading-gif{width:120px;height:120px;object-fit:contain}
@@ -1723,7 +1835,26 @@
                 <button class="case-action-btn deficit" id="deficit-btn" style="display:none" disabled></button>
                 <button class="case-action-btn deposit" id="deposit-btn" style="display:none" onclick="goDeposit()">Пополнить баланс</button>
                 <button class="case-action-btn prize" id="prize-btn" style="display:none" onclick="usePrize()">Использовать приз</button>
-                <button class="open-btn" id="open-btn" onclick="openCase()">Открыть кейс</button>
+                <!-- Swipe slider replaces open button -->
+                <div class="swipe-slider-container" id="swipe-slider-container">
+                    <div class="swipe-slider" id="swipe-slider">
+                        <div class="swipe-slider-progress" id="swipe-progress"></div>
+                        <div class="swipe-slider-ribbon"></div>
+                        <div class="swipe-slider-track">
+                            <span class="swipe-slider-text" id="swipe-text">
+                                <img src="/static/img/star.png" alt="">
+                                <span>Свайпни чтобы открыть</span>
+                            </span>
+                        </div>
+                        <div class="swipe-slider-handle" id="swipe-handle">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 18l6-6-6-6"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <!-- Hidden fallback button for backwards compatibility -->
+                <button class="open-btn" id="open-btn" onclick="openCase()" style="display:none">Открыть кейс</button>
             </div>
         </div>
         <div class="cost-info" id="cost-info" style="text-align:center;margin-top:4px"></div>
@@ -3218,10 +3349,132 @@
         });
     }
 
+    /* ===== SWIPE SLIDER SYSTEM ===== */
+    function initSwipeSlider(){
+        const slider = document.getElementById('swipe-slider');
+        const handle = document.getElementById('swipe-handle');
+        const progressBar = document.getElementById('swipe-progress');
+        const container = document.getElementById('swipe-slider-container');
+        if(!slider || !handle) return;
+
+        let isDragging = false;
+        let startX = 0;
+        let currentX = 0;
+        const handleWidth = 52;
+        const padding = 4;
+
+        function getMaxX(){
+            return slider.offsetWidth - handleWidth - padding * 2;
+        }
+
+        function updatePosition(x){
+            const maxX = getMaxX();
+            x = Math.max(0, Math.min(x, maxX));
+            handle.style.left = (x + padding) + 'px';
+            if(progressBar) progressBar.style.width = (x + handleWidth + padding) + 'px';
+            return x / maxX;
+        }
+
+        function resetSlider(){
+            handle.style.transition = 'left 0.3s ease';
+            if(progressBar) progressBar.style.transition = 'width 0.3s ease';
+            updatePosition(0);
+            setTimeout(() => {
+                handle.style.transition = '';
+                if(progressBar) progressBar.style.transition = '';
+            }, 300);
+            slider.classList.remove('success');
+            handle.classList.remove('dragging');
+        }
+
+        function triggerOpen(){
+            slider.classList.add('success');
+            if(window.triggerVibration) triggerVibration([50, 30, 80]);
+            setTimeout(() => {
+                openCase();
+                setTimeout(resetSlider, 500);
+            }, 200);
+        }
+
+        function onStart(e){
+            if(slider.classList.contains('disabled')) return;
+            isDragging = true;
+            handle.classList.add('dragging');
+            startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const rect = handle.getBoundingClientRect();
+            const sliderRect = slider.getBoundingClientRect();
+            currentX = rect.left - sliderRect.left - padding;
+            e.preventDefault();
+        }
+
+        function onMove(e){
+            if(!isDragging) return;
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            const deltaX = clientX - startX;
+            const newX = currentX + deltaX;
+            const pct = updatePosition(newX);
+            // Vibrate slightly when near end
+            if(pct > 0.9 && window.triggerVibration){
+                triggerVibration([10]);
+            }
+        }
+
+        function onEnd(){
+            if(!isDragging) return;
+            isDragging = false;
+            handle.classList.remove('dragging');
+            const rect = handle.getBoundingClientRect();
+            const sliderRect = slider.getBoundingClientRect();
+            const currentPos = rect.left - sliderRect.left - padding;
+            const maxX = getMaxX();
+            const pct = currentPos / maxX;
+
+            if(pct >= 0.85){
+                // Trigger open case
+                handle.style.transition = 'left 0.15s ease';
+                if(progressBar) progressBar.style.transition = 'width 0.15s ease';
+                updatePosition(maxX);
+                setTimeout(triggerOpen, 150);
+            } else {
+                resetSlider();
+            }
+        }
+
+        // Mouse events
+        handle.addEventListener('mousedown', onStart);
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onEnd);
+
+        // Touch events  
+        handle.addEventListener('touchstart', onStart, {passive: false});
+        document.addEventListener('touchmove', onMove, {passive: true});
+        document.addEventListener('touchend', onEnd);
+
+        // Update slider text based on currency mode
+        window.updateSwipeSliderText = function(price, currMode){
+            const textEl = document.getElementById('swipe-text');
+            if(!textEl) return;
+            const icon = currMode === 'ton' ? '/static/img/ton.png' : '/static/img/star.png';
+            const label = currMode === 'ton' ? 'TON' : '⭐';
+            textEl.innerHTML = '<img src="'+icon+'" alt=""><span>Свайпни → '+price+' '+label+'</span>';
+        };
+
+        // Enable/disable slider
+        window.setSwipeSliderEnabled = function(enabled){
+            if(enabled){
+                slider.classList.remove('disabled');
+                container.style.display = '';
+            } else {
+                slider.classList.add('disabled');
+            }
+        };
+    }
+
     /* ===== INIT ===== */
     document.addEventListener('DOMContentLoaded',function(){
         applyQtyMode();
         init();
+        initSwipeSlider();
         $('hubOverlay').addEventListener('click',function(e){if(e.target===this)closeHub()});
         applyVip();applyGif();
         document.addEventListener('click',function(e){if(e.target.closest('button,.qty-btn,.hdr-btn,.toggle,.hub-tab,.next-btn'))playClick()});

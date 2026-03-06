@@ -35,7 +35,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'raswet-secret-key-2024')
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 ADMIN_ID = int(os.getenv('ADMIN_ID', '5257227756'))
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8224991617:AAF2F7ub0XF9N6wsWyn3PmhdZnYt62KmpRE')
-WEBSITE_URL = os.getenv('WEBSITE_URL', 'https://rasswetik52.pythonanywhere.com')
+WEBSITE_URL = os.getenv('WEBSITE_URL', 'https://rasswet-gifts.onrender.com')
 TG_API = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_FILE_SIZE = 16 * 1024 * 1024
@@ -901,7 +901,7 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
             fallback_local.append({
                 'id': lg.get('id'),
                 'name': lg.get('name') or 'Gift',
-                'value': _safe_int(lg.get('value'), 0),
+                'value': int(round(float(lg.get('value', 0)) * FRAGMENT_TON_RATE)),
                 'image': _normalize_local_gift_image(lg.get('image')) or '/static/img/default_gift.png',
                 'fragment_slug': (lg.get('fragment_slug') or _slugify_fragment_name(lg.get('name', ''))),
                 'fragment_url': '',
@@ -945,7 +945,7 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
                 local_match = lg
                 break
 
-        local_value = _safe_int((local_match or {}).get('value'), 0)
+        local_value = int(round(float((local_match or {}).get('value', 0)) * FRAGMENT_TON_RATE))
         fragment_value = _safe_int(fg.get('value'), 0)
         merged.append({
             'id': (local_match or {}).get('id'),
@@ -971,7 +971,7 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
             merged.append({
                 'id': lg.get('id'),
                 'name': lg.get('name') or 'Gift',
-                'value': _safe_int(lg.get('value'), 0),
+                'value': int(round(float(lg.get('value', 0)) * FRAGMENT_TON_RATE)),
                 'image': _normalize_local_gift_image(lg.get('image')) or '/static/img/default_gift.png',
                 'fragment_slug': '',
                 'fragment_url': '',
@@ -2194,6 +2194,9 @@ def init_db():
                 if 'total_crash_bets' not in columns:
                     cursor.execute('ALTER TABLE users ADD COLUMN total_crash_bets INTEGER DEFAULT 0')
                     logger.info("✅ Добавлена колонка total_crash_bets")
+                if 'referral_balance' not in columns:
+                    cursor.execute('ALTER TABLE users ADD COLUMN referral_balance INTEGER DEFAULT 0')
+                    logger.info("✅ Добавлена колонка referral_balance")
                 conn.commit()
             except Exception as e:
                 logger.warning(f"⚠️ Миграция колонок users: {e}")
@@ -3496,6 +3499,13 @@ def root_page():
     """Главная страница — Краш"""
     return render_template('crash.html')
 
+
+@app.route('/api/ping')
+def api_ping():
+    """Keepalive ping to prevent sleeping"""
+    return jsonify({'pong': True})
+
+
 @app.route('/crash')
 def crash_page():
     """Страница игры Краш"""
@@ -3731,7 +3741,7 @@ def ultimate_crash_place_bet():
         if not user_id:
             return jsonify({'success': False, 'error': 'ID пользователя не указан'})
 
-        if bet_amount < 25:
+        if bet_amount < 10:
             return jsonify({'success': False, 'error': 'Минимальная ставка 25'})
 
         # Check phase transition lock FIRST (prevents bets during counting→flying)
@@ -3911,7 +3921,7 @@ def ultimate_crash_place_bet_gift():
         inv_id, gift_name, gift_image, gift_value = gift
         bet_amount = gift_value
 
-        if bet_amount < 25:
+        if bet_amount < 10:
             conn.close()
             return jsonify({'success': False, 'error': 'Стоимость подарка меньше 25⭐'})
 
@@ -4506,6 +4516,7 @@ def get_user_data(user_id):
             'total_bet_volume': user_row.get('total_bet_volume', 0) or 0,
             'crash_vip': bool(user_row.get('is_crash_vip', 0)),
             'currency_mode': user_row.get('currency_mode', 'stars') or 'stars',
+            'referral_balance': user_row.get('referral_balance', 0) or 0,
             'level_info': level_info
         }
 
@@ -5011,6 +5022,16 @@ def process_ton_payment():
         
         # Add stars to user
         cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (stars_to_add, user_id))
+        
+        # Give 10% referral commission to referrer
+        cursor.execute('SELECT referred_by FROM users WHERE id = ?', (user_id,))
+        ref_row = cursor.fetchone()
+        if ref_row and ref_row[0]:
+            referrer_id = ref_row[0]
+            commission = int(round(stars_to_add * 0.10))  # 10%
+            if commission > 0:
+                cursor.execute('UPDATE users SET referral_balance = referral_balance + ? WHERE id = ?', (commission, referrer_id))
+                logger.info(f"💰 Referral commission: {commission} stars to user {referrer_id} from deposit by {user_id}")
         
         # Record in history
         cursor.execute('''
@@ -6884,6 +6905,60 @@ def claim_referral_bonus():
         logger.error(f"❌ Ошибка получения реферального бонуса: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
+
+@app.route('/api/referral/withdraw', methods=['POST'])
+def withdraw_referral_balance():
+    """Вывод реферального баланса на основной (мин. 1 TON = 100 stars)"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'user_id required'})
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT referral_balance FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'User not found'})
+        
+        ref_balance = row[0] or 0
+        
+        if ref_balance < 100:  # Min 1 TON = 100 stars
+            conn.close()
+            return jsonify({'success': False, 'error': 'Minimum 1 TON to withdraw'})
+        
+        # Transfer to main balance
+        cursor.execute('''
+            UPDATE users 
+            SET balance_stars = balance_stars + ?, referral_balance = 0 
+            WHERE id = ?
+        ''', (ref_balance, user_id))
+        
+        add_history_record(user_id, 'referral_withdraw', ref_balance, f'Вывод реферального баланса')
+        
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        new_balance = cursor.fetchone()[0]
+        
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"💰 User {user_id} withdrew {ref_balance} stars from referral balance")
+        return jsonify({
+            'success': True,
+            'withdrawn': ref_balance,
+            'new_balance': new_balance
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Referral withdrawal error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
 # UPGRADE API
 @app.route('/api/user-upgrade-stats/<int:user_id>', methods=['GET'])
 def get_user_upgrade_stats(user_id):
@@ -7716,7 +7791,7 @@ def ultimate_crash_bet():
         if not user_id:
             return jsonify({'success': False, 'error': 'ID пользователя не указан'})
 
-        if bet_amount < 25:
+        if bet_amount < 10:
             return jsonify({'success': False, 'error': 'Минимальная ставка 25⭐'})
 
         conn = get_db_connection()
@@ -8137,7 +8212,7 @@ def place_bet_final():
         if not user_id:
             return jsonify({'success': False, 'error': 'ID пользователя не указан'})
 
-        if bet_amount < 25:
+        if bet_amount < 10:
             return jsonify({'success': False, 'error': 'Минимальная ставка 25'})
 
         conn = get_db_connection()
@@ -9643,11 +9718,20 @@ def crash_customizations():
             cursor.execute('ALTER TABLE crash_customizations ADD COLUMN requirement INTEGER DEFAULT 0')
         except: pass
         
-        # Добавляем дефолтные если их нет
-        cursor.execute('''
-            INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default, access_type, requirement)
-            VALUES ('background', 'phone', 'Космос', 0, 1, 'free', 0)
-        ''')
+        # Добавляем дефолтные если их нет - 5 animated backgrounds
+        cursor.execute("DELETE FROM crash_customizations WHERE item_type = 'background'")
+        bg_data = [
+            ('grid', 'Сетка', 0, 1, 'free', 0),         # Default - unlock at level 1
+            ('cosmic', 'Космос', 0, 0, 'level', 5),     # Space theme - level 5
+            ('rainbow', 'Радуга', 0, 0, 'level', 10),   # Rainbow - level 10
+            ('aurora', 'Сияние', 0, 0, 'level', 15),    # Northern lights - level 15
+            ('neon', 'Неон', 0, 0, 'level', 20),        # Neon/Cyberpunk - level 20
+        ]
+        for bg_id, bg_name, is_vip, is_default, access, req in bg_data:
+            cursor.execute('''
+                INSERT OR IGNORE INTO crash_customizations (item_type, item_id, name, is_vip, is_default, access_type, requirement)
+                VALUES ('background', ?, ?, ?, ?, ?, ?)
+            ''', (bg_id, bg_name, is_vip, is_default, access, req))
         
         # Регистрируем все ракеты из LEVEL_SYSTEM с уровневым доступом
         # Сначала удаляем старые ракеты чтобы обновить access_type
@@ -9700,7 +9784,7 @@ def crash_customizations():
             'rockets': rockets,
             'backgrounds': backgrounds,
             'default_rocket': 'crash',
-            'default_background': 'phone'
+            'default_background': 'grid'
         })
         
     except Exception as e:
@@ -16545,9 +16629,19 @@ def api_admin_leaderboard_distribute():
         return jsonify({'success': False, 'error': str(e)})
 
 
+# --- Setup webhook on import (for Gunicorn/production) ---
+try:
+    setup_telegram_webhook()
+except Exception as e:
+    logger.error(f"Initial webhook setup error: {e}")
+
+
 if __name__ == '__main__':
     host = os.getenv('HOST', '127.0.0.1')
     port = int(os.getenv('PORT', 5000))
+    
+    # Setup webhook on local run
+    setup_telegram_webhook()
     
     print("\n" + "=" * 60)
     print("🎮 RasswetGifts — Запуск сервера")
