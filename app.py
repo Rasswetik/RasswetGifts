@@ -3603,8 +3603,8 @@ def check_auth_code():
 
 @app.route('/')
 def root_page():
-    """Главная страница — Кейсы"""
-    return render_template('index.html')
+    """Главная страница — редирект на Краш"""
+    return redirect('/crash')
 
 
 @app.route('/api/ping')

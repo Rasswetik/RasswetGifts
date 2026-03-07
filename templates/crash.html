@@ -4970,17 +4970,17 @@ async function initTelegramApp() {
     /* 6. Load customizations from DB (non-blocking, 5s timeout) */
     try { await Promise.race([loadCrashCustomizations(), new Promise((_,r) => setTimeout(() => r('timeout'), 5000))]); } catch(e){ console.warn('Customizations load skipped:', e); }
 
-    /* 7. Load gifts for achievable display (non-blocking, 10s timeout) */
-    try { await Promise.race([loadCrashGifts(), new Promise((_,r) => setTimeout(() => r('timeout'), 10000))]); } catch(e){ console.warn('Gifts load skipped:', e); }
+    /* 7. Load gifts + loading screen animation (handles its own hide/reveal) */
+    try { await Promise.race([loadCrashGifts(), new Promise((_,r) => setTimeout(() => r('timeout'), 12000))]); } catch(e){
+        console.warn('Gifts load skipped:', e);
+        /* Force-hide loading screen on timeout */
+        var ls = $('ldScreen'); if(ls){ ls.classList.add('hidden'); setTimeout(function(){ ls.style.display='none'; }, 500); }
+    }
 
-    /* 7. Start game polling */
+    /* Start game polling */
     updStatus();
     loadBets();
     loadHist();
-
-    /* Hide loading screen - the circle reveal already started in loadCrashGifts */
-    $('ldScreen').classList.add('hidden');
-    setTimeout(function(){ $('ldScreen').style.display='none'; }, 500);
 
     /* Apply saved settings */
     applySettings();
@@ -5254,16 +5254,18 @@ document.addEventListener('touchstart', function initAudioOnceTouch(){
    ============================================================ */
 async function loadCrashGifts(){
     const progressBar = $('ldProgressBar');
-    const ldTxt = document.querySelector('.ld-txt') || $('ldTxt');
+    const ldTxt = document.getElementById('ldTxt');
     const ldPanels = document.querySelectorAll('.ld-panel img');
+    const ldScreen = $('ldScreen');
     
     /* Track which panels have been switched to rockets */
     var rocketPanels = new Set();
-    var lastProgress = 0;
     
     function updateProgress(pct){
-        if(progressBar) progressBar.style.width = pct + '%';
-        if(ldTxt) ldTxt.textContent = 'LOADING ' + Math.round(pct) + '%';
+        try{
+            if(progressBar) progressBar.style.width = pct + '%';
+            if(ldTxt) ldTxt.textContent = 'LOADING ' + Math.round(pct) + '%';
+        }catch(e){}
         
         /* Every ~11%, switch one random gift panel to a rocket GIF */
         var targetRockets = Math.floor(pct / 11);
@@ -5275,22 +5277,21 @@ async function loadCrashGifts(){
             if(available.length === 0) break;
             var chosen = available[Math.floor(Math.random() * available.length)];
             rocketPanels.add(chosen);
-            /* Animate the switch */
             (function(idx){
                 var img = ldPanels[idx];
                 if(!img) return;
                 img.classList.remove('show');
                 img.classList.add('hide');
                 setTimeout(function(){
-                    var rs = rocketsData.length > 0 ? rocketsData[Math.floor(Math.random()*rocketsData.length)] : null;
-                    img.src = rs ? '/static/gifs/rockets/' + rs.id + '.gif' : '/static/gifs/rockets/crash.gif';
+                    var rsList = (typeof rocketsData !== 'undefined' && rocketsData.length > 0) ? rocketsData : [{id:'crash'}];
+                    var rs = rsList[Math.floor(Math.random()*rsList.length)];
+                    img.src = '/static/gifs/rockets/' + rs.id + '.gif';
                     img.onerror = function(){ this.src = '/static/gifs/rockets/crash.gif'; };
                     img.classList.remove('hide');
                     img.classList.add('show');
                 }, 300);
             })(chosen);
         }
-        lastProgress = pct;
     }
     
     /* Initial: fill all panels with random gift PNGs */
@@ -5305,51 +5306,21 @@ async function loadCrashGifts(){
                 }
                 img.onerror = function(){ this.src = '/static/img/star.png'; };
                 img.classList.add('show');
-            }, i * 100);
+            }, i * 80);
         });
     }
     
-    try{
-        updateProgress(5);
-        
-        /* Load gifts from API (gifts.json) */
-        await loadGiftsFromAPI();
-        
-        updateProgress(25);
-        
-        console.log('📦 Gifts loaded:', allCatalogGifts.length);
-        
-        /* Show gift PNGs on panels */
-        initGiftPanels();
-        
-        /* Preload gift images in background (non-blocking) */
-        preloadGiftsInBackground();
-        
-        updateProgress(40);
-        
-        /* Load user's collection history (don't block on failure) */
-        try{ await loadCollectionHistory(); }catch(e){ console.warn('Collection history:', e); }
-        updateProgress(55);
-        
-        /* Check VIP status */
-        try{ await checkVipStatus(); }catch(e){ console.warn('VIP status:', e); }
-        
-        updateProgress(70);
-        
-        await new Promise(r => setTimeout(r, 600));
-        updateProgress(85);
-        
-        await new Promise(r => setTimeout(r, 600));
-        updateProgress(100);
-        
-        if(ldTxt) ldTxt.textContent = 'READY!';
-        
-        await new Promise(r => setTimeout(r, 400));
-        
-        /* Circle reveal transition */
+    function finishLoading(){
+        /* Hide loading screen first */
+        if(ldScreen){
+            ldScreen.classList.add('hidden');
+            setTimeout(function(){ ldScreen.style.display='none'; }, 500);
+        }
+        /* Circle reveal over game content */
         var reveal = $('ldReveal');
         if(reveal){
             reveal.style.display = 'block';
+            reveal.style.setProperty('--reveal-size', '0%');
             var size = 0;
             var revealAnim = setInterval(function(){
                 size += 3;
@@ -5360,8 +5331,48 @@ async function loadCrashGifts(){
                 }
             }, 16);
         }
+    }
+    
+    try{
+        /* Show gift panels immediately with placeholders */
+        initGiftPanels();
+        updateProgress(5);
+        
+        /* Load gifts from API */
+        try{ await loadGiftsFromAPI(); }catch(e){ console.warn('Gifts API:', e); }
+        updateProgress(25);
+        
+        console.log('📦 Gifts loaded:', allCatalogGifts.length);
+        
+        /* Re-fill panels with loaded gifts */
+        if(allCatalogGifts.length > 0) initGiftPanels();
+        
+        /* Preload gift images in background (non-blocking) */
+        preloadGiftsInBackground();
+        updateProgress(40);
+        
+        /* Load user's collection history */
+        try{ await loadCollectionHistory(); }catch(e){ console.warn('Collection history:', e); }
+        updateProgress(55);
+        
+        /* Check VIP status */
+        try{ await checkVipStatus(); }catch(e){ console.warn('VIP status:', e); }
+        updateProgress(70);
+        
+        await new Promise(r => setTimeout(r, 500));
+        updateProgress(85);
+        
+        await new Promise(r => setTimeout(r, 500));
+        updateProgress(100);
+        
+        if(ldTxt) ldTxt.textContent = 'READY!';
+        await new Promise(r => setTimeout(r, 300));
+        
+        finishLoading();
     }catch(e){
         console.error('Error in loadCrashGifts:', e);
+        /* Always finish loading even on error */
+        finishLoading();
     }
 }
 
