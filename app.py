@@ -13818,6 +13818,31 @@ def admin_upload_crate_image():
         return jsonify({'success': False, 'error': str(e)})
 
 
+@app.route('/api/admin/upload-image', methods=['POST'])
+def admin_upload_image():
+    """Upload image to a specific folder"""
+    try:
+        file = request.files.get('file')
+        folder = request.form.get('folder', 'news')
+        
+        if not file:
+            return jsonify({'success': False, 'error': 'Файл не выбран'})
+        
+        import uuid
+        ext = os.path.splitext(file.filename)[1] or '.png'
+        fname = f"{folder}_{uuid.uuid4().hex[:8]}{ext}"
+        save_dir = os.path.join(BASE_PATH, 'static', 'img', folder)
+        os.makedirs(save_dir, exist_ok=True)
+        filepath = os.path.join(save_dir, fname)
+        file.save(filepath)
+        
+        url = f'/static/img/{folder}/{fname}'
+        logger.info(f"📷 Uploaded image: {url}")
+        return jsonify({'success': True, 'url': url})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/api/crates', methods=['GET'])
 def get_crates():
     """Get active crates for users"""

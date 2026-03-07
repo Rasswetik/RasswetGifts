@@ -521,8 +521,14 @@ body::before{
                 <textarea class="form-input" id="newsContentInput" placeholder="Текст новости" rows="4" style="resize:vertical"></textarea>
             </div>
             <div class="form-group">
-                <label class="form-label">Изображение (URL)</label>
-                <input type="text" class="form-input" id="newsImageInput" placeholder="https://...">
+                <label class="form-label">Обложка</label>
+                <input type="hidden" id="newsImageInput" value="">
+                <div id="newsImagePreview" style="width:100%;aspect-ratio:16/9;border-radius:12px;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-bottom:8px;overflow:hidden" onclick="openCoverModal()">
+                    <div id="coverPreviewContent" style="text-align:center;color:rgba(255,255,255,0.4)">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+                        <div style="font-size:12px;margin-top:6px">Выбрать обложку</div>
+                    </div>
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Награда (Stars)</label>
@@ -685,6 +691,32 @@ body::before{
         <div style="display:flex;gap:8px;margin-top:16px">
             <button class="btn btn-success" style="flex:1" onclick="confirmAddGift()">Добавить</button>
             <button class="btn btn-danger" style="flex:1" onclick="closeAddGiftModal()">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<!-- Cover Selection Modal -->
+<div class="modal-overlay" id="coverModal">
+    <div class="modal-sheet" style="max-height:85vh">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Выбор обложки</div>
+        
+        <!-- Upload button -->
+        <div style="margin-bottom:16px">
+            <label class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Загрузить файл
+                <input type="file" id="coverUploadInput" accept="image/*" style="display:none" onchange="uploadCoverFile(this)">
+            </label>
+        </div>
+        
+        <!-- Cover grid -->
+        <div id="coverGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;max-height:50vh;overflow-y:auto;padding:4px">
+            <div class="loading" style="grid-column:1/-1"></div>
+        </div>
+        
+        <div style="display:flex;gap:8px;margin-top:16px">
+            <button class="btn btn-danger" style="flex:1" onclick="closeCoverModal()">Отмена</button>
         </div>
     </div>
 </div>
@@ -1062,11 +1094,71 @@ async function loadUsedPromos(){
 
 // ============ NEWS MANAGEMENT ============
 var allNews = [];
+var newsCovers = [
+    '/static/img/news/update_v41.svg',
+    '/static/img/news/leaderboard.svg',
+    '/static/img/news/event.svg',
+    '/static/img/news/maintenance.svg',
+    '/static/img/news/promo.svg',
+    '/static/img/news/gift.svg',
+    '/static/img/news/bonus.svg',
+    '/static/img/news/announcement.svg',
+    '/static/img/news/none.svg'
+];
+
+function openCoverModal(){
+    $('coverModal').classList.add('show');
+    renderCoverGrid();
+}
+
+function closeCoverModal(){
+    $('coverModal').classList.remove('show');
+}
+
+function renderCoverGrid(){
+    $('coverGrid').innerHTML = newsCovers.map(url => {
+        var name = url.split('/').pop().replace('.svg', '');
+        var selected = $('newsImageInput').value === url ? 'border:2px solid #6B7A8D;' : 'border:2px solid transparent;';
+        return '<div onclick="selectCover(\'' + url + '\')" style="cursor:pointer;border-radius:12px;overflow:hidden;aspect-ratio:16/9;background:rgba(255,255,255,0.04);' + selected + 'transition:all .2s">' +
+            '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover">' +
+        '</div>';
+    }).join('');
+}
+
+function selectCover(url){
+    $('newsImageInput').value = url;
+    $('coverPreviewContent').innerHTML = '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover">';
+    closeCoverModal();
+}
+
+async function uploadCoverFile(input){
+    if(!input.files || !input.files[0]) return;
+    var file = input.files[0];
+    var formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'news');
+    
+    try{
+        var r = await fetch('/api/admin/upload-image', {
+            method: 'POST',
+            body: formData
+        });
+        var d = await r.json();
+        if(d.success){
+            selectCover(d.url);
+            showToast('Обложка загружена', 'ok');
+        } else {
+            showToast(d.error || 'Ошибка загрузки', 'err');
+        }
+    }catch(e){
+        showToast('Ошибка сети', 'err');
+    }
+}
 
 async function loadNewsList(){
     $('newsList').innerHTML = '<div class="loading"></div>';
     try{
-        var r = await fetch('/api/admin/news?admin_id=' + adminId);
+        var r = await fetch('/api/admin/news?admin_id=' + ADMIN_ID);
         var d = await r.json();
         if(d.success && d.news && d.news.length){
             allNews = d.news;
@@ -1116,7 +1208,7 @@ async function createNews(){
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                admin_id: adminId,
+                admin_id: ADMIN_ID,
                 title: title,
                 content: content,
                 image_url: imageUrl,
@@ -1145,7 +1237,7 @@ async function toggleNewsActive(newsId, active){
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                admin_id: adminId,
+                admin_id: ADMIN_ID,
                 news_id: newsId,
                 is_active: active
             })
@@ -1170,7 +1262,7 @@ async function deleteNews(newsId){
             method: 'DELETE',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
-                admin_id: adminId,
+                admin_id: ADMIN_ID,
                 news_id: newsId
             })
         });
