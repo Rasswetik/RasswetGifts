@@ -7280,7 +7280,7 @@ function doClaim() {
     playSound('cashout');
     
     /* Vibrate */
-    if (settingVibration) { try { if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.impactOccurred('medium'); else if(navigator.vibrate) navigator.vibrate([50, 30, 80]); } catch(e){} }
+    if (settingVibration) { try { if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.impactOccurred('heavy'); else if(navigator.vibrate) navigator.vibrate([100, 50, 150]); } catch(e){} }
     
     /* Auto-close after 1.5s */
     setTimeout(() => {
@@ -9310,12 +9310,12 @@ function triggerVibration(pattern){
     /* Fallback to standard Web Vibration API - stronger pattern */
     try{
         if(navigator.vibrate){
-            /* Double the pattern values for stronger feeling */
+            /* Triple the pattern values for much stronger feeling */
             if(Array.isArray(pattern)){
-                var strongPattern = pattern.map(function(v){ return Math.min(v * 2, 300); });
+                var strongPattern = pattern.map(function(v){ return Math.min(v * 3, 500); });
                 navigator.vibrate(strongPattern);
             } else {
-                navigator.vibrate(Math.min(pattern * 2, 300));
+                navigator.vibrate(Math.min(pattern * 3, 500));
             }
         }
     }catch(e){
@@ -12695,7 +12695,7 @@ document.addEventListener('click', function _initMusicOnce(){
     }
     function playNotifSound() {
         /* Vibrate on mobile */
-        try { if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.impactOccurred('medium'); else if(navigator.vibrate) navigator.vibrate([80, 50, 80]); } catch(e){}
+        try { if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.impactOccurred('heavy'); else if(navigator.vibrate) navigator.vibrate([150, 80, 150]); } catch(e){}
         var ctx = getAudioCtx();
         if (!ctx) return;
         try {
