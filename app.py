@@ -1377,7 +1377,10 @@ def normalize_section_id(value):
 _db_ready = False
 _db_lock = threading.Lock()  # Один замок на все операции с БД
 
-DB_PATH = os.path.join(BASE_PATH, 'data', 'raswet_gifts.db')
+# Путь к БД: если задан DB_DIR (persistent disk), используем его; иначе — data/ в проекте
+_db_dir = os.environ.get('DB_DIR', os.path.join(BASE_PATH, 'data'))
+os.makedirs(_db_dir, exist_ok=True)
+DB_PATH = os.path.join(_db_dir, 'raswet_gifts.db')
 
 def get_db_connection():
     """Получает соединение с базой данных с защитой от повреждений"""
@@ -1439,7 +1442,7 @@ def _check_disk_space():
     """Проверяет свободное место на диске"""
     try:
         import shutil as _shutil
-        total, used, free = _shutil.disk_usage(os.path.join(BASE_PATH, 'data'))
+        total, used, free = _shutil.disk_usage(_db_dir)
         free_mb = free / (1024 * 1024)
         if free_mb < 5:
             logger.error(f"🚨 КРИТИЧЕСКИ МАЛО МЕСТА НА ДИСКЕ: {free_mb:.1f} MB свободно!")
@@ -2144,6 +2147,7 @@ def init_db():
     with _db_lock:
         _db_ready = False
 
+        os.makedirs(_db_dir, exist_ok=True)
         data_path = os.path.join(BASE_PATH, 'data')
         os.makedirs(data_path, exist_ok=True)
         for sub in ['static/gifs/gifts', 'static/gifs/cases', 'static/uploads/notifications']:
