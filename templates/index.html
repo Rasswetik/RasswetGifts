@@ -99,6 +99,21 @@
             padding:calc(env(safe-area-inset-top,20px) + 76px + 5vh) 16px 100px;
         }
 
+        /* ═══════════ SUB BANNER ═══════════ */
+        .sub-banner{
+            display:flex;align-items:center;gap:12px;
+            margin-bottom:14px;padding:10px 14px;
+            background:linear-gradient(135deg,rgba(0,152,234,.12),rgba(30,228,76,.08));
+            border:1px solid rgba(0,152,234,.18);border-radius:14px;
+            text-decoration:none;color:var(--text);
+            transition:background .2s;
+        }
+        .sub-banner:active{background:linear-gradient(135deg,rgba(0,152,234,.2),rgba(30,228,76,.14))}
+        .sub-banner-text{flex:1;display:flex;flex-direction:column;gap:2px}
+        .sub-banner-title{font-size:13px;font-weight:700}
+        .sub-banner-desc{font-size:11px;color:var(--text-2);line-height:1.3}
+        .sub-banner-icon{font-size:28px;flex-shrink:0}
+
         /* ═══════════ LIVE FEED ═══════════ */
         .feed{
             display:flex;align-items:center;gap:10px;
@@ -124,19 +139,37 @@
         .feed-track{
             display:flex;gap:8px;
             width:max-content;
-            animation:feedMarquee 20s linear infinite;
-        }
-        @keyframes feedMarquee{
-            0%{transform:translateX(0)}
-            100%{transform:translateX(-50%)}
+            transition:transform .4s cubic-bezier(.4,0,.2,1);
         }
         .feed-item{
-            width:36px;height:36px;
+            width:44px;height:44px;
             background:rgba(255,255,255,.04);
-            border-radius:8px;
-            padding:4px;flex-shrink:0;
+            border-radius:10px;
+            padding:3px;flex-shrink:0;
+            position:relative;
+            overflow:hidden;
         }
-        .feed-item img{width:100%;height:100%;object-fit:contain;border-radius:4px}
+        .feed-item img{width:100%;height:100%;object-fit:contain;border-radius:6px}
+        .feed-item-price{
+            position:absolute;bottom:0;left:0;right:0;
+            background:rgba(0,0,0,.65);
+            font-size:8px;font-weight:700;
+            text-align:center;padding:1px 0;
+            color:#fff;line-height:1.2;
+            border-radius:0 0 6px 6px;
+        }
+        @keyframes feedGlow{
+            0%{box-shadow:0 0 0 0 rgba(30,228,76,.6);background:rgba(30,228,76,.25)}
+            40%{box-shadow:0 0 12px 4px rgba(30,228,76,.35);background:rgba(30,228,76,.12)}
+            100%{box-shadow:none;background:rgba(255,255,255,.04)}
+        }
+        @keyframes feedSlideIn{
+            0%{width:0;padding:0;margin-right:0;opacity:0}
+            100%{width:44px;padding:3px;margin-right:8px;opacity:1}
+        }
+        .feed-item.new{
+            animation:feedSlideIn .4s cubic-bezier(.4,0,.2,1) forwards, feedGlow .9s ease-out .2s forwards;
+        }
 
         /* ═══════════ TABS ═══════════ */
         .tabs{
@@ -787,6 +820,15 @@
 
     <!-- MAIN -->
     <main class="main" id="mainApp">
+        <!-- SUB BANNER -->
+        <a href="https://t.me/RasswetGifts" target="_blank" class="sub-banner" onclick="event.preventDefault();window.open('https://t.me/RasswetGifts','_blank')">
+            <div class="sub-banner-text">
+                <span class="sub-banner-title">Подпишись на канал</span>
+                <span class="sub-banner-desc">Новости, раздачи подарков, промокоды на бесплатные кейсы</span>
+            </div>
+            <div class="sub-banner-icon">💎</div>
+        </a>
+
         <!-- LIVE FEED -->
         <div class="feed">
             <div class="feed-dot"></div>
@@ -1200,7 +1242,7 @@
             initSlider();
             updateOnline();
             setInterval(updateOnline, 30000);
-            setInterval(loadFeed, 15000);
+            setInterval(loadFeed, 5000);
         }
 
         async function loadCases() {
@@ -1246,13 +1288,26 @@
                 const res = await fetch('/api/recent-wins?limit=20');
                 const data = await res.json();
                 if (data.success && data.wins && data.wins.length) {
-                    renderFeed(data.wins);
-                } else {
-                    $('feedTrack').innerHTML = '';
+                    var filtered = data.wins.filter(function(w){
+                        var img = w.gift_image || w.image || '';
+                        var name = w.gift_name || '';
+                        return img.indexOf('/tons/') === -1 && name.indexOf('TON') === -1 && name.indexOf('Stars x') === -1;
+                    });
+                    if (!filtered.length) return;
+                    var newIds = filtered.map(function(w){ return w.gift_name + '_' + w.created_at; });
+                    if (lastFeedIds.length === 0) {
+                        renderFeed(data.wins);
+                    } else {
+                        for (var i = filtered.length - 1; i >= 0; i--) {
+                            if (lastFeedIds.indexOf(newIds[i]) === -1) {
+                                addFeedItem(filtered[i]);
+                            }
+                        }
+                        lastFeedIds = newIds;
+                    }
                 }
             } catch (e) {
                 console.error('Feed load error:', e);
-                $('feedTrack').innerHTML = '';
             }
         }
 
@@ -1275,14 +1330,35 @@
             return val.toFixed(2).replace('.', ',');
         }
 
+        var lastFeedIds = [];
+
         function renderFeed(wins) {
-            const track = $('feedTrack');
-            const items = [...wins, ...wins].map(w => `
-                <div class="feed-item">
-                    <img src="${w.gift_image || w.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
-                </div>
-            `).join('');
-            track.innerHTML = items;
+            var track = $('feedTrack');
+            var filtered = wins.filter(function(w){
+                var img = w.gift_image || w.image || '';
+                var name = w.gift_name || '';
+                return img.indexOf('/tons/') === -1 && name.indexOf('TON') === -1 && name.indexOf('Stars x') === -1;
+            });
+            if (!filtered.length) return;
+            lastFeedIds = filtered.map(function(w){ return w.gift_name + '_' + w.created_at; });
+            track.innerHTML = filtered.map(function(w){
+                var price = w.gift_value ? (Number(w.gift_value)/100).toFixed(1) : '';
+                return '<div class="feed-item">' +
+                    '<img src="' + (w.gift_image || w.image || '/static/img/gift.png') + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
+                    (price ? '<div class="feed-item-price">' + price + '</div>' : '') +
+                    '</div>';
+            }).join('');
+        }
+
+        function addFeedItem(w) {
+            var track = $('feedTrack');
+            var price = w.gift_value ? (Number(w.gift_value)/100).toFixed(1) : '';
+            var div = document.createElement('div');
+            div.className = 'feed-item new';
+            div.innerHTML = '<img src="' + (w.gift_image || w.image || '/static/img/gift.png') + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
+                (price ? '<div class="feed-item-price">' + price + '</div>' : '');
+            track.insertBefore(div, track.firstChild);
+            if (track.children.length > 30) track.removeChild(track.lastChild);
         }
 
         function switchTab(tab) {
