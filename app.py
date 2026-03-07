@@ -3691,12 +3691,6 @@ def cases_page():
     """Страница кейсов (алиас)"""
     return render_template('index.html')
 
-@app.route('/case/<int:case_id>')
-def case_page(case_id):
-    """Страница конкретного кейса"""
-    logger.info(f"📄 Запрос страницы кейса {case_id}")
-    return render_template('case.html', case_id=case_id)
-
 @app.route('/inventory')
 def inventory_page():
     """Страница инвентаря"""
@@ -3731,8 +3725,25 @@ def leaderboard_page():
 
 @app.route('/admin')
 def admin_page():
-    """Страница админ-панели"""
-    logger.info("🛠️ Запрос страницы админ-панели")
+    """Страница админ-панели - доступна только администратору"""
+    # Проверка initData из Telegram
+    init_data = request.args.get('initData', '') or request.args.get('tgWebAppData', '')
+    user_id = request.args.get('user_id')
+    
+    # Попытка извлечь user_id из initData
+    if init_data and not user_id:
+        try:
+            import urllib.parse
+            parsed = dict(urllib.parse.parse_qsl(init_data))
+            if 'user' in parsed:
+                user_json = json.loads(parsed['user'])
+                user_id = str(user_json.get('id', ''))
+        except:
+            pass
+    
+    # Для Telegram Mini App - проверяем через JS на клиенте
+    # Серверная защита от прямого доступа
+    logger.info(f"🛠️ Запрос страницы админ-панели от user_id: {user_id}")
     return render_template('admin.html', admin_id=ADMIN_ID)
 
 @app.route('/shop-verification-QX2XNbyDv5.txt')
@@ -6339,20 +6350,18 @@ def activate_promo_for_case():
         elif reward_type == 'inventory_gift':
             # Подарок в инвентарь с ограничениями
             gift_data = reward_data.get('gift', {})
-            restrictions = reward_data.get('restrictions', {})
             gift_name = gift_data.get('name', 'Промо-подарок')
             gift_image = gift_data.get('image', '/static/img/gift.png')
             
             cursor.execute('''
-                INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_price, source, restrictions, created_at)
-                VALUES (?, ?, ?, ?, ?, 'promo', ?, datetime('now'))
+                INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
+                VALUES (?, ?, ?, ?, ?)
             ''', (
                 user_id, 
-                gift_data.get('id', 'promo_gift'),
+                gift_data.get('id', 0),
                 gift_name,
                 gift_image,
-                gift_data.get('price', 0),
-                json.dumps(restrictions)
+                gift_data.get('price', 0)
             ))
             response_data['message'] = f'Промокод активирован! Подарок добавлен в инвентарь!'
             response_data['gift_name'] = gift_name
@@ -6957,30 +6966,32 @@ def withdraw_gift():
         cursor = conn.cursor()
 
         cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
-        gift = cursor.fetchone()
+        raw = cursor.fetchone()
 
-        if not gift:
+        if not raw:
             logger.error(f"❌ Подарок {inventory_id} не найден в инвентаре пользователя {user_id}")
+            conn.close()
             return jsonify({'success': False, 'error': 'Подарок не найден в инвентаре'})
 
-        if gift[7]:
+        columns = [desc[0] for desc in cursor.description]
+        gift = dict(zip(columns, raw))
+
+        if gift.get('is_withdrawing'):
             logger.error(f"❌ Подарок {inventory_id} уже в процессе вывода")
+            conn.close()
             return jsonify({'success': False, 'error': 'Подарок уже в процессе вывода'})
 
         # Check if it's a crate item (cannot be withdrawn)
-        try:
-            crate_id_val = gift[8] if len(gift) > 8 else None
-            if crate_id_val:
-                conn.close()
-                return jsonify({'success': False, 'error': 'Ящик нельзя вывести, только открыть'})
-        except:
-            pass
+        if gift.get('crate_id'):
+            conn.close()
+            return jsonify({'success': False, 'error': 'Ящик нельзя вывести, только открыть'})
 
         cursor.execute('SELECT first_name, username, photo_url FROM users WHERE id = ?', (user_id,))
         user = cursor.fetchone()
 
         if not user:
             logger.error(f"❌ Пользователь {user_id} не найден")
+            conn.close()
             return jsonify({'success': False, 'error': 'Пользователь не найден'})
 
         user_first_name, username, photo_url = user
@@ -6991,11 +7002,11 @@ def withdraw_gift():
             INSERT INTO withdrawals (user_id, inventory_id, gift_name, gift_image, gift_value,
                                    telegram_username, user_photo_url, user_first_name, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
-        ''', (user_id, inventory_id, gift[3], gift[4], gift[5], username, photo_url, user_first_name))
+        ''', (user_id, inventory_id, gift.get('gift_name', ''), gift.get('gift_image', ''), gift.get('gift_value', 0), username, photo_url, user_first_name))
 
         withdrawal_id = cursor.lastrowid
 
-        add_history_record(user_id, 'withdraw_request', 0, f'Запрос на вывод: {gift[3]}')
+        add_history_record(user_id, 'withdraw_request', 0, f'Запрос на вывод: {gift.get("gift_name", "")}')
 
         conn.commit()
         conn.close()
@@ -10022,15 +10033,26 @@ def admin_news_management():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             content TEXT NOT NULL,
+            title_en TEXT DEFAULT '',
+            content_en TEXT DEFAULT '',
             image_url TEXT,
             reward_amount INTEGER DEFAULT 0,
             is_active BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
+        # Добавляем колонки перевода если их нет
+        try:
+            cursor.execute("ALTER TABLE news ADD COLUMN title_en TEXT DEFAULT ''")
+        except:
+            pass
+        try:
+            cursor.execute("ALTER TABLE news ADD COLUMN content_en TEXT DEFAULT ''")
+        except:
+            pass
         conn.commit()
         
         if request.method == 'GET':
-            cursor.execute('SELECT id, title, content, image_url, reward_amount, is_active, created_at FROM news ORDER BY created_at DESC')
+            cursor.execute('SELECT id, title, content, image_url, reward_amount, is_active, created_at, title_en, content_en FROM news ORDER BY created_at DESC')
             news_list = []
             for row in cursor.fetchall():
                 news_list.append({
@@ -10040,7 +10062,9 @@ def admin_news_management():
                     'image_url': row[3],
                     'reward_amount': row[4],
                     'is_active': row[5],
-                    'created_at': row[6]
+                    'created_at': row[6],
+                    'title_en': row[7] or '',
+                    'content_en': row[8] or ''
                 })
             conn.close()
             return jsonify({'success': True, 'news': news_list})
@@ -10049,12 +10073,14 @@ def admin_news_management():
             data = request.get_json()
             title = data.get('title', '')
             content = data.get('content', '')
+            title_en = data.get('title_en', '')
+            content_en = data.get('content_en', '')
             image_url = data.get('image_url', '')
             reward_amount = int(data.get('reward_amount', 0))
             
             cursor.execute('''
-                INSERT INTO news (title, content, image_url, reward_amount) VALUES (?, ?, ?, ?)
-            ''', (title, content, image_url, reward_amount))
+                INSERT INTO news (title, content, title_en, content_en, image_url, reward_amount) VALUES (?, ?, ?, ?, ?, ?)
+            ''', (title, content, title_en, content_en, image_url, reward_amount))
             conn.commit()
             news_id = cursor.lastrowid
             conn.close()
@@ -10783,6 +10809,10 @@ def admin_cases_management():
                 'tags': data.get('tags', []),
                 'glow_effect': data.get('glow_effect', 'none'),
                 'open_date': open_date,
+                'free': data.get('free', False),
+                'promo': data.get('promo', False),
+                'time': data.get('time', '24H'),
+                'promo_codes': data.get('promo_codes', []),
                 'gifts': data.get('gifts', [])
             }
 
@@ -10840,6 +10870,10 @@ def admin_cases_management():
                 'tags': data.get('tags', []),
                 'glow_effect': data.get('glow_effect', 'none'),
                 'open_date': open_date,
+                'free': data.get('free', cases[case_index].get('free', False)),
+                'promo': data.get('promo', cases[case_index].get('promo', False)),
+                'time': data.get('time', cases[case_index].get('time', '24H')),
+                'promo_codes': data.get('promo_codes', cases[case_index].get('promo_codes', [])),
                 'gifts': data.get('gifts', [])
             }
 
@@ -11111,6 +11145,22 @@ def admin_case_gifts(case_id):
     
     except Exception as e:
         logger.error(f"Case gifts error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/admin/case-images', methods=['GET'])
+def admin_case_images():
+    """Список доступных изображений для кейсов"""
+    try:
+        import glob
+        images = []
+        for pattern in ['static/img/cases/*', 'static/gifs/cases/*']:
+            for f in glob.glob(os.path.join(os.path.dirname(__file__), pattern)):
+                fname = os.path.basename(f)
+                rel_path = '/' + pattern.rsplit('/', 1)[0] + '/' + fname
+                images.append(rel_path)
+        return jsonify({'success': True, 'images': sorted(images)})
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 

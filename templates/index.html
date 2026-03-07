@@ -338,8 +338,9 @@
             padding:4px 8px;border-radius:8px;
             background:rgba(0,152,234,.12);
             font-size:10px;font-weight:700;color:var(--blue);
+            line-height:1;
         }
-        .roulette-item-price img{width:12px;height:12px}
+        .roulette-item-price img{width:12px;height:12px;vertical-align:middle;flex-shrink:0}
         .roulette-pointer{
             position:absolute;top:0;left:50%;transform:translateX(-50%);
             width:3px;height:100%;
@@ -460,6 +461,20 @@
             transform-origin:left;
             transition:transform .1s;
         }
+        .slider.insufficient .slider-bg{
+            background:linear-gradient(90deg,#E53E3E,#C53030);
+        }
+        .slider.insufficient{
+            background:linear-gradient(90deg,rgba(229,62,62,.2),rgba(197,48,48,.1));
+            border-color:rgba(229,62,62,.5);
+        }
+        .slider.sufficient .slider-bg{
+            background:linear-gradient(90deg,#1EAA3F,#168832);
+        }
+        .slider.sufficient{
+            background:linear-gradient(90deg,rgba(30,170,63,.2),rgba(22,136,50,.1));
+            border-color:rgba(30,228,76,.5);
+        }
         .slider-text{
             position:absolute;inset:0;
             display:flex;align-items:center;justify-content:center;
@@ -485,6 +500,12 @@
             touch-action:none;
         }
         .slider-thumb:active{cursor:grabbing;box-shadow:0 0 20px rgba(0,152,234,.5)}
+        .slider.insufficient .slider-thumb{
+            background:linear-gradient(135deg,#E53E3E,#C53030);
+        }
+        .slider.sufficient .slider-thumb{
+            background:linear-gradient(135deg,#1EAA3F,#168832);
+        }
         .slider-thumb img{width:24px;height:24px;pointer-events:none;user-select:none;-webkit-user-drag:none}
 
         /* ═══════════ RANGE SLIDER ═══════════ */
@@ -566,7 +587,7 @@
             margin-top:auto;
             line-height:1;
         }
-        .content-price img{width:14px;height:14px;flex-shrink:0;vertical-align:middle}
+        .content-price img{width:14px;height:14px;flex-shrink:0;vertical-align:middle;position:relative;top:0px}
 
         /* Scrollbar styling */
         ::-webkit-scrollbar{width:6px;height:6px}
@@ -872,6 +893,23 @@
     <script>
         const $ = id => document.getElementById(id);
         const tg = window.Telegram?.WebApp;
+
+        /* ═══════════ HAPTIC FEEDBACK ═══════════ */
+        function vibrate(style) {
+            try {
+                if (tg && tg.HapticFeedback) {
+                    if (style === 'heavy') tg.HapticFeedback.impactOccurred('heavy');
+                    else if (style === 'error') tg.HapticFeedback.notificationOccurred('error');
+                    else if (style === 'success') tg.HapticFeedback.notificationOccurred('success');
+                    else if (style === 'warning') tg.HapticFeedback.notificationOccurred('warning');
+                    else if (style === 'selection') tg.HapticFeedback.selectionChanged();
+                    else tg.HapticFeedback.impactOccurred(style || 'light');
+                } else if (navigator.vibrate) {
+                    const ms = style === 'heavy' ? 80 : style === 'error' ? [60,30,60] : style === 'success' ? [30,20,50] : 15;
+                    navigator.vibrate(ms);
+                }
+            } catch(e) {}
+        }
         
         // Gift prices in TON
         const GIFT_PRICES = {
@@ -1304,14 +1342,24 @@
         }
 
         // SLIDER LOGIC
+        function checkHasFunds() {
+            if (!currentCase || !userId) return true;
+            if (currentCase.cost <= 0 || currentCase.promo) return true;
+            const rawCost = currentCase.cost || 0;
+            const totalCostInStars = currentCase.cost_type === 'ton' ? rawCost * 100 : rawCost;
+            return userBalance >= totalCostInStars;
+        }
+
         function initSlider() {
             const thumb = $('sliderThumb');
             const slider = $('slider');
             const bg = $('sliderBg');
+            const sliderText = slider.querySelector('.slider-text');
             
             let startX = 0;
             let currentX = 0;
             let isDragging = false;
+            let lastVibratePct = 0;
             const maxX = () => slider.offsetWidth - thumb.offsetWidth - 8;
 
             function onStart(e) {
@@ -1320,6 +1368,20 @@
                 startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
                 thumb.style.transition = 'none';
                 bg.style.transition = 'none';
+                
+                // Apply balance feedback
+                slider.classList.remove('insufficient', 'sufficient');
+                const hasFunds = checkHasFunds();
+                if (!hasFunds) {
+                    slider.classList.add('insufficient');
+                    sliderText.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 5.64l-12.72 12.72"/><path d="M5.64 5.64l12.72 12.72"/></svg> Недостаточно средств';
+                    vibrate('error');
+                } else {
+                    slider.classList.add('sufficient');
+                    sliderText.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Открыть кейс';
+                    vibrate('light');
+                }
+                lastVibratePct = 0;
             }
 
             function onMove(e) {
@@ -1329,6 +1391,13 @@
                 currentX = Math.max(0, Math.min(diff, maxX()));
                 thumb.style.left = (4 + currentX) + 'px';
                 bg.style.transform = `scaleX(${currentX / maxX()})`;
+                
+                // Gentle vibration during drag every 20%
+                const pct = currentX / maxX();
+                if (pct - lastVibratePct > 0.2) {
+                    vibrate('selection');
+                    lastVibratePct = pct;
+                }
             }
 
             function onEnd() {
@@ -1337,17 +1406,32 @@
                 thumb.style.transition = 'left .3s';
                 bg.style.transition = 'transform .3s';
 
-                if (currentX >= maxX() * 0.9) {
-                    // Успешный свайп - открываем кейс
+                const hasFunds = checkHasFunds();
+
+                if (currentX >= maxX() * 0.9 && hasFunds) {
+                    // Successful swipe
                     thumb.style.left = (4 + maxX()) + 'px';
                     bg.style.transform = 'scaleX(1)';
+                    vibrate('success');
                     openCase();
+                } else if (currentX >= maxX() * 0.9 && !hasFunds) {
+                    // Tried to open but no funds
+                    vibrate('error');
+                    showToast('Недостаточно средств', 'err');
+                    openDeposit();
+                    resetSlider();
                 } else {
-                    // Возврат
+                    // Return
                     thumb.style.left = '4px';
                     bg.style.transform = 'scaleX(0)';
                 }
                 currentX = 0;
+                
+                // Reset colors after delay
+                setTimeout(() => {
+                    slider.classList.remove('insufficient', 'sufficient');
+                    sliderText.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Свайпни для открытия';
+                }, 400);
             }
 
             thumb.addEventListener('mousedown', onStart);
@@ -1361,10 +1445,14 @@
         function resetSlider() {
             const thumb = $('sliderThumb');
             const bg = $('sliderBg');
+            const slider = $('slider');
             thumb.style.transition = 'none';
             bg.style.transition = 'none';
             thumb.style.left = '4px';
             bg.style.transform = 'scaleX(0)';
+            slider.classList.remove('insufficient', 'sufficient');
+            const sliderText = slider.querySelector('.slider-text');
+            if (sliderText) sliderText.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Свайпни для открытия';
         }
 
         async function openCase() {
@@ -1503,12 +1591,24 @@
                     const wrap = $('rouletteWrap');
                     const centerOffset = wrap.offsetWidth / 2;
                     const targetPos = itemWidth * 42 + itemWidth / 2;
-                    track.style.transition = 'transform 4s cubic-bezier(.1,.9,.2,1)';
+                    track.style.transition = 'transform 7s cubic-bezier(.05,.85,.15,1)';
                     track.style.transform = `translateX(${centerOffset - targetPos}px)`;
                 });
             });
 
-            setTimeout(() => showWinResultInModal(wonGift), 4300);
+            // Vibrate during spin at intervals
+            let spinVibCount = 0;
+            const spinVibInterval = setInterval(() => {
+                vibrate('light');
+                spinVibCount++;
+                if (spinVibCount > 12) clearInterval(spinVibInterval);
+            }, 500);
+
+            setTimeout(() => {
+                clearInterval(spinVibInterval);
+                vibrate('heavy');
+                showWinResultInModal(wonGift);
+            }, 7300);
         }
 
         function showWinResultInModal(gift) {
@@ -1653,8 +1753,15 @@
             const toast = $('toast');
             toast.textContent = msg;
             toast.className = 'toast show ' + type;
+            vibrate(type === 'err' ? 'warning' : 'light');
             setTimeout(() => toast.classList.remove('show'), 2500);
         }
+
+        // Add vibration to all interactive elements
+        document.addEventListener('click', function(e) {
+            const el = e.target.closest('button, .case, .tab, .bnav a, .deposit-method-btn, .h-add');
+            if (el) vibrate('light');
+        });
     </script>
 </body>
 </html>

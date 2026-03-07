@@ -64,22 +64,22 @@ body::before{
 
 /* Bottom Nav */
 .bottom-nav{
-    position:fixed;bottom:0;left:0;right:0;z-index:100;
-    background:linear-gradient(180deg,rgba(18,20,26,.95),rgba(14,16,21,.98));
-    border-top:1px solid rgba(255,255,255,.06);
-    display:flex;align-items:center;justify-content:center;
-    padding:6px 10px calc(env(safe-area-inset-bottom,8px) + 6px);
-    gap:2px;
-    backdrop-filter:blur(20px);
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    z-index:100;width:100%;max-width:480px;
+    height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);
+    background:rgba(26,30,42,.85);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border-top:1px solid rgba(255,255,255,.05);
+    display:flex;align-items:center;justify-content:space-around;
 }
 .bottom-nav-item{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    padding:8px 12px;border-radius:14px;background:transparent;border:none;
-    color:rgba(255,255,255,.3);font-weight:700;font-size:10px;
-    cursor:pointer;transition:all .25s;text-decoration:none;flex:1;max-width:80px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    padding:8px 16px;border-radius:12px;background:transparent;border:none;
+    color:rgba(255,255,255,.4);font-weight:600;font-size:10px;
+    cursor:pointer;transition:all .25s;text-decoration:none;
 }
-.bottom-nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none}
-.bottom-nav-item.active{background:rgba(255,255,255,.07);color:#C8D0DC}
+.bottom-nav-item svg{width:24px;height:24px;stroke:currentColor;fill:none}
+.bottom-nav-item.active{background:rgba(255,255,255,.08);color:#fff}
 
 /* Main Sections */
 .section{display:none;padding:12px}
@@ -325,6 +325,69 @@ body::before{
     animation:spin .8s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ===== MOBILE FIXES ===== */
+@media(max-width:480px){
+    .container{padding-top:calc(env(safe-area-inset-top, 0px) + 50px)}
+    .top-bar{padding:calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px}
+    .detail-section{padding:10px}
+    .form-group{margin-bottom:12px}
+    .form-input,.form-select{padding:10px 12px;font-size:14px}
+    .btn{padding:12px;font-size:14px}
+}
+
+/* News image preview - smaller on mobile */
+#newsImagePreview{
+    width:100%;
+    max-width:200px!important;
+    aspect-ratio:16/9;
+    border-radius:12px;
+    background:rgba(255,255,255,0.04);
+    border:2px dashed rgba(255,255,255,0.15);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    margin-bottom:8px;
+    overflow:hidden;
+}
+#newsImagePreview img{
+    width:100%;height:100%;object-fit:cover;
+}
+
+/* Cover modal grid - smaller items */
+#coverGrid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr)!important;
+    gap:8px;
+    max-height:50vh;
+    overflow-y:auto;
+    padding:4px;
+}
+#coverGrid>div{
+    aspect-ratio:16/9;
+    border-radius:8px;
+    overflow:hidden;
+    cursor:pointer;
+}
+#coverGrid>div img{
+    width:100%;height:100%;object-fit:cover;
+}
+
+/* Upload button fix */
+#coverModal .btn-primary{
+    padding:10px 16px!important;
+    font-size:13px;
+}
+
+/* Section header */
+.section-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:12px;
+}
+.section-header h2{
+    font-size:16px;font-weight:800;color:#fff;margin:0;
+}
 </style>
 </head>
 <body>
@@ -514,20 +577,28 @@ body::before{
                 Создать новость
             </div>
             <div class="form-group">
-                <label class="form-label">Заголовок</label>
+                <label class="form-label">Заголовок (RU)</label>
                 <input type="text" class="form-input" id="newsTitleInput" placeholder="Заголовок новости">
             </div>
             <div class="form-group">
-                <label class="form-label">Содержание</label>
+                <label class="form-label">Заголовок (EN)</label>
+                <input type="text" class="form-input" id="newsTitleInputEN" placeholder="News title">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Содержание (RU)</label>
                 <textarea class="form-input" id="newsContentInput" placeholder="Текст новости" rows="4" style="resize:vertical"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Содержание (EN)</label>
+                <textarea class="form-input" id="newsContentInputEN" placeholder="News content" rows="4" style="resize:vertical"></textarea>
             </div>
             <div class="form-group">
                 <label class="form-label">Обложка</label>
                 <input type="hidden" id="newsImageInput" value="">
-                <div id="newsImagePreview" style="width:100%;aspect-ratio:16/9;border-radius:12px;background:rgba(255,255,255,0.04);border:2px dashed rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-bottom:8px;overflow:hidden" onclick="openCoverModal()">
+                <div id="newsImagePreview" onclick="openCoverModal()">
                     <div id="coverPreviewContent" style="text-align:center;color:rgba(255,255,255,0.4)">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
-                        <div style="font-size:12px;margin-top:6px">Выбрать обложку</div>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+                        <div style="font-size:11px;margin-top:4px">Выбрать</div>
                     </div>
                 </div>
             </div>
@@ -548,6 +619,17 @@ body::before{
             </div>
             <button class="btn btn-secondary" onclick="loadNewsList()" style="margin-top:10px">Обновить</button>
         </div>
+    </div>
+</div>
+
+<!-- Cases Section -->
+<div class="section" id="sectionCases">
+    <div class="section-header">
+        <h2>Кейсы</h2>
+        <button class="btn btn-success btn-sm" onclick="openCreateCaseModal()">+ Создать</button>
+    </div>
+    <div id="casesList" style="display:flex;flex-direction:column;gap:8px">
+        <div class="loading"></div>
     </div>
 </div>
 
@@ -584,6 +666,10 @@ body::before{
     <button class="bottom-nav-item" onclick="showSection('News')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
         <span>News</span>
+    </button>
+    <button class="bottom-nav-item" onclick="showSection('Cases')">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
+        <span>Cases</span>
     </button>
 </div>
 
@@ -725,7 +811,35 @@ body::before{
 <script>
 var ADMIN_ID = {{ admin_id }};
 var tg = window.Telegram && window.Telegram.WebApp;
-if(tg){ tg.ready(); tg.expand(); }
+var currentTgUser = null;
+var adminVerified = false;
+
+// Verify admin access immediately
+async function verifyAdminAccess() {
+    if(tg){ 
+        tg.ready(); 
+        tg.expand();
+        // Get user from Telegram
+        var initData = tg.initDataUnsafe;
+        if(initData && initData.user) {
+            currentTgUser = initData.user;
+            if(currentTgUser.id !== ADMIN_ID) {
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;padding:20px;text-align:center"><h2 style="color:#F96999">Доступ запрещён</h2><p style="color:rgba(255,255,255,.5);margin-top:12px">Эта страница доступна только администратору</p><button onclick="goBack()" style="margin-top:20px;padding:12px 24px;border:none;border-radius:12px;background:linear-gradient(135deg,#6B7A8D,#556270);color:#fff;font-weight:700;cursor:pointer">Назад</button></div>';
+                return false;
+            }
+            adminVerified = true;
+            return true;
+        }
+    }
+    // If no Telegram data, allow access (for testing) but show warning
+    console.warn('No Telegram data - admin access not verified');
+    adminVerified = true;
+    return true;
+}
+
+verifyAdminAccess().then(function(ok){
+    if(ok) loadStats();
+});
 
 var allUsers = [];
 var allGifts = [];
@@ -752,6 +866,7 @@ function showSection(name){
     if(name === 'Withdrawals') loadWithdrawals();
     if(name === 'Leaderboard') { loadLeaderboards(); if($('lbRewardsContainer').children.length === 0) initLbRewards(); }
     if(name === 'News') loadNewsList();
+    if(name === 'Cases') loadCasesList();
 }
 
 function showToast(msg, type){
@@ -1197,6 +1312,8 @@ async function loadNewsList(){
 async function createNews(){
     var title = $('newsTitleInput').value.trim();
     var content = $('newsContentInput').value.trim();
+    var titleEn = $('newsTitleInputEN') ? $('newsTitleInputEN').value.trim() : '';
+    var contentEn = $('newsContentInputEN') ? $('newsContentInputEN').value.trim() : '';
     var imageUrl = $('newsImageInput').value.trim();
     var rewardAmount = parseInt($('newsRewardInput').value) || 0;
     
@@ -1213,6 +1330,8 @@ async function createNews(){
                 admin_id: ADMIN_ID,
                 title: title,
                 content: content,
+                title_en: titleEn,
+                content_en: contentEn,
                 image_url: imageUrl,
                 reward_amount: rewardAmount
             })
@@ -1222,6 +1341,8 @@ async function createNews(){
             showNotif('Новость создана', 'success');
             $('newsTitleInput').value = '';
             $('newsContentInput').value = '';
+            if($('newsTitleInputEN')) $('newsTitleInputEN').value = '';
+            if($('newsContentInputEN')) $('newsContentInputEN').value = '';
             $('newsImageInput').value = '';
             $('newsRewardInput').value = '0';
             loadNewsList();
@@ -1689,6 +1810,264 @@ function filterGiftsAdmin(){
 document.addEventListener('DOMContentLoaded', function(){
     loadStats();
 });
+
+// ===== CASE MANAGEMENT =====
+var allCasesAdmin = [];
+var editingCase = null;
+var caseImages = [];
+
+async function loadCasesList(){
+    $('casesList').innerHTML = '<div class="loading"></div>';
+    try{
+        var r = await fetch('/api/admin/cases?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success && d.cases){
+            allCasesAdmin = d.cases;
+            renderCasesList(d.cases);
+        } else { $('casesList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Ошибка</div></div>'; }
+    }catch(e){ $('casesList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Ошибка загрузки</div></div>'; }
+}
+
+function renderCasesList(cases){
+    if(!cases.length){ $('casesList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Нет кейсов</div></div>'; return; }
+    $('casesList').innerHTML = cases.map(c => {
+        var tags = [];
+        if(c.free) tags.push('<span style="color:#0f8;font-size:10px;background:rgba(0,255,136,.15);padding:2px 6px;border-radius:6px">FREE</span>');
+        if(c.promo) tags.push('<span style="color:#A855F7;font-size:10px;background:rgba(168,85,247,.15);padding:2px 6px;border-radius:6px">PROMO</span>');
+        if(c.limited) tags.push('<span style="color:#FFC107;font-size:10px;background:rgba(255,193,7,.15);padding:2px 6px;border-radius:6px">LIMITED</span>');
+        var giftsCount = (c.gifts||[]).length;
+        return '<div class="user-card" onclick="openEditCaseModal('+c.id+')">' +
+            '<div class="user-avatar" style="border-radius:10px;overflow:hidden"><img src="'+(c.image||'/static/img/gift.png')+'" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;height:100%;object-fit:cover"></div>' +
+            '<div class="user-info">' +
+                '<div class="user-name">'+escapeHtml(c.name)+'</div>' +
+                '<div class="user-meta">ID: '+c.id+' &bull; '+giftsCount+' дропов &bull; '+tags.join(' ')+'</div>' +
+            '</div>' +
+            '<div class="user-right">' +
+                '<div class="user-balance"><img src="/static/img/tons/ton_1.svg">'+formatTon(c.cost||0)+'</div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function openCreateCaseModal(){
+    editingCase = null;
+    showCaseModal({name:'',cost:0,cost_type:'ton',image:'',free:false,promo:false,time:'24H',limited:false,amount:0,required_level:1,description:'',glow_effect:'none',gifts:[]});
+}
+
+function openEditCaseModal(caseId){
+    var c = allCasesAdmin.find(x => x.id === caseId);
+    if(!c) return;
+    editingCase = c;
+    showCaseModal(c);
+}
+
+function showCaseModal(c){
+    var isEdit = !!editingCase;
+    var modal = document.createElement('div');
+    modal.className = 'modal-overlay show';
+    modal.id = 'caseEditModal';
+    modal.innerHTML = '<div class="modal-sheet" style="transform:translateY(0)"><div class="modal-handle"></div>' +
+        '<div class="modal-title">'+(isEdit?'Редактировать кейс':'Создать кейс')+'</div>' +
+        '<div style="max-height:70vh;overflow-y:auto;padding:0 4px">' +
+        '<div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="caseNameInput" value="'+escapeHtml(c.name||'')+'"></div>' +
+        '<div style="display:flex;gap:8px">' +
+            '<div class="form-group" style="flex:1"><label class="form-label">Цена (TON)</label><input type="number" class="form-input" id="caseCostInput" step="0.01" min="0" value="'+(c.cost||0)+'"></div>' +
+            '<div class="form-group" style="flex:1"><label class="form-label">Мин.уровень</label><input type="number" class="form-input" id="caseLevelInput" min="1" max="25" value="'+(c.required_level||1)+'"></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">' +
+            '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="caseFreeCheck" '+(c.free?'checked':'')+'>Бесплатный</label>' +
+            '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="casePromoCheck" '+(c.promo?'checked':'')+'>Промокод</label>' +
+            '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="caseLimitedCheck" '+(c.limited?'checked':'')+'>Лимитирован</label>' +
+        '</div>' +
+        '<div class="form-group"><label class="form-label">Превью</label>' +
+            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+                '<img id="caseImagePreview" src="'+(c.image||'/static/img/gift.png')+'" style="width:60px;height:60px;border-radius:10px;object-fit:cover;background:rgba(255,255,255,.04)">' +
+                '<button class="btn btn-sm" style="background:rgba(255,255,255,.1)" onclick="openCaseImagePicker()">Из папки</button>' +
+                '<input type="text" class="form-input" id="caseImageInput" value="'+escapeHtml(c.image||'')+'" placeholder="/static/img/cases/file.webp" style="flex:1;min-width:100px" oninput="$(\'caseImagePreview\').src=this.value||\'\/static\/img\/gift.png\'">' +
+            '</div>' +
+        '</div>' +
+        '<div class="form-group"><label class="form-label">Описание</label><input type="text" class="form-input" id="caseDescInput" value="'+escapeHtml(c.description||'')+'"></div>' +
+        '<div class="detail-section" style="margin-top:12px">' +
+            '<div class="detail-section-title">Дроп (подарки в кейсе)</div>' +
+            '<div id="caseGiftsList" style="display:flex;flex-direction:column;gap:6px"></div>' +
+            '<button class="btn btn-sm" style="margin-top:8px;background:rgba(255,255,255,.1)" onclick="addCaseGift()">+ Добавить дроп</button>' +
+        '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;margin-top:16px">' +
+            (isEdit ? '<button class="btn btn-danger btn-sm" onclick="deleteCase('+editingCase.id+')">Удалить</button>' : '') +
+            '<button class="btn btn-primary" style="flex:1" onclick="saveCase()">Сохранить</button>' +
+        '</div>' +
+    '</div>';
+    
+    modal.addEventListener('click', function(e){ if(e.target === modal) closeCaseModal(); });
+    document.body.appendChild(modal);
+    
+    // Render gifts
+    renderCaseGifts(c.gifts || []);
+}
+
+function closeCaseModal(){
+    var m = $('caseEditModal');
+    if(m) m.remove();
+}
+
+var tempCaseGifts = [];
+
+function renderCaseGifts(gifts){
+    tempCaseGifts = JSON.parse(JSON.stringify(gifts));
+    var container = $('caseGiftsList');
+    if(!container) return;
+    if(!tempCaseGifts.length){ container.innerHTML = '<div style="color:rgba(255,255,255,.3);font-size:12px;text-align:center;padding:8px">Нет дропов</div>'; return; }
+    container.innerHTML = tempCaseGifts.map(function(g, i){
+        var typeLabel = g.type === 'ton_balance' ? 'TON' : 'Подарок';
+        var val = g.type === 'ton_balance' ? (g.ton_amount||0)+' TON' : escapeHtml(g.name||'Gift');
+        return '<div style="background:rgba(255,255,255,.04);border-radius:10px;padding:8px 10px;display:flex;align-items:center;gap:8px">' +
+            '<div style="flex:1;min-width:0">' +
+                '<div style="font-size:12px;font-weight:600;color:#fff">'+typeLabel+': '+val+'</div>' +
+                '<div style="font-size:10px;color:rgba(255,255,255,.4)">Шанс: '+((g.chance||0))+'%</div>' +
+            '</div>' +
+            '<button class="btn btn-sm" style="background:rgba(255,255,255,.08);padding:6px 10px" onclick="editCaseGift('+i+')">✎</button>' +
+            '<button style="background:rgba(249,105,153,.2);border:none;color:#F96999;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:11px" onclick="removeCaseGift('+i+')">✕</button>' +
+        '</div>';
+    }).join('');
+}
+
+function addCaseGift(){
+    tempCaseGifts.push({type:'ton_balance', ton_amount:0.1, chance:10});
+    renderCaseGifts(tempCaseGifts);
+    editCaseGift(tempCaseGifts.length - 1);
+}
+
+function removeCaseGift(idx){
+    tempCaseGifts.splice(idx, 1);
+    renderCaseGifts(tempCaseGifts);
+}
+
+function editCaseGift(idx){
+    var g = tempCaseGifts[idx];
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay show';
+    overlay.id = 'giftEditOverlay';
+    overlay.innerHTML = '<div class="modal-sheet" style="transform:translateY(0);max-width:400px">' +
+        '<div class="modal-handle"></div>' +
+        '<div class="modal-title">Редактировать дроп</div>' +
+        '<div class="form-group"><label class="form-label">Тип</label>' +
+            '<select class="form-input" id="giftTypeSelect" onchange="toggleGiftFields()">' +
+                '<option value="ton_balance" '+(g.type==='ton_balance'?'selected':'')+'>TON</option>' +
+                '<option value="gift" '+(g.type!=='ton_balance'?'selected':'')+'>Подарок</option>' +
+            '</select></div>' +
+        '<div id="giftTonFields" style="'+(g.type==='ton_balance'?'':'display:none')+'">' +
+            '<div class="form-group"><label class="form-label">Сумма TON</label><input type="number" class="form-input" id="giftTonAmount" step="0.01" min="0" value="'+(g.ton_amount||0)+'"></div>' +
+        '</div>' +
+        '<div id="giftItemFields" style="'+(g.type!=='ton_balance'?'':'display:none')+'">' +
+            '<div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="giftItemName" value="'+escapeHtml(g.name||'')+'"></div>' +
+            '<div class="form-group"><label class="form-label">Изображение</label><input type="text" class="form-input" id="giftItemImage" value="'+escapeHtml(g.image||'')+'"></div>' +
+            '<div class="form-group"><label class="form-label">Цена (TON)</label><input type="number" class="form-input" id="giftItemPrice" step="0.01" min="0" value="'+(g.price||0)+'"></div>' +
+        '</div>' +
+        '<div class="form-group"><label class="form-label">Шанс (%)</label><input type="number" class="form-input" id="giftChanceInput" step="0.1" min="0" max="100" value="'+(g.chance||0)+'"></div>' +
+        '<button class="btn btn-primary" onclick="saveGiftEdit('+idx+')">Сохранить</button>' +
+    '</div>';
+    overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+}
+
+function toggleGiftFields(){
+    var type = $('giftTypeSelect').value;
+    $('giftTonFields').style.display = type === 'ton_balance' ? '' : 'none';
+    $('giftItemFields').style.display = type !== 'ton_balance' ? '' : 'none';
+}
+
+function saveGiftEdit(idx){
+    var type = $('giftTypeSelect').value;
+    var chance = parseFloat($('giftChanceInput').value) || 0;
+    if(type === 'ton_balance'){
+        tempCaseGifts[idx] = {type:'ton_balance', ton_amount: parseFloat($('giftTonAmount').value) || 0, chance: chance};
+    } else {
+        tempCaseGifts[idx] = {type:'gift', name: $('giftItemName').value.trim(), image: $('giftItemImage').value.trim(), price: parseFloat($('giftItemPrice').value) || 0, chance: chance};
+    }
+    var overlay = $('giftEditOverlay');
+    if(overlay) overlay.remove();
+    renderCaseGifts(tempCaseGifts);
+}
+
+async function saveCase(){
+    var name = $('caseNameInput').value.trim();
+    if(!name){ showToast('Введите название','err'); return; }
+    
+    var payload = {
+        admin_id: ADMIN_ID,
+        name: name,
+        cost: parseFloat($('caseCostInput').value) || 0,
+        cost_type: 'ton',
+        required_level: parseInt($('caseLevelInput').value) || 1,
+        free: $('caseFreeCheck').checked,
+        promo: $('casePromoCheck').checked,
+        limited: $('caseLimitedCheck').checked,
+        image: $('caseImageInput').value.trim(),
+        description: $('caseDescInput').value.trim(),
+        glow_effect: 'none',
+        gifts: tempCaseGifts
+    };
+    
+    try{
+        var method = editingCase ? 'PUT' : 'POST';
+        if(editingCase) payload.id = editingCase.id;
+        var r = await fetch('/api/admin/cases', {
+            method: method,
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast(editingCase ? 'Кейс обновлён' : 'Кейс создан', 'ok');
+            closeCaseModal();
+            loadCasesList();
+        } else { showToast(d.error || 'Ошибка', 'err'); }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function deleteCase(caseId){
+    if(!confirm('Удалить кейс?')) return;
+    try{
+        var r = await fetch('/api/admin/cases', {
+            method: 'DELETE',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, id: caseId})
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Кейс удалён', 'ok');
+            closeCaseModal();
+            loadCasesList();
+        } else { showToast(d.error || 'Ошибка', 'err'); }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function openCaseImagePicker(){
+    try{
+        var r = await fetch('/api/admin/case-images');
+        var d = await r.json();
+        if(!d.success || !d.images.length){ showToast('Нет изображений в папке', 'err'); return; }
+        var overlay = document.createElement('div');
+        overlay.className = 'modal-overlay show';
+        overlay.id = 'caseImagePicker';
+        overlay.innerHTML = '<div class="modal-sheet" style="transform:translateY(0)">' +
+            '<div class="modal-handle"></div>' +
+            '<div class="modal-title">Выберите изображение</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:60vh;overflow-y:auto;padding:4px">' +
+            d.images.map(function(img){ return '<div style="aspect-ratio:1;border-radius:10px;overflow:hidden;cursor:pointer;background:rgba(255,255,255,.04);border:2px solid transparent" onclick="selectCaseImage(\''+img+'\')"><img src="'+img+'" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.display=\'none\'"></div>'; }).join('') +
+            '</div></div>';
+        overlay.addEventListener('click', function(e){ if(e.target === overlay) overlay.remove(); });
+        document.body.appendChild(overlay);
+    }catch(e){ showToast('Ошибка', 'err'); }
+}
+
+function selectCaseImage(url){
+    $('caseImageInput').value = url;
+    $('caseImagePreview').src = url;
+    var picker = $('caseImagePicker');
+    if(picker) picker.remove();
+}
 </script>
 </body>
 </html>

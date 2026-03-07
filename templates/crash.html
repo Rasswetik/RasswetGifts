@@ -4868,7 +4868,7 @@ let collectionRewardClaimed = false;
 let collectionComplete = false;
 
 /* Settings */
-let currentBg = localStorage.getItem('crash_bg') || 'phone';
+let currentBg = localStorage.getItem('crash_bg') || 'grid';
 let currentRocket = localStorage.getItem('crash_rocket') || 'crash';
 let userTotalBets = 0;
 let userBetVolume = 0; /* Total volume of all bets in stars */
@@ -4876,7 +4876,7 @@ let userWagerCompleted = 0; /* Completed wager in stars */
 let userLevel = 1; /* User level */
 
 /* Default customizations - will be updated from DB */
-let backgrounds = ['phone'];
+let backgrounds = ['grid'];
 let rockets = ['crash'];
 let rocketsData = []; /* Full data with access_type */
 let backgroundsData = []; /* Full data with access_type */
@@ -8806,6 +8806,13 @@ function applyPreview() {
 function applyBackground(bgId){
     const gf = $('gameField');
     if(!gf) return;
+    
+    /* Validate bgId - default to grid if invalid */
+    const validBgs = ['grid', 'cosmic', 'rainbow', 'aurora', 'neon'];
+    if(!validBgs.includes(bgId)){
+        bgId = 'grid';
+        localStorage.setItem('crash_bg', 'grid');
+    }
     
     /* Remove all background theme classes */
     gf.classList.remove('bg-cosmic', 'bg-rainbow', 'bg-aurora', 'bg-neon');
