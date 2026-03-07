@@ -1308,7 +1308,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    userBalance = data.new_balance || userBalance - totalCost;
+                    userBalance = data.new_balance ? data.new_balance.stars : (userBalance - totalCost);
                     $('balanceDisplay').textContent = formatTon(starsToTon(userBalance));
                     runSpinRoulette(data.won_gifts || [data.won_gift]);
                 } else {
