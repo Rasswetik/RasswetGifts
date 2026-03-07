@@ -1111,6 +1111,7 @@ tc-root *{pointer-events:auto}
     display:flex;
     align-items:center;justify-content:center;
     flex-direction:column;
+    contain:layout style;
 }
 
 /* Animated grid background — speed controlled by --grid-speed CSS variable */
@@ -1315,18 +1316,25 @@ tc-root *{pointer-events:auto}
 
 /* Rocket */
 .rocket-wrap{
-    position:absolute;top:55%;left:50%;
+    position:absolute;top:52%;left:50%;
     transform:translate(-50%,-50%);
     z-index:2;
     transition: opacity 0.3s ease;
     opacity:1;
 }
 .rocket-wrap img{
-    width:260px;height:260px;object-fit:contain;
+    width:180px;height:180px;object-fit:contain;
     transition: filter 0.3s ease, transform 0.2s ease;
     will-change: transform;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    image-rendering: auto;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+/* High quality gift display */
+.rocket-wrap.showing-gift img{
+    width:200px;height:200px;
+    image-rendering: high-quality;
+    filter: drop-shadow(0 4px 20px rgba(0,0,0,0.4));
 }
 .rocket-wrap.hide{opacity:0;pointer-events:none}
 .rocket-wrap.flying{
@@ -1336,10 +1344,7 @@ tc-root *{pointer-events:auto}
 .rocket-wrap.flying img{
     transform:rotate(18deg);
 }
-/* Gift showing - no tilt, keep upright */
-.rocket-wrap.showing-gift img{
-    transform:rotate(0deg) !important;
-}
+/* Gift showing - no tilt, larger and crisp */
 .rocket-wrap.flying.showing-gift img{
     transform:scale(1.05) !important;
 }
@@ -1920,7 +1925,7 @@ tc-root *{pointer-events:auto}
 .bets-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .bets-title{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:14px;color:#fff;letter-spacing:.3px}
 .bets-count{font-size:12px;color:rgba(140,160,190,.8);font-weight:700;background:rgba(107,122,141,.15);padding:3px 10px;border-radius:10px}
-.bets-list{display:flex;flex-direction:column;gap:6px;max-height:350px;overflow-y:auto}
+.bets-list{display:flex;flex-direction:column;gap:6px;max-height:350px;overflow-y:auto;contain:content}
 .bets-list::-webkit-scrollbar{width:4px}
 .bets-list::-webkit-scrollbar-thumb{background:rgba(107,122,141,.3);border-radius:4px}
 .bet-row{display:flex;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(26,30,42,.8);border:1px solid rgba(107,122,141,.1);animation:betSlideIn .4s cubic-bezier(.34,1.56,.64,1) both;transform-origin:top;gap:10px}
@@ -5023,6 +5028,18 @@ async function initTelegramApp() {
 
     authReady = true;
     
+    /* Check if user is banned */
+    if (userData && userData.id) {
+        try {
+            const banRes = await fetch('/api/check-ban?user_id=' + userData.id);
+            const banData = await banRes.json();
+            if (banData.success && banData.banned) {
+                window.location.href = '/ban';
+                return;
+            }
+        } catch(e) { console.warn('Ban check failed:', e); }
+    }
+    
     /* Check if user is admin */
     checkAdmin();
 
@@ -5048,22 +5065,34 @@ async function initTelegramApp() {
     refreshBetCurrencyUI();
 
     /* Adaptive polling intervals based on power mode */
-    var statusPoll = document.body.classList.contains('low-power') ? 1200 : 500;
-    var betsPoll   = document.body.classList.contains('low-power') ? 2000 : 1200;
-    setInterval(updStatus, statusPoll);   /* Game status */
-    setInterval(loadUserData, 15000);     /* Balance every 15 sec */
-    setInterval(loadBets, betsPoll);      /* Bets */
+    var statusPoll = document.body.classList.contains('low-power') ? 1500 : 700;
+    var betsPoll   = document.body.classList.contains('low-power') ? 3000 : 1500;
+    var statusIntervalId = setInterval(updStatus, statusPoll);   /* Game status */
+    var balanceIntervalId = setInterval(loadUserData, 20000);     /* Balance every 20 sec */
+    var betsIntervalId = setInterval(loadBets, betsPoll);      /* Bets */
     
     /* Keepalive ping to prevent server/connection sleeping */
-    setInterval(function(){
+    var pingIntervalId = setInterval(function(){
         fetch('/api/ping').catch(function(){});
-    }, 25000);
+    }, 30000);
     
-    /* Stay awake when page hidden (mobile) */
+    /* Pause/resume intervals when page visibility changes */
+    var intervalsRunning = true;
     document.addEventListener('visibilitychange', function(){
-        if(!document.hidden){
-            updStatus();
-            loadBets();
+        if(document.hidden){
+            if(intervalsRunning){
+                clearInterval(statusIntervalId);
+                clearInterval(betsIntervalId);
+                intervalsRunning = false;
+            }
+        } else {
+            if(!intervalsRunning){
+                updStatus();
+                loadBets();
+                statusIntervalId = setInterval(updStatus, statusPoll);
+                betsIntervalId = setInterval(loadBets, betsPoll);
+                intervalsRunning = true;
+            }
         }
     });
 
@@ -13622,6 +13651,10 @@ else ensureCommonHeaderElements();
     <a class="bottom-nav-item" href="/cases">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
         <span>Кейсы</span>
+    </a>
+    <a class="bottom-nav-item" href="/news">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
+        <span>Новости</span>
     </a>
     <a class="bottom-nav-item" href="/leaderboard">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>

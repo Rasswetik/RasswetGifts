@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="icon" type="image/png" href="/static/img/logo.png">
+<title>Новости</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
+body{
+    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#1A1E2A;
+    color:#fff;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:80px;
+}
+
+/* Background */
+body::before{
+    content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+    background:
+        radial-gradient(circle at 20% 50%,rgba(140,160,190,.08) 0%,transparent 50%),
+        radial-gradient(circle at 80% 50%,rgba(140,160,190,.06) 0%,transparent 50%);
+    z-index:-1;
+    pointer-events:none;
+}
+
+/* Header */
+.header{
+    position:sticky;top:0;z-index:100;
+    background:rgba(26,30,42,.95);
+    backdrop-filter:blur(20px);
+    padding:16px 20px;
+    display:flex;align-items:center;gap:12px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+}
+.header-title{font-size:22px;font-weight:700;flex:1}
+.header-back{
+    width:36px;height:36px;border-radius:10px;
+    background:rgba(255,255,255,.08);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:background .2s;
+}
+.header-back:hover{background:rgba(255,255,255,.12)}
+.header-back svg{width:20px;height:20px;stroke:#fff}
+
+/* News container */
+.news-container{
+    padding:16px;
+    display:flex;flex-direction:column;gap:16px;
+}
+
+/* News card */
+.news-card{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:20px;
+    overflow:hidden;
+    transition:transform .2s;
+}
+.news-card:active{transform:scale(.98)}
+
+.news-image{
+    width:100%;
+    height:180px;
+    object-fit:cover;
+    background:rgba(255,255,255,.05);
+}
+.news-image.placeholder{
+    display:flex;align-items:center;justify-content:center;
+    font-size:48px;color:rgba(255,255,255,.2);
+}
+
+.news-body{padding:16px}
+
+.news-title{
+    font-size:18px;
+    font-weight:700;
+    margin-bottom:8px;
+    line-height:1.3;
+}
+
+.news-content{
+    font-size:14px;
+    color:rgba(255,255,255,.7);
+    line-height:1.5;
+    margin-bottom:12px;
+}
+
+.news-meta{
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:12px;color:rgba(255,255,255,.4);
+}
+
+.news-date{display:flex;align-items:center;gap:4px}
+
+.news-reward{
+    display:flex;align-items:center;gap:6px;
+    background:linear-gradient(135deg,rgba(0,255,136,.15),rgba(0,200,100,.1));
+    border:1px solid rgba(0,255,136,.3);
+    padding:6px 12px;
+    border-radius:20px;
+    font-weight:600;
+    color:#0f8;
+    cursor:pointer;
+    transition:all .2s;
+}
+.news-reward:hover{transform:scale(1.02);box-shadow:0 0 12px rgba(0,255,136,.3)}
+.news-reward img{width:16px;height:16px}
+.news-reward.claimed{
+    background:rgba(255,255,255,.05);
+    border-color:rgba(255,255,255,.1);
+    color:rgba(255,255,255,.4);
+    cursor:default;
+    pointer-events:none;
+}
+
+/* Empty state */
+.empty-state{
+    text-align:center;
+    padding:60px 20px;
+    color:rgba(255,255,255,.4);
+}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.5}
+.empty-text{font-size:16px}
+
+/* Loading */
+.loading{
+    text-align:center;
+    padding:40px;
+    color:rgba(255,255,255,.5);
+}
+
+/* Bottom nav */
+.bottom-nav{
+    position:fixed;bottom:0;left:0;right:0;
+    background:rgba(26,30,42,.98);
+    backdrop-filter:blur(20px);
+    border-top:1px solid rgba(255,255,255,.08);
+    display:flex;
+    padding:8px 16px 20px;
+    z-index:1000;
+}
+.nav-btn{
+    flex:1;
+    display:flex;flex-direction:column;align-items:center;gap:4px;
+    padding:8px 4px;
+    color:rgba(255,255,255,.5);
+    text-decoration:none;
+    font-size:10px;
+    transition:color .2s;
+}
+.nav-btn.active{color:#fff}
+.nav-btn svg{width:22px;height:22px}
+
+/* Toast */
+.toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:#1e2230;
+    border:1px solid rgba(255,255,255,.1);
+    padding:12px 24px;border-radius:12px;
+    font-size:14px;font-weight:500;
+    opacity:0;visibility:hidden;
+    transition:all .3s;
+    z-index:9999;
+}
+.toast.show{opacity:1;visibility:visible}
+.toast.ok{border-color:rgba(0,255,136,.3);color:#0f8}
+.toast.err{border-color:rgba(255,68,68,.3);color:#f44}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-back" onclick="history.back()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+        </svg>
+    </div>
+    <div class="header-title">Новости</div>
+</div>
+
+<div class="news-container" id="newsContainer">
+    <div class="loading">Загрузка новостей...</div>
+</div>
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav">
+    <a href="/" class="nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+        </svg>
+        <span>Кейсы</span>
+    </a>
+    <a href="/crash" class="nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+        <span>Краш</span>
+    </a>
+    <a href="/news" class="nav-btn active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/>
+        </svg>
+        <span>Новости</span>
+    </a>
+    <a href="/inventory" class="nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>
+        </svg>
+        <span>Инвентарь</span>
+    </a>
+    <a href="/leaderboard" class="nav-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 15l-2 5-3-1 1-4M12 15l2 5 3-1-1-4M12 15V9M8 9l4-5 4 5"/>
+        </svg>
+        <span>Топ</span>
+    </a>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+    var $ = function(id){ return document.getElementById(id); };
+    var tg = window.Telegram && window.Telegram.WebApp;
+    var userId = null;
+    
+    if(tg){
+        tg.ready();
+        tg.expand();
+        tg.setHeaderColor('#1A1E2A');
+        tg.setBackgroundColor('#1A1E2A');
+        userId = tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id;
+    }
+    
+    function showToast(msg, type){
+        var t = $('toast');
+        t.textContent = msg;
+        t.className = 'toast show ' + (type || 'ok');
+        setTimeout(function(){ t.classList.remove('show'); }, 2500);
+    }
+    
+    function formatDate(dateStr){
+        var d = new Date(dateStr);
+        return d.toLocaleDateString('ru-RU', {day:'numeric', month:'short'});
+    }
+    
+    function formatReward(amount){
+        if(amount >= 100){
+            return (amount / 100).toFixed(2) + ' TON';
+        }
+        return amount + ' Stars';
+    }
+    
+    async function loadNews(){
+        try{
+            var url = '/api/news';
+            if(userId) url += '?user_id=' + userId;
+            
+            var r = await fetch(url);
+            var d = await r.json();
+            
+            if(!d.success || !d.news || d.news.length === 0){
+                $('newsContainer').innerHTML = '<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-text">Нет новостей</div></div>';
+                return;
+            }
+            
+            $('newsContainer').innerHTML = d.news.map(function(n){
+                var imageHtml = n.image_url 
+                    ? '<img class="news-image" src="' + n.image_url + '" alt="" onerror="this.className=\'news-image placeholder\';this.innerHTML=\'📰\'">'
+                    : '<div class="news-image placeholder">📰</div>';
+                
+                var rewardHtml = '';
+                if(n.reward_amount > 0){
+                    if(n.claimed){
+                        rewardHtml = '<div class="news-reward claimed"><span>✓ Получено</span></div>';
+                    } else {
+                        rewardHtml = '<div class="news-reward" onclick="claimReward(' + n.id + ', this)"><img src="/static/img/star.png" alt=""><span>+' + formatReward(n.reward_amount) + '</span></div>';
+                    }
+                }
+                
+                return '<div class="news-card">' +
+                    imageHtml +
+                    '<div class="news-body">' +
+                        '<div class="news-title">' + n.title + '</div>' +
+                        '<div class="news-content">' + n.content + '</div>' +
+                        '<div class="news-meta">' +
+                            '<div class="news-date">' + formatDate(n.created_at) + '</div>' +
+                            rewardHtml +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            
+        }catch(e){
+            console.error('Load news error:', e);
+            $('newsContainer').innerHTML = '<div class="empty-state"><div class="empty-text">Ошибка загрузки</div></div>';
+        }
+    }
+    
+    window.claimReward = async function(newsId, btn){
+        if(!userId){
+            showToast('Войдите через Telegram', 'err');
+            return;
+        }
+        
+        btn.style.pointerEvents = 'none';
+        btn.innerHTML = '<span>Загрузка...</span>';
+        
+        try{
+            var r = await fetch('/api/news/claim-reward', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: userId, news_id: newsId})
+            });
+            var d = await r.json();
+            
+            if(d.success){
+                btn.className = 'news-reward claimed';
+                btn.innerHTML = '<span>✓ Получено</span>';
+                showToast('Получено +' + formatReward(d.reward), 'ok');
+            } else {
+                btn.innerHTML = '<span>Ошибка</span>';
+                showToast(d.error || 'Ошибка', 'err');
+            }
+        }catch(e){
+            btn.innerHTML = '<span>Ошибка</span>';
+            showToast('Ошибка сети', 'err');
+        }
+    };
+    
+    loadNews();
+})();
+</script>
+
+</body>
+</html>

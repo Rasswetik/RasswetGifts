@@ -501,6 +501,49 @@ body::before{
     </div>
 </div>
 
+<!-- News Section -->
+<div class="section" id="sectionNews">
+    <div class="section-header">
+        <h2>Новости</h2>
+    </div>
+    <div class="section-content">
+        <div class="detail-section">
+            <div class="detail-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                Создать новость
+            </div>
+            <div class="form-group">
+                <label class="form-label">Заголовок</label>
+                <input type="text" class="form-input" id="newsTitleInput" placeholder="Заголовок новости">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Содержание</label>
+                <textarea class="form-input" id="newsContentInput" placeholder="Текст новости" rows="4" style="resize:vertical"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Изображение (URL)</label>
+                <input type="text" class="form-input" id="newsImageInput" placeholder="https://...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Награда (Stars)</label>
+                <input type="number" class="form-input" id="newsRewardInput" min="0" value="0" placeholder="0">
+            </div>
+            <button class="btn btn-success" onclick="createNews()">Создать новость</button>
+        </div>
+        
+        <div class="detail-section">
+            <div class="detail-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
+                Все новости
+            </div>
+            <div id="newsList" style="max-height:400px;overflow-y:auto">
+                <div class="loading"></div>
+            </div>
+            <button class="btn btn-secondary" onclick="loadNewsList()" style="margin-top:10px">Обновить</button>
+        </div>
+    </div>
+</div>
+
 <!-- Bottom Nav -->
 <div class="bottom-nav">
     <button class="bottom-nav-item active" onclick="showSection('Dashboard')">
@@ -530,6 +573,10 @@ body::before{
     <button class="bottom-nav-item" onclick="showSection('Promo')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
         <span>Promo</span>
+    </button>
+    <button class="bottom-nav-item" onclick="showSection('News')">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
+        <span>News</span>
     </button>
 </div>
 
@@ -587,6 +634,35 @@ body::before{
             <button class="btn btn-success" style="margin-top:12px" onclick="openAddGiftModal()">+ Добавить подарок</button>
         </div>
         
+        <div class="detail-section" id="banSection">
+            <div class="detail-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                Блокировка
+            </div>
+            <div id="banStatusBox" style="margin-bottom:12px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.05)">
+                <span id="banStatusText" style="color:#888">Загрузка...</span>
+            </div>
+            <div id="banControls" style="display:none">
+                <div class="form-group">
+                    <label class="form-label">Причина бана</label>
+                    <input type="text" class="form-input" id="banReasonInput" placeholder="Нарушение правил">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Срок бана</label>
+                    <select class="form-input" id="banDurationSelect">
+                        <option value="permanent">Навсегда</option>
+                        <option value="day">1 день</option>
+                        <option value="week">1 неделя</option>
+                        <option value="month">1 месяц</option>
+                    </select>
+                </div>
+                <button class="btn" style="background:#ff4444;color:#fff;margin-top:8px" onclick="banUser()">Заблокировать</button>
+            </div>
+            <div id="unbanControls" style="display:none">
+                <button class="btn btn-success" style="margin-top:8px" onclick="unbanUser()">Разблокировать</button>
+            </div>
+        </div>
+        
         <button class="btn btn-danger" style="margin-top:8px" onclick="closeUserModal()">Закрыть</button>
     </div>
 </div>
@@ -642,6 +718,7 @@ function showSection(name){
     if(name === 'Promo') loadPromoCodes();
     if(name === 'Withdrawals') loadWithdrawals();
     if(name === 'Leaderboard') { loadLeaderboards(); if($('lbRewardsContainer').children.length === 0) initLbRewards(); }
+    if(name === 'News') loadNewsList();
 }
 
 function showToast(msg, type){
@@ -983,6 +1060,132 @@ async function loadUsedPromos(){
     }catch(e){ $('usedPromoList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Ошибка загрузки</div></div>'; }
 }
 
+// ============ NEWS MANAGEMENT ============
+var allNews = [];
+
+async function loadNewsList(){
+    $('newsList').innerHTML = '<div class="loading"></div>';
+    try{
+        var r = await fetch('/api/admin/news?admin_id=' + adminId);
+        var d = await r.json();
+        if(d.success && d.news && d.news.length){
+            allNews = d.news;
+            $('newsList').innerHTML = d.news.map(n => {
+                var statusBadge = n.is_active 
+                    ? '<span style="color:#0f8;font-size:10px">● Активна</span>'
+                    : '<span style="color:#888;font-size:10px">● Скрыта</span>';
+                var rewardBadge = n.reward_amount > 0 
+                    ? '<span style="background:rgba(0,255,136,.1);color:#0f8;padding:2px 8px;border-radius:10px;font-size:11px;margin-left:8px">+' + n.reward_amount + ' Stars</span>'
+                    : '';
+                return '<div class="detail-row" style="flex-direction:column;align-items:flex-start;gap:6px">' +
+                    '<div style="display:flex;align-items:center;width:100%;justify-content:space-between">' +
+                        '<div style="font-weight:600">' + n.title + '</div>' +
+                        '<div style="display:flex;gap:8px;align-items:center">' +
+                            statusBadge + rewardBadge +
+                        '</div>' +
+                    '</div>' +
+                    '<div style="font-size:12px;color:#888;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + n.content.slice(0, 80) + (n.content.length > 80 ? '...' : '') + '</div>' +
+                    '<div style="display:flex;gap:8px;margin-top:4px">' +
+                        '<button class="btn btn-sm" onclick="toggleNewsActive(' + n.id + ', ' + (n.is_active ? 'false' : 'true') + ')">' + (n.is_active ? 'Скрыть' : 'Показать') + '</button>' +
+                        '<button class="btn btn-sm btn-danger" onclick="deleteNews(' + n.id + ')">Удалить</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        } else {
+            $('newsList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Нет новостей</div></div>';
+        }
+    }catch(e){ 
+        console.error('Load news error:', e);
+        $('newsList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Ошибка загрузки</div></div>'; 
+    }
+}
+
+async function createNews(){
+    var title = $('newsTitleInput').value.trim();
+    var content = $('newsContentInput').value.trim();
+    var imageUrl = $('newsImageInput').value.trim();
+    var rewardAmount = parseInt($('newsRewardInput').value) || 0;
+    
+    if(!title || !content){
+        showNotif('Заполните заголовок и содержание', 'error');
+        return;
+    }
+    
+    try{
+        var r = await fetch('/api/admin/news', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                admin_id: adminId,
+                title: title,
+                content: content,
+                image_url: imageUrl,
+                reward_amount: rewardAmount
+            })
+        });
+        var d = await r.json();
+        if(d.success){
+            showNotif('Новость создана', 'success');
+            $('newsTitleInput').value = '';
+            $('newsContentInput').value = '';
+            $('newsImageInput').value = '';
+            $('newsRewardInput').value = '0';
+            loadNewsList();
+        } else {
+            showNotif(d.error || 'Ошибка создания', 'error');
+        }
+    }catch(e){
+        showNotif('Ошибка сети', 'error');
+    }
+}
+
+async function toggleNewsActive(newsId, active){
+    try{
+        var r = await fetch('/api/admin/news', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                admin_id: adminId,
+                news_id: newsId,
+                is_active: active
+            })
+        });
+        var d = await r.json();
+        if(d.success){
+            showNotif(active ? 'Новость активирована' : 'Новость скрыта', 'success');
+            loadNewsList();
+        } else {
+            showNotif(d.error || 'Ошибка', 'error');
+        }
+    }catch(e){
+        showNotif('Ошибка сети', 'error');
+    }
+}
+
+async function deleteNews(newsId){
+    if(!confirm('Удалить новость?')) return;
+    
+    try{
+        var r = await fetch('/api/admin/news', {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                admin_id: adminId,
+                news_id: newsId
+            })
+        });
+        var d = await r.json();
+        if(d.success){
+            showNotif('Новость удалена', 'success');
+            loadNewsList();
+        } else {
+            showNotif(d.error || 'Ошибка', 'error');
+        }
+    }catch(e){
+        showNotif('Ошибка сети', 'error');
+    }
+}
+
 async function loadPromoCodes(){
     $('promoCodesList').innerHTML = '<div class="loading"></div>';
     try{
@@ -1115,6 +1318,9 @@ async function openUserModal(userId){
     $('userInventory').innerHTML = '<div class="loading" style="grid-column:1/-1"></div>';
     $('userModal').classList.add('show');
     
+    // Load ban status
+    loadBanStatus(userId);
+    
     try{
         var r = await fetch('/api/admin/user-inventory?user_id=' + userId);
         var d = await r.json();
@@ -1125,6 +1331,90 @@ async function openUserModal(userId){
         }
     }catch(e){
         $('userInventory').innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:20px"><div class="empty-state-text">Ошибка</div></div>';
+    }
+}
+
+async function loadBanStatus(userId){
+    var statusBox = $('banStatusBox');
+    var statusText = $('banStatusText');
+    var banControls = $('banControls');
+    var unbanControls = $('unbanControls');
+    
+    statusText.textContent = 'Загрузка...';
+    banControls.style.display = 'none';
+    unbanControls.style.display = 'none';
+    
+    try{
+        var r = await fetch('/api/check-ban?user_id=' + userId);
+        var d = await r.json();
+        
+        if(d.success && d.banned){
+            statusBox.style.background = 'rgba(255,68,68,0.1)';
+            statusBox.style.border = '1px solid rgba(255,68,68,0.3)';
+            var untilText = d.until ? new Date(d.until).toLocaleString('ru-RU') : 'навсегда';
+            statusText.innerHTML = '<span style="color:#ff4444">🚫 Заблокирован</span><br><small style="color:#888">Причина: ' + (d.reason || '—') + '</small><br><small style="color:#888">До: ' + untilText + '</small>';
+            unbanControls.style.display = 'block';
+        } else {
+            statusBox.style.background = 'rgba(0,255,136,0.1)';
+            statusBox.style.border = '1px solid rgba(0,255,136,0.3)';
+            statusText.innerHTML = '<span style="color:#0f8">✓ Не заблокирован</span>';
+            banControls.style.display = 'block';
+        }
+    }catch(e){
+        statusText.textContent = 'Ошибка загрузки';
+    }
+}
+
+async function banUser(){
+    if(!currentUser) return;
+    
+    var reason = $('banReasonInput').value || 'Нарушение правил';
+    var duration = $('banDurationSelect').value;
+    
+    try{
+        var r = await fetch('/api/admin/ban-user', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                admin_id: adminId,
+                user_id: currentUser.id,
+                reason: reason,
+                duration: duration
+            })
+        });
+        var d = await r.json();
+        if(d.success){
+            showNotif('Пользователь заблокирован', 'success');
+            loadBanStatus(currentUser.id);
+        } else {
+            showNotif(d.error || 'Ошибка', 'error');
+        }
+    }catch(e){
+        showNotif('Ошибка сети', 'error');
+    }
+}
+
+async function unbanUser(){
+    if(!currentUser) return;
+    
+    try{
+        var r = await fetch('/api/admin/unban-user', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                admin_id: adminId,
+                user_id: currentUser.id
+            })
+        });
+        var d = await r.json();
+        if(d.success){
+            showNotif('Пользователь разблокирован', 'success');
+            loadBanStatus(currentUser.id);
+        } else {
+            showNotif(d.error || 'Ошибка', 'error');
+        }
+    }catch(e){
+        showNotif('Ошибка сети', 'error');
     }
 }
 

@@ -1757,6 +1757,25 @@ def _create_all_tables(conn):
             confirmed_at TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )''',
+        'news': '''CREATE TABLE IF NOT EXISTS news (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            image_url TEXT,
+            reward_amount INTEGER DEFAULT 0,
+            is_active BOOLEAN DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''',
+        'news_reads': '''CREATE TABLE IF NOT EXISTS news_reads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            news_id INTEGER NOT NULL,
+            reward_claimed BOOLEAN DEFAULT FALSE,
+            read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (news_id) REFERENCES news (id),
+            UNIQUE(user_id, news_id)
+        )''',
         'daily_tasks': '''CREATE TABLE IF NOT EXISTS daily_tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             task_type TEXT NOT NULL,
@@ -2207,6 +2226,16 @@ def init_db():
                 if 'referral_balance' not in columns:
                     cursor.execute('ALTER TABLE users ADD COLUMN referral_balance INTEGER DEFAULT 0')
                     logger.info("✅ Добавлена колонка referral_balance")
+                # Поля для системы банов
+                if 'is_banned' not in columns:
+                    cursor.execute('ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0')
+                    logger.info("✅ Добавлена колонка is_banned")
+                if 'ban_reason' not in columns:
+                    cursor.execute('ALTER TABLE users ADD COLUMN ban_reason TEXT')
+                    logger.info("✅ Добавлена колонка ban_reason")
+                if 'ban_until' not in columns:
+                    cursor.execute('ALTER TABLE users ADD COLUMN ban_until TEXT')
+                    logger.info("✅ Добавлена колонка ban_until")
                 conn.commit()
             except Exception as e:
                 logger.warning(f"⚠️ Миграция колонок users: {e}")
@@ -3578,6 +3607,68 @@ def root_page():
 def api_ping():
     """Keepalive ping to prevent sleeping"""
     return jsonify({'pong': True})
+
+
+@app.route('/ban')
+def ban_page():
+    """Страница для забаненных пользователей"""
+    return render_template('ban.html')
+
+
+@app.route('/api/check-ban')
+def api_check_ban():
+    """Проверка бана пользователя"""
+    try:
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'banned': False})
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT is_banned, ban_reason, ban_until FROM users WHERE id = ?
+        ''', (user_id,))
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({'success': True, 'banned': False})
+        
+        is_banned = row[0]
+        ban_reason = row[1]
+        ban_until = row[2]
+        
+        # Проверяем истёк ли временный бан
+        if is_banned and ban_until:
+            from datetime import datetime
+            try:
+                end_date = datetime.fromisoformat(ban_until)
+                if datetime.now() > end_date:
+                    # Бан истёк, снимаем его
+                    conn = get_db_connection()
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        UPDATE users SET is_banned = 0, ban_reason = NULL, ban_until = NULL
+                        WHERE id = ?
+                    ''', (user_id,))
+                    conn.commit()
+                    conn.close()
+                    return jsonify({'success': True, 'banned': False})
+            except:
+                pass
+        
+        return jsonify({
+            'success': True,
+            'banned': bool(is_banned),
+            'reason': ban_reason,
+            'until': ban_until
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка проверки бана: {e}")
+        return jsonify({'success': False, 'banned': False})
 
 
 @app.route('/crash')
@@ -9590,6 +9681,374 @@ def admin_update_user():
 
     except Exception as e:
         logger.error(f"❌ Ошибка обновления пользователя: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/ban-user', methods=['POST'])
+def admin_ban_user():
+    """Забанить пользователя"""
+    try:
+        data = request.get_json()
+        admin_id = data.get('admin_id')
+        
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+        
+        user_id = data.get('user_id')
+        reason = data.get('reason', 'Нарушение правил')
+        duration = data.get('duration')  # 'permanent', 'day', 'week', 'month' или кол-во часов
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'user_id обязателен'})
+        
+        # Вычисляем дату окончания бана
+        ban_until = None
+        if duration and duration != 'permanent':
+            from datetime import datetime, timedelta
+            now = datetime.now()
+            if duration == 'day':
+                ban_until = (now + timedelta(days=1)).isoformat()
+            elif duration == 'week':
+                ban_until = (now + timedelta(weeks=1)).isoformat()
+            elif duration == 'month':
+                ban_until = (now + timedelta(days=30)).isoformat()
+            elif isinstance(duration, int) or str(duration).isdigit():
+                ban_until = (now + timedelta(hours=int(duration))).isoformat()
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE users SET is_banned = 1, ban_reason = ?, ban_until = ?
+            WHERE id = ?
+        ''', (reason, ban_until, user_id))
+        
+        conn.commit()
+        conn.close()
+        
+        duration_txt = ban_until if ban_until else 'навсегда'
+        logger.info(f"🚫 Админ забанил пользователя {user_id}: причина={reason}, до={duration_txt}")
+        return jsonify({'success': True, 'message': f'Пользователь {user_id} забанен'})
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка бана пользователя: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/unban-user', methods=['POST'])
+def admin_unban_user():
+    """Разбанить пользователя"""
+    try:
+        data = request.get_json()
+        admin_id = data.get('admin_id')
+        
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+        
+        user_id = data.get('user_id')
+        
+        if not user_id:
+            return jsonify({'success': False, 'error': 'user_id обязателен'})
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE users SET is_banned = 0, ban_reason = NULL, ban_until = NULL
+            WHERE id = ?
+        ''', (user_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        logger.info(f"✅ Админ разбанил пользователя {user_id}")
+        return jsonify({'success': True, 'message': f'Пользователь {user_id} разбанен'})
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка разбана пользователя: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/banned-users', methods=['GET'])
+def admin_banned_users():
+    """Список забаненных пользователей"""
+    try:
+        admin_id = request.args.get('admin_id')
+        
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, first_name, username, photo_url, is_banned, ban_reason, ban_until
+            FROM users WHERE is_banned = 1
+            ORDER BY id DESC
+        ''')
+        
+        users = []
+        for row in cursor.fetchall():
+            users.append({
+                'id': row[0],
+                'first_name': row[1],
+                'username': row[2],
+                'photo_url': row[3],
+                'is_banned': row[4],
+                'ban_reason': row[5],
+                'ban_until': row[6]
+            })
+        
+        conn.close()
+        return jsonify({'success': True, 'users': users})
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения забаненных: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+# ==================== NEWS API ====================
+
+@app.route('/news')
+def news_page():
+    """Страница новостей"""
+    return render_template('news.html')
+
+@app.route('/api/news', methods=['GET'])
+def api_get_news():
+    """Получить список новостей"""
+    try:
+        user_id = request.args.get('user_id')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Создаём таблицы если нет
+        cursor.execute('''CREATE TABLE IF NOT EXISTS news (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            image_url TEXT,
+            reward_amount INTEGER DEFAULT 0,
+            is_active BOOLEAN DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''')
+        cursor.execute('''CREATE TABLE IF NOT EXISTS news_reads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            news_id INTEGER NOT NULL,
+            reward_claimed BOOLEAN DEFAULT FALSE,
+            read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, news_id)
+        )''')
+        conn.commit()
+        
+        # Получаем активные новости
+        if user_id:
+            cursor.execute('''
+                SELECT n.id, n.title, n.content, n.image_url, n.reward_amount, n.created_at,
+                       COALESCE(nr.reward_claimed, 0) as claimed
+                FROM news n
+                LEFT JOIN news_reads nr ON n.id = nr.news_id AND nr.user_id = ?
+                WHERE n.is_active = 1
+                ORDER BY n.created_at DESC
+            ''', (user_id,))
+        else:
+            cursor.execute('''
+                SELECT id, title, content, image_url, reward_amount, created_at, 0 as claimed
+                FROM news WHERE is_active = 1
+                ORDER BY created_at DESC
+            ''')
+        
+        news_list = []
+        for row in cursor.fetchall():
+            news_list.append({
+                'id': row[0],
+                'title': row[1],
+                'content': row[2],
+                'image_url': row[3],
+                'reward_amount': row[4],
+                'created_at': row[5],
+                'claimed': bool(row[6])
+            })
+        
+        conn.close()
+        return jsonify({'success': True, 'news': news_list})
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения новостей: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/news/claim-reward', methods=['POST'])
+def api_claim_news_reward():
+    """Получить награду за прочтение новости"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        news_id = data.get('news_id')
+        
+        if not user_id or not news_id:
+            return jsonify({'success': False, 'error': 'user_id и news_id обязательны'})
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Проверяем что новость существует и активна
+        cursor.execute('SELECT reward_amount FROM news WHERE id = ? AND is_active = 1', (news_id,))
+        news_row = cursor.fetchone()
+        if not news_row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Новость не найдена'})
+        
+        reward_amount = news_row[0] or 0
+        
+        # Проверяем что награда ещё не получена
+        cursor.execute('''
+            SELECT reward_claimed FROM news_reads WHERE user_id = ? AND news_id = ?
+        ''', (user_id, news_id))
+        read_row = cursor.fetchone()
+        
+        if read_row and read_row[0]:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Награда уже получена'})
+        
+        # Записываем прочтение и награду
+        if read_row:
+            cursor.execute('''
+                UPDATE news_reads SET reward_claimed = 1, read_at = CURRENT_TIMESTAMP
+                WHERE user_id = ? AND news_id = ?
+            ''', (user_id, news_id))
+        else:
+            cursor.execute('''
+                INSERT INTO news_reads (user_id, news_id, reward_claimed) VALUES (?, ?, 1)
+            ''', (user_id, news_id))
+        
+        # Начисляем награду
+        if reward_amount > 0:
+            cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', 
+                          (reward_amount, user_id))
+        
+        conn.commit()
+        
+        # Получаем новый баланс
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        new_balance = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        logger.info(f"🎁 Награда за новость {news_id}: user={user_id}, reward={reward_amount}")
+        return jsonify({
+            'success': True, 
+            'reward': reward_amount,
+            'new_balance': new_balance
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения награды: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/news', methods=['GET', 'POST', 'PUT', 'DELETE'])
+def admin_news_management():
+    """Управление новостями (админ)"""
+    try:
+        admin_id = request.args.get('admin_id') or (request.get_json() or {}).get('admin_id')
+        
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Создаём таблицу если нет
+        cursor.execute('''CREATE TABLE IF NOT EXISTS news (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            image_url TEXT,
+            reward_amount INTEGER DEFAULT 0,
+            is_active BOOLEAN DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''')
+        conn.commit()
+        
+        if request.method == 'GET':
+            cursor.execute('SELECT id, title, content, image_url, reward_amount, is_active, created_at FROM news ORDER BY created_at DESC')
+            news_list = []
+            for row in cursor.fetchall():
+                news_list.append({
+                    'id': row[0],
+                    'title': row[1],
+                    'content': row[2],
+                    'image_url': row[3],
+                    'reward_amount': row[4],
+                    'is_active': row[5],
+                    'created_at': row[6]
+                })
+            conn.close()
+            return jsonify({'success': True, 'news': news_list})
+        
+        elif request.method == 'POST':
+            data = request.get_json()
+            title = data.get('title', '')
+            content = data.get('content', '')
+            image_url = data.get('image_url', '')
+            reward_amount = int(data.get('reward_amount', 0))
+            
+            cursor.execute('''
+                INSERT INTO news (title, content, image_url, reward_amount) VALUES (?, ?, ?, ?)
+            ''', (title, content, image_url, reward_amount))
+            conn.commit()
+            news_id = cursor.lastrowid
+            conn.close()
+            
+            logger.info(f"📰 Создана новость: id={news_id}, title={title}")
+            return jsonify({'success': True, 'news_id': news_id})
+        
+        elif request.method == 'PUT':
+            data = request.get_json()
+            news_id = data.get('news_id')
+            title = data.get('title')
+            content = data.get('content')
+            image_url = data.get('image_url')
+            reward_amount = data.get('reward_amount')
+            is_active = data.get('is_active')
+            
+            updates = []
+            params = []
+            if title is not None:
+                updates.append('title = ?')
+                params.append(title)
+            if content is not None:
+                updates.append('content = ?')
+                params.append(content)
+            if image_url is not None:
+                updates.append('image_url = ?')
+                params.append(image_url)
+            if reward_amount is not None:
+                updates.append('reward_amount = ?')
+                params.append(int(reward_amount))
+            if is_active is not None:
+                updates.append('is_active = ?')
+                params.append(1 if is_active else 0)
+            
+            if updates:
+                params.append(news_id)
+                cursor.execute(f'UPDATE news SET {", ".join(updates)} WHERE id = ?', params)
+                conn.commit()
+            
+            conn.close()
+            return jsonify({'success': True})
+        
+        elif request.method == 'DELETE':
+            data = request.get_json()
+            news_id = data.get('news_id')
+            
+            cursor.execute('DELETE FROM news WHERE id = ?', (news_id,))
+            cursor.execute('DELETE FROM news_reads WHERE news_id = ?', (news_id,))
+            conn.commit()
+            conn.close()
+            
+            logger.info(f"🗑️ Удалена новость: id={news_id}")
+            return jsonify({'success': True})
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка управления новостями: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/notifications', methods=['GET', 'POST', 'PUT', 'DELETE'])
