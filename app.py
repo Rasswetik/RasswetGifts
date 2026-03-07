@@ -5608,8 +5608,11 @@ def open_case():
                 })
 
         total_cost = case['cost'] * quantity
+        # Convert TON to stars if cost_type is 'ton' (1 TON = 100 stars)
+        cost_in_stars = total_cost * 100 if case.get('cost_type') == 'ton' else total_cost
+        
         if case['cost'] > 0:
-            if case['cost_type'] == 'stars' and balance_stars < total_cost:
+            if case['cost_type'] in ['stars', 'ton'] and balance_stars < cost_in_stars:
                 conn.close()
                 return jsonify({'success': False, 'error': 'Недостаточно звезд'})
             elif case['cost_type'] == 'tickets' and balance_tickets < total_cost:
@@ -5617,9 +5620,9 @@ def open_case():
                 return jsonify({'success': False, 'error': 'Недостаточно билетов'})
 
         if case['cost'] > 0:
-            if case['cost_type'] == 'stars':
+            if case['cost_type'] in ['stars', 'ton']:
                 cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
-                             (total_cost, user_id))
+                             (cost_in_stars, user_id))
             else:
                 cursor.execute('UPDATE users SET balance_tickets = balance_tickets - ? WHERE id = ?',
                              (total_cost, user_id))
@@ -5821,17 +5824,20 @@ def open_case_single():
                 })
 
         # Списание стоимости
+        # Convert TON to stars if cost_type is 'ton' (1 TON = 100 stars)
+        cost_in_stars = case['cost'] * 100 if case.get('cost_type') == 'ton' else case['cost']
+        
         if case['cost'] > 0 and not is_free and not is_promo:
-            if case['cost_type'] == 'stars' and balance_stars < case['cost']:
+            if case['cost_type'] in ['stars', 'ton'] and balance_stars < cost_in_stars:
                 conn.close()
                 return jsonify({'success': False, 'error': 'Недостаточно звезд'})
             elif case['cost_type'] == 'tickets' and balance_tickets < case['cost']:
                 conn.close()
                 return jsonify({'success': False, 'error': 'Недостаточно билетов'})
 
-            if case['cost_type'] == 'stars':
+            if case['cost_type'] in ['stars', 'ton']:
                 cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
-                             (case['cost'], user_id))
+                             (cost_in_stars, user_id))
             else:
                 cursor.execute('UPDATE users SET balance_tickets = balance_tickets - ? WHERE id = ?',
                              (case['cost'], user_id))

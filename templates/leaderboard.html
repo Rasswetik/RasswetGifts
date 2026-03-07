@@ -328,18 +328,18 @@
 
                 const config = data.config;
                 const users = data.leaderboard || [];
-                const prizes = config.prizes || [];
+                const rewards = config.rewards || {};
 
                 // End time
-                if (config.end_time) {
-                    endTime = new Date(config.end_time).getTime();
+                if (config.period_end) {
+                    endTime = new Date(config.period_end).getTime();
                     updateCountdown();
                 }
 
                 // Render all users
                 document.getElementById('leadersList').innerHTML = users.slice(0, 20).map((u, i) => {
-                    const rank = i + 1;
-                    const prize = prizes[i];
+                    const rank = u.position || (i + 1);
+                    const prize = u.reward || rewards[String(rank)];
                     const rankClass = rank <= 3 ? `rank-${rank}` : '';
                     
                     // Rank badge: 1.gif, 2.gif, 3.gif for top 3, numbers for rest
@@ -353,32 +353,32 @@
                     // Prize image: gift or TON
                     let prizeImg = '';
                     if (prize) {
-                        if (prize.type === 'ton' || !prize.gift_image) {
-                            const tonAmount = (prize.amount || 0) / 100;
-                            prizeImg = `<img src="${getTonSvg(tonAmount)}" alt="${tonAmount} TON">`;
+                        if (prize.type === 'gift' && prize.gift_image) {
+                            prizeImg = `<img src="${prize.gift_image}" alt="${prize.gift_name || ''}">`;
                         } else {
-                            prizeImg = `<img src="${prize.gift_image || '/static/img/gift.png'}" alt="">`;
+                            const tonAmount = typeof prize === 'number' ? prize : ((prize.amount || 0) / 100);
+                            prizeImg = `<img src="${getTonSvg(tonAmount)}" alt="${tonAmount} TON">`;
                         }
                     }
                     
                     // Score/turnover in TON
-                    const turnover = ((u.score || 0) / 100).toFixed(2);
+                    const turnover = ((u.turnover || 0) / 100).toFixed(2);
+                    const displayName = u.first_name || u.username || 'Игрок';
+                    const avatar = u.photo_url || '/static/img/avatar-default.png';
                     
                     return `
                         <div class="leader-item ${rankClass}">
                             <div class="leader-rank">${rankBadge}</div>
                             <div class="leader-avatar">
-                                <img src="${u.avatar || '/static/img/avatar-default.png'}" alt="" onerror="this.src='/static/img/avatar-default.png'">
+                                <img src="${avatar}" alt="" onerror="this.src='/static/img/avatar-default.png'">
                             </div>
                             <div class="leader-info">
-                                <div class="leader-name">${escapeHtml(u.display_name || 'Игрок')}</div>
+                                <div class="leader-name">${escapeHtml(displayName)}</div>
                                 <div class="leader-stats">
                                     <div class="leader-turnover">
                                         <img src="/static/img/ton.png" alt="">
                                         <span>${turnover}</span>
                                     </div>
-                                    <div class="leader-separator"></div>
-                                    <div class="leader-level">${u.level || 1} level</div>
                                 </div>
                             </div>
                             ${prizeImg ? `<div class="leader-prize">${prizeImg}</div>` : ''}

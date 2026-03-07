@@ -1286,8 +1286,10 @@
                 return;
             }
 
-            const totalCost = currentCase.cost || 0;
-            if (userBalance < totalCost) {
+            // Convert cost to stars if cost_type is 'ton' (1 TON = 100 stars)
+            const rawCost = currentCase.cost || 0;
+            const totalCostInStars = currentCase.cost_type === 'ton' ? rawCost * 100 : rawCost;
+            if (userBalance < totalCostInStars) {
                 showToast('Недостаточно средств', 'err');
                 openDeposit();
                 resetSlider();

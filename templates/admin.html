@@ -442,15 +442,10 @@ body::before{
                         <input type="datetime-local" id="lbEnd" style="width:100%;padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:12px">
                     </div>
                 </div>
-                <div class="detail-section-title" style="margin:8px 0 4px">Награды по местам (TON)</div>
-                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
-                    <div><label style="font-size:10px;color:rgba(255,255,255,.5)">1 место</label><input type="number" id="lbReward1" value="50" step="1" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;text-align:center"></div>
-                    <div><label style="font-size:10px;color:rgba(255,255,255,.5)">2 место</label><input type="number" id="lbReward2" value="30" step="1" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;text-align:center"></div>
-                    <div><label style="font-size:10px;color:rgba(255,255,255,.5)">3 место</label><input type="number" id="lbReward3" value="20" step="1" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;text-align:center"></div>
-                    <div><label style="font-size:10px;color:rgba(255,255,255,.5)">4 место</label><input type="number" id="lbReward4" value="10" step="1" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;text-align:center"></div>
-                    <div><label style="font-size:10px;color:rgba(255,255,255,.5)">5 место</label><input type="number" id="lbReward5" value="5" step="1" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;text-align:center"></div>
-                </div>
-                <button class="btn btn-primary" onclick="createLeaderboard()">Создать лидерборд</button>
+                <div class="detail-section-title" style="margin:8px 0 4px">Награды по местам</div>
+                <div id="lbRewardsContainer" style="display:flex;flex-direction:column;gap:10px"></div>
+                <button type="button" class="btn" style="margin-top:8px;background:rgba(255,255,255,.1)" onclick="addRewardRow()">+ Добавить место</button>
+                <button class="btn btn-primary" style="margin-top:8px" onclick="createLeaderboard()">Создать лидерборд</button>
             </div>
         </div>
         
@@ -646,7 +641,7 @@ function showSection(name){
     if(name === 'Dashboard') loadStats();
     if(name === 'Promo') loadPromoCodes();
     if(name === 'Withdrawals') loadWithdrawals();
-    if(name === 'Leaderboard') loadLeaderboards();
+    if(name === 'Leaderboard') { loadLeaderboards(); if($('lbRewardsContainer').children.length === 0) initLbRewards(); }
 }
 
 function showToast(msg, type){
@@ -788,17 +783,88 @@ function renderLeaderboards(configs){
     }).join('');
 }
 
+var lbGiftsLoaded = [];
+var rewardRowCount = 0;
+
+async function loadLbGifts(){
+    if(lbGiftsLoaded.length > 0) return;
+    try {
+        var r = await fetch('/data/gifts.json');
+        var data = await r.json();
+        lbGiftsLoaded = data.gifts || data || [];
+    } catch(e) { lbGiftsLoaded = []; }
+}
+
+function addRewardRow(pos, type, amount, giftId){
+    rewardRowCount++;
+    var position = pos || rewardRowCount;
+    var rewardType = type || 'ton';
+    var tonVal = (type === 'ton' && amount) ? amount : (position === 1 ? 50 : position === 2 ? 30 : position === 3 ? 20 : position === 4 ? 10 : 5);
+    var giftVal = giftId || '';
+    
+    var row = document.createElement('div');
+    row.className = 'lb-reward-row';
+    row.dataset.pos = position;
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;padding:8px;background:rgba(0,0,0,.2);border-radius:10px';
+    row.innerHTML = 
+        '<span style="min-width:50px;font-size:12px;color:rgba(255,255,255,.6)">' + position + ' место</span>' +
+        '<select class="lb-type-sel" onchange="onRewardTypeChange(this)" style="flex:0 0 80px;padding:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:12px">' +
+            '<option value="ton"' + (rewardType === 'ton' ? ' selected' : '') + '>TON</option>' +
+            '<option value="gift"' + (rewardType === 'gift' ? ' selected' : '') + '>Подарок</option>' +
+        '</select>' +
+        '<input type="number" class="lb-ton-input" value="' + tonVal + '" step="1" placeholder="TON" style="flex:1;padding:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:12px;display:' + (rewardType === 'ton' ? 'block' : 'none') + '">' +
+        '<select class="lb-gift-sel" style="flex:1;padding:8px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:12px;display:' + (rewardType === 'gift' ? 'block' : 'none') + '"><option value="">Выберите подарок</option></select>' +
+        '<button type="button" onclick="this.parentElement.remove()" style="padding:6px 10px;background:rgba(249,105,153,.2);color:#F96999;border:none;border-radius:6px;cursor:pointer;font-size:12px">✕</button>';
+    
+    $('lbRewardsContainer').appendChild(row);
+    
+    // Populate gift select
+    var giftSel = row.querySelector('.lb-gift-sel');
+    lbGiftsLoaded.forEach(function(g) {
+        var opt = document.createElement('option');
+        opt.value = g.id || g.gift_key || '';
+        opt.textContent = g.name || 'Gift';
+        if(String(opt.value) === String(giftVal)) opt.selected = true;
+        giftSel.appendChild(opt);
+    });
+}
+
+function onRewardTypeChange(sel){
+    var row = sel.closest('.lb-reward-row');
+    var tonInput = row.querySelector('.lb-ton-input');
+    var giftSel = row.querySelector('.lb-gift-sel');
+    if(sel.value === 'ton'){
+        tonInput.style.display = 'block';
+        giftSel.style.display = 'none';
+    } else {
+        tonInput.style.display = 'none';
+        giftSel.style.display = 'block';
+    }
+}
+
+function initLbRewards(){
+    loadLbGifts().then(function(){
+        [1,2,3,4,5].forEach(function(p){ addRewardRow(p, 'ton'); });
+    });
+}
+
 async function createLeaderboard(){
     var title = $('lbTitle').value.trim() || 'Сезон';
     var periodStart = $('lbStart').value;
     var periodEnd = $('lbEnd').value;
-    var rewards = {
-        '1': parseFloat($('lbReward1').value) || 50,
-        '2': parseFloat($('lbReward2').value) || 30,
-        '3': parseFloat($('lbReward3').value) || 20,
-        '4': parseFloat($('lbReward4').value) || 10,
-        '5': parseFloat($('lbReward5').value) || 5
-    };
+    
+    var rewards = {};
+    document.querySelectorAll('.lb-reward-row').forEach(function(row){
+        var pos = row.dataset.pos;
+        var type = row.querySelector('.lb-type-sel').value;
+        if(type === 'ton'){
+            var amt = parseFloat(row.querySelector('.lb-ton-input').value) || 0;
+            rewards[pos] = {type: 'ton', amount: Math.round(amt * 100)};
+        } else {
+            var giftId = row.querySelector('.lb-gift-sel').value;
+            if(giftId) rewards[pos] = {type: 'gift', amount: giftId};
+        }
+    });
     
     if(!periodStart || !periodEnd){
         showToast('Укажите даты', 'err');
