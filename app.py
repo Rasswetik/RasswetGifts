@@ -5647,7 +5647,7 @@ def open_case():
                                      (ton_amount, user_id))
                         won_gift = {
                             'id': -1,
-                            'name': 'TON',
+                            'name': f'в­ђ {ton_amount} TON',
                             'image': '/static/img/tons/ton_1.svg',
                             'value': ton_amount,
                             'type': 'ton_balance',
@@ -10671,7 +10671,7 @@ def get_case_gifts(case_id):
             if gift_info.get('type') == 'ton_balance':
                 result.append({
                     'id': -1,
-                    'name': 'TON',
+                    'name': f"в­ђ {gift_info.get('ton_amount', 0)} Stars",
                     'image': '/static/img/tons/ton_1.svg',
                     'chance': gift_info.get('chance', 1),
                     'type': 'ton_balance',
