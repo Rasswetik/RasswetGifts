@@ -574,32 +574,90 @@
             background:rgba(0,0,0,.85);
             backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
             z-index:400;
-            display:none;align-items:flex-end;justify-content:center;
+            display:flex;align-items:center;justify-content:center;
+            opacity:0;visibility:hidden;
+            transition:opacity .3s,visibility .3s;
         }
-        .deposit-overlay.open{display:flex}
-        .deposit-sheet{
-            width:100%;max-width:480px;
-            background:var(--surface);
-            border-radius:24px 24px 0 0;
-            padding:20px 16px calc(env(safe-area-inset-bottom,0) + 24px);
+        .deposit-overlay.open{opacity:1;visibility:visible}
+        .deposit-modal{
+            background:linear-gradient(180deg,#161923,#0F1219);border-radius:24px;
+            width:90%;max-width:360px;padding:24px 20px;
+            transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);
+            border:1px solid rgba(255,255,255,.1);
         }
-        .deposit-handle{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 20px}
-        .deposit-title{font-size:18px;font-weight:700;text-align:center;margin-bottom:20px}
-        .deposit-amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
-        .deposit-amt{
-            padding:16px;border-radius:14px;border:none;
-            background:rgba(255,255,255,.04);
-            text-align:center;cursor:pointer;transition:all .2s;
+        .deposit-overlay.open .deposit-modal{transform:scale(1)}
+        .deposit-header{
+            display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;
         }
-        .deposit-amt:hover,.deposit-amt.selected{border-color:var(--blue);background:rgba(0,152,234,.15)}
-        .deposit-amt-val{font-size:18px;font-weight:700;color:var(--blue)}
-        .deposit-btn{
-            width:100%;padding:16px;border-radius:14px;border:none;
-            background:linear-gradient(135deg,#0098EA,#0077CC);
-            color:#fff;font-family:inherit;font-size:16px;font-weight:700;
-            cursor:pointer;
+        .deposit-title{
+            font-weight:800;font-size:18px;color:#fff;
+        }
+        .deposit-close{
+            width:32px;height:32px;border-radius:10px;border:none;
+            background:rgba(249,105,153,.15);cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:all .2s;
+        }
+        .deposit-close:hover{background:rgba(249,105,153,.25)}
+        .deposit-close img{width:14px;height:14px}
+        .deposit-methods{display:flex;gap:12px}
+        .deposit-method-btn{
+            flex:1;padding:20px 14px;border-radius:16px;border:none;
+            background:rgba(255,255,255,.04);cursor:pointer;
+            display:flex;flex-direction:column;align-items:center;gap:10px;
+            transition:all .2s;border:2px solid rgba(255,255,255,.06);
+        }
+        .deposit-method-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);transform:translateY(-2px)}
+        .deposit-method-btn:active{transform:scale(.97)}
+        .deposit-method-btn img{width:48px;height:48px;object-fit:contain}
+        .deposit-method-btn span{font-weight:700;font-size:13px;color:#fff}
+        .deposit-method-btn.disabled{opacity:.35;pointer-events:none;filter:grayscale(1)}
+
+        /* ═══════════ STARS DEPOSIT OVERLAY ═══════════ */
+        .stars-deposit-overlay{
+            position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:450;
+            display:flex;align-items:center;justify-content:center;
+            opacity:0;visibility:hidden;backdrop-filter:blur(8px);
+            transition:opacity .3s,visibility .3s;
+        }
+        .stars-deposit-overlay.show{opacity:1;visibility:visible}
+        .stars-deposit-modal{
+            background:linear-gradient(180deg,#161923,#0F1219);border-radius:24px;
+            width:92%;max-width:380px;overflow:hidden;
+            transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);
+            border:1px solid rgba(255,255,255,.1);
+        }
+        .stars-deposit-overlay.show .stars-deposit-modal{transform:scale(1)}
+        .stars-deposit-header{
+            display:flex;align-items:center;justify-content:space-between;
+            padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);
+        }
+        .stars-deposit-title{font-weight:800;font-size:16px;color:#fff}
+        .stars-deposit-close{
+            width:32px;height:32px;border-radius:50%;border:none;
+            background:rgba(249,105,153,.15);cursor:pointer;
+            display:flex;align-items:center;justify-content:center;transition:background .2s;
+        }
+        .stars-deposit-body{
+            padding:20px;display:flex;flex-direction:column;align-items:center;gap:16px;
+        }
+        .stars-deposit-icon{width:64px;height:64px}
+        .stars-deposit-label{text-align:center;color:rgba(255,255,255,.6);font-size:13px;line-height:1.5}
+        .stars-deposit-input-wrap{
+            width:100%;background:rgba(255,255,255,.05);border-radius:14px;padding:4px;
+        }
+        .stars-deposit-input{
+            width:100%;padding:14px;border:none;border-radius:12px;
+            background:transparent;color:#fff;font-size:20px;font-weight:700;
+            text-align:center;font-family:inherit;
+        }
+        .stars-deposit-pay-btn{
+            width:100%;padding:14px;border-radius:14px;border:none;
+            background:linear-gradient(135deg,#FFD700,#FFA500);
+            color:#000;font-size:15px;font-weight:700;cursor:pointer;
             display:flex;align-items:center;justify-content:center;gap:8px;
         }
+        .stars-deposit-pay-btn img{width:20px;height:20px}
 
         /* ═══════════ TOAST ═══════════ */
         .toast{
@@ -756,35 +814,45 @@
         </div>
     </div>
 
-    <!-- DEPOSIT OVERLAY -->
-    <div class="deposit-overlay" id="depositOverlay" onclick="closeDeposit(event)">
-        <div class="deposit-sheet" onclick="event.stopPropagation()">
-            <div class="deposit-handle"></div>
-            <div class="deposit-title">Пополнить баланс</div>
-            <div class="deposit-amounts" id="depositAmounts">
-                <div class="deposit-amt" data-ton="1" onclick="selectDeposit(this)">
-                    <div class="deposit-amt-val">1 TON</div>
-                </div>
-                <div class="deposit-amt" data-ton="5" onclick="selectDeposit(this)">
-                    <div class="deposit-amt-val">5 TON</div>
-                </div>
-                <div class="deposit-amt selected" data-ton="10" onclick="selectDeposit(this)">
-                    <div class="deposit-amt-val">10 TON</div>
-                </div>
-                <div class="deposit-amt" data-ton="25" onclick="selectDeposit(this)">
-                    <div class="deposit-amt-val">25 TON</div>
-                </div>
-                <div class="deposit-amt" data-ton="50" onclick="selectDeposit(this)">
-                    <div class="deposit-amt-val">50 TON</div>
-                </div>
-                <div class="deposit-amt" data-ton="100" onclick="selectDeposit(this)">
-                    <div class="deposit-amt-val">100 TON</div>
-                </div>
+    <!-- DEPOSIT METHOD SELECTOR -->
+    <div class="deposit-overlay" id="depositOverlay">
+        <div class="deposit-modal">
+            <div class="deposit-header">
+                <div class="deposit-title">Пополнить баланс</div>
+                <button class="deposit-close" onclick="closeDeposit()"><img src="/static/img/exit.png" alt=""></button>
             </div>
-            <button class="deposit-btn" onclick="processDeposit()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                Оплатить через TON
-            </button>
+            <div class="deposit-methods">
+                <button class="deposit-method-btn" onclick="closeDeposit();openTonDeposit()">
+                    <img src="/static/img/ton.png" alt="TON" onerror="this.src='/static/img/plus.png'">
+                    <span>TON</span>
+                </button>
+                <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDeposit();openStarsDeposit()">
+                    <img src="/static/img/star.png" alt="Stars">
+                    <span>Stars</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STARS DEPOSIT OVERLAY -->
+    <div class="stars-deposit-overlay" id="starsDepositOverlay">
+        <div class="stars-deposit-modal">
+            <div class="stars-deposit-header">
+                <div class="stars-deposit-title">Пополнить Stars</div>
+                <button class="stars-deposit-close" onclick="closeStarsDeposit()"><img src="/static/img/exit.png" alt=""></button>
+            </div>
+            <div class="stars-deposit-body">
+                <img class="stars-deposit-icon" src="/static/img/star.png" alt="Stars">
+                <div class="stars-deposit-label">Введите количество Stars<br>100 Stars = 1 TON</div>
+                <div class="stars-deposit-input-wrap">
+                    <input type="number" class="stars-deposit-input" id="starsDepositAmount" placeholder="100" min="1" max="10000" value="100">
+                </div>
+                <button class="stars-deposit-pay-btn" id="starsPayBtn" onclick="payWithStars()">
+                    <img src="/static/img/star.png" alt="">
+                    Оплатить <span id="starsPayAmount">100</span> Stars
+                </button>
+                <div id="starsDepositError" style="color:#E8527A;font-size:12px;display:none"></div>
+            </div>
         </div>
     </div>
 
@@ -1049,7 +1117,7 @@
             const track = $('feedTrack');
             const items = [...wins, ...wins].map(w => `
                 <div class="feed-item">
-                    <img src="${w.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
+                    <img src="${w.gift_image || w.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
                 </div>
             `).join('');
             track.innerHTML = items;
@@ -1458,23 +1526,105 @@
         });
 
         function openDeposit() {
+            // Check if Stars button should be disabled
+            const starsBtn = $('starsDepositBtn');
+            if(starsBtn){
+                if(!tg){
+                    starsBtn.classList.add('disabled');
+                    starsBtn.onclick = null;
+                } else {
+                    starsBtn.classList.remove('disabled');
+                    starsBtn.onclick = function(){ closeDeposit(); openStarsDeposit(); };
+                }
+            }
             $('depositOverlay').classList.add('open');
         }
 
-        function closeDeposit(e) {
-            if (e && e.target !== $('depositOverlay')) return;
+        function closeDeposit() {
             $('depositOverlay').classList.remove('open');
         }
 
-        function selectDeposit(el) {
-            document.querySelectorAll('.deposit-amt').forEach(a => a.classList.remove('selected'));
-            el.classList.add('selected');
-            selectedDeposit = parseInt(el.dataset.ton);
+        function openTonDeposit() {
+            // Redirect to crash page TON deposit or show message
+            showToast('TON депозит доступен в разделе Краш', 'ok');
+            window.location.href = '/crash';
         }
 
-        async function processDeposit() {
-            showToast('Депозит скоро будет доступен', 'ok');
-            closeDeposit();
+        function openStarsDeposit() {
+            if(!tg){
+                showToast('Stars депозит только в Telegram', 'err');
+                return;
+            }
+            $('starsDepositOverlay').classList.add('show');
+            $('starsDepositError').style.display = 'none';
+        }
+
+        function closeStarsDeposit() {
+            $('starsDepositOverlay').classList.remove('show');
+        }
+
+        // Update stars pay button on input
+        $('starsDepositAmount').addEventListener('input', function(){
+            var v = parseInt(this.value) || 0;
+            $('starsPayAmount').textContent = v > 0 ? v : '0';
+        });
+
+        // Stars overlay click outside
+        $('starsDepositOverlay').addEventListener('click', function(e){
+            if(e.target === this) closeStarsDeposit();
+        });
+        $('depositOverlay').addEventListener('click', function(e){
+            if(e.target === this) closeDeposit();
+        });
+
+        async function payWithStars() {
+            const amount = parseInt($('starsDepositAmount').value) || 0;
+            if(amount < 1 || amount > 10000){
+                $('starsDepositError').textContent = 'Введите от 1 до 10000 Stars';
+                $('starsDepositError').style.display = 'block';
+                return;
+            }
+            $('starsDepositError').style.display = 'none';
+            $('starsPayBtn').disabled = true;
+            $('starsPayBtn').textContent = 'Загрузка...';
+
+            try {
+                const res = await fetch('/api/stars/create-invoice', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({user_id: userId, amount: amount})
+                });
+                const data = await res.json();
+                if(data.success && data.invoice_link){
+                    if(tg && tg.openInvoice){
+                        tg.openInvoice(data.invoice_link, function(status){
+                            if(status === 'paid'){
+                                showToast('Оплата успешна! +' + amount + ' Stars', 'ok');
+                                closeStarsDeposit();
+                                loadUser();
+                            } else if(status === 'cancelled'){
+                                showToast('Оплата отменена', 'err');
+                            }
+                            $('starsPayBtn').disabled = false;
+                            $('starsPayBtn').innerHTML = '<img src="/static/img/star.png" alt=""> Оплатить <span id="starsPayAmount">' + amount + '</span> Stars';
+                        });
+                    } else {
+                        window.open(data.invoice_link, '_blank');
+                        $('starsPayBtn').disabled = false;
+                        $('starsPayBtn').innerHTML = '<img src="/static/img/star.png" alt=""> Оплатить <span id="starsPayAmount">' + amount + '</span> Stars';
+                    }
+                } else {
+                    $('starsDepositError').textContent = data.error || 'Ошибка создания счета';
+                    $('starsDepositError').style.display = 'block';
+                    $('starsPayBtn').disabled = false;
+                    $('starsPayBtn').innerHTML = '<img src="/static/img/star.png" alt=""> Оплатить <span id="starsPayAmount">' + amount + '</span> Stars';
+                }
+            } catch(e) {
+                $('starsDepositError').textContent = 'Ошибка сети';
+                $('starsDepositError').style.display = 'block';
+                $('starsPayBtn').disabled = false;
+                $('starsPayBtn').innerHTML = '<img src="/static/img/star.png" alt=""> Оплатить <span id="starsPayAmount">' + amount + '</span> Stars';
+            }
         }
 
         function showToast(msg, type = 'ok') {

@@ -12596,12 +12596,111 @@ document.addEventListener('click', function _initMusicOnce(){
 (function(){
     /* ===== GLOBAL GIFT IMAGE RESOLVER ===== */
     var FRAGMENT_GIFTS_BASE = 'https://fragment.com/file/gifts/';
+    var LOCAL_GIFTS_BASE = '/static/gifs/gifts/';
+    
+    /* Mapping of gift slugs/names to local file names */
+    var LOCAL_GIFT_MAP = {
+        'victorymedal': 'vm.png',
+        'rarebird': 'rb.png',
+        'prettyposy': 'pp.png',
+        'astral_shard': 'Astral_Shard.png',
+        'astralshard': 'Astral_Shard.png',
+        'bdaycandle': 'BDCandle.png',
+        'birthdaycandle': 'BDCandle.png',
+        'candycane': 'CandyCane.png',
+        'cloverpin': 'clover_pin.gif',
+        'cookieheart': 'CookieHeart.png',
+        'crystalball': 'Crystal_Ball.png',
+        'cupidcharm': 'Cupid_Charm.png',
+        'deskcalendar': 'calendar.gif',
+        'calendar': 'calendar.gif',
+        'diamondring': 'Diamond_Ring.png',
+        'durovcap': 'cap.png',
+        'durovscap': 'cap.png',
+        'electricskull': 'electric_skull.gif',
+        'eternalcandle': 'Eternal_Candle.png',
+        'eternalrose': 'EternalRose.png',
+        'faithamulet': 'Faith_Amulet.png',
+        'genielamp': 'Genie_Lamp.gif',
+        'gingercookie': 'Ginger_Cookie.png',
+        'happybrownie': 'Happy_Brownie.png',
+        'hangingstar': 'hstarr.gif',
+        'heroichelmet': 'heroic_helmet.gif',
+        'hexpot': 'Hex_Pot.png',
+        'holidaydrink': 'Holiday_Drink.png',
+        'homemadecake': 'hmcake.gif',
+        'icecream': 'ice_cream.gif',
+        'inputkey': 'input_key.gif',
+        'instantramen': 'ramen.png',
+        'ionicdryer': 'ionic_dryer.gif',
+        'iongem': 'Ion_Gem.gif',
+        'jellybunny': 'Jelly_Bunny.png',
+        'jinglebells': 'JingleBells.png',
+        'kissedfrog': 'Kissed_Frog.gif',
+        'lightsword': 'light_sword.gif',
+        'lolpop': 'lolpop.gif',
+        'lootbag': 'Loot_Bag.gif',
+        'lovecandle': 'Love_candle.gif',
+        'lunarsnake': 'LunarSnake.png',
+        'madpumpkin': 'mad_pumpkin.png',
+        'magicpotion': 'Magic_Potion.gif',
+        'mightyarm': 'Mighty_Arm.gif',
+        'minioscar': 'Mini_Oscar.gif',
+        'moussecake': 'Mousse_Cake.gif',
+        'nailbracelet': 'Nail_Bracelet.gif',
+        'nekohelmet': 'Neko_Helmet.png',
+        'partysparkler': 'PartySparkler.png',
+        'perfumebottle': 'perfume_bottle.gif',
+        'petsnake': 'Pet_Snake.png',
+        'plushpepe': 'Plush_Pepe.png',
+        'preciouspeach': 'PreciousPeach.png',
+        'recordplayer': 'Record_Player.png',
+        'record': 'Record_Player.png',
+        'sakuraflower': 'Sakura_Flower.png',
+        'santahat': 'santahat.png',
+        'scaredcat': 'scared_cat.gif',
+        'sharptongue': 'Sharp_Tongue.gif',
+        'signetring': 'Signet_Ring.gif',
+        'skystilettos': 'Sky_Stilettos.gif',
+        'sleighbell': 'SleighBell.png',
+        'snoopcsigar': 'Snoop_sigar.gif',
+        'vintagecigar': 'vintage_cigar.gif',
+        'snowglobe': 'SnowGlobe.png',
+        'snowmittens': 'SnowMittens.png',
+        'socks': 'Socks.gif',
+        'spyagaric': 'Spy_Agaric.png',
+        'star': 'star.gif',
+        'submitbutton': 'Submit_Button.png',
+        'swisswatch': 'swiss_watch.png',
+        'toybear': 'Toy_Bear.gif',
+        'valentinebear': 'valentine_bear.png',
+        'valentinebox': 'valentine_box.png',
+        'valentineheart': 'Valentine_heart.png',
+        'voodoodoll': 'voodoo_doll.png',
+        'westsidesign': 'Westside_Sign.gif',
+        'whipcupcake': 'Whip_Cupcake.gif',
+        'winterwreath': 'WInterWreath.png',
+        'xmasstocking': 'Xmas_Stocking.gif',
+        'bowtie': 'bow_tie.gif',
+        'bondedring': 'Bonded_Ring.gif',
+        'heartlocket': 'hl.gif',
+        'artisanbrick': 'Artisan_Brick.gif',
+        'bigyear': 'Big_Year.png',
+        'uranus': 'uranus.png',
+        'zombierider': 'ZombieRider.png',
+        'adulttasks': 'AdultTasks.png',
+        'barkslightyear': 'Barks_Lightyear.png',
+        'basket': 'Basket.png',
+        'bastet': 'Bastet.png',
+        'clownwars': 'ClownWars.png'
+    };
+    
     function _toSafeString(v){ return (v === undefined || v === null) ? '' : String(v); }
     function _isHttpUrl(v){ return /^https?:\/\//i.test(_toSafeString(v)); }
     function _normalizeGiftImageUrl(v){
         var s = _toSafeString(v);
         if(!s) return s;
-        return s.replace(/\.gif(\?.*)?$/i, '.png$1');
+        return s;
     }
     function _slugifyGiftName(name){
         return _toSafeString(name)
@@ -12616,6 +12715,15 @@ document.addEventListener('click', function _initMusicOnce(){
             var parsed = JSON.parse(raw);
             return (parsed && typeof parsed === 'object') ? parsed : {};
         } catch(e){ return {}; }
+    }
+    function _getLocalGiftUrl(gift){
+        if(!gift || typeof gift !== 'object') return '';
+        var slug = _toSafeString(gift.fragment_slug || gift.fragmentSlug || '').trim().toLowerCase();
+        if(!slug) slug = _slugifyGiftName(gift.name);
+        if(!slug) return '';
+        var localFile = LOCAL_GIFT_MAP[slug];
+        if(localFile) return LOCAL_GIFTS_BASE + localFile;
+        return '';
     }
     function _getManualGiftUrl(gift){
         if(!gift || typeof gift !== 'object') return '';
@@ -12655,6 +12763,9 @@ document.addEventListener('click', function _initMusicOnce(){
                 }
                 return _normalizeGiftImageUrl(gift.image) || fb;
             }
+            /* Priority: local files > manual overrides > fragment */
+            var local = _getLocalGiftUrl(gift);
+            if(local) return local;
             var manual = _getManualGiftUrl(gift);
             if(manual) return manual;
             var fragment = _getFragmentGiftUrl(gift);
