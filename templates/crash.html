@@ -3587,9 +3587,18 @@ tc-root *{pointer-events:auto}
         })(i);
     }
 
-    /* Set real progress — only goes forward */
+    /* Simulated progress 0→35% while waiting for real init */
+    var simId = setInterval(function(){
+        if(window._ldP >= 35){ clearInterval(simId); return; }
+        window._ldP += 0.4;
+        if(bar) bar.style.width = window._ldP + '%';
+        if(txt) txt.textContent = 'LOADING ' + Math.round(window._ldP) + '%';
+    }, 100);
+
+    /* Set real progress — only goes forward, stops sim when overtaking */
     window._ldUpdate = function(pct){
         if(pct <= window._ldP) return;
+        if(simId){ clearInterval(simId); simId = null; }
         window._ldP = pct;
         if(bar) bar.style.width = pct + '%';
         if(txt) txt.textContent = 'LOADING ' + Math.round(pct) + '%';
@@ -8758,7 +8767,6 @@ function renderSettings(){
             return '<div class="settings-item' + (isActive ? ' active' : '') + (isUnlocked ? '' : ' locked-skin') + '" onclick="selectBg(\'' + bgId + '\')" style="padding:6px">' +
                 '<div style="width:60px;height:60px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.2);box-shadow:0 0 8px rgba(255,255,255,.08)">' + svg + '</div>' +
             '</div>';
-            }
         }).join('');
     }
 }
