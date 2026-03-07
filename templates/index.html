@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#090B11">
+    <meta name="theme-color" content="#1A1E2A">
     <title>Rasswet Gifts - Кейсы</title>
     <link rel="icon" type="image/png" href="/static/img/logo.png">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -15,10 +15,10 @@
         html{font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
         
         :root{
-            --bg:#090B11;
-            --surface:#161923;
-            --surface-2:#1A1E2A;
-            --border:rgba(255,255,255,.05);
+            --bg:#1A1E2A;
+            --surface:#242936;
+            --surface-2:#2C3142;
+            --border:rgba(255,255,255,.06);
             --text:#fff;
             --text-2:#828AA4;
             --primary:#0098EA;
@@ -34,11 +34,18 @@
             min-height:100vh;
             overflow-x:hidden;
         }
+        body::before{
+            content:'';position:fixed;inset:0;
+            background:
+                radial-gradient(circle at 20% 50%,rgba(140,160,190,.08) 0%,transparent 50%),
+                radial-gradient(circle at 80% 50%,rgba(140,160,190,.06) 0%,transparent 50%);
+            z-index:-1;
+        }
 
         /* ═══════════ LOADING ═══════════ */
         .loader{
             position:fixed;inset:0;
-            background:#0e1015;
+            background:#1A1E2A;
             z-index:9999;
             display:flex;flex-direction:column;
             align-items:center;justify-content:center;
@@ -56,9 +63,9 @@
             position:fixed;top:env(safe-area-inset-top,0);left:50%;transform:translateX(-50%);
             z-index:100;width:100%;max-width:480px;
             height:56px;padding:0 16px;
-            background:rgba(9,11,17,.95);
-            backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-            border-bottom:1px solid var(--border);
+            background:rgba(26,30,42,.85);
+            backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+            border-bottom:1px solid rgba(255,255,255,.05);
             display:flex;align-items:center;gap:10px;
         }
         .h-online{
@@ -88,7 +95,7 @@
         /* ═══════════ MAIN ═══════════ */
         .main{
             max-width:480px;margin:0 auto;
-            padding:calc(env(safe-area-inset-top,0) + 90px) 16px 100px;
+            padding:calc(env(safe-area-inset-top,0) + 100px) 16px 100px;
         }
 
         /* ═══════════ LIVE FEED ═══════════ */
@@ -114,15 +121,18 @@
         }
         .feed-track{
             display:flex;gap:8px;
-            animation:feedScroll 30s linear infinite;
+            /* Static until new wins - no auto-scroll animation */
         }
-        @keyframes feedScroll{
-            0%{transform:translateX(0)}
-            100%{transform:translateX(-50%)}
+        @keyframes feedScrollIn{
+            0%{transform:translateX(-44px);opacity:0}
+            100%{transform:translateX(0);opacity:1}
+        }
+        .feed-track .feed-item.new{
+            animation:feedScrollIn .4s ease;
         }
         .feed-item{
             width:36px;height:36px;
-            background:rgba(255,255,255,.06);
+            background:rgba(255,255,255,.04);
             border-radius:8px;
             padding:4px;flex-shrink:0;
         }
@@ -201,10 +211,10 @@
 
         .case-img{
             flex:1;display:flex;align-items:center;justify-content:center;
-            padding:8px;min-height:100px;
+            padding:8px;min-height:120px;
         }
         .case-img img{
-            width:100%;max-width:110px;height:auto;
+            width:100%;max-width:140px;height:auto;
             object-fit:contain;
             transition:transform .3s;
             filter:drop-shadow(0 8px 16px rgba(0,0,0,.4));
@@ -216,9 +226,9 @@
             position:fixed;bottom:0;left:50%;transform:translateX(-50%);
             z-index:100;width:100%;max-width:480px;
             height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);
-            background:rgba(9,11,17,.98);
-            backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-            border-top:1px solid var(--border);
+            background:rgba(26,30,42,.85);
+            backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+            border-top:1px solid rgba(255,255,255,.05);
             display:flex;align-items:center;justify-content:space-around;
         }
         .bnav a{
@@ -297,7 +307,7 @@
         .roulette-item{
             flex-shrink:0;width:110px;height:150px;
             background:rgba(255,255,255,.04);
-            border:1px solid var(--border);
+            border:none;
             border-radius:14px;
             padding:10px;
             display:flex;flex-direction:column;align-items:center;
@@ -374,16 +384,16 @@
         }
         .modal-win-btn{
             flex:1;padding:14px;border-radius:14px;
-            border:1px solid var(--border);
+            border:none;
             background:rgba(255,255,255,.04);
-            color:var(--text);
+            color:#fff;
             font-family:inherit;font-size:14px;font-weight:600;
             cursor:pointer;transition:all .2s;
         }
-        .modal-win-btn:hover{background:rgba(255,255,255,.08)}
+        .modal-win-btn:hover{background:rgba(255,255,255,.1)}
         .modal-win-btn.primary{
             background:linear-gradient(135deg,var(--accent),#19A93A);
-            border:none;color:#090B11;
+            border:none;color:#fff;
         }
 
         /* ═══════════ PROMO INPUT ═══════════ */
@@ -403,10 +413,10 @@
         }
         .promo-input{
             flex:1;padding:12px 14px;
-            background:rgba(0,0,0,.3);
+            background:rgba(255,255,255,.04);
             border:1px solid rgba(255,255,255,.1);
             border-radius:12px;
-            color:var(--text);
+            color:#fff;
             font-family:inherit;font-size:14px;font-weight:600;
             text-transform:uppercase;
             letter-spacing:1px;
@@ -485,7 +495,7 @@
             background:var(--blue);
             border-radius:50%;
             cursor:pointer;
-            border:3px solid var(--surface);
+            border:3px solid #fff;
             box-shadow:0 2px 8px rgba(0,152,234,.4);
             transition:transform .2s;
         }
@@ -497,7 +507,7 @@
             background:var(--blue);
             border-radius:50%;
             cursor:pointer;
-            border:3px solid var(--surface);
+            border:3px solid #fff;
             box-shadow:0 2px 8px rgba(0,152,234,.4);
         }
         input[type="range"]::-webkit-slider-runnable-track{
@@ -521,7 +531,7 @@
         }
         .content-item{
             background:rgba(255,255,255,.04);
-            border:1px solid var(--border);
+            border:none;
             border-radius:16px;
             padding:14px;
             display:flex;flex-direction:column;
@@ -541,7 +551,7 @@
             margin-bottom:10px;
         }
         .content-price{
-            display:inline-flex;align-items:center;justify-content:center;gap:5px;
+            display:inline-flex;align-items:center;justify-content:center;gap:4px;
             padding:6px 12px;
             background:rgba(0,152,234,.12);
             border-radius:10px;
@@ -550,7 +560,13 @@
             margin-top:auto;
             line-height:1;
         }
-        .content-price img{width:14px;height:14px;flex-shrink:0;display:inline-block}
+        .content-price img{width:14px;height:14px;flex-shrink:0;vertical-align:middle}
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:rgba(255,255,255,.02);border-radius:3px}
+        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+        ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
 
         /* ═══════════ DEPOSIT OVERLAY ═══════════ */
         .deposit-overlay{
@@ -571,11 +587,11 @@
         .deposit-title{font-size:18px;font-weight:700;text-align:center;margin-bottom:20px}
         .deposit-amounts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
         .deposit-amt{
-            padding:16px;border-radius:14px;border:1px solid var(--border);
+            padding:16px;border-radius:14px;border:none;
             background:rgba(255,255,255,.04);
             text-align:center;cursor:pointer;transition:all .2s;
         }
-        .deposit-amt:hover,.deposit-amt.selected{border-color:var(--blue);background:rgba(0,152,234,.1)}
+        .deposit-amt:hover,.deposit-amt.selected{border-color:var(--blue);background:rgba(0,152,234,.15)}
         .deposit-amt-val{font-size:18px;font-weight:700;color:var(--blue)}
         .deposit-btn{
             width:100%;padding:16px;border-radius:14px;border:none;
@@ -589,7 +605,7 @@
         .toast{
             position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);
             padding:12px 20px;border-radius:12px;
-            background:var(--surface-2);border:1px solid var(--border);
+            background:var(--surface);border:none;
             font-size:13px;font-weight:600;
             z-index:9999;
             opacity:0;visibility:hidden;
@@ -916,8 +932,8 @@
         async function init() {
             if (tg) {
                 tg.expand();
-                tg.setHeaderColor('#090B11');
-                tg.setBackgroundColor('#090B11');
+                tg.setHeaderColor('#1A1E2A');
+                tg.setBackgroundColor('#1A1E2A');
                 tg.ready();
                 userId = tg.initDataUnsafe?.user?.id;
             }
@@ -1076,7 +1092,6 @@
                 <div class="cases">
                     ${filtered.map(c => {
                         const grad = getGradient(c);
-                        const priceTon = starsToTon(c.cost || 0);
                         return `
                             <div class="case ${grad}" onclick="openCaseModal(${c.id})">
                                 <div class="case-glow"></div>
@@ -1084,7 +1099,7 @@
                                     <div class="case-prices">
                                         <div class="case-price ton">
                                             <img src="/static/img/ton.png" alt="">
-                                            ${formatTon(priceTon)}
+                                            ${formatTon(c.cost || 0)}
                                         </div>
                                     </div>
                                     <div class="case-img">
@@ -1117,12 +1132,15 @@
         function renderModal() {
             if (!currentCase) return;
             
-            const price = starsToTon(currentCase.cost || 0);
+            const price = currentCase.cost || 0;
             $('modalName').textContent = currentCase.name || 'Кейс';
             $('modalPrice').querySelector('span').textContent = formatTon(price);
 
-            const gifts = currentCase.gifts_details || currentCase.gifts || [];
+            const rawGifts = currentCase.gifts_details || currentCase.gifts || [];
             const isPromoCase = currentCase.promo === true;
+            
+            // Sort gifts by price (expensive first)
+            const gifts = [...rawGifts].sort((a, b) => getGiftPrice(b) - getGiftPrice(a));
             
             // Hide win section, show controls
             $('modalWin').style.display = 'none';

@@ -276,6 +276,44 @@ body::before{
 .empty-state img{width:64px;height:64px;opacity:.3;margin-bottom:16px}
 .empty-state-text{font-size:14px;font-weight:600}
 
+/* Withdrawal List */
+.withdrawal-list{display:flex;flex-direction:column;gap:8px}
+.withdrawal-card{
+    background:rgba(255,255,255,.04);border-radius:14px;padding:12px 14px;
+    border:1px solid rgba(255,255,255,.06);
+    display:flex;align-items:center;gap:12px;
+}
+.withdrawal-avatar{
+    width:44px;height:44px;border-radius:12px;overflow:hidden;
+    background:linear-gradient(135deg,#6B7A8D,#556270);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:16px;flex-shrink:0;
+}
+.withdrawal-avatar img{width:100%;height:100%;object-fit:cover}
+.withdrawal-info{flex:1;min-width:0}
+.withdrawal-gift{font-weight:700;font-size:14px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.withdrawal-meta{font-size:11px;color:rgba(255,255,255,.5);display:flex;gap:8px;margin-top:2px}
+.withdrawal-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.withdrawal-value{
+    display:flex;align-items:center;gap:4px;font-weight:700;font-size:14px;color:#fff;
+}
+.withdrawal-value img{width:16px;height:16px}
+.withdrawal-status{
+    font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;
+}
+.withdrawal-status.pending{background:rgba(255,193,7,.2);color:#FFC107}
+.withdrawal-status.approved{background:rgba(30,228,76,.15);color:#1EE44C}
+.withdrawal-status.rejected{background:rgba(249,105,153,.2);color:#F96999}
+.withdrawal-status.processing{background:rgba(0,152,234,.2);color:#0098EA}
+.withdrawal-actions{display:flex;gap:6px;margin-top:8px}
+.withdrawal-actions button{
+    padding:6px 12px;border-radius:8px;border:none;cursor:pointer;
+    font-size:11px;font-weight:700;transition:all .2s;
+}
+.withdrawal-actions .btn-approve{background:rgba(30,228,76,.2);color:#1EE44C}
+.withdrawal-actions .btn-reject{background:rgba(249,105,153,.2);color:#F96999}
+.withdrawal-actions button:active{transform:scale(.95)}
+
 /* Loading */
 .loading{
     display:flex;align-items:center;justify-content:center;padding:40px;
@@ -372,6 +410,61 @@ body::before{
         <button class="btn btn-primary" onclick="loadStats()">Обновить статистику</button>
     </div>
     
+    <!-- Withdrawals Section -->
+    <div class="section" id="sectionWithdrawals">
+        <div class="tabs">
+            <button class="tab active" onclick="filterWithdrawals('all')">Все</button>
+            <button class="tab" onclick="filterWithdrawals('pending')">Ожидают</button>
+            <button class="tab" onclick="filterWithdrawals('approved')">Одобрено</button>
+            <button class="tab" onclick="filterWithdrawals('rejected')">Отклонено</button>
+        </div>
+        <div id="withdrawalsList" class="withdrawal-list">
+            <div class="loading"></div>
+        </div>
+    </div>
+    
+    <!-- Leaderboard Section -->
+    <div class="section" id="sectionLeaderboard">
+        <div class="detail-section">
+            <div class="detail-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                Создать Лидерборд
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <input type="text" id="lbTitle" placeholder="Название (напр. Сезон 1)" value="Сезон 1" style="padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
+                <div style="display:flex;gap:10px">
+                    <div style="flex:1">
+                        <label style="font-size:10px;color:rgba(255,255,255,.5)">Начало</label>
+                        <input type="datetime-local" id="lbStart" style="width:100%;padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:12px">
+                    </div>
+                    <div style="flex:1">
+                        <label style="font-size:10px;color:rgba(255,255,255,.5)">Конец</label>
+                        <input type="datetime-local" id="lbEnd" style="width:100%;padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:12px">
+                    </div>
+                </div>
+                <div class="detail-section-title" style="margin:8px 0 4px">Награды по местам (TON)</div>
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+                    <div><label style="font-size:10px;color:rgba(255,255,255,.5)">1 место</label><input type="number" id="lbReward1" value="50" step="1" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;text-align:center"></div>
+                    <div><label style="font-size:10px;color:rgba(255,255,255,.5)">2 место</label><input type="number" id="lbReward2" value="30" step="1" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;text-align:center"></div>
+                    <div><label style="font-size:10px;color:rgba(255,255,255,.5)">3 место</label><input type="number" id="lbReward3" value="20" step="1" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;text-align:center"></div>
+                    <div><label style="font-size:10px;color:rgba(255,255,255,.5)">4 место</label><input type="number" id="lbReward4" value="10" step="1" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;text-align:center"></div>
+                    <div><label style="font-size:10px;color:rgba(255,255,255,.5)">5 место</label><input type="number" id="lbReward5" value="5" step="1" style="width:100%;padding:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:14px;text-align:center"></div>
+                </div>
+                <button class="btn btn-primary" onclick="createLeaderboard()">Создать лидерборд</button>
+            </div>
+        </div>
+        
+        <div class="detail-section">
+            <div class="detail-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Активные лидерборды
+            </div>
+            <div id="leaderboardsList" style="max-height:400px;overflow-y:auto">
+                <div class="loading"></div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Promo Section -->
     <div class="section" id="sectionPromo">
         <div class="detail-section">
@@ -430,6 +523,14 @@ body::before{
     <button class="bottom-nav-item" onclick="showSection('Settings')">
         <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         <span>Settings</span>
+    </button>
+    <button class="bottom-nav-item" onclick="showSection('Withdrawals')">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>Вывод</span>
+    </button>
+    <button class="bottom-nav-item" onclick="showSection('Leaderboard')">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span>Leaders</span>
     </button>
     <button class="bottom-nav-item" onclick="showSection('Promo')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
@@ -543,6 +644,8 @@ function showSection(name){
     if(name === 'Gifts' && allGifts.length === 0) loadGifts();
     if(name === 'Dashboard') loadStats();
     if(name === 'Promo') loadPromoCodes();
+    if(name === 'Withdrawals') loadWithdrawals();
+    if(name === 'Leaderboard') loadLeaderboards();
 }
 
 function showToast(msg, type){
@@ -555,6 +658,227 @@ function showToast(msg, type){
 }
 
 function formatTon(stars){ return (Number(stars || 0) / 100).toFixed(2); }
+
+// Withdrawals
+var allWithdrawals = [];
+var currentWithdrawalFilter = 'all';
+
+async function loadWithdrawals(status){
+    status = status || currentWithdrawalFilter;
+    $('withdrawalsList').innerHTML = '<div class="loading"></div>';
+    try{
+        var r = await fetch('/api/admin/withdrawals?admin_id=' + ADMIN_ID + '&status=' + status);
+        var d = await r.json();
+        if(d.success){
+            allWithdrawals = d.withdrawals || [];
+            renderWithdrawals(allWithdrawals);
+        } else {
+            $('withdrawalsList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Ошибка: ' + (d.error || 'Неизвестно') + '</div></div>';
+        }
+    }catch(e){
+        $('withdrawalsList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Ошибка загрузки</div></div>';
+    }
+}
+
+function filterWithdrawals(status){
+    currentWithdrawalFilter = status;
+    document.querySelectorAll('#sectionWithdrawals .tab').forEach(t => t.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    loadWithdrawals(status);
+}
+
+function renderWithdrawals(withdrawals){
+    if(!withdrawals.length){
+        $('withdrawalsList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Нет заявок на вывод</div></div>';
+        return;
+    }
+    $('withdrawalsList').innerHTML = withdrawals.map(w => {
+        var avatar = w.user_photo_url ? '<img src="' + w.user_photo_url + '" onerror="this.parentElement.innerHTML=\'' + (w.user_first_name||'U')[0].toUpperCase() + '\'">' : (w.user_first_name||'U')[0].toUpperCase();
+        var statusClass = w.status || 'pending';
+        var statusText = {pending:'Ожидает',approved:'Одобрено',rejected:'Отклонено',processing:'Обработка',error:'Ошибка'}[w.status] || w.status;
+        var actions = w.status === 'pending' ? '<div class="withdrawal-actions"><button class="btn-approve" onclick="approveWithdrawal(' + w.id + ')">✓ Одобрить</button><button class="btn-reject" onclick="rejectWithdrawal(' + w.id + ')">✗ Отклонить</button></div>' : '';
+        return '<div class="withdrawal-card">' +
+            '<div class="withdrawal-avatar">' + avatar + '</div>' +
+            '<div class="withdrawal-info">' +
+                '<div class="withdrawal-gift">' + escapeHtml(w.gift_name || '?') + '</div>' +
+                '<div class="withdrawal-meta"><span>@' + (w.telegram_username || 'unknown') + '</span><span>ID: ' + w.user_id + '</span></div>' +
+                actions +
+            '</div>' +
+            '<div class="withdrawal-right">' +
+                '<div class="withdrawal-value"><img src="/static/img/tons/ton_1.svg">' + formatTon(w.gift_value) + '</div>' +
+                '<span class="withdrawal-status ' + statusClass + '">' + statusText + '</span>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+async function approveWithdrawal(id){
+    if(!confirm('Одобрить вывод?')) return;
+    try{
+        var r = await fetch('/api/admin/update-withdrawal-status', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, withdrawal_id: id, status: 'approved'})
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Вывод одобрен', 'ok');
+            loadWithdrawals();
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+        }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function rejectWithdrawal(id){
+    if(!confirm('Отклонить вывод?')) return;
+    try{
+        var r = await fetch('/api/admin/update-withdrawal-status', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, withdrawal_id: id, status: 'rejected'})
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Вывод отклонен', 'ok');
+            loadWithdrawals();
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+        }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+// Leaderboard
+async function loadLeaderboards(){
+    $('leaderboardsList').innerHTML = '<div class="loading"></div>';
+    try{
+        var r = await fetch('/api/admin/leaderboard?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success && d.configs && d.configs.length){
+            renderLeaderboards(d.configs);
+        } else {
+            $('leaderboardsList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Нет лидербордов</div></div>';
+        }
+    }catch(e){
+        $('leaderboardsList').innerHTML = '<div class="empty-state"><div class="empty-state-text">Ошибка загрузки</div></div>';
+    }
+}
+
+function renderLeaderboards(configs){
+    $('leaderboardsList').innerHTML = configs.map(c => {
+        var statusBadge = c.is_active ? '<span style="background:rgba(30,228,76,.15);color:#1EE44C;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">АКТИВЕН</span>' : '<span style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.4);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700">НЕАКТИВЕН</span>';
+        var rewards = c.rewards || {};
+        var rewardsList = Object.keys(rewards).map(k => k + ': ' + rewards[k] + ' TON').join(', ') || 'Не указаны';
+        return '<div class="detail-row" style="position:relative;flex-direction:column;align-items:stretch;gap:8px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                '<div>' +
+                    '<div style="font-weight:700;color:#fff">' + escapeHtml(c.title || 'Лидерборд') + '</div>' +
+                    '<div style="font-size:11px;color:rgba(255,255,255,.5)">' + (c.period_start||'').slice(0,10) + ' — ' + (c.period_end||'').slice(0,10) + '</div>' +
+                '</div>' +
+                statusBadge +
+            '</div>' +
+            '<div style="font-size:11px;color:rgba(255,255,255,.4)">Награды: ' + rewardsList + '</div>' +
+            '<div style="display:flex;gap:6px">' +
+                (c.is_active ? '<button onclick="distributeLeaderboard(' + c.id + ')" style="flex:1;background:rgba(30,228,76,.2);color:#1EE44C;padding:8px;border-radius:8px;border:none;cursor:pointer;font-size:11px;font-weight:700">Раздать награды</button>' : '') +
+                (!c.is_active ? '<button onclick="activateLeaderboard(' + c.id + ')" style="flex:1;background:rgba(0,152,234,.2);color:#0098EA;padding:8px;border-radius:8px;border:none;cursor:pointer;font-size:11px;font-weight:700">Активировать</button>' : '') +
+                '<button onclick="deleteLeaderboard(' + c.id + ')" style="background:rgba(249,105,153,.2);color:#F96999;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;font-size:11px;font-weight:700">✗</button>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+async function createLeaderboard(){
+    var title = $('lbTitle').value.trim() || 'Сезон';
+    var periodStart = $('lbStart').value;
+    var periodEnd = $('lbEnd').value;
+    var rewards = {
+        '1': parseFloat($('lbReward1').value) || 50,
+        '2': parseFloat($('lbReward2').value) || 30,
+        '3': parseFloat($('lbReward3').value) || 20,
+        '4': parseFloat($('lbReward4').value) || 10,
+        '5': parseFloat($('lbReward5').value) || 5
+    };
+    
+    if(!periodStart || !periodEnd){
+        showToast('Укажите даты', 'err');
+        return;
+    }
+    
+    try{
+        var r = await fetch('/api/admin/leaderboard', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                admin_id: ADMIN_ID,
+                title: title,
+                period_start: periodStart,
+                period_end: periodEnd,
+                rewards: rewards
+            })
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Лидерборд создан', 'ok');
+            loadLeaderboards();
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+        }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function activateLeaderboard(id){
+    if(!confirm('Активировать этот лидерборд?')) return;
+    try{
+        var r = await fetch('/api/admin/leaderboard', {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, id: id, is_active: true})
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Активирован', 'ok');
+            loadLeaderboards();
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+        }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function deleteLeaderboard(id){
+    if(!confirm('Удалить лидерборд?')) return;
+    try{
+        var r = await fetch('/api/admin/leaderboard', {
+            method: 'DELETE',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, id: id})
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Удален', 'ok');
+            loadLeaderboards();
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+        }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function distributeLeaderboard(id){
+    if(!confirm('Раздать награды участникам этого лидерборда?\nЭто действие необратимо!')) return;
+    try{
+        var r = await fetch('/api/admin/leaderboard/distribute', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, id: id})
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Награды розданы!', 'ok');
+            loadLeaderboards();
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+        }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
 
 // Stats
 async function loadStats(){

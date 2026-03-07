@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#090B11">
-    <title>Rasswet Gifts - Топ</title>
+    <meta name="theme-color" content="#1A1E2A">
+    <title>Rasswet Gifts - Сезон</title>
     <link rel="icon" type="image/png" href="/static/img/logo.png">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -13,11 +13,11 @@
 
         *{margin:0;padding:0;box-sizing:border-box}
         :root{
-            --bg:#090B11;
-            --surface:#161923;
-            --border:rgba(255,255,255,.05);
+            --bg:#1A1E2A;
+            --surface:#242936;
+            --border:rgba(255,255,255,.06);
             --text:#fff;
-            --text-2:#828AA4;
+            --text-2:rgba(255,255,255,.5);
             --primary:#0098EA;
             --accent:#1EE44C;
             --gold:#FDA100;
@@ -28,105 +28,212 @@
             color:var(--text);
             min-height:100vh;
         }
+        body::before{
+            content:'';position:fixed;inset:0;
+            background:linear-gradient(180deg,#12151C 0%,#1A1E2A 50%,#0E1017 100%);
+            z-index:-1;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:rgba(255,255,255,.02);border-radius:3px}
+        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+        ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
+
         .header{
             position:fixed;top:env(safe-area-inset-top,0);left:50%;transform:translateX(-50%);
             z-index:100;width:100%;max-width:480px;
             height:56px;padding:0 16px;
-            background:rgba(9,11,17,.95);
-            backdrop-filter:blur(16px);
-            border-bottom:1px solid var(--border);
+            background:rgba(26,30,42,.85);
+            backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+            border-bottom:1px solid rgba(255,255,255,.05);
             display:flex;align-items:center;justify-content:center;
         }
         .header-title{font-size:18px;font-weight:700}
+        
         .main{
             max-width:480px;margin:0 auto;
             padding:calc(env(safe-area-inset-top,0) + 72px) 16px 100px;
         }
-        .period{
-            display:flex;align-items:center;justify-content:center;gap:12px;
-            padding:16px;margin-bottom:20px;
-            background:var(--surface);border:1px solid var(--border);
-            border-radius:16px;text-align:center;
+        
+        /* Season Banner */
+        .season-banner{
+            position:relative;
+            border-radius:20px;
+            overflow:hidden;
+            margin:0 0 16px;
+            background:linear-gradient(135deg,#1A3050,#0D1524);
+            border:none;
+            height:180px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:0;
         }
-        .period-label{font-size:12px;color:var(--text-2)}
-        .period-time{font-size:20px;font-weight:700;color:var(--gold)}
-        .prize-pool{
-            text-align:center;margin-bottom:24px;
+        .season-banner img{
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            filter:none;
         }
-        .prize-pool-label{font-size:12px;color:var(--text-2);margin-bottom:4px}
-        .prize-pool-val{
-            font-size:28px;font-weight:700;
-            background:linear-gradient(90deg,var(--gold),#FFD700);
-            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+        .season-timer{
+            position:absolute;
+            top:16px;
+            right:16px;
+            font-size:14px;
+            font-weight:700;
+            color:var(--gold);
+            text-shadow:0 0 12px rgba(253,161,0,.4);
         }
-        .top3{
-            display:flex;justify-content:center;align-items:flex-end;gap:12px;
-            margin-bottom:24px;
-        }
-        .top-card{
-            flex:1;max-width:110px;
-            background:var(--surface);border:1px solid var(--border);
-            border-radius:16px;padding:16px 8px;
-            text-align:center;
-        }
-        .top-card.first{
-            order:2;
-            background:linear-gradient(160deg,#3D3520,#1A1A14);
-            border-color:rgba(253,161,0,.3);
-            transform:scale(1.1);
-        }
-        .top-card.second{order:1}
-        .top-card.third{order:3}
-        .top-rank{
-            width:28px;height:28px;margin:0 auto 8px;
-            border-radius:50%;
-            display:flex;align-items:center;justify-content:center;
-            font-size:14px;font-weight:700;
-        }
-        .first .top-rank{background:linear-gradient(135deg,#FFD700,#FFA500);color:#000}
-        .second .top-rank{background:linear-gradient(135deg,#C0C0C0,#A0A0A0);color:#000}
-        .third .top-rank{background:linear-gradient(135deg,#CD7F32,#B87333);color:#fff}
-        .top-avatar{
-            width:50px;height:50px;border-radius:50%;
-            background:rgba(255,255,255,.1);
-            margin:0 auto 8px;overflow:hidden;
-        }
-        .top-avatar img{width:100%;height:100%;object-fit:cover}
-        .top-name{font-size:12px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .top-score{font-size:11px;color:var(--gold);font-weight:700}
-        .top-prize{font-size:10px;color:var(--accent);margin-top:4px}
-        .list{display:flex;flex-direction:column;gap:8px}
-        .list-item{
-            display:flex;align-items:center;gap:12px;
-            padding:12px 16px;
-            background:var(--surface);border:1px solid var(--border);
+        
+        /* Boost Button */
+        .boost-btn{
+            width:100%;
+            padding:16px;
             border-radius:14px;
+            border:none;
+            background:linear-gradient(90deg,#0098EA,#0077CC);
+            color:#fff;
+            font-family:inherit;
+            font-size:15px;
+            font-weight:700;
+            cursor:pointer;
+            margin-bottom:20px;
+            transition:all .2s;
         }
-        .list-rank{
-            width:28px;height:28px;border-radius:8px;
-            background:rgba(255,255,255,.06);
-            display:flex;align-items:center;justify-content:center;
-            font-size:13px;font-weight:700;color:var(--text-2);
+        .boost-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,152,234,.3)}
+        
+        /* Leaderboard List */
+        .leaders-list{display:flex;flex-direction:column;gap:8px}
+        
+        .leader-item{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            padding:12px 14px;
+            background:rgba(255,255,255,.04);
+            border:none;
+            border-radius:14px;
+            transition:all .2s;
+        }
+        .leader-item:hover{background:rgba(255,255,255,.08)}
+        
+        /* Top 3 special styles */
+        .leader-item.rank-1{
+            background:linear-gradient(135deg,rgba(253,190,19,.15),rgba(253,161,0,.05));
+            border:none;
+        }
+        .leader-item.rank-2{
+            background:linear-gradient(135deg,rgba(192,192,192,.15),rgba(160,160,160,.05));
+            border:none;
+        }
+        .leader-item.rank-3{
+            background:linear-gradient(135deg,rgba(205,127,50,.15),rgba(184,115,51,.05));
+            border:none;
+        }
+        
+        /* Rank Badge */
+        .leader-rank{
+            width:32px;
+            height:32px;
             flex-shrink:0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
         }
-        .list-avatar{
-            width:36px;height:36px;border-radius:50%;
-            background:rgba(255,255,255,.1);overflow:hidden;flex-shrink:0;
+        .leader-rank img{
+            width:28px;
+            height:28px;
+            object-fit:contain;
         }
-        .list-avatar img{width:100%;height:100%;object-fit:cover}
-        .list-info{flex:1;min-width:0}
-        .list-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .list-score{font-size:11px;color:var(--text-2)}
-        .list-prize{font-size:12px;font-weight:700;color:var(--accent)}
+        .leader-rank span{
+            font-size:14px;
+            font-weight:700;
+            color:var(--text-2);
+        }
+        
+        /* Avatar */
+        .leader-avatar{
+            width:44px;
+            height:44px;
+            border-radius:50%;
+            overflow:hidden;
+            background:rgba(255,255,255,.04);
+            flex-shrink:0;
+            border:2px solid rgba(255,255,255,.1);
+        }
+        .leader-item.rank-1 .leader-avatar{border-color:rgba(253,161,0,.5)}
+        .leader-item.rank-2 .leader-avatar{border-color:rgba(160,160,160,.5)}
+        .leader-item.rank-3 .leader-avatar{border-color:rgba(184,115,51,.5)}
+        .leader-avatar img{width:100%;height:100%;object-fit:cover}
+        
+        /* Info */
+        .leader-info{flex:1;min-width:0}
+        .leader-name{
+            font-size:14px;
+            font-weight:700;
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            margin-bottom:4px;
+        }
+        .leader-stats{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            font-size:12px;
+            color:var(--text-2);
+        }
+        .leader-turnover{
+            display:flex;
+            align-items:center;
+            gap:4px;
+        }
+        .leader-turnover img{width:12px;height:12px}
+        .leader-turnover span{font-weight:600}
+        
+        .leader-separator{
+            width:1px;
+            height:14px;
+            background:rgba(255,255,255,.15);
+        }
+        
+        .leader-level{
+            display:flex;
+            align-items:center;
+            gap:4px;
+            color:var(--accent);
+            font-weight:700;
+        }
+        
+        /* Prize */
+        .leader-prize{
+            width:44px;
+            height:44px;
+            flex-shrink:0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+        }
+        .leader-prize img{
+            width:36px;
+            height:36px;
+            object-fit:contain;
+            filter:drop-shadow(0 2px 8px rgba(0,0,0,.3));
+        }
+        
+        /* Empty State */
         .empty{text-align:center;padding:60px 20px;color:var(--text-2)}
         .empty svg{width:48px;height:48px;margin-bottom:16px;opacity:.3}
+        
+        /* Bottom Nav */
         .bnav{
             position:fixed;bottom:0;left:50%;transform:translateX(-50%);
             z-index:100;width:100%;max-width:480px;
             height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);
-            background:rgba(9,11,17,.98);
-            backdrop-filter:blur(16px);
-            border-top:1px solid var(--border);
+            background:rgba(26,30,42,.85);
+            backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+            border-top:1px solid rgba(255,255,255,.05);
             display:flex;align-items:center;justify-content:space-around;
         }
         .bnav a{
@@ -135,30 +242,33 @@
             text-decoration:none;color:var(--text-2);
             transition:all .2s;
         }
-        .bnav a.active{color:var(--text);background:rgba(255,255,255,.08)}
+        .bnav a.active{color:var(--text);background:rgba(255,255,255,.06)}
         .bnav a svg{width:24px;height:24px}
         .bnav a span{font-size:10px;font-weight:600}
     </style>
 </head>
 <body>
     <header class="header">
-        <div class="header-title">🏆 Топ игроков</div>
+        <div class="header-title">Сезон</div>
     </header>
 
     <main class="main">
-        <div class="period" id="period">
-            <span class="period-label">До конца сезона:</span>
-            <span class="period-time" id="countdown">--:--:--</span>
+        <!-- Season Banner with Mascot -->
+        <div class="season-banner">
+            <img src="/static/img/lead.png" alt="" onerror="this.src='/static/img/logo.png'">
+            <div class="season-timer" id="countdown">--:--:--</div>
         </div>
-
-        <div class="prize-pool">
-            <div class="prize-pool-label">Призовой фонд</div>
-            <div class="prize-pool-val" id="prizePool">0 TON</div>
+        
+        <button class="boost-btn" onclick="openBoost()">Boost your rank</button>
+        
+        <div class="leaders-list" id="leadersList">
+            <div class="empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+                </svg>
+                <p>Лидерборд пока не активен</p>
+            </div>
         </div>
-
-        <div class="top3" id="top3"></div>
-
-        <div class="list" id="leaderList"></div>
     </main>
 
     <nav class="bnav">
@@ -172,7 +282,7 @@
         </a>
         <a href="/leaderboard" class="active">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-            <span>Топ</span>
+            <span>Сезон</span>
         </a>
         <a href="/inventory">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -184,11 +294,20 @@
         const tg = window.Telegram?.WebApp;
         if (tg) {
             tg.expand();
-            tg.setHeaderColor('#090B11');
-            tg.setBackgroundColor('#090B11');
+            tg.setHeaderColor('#1A1E2A');
+            tg.setBackgroundColor('#1A1E2A');
         }
 
         let endTime = null;
+
+        // Get appropriate TON SVG based on amount
+        function getTonSvg(amount) {
+            if (amount <= 25) return '/static/img/tons/ton_1.svg';
+            if (amount <= 50) return '/static/img/tons/ton_2.svg';
+            if (amount <= 100) return '/static/img/tons/ton_3.svg';
+            if (amount <= 250) return '/static/img/tons/ton_4.svg';
+            return '/static/img/tons/ton_5.svg';
+        }
 
         async function loadLeaderboard() {
             try {
@@ -196,8 +315,7 @@
                 const data = await res.json();
                 
                 if (!data.success || !data.active) {
-                    document.getElementById('top3').innerHTML = '';
-                    document.getElementById('leaderList').innerHTML = `
+                    document.getElementById('leadersList').innerHTML = `
                         <div class="empty">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/>
@@ -210,10 +328,7 @@
 
                 const config = data.config;
                 const users = data.leaderboard || [];
-
-                // Prize pool
-                const totalPrize = (config.prizes || []).reduce((s, p) => s + (p.amount || 0), 0) / 100;
-                document.getElementById('prizePool').textContent = totalPrize.toFixed(2) + ' TON';
+                const prizes = config.prizes || [];
 
                 // End time
                 if (config.end_time) {
@@ -221,41 +336,52 @@
                     updateCountdown();
                 }
 
-                // Top 3
-                const top3 = users.slice(0, 3);
-                const prizes = config.prizes || [];
-                document.getElementById('top3').innerHTML = top3.map((u, i) => {
-                    const cls = i === 0 ? 'first' : i === 1 ? 'second' : 'third';
-                    const prize = prizes[i] ? (prizes[i].amount / 100).toFixed(2) : '0';
+                // Render all users
+                document.getElementById('leadersList').innerHTML = users.slice(0, 20).map((u, i) => {
+                    const rank = i + 1;
+                    const prize = prizes[i];
+                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                    
+                    // Rank badge: 1.gif, 2.gif, 3.gif for top 3, numbers for rest
+                    let rankBadge;
+                    if (rank <= 3) {
+                        rankBadge = `<img src="/static/gifs/place/${rank}.gif" alt="${rank}" onerror="this.outerHTML='<span>#${rank}</span>'">`;
+                    } else {
+                        rankBadge = `<span>#${rank}</span>`;
+                    }
+                    
+                    // Prize image: gift or TON
+                    let prizeImg = '';
+                    if (prize) {
+                        if (prize.type === 'ton' || !prize.gift_image) {
+                            const tonAmount = (prize.amount || 0) / 100;
+                            prizeImg = `<img src="${getTonSvg(tonAmount)}" alt="${tonAmount} TON">`;
+                        } else {
+                            prizeImg = `<img src="${prize.gift_image || '/static/img/gift.png'}" alt="">`;
+                        }
+                    }
+                    
+                    // Score/turnover in TON
+                    const turnover = ((u.score || 0) / 100).toFixed(2);
+                    
                     return `
-                        <div class="top-card ${cls}">
-                            <div class="top-rank">${i + 1}</div>
-                            <div class="top-avatar">
+                        <div class="leader-item ${rankClass}">
+                            <div class="leader-rank">${rankBadge}</div>
+                            <div class="leader-avatar">
                                 <img src="${u.avatar || '/static/img/avatar-default.png'}" alt="" onerror="this.src='/static/img/avatar-default.png'">
                             </div>
-                            <div class="top-name">${escapeHtml(u.display_name || 'Игрок')}</div>
-                            <div class="top-score">${formatScore(u.score)}</div>
-                            <div class="top-prize">+${prize} TON</div>
-                        </div>
-                    `;
-                }).join('');
-
-                // Rest of list
-                const rest = users.slice(3, 20);
-                document.getElementById('leaderList').innerHTML = rest.map((u, i) => {
-                    const rank = i + 4;
-                    const prize = prizes[rank - 1] ? (prizes[rank - 1].amount / 100).toFixed(2) : null;
-                    return `
-                        <div class="list-item">
-                            <div class="list-rank">${rank}</div>
-                            <div class="list-avatar">
-                                <img src="${u.avatar || '/static/img/avatar-default.png'}" alt="" onerror="this.src='/static/img/avatar-default.png'">
+                            <div class="leader-info">
+                                <div class="leader-name">${escapeHtml(u.display_name || 'Игрок')}</div>
+                                <div class="leader-stats">
+                                    <div class="leader-turnover">
+                                        <img src="/static/img/ton.png" alt="">
+                                        <span>${turnover}</span>
+                                    </div>
+                                    <div class="leader-separator"></div>
+                                    <div class="leader-level">${u.level || 1} level</div>
+                                </div>
                             </div>
-                            <div class="list-info">
-                                <div class="list-name">${escapeHtml(u.display_name || 'Игрок')}</div>
-                                <div class="list-score">${formatScore(u.score)} очков</div>
-                            </div>
-                            ${prize ? `<div class="list-prize">+${prize} TON</div>` : ''}
+                            ${prizeImg ? `<div class="leader-prize">${prizeImg}</div>` : ''}
                         </div>
                     `;
                 }).join('');
@@ -265,10 +391,6 @@
             }
         }
 
-        function formatScore(score) {
-            return Math.round(score || 0).toLocaleString('ru-RU');
-        }
-
         function escapeHtml(str) {
             const div = document.createElement('div');
             div.textContent = str;
@@ -276,16 +398,28 @@
         }
 
         function updateCountdown() {
-            if (!endTime) return;
+            if (!endTime) {
+                document.getElementById('countdown').textContent = '--:--:--';
+                return;
+            }
             const now = Date.now();
             const diff = Math.max(0, endTime - now);
             
-            const h = Math.floor(diff / 3600000);
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff % 86400000) / 3600000);
             const m = Math.floor((diff % 3600000) / 60000);
             const s = Math.floor((diff % 60000) / 1000);
             
-            document.getElementById('countdown').textContent = 
-                `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            if (d > 0) {
+                document.getElementById('countdown').textContent = `${d}d ${h}h ${m}m ${s}s`;
+            } else {
+                document.getElementById('countdown').textContent = 
+                    `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            }
+        }
+        
+        function openBoost() {
+            window.location.href = '/cases';
         }
 
         loadLeaderboard();
