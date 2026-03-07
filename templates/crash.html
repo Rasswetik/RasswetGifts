@@ -3558,6 +3558,26 @@ tc-root *{pointer-events:auto}
     <div class="ld-progress"><div class="ld-progress-bar" id="ldProgressBar"></div></div>
 </div>
 <div class="ld-reveal" id="ldReveal" style="display:none"></div>
+<script>
+/* Immediate visual progress — shows movement while server wakes up */
+(function(){
+    var p=0, bar=document.getElementById('ldProgressBar'), txt=document.getElementById('ldTxt');
+    window._ldSim = setInterval(function(){
+        if(p >= 30) return; /* pause at 30% — real loader takes over */
+        p += 0.5;
+        if(bar) bar.style.width = p + '%';
+        if(txt) txt.textContent = 'LOADING ' + Math.round(p) + '%';
+    }, 100);
+    /* Show star images on panels immediately */
+    var imgs = document.querySelectorAll('.ld-panel img');
+    imgs.forEach(function(img, i){
+        setTimeout(function(){
+            img.src = '/static/img/star.png';
+            img.classList.add('show');
+        }, i * 80);
+    });
+})();
+</script>
 
 <div class="container">
 
@@ -4926,14 +4946,17 @@ async function initTelegramApp() {
         }
     }
 
-    /* 3. Still no user - try telegramAuth() fallback */
+    /* 3. Still no user - try telegramAuth() fallback (5s timeout) */
     if (!userData || !userData.id) {
         try {
-            const authData = await telegramAuth();
+            const authData = await Promise.race([
+                telegramAuth(),
+                new Promise((_,r) => setTimeout(() => r('auth_timeout'), 5000))
+            ]);
             if (authData && authData.id) {
                 userData = authData;
             }
-        } catch(e) {}
+        } catch(e) { console.warn('Auth fallback skipped:', e); }
     }
 
     /* 4. Last resort - empty user */
@@ -4952,10 +4975,12 @@ async function initTelegramApp() {
 
     authReady = true;
     
-    /* Check if user is banned */
+    /* Check if user is banned (5s timeout) */
     if (userData && userData.id) {
         try {
-            const banRes = await fetch('/api/check-ban?user_id=' + userData.id);
+            const banAc = new AbortController();
+            setTimeout(() => banAc.abort(), 5000);
+            const banRes = await fetch('/api/check-ban?user_id=' + userData.id, {signal: banAc.signal});
             const banData = await banRes.json();
             if (banData.success && banData.banned) {
                 window.location.href = '/ban';
@@ -5215,7 +5240,18 @@ function formatNumber(num) {
     return num.toString();
 }
 
-document.addEventListener('DOMContentLoaded', initTelegramApp);
+document.addEventListener('DOMContentLoaded', function(){
+    initTelegramApp();
+    /* Safety: force-hide loading screen after 15s no matter what */
+    setTimeout(function(){
+        var ls = document.getElementById('ldScreen');
+        if(ls && !ls.classList.contains('hidden')){
+            console.warn('Loading screen safety timeout — forcing hide');
+            ls.classList.add('hidden');
+            setTimeout(function(){ ls.style.display='none'; }, 500);
+        }
+    }, 15000);
+});
 window.addEventListener('rasswet-currency-change', function(){
     refreshBetCurrencyUI();
     updateUI(userData);
@@ -5253,6 +5289,9 @@ document.addEventListener('touchstart', function initAudioOnceTouch(){
    GIFTS FOR ACHIEVABLE DISPLAY + CATALOG (EMBEDDED)
    ============================================================ */
 async function loadCrashGifts(){
+    /* Stop the simulated progress from the inline script */
+    if(window._ldSim){ clearInterval(window._ldSim); window._ldSim = null; }
+    
     const progressBar = $('ldProgressBar');
     const ldTxt = document.getElementById('ldTxt');
     const ldPanels = document.querySelectorAll('.ld-panel img');
