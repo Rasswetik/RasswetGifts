@@ -181,14 +181,24 @@ body.low-power .countdown-display{backdrop-filter:none!important;-webkit-backdro
 }
 .ld-panel img{
     width:54px;height:54px;object-fit:contain;
-    opacity:0;transition:opacity .4s ease,transform .4s ease;
-    transform:scale(.7);
+    opacity:0;transform:scale(.7);
 }
 .ld-panel img.show{
-    opacity:1;transform:scale(1);
+    opacity:1;transform:scale(1);transition:opacity .4s ease,transform .4s ease;
 }
-.ld-panel img.hide{
-    opacity:0;transform:scale(.5) rotate(10deg);
+.ld-panel img.slide-out{
+    animation:ldSlideOut .4s ease forwards;
+}
+.ld-panel img.slide-in{
+    animation:ldSlideIn .4s ease forwards;
+}
+@keyframes ldSlideOut{
+    0%{opacity:1;transform:scale(1) translateY(0)}
+    100%{opacity:0;transform:scale(.55) translateY(28px)}
+}
+@keyframes ldSlideIn{
+    0%{opacity:0;transform:scale(.55) translateY(-28px)}
+    100%{opacity:1;transform:scale(1) translateY(0)}
 }
 .ld-txt{
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
@@ -3559,15 +3569,16 @@ tc-root *{pointer-events:auto}
 </div>
 <div class="ld-reveal" id="ldReveal" style="display:none"></div>
 <script>
-/* Immediate visual progress + rocket animation while server loads */
+/* Loading screen API — real progress, gift panels, rocket swap animation */
 (function(){
-    var p=0, bar=document.getElementById('ldProgressBar'), txt=document.getElementById('ldTxt');
+    var bar = document.getElementById('ldProgressBar');
+    var txt = document.getElementById('ldTxt');
     var imgs = document.querySelectorAll('.ld-panel img');
     var rocketsDone = {};
-    window._ldSimP = 0;
+    window._ldP = 0;
 
-    /* Show star images on panels immediately */
-    for(var i=0;i<imgs.length;i++){
+    /* Show star.png on all 9 panels immediately */
+    for(var i = 0; i < imgs.length; i++){
         (function(idx){
             setTimeout(function(){
                 imgs[idx].src = '/static/img/star.png';
@@ -3576,40 +3587,52 @@ tc-root *{pointer-events:auto}
         })(i);
     }
 
-    window._ldSim = setInterval(function(){
-        if(p >= 90) return;
-        /* Fast 0-30, slower 30-60, slowest 60-90 */
-        if(p < 30) p += 0.5;
-        else if(p < 60) p += 0.2;
-        else p += 0.1;
-        window._ldSimP = p;
-        if(bar) bar.style.width = p + '%';
-        if(txt) txt.textContent = 'LOADING ' + Math.round(p) + '%';
+    /* Set real progress — only goes forward */
+    window._ldUpdate = function(pct){
+        if(pct <= window._ldP) return;
+        window._ldP = pct;
+        if(bar) bar.style.width = pct + '%';
+        if(txt) txt.textContent = 'LOADING ' + Math.round(pct) + '%';
+    };
 
-        /* Switch panels from stars → rockets after 30% */
-        var targetRockets = Math.max(0, Math.floor((p - 30) / 7));
-        var rocketCount = Object.keys(rocketsDone).length;
-        while(rocketCount < targetRockets && rocketCount < 9){
-            var available = [];
-            for(var j=0;j<9;j++){ if(!rocketsDone[j]) available.push(j); }
-            if(!available.length) break;
-            var chosen = available[Math.floor(Math.random()*available.length)];
-            rocketsDone[chosen] = true;
-            rocketCount++;
-            (function(idx){
+    /* Fill panels with real gift PNGs */
+    window._ldFillGifts = function(srcArr){
+        for(var i = 0; i < imgs.length; i++){
+            if(rocketsDone[i]) continue;
+            (function(idx, src){
                 var img = imgs[idx];
                 if(!img) return;
-                img.classList.remove('show');
-                img.classList.add('hide');
-                setTimeout(function(){
-                    img.src = '/static/gifs/rockets/crash.gif';
-                    img.onerror = function(){ this.src='/static/img/star.png'; };
-                    img.classList.remove('hide');
-                    img.classList.add('show');
-                }, 350);
-            })(chosen);
+                img.src = src;
+                img.onerror = function(){ this.src = '/static/img/star.png'; };
+                if(!img.classList.contains('show')) img.classList.add('show');
+            })(i, srcArr[i % srcArr.length]);
         }
-    }, 100);
+    };
+
+    /* Swap one random gift panel → rocket GIF with slide animation */
+    window._ldSwapRocket = function(rocketSrc){
+        var available = [];
+        for(var j = 0; j < 9; j++){ if(!rocketsDone[j]) available.push(j); }
+        if(!available.length) return;
+        var chosen = available[Math.floor(Math.random() * available.length)];
+        rocketsDone[chosen] = true;
+        var img = imgs[chosen];
+        if(!img) return;
+        /* Gift slides out downward */
+        img.classList.remove('show');
+        img.classList.add('slide-out');
+        setTimeout(function(){
+            img.src = rocketSrc;
+            img.onerror = function(){ this.src = '/static/gifs/rockets/crash.gif'; };
+            img.classList.remove('slide-out');
+            /* Rocket slides in from above */
+            img.classList.add('slide-in');
+            setTimeout(function(){
+                img.classList.remove('slide-in');
+                img.classList.add('show');
+            }, 420);
+        }, 420);
+    };
 })();
 </script>
 
@@ -4942,6 +4965,8 @@ function refreshBetCurrencyUI(){
 
 /* ---------- initTelegramApp ---------- */
 async function initTelegramApp() {
+    if(window._ldUpdate) window._ldUpdate(2);
+
     /* 1. Check localStorage first (for browser sessions) */
     const saved = localStorage.getItem('rasswet_user');
     if (saved) {
@@ -4979,6 +5004,7 @@ async function initTelegramApp() {
             }
         }
     }
+    if(window._ldUpdate) window._ldUpdate(8);
 
     /* 3. Still no user - try telegramAuth() fallback (5s timeout) */
     if (!userData || !userData.id) {
@@ -4998,6 +5024,7 @@ async function initTelegramApp() {
         console.log('No auth');
         userData = {id: 0, first_name: 'Player', balance_stars: 0, balance_tickets: 0};
     }
+    if(window._ldUpdate) window._ldUpdate(15);
 
     updateUI(userData);
 
@@ -5008,6 +5035,7 @@ async function initTelegramApp() {
     }
 
     authReady = true;
+    if(window._ldUpdate) window._ldUpdate(20);
     
     /* Check if user is banned (5s timeout) */
     if (userData && userData.id) {
@@ -5022,15 +5050,17 @@ async function initTelegramApp() {
             }
         } catch(e) { console.warn('Ban check failed:', e); }
     }
+    if(window._ldUpdate) window._ldUpdate(28);
     
     /* Check if user is admin */
     checkAdmin();
 
     /* 6. Load customizations from DB (non-blocking, 5s timeout) */
     try { await Promise.race([loadCrashCustomizations(), new Promise((_,r) => setTimeout(() => r('timeout'), 5000))]); } catch(e){ console.warn('Customizations load skipped:', e); }
+    if(window._ldUpdate) window._ldUpdate(38);
 
     /* 7. Load gifts + loading screen animation (handles its own hide/reveal) */
-    try { await Promise.race([loadCrashGifts(), new Promise((_,r) => setTimeout(() => r('timeout'), 12000))]); } catch(e){
+    try { await Promise.race([loadCrashGifts(), new Promise((_,r) => setTimeout(() => r('timeout'), 20000))]); } catch(e){
         console.warn('Gifts load skipped:', e);
         /* Force-hide loading screen on timeout */
         var ls = $('ldScreen'); if(ls){ ls.classList.add('hidden'); setTimeout(function(){ ls.style.display='none'; }, 500); }
@@ -5323,22 +5353,20 @@ document.addEventListener('touchstart', function initAudioOnceTouch(){
    GIFTS FOR ACHIEVABLE DISPLAY + CATALOG (EMBEDDED)
    ============================================================ */
 async function loadCrashGifts(){
-    /* Stop the simulated progress — rocket animation already handled by inline script */
-    if(window._ldSim){ clearInterval(window._ldSim); window._ldSim = null; }
+    var ldTxt = document.getElementById('ldTxt');
+    var ldScreen = $('ldScreen');
 
-    var curP = window._ldSimP || 0;
-    const progressBar = $('ldProgressBar');
-    const ldTxt = document.getElementById('ldTxt');
-    const ldScreen = $('ldScreen');
+    function setP(pct){ if(window._ldUpdate) window._ldUpdate(pct); }
 
-    function setP(pct){
-        if(pct <= curP) return; /* Never go backward */
-        curP = pct;
-        try{
-            if(progressBar) progressBar.style.width = pct + '%';
-            if(ldTxt) ldTxt.textContent = 'LOADING ' + Math.round(pct) + '%';
-        }catch(e){}
+    function getRandRocketSrc(){
+        if(typeof rocketsData !== 'undefined' && rocketsData.length > 0){
+            var r = rocketsData[Math.floor(Math.random() * rocketsData.length)];
+            return '/static/gifs/rockets/' + r.id + '.gif';
+        }
+        return '/static/gifs/rockets/crash.gif';
     }
+
+    function swapPanel(){ if(window._ldSwapRocket) window._ldSwapRocket(getRandRocketSrc()); }
 
     function finishLoading(){
         if(ldScreen){
@@ -5353,37 +5381,65 @@ async function loadCrashGifts(){
             var revealAnim = setInterval(function(){
                 size += 3;
                 reveal.style.setProperty('--reveal-size', size + '%');
-                if(size >= 120){
-                    clearInterval(revealAnim);
-                    reveal.style.display = 'none';
-                }
+                if(size >= 120){ clearInterval(revealAnim); reveal.style.display = 'none'; }
             }, 16);
         }
     }
 
     try{
-        setP(Math.max(curP, 30));
+        setP(40);
 
-        /* Load gifts from API (has internal 8s timeout) */
+        /* Load gifts from API */
         try{ await Promise.race([loadGiftsFromAPI(), new Promise((_,r)=>setTimeout(()=>r('t'),8000))]); }catch(e){ console.warn('Gifts API:', e); }
-        setP(Math.max(curP + 15, 55));
+        setP(55);
         console.log('Gifts loaded:', allCatalogGifts.length);
 
+        /* Fill panels with random real gift PNGs */
+        if(allCatalogGifts.length > 0 && window._ldFillGifts){
+            var srcs = [];
+            for(var i = 0; i < 9; i++){
+                var rg = allCatalogGifts[Math.floor(Math.random() * allCatalogGifts.length)];
+                srcs.push(resolveCrashGiftImage(rg, '/static/img/star.png'));
+            }
+            window._ldFillGifts(srcs);
+        }
+        await new Promise(r => setTimeout(r, 600));
+        setP(58);
+
+        /* Start swapping gift panels → rockets one by one */
+        swapPanel();
         preloadGiftsInBackground();
-        setP(Math.max(curP + 5, 65));
+        setP(62);
 
-        /* Load collection + VIP with 5s timeouts each */
+        /* Load collection history */
         try{ await Promise.race([loadCollectionHistory(), new Promise((_,r)=>setTimeout(()=>r('t'),5000))]); }catch(e){}
-        setP(Math.max(curP + 10, 80));
+        setP(70);
+        swapPanel();
+        await new Promise(r => setTimeout(r, 450));
+        swapPanel();
+        setP(75);
 
+        /* Check VIP */
         try{ await Promise.race([checkVipStatus(), new Promise((_,r)=>setTimeout(()=>r('t'),5000))]); }catch(e){}
-        setP(Math.max(curP + 5, 90));
+        setP(82);
+        swapPanel();
+        await new Promise(r => setTimeout(r, 400));
+        swapPanel();
+        setP(88);
 
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 400));
+        swapPanel();
+        setP(92);
+        await new Promise(r => setTimeout(r, 350));
+        swapPanel();
+        setP(95);
+        await new Promise(r => setTimeout(r, 300));
+        swapPanel();
+        swapPanel();
         setP(100);
 
         if(ldTxt) ldTxt.textContent = 'READY!';
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 400));
 
         finishLoading();
     }catch(e){
