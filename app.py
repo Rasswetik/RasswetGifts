@@ -4284,6 +4284,7 @@ def ultimate_crash_cashout_simple():
     try:
         data = request.get_json()
         user_id = data.get('user_id')
+        client_mult = data.get('client_mult')  # Client's displayed multiplier
 
         if not user_id:
             return jsonify({'success': False, 'error': 'ID пользователя не указан'})
@@ -4318,7 +4319,20 @@ def ultimate_crash_cashout_simple():
             game_id = game[0]
             # Use the fresher of: DB multiplier vs cache multiplier
             db_mult = float(game[1]) if game[1] else 1.0
-            current_mult = max(db_mult, cached_mult)
+            server_mult = max(db_mult, cached_mult)
+            
+            # Use client multiplier if provided and within reasonable tolerance
+            # This prevents visual mismatch where user sees one number but gets different payout
+            current_mult = server_mult
+            if client_mult is not None:
+                try:
+                    client_mult = float(client_mult)
+                    # Allow client mult if it's at least 1.0 and not more than 15% above server
+                    # (accounts for client-side extrapolation between server updates)
+                    if client_mult >= 1.0 and client_mult <= server_mult * 1.15 + 0.05:
+                        current_mult = client_mult
+                except (ValueError, TypeError):
+                    pass
 
             # Получаем ставку пользователя
             cursor.execute('''
@@ -9809,6 +9823,11 @@ def admin_banned_users():
 def news_page():
     """Страница новостей"""
     return render_template('news.html')
+
+@app.route('/news/<int:news_id>')
+def news_detail_page(news_id):
+    """Страница отдельной новости"""
+    return render_template('news_detail.html', news_id=news_id)
 
 @app.route('/api/news', methods=['GET'])
 def api_get_news():

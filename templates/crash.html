@@ -5064,9 +5064,9 @@ async function initTelegramApp() {
     if(savedBetAmount) setBetInputFromStars(savedBetAmount);
     refreshBetCurrencyUI();
 
-    /* Adaptive polling intervals based on power mode */
-    var statusPoll = document.body.classList.contains('low-power') ? 1500 : 700;
-    var betsPoll   = document.body.classList.contains('low-power') ? 3000 : 1500;
+    /* Adaptive polling intervals based on power mode - faster for smoother display */
+    var statusPoll = document.body.classList.contains('low-power') ? 800 : 350;
+    var betsPoll   = document.body.classList.contains('low-power') ? 2500 : 1000;
     var statusIntervalId = setInterval(updStatus, statusPoll);   /* Game status */
     var balanceIntervalId = setInterval(loadUserData, 20000);     /* Balance every 20 sec */
     var betsIntervalId = setInterval(loadBets, betsPoll);      /* Bets */
@@ -6452,7 +6452,7 @@ async function doCashout(){
     try{
         var r = await fetch('/api/ultimate-crash/cashout-simple', {
             method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({user_id: userData.id})
+            body: JSON.stringify({user_id: userData.id, client_mult: dispMult})
         });
         var d = await r.json();
         if(d.success){

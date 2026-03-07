@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="icon" type="image/png" href="/static/img/logo.png">
-<title>Новости</title>
+<title>Новость</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -15,26 +15,19 @@ body{
     color:#fff;
     -webkit-font-smoothing:antialiased;
     min-height:100vh;
-    padding-bottom:80px;
+    padding-bottom:100px;
 }
-
-/* Background */
 body::before{
     content:'';position:fixed;top:0;left:0;width:100%;height:100%;
     background:
         radial-gradient(circle at 20% 50%,rgba(140,160,190,.08) 0%,transparent 50%),
         radial-gradient(circle at 80% 50%,rgba(140,160,190,.06) 0%,transparent 50%);
-    z-index:-1;
-    pointer-events:none;
+    z-index:-1;pointer-events:none;
 }
 
 /* Container */
-.container{
-    max-width:480px;
-    margin:0 auto;
-    padding:0 12px;
-}
-@media(min-width:768px){ .container{max-width:480px} }
+.container{max-width:480px;margin:0 auto;padding:0 12px}
+@media(min-width:768px){.container{max-width:480px}}
 
 /* Header */
 .header{
@@ -45,126 +38,145 @@ body::before{
     display:flex;align-items:center;gap:12px;
     border-bottom:1px solid rgba(255,255,255,.06);
 }
-.header-title{font-size:20px;font-weight:700;flex:1}
+.header-title{font-size:18px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .header-back{
     width:36px;height:36px;border-radius:10px;
     background:rgba(255,255,255,.08);
     display:flex;align-items:center;justify-content:center;
-    cursor:pointer;transition:all .2s;
+    cursor:pointer;transition:all .2s;flex-shrink:0;
 }
 .header-back:hover{background:rgba(255,255,255,.12)}
 .header-back:active{transform:scale(.95)}
 .header-back svg{width:20px;height:20px;stroke:#fff;fill:none}
 
-/* News container */
-.news-container{
-    padding:16px 0;
-    display:flex;flex-direction:column;gap:16px;
-}
-
-/* News card */
-.news-card{
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:20px;
-    overflow:hidden;
-    transition:transform .2s, box-shadow .2s;
-}
-.news-card:active{transform:scale(.98)}
-
-.news-image{
+/* Banner */
+.news-banner{
     width:100%;
-    aspect-ratio:16/9;
-    object-fit:cover;
+    aspect-ratio:3/1;
     background:rgba(255,255,255,.03);
-    display:block;
+    overflow:hidden;
 }
-.news-image.placeholder{
-    display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(135deg, #1a1e2a 0%, #252b3b 100%);
-}
-.news-image.placeholder img{
-    width:64px;height:64px;opacity:.3;
+.news-banner img{
+    width:100%;height:100%;
+    object-fit:cover;
 }
 
-.news-body{padding:14px 16px}
-
-.news-title{
-    font-size:17px;
+/* Version badge */
+.version-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(100,140,200,.15);
+    border:1px solid rgba(100,140,200,.3);
+    padding:8px 16px;
+    border-radius:20px;
+    margin:16px;
     font-weight:700;
-    margin-bottom:6px;
+    color:#7a9ac0;
+}
+.version-badge svg{width:18px;height:18px;stroke:currentColor;fill:none}
+
+/* Content */
+.news-content{
+    padding:0 16px 20px;
+}
+.news-title{
+    font-size:24px;
+    font-weight:800;
+    margin-bottom:12px;
     line-height:1.3;
 }
-
-.news-content{
-    font-size:13px;
-    color:rgba(255,255,255,.6);
-    line-height:1.5;
-    margin-bottom:12px;
-    display:-webkit-box;
-    -webkit-line-clamp:3;
-    -webkit-box-orient:vertical;
-    overflow:hidden;
-}
-
 .news-meta{
-    display:flex;align-items:center;justify-content:space-between;
-    font-size:12px;color:rgba(255,255,255,.4);
+    display:flex;align-items:center;gap:12px;
+    font-size:13px;
+    color:rgba(255,255,255,.4);
+    margin-bottom:20px;
 }
-
 .news-date{display:flex;align-items:center;gap:4px}
 
-.news-reward{
-    display:flex;align-items:center;gap:6px;
-    background:linear-gradient(135deg,rgba(0,255,136,.15),rgba(0,200,100,.1));
-    border:1px solid rgba(0,255,136,.3);
-    padding:6px 14px;
-    border-radius:20px;
-    font-weight:600;
-    color:#0f8;
-    cursor:pointer;
-    transition:all .2s;
-    font-size:13px;
+/* Article content */
+.article{
+    font-size:15px;
+    line-height:1.7;
+    color:rgba(255,255,255,.8);
 }
-.news-reward:hover{transform:scale(1.02);box-shadow:0 0 12px rgba(0,255,136,.3)}
-.news-reward:active{transform:scale(.97)}
-.news-reward img{width:16px;height:16px}
-.news-reward.claimed{
-    background:rgba(255,255,255,.05);
-    border-color:rgba(255,255,255,.1);
-    color:rgba(255,255,255,.4);
-    cursor:default;
-    pointer-events:none;
+.article h2{
+    font-size:18px;
+    font-weight:700;
+    margin:24px 0 12px;
+    color:#fff;
+}
+.article h3{
+    font-size:16px;
+    font-weight:600;
+    margin:20px 0 10px;
+    color:rgba(255,255,255,.9);
+}
+.article p{margin-bottom:12px}
+.article ul{
+    margin:12px 0;
+    padding-left:20px;
+}
+.article li{
+    margin-bottom:8px;
+    color:rgba(255,255,255,.7);
 }
 
-/* Empty state */
-.empty-state{
-    text-align:center;
-    padding:60px 20px;
-    color:rgba(255,255,255,.4);
+/* Reward section */
+.reward-section{
+    margin:24px 16px;
+    padding:16px;
+    background:linear-gradient(135deg,rgba(0,255,136,.1),rgba(0,200,100,.05));
+    border:1px solid rgba(0,255,136,.25);
+    border-radius:16px;
 }
-.empty-icon{
-    width:80px;height:80px;
-    margin:0 auto 16px;
-    opacity:.4;
+.reward-title{
+    font-weight:700;
+    font-size:15px;
+    margin-bottom:8px;
+    color:#0f8;
 }
-.empty-text{font-size:16px;font-weight:500}
+.reward-btn{
+    width:100%;
+    padding:14px;
+    border-radius:12px;
+    border:none;
+    background:linear-gradient(135deg,#00cc66,#008844);
+    color:#fff;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    transition:all .2s;
+}
+.reward-btn:active{transform:scale(.98)}
+.reward-btn.claimed{
+    background:rgba(255,255,255,.1);
+    color:rgba(255,255,255,.5);
+    cursor:default;
+}
 
 /* Loading */
 .loading{
     text-align:center;
-    padding:40px;
+    padding:60px 20px;
     color:rgba(255,255,255,.5);
 }
 .loading::after{
     content:'';display:inline-block;
-    width:24px;height:24px;
-    border:2px solid rgba(255,255,255,.2);
+    width:28px;height:28px;
+    border:3px solid rgba(255,255,255,.2);
     border-top-color:#fff;
     border-radius:50%;
     animation:spin .8s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* Error state */
+.error-state{
+    text-align:center;
+    padding:60px 20px;
+    color:rgba(255,255,255,.4);
+}
+.error-icon{font-size:48px;margin-bottom:12px}
+.error-text{font-size:16px;font-weight:500}
 
 /* ===== BOTTOM NAV ===== */
 .bottom-nav{
@@ -230,18 +242,16 @@ body::before{
 <body>
 
 <div class="header">
-    <div class="header-back" onclick="history.back()">
+    <div class="header-back" onclick="goBack()">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M15 18l-6-6 6-6"/>
         </svg>
     </div>
-    <div class="header-title">Новости</div>
+    <div class="header-title" id="headerTitle">Новость</div>
 </div>
 
-<div class="container">
-    <div class="news-container" id="newsContainer">
-        <div class="loading"></div>
-    </div>
+<div id="newsContent">
+    <div class="loading"></div>
 </div>
 
 <!-- Bottom Navigation -->
@@ -272,9 +282,9 @@ body::before{
 
 <script>
 (function(){
-    var $ = function(id){ return document.getElementById(id); };
     var tg = window.Telegram && window.Telegram.WebApp;
     var userId = null;
+    var newsId = {{ news_id }};
     
     if(tg){
         tg.ready();
@@ -284,8 +294,13 @@ body::before{
         userId = tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id;
     }
     
+    function goBack(){
+        window.location.href = '/news';
+    }
+    window.goBack = goBack;
+    
     function showToast(msg, type){
-        var t = $('toast');
+        var t = document.getElementById('toast');
         t.textContent = msg;
         t.className = 'toast show ' + (type || 'ok');
         setTimeout(function(){ t.classList.remove('show'); }, 2500);
@@ -293,14 +308,22 @@ body::before{
     
     function formatDate(dateStr){
         var d = new Date(dateStr);
-        return d.toLocaleDateString('ru-RU', {day:'numeric', month:'short'});
+        return d.toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric'});
     }
     
-    function formatReward(amount){
-        if(amount >= 100){
-            return (amount / 100).toFixed(2) + ' TON';
-        }
-        return amount + ' Stars';
+    function parseMarkdown(text){
+        return text
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^- (.+)$/gm, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/^([^<].+)$/gm, '<p>$1</p>')
+            .replace(/<p><\/p>/g, '')
+            .replace(/<p>(<h[23]>)/g, '$1')
+            .replace(/(<\/h[23]>)<\/p>/g, '$1')
+            .replace(/<p>(<ul>)/g, '$1')
+            .replace(/(<\/ul>)<\/p>/g, '$1');
     }
     
     async function loadNews(){
@@ -311,75 +334,80 @@ body::before{
             var r = await fetch(url);
             var d = await r.json();
             
-            if(!d.success || !d.news || d.news.length === 0){
-                $('newsContainer').innerHTML = '<div class="empty-state"><img class="empty-icon" src="/static/img/news/none.svg" alt=""><div class="empty-text">Нет новостей</div></div>';
+            if(!d.success || !d.news){
+                throw new Error('No news');
+            }
+            
+            var news = d.news.find(function(n){ return n.id === newsId; });
+            if(!news){
+                document.getElementById('newsContent').innerHTML = '<div class="error-state"><div class="error-icon">📰</div><div class="error-text">Новость не найдена</div></div>';
                 return;
             }
             
-            $('newsContainer').innerHTML = d.news.map(function(n){
-                var imageHtml = n.image_url 
-                    ? '<img class="news-image" src="' + n.image_url + '" alt="" onerror="this.outerHTML=\'<div class=\\\'news-image placeholder\\\'><img src=\\\'/static/img/news/none.svg\\\' alt=\\\'\\\'></div>\'">'
-                    : '<div class="news-image placeholder"><img src="/static/img/news/none.svg" alt=""></div>';
-                
-                var rewardHtml = '';
-                if(n.reward_amount > 0){
-                    if(n.claimed){
-                        rewardHtml = '<div class="news-reward claimed" onclick="event.stopPropagation()"><span>✓ Получено</span></div>';
-                    } else {
-                        rewardHtml = '<div class="news-reward" onclick="event.stopPropagation(); claimReward(' + n.id + ', this)"><img src="/static/img/star.png" alt=""><span>+' + formatReward(n.reward_amount) + '</span></div>';
-                    }
+            document.getElementById('headerTitle').textContent = news.title;
+            
+            var bannerUrl = news.image_url || '/static/img/news/none.svg';
+            var versionMatch = news.title.match(/v?(\d+\.\d+)/i);
+            var version = versionMatch ? versionMatch[1] : '';
+            
+            var html = '';
+            
+            // Banner
+            html += '<div class="news-banner"><img src="' + bannerUrl.replace('.svg', '_banner.svg').replace('/news/', '/news/banners/') + '" onerror="this.src=\'' + bannerUrl + '\'"></div>';
+            
+            // Version badge
+            if(version){
+                html += '<div class="version-badge"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Версия ' + version + '</div>';
+            }
+            
+            // Content
+            html += '<div class="news-content">';
+            html += '<div class="news-title">' + news.title + '</div>';
+            html += '<div class="news-meta"><div class="news-date">' + formatDate(news.created_at) + '</div></div>';
+            html += '<div class="article">' + parseMarkdown(news.content) + '</div>';
+            html += '</div>';
+            
+            // Reward section
+            if(news.reward_amount > 0){
+                html += '<div class="reward-section">';
+                html += '<div class="reward-title">🎁 Награда за прочтение</div>';
+                if(news.claimed){
+                    html += '<button class="reward-btn claimed" disabled>✓ Награда получена</button>';
+                } else {
+                    html += '<button class="reward-btn" onclick="claimReward(' + news.id + ')">Получить +' + news.reward_amount + ' Stars</button>';
                 }
-                
-                return '<div class="news-card" onclick="openNews(' + n.id + ')">' +
-                    imageHtml +
-                    '<div class="news-body">' +
-                        '<div class="news-title">' + n.title + '</div>' +
-                        '<div class="news-content">' + n.content + '</div>' +
-                        '<div class="news-meta">' +
-                            '<div class="news-date">' + formatDate(n.created_at) + '</div>' +
-                            rewardHtml +
-                        '</div>' +
-                    '</div>' +
-                '</div>';
-            }).join('');
+                html += '</div>';
+            }
+            
+            document.getElementById('newsContent').innerHTML = html;
             
         }catch(e){
             console.error('Load news error:', e);
-            $('newsContainer').innerHTML = '<div class="empty-state"><img class="empty-icon" src="/static/img/news/none.svg" alt=""><div class="empty-text">Ошибка загрузки</div></div>';
+            document.getElementById('newsContent').innerHTML = '<div class="error-state"><div class="error-icon">❌</div><div class="error-text">Ошибка загрузки</div></div>';
         }
     }
     
-    window.openNews = function(newsId){
-        window.location.href = '/news/' + newsId;
-    };
-    
-    window.claimReward = async function(newsId, btn){
+    window.claimReward = async function(nid){
         if(!userId){
             showToast('Войдите через Telegram', 'err');
             return;
         }
         
-        btn.style.pointerEvents = 'none';
-        btn.innerHTML = '<span>...</span>';
-        
         try{
             var r = await fetch('/api/news/claim-reward', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({user_id: userId, news_id: newsId})
+                body: JSON.stringify({user_id: userId, news_id: nid})
             });
             var d = await r.json();
             
             if(d.success){
-                btn.className = 'news-reward claimed';
-                btn.innerHTML = '<span>✓ Получено</span>';
-                showToast('Получено +' + formatReward(d.reward), 'ok');
+                showToast('Получено +' + d.reward + ' Stars!', 'ok');
+                loadNews();
             } else {
-                btn.innerHTML = '<span>Ошибка</span>';
                 showToast(d.error || 'Ошибка', 'err');
             }
         }catch(e){
-            btn.innerHTML = '<span>Ошибка</span>';
             showToast('Ошибка сети', 'err');
         }
     };
