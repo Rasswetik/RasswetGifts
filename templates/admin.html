@@ -789,10 +789,14 @@ var rewardRowCount = 0;
 async function loadLbGifts(){
     if(lbGiftsLoaded.length > 0) return;
     try {
-        var r = await fetch('/data/gifts.json');
+        var r = await fetch('/api/admin/get-gifts-list');
         var data = await r.json();
-        lbGiftsLoaded = data.gifts || data || [];
-    } catch(e) { lbGiftsLoaded = []; }
+        lbGiftsLoaded = data.gifts || [];
+        console.log('Loaded gifts for leaderboard:', lbGiftsLoaded.length);
+    } catch(e) { 
+        console.error('Error loading gifts:', e);
+        lbGiftsLoaded = []; 
+    }
 }
 
 function addRewardRow(pos, type, amount, giftId){
@@ -1211,15 +1215,16 @@ function closeAddGiftModal(){
 async function loadGiftsForAdd(){
     $('addGiftGrid').innerHTML = '<div class="loading" style="grid-column:1/-1"></div>';
     try{
-        var r = await fetch('/data/gifts.json');
-        allGifts = await r.json();
+        var r = await fetch('/api/admin/get-gifts-list');
+        var data = await r.json();
+        allGifts = data.gifts || [];
         renderAddGifts(allGifts);
     }catch(e){ $('addGiftGrid').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-text">Ошибка</div></div>'; }
 }
 
 function renderAddGifts(gifts){
     $('addGiftGrid').innerHTML = gifts.slice(0, 50).map(g => {
-        var img = g.image_url || (g.slug ? 'https://fragment.com/file/gift/gift-' + g.slug + '.webp' : '/static/img/gift.png');
+        var img = g.image || g.image_url || '/static/img/gift.png';
         var selected = selectedGiftToAdd && selectedGiftToAdd.id === g.id ? ' selected' : '';
         return '<div class="gift-card' + selected + '" onclick="selectGiftToAdd(\'' + g.id + '\')">' +
             '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">' +
@@ -1272,15 +1277,16 @@ async function confirmAddGift(){
 async function loadGifts(){
     $('giftGridAdmin').innerHTML = '<div class="loading" style="grid-column:1/-1"></div>';
     try{
-        var r = await fetch('/data/gifts.json');
-        allGifts = await r.json();
+        var r = await fetch('/api/admin/get-gifts-list');
+        var data = await r.json();
+        allGifts = data.gifts || [];
         renderGiftsAdmin(allGifts);
     }catch(e){ $('giftGridAdmin').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-text">Ошибка</div></div>'; }
 }
 
 function renderGiftsAdmin(gifts){
     $('giftGridAdmin').innerHTML = gifts.map(g => {
-        var img = g.image_url || (g.slug ? 'https://fragment.com/file/gift/gift-' + g.slug + '.webp' : '/static/img/gift.png');
+        var img = g.image || g.image_url || '/static/img/gift.png';
         return '<div class="gift-card">' +
             '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">' +
             '<div class="gift-card-name">' + g.name + '</div>' +
