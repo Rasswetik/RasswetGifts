@@ -475,30 +475,30 @@ def _get_bot_bets_for_api(game_id):
 # Rewards: rocket skins and backgrounds ONLY (no stars/tickets)
 LEVEL_SYSTEM = [
     {"level": 1,  "exp_required": 0,       "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "crash",       "reward_bg": None},
-    {"level": 2,  "exp_required": 10000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "cosmic"},
-    {"level": 3,  "exp_required": 30000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "cat",         "reward_bg": None},
-    {"level": 4,  "exp_required": 60000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 5,  "exp_required": 100000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "dog",         "reward_bg": "rainbow"},
-    {"level": 6,  "exp_required": 150000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 7,  "exp_required": 210000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "banana",      "reward_bg": None},
-    {"level": 8,  "exp_required": 280000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "aurora"},
-    {"level": 9,  "exp_required": 360000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "plane",       "reward_bg": None},
-    {"level": 10, "exp_required": 450000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "rabbit",      "reward_bg": None},
-    {"level": 11, "exp_required": 550000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "neon"},
-    {"level": 12, "exp_required": 660000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "ice",         "reward_bg": None},
-    {"level": 13, "exp_required": 780000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 14, "exp_required": 910000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "unicorn",     "reward_bg": None},
-    {"level": 15, "exp_required": 1050000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 16, "exp_required": 1200000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "goldenplane", "reward_bg": None},
-    {"level": 17, "exp_required": 1360000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 18, "exp_required": 1530000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "telegram",    "reward_bg": None},
-    {"level": 19, "exp_required": 1710000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 20, "exp_required": 1900000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 21, "exp_required": 2150000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 22, "exp_required": 2400000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 23, "exp_required": 2700000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 24, "exp_required": 3000000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 25, "exp_required": 3400000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "TonTheMoon",  "reward_bg": None},
+    {"level": 2,  "exp_required": 1000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "cosmic"},
+    {"level": 3,  "exp_required": 1500,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "cat",         "reward_bg": None},
+    {"level": 4,  "exp_required": 2500,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 5,  "exp_required": 4000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "dog",         "reward_bg": "rainbow"},
+    {"level": 6,  "exp_required": 7000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 7,  "exp_required": 10000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "banana",      "reward_bg": None},
+    {"level": 8,  "exp_required": 15000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "aurora"},
+    {"level": 9,  "exp_required": 22000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "plane",       "reward_bg": None},
+    {"level": 10, "exp_required": 30000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "rabbit",      "reward_bg": None},
+    {"level": 11, "exp_required": 40000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "neon"},
+    {"level": 12, "exp_required": 55000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "ice",         "reward_bg": None},
+    {"level": 13, "exp_required": 75000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 14, "exp_required": 100000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "unicorn",     "reward_bg": None},
+    {"level": 15, "exp_required": 130000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 16, "exp_required": 170000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "goldenplane", "reward_bg": None},
+    {"level": 17, "exp_required": 220000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 18, "exp_required": 280000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "telegram",    "reward_bg": None},
+    {"level": 19, "exp_required": 350000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 20, "exp_required": 430000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 21, "exp_required": 520000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 22, "exp_required": 620000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 23, "exp_required": 730000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 24, "exp_required": 850000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 25, "exp_required": 1000000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "TonTheMoon",  "reward_bg": None},
 ]
 
 # Background names for display
@@ -6795,6 +6795,7 @@ def claim_daily_bonus():
 @app.route('/api/sell-gift', methods=['POST'])
 def sell_gift():
     """Продажа подарка из инвентаря"""
+    conn = None
     try:
         data = request.get_json()
         user_id = data['user_id']
@@ -6805,31 +6806,28 @@ def sell_gift():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute('SELECT gift_name, gift_value, is_withdrawing FROM inventory WHERE id = ? AND user_id = ?', (gift_id, user_id))
-        gift = cursor.fetchone()
+        cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ?', (gift_id, user_id))
+        raw = cursor.fetchone()
 
-        if not gift:
+        if not raw:
             conn.close()
             return jsonify({'success': False, 'error': 'Подарок не найден в инвентаре'})
 
-        gift_name, gift_value, is_withdrawing = gift
+        columns = [desc[0] for desc in cursor.description]
+        gift = dict(zip(columns, raw))
+
+        gift_name = gift.get('gift_name', 'Gift')
+        gift_value = gift.get('gift_value', 0) or 0
+        is_withdrawing = gift.get('is_withdrawing', False)
 
         if is_withdrawing:
             conn.close()
             return jsonify({'success': False, 'error': 'Подарок находится в процессе вывода и не может быть продан'})
 
         # Check if it's a crate item (cannot be sold)
-        try:
-            cursor.execute("PRAGMA table_info('inventory')")
-            cols = [r[1] for r in cursor.fetchall()]
-            if 'crate_id' in cols:
-                cursor.execute('SELECT crate_id FROM inventory WHERE id = ?', (gift_id,))
-                cr = cursor.fetchone()
-                if cr and cr[0]:
-                    conn.close()
-                    return jsonify({'success': False, 'error': 'Ящик нельзя продать, только открыть'})
-        except:
-            pass
+        if gift.get('crate_id'):
+            conn.close()
+            return jsonify({'success': False, 'error': 'Ящик нельзя продать, только открыть'})
 
         cursor.execute('DELETE FROM inventory WHERE id = ?', (gift_id,))
 
@@ -6844,10 +6842,13 @@ def sell_gift():
         exp_gained = max(1, gift_value // 100)
         cursor.execute('UPDATE users SET experience = experience + ? WHERE id = ?', (exp_gained, user_id))
 
-        cursor.execute('''
-            INSERT INTO user_history (user_id, operation_type, amount, description)
-            VALUES (?, 'gift_sold', ?, ?)
-        ''', (user_id, gift_value, f'Продажа подарка: {gift_name}'))
+        try:
+            cursor.execute('''
+                INSERT INTO user_history (user_id, operation_type, amount, description)
+                VALUES (?, 'gift_sold', ?, ?)
+            ''', (user_id, gift_value, f'Продажа подарка: {gift_name}'))
+        except Exception:
+            pass
 
         conn.commit()
 
@@ -6861,13 +6862,16 @@ def sell_gift():
             'success': True,
             'message': f'Подарок продан за {gift_value} звезд!',
             'new_balance': {
-                'stars': new_balance[0],
-                'tickets': new_balance[1]
+                'stars': new_balance[0] if new_balance else 0,
+                'tickets': new_balance[1] if new_balance else 0
             }
         })
 
     except Exception as e:
         logger.error(f"❌ Ошибка продажи подарка: {e}")
+        if conn:
+            try: conn.close()
+            except: pass
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/sell-all-gifts', methods=['POST'])
@@ -9851,7 +9855,7 @@ def api_get_news():
         if not os.path.exists(news_file):
             return jsonify({'success': True, 'news': []})
         
-        with open(news_file, 'r', encoding='utf-8') as f:
+        with open(news_file, 'r', encoding='utf-8-sig') as f:
             data = json.load(f)
         
         news_list = data.get('news', [])
@@ -9915,7 +9919,7 @@ def api_get_news_detail(news_id):
         if not os.path.exists(news_file):
             return jsonify({'success': False, 'error': 'Новость не найдена'})
         
-        with open(news_file, 'r', encoding='utf-8') as f:
+        with open(news_file, 'r', encoding='utf-8-sig') as f:
             data = json.load(f)
         
         news_list = data.get('news', [])
@@ -10015,6 +10019,74 @@ def api_claim_news_reward():
     except Exception as e:
         logger.error(f"❌ Ошибка получения награды: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+
+# ===== NEWS.JSON MANAGEMENT (admin) =====
+
+def _load_news_json():
+    news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+    with open(news_file, 'r', encoding='utf-8-sig') as f:
+        return json.load(f)
+
+def _save_news_json(data):
+    news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+    with open(news_file, 'w', encoding='utf-8-sig') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+@app.route('/api/admin/news-json', methods=['GET'])
+def admin_news_json_list():
+    """Список всех новостей из news.json (включая неактивные)"""
+    admin_id = request.args.get('admin_id')
+    if not admin_id or int(admin_id) != ADMIN_ID:
+        return jsonify({'success': False, 'error': 'Доступ запрещен'})
+    data = _load_news_json()
+    return jsonify({'success': True, 'news': data.get('news', [])})
+
+@app.route('/api/admin/news-json/toggle', methods=['POST'])
+def admin_news_json_toggle():
+    """Включить/выключить новость"""
+    body = request.get_json() or {}
+    if int(body.get('admin_id', 0)) != ADMIN_ID:
+        return jsonify({'success': False, 'error': 'Доступ запрещен'})
+    data = _load_news_json()
+    nid = body.get('news_id')
+    for n in data.get('news', []):
+        if n['id'] == nid:
+            n['is_active'] = not n.get('is_active', True)
+            _save_news_json(data)
+            return jsonify({'success': True, 'is_active': n['is_active']})
+    return jsonify({'success': False, 'error': 'Не найдена'})
+
+@app.route('/api/admin/news-json/delete', methods=['POST'])
+def admin_news_json_delete():
+    """Удалить новость из news.json"""
+    body = request.get_json() or {}
+    if int(body.get('admin_id', 0)) != ADMIN_ID:
+        return jsonify({'success': False, 'error': 'Доступ запрещен'})
+    data = _load_news_json()
+    nid = body.get('news_id')
+    data['news'] = [n for n in data.get('news', []) if n['id'] != nid]
+    _save_news_json(data)
+    return jsonify({'success': True})
+
+@app.route('/api/admin/news-json/update', methods=['POST'])
+def admin_news_json_update():
+    """Обновить поля новости в news.json"""
+    body = request.get_json() or {}
+    if int(body.get('admin_id', 0)) != ADMIN_ID:
+        return jsonify({'success': False, 'error': 'Доступ запрещен'})
+    data = _load_news_json()
+    nid = body.get('news_id')
+    updates = body.get('updates', {})
+    for n in data.get('news', []):
+        if n['id'] == nid:
+            for k, v in updates.items():
+                if k not in ('id',):
+                    n[k] = v
+            _save_news_json(data)
+            return jsonify({'success': True, 'news': n})
+    return jsonify({'success': False, 'error': 'Не найдена'})
+
 
 @app.route('/api/admin/news', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_news_management():
@@ -15107,6 +15179,40 @@ def _lazy_init():
 def ensure_initialized():
     """Гарантирует что БД и игровые циклы запущены перед обработкой запросов"""
     _lazy_init()
+
+    # ── Server-side ban enforcement ──
+    path = request.path
+    # Skip ban check for: static, ban page, check-ban, admin routes, webhooks
+    if (path.startswith('/static') or path in ('/ban', '/api/check-ban', '/favicon.ico')
+            or path.startswith('/api/admin/') or path.startswith('/webhook')):
+        return
+    # Only enforce on API mutation endpoints
+    if path.startswith('/api/'):
+        user_id = (request.args.get('user_id')
+                   or (request.get_json(silent=True) or {}).get('user_id'))
+        if user_id:
+            try:
+                conn = get_db_connection()
+                row = conn.execute(
+                    'SELECT is_banned, ban_until FROM users WHERE id = ?', (str(user_id),)
+                ).fetchone()
+                conn.close()
+                if row and row[0]:
+                    # Check if temp ban expired
+                    if row[1]:
+                        from datetime import datetime
+                        try:
+                            if datetime.now() > datetime.fromisoformat(row[1]):
+                                c2 = get_db_connection()
+                                c2.execute('UPDATE users SET is_banned=0, ban_reason=NULL, ban_until=NULL WHERE id=?', (str(user_id),))
+                                c2.commit()
+                                c2.close()
+                                return  # ban expired, allow
+                        except Exception:
+                            pass
+                    return jsonify({'success': False, 'error': 'banned'}), 403
+            except Exception:
+                pass
 
 # ==================== TELEGRAM BOT (WEBHOOK, без telebot) ====================
 

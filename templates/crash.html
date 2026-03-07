@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="icon" type="image/png" href="/static/img/logo.png">
 <link rel="stylesheet" href="/static/css/global.css">
+<link rel="stylesheet" href="/static/css/crash-backgrounds.css">
 <link rel="shortcut icon" href="/static/img/logo.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/static/img/logo.png">
 <title>CRASH</title>
@@ -47,7 +48,12 @@ body.no-blur .modal-overlay,
 body.no-blur .settings-overlay,
 body.no-blur .ton-overlay,
 body.no-blur .catalog-overlay,
-body.no-blur .win-overlay{backdrop-filter:none!important}
+body.no-blur .win-overlay,
+body.no-blur .bottom-nav,
+body.no-blur .coeff-box,
+body.no-blur .countdown-display,
+body.no-blur .balance-card,
+body.no-blur .toast{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 /* Use targeted selectors instead of * (which forces full restyle pass) */
 body.no-shadows .hub-modal,
 body.no-shadows .settings-modal,
@@ -61,12 +67,17 @@ body.no-shadows .history-bar,
 body.no-shadows .shop-deal-card{box-shadow:none!important;text-shadow:none!important}
 body.low-power *{
     animation-duration:0s!important;
-    transition-duration:0.1s!important;
+    transition-duration:0.05s!important;
 }
 body.low-power::before,
 body.low-power::after{display:none!important}
-/* video removed — CSS grid bg only */
 body.low-power .rocket-wrap img{filter:none!important}
+body.low-power .bottom-nav,
+body.low-power .coeff-box,
+body.low-power .countdown-display{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+@media(max-width:768px){
+    .bottom-nav{backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+}
 
 /* ===== CONTAINER ===== */
 .container{
@@ -77,48 +88,46 @@ body.low-power .rocket-wrap img{filter:none!important}
     flex-direction:column;
     position:relative;
     padding-bottom:80px;
-    padding-top:calc(env(safe-area-inset-top, 20px) + 60px);
+    padding-top:calc(env(safe-area-inset-top, 20px) + 50px + 5vh);
 }
 @media(min-width:768px){ .container{max-width:480px} }
 @media(min-width:1100px){ .container{max-width:480px} }
 
 /* ===== BOTTOM NAV ===== */
 .bottom-nav{
-    position:fixed;bottom:0;left:0;right:0;z-index:4000;
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    z-index:4000;width:100%;max-width:480px;
+    height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);
     background:rgba(26,30,42,.85);
-    border-top:1px solid rgba(255,255,255,.05);
-    display:flex;align-items:center;justify-content:center;
-    padding:6px 10px calc(env(safe-area-inset-bottom,8px) + 6px);
-    gap:2px;
     backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border-top:1px solid rgba(255,255,255,.05);
+    display:flex;align-items:center;justify-content:space-around;
 }
 .bottom-nav-item{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    padding:8px 12px;
-    border-radius:14px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    padding:8px 16px;
+    border-radius:12px;
     background:transparent;
     border:none;
-    color:rgba(255,255,255,.3);
+    color:rgba(255,255,255,.4);
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    font-weight:600;font-size:12px;
+    font-weight:600;
     cursor:pointer;
     transition:all .25s ease;
     text-decoration:none;
-    flex:1;
-    max-width:100px;
     position:relative;
 }
 .bottom-nav-item svg{
-    width:22px;height:22px;
+    width:24px;height:24px;
     flex-shrink:0;
     stroke:currentColor;
     fill:none;
     transition:transform .25s ease;
 }
-.bottom-nav-item span{font-size:10px;font-weight:700;letter-spacing:.3px}
+.bottom-nav-item span{font-size:10px;font-weight:600}
 .bottom-nav-item.active{
-    background:rgba(255,255,255,.07);
-    color:#C8D0DC;
+    background:rgba(255,255,255,.08);
+    color:#fff;
 }
 .bottom-nav-item.disabled{
     opacity:.3;
@@ -1166,111 +1175,8 @@ tc-root *{pointer-events:auto}
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:900;
     font-size:min(220px, 45vw);
 
-/* ===== ANIMATED BACKGROUND THEMES ===== */
-/* Theme: Cosmic (Space with planets and stars) */
-.game-field.bg-cosmic{
-    background:radial-gradient(ellipse at 30% 20%,#1a1040 0%,#0a0818 50%,#050510 100%);
-}
-.game-field.bg-cosmic::before{
-    background:
-        radial-gradient(3px 3px at 10% 10%, rgba(255,200,100,.9) 50%, transparent 100%),
-        radial-gradient(2px 2px at 25% 35%, rgba(180,200,255,.8) 50%, transparent 100%),
-        radial-gradient(2.5px 2.5px at 75% 15%, rgba(255,220,150,.85) 50%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 90% 50%, rgba(200,220,255,.7) 50%, transparent 100%),
-        radial-gradient(2px 2px at 55% 75%, rgba(255,180,200,.75) 50%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 15% 85%, rgba(150,200,255,.65) 50%, transparent 100%),
-        radial-gradient(2px 2px at 40% 20%, rgba(255,255,200,.6) 50%, transparent 100%),
-        radial-gradient(1px 1px at 85% 80%, rgba(180,150,255,.7) 50%, transparent 100%),
-        radial-gradient(60px 60px at 70% 70%, rgba(100,80,160,.2) 0%, transparent 60%),
-        radial-gradient(40px 40px at 20% 60%, rgba(60,100,180,.15) 0%, transparent 60%);
-    animation:cosmicPulse 6s ease-in-out infinite alternate;
-}
-.game-field.bg-cosmic .grid-overlay{opacity:.03}
-@keyframes cosmicPulse{
-    0%{opacity:.6;filter:hue-rotate(0deg)}
-    50%{opacity:.9;filter:hue-rotate(15deg)}
-    100%{opacity:.7;filter:hue-rotate(-10deg)}
-}
+/* ===== ANIMATED BACKGROUND THEMES — see /static/css/crash-backgrounds.css ===== */
 
-/* Theme: Rainbow (Colorful gradient flow) */
-.game-field.bg-rainbow{
-    background:linear-gradient(135deg,#1a0a2e 0%,#0f0f20 100%);
-}
-.game-field.bg-rainbow::before{
-    background:
-        linear-gradient(45deg,
-            rgba(255,100,100,.12) 0%,
-            rgba(255,200,100,.12) 20%,
-            rgba(100,255,150,.12) 40%,
-            rgba(100,200,255,.12) 60%,
-            rgba(200,100,255,.12) 80%,
-            rgba(255,100,200,.12) 100%);
-    background-size:200% 200%;
-    animation:rainbowShift 8s ease infinite;
-}
-.game-field.bg-rainbow .grid-overlay{
-    background:
-        linear-gradient(rgba(255,150,150,.05) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(150,150,255,.05) 1px,transparent 1px);
-    background-size:40px 40px;
-}
-@keyframes rainbowShift{
-    0%{background-position:0% 0%}
-    50%{background-position:100% 100%}
-    100%{background-position:0% 0%}
-}
-
-/* Theme: Aurora (Northern lights effect) */
-.game-field.bg-aurora{
-    background:linear-gradient(180deg,#050812 0%,#0a1020 50%,#0f1828 100%);
-}
-.game-field.bg-aurora::before{
-    background:
-        linear-gradient(180deg,
-            transparent 0%,
-            rgba(50,200,150,.08) 20%,
-            rgba(100,150,255,.1) 40%,
-            rgba(80,200,180,.08) 60%,
-            rgba(150,100,255,.06) 80%,
-            transparent 100%);
-    animation:auroraWave 10s ease-in-out infinite;
-}
-.game-field.bg-aurora .grid-overlay{opacity:.04}
-@keyframes auroraWave{
-    0%{transform:translateY(0) scaleY(1);opacity:.5}
-    25%{transform:translateY(-5%) scaleY(1.1);opacity:.7}
-    50%{transform:translateY(0) scaleY(.95);opacity:.6}
-    75%{transform:translateY(3%) scaleY(1.05);opacity:.8}
-    100%{transform:translateY(0) scaleY(1);opacity:.5}
-}
-
-/* Theme: Neon City (Cyberpunk neon lines) */
-.game-field.bg-neon{
-    background:linear-gradient(180deg,#0a0515 0%,#120820 50%,#0a0510 100%);
-}
-.game-field.bg-neon::before{
-    background:
-        radial-gradient(2px 2px at 20% 30%, rgba(255,50,150,.8) 50%, transparent 100%),
-        radial-gradient(2px 2px at 80% 20%, rgba(50,200,255,.8) 50%, transparent 100%),
-        radial-gradient(2px 2px at 50% 70%, rgba(255,200,50,.7) 50%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 30% 80%, rgba(100,255,200,.6) 50%, transparent 100%),
-        radial-gradient(1.5px 1.5px at 70% 60%, rgba(255,100,255,.7) 50%, transparent 100%);
-    animation:neonFlicker 3s ease-in-out infinite alternate;
-}
-.game-field.bg-neon .grid-overlay{
-    background:
-        linear-gradient(rgba(255,50,150,.08) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(50,200,255,.08) 1px,transparent 1px);
-    background-size:50px 50px;
-    animation:gridScroll 6s linear infinite;
-}
-@keyframes neonFlicker{
-    0%{opacity:.5;filter:brightness(1)}
-    25%{opacity:.7;filter:brightness(1.2)}
-    50%{opacity:.6;filter:brightness(.9)}
-    75%{opacity:.8;filter:brightness(1.1)}
-    100%{opacity:.5;filter:brightness(1)}
-}
     color:rgba(255,255,255,.85);
     position:absolute;
     z-index:4;
@@ -1767,6 +1673,8 @@ tc-root *{pointer-events:auto}
 @keyframes coeffPulse{0%,100%{transform:scale(1);box-shadow:0 0 15px rgba(30,228,76,.1)}50%{transform:scale(1.02);box-shadow:0 0 25px rgba(30,228,76,.2)}}
 .coeff-box.crashed{color:#F96999;border-color:rgba(249,105,153,.25);box-shadow:0 0 15px rgba(249,105,153,.1);animation:coeffShake .5s ease}
 .coeff-box.waiting{background:rgba(30,228,76,.15);color:#1EE44C;border-color:rgba(30,228,76,.25);box-shadow:0 0 15px rgba(30,228,76,.1)}
+.coeff-gift-icon{width:32px;height:32px;object-fit:contain;border-radius:6px;margin-left:-4px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));animation:giftIconFloat 2s ease-in-out infinite}
+@keyframes giftIconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 
 /* ===== AUTO CASHOUT (in modal) ===== */
 .auto-cashout-row{
@@ -1902,17 +1810,17 @@ tc-root *{pointer-events:auto}
 .clear-selected{padding:8px 14px;border-radius:10px;border:none;background:rgba(249,105,153,.2);color:#E8527A;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:11px;cursor:pointer;transition:all .2s}
 .clear-selected:hover{background:rgba(249,105,153,.3)}
 /* Inventory grid */
-.inv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:260px;overflow-y:auto;padding:4px}
+.inv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:340px;overflow-y:auto;overflow-x:hidden;padding:4px;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 .inv-grid::-webkit-scrollbar{width:4px}
 .inv-grid::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px}
-.inv-card{background:linear-gradient(135deg,rgba(30,30,50,.8),rgba(20,20,40,.8));border-radius:16px;padding:12px 8px;text-align:center;cursor:pointer;border:2px solid rgba(255,255,255,.08);transition:all .2s;position:relative}
+.inv-card{background:linear-gradient(135deg,rgba(30,30,50,.8),rgba(20,20,40,.8));border-radius:16px;padding:10px 6px;text-align:center;cursor:pointer;border:2px solid rgba(255,255,255,.08);transition:all .2s;position:relative;min-width:0;overflow:hidden}
 .inv-card:hover{border-color:rgba(120,135,160,.4);background:linear-gradient(135deg,rgba(40,40,70,.9),rgba(30,30,60,.9));transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
 .inv-card.selected{border-color:#6B7A8D;background:linear-gradient(135deg,rgba(120,135,160,.2),rgba(27,90,181,.2));box-shadow:0 0 20px rgba(120,135,160,.3)}
-.inv-card.selected::after{content:'';position:absolute;top:6px;right:6px;width:20px;height:20px;background:#6B7A8D;border-radius:50%;background-image:url('/static/img/star.png');background-size:12px;background-position:center;background-repeat:no-repeat}
-.inv-card img{width:52px;height:52px;object-fit:contain;margin-bottom:6px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.3));image-rendering:auto}
+.inv-card.selected::after{content:'✓';position:absolute;top:4px;right:4px;width:18px;height:18px;background:#6B7A8D;border-radius:50%;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.inv-card img{width:48px;height:48px;object-fit:contain;margin-bottom:4px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.3));image-rendering:auto}
 .inv-card:hover img{transform:scale(1.05)}
-.inv-card .inv-name{font-size:10px;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
-.inv-card .inv-val{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:12px;color:#FDA100;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:3px}
+.inv-card .inv-name{font-size:9px;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.inv-card .inv-val{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:11px;color:#0088cc;margin-top:3px;display:flex;align-items:center;justify-content:center;gap:3px}
 .inv-card .inv-val img{width:12px;height:12px}
 .inv-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px}
 /* Confirm button for gifts */
@@ -3262,16 +3170,18 @@ tc-root *{pointer-events:auto}
 @media(max-width:600px){
     .game-field{
         margin:0 8px;border-radius:20px;
-        aspect-ratio:1/1;min-height:auto;
+        aspect-ratio:5/4;min-height:auto;
     }
-    .rocket-wrap img{width:200px;height:200px}
+    .rocket-wrap img{width:120px;height:120px}
+    .rocket-wrap.showing-gift img{width:130px;height:130px}
     .mult-display{top:12%;font-size:min(48px,12vw)}
     .top-bar{margin-bottom:4px}
 }
 @media(max-width:400px){
     .countdown-display{font-size:min(180px,40vw)}
-    .game-field{aspect-ratio:1/1;min-height:auto;margin:0 6px;border-radius:16px}
-    .rocket-wrap img{width:180px;height:180px}
+    .game-field{aspect-ratio:5/4;min-height:auto;margin:0 6px;border-radius:16px}
+    .rocket-wrap img{width:100px;height:100px}
+    .rocket-wrap.showing-gift img{width:110px;height:110px}
     .mult-display{top:10%;font-size:min(40px,11vw)}
     .top-bar{padding:8px 12px}
     .bal-pill-crash{padding:5px 10px;font-size:12px}
@@ -3694,6 +3604,7 @@ tc-root *{pointer-events:auto}
     <div class="history-section">
         <div class="history-scroll" id="histScroll">
             <div class="coeff-box" id="coeffBox">--</div>
+            <img class="coeff-gift-icon" id="coeffGiftIcon" src="" style="display:none">
         </div>
     </div>
 
@@ -3748,7 +3659,7 @@ tc-root *{pointer-events:auto}
             <div class="selected-summary" id="selectedSummary">
                 <div class="selected-info">
                     <div class="selected-count">Selected: <span id="selectedCount">0</span></div>
-                    <div class="selected-total"><span id="selectedTotal">0</span><img id="selectedTotalIcon" src="/static/img/star.png" onerror="this.src='/static/img/star.png'"></div>
+                    <div class="selected-total"><span id="selectedTotal">0</span><img id="selectedTotalIcon" src="/static/img/tons/ton_1.svg"></div>
                 </div>
                 <button class="clear-selected" onclick="clearSelectedGifts()">Clear</button>
             </div>
@@ -4768,6 +4679,8 @@ let gameId = null, prevGameId = null;
 let status = 'counting', prevSt = 'counting';
 let dispMult = 1.0, servMult = 1.0;
 let hasBet = false, betAmt = 0;
+let activeBetType = 'stars'; /* 'stars' | 'gift' | 'multi' */
+let activeBetGiftImage = null; /* Gift image for display when bet is gift */
 let cashedOut = false;  /* Flag: already cashed out this round */
 let cashedOutBetAmt = 0; /* Bet amount after cashout for gift display */
 let crashDone = false;
@@ -5096,6 +5009,11 @@ async function initTelegramApp() {
             }
         }
     });
+
+    /* Auto-enable no-blur on mobile for better performance */
+    if(/Mobi|Android|iPhone/i.test(navigator.userAgent)){
+        document.body.classList.add('no-blur');
+    }
 
     requestAnimationFrame(render);
 }
@@ -5676,11 +5594,23 @@ function onNewServerMult(newMult){
     }
 }
 
+/* ---- Cached DOM refs for render loop (set once) ---- */
+var _rw = null, _rImg = null, _gf = null, _coeffBox = null, _coeffGI = null, _multDisp = null, _cdDisp = null;
+var _rwFlying = false, _prevAnimDur = '', _prevGridS = '', _prevCoeffText = '';
+var _renderCacheInited = false;
+function _initRenderCache(){
+    _rw = $('rocketWrap'); _gf = $('gameField'); _coeffBox = $('coeffBox');
+    _coeffGI = $('coeffGiftIcon'); _multDisp = $('multDisplay'); _cdDisp = $('cdDisplay');
+    if(_rw) _rImg = _rw.querySelector('img');
+    _renderCacheInited = true;
+}
+
 function render(){
     var now = performance.now();
     var dt = lastFrameTime > 0 ? (now - lastFrameTime) : 16;
-    if(dt > 100) dt = 100; /* clamp to avoid huge jumps after tab-switch */
+    if(dt > 100) dt = 100;
     lastFrameTime = now;
+    if(!_renderCacheInited) _initRenderCache();
 
     if(status === 'flying'){
         /* Client-side interpolation: continuously increment using growth rate */
@@ -5694,43 +5624,63 @@ function render(){
         /* Ensure display never falls below 1.0 */
         if(dispMult < 1.0) dispMult = 1.0;
 
-        const rw = $('rocketWrap');
-        if(rw && !rw.classList.contains('flying')) rw.classList.add('flying');
+        if(_rw && !_rwFlying){ _rw.classList.add('flying'); _rwFlying = true; }
 
         /* Dynamic rocket tilt & speed feel based on multiplier */
-        if(rw){
-            const rImg = rw.querySelector('img');
-            /* Check if showing gift (PNG) - no tilt for gifts */
-            const isShowingGift = rw.classList.contains('showing-gift');
-            if(rImg && !isShowingGift){
-                /* Tilt from 12deg at 1x to 22deg at 5x+ - smoother angle */
-                var tilt = Math.min(22, 12 + (dispMult - 1) * 2.5);
-                /* Scale slightly at high multipliers for speed feel */
-                var sc = Math.min(1.12, 1 + (dispMult - 1) * 0.015);
-                rImg.style.transform = 'rotate(' + tilt.toFixed(1) + 'deg) scale(' + sc.toFixed(2) + ')';
-            } else if(rImg && isShowingGift){
-                /* Gift stays upright with slight scale */
+        if(_rw && _rImg){
+            var isShowingGift = _rw.classList.contains('showing-gift');
+            if(!isShowingGift){
+                var tilt = 0;
+                if(dispMult >= 2.0) tilt = Math.min(35, (dispMult - 2.0) * 5.8);
+                var sc = Math.min(1.15, 1 + Math.max(0, dispMult - 1.5) * 0.02);
+                _rImg.style.transform = 'rotate(' + tilt.toFixed(1) + 'deg) scale(' + sc.toFixed(2) + ')';
+                /* Only update animationDuration when value actually changes */
+                var newDur;
+                if(dispMult >= 2.0){
+                    newDur = Math.max(0.15, 1.0 - (dispMult - 2.0) * 0.25).toFixed(2) + 's';
+                } else {
+                    newDur = '1s';
+                }
+                if(newDur !== _prevAnimDur){ _rw.style.animationDuration = newDur; _prevAnimDur = newDur; }
+            } else {
                 var sc = Math.min(1.08, 1 + (dispMult - 1) * 0.01);
-                rImg.style.transform = 'scale(' + sc.toFixed(2) + ')';
+                _rImg.style.transform = 'scale(' + sc.toFixed(2) + ')';
+                if(_prevAnimDur !== '1s'){ _rw.style.animationDuration = '1s'; _prevAnimDur = '1s'; }
             }
-            /* Speed up glow animation at high multipliers */
-            var glowDur = Math.max(0.3, 1.0 - (dispMult - 1) * 0.08);
-            rw.style.animationDuration = glowDur.toFixed(2) + 's';
         }
 
-        /* Dynamic grid speed based on multiplier — faster at higher coefficients */
-        var gf2 = $('gameField');
-        if(gf2){
-            var gridS = Math.max(0.5, 8.0 - (dispMult - 1) * 1.2);
-            gf2.style.setProperty('--grid-speed', gridS.toFixed(1) + 's');
+        /* Dynamic grid speed — only update when visually changed */
+        if(_gf){
+            var gs = Math.max(0.5, 8.0 - (dispMult - 1) * 1.2).toFixed(1) + 's';
+            if(gs !== _prevGridS){ _gf.style.setProperty('--grid-speed', gs); _prevGridS = gs; }
         }
 
-        /* Live coeff display - both small pill and big rolling display */
-        $('coeffBox').textContent = dispMult.toFixed(2) + 'x';
+        /* Live coeff display */
+        var ct = dispMult.toFixed(2) + 'x';
+        if(ct !== _prevCoeffText){ if(_coeffBox) _coeffBox.textContent = ct; _prevCoeffText = ct; }
+        if(_coeffGI){
+            if(hasBet && !cashedOut){
+                var _ciSrc = null;
+                if(activeBetType !== 'stars' && activeBetGiftImage){
+                    _ciSrc = activeBetGiftImage;
+                } else if(activeBetType === 'stars' && betAmt > 0){
+                    var _cpw = Math.floor(betAmt * dispMult);
+                    var _cg = getAchievableGift(_cpw);
+                    if(_cg) _ciSrc = resolveCrashGiftImage(_cg, null);
+                }
+                if(_ciSrc){
+                    if(_coeffGI.src !== _ciSrc) _coeffGI.src = _ciSrc;
+                    if(_coeffGI.style.display === 'none') _coeffGI.style.display = '';
+                } else {
+                    if(_coeffGI.style.display !== 'none') _coeffGI.style.display = 'none';
+                }
+            } else {
+                if(_coeffGI.style.display !== 'none') _coeffGI.style.display = 'none';
+            }
+        }
         updateMultDisplay(dispMult);
         
-        var md = $('multDisplay');
-        if(md && !md.classList.contains('active')) md.classList.add('active');
+        if(_multDisp && !_multDisp.classList.contains('active')) _multDisp.classList.add('active');
         
         updateBetInfoDisplay();
 
@@ -5753,6 +5703,8 @@ function render(){
     } else {
         if(lastRenderStatus === 'flying'){
             updateRocketImage();
+            _rwFlying = false; _prevAnimDur = ''; _prevGridS = ''; _prevCoeffText = '';
+            _cachedActiveRows = null;
         }
         
         /* Client-side countdown interpolation for smooth 5,4,3,2,1,GO */
@@ -5760,20 +5712,18 @@ function render(){
             var elapsed = (performance.now() - lastTrTimestamp) / 1000;
             var clientTr = Math.max(0, lastTimeRemaining - elapsed);
             var sec = Math.ceil(clientTr);
-            if(sec > 5) sec = 5; /* Clamp to max 5 */
+            if(sec > 5) sec = 5;
             if(sec <= 0 && clientTr <= 0) sec = 0;
             var label = sec > 0 ? String(sec) : 'GO';
             if(countdownShown !== label){
                 countdownShown = label;
-                var cd = $('cdDisplay');
-                if(cd){
-                    cd.textContent = label;
-                    cd.classList.remove('active');
-                    void cd.offsetWidth;
-                    cd.classList.add('active');
+                if(_cdDisp){
+                    _cdDisp.textContent = label;
+                    _cdDisp.classList.remove('active');
+                    void _cdDisp.offsetWidth;
+                    _cdDisp.classList.add('active');
                     if(label !== 'GO'){
                         playSound('countdown');
-                        /* Vibration on each countdown number - stronger pulse */
                         triggerVibration([80, 30, 80]);
                     }
                 }
@@ -5830,6 +5780,7 @@ async function updStatus(){
         /* On new round, forcibly clear bet state — server cache may lag */
         if(newRound){
             hasBet = false; betAmt = 0;
+            activeBetType = 'stars'; activeBetGiftImage = null;
             cashedOut = false; cashedOutBetAmt = 0;
             betPlacedOptimistic = false;
         }
@@ -6006,6 +5957,7 @@ async function updStatus(){
             gf.classList.remove('flying');
             coeff.className = 'coeff-box crashed';
             coeff.textContent = servMult.toFixed(2) + 'x';
+            var giC = $('coeffGiftIcon'); if(giC) giC.style.display = 'none';
             
             /* Hide multiplier display on crash — only boom visible */
             if(md){
@@ -6168,6 +6120,7 @@ async function processPendingBet(){
             const d = await r.json();
             if(d.success){
                 hasBet = true; betAmt = bet.amount;
+                activeBetType = 'stars'; activeBetGiftImage = null;
                 betPlacedOptimistic = true;
                 userTotalBets++;
                 userBetVolume += bet.amount; checkVolumeUnlock(userBetVolume);
@@ -6188,6 +6141,7 @@ async function processPendingBet(){
             const d = await r.json();
             if(d.success){
                 hasBet = true; betAmt = d.bet_amount || bet.amount;
+                activeBetType = 'gift'; activeBetGiftImage = bet.giftImage || null;
                 betPlacedOptimistic = true;
                 userTotalBets++;
                 userBetVolume += (d.bet_amount || bet.amount); checkVolumeUnlock(userBetVolume);
@@ -6208,6 +6162,7 @@ async function processPendingBet(){
             const d = await r.json();
             if(d.success){
                 hasBet = true; betAmt = d.bet_amount || bet.amount;
+                activeBetType = 'multi'; activeBetGiftImage = (selectedGifts[0] && selectedGifts[0].image) || null;
                 betPlacedOptimistic = true;
                 userTotalBets++;
                 userBetVolume += (d.bet_amount || bet.amount); checkVolumeUnlock(userBetVolume);
@@ -6293,10 +6248,11 @@ async function loadInventory(){
         }
         grid.innerHTML = inventoryItems.map(function(i){
             var isSelected = selectedGifts.some(function(g){ return g.id === i.id; });
+            var tonVal = (i.gift_value / 100).toFixed(2);
             return '<div class="inv-card' + (isSelected ? ' selected' : '') + '" data-id="' + i.id + '" onclick="toggleGiftSelection(' + i.id + ')">' +
-                '<img src="' + (i.gift_image || '/static/img/star.png') + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
+                '<img src="' + (i.gift_image || '/static/img/gift.png') + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
                 '<div class="inv-name">' + (i.gift_name || 'Gift') + '</div>' +
-                '<div class="inv-val">' + i.gift_value + '<img src="/static/img/star.png"></div>' +
+                '<div class="inv-val">' + tonVal + '<img src="/static/img/tons/ton_1.svg"></div>' +
             '</div>';
         }).join('');
         updateSelectedSummary();
@@ -6336,13 +6292,14 @@ function clearSelectedGifts(){
 function updateSelectedSummary(){
     var count = selectedGifts.length;
     var total = selectedGifts.reduce(function(s, g){ return s + g.value; }, 0);
+    var tonVal = (total / 100).toFixed(2);
     
     $('selectedCount').textContent = count;
     $('selectedTotal').dataset.rawStars = String(total);
-    $('selectedTotal').textContent = formatCrashMoney(total);
+    $('selectedTotal').textContent = tonVal;
     $('selectedSummary').classList.toggle('show', count > 0);
     $('confirmGiftsBtn').classList.toggle('show', count > 0);
-    $('confirmGiftsBtn').textContent = 'BET ' + count + ' GIFTS (' + formatCrashMoney(total) + ')';
+    $('confirmGiftsBtn').textContent = 'BET ' + count + ' GIFTS (' + tonVal + ' TON)';
 }
 
 async function confirmMultiGiftBet(){
@@ -6354,7 +6311,7 @@ async function confirmMultiGiftBet(){
     
     /* If game is flying, queue for next round */
     if(status === 'flying'){
-        pendingBet = {type: 'multi', amount: totalValue, inventoryIds: giftIds};
+        pendingBet = {type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: (selectedGifts[0] && selectedGifts[0].image) || null};
         closeBetModal();
         showToast('Gifts (' + totalValue + ') next round','ok');
         updateBetButton();
@@ -6371,6 +6328,7 @@ async function confirmMultiGiftBet(){
         var d = await r.json();
         if(d.success){
             hasBet = true; betAmt = d.bet_amount || totalValue;
+            activeBetType = 'multi'; activeBetGiftImage = (selectedGifts[0] && selectedGifts[0].image) || null;
             betPlacedOptimistic = true;
             userTotalBets++;
             userBetVolume += (d.bet_amount || totalValue); checkVolumeUnlock(userBetVolume);
@@ -6388,10 +6346,13 @@ async function confirmMultiGiftBet(){
 
 async function betGift(invId, name, val){
     if(!userData || !userData.id){ showToast('Auth error','err'); return; }
+    var giftImg = null;
+    var inv = inventoryItems.find(function(i){return i.id === invId});
+    if(inv) giftImg = inv.gift_image || inv.image || null;
     
     /* If game is flying, queue for next round */
     if(status === 'flying'){
-        pendingBet = {type: 'gift', amount: val, inventoryId: invId, name: name};
+        pendingBet = {type: 'gift', amount: val, inventoryId: invId, name: name, giftImage: giftImg};
         closeBetModal();
         showToast('Gift next round','ok');
         updateBetButton();
@@ -6407,6 +6368,7 @@ async function betGift(invId, name, val){
         var d = await r.json();
         if(d.success){
             hasBet = true; betAmt = d.bet_amount || val;
+            activeBetType = 'gift'; activeBetGiftImage = giftImg;
             betPlacedOptimistic = true;
             userTotalBets++;
             userBetVolume += (d.bet_amount || val); checkVolumeUnlock(userBetVolume);
@@ -6713,6 +6675,8 @@ async function loadBets(){
                 var potentialWin = Math.floor(b.bet_amount * (dispMult || 1));
                 coefVal = dispMult ? dispMult.toFixed(2) : '1.00';
                 winDisplay = formatCrashMoney(potentialWin);
+                var aGift = getAchievableGift(potentialWin);
+                if(aGift) winIcon = resolveCrashGiftImage(aGift, tonIcon);
             }
 
             return '<div class="bet-row ' + stCls + '" data-bet-id="' + b.id + '" data-bet-amount="' + b.bet_amount + '" data-status="' + b.status + '">' +
@@ -6756,22 +6720,26 @@ function showCashoutFloat(name, amount, mult){
 
 /* Update active bets display in real-time */
 let lastBetsUpdateTime = 0;
+let _cachedActiveRows = null;
+let _cachedActiveRowsTime = 0;
 function updateActiveBetsDisplay(){
     if(status !== 'flying') return;
-    /* Throttle to 5 updates per second */
     var now = Date.now();
-    if(now - lastBetsUpdateTime < 200) return;
+    if(now - lastBetsUpdateTime < 300) return;
     lastBetsUpdateTime = now;
-    
-    var rows = document.querySelectorAll('.bet-row[data-status="active"]');
-    rows.forEach(function(row){
-        var betAmt = parseInt(row.getAttribute('data-bet-amount')) || 0;
-        var potentialWin = Math.floor(betAmt * dispMult);
-        var curMx = dispMult ? dispMult.toFixed(2) : '1.00';
+    /* Re-query rows only every 2s or when stale */
+    if(!_cachedActiveRows || now - _cachedActiveRowsTime > 2000){
+        _cachedActiveRows = document.querySelectorAll('.bet-row[data-status="active"]');
+        _cachedActiveRowsTime = now;
+    }
+    var curMx = dispMult ? dispMult.toFixed(2) : '1.00';
+    var mx = 'x' + curMx;
+    _cachedActiveRows.forEach(function(row){
+        var ba = parseInt(row.getAttribute('data-bet-amount')) || 0;
         var winEl = row.querySelector('.bet-win-amt');
         var coefEl = row.querySelector('.bet-coef-val');
-        if(winEl) winEl.textContent = formatCrashMoney(potentialWin);
-        if(coefEl) coefEl.textContent = 'x' + curMx;
+        if(winEl) winEl.textContent = formatCrashMoney(Math.floor(ba * dispMult));
+        if(coefEl) coefEl.textContent = mx;
     });
 }
 
@@ -9240,34 +9208,33 @@ function checkCollectionUnlocks(newGiftIds){
 /* ============================================================
    BET INFO DISPLAY IN GAME FIELD
    ============================================================ */
+/* Cached refs for betInfoDisplay — set once after DOM ready */
+var _bidDisplay = null, _bidGift = null, _bidAmt = null, _bidCoef = null, _bidInited = false;
+var _bidLastMult = 0, _bidLastTime = 0;
 function updateBetInfoDisplay(){
-    const display = $('betInfoDisplay');
-    const giftImg = $('betInfoGift');
-    const amtEl = $('betInfoAmount');
-    const coefEl = $('betInfoCoef');
+    if(!_bidInited){ _bidDisplay=$('betInfoDisplay'); _bidGift=$('betInfoGift'); _bidAmt=$('betInfoAmount'); _bidCoef=$('betInfoCoef'); _bidInited=true; }
+    if(!_bidDisplay) return;
+    /* Throttle to 5fps (200ms) */
+    var now = performance.now();
+    if(now - _bidLastTime < 200) return;
+    _bidLastTime = now;
     
-    if(!display) return;
+    var activeBetAmt = hasBet ? betAmt : (cashedOut ? cashedOutBetAmt : 0);
+    if(!activeBetAmt || activeBetAmt <= 0){ _bidDisplay.classList.remove('show'); return; }
     
-    /* Show only if user has an active bet */
-    const activeBetAmt = hasBet ? betAmt : (cashedOut ? cashedOutBetAmt : 0);
+    var mult = dispMult || 1;
+    /* Skip DOM write if multiplier hasn't visually changed */
+    var roundMult = Math.floor(mult * 100);
+    if(roundMult === _bidLastMult) return;
+    _bidLastMult = roundMult;
     
-    if(!activeBetAmt || activeBetAmt <= 0){
-        display.classList.remove('show');
-        return;
-    }
-    
-    /* Calculate potential win based on current multiplier */
-    const mult = dispMult || 1;
-    const potentialWin = Math.floor(activeBetAmt * mult);
-    
-    /* Get gift for potential win */
-    const gift = getAchievableGift(potentialWin);
-    giftImg.src = gift ? resolveCrashGiftImage(gift, getCrashMoneyIcon()) : getCrashMoneyIcon();
-    
-    amtEl.textContent = formatCrashMoney(potentialWin);
-    coefEl.textContent = 'x' + mult.toFixed(2);
-    
-    display.classList.add('show');
+    var potentialWin = Math.floor(activeBetAmt * mult);
+    var gift = getAchievableGift(potentialWin);
+    var newSrc = gift ? resolveCrashGiftImage(gift, getCrashMoneyIcon()) : getCrashMoneyIcon();
+    if(_bidGift.src !== newSrc) _bidGift.src = newSrc;
+    _bidAmt.textContent = formatCrashMoney(potentialWin);
+    _bidCoef.textContent = 'x' + mult.toFixed(2);
+    _bidDisplay.classList.add('show');
 }
 
 function hideBetInfoDisplay(){

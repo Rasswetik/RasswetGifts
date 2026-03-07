@@ -26,7 +26,7 @@
                 radial-gradient(circle at 80% 50%,rgba(140,150,170,.03) 0%,transparent 50%);
             z-index:0;pointer-events:none;
         }
-        .container{max-width:480px;width:100%;margin:0 auto;padding:30px 20px;display:flex;flex-direction:column;align-items:center;gap:20px;position:relative;z-index:1}
+        .container{max-width:480px;width:100%;margin:0 auto;padding:calc(env(safe-area-inset-top,20px) + 30px + 5vh) 20px 30px;display:flex;flex-direction:column;align-items:center;gap:20px;position:relative;z-index:1}
 
         .menu-title{text-align:center;margin-bottom:20px}
         .menu-title h1{font-size:38px;font-weight:900;letter-spacing:1.5px;background:linear-gradient(135deg,#8CA0BE,#A0B0C4,#C8D0DC);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
@@ -103,7 +103,13 @@
         friends:   { text:'FRIENDS',   gif:'/static/gifs/frd.gif',   cls:'btn-disabled big',  order:5 }
     };
 
-    async function init() { await telegramAuth(); createMenu(); }
+    async function init() {
+        var auth = await telegramAuth();
+        if(auth && auth.id){
+            try{ var br=await fetch('/api/check-ban?user_id='+auth.id); var bd=await br.json(); if(bd.banned){window.location.href='/ban';return;} }catch(e){}
+        }
+        createMenu();
+    }
 
     function createMenu() {
         var menu = document.getElementById('mainMenu');

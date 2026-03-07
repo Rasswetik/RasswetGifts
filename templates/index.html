@@ -61,7 +61,7 @@
 
         /* ═══════════ HEADER ═══════════ */
         .header{
-            position:fixed;top:env(safe-area-inset-top,0);left:50%;transform:translateX(-50%);
+            position:fixed;top:calc(env(safe-area-inset-top,20px) + 5vh);left:50%;transform:translateX(-50%);
             z-index:100;width:100%;max-width:480px;
             height:56px;padding:0 16px;
             background:rgba(26,30,42,.85);
@@ -96,7 +96,7 @@
         /* ═══════════ MAIN ═══════════ */
         .main{
             max-width:480px;margin:0 auto;
-            padding:calc(env(safe-area-inset-top,0) + 100px) 16px 100px;
+            padding:calc(env(safe-area-inset-top,20px) + 76px + 5vh) 16px 100px;
         }
 
         /* ═══════════ LIVE FEED ═══════════ */
@@ -107,7 +107,7 @@
         }
         .feed-dot{
             width:8px;height:8px;border-radius:50%;
-            background:var(--accent);
+            background:#e53935;
             animation:blink 2s ease-in-out infinite;
             flex-shrink:0;
         }
@@ -117,19 +117,18 @@
             text-transform:uppercase;flex-shrink:0;
         }
         .feed-scroll{
-            flex:1;display:flex;gap:8px;
-            overflow:hidden;
+            flex:1;overflow:hidden;
+            -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+            mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
         }
         .feed-track{
             display:flex;gap:8px;
-            /* Static until new wins - no auto-scroll animation */
+            width:max-content;
+            animation:feedMarquee 20s linear infinite;
         }
-        @keyframes feedScrollIn{
-            0%{transform:translateX(-44px);opacity:0}
-            100%{transform:translateX(0);opacity:1}
-        }
-        .feed-track .feed-item.new{
-            animation:feedScrollIn .4s ease;
+        @keyframes feedMarquee{
+            0%{transform:translateX(0)}
+            100%{transform:translateX(-50%)}
         }
         .feed-item{
             width:36px;height:36px;
@@ -686,6 +685,50 @@
         }
         .stars-deposit-pay-btn img{width:20px;height:20px}
 
+        /* ═══════════ TON CONNECT OVERLAY ═══════════ */
+        .ton-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
+        [data-tc-wallets-modal-container],.tc-wallets-modal-container,#tc-widget-root,tc-root,.tonconnect-modal,div[class*="wallets-modal"]{position:relative!important;z-index:999999!important}
+        tc-root{display:block;position:fixed!important;inset:0;z-index:999999!important;pointer-events:none}
+        tc-root *{pointer-events:auto}
+        .ton-overlay.show{opacity:1;visibility:visible}
+        .ton-modal{background:linear-gradient(180deg,#161923,#0F1219);border-radius:24px;width:90%;max-width:360px;padding:24px 20px;transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid rgba(0,136,204,.2)}
+        .ton-overlay.show .ton-modal{transform:scale(1)}
+        .ton-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+        .ton-title{font-weight:800;font-size:18px;display:flex;align-items:center;gap:10px;color:#0088cc}
+        .ton-title img{width:24px;height:24px}
+        .ton-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.15);cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .ton-close img{width:14px;height:14px}
+        .ton-rate{text-align:center;padding:16px;border-radius:14px;background:rgba(0,136,204,.1);border:1px solid rgba(0,136,204,.2);margin-bottom:16px}
+        .ton-rate-val{font-weight:900;font-size:28px;color:#0088cc}
+        .ton-rate-label{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px}
+        .ton-input-wrap{display:flex;gap:8px;margin-bottom:16px}
+        .ton-input{flex:1;padding:14px 16px;border-radius:14px;border:2px solid rgba(0,136,204,.3);background:rgba(0,136,204,.08);color:#fff;font-size:16px;font-weight:700;outline:none;text-align:center}
+        .ton-input:focus{border-color:rgba(0,136,204,.6)}
+        .ton-input::placeholder{color:rgba(255,255,255,.3)}
+        .ton-preview{text-align:center;margin-bottom:16px;font-weight:700;font-size:14px;color:rgba(255,255,255,.6)}
+        .ton-preview span{color:#FDA100;font-weight:800}
+        .ton-connect-btn{width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#0088cc,#00b4ff);color:#fff;font-weight:800;font-size:15px;cursor:pointer;transition:all .2s;box-shadow:0 8px 25px rgba(0,136,204,.3)}
+        .ton-connect-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,136,204,.4)}
+        .ton-connect-btn:disabled{opacity:.5;cursor:default;transform:none}
+        .ton-step{padding:4px 0}
+        .ton-wallet-status{text-align:center;padding:20px 0}
+        .ton-wallet-icon{font-size:48px;margin-bottom:8px}
+        .ton-wallet-text{font-size:14px;color:rgba(255,255,255,.6)}
+        .ton-connected-wallet{background:rgba(24,184,62,.1);border:1px solid rgba(24,184,62,.3);border-radius:14px;padding:14px;margin-bottom:16px;text-align:center}
+        .ton-wallet-badge{font-size:12px;color:#1EE44C;font-weight:700;margin-bottom:6px}
+        .ton-wallet-addr{font-family:'Courier New',monospace;font-size:11px;color:rgba(255,255,255,.7);margin-bottom:8px;word-break:break-all}
+        .ton-disconnect-btn{padding:6px 12px;border-radius:8px;border:none;background:rgba(249,105,153,.15);color:#ff6060;font-size:11px;font-weight:600;cursor:pointer}
+        .ton-disconnect-btn:hover{background:rgba(249,105,153,.25)}
+        .ton-processing{text-align:center;padding:30px 0}
+        .ton-spinner{width:48px;height:48px;border:4px solid rgba(0,136,204,.2);border-top-color:#0088cc;border-radius:50%;animation:tonSpin 1s linear infinite;margin:0 auto 16px}
+        @keyframes tonSpin{to{transform:rotate(360deg)}}
+        .ton-processing-text{font-weight:700;font-size:16px;color:#0088cc;margin-bottom:4px}
+        .ton-processing-hint{font-size:12px;color:rgba(255,255,255,.4)}
+        .ton-success{text-align:center;padding:20px 0}
+        .ton-success-icon{font-size:48px;margin-bottom:12px}
+        .ton-success-text{font-weight:700;font-size:16px;color:#1EE44C;margin-bottom:8px}
+        .ton-success-amount{font-weight:900;font-size:28px;color:#FDA100}
+
         /* ═══════════ TOAST ═══════════ */
         .toast{
             position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);
@@ -883,6 +926,56 @@
                     Оплатить <span id="starsPayAmount">100</span> Stars
                 </button>
                 <div id="starsDepositError" style="color:#E8527A;font-size:12px;display:none"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TON CONNECT OVERLAY -->
+    <div class="ton-overlay" id="tonOverlay">
+        <div class="ton-modal">
+            <div class="ton-header">
+                <div class="ton-title"><img src="/static/img/plus.png" alt="">TON Top Up</div>
+                <button class="ton-close" onclick="closeTonModal()"><img src="/static/img/exit.png" alt=""></button>
+            </div>
+            <div class="ton-rate">
+                <div class="ton-rate-val">1 TON = 100 <img src="/static/img/star.png" style="width:20px;height:20px;vertical-align:middle"></div>
+                <div class="ton-rate-label">Exchange rate</div>
+            </div>
+            <div class="ton-step" id="tonStep0">
+                <div class="ton-wallet-status" id="tonWalletStatus">
+                    <div class="ton-wallet-icon"><img src="/static/img/plus.png" style="width:48px;height:48px"></div>
+                    <div class="ton-wallet-text">Connect wallet to pay</div>
+                </div>
+                <button class="ton-connect-btn" id="tonConnectBtn" onclick="connectTonWallet()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    CONNECT WALLET
+                </button>
+            </div>
+            <div class="ton-step" id="tonStep1" style="display:none">
+                <div class="ton-connected-wallet" id="tonConnectedWallet">
+                    <div class="ton-wallet-badge" style="color:#1EE44C">Connected</div>
+                    <div class="ton-wallet-addr" id="tonUserWallet">---</div>
+                    <button class="ton-disconnect-btn" onclick="disconnectTonWallet()">Disconnect</button>
+                </div>
+                <div class="ton-input-wrap">
+                    <input type="number" class="ton-input" id="tonAmount" placeholder="TON" min="0.1" step="0.1" value="1" oninput="updateTonPreview()">
+                </div>
+                <div class="ton-preview">You will receive: <span id="tonStarsPreview">100</span> <img src="/static/img/star.png" style="width:16px;height:16px;vertical-align:middle"></div>
+                <button class="ton-connect-btn" onclick="sendTonPayment()" style="margin-top:10px">PAY</button>
+            </div>
+            <div class="ton-step" id="tonStep2" style="display:none">
+                <div class="ton-processing">
+                    <div class="ton-spinner"></div>
+                    <div class="ton-processing-text">Processing transaction...</div>
+                    <div class="ton-processing-hint">Confirm in wallet</div>
+                </div>
+            </div>
+            <div class="ton-step" id="tonStep3" style="display:none">
+                <div class="ton-success">
+                    <div class="ton-success-icon">✅</div>
+                    <div class="ton-success-text">Payment successful!</div>
+                    <div class="ton-success-amount">+<span id="tonSuccessStars">0</span> ⭐</div>
+                </div>
             </div>
         </div>
     </div>
@@ -1667,9 +1760,11 @@
         }
 
         function openTonDeposit() {
-            // Redirect to crash page TON deposit or show message
-            showToast('TON депозит доступен в разделе Краш', 'ok');
-            window.location.href = '/crash';
+            $('tonOverlay').classList.add('show');
+            $('tonStep2').style.display = 'none';
+            $('tonStep3').style.display = 'none';
+            updateTonWalletUI();
+            updateTonPreview();
         }
 
         function openStarsDeposit() {
@@ -1748,6 +1843,135 @@
                 $('starsPayBtn').innerHTML = '<img src="/static/img/star.png" alt=""> Оплатить <span id="starsPayAmount">' + amount + '</span> Stars';
             }
         }
+
+        /* ═══════════ TON CONNECT ═══════════ */
+        const TON_RECEIVER_ADDRESS = 'UQCHqlS8KSD3ZOF-OwV5efg2ST60u2JTnGEXeViQLU9g5v3i';
+        const TON_CONNECT_MANIFEST = window.location.origin + '/tonconnect-manifest.json';
+        let tonConnectUI = null;
+        let connectedWallet = null;
+
+        async function initTonConnect(){
+            try{
+                if(typeof TON_CONNECT_UI === 'undefined'){
+                    await new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = 'https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js';
+                        s.onload = resolve;
+                        s.onerror = () => {
+                            const s2 = document.createElement('script');
+                            s2.src = 'https://cdn.jsdelivr.net/npm/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js';
+                            s2.onload = resolve;
+                            s2.onerror = reject;
+                            document.head.appendChild(s2);
+                        };
+                        document.head.appendChild(s);
+                    });
+                }
+                tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+                    manifestUrl: TON_CONNECT_MANIFEST,
+                    buttonRootId: null,
+                    actionsConfiguration:{twaReturnUrl:'https://t.me'}
+                });
+                const tcObs = new MutationObserver(function(muts){
+                    muts.forEach(function(m){ m.addedNodes.forEach(function(n){
+                        if(n.nodeType===1&&(n.getAttribute('data-tc-wallets-modal-container')!==null||n.id==='tc-widget-root'||n.tagName==='TC-ROOT'||(n.className&&typeof n.className==='string'&&n.className.includes('wallets-modal')))){
+                            n.style.position='fixed';n.style.zIndex='999999';n.style.inset='0';
+                        }
+                    });});
+                });
+                tcObs.observe(document.body,{childList:true,subtree:true});
+                tonConnectUI.onStatusChange(w=>{connectedWallet=w;updateTonWalletUI();});
+                if(tonConnectUI.wallet){connectedWallet=tonConnectUI.wallet;updateTonWalletUI();}
+            }catch(e){console.error('TonConnect init error:',e);}
+        }
+
+        function tonRawToFriendly(raw){
+            if(!raw||!raw.includes(':'))return raw;
+            try{
+                const parts=raw.split(':');const wc=parseInt(parts[0]);const h=parts[1];
+                if(h.length!==64)return raw;
+                const a=new Uint8Array(34);a[0]=0x51;a[1]=wc&0xff;
+                for(let i=0;i<32;i++)a[i+2]=parseInt(h.substr(i*2,2),16);
+                let crc=0;for(let i=0;i<34;i++){crc^=a[i]<<8;for(let j=0;j<8;j++)crc=(crc&0x8000)?((crc<<1)^0x1021):(crc<<1);crc&=0xffff;}
+                const r=new Uint8Array(36);r.set(a);r[34]=(crc>>8)&0xff;r[35]=crc&0xff;
+                let b=btoa(String.fromCharCode(...r));return b.replace(/\+/g,'-').replace(/\//g,'_');
+            }catch(e){return raw;}
+        }
+
+        function createCommentPayloadBoc(text){
+            const tb=new TextEncoder().encode(text);const dl=4+tb.length;const d=new Uint8Array(dl);d.set(tb,4);
+            const cs=2+dl;const boc=new Uint8Array(11+cs);
+            boc[0]=0xb5;boc[1]=0xee;boc[2]=0x9c;boc[3]=0x72;boc[4]=0x01;boc[5]=0x01;boc[6]=0x01;boc[7]=0x01;boc[8]=0x00;boc[9]=cs;boc[10]=0x00;boc[11]=0;boc[12]=dl*2;
+            boc.set(d,13);return btoa(String.fromCharCode(...boc));
+        }
+
+        function updateTonWalletUI(){
+            const s0=$('tonStep0'),s1=$('tonStep1'),wa=$('tonUserWallet');
+            if(connectedWallet){
+                s0.style.display='none';s1.style.display='block';
+                const raw=connectedWallet.account?.address||'';
+                let friendly=raw;
+                try{if(typeof TON_CONNECT_UI!=='undefined'&&TON_CONNECT_UI.toUserFriendlyAddress)friendly=TON_CONNECT_UI.toUserFriendlyAddress(raw);else friendly=tonRawToFriendly(raw);}catch(e){}
+                wa.textContent=friendly.slice(0,6)+'...'+friendly.slice(-4);
+            }else{s0.style.display='block';s1.style.display='none';}
+        }
+
+        function closeTonModal(){$('tonOverlay').classList.remove('show');$('tonStep2').style.display='none';$('tonStep3').style.display='none';updateTonWalletUI();}
+        function updateTonPreview(){const a=parseFloat($('tonAmount')?.value)||0;const s=Math.floor(a*100);const p=$('tonStarsPreview');if(p)p.textContent=s;}
+
+        async function connectTonWallet(){
+            if(!tonConnectUI){try{await initTonConnect();}catch(e){showToast('TonConnect init error','err');return;}}
+            if(!tonConnectUI){showToast('TonConnect unavailable','err');return;}
+            try{await tonConnectUI.openModal();}catch(e){showToast('Connection error','err');}
+        }
+
+        async function disconnectTonWallet(){
+            if(tonConnectUI){try{await tonConnectUI.disconnect();connectedWallet=null;updateTonWalletUI();showToast('Wallet disconnected','ok');}catch(e){}}
+        }
+
+        async function sendTonPayment(){
+            if(!connectedWallet){showToast('Connect wallet','err');return;}
+            const amt=parseFloat($('tonAmount').value)||0;
+            if(amt<0.1){showToast('Minimum 0.1 TON','err');return;}
+            const stars=Math.floor(amt*100);
+            const amountNano=Math.floor(amt*1000000000).toString();
+            $('tonStep0').style.display='none';$('tonStep1').style.display='none';$('tonStep2').style.display='block';$('tonStep3').style.display='none';
+            try{
+                const commentText=String(userId||'');
+                const payloadBase64=createCommentPayloadBoc(commentText);
+                const tx={validUntil:Math.floor(Date.now()/1000)+600,messages:[{address:TON_RECEIVER_ADDRESS,amount:amountNano,payload:payloadBase64}]};
+                await tonConnectUI.sendTransaction(tx);
+                showToast('Checking transaction...','ok');
+                let verified=false,verifyData=null;
+                for(let i=0;i<6;i++){
+                    await new Promise(r=>setTimeout(r,5000));
+                    try{
+                        const res=await fetch('/api/ton-check-payment',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,amount_ton:amt,comment:String(userId||'')})});
+                        verifyData=await res.json();
+                        if(verifyData.success&&verifyData.verified){verified=true;break;}
+                    }catch(ce){}
+                }
+                if(verified&&verifyData){
+                    $('tonSuccessStars').textContent=verifyData.stars_added||stars;
+                    $('tonStep2').style.display='none';$('tonStep3').style.display='block';
+                    showToast('+'+(verifyData.stars_added||stars)+' stars!','ok');
+                    setTimeout(loadUser,1500);
+                }else{
+                    $('tonStep2').style.display='none';updateTonWalletUI();
+                    showToast('Transaction pending. Stars credited after confirmation.','ok');
+                }
+            }catch(e){
+                if(e.message?.includes('reject')||e.message?.includes('cancel'))showToast('Payment cancelled','err');
+                else showToast('Error: '+(e.message||'Try again'),'err');
+                $('tonStep2').style.display='none';updateTonWalletUI();
+            }
+        }
+
+        // TON overlay click-outside + init
+        document.addEventListener('DOMContentLoaded',function(){
+            var ov=$('tonOverlay');if(ov)ov.addEventListener('click',function(e){if(e.target===this)closeTonModal();});
+            setTimeout(initTonConnect,1500);
+        });
 
         function showToast(msg, type = 'ok') {
             const toast = $('toast');

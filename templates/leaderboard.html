@@ -42,7 +42,7 @@
         ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
 
         .header{
-            position:fixed;top:env(safe-area-inset-top,0);left:50%;transform:translateX(-50%);
+            position:fixed;top:calc(env(safe-area-inset-top,20px) + 5vh);left:50%;transform:translateX(-50%);
             z-index:100;width:100%;max-width:480px;
             height:56px;padding:0 16px;
             background:rgba(26,30,42,.85);
@@ -54,7 +54,7 @@
         
         .main{
             max-width:480px;margin:0 auto;
-            padding:calc(env(safe-area-inset-top,0) + 72px) 16px 100px;
+            padding:calc(env(safe-area-inset-top,20px) + 76px + 5vh) 16px 100px;
         }
         
         /* Season Banner */
@@ -226,6 +226,8 @@
         /* Empty State */
         .empty{text-align:center;padding:60px 20px;color:var(--text-2)}
         .empty svg{width:48px;height:48px;margin-bottom:16px;opacity:.3}
+
+
         
         /* Bottom Nav */
         .bnav{
@@ -259,15 +261,16 @@
             <img src="/static/img/lead.png" alt="" onerror="this.src='/static/img/logo.png'">
             <div class="season-timer" id="countdown">--:--:--</div>
         </div>
-        
-        <button class="boost-btn" onclick="openBoost()">Boost your rank</button>
-        
-        <div class="leaders-list" id="leadersList">
-            <div class="empty">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/>
-                </svg>
-                <p>Лидерборд пока не активен</p>
+
+        <div>
+            <button class="boost-btn" onclick="openBoost()">Boost your rank</button>
+            <div class="leaders-list" id="leadersList">
+                <div class="empty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+                    </svg>
+                    <p>Лидерборд пока не активен</p>
+                </div>
             </div>
         </div>
     </main>
@@ -426,6 +429,8 @@
         function openBoost() {
             window.location.href = '/cases';
         }
+
+
 
         loadLeaderboard();
         setInterval(updateCountdown, 1000);

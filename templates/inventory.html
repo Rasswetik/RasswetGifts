@@ -121,7 +121,25 @@
         .bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
         .bnav-item.disabled{opacity:.3;pointer-events:none;cursor:default}
 
-        .admin-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:24px;display:none}
+        .admin-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px;display:none}
+
+        /* === NEWS MANAGEMENT (admin) === */
+        .news-mgmt{display:none;margin-bottom:24px}
+        .news-mgmt-toggle{width:100%;padding:12px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+        .news-mgmt-toggle svg{width:16px;height:16px;opacity:.5;transition:transform .2s}
+        .news-mgmt-toggle.open svg{transform:rotate(180deg)}
+        .news-mgmt-list{display:none;flex-direction:column;gap:6px}
+        .news-mgmt-list.show{display:flex}
+        .nm-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
+        .nm-ver{font-size:12px;font-weight:800;color:var(--accent-light);min-width:32px}
+        .nm-title{flex:1;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .nm-toggle{width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;position:relative;transition:background .2s}
+        .nm-toggle.on{background:#34D399}
+        .nm-toggle.off{background:rgba(255,255,255,.15)}
+        .nm-toggle::after{content:'';position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s}
+        .nm-toggle.on::after{left:18px}
+        .nm-toggle.off::after{left:2px}
+        .nm-del{width:28px;height:28px;border-radius:8px;border:none;background:rgba(239,68,68,.15);color:#ef4444;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
         /* === ITEM MODAL === */
         .item-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:1001;display:none;align-items:center;justify-content:center}
@@ -222,6 +240,14 @@
         </div>
 
         <button class="admin-btn" id="adminBtn" onclick="window.location.href='/admin'">Admin Panel</button>
+
+        <div class="news-mgmt" id="newsMgmt">
+            <button class="news-mgmt-toggle" id="newsMgmtToggle" onclick="toggleNewsMgmt()">
+                News Management
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="news-mgmt-list" id="newsMgmtList"></div>
+        </div>
 
         <div class="ref-card">
             <img class="ref-decor" src="/static/img/sapphire.png" alt="" onerror="this.style.display='none'">
@@ -347,10 +373,11 @@
         
         var authData = await telegramAuth();
         if (!authData) return;
+        try{ var br=await fetch('/api/check-ban?user_id='+authData.id); var bd=await br.json(); if(bd.banned){window.location.href='/ban';return;} }catch(e){}
         try {
             var r = await fetch('/api/telegram-auth', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(authData) });
             var d = await r.json();
-            if (d.success) { user = d.user; updateProfile(); await refreshUserData(); loadInventory(); if (user.id == ADMIN_ID) document.getElementById('adminBtn').style.display = 'block'; }
+            if (d.success) { user = d.user; updateProfile(); await refreshUserData(); loadInventory(); if (user.id == ADMIN_ID) { document.getElementById('adminBtn').style.display = 'block'; document.getElementById('newsMgmt').style.display = 'block'; loadNewsMgmt(); } }
         } catch (e) { console.error('Init error:', e); showNotif('Error loading data', true); }
     }
 
@@ -444,8 +471,8 @@
 
     function openItemModal(itemId) { var item = inventory.find(function(i){return i.id === itemId}); if (!item) return; selectedItem = item; vibrateIfOn(); var ton = starsToTon(item.gift_value); document.getElementById('itemModalImg').src = item.gift_image; document.getElementById('itemModalName').textContent = item.gift_name; document.getElementById('itemModalPrice').textContent = formatTon(ton); document.getElementById('itemModalSellBtn').textContent = t('sell'); document.getElementById('itemModalWithdrawBtn').textContent = t('withdraw'); document.getElementById('itemModalSellBtn').disabled = item.is_withdrawing; document.getElementById('itemModalWithdrawBtn').disabled = item.is_withdrawing; document.getElementById('itemModal').classList.add('show'); }
     function hideItemModal() { document.getElementById('itemModal').classList.remove('show'); selectedItem = null; }
-    async function sellItem() { if (!selectedItem) return; hideItemModal(); try { var r = await fetch('/api/sell-gift', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: user.id, gift_id: selectedItem.id}) }); var d = await r.json(); if (d.success) { showNotif(t('giftSold')); await refreshUserData(); loadInventory(); } else showNotif(d.error || 'Error selling', true); } catch (e) { showNotif('Error selling', true); } }
-    async function withdrawItem() { if (!selectedItem) return; hideItemModal(); try { var r = await fetch('/api/withdraw-gift', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: user.id, gift_id: selectedItem.id}) }); var d = await r.json(); if (d.success) { showNotif(t('withdrawReq')); loadInventory(); } else showNotif(d.error || 'Error withdrawing', true); } catch (e) { showNotif('Error withdrawing', true); } }
+    async function sellItem() { if (!selectedItem) return; var itemId = selectedItem.id; hideItemModal(); try { var r = await fetch('/api/sell-gift', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: user.id, gift_id: itemId}) }); var d = await r.json(); if (d.success) { showNotif(t('giftSold')); await refreshUserData(); loadInventory(); } else showNotif(d.error || 'Error selling', true); } catch (e) { showNotif('Error selling', true); } }
+    async function withdrawItem() { if (!selectedItem) return; var itemId = selectedItem.id; hideItemModal(); try { var r = await fetch('/api/withdraw-gift', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: user.id, gift_id: itemId}) }); var d = await r.json(); if (d.success) { showNotif(t('withdrawReq')); loadInventory(); } else showNotif(d.error || 'Error withdrawing', true); } catch (e) { showNotif('Error withdrawing', true); } }
 
     function showSellAllModal() { var sellable = inventory.filter(function(i){return !i.is_withdrawing}); if (!sellable.length) { showNotif(t('noGifts'), true); return; } var total = sellable.reduce(function(s,i){return s + (i.gift_value || 0)}, 0); document.getElementById('sellAllTotal').textContent = formatTon(starsToTon(total)) + ' TON'; document.getElementById('sellAllModal').classList.add('show'); }
     function hideSellAllModal() { document.getElementById('sellAllModal').classList.remove('show'); }
@@ -481,6 +508,54 @@
         el.classList.add('show');
         clearTimeout(el._hideTimer);
         el._hideTimer = setTimeout(function(){ el.classList.remove('show'); }, 3000);
+    }
+
+    /* === News Management === */
+    function toggleNewsMgmt() {
+        var btn = document.getElementById('newsMgmtToggle');
+        var list = document.getElementById('newsMgmtList');
+        btn.classList.toggle('open');
+        list.classList.toggle('show');
+    }
+
+    async function loadNewsMgmt() {
+        try {
+            var r = await fetch('/api/admin/news-json?admin_id=' + ADMIN_ID);
+            var d = await r.json();
+            if (!d.success) return;
+            var list = document.getElementById('newsMgmtList');
+            list.innerHTML = '';
+            d.news.forEach(function(n) {
+                var row = document.createElement('div');
+                row.className = 'nm-item';
+                row.innerHTML = '<span class="nm-ver">' + (n.version || '') + '</span>' +
+                    '<span class="nm-title">' + (n.title || n.title_en || '') + '</span>' +
+                    '<button class="nm-toggle ' + (n.is_active ? 'on' : 'off') + '" onclick="toggleNewsActive(' + n.id + ',this)"></button>' +
+                    '<button class="nm-del" onclick="deleteNewsItem(' + n.id + ',this)">✕</button>';
+                list.appendChild(row);
+            });
+        } catch(e) { console.error('News mgmt load error', e); }
+    }
+
+    async function toggleNewsActive(id, btn) {
+        try {
+            var r = await fetch('/api/admin/news-json/toggle', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, news_id: id}) });
+            var d = await r.json();
+            if (d.success) {
+                btn.classList.toggle('on');
+                btn.classList.toggle('off');
+                showNotif(d.is_active ? 'News activated' : 'News hidden');
+            }
+        } catch(e) { showNotif('Error', true); }
+    }
+
+    async function deleteNewsItem(id, btn) {
+        if (!confirm('Delete this news entry?')) return;
+        try {
+            var r = await fetch('/api/admin/news-json/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, news_id: id}) });
+            var d = await r.json();
+            if (d.success) { btn.closest('.nm-item').remove(); showNotif('News deleted'); }
+        } catch(e) { showNotif('Error', true); }
     }
 
     document.addEventListener('DOMContentLoaded', initUser);

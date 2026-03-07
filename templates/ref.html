@@ -39,7 +39,7 @@
         @keyframes spin{to{transform:rotate(360deg)}}
         .loading-text{font-weight:700;font-size:14px;color:var(--text2)}
 
-        .container{max-width:480px;margin:0 auto;padding:calc(env(safe-area-inset-top,20px) + 50px) 16px 100px;position:relative;z-index:1}
+        .container{max-width:480px;margin:0 auto;padding:calc(env(safe-area-inset-top,20px) + 50px + 5vh) 16px 100px;position:relative;z-index:1}
 
         /* Header */
         .header{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:14px 16px;background:linear-gradient(160deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:16px}
@@ -221,7 +221,10 @@
     async function init(){
         try{
             var auth = await telegramAuth();
-            if(auth){ userData=auth; var r=await fetch('/api/user/'+userData.id); var d=await r.json(); if(d.success){userData.balance_stars=d.user.balance_stars;userData.balance_tickets=d.user.balance_tickets;} }
+            if(auth){
+                try{ var br=await fetch('/api/check-ban?user_id='+auth.id); var bd=await br.json(); if(bd.banned){window.location.href='/ban';return;} }catch(e){}
+                userData=auth; var r=await fetch('/api/user/'+userData.id); var d=await r.json(); if(d.success){userData.balance_stars=d.user.balance_stars;userData.balance_tickets=d.user.balance_tickets;}
+            }
             updateUI();
             await loadReferralData();
         }catch(e){console.error('Init:',e);}
