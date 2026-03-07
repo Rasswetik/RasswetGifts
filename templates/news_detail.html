@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="icon" type="image/png" href="/static/img/logo.png">
+<link rel="stylesheet" href="/static/css/global.css">
 <title>Новость</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
@@ -328,32 +329,29 @@ body::before{
     
     async function loadNews(){
         try{
-            var url = '/api/news';
+            var url = '/api/news/' + newsId;
             if(userId) url += '?user_id=' + userId;
             
             var r = await fetch(url);
             var d = await r.json();
             
             if(!d.success || !d.news){
-                throw new Error('No news');
-            }
-            
-            var news = d.news.find(function(n){ return n.id === newsId; });
-            if(!news){
                 document.getElementById('newsContent').innerHTML = '<div class="error-state"><div class="error-icon">📰</div><div class="error-text">Новость не найдена</div></div>';
                 return;
             }
             
+            var news = d.news;
+            
             document.getElementById('headerTitle').textContent = news.title;
             
-            var bannerUrl = news.image_url || '/static/img/news/none.svg';
-            var versionMatch = news.title.match(/v?(\d+\.\d+)/i);
-            var version = versionMatch ? versionMatch[1] : '';
+            var bannerUrl = news.banner || news.cover || '/static/img/news/none.svg';
+            var coverUrl = news.cover || '/static/img/news/none.svg';
+            var version = news.version || '';
             
             var html = '';
             
             // Banner
-            html += '<div class="news-banner"><img src="' + bannerUrl.replace('.svg', '_banner.svg').replace('/news/', '/news/banners/') + '" onerror="this.src=\'' + bannerUrl + '\'"></div>';
+            html += '<div class="news-banner"><img src="' + bannerUrl + '" onerror="this.src=\'' + coverUrl + '\'"></div>';
             
             // Version badge
             if(version){

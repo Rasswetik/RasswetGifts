@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#1A1E2A">
     <title>Profile - Rasswet Gifts</title>
     <link rel="icon" type="image/png" href="/static/img/logo.png">
+    <link rel="stylesheet" href="/static/css/global.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/static/js/telegram-auth.js"></script>
     <style>
@@ -154,6 +155,7 @@
         .reward-card-img{width:56px;height:56px;object-fit:contain;margin:0 auto;display:block;transition:filter .3s}
         .reward-card-name{display:none}
         .reward-card.unlocked .reward-card-name{display:none}
+        .reward-lock-icon{position:absolute;bottom:8px;right:8px;font-size:14px;opacity:0.7}
         .rewards-close-btn{margin:0 20px 20px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;width:calc(100% - 40px);flex-shrink:0}
 
         /* === SELL ALL MODAL === */
@@ -340,12 +342,15 @@
     function formatTon(ton) { var v = parseFloat(ton) || 0; if (v === 0) return '0.00'; if (v >= 100) return v.toFixed(0); if (v >= 10) return v.toFixed(1); return v.toFixed(2); }
 
     async function initUser() {
+        // Load rewards first (don't require auth)
+        loadLevelRewards();
+        
         var authData = await telegramAuth();
         if (!authData) return;
         try {
             var r = await fetch('/api/telegram-auth', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(authData) });
             var d = await r.json();
-            if (d.success) { user = d.user; updateProfile(); await refreshUserData(); loadInventory(); loadLevelRewards(); if (user.id == ADMIN_ID) document.getElementById('adminBtn').style.display = 'block'; }
+            if (d.success) { user = d.user; updateProfile(); await refreshUserData(); loadInventory(); if (user.id == ADMIN_ID) document.getElementById('adminBtn').style.display = 'block'; }
         } catch (e) { console.error('Init error:', e); showNotif('Error loading data', true); }
     }
 
@@ -371,17 +376,54 @@
         applyTranslations();
     }
 
-    async function loadLevelRewards() { try { var r = await fetch('/api/level-rewards'); var d = await r.json(); if (d.success) { levelRewards = d.levels || []; console.log('Loaded rewards:', levelRewards.length); } } catch (e) { console.error('Load rewards error:', e); } }
+    async function loadLevelRewards() { 
+        try { 
+            var r = await fetch('/api/level-rewards'); 
+            var d = await r.json(); 
+            console.log('Level rewards API response:', d);
+            if (d.success) { 
+                levelRewards = d.levels || []; 
+                console.log('Loaded rewards:', levelRewards.length, 'items'); 
+                if (levelRewards.length > 0) {
+                    console.log('First reward:', levelRewards[0]);
+                }
+            } else {
+                console.error('Level rewards failed:', d.error);
+            }
+        } catch (e) { 
+            console.error('Load rewards error:', e); 
+        } 
+    }
 
     function openRewardsModal() {
         vibrateIfOn();
         var userLvl = (user && user.current_level) || 1;
         document.getElementById('rewardsUserLevel').textContent = userLvl + ' lvl';
         var grid = document.getElementById('rewardsGrid');
-        var allRewards = levelRewards.filter(function(lv){ return lv.reward; });
-        console.log('Filtered rewards:', allRewards.length);
-        if (!allRewards.length) { grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:20px">No rewards available</div>'; }
-        else { grid.innerHTML = allRewards.map(function(lv) { var unlocked = userLvl >= lv.level; var cls = unlocked ? 'unlocked' : 'locked'; var rw = lv.reward || {}; var img = rw.image || '/static/img/ton.png'; var fallbackImg = rw.type === 'rocket_skin' ? '/static/gifs/rockets/crash.gif' : '/static/img/ton.png'; return '<div class="reward-card ' + cls + '" onclick="onRewardClick(' + lv.level + ',' + (unlocked?1:0) + ')"><div class="reward-card-lvl">' + lv.level + ' lvl</div><img class="reward-card-img" src="' + img + '" alt="" onerror="this.onerror=null;this.src=\'' + fallbackImg + '\'"></div>'; }).join(''); }
+        
+        console.log('Opening rewards modal, levelRewards:', levelRewards.length);
+        
+        // Filter levels that have a reward property
+        var allRewards = levelRewards.filter(function(lv){ return lv && lv.reward; });
+        console.log('Filtered rewards with reward property:', allRewards.length);
+        
+        if (!allRewards.length) { 
+            grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:40px 20px;font-size:14px">Загрузка наград...<br><button onclick="loadLevelRewards();setTimeout(openRewardsModal,500)" style="margin-top:12px;padding:8px 16px;border:none;background:var(--accent);color:#fff;border-radius:8px;cursor:pointer">Обновить</button></div>'; 
+        } else { 
+            grid.innerHTML = allRewards.map(function(lv) { 
+                var unlocked = userLvl >= lv.level; 
+                var cls = unlocked ? 'unlocked' : 'locked'; 
+                var rw = lv.reward || {}; 
+                var img = rw.image || '/static/img/ton.png'; 
+                var fallbackImg = rw.type === 'rocket_skin' ? '/static/gifs/rockets/crash.gif' : '/static/img/ton.png'; 
+                var lockIcon = unlocked ? '' : '<div class="reward-lock-icon">🔒</div>';
+                return '<div class="reward-card ' + cls + '" onclick="onRewardClick(' + lv.level + ',' + (unlocked?1:0) + ')">' +
+                    '<div class="reward-card-lvl">' + lv.level + ' lvl</div>' +
+                    '<img class="reward-card-img" src="' + img + '" alt="" onerror="this.onerror=null;this.src=\'' + fallbackImg + '\'">' +
+                    lockIcon +
+                    '</div>'; 
+            }).join(''); 
+        }
         document.getElementById('rewardsOverlay').classList.add('show');
     }
     function closeRewardsModal() { document.getElementById('rewardsOverlay').classList.remove('show'); }

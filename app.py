@@ -9831,67 +9831,92 @@ def news_detail_page(news_id):
 
 @app.route('/api/news', methods=['GET'])
 def api_get_news():
-    """Получить список новостей"""
+    """Получить список новостей из news.json"""
     try:
         user_id = request.args.get('user_id')
         
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Загружаем из news.json
+        news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+        if not os.path.exists(news_file):
+            return jsonify({'success': True, 'news': []})
         
-        # Создаём таблицы если нет
-        cursor.execute('''CREATE TABLE IF NOT EXISTS news (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            content TEXT NOT NULL,
-            image_url TEXT,
-            reward_amount INTEGER DEFAULT 0,
-            is_active BOOLEAN DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
-        cursor.execute('''CREATE TABLE IF NOT EXISTS news_reads (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            news_id INTEGER NOT NULL,
-            reward_claimed BOOLEAN DEFAULT FALSE,
-            read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(user_id, news_id)
-        )''')
-        conn.commit()
+        with open(news_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
         
-        # Получаем активные новости
+        news_list = data.get('news', [])
+        
+        # Фильтруем только активные
+        active_news = [n for n in news_list if n.get('is_active', True)]
+        
+        # Сортируем по дате (новые первые)
+        active_news.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        
+        # Проверяем claimed статус из БД если есть user_id
         if user_id:
-            cursor.execute('''
-                SELECT n.id, n.title, n.content, n.image_url, n.reward_amount, n.created_at,
-                       COALESCE(nr.reward_claimed, 0) as claimed
-                FROM news n
-                LEFT JOIN news_reads nr ON n.id = nr.news_id AND nr.user_id = ?
-                WHERE n.is_active = 1
-                ORDER BY n.created_at DESC
-            ''', (user_id,))
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('''CREATE TABLE IF NOT EXISTS news_reads (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                news_id INTEGER NOT NULL,
+                reward_claimed BOOLEAN DEFAULT FALSE,
+                read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, news_id)
+            )''')
+            conn.commit()
+            
+            for news in active_news:
+                cursor.execute('SELECT reward_claimed FROM news_reads WHERE user_id = ? AND news_id = ?', 
+                             (user_id, news['id']))
+                row = cursor.fetchone()
+                news['claimed'] = bool(row[0]) if row else False
+            conn.close()
         else:
-            cursor.execute('''
-                SELECT id, title, content, image_url, reward_amount, created_at, 0 as claimed
-                FROM news WHERE is_active = 1
-                ORDER BY created_at DESC
-            ''')
+            for news in active_news:
+                news['claimed'] = False
         
-        news_list = []
-        for row in cursor.fetchall():
-            news_list.append({
-                'id': row[0],
-                'title': row[1],
-                'content': row[2],
-                'image_url': row[3],
-                'reward_amount': row[4],
-                'created_at': row[5],
-                'claimed': bool(row[6])
+        # Форматируем для API (совместимость со старым форматом)
+        result = []
+        for n in active_news:
+            result.append({
+                'id': n.get('id'),
+                'title': n.get('title'),
+                'content': n.get('summary', n.get('content', '')[:100]),
+                'image_url': n.get('cover'),
+                'reward_amount': n.get('reward_amount', 0),
+                'created_at': n.get('created_at'),
+                'claimed': n.get('claimed', False),
+                'version': n.get('version'),
+                'banner': n.get('banner')
             })
         
-        conn.close()
-        return jsonify({'success': True, 'news': news_list})
+        return jsonify({'success': True, 'news': result})
         
     except Exception as e:
         logger.error(f"❌ Ошибка получения новостей: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/news/<int:news_id>', methods=['GET'])
+def api_get_news_detail(news_id):
+    """Получить детали одной новости из news.json"""
+    try:
+        news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+        if not os.path.exists(news_file):
+            return jsonify({'success': False, 'error': 'Новость не найдена'})
+        
+        with open(news_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        news_list = data.get('news', [])
+        news_item = next((n for n in news_list if n.get('id') == news_id), None)
+        
+        if not news_item:
+            return jsonify({'success': False, 'error': 'Новость не найдена'})
+        
+        return jsonify({'success': True, 'news': news_item})
+        
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения новости: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/news/claim-reward', methods=['POST'])
@@ -9905,17 +9930,35 @@ def api_claim_news_reward():
         if not user_id or not news_id:
             return jsonify({'success': False, 'error': 'user_id и news_id обязательны'})
         
+        # Загружаем из news.json
+        news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+        if not os.path.exists(news_file):
+            return jsonify({'success': False, 'error': 'Новость не найдена'})
+        
+        with open(news_file, 'r', encoding='utf-8') as f:
+            news_data = json.load(f)
+        
+        news_list = news_data.get('news', [])
+        news_item = next((n for n in news_list if n.get('id') == news_id), None)
+        
+        if not news_item:
+            return jsonify({'success': False, 'error': 'Новость не найдена'})
+        
+        reward_amount = news_item.get('reward_amount', 0)
+        
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Проверяем что новость существует и активна
-        cursor.execute('SELECT reward_amount FROM news WHERE id = ? AND is_active = 1', (news_id,))
-        news_row = cursor.fetchone()
-        if not news_row:
-            conn.close()
-            return jsonify({'success': False, 'error': 'Новость не найдена'})
-        
-        reward_amount = news_row[0] or 0
+        # Создаём таблицу если нет
+        cursor.execute('''CREATE TABLE IF NOT EXISTS news_reads (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            news_id INTEGER NOT NULL,
+            reward_claimed BOOLEAN DEFAULT FALSE,
+            read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, news_id)
+        )''')
+        conn.commit()
         
         # Проверяем что награда ещё не получена
         cursor.execute('''
