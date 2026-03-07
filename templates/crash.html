@@ -3559,23 +3559,57 @@ tc-root *{pointer-events:auto}
 </div>
 <div class="ld-reveal" id="ldReveal" style="display:none"></div>
 <script>
-/* Immediate visual progress — shows movement while server wakes up */
+/* Immediate visual progress + rocket animation while server loads */
 (function(){
     var p=0, bar=document.getElementById('ldProgressBar'), txt=document.getElementById('ldTxt');
+    var imgs = document.querySelectorAll('.ld-panel img');
+    var rocketsDone = {};
+    window._ldSimP = 0;
+
+    /* Show star images on panels immediately */
+    for(var i=0;i<imgs.length;i++){
+        (function(idx){
+            setTimeout(function(){
+                imgs[idx].src = '/static/img/star.png';
+                imgs[idx].classList.add('show');
+            }, idx * 80);
+        })(i);
+    }
+
     window._ldSim = setInterval(function(){
-        if(p >= 30) return; /* pause at 30% — real loader takes over */
-        p += 0.5;
+        if(p >= 90) return;
+        /* Fast 0-30, slower 30-60, slowest 60-90 */
+        if(p < 30) p += 0.5;
+        else if(p < 60) p += 0.2;
+        else p += 0.1;
+        window._ldSimP = p;
         if(bar) bar.style.width = p + '%';
         if(txt) txt.textContent = 'LOADING ' + Math.round(p) + '%';
+
+        /* Switch panels from stars → rockets after 30% */
+        var targetRockets = Math.max(0, Math.floor((p - 30) / 7));
+        var rocketCount = Object.keys(rocketsDone).length;
+        while(rocketCount < targetRockets && rocketCount < 9){
+            var available = [];
+            for(var j=0;j<9;j++){ if(!rocketsDone[j]) available.push(j); }
+            if(!available.length) break;
+            var chosen = available[Math.floor(Math.random()*available.length)];
+            rocketsDone[chosen] = true;
+            rocketCount++;
+            (function(idx){
+                var img = imgs[idx];
+                if(!img) return;
+                img.classList.remove('show');
+                img.classList.add('hide');
+                setTimeout(function(){
+                    img.src = '/static/gifs/rockets/crash.gif';
+                    img.onerror = function(){ this.src='/static/img/star.png'; };
+                    img.classList.remove('hide');
+                    img.classList.add('show');
+                }, 350);
+            })(chosen);
+        }
     }, 100);
-    /* Show star images on panels immediately */
-    var imgs = document.querySelectorAll('.ld-panel img');
-    imgs.forEach(function(img, i){
-        setTimeout(function(){
-            img.src = '/static/img/star.png';
-            img.classList.add('show');
-        }, i * 80);
-    });
 })();
 </script>
 
@@ -5242,7 +5276,7 @@ function formatNumber(num) {
 
 document.addEventListener('DOMContentLoaded', function(){
     initTelegramApp();
-    /* Safety: force-hide loading screen after 15s no matter what */
+    /* Safety: force-hide loading screen after 25s no matter what */
     setTimeout(function(){
         var ls = document.getElementById('ldScreen');
         if(ls && !ls.classList.contains('hidden')){
@@ -5250,7 +5284,7 @@ document.addEventListener('DOMContentLoaded', function(){
             ls.classList.add('hidden');
             setTimeout(function(){ ls.style.display='none'; }, 500);
         }
-    }, 15000);
+    }, 25000);
 });
 window.addEventListener('rasswet-currency-change', function(){
     refreshBetCurrencyUI();
@@ -5289,73 +5323,28 @@ document.addEventListener('touchstart', function initAudioOnceTouch(){
    GIFTS FOR ACHIEVABLE DISPLAY + CATALOG (EMBEDDED)
    ============================================================ */
 async function loadCrashGifts(){
-    /* Stop the simulated progress from the inline script */
+    /* Stop the simulated progress — rocket animation already handled by inline script */
     if(window._ldSim){ clearInterval(window._ldSim); window._ldSim = null; }
-    
+
+    var curP = window._ldSimP || 0;
     const progressBar = $('ldProgressBar');
     const ldTxt = document.getElementById('ldTxt');
-    const ldPanels = document.querySelectorAll('.ld-panel img');
     const ldScreen = $('ldScreen');
-    
-    /* Track which panels have been switched to rockets */
-    var rocketPanels = new Set();
-    
-    function updateProgress(pct){
+
+    function setP(pct){
+        if(pct <= curP) return; /* Never go backward */
+        curP = pct;
         try{
             if(progressBar) progressBar.style.width = pct + '%';
             if(ldTxt) ldTxt.textContent = 'LOADING ' + Math.round(pct) + '%';
         }catch(e){}
-        
-        /* Every ~11%, switch one random gift panel to a rocket GIF */
-        var targetRockets = Math.floor(pct / 11);
-        while(rocketPanels.size < targetRockets && rocketPanels.size < 9){
-            var available = [];
-            for(var pi = 0; pi < 9; pi++){
-                if(!rocketPanels.has(pi)) available.push(pi);
-            }
-            if(available.length === 0) break;
-            var chosen = available[Math.floor(Math.random() * available.length)];
-            rocketPanels.add(chosen);
-            (function(idx){
-                var img = ldPanels[idx];
-                if(!img) return;
-                img.classList.remove('show');
-                img.classList.add('hide');
-                setTimeout(function(){
-                    var rsList = (typeof rocketsData !== 'undefined' && rocketsData.length > 0) ? rocketsData : [{id:'crash'}];
-                    var rs = rsList[Math.floor(Math.random()*rsList.length)];
-                    img.src = '/static/gifs/rockets/' + rs.id + '.gif';
-                    img.onerror = function(){ this.src = '/static/gifs/rockets/crash.gif'; };
-                    img.classList.remove('hide');
-                    img.classList.add('show');
-                }, 300);
-            })(chosen);
-        }
     }
-    
-    /* Initial: fill all panels with random gift PNGs */
-    function initGiftPanels(){
-        ldPanels.forEach(function(img, i){
-            setTimeout(function(){
-                if(allCatalogGifts.length > 0){
-                    var rg = allCatalogGifts[Math.floor(Math.random()*allCatalogGifts.length)];
-                    img.src = resolveCrashGiftImage(rg, '/static/img/star.png');
-                } else {
-                    img.src = '/static/img/star.png';
-                }
-                img.onerror = function(){ this.src = '/static/img/star.png'; };
-                img.classList.add('show');
-            }, i * 80);
-        });
-    }
-    
+
     function finishLoading(){
-        /* Hide loading screen first */
         if(ldScreen){
             ldScreen.classList.add('hidden');
             setTimeout(function(){ ldScreen.style.display='none'; }, 500);
         }
-        /* Circle reveal over game content */
         var reveal = $('ldReveal');
         if(reveal){
             reveal.style.display = 'block';
@@ -5371,46 +5360,34 @@ async function loadCrashGifts(){
             }, 16);
         }
     }
-    
+
     try{
-        /* Show gift panels immediately with placeholders */
-        initGiftPanels();
-        updateProgress(5);
-        
-        /* Load gifts from API */
-        try{ await loadGiftsFromAPI(); }catch(e){ console.warn('Gifts API:', e); }
-        updateProgress(25);
-        
-        console.log('📦 Gifts loaded:', allCatalogGifts.length);
-        
-        /* Re-fill panels with loaded gifts */
-        if(allCatalogGifts.length > 0) initGiftPanels();
-        
-        /* Preload gift images in background (non-blocking) */
+        setP(Math.max(curP, 30));
+
+        /* Load gifts from API (has internal 8s timeout) */
+        try{ await Promise.race([loadGiftsFromAPI(), new Promise((_,r)=>setTimeout(()=>r('t'),8000))]); }catch(e){ console.warn('Gifts API:', e); }
+        setP(Math.max(curP + 15, 55));
+        console.log('Gifts loaded:', allCatalogGifts.length);
+
         preloadGiftsInBackground();
-        updateProgress(40);
-        
-        /* Load user's collection history */
-        try{ await loadCollectionHistory(); }catch(e){ console.warn('Collection history:', e); }
-        updateProgress(55);
-        
-        /* Check VIP status */
-        try{ await checkVipStatus(); }catch(e){ console.warn('VIP status:', e); }
-        updateProgress(70);
-        
-        await new Promise(r => setTimeout(r, 500));
-        updateProgress(85);
-        
-        await new Promise(r => setTimeout(r, 500));
-        updateProgress(100);
-        
+        setP(Math.max(curP + 5, 65));
+
+        /* Load collection + VIP with 5s timeouts each */
+        try{ await Promise.race([loadCollectionHistory(), new Promise((_,r)=>setTimeout(()=>r('t'),5000))]); }catch(e){}
+        setP(Math.max(curP + 10, 80));
+
+        try{ await Promise.race([checkVipStatus(), new Promise((_,r)=>setTimeout(()=>r('t'),5000))]); }catch(e){}
+        setP(Math.max(curP + 5, 90));
+
+        await new Promise(r => setTimeout(r, 200));
+        setP(100);
+
         if(ldTxt) ldTxt.textContent = 'READY!';
         await new Promise(r => setTimeout(r, 300));
-        
+
         finishLoading();
     }catch(e){
         console.error('Error in loadCrashGifts:', e);
-        /* Always finish loading even on error */
         finishLoading();
     }
 }
