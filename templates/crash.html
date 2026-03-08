@@ -7197,10 +7197,6 @@ function renderHubCustomization(){
 
 /* Show locked item info */
 function showLockedItemInfo(accessType, requirement) {
-    if (accessType === 'level') return 'Требуется уровень ' + requirement;
-    if (accessType === 'vip') return 'Только для VIP';
-    if (accessType === 'bet_volume') return 'Объём ставок: ' + requirement;
-    if (accessType === 'wager') return 'Вейджер: ' + requirement;
     return 'Заблокировано';
 }
 
@@ -7269,11 +7265,7 @@ function markAsClaimed(itemId) {
 /* Handle click on locked item — show progress popup for trackable types */
 function handleLockedClick(type, id, name, accessType, requirement) {
     playSound('click');
-    var msg = 'Заблокировано';
-    if (accessType === 'level') msg = 'Требуется уровень ' + requirement;
-    else if (accessType === 'vip') msg = 'Только для VIP';
-    else if (accessType === 'bet_volume') msg = 'Нужен объём ставок: ' + requirement;
-    showToast(msg, 'err');
+    showToast('Заблокировано', 'err');
     if (type === 'rocket') {
         openLockedRocketPreview(id, name, accessType, requirement);
     } else {
@@ -13431,10 +13423,9 @@ document.addEventListener('click', function _initMusicOnce(){
         }
     }
 
-    /* Start polling — DISABLED (notifications removed) */
-    // setTimeout(fetchNotifs, 2500);
-    // setInterval(fetchNotifs, 30000);
-    // setTimeout(initCurrencyMode, 1200);
+    /* Start polling — notifications enabled */
+    setTimeout(fetchNotifs, 2500);
+    setInterval(fetchNotifs, 30000);
 
     /* ===== POPUP TOGGLE ===== */
     window.toggleNotifPopup = function() {
