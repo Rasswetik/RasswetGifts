@@ -957,11 +957,12 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
 
         local_value = int(round(float((local_match or {}).get('value', 0)) * FRAGMENT_TON_RATE))
         fragment_value = _safe_int(fg.get('value'), 0)
+        local_image = _normalize_local_gift_image((local_match or {}).get('image'))
         merged.append({
             'id': (local_match or {}).get('id'),
             'name': (local_match or {}).get('name') or fg.get('name') or slug,
-            'value': fragment_value if fragment_value > 0 else local_value,
-            'image': fg.get('image') or _normalize_local_gift_image((local_match or {}).get('image')) or '/static/img/default_gift.png',
+            'value': local_value if local_value > 0 else fragment_value,
+            'image': local_image or fg.get('image') or '/static/img/default_gift.png',
             'fragment_slug': slug,
             'fragment_url': fg.get('fragment_url') or f'https://fragment.com/gifts/{slug}',
             'fragment_price_ton': fg.get('fragment_price_ton'),
@@ -5707,11 +5708,15 @@ def api_case_detail(case_id):
             else:
                 target_id = gift_info.get('id')
                 target_id_str = str(target_id) if target_id is not None else ''
-                # Try local gifts first (by numeric ID)
+                # Try local gifts first (by numeric ID) — values in TON
                 gift = next((g for g in local_gifts if str(g.get('id')) == target_id_str), None) if target_id is not None else None
                 # Then try Fragment catalog (by string ID like fragment_model:slug:model)
                 if not gift and target_id_str:
-                    gift = next((g for g in fragment_all if str(g.get('id')) == target_id_str or str(g.get('gift_key')) == target_id_str), None)
+                    frag_gift = next((g for g in fragment_all if str(g.get('id')) == target_id_str or str(g.get('gift_key')) == target_id_str), None)
+                    if frag_gift:
+                        gift = dict(frag_gift)
+                        # fragment_all values are in stars — convert to TON for consistency
+                        gift['value'] = round(float(gift.get('value', 0)) / FRAGMENT_TON_RATE, 2)
                 # Fallback: construct from gift_info fields
                 if not gift and gift_info.get('name'):
                     gift = {

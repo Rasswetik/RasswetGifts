@@ -376,32 +376,36 @@
             image-rendering:-webkit-optimize-contrast;
         }
         .roulette-pointer{
-            position:absolute;left:50%;transform:translateX(-50%);
-            width:0;height:0;pointer-events:none;z-index:5;
+            position:absolute;left:50%;
+            pointer-events:none;z-index:5;
         }
         .roulette-pointer.ptr-top{
-            top:0;
-            border-left:9px solid transparent;border-right:9px solid transparent;
-            border-top:14px solid #3b82f6;
-            filter:drop-shadow(0 2px 6px rgba(59,130,246,.5));
+            top:-6px;
+            width:14px;height:14px;
+            background:#9ca3af;
+            border-radius:2px;
+            transform:translateX(-50%) rotate(45deg);
+            filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));
         }
         .roulette-pointer.ptr-bottom{
-            bottom:0;
-            border-left:9px solid transparent;border-right:9px solid transparent;
-            border-bottom:14px solid #3b82f6;
-            filter:drop-shadow(0 -2px 6px rgba(59,130,246,.5));
+            bottom:-6px;
+            width:14px;height:14px;
+            background:#9ca3af;
+            border-radius:2px;
+            transform:translateX(-50%) rotate(45deg);
+            filter:drop-shadow(0 -2px 4px rgba(0,0,0,.3));
         }
-        .roulette-wrap.won .roulette-pointer.ptr-top{border-top-color:#FDA100;filter:drop-shadow(0 2px 6px rgba(253,161,0,.5))}
-        .roulette-wrap.won .roulette-pointer.ptr-bottom{border-bottom-color:#FDA100;filter:drop-shadow(0 -2px 6px rgba(253,161,0,.5))}
+        .roulette-wrap.won .roulette-pointer.ptr-top{background:#FDA100;filter:drop-shadow(0 2px 6px rgba(253,161,0,.5))}
+        .roulette-wrap.won .roulette-pointer.ptr-bottom{background:#FDA100;filter:drop-shadow(0 -2px 6px rgba(253,161,0,.5))}
 
         /* ═══════════ MULTI ROULETTE (stacked rows) ═══════════ */
         .roulette-multi{display:none;position:relative}
         .roulette-multi-rows{width:100%}
         .roulette-row{
             position:relative;height:118px;overflow:hidden;
-            border-bottom:1px solid rgba(255,255,255,.04);
+            margin-bottom:6px;
         }
-        .roulette-row:last-child{border-bottom:none}
+        .roulette-row:last-child{margin-bottom:0}
         .roulette-row-track{
             display:flex;gap:8px;
             padding:6px 0 6px 6px;
@@ -428,20 +432,24 @@
         .roulette-row-item .ri-price img{width:11px;height:11px;flex-shrink:0}
         .roulette-row-item .ri-img{width:58px;height:58px;object-fit:contain}
         .roulette-row .roulette-pointer{
-            position:absolute;left:50%;transform:translateX(-50%);
-            width:0;height:0;pointer-events:none;z-index:5;
+            position:absolute;left:50%;
+            pointer-events:none;z-index:5;
         }
         .roulette-row .roulette-pointer.ptr-top{
-            top:0;
-            border-left:8px solid transparent;border-right:8px solid transparent;
-            border-top:12px solid #3b82f6;
-            filter:drop-shadow(0 2px 5px rgba(59,130,246,.5));
+            top:-6px;
+            width:12px;height:12px;
+            background:#9ca3af;
+            border-radius:2px;
+            transform:translateX(-50%) rotate(45deg);
+            filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));
         }
         .roulette-row .roulette-pointer.ptr-bottom{
-            bottom:0;
-            border-left:8px solid transparent;border-right:8px solid transparent;
-            border-bottom:12px solid #3b82f6;
-            filter:drop-shadow(0 -2px 5px rgba(59,130,246,.5));
+            bottom:-6px;
+            width:12px;height:12px;
+            background:#9ca3af;
+            border-radius:2px;
+            transform:translateX(-50%) rotate(45deg);
+            filter:drop-shadow(0 -2px 4px rgba(0,0,0,.3));
         }
 
         /* ═══════════ QTY BUTTONS ═══════════ */
@@ -1421,21 +1429,17 @@
             if (!filtered.length) return;
             lastFeedIds = filtered.map(function(w){ return w.gift_name + '_' + w.created_at; });
             track.innerHTML = filtered.map(function(w){
-                var price = w.gift_value ? (Number(w.gift_value)/100).toFixed(1) : '';
                 return '<div class="feed-item">' +
                     '<img src="' + (w.gift_image || w.image || '/static/img/gift.png') + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
-                    (price ? '<div class="feed-item-price">' + price + '</div>' : '') +
                     '</div>';
             }).join('');
         }
 
         function addFeedItem(w) {
             var track = $('feedTrack');
-            var price = w.gift_value ? (Number(w.gift_value)/100).toFixed(1) : '';
             var div = document.createElement('div');
             div.className = 'feed-item new';
-            div.innerHTML = '<img src="' + (w.gift_image || w.image || '/static/img/gift.png') + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
-                (price ? '<div class="feed-item-price">' + price + '</div>' : '');
+            div.innerHTML = '<img src="' + (w.gift_image || w.image || '/static/img/gift.png') + '" alt="" onerror="this.src=\'/static/img/gift.png\'">';
             track.insertBefore(div, track.firstChild);
             if (track.children.length > 30) track.removeChild(track.lastChild);
         }
@@ -1545,12 +1549,14 @@
             const gifts = currentCase ? (currentCase.gifts_details || currentCase.gifts || []) : [];
             if (!gifts.length) return;
             container.innerHTML = '';
+            const offsets = [0, 55, 27];
             for (let r = 0; r < qty; r++) {
                 const row = document.createElement('div');
                 row.className = 'roulette-row';
                 const track = document.createElement('div');
                 track.className = 'roulette-row-track idle';
                 track.id = 'multiRowTrack-' + r;
+                track.style.paddingLeft = offsets[r % offsets.length] + 'px';
                 // Fill with shuffled items
                 const items = [];
                 for (let i = 0; i < 30; i++) {
@@ -1952,6 +1958,7 @@
             const container = $('rouletteMultiRows');
             container.innerHTML = '';
             const qty = wonGiftsArr.length;
+            const offsets = [0, 55, 27];
             
             for (let r = 0; r < qty; r++) {
                 const row = document.createElement('div');
@@ -1987,6 +1994,8 @@
                 container.appendChild(row);
                 
                 // Animate horizontal scroll with staggered delay
+                const rowOffset = offsets[r % offsets.length];
+                track.style.paddingLeft = rowOffset + 'px';
                 const delay = r * 400;
                 track.style.transition = 'none';
                 track.style.transform = 'translateX(0)';
