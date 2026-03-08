@@ -7547,6 +7547,14 @@ def upgrade_gift():
         # Build NFT image URL
         new_image = f'https://nft.fragment.com/gift/{slug}-{nft_num}.webp'
 
+        # Generate 10 random preview images for roulette animation
+        preview_nums = set()
+        while len(preview_nums) < 10:
+            n = random.randint(1, max_num)
+            if n != nft_num:
+                preview_nums.add(n)
+        preview_images = [f'https://nft.fragment.com/gift/{slug}-{n}.webp' for n in preview_nums]
+
         cursor.execute('''UPDATE inventory
             SET gift_name = ?, gift_image = ?, is_upgraded = 1, nft_number = ?
             WHERE id = ?''', (new_name, new_image, nft_num, inventory_id))
@@ -7568,7 +7576,8 @@ def upgrade_gift():
             'new_name': new_name,
             'new_image': new_image,
             'nft_number': nft_num,
-            'new_balance': new_bal[0] if new_bal else 0
+            'new_balance': new_bal[0] if new_bal else 0,
+            'preview_images': preview_images
         })
 
     except Exception as e:
