@@ -147,20 +147,44 @@
         .nm-toggle.off::after{left:2px}
         .nm-del{width:28px;height:28px;border-radius:8px;border:none;background:rgba(239,68,68,.15);color:#ef4444;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
-        /* === ITEM MODAL === */
-        .item-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:1001;display:none;align-items:center;justify-content:center}
+        /* === ITEM MODAL (bottom sheet 30%) === */
+        .item-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1001;display:none;align-items:flex-end;justify-content:center}
         .item-modal-overlay.show{display:flex}
-        .item-modal{background:linear-gradient(160deg,rgba(36,41,54,1),rgba(26,30,42,1));border:none;border-radius:16px;padding:24px;width:90%;max-width:360px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:modalPop .3s cubic-bezier(.34,1.56,.64,1)}
-        @keyframes modalPop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
-        .item-modal img{width:100px;height:100px;object-fit:contain;margin-bottom:12px}
-        .item-modal-name{font-size:18px;font-weight:700;margin-bottom:4px}
-        .item-modal-price{display:flex;align-items:center;justify-content:center;gap:4px;font-size:16px;font-weight:700;color:var(--accent-light);margin-bottom:16px;line-height:1}
-        .item-modal-price img{width:16px;height:16px;flex-shrink:0;display:block}
-        .item-modal-actions{display:flex;gap:10px}
-        .item-modal-btn{flex:1;padding:12px;border-radius:12px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
-        .item-modal-sell{background:linear-gradient(135deg,#ff416c,#ff4b2b);color:#fff}
-        .item-modal-withdraw{background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff}
-        .item-modal-close{background:var(--surface2);color:#fff;margin-top:10px;width:100%;padding:10px;border-radius:10px;border:none;font-family:inherit;font-size:13px;cursor:pointer}
+        .item-modal{background:#1e2230;border-radius:20px 20px 0 0;width:100%;max-width:480px;min-height:30vh;text-align:center;box-shadow:0 -4px 30px rgba(0,0,0,.5);animation:sheetUp .3s ease;display:flex;flex-direction:column;align-items:center;padding:0 20px 24px;position:relative}
+        .item-modal-handle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:10px auto 14px;flex-shrink:0}
+        .item-modal-name{font-size:16px;font-weight:700;margin-bottom:6px;color:#fff}
+        .item-modal img.item-modal-main-img{width:90px;height:90px;object-fit:contain;margin-bottom:10px}
+        .item-modal-price{display:flex;align-items:center;justify-content:center;gap:5px;font-size:15px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1}
+        .item-modal-price img{width:15px;height:15px;flex-shrink:0;display:block}
+        .item-modal-actions{display:flex;gap:10px;width:100%}
+        .item-modal-btn{flex:1;padding:14px;border-radius:14px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s}
+        .item-modal-btn:disabled{opacity:.4;cursor:not-allowed}
+        .item-modal-sell{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+        .item-modal-upgrade{background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff}
+        .item-modal-withdraw-nft{background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff}
+        .item-modal-claim{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:15px}
+
+        /* === CHALLENGE PROGRESS IN ITEM MODAL === */
+        .item-modal-challenge{width:100%;margin-bottom:14px}
+        .challenge-label{font-size:13px;font-weight:600;color:rgba(255,255,255,.5);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+        .challenge-label svg{width:14px;height:14px;stroke:rgba(255,255,255,.4);fill:none}
+        .challenge-bar-wrap{width:100%;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-bottom:6px}
+        .challenge-bar{height:100%;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:4px;transition:width .4s ease}
+        .challenge-text{font-size:11px;color:rgba(255,255,255,.4)}
+
+        /* === UPGRADE ANIMATION === */
+        .upgrade-anim-wrap{display:none;flex-direction:column;align-items:center;width:100%;padding:20px 0}
+        .upgrade-anim-wrap.active{display:flex}
+        .upgrade-anim-img{width:100px;height:100px;object-fit:contain;margin-bottom:16px;animation:upgradePulse 1.5s infinite}
+        @keyframes upgradePulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.06);filter:brightness(1.3)}}
+        .upgrade-bar-wrap{width:100%;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+        .upgrade-bar{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:3px;transition:width .3s linear}
+        .upgrade-status{font-size:12px;color:rgba(255,255,255,.4);margin-top:8px}
+
+        /* === CHALLENGE BADGE ON CARD === */
+        .inv-card-challenge{position:absolute;top:4px;right:4px;display:flex;align-items:center;justify-content:center;width:18px;height:18px;background:rgba(0,0,0,.5);border-radius:5px}
+        .inv-card-challenge svg{width:11px;height:11px;stroke:rgba(255,255,255,.5);fill:none}
+        .inv-card-locked{opacity:.85;border:1px solid rgba(99,102,241,.3)}
 
         /* === REWARDS MODAL === */
         .rewards-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:1002;display:none;align-items:flex-end;justify-content:center}
@@ -272,6 +296,21 @@
         .promo-progress-bar{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .5s ease;min-width:0}
         .promo-progress-text{text-align:center;font-size:11px;color:rgba(255,255,255,.5);margin-top:6px}
 
+        /* === DEPOSIT HISTORY IN PROMO === */
+        .deposit-history-section{margin-top:16px;padding:14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
+        .deposit-history-title{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+        .deposit-history-title svg{width:14px;height:14px;stroke:rgba(255,255,255,.4);fill:none}
+        .deposit-history-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+        .deposit-history-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.03)}
+        .deposit-history-left{display:flex;align-items:center;gap:8px}
+        .deposit-history-icon{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center}
+        .deposit-history-icon svg{width:14px;height:14px;stroke:rgba(255,255,255,.4);fill:none}
+        .deposit-history-type{font-size:12px;color:rgba(255,255,255,.5)}
+        .deposit-history-amount{font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:4px}
+        .deposit-history-amount img{width:12px;height:12px}
+        .deposit-history-date{font-size:10px;color:rgba(255,255,255,.3)}
+        .deposit-history-empty{font-size:12px;color:rgba(255,255,255,.3);text-align:center;padding:12px}
+
         /* ═══════════ GIFT REVEAL ANIMATION ═══════════ */
         .gift-reveal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;opacity:0;visibility:hidden;transition:opacity .4s,visibility .4s}
         .gift-reveal-overlay.show{opacity:1;visibility:visible}
@@ -375,16 +414,33 @@
         </div>
     </div>
 
-    <div class="item-modal-overlay" id="itemModal">
+    <div class="item-modal-overlay" id="itemModal" onclick="if(event.target===this)hideItemModal()">
         <div class="item-modal">
-            <img id="itemModalImg" src="" alt="">
+            <div class="item-modal-handle"></div>
             <div class="item-modal-name" id="itemModalName"></div>
-            <div class="item-modal-price"><img src="/static/img/ton.png" id="itemModalTonIcon"> <span id="itemModalPrice">0</span></div>
-            <div class="item-modal-actions">
-                <button class="item-modal-btn item-modal-sell" id="itemModalSellBtn" onclick="sellItem()">Sell</button>
-                <button class="item-modal-btn item-modal-withdraw" id="itemModalWithdrawBtn" onclick="withdrawItem()">Withdraw</button>
+            <img class="item-modal-main-img" id="itemModalImg" src="" alt="">
+            <div class="item-modal-price"><img src="/static/img/ton.png" id="itemModalTonIcon"> <span id="itemModalPrice">0</span> TON</div>
+
+            <div class="item-modal-challenge" id="itemModalChallenge" style="display:none">
+                <div class="challenge-label"><svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Wager</div>
+                <div class="challenge-bar-wrap">
+                    <div class="challenge-bar" id="challengeBar" style="width:0%"></div>
+                </div>
+                <div class="challenge-text" id="challengeText">0 / 0 TON</div>
             </div>
-            <button class="item-modal-close" onclick="hideItemModal()">Close</button>
+
+            <div class="upgrade-anim-wrap" id="upgradeAnimWrap">
+                <img class="upgrade-anim-img" id="upgradeAnimImg" src="">
+                <div class="upgrade-bar-wrap"><div class="upgrade-bar" id="upgradeBar"></div></div>
+                <div class="upgrade-status" id="upgradeStatus">Upgrading...</div>
+            </div>
+
+            <div class="item-modal-actions" id="itemModalActions">
+                <button class="item-modal-btn item-modal-sell" id="itemModalSellBtn" onclick="sellItem()">Sell</button>
+                <button class="item-modal-btn item-modal-upgrade" id="itemModalUpgradeBtn" onclick="upgradeItem()">Upgrade 0.1 TON</button>
+                <button class="item-modal-btn item-modal-withdraw-nft" id="itemModalWithdrawBtn" onclick="withdrawItem()" style="display:none">Withdraw</button>
+                <button class="item-modal-btn item-modal-claim" id="itemModalClaimBtn" onclick="claimChallenge()" style="display:none">Claim</button>
+            </div>
         </div>
     </div>
 
@@ -392,16 +448,16 @@
     <div class="promo-overlay" id="promoOverlay" onclick="if(event.target===this)closePromoModal()">
         <div class="promo-modal">
             <div class="promo-header">
-                <div class="promo-title">🎟️ Промокод</div>
-                <button class="promo-close" onclick="closePromoModal()">✕</button>
+                <div class="promo-title">Promo</div>
+                <button class="promo-close" onclick="closePromoModal()">&#10005;</button>
             </div>
             <div class="promo-input-wrap">
-                <input class="promo-input" id="promoInput" type="text" placeholder="Введите код" maxlength="20" autocomplete="off">
+                <input class="promo-input" id="promoInput" type="text" placeholder="Enter code" maxlength="20" autocomplete="off">
                 <button class="promo-submit" id="promoSubmitBtn" onclick="activatePromo()">OK</button>
             </div>
             <div class="promo-error" id="promoError"></div>
             <div class="promo-progress-section" id="promoProgressSection">
-                <div class="promo-progress-title">🎁 Активный промо-подарок</div>
+                <div class="promo-progress-title">Active promo gift</div>
                 <div class="promo-progress-gift">
                     <img id="promoGiftImg" src="" alt="">
                     <div class="promo-progress-gift-info">
@@ -413,6 +469,12 @@
                     <div class="promo-progress-bar" id="promoProgressBar" style="width:0%"></div>
                 </div>
                 <div class="promo-progress-text" id="promoProgressText">0 / 0 TON</div>
+            </div>
+            <div class="deposit-history-section" id="depositHistorySection">
+                <div class="deposit-history-title"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 2v20M2 12h20"/><path d="M17 7l-5 5-5-5"/></svg> Deposit history</div>
+                <div class="deposit-history-list" id="depositHistoryList">
+                    <div class="deposit-history-empty">Loading...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -619,14 +681,202 @@
             var ton = starsToTon(item.gift_value); 
             var fragmentFallback = item.fragment_slug ? 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp' : '/static/img/default_gift.png'; 
             var onerrorHandler = "this.onerror=function(){this.src=&quot;/static/img/default_gift.png&quot;};this.src=&quot;" + fragmentFallback + "&quot;";
-            return '<div class="inv-card" onclick="openItemModal(' + item.id + ')"><img class="inv-card-img" src="' + item.gift_image + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '"><div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; 
+            var challengeBadge = (item.challenge && !item.challenge.is_completed) ? '<div class="inv-card-challenge"><svg viewBox="0 0 24 24" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' : '';
+            return '<div class="inv-card' + ((item.challenge && !item.challenge.is_completed) ? ' inv-card-locked' : '') + '" onclick="openItemModal(' + item.id + ')"><img class="inv-card-img" src="' + item.gift_image + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '">' + challengeBadge + '<div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; 
         }).join('') + '</div>';
     }
 
-    function openItemModal(itemId) { var item = inventory.find(function(i){return i.id === itemId}); if (!item) return; selectedItem = item; vibrateIfOn(); var ton = starsToTon(item.gift_value); document.getElementById('itemModalImg').src = item.gift_image; document.getElementById('itemModalName').textContent = item.gift_name; document.getElementById('itemModalPrice').textContent = formatTon(ton); document.getElementById('itemModalSellBtn').textContent = t('sell'); document.getElementById('itemModalWithdrawBtn').textContent = t('withdraw'); document.getElementById('itemModalSellBtn').disabled = item.is_withdrawing; document.getElementById('itemModalWithdrawBtn').disabled = item.is_withdrawing; document.getElementById('itemModal').classList.add('show'); }
-    function hideItemModal() { document.getElementById('itemModal').classList.remove('show'); selectedItem = null; }
+    function openItemModal(itemId) {
+        var item = inventory.find(function(i){return i.id === itemId});
+        if (!item) return;
+        selectedItem = item;
+        vibrateIfOn();
+        var ton = starsToTon(item.gift_value);
+
+        document.getElementById('itemModalImg').src = item.gift_image;
+        document.getElementById('itemModalName').textContent = item.gift_name;
+        document.getElementById('itemModalPrice').textContent = formatTon(ton);
+
+        var ch = item.challenge;
+        var chSection = document.getElementById('itemModalChallenge');
+        var actSection = document.getElementById('itemModalActions');
+        var upgradeAnimWrap = document.getElementById('upgradeAnimWrap');
+        upgradeAnimWrap.classList.remove('active');
+
+        var sellBtn = document.getElementById('itemModalSellBtn');
+        var upgradeBtn = document.getElementById('itemModalUpgradeBtn');
+        var withdrawBtn = document.getElementById('itemModalWithdrawBtn');
+        var claimBtn = document.getElementById('itemModalClaimBtn');
+
+        sellBtn.style.display = 'none';
+        upgradeBtn.style.display = 'none';
+        withdrawBtn.style.display = 'none';
+        claimBtn.style.display = 'none';
+
+        if (ch && !ch.is_completed) {
+            // Active challenge: show progress bar only, no action buttons
+            var pct = ch.target_wager > 0 ? Math.min(100, (ch.current_wager / ch.target_wager) * 100) : 0;
+            document.getElementById('challengeBar').style.width = pct.toFixed(1) + '%';
+            var cTon = (ch.current_wager / 100).toFixed(2);
+            var tTon = (ch.target_wager / 100).toFixed(2);
+            document.getElementById('challengeText').textContent = cTon + ' / ' + tTon + ' TON';
+            chSection.style.display = '';
+            actSection.style.display = 'none';
+
+            // If challenge is complete (current >= target), show Claim button
+            if (ch.current_wager >= ch.target_wager) {
+                actSection.style.display = '';
+                claimBtn.style.display = '';
+            }
+        } else if (item.crate_id) {
+            // Crate item
+            chSection.style.display = 'none';
+            actSection.style.display = 'none';
+        } else if (item.is_upgraded) {
+            // Upgraded NFT item: sell + withdraw
+            chSection.style.display = 'none';
+            actSection.style.display = '';
+            sellBtn.style.display = '';
+            sellBtn.textContent = t('sell');
+            sellBtn.disabled = item.is_withdrawing;
+            withdrawBtn.style.display = '';
+            withdrawBtn.textContent = t('withdraw');
+            withdrawBtn.disabled = item.is_withdrawing;
+        } else {
+            // Normal random item: sell + upgrade
+            chSection.style.display = 'none';
+            actSection.style.display = '';
+            sellBtn.style.display = '';
+            sellBtn.textContent = t('sell');
+            sellBtn.disabled = item.is_withdrawing;
+            upgradeBtn.style.display = '';
+            upgradeBtn.textContent = 'Upgrade 0.1 TON';
+            upgradeBtn.disabled = false;
+        }
+
+        document.getElementById('itemModal').classList.add('show');
+    }
+    function hideItemModal() {
+        document.getElementById('itemModal').classList.remove('show');
+        document.getElementById('upgradeAnimWrap').classList.remove('active');
+        selectedItem = null;
+    }
+
+    async function upgradeItem() {
+        if (!selectedItem) return;
+        var itemId = selectedItem.id;
+        var btn = document.getElementById('itemModalUpgradeBtn');
+        btn.disabled = true;
+        btn.textContent = 'Upgrading...';
+
+        // Show upgrade animation
+        var animWrap = document.getElementById('upgradeAnimWrap');
+        var animImg = document.getElementById('upgradeAnimImg');
+        var animBar = document.getElementById('upgradeBar');
+        var animStatus = document.getElementById('upgradeStatus');
+        animImg.src = selectedItem.gift_image;
+        animBar.style.width = '0%';
+        animStatus.textContent = 'Upgrading...';
+        animWrap.classList.add('active');
+        document.getElementById('itemModalActions').style.display = 'none';
+
+        // Animate progress bar over 7 seconds
+        var startTime = Date.now();
+        var duration = 7000;
+        var upgradeResult = null;
+        var upgradeError = null;
+
+        // Start the API call immediately
+        var fetchPromise = fetch('/api/upgrade-gift', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_id: user.id, inventory_id: itemId})
+        }).then(function(r){ return r.json(); }).then(function(d){
+            upgradeResult = d;
+        }).catch(function(e){
+            upgradeError = e;
+        });
+
+        // Animate bar
+        function tick() {
+            var elapsed = Date.now() - startTime;
+            var pct = Math.min(100, (elapsed / duration) * 100);
+            animBar.style.width = pct + '%';
+            if (elapsed < duration) requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+
+        // Wait for both animation and API
+        await Promise.all([fetchPromise, new Promise(function(r){ setTimeout(r, duration); })]);
+        animBar.style.width = '100%';
+
+        if (upgradeResult && upgradeResult.success) {
+            animImg.src = upgradeResult.new_image;
+            animStatus.textContent = 'Upgrade complete!';
+            document.getElementById('itemModalImg').src = upgradeResult.new_image;
+            document.getElementById('itemModalName').textContent = upgradeResult.new_name;
+            // Update local data
+            selectedItem.gift_name = upgradeResult.new_name;
+            selectedItem.gift_image = upgradeResult.new_image;
+            selectedItem.is_upgraded = true;
+            selectedItem.nft_number = upgradeResult.nft_number;
+            await refreshUserData();
+            setTimeout(function(){
+                animWrap.classList.remove('active');
+                document.getElementById('itemModalActions').style.display = '';
+                var sellBtn = document.getElementById('itemModalSellBtn');
+                var withdrawBtn = document.getElementById('itemModalWithdrawBtn');
+                var upgradeBtn2 = document.getElementById('itemModalUpgradeBtn');
+                upgradeBtn2.style.display = 'none';
+                sellBtn.style.display = '';
+                sellBtn.textContent = t('sell');
+                sellBtn.disabled = false;
+                withdrawBtn.style.display = '';
+                withdrawBtn.textContent = t('withdraw');
+                withdrawBtn.disabled = false;
+                renderInventory();
+            }, 1500);
+        } else {
+            animStatus.textContent = (upgradeResult && upgradeResult.error) || 'Upgrade failed';
+            setTimeout(function(){
+                animWrap.classList.remove('active');
+                document.getElementById('itemModalActions').style.display = '';
+                btn.disabled = false;
+                btn.textContent = 'Upgrade 0.1 TON';
+            }, 2000);
+        }
+    }
+
+    async function claimChallenge() {
+        if (!selectedItem) return;
+        var btn = document.getElementById('itemModalClaimBtn');
+        btn.disabled = true;
+        btn.textContent = 'Claiming...';
+        // For now, just reload inventory to reflect backend state
+        showNotif('Gift claimed!');
+        await loadInventory();
+        hideItemModal();
+    }
+
     async function sellItem() { if (!selectedItem) return; var itemId = selectedItem.id; hideItemModal(); try { var r = await fetch('/api/sell-gift', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: user.id, gift_id: itemId}) }); var d = await r.json(); if (d.success) { showNotif(t('giftSold')); await refreshUserData(); loadInventory(); } else showNotif(d.error || 'Error selling', true); } catch (e) { showNotif('Error selling', true); } }
-    async function withdrawItem() { if (!selectedItem) return; var itemId = selectedItem.id; hideItemModal(); try { var r = await fetch('/api/withdraw-gift', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: user.id, gift_id: itemId}) }); var d = await r.json(); if (d.success) { showNotif(t('withdrawReq')); loadInventory(); } else showNotif(d.error || 'Error withdrawing', true); } catch (e) { showNotif('Error withdrawing', true); } }
+
+    async function withdrawItem() {
+        if (!selectedItem) return;
+        var itemId = selectedItem.id;
+        // Upgraded items: show error (withdrawal not available yet)
+        if (selectedItem.is_upgraded) {
+            hideItemModal();
+            showNotif('Withdrawal error. Contact support.', true);
+            return;
+        }
+        hideItemModal();
+        try {
+            var r = await fetch('/api/withdraw-gift', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: user.id, gift_id: itemId}) });
+            var d = await r.json();
+            if (d.success) { showNotif(t('withdrawReq')); loadInventory(); }
+            else showNotif(d.error || 'Error withdrawing', true);
+        } catch (e) { showNotif('Error withdrawing', true); }
+    }
 
     function showSellAllModal() { var sellable = inventory.filter(function(i){return !i.is_withdrawing}); if (!sellable.length) { showNotif(t('noGifts'), true); return; } var total = sellable.reduce(function(s,i){return s + (i.gift_value || 0)}, 0); document.getElementById('sellAllTotal').textContent = formatTon(starsToTon(total)) + ' TON'; document.getElementById('sellAllModal').classList.add('show'); }
     function hideSellAllModal() { document.getElementById('sellAllModal').classList.remove('show'); }
@@ -791,6 +1041,7 @@
         document.getElementById('promoInput').value = '';
         document.getElementById('promoInput').focus();
         loadPromoProgress();
+        loadDepositHistory();
     }
     function closePromoModal() { document.getElementById('promoOverlay').classList.remove('show'); }
 
@@ -844,8 +1095,8 @@
                 var c = d.challenge;
                 section.style.display = 'block';
                 document.getElementById('promoGiftImg').src = c.gift_image || '/static/img/gift.png';
-                document.getElementById('promoGiftName').textContent = c.gift_name || 'Подарок';
-                document.getElementById('promoGiftVal').textContent = (c.current_gift_name || c.gift_name) + ' → ' + c.gift_name;
+                document.getElementById('promoGiftName').textContent = c.gift_name || 'Gift';
+                document.getElementById('promoGiftVal').textContent = (c.current_gift_name || c.gift_name) + ' -> ' + c.gift_name;
                 var pct = Math.min(100, (c.progress / c.target) * 100);
                 document.getElementById('promoProgressBar').style.width = pct + '%';
                 var progTon = (c.progress / 100).toFixed(2);
@@ -856,6 +1107,33 @@
             }
         } catch(e) {
             document.getElementById('promoProgressSection').style.display = 'none';
+        }
+    }
+
+    async function loadDepositHistory() {
+        if (!user) return;
+        var list = document.getElementById('depositHistoryList');
+        try {
+            var r = await fetch('/api/deposit-history/' + user.id);
+            var d = await r.json();
+            if (!d.success || !d.deposits || !d.deposits.length) {
+                list.innerHTML = '<div class="deposit-history-empty">No deposits yet</div>';
+                return;
+            }
+            list.innerHTML = d.deposits.map(function(dep) {
+                var ton = (dep.amount / 100).toFixed(2);
+                var typeLabel = dep.type === 'stars' ? 'Stars' : dep.type === 'gift' ? 'Gift' : 'SBP';
+                var iconSvg = dep.type === 'gift'
+                    ? '<svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="8" width="18" height="4"/><rect x="5" y="12" width="14" height="8"/><line x1="12" y1="8" x2="12" y2="20"/><path d="M12 8c-2-4-6-4-6-1s4 3 6 1"/><path d="M12 8c2-4 6-4 6-1s-4 3-6 1"/></svg>'
+                    : '<svg viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>';
+                var dateStr = '';
+                if (dep.date) {
+                    try { var dt = new Date(dep.date); dateStr = dt.toLocaleDateString(); } catch(e){}
+                }
+                return '<div class="deposit-history-item"><div class="deposit-history-left"><div class="deposit-history-icon">' + iconSvg + '</div><div><div class="deposit-history-type">' + typeLabel + (dep.gift_name ? ': ' + dep.gift_name : '') + '</div><div class="deposit-history-date">' + dateStr + '</div></div></div><div class="deposit-history-amount"><img src="/static/img/ton.png"> ' + ton + '</div></div>';
+            }).join('');
+        } catch(e) {
+            list.innerHTML = '<div class="deposit-history-empty">Failed to load</div>';
         }
     }
 

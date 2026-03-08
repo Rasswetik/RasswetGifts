@@ -2066,6 +2066,12 @@ def _create_all_tables(conn):
         if 'crate_image' not in inv_cols:
             try: conn.execute("ALTER TABLE inventory ADD COLUMN crate_image TEXT DEFAULT NULL")
             except: pass
+        if 'is_upgraded' not in inv_cols:
+            try: conn.execute("ALTER TABLE inventory ADD COLUMN is_upgraded BOOLEAN DEFAULT 0")
+            except: pass
+        if 'nft_number' not in inv_cols:
+            try: conn.execute("ALTER TABLE inventory ADD COLUMN nft_number INTEGER DEFAULT NULL")
+            except: pass
         conn.commit()
     except Exception as mig_e:
         logger.warning(f"Inventory migration: {mig_e}")
@@ -4650,11 +4656,10 @@ def ultimate_crash_cashout_simple():
 
         conn.close()
 
-        # Update gift challenge progress (profit = win - bet)
+        # Update gift challenge progress (bet turnover)
         try:
-            profit_stars = win_amount - bet_amount
-            if profit_stars > 0:
-                update_gift_challenge_progress(user_id, profit_stars)
+            if bet_amount > 0:
+                update_gift_challenge_progress(user_id, bet_amount)
         except Exception as gc_err:
             logger.error(f"Gift challenge update error: {gc_err}")
 
@@ -4965,6 +4970,28 @@ def get_user_inventory(user_id):
         cursor.execute('SELECT * FROM inventory WHERE user_id = ? ORDER BY received_at DESC', (user_id,))
         columns = [desc[0] for desc in cursor.description]
         inventory = cursor.fetchall()
+
+        # Load active gift challenges for this user
+        challenge_map = {}
+        try:
+            cursor.execute('''
+                SELECT inventory_id, target_wager, current_wager, is_completed,
+                       gift_name, gift_image, gift_value
+                FROM promo_gift_challenges
+                WHERE user_id = ? AND is_completed = 0
+            ''', (user_id,))
+            for ch_row in cursor.fetchall():
+                challenge_map[ch_row[0]] = {
+                    'target_wager': ch_row[1],
+                    'current_wager': ch_row[2],
+                    'is_completed': bool(ch_row[3]),
+                    'final_gift_name': ch_row[4],
+                    'final_gift_image': ch_row[5],
+                    'final_gift_value': ch_row[6],
+                }
+        except Exception:
+            pass
+
         conn.close()
 
         local_gifts = load_gifts_cached() or []
@@ -5038,6 +5065,9 @@ def get_user_inventory(user_id):
                 'fragment_slug': (fragment_meta.get('fragment_slug') if fragment_meta else inferred_slug) or None,
                 'fragment_url': fragment_meta.get('fragment_url') if fragment_meta else None,
                 'fragment_image': fragment_meta.get('image') if fragment_meta else None,
+                'challenge': challenge_map.get(row.get('id')),
+                'is_upgraded': bool(row.get('is_upgraded', 0)),
+                'nft_number': row.get('nft_number'),
             }
             inventory_list.append(entry)
 
@@ -6723,11 +6753,10 @@ def promo_challenge_status():
         return jsonify({'success': False, 'error': str(e)})
 
 
-def update_gift_challenge_progress(user_id, win_amount_stars, conn=None):
-    """Update promo gift challenge progress when user cashes out in crash.
-    win_amount_stars = net profit in stars (win - bet).
-    When progress fills up, the current gift upgrades and bar resets with remainder.
-    When fully complete, the gift becomes sellable/withdrawable."""
+def update_gift_challenge_progress(user_id, wager_amount_stars, conn=None):
+    """Update promo gift challenge progress based on bet turnover.
+    wager_amount_stars = the bet amount placed (turnover-based).
+    When wager target is met, the gift becomes sellable/withdrawable."""
     close_conn = False
     if conn is None:
         conn = get_db_connection()
@@ -6749,12 +6778,11 @@ def update_gift_challenge_progress(user_id, win_amount_stars, conn=None):
         ch_id, gift_name, gift_image, gift_value, target_wager, current_wager, \
             cur_gift_name, cur_gift_image, cur_gift_value, inv_id = challenge
         
-        # Only count positive profit
-        if win_amount_stars <= 0:
+        if wager_amount_stars <= 0:
             if close_conn: conn.close()
             return
         
-        new_wager = current_wager + win_amount_stars
+        new_wager = current_wager + wager_amount_stars
         
         if new_wager >= target_wager:
             # Challenge completed! Gift becomes sellable/withdrawable (original gift)
@@ -6774,38 +6802,10 @@ def update_gift_challenge_progress(user_id, win_amount_stars, conn=None):
             
             logger.info(f"🎉 User {user_id} completed gift challenge #{ch_id}! Gift: {gift_name}")
         else:
-            # Progress increased — check for intermediate gift upgrades
-            # The current gift value scales with progress
-            progress_pct = new_wager / target_wager
-            # Find a gift that matches the current progress value
-            intermediate_value = int(gift_value * progress_pct)
-            
-            # Try to find a matching gift from catalog
-            all_gifts = load_gifts()
-            # Sort by value to find closest match
-            sorted_gifts = sorted(all_gifts, key=lambda g: abs(int(float(g.get('value', 0)) * 100) - intermediate_value))
-            
-            if sorted_gifts:
-                new_gift = sorted_gifts[0]
-                new_gift_name = new_gift.get('name', cur_gift_name)
-                new_gift_image = new_gift.get('image', cur_gift_image)
-                new_gift_value = int(float(new_gift.get('value', 0)) * 100)
-                
-                cursor.execute('''
-                    UPDATE promo_gift_challenges 
-                    SET current_wager = ?, current_gift_name = ?, current_gift_image = ?, current_gift_value = ?
-                    WHERE id = ?
-                ''', (new_wager, new_gift_name, new_gift_image, new_gift_value, ch_id))
-                
-                # Update inventory item to show current gift
-                if inv_id:
-                    cursor.execute('''
-                        UPDATE inventory SET gift_name = ?, gift_image = ?, gift_value = ?
-                        WHERE id = ?
-                    ''', (new_gift_name, new_gift_image, new_gift_value, inv_id))
-            else:
-                cursor.execute('UPDATE promo_gift_challenges SET current_wager = ? WHERE id = ?',
-                             (new_wager, ch_id))
+            # Progress increased — update current wager
+            cursor.execute('''
+                UPDATE promo_gift_challenges SET current_wager = ? WHERE id = ?
+            ''', (new_wager, ch_id))
         
         conn.commit()
         if close_conn: conn.close()
@@ -7447,6 +7447,146 @@ def withdraw_gift():
     except Exception as e:
         logger.error(f"❌ Ошибка создания заявки на вывод: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+
+UPGRADE_COST_STARS = 10  # 0.1 TON = 10 stars
+
+
+@app.route('/api/upgrade-gift', methods=['POST'])
+def upgrade_gift():
+    """Upgrade a random gift to an NFT-linked gift"""
+    conn = None
+    try:
+        data = request.get_json()
+        user_id = int(data.get('user_id', 0))
+        inventory_id = int(data.get('inventory_id', 0))
+        if not user_id or not inventory_id:
+            return jsonify({'success': False, 'error': 'Missing data'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
+        raw = cursor.fetchone()
+        if not raw:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Gift not found'})
+        columns = [desc[0] for desc in cursor.description]
+        gift = dict(zip(columns, raw))
+
+        if gift.get('is_upgraded'):
+            conn.close()
+            return jsonify({'success': False, 'error': 'Already upgraded'})
+
+        if gift.get('crate_id'):
+            conn.close()
+            return jsonify({'success': False, 'error': 'Cannot upgrade a crate'})
+
+        # Check active challenge
+        cursor.execute('SELECT id FROM promo_gift_challenges WHERE inventory_id = ? AND is_completed = 0', (inventory_id,))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'error': 'Gift locked by challenge'})
+
+        # Check balance
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+        if not row or row[0] < UPGRADE_COST_STARS:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Insufficient balance'})
+
+        # Deduct cost
+        cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
+                        (UPGRADE_COST_STARS, user_id))
+
+        # Generate NFT number and build new name/image
+        nft_num = random.randint(10000, 99999)
+        gift_name = gift.get('gift_name', 'Gift')
+        # Clean base name (remove existing "(random)" or "#xxx")
+        base_name = re.sub(r'\s*\(random\)|\s*#\d+', '', gift_name).strip()
+        new_name = f'{base_name} #{nft_num}'
+
+        # Build fragment slug for NFT image
+        slug = _slugify_fragment_name(base_name)
+        new_image = f'https://nft.fragment.com/gift/{slug}-{nft_num}.medium.jpg'
+
+        cursor.execute('''UPDATE inventory
+            SET gift_name = ?, gift_image = ?, is_upgraded = 1, nft_number = ?
+            WHERE id = ?''', (new_name, new_image, nft_num, inventory_id))
+
+        try:
+            cursor.execute('''INSERT INTO user_history (user_id, operation_type, amount, description)
+                VALUES (?, 'upgrade', ?, ?)''', (user_id, UPGRADE_COST_STARS, f'Upgrade: {new_name}'))
+        except Exception:
+            pass
+
+        conn.commit()
+
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        new_bal = cursor.fetchone()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'new_name': new_name,
+            'new_image': new_image,
+            'nft_number': nft_num,
+            'new_balance': new_bal[0] if new_bal else 0
+        })
+
+    except Exception as e:
+        logger.error(f"Upgrade error: {e}")
+        if conn:
+            try: conn.close()
+            except: pass
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/deposit-history/<int:user_id>', methods=['GET'])
+def get_deposit_history(user_id):
+    """Get deposit history for user (stars, gifts, SBP)"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        deposits = []
+
+        # Stars payments
+        try:
+            cursor.execute('''SELECT amount, created_at FROM stars_payments
+                WHERE user_id = ? ORDER BY created_at DESC LIMIT 50''', (user_id,))
+            for r in cursor.fetchall():
+                deposits.append({'type': 'stars', 'amount': r[0], 'date': r[1]})
+        except Exception:
+            pass
+
+        # Gift deposits
+        try:
+            cursor.execute('''SELECT gift_value, created_at, gift_name FROM gift_deposits
+                WHERE user_id = ? ORDER BY created_at DESC LIMIT 50''', (user_id,))
+            for r in cursor.fetchall():
+                deposits.append({'type': 'gift', 'amount': r[0], 'date': r[1], 'gift_name': r[2]})
+        except Exception:
+            pass
+
+        # SBP payments
+        try:
+            cursor.execute('''SELECT stars, completed_at FROM sbp_payments
+                WHERE user_id = ? AND status = 'completed' ORDER BY completed_at DESC LIMIT 50''', (user_id,))
+            for r in cursor.fetchall():
+                deposits.append({'type': 'sbp', 'amount': r[0], 'date': r[1]})
+        except Exception:
+            pass
+
+        conn.close()
+
+        # Sort by date desc
+        deposits.sort(key=lambda d: d.get('date') or '', reverse=True)
+
+        return jsonify({'success': True, 'deposits': deposits[:50]})
+    except Exception as e:
+        logger.error(f"Deposit history error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
 
 # REFERRAL API
 @app.route('/api/referral-info/<int:user_id>', methods=['GET'])
@@ -8595,11 +8735,10 @@ def ultimate_crash_cashout():
         conn.commit()
         conn.close()
 
-        # Update gift challenge progress (profit = win - bet)
+        # Update gift challenge progress (bet turnover)
         try:
-            profit_stars = win_amount - bet_amount
-            if profit_stars > 0:
-                update_gift_challenge_progress(user_id, profit_stars)
+            if bet_amount > 0:
+                update_gift_challenge_progress(user_id, bet_amount)
         except Exception as gc_err:
             logger.error(f"Gift challenge update error: {gc_err}")
 
@@ -9072,11 +9211,10 @@ def cashout_final():
 
         conn.close()
 
-        # Update gift challenge progress (profit = win - bet)
+        # Update gift challenge progress (bet turnover)
         try:
-            profit_stars = win_amount - bet_amount
-            if profit_stars > 0:
-                update_gift_challenge_progress(user_id, profit_stars)
+            if bet_amount > 0:
+                update_gift_challenge_progress(user_id, bet_amount)
         except Exception as gc_err:
             logger.error(f"Gift challenge update error: {gc_err}")
 
@@ -11236,11 +11374,10 @@ def crash_cashout():
     conn.commit()
     conn.close()
 
-    # Update gift challenge progress (profit = win - bet)
+    # Update gift challenge progress (bet turnover)
     try:
-        profit_stars = win - amount
-        if profit_stars > 0:
-            update_gift_challenge_progress(user_id, profit_stars)
+        if amount > 0:
+            update_gift_challenge_progress(user_id, amount)
     except Exception as gc_err:
         logger.error(f"Gift challenge update error: {gc_err}")
 
@@ -17785,8 +17922,31 @@ def api_leaderboard():
         config = cursor.fetchone()
         
         if not config:
+            # Fallback: all-time leaderboard by total bet volume
+            cursor.execute('''SELECT u.id, u.first_name, u.username, u.photo_url,
+                    COALESCE(u.total_bet_volume, 0) as volume
+                FROM users u
+                WHERE u.id > 0 AND COALESCE(u.total_bet_volume, 0) > 0
+                ORDER BY volume DESC LIMIT 50''')
+            fallback_users = []
+            for i, row in enumerate(cursor.fetchall(), 1):
+                fallback_users.append({
+                    'position': i,
+                    'user_id': row[0],
+                    'first_name': row[1] or 'User',
+                    'username': row[2],
+                    'photo_url': row[3],
+                    'turnover': row[4] or 0,
+                    'reward': None,
+                    'is_bot': False
+                })
             conn.close()
-            return jsonify({'success': True, 'active': False, 'leaderboard': [], 'config': None})
+            return jsonify({
+                'success': True,
+                'active': True,
+                'config': {'id': 0, 'period_start': None, 'period_end': None, 'rewards': {}, 'title': 'Top'},
+                'leaderboard': fallback_users
+            })
         
         raw_rewards = json.loads(config[3]) if config[3] else {}
 
