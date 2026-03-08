@@ -9924,6 +9924,8 @@ def v3_progress_page():
 @app.route('/news/<int:news_id>')
 def news_detail_page(news_id):
     """Страница отдельной новости"""
+    if news_id == 15:
+        return render_template('v3_progress.html')
     return render_template('news_detail.html', news_id=news_id)
 
 @app.route('/api/news', methods=['GET'])

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#1A1E2A">
+    <meta name="theme-color" content="#0f1319">
     <title>Rasswet Gifts - Сезон</title>
     <link rel="icon" type="image/png" href="/static/img/logo.png">
     <link rel="stylesheet" href="/static/css/global.css">
@@ -14,38 +14,37 @@
 
         *{margin:0;padding:0;box-sizing:border-box}
         :root{
-            --bg:#1A1E2A;
-            --surface:#242936;
+            --bg:#0f1319;
+            --surface:rgba(255,255,255,.04);
             --border:rgba(255,255,255,.06);
             --text:#fff;
-            --text-2:rgba(255,255,255,.5);
-            --primary:#0098EA;
-            --accent:#1EE44C;
+            --text-2:rgba(255,255,255,.45);
             --gold:#FDA100;
+            --gold-glow:rgba(253,161,0,.35);
+            --silver:#C0C0C0;
+            --bronze:#CD7F32;
         }
         body{
             font-family:'Inter Variable','Inter',-apple-system,sans-serif;
-            background:var(--bg);
-            color:var(--text);
-            min-height:100vh;
+            background:var(--bg);color:var(--text);
+            min-height:100vh;-webkit-font-smoothing:antialiased;
         }
         body::before{
-            content:'';position:fixed;inset:0;
-            background:linear-gradient(180deg,#12151C 0%,#1A1E2A 50%,#0E1017 100%);
-            z-index:-1;
+            content:'';position:fixed;inset:0;z-index:-1;
+            background:
+                radial-gradient(ellipse 500px 300px at 50% 0%,rgba(253,161,0,.06) 0%,transparent 70%),
+                linear-gradient(180deg,#0f1319 0%,#0a0e14 100%);
         }
-        
-        /* Scrollbar */
-        ::-webkit-scrollbar{width:6px;height:6px}
-        ::-webkit-scrollbar-track{background:rgba(255,255,255,.02);border-radius:3px}
-        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
-        ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
+
+        ::-webkit-scrollbar{width:5px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
 
         .header{
             position:fixed;top:calc(env(safe-area-inset-top,20px) + 5vh);left:50%;transform:translateX(-50%);
             z-index:100;width:100%;max-width:480px;
             height:56px;padding:0 16px;
-            background:rgba(26,30,42,.85);
+            background:rgba(15,19,25,.85);
             backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
             border-bottom:1px solid rgba(255,255,255,.05);
             display:flex;align-items:center;justify-content:center;
@@ -59,241 +58,199 @@
         
         /* Season Banner */
         .season-banner{
-            position:relative;
-            border-radius:20px;
-            overflow:hidden;
-            margin:0 0 16px;
+            position:relative;border-radius:20px;overflow:hidden;
+            margin:0 0 16px;height:180px;
             background:linear-gradient(135deg,#1A3050,#0D1524);
-            border:none;
-            height:180px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            padding:0;
         }
-        .season-banner img{
-            width:100%;
-            height:100%;
-            object-fit:cover;
-            filter:none;
-        }
+        .season-banner img{width:100%;height:100%;object-fit:cover}
         .season-timer{
-            position:absolute;
-            top:16px;
-            right:16px;
-            font-size:14px;
-            font-weight:700;
-            color:var(--gold);
+            position:absolute;top:16px;right:16px;
+            font-size:14px;font-weight:700;color:var(--gold);
             text-shadow:0 0 12px rgba(253,161,0,.4);
         }
         
         /* Boost Button */
         .boost-btn{
-            width:100%;
-            padding:16px;
-            border-radius:14px;
-            border:none;
+            width:100%;padding:16px;border-radius:14px;border:none;
             background:linear-gradient(90deg,#0098EA,#0077CC);
-            color:#fff;
-            font-family:inherit;
-            font-size:15px;
-            font-weight:700;
-            cursor:pointer;
-            margin-bottom:20px;
-            transition:all .2s;
+            color:#fff;font-family:inherit;font-size:15px;font-weight:700;
+            cursor:pointer;margin-bottom:24px;transition:all .2s;
         }
-        .boost-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,152,234,.3)}
-        
-        /* Leaderboard List */
-        .leaders-list{display:flex;flex-direction:column;gap:8px}
+        .boost-btn:active{transform:scale(.97)}
 
-        /* ===== PODIUM ===== */
+        /* ══════════════ PODIUM ══════════════ */
         .podium{
             display:flex;align-items:flex-end;justify-content:center;
-            gap:8px;margin-bottom:20px;padding:0 8px;
+            gap:0;margin-bottom:28px;padding:0 8px;
+            position:relative;
         }
+
         .podium-slot{
             display:flex;flex-direction:column;align-items:center;
-            flex:1;max-width:130px;
+            flex:1;max-width:140px;position:relative;z-index:1;
         }
-        .podium-avatar{
-            width:56px;height:56px;border-radius:50%;overflow:hidden;
-            border:3px solid rgba(255,255,255,.15);margin-bottom:8px;
-            background:rgba(255,255,255,.04);
-        }
-        .podium-slot.p1 .podium-avatar{width:68px;height:68px;border-color:rgba(253,161,0,.6);box-shadow:0 0 20px rgba(253,161,0,.25)}
-        .podium-slot.p2 .podium-avatar{border-color:rgba(192,192,192,.5)}
-        .podium-slot.p3 .podium-avatar{border-color:rgba(205,127,50,.5)}
-        .podium-avatar img{width:100%;height:100%;object-fit:cover}
+
+        /* ── Name above avatar ── */
         .podium-name{
             font-size:12px;font-weight:700;color:#fff;
             max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-            margin-bottom:4px;text-align:center;
+            margin-bottom:8px;text-align:center;
         }
+
+        /* ── Rank badge (circle with number) ── */
+        .podium-badge{
+            position:absolute;z-index:5;
+            width:24px;height:24px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            font-size:12px;font-weight:900;color:#fff;
+            border:2px solid var(--bg);
+        }
+        .podium-slot.p1 .podium-badge{
+            bottom:calc(100px + 8px);right:calc(50% - 50px);
+            background:linear-gradient(135deg,#FFD700,#FDA100);
+            box-shadow:0 2px 10px rgba(253,161,0,.5);
+        }
+        .podium-slot.p2 .podium-badge{
+            bottom:calc(76px + 8px);right:calc(50% - 42px);
+            background:linear-gradient(135deg,#D4D4D4,#A8A8A8);
+            box-shadow:0 2px 8px rgba(192,192,192,.4);
+        }
+        .podium-slot.p3 .podium-badge{
+            bottom:calc(60px + 8px);right:calc(50% - 42px);
+            background:linear-gradient(135deg,#E8A854,#CD7F32);
+            box-shadow:0 2px 8px rgba(205,127,50,.4);
+        }
+
+        /* ── Avatar ── */
+        .podium-avatar{
+            border-radius:50%;overflow:hidden;
+            background:rgba(255,255,255,.04);
+            margin-bottom:10px;position:relative;
+        }
+        .podium-slot.p1 .podium-avatar{
+            width:88px;height:88px;
+            border:3px solid var(--gold);
+            box-shadow:0 0 30px var(--gold-glow),0 0 60px rgba(253,161,0,.15);
+        }
+        .podium-slot.p2 .podium-avatar{
+            width:72px;height:72px;
+            border:3px solid var(--silver);
+            box-shadow:0 0 16px rgba(192,192,192,.2);
+        }
+        .podium-slot.p3 .podium-avatar{
+            width:72px;height:72px;
+            border:3px solid var(--bronze);
+            box-shadow:0 0 16px rgba(205,127,50,.2);
+        }
+        .podium-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+
+        /* ── Pedestal ── */
+        .podium-pedestal{
+            width:100%;border-radius:16px 16px 0 0;
+            display:flex;flex-direction:column;align-items:center;
+            padding:12px 8px 16px;position:relative;
+        }
+        .podium-slot.p1 .podium-pedestal{
+            height:100px;
+            background:linear-gradient(180deg,rgba(253,190,19,.18),rgba(253,161,0,.04));
+            border:1px solid rgba(253,161,0,.2);border-bottom:none;
+        }
+        .podium-slot.p2 .podium-pedestal{
+            height:76px;
+            background:linear-gradient(180deg,rgba(192,192,192,.12),rgba(160,160,160,.03));
+            border:1px solid rgba(192,192,192,.15);border-bottom:none;
+        }
+        .podium-slot.p3 .podium-pedestal{
+            height:60px;
+            background:linear-gradient(180deg,rgba(205,127,50,.12),rgba(184,115,51,.03));
+            border:1px solid rgba(205,127,50,.15);border-bottom:none;
+        }
+
+        /* Prize inside pedestal */
+        .podium-prize{margin-bottom:4px}
+        .podium-prize img{
+            width:36px;height:36px;object-fit:contain;
+            filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));
+        }
+        .podium-slot.p1 .podium-prize img{width:42px;height:42px}
+
+        /* Turnover under prize */
         .podium-turnover{
             font-size:11px;font-weight:600;color:var(--text-2);
-            display:flex;align-items:center;gap:3px;margin-bottom:8px;
+            display:flex;align-items:center;gap:3px;
         }
         .podium-turnover img{width:11px;height:11px}
-        .podium-base{
-            width:100%;border-radius:14px 14px 0 0;
-            display:flex;flex-direction:column;align-items:center;
-            justify-content:flex-start;padding:10px 6px 14px;
-            position:relative;
+
+        /* ── Golden glow for #1 ── */
+        .podium-slot.p1::before{
+            content:'';position:absolute;
+            top:-20px;left:50%;transform:translateX(-50%);
+            width:120px;height:120px;border-radius:50%;
+            background:radial-gradient(circle,rgba(253,161,0,.15) 0%,transparent 70%);
+            z-index:-1;pointer-events:none;
+            animation:goldPulse 3s ease-in-out infinite;
         }
-        .podium-slot.p1 .podium-base{
-            height:100px;
-            background:linear-gradient(180deg,rgba(253,190,19,.2),rgba(253,161,0,.06));
-            border:1px solid rgba(253,161,0,.25);border-bottom:none;
+        @keyframes goldPulse{
+            0%,100%{opacity:.6;transform:translateX(-50%) scale(1)}
+            50%{opacity:1;transform:translateX(-50%) scale(1.1)}
         }
-        .podium-slot.p2 .podium-base{
-            height:76px;
-            background:linear-gradient(180deg,rgba(192,192,192,.15),rgba(160,160,160,.04));
-            border:1px solid rgba(192,192,192,.2);border-bottom:none;
-        }
-        .podium-slot.p3 .podium-base{
-            height:60px;
-            background:linear-gradient(180deg,rgba(205,127,50,.15),rgba(184,115,51,.04));
-            border:1px solid rgba(205,127,50,.2);border-bottom:none;
-        }
-        .podium-place{
-            font-size:22px;font-weight:900;
-            text-shadow:0 0 10px rgba(255,255,255,.1);
-        }
-        .podium-slot.p1 .podium-place{color:var(--gold)}
-        .podium-slot.p2 .podium-place{color:#c0c0c0}
-        .podium-slot.p3 .podium-place{color:#cd7f32}
-        .podium-prize{margin-top:4px}
-        .podium-prize img{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))}
-        
+
+        /* ══════════════ LIST (#4+) ══════════════ */
+        .leaders-list{display:flex;flex-direction:column;gap:8px}
+
         .leader-item{
-            display:flex;
-            align-items:center;
-            gap:12px;
+            display:flex;align-items:center;gap:12px;
             padding:12px 14px;
-            background:rgba(255,255,255,.04);
-            border:none;
-            border-radius:14px;
-            transition:all .2s;
+            background:var(--surface);
+            border:1px solid var(--border);
+            border-radius:14px;transition:all .15s;
         }
-        .leader-item:hover{background:rgba(255,255,255,.08)}
-        
-        /* Top 3 special styles */
-        .leader-item.rank-1{
-            background:linear-gradient(135deg,rgba(253,190,19,.15),rgba(253,161,0,.05));
-            border:none;
-        }
-        .leader-item.rank-2{
-            background:linear-gradient(135deg,rgba(192,192,192,.15),rgba(160,160,160,.05));
-            border:none;
-        }
-        .leader-item.rank-3{
-            background:linear-gradient(135deg,rgba(205,127,50,.15),rgba(184,115,51,.05));
-            border:none;
-        }
-        
-        /* Rank Badge */
+        .leader-item:active{transform:scale(.98)}
+
         .leader-rank{
-            width:32px;
-            height:32px;
-            flex-shrink:0;
-            display:flex;
-            align-items:center;
-            justify-content:center;
+            width:28px;flex-shrink:0;
+            font-size:14px;font-weight:800;color:var(--text-2);
+            text-align:center;
         }
-        .leader-rank img{
-            width:28px;
-            height:28px;
-            object-fit:contain;
-        }
-        .leader-rank span{
-            font-size:14px;
-            font-weight:700;
-            color:var(--text-2);
-        }
-        
-        /* Avatar */
+
         .leader-avatar{
-            width:44px;
-            height:44px;
-            border-radius:50%;
-            overflow:hidden;
-            background:rgba(255,255,255,.04);
-            flex-shrink:0;
-            border:2px solid rgba(255,255,255,.1);
+            width:44px;height:44px;border-radius:50%;overflow:hidden;
+            background:rgba(255,255,255,.04);flex-shrink:0;
+            border:2px solid rgba(255,255,255,.08);
         }
-        .leader-item.rank-1 .leader-avatar{border-color:rgba(253,161,0,.5)}
-        .leader-item.rank-2 .leader-avatar{border-color:rgba(160,160,160,.5)}
-        .leader-item.rank-3 .leader-avatar{border-color:rgba(184,115,51,.5)}
         .leader-avatar img{width:100%;height:100%;object-fit:cover}
-        
-        /* Info */
+
         .leader-info{flex:1;min-width:0}
         .leader-name{
-            font-size:14px;
-            font-weight:700;
-            white-space:nowrap;
-            overflow:hidden;
-            text-overflow:ellipsis;
-            margin-bottom:4px;
-        }
-        .leader-stats{
-            display:flex;
-            align-items:center;
-            gap:10px;
-            font-size:12px;
-            color:var(--text-2);
+            font-size:14px;font-weight:700;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+            margin-bottom:2px;
         }
         .leader-turnover{
-            display:flex;
-            align-items:center;
-            gap:4px;
+            display:flex;align-items:center;gap:4px;
+            font-size:12px;color:var(--text-2);font-weight:600;
         }
         .leader-turnover img{width:12px;height:12px}
-        .leader-turnover span{font-weight:600}
-        
-        .leader-separator{
-            width:1px;
-            height:14px;
-            background:rgba(255,255,255,.15);
-        }
-        
-        .leader-level{
-            display:flex;
-            align-items:center;
-            gap:4px;
-            color:var(--accent);
-            font-weight:700;
-        }
-        
-        /* Prize */
+
         .leader-prize{
-            width:44px;
-            height:44px;
-            flex-shrink:0;
-            display:flex;
-            align-items:center;
-            justify-content:center;
+            width:40px;height:40px;flex-shrink:0;
+            display:flex;align-items:center;justify-content:center;
         }
         .leader-prize img{
-            width:36px;
-            height:36px;
-            object-fit:contain;
-            filter:drop-shadow(0 2px 8px rgba(0,0,0,.3));
+            width:34px;height:34px;object-fit:contain;
+            filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));
         }
-        
+
         /* Empty State */
         .empty{text-align:center;padding:60px 20px;color:var(--text-2)}
         .empty svg{width:48px;height:48px;margin-bottom:16px;opacity:.3}
 
-
-        
-        /* Bottom Nav */
+        /* ══════════════ BOTTOM NAV ══════════════ */
         .bnav{
             position:fixed;bottom:0;left:50%;transform:translateX(-50%);
             z-index:100;width:100%;max-width:480px;
             height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);
-            background:rgba(26,30,42,.85);
+            background:rgba(15,19,25,.9);
             backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
             border-top:1px solid rgba(255,255,255,.05);
             display:flex;align-items:center;justify-content:space-around;
@@ -301,8 +258,7 @@
         .bnav a{
             display:flex;flex-direction:column;align-items:center;gap:4px;
             padding:8px 16px;border-radius:12px;
-            text-decoration:none;color:var(--text-2);
-            transition:all .2s;
+            text-decoration:none;color:var(--text-2);transition:all .2s;
         }
         .bnav a.active{color:var(--text);background:rgba(255,255,255,.06)}
         .bnav a svg{width:24px;height:24px}
@@ -315,22 +271,20 @@
     </header>
 
     <main class="main">
-        <!-- Season Banner with Mascot -->
         <div class="season-banner">
             <img src="/static/img/lead.png" alt="" onerror="this.src='/static/img/logo.png'">
             <div class="season-timer" id="countdown">--:--:--</div>
         </div>
 
-        <div>
-            <button class="boost-btn" onclick="openBoost()">Boost your rank</button>
-            <div class="podium" id="podium"></div>
-            <div class="leaders-list" id="leadersList">
-                <div class="empty">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/>
-                    </svg>
-                    <p>Лидерборд пока не активен</p>
-                </div>
+        <button class="boost-btn" onclick="openBoost()">Boost your rank</button>
+
+        <div class="podium" id="podium"></div>
+        <div class="leaders-list" id="leadersList">
+            <div class="empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+                </svg>
+                <p>Лидерборд пока не активен</p>
             </div>
         </div>
     </main>
@@ -362,13 +316,12 @@
         const tg = window.Telegram?.WebApp;
         if (tg) {
             tg.expand();
-            tg.setHeaderColor('#1A1E2A');
-            tg.setBackgroundColor('#1A1E2A');
+            tg.setHeaderColor('#0f1319');
+            tg.setBackgroundColor('#0f1319');
         }
 
         let endTime = null;
 
-        // Get appropriate TON SVG based on amount
         function getTonSvg(amount) {
             if (amount <= 25) return '/static/img/tons/ton_1.svg';
             if (amount <= 50) return '/static/img/tons/ton_2.svg';
@@ -377,20 +330,26 @@
             return '/static/img/tons/ton_5.svg';
         }
 
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
         async function loadLeaderboard() {
             try {
                 const res = await fetch('/api/leaderboard');
                 const data = await res.json();
                 
                 if (!data.success || !data.active) {
+                    document.getElementById('podium').innerHTML = '';
                     document.getElementById('leadersList').innerHTML = `
                         <div class="empty">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/>
                             </svg>
                             <p>Лидерборд пока не активен</p>
-                        </div>
-                    `;
+                        </div>`;
                     return;
                 }
 
@@ -398,25 +357,26 @@
                 const users = data.leaderboard || [];
                 const rewards = config.rewards || {};
 
-                // End time
                 if (config.period_end) {
                     endTime = new Date(config.period_end).getTime();
                     updateCountdown();
                 }
 
-                // === PODIUM (top 3) ===
+                // ═══ PODIUM (top 3) ═══
                 const top3 = users.slice(0, 3);
                 const podiumEl = document.getElementById('podium');
                 if (top3.length >= 3) {
                     // Order: #2 left, #1 center, #3 right
                     const order = [top3[1], top3[0], top3[2]];
                     const pClasses = ['p2', 'p1', 'p3'];
+
                     podiumEl.innerHTML = order.map((u, idx) => {
                         const rank = u.position || (idx === 1 ? 1 : idx === 0 ? 2 : 3);
                         const prize = u.reward || rewards[String(rank)];
                         const turnover = ((u.turnover || 0) / 100).toFixed(2);
                         const displayName = u.first_name || u.username || 'Игрок';
                         const avatar = u.photo_url || '/static/img/avatar-default.png';
+
                         let prizeHtml = '';
                         if (prize) {
                             if (prize.type === 'gift' && prize.gift_image) {
@@ -426,13 +386,19 @@
                                 prizeHtml = `<div class="podium-prize"><img src="${getTonSvg(tonAmt)}" alt=""></div>`;
                             }
                         }
+
                         return `<div class="podium-slot ${pClasses[idx]}">
-                            <div class="podium-avatar"><img src="${avatar}" alt="" onerror="this.src='/static/img/avatar-default.png'"></div>
                             <div class="podium-name">${escapeHtml(displayName)}</div>
-                            <div class="podium-turnover"><img src="/static/img/ton.png" alt=""><span>${turnover}</span></div>
-                            <div class="podium-base">
-                                <div class="podium-place">${rank}</div>
+                            <div class="podium-avatar">
+                                <img src="${avatar}" alt="" onerror="this.src='/static/img/avatar-default.png'">
+                            </div>
+                            <div class="podium-badge">${rank}</div>
+                            <div class="podium-pedestal">
                                 ${prizeHtml}
+                                <div class="podium-turnover">
+                                    <img src="/static/img/ton.png" alt="">
+                                    <span>${turnover}</span>
+                                </div>
                             </div>
                         </div>`;
                     }).join('');
@@ -440,55 +406,44 @@
                     podiumEl.innerHTML = '';
                 }
 
-                // === LIST (#4+) ===
+                // ═══ LIST (#4+) ═══
                 const rest = users.slice(3, 20);
                 document.getElementById('leadersList').innerHTML = rest.map((u, i) => {
                     const rank = u.position || (i + 4);
                     const prize = u.reward || rewards[String(rank)];
-                    
+                    const turnover = ((u.turnover || 0) / 100).toFixed(2);
+                    const displayName = u.first_name || u.username || 'Игрок';
+                    const avatar = u.photo_url || '/static/img/avatar-default.png';
+
                     let prizeImg = '';
                     if (prize) {
                         if (prize.type === 'gift' && prize.gift_image) {
-                            prizeImg = `<img src="${prize.gift_image}" alt="${prize.gift_name || ''}">`;
+                            prizeImg = `<img src="${prize.gift_image}" alt="${escapeHtml(prize.gift_name || '')}">`;
                         } else {
                             const tonAmount = typeof prize === 'number' ? prize : ((prize.amount || 0) / 100);
                             prizeImg = `<img src="${getTonSvg(tonAmount)}" alt="${tonAmount} TON">`;
                         }
                     }
-                    
-                    const turnover = ((u.turnover || 0) / 100).toFixed(2);
-                    const displayName = u.first_name || u.username || 'Игрок';
-                    const avatar = u.photo_url || '/static/img/avatar-default.png';
-                    
-                    return `
-                        <div class="leader-item">
-                            <div class="leader-rank"><span>#${rank}</span></div>
-                            <div class="leader-avatar">
-                                <img src="${avatar}" alt="" onerror="this.src='/static/img/avatar-default.png'">
-                            </div>
-                            <div class="leader-info">
-                                <div class="leader-name">${escapeHtml(displayName)}</div>
-                                <div class="leader-stats">
-                                    <div class="leader-turnover">
-                                        <img src="/static/img/ton.png" alt="">
-                                        <span>${turnover}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            ${prizeImg ? `<div class="leader-prize">${prizeImg}</div>` : ''}
+
+                    return `<div class="leader-item">
+                        <div class="leader-rank">#${rank}</div>
+                        <div class="leader-avatar">
+                            <img src="${avatar}" alt="" onerror="this.src='/static/img/avatar-default.png'">
                         </div>
-                    `;
+                        <div class="leader-info">
+                            <div class="leader-name">${escapeHtml(displayName)}</div>
+                            <div class="leader-turnover">
+                                <img src="/static/img/ton.png" alt="">
+                                <span>${turnover}</span>
+                            </div>
+                        </div>
+                        ${prizeImg ? `<div class="leader-prize">${prizeImg}</div>` : ''}
+                    </div>`;
                 }).join('');
 
             } catch (e) {
                 console.error('Leaderboard error:', e);
             }
-        }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
         }
 
         function updateCountdown() {
@@ -498,7 +453,6 @@
             }
             const now = Date.now();
             const diff = Math.max(0, endTime - now);
-            
             const d = Math.floor(diff / 86400000);
             const h = Math.floor((diff % 86400000) / 3600000);
             const m = Math.floor((diff % 3600000) / 60000);
@@ -515,8 +469,6 @@
         function openBoost() {
             window.location.href = '/cases';
         }
-
-
 
         loadLeaderboard();
         setInterval(updateCountdown, 1000);

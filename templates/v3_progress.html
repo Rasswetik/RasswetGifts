@@ -5,240 +5,402 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="icon" type="image/png" href="/static/img/logo.png">
 <link rel="stylesheet" href="/static/css/global.css">
-<title>v3.0.0 Progress</title>
+<title>v3.0.0 — Прогресс разработки</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    background:#0f1319;color:#fff;-webkit-font-smoothing:antialiased;
-    min-height:100vh;padding-bottom:40px;
+  font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:#0a0e17;color:#fff;-webkit-font-smoothing:antialiased;
+  min-height:100vh;padding-bottom:40px;
 }
+
+/* ── Background glow ── */
 body::before{
-    content:'';position:fixed;top:0;left:0;width:100%;height:100%;
-    background:radial-gradient(circle at 30% 20%,rgba(59,130,246,.06) 0%,transparent 50%),
-               radial-gradient(circle at 70% 80%,rgba(99,102,241,.05) 0%,transparent 50%);
-    z-index:-1;pointer-events:none;
+  content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 600px 400px at 50% 0%,rgba(99,102,241,.12) 0%,transparent 70%),
+    radial-gradient(circle 300px at 20% 60%,rgba(59,130,246,.06) 0%,transparent 70%),
+    radial-gradient(circle 300px at 80% 80%,rgba(139,92,246,.05) 0%,transparent 70%);
 }
+
 .container{max-width:420px;margin:0 auto;padding:0 16px}
 
-/* Header */
-.v3-header{
-    text-align:center;padding:48px 16px 24px;
+/* ── Back button ── */
+.back-btn{
+  position:fixed;top:calc(env(safe-area-inset-top,0px) + 16px);left:16px;
+  width:40px;height:40px;border-radius:12px;
+  background:rgba(255,255,255,.07);backdrop-filter:blur(12px);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:100;border:none;color:#fff;transition:all .2s;
 }
-.v3-badge{
-    display:inline-flex;align-items:center;gap:8px;
-    background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(99,102,241,.1));
-    border:1px solid rgba(59,130,246,.3);
-    padding:8px 20px;border-radius:30px;
-    font-weight:800;font-size:14px;color:#3b82f6;
-    letter-spacing:1px;margin-bottom:16px;
+.back-btn:active{transform:scale(.9)}
+.back-btn svg{width:22px;height:22px;stroke:#fff;fill:none}
+
+/* ── Banner ── */
+.banner-wrap{
+  position:relative;width:100%;margin-top:60px;border-radius:20px;overflow:hidden;
+  aspect-ratio:16/7;
 }
-.v3-title{
-    font-size:36px;font-weight:900;
-    background:linear-gradient(135deg,#fff 30%,rgba(59,130,246,.8));
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-    letter-spacing:2px;margin-bottom:8px;
-}
-.v3-subtitle{
-    font-size:13px;color:rgba(255,255,255,.4);font-weight:500;
+.banner-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.banner-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 40%,rgba(10,14,23,.95) 100%);
 }
 
-/* Progress summary */
-.progress-summary{
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:20px;padding:20px;margin:0 0 32px;
-    text-align:center;
+/* ── Badge & percent ── */
+.version-area{
+  text-align:center;margin-top:-32px;position:relative;z-index:2;
 }
-.progress-bar-outer{
-    width:100%;height:14px;border-radius:7px;
-    background:rgba(255,255,255,.06);margin-bottom:12px;
-    overflow:hidden;
+.version-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(59,130,246,.15));
+  border:1px solid rgba(99,102,241,.4);
+  padding:6px 18px;border-radius:30px;
+  font-weight:800;font-size:13px;color:#a78bfa;letter-spacing:1.5px;
+  text-transform:uppercase;
 }
-.progress-bar-fill{
-    height:100%;border-radius:7px;
-    background:linear-gradient(90deg,#3b82f6,#6366f1);
-    box-shadow:0 0 12px rgba(59,130,246,.4);
-    transition:width .6s ease;
+.pct-display{
+  margin-top:14px;
+  font-size:52px;font-weight:900;line-height:1;
+  background:linear-gradient(135deg,#6366f1,#3b82f6,#818cf8);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
 }
-.progress-stats{
-    display:flex;justify-content:space-between;align-items:center;
-}
-.progress-pct{font-size:24px;font-weight:900;color:#3b82f6}
-.progress-count{font-size:14px;font-weight:700;color:rgba(255,255,255,.4)}
-
-/* Vertical timeline */
-.timeline{position:relative;padding:0 0 0 40px}
-.timeline::before{
-    content:'';position:absolute;top:0;left:18px;width:3px;height:100%;
-    background:rgba(255,255,255,.06);border-radius:2px;
-}
-.timeline-fill{
-    position:absolute;top:0;left:18px;width:3px;border-radius:2px;
-    background:linear-gradient(180deg,#3b82f6,#6366f1);
-    box-shadow:0 0 8px rgba(59,130,246,.3);
-    transition:height .6s ease;
+.pct-display span{font-size:28px}
+.pct-label{
+  margin-top:4px;
+  font-size:12px;font-weight:600;color:rgba(255,255,255,.35);letter-spacing:1px;
+  text-transform:uppercase;
 }
 
+/* ══════════════════ ROADMAP ══════════════════ */
+.roadmap{
+  position:relative;margin:40px auto 0;
+  width:100%;max-width:360px;
+  /* 5 milestones: heights 0%,20%,40%,60%,80% roughly */
+}
+
+/* ── Central vertical track ── */
+.roadmap-track{
+  position:absolute;left:50%;transform:translateX(-50%);
+  top:0;bottom:0;width:4px;
+  background:rgba(255,255,255,.06);border-radius:2px;
+}
+.roadmap-fill{
+  position:absolute;bottom:0;left:0;width:100%;
+  height:0%;border-radius:2px;
+  background:linear-gradient(0deg,#6366f1,#3b82f6,#818cf8);
+  box-shadow:0 0 14px rgba(99,102,241,.4);
+  transition:height 1.8s cubic-bezier(.22,1,.36,1);
+}
+
+/* ── Milestone node on track ── */
 .milestone{
-    position:relative;margin-bottom:24px;
-    animation:mileIn .4s ease both;
+  position:absolute;left:50%;
+  transform:translateX(-50%);
+  display:flex;align-items:center;
+  opacity:0;
+  transition:opacity .5s ease;
 }
-.milestone:nth-child(2){animation-delay:.05s}
-.milestone:nth-child(3){animation-delay:.1s}
-.milestone:nth-child(4){animation-delay:.15s}
-.milestone:nth-child(5){animation-delay:.2s}
-.milestone:nth-child(6){animation-delay:.25s}
-.milestone:nth-child(7){animation-delay:.3s}
-.milestone:nth-child(8){animation-delay:.35s}
-.milestone:nth-child(9){animation-delay:.4s}
-.milestone:nth-child(10){animation-delay:.45s}
-@keyframes mileIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+.milestone.visible{opacity:1}
 
+/* ── Branch (the "stick" from center to card) ── */
+.milestone-branch{
+  position:absolute;
+  top:50%;height:3px;
+  background:rgba(255,255,255,.06);
+  border-radius:2px;
+  transform:translateY(-50%);
+}
+.milestone.active .milestone-branch,
+.milestone.done .milestone-branch{
+  background:linear-gradient(90deg,rgba(99,102,241,.6),rgba(59,130,246,.3));
+}
+.milestone.right .milestone-branch{
+  left:16px;width:40px;
+}
+.milestone.left .milestone-branch{
+  right:16px;width:40px;
+}
+
+/* ── Center dot ── */
 .milestone-dot{
-    position:absolute;left:-30px;top:4px;
-    width:14px;height:14px;border-radius:50%;
-    background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.15);
-    z-index:2;
+  width:18px;height:18px;border-radius:50%;
+  background:rgba(255,255,255,.08);border:3px solid rgba(255,255,255,.12);
+  position:relative;z-index:3;flex-shrink:0;
+  transition:all .4s ease;
+}
+.milestone.active .milestone-dot{
+  background:#6366f1;border-color:#818cf8;
+  box-shadow:0 0 16px rgba(99,102,241,.6),0 0 30px rgba(99,102,241,.2);
+  animation:dotGlow 2s ease-in-out infinite;
 }
 .milestone.done .milestone-dot{
-    background:#3b82f6;border-color:#6366f1;
-    box-shadow:0 0 10px rgba(59,130,246,.5);
+  background:#3b82f6;border-color:#60a5fa;
+  box-shadow:0 0 10px rgba(59,130,246,.4);
 }
-.milestone.current .milestone-dot{
-    background:#fbbf24;border-color:#f59e0b;
-    box-shadow:0 0 12px rgba(251,191,36,.5);
-    animation:dotPulse 2s ease-in-out infinite;
+@keyframes dotGlow{
+  0%,100%{box-shadow:0 0 12px rgba(99,102,241,.5),0 0 24px rgba(99,102,241,.15)}
+  50%{box-shadow:0 0 20px rgba(99,102,241,.7),0 0 40px rgba(99,102,241,.25)}
 }
-@keyframes dotPulse{0%,100%{box-shadow:0 0 8px rgba(251,191,36,.4)}50%{box-shadow:0 0 18px rgba(251,191,36,.7)}}
 
+/* ── Card ── */
 .milestone-card{
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:16px;padding:14px 16px;
-    transition:all .2s;
+  position:absolute;
+  width:130px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:14px 12px;
+  text-align:center;
+  transition:all .3s ease;
+  top:50%;transform:translateY(-50%);
+}
+.milestone.right .milestone-card{left:62px}
+.milestone.left .milestone-card{right:62px}
+
+.milestone.active .milestone-card{
+  background:rgba(99,102,241,.08);
+  border-color:rgba(99,102,241,.25);
+  box-shadow:0 0 24px rgba(99,102,241,.1);
 }
 .milestone.done .milestone-card{
-    background:rgba(59,130,246,.06);
-    border-color:rgba(59,130,246,.15);
+  background:rgba(59,130,246,.06);
+  border-color:rgba(59,130,246,.15);
 }
-.milestone.current .milestone-card{
-    background:rgba(251,191,36,.06);
-    border-color:rgba(251,191,36,.2);
-    box-shadow:0 0 20px rgba(251,191,36,.08);
-}
-.milestone-num{
-    font-size:11px;font-weight:700;
-    color:rgba(255,255,255,.3);margin-bottom:4px;
-    letter-spacing:.5px;
-}
-.milestone.done .milestone-num{color:rgba(59,130,246,.6)}
-.milestone.current .milestone-num{color:rgba(251,191,36,.7)}
-.milestone-title{
-    font-size:14px;font-weight:700;color:#fff;
-    margin-bottom:2px;
-}
-.milestone.done .milestone-title{color:rgba(255,255,255,.6);text-decoration:line-through;text-decoration-color:rgba(59,130,246,.3)}
-.milestone-desc{
-    font-size:12px;color:rgba(255,255,255,.35);line-height:1.4;
-}
-.milestone-check{
-    position:absolute;right:16px;top:50%;transform:translateY(-50%);
-    width:22px;height:22px;border-radius:50%;
-    background:rgba(59,130,246,.15);
-    display:flex;align-items:center;justify-content:center;
-}
-.milestone-check svg{width:12px;height:12px;stroke:#3b82f6;fill:none;stroke-width:3}
 
-/* Back button */
-.back-btn{
-    position:fixed;top:calc(env(safe-area-inset-top,0px) + 16px);left:16px;
-    width:40px;height:40px;border-radius:12px;
-    background:rgba(255,255,255,.08);backdrop-filter:blur(12px);
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer;z-index:100;border:none;color:#fff;
-    transition:all .2s;
+.milestone-icon{
+  width:44px;height:44px;border-radius:12px;
+  margin:0 auto 8px;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
 }
-.back-btn:active{transform:scale(.92)}
-.back-btn svg{width:22px;height:22px;stroke:#fff;fill:none}
+.milestone-icon img{
+  width:100%;height:100%;object-fit:contain;
+}
+.milestone.locked .milestone-icon{
+  filter:grayscale(1) brightness(.4);
+}
+.milestone-name{
+  font-size:11px;font-weight:700;color:#fff;
+  line-height:1.3;
+}
+.milestone.locked .milestone-name{color:rgba(255,255,255,.3)}
+.milestone-status{
+  margin-top:4px;font-size:9px;font-weight:600;
+  letter-spacing:.5px;text-transform:uppercase;
+}
+.milestone.active .milestone-status{color:#818cf8}
+.milestone.done .milestone-status{color:#60a5fa}
+.milestone.locked .milestone-status{color:rgba(255,255,255,.2)}
+
+/* ── Features grid ── */
+.features-section{margin-top:40px}
+.features-title{
+  font-size:15px;font-weight:800;color:rgba(255,255,255,.5);
+  text-align:center;margin-bottom:16px;
+  letter-spacing:1px;text-transform:uppercase;
+}
+.features-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+}
+.feature-chip{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:14px 12px;
+  text-align:center;
+}
+.feature-chip-icon{font-size:22px;margin-bottom:6px}
+.feature-chip-text{font-size:11px;font-weight:600;color:rgba(255,255,255,.45);line-height:1.3}
+
+/* ── Channel link ── */
+.channel-link{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:28px;padding:14px;
+  background:linear-gradient(135deg,rgba(99,102,241,.1),rgba(59,130,246,.06));
+  border:1px solid rgba(99,102,241,.2);
+  border-radius:16px;text-decoration:none;
+  font-size:13px;font-weight:700;color:#818cf8;
+  transition:all .2s;
+}
+.channel-link:active{transform:scale(.97)}
+.channel-link svg{width:18px;height:18px;stroke:currentColor;fill:none}
+
+/* ── Bottom nav ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  display:flex;justify-content:center;gap:6px;
+  padding:10px 16px calc(env(safe-area-inset-bottom,0px) + 10px);
+  background:linear-gradient(180deg,transparent,rgba(10,14,23,.95) 30%);
+  z-index:90;
+}
+.nav-btn{
+  flex:1;max-width:72px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 4px;border-radius:14px;border:none;
+  background:transparent;color:rgba(255,255,255,.35);
+  font-size:10px;font-weight:600;cursor:pointer;
+  transition:all .2s;text-decoration:none;
+}
+.nav-btn.active{color:#6366f1}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none}
 </style>
 </head>
 <body>
+
 <button class="back-btn" onclick="history.back()">
-    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
 </button>
 
 <div class="container">
-    <div class="v3-header">
-        <div class="v3-badge">🚀 IN DEVELOPMENT</div>
-        <div class="v3-title">v3.0.0</div>
-        <div class="v3-subtitle">Major Platform Update</div>
-    </div>
+  <!-- Banner -->
+  <div class="banner-wrap">
+    <img src="/static/img/news/banners/v300_banner.svg" alt="v3.0.0">
+    <div class="banner-overlay"></div>
+  </div>
 
-    <div class="progress-summary">
-        <div class="progress-bar-outer">
-            <div class="progress-bar-fill" id="progressFill" style="width:35%"></div>
-        </div>
-        <div class="progress-stats">
-            <span class="progress-pct">35%</span>
-            <span class="progress-count">34 / 100</span>
-        </div>
-    </div>
+  <!-- Version + percentage -->
+  <div class="version-area">
+    <div class="version-badge">🚀 v3.0.0</div>
+    <div class="pct-display"><span id="pctNum">0</span><span>%</span></div>
+    <div class="pct-label">прогресс разработки</div>
+  </div>
 
-    <div class="timeline" id="timeline">
-        <div class="timeline-fill" id="timelineFill"></div>
+  <!-- ═══ Roadmap ═══ -->
+  <div class="roadmap" id="roadmap">
+    <div class="roadmap-track">
+      <div class="roadmap-fill" id="roadmapFill"></div>
     </div>
+    <!-- milestones injected by JS -->
+  </div>
+
+  <!-- Features coming -->
+  <div class="features-section">
+    <div class="features-title">Что будет в v3.0.0</div>
+    <div class="features-grid">
+      <div class="feature-chip">
+        <div class="feature-chip-icon">🎰</div>
+        <div class="feature-chip-text">Новые кейсы</div>
+      </div>
+      <div class="feature-chip">
+        <div class="feature-chip-icon">⚡</div>
+        <div class="feature-chip-text">Турниры</div>
+      </div>
+      <div class="feature-chip">
+        <div class="feature-chip-icon">🏆</div>
+        <div class="feature-chip-text">Достижения</div>
+      </div>
+      <div class="feature-chip">
+        <div class="feature-chip-icon">🎁</div>
+        <div class="feature-chip-text">Подарки v2</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Channel link -->
+  <a class="channel-link" href="https://t.me/raswet_gifts" target="_blank">
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6A8.38 8.38 0 0112.5 3h.5a8.48 8.48 0 018 8v.5z"/></svg>
+    Следить за обновлениями
+  </a>
 </div>
 
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <a class="nav-btn" href="/">
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Главная</span>
+  </a>
+  <a class="nav-btn" href="/cases">
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+    <span>Кейсы</span>
+  </a>
+  <a class="nav-btn" href="/crash">
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    <span>Краш</span>
+  </a>
+  <a class="nav-btn active" href="#">
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    <span>v3.0.0</span>
+  </a>
+</nav>
+
 <script>
-var milestones = [
-    {num:1, title:'PostgreSQL Migration', desc:'Переход с SQLite на PostgreSQL для масштабируемости', done:true},
-    {num:2, title:'Multi-Case Opening', desc:'Открытие кейсов x1/x2/x3 с параллельными рулетками', done:true},
-    {num:3, title:'Roulette Redesign', desc:'Новые синие стрелки-треугольники и плавная анимация', done:true},
-    {num:4, title:'Gift Bets Display', desc:'Отображение PNG подарков в ставках краша', done:true},
-    {num:5, title:'Leaderboard Reset', desc:'Сброс объёма при новой ротации лидерборда', done:true},
-    {num:6, title:'RTP Compensation', desc:'Система компенсации для проигрывающих игроков', done:true},
-    {num:7, title:'Leaderboard Podium', desc:'Редизайн лидерборда с подиумом топ-3', current:true},
-    {num:8, title:'Upgrade System', desc:'Upgrade подарков с визуальной анимацией', done:false},
-    {num:9, title:'Referral System v2', desc:'Улучшенная реферальная система с уровнями', done:false},
-    {num:10, title:'Tournaments', desc:'Турниры с призовыми фондами', done:false}
-];
+(function(){
+  /* ── CONFIG ── */
+  var PROGRESS = 20;
+  var ACTIVE = 1; /* milestone # that is currently active (1-based) */
 
-var tl = document.getElementById('timeline');
-var html = '<div class="timeline-fill" id="timelineFill"></div>';
-milestones.forEach(function(m){
-    var cls = m.done ? 'done' : (m.current ? 'current' : '');
-    var check = m.done ? '<div class="milestone-check"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>' : '';
-    html += '<div class="milestone '+cls+'">'+
-        '<div class="milestone-dot"></div>'+
-        '<div class="milestone-card">'+
-            '<div class="milestone-num">#'+m.num+'</div>'+
-            '<div class="milestone-title">'+m.title+'</div>'+
-            '<div class="milestone-desc">'+m.desc+'</div>'+
-            check+
-        '</div></div>';
-});
-tl.innerHTML = html;
+  var milestones = [
+    {id:1, name:'Новые кейсы',        icon:'/static/gifs/cases/case.gif',   side:'right'},
+    {id:2, name:'Система турниров',    icon:'/static/img/lock.png',          side:'left'},
+    {id:3, name:'Достижения',          icon:'/static/img/lock.png',          side:'right'},
+    {id:4, name:'Апгрейд подарков v2', icon:'/static/img/lock.png',          side:'left'},
+    {id:5, name:'Полный релиз',        icon:'/static/img/lock.png',          side:'right'}
+  ];
 
-// Animate timeline fill
-var doneCount = milestones.filter(function(m){return m.done}).length;
-var currentIdx = milestones.findIndex(function(m){return m.current});
-var fillPct = ((currentIdx >= 0 ? currentIdx + 0.5 : doneCount) / milestones.length) * 100;
-setTimeout(function(){
-    var fill = document.getElementById('timelineFill');
-    if(fill) fill.style.height = fillPct + '%';
-}, 300);
+  /* ── Build roadmap ── */
+  var roadmap = document.getElementById('roadmap');
+  var count = milestones.length;
+  var totalH = count * 120; /* px per step */
+  roadmap.style.height = totalH + 'px';
 
-// Telegram back button
-try{
+  milestones.forEach(function(m, i){
+    var state = m.id < ACTIVE ? 'done' : (m.id === ACTIVE ? 'active' : 'locked');
+    var posBottom = i * 120; /* bottom-up */
+    var el = document.createElement('div');
+    el.className = 'milestone ' + m.side + ' ' + state;
+    el.style.bottom = posBottom + 'px';
+
+    el.innerHTML =
+      '<div class="milestone-branch"></div>' +
+      '<div class="milestone-dot"></div>' +
+      '<div class="milestone-card">' +
+        '<div class="milestone-icon"><img src="' + encodeURI(m.icon) + '" alt=""></div>' +
+        '<div class="milestone-name">' + m.name + '</div>' +
+        '<div class="milestone-status">' +
+          (state === 'active' ? '● В работе' : state === 'done' ? '✓ Готово' : '🔒 Скоро') +
+        '</div>' +
+      '</div>';
+
+    roadmap.appendChild(el);
+  });
+
+  /* ── Animate on load ── */
+  var fillTarget = ((ACTIVE - 1 + 0.5) / count) * 100; /* % from bottom */
+  setTimeout(function(){
+    /* fill bar */
+    document.getElementById('roadmapFill').style.height = fillTarget + '%';
+    /* milestones fade in staggered */
+    var nodes = document.querySelectorAll('.milestone');
+    nodes.forEach(function(n, i){
+      setTimeout(function(){ n.classList.add('visible'); }, 200 + i * 180);
+    });
+  }, 400);
+
+  /* ── Counter animation ── */
+  var pctEl = document.getElementById('pctNum');
+  var start = 0;
+  var duration = 1600;
+  var startTime = null;
+  function animPct(ts){
+    if(!startTime) startTime = ts;
+    var elapsed = ts - startTime;
+    var progress = Math.min(elapsed / duration, 1);
+    /* ease-out cubic */
+    var eased = 1 - Math.pow(1 - progress, 3);
+    pctEl.textContent = Math.round(eased * PROGRESS);
+    if(progress < 1) requestAnimationFrame(animPct);
+  }
+  setTimeout(function(){ requestAnimationFrame(animPct); }, 500);
+
+  /* ── Telegram ── */
+  try{
     if(window.Telegram && Telegram.WebApp){
-        Telegram.WebApp.ready();
-        Telegram.WebApp.BackButton.show();
-        Telegram.WebApp.BackButton.onClick(function(){history.back()});
+      Telegram.WebApp.ready();
+      Telegram.WebApp.BackButton.show();
+      Telegram.WebApp.BackButton.onClick(function(){history.back()});
     }
-}catch(e){}
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
