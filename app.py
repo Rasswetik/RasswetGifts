@@ -7921,8 +7921,8 @@ def upgrade_gift_fast():
         logger.error(f"❌ Ошибка быстрого апгрейда: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
-@app.route('/api/upgrade-gift', methods=['POST'])
-def upgrade_gift():
+@app.route('/api/upgrade-gift-chance', methods=['POST'])
+def upgrade_gift_chance():
     """Апгрейд подарка"""
     try:
         data = request.get_json()
@@ -8031,7 +8031,7 @@ def upgrade_gift():
                 logger.warning("🔒 База заблокирована, повторяем запрос...")
                 conn.close()
                 time.sleep(0.1)
-                return upgrade_gift()
+                return upgrade_gift_chance()
             raise e
         except Exception as e:
             conn.rollback()
