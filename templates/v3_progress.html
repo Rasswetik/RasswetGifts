@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="icon" type="image/png" href="/static/img/logo.png">
+<link rel="stylesheet" href="/static/css/global.css">
+<title>v3.0.0 Progress</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
+body{
+    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#0f1319;color:#fff;-webkit-font-smoothing:antialiased;
+    min-height:100vh;padding-bottom:40px;
+}
+body::before{
+    content:'';position:fixed;top:0;left:0;width:100%;height:100%;
+    background:radial-gradient(circle at 30% 20%,rgba(59,130,246,.06) 0%,transparent 50%),
+               radial-gradient(circle at 70% 80%,rgba(99,102,241,.05) 0%,transparent 50%);
+    z-index:-1;pointer-events:none;
+}
+.container{max-width:420px;margin:0 auto;padding:0 16px}
+
+/* Header */
+.v3-header{
+    text-align:center;padding:48px 16px 24px;
+}
+.v3-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(99,102,241,.1));
+    border:1px solid rgba(59,130,246,.3);
+    padding:8px 20px;border-radius:30px;
+    font-weight:800;font-size:14px;color:#3b82f6;
+    letter-spacing:1px;margin-bottom:16px;
+}
+.v3-title{
+    font-size:36px;font-weight:900;
+    background:linear-gradient(135deg,#fff 30%,rgba(59,130,246,.8));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    letter-spacing:2px;margin-bottom:8px;
+}
+.v3-subtitle{
+    font-size:13px;color:rgba(255,255,255,.4);font-weight:500;
+}
+
+/* Progress summary */
+.progress-summary{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:20px;padding:20px;margin:0 0 32px;
+    text-align:center;
+}
+.progress-bar-outer{
+    width:100%;height:14px;border-radius:7px;
+    background:rgba(255,255,255,.06);margin-bottom:12px;
+    overflow:hidden;
+}
+.progress-bar-fill{
+    height:100%;border-radius:7px;
+    background:linear-gradient(90deg,#3b82f6,#6366f1);
+    box-shadow:0 0 12px rgba(59,130,246,.4);
+    transition:width .6s ease;
+}
+.progress-stats{
+    display:flex;justify-content:space-between;align-items:center;
+}
+.progress-pct{font-size:24px;font-weight:900;color:#3b82f6}
+.progress-count{font-size:14px;font-weight:700;color:rgba(255,255,255,.4)}
+
+/* Vertical timeline */
+.timeline{position:relative;padding:0 0 0 40px}
+.timeline::before{
+    content:'';position:absolute;top:0;left:18px;width:3px;height:100%;
+    background:rgba(255,255,255,.06);border-radius:2px;
+}
+.timeline-fill{
+    position:absolute;top:0;left:18px;width:3px;border-radius:2px;
+    background:linear-gradient(180deg,#3b82f6,#6366f1);
+    box-shadow:0 0 8px rgba(59,130,246,.3);
+    transition:height .6s ease;
+}
+
+.milestone{
+    position:relative;margin-bottom:24px;
+    animation:mileIn .4s ease both;
+}
+.milestone:nth-child(2){animation-delay:.05s}
+.milestone:nth-child(3){animation-delay:.1s}
+.milestone:nth-child(4){animation-delay:.15s}
+.milestone:nth-child(5){animation-delay:.2s}
+.milestone:nth-child(6){animation-delay:.25s}
+.milestone:nth-child(7){animation-delay:.3s}
+.milestone:nth-child(8){animation-delay:.35s}
+.milestone:nth-child(9){animation-delay:.4s}
+.milestone:nth-child(10){animation-delay:.45s}
+@keyframes mileIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+
+.milestone-dot{
+    position:absolute;left:-30px;top:4px;
+    width:14px;height:14px;border-radius:50%;
+    background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.15);
+    z-index:2;
+}
+.milestone.done .milestone-dot{
+    background:#3b82f6;border-color:#6366f1;
+    box-shadow:0 0 10px rgba(59,130,246,.5);
+}
+.milestone.current .milestone-dot{
+    background:#fbbf24;border-color:#f59e0b;
+    box-shadow:0 0 12px rgba(251,191,36,.5);
+    animation:dotPulse 2s ease-in-out infinite;
+}
+@keyframes dotPulse{0%,100%{box-shadow:0 0 8px rgba(251,191,36,.4)}50%{box-shadow:0 0 18px rgba(251,191,36,.7)}}
+
+.milestone-card{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:14px 16px;
+    transition:all .2s;
+}
+.milestone.done .milestone-card{
+    background:rgba(59,130,246,.06);
+    border-color:rgba(59,130,246,.15);
+}
+.milestone.current .milestone-card{
+    background:rgba(251,191,36,.06);
+    border-color:rgba(251,191,36,.2);
+    box-shadow:0 0 20px rgba(251,191,36,.08);
+}
+.milestone-num{
+    font-size:11px;font-weight:700;
+    color:rgba(255,255,255,.3);margin-bottom:4px;
+    letter-spacing:.5px;
+}
+.milestone.done .milestone-num{color:rgba(59,130,246,.6)}
+.milestone.current .milestone-num{color:rgba(251,191,36,.7)}
+.milestone-title{
+    font-size:14px;font-weight:700;color:#fff;
+    margin-bottom:2px;
+}
+.milestone.done .milestone-title{color:rgba(255,255,255,.6);text-decoration:line-through;text-decoration-color:rgba(59,130,246,.3)}
+.milestone-desc{
+    font-size:12px;color:rgba(255,255,255,.35);line-height:1.4;
+}
+.milestone-check{
+    position:absolute;right:16px;top:50%;transform:translateY(-50%);
+    width:22px;height:22px;border-radius:50%;
+    background:rgba(59,130,246,.15);
+    display:flex;align-items:center;justify-content:center;
+}
+.milestone-check svg{width:12px;height:12px;stroke:#3b82f6;fill:none;stroke-width:3}
+
+/* Back button */
+.back-btn{
+    position:fixed;top:calc(env(safe-area-inset-top,0px) + 16px);left:16px;
+    width:40px;height:40px;border-radius:12px;
+    background:rgba(255,255,255,.08);backdrop-filter:blur(12px);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;z-index:100;border:none;color:#fff;
+    transition:all .2s;
+}
+.back-btn:active{transform:scale(.92)}
+.back-btn svg{width:22px;height:22px;stroke:#fff;fill:none}
+</style>
+</head>
+<body>
+<button class="back-btn" onclick="history.back()">
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+</button>
+
+<div class="container">
+    <div class="v3-header">
+        <div class="v3-badge">🚀 IN DEVELOPMENT</div>
+        <div class="v3-title">v3.0.0</div>
+        <div class="v3-subtitle">Major Platform Update</div>
+    </div>
+
+    <div class="progress-summary">
+        <div class="progress-bar-outer">
+            <div class="progress-bar-fill" id="progressFill" style="width:35%"></div>
+        </div>
+        <div class="progress-stats">
+            <span class="progress-pct">35%</span>
+            <span class="progress-count">34 / 100</span>
+        </div>
+    </div>
+
+    <div class="timeline" id="timeline">
+        <div class="timeline-fill" id="timelineFill"></div>
+    </div>
+</div>
+
+<script>
+var milestones = [
+    {num:1, title:'PostgreSQL Migration', desc:'Переход с SQLite на PostgreSQL для масштабируемости', done:true},
+    {num:2, title:'Multi-Case Opening', desc:'Открытие кейсов x1/x2/x3 с параллельными рулетками', done:true},
+    {num:3, title:'Roulette Redesign', desc:'Новые синие стрелки-треугольники и плавная анимация', done:true},
+    {num:4, title:'Gift Bets Display', desc:'Отображение PNG подарков в ставках краша', done:true},
+    {num:5, title:'Leaderboard Reset', desc:'Сброс объёма при новой ротации лидерборда', done:true},
+    {num:6, title:'RTP Compensation', desc:'Система компенсации для проигрывающих игроков', done:true},
+    {num:7, title:'Leaderboard Podium', desc:'Редизайн лидерборда с подиумом топ-3', current:true},
+    {num:8, title:'Upgrade System', desc:'Upgrade подарков с визуальной анимацией', done:false},
+    {num:9, title:'Referral System v2', desc:'Улучшенная реферальная система с уровнями', done:false},
+    {num:10, title:'Tournaments', desc:'Турниры с призовыми фондами', done:false}
+];
+
+var tl = document.getElementById('timeline');
+var html = '<div class="timeline-fill" id="timelineFill"></div>';
+milestones.forEach(function(m){
+    var cls = m.done ? 'done' : (m.current ? 'current' : '');
+    var check = m.done ? '<div class="milestone-check"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>' : '';
+    html += '<div class="milestone '+cls+'">'+
+        '<div class="milestone-dot"></div>'+
+        '<div class="milestone-card">'+
+            '<div class="milestone-num">#'+m.num+'</div>'+
+            '<div class="milestone-title">'+m.title+'</div>'+
+            '<div class="milestone-desc">'+m.desc+'</div>'+
+            check+
+        '</div></div>';
+});
+tl.innerHTML = html;
+
+// Animate timeline fill
+var doneCount = milestones.filter(function(m){return m.done}).length;
+var currentIdx = milestones.findIndex(function(m){return m.current});
+var fillPct = ((currentIdx >= 0 ? currentIdx + 0.5 : doneCount) / milestones.length) * 100;
+setTimeout(function(){
+    var fill = document.getElementById('timelineFill');
+    if(fill) fill.style.height = fillPct + '%';
+}, 300);
+
+// Telegram back button
+try{
+    if(window.Telegram && Telegram.WebApp){
+        Telegram.WebApp.ready();
+        Telegram.WebApp.BackButton.show();
+        Telegram.WebApp.BackButton.onClick(function(){history.back()});
+    }
+}catch(e){}
+</script>
+</body>
+</html>

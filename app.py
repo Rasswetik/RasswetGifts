@@ -1674,6 +1674,8 @@ def _create_all_tables(conn):
             user_id INTEGER,
             bet_amount INTEGER DEFAULT 0,
             gift_value INTEGER DEFAULT 0,
+            bet_type TEXT DEFAULT 'stars',
+            gift_image TEXT,
             status TEXT DEFAULT 'active',
             cashout_multiplier DECIMAL(10,2),
             win_amount INTEGER DEFAULT 0,
@@ -2243,6 +2245,20 @@ def init_db():
                 conn.commit()
             except Exception as e:
                 logger.warning(f"⚠️ Миграция колонок users: {e}")
+
+            # Миграция: ultimate_crash_bets — добавляем bet_type и gift_image
+            try:
+                cursor.execute("PRAGMA table_info(ultimate_crash_bets)")
+                ucb_columns = [col[1] for col in cursor.fetchall()]
+                if 'bet_type' not in ucb_columns:
+                    cursor.execute("ALTER TABLE ultimate_crash_bets ADD COLUMN bet_type TEXT DEFAULT 'stars'")
+                    logger.info("✅ Добавлена колонка bet_type в ultimate_crash_bets")
+                if 'gift_image' not in ucb_columns:
+                    cursor.execute("ALTER TABLE ultimate_crash_bets ADD COLUMN gift_image TEXT")
+                    logger.info("✅ Добавлена колонка gift_image в ultimate_crash_bets")
+                conn.commit()
+            except Exception as e:
+                logger.warning(f"⚠️ Миграция колонок ultimate_crash_bets: {e}")
 
             # Лимиты кейсов
             try:
@@ -2925,6 +2941,34 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
         if not bets:
             if close_conn: conn.close()
             return base_target
+        
+        # === RTP COMPENSATION: Boost for deeply losing players ===
+        # If a single real player is deeply in the red (-500+), give them a compensating multiplier
+        compensation_target = None
+        for user_id, bet_amount in bets:
+            if user_id < 0:
+                continue
+            stats = get_player_crash_stats(user_id, conn)
+            net_loss = -stats.get('net_profit', 0)  # positive value = how much they lost
+            if net_loss >= 500 and bet_amount < LARGE_BET_THRESHOLD:
+                # Scale: smaller bets get higher compensation multipliers
+                # bet 3 → ~20x, bet 10 → ~6x, bet 30 → ~3x
+                if bet_amount <= 5:
+                    comp_mult = round(15.0 + random.random() * 10.0, 2)  # 15-25x
+                elif bet_amount <= 15:
+                    comp_mult = round(4.0 + random.random() * 4.0, 2)   # 4-8x
+                elif bet_amount <= 50:
+                    comp_mult = round(2.5 + random.random() * 2.5, 2)   # 2.5-5x
+                else:
+                    comp_mult = round(2.0 + random.random() * 1.5, 2)   # 2-3.5x
+                # Only compensate sometimes (60% chance) to keep it unpredictable
+                if random.random() < 0.6:
+                    compensation_target = max(compensation_target or 0, comp_mult)
+                    logger.info(f"💰 RTP Compensation: user {user_id} loss={net_loss}, bet={bet_amount} → target {comp_mult:.2f}x")
+        
+        if compensation_target and compensation_target > base_target:
+            if close_conn: conn.close()
+            return round(compensation_target, 2)
         
         # Analyze bet composition
         total_bet_value = sum(b[1] for b in bets)
@@ -4027,8 +4071,8 @@ def ultimate_crash_place_bet():
 
             # Создаем ставку
             cursor.execute('''
-                INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, status)
-                VALUES (?, ?, ?, ?, 'active')
+                INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, bet_type, status)
+                VALUES (?, ?, ?, ?, 'stars', 'active')
             ''', (game_id, user_id, bet_amount, bet_amount))
 
             bet_id = cursor.lastrowid
@@ -4154,9 +4198,9 @@ def ultimate_crash_place_bet_gift():
         cursor.execute('UPDATE users SET total_crash_bets = COALESCE(total_crash_bets, 0) + 1, total_bet_volume = COALESCE(total_bet_volume, 0) + ? WHERE id = ?', (gift_value, user_id,))
 
         cursor.execute('''
-            INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, status)
-            VALUES (?, ?, ?, ?, 'active')
-        ''', (game_id, user_id, bet_amount, bet_amount))
+            INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, bet_type, gift_image, status)
+            VALUES (?, ?, ?, ?, 'gift', ?, 'active')
+        ''', (game_id, user_id, bet_amount, bet_amount, gift_image))
         bet_id = cursor.lastrowid
 
         cursor.execute('''
@@ -4260,11 +4304,12 @@ def ultimate_crash_place_bet_multi_gift():
         # Увеличиваем счётчик ставок и объём
         cursor.execute('UPDATE users SET total_crash_bets = COALESCE(total_crash_bets, 0) + 1, total_bet_volume = COALESCE(total_bet_volume, 0) + ? WHERE id = ?', (total_value, user_id,))
 
-        # Создаем ставку
+        # Создаем ставку (используем изображение первого подарка)
+        first_gift_image = gifts[0][2] if gifts else None
         cursor.execute('''
-            INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, status)
-            VALUES (?, ?, ?, ?, 'active')
-        ''', (game_id, user_id, total_value, total_value))
+            INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, bet_type, gift_image, status)
+            VALUES (?, ?, ?, ?, 'gift', ?, 'active')
+        ''', (game_id, user_id, total_value, total_value, first_gift_image))
         bet_id = cursor.lastrowid
 
         cursor.execute('''
@@ -8860,7 +8905,9 @@ def get_recent_ultimate_crash_bets():
                 ucb.created_at,
                 u.first_name,
                 u.username,
-                u.photo_url
+                u.photo_url,
+                ucb.bet_type,
+                ucb.gift_image
             FROM ultimate_crash_bets ucb
             LEFT JOIN users u ON ucb.user_id = u.id
             WHERE ucb.game_id = ?
@@ -8883,7 +8930,9 @@ def get_recent_ultimate_crash_bets():
                 'created_at': bet[6],
                 'first_name': bet[7],
                 'username': bet[8],
-                'photo_url': bet[9] or '/static/img/default_avatar.png'
+                'photo_url': bet[9] or '/static/img/default_avatar.png',
+                'bet_type': bet[10] or 'stars',
+                'gift_image': bet[11]
             })
 
         # Bots disabled — skip fallback and bot bets
@@ -9842,6 +9891,11 @@ def admin_banned_users():
 def news_page():
     """Страница новостей"""
     return render_template('news.html')
+
+@app.route('/v3')
+def v3_progress_page():
+    """Страница прогресса v3.0.0"""
+    return render_template('v3_progress.html')
 
 @app.route('/news/<int:news_id>')
 def news_detail_page(news_id):
@@ -17328,12 +17382,18 @@ def api_leaderboard():
             'title': config[4] or 'Лидерборд'
         }
 
-        # Get top users by total_bet_volume
-        cursor.execute('''SELECT id, first_name, username, photo_url, total_bet_volume 
-            FROM users 
-            WHERE total_bet_volume > 0
-            ORDER BY total_bet_volume DESC 
-            LIMIT 50''')
+        period_start = config[1]
+
+        # Get top users by bet volume WITHIN current leaderboard period
+        cursor.execute('''SELECT ucb.user_id, u.first_name, u.username, u.photo_url, 
+                COALESCE(SUM(ucb.bet_amount), 0) as period_volume
+            FROM ultimate_crash_bets ucb
+            LEFT JOIN users u ON ucb.user_id = u.id
+            WHERE ucb.created_at >= ? AND ucb.user_id > 0
+            GROUP BY ucb.user_id
+            HAVING period_volume > 0
+            ORDER BY period_volume DESC 
+            LIMIT 50''', (period_start,))
         combined_entries = []
         for row in cursor.fetchall():
             combined_entries.append({

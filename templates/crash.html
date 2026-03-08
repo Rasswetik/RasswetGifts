@@ -895,13 +895,13 @@ tc-root *{pointer-events:auto}
     box-shadow:0 25px 80px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.06);
 }
 .admin-panel.modal-mode{
-    top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);
-    width:calc(100% - 32px);max-width:360px;max-height:calc(100vh - 40px);
-    border-radius:24px;border:1px solid rgba(255,255,255,.08);
+    bottom:0;left:0;right:0;transform:translateY(100%);
+    width:100%;max-width:100%;max-height:75vh;
+    border-radius:24px 24px 0 0;border:1px solid rgba(255,255,255,.08);border-bottom:none;
     opacity:0;visibility:hidden;
 }
 .admin-overlay.show .admin-panel.modal-mode{
-    transform:translate(-50%,-50%) scale(1);opacity:1;visibility:visible;
+    transform:translateY(0);opacity:1;visibility:visible;
 }
 
 /* Side drawer mode (right) */
@@ -949,7 +949,7 @@ tc-root *{pointer-events:auto}
 .admin-content{
     padding:16px;overflow-y:auto;scrollbar-width:none;
 }
-.admin-panel.modal-mode .admin-content{max-height:calc(100vh - 120px)}
+.admin-panel.modal-mode .admin-content{max-height:calc(75vh - 80px);-webkit-overflow-scrolling:touch}
 .admin-panel.side-mode .admin-content{max-height:calc(100vh - 70px)}
 .admin-content::-webkit-scrollbar{display:none}
 .admin-section{
@@ -1855,39 +1855,47 @@ tc-root *{pointer-events:auto}
 .bets-list{display:flex;flex-direction:column;gap:6px;max-height:350px;overflow-y:auto;contain:content}
 .bets-list::-webkit-scrollbar{width:4px}
 .bets-list::-webkit-scrollbar-thumb{background:rgba(107,122,141,.3);border-radius:4px}
-.bet-row{display:flex;align-items:center;padding:10px 14px;border-radius:14px;background:rgba(28,34,51,.92);border:1px solid rgba(59,130,246,.06);animation:betSlideIn .4s cubic-bezier(.34,1.56,.64,1) both;transform-origin:top;gap:10px}
+.bet-row{display:flex;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(28,34,51,.9);border:1px solid rgba(59,130,246,.06);animation:betSlideIn .4s cubic-bezier(.34,1.56,.64,1) both;transform-origin:top;gap:10px}
 @keyframes betSlideIn{0%{opacity:0;transform:translateX(-30px) scale(.95)}100%{opacity:1;transform:translateX(0) scale(1)}}
 .bet-row:nth-child(1){animation-delay:0s}.bet-row:nth-child(2){animation-delay:.03s}.bet-row:nth-child(3){animation-delay:.06s}.bet-row:nth-child(4){animation-delay:.09s}.bet-row:nth-child(5){animation-delay:.12s}
 .bet-row:hover{background:rgba(40,50,70,.9);border-color:rgba(107,122,141,.2);transition:all .2s}
-.bet-row.won{background:rgba(30,228,76,.06);border-color:rgba(30,228,76,.15)}
-.bet-row.lost{background:rgba(249,105,153,.05);border-color:rgba(249,105,153,.12)}
+.bet-row.won{background:rgba(30,228,76,.08);border-color:rgba(30,228,76,.2)}
+.bet-row.lost{background:rgba(249,105,153,.06);border-color:rgba(249,105,153,.15)}
 .bet-row.won.cashout-flash{animation:cashoutGlow .8s ease-out}
 @keyframes cashoutGlow{
     0%{background:rgba(30,228,76,.25);box-shadow:0 0 20px rgba(30,228,76,.3)}
     30%{background:rgba(30,228,76,.15);box-shadow:0 0 12px rgba(30,228,76,.2)}
-    100%{background:rgba(30,228,76,.06);box-shadow:none}
+    100%{background:rgba(30,228,76,.08);box-shadow:none}
 }
-.bet-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
-.bet-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#2a3040,#3a4558);display:flex;align-items:center;justify-content:center;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:14px;color:#fff;overflow:hidden;flex-shrink:0;border:2px solid rgba(107,122,141,.25)}
+.bet-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.bet-avatar{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#2a3040,#3a4558);display:flex;align-items:center;justify-content:center;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:13px;overflow:hidden;flex-shrink:0;border:1px solid rgba(107,122,141,.2)}
 .bet-avatar img{width:100%;height:100%;object-fit:cover}
 .bet-info{display:flex;flex-direction:column;gap:2px;min-width:0}
-.bet-name{font-weight:700;font-size:13px;color:#fff;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bet-amt{font-size:12px;color:rgba(140,160,190,.8);font-weight:600;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-.bet-amt img{width:13px;height:13px;object-fit:contain;flex-shrink:0}
+.bet-name{font-weight:700;font-size:13px;color:#fff;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bet-amt{font-size:12px;color:rgba(140,160,190,.9);font-weight:600;display:flex;align-items:center;gap:4px}
+.bet-amt img{width:14px;height:14px;object-fit:contain;flex-shrink:0}
 .bet-amt .bet-amt-val{transition:transform .15s ease;display:inline-block}
-.bet-amt .bet-coef-inline{color:rgba(140,160,190,.5);font-size:11px;font-weight:600;display:flex;align-items:center;gap:2px}
-.bet-amt .bet-coef-inline svg{width:11px;height:11px;stroke:rgba(140,160,190,.4);flex-shrink:0}
-.bet-row.won .bet-amt .bet-coef-inline{color:rgba(30,228,76,.6)}
-.bet-row.won .bet-amt .bet-coef-inline svg{stroke:rgba(30,228,76,.5)}
-/* Right side - pill with winnings */
-.bet-win-pill{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:6px 14px;border-radius:20px;background:rgba(107,122,141,.12);border:1px solid rgba(107,122,141,.15)}
-.bet-row.won .bet-win-pill{background:rgba(30,228,76,.1);border-color:rgba(30,228,76,.2)}
-.bet-row.lost .bet-win-pill{background:rgba(249,105,153,.06);border-color:rgba(249,105,153,.12)}
-.bet-win-pill img{width:16px;height:16px;object-fit:contain;flex-shrink:0}
-.bet-win-pill .bet-win-amt{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:14px;color:#fff}
-.bet-row.won .bet-win-pill .bet-win-amt{color:#1EE44C}
-.bet-row.lost .bet-win-pill .bet-win-amt{color:rgba(249,105,153,.7)}
-.bet-row.active .bet-win-pill .bet-win-amt{color:rgba(255,255,255,.7)}
+/* Coefficient badge with SVG arrows */
+.bet-coef{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.bet-coef-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(107,122,141,.15);border:1px solid rgba(107,122,141,.2)}
+.bet-coef-icon svg{width:12px;height:12px}
+.bet-coef.active .bet-coef-icon{background:rgba(255,193,7,.12);border-color:rgba(255,193,7,.25)}
+.bet-coef.active .bet-coef-icon svg{stroke:#ffc107}
+.bet-coef.won .bet-coef-icon{background:rgba(30,228,76,.15);border-color:rgba(30,228,76,.3)}
+.bet-coef.won .bet-coef-icon svg{stroke:#1EE44C}
+.bet-coef.lost .bet-coef-icon{background:rgba(249,105,153,.1);border-color:rgba(249,105,153,.2)}
+.bet-coef.lost .bet-coef-icon svg{stroke:#F96999}
+.bet-coef-val{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:12px;color:rgba(140,160,190,.8)}
+.bet-coef.active .bet-coef-val{color:rgba(255,193,7,.8)}
+.bet-coef.won .bet-coef-val{color:#1EE44C}
+.bet-coef.lost .bet-coef-val{color:#F96999}
+/* Right side - win amount with icon */
+.bet-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.bet-win-icon{width:24px;height:24px;object-fit:contain;flex-shrink:0;border-radius:4px}
+.bet-win-amt{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:13px;color:rgba(255,193,7,.8)}
+.bet-row.won .bet-win-amt{color:#1EE44C}
+.bet-row.lost .bet-win-amt{color:#F96999}
+.bet-row.lost .bet-win-icon{filter:grayscale(80%) brightness(0.6)}
 /* Floating cashout notification */
 .cashout-float{
     position:fixed;z-index:7000;pointer-events:none;
@@ -3610,12 +3618,8 @@ tc-root *{pointer-events:auto}
         }
     };
 
-    /* All actual rocket GIF files on disk */
-    var ALL_ROCKET_GIFS = ['crash','pencil','ice','goldenplane','dog','cat','banana','scorpion','rabbit','plane','telegram','smesh','TonTheMoon','unicorn'];
-
     /* Swap one random gift panel → rocket GIF with slide animation */
     window._ldSwapRocket = function(rocketSrc){
-        if(!rocketSrc) rocketSrc = '/static/gifs/rockets/' + ALL_ROCKET_GIFS[Math.floor(Math.random()*ALL_ROCKET_GIFS.length)] + '.gif';
         var available = [];
         for(var j = 0; j < 9; j++){ if(!rocketsDone[j]) available.push(j); }
         if(!available.length) return;
@@ -5363,12 +5367,12 @@ async function loadCrashGifts(){
 
     function setP(pct){ if(window._ldUpdate) window._ldUpdate(pct); }
 
-    var ALL_ROCKETS_LIST = ['crash','pencil','ice','goldenplane','dog','cat','banana','scorpion','rabbit','plane','telegram','smesh','TonTheMoon','unicorn'];
     function getRandRocketSrc(){
-        var pool = (typeof rocketsData !== 'undefined' && rocketsData.length > 0)
-            ? rocketsData.map(function(r){ return r.id; })
-            : ALL_ROCKETS_LIST;
-        return '/static/gifs/rockets/' + pool[Math.floor(Math.random() * pool.length)] + '.gif';
+        if(typeof rocketsData !== 'undefined' && rocketsData.length > 0){
+            var r = rocketsData[Math.floor(Math.random() * rocketsData.length)];
+            return '/static/gifs/rockets/' + r.id + '.gif';
+        }
+        return '/static/gifs/rockets/crash.gif';
     }
 
     function swapPanel(){ if(window._ldSwapRocket) window._ldSwapRocket(getRandRocketSrc()); }
@@ -6783,28 +6787,43 @@ async function loadBets(){
                 ? '<img src="' + b.photo_url + '" alt="">'
                 : ini;
 
-            var stCls = 'active';
+            var stCls = 'active', coefCls = 'active';
             var tonIcon = getCrashMoneyIcon();
             var betAmtDisplay = formatCrashMoney(b.bet_amount);
             var winDisplay = '', winIcon = tonIcon, coefVal = '1.00';
             var isFreshCashout = newCashouts.some(function(c){ return c.id === b.id; });
 
-            /* Mini arrows SVG for inline coef */
-            var miniArrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 13l5-5 5 5"/></svg>';
-
+            /* Use gift image as bet icon if bet was made with a gift */
+            var betIcon = tonIcon;
+            if(b.bet_type === 'gift' && b.gift_image){
+                betIcon = b.gift_image;
+            }
+            
+            /* SVG arrows icon for coefficient */
+            var arrowsSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17l5-5 5 5"/><path d="M7 11l5-5 5 5"/></svg>';
+            
             if(b.status === 'cashed_out'){
                 stCls = 'won' + (isFreshCashout ? ' cashout-flash' : '');
+                coefCls = 'won';
                 coefVal = b.cashout_multiplier ? parseFloat(b.cashout_multiplier).toFixed(2) : '?';
-                winDisplay = formatCrashMoney(b.win_amount || 0);
+                winDisplay = '+' + formatCrashMoney(b.win_amount || 0);
+                /* Show gift icon if won a gift, otherwise ton */
+                var gift = getAchievableGift(b.win_amount || 0);
+                if(gift){
+                    winIcon = resolveCrashGiftImage(gift, tonIcon);
+                }
             } else if(b.status === 'lost'){
                 stCls = 'lost';
+                coefCls = 'lost';
                 coefVal = servMult ? parseFloat(servMult).toFixed(2) : '?';
-                winDisplay = formatCrashMoney(b.bet_amount);
+                winDisplay = '-' + formatCrashMoney(b.bet_amount);
             } else {
                 /* Active bet */
                 var potentialWin = Math.floor(b.bet_amount * (dispMult || 1));
                 coefVal = dispMult ? dispMult.toFixed(2) : '1.00';
                 winDisplay = formatCrashMoney(potentialWin);
+                var aGift = getAchievableGift(potentialWin);
+                if(aGift) winIcon = resolveCrashGiftImage(aGift, tonIcon);
             }
 
             return '<div class="bet-row ' + stCls + '" data-bet-id="' + b.id + '" data-bet-amount="' + b.bet_amount + '" data-status="' + b.status + '">' +
@@ -6812,15 +6831,15 @@ async function loadBets(){
                     '<div class="bet-avatar">' + avatar + '</div>' +
                     '<div class="bet-info">' +
                         '<div class="bet-name">' + name + '</div>' +
-                        '<div class="bet-amt">' +
-                            '<img src="' + tonIcon + '">' +
-                            '<span class="bet-amt-val">' + betAmtDisplay + '</span>' +
-                            '<span class="bet-coef-inline">' + miniArrow + 'x' + coefVal + '</span>' +
-                        '</div>' +
+                        '<div class="bet-amt"><img src="' + betIcon + '"><span class="bet-amt-val">' + betAmtDisplay + '</span></div>' +
                     '</div>' +
                 '</div>' +
-                '<div class="bet-win-pill">' +
-                    '<img src="' + tonIcon + '">' +
+                '<div class="bet-coef ' + coefCls + '">' +
+                    '<div class="bet-coef-icon">' + arrowsSvg + '</div>' +
+                    '<span class="bet-coef-val">x' + coefVal + '</span>' +
+                '</div>' +
+                '<div class="bet-right">' +
+                    '<img class="bet-win-icon" src="' + winIcon + '">' +
                     '<span class="bet-win-amt">' + winDisplay + '</span>' +
                 '</div>' +
             '</div>';
@@ -6865,13 +6884,9 @@ function updateActiveBetsDisplay(){
     _cachedActiveRows.forEach(function(row){
         var ba = parseInt(row.getAttribute('data-bet-amount')) || 0;
         var winEl = row.querySelector('.bet-win-amt');
-        var coefEl = row.querySelector('.bet-coef-inline');
+        var coefEl = row.querySelector('.bet-coef-val');
         if(winEl) winEl.textContent = formatCrashMoney(Math.floor(ba * dispMult));
-        if(coefEl){
-            var svg = coefEl.querySelector('svg');
-            var svgHtml = svg ? svg.outerHTML : '';
-            coefEl.innerHTML = svgHtml + 'x' + curMx;
-        }
+        if(coefEl) coefEl.textContent = mx;
     });
 }
 

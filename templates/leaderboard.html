@@ -106,6 +106,65 @@
         
         /* Leaderboard List */
         .leaders-list{display:flex;flex-direction:column;gap:8px}
+
+        /* ===== PODIUM ===== */
+        .podium{
+            display:flex;align-items:flex-end;justify-content:center;
+            gap:8px;margin-bottom:20px;padding:0 8px;
+        }
+        .podium-slot{
+            display:flex;flex-direction:column;align-items:center;
+            flex:1;max-width:130px;
+        }
+        .podium-avatar{
+            width:56px;height:56px;border-radius:50%;overflow:hidden;
+            border:3px solid rgba(255,255,255,.15);margin-bottom:8px;
+            background:rgba(255,255,255,.04);
+        }
+        .podium-slot.p1 .podium-avatar{width:68px;height:68px;border-color:rgba(253,161,0,.6);box-shadow:0 0 20px rgba(253,161,0,.25)}
+        .podium-slot.p2 .podium-avatar{border-color:rgba(192,192,192,.5)}
+        .podium-slot.p3 .podium-avatar{border-color:rgba(205,127,50,.5)}
+        .podium-avatar img{width:100%;height:100%;object-fit:cover}
+        .podium-name{
+            font-size:12px;font-weight:700;color:#fff;
+            max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+            margin-bottom:4px;text-align:center;
+        }
+        .podium-turnover{
+            font-size:11px;font-weight:600;color:var(--text-2);
+            display:flex;align-items:center;gap:3px;margin-bottom:8px;
+        }
+        .podium-turnover img{width:11px;height:11px}
+        .podium-base{
+            width:100%;border-radius:14px 14px 0 0;
+            display:flex;flex-direction:column;align-items:center;
+            justify-content:flex-start;padding:10px 6px 14px;
+            position:relative;
+        }
+        .podium-slot.p1 .podium-base{
+            height:100px;
+            background:linear-gradient(180deg,rgba(253,190,19,.2),rgba(253,161,0,.06));
+            border:1px solid rgba(253,161,0,.25);border-bottom:none;
+        }
+        .podium-slot.p2 .podium-base{
+            height:76px;
+            background:linear-gradient(180deg,rgba(192,192,192,.15),rgba(160,160,160,.04));
+            border:1px solid rgba(192,192,192,.2);border-bottom:none;
+        }
+        .podium-slot.p3 .podium-base{
+            height:60px;
+            background:linear-gradient(180deg,rgba(205,127,50,.15),rgba(184,115,51,.04));
+            border:1px solid rgba(205,127,50,.2);border-bottom:none;
+        }
+        .podium-place{
+            font-size:22px;font-weight:900;
+            text-shadow:0 0 10px rgba(255,255,255,.1);
+        }
+        .podium-slot.p1 .podium-place{color:var(--gold)}
+        .podium-slot.p2 .podium-place{color:#c0c0c0}
+        .podium-slot.p3 .podium-place{color:#cd7f32}
+        .podium-prize{margin-top:4px}
+        .podium-prize img{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.3))}
         
         .leader-item{
             display:flex;
@@ -264,6 +323,7 @@
 
         <div>
             <button class="boost-btn" onclick="openBoost()">Boost your rank</button>
+            <div class="podium" id="podium"></div>
             <div class="leaders-list" id="leadersList">
                 <div class="empty">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -344,21 +404,48 @@
                     updateCountdown();
                 }
 
-                // Render all users
-                document.getElementById('leadersList').innerHTML = users.slice(0, 20).map((u, i) => {
-                    const rank = u.position || (i + 1);
+                // === PODIUM (top 3) ===
+                const top3 = users.slice(0, 3);
+                const podiumEl = document.getElementById('podium');
+                if (top3.length >= 3) {
+                    // Order: #2 left, #1 center, #3 right
+                    const order = [top3[1], top3[0], top3[2]];
+                    const pClasses = ['p2', 'p1', 'p3'];
+                    podiumEl.innerHTML = order.map((u, idx) => {
+                        const rank = u.position || (idx === 1 ? 1 : idx === 0 ? 2 : 3);
+                        const prize = u.reward || rewards[String(rank)];
+                        const turnover = ((u.turnover || 0) / 100).toFixed(2);
+                        const displayName = u.first_name || u.username || 'Игрок';
+                        const avatar = u.photo_url || '/static/img/avatar-default.png';
+                        let prizeHtml = '';
+                        if (prize) {
+                            if (prize.type === 'gift' && prize.gift_image) {
+                                prizeHtml = `<div class="podium-prize"><img src="${prize.gift_image}" alt=""></div>`;
+                            } else {
+                                const tonAmt = typeof prize === 'number' ? prize : ((prize.amount || 0) / 100);
+                                prizeHtml = `<div class="podium-prize"><img src="${getTonSvg(tonAmt)}" alt=""></div>`;
+                            }
+                        }
+                        return `<div class="podium-slot ${pClasses[idx]}">
+                            <div class="podium-avatar"><img src="${avatar}" alt="" onerror="this.src='/static/img/avatar-default.png'"></div>
+                            <div class="podium-name">${escapeHtml(displayName)}</div>
+                            <div class="podium-turnover"><img src="/static/img/ton.png" alt=""><span>${turnover}</span></div>
+                            <div class="podium-base">
+                                <div class="podium-place">${rank}</div>
+                                ${prizeHtml}
+                            </div>
+                        </div>`;
+                    }).join('');
+                } else {
+                    podiumEl.innerHTML = '';
+                }
+
+                // === LIST (#4+) ===
+                const rest = users.slice(3, 20);
+                document.getElementById('leadersList').innerHTML = rest.map((u, i) => {
+                    const rank = u.position || (i + 4);
                     const prize = u.reward || rewards[String(rank)];
-                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
                     
-                    // Rank badge: 1.gif, 2.gif, 3.gif for top 3, numbers for rest
-                    let rankBadge;
-                    if (rank <= 3) {
-                        rankBadge = `<img src="/static/gifs/place/${rank}.gif" alt="${rank}" onerror="this.outerHTML='<span>#${rank}</span>'">`;
-                    } else {
-                        rankBadge = `<span>#${rank}</span>`;
-                    }
-                    
-                    // Prize image: gift or TON
                     let prizeImg = '';
                     if (prize) {
                         if (prize.type === 'gift' && prize.gift_image) {
@@ -369,14 +456,13 @@
                         }
                     }
                     
-                    // Score/turnover in TON
                     const turnover = ((u.turnover || 0) / 100).toFixed(2);
                     const displayName = u.first_name || u.username || 'Игрок';
                     const avatar = u.photo_url || '/static/img/avatar-default.png';
                     
                     return `
-                        <div class="leader-item ${rankClass}">
-                            <div class="leader-rank">${rankBadge}</div>
+                        <div class="leader-item">
+                            <div class="leader-rank"><span>#${rank}</span></div>
                             <div class="leader-avatar">
                                 <img src="${avatar}" alt="" onerror="this.src='/static/img/avatar-default.png'">
                             </div>
