@@ -332,13 +332,16 @@
         /* ═══════════ IDLE ROULETTE ═══════════ */
         .roulette-wrap{
             position:relative;
-            height:168px;margin:0 -16px 20px;
+            margin:0 -16px 8px;
             background:rgba(0,0,0,.25);
             overflow:hidden;
         }
+        .roulette-wrap.single-mode{height:148px}
+        .roulette-wrap.multi-mode-2{height:auto}
+        .roulette-wrap.multi-mode-3{height:auto}
         .roulette-track{
             display:flex;gap:10px;
-            padding:10px 0 10px 10px;
+            padding:8px 0 8px 10px;
             will-change:transform;
             backface-visibility:hidden;
             -webkit-backface-visibility:hidden;
@@ -351,11 +354,11 @@
             100%{transform:translateX(-50%)}
         }
         .roulette-item{
-            flex-shrink:0;width:110px;height:150px;
+            flex-shrink:0;width:100px;height:130px;
             background:rgba(255,255,255,.04);
             border:none;
             border-radius:14px;
-            padding:10px;
+            padding:8px;
             display:flex;flex-direction:column;align-items:center;
             justify-content:space-between;
         }
@@ -364,10 +367,10 @@
             text-align:center;line-height:1.2;
             max-width:100%;overflow:hidden;
             display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-            min-height:24px;
+            min-height:20px;
         }
         .roulette-item img{
-            width:60px;height:60px;object-fit:contain;
+            width:52px;height:52px;object-fit:contain;
             image-rendering:-webkit-optimize-contrast;
             image-rendering:crisp-edges;
             backface-visibility:hidden;
@@ -383,16 +386,87 @@
         .roulette-item-price img{width:12px;height:12px;vertical-align:middle;flex-shrink:0}
         .roulette-pointer{
             position:absolute;top:0;left:50%;transform:translateX(-50%);
-            width:3px;height:100%;
-            background:linear-gradient(180deg,var(--accent),transparent 90%);
+            width:2px;height:100%;pointer-events:none;
+            background:linear-gradient(180deg,rgba(59,130,246,.45),rgba(59,130,246,.08) 40%,rgba(59,130,246,.08) 60%,rgba(59,130,246,.45));
             z-index:5;
         }
         .roulette-pointer::before{
             content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
-            border:8px solid transparent;border-top:12px solid var(--accent);
+            border:10px solid transparent;border-top:16px solid #3b82f6;
+            filter:drop-shadow(0 0 8px rgba(59,130,246,.6));
         }
-        .roulette-wrap.won .roulette-pointer{background:linear-gradient(180deg,#FDA100,transparent 90%)}
-        .roulette-wrap.won .roulette-pointer::before{border-top-color:#FDA100}
+        .roulette-pointer::after{
+            content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+            border:10px solid transparent;border-bottom:16px solid #3b82f6;
+            filter:drop-shadow(0 0 8px rgba(59,130,246,.6));
+        }
+        .roulette-wrap.won .roulette-pointer{background:linear-gradient(180deg,rgba(253,161,0,.5),transparent 40%,transparent 60%,rgba(253,161,0,.5))}
+        .roulette-wrap.won .roulette-pointer::before{border-top-color:#FDA100;filter:drop-shadow(0 0 8px rgba(253,161,0,.6))}
+        .roulette-wrap.won .roulette-pointer::after{border-bottom-color:#FDA100;filter:drop-shadow(0 0 8px rgba(253,161,0,.6))}
+
+        /* ═══════════ MULTI ROULETTE (stacked rows) ═══════════ */
+        .roulette-multi{display:none;position:relative}
+        .roulette-multi-rows{width:100%}
+        .roulette-row{
+            position:relative;height:130px;overflow:hidden;
+            border-bottom:1px solid rgba(255,255,255,.05);
+        }
+        .roulette-row:last-child{border-bottom:none}
+        .roulette-row-track{
+            display:flex;gap:8px;
+            padding:6px 0 6px 6px;
+            will-change:transform;
+            backface-visibility:hidden;
+        }
+        .roulette-row-track.idle{animation:idleScroll 18s linear infinite}
+        .roulette-row-track.spinning{animation:none}
+        .roulette-row-item{
+            flex-shrink:0;width:95px;height:118px;
+            background:rgba(255,255,255,.04);
+            border-radius:12px;padding:6px;
+            display:flex;flex-direction:column;align-items:center;
+            justify-content:space-between;
+        }
+        .roulette-row-item img{width:48px;height:48px;object-fit:contain}
+        .roulette-row-item .roulette-item-name{font-size:9px;min-height:18px}
+        .roulette-row-item .roulette-item-price{font-size:9px;padding:3px 6px}
+        .roulette-row-item .roulette-item-price img{width:10px;height:10px}
+        .roulette-row .roulette-pointer{
+            position:absolute;top:0;left:50%;transform:translateX(-50%);
+            width:2px;height:100%;pointer-events:none;
+            background:linear-gradient(180deg,rgba(59,130,246,.45),rgba(59,130,246,.08) 40%,rgba(59,130,246,.08) 60%,rgba(59,130,246,.45));
+            z-index:5;
+        }
+        .roulette-row .roulette-pointer::before{
+            content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+            border:8px solid transparent;border-top:12px solid #3b82f6;
+            filter:drop-shadow(0 0 6px rgba(59,130,246,.5));
+        }
+        .roulette-row .roulette-pointer::after{
+            content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+            border:8px solid transparent;border-bottom:12px solid #3b82f6;
+            filter:drop-shadow(0 0 6px rgba(59,130,246,.5));
+        }
+
+        /* ═══════════ QTY BUTTONS ═══════════ */
+        .qty-row{
+            display:flex;gap:6px;
+            padding:8px 0 4px;
+        }
+        .qty-btn{
+            flex:1;height:42px;border-radius:12px;
+            border:1px solid rgba(255,255,255,.1);
+            background:rgba(255,255,255,.05);
+            color:var(--text-2);font-size:15px;font-weight:700;
+            cursor:pointer;transition:all .2s;
+            font-family:inherit;
+        }
+        .qty-btn.active{
+            background:linear-gradient(135deg,var(--primary),#0077CC);
+            border-color:var(--primary);
+            color:#fff;box-shadow:0 4px 15px rgba(0,152,234,.3);
+        }
+        .qty-btn:active{transform:scale(.95)}
 
         /* ═══════════ MODAL WIN ═══════════ */
         .modal-win{
@@ -820,13 +894,9 @@
 
     <!-- MAIN -->
     <main class="main" id="mainApp">
-        <!-- SUB BANNER -->
-        <a href="https://t.me/RasswetGifts" target="_blank" class="sub-banner" onclick="event.preventDefault();window.open('https://t.me/RasswetGifts','_blank')">
-            <div class="sub-banner-text">
-                <span class="sub-banner-title">Подпишись на канал</span>
-                <span class="sub-banner-desc">Новости, раздачи подарков, промокоды на бесплатные кейсы</span>
-            </div>
-            <div class="sub-banner-icon">💎</div>
+        <!-- BANNER -->
+        <a href="https://t.me/RasswetGifts" target="_blank" class="sub-banner" onclick="event.preventDefault();window.open('https://t.me/RasswetGifts','_blank')" style="padding:0;overflow:hidden;border:none;background:none">
+            <img src="/static/img/ban.jpg" alt="" style="width:100%;height:auto;display:block;border-radius:14px">
         </a>
 
         <!-- LIVE FEED -->
@@ -887,9 +957,20 @@
                 </div>
 
                 <!-- ROULETTE (unified) -->
-                <div class="roulette-wrap" id="rouletteWrap">
+                <div class="roulette-wrap single-mode" id="rouletteWrap">
                     <div class="roulette-track idle" id="rouletteTrack"></div>
                     <div class="roulette-pointer"></div>
+                    <!-- Multi roulette (stacked horizontal rows for qty 2/3) -->
+                    <div class="roulette-multi" id="rouletteMulti">
+                        <div class="roulette-multi-rows" id="rouletteMultiRows"></div>
+                    </div>
+                </div>
+
+                <!-- QTY BUTTONS -->
+                <div class="qty-row" id="qtyRow">
+                    <button class="qty-btn active" data-qty="1" onclick="setQty(1)">1</button>
+                    <button class="qty-btn" data-qty="2" onclick="setQty(2)">2</button>
+                    <button class="qty-btn" data-qty="3" onclick="setQty(3)">3</button>
                 </div>
 
                 <!-- WIN RESULT IN MODAL -->
@@ -1186,6 +1267,7 @@
         let selectedDeposit = 10;
         let lastWonGift = null;
         let isOpening = false;
+        let selectedQty = 1;
 
         document.addEventListener('DOMContentLoaded', init);
 
@@ -1426,6 +1508,9 @@
                 if (data.success && data.case) {
                     currentCase = data.case;
                     isOpening = false;
+                    selectedQty = 1;
+                    document.querySelectorAll('.qty-btn').forEach(b => b.classList.toggle('active', b.dataset.qty === '1'));
+                    $('rouletteWrap').className = 'roulette-wrap single-mode';
                     renderModal();
                     $('caseModal').classList.add('open');
                     resetSlider();
@@ -1435,10 +1520,67 @@
             }
         }
 
+        function setQty(q) {
+            selectedQty = q;
+            document.querySelectorAll('.qty-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.qty) === q));
+            // Update price display
+            if (currentCase) {
+                const price = (currentCase.cost || 0) * q;
+                $('modalPrice').querySelector('span').textContent = formatTon(price);
+            }
+            const wrap = $('rouletteWrap');
+            // Switch between single and multi roulette
+            if (q === 1) {
+                wrap.className = 'roulette-wrap single-mode';
+                $('rouletteTrack').style.display = 'flex';
+                $('rouletteMulti').style.display = 'none';
+                $('rouletteTrack').classList.add('idle');
+            } else {
+                wrap.className = 'roulette-wrap multi-mode-' + q;
+                $('rouletteTrack').style.display = 'none';
+                $('rouletteMulti').style.display = 'block';
+                initMultiRoulette(q);
+            }
+        }
+
+        function initMultiRoulette(qty) {
+            const container = $('rouletteMultiRows');
+            const gifts = currentCase ? (currentCase.gifts_details || currentCase.gifts || []) : [];
+            if (!gifts.length) return;
+            container.innerHTML = '';
+            for (let r = 0; r < qty; r++) {
+                const row = document.createElement('div');
+                row.className = 'roulette-row';
+                const track = document.createElement('div');
+                track.className = 'roulette-row-track idle';
+                track.id = 'multiRowTrack-' + r;
+                // Fill with shuffled items
+                const items = [];
+                for (let i = 0; i < 30; i++) {
+                    const g = gifts[Math.floor(Math.random() * gifts.length)];
+                    const gPrice = getGiftPrice(g);
+                    const gName = getGiftName(g);
+                    const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
+                    items.push(`<div class="roulette-row-item">
+                        <div class="roulette-item-name">${escapeHtml(gName)}</div>
+                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
+                        <div class="roulette-item-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                    </div>`);
+                }
+                track.innerHTML = items.join('') + items.join('');
+                row.appendChild(track);
+                // Blue triangle pointer for this row
+                const ptr = document.createElement('div');
+                ptr.className = 'roulette-pointer';
+                row.appendChild(ptr);
+                container.appendChild(row);
+            }
+        }
+
         function renderModal() {
             if (!currentCase) return;
             
-            const price = currentCase.cost || 0;
+            const price = (currentCase.cost || 0) * selectedQty;
             $('modalName').textContent = currentCase.name || 'Кейс';
             $('modalPrice').querySelector('span').textContent = formatTon(price);
 
@@ -1453,6 +1595,22 @@
             $('rouletteWrap').style.display = 'block';
             $('rouletteWrap').classList.remove('won');
             $('contentsSection').style.display = 'block';
+            
+            // Show/hide qty row (not for promo cases)
+            $('qtyRow').style.display = isPromoCase ? 'none' : 'flex';
+            
+            // Toggle single vs multi roulette
+            const wrap = $('rouletteWrap');
+            if (selectedQty === 1) {
+                wrap.className = 'roulette-wrap single-mode';
+                $('rouletteTrack').style.display = 'flex';
+                $('rouletteMulti').style.display = 'none';
+            } else {
+                wrap.className = 'roulette-wrap multi-mode-' + selectedQty;
+                $('rouletteTrack').style.display = 'none';
+                $('rouletteMulti').style.display = 'block';
+                initMultiRoulette(selectedQty);
+            }
             
             // Show promo input for promo cases, hide slider
             if (isPromoCase) {
@@ -1524,7 +1682,7 @@
             if (!currentCase || !userId) return true;
             if (currentCase.cost <= 0 || currentCase.promo) return true;
             const rawCost = currentCase.cost || 0;
-            const totalCostInStars = currentCase.cost_type === 'ton' ? rawCost * 100 : rawCost;
+            const totalCostInStars = (currentCase.cost_type === 'ton' ? rawCost * 100 : rawCost) * selectedQty;
             return userBalance >= totalCostInStars;
         }
 
@@ -1644,7 +1802,7 @@
 
             // Convert cost to stars if cost_type is 'ton' (1 TON = 100 stars)
             const rawCost = currentCase.cost || 0;
-            const totalCostInStars = currentCase.cost_type === 'ton' ? rawCost * 100 : rawCost;
+            const totalCostInStars = (currentCase.cost_type === 'ton' ? rawCost * 100 : rawCost) * selectedQty;
             if (userBalance < totalCostInStars) {
                 showToast('Недостаточно средств', 'err');
                 openDeposit();
@@ -1661,12 +1819,12 @@
                     body: JSON.stringify({
                         user_id: userId,
                         case_id: currentCase.id,
-                        quantity: 1
+                        quantity: selectedQty
                     })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    userBalance = data.new_balance ? data.new_balance.stars : (userBalance - totalCost);
+                    userBalance = data.new_balance ? data.new_balance.stars : (userBalance - totalCostInStars);
                     $('balanceDisplay').textContent = formatTon(starsToTon(userBalance));
                     runSpinRoulette(data.won_gifts || [data.won_gift]);
                 } else {
@@ -1724,12 +1882,19 @@
         }
 
         function runSpinRoulette(wonGifts) {
-            const wonGift = Array.isArray(wonGifts) ? wonGifts[0] : wonGifts;
-            lastWonGift = wonGift;
+            const giftsArr = Array.isArray(wonGifts) ? wonGifts : [wonGifts];
+            lastWonGift = giftsArr[0];
             
             // Get all gifts including ton_balance
             const allGifts = currentCase.gifts_details || currentCase.gifts || [];
             const gifts = allGifts;
+
+            if (selectedQty > 1 && giftsArr.length > 1) {
+                // Multi-column vertical spin
+                runMultiSpin(giftsArr, gifts);
+                return;
+            }
+
             const track = $('rouletteTrack');
             
             // Stop idle animation
@@ -1739,10 +1904,10 @@
             // Generate spin items with winner at position 42
             const items = [];
             for (let i = 0; i < 50; i++) {
-                const g = gifts.length ? gifts[Math.floor(Math.random() * gifts.length)] : wonGift;
+                const g = gifts.length ? gifts[Math.floor(Math.random() * gifts.length)] : giftsArr[0];
                 items.push(g);
             }
-            items[42] = wonGift;
+            items[42] = giftsArr[0];
 
             track.innerHTML = items.map(g => {
                 const gPrice = getGiftPrice(g);
@@ -1765,7 +1930,7 @@
 
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    const itemWidth = 120; // 110px + 10px gap
+                    const itemWidth = 110; // 100px + 10px gap
                     const wrap = $('rouletteWrap');
                     const centerOffset = wrap.offsetWidth / 2;
                     const targetPos = itemWidth * 42 + itemWidth / 2;
@@ -1785,8 +1950,111 @@
             setTimeout(() => {
                 clearInterval(spinVibInterval);
                 vibrate('heavy');
-                showWinResultInModal(wonGift);
+                showWinResultInModal(giftsArr[0]);
             }, 7300);
+        }
+
+        function runMultiSpin(wonGiftsArr, allGifts) {
+            // Show multi roulette with stacked horizontal rows
+            const wrap = $('rouletteWrap');
+            $('rouletteTrack').style.display = 'none';
+            $('rouletteMulti').style.display = 'block';
+            wrap.className = 'roulette-wrap multi-mode-' + wonGiftsArr.length;
+            
+            const container = $('rouletteMultiRows');
+            container.innerHTML = '';
+            const qty = wonGiftsArr.length;
+            
+            for (let r = 0; r < qty; r++) {
+                const row = document.createElement('div');
+                row.className = 'roulette-row';
+                const track = document.createElement('div');
+                track.className = 'roulette-row-track spinning';
+                
+                // Generate 50 items with winner at position 42
+                const items = [];
+                for (let i = 0; i < 50; i++) {
+                    const g = allGifts.length ? allGifts[Math.floor(Math.random() * allGifts.length)] : wonGiftsArr[r];
+                    items.push(g);
+                }
+                items[42] = wonGiftsArr[r];
+                
+                track.innerHTML = items.map(g => {
+                    const gPrice = getGiftPrice(g);
+                    const gName = getGiftName(g);
+                    const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
+                    return `<div class="roulette-row-item">
+                        <div class="roulette-item-name">${escapeHtml(gName)}</div>
+                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
+                        <div class="roulette-item-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                    </div>`;
+                }).join('');
+                
+                row.appendChild(track);
+                // Blue triangle pointer for this row
+                const ptr = document.createElement('div');
+                ptr.className = 'roulette-pointer';
+                row.appendChild(ptr);
+                container.appendChild(row);
+                
+                // Animate horizontal scroll with staggered delay
+                const delay = r * 400;
+                track.style.transition = 'none';
+                track.style.transform = 'translateX(0)';
+                setTimeout(() => {
+                    const itemW = 103; // 95px + 8px gap
+                    const rowW = row.offsetWidth || 300;
+                    const centerOff = rowW / 2;
+                    const targetPos = itemW * 42 + itemW / 2;
+                    track.style.transition = `transform ${6.5 + r * 0.7}s cubic-bezier(.15,.85,.08,1)`;
+                    track.style.transform = `translateX(${centerOff - targetPos}px)`;
+                }, delay + 50);
+            }
+            
+            // Vibrate
+            let vc = 0;
+            const vi = setInterval(() => { vibrate('light'); vc++; if(vc > 12) clearInterval(vi); }, 500);
+            
+            const totalTime = 7000 + (qty - 1) * 1000;
+            setTimeout(() => {
+                clearInterval(vi);
+                vibrate('heavy');
+                showMultiWinResult(wonGiftsArr);
+            }, totalTime);
+        }
+
+        var _originalModalWinHTML = '';
+
+        function showMultiWinResult(giftsArr) {
+            $('rouletteWrap').classList.add('won');
+            $('sliderWrap').style.display = 'none';
+            $('contentsSection').style.display = 'none';
+            $('qtyRow').style.display = 'none';
+            
+            if (!_originalModalWinHTML) _originalModalWinHTML = $('modalWin').innerHTML;
+            
+            const totalValue = giftsArr.reduce((s, g) => s + getGiftPrice(g), 0);
+            
+            $('modalWin').innerHTML = `
+                <div style="text-align:center;padding:10px 0;">
+                    <div style="font-size:14px;color:#4ADE80;margin-bottom:12px;">Вы выиграли ${giftsArr.length} подарков!</div>
+                    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;">
+                        ${giftsArr.map(g => `
+                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:8px;width:80px;text-align:center;">
+                                <img src="${getGiftImage(g)}" style="width:50px;height:50px;object-fit:contain;" onerror="this.src='/static/img/gift.png'">
+                                <div style="font-size:11px;color:#fff;margin-top:4px;">${formatTon(getGiftPrice(g))} TON</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="color:#4ADE80;font-size:16px;font-weight:600;">Итого: ${formatTon(totalValue)} TON</div>
+                    <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
+                        <button onclick="openAgain()" style="flex:1;max-width:140px;padding:10px;background:#3b82f6;border:none;border-radius:10px;color:white;font-size:14px;cursor:pointer;">Ещё раз</button>
+                        <button onclick="closeModalAndReset()" style="flex:1;max-width:140px;padding:10px;background:rgba(255,255,255,0.08);border:none;border-radius:10px;color:white;font-size:14px;cursor:pointer;">Закрыть</button>
+                    </div>
+                </div>
+            `;
+            $('modalWin').style.display = 'block';
+            isOpening = false;
         }
 
         function showWinResultInModal(gift) {
@@ -1794,6 +2062,7 @@
             $('rouletteWrap').classList.add('won');
             $('sliderWrap').style.display = 'none';
             $('contentsSection').style.display = 'none';
+            $('qtyRow').style.display = 'none';
             
             // Show win section in modal
             $('modalWinImg').src = getGiftImage(gift);
@@ -1811,6 +2080,11 @@
         
         function openAgain() {
             if (!currentCase) return;
+            // Restore original modalWin HTML if it was replaced by multi-win
+            if (_originalModalWinHTML) {
+                $('modalWin').innerHTML = _originalModalWinHTML;
+                _originalModalWinHTML = '';
+            }
             $('modalWin').style.display = 'none';
             renderModal();
             resetSlider();

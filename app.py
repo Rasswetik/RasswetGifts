@@ -3924,7 +3924,21 @@ def ultimate_crash_simple_status():
                 except:
                     pass
         
-        return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet})
+        # Fetch user balance alongside status for real-time display
+        user_balance = None
+        if user_id:
+            try:
+                conn2 = sqlite3.connect(DB_PATH, timeout=3)
+                c2 = conn2.cursor()
+                c2.execute("SELECT balance_stars FROM users WHERE id = ?", (user_id,))
+                row = c2.fetchone()
+                conn2.close()
+                if row:
+                    user_balance = row[0]
+            except:
+                pass
+        
+        return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance})
     
     # Fallback - если кэш устарел
     try:
@@ -3944,14 +3958,19 @@ def ultimate_crash_simple_status():
             }
             
             user_bet = None
+            user_balance = None
             if user_id:
                 cursor.execute("SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1", (game_id, user_id))
                 bet = cursor.fetchone()
                 if bet:
                     user_bet = {'id': bet[0], 'bet_amount': bet[1], 'status': bet[2]}
+                cursor.execute("SELECT balance_stars FROM users WHERE id = ?", (user_id,))
+                brow = cursor.fetchone()
+                if brow:
+                    user_balance = brow[0]
             
             conn.close()
-            return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet})
+            return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance})
         
         conn.close()
     except:
@@ -17385,14 +17404,14 @@ def api_leaderboard():
         period_start = config[1]
 
         # Get top users by bet volume WITHIN current leaderboard period
-        cursor.execute('''SELECT ucb.user_id, u.first_name, u.username, u.photo_url, 
+        # Include ALL users even with 0 volume so they appear at season start
+        cursor.execute('''SELECT u.id, u.first_name, u.username, u.photo_url, 
                 COALESCE(SUM(ucb.bet_amount), 0) as period_volume
-            FROM ultimate_crash_bets ucb
-            LEFT JOIN users u ON ucb.user_id = u.id
-            WHERE ucb.created_at >= ? AND ucb.user_id > 0
-            GROUP BY ucb.user_id
-            HAVING period_volume > 0
-            ORDER BY period_volume DESC 
+            FROM users u
+            LEFT JOIN ultimate_crash_bets ucb ON u.id = ucb.user_id AND ucb.created_at >= ? AND ucb.user_id > 0
+            WHERE u.id > 0
+            GROUP BY u.id
+            ORDER BY period_volume DESC, u.id ASC
             LIMIT 50''', (period_start,))
         combined_entries = []
         for row in cursor.fetchall():

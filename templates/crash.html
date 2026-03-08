@@ -5088,7 +5088,7 @@ async function initTelegramApp() {
     refreshBetCurrencyUI();
 
     /* Adaptive polling intervals based on power mode - faster for smoother display */
-    var statusPoll = document.body.classList.contains('low-power') ? 800 : 350;
+    var statusPoll = document.body.classList.contains('low-power') ? 400 : 120;
     var betsPoll   = document.body.classList.contains('low-power') ? 2500 : 1000;
     var statusIntervalId = setInterval(updStatus, statusPoll);   /* Game status */
     var balanceIntervalId = setInterval(loadUserData, 20000);     /* Balance every 20 sec */
@@ -5728,10 +5728,12 @@ function onNewServerMult(newMult){
     }
     prevServMult = newMult;
     lastPollTimestamp = now;
-    /* If display is behind server, don't snap — let render() catch up smoothly.
-       If display is ahead (overshoot), gently pull back. */
-    if(dispMult > newMult + 0.02){
-        dispMult = newMult; /* snap back to prevent showing wrong value */
+    /* Smooth correction: blend display toward server value instead of hard snap.
+       This prevents visible jumpbacks (e.g. 1.9 -> 1.7 -> forward). */
+    if(dispMult > newMult + 0.005){
+        dispMult = newMult + (dispMult - newMult) * 0.15;
+    } else if(dispMult < newMult - 0.02){
+        dispMult = newMult; /* behind server: snap forward */
     }
 }
 
@@ -5758,8 +5760,8 @@ function render(){
         if(multGrowthRate > 0){
             dispMult += multGrowthRate * dt;
             /* Don't run too far ahead of last known server value.
-               Allow up to ~600ms of extrapolation beyond last poll. */
-            var maxExtrapolation = prevServMult + multGrowthRate * 600;
+               Allow up to ~200ms of extrapolation beyond last poll (tighter with faster polling). */
+            var maxExtrapolation = prevServMult + multGrowthRate * 200;
             if(dispMult > maxExtrapolation) dispMult = maxExtrapolation;
         }
         /* Ensure display never falls below 1.0 */
@@ -5900,6 +5902,12 @@ async function updStatus(){
 
         /* Feed new server multiplier to interpolation engine */
         if(status === 'flying') onNewServerMult(servMult);
+
+        /* Update balance from status poll for real-time accuracy */
+        if(d.user_balance !== undefined && d.user_balance !== null && userData){
+            userData.balance_stars = d.user_balance;
+            updateUI(userData);
+        }
 
         /* Only update hasBet from server if we haven't cashed out this round */
         if(d.user_bet && d.user_bet.status === 'active'){
