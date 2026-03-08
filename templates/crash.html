@@ -1355,12 +1355,12 @@ tc-root *{pointer-events:auto}
 .bet-info-display.show{display:flex}
 @keyframes betInfoFade{0%{opacity:0;transform:translateX(-50%) translateY(8px)}100%{opacity:1;transform:translateX(-50%) translateY(0)}}
 .bet-info-gift{
-    width:80px;height:80px;object-fit:cover;
-    border-radius:14px;border:1.5px solid rgba(255,255,255,.3);
+    width:80px;height:80px;object-fit:contain;
+    border:none;border-radius:0;
     filter:drop-shadow(0 4px 15px rgba(253,161,0,.3));
     animation:betGiftFloat 2s ease-in-out infinite;
 }
-@keyframes betGiftFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes betGiftFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
 .bet-info-coef{
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:11px;
     color:rgba(255,255,255,.5);
@@ -1671,7 +1671,7 @@ tc-root *{pointer-events:auto}
 }
 .history-scroll{
     display:flex;gap:6px;
-    overflow-x:auto;
+    flex-wrap:wrap;
     padding-bottom:0;
     scrollbar-width:none;
     -ms-overflow-style:none;
@@ -1681,6 +1681,7 @@ tc-root *{pointer-events:auto}
     padding:5px 12px;border-radius:20px;
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:12px;
     white-space:nowrap;flex-shrink:0;
+    width:calc(50% - 3px);
     display:flex;align-items:center;justify-content:center;
     line-height:1.2;
     transition:transform .2s,box-shadow .2s;
@@ -1703,15 +1704,14 @@ tc-root *{pointer-events:auto}
     border-radius:20px;padding:5px 12px;
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:13px;
     color:#1EE44C;
-    margin-right:4px;flex-shrink:0;
+    width:100%;justify-content:center;
     transition:all .3s cubic-bezier(.175,.885,.32,1.275);
 }
 .coeff-box.live{color:#1EE44C;border-color:rgba(30,228,76,.3);box-shadow:0 0 15px rgba(30,228,76,.1);animation:coeffPulse 1s ease-in-out infinite}
 @keyframes coeffPulse{0%,100%{transform:scale(1);box-shadow:0 0 15px rgba(30,228,76,.1)}50%{transform:scale(1.02);box-shadow:0 0 25px rgba(30,228,76,.2)}}
 .coeff-box.crashed{background:rgba(220,60,80,.2);color:#F96999;border-color:rgba(249,105,153,.3);box-shadow:0 0 15px rgba(249,105,153,.1);animation:coeffShake .5s ease}
 .coeff-box.waiting{background:rgba(30,228,76,.15);color:#1EE44C;border-color:rgba(30,228,76,.3);box-shadow:0 0 12px rgba(30,228,76,.1)}
-.coeff-gift-icon{width:32px;height:32px;object-fit:contain;border-radius:6px;margin-left:-4px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));animation:giftIconFloat 2s ease-in-out infinite}
-@keyframes giftIconFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.coeff-gift-icon{display:none!important}
 
 /* ===== AUTO CASHOUT (in modal) ===== */
 .auto-cashout-row{
@@ -3720,7 +3720,7 @@ tc-root *{pointer-events:auto}
     <div class="history-section">
         <div class="history-scroll" id="histScroll">
             <div class="coeff-box" id="coeffBox">--</div>
-            <img class="coeff-gift-icon" id="coeffGiftIcon" src="" style="display:none">
+
         </div>
     </div>
 
@@ -5821,26 +5821,6 @@ function render(){
         /* Live coeff display */
         var ct = dispMult.toFixed(2) + 'x';
         if(ct !== _prevCoeffText){ if(_coeffBox) _coeffBox.textContent = ct; _prevCoeffText = ct; }
-        if(_coeffGI){
-            if(hasBet && !cashedOut){
-                var _ciSrc = null;
-                if(activeBetType !== 'stars' && activeBetGiftImage){
-                    _ciSrc = activeBetGiftImage;
-                } else if(activeBetType === 'stars' && betAmt > 0){
-                    var _cpw = Math.floor(betAmt * dispMult);
-                    var _cg = getAchievableGift(_cpw);
-                    if(_cg) _ciSrc = resolveCrashGiftImage(_cg, null);
-                }
-                if(_ciSrc){
-                    if(_coeffGI.src !== _ciSrc) _coeffGI.src = _ciSrc;
-                    if(_coeffGI.style.display === 'none') _coeffGI.style.display = '';
-                } else {
-                    if(_coeffGI.style.display !== 'none') _coeffGI.style.display = 'none';
-                }
-            } else {
-                if(_coeffGI.style.display !== 'none') _coeffGI.style.display = 'none';
-            }
-        }
         updateMultDisplay(dispMult);
         
         if(_multDisp && !_multDisp.classList.contains('active')) _multDisp.classList.add('active');
