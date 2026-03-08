@@ -1976,6 +1976,25 @@ def _create_all_tables(conn):
             min_real_players_threshold INTEGER DEFAULT 3,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''',
+        'promo_gift_challenges': '''CREATE TABLE IF NOT EXISTS promo_gift_challenges (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            promo_id INTEGER,
+            gift_id INTEGER,
+            gift_name TEXT,
+            gift_image TEXT,
+            gift_value INTEGER DEFAULT 0,
+            target_wager INTEGER NOT NULL,
+            current_wager INTEGER DEFAULT 0,
+            current_gift_name TEXT,
+            current_gift_image TEXT,
+            current_gift_value INTEGER DEFAULT 0,
+            inventory_id INTEGER,
+            is_completed BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )''',
     }
 
     ok = 0
@@ -4631,6 +4650,14 @@ def ultimate_crash_cashout_simple():
 
         conn.close()
 
+        # Update gift challenge progress (profit = win - bet)
+        try:
+            profit_stars = win_amount - bet_amount
+            if profit_stars > 0:
+                update_gift_challenge_progress(user_id, profit_stars)
+        except Exception as gc_err:
+            logger.error(f"Gift challenge update error: {gc_err}")
+
         # Experience based on bet (1:1 turnover) - now added on bet placement, not cashout
         # exp_gained = bet_amount (removed - exp is added when placing bet)
 
@@ -5623,7 +5650,7 @@ def stars_create_invoice():
 
         invoice_url = result.get('result', '')
         logger.info(f"Stars invoice created: user={user_id}, amount={amount}")
-        return jsonify({'success': True, 'invoice_url': invoice_url})
+        return jsonify({'success': True, 'invoice_link': invoice_url})
 
     except Exception as e:
         logger.error(f"Stars invoice error: {e}")
@@ -6576,6 +6603,56 @@ def activate_promo_for_case():
             response_data['reward_amount'] = wager_amount
             response_data['wager_multiplier'] = wager_multiplier
 
+        elif reward_type == 'gift_challenge':
+            # New promo type: gift with progress bar wager challenge
+            # reward_data: {"gift_id": 42, "target_wager": 5000}
+            # gift_id references gifts.json, target_wager is in stars
+            gift_id = reward_data.get('gift_id')
+            target_wager = int(reward_data.get('target_wager', 5000))
+            
+            # Load gift info from gifts.json
+            all_gifts = load_gifts()
+            challenge_gift = next((g for g in all_gifts if g.get('id') == gift_id), None)
+            if not challenge_gift:
+                conn.close()
+                return jsonify({'success': False, 'error': 'Подарок промокода не найден'})
+            
+            gift_name = challenge_gift.get('name', 'Подарок')
+            gift_image = challenge_gift.get('image', '/static/img/gift.png')
+            gift_value = int(float(challenge_gift.get('value', 0)) * 100)  # TON -> stars
+            
+            # Check if user already has active challenge
+            cursor.execute('SELECT id FROM promo_gift_challenges WHERE user_id = ? AND is_completed = FALSE', (user_id,))
+            existing_challenge = cursor.fetchone()
+            if existing_challenge:
+                conn.close()
+                return jsonify({'success': False, 'error': 'У вас уже есть активный промо-подарок'})
+            
+            # Add gift to inventory (non-sellable/non-withdrawable, tracked by challenge)
+            cursor.execute('''
+                INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (user_id, gift_id, gift_name, gift_image, gift_value))
+            inv_id = cursor.lastrowid
+            
+            # Create challenge record
+            cursor.execute('''
+                INSERT INTO promo_gift_challenges 
+                (user_id, promo_id, gift_id, gift_name, gift_image, gift_value,
+                 target_wager, current_wager, current_gift_name, current_gift_image, 
+                 current_gift_value, inventory_id, is_completed)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, FALSE)
+            ''', (user_id, promo_id, gift_id, gift_name, gift_image, gift_value,
+                  target_wager, gift_name, gift_image, gift_value, inv_id))
+            
+            response_data['reward_type'] = 'gift_challenge'
+            response_data['message'] = f'Получен подарок: {gift_name}!'
+            response_data['gift_name'] = gift_name
+            response_data['gift_image'] = gift_image
+            response_data['reward_amount'] = gift_name
+            response_data['reward_icon'] = gift_image
+            response_data['target_wager'] = target_wager
+
         elif reward_type == 'case_open':
             # Открытие промо-кейса — проверяем case_id
             target_case_id = reward_data.get('case_id', None)
@@ -6601,6 +6678,142 @@ def activate_promo_for_case():
     except Exception as e:
         logger.error(f"❌ Ошибка активации промокода: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/promo-challenge/status', methods=['GET'])
+def promo_challenge_status():
+    """Get active promo gift challenge status for user"""
+    try:
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'Missing user_id'})
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, gift_name, gift_image, gift_value, target_wager, current_wager,
+                   current_gift_name, current_gift_image, current_gift_value, is_completed
+            FROM promo_gift_challenges
+            WHERE user_id = ? AND is_completed = FALSE
+            ORDER BY created_at DESC LIMIT 1
+        ''', (int(user_id),))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({'success': True, 'challenge': None})
+        
+        return jsonify({
+            'success': True,
+            'challenge': {
+                'id': row[0],
+                'gift_name': row[1],
+                'gift_image': row[2],
+                'gift_value': row[3],
+                'target': row[4],
+                'progress': row[5],
+                'current_gift_name': row[6],
+                'current_gift_image': row[7],
+                'current_gift_value': row[8],
+                'is_completed': bool(row[9])
+            }
+        })
+    except Exception as e:
+        logger.error(f"Challenge status error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+def update_gift_challenge_progress(user_id, win_amount_stars, conn=None):
+    """Update promo gift challenge progress when user cashes out in crash.
+    win_amount_stars = net profit in stars (win - bet).
+    When progress fills up, the current gift upgrades and bar resets with remainder.
+    When fully complete, the gift becomes sellable/withdrawable."""
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, gift_name, gift_image, gift_value, target_wager, current_wager,
+                   current_gift_name, current_gift_image, current_gift_value, inventory_id
+            FROM promo_gift_challenges
+            WHERE user_id = ? AND is_completed = FALSE
+            ORDER BY created_at DESC LIMIT 1
+        ''', (user_id,))
+        challenge = cursor.fetchone()
+        if not challenge:
+            if close_conn: conn.close()
+            return
+        
+        ch_id, gift_name, gift_image, gift_value, target_wager, current_wager, \
+            cur_gift_name, cur_gift_image, cur_gift_value, inv_id = challenge
+        
+        # Only count positive profit
+        if win_amount_stars <= 0:
+            if close_conn: conn.close()
+            return
+        
+        new_wager = current_wager + win_amount_stars
+        
+        if new_wager >= target_wager:
+            # Challenge completed! Gift becomes sellable/withdrawable (original gift)
+            cursor.execute('''
+                UPDATE promo_gift_challenges 
+                SET current_wager = ?, is_completed = TRUE, completed_at = CURRENT_TIMESTAMP,
+                    current_gift_name = ?, current_gift_image = ?, current_gift_value = ?
+                WHERE id = ?
+            ''', (new_wager, gift_name, gift_image, gift_value, ch_id))
+            
+            # Update inventory item to final gift (sellable/withdrawable)
+            if inv_id:
+                cursor.execute('''
+                    UPDATE inventory SET gift_name = ?, gift_image = ?, gift_value = ?
+                    WHERE id = ?
+                ''', (gift_name, gift_image, gift_value, inv_id))
+            
+            logger.info(f"🎉 User {user_id} completed gift challenge #{ch_id}! Gift: {gift_name}")
+        else:
+            # Progress increased — check for intermediate gift upgrades
+            # The current gift value scales with progress
+            progress_pct = new_wager / target_wager
+            # Find a gift that matches the current progress value
+            intermediate_value = int(gift_value * progress_pct)
+            
+            # Try to find a matching gift from catalog
+            all_gifts = load_gifts()
+            # Sort by value to find closest match
+            sorted_gifts = sorted(all_gifts, key=lambda g: abs(int(float(g.get('value', 0)) * 100) - intermediate_value))
+            
+            if sorted_gifts:
+                new_gift = sorted_gifts[0]
+                new_gift_name = new_gift.get('name', cur_gift_name)
+                new_gift_image = new_gift.get('image', cur_gift_image)
+                new_gift_value = int(float(new_gift.get('value', 0)) * 100)
+                
+                cursor.execute('''
+                    UPDATE promo_gift_challenges 
+                    SET current_wager = ?, current_gift_name = ?, current_gift_image = ?, current_gift_value = ?
+                    WHERE id = ?
+                ''', (new_wager, new_gift_name, new_gift_image, new_gift_value, ch_id))
+                
+                # Update inventory item to show current gift
+                if inv_id:
+                    cursor.execute('''
+                        UPDATE inventory SET gift_name = ?, gift_image = ?, gift_value = ?
+                        WHERE id = ?
+                    ''', (new_gift_name, new_gift_image, new_gift_value, inv_id))
+            else:
+                cursor.execute('UPDATE promo_gift_challenges SET current_wager = ? WHERE id = ?',
+                             (new_wager, ch_id))
+        
+        conn.commit()
+        if close_conn: conn.close()
+    except Exception as e:
+        logger.error(f"Gift challenge progress error: {e}")
+        if close_conn:
+            try: conn.close()
+            except: pass
 
 
 @app.route('/api/user/<int:user_id>/case-history/<int:case_id>')
@@ -7022,6 +7235,12 @@ def sell_gift():
             conn.close()
             return jsonify({'success': False, 'error': 'Ящик нельзя продать, только открыть'})
 
+        # Check if gift is locked by active gift challenge
+        cursor.execute('SELECT id FROM promo_gift_challenges WHERE inventory_id = ? AND is_completed = FALSE', (gift_id,))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'error': 'Подарок заблокирован до завершения отыгрыша'})
+
         cursor.execute('DELETE FROM inventory WHERE id = ?', (gift_id,))
 
         if gift_value > 0:
@@ -7183,6 +7402,12 @@ def withdraw_gift():
             conn.close()
             return jsonify({'success': False, 'error': 'Ящик нельзя вывести, только открыть'})
 
+        # Check if gift is locked by active gift challenge
+        cursor.execute('SELECT id FROM promo_gift_challenges WHERE inventory_id = ? AND is_completed = FALSE', (inventory_id,))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'error': 'Подарок заблокирован до завершения отыгрыша'})
+
         cursor.execute('SELECT first_name, username, photo_url FROM users WHERE id = ?', (user_id,))
         user = cursor.fetchone()
 
@@ -7203,10 +7428,14 @@ def withdraw_gift():
 
         withdrawal_id = cursor.lastrowid
 
-        add_history_record(user_id, 'withdraw_request', 0, f'Запрос на вывод: {gift.get("gift_name", "")}')
-
         conn.commit()
         conn.close()
+
+        # Record history after connection is closed to avoid deadlock
+        try:
+            add_history_record(user_id, 'withdraw_request', 0, f'Запрос на вывод: {gift.get("gift_name", "")}')
+        except Exception:
+            pass
 
         logger.info(f"✅ Создана заявка на вывод #{withdrawal_id} для пользователя {user_id}")
         return jsonify({
@@ -8366,6 +8595,14 @@ def ultimate_crash_cashout():
         conn.commit()
         conn.close()
 
+        # Update gift challenge progress (profit = win - bet)
+        try:
+            profit_stars = win_amount - bet_amount
+            if profit_stars > 0:
+                update_gift_challenge_progress(user_id, profit_stars)
+        except Exception as gc_err:
+            logger.error(f"Gift challenge update error: {gc_err}")
+
         logger.info(f"✅ Кэшаут: {win_amount} (x{final_multiplier:.2f})")
 
         return jsonify({
@@ -8834,6 +9071,14 @@ def cashout_final():
         new_balance = cursor.fetchone()[0]
 
         conn.close()
+
+        # Update gift challenge progress (profit = win - bet)
+        try:
+            profit_stars = win_amount - bet_amount
+            if profit_stars > 0:
+                update_gift_challenge_progress(user_id, profit_stars)
+        except Exception as gc_err:
+            logger.error(f"Gift challenge update error: {gc_err}")
 
         logger.info(f"✅ Кэшаут: {win_amount} (x{current_mult:.2f})")
 
@@ -10990,6 +11235,14 @@ def crash_cashout():
 
     conn.commit()
     conn.close()
+
+    # Update gift challenge progress (profit = win - bet)
+    try:
+        profit_stars = win - amount
+        if profit_stars > 0:
+            update_gift_challenge_progress(user_id, profit_stars)
+    except Exception as gc_err:
+        logger.error(f"Gift challenge update error: {gc_err}")
 
     return jsonify({
         "success":True,

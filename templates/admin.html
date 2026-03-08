@@ -535,11 +535,40 @@ select.form-input option{background:#1A1E2A;color:#fff}
             </div>
             <div style="display:flex;flex-direction:column;gap:10px">
                 <input type="text" id="promoCodeInput" placeholder="Код (оставить пустым для авто)" style="padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
-                <div style="display:flex;gap:10px">
+                <select id="promoTypeSelect" onchange="togglePromoFields()" style="padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
+                    <option value="ton">TON награда</option>
+                    <option value="case_open">Бесплатный кейс</option>
+                </select>
+                <div id="promoTonFields" style="display:flex;gap:10px">
                     <input type="number" id="promoRewardTon" placeholder="TON" value="1" min="0.1" step="0.1" style="flex:1;padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
                     <input type="number" id="promoMaxUses" placeholder="Использований" value="100" min="1" style="flex:1;padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
                 </div>
+                <div id="promoCaseFields" style="display:none;flex-direction:column;gap:10px">
+                    <input type="number" id="promoCaseId" placeholder="ID кейса (2 = PROMO CASE)" value="2" min="1" style="padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
+                    <input type="number" id="promoCaseMaxUses" placeholder="Использований" value="100" min="1" style="padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
+                </div>
                 <button class="btn btn-primary" onclick="createPromoCode()">Создать промокод</button>
+            </div>
+        </div>
+
+        <!-- Gift Challenge Promo Section -->
+        <div class="detail-section">
+            <div class="detail-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12V8H6a2 2 0 010-4h12V0"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 000 4h4v-4h-4z"/></svg>
+                Создать Gift Challenge промокод
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <input type="text" id="gcPromoCode" placeholder="Код (оставить пустым для авто)" style="padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
+                <select id="gcGiftSelect" style="padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
+                    <option value="">Загрузка подарков...</option>
+                </select>
+                <div id="gcGiftPreview" style="display:none;padding:10px;background:rgba(0,0,0,.2);border-radius:10px;text-align:center">
+                    <img id="gcGiftImg" src="" style="width:64px;height:64px;border-radius:8px;object-fit:cover">
+                    <div id="gcGiftInfo" style="color:#ccc;font-size:12px;margin-top:4px"></div>
+                </div>
+                <input type="number" id="gcTargetWager" placeholder="Сумма отыгрыша (в звёздах)" value="10000" min="100" style="padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
+                <input type="number" id="gcMaxUses" placeholder="Макс использований" value="1" min="1" style="padding:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#fff;font-size:14px">
+                <button class="btn btn-primary" onclick="createGiftChallengePromo()" style="background:linear-gradient(135deg,#FF6B35,#FF3864)">🎁 Создать Gift Challenge</button>
             </div>
         </div>
         
@@ -1429,21 +1458,25 @@ async function loadPromoCodes(){
 
 async function createPromoCode(){
     var code = $('promoCodeInput').value.trim().toUpperCase();
-    var rewardTon = parseFloat($('promoRewardTon').value) || 1;
-    var maxUses = parseInt($('promoMaxUses').value) || 100;
+    var promoType = $('promoTypeSelect').value;
+    var payload = { admin_id: ADMIN_ID, code: code, expires_days: 365 };
+    
+    if (promoType === 'case_open') {
+        payload.reward_type = 'case_open';
+        payload.reward_stars = 0;
+        payload.reward_data = { case_id: parseInt($('promoCaseId').value) || 2 };
+        payload.max_uses = parseInt($('promoCaseMaxUses').value) || 100;
+    } else {
+        payload.reward_type = 'ton';
+        payload.reward_stars = parseFloat($('promoRewardTon').value) || 1;
+        payload.max_uses = parseInt($('promoMaxUses').value) || 100;
+    }
     
     try{
         var r = await fetch('/api/admin/promo-codes', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                admin_id: ADMIN_ID,
-                code: code,
-                reward_stars: rewardTon,
-                reward_type: 'ton',
-                max_uses: maxUses,
-                expires_days: 365
-            })
+            body: JSON.stringify(payload)
         });
         var d = await r.json();
         if(d.success){
@@ -1454,6 +1487,12 @@ async function createPromoCode(){
             showToast(d.error || 'Ошибка создания', 'error');
         }
     }catch(e){ showToast('Ошибка сети', 'error'); }
+}
+
+function togglePromoFields(){
+    var t = $('promoTypeSelect').value;
+    $('promoTonFields').style.display = t === 'ton' ? 'flex' : 'none';
+    $('promoCaseFields').style.display = t === 'case_open' ? 'flex' : 'none';
 }
 
 async function deletePromoCode(id){
@@ -1470,6 +1509,76 @@ async function deletePromoCode(id){
             loadPromoCodes();
         } else {
             showToast(d.error || 'Ошибка', 'error');
+        }
+    }catch(e){ showToast('Ошибка сети', 'error'); }
+}
+
+// Gift Challenge Promo
+var gcGiftsList = [];
+async function loadGiftsForChallenge(){
+    try{
+        var r = await fetch('/api/gifts');
+        var d = await r.json();
+        var gifts = d.gifts || d || [];
+        gcGiftsList = gifts;
+        var sel = $('gcGiftSelect');
+        sel.innerHTML = '<option value="">— Выберите подарок —</option>';
+        gifts.forEach(function(g){
+            var opt = document.createElement('option');
+            opt.value = g.id;
+            opt.textContent = g.name + ' (' + (g.value||0) + ' TON)';
+            sel.appendChild(opt);
+        });
+    }catch(e){ console.error('Load gifts error', e); }
+}
+
+if($('gcGiftSelect')){
+    $('gcGiftSelect').addEventListener('change', function(){
+        var gid = this.value;
+        var prev = $('gcGiftPreview');
+        if(!gid){ prev.style.display='none'; return; }
+        var g = gcGiftsList.find(function(x){ return String(x.id) === String(gid); });
+        if(g){
+            $('gcGiftImg').src = g.image || '/static/img/star.png';
+            $('gcGiftInfo').textContent = g.name + ' — ' + (g.value||0) + ' TON';
+            prev.style.display = 'block';
+        }
+    });
+    loadGiftsForChallenge();
+}
+
+async function createGiftChallengePromo(){
+    var code = ($('gcPromoCode').value||'').trim().toUpperCase();
+    var giftId = $('gcGiftSelect').value;
+    var targetWager = parseInt($('gcTargetWager').value) || 10000;
+    var maxUses = parseInt($('gcMaxUses').value) || 1;
+
+    if(!giftId){
+        showToast('Выберите подарок', 'error');
+        return;
+    }
+
+    try{
+        var r = await fetch('/api/admin/promo-codes', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                admin_id: ADMIN_ID,
+                code: code,
+                reward_stars: 0,
+                reward_type: 'gift_challenge',
+                reward_data: { gift_id: parseInt(giftId), target_wager: targetWager },
+                max_uses: maxUses,
+                expires_days: 365
+            })
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Gift Challenge промокод создан: ' + d.promo_code.code, 'success');
+            $('gcPromoCode').value = '';
+            loadPromoCodes();
+        } else {
+            showToast(d.error || 'Ошибка создания', 'error');
         }
     }catch(e){ showToast('Ошибка сети', 'error'); }
 }
