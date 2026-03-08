@@ -1361,17 +1361,6 @@ tc-root *{pointer-events:auto}
     animation:betGiftFloat 2s ease-in-out infinite;
 }
 @keyframes betGiftFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.bet-info-amount{
-    display:flex;align-items:center;gap:6px;
-    background:rgba(0,0,0,.6);backdrop-filter:blur(10px);
-    padding:8px 16px;border-radius:12px;
-    border:1px solid rgba(253,161,0,.25);
-}
-.bet-info-amount img{width:18px;height:18px}
-.bet-info-amount span{
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:18px;
-    color:#FDA100;
-}
 .bet-info-coef{
     font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:11px;
     color:rgba(255,255,255,.5);
@@ -3723,11 +3712,7 @@ tc-root *{pointer-events:auto}
         <!-- Bet Info Display -->
         <div class="bet-info-display" id="betInfoDisplay">
             <img class="bet-info-gift" id="betInfoGift" src="/static/img/star.png" alt="" onerror="this.src='/static/img/star.png'">
-            <div class="bet-info-amount">
-                <img id="betInfoAmtIcon" src="/static/img/star.png" onerror="this.src='/static/img/star.png'">
-                <span id="betInfoAmount">0</span>
-            </div>
-            <div class="bet-info-coef" id="betInfoCoef">Potential: 0</div>
+            <div class="bet-info-coef" id="betInfoCoef">x1.00</div>
         </div>
     </div>
 
@@ -4996,9 +4981,6 @@ function refreshBetCurrencyUI(){
 
     var balIcon = $('balIcon');
     if(balIcon) balIcon.src = moneyIcon;
-
-    var betInfoAmtIcon = $('betInfoAmtIcon');
-    if(betInfoAmtIcon) betInfoAmtIcon.src = moneyIcon;
 
     var selectedTotalIcon = $('selectedTotalIcon');
     if(selectedTotalIcon) selectedTotalIcon.src = moneyIcon;
@@ -9393,10 +9375,10 @@ function checkCollectionUnlocks(newGiftIds){
    BET INFO DISPLAY IN GAME FIELD
    ============================================================ */
 /* Cached refs for betInfoDisplay — set once after DOM ready */
-var _bidDisplay = null, _bidGift = null, _bidAmt = null, _bidCoef = null, _bidInited = false;
+var _bidDisplay = null, _bidGift = null, _bidCoef = null, _bidInited = false;
 var _bidLastMult = 0, _bidLastTime = 0;
 function updateBetInfoDisplay(){
-    if(!_bidInited){ _bidDisplay=$('betInfoDisplay'); _bidGift=$('betInfoGift'); _bidAmt=$('betInfoAmount'); _bidCoef=$('betInfoCoef'); _bidInited=true; }
+    if(!_bidInited){ _bidDisplay=$('betInfoDisplay'); _bidGift=$('betInfoGift'); _bidCoef=$('betInfoCoef'); _bidInited=true; }
     if(!_bidDisplay) return;
     /* Throttle to 5fps (200ms) */
     var now = performance.now();
@@ -9416,7 +9398,6 @@ function updateBetInfoDisplay(){
     var gift = getAchievableGift(potentialWin);
     var newSrc = gift ? resolveCrashGiftImage(gift, getCrashMoneyIcon()) : getCrashMoneyIcon();
     if(_bidGift.src !== newSrc) _bidGift.src = newSrc;
-    _bidAmt.textContent = formatCrashMoney(potentialWin);
     _bidCoef.textContent = 'x' + mult.toFixed(2);
     _bidDisplay.classList.add('show');
 }

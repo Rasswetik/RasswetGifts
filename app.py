@@ -5992,18 +5992,11 @@ def open_case():
         # Case-specific RTP adjustment (uses case stats, not crash stats)
         rtp_mode = get_player_case_rtp_mode(user_id)
 
-        # Minimum drop value floors per case cost (in TON)
-        CASE_MIN_DROP_TON = {
-            0.1: 0.04,
-            1.0: 0.33,
-            1.5: 0.4,
-            10.0: 4.0,
-            100.0: 40.0,
-        }
+        # Minimum drop value = 30% of case cost
         case_cost_ton = float(case.get('cost', 0) or 0)
         if case.get('cost_type') == 'stars':
             case_cost_ton = case_cost_ton / 100.0
-        min_drop_ton = CASE_MIN_DROP_TON.get(round(case_cost_ton, 2), 0)
+        min_drop_ton = case_cost_ton * 0.30
         min_drop_stars = int(min_drop_ton * 100)
 
         for _ in range(quantity):
@@ -6267,6 +6260,13 @@ def open_case_single():
         # Case-specific RTP adjustment
         case_rtp_mode = get_player_case_rtp_mode(user_id)
 
+        # Minimum drop value = 30% of case cost
+        s_case_cost_ton = float(case.get('cost', 0) or 0)
+        if case.get('cost_type') == 'stars':
+            s_case_cost_ton = s_case_cost_ton / 100.0
+        s_min_drop_ton = s_case_cost_ton * 0.30
+        s_min_drop_stars = int(s_min_drop_ton * 100)
+
         if case.get('gifts'):
             adjusted_gifts = case['gifts']
             if case_rtp_mode in ('boost', 'nerf') and len(case['gifts']) > 1:
@@ -6301,6 +6301,21 @@ def open_case_single():
                     break
 
             if selected_gift_info:
+                # Enforce minimum drop floor (30% of case cost)
+                if s_min_drop_stars > 0:
+                    gift_val = float(selected_gift_info.get('value', 0) or selected_gift_info.get('ton_amount', 0) or 0)
+                    if selected_gift_info.get('type') == 'ton_balance':
+                        gift_val_stars = int(float(selected_gift_info.get('ton_amount', 0) or 0) * 100)
+                    else:
+                        gift_val_stars = int(gift_val)
+                    if gift_val_stars < s_min_drop_stars:
+                        eligible = [g for g in adjusted_gifts if (
+                            (g.get('type') == 'ton_balance' and int(float(g.get('ton_amount', 0) or 0) * 100) >= s_min_drop_stars) or
+                            (g.get('type') != 'ton_balance' and int(float(g.get('value', 0) or 0)) >= s_min_drop_stars)
+                        )]
+                        if eligible:
+                            selected_gift_info = random.choice(eligible)
+
                 # Check if ton_balance
                 if selected_gift_info.get('type') == 'ton_balance':
                     ton_amount = float(selected_gift_info.get('ton_amount', 0) or 0)
