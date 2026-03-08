@@ -336,12 +336,12 @@
             background:rgba(0,0,0,.25);
             overflow:hidden;
         }
-        .roulette-wrap.single-mode{height:148px}
+        .roulette-wrap.single-mode{height:130px}
         .roulette-wrap.multi-mode-2{height:auto}
         .roulette-wrap.multi-mode-3{height:auto}
         .roulette-track{
-            display:flex;gap:10px;
-            padding:8px 0 8px 10px;
+            display:flex;gap:8px;
+            padding:6px 0 6px 6px;
             will-change:transform;
             backface-visibility:hidden;
             -webkit-backface-visibility:hidden;
@@ -354,62 +354,52 @@
             100%{transform:translateX(-50%)}
         }
         .roulette-item{
-            flex-shrink:0;width:100px;height:130px;
-            background:rgba(255,255,255,.04);
+            flex-shrink:0;width:110px;height:118px;
+            background:rgba(255,255,255,.05);
             border:none;
             border-radius:14px;
             padding:8px;
-            display:flex;flex-direction:column;align-items:center;
-            justify-content:space-between;
+            position:relative;
+            display:flex;align-items:center;justify-content:center;
         }
-        .roulette-item-name{
-            font-size:10px;font-weight:600;color:var(--text);
-            text-align:center;line-height:1.2;
-            max-width:100%;overflow:hidden;
-            display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-            min-height:20px;
+        .roulette-item .ri-price{
+            position:absolute;top:6px;left:6px;
+            display:flex;align-items:center;gap:2px;
+            padding:3px 7px;border-radius:8px;
+            background:rgba(0,0,0,.45);
+            font-size:10px;font-weight:700;color:#fff;
+            line-height:1;z-index:2;
         }
-        .roulette-item img{
-            width:52px;height:52px;object-fit:contain;
+        .roulette-item .ri-price img{width:12px;height:12px;flex-shrink:0}
+        .roulette-item .ri-img{
+            width:64px;height:64px;object-fit:contain;
             image-rendering:-webkit-optimize-contrast;
-            image-rendering:crisp-edges;
-            backface-visibility:hidden;
-            -webkit-backface-visibility:hidden;
         }
-        .roulette-item-price{
-            display:flex;align-items:center;gap:3px;
-            padding:4px 8px;border-radius:8px;
-            background:rgba(0,152,234,.12);
-            font-size:10px;font-weight:700;color:var(--blue);
-            line-height:1;
-        }
-        .roulette-item-price img{width:12px;height:12px;vertical-align:middle;flex-shrink:0}
         .roulette-pointer{
-            position:absolute;top:0;left:50%;transform:translateX(-50%);
-            width:2px;height:100%;pointer-events:none;
-            background:linear-gradient(180deg,rgba(59,130,246,.45),rgba(59,130,246,.08) 40%,rgba(59,130,246,.08) 60%,rgba(59,130,246,.45));
-            z-index:5;
+            position:absolute;left:50%;transform:translateX(-50%);
+            width:0;height:0;pointer-events:none;z-index:5;
         }
-        .roulette-pointer::before{
-            content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
-            border:10px solid transparent;border-top:16px solid #3b82f6;
-            filter:drop-shadow(0 0 8px rgba(59,130,246,.6));
+        .roulette-pointer.ptr-top{
+            top:0;
+            border-left:9px solid transparent;border-right:9px solid transparent;
+            border-top:14px solid #3b82f6;
+            filter:drop-shadow(0 2px 6px rgba(59,130,246,.5));
         }
-        .roulette-pointer::after{
-            content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-            border:10px solid transparent;border-bottom:16px solid #3b82f6;
-            filter:drop-shadow(0 0 8px rgba(59,130,246,.6));
+        .roulette-pointer.ptr-bottom{
+            bottom:0;
+            border-left:9px solid transparent;border-right:9px solid transparent;
+            border-bottom:14px solid #3b82f6;
+            filter:drop-shadow(0 -2px 6px rgba(59,130,246,.5));
         }
-        .roulette-wrap.won .roulette-pointer{background:linear-gradient(180deg,rgba(253,161,0,.5),transparent 40%,transparent 60%,rgba(253,161,0,.5))}
-        .roulette-wrap.won .roulette-pointer::before{border-top-color:#FDA100;filter:drop-shadow(0 0 8px rgba(253,161,0,.6))}
-        .roulette-wrap.won .roulette-pointer::after{border-bottom-color:#FDA100;filter:drop-shadow(0 0 8px rgba(253,161,0,.6))}
+        .roulette-wrap.won .roulette-pointer.ptr-top{border-top-color:#FDA100;filter:drop-shadow(0 2px 6px rgba(253,161,0,.5))}
+        .roulette-wrap.won .roulette-pointer.ptr-bottom{border-bottom-color:#FDA100;filter:drop-shadow(0 -2px 6px rgba(253,161,0,.5))}
 
         /* ═══════════ MULTI ROULETTE (stacked rows) ═══════════ */
         .roulette-multi{display:none;position:relative}
         .roulette-multi-rows{width:100%}
         .roulette-row{
-            position:relative;height:130px;overflow:hidden;
-            border-bottom:1px solid rgba(255,255,255,.05);
+            position:relative;height:118px;overflow:hidden;
+            border-bottom:1px solid rgba(255,255,255,.04);
         }
         .roulette-row:last-child{border-bottom:none}
         .roulette-row-track{
@@ -421,31 +411,37 @@
         .roulette-row-track.idle{animation:idleScroll 18s linear infinite}
         .roulette-row-track.spinning{animation:none}
         .roulette-row-item{
-            flex-shrink:0;width:95px;height:118px;
-            background:rgba(255,255,255,.04);
-            border-radius:12px;padding:6px;
-            display:flex;flex-direction:column;align-items:center;
-            justify-content:space-between;
+            flex-shrink:0;width:110px;height:106px;
+            background:rgba(255,255,255,.05);
+            border-radius:12px;
+            position:relative;
+            display:flex;align-items:center;justify-content:center;
         }
-        .roulette-row-item img{width:48px;height:48px;object-fit:contain}
-        .roulette-row-item .roulette-item-name{font-size:9px;min-height:18px}
-        .roulette-row-item .roulette-item-price{font-size:9px;padding:3px 6px}
-        .roulette-row-item .roulette-item-price img{width:10px;height:10px}
+        .roulette-row-item .ri-price{
+            position:absolute;top:5px;left:5px;
+            display:flex;align-items:center;gap:2px;
+            padding:3px 6px;border-radius:7px;
+            background:rgba(0,0,0,.45);
+            font-size:10px;font-weight:700;color:#fff;
+            line-height:1;z-index:2;
+        }
+        .roulette-row-item .ri-price img{width:11px;height:11px;flex-shrink:0}
+        .roulette-row-item .ri-img{width:58px;height:58px;object-fit:contain}
         .roulette-row .roulette-pointer{
-            position:absolute;top:0;left:50%;transform:translateX(-50%);
-            width:2px;height:100%;pointer-events:none;
-            background:linear-gradient(180deg,rgba(59,130,246,.45),rgba(59,130,246,.08) 40%,rgba(59,130,246,.08) 60%,rgba(59,130,246,.45));
-            z-index:5;
+            position:absolute;left:50%;transform:translateX(-50%);
+            width:0;height:0;pointer-events:none;z-index:5;
         }
-        .roulette-row .roulette-pointer::before{
-            content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
-            border:8px solid transparent;border-top:12px solid #3b82f6;
-            filter:drop-shadow(0 0 6px rgba(59,130,246,.5));
+        .roulette-row .roulette-pointer.ptr-top{
+            top:0;
+            border-left:8px solid transparent;border-right:8px solid transparent;
+            border-top:12px solid #3b82f6;
+            filter:drop-shadow(0 2px 5px rgba(59,130,246,.5));
         }
-        .roulette-row .roulette-pointer::after{
-            content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-            border:8px solid transparent;border-bottom:12px solid #3b82f6;
-            filter:drop-shadow(0 0 6px rgba(59,130,246,.5));
+        .roulette-row .roulette-pointer.ptr-bottom{
+            bottom:0;
+            border-left:8px solid transparent;border-right:8px solid transparent;
+            border-bottom:12px solid #3b82f6;
+            filter:drop-shadow(0 -2px 5px rgba(59,130,246,.5));
         }
 
         /* ═══════════ QTY BUTTONS ═══════════ */
@@ -959,7 +955,8 @@
                 <!-- ROULETTE (unified) -->
                 <div class="roulette-wrap single-mode" id="rouletteWrap">
                     <div class="roulette-track idle" id="rouletteTrack"></div>
-                    <div class="roulette-pointer"></div>
+                    <div class="roulette-pointer ptr-top"></div>
+                    <div class="roulette-pointer ptr-bottom"></div>
                     <!-- Multi roulette (stacked horizontal rows for qty 2/3) -->
                     <div class="roulette-multi" id="rouletteMulti">
                         <div class="roulette-multi-rows" id="rouletteMultiRows"></div>
@@ -1559,20 +1556,21 @@
                 for (let i = 0; i < 30; i++) {
                     const g = gifts[Math.floor(Math.random() * gifts.length)];
                     const gPrice = getGiftPrice(g);
-                    const gName = getGiftName(g);
                     const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
                     items.push(`<div class="roulette-row-item">
-                        <div class="roulette-item-name">${escapeHtml(gName)}</div>
-                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
-                        <div class="roulette-item-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                        <div class="ri-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                        <img class="ri-img" src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                     </div>`);
                 }
                 track.innerHTML = items.join('') + items.join('');
                 row.appendChild(track);
-                // Blue triangle pointer for this row
-                const ptr = document.createElement('div');
-                ptr.className = 'roulette-pointer';
-                row.appendChild(ptr);
+                // Blue triangle pointers for this row
+                const ptrT = document.createElement('div');
+                ptrT.className = 'roulette-pointer ptr-top';
+                row.appendChild(ptrT);
+                const ptrB = document.createElement('div');
+                ptrB.className = 'roulette-pointer ptr-bottom';
+                row.appendChild(ptrB);
                 container.appendChild(row);
             }
         }
@@ -1628,21 +1626,16 @@
                 return;
             }
             
-            // Roulette items with names (name top, img center, price bottom)
+            // Roulette items — price badge overlay + centered image
             const rouletteItems = [];
             for (let i = 0; i < 30; i++) {
                 const g = gifts[i % gifts.length];
                 const gPrice = getGiftPrice(g);
-                const gName = getGiftName(g);
                 const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
                 rouletteItems.push(`
                     <div class="roulette-item">
-                        <div class="roulette-item-name">${escapeHtml(gName)}</div>
-                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
-                        <div class="roulette-item-price">
-                            <img src="${tonIcon}" alt="">
-                            ${formatTon(gPrice)}
-                        </div>
+                        <div class="ri-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                        <img class="ri-img" src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                     </div>
                 `);
             }
@@ -1911,16 +1904,11 @@
 
             track.innerHTML = items.map(g => {
                 const gPrice = getGiftPrice(g);
-                const gName = getGiftName(g);
                 const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
                 return `
                     <div class="roulette-item">
-                        <div class="roulette-item-name">${escapeHtml(gName)}</div>
-                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
-                        <div class="roulette-item-price">
-                            <img src="${tonIcon}" alt="">
-                            ${formatTon(gPrice)}
-                        </div>
+                        <div class="ri-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                        <img class="ri-img" src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                     </div>
                 `;
             }).join('');
@@ -1930,7 +1918,7 @@
 
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    const itemWidth = 110; // 100px + 10px gap
+                    const itemWidth = 118; // 110px + 8px gap
                     const wrap = $('rouletteWrap');
                     const centerOffset = wrap.offsetWidth / 2;
                     const targetPos = itemWidth * 42 + itemWidth / 2;
@@ -1981,20 +1969,21 @@
                 
                 track.innerHTML = items.map(g => {
                     const gPrice = getGiftPrice(g);
-                    const gName = getGiftName(g);
                     const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
                     return `<div class="roulette-row-item">
-                        <div class="roulette-item-name">${escapeHtml(gName)}</div>
-                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
-                        <div class="roulette-item-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                        <div class="ri-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                        <img class="ri-img" src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
                     </div>`;
                 }).join('');
                 
                 row.appendChild(track);
-                // Blue triangle pointer for this row
-                const ptr = document.createElement('div');
-                ptr.className = 'roulette-pointer';
-                row.appendChild(ptr);
+                // Blue triangle pointers for this row
+                const ptrT = document.createElement('div');
+                ptrT.className = 'roulette-pointer ptr-top';
+                row.appendChild(ptrT);
+                const ptrB = document.createElement('div');
+                ptrB.className = 'roulette-pointer ptr-bottom';
+                row.appendChild(ptrB);
                 container.appendChild(row);
                 
                 // Animate horizontal scroll with staggered delay
@@ -2002,7 +1991,7 @@
                 track.style.transition = 'none';
                 track.style.transform = 'translateX(0)';
                 setTimeout(() => {
-                    const itemW = 103; // 95px + 8px gap
+                    const itemW = 118; // 110px + 8px gap
                     const rowW = row.offsetWidth || 300;
                     const centerOff = rowW / 2;
                     const targetPos = itemW * 42 + itemW / 2;
