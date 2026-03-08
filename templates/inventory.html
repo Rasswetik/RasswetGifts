@@ -173,28 +173,28 @@
         .challenge-text{font-size:11px;color:rgba(255,255,255,.4)}
 
         /* === UPGRADE ANIMATION (roulette strip) === */
-        .upgrade-anim-wrap{display:none;flex-direction:column;align-items:center;width:100%;padding:16px 0;position:relative}
+        .upgrade-anim-wrap{display:none;flex-direction:column;align-items:center;width:100%;padding:0;position:relative}
         .upgrade-anim-wrap.active{display:flex}
 
-        .upgrade-roulette{position:relative;width:100%;height:140px;overflow:hidden;border-radius:16px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);margin-bottom:14px}
-        .upgrade-roulette::before,.upgrade-roulette::after{content:'';position:absolute;top:0;bottom:0;width:30px;z-index:3;pointer-events:none}
-        .upgrade-roulette::before{left:0;background:linear-gradient(90deg,rgba(28,34,51,.8) 0%,transparent 100%)}
-        .upgrade-roulette::after{right:0;background:linear-gradient(-90deg,rgba(28,34,51,.8) 0%,transparent 100%)}
+        .upgrade-roulette{position:relative;width:100%;height:182px;overflow:hidden;border-radius:0;background:transparent;margin-bottom:0}
+        .upgrade-roulette::before,.upgrade-roulette::after{content:'';position:absolute;top:0;bottom:0;width:40px;z-index:3;pointer-events:none}
+        .upgrade-roulette::before{left:0;background:linear-gradient(90deg,#1C2233 0%,transparent 100%)}
+        .upgrade-roulette::after{right:0;background:linear-gradient(-90deg,#1C2233 0%,transparent 100%)}
         .upgrade-strip{display:flex;align-items:center;height:100%;will-change:transform;position:absolute;top:0;left:0}
-        .upgrade-strip-item{width:calc(100vw / 3 - 12px);max-width:148px;height:128px;flex-shrink:0;margin:0 4px;border-radius:14px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.06)}
-        .upgrade-strip-item img{width:100px;height:100px;object-fit:contain}
+        .upgrade-strip-item{flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+        .upgrade-strip-item img{width:100%;height:100%;object-fit:cover;border-radius:16px;border:1.5px solid rgba(255,255,255,.25)}
 
         .upgrade-result-card{display:none;flex-direction:column;align-items:center;margin-bottom:14px}
         .upgrade-result-card.show{display:flex}
-        .upgrade-result-frame{width:130px;height:130px;border-radius:20px;background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;animation:resultPop .5s cubic-bezier(.34,1.56,.64,1)}
-        .upgrade-result-frame img{width:105px;height:105px;object-fit:contain}
+        .upgrade-result-frame{width:130px;height:130px;border-radius:20px;overflow:hidden;display:flex;align-items:center;justify-content:center;animation:resultPop .5s cubic-bezier(.34,1.56,.64,1);border:1.5px solid rgba(255,255,255,.3)}
+        .upgrade-result-frame img{width:100%;height:100%;object-fit:cover}
         .upgrade-result-name{margin-top:10px;font-size:14px;font-weight:700;color:rgba(255,255,255,.8)}
         @keyframes resultPop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
 
         .upgrade-status{font-size:12px;color:rgba(255,255,255,.35);margin-top:8px;letter-spacing:.5px}
 
         /* confetti */
-        .confetti-container{position:absolute;inset:0;pointer-events:none;z-index:10;overflow:hidden}
+        .confetti-container{position:fixed;inset:0;pointer-events:none;z-index:1100;overflow:hidden}
         .confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;opacity:0;animation:confettiFall 1.5s ease-out forwards}
         @keyframes confettiFall{0%{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}100%{opacity:0;transform:translateY(200px) rotate(720deg) scale(.3)}}
 
@@ -202,7 +202,7 @@
         .inv-card-challenge{position:absolute;top:4px;right:4px;display:flex;align-items:center;justify-content:center;width:18px;height:18px;background:rgba(0,0,0,.5);border-radius:5px}
         .inv-card-challenge svg{width:11px;height:11px;stroke:rgba(255,255,255,.5);fill:none}
         .inv-card-locked{opacity:.85;border:1px solid rgba(99,102,241,.3)}
-        .inv-card-upgraded .inv-card-img{border-radius:12px;background:rgba(255,255,255,.08);padding:6px;border:1px solid rgba(255,255,255,.12)}
+        .inv-card-upgraded .inv-card-img{border-radius:10px;border:1.5px solid rgba(255,255,255,.3);padding:0;background:transparent}
 
         /* === REWARDS MODAL === */
         .rewards-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:1002;display:none;align-items:flex-end;justify-content:center}
@@ -825,18 +825,25 @@
         var resultImg = document.getElementById('upgradeResultImg');
         var resultName = document.getElementById('upgradeResultName');
         var animStatus = document.getElementById('upgradeStatus');
+        var modal = document.querySelector('.item-modal');
+        var handle = document.querySelector('.item-modal-handle');
 
         // Reset state
         strip.innerHTML = '';
         strip.style.transform = 'translateX(0)';
         roulette.style.display = '';
         resultCard.classList.remove('show');
-        animStatus.textContent = 'Upgrading...';
-        animWrap.className = 'upgrade-anim-wrap active';
+        animStatus.textContent = '';
+
+        // Hide EVERYTHING in modal — name, image, price, challenge, actions, handle
         document.getElementById('itemModalActions').style.display = 'none';
         document.getElementById('itemModalImg').style.display = 'none';
         document.getElementById('itemModalChallenge').style.display = 'none';
         document.getElementById('itemModalPrice').style.display = 'none';
+        document.getElementById('itemModalName').style.display = 'none';
+        if (handle) handle.style.display = 'none';
+        modal.style.padding = '0';
+        animWrap.className = 'upgrade-anim-wrap active';
 
         // Start the API call
         var upgradeResult = null;
@@ -851,13 +858,15 @@
             upgradeError = e;
         });
 
-        // Wait for API to return
         await fetchPromise;
 
         if (!upgradeResult || !upgradeResult.success) {
             animStatus.textContent = (upgradeResult && upgradeResult.error) || 'Upgrade failed';
             setTimeout(function(){
                 animWrap.className = 'upgrade-anim-wrap';
+                modal.style.padding = '';
+                if (handle) handle.style.display = '';
+                document.getElementById('itemModalName').style.display = '';
                 document.getElementById('itemModalImg').style.display = '';
                 document.getElementById('itemModalPrice').style.display = '';
                 document.getElementById('itemModalActions').style.display = '';
@@ -867,10 +876,9 @@
             return;
         }
 
-        // Build roulette strip: previews + winner at the end
+        // Build roulette strip: 3 images visible, no borders, images fill space
         var previews = upgradeResult.preview_images || [];
         var allImages = [];
-        // Fill strip: repeat previews to get ~60 items, then place winner
         while (allImages.length < 60) {
             for (var p = 0; p < previews.length; p++) {
                 allImages.push(previews[p]);
@@ -879,38 +887,35 @@
         }
         allImages.push(upgradeResult.new_image); // winner at the end
 
-        // Measure item width based on container (3 items visible)
         var containerW = roulette.offsetWidth;
-        var itemW = Math.floor(containerW / 3);
-        var itemMargin = 4; // matches CSS margin: 0 4px
-        var fullItemW = itemW; // total width per item including margins
+        var itemSize = Math.floor(containerW / 3);
+        var rouletteH = 182;
 
         for (var i = 0; i < allImages.length; i++) {
             var el = document.createElement('div');
             el.className = 'upgrade-strip-item';
-            el.style.width = (itemW - itemMargin * 2) + 'px';
+            el.style.width = itemSize + 'px';
+            el.style.height = rouletteH + 'px';
+            el.style.padding = '6px';
             var img = document.createElement('img');
             img.src = allImages[i];
             el.appendChild(img);
             strip.appendChild(el);
         }
 
-        // Calculate target offset: winner should be centered
         var winnerIdx = allImages.length - 1;
-        var targetOffset = (winnerIdx * fullItemW) + (fullItemW / 2) - (containerW / 2);
+        var targetOffset = (winnerIdx * itemSize) + (itemSize / 2) - (containerW / 2);
 
-        // Animate: fast start, smooth deceleration over 4s
-        var duration = 4000;
+        // Animate: fast start, smooth deceleration over 3.5s
+        var duration = 3500;
         var startTime = Date.now();
 
         await new Promise(function(resolve) {
             function tick() {
                 var elapsed = Date.now() - startTime;
                 var t = Math.min(1, elapsed / duration);
-                // Quartic ease-out for fast start, smooth deceleration
                 var eased = 1 - Math.pow(1 - t, 4);
-                var currentOffset = eased * targetOffset;
-                strip.style.transform = 'translateX(' + (-currentOffset) + 'px)';
+                strip.style.transform = 'translateX(' + (-(eased * targetOffset)) + 'px)';
                 if (t < 1) {
                     requestAnimationFrame(tick);
                 } else {
@@ -920,43 +925,36 @@
             requestAnimationFrame(tick);
         });
 
-        // Show result
-        animStatus.textContent = 'NFT #' + upgradeResult.nft_number;
+        // Confetti on full screen
         spawnConfetti(document.getElementById('confettiContainer'));
+        animStatus.textContent = 'NFT #' + upgradeResult.nft_number;
 
-        // After short delay, transition to result card
-        await new Promise(function(r){ setTimeout(r, 1200); });
-        roulette.style.display = 'none';
-        resultImg.src = upgradeResult.new_image;
-        resultName.textContent = upgradeResult.new_name;
-        resultCard.classList.add('show');
-
-        // Update local data
-        document.getElementById('itemModalImg').src = upgradeResult.new_image;
-        document.getElementById('itemModalName').textContent = upgradeResult.new_name;
+        // Update local data immediately
         selectedItem.gift_name = upgradeResult.new_name;
         selectedItem.gift_image = upgradeResult.new_image;
         selectedItem.is_upgraded = true;
         selectedItem.nft_number = upgradeResult.nft_number;
         await refreshUserData();
+        renderInventory();
 
-        // After 2s, show buttons
-        await new Promise(function(r){ setTimeout(r, 2000); });
+        // Wait for confetti, then close modal and reopen with new data
+        await new Promise(function(r){ setTimeout(r, 1800); });
+
+        // Restore modal structure
         animWrap.className = 'upgrade-anim-wrap';
+        strip.innerHTML = '';
+        modal.style.padding = '';
+        if (handle) handle.style.display = '';
+        document.getElementById('itemModalName').style.display = '';
         document.getElementById('itemModalImg').style.display = '';
         document.getElementById('itemModalPrice').style.display = '';
         document.getElementById('itemModalActions').style.display = '';
-        var sellBtn = document.getElementById('itemModalSellBtn');
-        var withdrawBtn = document.getElementById('itemModalWithdrawBtn');
-        var upgradeBtn2 = document.getElementById('itemModalUpgradeBtn');
-        upgradeBtn2.style.display = 'none';
-        sellBtn.style.display = '';
-        sellBtn.textContent = t('sell');
-        sellBtn.disabled = false;
-        withdrawBtn.style.display = '';
-        withdrawBtn.textContent = t('withdraw');
-        withdrawBtn.disabled = false;
-        renderInventory();
+
+        // Close and reopen with updated data
+        var reopenId = itemId;
+        hideItemModal();
+        await new Promise(function(r){ setTimeout(r, 300); });
+        openItemModal(reopenId);
     }
 
     async function claimChallenge() {
