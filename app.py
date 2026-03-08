@@ -18072,8 +18072,8 @@ def api_leaderboard():
             FROM users u
             INNER JOIN ultimate_crash_bets ucb ON u.id = ucb.user_id AND ucb.created_at >= ? AND ucb.user_id > 0
             WHERE u.id > 0
-            GROUP BY u.id
-            HAVING period_volume > 0
+            GROUP BY u.id, u.first_name, u.username, u.photo_url
+            HAVING COALESCE(SUM(ucb.bet_amount), 0) > 0
             ORDER BY period_volume DESC, u.id ASC
             LIMIT 50''', (period_start,))
         combined_entries = []
@@ -18121,6 +18121,24 @@ def api_leaderboard():
             })
 
         combined_entries.sort(key=lambda item: item.get('turnover', 0), reverse=True)
+        
+        # If no entries in current period, fallback to all-time volume
+        if not combined_entries:
+            cursor.execute('''SELECT u.id, u.first_name, u.username, u.photo_url,
+                    COALESCE(u.total_bet_volume, 0) as volume
+                FROM users u
+                WHERE u.id > 0 AND COALESCE(u.total_bet_volume, 0) > 0
+                ORDER BY volume DESC LIMIT 50''')
+            for row in cursor.fetchall():
+                combined_entries.append({
+                    'user_id': row[0],
+                    'first_name': row[1] or 'User',
+                    'username': row[2],
+                    'photo_url': row[3],
+                    'turnover': row[4] or 0,
+                    'is_bot': False
+                })
+        
         users = []
         for i, row in enumerate(combined_entries[:50], 1):
             reward = config_data['rewards'].get(str(i), None)

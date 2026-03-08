@@ -362,8 +362,20 @@
                     updateCountdown();
                 }
 
+                if (users.length === 0) {
+                    podiumEl.innerHTML = '';
+                    document.getElementById('leadersList').innerHTML = `
+                        <div class="empty">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+                            </svg>
+                            <p>Пока нет участников</p>
+                        </div>`;
+                    return;
+                }
+
                 // ═══ PODIUM (top 3) ═══
-                const top3 = users.slice(0, 3);
+                const top3 = users.slice(0, Math.min(3, users.length));
                 const podiumEl = document.getElementById('podium');
                 if (top3.length >= 3) {
                     // Order: #2 left, #1 center, #3 right
@@ -402,12 +414,16 @@
                             </div>
                         </div>`;
                     }).join('');
+                } else if (top3.length > 0) {
+                    // 1-2 users: show them as list items instead of podium
+                    podiumEl.innerHTML = '';
                 } else {
                     podiumEl.innerHTML = '';
                 }
 
-                // ═══ LIST (#4+) ═══
-                const rest = users.slice(3, 20);
+                // ═══ LIST ═══
+                const listStart = top3.length >= 3 ? 3 : 0;
+                const rest = users.slice(listStart, 20);
                 document.getElementById('leadersList').innerHTML = rest.map((u, i) => {
                     const rank = u.position || (i + 4);
                     const prize = u.reward || rewards[String(rank)];
