@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0f1319">
-    <title>Rasswet Gifts - Сезон</title>
+    <title>Rasswet Gifts - Лидерборд</title>
     <link rel="icon" type="image/png" href="/static/img/logo.png">
     <link rel="stylesheet" href="/static/css/global.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -40,43 +40,30 @@
         ::-webkit-scrollbar-track{background:transparent}
         ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
 
-        .header{
-            position:fixed;top:calc(env(safe-area-inset-top,20px) + 5vh);left:50%;transform:translateX(-50%);
-            z-index:100;width:100%;max-width:480px;
-            height:56px;padding:0 16px;
-            background:rgba(15,19,25,.85);
-            backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-            border-bottom:1px solid rgba(255,255,255,.05);
-            display:flex;align-items:center;justify-content:center;
-        }
-        .header-title{font-size:18px;font-weight:700}
+        .header{display:none}
         
         .main{
             max-width:480px;margin:0 auto;
-            padding:calc(env(safe-area-inset-top,20px) + 76px + 5vh) 16px calc(env(safe-area-inset-bottom,0px) + 90px);
+            padding:calc(env(safe-area-inset-top,20px) + 5vh + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 90px);
         }
-        
-        /* Season Banner */
-        .season-banner{
-            position:relative;border-radius:20px;overflow:hidden;
-            margin:0 0 16px;height:180px;
-            background:linear-gradient(135deg,#1A3050,#0D1524);
+
+        /* Page Title */
+        .page-title{
+            font-size:28px;font-weight:900;text-align:center;
+            margin-bottom:8px;letter-spacing:-.5px;
         }
-        .season-banner img{width:100%;height:100%;object-fit:cover}
+        .page-desc{
+            text-align:center;color:var(--text-2);font-size:13px;
+            line-height:1.5;margin-bottom:24px;
+            max-width:340px;margin-left:auto;margin-right:auto;
+        }
         .season-timer{
-            position:absolute;top:16px;right:16px;
-            font-size:14px;font-weight:700;color:#fff;
-            text-shadow:0 0 12px rgba(255,255,255,.4);
+            display:inline-flex;align-items:center;gap:6px;
+            font-size:13px;font-weight:700;color:var(--gold);
+            margin-bottom:20px;text-align:center;width:100%;
+            justify-content:center;
         }
-        
-        /* Boost Button */
-        .boost-btn{
-            width:100%;padding:16px;border-radius:14px;border:none;
-            background:linear-gradient(90deg,#0098EA,#0077CC);
-            color:#fff;font-family:inherit;font-size:15px;font-weight:700;
-            cursor:pointer;margin-bottom:24px;transition:all .2s;
-        }
-        .boost-btn:active{transform:scale(.97)}
+        .season-timer svg{width:16px;height:16px;opacity:.7}
 
         /* ══════════════ PODIUM ══════════════ */
         .podium{
@@ -97,28 +84,28 @@
             margin-bottom:8px;text-align:center;
         }
 
-        /* ── Rank badge (circle with number) ── */
+        /* ── Rank badge (medal circle) ── */
         .podium-badge{
             position:absolute;z-index:5;
-            width:24px;height:24px;border-radius:50%;
+            width:28px;height:28px;border-radius:50%;
             display:flex;align-items:center;justify-content:center;
-            font-size:12px;font-weight:900;color:#fff;
-            border:2px solid var(--bg);
+            font-size:13px;font-weight:900;color:#fff;
+            border:2.5px solid var(--bg);
         }
         .podium-slot.p1 .podium-badge{
-            bottom:calc(100px + 8px);right:calc(50% - 50px);
+            top:-14px;left:50%;transform:translateX(-50%);
             background:linear-gradient(135deg,#FFD700,#FDA100);
-            box-shadow:0 2px 10px rgba(253,161,0,.5);
+            box-shadow:0 2px 12px rgba(253,161,0,.6);
         }
         .podium-slot.p2 .podium-badge{
-            bottom:calc(76px + 8px);right:calc(50% - 42px);
-            background:linear-gradient(135deg,#D4D4D4,#A8A8A8);
-            box-shadow:0 2px 8px rgba(192,192,192,.4);
+            top:-14px;left:50%;transform:translateX(-50%);
+            background:linear-gradient(135deg,#D4D4D4,#9E9E9E);
+            box-shadow:0 2px 10px rgba(192,192,192,.5);
         }
         .podium-slot.p3 .podium-badge{
-            bottom:calc(60px + 8px);right:calc(50% - 42px);
+            top:-14px;left:50%;transform:translateX(-50%);
             background:linear-gradient(135deg,#E8A854,#CD7F32);
-            box-shadow:0 2px 8px rgba(205,127,50,.4);
+            box-shadow:0 2px 10px rgba(205,127,50,.5);
         }
 
         /* ── Avatar ── */
@@ -174,12 +161,14 @@
         }
         .podium-slot.p1 .podium-prize img{width:42px;height:42px}
 
-        /* Turnover under prize */
+        /* Turnover under pedestal */
         .podium-turnover{
-            font-size:11px;font-weight:600;color:var(--text-2);
+            font-size:11px;font-weight:700;color:rgba(255,255,255,.65);
             display:flex;align-items:center;gap:3px;
+            margin-top:8px;
+            white-space:nowrap;
         }
-        .podium-turnover img{width:11px;height:11px}
+        .podium-turnover img{width:12px;height:12px}
 
         /* ── Golden glow for #1 ── */
         .podium-slot.p1::before{
@@ -266,17 +255,15 @@
     </style>
 </head>
 <body>
-    <header class="header">
-        <div class="header-title">Сезон</div>
-    </header>
+    <header class="header"></header>
 
     <main class="main">
-        <div class="season-banner">
-            <img src="/static/img/lead.png" alt="" onerror="this.src='/static/img/logo.png'">
-            <div class="season-timer" id="countdown">--:--:--</div>
+        <div class="page-title">Лидерборд игр</div>
+        <div class="page-desc">Играйте в краш и крутите кейсы. Получайте призы, если попадёте в топ-15 по сумме ставок за месяц</div>
+        <div class="season-timer" id="countdown">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span id="countdown-text">--:--:--</span>
         </div>
-
-        <button class="boost-btn" onclick="openBoost()">Boost your rank</button>
 
         <div class="podium" id="podium"></div>
         <div class="leaders-list" id="leadersList">
@@ -363,7 +350,7 @@
                 }
 
                 if (users.length === 0) {
-                    podiumEl.innerHTML = '';
+                    document.getElementById('podium').innerHTML = '';
                     document.getElementById('leadersList').innerHTML = `
                         <div class="empty">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -400,17 +387,14 @@
                         }
 
                         return `<div class="podium-slot ${pClasses[idx]}">
+                            <div class="podium-badge">${rank}</div>
                             <div class="podium-name">${escapeHtml(displayName)}</div>
                             <div class="podium-avatar">
                                 <img src="${avatar}" alt="" onerror="this.src='/static/img/avatar-default.png'">
                             </div>
-                            <div class="podium-badge">${rank}</div>
                             <div class="podium-pedestal">
                                 ${prizeHtml}
-                                <div class="podium-turnover">
-                                    <img src="/static/img/ton.png" alt="">
-                                    <span>${turnover}</span>
-                                </div>
+                                <div class="podium-turnover">${turnover} TON</div>
                             </div>
                         </div>`;
                     }).join('');
@@ -442,16 +426,13 @@
                     }
 
                     return `<div class="leader-item">
-                        <div class="leader-rank">#${rank}</div>
+                        <div class="leader-rank">${rank}</div>
                         <div class="leader-avatar">
                             <img src="${avatar}" alt="" onerror="this.src='/static/img/avatar-default.png'">
                         </div>
                         <div class="leader-info">
                             <div class="leader-name">${escapeHtml(displayName)}</div>
-                            <div class="leader-turnover">
-                                <img src="/static/img/ton.png" alt="">
-                                <span>${turnover}</span>
-                            </div>
+                            <div class="leader-turnover">${turnover} TON</div>
                         </div>
                         ${prizeImg ? `<div class="leader-prize">${prizeImg}</div>` : ''}
                     </div>`;
@@ -464,7 +445,7 @@
 
         function updateCountdown() {
             if (!endTime) {
-                document.getElementById('countdown').textContent = '--:--:--';
+                document.getElementById('countdown-text').textContent = '--:--:--';
                 return;
             }
             const now = Date.now();
@@ -475,9 +456,9 @@
             const s = Math.floor((diff % 60000) / 1000);
             
             if (d > 0) {
-                document.getElementById('countdown').textContent = `${d}d ${h}h ${m}m ${s}s`;
+                document.getElementById('countdown-text').textContent = `${d}д ${h}ч ${m}м`;
             } else {
-                document.getElementById('countdown').textContent = 
+                document.getElementById('countdown-text').textContent = 
                     `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
             }
         }
