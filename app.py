@@ -7451,6 +7451,32 @@ def withdraw_gift():
 
 UPGRADE_COST_STARS = 10  # 0.1 TON = 10 stars
 
+def _get_fragment_collection_supply():
+    """Build slug -> total_supply map from fragment_catalog_cache.json"""
+    try:
+        with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        supply = {}
+        for g in data.get('gifts', []):
+            slug = (g.get('fragment_slug') or '').strip().lower()
+            if not slug:
+                continue
+            nums = re.findall(r'[\d,]+', g.get('name', ''))
+            if nums:
+                count = int(nums[-1].replace(',', ''))
+                if count > 0:
+                    supply[slug] = count
+        return supply
+    except Exception:
+        return {}
+
+_fragment_supply_cache = None
+def _get_collection_max_number(slug):
+    global _fragment_supply_cache
+    if _fragment_supply_cache is None:
+        _fragment_supply_cache = _get_fragment_collection_supply()
+    return _fragment_supply_cache.get(slug, 5000)
+
 
 @app.route('/api/upgrade-gift', methods=['POST'])
 def upgrade_gift():
@@ -7499,16 +7525,27 @@ def upgrade_gift():
         cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
                         (UPGRADE_COST_STARS, user_id))
 
-        # Generate NFT number and build new name/image
-        nft_num = random.randint(10000, 99999)
+        # Extract fragment slug from gift_image URL or name
+        gift_image = gift.get('gift_image', '')
+        slug_match = re.search(r'/gifts/([a-z0-9]+)/', gift_image)
+        if slug_match:
+            slug = slug_match.group(1)
+        else:
+            gift_name = gift.get('gift_name', 'Gift')
+            base_name = re.sub(r'\s*\(random\)|\s*#\d+', '', gift_name, flags=re.IGNORECASE).strip()
+            slug = _slugify_fragment_name(base_name)
+
+        # Generate NFT number within valid collection range
+        max_num = _get_collection_max_number(slug)
+        nft_num = random.randint(1, max_num)
+
+        # Clean base name (remove "(Random)" or "#xxx")
         gift_name = gift.get('gift_name', 'Gift')
-        # Clean base name (remove existing "(random)" or "#xxx")
-        base_name = re.sub(r'\s*\(random\)|\s*#\d+', '', gift_name).strip()
+        base_name = re.sub(r'\s*\(random\)|\s*#\d+', '', gift_name, flags=re.IGNORECASE).strip()
         new_name = f'{base_name} #{nft_num}'
 
-        # Build fragment slug for NFT image
-        slug = _slugify_fragment_name(base_name)
-        new_image = f'https://nft.fragment.com/gift/{slug}-{nft_num}.medium.jpg'
+        # Build NFT image URL
+        new_image = f'https://nft.fragment.com/gift/{slug}-{nft_num}.webp'
 
         cursor.execute('''UPDATE inventory
             SET gift_name = ?, gift_image = ?, is_upgraded = 1, nft_number = ?

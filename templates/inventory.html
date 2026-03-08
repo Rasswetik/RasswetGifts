@@ -173,13 +173,27 @@
         .challenge-text{font-size:11px;color:rgba(255,255,255,.4)}
 
         /* === UPGRADE ANIMATION === */
-        .upgrade-anim-wrap{display:none;flex-direction:column;align-items:center;width:100%;padding:20px 0}
+        .upgrade-anim-wrap{display:none;flex-direction:column;align-items:center;width:100%;padding:24px 0;position:relative}
         .upgrade-anim-wrap.active{display:flex}
-        .upgrade-anim-img{width:100px;height:100px;object-fit:contain;margin-bottom:16px;animation:upgradePulse 1.5s infinite}
-        @keyframes upgradePulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.06);filter:brightness(1.3)}}
-        .upgrade-bar-wrap{width:100%;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
-        .upgrade-bar{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#818cf8);border-radius:3px;transition:width .3s linear}
-        .upgrade-status{font-size:12px;color:rgba(255,255,255,.4);margin-top:8px}
+        .upgrade-anim-container{position:relative;width:120px;height:120px;margin-bottom:20px}
+        .upgrade-anim-img{width:120px;height:120px;object-fit:contain;position:relative;z-index:2;transition:transform .6s cubic-bezier(.34,1.56,.64,1),filter .6s ease}
+        .upgrade-anim-ring{position:absolute;inset:-12px;border-radius:50%;border:2px solid rgba(99,102,241,.3);animation:upgradeRingSpin 3s linear infinite;z-index:1}
+        .upgrade-anim-ring2{position:absolute;inset:-20px;border-radius:50%;border:1px dashed rgba(99,102,241,.15);animation:upgradeRingSpin 5s linear infinite reverse;z-index:0}
+        .upgrade-anim-glow{position:absolute;inset:-30px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,.15) 0%,transparent 70%);z-index:0;opacity:0;transition:opacity .5s ease}
+        .upgrade-anim-wrap.phase-active .upgrade-anim-glow{opacity:1}
+        .upgrade-anim-wrap.phase-active .upgrade-anim-img{transform:scale(1.05)}
+        .upgrade-anim-wrap.phase-done .upgrade-anim-img{transform:scale(1.12);filter:brightness(1.2) drop-shadow(0 0 20px rgba(99,102,241,.5))}
+        .upgrade-anim-wrap.phase-done .upgrade-anim-glow{opacity:0;transition:none}
+        .upgrade-anim-wrap.phase-done .upgrade-anim-ring,.upgrade-anim-wrap.phase-done .upgrade-anim-ring2{animation:none;opacity:0;transition:opacity .3s}
+        @keyframes upgradeRingSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        .upgrade-bar-wrap{width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;position:relative}
+        .upgrade-bar{height:100%;width:0;background:linear-gradient(90deg,#6366f1,#818cf8,#6366f1);background-size:200% 100%;border-radius:2px;transition:width .15s linear;animation:upgradeBarShimmer 1.5s linear infinite}
+        @keyframes upgradeBarShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+        .upgrade-status{font-size:12px;color:rgba(255,255,255,.35);margin-top:10px;letter-spacing:.5px;transition:color .3s,transform .3s}
+        .upgrade-anim-wrap.phase-done .upgrade-status{color:rgba(129,140,248,.9);transform:scale(1.05)}
+        .upgrade-anim-flash{position:absolute;inset:0;background:radial-gradient(circle,rgba(255,255,255,.25) 0%,transparent 60%);opacity:0;z-index:3;pointer-events:none;border-radius:50%}
+        .upgrade-anim-wrap.phase-done .upgrade-anim-flash{animation:upgradeFlash .6s ease-out forwards}
+        @keyframes upgradeFlash{0%{opacity:0;transform:scale(.5)}30%{opacity:1}100%{opacity:0;transform:scale(2.5)}}
 
         /* === CHALLENGE BADGE ON CARD === */
         .inv-card-challenge{position:absolute;top:4px;right:4px;display:flex;align-items:center;justify-content:center;width:18px;height:18px;background:rgba(0,0,0,.5);border-radius:5px}
@@ -430,7 +444,13 @@
             </div>
 
             <div class="upgrade-anim-wrap" id="upgradeAnimWrap">
-                <img class="upgrade-anim-img" id="upgradeAnimImg" src="">
+                <div class="upgrade-anim-container">
+                    <div class="upgrade-anim-glow"></div>
+                    <div class="upgrade-anim-ring"></div>
+                    <div class="upgrade-anim-ring2"></div>
+                    <img class="upgrade-anim-img" id="upgradeAnimImg" src="">
+                    <div class="upgrade-anim-flash"></div>
+                </div>
                 <div class="upgrade-bar-wrap"><div class="upgrade-bar" id="upgradeBar"></div></div>
                 <div class="upgrade-status" id="upgradeStatus">Upgrading...</div>
             </div>
@@ -758,7 +778,8 @@
     }
     function hideItemModal() {
         document.getElementById('itemModal').classList.remove('show');
-        document.getElementById('upgradeAnimWrap').classList.remove('active');
+        document.getElementById('upgradeAnimWrap').className = 'upgrade-anim-wrap';
+        document.getElementById('itemModalImg').style.display = '';
         selectedItem = null;
     }
 
@@ -775,14 +796,19 @@
         var animBar = document.getElementById('upgradeBar');
         var animStatus = document.getElementById('upgradeStatus');
         animImg.src = selectedItem.gift_image;
+        animBar.style.transition = 'none';
         animBar.style.width = '0%';
+        void animBar.offsetWidth;
+        animBar.style.transition = 'width .15s linear';
         animStatus.textContent = 'Upgrading...';
-        animWrap.classList.add('active');
+        animWrap.className = 'upgrade-anim-wrap active phase-active';
         document.getElementById('itemModalActions').style.display = 'none';
+        document.getElementById('itemModalImg').style.display = 'none';
+        document.getElementById('itemModalChallenge').style.display = 'none';
 
-        // Animate progress bar over 7 seconds
+        // Animate progress bar over 5 seconds with easing
         var startTime = Date.now();
-        var duration = 7000;
+        var duration = 5000;
         var upgradeResult = null;
         var upgradeError = null;
 
@@ -797,22 +823,29 @@
             upgradeError = e;
         });
 
-        // Animate bar
+        // Smooth eased progress bar
         function tick() {
             var elapsed = Date.now() - startTime;
-            var pct = Math.min(100, (elapsed / duration) * 100);
-            animBar.style.width = pct + '%';
+            var t = Math.min(1, elapsed / duration);
+            // Ease-out cubic for smooth deceleration
+            var pct = 1 - Math.pow(1 - t, 3);
+            animBar.style.width = (pct * 95) + '%';
             if (elapsed < duration) requestAnimationFrame(tick);
         }
         requestAnimationFrame(tick);
 
         // Wait for both animation and API
         await Promise.all([fetchPromise, new Promise(function(r){ setTimeout(r, duration); })]);
-        animBar.style.width = '100%';
 
         if (upgradeResult && upgradeResult.success) {
-            animImg.src = upgradeResult.new_image;
-            animStatus.textContent = 'Upgrade complete!';
+            // Snap bar to 100%
+            animBar.style.width = '100%';
+            // Phase transition: show new NFT image with flash
+            animStatus.textContent = 'NFT #' + upgradeResult.nft_number;
+            setTimeout(function(){
+                animImg.src = upgradeResult.new_image;
+                animWrap.className = 'upgrade-anim-wrap active phase-done';
+            }, 200);
             document.getElementById('itemModalImg').src = upgradeResult.new_image;
             document.getElementById('itemModalName').textContent = upgradeResult.new_name;
             // Update local data
@@ -822,7 +855,8 @@
             selectedItem.nft_number = upgradeResult.nft_number;
             await refreshUserData();
             setTimeout(function(){
-                animWrap.classList.remove('active');
+                animWrap.className = 'upgrade-anim-wrap';
+                document.getElementById('itemModalImg').style.display = '';
                 document.getElementById('itemModalActions').style.display = '';
                 var sellBtn = document.getElementById('itemModalSellBtn');
                 var withdrawBtn = document.getElementById('itemModalWithdrawBtn');
@@ -839,7 +873,8 @@
         } else {
             animStatus.textContent = (upgradeResult && upgradeResult.error) || 'Upgrade failed';
             setTimeout(function(){
-                animWrap.classList.remove('active');
+                animWrap.className = 'upgrade-anim-wrap';
+                document.getElementById('itemModalImg').style.display = '';
                 document.getElementById('itemModalActions').style.display = '';
                 btn.disabled = false;
                 btn.textContent = 'Upgrade 0.1 TON';
