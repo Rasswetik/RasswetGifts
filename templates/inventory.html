@@ -181,8 +181,8 @@
         .upgrade-roulette::before{left:0;background:linear-gradient(90deg,#1C2233 0%,transparent 100%)}
         .upgrade-roulette::after{right:0;background:linear-gradient(-90deg,#1C2233 0%,transparent 100%)}
         .upgrade-strip{display:flex;align-items:center;height:100%;will-change:transform;position:absolute;top:0;left:0}
-        .upgrade-strip-item{flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-        .upgrade-strip-item img{width:100%;height:100%;object-fit:cover;border-radius:18px;border:1.5px solid rgba(255,255,255,.25)}
+        .upgrade-strip-item{flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:16px 6px !important}
+        .upgrade-strip-item img{width:100%;height:auto;max-height:100%;object-fit:contain;border-radius:16px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.03)}
 
         .upgrade-result-card{display:none;flex-direction:column;align-items:center;margin-bottom:14px}
         .upgrade-result-card.show{display:flex}
@@ -836,6 +836,7 @@
         // Reset state
         strip.innerHTML = '';
         strip.style.transform = 'translateX(0)';
+        strip.style.opacity = '0';
         roulette.style.display = '';
         resultCard.classList.remove('show');
         animStatus.textContent = '';
@@ -918,6 +919,9 @@
         }
 
         var targetOffset = (winnerPos * itemSize) + (itemSize / 2) - (containerW / 2);
+
+        // Show strip now that it's built
+        strip.style.opacity = '1';
 
         // Animate: fast start, smooth deceleration over 3.5s
         var duration = 3500;
