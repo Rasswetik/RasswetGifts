@@ -47,6 +47,15 @@
             padding:calc(env(safe-area-inset-top,20px) + 5vh + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 90px);
         }
 
+        /* Help tooltip */
+        .help-tip{
+            display:flex;align-items:center;gap:6px;
+            justify-content:center;margin-bottom:6px;
+            font-size:12px;color:var(--text-2);
+            cursor:pointer;
+        }
+        .help-tip svg{width:14px;height:14px;opacity:.5}
+
         /* Page Title */
         .page-title{
             font-size:28px;font-weight:900;text-align:center;
@@ -115,9 +124,9 @@
             margin-bottom:10px;position:relative;
         }
         .podium-slot.p1 .podium-avatar{
-            width:88px;height:88px;
-            border:3px solid var(--gold);
-            box-shadow:0 0 30px var(--gold-glow),0 0 60px rgba(253,161,0,.15);
+            width:96px;height:96px;
+            border:3.5px solid var(--gold);
+            box-shadow:0 0 36px var(--gold-glow),0 0 72px rgba(253,161,0,.2);
         }
         .podium-slot.p2 .podium-avatar{
             width:72px;height:72px;
@@ -138,9 +147,9 @@
             padding:12px 8px 16px;position:relative;
         }
         .podium-slot.p1 .podium-pedestal{
-            height:100px;
-            background:linear-gradient(180deg,rgba(253,190,19,.18),rgba(253,161,0,.04));
-            border:1px solid rgba(253,161,0,.2);border-bottom:none;
+            height:110px;
+            background:linear-gradient(180deg,rgba(253,190,19,.22),rgba(253,161,0,.06));
+            border:1px solid rgba(253,161,0,.25);border-bottom:none;
         }
         .podium-slot.p2 .podium-pedestal{
             height:76px;
@@ -159,7 +168,7 @@
             width:36px;height:36px;object-fit:contain;
             filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));
         }
-        .podium-slot.p1 .podium-prize img{width:42px;height:42px}
+        .podium-slot.p1 .podium-prize img{width:52px;height:52px;filter:drop-shadow(0 4px 16px rgba(253,161,0,.5))}
 
         /* Turnover under pedestal */
         .podium-turnover{
@@ -258,12 +267,16 @@
     <header class="header"></header>
 
     <main class="main">
-        <div class="page-title">Лидерборд игр</div>
-        <div class="page-desc">Играйте в краш и крутите кейсы. Получайте призы, если попадёте в топ-15 по сумме ставок за месяц</div>
+        <div class="help-tip" onclick="alert('Играйте в краш или открывайте кейсы — сумма ваших ставок за месяц определяет место в топе. Топ-15 получают призы!')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 16v-1m0-3a2 2 0 10-2-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16" r="0.5"/></svg>
+            Как попасть в лидерборд?
+        </div>
         <div class="season-timer" id="countdown">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             <span id="countdown-text">--:--:--</span>
         </div>
+        <div class="page-title">Лидерборд игр</div>
+        <div class="page-desc">Играйте в краш и крутите кейсы. Получайте призы, если попадёте в топ-15 по сумме ставок за месяц</div>
 
         <div class="podium" id="podium"></div>
         <div class="leaders-list" id="leadersList">
@@ -371,20 +384,13 @@
 
                     podiumEl.innerHTML = order.map((u, idx) => {
                         const rank = u.position || (idx === 1 ? 1 : idx === 0 ? 2 : 3);
-                        const prize = u.reward || rewards[String(rank)];
                         const turnover = ((u.turnover || 0) / 100).toFixed(2);
                         const displayName = u.first_name || u.username || 'Игрок';
                         const avatar = u.photo_url || '/static/img/avatar-default.png';
 
-                        let prizeHtml = '';
-                        if (prize) {
-                            if (prize.type === 'gift' && prize.gift_image) {
-                                prizeHtml = `<div class="podium-prize"><img src="${prize.gift_image}" alt=""></div>`;
-                            } else {
-                                const tonAmt = typeof prize === 'number' ? prize : ((prize.amount || 0) / 100);
-                                prizeHtml = `<div class="podium-prize"><img src="${getTonSvg(tonAmt)}" alt=""></div>`;
-                            }
-                        }
+                        // Use place GIFs for top 3
+                        const placeGif = `/static/gifs/place/${rank}.gif`;
+                        const prizeHtml = `<div class="podium-prize"><img src="${placeGif}" alt="${rank} место"></div>`;
 
                         return `<div class="podium-slot ${pClasses[idx]}">
                             <div class="podium-badge">${rank}</div>
@@ -456,10 +462,10 @@
             const s = Math.floor((diff % 60000) / 1000);
             
             if (d > 0) {
-                document.getElementById('countdown-text').textContent = `${d}д ${h}ч ${m}м`;
+                document.getElementById('countdown-text').textContent = `Осталось ${d} дней и ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
             } else {
                 document.getElementById('countdown-text').textContent = 
-                    `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                    `Осталось ${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
             }
         }
         
