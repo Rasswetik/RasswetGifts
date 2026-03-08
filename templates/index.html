@@ -192,12 +192,12 @@
         .cases{
             display:grid;
             grid-template-columns:repeat(2,1fr);
-            gap:12px;
+            gap:10px;
         }
 
         .case{
             position:relative;
-            border-radius:20px;
+            border-radius:16px;
             overflow:hidden;
             cursor:pointer;
             transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1);
@@ -207,14 +207,14 @@
         .case:nth-child(1){animation-delay:0s}.case:nth-child(2){animation-delay:.06s}
         .case:nth-child(3){animation-delay:.12s}.case:nth-child(4){animation-delay:.18s}
         .case:nth-child(5){animation-delay:.24s}.case:nth-child(6){animation-delay:.3s}
-        .case:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.6)}
+        .case:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.5)}
         .case:active{transform:scale(.97)}
         
         .case-glow{
             position:absolute;inset:0;
-            border-radius:20px;
-            padding:3px;
-            background:linear-gradient(160deg,rgba(255,255,255,.25),rgba(255,255,255,.1) 40%,transparent 70%);
+            border-radius:16px;
+            padding:2px;
+            background:linear-gradient(160deg,rgba(255,255,255,.2),rgba(255,255,255,.08) 40%,transparent 70%);
             animation:glowPulse 3s ease-in-out infinite;
         }
         @keyframes glowPulse{
@@ -223,47 +223,94 @@
         }
         .case-inner{
             background:linear-gradient(160deg,#3A4560,#252A38);
-            border-radius:17px;
-            padding:10px;
+            border-radius:14px;
+            padding:8px;
             height:100%;
             display:flex;flex-direction:column;
+            position:relative;
+            overflow:hidden;
         }
 
-        .case.g-yellow .case-glow{background:linear-gradient(160deg,rgba(255,210,50,0.7),rgba(253,190,19,0.4) 40%,transparent 70%);box-shadow:0 0 25px rgba(253,190,19,0.3)}
+        /* Bottom glow effect */
+        .case-inner::after{
+            content:'';position:absolute;
+            bottom:-20px;left:10%;right:10%;height:60px;
+            border-radius:50%;
+            filter:blur(20px);
+            opacity:.7;
+            animation:bottomGlow 2.5s ease-in-out infinite;
+            pointer-events:none;z-index:0;
+        }
+        @keyframes bottomGlow{
+            0%,100%{opacity:.5;transform:scale(1)}
+            50%{opacity:.9;transform:scale(1.1)}
+        }
+
+        .case.g-yellow .case-glow{background:linear-gradient(160deg,rgba(255,210,50,0.7),rgba(253,190,19,0.4) 40%,transparent 70%);box-shadow:0 0 20px rgba(253,190,19,0.25)}
         .case.g-yellow .case-inner{background:linear-gradient(160deg,#6a6035,#3A352A)}
-        .case.g-blue .case-glow{background:linear-gradient(160deg,rgba(50,180,255,0.7),rgba(0,152,234,0.4) 40%,transparent 70%);box-shadow:0 0 25px rgba(0,152,234,0.3)}
+        .case.g-yellow .case-inner::after{background:rgba(253,190,19,0.5)}
+        .case.g-blue .case-glow{background:linear-gradient(160deg,rgba(50,180,255,0.7),rgba(0,152,234,0.4) 40%,transparent 70%);box-shadow:0 0 20px rgba(0,152,234,0.25)}
         .case.g-blue .case-inner{background:linear-gradient(160deg,#3A5580,#253040)}
-        .case.g-purple .case-glow{background:linear-gradient(160deg,rgba(170,120,255,0.7),rgba(139,92,246,0.4) 40%,transparent 70%);box-shadow:0 0 25px rgba(139,92,246,0.3)}
+        .case.g-blue .case-inner::after{background:rgba(0,152,234,0.5)}
+        .case.g-purple .case-glow{background:linear-gradient(160deg,rgba(170,120,255,0.7),rgba(139,92,246,0.4) 40%,transparent 70%);box-shadow:0 0 20px rgba(139,92,246,0.25)}
         .case.g-purple .case-inner{background:linear-gradient(160deg,#553a80,#2E2548)}
-        .case.g-green .case-glow{background:linear-gradient(160deg,rgba(80,255,120,0.7),rgba(30,228,76,0.4) 40%,transparent 70%);box-shadow:0 0 25px rgba(30,228,76,0.3)}
+        .case.g-purple .case-inner::after{background:rgba(139,92,246,0.5)}
+        .case.g-green .case-glow{background:linear-gradient(160deg,rgba(80,255,120,0.7),rgba(30,228,76,0.4) 40%,transparent 70%);box-shadow:0 0 20px rgba(30,228,76,0.25)}
         .case.g-green .case-inner{background:linear-gradient(160deg,#3A7050,#253830)}
-        .case.g-orange .case-glow{background:linear-gradient(160deg,rgba(255,160,80,0.7),rgba(255,120,50,0.4) 40%,transparent 70%);box-shadow:0 0 25px rgba(255,120,50,0.3)}
+        .case.g-green .case-inner::after{background:rgba(30,228,76,0.5)}
+        .case.g-orange .case-glow{background:linear-gradient(160deg,rgba(255,160,80,0.7),rgba(255,120,50,0.4) 40%,transparent 70%);box-shadow:0 0 20px rgba(255,120,50,0.25)}
         .case.g-orange .case-inner{background:linear-gradient(160deg,#705040,#3A3028)}
-        .case.g-red .case-glow{background:linear-gradient(160deg,rgba(255,100,100,0.7),rgba(239,68,68,0.4) 40%,transparent 70%);box-shadow:0 0 25px rgba(239,68,68,0.3)}
+        .case.g-orange .case-inner::after{background:rgba(255,120,50,0.5)}
+        .case.g-red .case-glow{background:linear-gradient(160deg,rgba(255,100,100,0.7),rgba(239,68,68,0.4) 40%,transparent 70%);box-shadow:0 0 20px rgba(239,68,68,0.25)}
         .case.g-red .case-inner{background:linear-gradient(160deg,#703A3A,#3A2828)}
+        .case.g-red .case-inner::after{background:rgba(239,68,68,0.5)}
 
         .case-prices{
-            display:flex;align-items:center;gap:8px;
-            margin-bottom:8px;
+            display:flex;align-items:center;gap:6px;
+            margin-bottom:4px;
+            position:relative;z-index:2;
         }
         .case-price{
             display:flex;align-items:center;gap:4px;
-            font-size:12px;font-weight:700;
+            font-size:11px;font-weight:700;
         }
-        .case-price img{width:12px;height:12px}
+        .case-price img{width:11px;height:11px}
         .case-price.ton{color:var(--blue)}
 
         .case-img{
             flex:1;display:flex;align-items:center;justify-content:center;
-            padding:4px;min-height:150px;
+            padding:2px;min-height:120px;
+            position:relative;z-index:1;
         }
         .case-img img{
-            width:110%;max-width:130%;height:auto;
+            width:100%;max-width:120%;height:auto;
             object-fit:contain;
             transition:transform .3s,filter .3s;
-            filter:drop-shadow(0 10px 20px rgba(0,0,0,.5)) brightness(1.1);
+            filter:drop-shadow(0 8px 16px rgba(0,0,0,.5)) brightness(1.1);
+            animation:caseFloat 3s ease-in-out infinite;
         }
-        .case:hover .case-img img{transform:scale(1.2) rotate(-3deg);filter:drop-shadow(0 14px 28px rgba(0,0,0,.6)) brightness(1.2)}
+        @keyframes caseFloat{
+            0%,100%{transform:translateY(0)}
+            50%{transform:translateY(-6px)}
+        }
+        .case:hover .case-img img{transform:scale(1.15) rotate(-3deg);filter:drop-shadow(0 12px 24px rgba(0,0,0,.6)) brightness(1.2);animation:none}
+
+        /* Case particles */
+        .case-particles{
+            position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;
+        }
+        .case-particle{
+            position:absolute;
+            width:3px;height:3px;
+            border-radius:50%;
+            background:rgba(255,255,255,.6);
+            animation:particleFloat 2.5s ease-in-out infinite;
+        }
+        @keyframes particleFloat{
+            0%{opacity:0;transform:translateY(0) scale(0)}
+            30%{opacity:1;transform:translateY(-10px) scale(1)}
+            100%{opacity:0;transform:translateY(-40px) scale(0)}
+        }
 
         /* ═══════════ BOTTOM NAV ═══════════ */
         .bnav{
@@ -1141,43 +1188,13 @@
             } catch(e) {}
         }
         
-        // Gift prices in TON
-        const GIFT_PRICES = {
-            "UFC Strike":15.3,"Valentine Box":11.7,"Victory Medal":4.98,"Vintage Cigar":33.9,
-            "Voodoo Doll":30.9,"Westside Sign":111.9,"Whip Cupcake":4.4,"Winter Wreath":4.49,
-            "Witch Hat":6.29,"Xmas Stocking":4.33,"Swag Bag":5.19,"Swiss Watch":55.8,
-            "Tama Gadget":4.65,"Top Hat":12.8,"Toy Bear":44.9,"Trapped Heart":14.5,
-            "Moon":5.64,"Mousse Cake":4.96,"Nail Bracelet":145.9,"Neko Helmet":41.1,
-            "Party Sparkler":4.3,"Perfume Bottle":97.9,"Pet Snake":4.55,"Precious Peach":438,
-            "Pretty Posy":4.7,"Rare Bird":29.9,"Record":5.61,"Restless Jar":11.3,
-            "Sakura Flower":48.9,"Santa Hat":12.5,"Scared Cat":4.5,"Sharp Tongue":5.08,
-            "Signet Ring":5.48,"Skull Flower":7.2,"Sky Stilettos":5.49,"Sleigh Bell":5.83,
-            "Snake Box":6.17,"Loot Bag":162.9,"Love Candle":12.3,"Love Potion":17,
-            "Low Rider":52,"Lunar Snake":4.3,"Lush Bouquet":6.55,"Mad Pumpkin":13.8,
-            "Magic Potion":80.9,"Mighty Arm":171.9,"Mini Oscar":103.7,"Money Pot":4.66,
-            "Ion Gem":98.5,"Ionic Dryer":18.7,"Jack-in-the-Box":4.94,"Jelly Bunny":8.03,
-            "Jester Hat":4.83,"Jolly Chimp":7.3,"Joyful Bundle":7.11,"Khabib's Papakha":25.9,
-            "Kissed Frog":67.8,"Light Sword":6.3,"Lol Pop":4.5,"Hanging Star":9.93,
-            "Happy Brownie":4.65,"Heroic Helmet":255.7,"Hex Pot":4.99,"Holiday Drink":4.4,
-            "Homemade Cake":5.06,"Hypno Lollipop":4.84,"Ice Cream":4.44,"Input Key":6.19,
-            "Instant Ramen":4.38,"Desk Calendar":6.78,"Durov's Cap":708,"Jingle Bells":9.53,
-            "Plush Pepe":7999,"Heart Locket":2199,"Artisan Brick":97.7,"Astral Shard":199.9,
-            "B-Day Candle":4.3,"Berry Box":8.81,"Big Year":4.72,"Bling Binky":35.3,
-            "Bonded Ring":58.2,"Bow Tie":6.3,"Bunny Muffin":8.28,"Candy Cane":4.31,
-            "Clover Pin":4.7,"Cookie Heart":4.95,"Crystal Ball":12,"Cupid Charm":22.5,
-            "Diamond Ring":29.4,"Easter Egg":5.63,"Electric Skull":33.9,"Eternal Candle":6.58,
-            "Eternal Rose":29.4,"Evil Eye":7.94,"Faith Amulet":4.7,"Flying Broom":14,
-            "Fresh Socks":4.43,"Gem Signet":72.3,"Genie Lamp":50,"Ginger Cookie":4.9
-        };
-        
+        // Gift prices — always use value from API (sourced from gifts.json)
         function getGiftPrice(gift) {
             // ton_balance uses ton_amount directly
             if (gift.type === 'ton_balance' && gift.ton_amount) {
                 return Number(gift.ton_amount);
             }
-            const name = (gift.name || '').replace(' (Random)', '');
-            if (GIFT_PRICES[name]) return GIFT_PRICES[name];
-            // Value is already in TON, no conversion needed
+            // Value is already in TON from gifts.json via API
             return Number(gift.value || 0);
         }
         
@@ -1484,6 +1501,7 @@
                         return `
                             <div class="case ${grad}" onclick="openCaseModal(${c.id})">
                                 <div class="case-glow"></div>
+                                <div class="case-particles"></div>
                                 <div class="case-inner">
                                     <div class="case-prices">
                                         <div class="case-price ton">
@@ -1500,6 +1518,24 @@
                     }).join('')}
                 </div>
             `;
+            /* Spawn particles in each case card */
+            requestAnimationFrame(()=>{
+                document.querySelectorAll('.case-particles').forEach(el => {
+                    if(el.children.length) return;
+                    const colors = ['rgba(255,255,255,.6)','rgba(255,220,100,.5)','rgba(150,200,255,.5)'];
+                    for(let i = 0; i < 5; i++){
+                        const p = document.createElement('div');
+                        p.className = 'case-particle';
+                        p.style.left = (15 + Math.random() * 70) + '%';
+                        p.style.bottom = (5 + Math.random() * 20) + '%';
+                        p.style.animationDelay = (Math.random() * 2.5).toFixed(1) + 's';
+                        p.style.animationDuration = (2 + Math.random() * 1.5).toFixed(1) + 's';
+                        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+                        p.style.width = p.style.height = (2 + Math.random() * 2) + 'px';
+                        el.appendChild(p);
+                    }
+                });
+            });
         }
 
         async function openCaseModal(caseId) {

@@ -20,6 +20,7 @@ import pytz
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import requests as http_requests
+from db_wrapper import USE_POSTGRES, get_connection as _pg_get_connection
 
 # Загружаем переменные окружения
 load_dotenv()
@@ -990,20 +991,8 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
                 'source': 'local'
             })
 
-    # 3) Apply manual TON price overrides
-    for item in merged:
-        name_raw = str(item.get('name') or '').strip()
-        # Strip "(Random)" suffix for matching
-        name_clean = re.sub(r'\s*\(random\)\s*$', '', name_raw, flags=re.IGNORECASE).strip().lower()
-        slug = (item.get('fragment_slug') or '').strip().lower()
-        slug_key = re.sub(r'[^a-z0-9]+', '', slug) if slug else ''
-
-        manual_ton = MANUAL_GIFT_PRICES_TON.get(name_clean)
-        if manual_ton is None and slug_key:
-            manual_ton = _MANUAL_PRICES_BY_SLUG.get(slug_key)
-        if manual_ton is not None:
-            item['fragment_price_ton'] = manual_ton
-            item['value'] = int(round(manual_ton * FRAGMENT_TON_RATE))
+    # 3) Manual TON price overrides DISABLED — prices now always come from gifts.json
+    #    (Previously MANUAL_GIFT_PRICES_TON would override the API values)
 
     merged.sort(key=lambda x: float(x.get('value', 0) or 0), reverse=True)
     return merged
@@ -1383,9 +1372,28 @@ _db_dir = os.environ.get('DB_DIR', os.path.join(BASE_PATH, 'data'))
 os.makedirs(_db_dir, exist_ok=True)
 DB_PATH = os.path.join(_db_dir, 'raswet_gifts.db')
 
+def _quick_db_conn(timeout=5):
+    """Fast DB connection for hot paths (status polling etc.)"""
+    if USE_POSTGRES:
+        return _pg_get_connection()
+    return sqlite3.connect(DB_PATH, timeout=timeout, check_same_thread=False)
+
 def get_db_connection():
-    """Получает соединение с базой данных с защитой от повреждений"""
+    """Получает соединение с базой данных с защитой от повреждений.
+    При наличии DATABASE_URL использует PostgreSQL через db_wrapper."""
     global _db_ready
+
+    if USE_POSTGRES:
+        conn = _pg_get_connection()
+        if not _db_ready:
+            try:
+                _create_all_tables(conn)
+                conn.commit()
+                _db_ready = True
+            except Exception as e:
+                logger.error(f"PG table creation error: {e}")
+                conn.rollback()
+        return conn
     
     for attempt in range(3):
         try:
@@ -2155,6 +2163,20 @@ def init_db():
         os.makedirs(data_path, exist_ok=True)
         for sub in ['static/gifs/gifts', 'static/gifs/cases', 'static/uploads/notifications']:
             os.makedirs(os.path.join(BASE_PATH, sub), exist_ok=True)
+
+        # PostgreSQL — skip file-based health checks, just create tables
+        if USE_POSTGRES:
+            try:
+                conn = _pg_get_connection()
+                _create_all_tables(conn)
+                conn.commit()
+                conn.close()
+                _db_ready = True
+                logger.info("✅ PostgreSQL database initialized")
+                return True
+            except Exception as e:
+                logger.error(f"❌ PostgreSQL init failed: {e}")
+                return False
 
         # Проверяем диск
         if not _check_disk_space():
@@ -3886,6 +3908,28 @@ def _cleanup_user_bets_cache():
     except Exception:
         pass
 
+# Cached crash RTP (recalculated every 30s)
+_crash_rtp_cache = {'value': TARGET_RTP * 100, 'ts': 0}
+
+def _get_cached_crash_rtp():
+    now = time.time()
+    if now - _crash_rtp_cache['ts'] < 30:
+        return _crash_rtp_cache['value']
+    try:
+        conn = _quick_db_conn(3)
+        cur = conn.cursor()
+        cur.execute('SELECT COALESCE(SUM(bet_amount),0) FROM ultimate_crash_bets')
+        total_bets = cur.fetchone()[0]
+        cur.execute('SELECT COALESCE(SUM(win_amount),0) FROM ultimate_crash_bets WHERE status=? ', ('cashed_out',))
+        total_wins = cur.fetchone()[0]
+        conn.close()
+        rtp = round((total_wins / total_bets * 100) if total_bets > 0 else TARGET_RTP * 100, 1)
+        _crash_rtp_cache['value'] = rtp
+        _crash_rtp_cache['ts'] = now
+        return rtp
+    except:
+        return _crash_rtp_cache['value']
+
 @app.route('/api/ultimate-crash/simple-status', methods=['GET'])
 def ultimate_crash_simple_status():
     """Быстрый статус игры - использует кэш"""
@@ -3914,7 +3958,7 @@ def ultimate_crash_simple_status():
                 user_bet = bet_cache.get('bet')
             else:
                 try:
-                    conn = sqlite3.connect(DB_PATH, timeout=5)
+                    conn = _quick_db_conn(5)
                     cursor = conn.cursor()
                     cursor.execute("SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1", (cached['id'], user_id))
                     bet = cursor.fetchone()
@@ -3929,7 +3973,7 @@ def ultimate_crash_simple_status():
         user_balance = None
         if user_id:
             try:
-                conn2 = sqlite3.connect(DB_PATH, timeout=3)
+                conn2 = _quick_db_conn(3)
                 c2 = conn2.cursor()
                 c2.execute("SELECT balance_stars FROM users WHERE id = ?", (user_id,))
                 row = c2.fetchone()
@@ -3939,11 +3983,11 @@ def ultimate_crash_simple_status():
             except:
                 pass
         
-        return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance})
+        return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance, 'rtp': _get_cached_crash_rtp()})
     
     # Fallback - если кэш устарел
     try:
-        conn = sqlite3.connect(DB_PATH, timeout=5)
+        conn = _quick_db_conn(5)
         cursor = conn.cursor()
         cursor.execute("SELECT id, status, current_multiplier, target_multiplier FROM ultimate_crash_games WHERE status IN ('waiting', 'counting', 'flying', 'crashed') ORDER BY id DESC LIMIT 1")
         game = cursor.fetchone()
@@ -3971,13 +4015,13 @@ def ultimate_crash_simple_status():
                     user_balance = brow[0]
             
             conn.close()
-            return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance})
+            return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance, 'rtp': _get_cached_crash_rtp()})
         
         conn.close()
     except:
         pass
     
-    return jsonify({'success': True, 'game': {'id': 0, 'status': 'waiting', 'current_multiplier': 1.0, 'target_multiplier': 5.0, 'time_remaining': 5.0}, 'user_bet': None})
+    return jsonify({'success': True, 'game': {'id': 0, 'status': 'waiting', 'current_multiplier': 1.0, 'target_multiplier': 5.0, 'time_remaining': 5.0}, 'user_bet': None, 'rtp': _get_cached_crash_rtp()})
 
 @app.route('/api/ultimate-crash/place-bet', methods=['POST'])
 def ultimate_crash_place_bet():
@@ -8806,8 +8850,7 @@ def ultimate_crash_quick_status():
                 pass
 
         # Если кэш устарел или его нет, получаем из базы с быстрым соединением
-        conn = sqlite3.connect(os.path.join(BASE_PATH, 'data', 'raswet_gifts.db'), timeout=5)
-        conn.execute("PRAGMA busy_timeout = 5000")
+        conn = _quick_db_conn(5)
         cursor = conn.cursor()
 
         cursor.execute('''
@@ -9924,8 +9967,6 @@ def v3_progress_page():
 @app.route('/news/<int:news_id>')
 def news_detail_page(news_id):
     """Страница отдельной новости"""
-    if news_id == 15:
-        return render_template('v3_progress.html')
     return render_template('news_detail.html', news_id=news_id)
 
 @app.route('/api/news', methods=['GET'])
@@ -10740,12 +10781,22 @@ def crash_status():
     if not game:
         cur.execute("INSERT INTO crash_games(status,current_multiplier) VALUES('waiting',1.0)")
         conn.commit()
-        return jsonify({"status": "waiting", "multiplier": 1.0})
+        conn.close()
+        return jsonify({"status": "waiting", "multiplier": 1.0, "rtp": TARGET_RTP * 100})
+
+    # Calculate actual crash RTP
+    cur.execute('SELECT COALESCE(SUM(bet_amount),0) FROM ultimate_crash_bets')
+    total_bets = cur.fetchone()[0]
+    cur.execute('SELECT COALESCE(SUM(win_amount),0) FROM ultimate_crash_bets WHERE status="cashed_out"')
+    total_wins = cur.fetchone()[0]
+    crash_rtp = round((total_wins / total_bets * 100) if total_bets > 0 else TARGET_RTP * 100, 1)
+    conn.close()
 
     return jsonify({
         "game_id": game[0],
         "status": game[1],
-        "multiplier": float(game[2])
+        "multiplier": float(game[2]),
+        "rtp": crash_rtp
     })
 
 @app.route('/api/crash/bet', methods=['POST'])
