@@ -150,7 +150,7 @@
         /* === ITEM MODAL (bottom sheet 30%) === */
         .item-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1001;display:none;align-items:flex-end;justify-content:center}
         .item-modal-overlay.show{display:flex}
-        .item-modal{background:#1C2233;border-radius:20px 20px 0 0;width:100%;max-width:480px;min-height:30vh;text-align:center;box-shadow:0 -4px 30px rgba(0,0,0,.5);animation:sheetUp .3s ease;display:flex;flex-direction:column;align-items:center;padding:0 20px 24px;position:relative;overflow:hidden}
+        .item-modal{background:#1C2233;border-radius:20px 20px 0 0;width:100%;max-width:480px;min-height:30vh;text-align:center;box-shadow:0 -4px 30px rgba(0,0,0,.5);animation:sheetUp .3s ease;display:flex;flex-direction:column;align-items:center;padding:0 20px calc(80px + env(safe-area-inset-bottom,0));position:relative;overflow:hidden}
         .item-modal-handle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:10px auto 14px;flex-shrink:0}
         .item-modal-name{font-size:16px;font-weight:700;margin-bottom:6px;color:#fff}
         .item-modal img.item-modal-main-img{width:100px;height:100px;object-fit:contain;margin-bottom:10px;border-radius:16px;background:rgba(255,255,255,.06);padding:8px}
@@ -176,17 +176,13 @@
         .upgrade-anim-wrap{display:none;flex-direction:column;align-items:center;width:100%;padding:16px 0;position:relative}
         .upgrade-anim-wrap.active{display:flex}
 
-        .upgrade-roulette{position:relative;width:100%;height:110px;overflow:hidden;border-radius:16px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);margin-bottom:14px}
-        .upgrade-roulette::before,.upgrade-roulette::after{content:'';position:absolute;top:0;bottom:0;width:50px;z-index:3;pointer-events:none}
-        .upgrade-roulette::before{left:0;background:linear-gradient(90deg,#1C2233 0%,transparent 100%)}
-        .upgrade-roulette::after{right:0;background:linear-gradient(-90deg,#1C2233 0%,transparent 100%)}
-        .upgrade-roulette-pointer{position:absolute;top:0;left:50%;transform:translateX(-50%);width:2px;height:100%;background:rgba(255,255,255,.35);z-index:4}
-        .upgrade-roulette-pointer::before{content:'';position:absolute;top:-1px;left:-5px;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid rgba(255,255,255,.5)}
-        .upgrade-roulette-pointer::after{content:'';position:absolute;bottom:-1px;left:-5px;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:8px solid rgba(255,255,255,.5)}
+        .upgrade-roulette{position:relative;width:100%;height:140px;overflow:hidden;border-radius:16px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.06);margin-bottom:14px}
+        .upgrade-roulette::before,.upgrade-roulette::after{content:'';position:absolute;top:0;bottom:0;width:30px;z-index:3;pointer-events:none}
+        .upgrade-roulette::before{left:0;background:linear-gradient(90deg,rgba(28,34,51,.8) 0%,transparent 100%)}
+        .upgrade-roulette::after{right:0;background:linear-gradient(-90deg,rgba(28,34,51,.8) 0%,transparent 100%)}
         .upgrade-strip{display:flex;align-items:center;height:100%;will-change:transform;position:absolute;top:0;left:0}
-        .upgrade-strip-item{width:100px;height:100px;flex-shrink:0;margin:0 5px;border-radius:14px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.06)}
-        .upgrade-strip-item img{width:80px;height:80px;object-fit:contain}
-        .upgrade-strip-item.winner{border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1)}
+        .upgrade-strip-item{width:calc(100vw / 3 - 12px);max-width:148px;height:128px;flex-shrink:0;margin:0 4px;border-radius:14px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.06)}
+        .upgrade-strip-item img{width:100px;height:100px;object-fit:contain}
 
         .upgrade-result-card{display:none;flex-direction:column;align-items:center;margin-bottom:14px}
         .upgrade-result-card.show{display:flex}
@@ -453,7 +449,6 @@
 
             <div class="upgrade-anim-wrap" id="upgradeAnimWrap">
                 <div class="upgrade-roulette" id="upgradeRoulette">
-                    <div class="upgrade-roulette-pointer"></div>
                     <div class="upgrade-strip" id="upgradeStrip"></div>
                 </div>
                 <div class="upgrade-result-card" id="upgradeResultCard">
@@ -562,23 +557,23 @@
     <nav class="bottom-nav">
         <a class="bnav-item" href="/crash">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
-            <span class="bnav-label">Краш</span>
+            <span class="bnav-label" data-t="crash">Crash</span>
         </a>
         <a class="bnav-item" href="/cases">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-            <span class="bnav-label">Кейсы</span>
+            <span class="bnav-label" data-t="cases">Cases</span>
         </a>
         <a class="bnav-item" href="/news">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
-            <span class="bnav-label">Новости</span>
+            <span class="bnav-label" data-t="news">News</span>
         </a>
         <a class="bnav-item" href="/leaderboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-            <span class="bnav-label">Топ</span>
+            <span class="bnav-label" data-t="top">Top</span>
         </a>
         <a class="bnav-item active" href="/inventory">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span class="bnav-label">Профиль</span>
+            <span class="bnav-label" data-t="profile">Profile</span>
         </a>
     </nav>
 
@@ -591,8 +586,8 @@
 
     let currentLang = localStorage.getItem('app_lang') || 'en';
     const TRANSLATIONS = {
-        en: { deposit:'Deposit', rewards:'Rewards', referrals:'REFERRALS', refDesc:'Invite friends and get 10% of your friends\' deposits!', inviteFriends:'Invite friends', copyLink:'Copy link', terms:'Terms', inventory:'Inventory', emptyInv:'Inventory is empty', sell:'Sell', withdraw:'Withdraw', close:'Close', cancel:'Cancel', sellAll:'Sell all gifts?', allSold:'All gifts will be sold', adminPanel:'Admin Panel', loading:'Loading...', crash:'Crash', profile:'Profile', linkCopied:'Link copied!', giftSold:'Gift sold!', withdrawReq:'Withdrawal request created!', noGifts:'No gifts to sell', reachLevel:'Reach level {lvl} to unlock this reward!', balance:'Balance:', referralsLabel:'Referrals:' },
-        ru: { deposit:'Депозит', rewards:'Награды', referrals:'РЕФЕРАЛЫ', refDesc:'Приглашайте друзей и получайте 10% с депозитов ваших друзей!', inviteFriends:'Пригласить друзей', copyLink:'Копировать', terms:'Условия', inventory:'Инвентарь', emptyInv:'Инвентарь пуст', sell:'Продать', withdraw:'Вывести', close:'Закрыть', cancel:'Отмена', sellAll:'Продать все подарки?', allSold:'Все подарки будут проданы', adminPanel:'Админ панель', loading:'Загрузка...', crash:'Краш', profile:'Профиль', linkCopied:'Ссылка скопирована!', giftSold:'Подарок продан!', withdrawReq:'Заявка на вывод создана!', noGifts:'Нет подарков', reachLevel:'Достигните уровня {lvl}, чтобы открыть награду!', balance:'Баланс:', referralsLabel:'Рефералы:' }
+        en: { deposit:'Deposit', rewards:'Rewards', referrals:'REFERRALS', refDesc:'Invite friends and get 10% of your friends\' deposits!', inviteFriends:'Invite friends', copyLink:'Copy link', terms:'Terms', inventory:'Inventory', emptyInv:'Inventory is empty', sell:'Sell', withdraw:'Withdraw', close:'Close', cancel:'Cancel', sellAll:'Sell all gifts?', allSold:'All gifts will be sold', adminPanel:'Admin Panel', loading:'Loading...', crash:'Crash', profile:'Profile', linkCopied:'Link copied!', giftSold:'Gift sold!', withdrawReq:'Withdrawal request created!', noGifts:'No gifts to sell', reachLevel:'Reach level {lvl} to unlock this reward!', balance:'Balance:', referralsLabel:'Referrals:', cases:'Cases', news:'News', top:'Top', topUp:'Top Up', promo:'Promo', depositTitle:'Deposit', starsDeposit:'Stars Deposit', pay:'Pay', upgrade:'Upgrade', wager:'Wager', claim:'Claim' },
+        ru: { deposit:'Депозит', rewards:'Награды', referrals:'РЕФЕРАЛЫ', refDesc:'Приглашайте друзей и получайте 10% с депозитов ваших друзей!', inviteFriends:'Пригласить друзей', copyLink:'Копировать', terms:'Условия', inventory:'Инвентарь', emptyInv:'Инвентарь пуст', sell:'Продать', withdraw:'Вывести', close:'Закрыть', cancel:'Отмена', sellAll:'Продать все подарки?', allSold:'Все подарки будут проданы', adminPanel:'Админ панель', loading:'Загрузка...', crash:'Краш', profile:'Профиль', linkCopied:'Ссылка скопирована!', giftSold:'Подарок продан!', withdrawReq:'Заявка на вывод создана!', noGifts:'Нет подарков', reachLevel:'Достигните уровня {lvl}, чтобы открыть награду!', balance:'Баланс:', referralsLabel:'Рефералы:', cases:'Кейсы', news:'Новости', top:'Топ', topUp:'Пополнить', promo:'Промо', depositTitle:'Пополнение', starsDeposit:'Пополнение Stars', pay:'Оплатить', upgrade:'Улучшить', wager:'Отыгрыш', claim:'Забрать' }
     };
     function t(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.en)[key] || key; }
     function applyTranslations() { document.querySelectorAll('[data-t]').forEach(function(el) { el.textContent = t(el.getAttribute('data-t')); }); }
@@ -782,7 +777,7 @@
             sellBtn.textContent = t('sell');
             sellBtn.disabled = item.is_withdrawing;
             upgradeBtn.style.display = '';
-            upgradeBtn.textContent = 'Upgrade 0.1 TON';
+            upgradeBtn.textContent = t('upgrade') + ' 0.1 TON';
             upgradeBtn.disabled = false;
         }
 
@@ -867,7 +862,7 @@
                 document.getElementById('itemModalPrice').style.display = '';
                 document.getElementById('itemModalActions').style.display = '';
                 btn.disabled = false;
-                btn.textContent = 'Upgrade 0.1 TON';
+                btn.textContent = t('upgrade') + ' 0.1 TON';
             }, 2000);
             return;
         }
@@ -875,18 +870,25 @@
         // Build roulette strip: previews + winner at the end
         var previews = upgradeResult.preview_images || [];
         var allImages = [];
-        // Fill strip: repeat previews a few times, then place winner
-        for (var ri = 0; ri < 3; ri++) {
+        // Fill strip: repeat previews to get ~60 items, then place winner
+        while (allImages.length < 60) {
             for (var p = 0; p < previews.length; p++) {
                 allImages.push(previews[p]);
+                if (allImages.length >= 60) break;
             }
         }
-        allImages.push(upgradeResult.new_image); // winner at position 30
+        allImages.push(upgradeResult.new_image); // winner at the end
 
-        var itemW = 110; // 100px + 10px margin
+        // Measure item width based on container (3 items visible)
+        var containerW = roulette.offsetWidth;
+        var itemW = Math.floor(containerW / 3);
+        var itemMargin = 4; // matches CSS margin: 0 4px
+        var fullItemW = itemW; // total width per item including margins
+
         for (var i = 0; i < allImages.length; i++) {
             var el = document.createElement('div');
-            el.className = 'upgrade-strip-item' + (i === allImages.length - 1 ? ' winner' : '');
+            el.className = 'upgrade-strip-item';
+            el.style.width = (itemW - itemMargin * 2) + 'px';
             var img = document.createElement('img');
             img.src = allImages[i];
             el.appendChild(img);
@@ -894,11 +896,10 @@
         }
 
         // Calculate target offset: winner should be centered
-        var containerW = roulette.offsetWidth;
         var winnerIdx = allImages.length - 1;
-        var targetOffset = (winnerIdx * itemW) + (itemW / 2) - (containerW / 2);
+        var targetOffset = (winnerIdx * fullItemW) + (fullItemW / 2) - (containerW / 2);
 
-        // Animate: ease-out from start to targetOffset over 4s
+        // Animate: fast start, smooth deceleration over 4s
         var duration = 4000;
         var startTime = Date.now();
 
@@ -906,8 +907,8 @@
             function tick() {
                 var elapsed = Date.now() - startTime;
                 var t = Math.min(1, elapsed / duration);
-                // Cubic ease-out for smooth deceleration
-                var eased = 1 - Math.pow(1 - t, 3);
+                // Quartic ease-out for fast start, smooth deceleration
+                var eased = 1 - Math.pow(1 - t, 4);
                 var currentOffset = eased * targetOffset;
                 strip.style.transform = 'translateX(' + (-currentOffset) + 'px)';
                 if (t < 1) {

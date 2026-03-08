@@ -5970,6 +5970,20 @@ def open_case():
         # RTP-based case drop adjustment
         rtp_mode, rtp_stats = get_player_rtp_mode(user_id)
 
+        # Minimum drop value floors per case cost (in TON)
+        CASE_MIN_DROP_TON = {
+            0.1: 0.04,
+            1.0: 0.33,
+            1.5: 0.4,
+            10.0: 4.0,
+            100.0: 40.0,
+        }
+        case_cost_ton = float(case.get('cost', 0) or 0)
+        if case.get('cost_type') == 'stars':
+            case_cost_ton = case_cost_ton / 100.0
+        min_drop_ton = CASE_MIN_DROP_TON.get(round(case_cost_ton, 2), 0)
+        min_drop_stars = int(min_drop_ton * 100)
+
         for _ in range(quantity):
             if case.get('gifts'):
                 # Adjust chances based on player RTP mode
@@ -6010,6 +6024,21 @@ def open_case():
                         break
 
                 if selected_gift_info:
+                    # Enforce minimum drop floor
+                    if min_drop_stars > 0:
+                        gift_val = float(selected_gift_info.get('value', 0) or selected_gift_info.get('ton_amount', 0) or 0)
+                        if selected_gift_info.get('type') == 'ton_balance':
+                            gift_val_stars = int(float(selected_gift_info.get('ton_amount', 0) or 0) * 100)
+                        else:
+                            gift_val_stars = int(gift_val)
+                        if gift_val_stars < min_drop_stars:
+                            # Re-select from gifts meeting minimum
+                            eligible = [g for g in adjusted_gifts if (
+                                (g.get('type') == 'ton_balance' and int(float(g.get('ton_amount', 0) or 0) * 100) >= min_drop_stars) or
+                                (g.get('type') != 'ton_balance' and int(float(g.get('value', 0) or 0)) >= min_drop_stars)
+                            )]
+                            if eligible:
+                                selected_gift_info = random.choice(eligible)
                     # Check if ton_balance
                     if selected_gift_info.get('type') == 'ton_balance':
                         ton_amount = float(selected_gift_info.get('ton_amount', 0) or 0)
@@ -7547,9 +7576,9 @@ def upgrade_gift():
         # Build NFT image URL
         new_image = f'https://nft.fragment.com/gift/{slug}-{nft_num}.webp'
 
-        # Generate 10 random preview images for roulette animation
+        # Generate 20 random preview images for roulette animation
         preview_nums = set()
-        while len(preview_nums) < 10:
+        while len(preview_nums) < 20:
             n = random.randint(1, max_num)
             if n != nft_num:
                 preview_nums.add(n)
@@ -17963,7 +17992,7 @@ def api_leaderboard():
         # Get active leaderboard config
         cursor.execute('''SELECT id, period_start, period_end, rewards_json, title 
             FROM leaderboard_config 
-            WHERE is_active = 1 AND datetime(period_end) > datetime('now')
+            WHERE is_active = 1 AND period_end > datetime('now')
             ORDER BY created_at DESC LIMIT 1''')
         config = cursor.fetchone()
         
