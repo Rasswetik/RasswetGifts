@@ -2741,7 +2741,7 @@
         try{currencyMode=localStorage.getItem('rasswet_currency_mode')==='ton'?'ton':'stars'}catch(e){currencyMode='stars'}
         if(userData&&userData.currency_mode)currencyMode=userData.currency_mode==='ton'?'ton':'stars';
         if(!userData||!userData.id){
-            if(isTgApp()){try{var tg=Telegram.WebApp;tg.ready();tg.expand();var u=tg.initDataUnsafe.user;
+            if(isTgApp()){try{var tg=Telegram.WebApp;tg.ready();tg.expand();try{if(tg.requestFullscreen)tg.requestFullscreen()}catch(e){}var u=tg.initDataUnsafe.user;
             if(u)userData={id:u.id,first_name:u.first_name,last_name:u.last_name||'',username:u.username||'',photo_url:u.photo_url||'',balance_stars:0,balance_tickets:0}}catch(e){}}
         }
         if(!userData||!userData.id){try{var ad=await telegramAuth();if(ad&&ad.id)userData=ad}catch(e){}}

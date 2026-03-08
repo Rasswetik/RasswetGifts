@@ -50,11 +50,33 @@ def _translate_query(sql):
     # datetime('now') → NOW()
     out = re.sub(r"datetime\(\s*'now'\s*\)", 'NOW()', out, flags=re.IGNORECASE)
     # INSERT OR IGNORE → INSERT ... ON CONFLICT DO NOTHING
+    _is_insert_or_ignore = bool(re.search(r'\bINSERT\s+OR\s+IGNORE\b', out, re.IGNORECASE))
+    # INSERT OR REPLACE → upsert with ON CONFLICT DO UPDATE
+    _replace_match = re.match(
+        r'\s*INSERT\s+OR\s+REPLACE\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\((.+)\)\s*;?\s*$',
+        out, re.IGNORECASE | re.DOTALL
+    )
+    if _replace_match:
+        _UPSERT_CONFLICT = {
+            'case_limits': 'case_id',
+            'crash_customizations': 'item_type, item_id',
+            'levels': 'level',
+        }
+        tbl = _replace_match.group(1).lower()
+        cols_str = _replace_match.group(2)
+        vals_str = _replace_match.group(3)
+        conflict_col = _UPSERT_CONFLICT.get(tbl)
+        if conflict_col:
+            cols = [c.strip() for c in cols_str.split(',')]
+            conflict_set = {c.strip() for c in conflict_col.split(',')}
+            update_cols = [c for c in cols if c not in conflict_set and c != 'id']
+            set_clause = ', '.join(f"{c} = EXCLUDED.{c}" for c in update_cols)
+            out = f"INSERT INTO {tbl} ({cols_str}) VALUES ({vals_str}) ON CONFLICT ({conflict_col}) DO UPDATE SET {set_clause}"
+        else:
+            out = re.sub(r'\bINSERT\s+OR\s+REPLACE\b', 'INSERT', out, flags=re.IGNORECASE)
+    else:
+        out = re.sub(r'\bINSERT\s+OR\s+REPLACE\b', 'INSERT', out, flags=re.IGNORECASE)
     out = re.sub(r'\bINSERT\s+OR\s+IGNORE\b', 'INSERT', out, flags=re.IGNORECASE)
-    # INSERT OR REPLACE → INSERT (PG needs ON CONFLICT clause per-table;
-    # for simple cases the app already has ON CONFLICT clauses built in.
-    # For INSERT OR REPLACE without explicit conflict target, this is best-effort.)
-    out = re.sub(r'\bINSERT\s+OR\s+REPLACE\b', 'INSERT', out, flags=re.IGNORECASE)
     # Remove PRAGMA statements entirely
     if re.match(r'^\s*PRAGMA\b', out, re.IGNORECASE):
         return ''
@@ -65,6 +87,9 @@ def _translate_query(sql):
             "SELECT tablename AS name FROM pg_tables WHERE schemaname = 'public'",
             out, flags=re.IGNORECASE
         )
+    # Append ON CONFLICT DO NOTHING for INSERT OR IGNORE queries
+    if _is_insert_or_ignore:
+        out = out.rstrip().rstrip(';') + ' ON CONFLICT DO NOTHING'
     return out
 
 

@@ -2878,6 +2878,24 @@ RTP_CHECK_INTERVAL = 5  # Re-evaluate every N games
 LARGE_BET_THRESHOLD = 100  # Stars threshold for "large bet" (1 TON)
 WHALE_BET_THRESHOLD = 500  # Stars threshold for "whale bet" (5 TON)
 
+# Per-player RTP balancing thresholds
+RTP_BOOST_THRESHOLD = 0.40   # Below 40% → boost player (bigger wins)
+RTP_NERF_THRESHOLD = 0.80    # Above 80% → nerf player (reduce luck)
+
+def get_player_rtp_mode(user_id, conn=None):
+    """Determine if a player should be boosted or nerfed based on their RTP.
+    Returns: 'boost', 'nerf', or 'normal'
+    """
+    stats = get_player_crash_stats(user_id, conn)
+    if stats['total_wagered'] < 100:  # Not enough data
+        return 'normal', stats
+    rtp = stats['player_rtp']
+    if rtp < RTP_BOOST_THRESHOLD:
+        return 'boost', stats
+    elif rtp > RTP_NERF_THRESHOLD:
+        return 'nerf', stats
+    return 'normal', stats
+
 def get_player_crash_stats(user_id, conn=None):
     """Get a player's crash game lifetime stats including net position"""
     close_conn = False
@@ -2966,28 +2984,27 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
             return base_target
         
         # === RTP COMPENSATION: Boost for deeply losing players ===
-        # If a single real player is deeply in the red (-500+), give them a compensating multiplier
+        # If a single real player has RTP below 40%, give them compensating multipliers
         compensation_target = None
         for user_id, bet_amount in bets:
             if user_id < 0:
                 continue
-            stats = get_player_crash_stats(user_id, conn)
-            net_loss = -stats.get('net_profit', 0)  # positive value = how much they lost
-            if net_loss >= 500 and bet_amount < LARGE_BET_THRESHOLD:
-                # Scale: smaller bets get higher compensation multipliers
-                # bet 3 → ~20x, bet 10 → ~6x, bet 30 → ~3x
+            mode, stats = get_player_rtp_mode(user_id, conn)
+            if mode == 'boost' and bet_amount < LARGE_BET_THRESHOLD:
+                # Player RTP < 40% — give bigger coefficients
+                rtp_deficit = RTP_BOOST_THRESHOLD - stats['player_rtp']
                 if bet_amount <= 5:
-                    comp_mult = round(15.0 + random.random() * 10.0, 2)  # 15-25x
+                    comp_mult = round(15.0 + rtp_deficit * 20 + random.random() * 10.0, 2)
                 elif bet_amount <= 15:
-                    comp_mult = round(4.0 + random.random() * 4.0, 2)   # 4-8x
+                    comp_mult = round(5.0 + rtp_deficit * 10 + random.random() * 4.0, 2)
                 elif bet_amount <= 50:
-                    comp_mult = round(2.5 + random.random() * 2.5, 2)   # 2.5-5x
+                    comp_mult = round(3.0 + rtp_deficit * 5 + random.random() * 2.5, 2)
                 else:
-                    comp_mult = round(2.0 + random.random() * 1.5, 2)   # 2-3.5x
-                # Only compensate sometimes (60% chance) to keep it unpredictable
-                if random.random() < 0.6:
+                    comp_mult = round(2.0 + rtp_deficit * 3 + random.random() * 1.5, 2)
+                # 70% chance to boost (higher than before)
+                if random.random() < 0.70:
                     compensation_target = max(compensation_target or 0, comp_mult)
-                    logger.info(f"💰 RTP Compensation: user {user_id} loss={net_loss}, bet={bet_amount} → target {comp_mult:.2f}x")
+                    logger.info(f"💰 RTP Boost: user {user_id} RTP={stats['player_rtp']:.2f}, bet={bet_amount} → target {comp_mult:.2f}x")
         
         if compensation_target and compensation_target > base_target:
             if close_conn: conn.close()
@@ -3046,11 +3063,24 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
                 logger.debug(f"🎰 AI: Moderate loser tease {base_target:.2f}x → {adjusted:.2f}x")
                 return round(min(100.0, adjusted), 2)
         
-        # === WINNING PLAYERS: Reduce target ===
+        # === WINNING PLAYERS: Reduce target (stronger for nerfed players) ===
         if winning_bet_value > total_bet_value * 0.3:
-            reduction = min(0.5, 0.2 + (winning_bet_value / total_bet_value) * 0.3)
+            # Check if any winning player is in nerf mode (RTP > 80%)
+            has_nerf_player = False
+            for user_id, bet_amount in bets:
+                if user_id < 0:
+                    continue
+                m, _ = get_player_rtp_mode(user_id)
+                if m == 'nerf':
+                    has_nerf_player = True
+                    break
+            
+            if has_nerf_player:
+                reduction = min(0.70, 0.40 + (winning_bet_value / total_bet_value) * 0.3)
+            else:
+                reduction = min(0.50, 0.20 + (winning_bet_value / total_bet_value) * 0.3)
             adjusted = max(1.01, base_target * (1 - reduction))
-            logger.debug(f"🎯 AI: Winners detected, reducing target {base_target:.2f}x → {adjusted:.2f}x")
+            logger.debug(f"🎯 AI: Winners detected (nerf={has_nerf_player}), reducing {base_target:.2f}x → {adjusted:.2f}x")
             return round(adjusted, 2)
         
         return base_target
@@ -3114,9 +3144,24 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
                         return True
             
             # === Secondary: Player profitability check ===
-            # If player is winning overall, crash more often
+            # If player RTP > 80%, crash more aggressively to bring them down
             if stats['total_wagered'] >= 200:  # Has some history
-                if stats['player_rtp'] > 1.1:  # Player is profitable
+                mode, _ = get_player_rtp_mode(user_id, conn)
+                if mode == 'nerf':
+                    # Player RTP above 80% — crash aggressively
+                    excess_rtp = stats['player_rtp'] - RTP_NERF_THRESHOLD
+                    crash_prob = min(0.55, 0.25 + excess_rtp * 0.5)
+                    
+                    if potential_win > 300:
+                        crash_prob += 0.10
+                    if potential_win > 1000:
+                        crash_prob += 0.15
+                    
+                    if random.random() < crash_prob:
+                        if close_conn: conn.close()
+                        logger.info(f"🎯 RTP Nerf crash: user {user_id} RTP={stats['player_rtp']:.2f}, prob={crash_prob:.2f}")
+                        return True
+                elif stats['player_rtp'] > 1.1:  # Still profitable but not in nerf zone
                     excess_rtp = stats['player_rtp'] - TARGET_RTP
                     crash_prob = min(0.40, excess_rtp * 0.35)
                     
@@ -4368,12 +4413,14 @@ def ultimate_crash_place_bet_multi_gift():
         # Увеличиваем счётчик ставок и объём
         cursor.execute('UPDATE users SET total_crash_bets = COALESCE(total_crash_bets, 0) + 1, total_bet_volume = COALESCE(total_bet_volume, 0) + ? WHERE id = ?', (total_value, user_id,))
 
-        # Создаем ставку (используем изображение первого подарка)
-        first_gift_image = gifts[0][2] if gifts else None
+        # Store all gift images as JSON array, sorted by value desc
+        sorted_gifts = sorted(gifts, key=lambda g: g[3], reverse=True)
+        all_images = json.dumps([g[2] for g in sorted_gifts])
+        first_gift_image = sorted_gifts[0][2] if sorted_gifts else None
         cursor.execute('''
             INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, bet_type, gift_image, status)
             VALUES (?, ?, ?, ?, 'gift', ?, 'active')
-        ''', (game_id, user_id, total_value, total_value, first_gift_image))
+        ''', (game_id, user_id, total_value, total_value, all_images if len(sorted_gifts) > 1 else first_gift_image))
         bet_id = cursor.lastrowid
 
         cursor.execute('''
@@ -5863,14 +5910,43 @@ def open_case():
         won_gifts = []
         gifts = build_fragment_first_gifts_catalog() or load_gifts()
 
+        # RTP-based case drop adjustment
+        rtp_mode, rtp_stats = get_player_rtp_mode(user_id)
+
         for _ in range(quantity):
             if case.get('gifts'):
-                total_chance = sum(gift.get('chance', 1) for gift in case['gifts'])
+                # Adjust chances based on player RTP mode
+                adjusted_gifts = case['gifts']
+                if rtp_mode in ('boost', 'nerf') and len(case['gifts']) > 1:
+                    # Sort by value to identify cheap vs expensive items
+                    sorted_by_value = sorted(case['gifts'], key=lambda g: float(g.get('value', 0) or g.get('ton_amount', 0) or 0))
+                    mid = len(sorted_by_value) // 2
+                    cheap_ids = {id(g) for g in sorted_by_value[:mid]}
+                    
+                    adjusted_gifts = []
+                    for g in case['gifts']:
+                        ag = dict(g)
+                        base_chance = ag.get('chance', 1)
+                        if rtp_mode == 'boost':
+                            # Boost: double chance for expensive items, halve for cheap
+                            if id(g) in cheap_ids:
+                                ag['chance'] = base_chance * 0.5
+                            else:
+                                ag['chance'] = base_chance * 2.0
+                        else:  # nerf
+                            # Nerf: double chance for cheap items, halve for expensive
+                            if id(g) in cheap_ids:
+                                ag['chance'] = base_chance * 2.0
+                            else:
+                                ag['chance'] = base_chance * 0.5
+                        adjusted_gifts.append(ag)
+
+                total_chance = sum(gift.get('chance', 1) for gift in adjusted_gifts)
                 random_value = random.random() * total_chance
                 current_chance = 0
                 selected_gift_info = None
 
-                for gift_info in case['gifts']:
+                for gift_info in adjusted_gifts:
                     current_chance += gift_info.get('chance', 1)
                     if random_value <= current_chance:
                         selected_gift_info = gift_info
@@ -8924,6 +9000,18 @@ def ultimate_crash_quick_status():
             'error': 'Используются демо-данные'
         })
 
+def _parse_gift_images(gift_image_str):
+    """Parse gift_image field: could be JSON array or single URL."""
+    if not gift_image_str:
+        return []
+    try:
+        parsed = json.loads(gift_image_str)
+        if isinstance(parsed, list):
+            return parsed
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return [gift_image_str]
+
 @app.route('/api/ultimate-crash/recent-bets', methods=['GET'])
 def get_recent_ultimate_crash_bets():
     """Получение ставок текущего раунда"""
@@ -8999,7 +9087,8 @@ def get_recent_ultimate_crash_bets():
                 'username': bet[8],
                 'photo_url': bet[9] or '/static/img/default_avatar.png',
                 'bet_type': bet[10] or 'stars',
-                'gift_image': bet[11]
+                'gift_image': bet[11],
+                'gift_images': _parse_gift_images(bet[11])
             })
 
         # Bots disabled — skip fallback and bot bets
@@ -9034,7 +9123,8 @@ def admin_crash_status():
         return jsonify({
             'success': True,
             'game': game_cache,
-            'admin_control': admin_ctrl
+            'admin_control': admin_ctrl,
+            'rtp': _get_cached_crash_rtp()
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -9115,6 +9205,32 @@ def admin_set_multiplier_range():
         return jsonify({
             'success': True,
             'message': f'Диапазон {min_mult}x - {max_mult}x ({"ВКЛ" if enabled else "ВЫКЛ"})'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/crash/set-rtp', methods=['POST'])
+def admin_set_rtp():
+    """Set target RTP percentage"""
+    try:
+        data = request.get_json()
+        admin_id = data.get('admin_id')
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+        
+        rtp_val = float(data.get('rtp', 85))
+        if rtp_val < 1 or rtp_val > 100:
+            return jsonify({'success': False, 'error': 'RTP должен быть от 1 до 100'})
+        
+        global TARGET_RTP
+        TARGET_RTP = rtp_val / 100.0
+        _crash_rtp_cache['ts'] = 0  # reset cache so next fetch picks up new target
+        
+        logger.info(f"🎮 ADMIN {admin_id} set TARGET_RTP: {rtp_val}%")
+        
+        return jsonify({
+            'success': True,
+            'message': f'RTP установлен: {rtp_val}%'
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -17462,13 +17578,14 @@ def api_leaderboard():
         period_start = config[1]
 
         # Get top users by bet volume WITHIN current leaderboard period
-        # Include ALL users even with 0 volume so they appear at season start
+        # Only show users who actually placed bets during this period
         cursor.execute('''SELECT u.id, u.first_name, u.username, u.photo_url, 
                 COALESCE(SUM(ucb.bet_amount), 0) as period_volume
             FROM users u
-            LEFT JOIN ultimate_crash_bets ucb ON u.id = ucb.user_id AND ucb.created_at >= ? AND ucb.user_id > 0
+            INNER JOIN ultimate_crash_bets ucb ON u.id = ucb.user_id AND ucb.created_at >= ? AND ucb.user_id > 0
             WHERE u.id > 0
             GROUP BY u.id
+            HAVING period_volume > 0
             ORDER BY period_volume DESC, u.id ASC
             LIMIT 50''', (period_start,))
         combined_entries = []

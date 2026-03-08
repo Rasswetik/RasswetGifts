@@ -1140,6 +1140,24 @@ tc-root *{pointer-events:auto}
     flex-shrink:0;
 }
 
+/* Admin panel mobile optimization */
+@media(max-width:480px){
+    .admin-panel.modal-mode{max-height:85vh;border-radius:20px 20px 0 0}
+    .admin-panel.modal-mode .admin-content{max-height:calc(85vh - 80px)}
+    .admin-header{padding:14px 16px}
+    .admin-title{font-size:14px}
+    .admin-content{padding:12px}
+    .admin-section{padding:12px;margin-bottom:10px;border-radius:12px}
+    .admin-section-title{font-size:10px;margin-bottom:10px}
+    .admin-input{padding:10px 12px;font-size:13px;border-radius:10px}
+    .admin-crash-btn{padding:12px 16px;font-size:12px;border-radius:12px}
+    .admin-range-row{flex-direction:column;gap:8px}
+    .admin-tabs{padding:3px 4px}
+    .admin-tab{padding:6px 3px 5px;font-size:8px}
+    .admin-tab svg{width:14px;height:14px}
+    .admin-form-row{flex-direction:column;gap:6px}
+}
+
 /* ===== GAME FIELD ===== */
 .game-field{
     margin:0 12px;border-radius:20px;
@@ -1190,18 +1208,7 @@ tc-root *{pointer-events:auto}
     box-shadow:inset 0 0 80px rgba(59,130,246,.06), 0 0 30px rgba(59,130,246,.08);
 }
 
-/* RTP badge */
-.rtp-badge{
-    position:absolute;top:10px;right:12px;z-index:10;
-    background:rgba(0,0,0,.45);
-    backdrop-filter:blur(6px);
-    border:1px solid rgba(59,130,246,.3);
-    border-radius:8px;
-    padding:4px 10px;
-    font-size:11px;font-weight:600;
-    color:rgba(59,130,246,.9);
-    letter-spacing:.5px;
-}
+
 
 /* Big countdown filling the field */
 .countdown-display{
@@ -1889,6 +1896,11 @@ tc-root *{pointer-events:auto}
 .bet-amt{font-size:12px;color:rgba(140,160,190,.9);font-weight:600;display:flex;align-items:center;gap:4px}
 .bet-amt img{width:14px;height:14px;object-fit:contain;flex-shrink:0}
 .bet-amt .bet-amt-val{transition:transform .15s ease;display:inline-block}
+/* Stacked gift images in bet amount */
+.bet-gift-stack{display:flex;align-items:center;flex-shrink:0}
+.bet-gift-stack img{width:18px;height:18px;object-fit:contain;border-radius:4px;border:1px solid rgba(255,255,255,.15);background:rgba(0,0,0,.3);margin-left:-6px}
+.bet-gift-stack img:first-child{margin-left:0}
+.bet-gift-stack .bet-gift-more{width:18px;height:18px;border-radius:50%;background:rgba(59,130,246,.3);border:1px solid rgba(59,130,246,.5);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;margin-left:-4px;flex-shrink:0}
 /* Coefficient badge with SVG arrows */
 .bet-coef{display:flex;align-items:center;gap:4px;flex-shrink:0}
 .bet-coef-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(107,122,141,.15);border:1px solid rgba(107,122,141,.2)}
@@ -3690,7 +3702,6 @@ tc-root *{pointer-events:auto}
     <!-- GAME FIELD -->
     <div class="game-field" id="gameField">
         <div class="grid-overlay" id="gridOverlay"></div>
-        <div class="rtp-badge" id="rtpBadge">RTP: 85%</div>
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="mult-display" id="multDisplay"></div>
         <div class="wait-label" id="waitLabel">Waiting for round</div>
@@ -4078,6 +4089,25 @@ tc-root *{pointer-events:auto}
                         <div class="toggle-switch" id="adminRangeToggle" onclick="adminToggleRange()"></div>
                     </div>
                     <button class="admin-apply-btn" onclick="adminSetRange()">Apply</button>
+                </div>
+                
+                <!-- RTP Control -->
+                <div class="admin-section">
+                    <div class="admin-section-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                        RTP (Return to Player)
+                    </div>
+                    <div class="admin-game-info">
+                        <div class="admin-info-row">
+                            <span>Current RTP</span>
+                            <span class="admin-rtp-val" id="adminRtpVal" style="font-weight:700;font-size:14px;color:#3b82f6">—</span>
+                        </div>
+                    </div>
+                    <div class="admin-input-row" style="margin-top:10px">
+                        <input type="number" class="admin-input" id="adminRtpInput" placeholder="e.g. 85" min="1" max="100" step="1" value="">
+                        <button class="admin-set-btn" onclick="adminSetRtp()">Set</button>
+                    </div>
+                    <div class="admin-hint">Percentage of bets returned as winnings (1–100%)</div>
                 </div>
             </div>
             
@@ -4993,6 +5023,7 @@ async function initTelegramApp() {
                 const tg = Telegram.WebApp;
                 tg.ready();
                 tg.expand();
+                try{ if(tg.requestFullscreen) tg.requestFullscreen(); }catch(e){}
                 const tgUser = tg.initDataUnsafe.user;
                 if (tgUser) {
                     userData = {
@@ -5888,11 +5919,7 @@ async function updStatus(){
         const d = await r.json();
         if(!d.success && !d.game) return;
 
-        /* Update RTP badge */
-        if(d.rtp !== undefined){
-            var rb = $('rtpBadge');
-            if(rb) rb.textContent = 'RTP: ' + d.rtp + '%';
-        }
+
 
         const g = d.game;
         prevSt = status;
@@ -6805,10 +6832,19 @@ async function loadBets(){
             var winDisplay = '', winIcon = tonIcon, coefVal = '1.00';
             var isFreshCashout = newCashouts.some(function(c){ return c.id === b.id; });
 
-            /* Use gift image as bet icon if bet was made with a gift */
-            var betIcon = tonIcon;
-            if(b.bet_type === 'gift' && b.gift_image){
-                betIcon = b.gift_image;
+            /* Build bet icon: stacked gift PNGs or single TON icon */
+            var giftImages = (b.bet_type === 'gift' && b.gift_images && b.gift_images.length) ? b.gift_images : null;
+            var betIconHtml = '';
+            if(giftImages){
+                var maxShow = 2;
+                var shown = giftImages.slice(0, maxShow);
+                var extra = giftImages.length - maxShow;
+                betIconHtml = '<div class="bet-gift-stack">';
+                shown.forEach(function(url){ betIconHtml += '<img src="' + url + '">'; });
+                if(extra > 0) betIconHtml += '<div class="bet-gift-more">+' + extra + '</div>';
+                betIconHtml += '</div>';
+            } else {
+                betIconHtml = '<img src="' + tonIcon + '">';
             }
             
             /* SVG arrows icon for coefficient */
@@ -6843,7 +6879,7 @@ async function loadBets(){
                     '<div class="bet-avatar">' + avatar + '</div>' +
                     '<div class="bet-info">' +
                         '<div class="bet-name">' + name + '</div>' +
-                        '<div class="bet-amt"><img src="' + betIcon + '"><span class="bet-amt-val">' + betAmtDisplay + '</span></div>' +
+                        '<div class="bet-amt">' + betIconHtml + '<span class="bet-amt-val">' + betAmtDisplay + '</span></div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="bet-coef ' + coefCls + '">' +
@@ -11679,6 +11715,10 @@ async function updateAdminStatus(){
         if(minInput && !minInput.matches(':focus')) minInput.value = ctrl.multiplier_min;
         if(maxInput && !maxInput.matches(':focus')) maxInput.value = ctrl.multiplier_max;
         
+        /* Update RTP display */
+        const rtpEl = $('adminRtpVal');
+        if(rtpEl && d.rtp !== undefined) rtpEl.textContent = d.rtp + '%';
+        
     }catch(e){
         console.error('Admin status error:', e);
     }
@@ -11770,6 +11810,21 @@ async function adminSetRange(){
     }catch(e){
         showToast('Network error', 'err');
     }
+}
+
+async function adminSetRtp(){
+    if(!isAdmin || !userData) return;
+    var val = parseFloat($('adminRtpInput').value);
+    if(!val || val < 1 || val > 100){ showToast('RTP: 1–100', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/crash/set-rtp', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: userData.id, rtp: val})
+        });
+        var d = await r.json();
+        if(d.success){ showToast(d.message, 'ok'); $('adminRtpInput').value = ''; }
+        else showToast(d.error || 'Error', 'err');
+    }catch(e){ showToast('Network error', 'err'); }
 }
 
 /* ===== ADMIN SHOP MANAGEMENT ===== */
