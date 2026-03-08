@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # app.py - main application file
-from flask import Flask, render_template, request, jsonify, send_from_directory, redirect
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, make_response
 import sqlite3
 import json
 import os
@@ -2898,6 +2898,40 @@ def process_referral(referred_user_id, referral_code):
 # ============================================================
 
 TARGET_RTP = 0.85  # 85% RTP target
+
+# Case-specific RTP tracking
+CASE_RTP_BOOST_THRESHOLD = 0.45   # Below 45% → boost player (better drops)
+CASE_RTP_NERF_THRESHOLD = 0.90    # Above 90% → nerf player (cheaper drops)
+
+def get_player_case_rtp_mode(user_id, conn=None):
+    """Determine if a player should get boosted or nerfed case drops based on case-specific RTP."""
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''SELECT COALESCE(SUM(cost), 0), COALESCE(SUM(gift_value), 0), COUNT(*)
+                         FROM case_open_history WHERE user_id = ?''', (user_id,))
+        row = cursor.fetchone()
+        if close_conn:
+            conn.close()
+        total_spent = row[0] if row else 0
+        total_won = row[1] if row else 0
+        opens = row[2] if row else 0
+        if total_spent < 50 or opens < 5:  # Not enough data
+            return 'normal'
+        case_rtp = total_won / total_spent if total_spent > 0 else 1.0
+        if case_rtp < CASE_RTP_BOOST_THRESHOLD:
+            return 'boost'
+        elif case_rtp > CASE_RTP_NERF_THRESHOLD:
+            return 'nerf'
+        return 'normal'
+    except Exception as e:
+        if close_conn:
+            try: conn.close()
+            except: pass
+        return 'normal'
 RTP_HARD_FLOOR = 0.70  # Never let a player's effective RTP exceed this floor 
 RTP_CHECK_INTERVAL = 5  # Re-evaluate every N games
 LARGE_BET_THRESHOLD = 100  # Stars threshold for "large bet" (1 TON)
@@ -3062,35 +3096,31 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
         
         if close_conn: conn.close()
         
-        # === WHALE BET: Crash early! ===
+        # === WHALE BET: Moderate target reduction ===
         if has_whale_bet or large_bet_value > total_bet_value * 0.5:
-            # Drastically reduce target for rounds with large bets
-            reduction = 0.7 if has_whale_bet else 0.5
-            adjusted = max(1.01, base_target * (1 - reduction))
+            # Modest reduction — still allow decent multipliers
+            reduction = 0.25 if has_whale_bet else 0.15
+            adjusted = max(2.0, base_target * (1 - reduction))
             logger.info(f"🐋 AI: Large bet detected! Reducing target {base_target:.2f}x → {adjusted:.2f}x")
             return round(adjusted, 2)
         
-        # === TEASE LOSING PLAYERS: Allow massive multipliers ===
-        if losing_small_bet_value > total_bet_value * 0.4 and large_bet_value == 0:
-            # Mostly losing players with small bets - TEASE them with high multipliers
+        # === LOSING PLAYERS: Boost multipliers to help them recover ===
+        if losing_small_bet_value > total_bet_value * 0.3 and large_bet_value == 0:
             loss_ratio = losing_small_bet_value / max(total_bet_value, 1)
             
-            # Generate provocative high multipliers
-            if random.random() < 0.25:  # 25% chance of massive boost
-                boost = 3.0 + random.random() * 10.0  # 3x to 13x multiplier boost!
+            if random.random() < 0.35:  # 35% chance of big boost
+                boost = 2.0 + random.random() * 5.0  # 2x to 7x multiplier boost
                 adjusted = min(150.0, base_target * boost)
-                logger.info(f"🎰 AI: Teasing losers! Boosting target {base_target:.2f}x → {adjusted:.2f}x")
+                logger.info(f"🎰 AI: Boosting losers! Target {base_target:.2f}x → {adjusted:.2f}x")
                 return round(adjusted, 2)
             else:
-                # Still boost, but more moderately
-                boost = 1.5 + loss_ratio * 2.0
+                boost = 1.3 + loss_ratio * 1.5
                 adjusted = base_target * boost
-                logger.debug(f"🎰 AI: Moderate loser tease {base_target:.2f}x → {adjusted:.2f}x")
+                logger.debug(f"🎰 AI: Moderate loser boost {base_target:.2f}x → {adjusted:.2f}x")
                 return round(min(100.0, adjusted), 2)
         
-        # === WINNING PLAYERS: Reduce target (stronger for nerfed players) ===
-        if winning_bet_value > total_bet_value * 0.3:
-            # Check if any winning player is in nerf mode (RTP > 80%)
+        # === WINNING PLAYERS: Slight target reduction ===
+        if winning_bet_value > total_bet_value * 0.5:
             has_nerf_player = False
             for user_id, bet_amount in bets:
                 if user_id < 0:
@@ -3101,10 +3131,10 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
                     break
             
             if has_nerf_player:
-                reduction = min(0.70, 0.40 + (winning_bet_value / total_bet_value) * 0.3)
+                reduction = min(0.30, 0.10 + (winning_bet_value / total_bet_value) * 0.15)
             else:
-                reduction = min(0.50, 0.20 + (winning_bet_value / total_bet_value) * 0.3)
-            adjusted = max(1.01, base_target * (1 - reduction))
+                reduction = min(0.15, 0.05 + (winning_bet_value / total_bet_value) * 0.10)
+            adjusted = max(2.0, base_target * (1 - reduction))
             logger.debug(f"🎯 AI: Winners detected (nerf={has_nerf_player}), reducing {base_target:.2f}x → {adjusted:.2f}x")
             return round(adjusted, 2)
         
@@ -3121,10 +3151,8 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
 def ai_should_force_crash(game_id, current_mult, conn=None):
     """Check if the game should crash NOW based on player bets and their status.
     
-    KEY LOGIC:
-    - If player bets LARGE (>1-5 TON), crash early to take their money
-    - If player is losing overall, let them win small bets (provoke to bet more)
-    - If player is winning overall, crash more aggressively
+    Balanced approach: protect against extreme extractions while allowing
+    regular wins at good multipliers. Only intervene for truly dangerous payouts.
     """
     close_conn = False
     if conn is None:
@@ -3147,63 +3175,46 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
             potential_win = bet_amount * current_mult
             stats = get_player_crash_stats(user_id, conn)
             
-            # === KEY: Large bet detection ===
-            # If bet is large (>1 TON = 100 stars), crash early regardless
+            # === Large bet protection — only at high multipliers ===
             if bet_amount >= LARGE_BET_THRESHOLD:
-                # Crash probability increases with bet size
                 if bet_amount >= WHALE_BET_THRESHOLD:  # 5+ TON
-                    # Very high chance to crash early on whale bets
-                    crash_prob = 0.6 + (current_mult - 1.0) * 0.15
-                    if random.random() < crash_prob:
-                        if close_conn: conn.close()
-                        logger.info(f"🐋 Whale crash: {bet_amount} stars bet from user {user_id}, mult={current_mult:.2f}x")
-                        return True
+                    # Only start considering crash above 3x for whales
+                    if current_mult > 3.0:
+                        crash_prob = 0.05 + (current_mult - 3.0) * 0.04
+                        crash_prob = min(crash_prob, 0.30)
+                        if random.random() < crash_prob:
+                            if close_conn: conn.close()
+                            logger.info(f"🐋 Whale crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
+                            return True
                 else:  # 1-5 TON range
-                    # Medium chance to crash
-                    crash_prob = 0.35 + (current_mult - 1.0) * 0.12
-                    if bet_amount >= 200:  # 2+ TON
-                        crash_prob += 0.15
-                    if random.random() < crash_prob:
-                        if close_conn: conn.close()
-                        logger.info(f"💰 Large bet crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
-                        return True
+                    # Only start considering crash above 5x for large bets
+                    if current_mult > 5.0:
+                        crash_prob = 0.03 + (current_mult - 5.0) * 0.03
+                        crash_prob = min(crash_prob, 0.20)
+                        if random.random() < crash_prob:
+                            if close_conn: conn.close()
+                            logger.info(f"💰 Large bet crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
+                            return True
             
-            # === Secondary: Player profitability check ===
-            # If player RTP > 80%, crash more aggressively to bring them down
-            if stats['total_wagered'] >= 200:  # Has some history
+            # === Profitability check — only for very profitable players ===
+            if stats['total_wagered'] >= 500:  # Needs significant history
                 mode, _ = get_player_rtp_mode(user_id, conn)
-                if mode == 'nerf':
-                    # Player RTP above 80% — crash aggressively
+                if mode == 'nerf' and current_mult > 4.0:
                     excess_rtp = stats['player_rtp'] - RTP_NERF_THRESHOLD
-                    crash_prob = min(0.55, 0.25 + excess_rtp * 0.5)
+                    crash_prob = min(0.20, 0.05 + excess_rtp * 0.2)
                     
-                    if potential_win > 300:
-                        crash_prob += 0.10
                     if potential_win > 1000:
-                        crash_prob += 0.15
+                        crash_prob += 0.05
+                    if potential_win > 5000:
+                        crash_prob += 0.08
                     
                     if random.random() < crash_prob:
                         if close_conn: conn.close()
                         logger.info(f"🎯 RTP Nerf crash: user {user_id} RTP={stats['player_rtp']:.2f}, prob={crash_prob:.2f}")
                         return True
-                elif stats['player_rtp'] > 1.1:  # Still profitable but not in nerf zone
-                    excess_rtp = stats['player_rtp'] - TARGET_RTP
-                    crash_prob = min(0.40, excess_rtp * 0.35)
-                    
-                    if potential_win > 500:
-                        crash_prob += 0.08
-                    if potential_win > 2000:
-                        crash_prob += 0.12
-                    
-                    if random.random() < crash_prob:
-                        if close_conn: conn.close()
-                        logger.info(f"🎯 RTP crash: user {user_id} RTP={stats['player_rtp']:.2f}, prob={crash_prob:.2f}")
-                        return True
-                        
-                # If player is losing AND betting small, let them win occasionally
-                # This is handled by NOT crashing here
-                elif stats['is_losing'] and bet_amount < LARGE_BET_THRESHOLD:
-                    # Skip force crash for small bets from losing players
+                
+                # Losing players — never force crash on them
+                elif stats['is_losing']:
                     continue
         
         if close_conn: conn.close()
@@ -3228,56 +3239,65 @@ def generate_extreme_crash_multiplier():
     
     # Standard distribution based on site balance
     if site_balance < -5000:
-        # Site is losing big — mostly low multipliers
-        if r < 0.65:
-            return round(1.0 + random.random() * 0.8, 2)  # 1.0-1.8
-        elif r < 0.85:
-            return round(1.8 + random.random() * 1.2, 2)  # 1.8-3.0
-        elif r < 0.95:
-            return round(3.0 + random.random() * 2.0, 2)  # 3.0-5.0
+        # Site is losing big — tighter distribution but still fair
+        if r < 0.40:
+            return round(1.0 + random.random() * 1.5, 2)  # 1.0-2.5
+        elif r < 0.65:
+            return round(2.5 + random.random() * 2.0, 2)  # 2.5-4.5
+        elif r < 0.82:
+            return round(4.5 + random.random() * 3.0, 2)  # 4.5-7.5
+        elif r < 0.93:
+            return round(7.5 + random.random() * 5.0, 2)  # 7.5-12.5
+        elif r < 0.98:
+            return round(12.5 + random.random() * 7.5, 2) # 12.5-20.0
         else:
-            return round(5.0 + random.random() * 3.0, 2)   # 5.0-8.0
+            return round(20.0 + random.random() * 10.0, 2) # 20.0-30.0
     elif site_balance < -1000:
         # Site is losing moderately — slightly lower multipliers
-        if r < 0.55:
-            return round(1.0 + random.random() * 1.0, 2)
-        elif r < 0.75:
-            return round(2.0 + random.random() * 1.5, 2)
-        elif r < 0.90:
-            return round(3.5 + random.random() * 1.5, 2)
+        if r < 0.35:
+            return round(1.0 + random.random() * 1.5, 2)  # 1.0-2.5
+        elif r < 0.58:
+            return round(2.5 + random.random() * 2.5, 2)  # 2.5-5.0
+        elif r < 0.76:
+            return round(5.0 + random.random() * 3.0, 2)  # 5.0-8.0
+        elif r < 0.89:
+            return round(8.0 + random.random() * 7.0, 2)  # 8.0-15.0
         elif r < 0.97:
-            return round(5.0 + random.random() * 3.0, 2)
+            return round(15.0 + random.random() * 15.0, 2) # 15.0-30.0
         else:
-            return round(8.0 + random.random() * 5.0, 2)
+            return round(30.0 + random.random() * 20.0, 2) # 30.0-50.0
     elif site_balance > 5000:
-        # Site is profiting well — give players better odds (but cap at 50% return)
-        payout_factor = min(0.5, site_balance / 20000)  # Max 50% payout factor
-        if r < 0.40:
-            return round(1.0 + random.random() * 1.5, 2)
-        elif r < 0.60:
-            return round(2.5 + random.random() * 2.0, 2)
+        # Site is profiting well — give players better odds
+        if r < 0.25:
+            return round(1.0 + random.random() * 2.0, 2)  # 1.0-3.0
+        elif r < 0.45:
+            return round(3.0 + random.random() * 3.0, 2)  # 3.0-6.0
+        elif r < 0.63:
+            return round(6.0 + random.random() * 4.0, 2)  # 6.0-10.0
         elif r < 0.78:
-            return round(4.5 + random.random() * 3.5, 2)
+            return round(10.0 + random.random() * 10.0, 2) # 10.0-20.0
         elif r < 0.90:
-            return round(8.0 + random.random() * 7.0, 2)
+            return round(20.0 + random.random() * 20.0, 2) # 20.0-40.0
         elif r < 0.97:
-            return round(15.0 + random.random() * 15.0, 2)
+            return round(40.0 + random.random() * 30.0, 2) # 40.0-70.0
         else:
-            return round(30.0 + random.random() * 20.0, 2)
+            return round(70.0 + random.random() * 30.0, 2) # 70.0-100.0
     else:
-        # Normal/balanced — standard distribution
-        if r < 0.50:
-            return round(1.0 + random.random() * 1.0, 2)
+        # Normal/balanced — fair distribution with regular big multipliers
+        if r < 0.30:
+            return round(1.0 + random.random() * 1.5, 2)  # 1.0-2.5
+        elif r < 0.52:
+            return round(2.5 + random.random() * 2.5, 2)  # 2.5-5.0
         elif r < 0.70:
-            return round(2.0 + random.random() * 1.5, 2)
-        elif r < 0.85:
-            return round(3.5 + random.random() * 1.5, 2)
-        elif r < 0.94:
-            return round(5.0 + random.random() * 3.0, 2)
+            return round(5.0 + random.random() * 3.0, 2)  # 5.0-8.0
+        elif r < 0.83:
+            return round(8.0 + random.random() * 7.0, 2)  # 8.0-15.0
+        elif r < 0.93:
+            return round(15.0 + random.random() * 15.0, 2) # 15.0-30.0
         elif r < 0.98:
-            return round(8.0 + random.random() * 7.0, 2)
+            return round(30.0 + random.random() * 30.0, 2) # 30.0-60.0
         else:
-            return round(15.0 + random.random() * 35.0, 2)
+            return round(60.0 + random.random() * 40.0, 2) # 60.0-100.0
 
 
 def _get_site_profit_balance():
@@ -3481,7 +3501,7 @@ def start_ultimate_crash_loop():
 
                         if current_mult_float < target_mult_float:
                             # AI RTP check — force crash if profitable players would extract too much
-                            if current_mult_float > 1.5 and tick_counter % 3 == 0:
+                            if current_mult_float > 3.0 and tick_counter % 5 == 0:
                                 if ai_should_force_crash(game_id, current_mult_float, conn):
                                     cursor.execute('UPDATE ultimate_crash_games SET status = "crashed" WHERE id = ?', (game_id,))
                                     cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (game_id, current_mult_float))
@@ -3862,7 +3882,9 @@ def upgrade_page():
 @app.route('/leaderboard')
 def leaderboard_page():
     """Страница лидерборда"""
-    return render_template('leaderboard.html')
+    response = make_response(render_template('leaderboard.html'))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
 
 @app.route('/admin')
 def admin_page():
@@ -5967,8 +5989,8 @@ def open_case():
         won_gifts = []
         gifts = build_fragment_first_gifts_catalog() or load_gifts()
 
-        # RTP-based case drop adjustment
-        rtp_mode, rtp_stats = get_player_rtp_mode(user_id)
+        # Case-specific RTP adjustment (uses case stats, not crash stats)
+        rtp_mode = get_player_case_rtp_mode(user_id)
 
         # Minimum drop value floors per case cost (in TON)
         CASE_MIN_DROP_TON = {
@@ -5999,17 +6021,17 @@ def open_case():
                         ag = dict(g)
                         base_chance = ag.get('chance', 1)
                         if rtp_mode == 'boost':
-                            # Boost: double chance for expensive items, halve for cheap
+                            # Boost: triple chance for expensive items, 0.3x for cheap
                             if id(g) in cheap_ids:
-                                ag['chance'] = base_chance * 0.5
+                                ag['chance'] = base_chance * 0.3
                             else:
-                                ag['chance'] = base_chance * 2.0
+                                ag['chance'] = base_chance * 3.0
                         else:  # nerf
-                            # Nerf: double chance for cheap items, halve for expensive
+                            # Nerf: triple chance for cheap items, 0.3x for expensive
                             if id(g) in cheap_ids:
-                                ag['chance'] = base_chance * 2.0
+                                ag['chance'] = base_chance * 3.0
                             else:
-                                ag['chance'] = base_chance * 0.5
+                                ag['chance'] = base_chance * 0.3
                         adjusted_gifts.append(ag)
 
                 total_chance = sum(gift.get('chance', 1) for gift in adjusted_gifts)
@@ -6242,13 +6264,37 @@ def open_case_single():
         won_gift = None
         is_ton_balance = False
 
+        # Case-specific RTP adjustment
+        case_rtp_mode = get_player_case_rtp_mode(user_id)
+
         if case.get('gifts'):
-            total_chance = sum(gift.get('chance', 1) for gift in case['gifts'])
+            adjusted_gifts = case['gifts']
+            if case_rtp_mode in ('boost', 'nerf') and len(case['gifts']) > 1:
+                sorted_by_value = sorted(case['gifts'], key=lambda g: float(g.get('value', 0) or g.get('ton_amount', 0) or 0))
+                mid = len(sorted_by_value) // 2
+                cheap_ids = {id(g) for g in sorted_by_value[:mid]}
+                adjusted_gifts = []
+                for g in case['gifts']:
+                    ag = dict(g)
+                    base_chance = ag.get('chance', 1)
+                    if case_rtp_mode == 'boost':
+                        if id(g) in cheap_ids:
+                            ag['chance'] = base_chance * 0.3
+                        else:
+                            ag['chance'] = base_chance * 3.0
+                    else:  # nerf
+                        if id(g) in cheap_ids:
+                            ag['chance'] = base_chance * 3.0
+                        else:
+                            ag['chance'] = base_chance * 0.3
+                    adjusted_gifts.append(ag)
+
+            total_chance = sum(gift.get('chance', 1) for gift in adjusted_gifts)
             random_value = random.random() * total_chance
             current_chance = 0
             selected_gift_info = None
 
-            for gift_info in case['gifts']:
+            for gift_info in adjusted_gifts:
                 current_chance += gift_info.get('chance', 1)
                 if random_value <= current_chance:
                     selected_gift_info = gift_info
@@ -7345,6 +7391,21 @@ def sell_all_gifts():
             conn.close()
             return jsonify({'success': False, 'error': 'В инвентаре нет предметов для продажи'})
 
+        # Filter out gifts locked by active challenges (wager not completed)
+        gift_ids = [g[0] for g in gifts]
+        locked_ids = set()
+        if gift_ids:
+            placeholders = ','.join('?' * len(gift_ids))
+            cursor.execute(f'SELECT inventory_id FROM promo_gift_challenges WHERE inventory_id IN ({placeholders}) AND is_completed = FALSE', gift_ids)
+            locked_ids = {r[0] for r in cursor.fetchall()}
+        
+        if locked_ids:
+            gifts = [g for g in gifts if g[0] not in locked_ids]
+        
+        if not gifts:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Все подарки заблокированы отыгрышем'})
+
         total_value = 0
         sold_count = len(gifts)
 
@@ -7538,7 +7599,7 @@ def upgrade_gift():
             return jsonify({'success': False, 'error': 'Cannot upgrade a crate'})
 
         # Check active challenge
-        cursor.execute('SELECT id FROM promo_gift_challenges WHERE inventory_id = ? AND is_completed = 0', (inventory_id,))
+        cursor.execute('SELECT id FROM promo_gift_challenges WHERE inventory_id = ? AND is_completed = FALSE', (inventory_id,))
         if cursor.fetchone():
             conn.close()
             return jsonify({'success': False, 'error': 'Gift locked by challenge'})
