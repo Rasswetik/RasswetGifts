@@ -42,14 +42,16 @@ a{text-decoration:none;color:inherit}
 .wheel-green{fill:none;stroke:var(--green);stroke-width:32;stroke-linecap:round;filter:drop-shadow(0 0 10px rgba(30,228,76,.4));transition:stroke-dasharray .5s,stroke-dashoffset .5s}
 .wheel-red{fill:none;stroke:var(--red);stroke-width:32;stroke-linecap:round;filter:drop-shadow(0 0 10px rgba(249,105,153,.35));transition:stroke-dasharray .5s,stroke-dashoffset .5s}
 
-/* Outer ring decorations */
-.wheel-container::before{content:'';position:absolute;inset:-10px;border-radius:50%;border:2px solid rgba(59,130,246,.08);pointer-events:none}
-.wheel-container::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px dashed rgba(255,255,255,.04);pointer-events:none}
+/* Outer ring decorations - multiple concentric rings */
+.wheel-container::before{content:'';position:absolute;inset:-14px;border-radius:50%;border:2px solid rgba(59,130,246,.1);pointer-events:none;box-shadow:inset 0 0 20px rgba(59,130,246,.03)}
+.wheel-container::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1px solid rgba(255,255,255,.04);pointer-events:none}
+.wheel-ring-inner{position:absolute;inset:4px;border-radius:50%;border:1px solid rgba(59,130,246,.06);pointer-events:none}
+.wheel-ring-outer{position:absolute;inset:-22px;border-radius:50%;border:1.5px solid rgba(59,130,246,.06);pointer-events:none}
+.wheel-ring-glow{position:absolute;inset:-30px;border-radius:50%;border:1px solid rgba(6,182,212,.04);pointer-events:none}
 
-/* Pointer arrow at 12 o'clock — this element SPINS */
+/* Pointer dot at 12 o'clock — this element SPINS */
 .wheel-pointer-wrap{position:absolute;top:50%;left:50%;width:0;height:0;z-index:10;transition:none}
-.wheel-pointer{position:absolute;left:-14px;top:-150px;width:28px;height:28px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
-.wheel-pointer svg{width:28px;height:28px}
+.wheel-pointer{position:absolute;left:-6px;top:-148px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 8px rgba(255,255,255,.8),0 0 20px rgba(59,130,246,.5);border:2px solid rgba(59,130,246,.6)}
 
 /* Glow ring around wheel during spin */
 .wheel-glow{position:absolute;inset:-14px;border-radius:50%;border:2px solid transparent;pointer-events:none;transition:border-color .3s,box-shadow .3s}
@@ -77,9 +79,11 @@ a{text-decoration:none;color:inherit}
 
 /* ── TWO-COLUMN CARDS ── */
 .cards-row{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;min-height:160px}
+.card{background:rgba(26,38,52,.6);border:1.5px dashed rgba(59,130,246,.15);border-radius:20px;padding:20px 14px;display:flex;flex-direction:column;align-items:center;min-height:180px;justify-content:center;transition:border-color .2s}
+.card:active{border-color:rgba(59,130,246,.3)}
 .card-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:5px}
 .card-label svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+.card-empty-icon{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 
 /* Gift slots inside left card */
 .card-gift-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:6px}
@@ -110,9 +114,13 @@ a{text-decoration:none;color:inherit}
 
 /* ── TWO BUTTONS ROW ── */
 .btns-row{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.select-btn{height:44px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
-.select-btn:active{transform:scale(.97);background:rgba(59,130,246,.08)}
+.select-btn{height:48px;border-radius:14px;border:none;background:var(--card);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:all .15s}
+.select-btn:nth-child(2){background:rgba(120,135,160,.2)}
+.select-btn:active{transform:scale(.97);opacity:.85}
 .select-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ── HELPER TEXT ── */
+.helper-text{text-align:center;font-size:14px;color:rgba(255,255,255,.35);font-weight:500;padding:8px 0}
 
 /* ── UPGRADE BUTTON ── */
 .upgrade-btn{width:100%;height:56px;border-radius:16px;border:none;background:var(--card);color:rgba(255,255,255,.2);font-family:'Inter',sans-serif;font-size:17px;font-weight:800;cursor:not-allowed;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .3s;position:relative;overflow:hidden;letter-spacing:.3px}
@@ -201,16 +209,17 @@ a{text-decoration:none;color:inherit}
     <div class="wheel-section">
         <div class="wheel-container" id="wheelContainer">
             <div class="wheel-glow" id="wheelGlow"></div>
+            <div class="wheel-ring-outer"></div>
+            <div class="wheel-ring-inner"></div>
+            <div class="wheel-ring-glow"></div>
             <svg class="wheel-svg" viewBox="0 0 200 200" id="wheelSvg">
                 <circle class="wheel-bg" cx="100" cy="100" r="82"/>
                 <circle class="wheel-green" id="wheelGreen" cx="100" cy="100" r="82" stroke-dasharray="0 515.22" stroke-dashoffset="0"/>
                 <circle class="wheel-red" id="wheelRed" cx="100" cy="100" r="82" stroke-dasharray="0 515.22" stroke-dashoffset="0"/>
             </svg>
-            <!-- Pointer that spins -->
+            <!-- Pointer dot that spins -->
             <div class="wheel-pointer-wrap" id="pointerWrap">
-                <div class="wheel-pointer">
-                    <svg viewBox="0 0 28 28"><path d="M14 2L7 14h14L14 2z" fill="#fff" opacity=".9"/><path d="M14 2L7 14h14L14 2z" fill="none" stroke="rgba(59,130,246,.5)" stroke-width="1"/></svg>
-                </div>
+                <div class="wheel-pointer"></div>
             </div>
             <div class="wheel-center" id="wheelCenter">
                 <img id="wheelCenterImg" src="" alt="">
@@ -228,22 +237,32 @@ a{text-decoration:none;color:inherit}
         </div>
     </div>
 
+    <!-- UPGRADE BUTTON -->
+    <button class="upgrade-btn" id="upgradeBtn" disabled onclick="doUpgrade()">
+        <span id="upgradeBtnText">Апгрейд 🚀</span>
+    </button>
+
     <!-- TWO CARDS -->
     <div class="cards-row">
-        <div class="card">
-            <div class="card-label"><svg viewBox="0 0 24 24" stroke-linecap="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18"/><path d="M7.5 8C7.5 8 7 2 12 5c0 0 .5-3.5 4.5-.5S12 8 12 8"/></svg>Ваш подарок</div>
-            <div class="card-gift-area">
-                <div class="gift-slots" id="giftSlots">
-                    <div class="gift-slot" onclick="openGiftPicker()"><svg class="slot-plus" viewBox="0 0 20 20"><line x1="10" y1="5" x2="10" y2="15" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="10" x2="15" y2="10" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <div class="card" onclick="openGiftPicker()">
+            <div class="card-gift-area" id="leftCardContent">
+                <div class="card-empty-icon" id="leftCardPlaceholder">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.5" stroke-linecap="round"><rect x="8" y="18" width="32" height="22" rx="3"/><path d="M24 18v22M8 24h32"/><path d="M16 18s-1-10 8-5c0 0 1-6 8-1s-8 6-8 6"/></svg>
+                    <span style="font-size:13px;color:rgba(255,255,255,.35);font-weight:600;margin-top:8px">Выберите ваш подарок</span>
+                </div>
+                <div class="gift-slots" id="giftSlots" style="display:none">
+                    <div class="gift-slot" onclick="event.stopPropagation();openGiftPicker()"><svg class="slot-plus" viewBox="0 0 20 20"><line x1="10" y1="5" x2="10" y2="15" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="10" x2="15" y2="10" stroke-width="2" stroke-linecap="round"/></svg></div>
                 </div>
                 <div class="total-bet" id="totalBet" style="display:none"><img src="/static/img/ton.png" alt=""><span id="totalBetVal">0.00</span></div>
             </div>
         </div>
-        <div class="card">
-            <div class="card-label"><svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Желаемый</div>
-            <div class="target-area" id="targetArea" onclick="openTargetPicker()">
+        <div class="card" onclick="openTargetPicker()">
+            <div class="target-area" id="targetArea">
                 <div class="target-slot">
-                    <div class="target-placeholder" id="targetPlaceholder"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16"/><path d="M20 12v16M12 20h16" stroke-linecap="round"/></svg><span>Выбрать</span></div>
+                    <div class="target-placeholder" id="targetPlaceholder">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="rgba(255,255,255,.15)" stroke-width="1.5" stroke-linecap="round"><rect x="8" y="18" width="32" height="22" rx="3"/><path d="M24 18v22M8 24h32"/><path d="M16 18s-1-10 8-5c0 0 1-6 8-1s-8 6-8 6"/></svg>
+                        <span style="font-size:13px;color:rgba(255,255,255,.35);font-weight:600;margin-top:8px">Выберите желаемый подарок</span>
+                    </div>
                     <img id="targetImg" src="" alt="">
                     <div class="target-name" id="targetName" style="display:none"></div>
                     <div class="target-price" id="targetPriceWrap" style="display:none"><img src="/static/img/ton.png" alt=""><span id="targetPrice"></span></div>
@@ -255,19 +274,15 @@ a{text-decoration:none;color:inherit}
     <!-- TWO SELECT BUTTONS -->
     <div class="btns-row">
         <button class="select-btn" onclick="openGiftPicker()">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18"/></svg>
             Инвентарь
         </button>
         <button class="select-btn" onclick="openTargetPicker()">
-            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             Желаемый
         </button>
     </div>
 
-    <!-- UPGRADE BUTTON -->
-    <button class="upgrade-btn" id="upgradeBtn" disabled onclick="doUpgrade()">
-        <span id="upgradeBtnText">Апгрейд 🚀</span>
-    </button>
+    <!-- HELPER TEXT -->
+    <div class="helper-text" id="helperText">Сначало выберите подарок для апгрейда</div>
 </div>
 
 <!-- GIFT PICKER -->
@@ -373,6 +388,22 @@ function closeGiftPicker(){document.getElementById('giftPickerOverlay').classLis
 function renderSlots(){
     var c=document.getElementById('giftSlots');c.innerHTML='';
     var totalVal=0;
+    var placeholder=document.getElementById('leftCardPlaceholder');
+    var slotsDiv=document.getElementById('giftSlots');
+    var helperText=document.getElementById('helperText');
+    
+    if(selectedGifts.length===0){
+        placeholder.style.display='flex';
+        slotsDiv.style.display='none';
+        helperText.style.display='block';
+        helperText.textContent='Сначало выберите подарок для апгрейда';
+    } else {
+        placeholder.style.display='none';
+        slotsDiv.style.display='flex';
+        helperText.style.display=targetGift?'none':'block';
+        if(!targetGift) helperText.textContent='Теперь выберите желаемый подарок';
+    }
+    
     selectedGifts.forEach(function(g,i){
         totalVal+=g.value||0;
         var s=document.createElement('div');s.className='gift-slot filled';
@@ -382,7 +413,7 @@ function renderSlots(){
         c.appendChild(s);
     });
     if(selectedGifts.length<6){
-        var a=document.createElement('div');a.className='gift-slot';a.onclick=openGiftPicker;
+        var a=document.createElement('div');a.className='gift-slot';a.onclick=function(e){e.stopPropagation();openGiftPicker()};
         a.innerHTML='<svg class="slot-plus" viewBox="0 0 20 20"><line x1="10" y1="5" x2="10" y2="15" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="10" x2="15" y2="10" stroke-width="2" stroke-linecap="round"/></svg>';
         c.appendChild(a);
     }
@@ -446,6 +477,7 @@ function selectTarget(g){
     document.getElementById('wheelCenterImg').src=g.image;
     document.getElementById('wheelCenterImg').style.display='block';
     document.getElementById('chanceInside').style.display='none';
+    document.getElementById('helperText').style.display='none';
     updateWheel();
 }
 
@@ -599,6 +631,8 @@ function resetAfterSpin(){
     document.getElementById('resultSad').classList.remove('show');
     document.getElementById('resultHappy').classList.remove('show');
     document.getElementById('pointerWrap').style.transform='rotate(0deg)';
+    document.getElementById('helperText').style.display='block';
+    document.getElementById('helperText').textContent='Сначало выберите подарок для апгрейда';
     updateWheel();
 }
 
