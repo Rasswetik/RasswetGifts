@@ -1513,7 +1513,8 @@ def _create_all_tables(conn):
             referral_balance INTEGER DEFAULT 0,
             is_banned INTEGER DEFAULT 0,
             ban_reason TEXT,
-            ban_until TEXT
+            ban_until TEXT,
+            rtp_boost INTEGER DEFAULT 40
         )''',
         'inventory': '''CREATE TABLE IF NOT EXISTS inventory (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -2381,6 +2382,9 @@ def init_db():
                 if 'ban_until' not in columns:
                     cursor.execute('ALTER TABLE users ADD COLUMN ban_until TEXT')
                     logger.info("✅ Добавлена колонка ban_until")
+                if 'rtp_boost' not in columns:
+                    cursor.execute('ALTER TABLE users ADD COLUMN rtp_boost INTEGER DEFAULT 40')
+                    logger.info("✅ Добавлена колонка rtp_boost")
                 conn.commit()
             except Exception as e:
                 logger.warning(f"⚠️ Миграция колонок users: {e}")
@@ -3009,15 +3013,20 @@ def get_player_case_rtp_mode(user_id, conn=None):
         cursor.execute('''SELECT COALESCE(SUM(cost), 0), COALESCE(SUM(gift_value), 0), COUNT(*)
                          FROM case_open_history WHERE user_id = ?''', (user_id,))
         row = cursor.fetchone()
-        if close_conn:
-            conn.close()
         total_spent = row[0] if row else 0
         total_won = row[1] if row else 0
         opens = row[2] if row else 0
         if total_spent < 50 or opens < 5:  # Not enough data
+            if close_conn:
+                conn.close()
             return 'normal'
         case_rtp = total_won / total_spent if total_spent > 0 else 1.0
-        if case_rtp < CASE_RTP_BOOST_THRESHOLD:
+        # Use per-user RTP boost
+        user_boost = get_user_rtp_boost(user_id, conn)
+        boost_threshold = max(CASE_RTP_BOOST_THRESHOLD, user_boost / 100.0)
+        if close_conn:
+            conn.close()
+        if case_rtp < boost_threshold:
             return 'boost'
         elif case_rtp > CASE_RTP_NERF_THRESHOLD:
             return 'nerf'
@@ -3036,15 +3045,42 @@ WHALE_BET_THRESHOLD = 500  # Stars threshold for "whale bet" (5 TON)
 RTP_BOOST_THRESHOLD = 0.40   # Below 40% → boost player (bigger wins)
 RTP_NERF_THRESHOLD = 0.80    # Above 80% → nerf player (reduce luck)
 
+def get_user_rtp_boost(user_id, conn=None):
+    """Get user's personal RTP boost (0-100). Default 40 means player can't lose more than 60%."""
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    try:
+        cursor = conn.cursor()
+        try:
+            cursor.execute('SELECT rtp_boost FROM users WHERE id = ?', (user_id,))
+            row = cursor.fetchone()
+            val = row[0] if row and row[0] is not None else 40
+        except:
+            val = 40
+        if close_conn:
+            conn.close()
+        return val
+    except:
+        if close_conn:
+            try: conn.close()
+            except: pass
+        return 40
+
 def get_player_rtp_mode(user_id, conn=None):
     """Determine if a player should be boosted or nerfed based on their RTP.
+    Uses per-user RTP boost from admin if set.
     Returns: 'boost', 'nerf', or 'normal'
     """
     stats = get_player_crash_stats(user_id, conn)
     if stats['total_wagered'] < 100:  # Not enough data
         return 'normal', stats
+    # Check per-user RTP boost
+    user_boost = get_user_rtp_boost(user_id, conn)
+    boost_threshold = user_boost / 100.0  # e.g. 40 -> 0.40
     rtp = stats['player_rtp']
-    if rtp < RTP_BOOST_THRESHOLD:
+    if rtp < boost_threshold:
         return 'boost', stats
     elif rtp > RTP_NERF_THRESHOLD:
         return 'nerf', stats
@@ -8634,6 +8670,12 @@ def upgrade_gift_chance():
 
             real_chance = max(5, real_chance)
 
+            # Per-user RTP boost from admin
+            user_rtp_boost = get_user_rtp_boost(user_id)
+            if user_rtp_boost > 40:
+                boost_mult = 1.0 + (user_rtp_boost - 40) / 100.0
+                real_chance = min(real_chance * boost_mult, 95)
+
             logger.info(f"🎯 Шансы: отображаемый {displayed_chance}%, реальный {real_chance:.1f}%, цена: {current_value} -> {target_value}")
 
             success = random.random() * 100 <= real_chance
@@ -8866,6 +8908,12 @@ def upgrade_multi_gifts():
             elif target_value > 1000:
                 real_chance = base_chance * 0.8
             real_chance = max(5, real_chance)
+
+            # Per-user RTP boost from admin
+            user_rtp_boost = get_user_rtp_boost(user_id)
+            if user_rtp_boost > 40:
+                boost_mult = 1.0 + (user_rtp_boost - 40) / 100.0
+                real_chance = min(real_chance * boost_mult, 95)
 
             cursor.execute('SELECT COALESCE(first_name, username, ?) FROM users WHERE id = ?', ('Игрок', user_id))
             user_row = cursor.fetchone()
@@ -11127,6 +11175,92 @@ def admin_update_user():
 
     except Exception as e:
         logger.error(f"❌ Ошибка обновления пользователя: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/send-message', methods=['POST'])
+def admin_send_message():
+    """Отправка сообщения пользователю от бота (админ)"""
+    try:
+        data = request.get_json()
+        admin_id = data.get('admin_id')
+        user_id = data.get('user_id')
+        text = data.get('text', '').strip()
+
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+
+        if not user_id or not text:
+            return jsonify({'success': False, 'error': 'user_id и text обязательны'})
+
+        result = tg_send(int(user_id), text)
+        if result.get('ok'):
+            logger.info(f"📨 Админ отправил сообщение пользователю {user_id}")
+            return jsonify({'success': True, 'message': 'Сообщение отправлено'})
+        else:
+            err_desc = result.get('description', 'Ошибка Telegram API')
+            return jsonify({'success': False, 'error': err_desc})
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка отправки сообщения: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/set-user-rtp', methods=['POST'])
+def admin_set_user_rtp():
+    """Установка персонального RTP буста для пользователя (админ)"""
+    try:
+        data = request.get_json()
+        admin_id = data.get('admin_id')
+        user_id = data.get('user_id')
+        rtp_boost = data.get('rtp_boost')
+
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+
+        if not user_id or rtp_boost is None:
+            return jsonify({'success': False, 'error': 'user_id и rtp_boost обязательны'})
+
+        rtp_val = int(rtp_boost)
+        if rtp_val < 0 or rtp_val > 100:
+            return jsonify({'success': False, 'error': 'rtp_boost должен быть 0-100'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Add column if it doesn't exist
+        try:
+            cursor.execute('ALTER TABLE users ADD COLUMN rtp_boost INTEGER DEFAULT 40')
+        except:
+            pass  # Column already exists
+        cursor.execute('UPDATE users SET rtp_boost = ? WHERE id = ?', (rtp_val, user_id))
+        conn.commit()
+        conn.close()
+
+        logger.info(f"🎲 Админ установил RTP буст {rtp_val}% для пользователя {user_id}")
+        return jsonify({'success': True, 'message': f'RTP буст установлен: {rtp_val}%'})
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка установки RTP: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/admin/get-user-rtp', methods=['GET'])
+def admin_get_user_rtp():
+    """Получение RTP буста пользователя (админ)"""
+    try:
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'user_id required'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('SELECT rtp_boost FROM users WHERE id = ?', (user_id,))
+            row = cursor.fetchone()
+            rtp_boost = row[0] if row and row[0] is not None else 40
+        except:
+            rtp_boost = 40
+        conn.close()
+
+        return jsonify({'success': True, 'rtp_boost': rtp_boost})
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/ban-user', methods=['POST'])

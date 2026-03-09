@@ -342,6 +342,20 @@ select.form-input option{background:#1A1E2A;color:#fff}
     .form-group{margin-bottom:12px}
     .form-input,.form-select{padding:10px 12px;font-size:14px}
     .btn{padding:12px;font-size:14px}
+    .bottom-nav{height:62px;gap:1px}
+    .bottom-nav-item{min-width:48px;padding:5px 7px;font-size:8px}
+    .bottom-nav-item svg{width:18px;height:18px}
+    .modal-sheet{padding:14px 12px calc(env(safe-area-inset-bottom,12px) + 12px)}
+    .stat-card{padding:12px}
+    .stat-card-value{font-size:18px}
+    .user-card{padding:10px 12px;gap:10px}
+    .user-avatar{width:38px;height:38px;border-radius:10px}
+    .gift-grid{grid-template-columns:repeat(3,1fr);gap:6px}
+    .inv-grid-mini{grid-template-columns:1fr;gap:6px}
+    .withdrawal-card{padding:10px 12px;gap:10px;flex-wrap:wrap}
+    textarea.form-input{font-size:13px}
+    .section{padding:8px}
+    .section-header h2{font-size:15px}
 }
 
 /* News image preview - smaller on mobile */
@@ -721,6 +735,57 @@ select.form-input option{background:#1A1E2A;color:#fff}
     </div>
 </div>
 
+<!-- Messages Section -->
+<div class="section" id="sectionMessages">
+    <div class="section-header">
+        <h2>Сообщения</h2>
+    </div>
+    <div class="section-content">
+        <div class="detail-section">
+            <div class="detail-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                Отправить сообщение
+            </div>
+            <div class="form-group">
+                <label class="form-label">ID пользователя</label>
+                <input type="number" class="form-input" id="msgUserId" placeholder="Telegram ID пользователя">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Или выберите из списка</label>
+                <div class="search-wrap" style="margin-bottom:0">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    <input type="text" class="search-input" id="msgUserSearch" placeholder="Поиск пользователя..." oninput="searchMsgUser()">
+                </div>
+                <div id="msgUserResults" style="max-height:150px;overflow-y:auto;margin-top:8px"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Текст сообщения (HTML)</label>
+                <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap">
+                    <button type="button" class="btn btn-sm" onclick="insertMsgTag('<b>','</b>')" style="min-width:32px;font-weight:800">B</button>
+                    <button type="button" class="btn btn-sm" onclick="insertMsgTag('<i>','</i>')" style="min-width:32px;font-style:italic">I</button>
+                    <button type="button" class="btn btn-sm" onclick="insertMsgTag('<code>','</code>')" style="min-width:32px;font-family:monospace">{'<>'}</button>
+                </div>
+                <textarea class="form-input" id="msgText" placeholder="Привет! Это сообщение от бота..." rows="5" style="resize:vertical"></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="sendAdminMessage()">Отправить сообщение</button>
+            <div id="msgStatus" style="margin-top:10px;font-size:13px;display:none"></div>
+        </div>
+        
+        <div class="detail-section">
+            <div class="detail-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                Массовая рассылка
+            </div>
+            <div class="form-group">
+                <label class="form-label">Текст рассылки (HTML)</label>
+                <textarea class="form-input" id="broadcastText" placeholder="Сообщение для всех пользователей..." rows="5" style="resize:vertical"></textarea>
+            </div>
+            <button class="btn btn-danger" onclick="sendBroadcast()">Отправить всем</button>
+            <div id="broadcastStatus" style="margin-top:10px;font-size:13px;display:none"></div>
+        </div>
+    </div>
+</div>
+
 <!-- Bottom Nav -->
 <div class="bottom-nav">
     <button class="bottom-nav-item active" onclick="showSection('Dashboard')">
@@ -758,6 +823,10 @@ select.form-input option{background:#1A1E2A;color:#fff}
     <button class="bottom-nav-item" onclick="showSection('Cases')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
         <span>Cases</span>
+    </button>
+    <button class="bottom-nav-item" onclick="showSection('Messages')">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <span>Msg</span>
     </button>
 </div>
 
@@ -813,6 +882,24 @@ select.form-input option{background:#1A1E2A;color:#fff}
                 </div>
             </div>
             <button class="btn btn-success" style="margin-top:12px" onclick="openAddGiftModal()">+ Добавить подарок</button>
+        </div>
+        
+        <div class="detail-section">
+            <div class="detail-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+                RTP Буст
+            </div>
+            <div class="detail-row">
+                <div class="detail-row-label">Текущий RTP</div>
+                <div class="detail-row-value" id="userRtpValue">40%</div>
+            </div>
+            <div class="form-group" style="margin-top:8px">
+                <label class="form-label">RTP буст (0-100%)</label>
+                <input type="range" id="userRtpSlider" min="0" max="100" value="40" style="width:100%;accent-color:#1EE44C" oninput="$('userRtpDisplay').textContent=this.value+'%'">
+                <div style="text-align:center;font-weight:700;font-size:18px;color:#1EE44C;margin-top:4px" id="userRtpDisplay">40%</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.4);text-align:center;margin-top:2px">40% = по умолчанию. Выше = больше шансов на выигрыш</div>
+            </div>
+            <button class="btn btn-success" style="margin-top:8px" onclick="saveUserRtp()">Сохранить RTP</button>
         </div>
         
         <div class="detail-section" id="banSection">
@@ -955,6 +1042,7 @@ function showSection(name){
     if(name === 'Leaderboard') { loadLeaderboards(); if($('lbRewardsContainer').children.length === 0) initLbRewards(); }
     if(name === 'News') loadNewsList();
     if(name === 'Cases') loadCasesList();
+    if(name === 'Messages' && allUsers.length === 0) loadUsers();
 }
 
 function showToast(msg, type){
@@ -1855,6 +1943,9 @@ async function openUserModal(userId){
     // Load ban status
     loadBanStatus(userId);
     
+    // Load RTP boost
+    loadUserRtp(userId);
+    
     try{
         var r = await fetch('/api/admin/user-inventory?user_id=' + userId);
         var d = await r.json();
@@ -2012,7 +2103,7 @@ async function removeInventoryItem(invId){
         var r = await fetch('/api/admin/remove-inventory-item', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ inventory_id: invId })
+            body: JSON.stringify({ admin_id: ADMIN_ID, inventory_id: invId })
         });
         var d = await r.json();
         if(d.success){
@@ -2082,6 +2173,7 @@ async function confirmAddGift(){
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
+                admin_id: ADMIN_ID,
                 user_id: currentUser.id,
                 gift_id: selectedGiftToAdd.id
             })
@@ -2443,6 +2535,125 @@ function selectCaseImage(url){
     $('caseImagePreview').src = url;
     var picker = $('caseImagePicker');
     if(picker) picker.remove();
+}
+
+// ===== MESSAGES =====
+function insertMsgTag(open, close){
+    var ta = $('msgText');
+    var start = ta.selectionStart, end = ta.selectionEnd;
+    var sel = ta.value.substring(start, end);
+    ta.value = ta.value.substring(0, start) + open + sel + close + ta.value.substring(end);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = start + open.length + sel.length;
+}
+
+function searchMsgUser(){
+    var q = $('msgUserSearch').value.toLowerCase().trim();
+    if(!q || q.length < 2){ $('msgUserResults').innerHTML = ''; return; }
+    var results = allUsers.filter(u => 
+        (u.username || '').toLowerCase().includes(q) ||
+        (u.first_name || '').toLowerCase().includes(q) ||
+        String(u.id).includes(q)
+    ).slice(0, 5);
+    $('msgUserResults').innerHTML = results.map(u => 
+        '<div class="user-card" style="padding:8px 10px;margin-bottom:4px" onclick="selectMsgUser(' + u.id + ',\'' + (u.username || u.first_name || u.id).toString().replace(/'/g, "\\'") + '\')">' +
+        '<div class="user-info"><div class="user-name">' + (u.first_name || 'User') + '</div>' +
+        '<div class="user-meta">ID: ' + u.id + (u.username ? ' @' + u.username : '') + '</div></div></div>'
+    ).join('');
+}
+
+function selectMsgUser(id, name){
+    $('msgUserId').value = id;
+    $('msgUserSearch').value = name;
+    $('msgUserResults').innerHTML = '';
+}
+
+async function sendAdminMessage(){
+    var userId = $('msgUserId').value.trim();
+    var text = $('msgText').value.trim();
+    if(!userId || !text){ showToast('Заполните ID и текст', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/send-message', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ admin_id: ADMIN_ID, user_id: parseInt(userId), text: text })
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Сообщение отправлено!', 'ok');
+            $('msgText').value = '';
+            $('msgStatus').style.display = 'block';
+            $('msgStatus').style.color = '#1EE44C';
+            $('msgStatus').textContent = '✓ Отправлено пользователю ' + userId;
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+            $('msgStatus').style.display = 'block';
+            $('msgStatus').style.color = '#F96999';
+            $('msgStatus').textContent = '✗ ' + (d.error || 'Ошибка');
+        }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function sendBroadcast(){
+    var text = $('broadcastText').value.trim();
+    if(!text){ showToast('Введите текст рассылки', 'err'); return; }
+    if(!confirm('Отправить сообщение ВСЕМ пользователям?')) return;
+    $('broadcastStatus').style.display = 'block';
+    $('broadcastStatus').style.color = 'rgba(255,255,255,.5)';
+    $('broadcastStatus').textContent = 'Отправка...';
+    try{
+        var r = await fetch('/api/admin/users?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(!d.success){ showToast('Не удалось загрузить пользователей', 'err'); return; }
+        var users = d.users || [];
+        var sent = 0, failed = 0;
+        for(var u of users){
+            try{
+                var mr = await fetch('/api/admin/send-message', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ admin_id: ADMIN_ID, user_id: u.id, text: text })
+                });
+                var md = await mr.json();
+                if(md.success) sent++; else failed++;
+            }catch(e){ failed++; }
+            $('broadcastStatus').textContent = 'Отправлено: ' + sent + ', ошибок: ' + failed + ' из ' + users.length;
+        }
+        $('broadcastStatus').style.color = '#1EE44C';
+        $('broadcastStatus').textContent = '✓ Готово! Отправлено: ' + sent + ', ошибок: ' + failed;
+        showToast('Рассылка завершена!', 'ok');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+// ===== RTP BOOST =====
+async function loadUserRtp(userId){
+    try{
+        var r = await fetch('/api/admin/get-user-rtp?user_id=' + userId);
+        var d = await r.json();
+        var val = d.success ? d.rtp_boost : 40;
+        $('userRtpSlider').value = val;
+        $('userRtpDisplay').textContent = val + '%';
+        $('userRtpValue').textContent = val + '%';
+    }catch(e){}
+}
+
+async function saveUserRtp(){
+    if(!currentUser) return;
+    var val = parseInt($('userRtpSlider').value);
+    try{
+        var r = await fetch('/api/admin/set-user-rtp', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ admin_id: ADMIN_ID, user_id: currentUser.id, rtp_boost: val })
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('RTP буст сохранён: ' + val + '%', 'ok');
+            $('userRtpValue').textContent = val + '%';
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+        }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 </script>
 </body>
