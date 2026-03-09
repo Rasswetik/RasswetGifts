@@ -1489,7 +1489,12 @@ def _create_all_tables(conn):
             ton_wallet TEXT,
             currency_mode TEXT DEFAULT 'stars',
             total_crash_bets INTEGER DEFAULT 0,
-            total_bet_volume INTEGER DEFAULT 0
+            total_bet_volume INTEGER DEFAULT 0,
+            is_crash_vip INTEGER DEFAULT 0,
+            referral_balance INTEGER DEFAULT 0,
+            is_banned INTEGER DEFAULT 0,
+            ban_reason TEXT,
+            ban_until TEXT
         )''',
         'inventory': '''CREATE TABLE IF NOT EXISTS inventory (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1500,6 +1505,11 @@ def _create_all_tables(conn):
             gift_value INTEGER,
             received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             is_withdrawing BOOLEAN DEFAULT FALSE,
+            crate_id INTEGER DEFAULT NULL,
+            crate_name TEXT DEFAULT NULL,
+            crate_image TEXT DEFAULT NULL,
+            is_upgraded BOOLEAN DEFAULT 0,
+            nft_number INTEGER DEFAULT NULL,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )''',
         'user_history': '''CREATE TABLE IF NOT EXISTS user_history (
@@ -1764,7 +1774,6 @@ def _create_all_tables(conn):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             ton_amount REAL NOT NULL,
-            ton_amount INTEGER NOT NULL,
             tx_hash TEXT,
             status TEXT DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -2052,29 +2061,44 @@ def _create_all_tables(conn):
         pass
     logger.info("✅ Индексы созданы")
 
-    # Migrate inventory table: add crate columns
+    # Migrate inventory table: add crate columns (PG-compatible)
+    _inv_migrate_cols = [
+        ('crate_id', 'INTEGER DEFAULT NULL'),
+        ('crate_name', 'TEXT DEFAULT NULL'),
+        ('crate_image', 'TEXT DEFAULT NULL'),
+        ('is_upgraded', 'BOOLEAN DEFAULT FALSE'),
+        ('nft_number', 'INTEGER DEFAULT NULL'),
+    ]
+    for _col_name, _col_type in _inv_migrate_cols:
+        try:
+            conn.execute(f"ALTER TABLE inventory ADD COLUMN {_col_name} {_col_type}")
+        except Exception:
+            pass  # column already exists
     try:
-        cursor2 = conn.cursor()
-        cursor2.execute("PRAGMA table_info('inventory')")
-        inv_cols = [r[1] for r in cursor2.fetchall()]
-        if 'crate_id' not in inv_cols:
-            try: conn.execute("ALTER TABLE inventory ADD COLUMN crate_id INTEGER DEFAULT NULL")
-            except: pass
-        if 'crate_name' not in inv_cols:
-            try: conn.execute("ALTER TABLE inventory ADD COLUMN crate_name TEXT DEFAULT NULL")
-            except: pass
-        if 'crate_image' not in inv_cols:
-            try: conn.execute("ALTER TABLE inventory ADD COLUMN crate_image TEXT DEFAULT NULL")
-            except: pass
-        if 'is_upgraded' not in inv_cols:
-            try: conn.execute("ALTER TABLE inventory ADD COLUMN is_upgraded BOOLEAN DEFAULT 0")
-            except: pass
-        if 'nft_number' not in inv_cols:
-            try: conn.execute("ALTER TABLE inventory ADD COLUMN nft_number INTEGER DEFAULT NULL")
-            except: pass
         conn.commit()
     except Exception as mig_e:
         logger.warning(f"Inventory migration: {mig_e}")
+
+    # Migrate users table: add missing columns (PG-compatible)
+    _usr_migrate_cols = [
+        ('total_bet_volume', 'INTEGER DEFAULT 0'),
+        ('is_crash_vip', 'INTEGER DEFAULT 0'),
+        ('total_loss', 'INTEGER DEFAULT 0'),
+        ('total_crash_bets', 'INTEGER DEFAULT 0'),
+        ('referral_balance', 'INTEGER DEFAULT 0'),
+        ('is_banned', 'INTEGER DEFAULT 0'),
+        ('ban_reason', 'TEXT'),
+        ('ban_until', 'TEXT'),
+    ]
+    for _col_name, _col_type in _usr_migrate_cols:
+        try:
+            conn.execute(f"ALTER TABLE users ADD COLUMN {_col_name} {_col_type}")
+        except Exception:
+            pass
+    try:
+        conn.commit()
+    except Exception as mig_e:
+        logger.warning(f"Users migration: {mig_e}")
 
     # === Bonus system tables ===
     try:
@@ -7388,13 +7412,8 @@ def sell_all_gifts():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Check if crate_id column exists
-        _has_crate_col = False
-        try:
-            cursor.execute("PRAGMA table_info('inventory')")
-            _has_crate_col = 'crate_id' in [r[1] for r in cursor.fetchall()]
-        except:
-            pass
+        # crate_id column always exists in DDL now
+        _has_crate_col = True
 
         if _has_crate_col:
             cursor.execute('SELECT id, gift_name, gift_value FROM inventory WHERE user_id = ? AND is_withdrawing = FALSE AND (crate_id IS NULL OR crate_id = 0)', (user_id,))
@@ -12335,10 +12354,7 @@ def admin_get_customization():
         
         # Миграция: добавляем is_default если нет
         try:
-            cursor.execute("PRAGMA table_info(crash_customizations)")
-            columns = [col[1] for col in cursor.fetchall()]
-            if 'is_default' not in columns:
-                cursor.execute('ALTER TABLE crash_customizations ADD COLUMN is_default INTEGER DEFAULT 0')
+            cursor.execute('ALTER TABLE crash_customizations ADD COLUMN is_default INTEGER DEFAULT 0')
         except:
             pass
         
@@ -14508,18 +14524,11 @@ def init_crates_tables(cursor=None):
     )''')
     # Backwards-compatible migration: ensure new columns exist for older DBs
     try:
-        cursor.execute("PRAGMA table_info('crates')")
-        cols = [r[1] for r in cursor.fetchall()]
-        if 'is_promoted' not in cols:
-            try:
-                cursor.execute("ALTER TABLE crates ADD COLUMN is_promoted BOOLEAN DEFAULT 0")
-            except Exception:
-                pass
-        if 'promo_deal_id' not in cols:
-            try:
-                cursor.execute("ALTER TABLE crates ADD COLUMN promo_deal_id INTEGER DEFAULT NULL")
-            except Exception:
-                pass
+        cursor.execute("ALTER TABLE crates ADD COLUMN is_promoted BOOLEAN DEFAULT 0")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE crates ADD COLUMN promo_deal_id INTEGER DEFAULT NULL")
     except Exception:
         pass
     if own_conn:
@@ -18052,6 +18061,72 @@ def api_admin_levels_delete(level_num):
         conn.close()
         _sync_levels_from_db()
         return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+# ============== USER PROFILE CARD API ==============
+
+@app.route('/api/user-profile/<int:user_id>', methods=['GET'])
+def api_user_profile_card(user_id):
+    """Public profile card data for popup"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''SELECT id, first_name, username, photo_url,
+                COALESCE(total_cases_opened,0), COALESCE(total_crash_bets,0),
+                COALESCE(total_bet_volume,0), COALESCE(current_level,1),
+                COALESCE(experience,0)
+            FROM users WHERE id = ?''', (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'User not found'})
+
+        # Leaderboard position (by total_bet_volume)
+        cursor.execute('''SELECT COUNT(*) FROM users
+            WHERE COALESCE(total_bet_volume,0) > ? AND id > 0''', (row[6],))
+        rank = (cursor.fetchone()[0] or 0) + 1
+
+        # Monthly turnover
+        cursor.execute('''SELECT COALESCE(SUM(bet_amount),0) FROM ultimate_crash_bets
+            WHERE user_id = ? AND created_at >= date('now','start of month')''', (user_id,))
+        monthly = cursor.fetchone()[0] or 0
+
+        # Inventory (last 30 items)
+        cursor.execute('''SELECT gift_id, gift_name, gift_image, gift_value,
+                COALESCE(is_upgraded, 0) as is_upgraded
+            FROM inventory WHERE user_id = ?
+            ORDER BY received_at DESC LIMIT 30''', (user_id,))
+        inv_rows = cursor.fetchall()
+        inventory = []
+        for ir in inv_rows:
+            inventory.append({
+                'gift_id': ir[0],
+                'name': ir[1] or 'Gift',
+                'image': ir[2] or '/static/img/gift.png',
+                'value': ir[3] or 0,
+                'is_upgraded': bool(ir[4])
+            })
+
+        conn.close()
+        return jsonify({
+            'success': True,
+            'profile': {
+                'id': row[0],
+                'first_name': row[1] or 'User',
+                'username': row[2] or '',
+                'photo_url': row[3] or '/static/img/default_avatar.png',
+                'cases_opened': row[4],
+                'crash_bets': row[5],
+                'total_volume': row[6],
+                'level': row[7],
+                'experience': row[8],
+                'rank': rank,
+                'monthly_turnover': monthly,
+                'inventory': inventory
+            }
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 

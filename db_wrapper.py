@@ -49,6 +49,14 @@ def _translate_query(sql):
     )
     # datetime('now') → NOW()
     out = re.sub(r"datetime\(\s*'now'\s*\)", 'NOW()', out, flags=re.IGNORECASE)
+    # date('now') → CURRENT_DATE
+    out = re.sub(r"date\(\s*'now'\s*\)", 'CURRENT_DATE', out, flags=re.IGNORECASE)
+    # date('now','start of month') → date_trunc('month', CURRENT_TIMESTAMP)
+    out = re.sub(
+        r"date\(\s*'now'\s*,\s*'start of month'\s*\)",
+        "date_trunc('month', CURRENT_TIMESTAMP)",
+        out, flags=re.IGNORECASE
+    )
     # INSERT OR IGNORE → INSERT ... ON CONFLICT DO NOTHING
     _is_insert_or_ignore = bool(re.search(r'\bINSERT\s+OR\s+IGNORE\b', out, re.IGNORECASE))
     # INSERT OR REPLACE → upsert with ON CONFLICT DO UPDATE
