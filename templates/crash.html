@@ -6509,6 +6509,41 @@ async function confirmStarsBet(){
     }catch(e){ showToast('Network error','err'); }
 }
 
+/* TGS hover animation for upgraded NFTs in crash */
+function initCrashTgsHover(){
+    document.querySelectorAll('.nft-tgs-container').forEach(function(container){
+        if(container._tgsInited) return;
+        container._tgsInited = true;
+        var tgsUrl = container.getAttribute('data-tgs');
+        if(!tgsUrl) return;
+        var wrap = container.parentElement;
+        if(!wrap) return;
+        var anim = null, loaded = false;
+        function play(){
+            if(loaded && anim){container.style.display='block';var s=wrap.querySelector('img');if(s)s.style.display='none';anim.goToAndPlay(0,true);return;}
+            fetch(tgsUrl).then(function(r){return r.arrayBuffer();}).then(function(buf){
+                try{
+                    var d=pako.inflate(new Uint8Array(buf),{to:'string'});
+                    var ad=JSON.parse(d);
+                    container.innerHTML='';container.style.display='block';
+                    var s=wrap.querySelector('img');if(s)s.style.display='none';
+                    anim=lottie.loadAnimation({container:container,renderer:'svg',loop:true,autoplay:true,animationData:ad});
+                    loaded=true;
+                }catch(e){}
+            }).catch(function(){});
+        }
+        function stop(){
+            container.style.display='none';
+            var s=wrap.querySelector('img');if(s)s.style.display='';
+            if(anim)anim.stop();
+        }
+        wrap.addEventListener('mouseenter',play);
+        wrap.addEventListener('mouseleave',stop);
+        wrap.addEventListener('touchstart',play,{passive:true});
+        wrap.addEventListener('touchend',function(){setTimeout(stop,600);},{passive:true});
+    });
+}
+
 async function loadInventory(){
     if(!userData || !userData.id) return;
     try{
@@ -9620,12 +9655,21 @@ function openProfileCard(userId){
                     var cls = 'profile-inv-item' + (it.is_upgraded ? ' upgraded' : '');
                     h += '<div class="' + cls + '">';
                     if(it.is_upgraded) h += '<div class="profile-inv-upgraded">⬆</div>';
-                    h += '<img class="profile-inv-img" src="' + it.image + '" alt="">';
+                    if(it.is_upgraded && it.fragment_slug){
+                        var thumbUrl = 'https://fragment.com/file/gifts/' + it.fragment_slug + '/thumb.webp';
+                        h += '<div class="profile-inv-img-wrap" data-slug="' + it.fragment_slug + '">';
+                        h += '<img class="profile-inv-img" src="' + thumbUrl + '" alt="">';
+                        h += '<div class="nft-tgs-container" data-tgs="https://fragment.com/file/gifts/' + it.fragment_slug + '/animation.tgs"></div>';
+                        h += '</div>';
+                    } else {
+                        h += '<img class="profile-inv-img" src="' + it.image + '" alt="">';
+                    }
                     h += '<div class="profile-inv-name">' + it.name + '</div>';
                     h += '<div class="profile-inv-price">' + price + ' TON</div>';
                     h += '</div>';
                 }
                 document.getElementById('pcInvGrid').innerHTML = h;
+                initCrashTgsHover();
             }
         })
         .catch(function(){ _pcLoading = false; document.getElementById('pcName').textContent = 'Ошибка'; });

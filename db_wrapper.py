@@ -88,6 +88,8 @@ def _translate_query(sql):
     # Remove PRAGMA statements entirely
     if re.match(r'^\s*PRAGMA\b', out, re.IGNORECASE):
         return ''
+    # BEGIN IMMEDIATE → BEGIN (PG doesn't support IMMEDIATE)
+    out = re.sub(r'\bBEGIN\s+IMMEDIATE\b', 'BEGIN', out, flags=re.IGNORECASE)
     # sqlite_master table listing → pg equivalent
     if 'sqlite_master' in out.lower():
         out = re.sub(
@@ -200,10 +202,11 @@ def _init_pg_pool():
         return
     try:
         _pg_pool = psycopg2.pool.ThreadedConnectionPool(
-            minconn=2, maxconn=10,
-            dsn=DATABASE_URL
+            minconn=2, maxconn=30,
+            dsn=DATABASE_URL,
+            options='-c statement_timeout=30000'
         )
-        logger.info("✅ PostgreSQL connection pool initialized")
+        logger.info("✅ PostgreSQL connection pool initialized (max=30)")
     except Exception as e:
         logger.error(f"❌ Failed to init PG pool: {e}")
         raise
