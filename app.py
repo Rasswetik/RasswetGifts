@@ -912,7 +912,7 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
             fallback_local.append({
                 'id': lg.get('id'),
                 'name': lg.get('name') or 'Gift',
-                'value': int(round(float(lg.get('value', 0)) * FRAGMENT_TON_RATE)),
+                'value': int(round(float(lg.get('value', 0)))),
                 'image': _normalize_local_gift_image(lg.get('image')) or '/static/img/default_gift.png',
                 'fragment_slug': (lg.get('fragment_slug') or _slugify_fragment_name(lg.get('name', ''))),
                 'fragment_url': '',
@@ -956,7 +956,7 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
                 local_match = lg
                 break
 
-        local_value = int(round(float((local_match or {}).get('value', 0)) * FRAGMENT_TON_RATE))
+        local_value = int(round(float((local_match or {}).get('value', 0))))
         fragment_value = _safe_int(fg.get('value'), 0)
         local_image = _normalize_local_gift_image((local_match or {}).get('image'))
         merged.append({
@@ -983,7 +983,7 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
             merged.append({
                 'id': lg.get('id'),
                 'name': lg.get('name') or 'Gift',
-                'value': int(round(float(lg.get('value', 0)) * FRAGMENT_TON_RATE)),
+                'value': int(round(float(lg.get('value', 0)))),
                 'image': _normalize_local_gift_image(lg.get('image')) or '/static/img/default_gift.png',
                 'fragment_slug': '',
                 'fragment_url': '',
@@ -5929,15 +5929,13 @@ def api_case_detail(case_id):
             else:
                 target_id = gift_info.get('id')
                 target_id_str = str(target_id) if target_id is not None else ''
-                # Try local gifts first (by numeric ID) — values in TON
+                # Try local gifts first (by numeric ID) — values in stars
                 gift = next((g for g in local_gifts if str(g.get('id')) == target_id_str), None) if target_id is not None else None
                 # Then try Fragment catalog (by string ID like fragment_model:slug:model)
                 if not gift and target_id_str:
                     frag_gift = next((g for g in fragment_all if str(g.get('id')) == target_id_str or str(g.get('gift_key')) == target_id_str), None)
                     if frag_gift:
                         gift = dict(frag_gift)
-                        # fragment_all values are in stars — convert to TON for consistency
-                        gift['value'] = round(float(gift.get('value', 0)) / FRAGMENT_TON_RATE, 2)
                 # Fallback: construct from gift_info fields
                 if not gift and gift_info.get('name'):
                     gift = {
@@ -11100,6 +11098,8 @@ def admin_news_management():
             news_id = data.get('news_id')
             title = data.get('title')
             content = data.get('content')
+            title_en = data.get('title_en')
+            content_en = data.get('content_en')
             image_url = data.get('image_url')
             reward_amount = data.get('reward_amount')
             is_active = data.get('is_active')
@@ -11112,6 +11112,12 @@ def admin_news_management():
             if content is not None:
                 updates.append('content = ?')
                 params.append(content)
+            if title_en is not None:
+                updates.append('title_en = ?')
+                params.append(title_en)
+            if content_en is not None:
+                updates.append('content_en = ?')
+                params.append(content_en)
             if image_url is not None:
                 updates.append('image_url = ?')
                 params.append(image_url)
