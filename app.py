@@ -2973,7 +2973,7 @@ def process_referral(referred_user_id, referral_code):
 #      would extract too much from a cashout
 # ============================================================
 
-TARGET_RTP = 0.85  # 85% RTP target
+TARGET_RTP = 0.80  # 80% RTP target
 
 # Case-specific RTP tracking
 CASE_RTP_BOOST_THRESHOLD = 0.45   # Below 45% → boost player (better drops)
@@ -3172,11 +3172,10 @@ def ai_adjust_target_multiplier(base_target, game_id, conn=None):
         
         if close_conn: conn.close()
         
-        # === WHALE BET: Moderate target reduction ===
+        # === WHALE BET: Stronger target reduction ===
         if has_whale_bet or large_bet_value > total_bet_value * 0.5:
-            # Modest reduction — still allow decent multipliers
-            reduction = 0.25 if has_whale_bet else 0.15
-            adjusted = max(2.0, base_target * (1 - reduction))
+            reduction = 0.40 if has_whale_bet else 0.25
+            adjusted = max(1.5, base_target * (1 - reduction))
             logger.info(f"🐋 AI: Large bet detected! Reducing target {base_target:.2f}x → {adjusted:.2f}x")
             return round(adjusted, 2)
         
@@ -3251,22 +3250,22 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
             potential_win = bet_amount * current_mult
             stats = get_player_crash_stats(user_id, conn)
             
-            # === Large bet protection — only at high multipliers ===
+            # === Large bet protection — crash earlier for big bets ===
             if bet_amount >= LARGE_BET_THRESHOLD:
                 if bet_amount >= WHALE_BET_THRESHOLD:  # 5+ TON
-                    # Only start considering crash above 3x for whales
-                    if current_mult > 3.0:
-                        crash_prob = 0.05 + (current_mult - 3.0) * 0.04
-                        crash_prob = min(crash_prob, 0.30)
+                    # Start considering crash above 2x for whales
+                    if current_mult > 2.0:
+                        crash_prob = 0.08 + (current_mult - 2.0) * 0.06
+                        crash_prob = min(crash_prob, 0.40)
                         if random.random() < crash_prob:
                             if close_conn: conn.close()
                             logger.info(f"🐋 Whale crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
                             return True
                 else:  # 1-5 TON range
-                    # Only start considering crash above 5x for large bets
-                    if current_mult > 5.0:
-                        crash_prob = 0.03 + (current_mult - 5.0) * 0.03
-                        crash_prob = min(crash_prob, 0.20)
+                    # Start considering crash above 3x for large bets
+                    if current_mult > 3.0:
+                        crash_prob = 0.05 + (current_mult - 3.0) * 0.05
+                        crash_prob = min(crash_prob, 0.30)
                         if random.random() < crash_prob:
                             if close_conn: conn.close()
                             logger.info(f"💰 Large bet crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
@@ -3308,58 +3307,42 @@ def generate_extreme_crash_multiplier():
     """Генерация множителя для Ultimate Crash с учётом баланса сайта.
     
     Base multiplier generation — will be adjusted by ai_adjust_target_multiplier
-    once bets are placed.
+    once bets are placed. Tightened distribution for better house edge.
     """
     site_balance = _get_site_profit_balance()
     r = random.random()
     
     # Standard distribution based on site balance
     if site_balance < -5000:
-        # Site is losing big — tighter distribution but still fair
-        if r < 0.40:
-            return round(1.0 + random.random() * 1.5, 2)  # 1.0-2.5
-        elif r < 0.65:
-            return round(2.5 + random.random() * 2.0, 2)  # 2.5-4.5
-        elif r < 0.82:
-            return round(4.5 + random.random() * 3.0, 2)  # 4.5-7.5
-        elif r < 0.93:
-            return round(7.5 + random.random() * 5.0, 2)  # 7.5-12.5
+        # Site is losing big — very tight distribution
+        if r < 0.50:
+            return round(1.0 + random.random() * 1.0, 2)  # 1.0-2.0
+        elif r < 0.72:
+            return round(2.0 + random.random() * 1.5, 2)  # 2.0-3.5
+        elif r < 0.86:
+            return round(3.5 + random.random() * 2.0, 2)  # 3.5-5.5
+        elif r < 0.94:
+            return round(5.5 + random.random() * 3.0, 2)  # 5.5-8.5
         elif r < 0.98:
-            return round(12.5 + random.random() * 7.5, 2) # 12.5-20.0
+            return round(8.5 + random.random() * 5.0, 2)  # 8.5-13.5
         else:
-            return round(20.0 + random.random() * 10.0, 2) # 20.0-30.0
+            return round(13.5 + random.random() * 6.5, 2)  # 13.5-20.0
     elif site_balance < -1000:
-        # Site is losing moderately — slightly lower multipliers
-        if r < 0.35:
-            return round(1.0 + random.random() * 1.5, 2)  # 1.0-2.5
-        elif r < 0.58:
-            return round(2.5 + random.random() * 2.5, 2)  # 2.5-5.0
-        elif r < 0.76:
-            return round(5.0 + random.random() * 3.0, 2)  # 5.0-8.0
-        elif r < 0.89:
-            return round(8.0 + random.random() * 7.0, 2)  # 8.0-15.0
+        # Site is losing moderately — tighter multipliers
+        if r < 0.45:
+            return round(1.0 + random.random() * 1.2, 2)  # 1.0-2.2
+        elif r < 0.68:
+            return round(2.2 + random.random() * 2.0, 2)  # 2.2-4.2
+        elif r < 0.82:
+            return round(4.2 + random.random() * 2.5, 2)  # 4.2-6.7
+        elif r < 0.92:
+            return round(6.7 + random.random() * 4.0, 2)  # 6.7-10.7
         elif r < 0.97:
-            return round(15.0 + random.random() * 15.0, 2) # 15.0-30.0
+            return round(10.7 + random.random() * 7.0, 2)  # 10.7-17.7
         else:
-            return round(30.0 + random.random() * 20.0, 2) # 30.0-50.0
+            return round(17.7 + random.random() * 12.0, 2) # 17.7-29.7
     elif site_balance > 5000:
-        # Site is profiting well — give players better odds
-        if r < 0.25:
-            return round(1.0 + random.random() * 2.0, 2)  # 1.0-3.0
-        elif r < 0.45:
-            return round(3.0 + random.random() * 3.0, 2)  # 3.0-6.0
-        elif r < 0.63:
-            return round(6.0 + random.random() * 4.0, 2)  # 6.0-10.0
-        elif r < 0.78:
-            return round(10.0 + random.random() * 10.0, 2) # 10.0-20.0
-        elif r < 0.90:
-            return round(20.0 + random.random() * 20.0, 2) # 20.0-40.0
-        elif r < 0.97:
-            return round(40.0 + random.random() * 30.0, 2) # 40.0-70.0
-        else:
-            return round(70.0 + random.random() * 30.0, 2) # 70.0-100.0
-    else:
-        # Normal/balanced — fair distribution with regular big multipliers
+        # Site is profiting well — slightly looser but still house edge
         if r < 0.30:
             return round(1.0 + random.random() * 1.5, 2)  # 1.0-2.5
         elif r < 0.52:
@@ -3371,9 +3354,25 @@ def generate_extreme_crash_multiplier():
         elif r < 0.93:
             return round(15.0 + random.random() * 15.0, 2) # 15.0-30.0
         elif r < 0.98:
-            return round(30.0 + random.random() * 30.0, 2) # 30.0-60.0
+            return round(30.0 + random.random() * 20.0, 2) # 30.0-50.0
         else:
-            return round(60.0 + random.random() * 40.0, 2) # 60.0-100.0
+            return round(50.0 + random.random() * 30.0, 2) # 50.0-80.0
+    else:
+        # Normal/balanced — house-favoring distribution
+        if r < 0.38:
+            return round(1.0 + random.random() * 1.3, 2)  # 1.0-2.3
+        elif r < 0.60:
+            return round(2.3 + random.random() * 2.0, 2)  # 2.3-4.3
+        elif r < 0.76:
+            return round(4.3 + random.random() * 2.5, 2)  # 4.3-6.8
+        elif r < 0.87:
+            return round(6.8 + random.random() * 5.0, 2)  # 6.8-11.8
+        elif r < 0.94:
+            return round(11.8 + random.random() * 8.0, 2)  # 11.8-19.8
+        elif r < 0.98:
+            return round(19.8 + random.random() * 15.0, 2) # 19.8-34.8
+        else:
+            return round(34.8 + random.random() * 25.0, 2) # 34.8-59.8
 
 
 def _get_site_profit_balance():
@@ -4774,6 +4773,7 @@ def ultimate_crash_cashout_simple():
         response = {
             'success': True,
             'win_amount': win_amount,
+            'bet_amount': bet_amount,
             'multiplier': current_mult,
             'new_balance': new_balance,
             'awarded_gifts': awarded_gifts,
@@ -5180,6 +5180,7 @@ def get_user_inventory(user_id):
                 'nft_model_price': row.get('nft_model_price'),
                 'nft_symbol_price': row.get('nft_symbol_price'),
                 'nft_backdrop_price': row.get('nft_backdrop_price'),
+                'upgrade_cost_stars': _calc_upgrade_cost_stars(row.get('gift_value', 0)),
             }
             inventory_list.append(entry)
 
@@ -7688,7 +7689,13 @@ def withdraw_gift():
         return jsonify({'success': False, 'error': 'Произошла ошибка, заявка передана администратору'})
 
 
-UPGRADE_COST_STARS = 10  # 0.1 TON = 10 stars
+UPGRADE_MIN_STARS = 30   # 0.3 TON
+UPGRADE_MAX_STARS = 1000 # 10 TON
+
+def _calc_upgrade_cost_stars(gift_value_stars):
+    """5% of gift value, min 0.3 TON (30 stars), max 10 TON (1000 stars)"""
+    cost = int(gift_value_stars * 0.05)
+    return max(UPGRADE_MIN_STARS, min(UPGRADE_MAX_STARS, cost))
 
 def _get_fragment_collection_supply():
     """Build slug -> total_supply map from fragment_catalog_cache.json"""
@@ -7878,16 +7885,20 @@ def upgrade_gift():
             conn.close()
             return jsonify({'success': False, 'error': 'Gift locked by challenge'})
 
+        # Calculate dynamic upgrade cost (5% of gift value, min 0.3 TON, max 10 TON)
+        gift_value_stars = gift.get('gift_value', 0)
+        upgrade_cost = _calc_upgrade_cost_stars(gift_value_stars)
+
         # Check balance
         cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
         row = cursor.fetchone()
-        if not row or row[0] < UPGRADE_COST_STARS:
+        if not row or row[0] < upgrade_cost:
             conn.close()
             return jsonify({'success': False, 'error': 'Insufficient balance'})
 
         # Deduct cost
         cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
-                        (UPGRADE_COST_STARS, user_id))
+                        (upgrade_cost, user_id))
 
         # Extract fragment slug from gift_image URL or name
         gift_image = gift.get('gift_image', '')
@@ -7938,7 +7949,7 @@ def upgrade_gift():
 
         try:
             cursor.execute('''INSERT INTO user_history (user_id, operation_type, amount, description)
-                VALUES (?, 'upgrade', ?, ?)''', (user_id, UPGRADE_COST_STARS, f'Upgrade: {new_name}'))
+                VALUES (?, 'upgrade', ?, ?)''', (user_id, upgrade_cost, f'Upgrade: {new_name}'))
         except Exception:
             pass
 

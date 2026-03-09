@@ -1974,8 +1974,8 @@ tc-root *{pointer-events:auto}
 .inv-card .inv-name{font-size:9px;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
 .inv-card .inv-val{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:11px;color:#0088cc;margin-top:3px;display:flex;align-items:center;justify-content:center;gap:3px}
 .inv-card .inv-val img{width:12px;height:12px}
-.inv-card.upgraded{border-color:rgba(255,215,0,.3);background:linear-gradient(135deg,rgba(255,215,0,.06),rgba(255,180,0,.03));box-shadow:0 0 14px rgba(255,215,0,.07)}
-.inv-card.upgraded img{object-fit:cover;border-radius:10px}
+.inv-card.upgraded{border:1px solid rgba(255,255,255,.06);padding:0;overflow:hidden}
+.inv-card.upgraded img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:10px 10px 0 0;margin:0}
 .inv-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px}
 /* Confirm button for gifts */
 .confirm-gifts-btn{width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#6B7A8D,#556270);color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .2s;box-shadow:0 8px 25px rgba(120,135,160,.3);margin-top:12px;display:none}
@@ -2052,111 +2052,84 @@ tc-root *{pointer-events:auto}
 }
 .no-bets{text-align:center;padding:40px;color:rgba(255,255,255,.2);font-size:14px}
 
-/* ===== WIN POPUP (compact) ===== */
+/* ===== WIN POPUP (redesigned bottom-sheet) ===== */
 .win-overlay{
-    position:fixed;bottom:0;left:24px;right:24px;z-index:6000;
+    position:fixed;bottom:0;left:0;right:0;z-index:6000;
     opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s,transform .4s cubic-bezier(.16,1,.3,1);
     transform:translateY(100%);
     pointer-events:none;
 }
 .win-overlay.show{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
 .win-sheet{
-    background:linear-gradient(180deg,#1a1f2a 0%,#12151c 100%);
+    background:linear-gradient(180deg,#1e2433 0%,#151920 100%);
     border-radius:20px 20px 0 0;
-    padding:16px 16px 24px;
+    padding:12px 20px calc(24px + env(safe-area-inset-bottom,0));
     border-top:2px solid rgba(30,228,76,.25);
     box-shadow:0 -8px 40px rgba(0,0,0,.5), 0 0 20px rgba(30,228,76,.08);
+    max-width:480px;margin:0 auto;
 }
 .win-sheet-handle{
-    width:36px;height:4px;background:rgba(255,255,255,.1);
-    border-radius:2px;margin:0 auto 12px;
+    width:36px;height:4px;background:rgba(255,255,255,.12);
+    border-radius:2px;margin:0 auto 14px;
 }
-.win-title{
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:900;font-size:16px;
-    color:#1EE44C;text-transform:uppercase;letter-spacing:2px;
-    text-shadow:0 0 16px rgba(30,228,76,.4);
-    text-align:center;margin-bottom:12px;
+/* Stacked gift images area */
+.win-gifts-stack{
+    display:flex;align-items:center;justify-content:center;
+    padding:8px 0 12px;position:relative;min-height:70px;
 }
-/* Stars-only layout */
-.win-stars-layout{
-    display:flex;align-items:center;justify-content:center;gap:12px;
-    padding:4px 0;
+.win-gifts-stack img{
+    width:64px;height:64px;object-fit:cover;border-radius:14px;
+    border:2px solid rgba(255,255,255,.12);
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));
+    background:rgba(255,255,255,.04);
 }
-.win-stars-layout .win-star-icon{
-    width:48px;height:48px;object-fit:contain;
-    filter:drop-shadow(0 0 10px rgba(253,161,0,.4));
+.win-gifts-stack img+img{margin-left:-18px}
+/* Multiplier badge (no gifts case) */
+.win-mult-badge{
+    display:flex;align-items:center;justify-content:center;
+    padding:12px 0 8px;
 }
-.win-stars-layout .win-star-amount{
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:900;font-size:28px;
-    color:#1EE44C;
-    text-shadow:0 0 16px rgba(30,228,76,.3);
+.win-mult-badge span{
+    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-weight:900;font-size:36px;color:#1EE44C;
+    text-shadow:0 0 20px rgba(30,228,76,.4);
 }
-.win-stars-layout .win-star-label{
-    font-family:'Inter Variable','Inter',sans-serif;font-weight:600;font-size:11px;
-    color:rgba(255,255,255,.3);margin-left:-4px;
+/* Bet → Win summary row */
+.win-summary{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:6px 0;
 }
-/* Gift layout: info LEFT, gift RIGHT */
-.win-gift-layout{
-    display:flex;align-items:center;gap:12px;padding:4px 0;
-}
-.win-gift-info{
-    flex:1;display:flex;flex-direction:column;gap:4px;
-}
-.win-gift-img{
-    width:70px;height:70px;object-fit:cover;flex-shrink:0;
-    border-radius:12px;
-    filter:drop-shadow(0 0 10px rgba(253,161,0,.25));
-}
-.win-gift-name{
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:14px;
-    color:#fff;
-}
-.win-gift-value{
+.win-summary-item{
     display:flex;align-items:center;gap:4px;
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:12px;
+    font-family:'Inter Variable','Inter',sans-serif;font-weight:700;font-size:13px;
+    color:rgba(255,255,255,.5);
+}
+.win-summary-item img{width:14px;height:14px;flex-shrink:0}
+.win-summary-arrow{
+    font-size:14px;color:rgba(255,255,255,.2);
+}
+.win-summary-win{color:#1EE44C}
+/* Breakdown: gifts value + balance value */
+.win-breakdown{
+    display:flex;flex-direction:column;gap:4px;
+    padding:8px 0 12px;
+}
+.win-breakdown-row{
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    font-family:'Inter Variable','Inter',sans-serif;font-weight:600;font-size:12px;
     color:rgba(255,255,255,.4);
 }
-.win-gift-value img{width:14px;height:14px}
-.win-gift-stars{
-    display:flex;align-items:center;gap:5px;
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:900;font-size:18px;
-    color:#1EE44C;
-    text-shadow:0 0 10px rgba(30,228,76,.2);
+.win-breakdown-row img{width:12px;height:12px;flex-shrink:0}
+.win-breakdown-row.accent{color:rgba(30,228,76,.7)}
+/* Collect button */
+.win-collect-btn{
+    width:100%;padding:14px;border:none;border-radius:14px;
+    background:#fff;color:#12151c;
+    font-family:'Inter Variable','Inter',sans-serif;font-weight:800;font-size:15px;
+    cursor:pointer;transition:all .2s;
+    margin-top:4px;
 }
-.win-gift-stars img{width:18px;height:18px}
-/* Dual layout: TON left + Gift right */
-.win-dual-layout{
-    display:flex;gap:10px;padding:4px 0;
-}
-.win-dual-card{
-    flex:1;background:rgba(255,255,255,.04);border-radius:14px;
-    padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;
-    border:1px solid rgba(139,163,204,.1);
-}
-.win-ton-card{border-color:rgba(120,135,160,.2);background:rgba(120,135,160,.06)}
-.win-gift-card{border-color:rgba(30,228,76,.15);background:rgba(30,228,76,.04)}
-.win-dual-icon{width:48px;height:48px;object-fit:cover;border-radius:10px}
-.win-dual-amt{
-    font-family:'Inter Variable','Inter',sans-serif;font-weight:800;font-size:14px;
-    color:#fff;text-align:center;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;
-}
-.win-ton-card .win-dual-amt{color:#8CA0BE}
-.win-gift-card .win-dual-amt{font-size:11px;color:rgba(255,255,255,.8)}
-.win-dual-label{
-    font-family:'Inter Variable','Inter',sans-serif;font-weight:600;font-size:10px;
-    color:rgba(255,255,255,.3);display:flex;align-items:center;gap:3px;
-}
-.win-mult{
-    text-align:center;margin-top:10px;
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:11px;
-    color:rgba(255,255,255,.18);
-}
-.win-tap-hint{
-    text-align:center;margin-top:6px;
-    font-size:10px;color:rgba(255,255,255,.1);
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-}
+.win-collect-btn:active{transform:scale(.97);opacity:.85}
 
 /* ===== TOAST ===== */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(0);background:rgba(20,20,20,.95);backdrop-filter:blur(12px);padding:10px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.06);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:7000;color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:13px;animation:toastUp .3s ease;max-width:90%;text-align:center}
@@ -4890,12 +4863,11 @@ tc-root *{pointer-events:auto}
 </div>
 
 <!-- WIN BOTTOM SHEET -->
-<div class="win-overlay" id="winOverlay" onclick="closeWin()">
+<div class="win-overlay" id="winOverlay">
     <div class="win-sheet" id="winSheet">
         <div class="win-sheet-handle"></div>
         <div id="winContent"></div>
-        <div class="win-mult" id="winMult"></div>
-        <div class="win-tap-hint">tap to close</div>
+        <button class="win-collect-btn" onclick="closeWin()">Получить</button>
     </div>
 </div>
 
@@ -6523,6 +6495,8 @@ async function loadInventory(){
             if (i.is_upgraded) {
                 return '<div class="inv-card' + upgradedCls + (isSelected ? ' selected' : '') + '" data-id="' + i.id + '" onclick="toggleGiftSelection(' + i.id + ')">' +
                     '<img src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
+                    '<div class="inv-name">' + (i.gift_name || 'Gift') + '</div>' +
+                    '<div class="inv-val">' + tonVal + '<img src="/static/img/tons/ton_1.svg"></div>' +
                 '</div>';
             }
             return '<div class="inv-card' + (isSelected ? ' selected' : '') + '" data-id="' + i.id + '" onclick="toggleGiftSelection(' + i.id + ')">' +
@@ -6748,71 +6722,61 @@ function updateMyBetRow(mult, winAmt){
 function showWin(d){
     var m = parseFloat(d.multiplier).toFixed(2);
     var content = $('winContent');
-    var mult = $('winMult');
     var winTon = d.win_amount ? starsToTon(d.win_amount) : 0;
+    var betTon = d.bet_amount ? starsToTon(d.bet_amount) : (cashedOutBetAmt ? starsToTon(cashedOutBetAmt) : 0);
+    var allGifts = d.awarded_gifts || [];
+    if(!allGifts.length && d.gift) allGifts = [d.gift];
+    var starRemainder = d.star_remainder || 0;
+    var balanceTon = starsToTon(starRemainder);
+    var giftsTotalValue = 0;
+    for(var gi=0;gi<allGifts.length;gi++) giftsTotalValue += (allGifts[gi].value || 0);
+    var giftsTon = starsToTon(giftsTotalValue);
     
-    if(d.gift){
-        /* Check if this is a new collection item */
-        var giftId = d.gift.id || d.gift.name;
-        var isNewToCollection = !previousCollectedIds.has(giftId);
-        
-        var starsDiff = d.star_difference || 0;
-        var diffTon = starsToTon(starsDiff);
-        var giftTon = starsToTon(d.gift.value || 0);
-        
-        /* If there's a TON surplus on top of gift — show dual panel layout */
-        if(starsDiff > 0){
-            content.innerHTML = 
-                '<div class="win-title">WIN!</div>' +
-                '<div class="win-dual-layout">' +
-                    /* Left: TON bonus */
-                    '<div class="win-dual-card win-ton-card">' +
-                        '<img class="win-dual-icon" src="' + getTonIcon(diffTon) + '" alt="">' +
-                        '<div class="win-dual-amt">+' + formatTon(diffTon) + '</div>' +
-                        '<div class="win-dual-label">TON</div>' +
-                    '</div>' +
-                    /* Right: Gift */
-                    '<div class="win-dual-card win-gift-card">' +
-                        '<img class="win-dual-icon" src="' + resolveCrashGiftImage(d.gift, '/static/img/star.png') + '" alt="" onerror="this.src=\'/static/img/star.png\'">' +
-                        '<div class="win-dual-amt">' + d.gift.name + '</div>' +
-                        '<div class="win-dual-label"><img src="' + getTonIcon(giftTon) + '" style="width:12px;height:12px;vertical-align:middle"> ' + formatTon(giftTon) + '</div>' +
-                    '</div>' +
-                '</div>';
-        } else {
-            /* Gift only — centered gift display */
-            content.innerHTML = 
-                '<div class="win-title">WIN!</div>' +
-                '<div class="win-gift-layout">' +
-                    '<div class="win-gift-info">' +
-                        '<div class="win-gift-name">' + d.gift.name + '</div>' +
-                        '<div class="win-gift-value"><img src="' + getTonIcon(giftTon) + '"> ' + formatTon(giftTon) + ' TON</div>' +
-                    '</div>' +
-                    '<img class="win-gift-img" src="' + resolveCrashGiftImage(d.gift, '/static/img/star.png') + '" alt="" onerror="this.src=\'/static/img/star.png\'">' +
-                '</div>';
+    var html = '';
+    
+    /* Gift images stacked or multiplier badge */
+    if(allGifts.length > 0){
+        html += '<div class="win-gifts-stack">';
+        for(var gi=0;gi<allGifts.length;gi++){
+            var gImg = resolveCrashGiftImage(allGifts[gi], '/static/img/star.png');
+            html += '<img src="' + gImg + '" alt="" onerror="this.src=\'/static/img/star.png\'">';
         }
-        
-        /* Show unlock notification for new collection items */
-        if(isNewToCollection){
-            previousCollectedIds.add(giftId);
-            setTimeout(function(){
-                showUnlockToast(d.gift);
-            }, 1500);
-        }
+        html += '</div>';
     } else {
-        /* TON only win — big TON SVG by amount + amount text */
-        var tonIcon = getTonIcon(winTon);
-        content.innerHTML = 
-            '<div class="win-title">WIN!</div>' +
-            '<div class="win-stars-layout">' +
-                '<img class="win-star-icon" src="' + tonIcon + '" alt="">' +
-                '<div class="win-star-amount">+' + formatTon(winTon) + '</div>' +
-                '<div class="win-star-label">TON</div>' +
-            '</div>';
+        html += '<div class="win-mult-badge"><span>x' + m + '</span></div>';
     }
-    mult.textContent = 'x' + m;
+    
+    /* Bet → Win summary */
+    html += '<div class="win-summary">';
+    html += '<div class="win-summary-item">Ставка <img src="/static/img/ton.png"> ' + formatTon(betTon) + '</div>';
+    html += '<div class="win-summary-arrow">›</div>';
+    html += '<div class="win-summary-item win-summary-win">Выигрыш <img src="/static/img/ton.png"> ' + formatTon(winTon) + '</div>';
+    html += '</div>';
+    
+    /* Breakdown */
+    html += '<div class="win-breakdown">';
+    if(giftsTon > 0){
+        html += '<div class="win-breakdown-row accent"><img src="/static/img/ton.png"> ' + formatTon(giftsTon) + ' в подарках</div>';
+    }
+    if(balanceTon > 0){
+        html += '<div class="win-breakdown-row"><img src="/static/img/ton.png"> ' + formatTon(balanceTon) + ' на баланс</div>';
+    } else if(giftsTon <= 0){
+        html += '<div class="win-breakdown-row"><img src="/static/img/ton.png"> ' + formatTon(winTon) + ' на баланс</div>';
+    }
+    html += '</div>';
+    
+    content.innerHTML = html;
     $('winOverlay').classList.add('show');
-    /* Vibrate on win display */
     triggerVibration([30, 20, 60]);
+    
+    /* Check for new collection items */
+    for(var ni=0;ni<allGifts.length;ni++){
+        var giftId = allGifts[ni].id || allGifts[ni].name;
+        if(!previousCollectedIds.has(giftId)){
+            previousCollectedIds.add(giftId);
+            (function(g){ setTimeout(function(){ showUnlockToast(g); }, 1500); })(allGifts[ni]);
+        }
+    }
 }
 function closeWin(){ $('winOverlay').classList.remove('show'); }
 

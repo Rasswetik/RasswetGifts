@@ -209,8 +209,8 @@
         .inv-card-challenge{position:absolute;top:4px;right:4px;display:flex;align-items:center;justify-content:center;width:18px;height:18px;background:rgba(0,0,0,.5);border-radius:5px}
         .inv-card-challenge svg{width:11px;height:11px;stroke:rgba(255,255,255,.5);fill:none}
         .inv-card-locked{opacity:.85;border:1px solid rgba(99,102,241,.3)}
-        .inv-card-upgraded{border:1.5px solid rgba(255,215,0,.3);background:linear-gradient(135deg,rgba(255,215,0,.06) 0%,rgba(255,180,0,.03) 100%);box-shadow:0 0 14px rgba(255,215,0,.07)}
-        .inv-card-upgraded .inv-card-img{width:72px;height:72px;object-fit:cover;border-radius:12px}
+        .inv-card-upgraded{border:1px solid rgba(255,255,255,.06);padding:0;overflow:hidden}
+        .inv-card-upgraded .inv-card-img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:14px 14px 0 0;margin:0;display:block}
 
         /* === NFT DETAIL CARD IN ITEM MODAL === */
         .nft-detail-section{width:100%;display:none;flex-direction:column;align-items:center;padding-bottom:4px}
@@ -531,7 +531,7 @@
 
             <div class="item-modal-actions" id="itemModalActions">
                 <button class="item-modal-btn item-modal-sell" id="itemModalSellBtn" onclick="sellItem()">Sell</button>
-                <button class="item-modal-btn item-modal-upgrade" id="itemModalUpgradeBtn" onclick="upgradeItem()">Upgrade 0.1 TON</button>
+                <button class="item-modal-btn item-modal-upgrade" id="itemModalUpgradeBtn" onclick="upgradeItem()">Upgrade</button>
                 <button class="item-modal-btn item-modal-withdraw-nft" id="itemModalWithdrawBtn" onclick="withdrawItem()" style="display:none">Withdraw</button>
                 <button class="item-modal-btn item-modal-claim" id="itemModalClaimBtn" onclick="claimChallenge()" style="display:none">Claim</button>
             </div>
@@ -787,7 +787,7 @@
             var imgSrc = item.is_upgraded ? (item.gift_image || (item.fragment_slug ? 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp' : '/static/img/default_gift.png')) : item.gift_image;
             var imgHtml = '<img class="inv-card-img" src="' + imgSrc + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '">';
             if (item.is_upgraded) {
-                return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + '</div>';
+                return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + '<div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>';
             }
             return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + challengeBadge + '<div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; 
         }).join('') + '</div>';
@@ -884,7 +884,8 @@
                 sellBtn.textContent = t('sell');
                 sellBtn.disabled = item.is_withdrawing;
                 upgradeBtn.style.display = '';
-                upgradeBtn.textContent = t('upgrade') + ' 0.1 TON';
+                var ucost = item.upgrade_cost_stars ? starsToTon(item.upgrade_cost_stars) : 0.3;
+                upgradeBtn.textContent = t('upgrade') + ' ' + formatTon(ucost) + ' TON';
                 upgradeBtn.disabled = false;
             }
         }
@@ -1020,7 +1021,8 @@
                 document.getElementById('itemModalPriceWrap').style.display = '';
                 document.getElementById('itemModalActions').style.display = '';
                 btn.disabled = false;
-                btn.textContent = t('upgrade') + ' 0.1 TON';
+                var uc = selectedItem && selectedItem.upgrade_cost_stars ? starsToTon(selectedItem.upgrade_cost_stars) : 0.3;
+                btn.textContent = t('upgrade') + ' ' + formatTon(uc) + ' TON';
             }, 2000);
             return;
         }
