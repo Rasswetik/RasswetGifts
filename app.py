@@ -8617,7 +8617,7 @@ def upgrade_gift_chance():
                 conn.close()
                 return jsonify({'success': False, 'error': 'Нельзя апгрейдить на более дешевый подарок'})
 
-            base_chance = max(2, min((current_value / target_value) * 100, 75))
+            base_chance = max(10, min((current_value / target_value) * 100, 75))
             displayed_chance = round(base_chance, 1)
 
             price_ratio = target_value / current_value
@@ -8852,7 +8852,7 @@ def upgrade_multi_gifts():
                 conn.close()
                 return jsonify({'success': False, 'error': 'Сумма ставки должна быть меньше цены цели'})
 
-            base_chance = max(2, min((total_value / target_value) * 100, 80))
+            base_chance = max(10, min((total_value / target_value) * 100, 75))
             displayed_chance = round(base_chance, 1)
 
             real_chance = base_chance

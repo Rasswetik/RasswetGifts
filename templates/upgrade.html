@@ -36,7 +36,7 @@ a{text-decoration:none;color:inherit}
 .wheel-green{fill:none;stroke:var(--green);stroke-width:22;stroke-linecap:round;filter:drop-shadow(0 0 12px rgba(30,228,76,.5));transition:stroke-dasharray .5s,stroke-dashoffset .5s}
 .wheel-red{fill:none;stroke:var(--red);stroke-width:22;stroke-linecap:round;filter:drop-shadow(0 0 12px rgba(249,105,153,.5));transition:stroke-dasharray .5s,stroke-dashoffset .5s}
 .wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:130px;height:130px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#162240,#0B1120);border:2px solid rgba(59,130,246,.18);box-shadow:0 0 40px rgba(11,17,32,.8),inset 0 0 20px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:border-color .4s,box-shadow .4s}
-.wheel-center img{width:85px;height:85px;object-fit:contain;display:none}
+.wheel-center img{width:90px;height:90px;object-fit:contain;display:none;border-radius:12px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))}
 .wheel-center .wheel-placeholder{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text2)}
 .wheel-center .wheel-placeholder svg{width:36px;height:36px;stroke:rgba(59,130,246,.25);fill:none;stroke-width:1.5}
 .wheel-center .wheel-placeholder span{font-size:11px;font-weight:600}
@@ -61,10 +61,10 @@ a{text-decoration:none;color:inherit}
 
 /* Gift slots */
 .gift-slots{display:flex;gap:8px;flex-wrap:wrap}
-.gift-slot{width:56px;height:56px;border-radius:12px;border:2px dashed rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;background:rgba(59,130,246,.03)}
+.gift-slot{width:62px;height:62px;border-radius:14px;border:2px dashed rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;background:rgba(59,130,246,.03)}
 .gift-slot:hover{border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.06)}
-.gift-slot.filled{border:2px solid rgba(59,130,246,.35);background:rgba(59,130,246,.08)}
-.gift-slot.filled img{width:44px;height:44px;object-fit:contain}
+.gift-slot.filled{border:2px solid rgba(59,130,246,.35);background:rgba(59,130,246,.08);border-style:solid}
+.gift-slot.filled img{width:50px;height:50px;object-fit:contain;border-radius:8px}
 .gift-slot .slot-remove{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--red);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:2}
 .gift-slot.filled .slot-remove{display:flex}
 .gift-slot .slot-remove svg{width:10px;height:10px;stroke:#fff;stroke-width:3;fill:none}
@@ -101,14 +101,16 @@ a{text-decoration:none;color:inherit}
 .picker-title{font-size:16px;font-weight:800}
 .picker-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
 .picker-close svg{width:16px;height:16px;stroke:#F96999;stroke-width:2;fill:none}
-.picker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;overflow-y:auto;flex:1;padding-bottom:10px}
-.picker-item{aspect-ratio:1;border-radius:14px;border:1px solid var(--border);background:rgba(59,130,246,.03);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .2s;padding:6px}
-.picker-item:hover{border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.06)}
-.picker-item.selected{border-color:var(--accent);background:rgba(59,130,246,.12);box-shadow:0 0 12px rgba(59,130,246,.2)}
+.picker-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;overflow-y:auto;flex:1;padding-bottom:10px}
+.picker-item{border-radius:16px;border:1px solid var(--border);background:rgba(59,130,246,.04);display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);padding:10px 8px;text-align:center}
+.picker-item:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.3);border-color:rgba(59,130,246,.3)}
+.picker-item:active{transform:scale(.95)}
+.picker-item.selected{border-color:var(--accent);background:rgba(59,130,246,.1);box-shadow:0 0 16px rgba(59,130,246,.25)}
 .picker-item.disabled{opacity:.35;pointer-events:none}
-.picker-item img{width:48px;height:48px;object-fit:contain}
-.picker-item-name{font-size:9px;font-weight:600;color:var(--text2);text-align:center;line-height:1.1;max-height:20px;overflow:hidden}
-.picker-item-value{font-size:10px;font-weight:700;color:var(--text)}
+.picker-item img{width:72px;height:72px;object-fit:contain;margin-bottom:6px;border-radius:12px;transition:transform .25s ease}
+.picker-item:hover img{transform:scale(1.08)}
+.picker-item-name{font-size:10px;font-weight:600;color:var(--text2);text-align:center;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.picker-item-value{font-size:11px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:3px;margin-top:2px}
 
 /* ═══ TARGET PICKER MODAL ═══ */
 .target-picker-overlay{position:fixed;inset:0;background:rgba(11,17,32,.92);z-index:5000;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
@@ -372,7 +374,7 @@ function openGiftPicker(){
         var atMax=selectedGifts.length>=6&&!isSelected;
         var div=document.createElement('div');
         div.className='picker-item'+(isSelected?' selected':'')+(atMax?' disabled':'');
-        div.innerHTML='<img src="'+it.gift_image+'" alt="" onerror="this.src=\'/static/img/gift.png\'">'
+        div.innerHTML='<img src="'+it.gift_image+'" alt="" onerror="this.src=\'/static/img/gift.png\'" style="border-radius:12px">'
             +'<div class="picker-item-name">'+it.gift_name+'</div>'
             +'<div class="picker-item-value">'+((it.gift_value||0)/100).toFixed(2)+'</div>';
         div.onclick=function(){
@@ -440,7 +442,7 @@ async function openTargetPicker(){
         var minTarget=totalValue*1.2;
         d.possible_gifts.forEach(function(g){
             if(g.value>totalValue){
-                var chance=Math.max(2,Math.min((totalValue/g.value)*100,80));
+                var chance=Math.max(10,Math.min((totalValue/g.value)*100,75));
                 g.upgrade_chance=Math.round(chance*10)/10;
                 possibleTargets.push(g);
             }
@@ -508,7 +510,7 @@ function updateWheel(){
         return;
     }
 
-    var chance=Math.max(2,Math.min((totalValue/targetGift.value)*100,80));
+    var chance=Math.max(10,Math.min((totalValue/targetGift.value)*100,75));
     chance=Math.round(chance*10)/10;
     var greenLen=(chance/100)*CIRC;
     var redLen=CIRC-greenLen;
@@ -549,65 +551,57 @@ async function doUpgrade(){
     // Start spinner
     document.getElementById('wheelSpinner').classList.add('spinning');
 
-    // Start spinning animation on the wheel SVG
-    var wheelSvg=document.getElementById('wheelSvg');
-    var spinDuration=3000+Math.random()*1500;
-    var startTime=Date.now();
-    var baseRotation=-90;
-    var spinId;
-
-    function animateSpin(){
-        var elapsed=Date.now()-startTime;
-        var progress=Math.min(elapsed/spinDuration,1);
-        // Ease out cubic
-        var eased=1-Math.pow(1-progress,3);
-        var totalRotation=baseRotation+360*6*eased+Math.random()*2;
-        wheelSvg.style.transform='rotate('+totalRotation+'deg)';
-        if(progress<1){
-            spinId=requestAnimationFrame(animateSpin);
-        }
-    }
-    animateSpin();
-
-    // Make API call
+    // Make API call first, then animate based on result
     var invIds=selectedGifts.map(function(g){return g.id});
+    var wheelSvg=document.getElementById('wheelSvg');
     try{
         var r=await fetch('/api/upgrade-multi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,inventory_ids:invIds,target_gift_id:targetGift.id||targetGift.gift_key||targetGift.fragment_slug})});
         var d=await r.json();
 
-        // Wait for spin to finish
-        await new Promise(function(resolve){setTimeout(resolve,Math.max(0,spinDuration-(Date.now()-startTime)+200))});
-        cancelAnimationFrame(spinId);
-        document.getElementById('wheelSpinner').classList.remove('spinning');
-
         if(!d.success){
+            document.getElementById('wheelSpinner').classList.remove('spinning');
             alert(d.error||'Ошибка');
             resetAfterSpin();
             return;
         }
 
-        // Determine final rotation based on result
+        // Calculate landing angle based on result
         var chance=d.chance;
         var greenAngle=(chance/100)*360;
-        var finalAngle;
+        var landAngle;
         if(d.upgrade_success){
-            // Land on green zone (0 to greenAngle from top)
-            finalAngle=-90+greenAngle*0.5;
+            landAngle=Math.random()*greenAngle*.8+greenAngle*.1;
         }else{
-            // Land on red zone
-            finalAngle=-90+greenAngle+((360-greenAngle)*0.5);
+            var redStart=greenAngle;
+            var redSize=360-greenAngle;
+            landAngle=redStart+Math.random()*redSize*.8+redSize*.1;
         }
-        wheelSvg.style.transition='transform 0.5s ease-out';
-        wheelSvg.style.transform='rotate('+finalAngle+'deg)';
+        // Total spin: 5-7 full rotations + land
+        var totalSpin=360*(5+Math.floor(Math.random()*3))+landAngle;
+        var spinDuration=2800+Math.random()*800;
+        var startTime=Date.now();
+        var startAngle=-90;
+        var spinId;
 
-        setTimeout(function(){
-            wheelSvg.style.transition='';
-            showResult(d);
-        },600);
+        function animateSpin(){
+            var elapsed=Date.now()-startTime;
+            var t=Math.min(elapsed/spinDuration,1);
+            // Ease out quart for smooth deceleration
+            var eased=1-Math.pow(1-t,4);
+            var angle=startAngle+totalSpin*eased;
+            wheelSvg.style.transform='rotate('+angle+'deg)';
+            if(t<1){
+                spinId=requestAnimationFrame(animateSpin);
+            }else{
+                document.getElementById('wheelSpinner').classList.remove('spinning');
+                showResult(d);
+            }
+        }
+        animateSpin();
 
     }catch(e){
-        cancelAnimationFrame(spinId);
         document.getElementById('wheelSpinner').classList.remove('spinning');
+        wheelSvg.style.transform='rotate(-90deg)';
         alert('Ошибка сети');
         resetAfterSpin();
     }
