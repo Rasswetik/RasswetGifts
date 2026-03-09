@@ -10,8 +10,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/static/js/telegram-auth.js"></script>
     <style>
-        @font-face{font-family:'LilitaOne';src:url('/static/fonts/lilitaone-regular-webfont.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0000-024F,U+0300-036F,U+1E00-1EFF,U+2000-206F,U+2070-209F,U+20A0-20CF,U+2100-214F}
-        @font-face{font-family:'LilitaOne';src:url('/static/fonts/LilitaOne_BSS.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0400-04FF,U+0500-052F,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}
+        @font-face{font-family:'LilitaOne';src:url('/static/fonts/lilitaone-regular-webfont.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
 
         *{margin:0;padding:0;box-sizing:border-box}
         :root{
@@ -91,10 +90,10 @@
         @media(max-width:380px){
             .inv-grid{grid-template-columns:repeat(2,1fr)}
         }
-        .inv-card{background:var(--surface);border:none;border-radius:14px;padding:8px;text-align:center;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);position:relative}
+        .inv-card{background:rgba(255,255,255,.05);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:10px 8px;text-align:center;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);position:relative}
         .inv-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
         .inv-card:active{transform:scale(.95)}
-        .inv-card-img{width:70px;height:70px;object-fit:contain;margin:0 auto 6px;display:block;transition:transform .25s ease}
+        .inv-card-img{width:72px;height:72px;object-fit:contain;margin:0 auto 6px;display:block;transition:transform .25s ease}
         .inv-card:hover .inv-card-img{transform:scale(1.08)}
         .inv-card-name{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .inv-card-price{display:flex;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:700;color:var(--accent-light);margin-top:2px;line-height:1}
@@ -148,10 +147,10 @@
         .nm-del{width:28px;height:28px;border-radius:8px;border:none;background:rgba(239,68,68,.15);color:#ef4444;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
         /* === ITEM MODAL (bottom sheet 30%) === */
-        .item-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1001;display:none;align-items:flex-end;justify-content:center}
+        .item-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:1001;display:none;align-items:flex-end;justify-content:center}
         .item-modal-overlay.show{display:flex}
-        .item-modal{background:#1C2233;border-radius:20px 20px 0 0;width:100%;max-width:480px;min-height:30vh;text-align:center;box-shadow:0 -4px 30px rgba(0,0,0,.5);animation:sheetUp .3s ease;display:flex;flex-direction:column;align-items:center;padding:0 20px calc(80px + env(safe-area-inset-bottom,0));position:relative;overflow:hidden}
-        .item-modal-handle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:10px auto 14px;flex-shrink:0}
+        .item-modal{background:linear-gradient(180deg,rgba(30,35,50,.97) 0%,rgba(22,26,38,.99) 100%);border-radius:24px 24px 0 0;width:100%;max-width:480px;min-height:30vh;text-align:center;box-shadow:0 -4px 40px rgba(0,0,0,.5);animation:sheetUp .3s ease;display:flex;flex-direction:column;align-items:center;padding:0 20px calc(80px + env(safe-area-inset-bottom,0));position:relative;overflow:hidden}
+        .item-modal-handle{width:40px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:10px auto 14px;flex-shrink:0}
         .item-modal-name{font-size:16px;font-weight:700;margin-bottom:6px;color:#fff}
         .item-modal img.item-modal-main-img{width:100px;height:100px;object-fit:contain;margin-bottom:10px;border-radius:16px;background:rgba(255,255,255,.06);padding:8px}
         .item-modal-price{display:flex;align-items:center;justify-content:center;gap:5px;font-size:15px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1}
@@ -202,7 +201,41 @@
         .inv-card-challenge{position:absolute;top:4px;right:4px;display:flex;align-items:center;justify-content:center;width:18px;height:18px;background:rgba(0,0,0,.5);border-radius:5px}
         .inv-card-challenge svg{width:11px;height:11px;stroke:rgba(255,255,255,.5);fill:none}
         .inv-card-locked{opacity:.85;border:1px solid rgba(99,102,241,.3)}
-        .inv-card-upgraded .inv-card-img{border-radius:10px;border:1.5px solid rgba(255,255,255,.3);padding:0;background:transparent}
+        .inv-card-upgraded{border:1.5px solid rgba(255,215,0,.3);background:linear-gradient(135deg,rgba(255,215,0,.06) 0%,rgba(255,180,0,.03) 100%);box-shadow:0 0 14px rgba(255,215,0,.07)}
+        .inv-card-upgraded .inv-card-img{border-radius:12px;padding:0;background:transparent}
+
+        /* === NFT DETAIL CARD IN ITEM MODAL (glassmorphism) === */
+        .nft-detail-section{width:100%;display:none;flex-direction:column;align-items:center;padding-bottom:4px}
+        .nft-detail-section.show{display:flex}
+        .nft-detail-img-wrap{
+            position:relative;width:180px;height:180px;margin-bottom:14px;
+            border-radius:22px;overflow:hidden;
+            background:linear-gradient(135deg,rgba(120,140,180,.18) 0%,rgba(80,100,140,.12) 100%);
+            border:1.5px solid rgba(255,255,255,.08);
+            box-shadow:0 8px 32px rgba(0,0,0,.25);
+            backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+        }
+        .nft-detail-img-wrap img{width:100%;height:100%;object-fit:contain;padding:16px}
+        .nft-detail-name{font-size:20px;font-weight:800;color:#fff;margin-bottom:2px;display:flex;align-items:center;gap:6px}
+        .nft-detail-name .nft-chevron{font-size:14px;color:rgba(255,255,255,.35)}
+        .nft-detail-number{font-size:14px;color:rgba(255,255,255,.35);font-weight:600;margin-bottom:16px}
+        .nft-attrs-card{
+            width:100%;
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.07);
+            border-radius:16px;overflow:hidden;
+            backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+            box-shadow:0 4px 20px rgba(0,0,0,.15);
+        }
+        .nft-attr-row{display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.05)}
+        .nft-attr-row:last-child{border-bottom:none}
+        .nft-attr-label{font-size:13px;color:rgba(255,255,255,.4);font-weight:600;min-width:78px}
+        .nft-attr-val{font-size:14px;color:#6ec6ff;font-weight:700;flex:1}
+        .nft-attr-rarity{font-size:10px;color:rgba(255,255,255,.45);background:rgba(255,255,255,.08);padding:2px 7px;border-radius:6px;margin-left:4px;margin-right:auto;font-weight:600}
+        .nft-attr-ton{font-size:13px;color:#fff;font-weight:700;margin-left:auto;white-space:nowrap}
+        .nft-price-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-top:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)}
+        .nft-price-label{font-size:13px;color:rgba(255,255,255,.4);font-weight:600}
+        .nft-price-val{font-size:15px;color:#fff;font-weight:800}
 
         /* === REWARDS MODAL === */
         .rewards-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:1002;display:none;align-items:flex-end;justify-content:center}
@@ -438,6 +471,21 @@
             <div class="item-modal-name" id="itemModalName"></div>
             <img class="item-modal-main-img" id="itemModalImg" src="" alt="">
             <div class="item-modal-price" id="itemModalPriceWrap"><img src="/static/img/ton.png" id="itemModalTonIcon"> <span id="itemModalPrice">0</span> TON</div>
+
+            <!-- NFT Detail Section (visible for upgraded gifts) -->
+            <div class="nft-detail-section" id="nftDetailSection">
+                <div class="nft-detail-img-wrap">
+                    <img id="nftDetailImg" src="" alt="">
+                </div>
+                <div class="nft-detail-name"><span id="nftDetailNameText"></span><span class="nft-chevron">›</span></div>
+                <div class="nft-detail-number" id="nftDetailNumber"></div>
+                <div class="nft-attrs-card" id="nftAttrsCard">
+                    <div class="nft-attr-row"><span class="nft-attr-label">Model</span><span class="nft-attr-val" id="nftAttrModel">—</span><span class="nft-attr-rarity" id="nftAttrModelR"></span><span class="nft-attr-ton" id="nftAttrModelTon"></span></div>
+                    <div class="nft-attr-row"><span class="nft-attr-label">Symbol</span><span class="nft-attr-val" id="nftAttrSymbol">—</span><span class="nft-attr-rarity" id="nftAttrSymbolR"></span><span class="nft-attr-ton" id="nftAttrSymbolTon"></span></div>
+                    <div class="nft-attr-row"><span class="nft-attr-label">Backdrop</span><span class="nft-attr-val" id="nftAttrBackdrop">—</span><span class="nft-attr-rarity" id="nftAttrBackdropR"></span><span class="nft-attr-ton" id="nftAttrBackdropTon"></span></div>
+                    <div class="nft-price-row"><span class="nft-price-label">Min. Price</span><span class="nft-price-val" id="nftMinPrice">0 TON</span></div>
+                </div>
+            </div>
 
             <div class="item-modal-challenge" id="itemModalChallenge" style="display:none">
                 <div class="challenge-label"><svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Wager</div>
@@ -720,9 +768,10 @@
         vibrateIfOn();
         var ton = starsToTon(item.gift_value);
 
-        document.getElementById('itemModalImg').src = item.gift_image;
-        document.getElementById('itemModalName').textContent = item.gift_name;
-        document.getElementById('itemModalPrice').textContent = formatTon(ton);
+        var nftSection = document.getElementById('nftDetailSection');
+        var mainImg = document.getElementById('itemModalImg');
+        var mainName = document.getElementById('itemModalName');
+        var mainPrice = document.getElementById('itemModalPriceWrap');
 
         var ch = item.challenge;
         var chSection = document.getElementById('itemModalChallenge');
@@ -739,28 +788,31 @@
         upgradeBtn.style.display = 'none';
         withdrawBtn.style.display = 'none';
         claimBtn.style.display = 'none';
+        nftSection.classList.remove('show');
 
-        if (ch && !ch.is_completed) {
-            // Active challenge: show progress bar only, no action buttons
-            var pct = ch.target_wager > 0 ? Math.min(100, (ch.current_wager / ch.target_wager) * 100) : 0;
-            document.getElementById('challengeBar').style.width = pct.toFixed(1) + '%';
-            var cTon = (ch.current_wager / 100).toFixed(2);
-            var tTon = (ch.target_wager / 100).toFixed(2);
-            document.getElementById('challengeText').textContent = cTon + ' / ' + tTon + ' TON';
-            chSection.style.display = '';
-            actSection.style.display = 'none';
+        if (item.is_upgraded) {
+            // NFT view: hide old elements, show NFT detail section
+            mainImg.style.display = 'none';
+            mainName.style.display = 'none';
+            mainPrice.style.display = 'none';
+            nftSection.classList.add('show');
 
-            // If challenge is complete (current >= target), show Claim button
-            if (ch.current_wager >= ch.target_wager) {
-                actSection.style.display = '';
-                claimBtn.style.display = '';
-            }
-        } else if (item.crate_id) {
-            // Crate item
-            chSection.style.display = 'none';
-            actSection.style.display = 'none';
-        } else if (item.is_upgraded) {
-            // Upgraded NFT item: sell + withdraw
+            document.getElementById('nftDetailImg').src = item.gift_image;
+            var baseName = (item.gift_name || '').replace(/#\d+$/, '').trim();
+            document.getElementById('nftDetailNameText').textContent = baseName;
+            document.getElementById('nftDetailNumber').textContent = '#' + (item.nft_number || '?');
+
+            document.getElementById('nftAttrModel').textContent = item.nft_model || '—';
+            document.getElementById('nftAttrSymbol').textContent = item.nft_symbol || '—';
+            document.getElementById('nftAttrBackdrop').textContent = item.nft_backdrop || '—';
+            document.getElementById('nftAttrModelR').textContent = item.nft_model_rarity ? item.nft_model_rarity + '%' : '';
+            document.getElementById('nftAttrSymbolR').textContent = item.nft_symbol_rarity ? item.nft_symbol_rarity + '%' : '';
+            document.getElementById('nftAttrBackdropR').textContent = item.nft_backdrop_rarity ? item.nft_backdrop_rarity + '%' : '';
+            document.getElementById('nftAttrModelTon').textContent = item.nft_model_price ? item.nft_model_price + ' TON' : '';
+            document.getElementById('nftAttrSymbolTon').textContent = item.nft_symbol_price ? item.nft_symbol_price + ' TON' : '';
+            document.getElementById('nftAttrBackdropTon').textContent = item.nft_backdrop_price ? item.nft_backdrop_price + ' TON' : '';
+            document.getElementById('nftMinPrice').textContent = formatTon(ton) + ' TON';
+
             chSection.style.display = 'none';
             actSection.style.display = '';
             sellBtn.style.display = '';
@@ -770,15 +822,39 @@
             withdrawBtn.textContent = t('withdraw');
             withdrawBtn.disabled = item.is_withdrawing;
         } else {
-            // Normal random item: sell + upgrade
-            chSection.style.display = 'none';
-            actSection.style.display = '';
-            sellBtn.style.display = '';
-            sellBtn.textContent = t('sell');
-            sellBtn.disabled = item.is_withdrawing;
-            upgradeBtn.style.display = '';
-            upgradeBtn.textContent = t('upgrade') + ' 0.1 TON';
-            upgradeBtn.disabled = false;
+            // Normal view
+            mainImg.style.display = '';
+            mainName.style.display = '';
+            mainPrice.style.display = '';
+            document.getElementById('itemModalImg').src = item.gift_image;
+            document.getElementById('itemModalName').textContent = item.gift_name;
+            document.getElementById('itemModalPrice').textContent = formatTon(ton);
+
+            if (ch && !ch.is_completed) {
+                var pct = ch.target_wager > 0 ? Math.min(100, (ch.current_wager / ch.target_wager) * 100) : 0;
+                document.getElementById('challengeBar').style.width = pct.toFixed(1) + '%';
+                var cTon = (ch.current_wager / 100).toFixed(2);
+                var tTon = (ch.target_wager / 100).toFixed(2);
+                document.getElementById('challengeText').textContent = cTon + ' / ' + tTon + ' TON';
+                chSection.style.display = '';
+                actSection.style.display = 'none';
+                if (ch.current_wager >= ch.target_wager) {
+                    actSection.style.display = '';
+                    claimBtn.style.display = '';
+                }
+            } else if (item.crate_id) {
+                chSection.style.display = 'none';
+                actSection.style.display = 'none';
+            } else {
+                chSection.style.display = 'none';
+                actSection.style.display = '';
+                sellBtn.style.display = '';
+                sellBtn.textContent = t('sell');
+                sellBtn.disabled = item.is_withdrawing;
+                upgradeBtn.style.display = '';
+                upgradeBtn.textContent = t('upgrade') + ' 0.1 TON';
+                upgradeBtn.disabled = false;
+            }
         }
 
         document.getElementById('itemModal').classList.add('show');
@@ -789,6 +865,7 @@
         document.getElementById('itemModalImg').style.display = '';
         document.getElementById('itemModalPriceWrap').style.display = '';
         document.getElementById('itemModalName').style.display = '';
+        document.getElementById('nftDetailSection').classList.remove('show');
         var hnd = document.querySelector('.item-modal-handle');
         if (hnd) hnd.style.display = '';
         var mdl = document.querySelector('.item-modal');
@@ -951,6 +1028,15 @@
         selectedItem.gift_image = upgradeResult.new_image;
         selectedItem.is_upgraded = true;
         selectedItem.nft_number = upgradeResult.nft_number;
+        selectedItem.nft_model = upgradeResult.nft_model;
+        selectedItem.nft_symbol = upgradeResult.nft_symbol;
+        selectedItem.nft_backdrop = upgradeResult.nft_backdrop;
+        selectedItem.nft_model_rarity = upgradeResult.nft_model_rarity;
+        selectedItem.nft_symbol_rarity = upgradeResult.nft_symbol_rarity;
+        selectedItem.nft_backdrop_rarity = upgradeResult.nft_backdrop_rarity;
+        selectedItem.nft_model_price = upgradeResult.nft_model_price;
+        selectedItem.nft_symbol_price = upgradeResult.nft_symbol_price;
+        selectedItem.nft_backdrop_price = upgradeResult.nft_backdrop_price;
         await refreshUserData();
         renderInventory();
 
@@ -990,12 +1076,6 @@
     async function withdrawItem() {
         if (!selectedItem) return;
         var itemId = selectedItem.id;
-        // Upgraded items: show error (withdrawal not available yet)
-        if (selectedItem.is_upgraded) {
-            hideItemModal();
-            showNotif('Withdrawal error. Contact support.', true);
-            return;
-        }
         hideItemModal();
         try {
             var r = await fetch('/api/withdraw-gift', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({user_id: user.id, gift_id: itemId}) });

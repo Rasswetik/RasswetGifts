@@ -2076,6 +2076,15 @@ def _create_all_tables(conn):
         ('crate_image', 'TEXT DEFAULT NULL'),
         ('is_upgraded', 'BOOLEAN DEFAULT FALSE'),
         ('nft_number', 'INTEGER DEFAULT NULL'),
+        ('nft_model', 'TEXT DEFAULT NULL'),
+        ('nft_symbol', 'TEXT DEFAULT NULL'),
+        ('nft_backdrop', 'TEXT DEFAULT NULL'),
+        ('nft_model_rarity', 'REAL DEFAULT NULL'),
+        ('nft_symbol_rarity', 'REAL DEFAULT NULL'),
+        ('nft_backdrop_rarity', 'REAL DEFAULT NULL'),
+        ('nft_model_price', 'REAL DEFAULT NULL'),
+        ('nft_symbol_price', 'REAL DEFAULT NULL'),
+        ('nft_backdrop_price', 'REAL DEFAULT NULL'),
     ]
     for _col_name, _col_type in _inv_migrate_cols:
         try:
@@ -5123,6 +5132,15 @@ def get_user_inventory(user_id):
                 'challenge': challenge_map.get(row.get('id')),
                 'is_upgraded': bool(row.get('is_upgraded', 0)),
                 'nft_number': row.get('nft_number'),
+                'nft_model': row.get('nft_model'),
+                'nft_symbol': row.get('nft_symbol'),
+                'nft_backdrop': row.get('nft_backdrop'),
+                'nft_model_rarity': row.get('nft_model_rarity'),
+                'nft_symbol_rarity': row.get('nft_symbol_rarity'),
+                'nft_backdrop_rarity': row.get('nft_backdrop_rarity'),
+                'nft_model_price': row.get('nft_model_price'),
+                'nft_symbol_price': row.get('nft_symbol_price'),
+                'nft_backdrop_price': row.get('nft_backdrop_price'),
             }
             inventory_list.append(entry)
 
@@ -7642,6 +7660,54 @@ def _get_collection_max_number(slug):
 # Gift IDs that cannot be upgraded (regular Telegram gifts)
 NON_UPGRADEABLE_GIFT_IDS = {90}
 
+# NFT attribute pools for upgrade (loaded from fragment_catalog_cache at runtime)
+_NFT_SYMBOLS = [
+    'Snowflake','Jingle Bell','Crystal','Star','Diamond','Heart','Crescent',
+    'Clover','Anchor','Feather','Lightning','Crown','Flame','Leaf','Sun',
+    'Butterfly','Ribbon','Shield','Arrow','Compass','Shell','Gem','Bell',
+    'Moon','Lotus','Rose','Dove','Candle','Key','Lantern',
+]
+_NFT_BACKDROPS = [
+    'Silver Blue','Coral Red','Olive Green','Lavender','Midnight Blue',
+    'Ivory','Crimson','Bronze','Emerald','Amethyst','Turquoise',
+    'Champagne','Deep Purple','Rose Gold','Sky Blue','Mint Green',
+    'Sunset Orange','Pearl White','Charcoal','Ruby Red','Ocean Blue',
+    'Forest Green','Dusty Pink','Warm Grey','Arctic White',
+]
+
+def _pick_nft_attributes(slug, gift_value_stars=0):
+    """Pick random Model/Symbol/Backdrop from known data for a collection."""
+    import random as _rnd
+    model_name = None
+    model_floor = None
+    try:
+        with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
+            cache = json.load(f)
+        models_map = cache.get('models', {})
+        slug_models = models_map.get(slug, [])
+        if slug_models:
+            chosen = _rnd.choice(slug_models)
+            model_name = chosen.get('model_name', 'Classic')
+            mf = chosen.get('getgems_model_floor_ton')
+            if mf:
+                try: model_floor = float(mf)
+                except Exception: pass
+    except Exception:
+        pass
+    if not model_name:
+        model_name = 'Classic'
+    symbol = _rnd.choice(_NFT_SYMBOLS)
+    backdrop = _rnd.choice(_NFT_BACKDROPS)
+    model_r = round(_rnd.uniform(0.5, 8.0), 1)
+    symbol_r = round(_rnd.uniform(0.5, 8.0), 1)
+    backdrop_r = round(_rnd.uniform(0.5, 8.0), 1)
+    # Attribute TON prices: model from getgems floor, others derived from gift value
+    base_ton = (gift_value_stars / 100.0) if gift_value_stars else 5.0
+    model_price = round(model_floor if model_floor and model_floor > 0 else base_ton * _rnd.uniform(0.8, 1.4), 2)
+    symbol_price = round(base_ton * _rnd.uniform(0.7, 1.3), 2)
+    backdrop_price = round(base_ton * _rnd.uniform(0.7, 1.3), 2)
+    return model_name, symbol, backdrop, model_r, symbol_r, backdrop_r, model_price, symbol_price, backdrop_price
+
 
 @app.route('/api/upgrade-gift', methods=['POST'])
 def upgrade_gift():
@@ -7725,9 +7791,19 @@ def upgrade_gift():
                 preview_nums.add(n)
         preview_images = [f'https://nft.fragment.com/gift/{slug}-{n}.webp' for n in preview_nums]
 
+        # Pick NFT attributes (model, symbol, backdrop)
+        nft_model, nft_symbol, nft_backdrop, model_r, symbol_r, backdrop_r, model_p, symbol_p, backdrop_p = _pick_nft_attributes(slug, gift.get('gift_value', 0))
+
         cursor.execute('''UPDATE inventory
-            SET gift_name = ?, gift_image = ?, is_upgraded = 1, nft_number = ?
-            WHERE id = ?''', (new_name, new_image, nft_num, inventory_id))
+            SET gift_name = ?, gift_image = ?, is_upgraded = 1, nft_number = ?,
+                nft_model = ?, nft_symbol = ?, nft_backdrop = ?,
+                nft_model_rarity = ?, nft_symbol_rarity = ?, nft_backdrop_rarity = ?,
+                nft_model_price = ?, nft_symbol_price = ?, nft_backdrop_price = ?
+            WHERE id = ?''', (new_name, new_image, nft_num,
+                              nft_model, nft_symbol, nft_backdrop,
+                              model_r, symbol_r, backdrop_r,
+                              model_p, symbol_p, backdrop_p,
+                              inventory_id))
 
         try:
             cursor.execute('''INSERT INTO user_history (user_id, operation_type, amount, description)
@@ -7747,7 +7823,16 @@ def upgrade_gift():
             'new_image': new_image,
             'nft_number': nft_num,
             'new_balance': new_bal[0] if new_bal else 0,
-            'preview_images': preview_images
+            'preview_images': preview_images,
+            'nft_model': nft_model,
+            'nft_symbol': nft_symbol,
+            'nft_backdrop': nft_backdrop,
+            'nft_model_rarity': model_r,
+            'nft_symbol_rarity': symbol_r,
+            'nft_backdrop_rarity': backdrop_r,
+            'nft_model_price': model_p,
+            'nft_symbol_price': symbol_p,
+            'nft_backdrop_price': backdrop_p,
         })
 
     except Exception as e:
