@@ -1217,12 +1217,12 @@
         
         // Gift prices — always use value from API (sourced from gifts.json)
         function getGiftPrice(gift) {
-            // ton_balance uses ton_amount directly
+            // ton_balance uses ton_amount directly (already in TON)
             if (gift.type === 'ton_balance' && gift.ton_amount) {
                 return Number(gift.ton_amount);
             }
-            // Value is already in TON from gifts.json via API
-            return Number(gift.value || 0);
+            // Value from gifts.json is in stars (100 stars = 1 TON)
+            return Number(gift.value || 0) / 100;
         }
         
         // Get appropriate TON SVG based on amount

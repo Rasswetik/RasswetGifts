@@ -9,8 +9,7 @@
     <link rel="stylesheet" href="/static/css/global.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/static/js/telegram-auth.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         :root{
@@ -211,13 +210,7 @@
         .inv-card-challenge svg{width:11px;height:11px;stroke:rgba(255,255,255,.5);fill:none}
         .inv-card-locked{opacity:.85;border:1px solid rgba(99,102,241,.3)}
         .inv-card-upgraded{border:1.5px solid rgba(255,215,0,.3);background:linear-gradient(135deg,rgba(255,215,0,.06) 0%,rgba(255,180,0,.03) 100%);box-shadow:0 0 14px rgba(255,215,0,.07)}
-        .inv-card-upgraded .inv-card-img-wrap{position:relative;width:72px;height:72px;margin:0 auto 6px;border-radius:14px;overflow:hidden;background:rgba(255,255,255,.04);border:2px solid rgba(255,215,0,.35);box-shadow:0 0 10px rgba(255,215,0,.12),inset 0 0 8px rgba(255,215,0,.05)}
-        .inv-card-upgraded .inv-card-img-wrap::before{content:'';position:absolute;inset:0;border-radius:12px;border:1px solid rgba(255,255,255,.15);pointer-events:none;z-index:2}
-        .inv-card-upgraded .inv-card-img{border-radius:12px;padding:0;background:transparent;border:none;box-shadow:none}
-        .nft-tgs-container{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:1}
-        .inv-card .nft-hover-anim,.inv-card .nft-tgs-container{display:none;position:absolute;inset:0;border-radius:12px;z-index:1}
-        .inv-card:hover .nft-hover-anim,.inv-card:hover .nft-tgs-container{display:block}
-        .inv-card:hover .inv-card-img-static{display:none}
+        .inv-card-upgraded .inv-card-img{width:72px;height:72px;object-fit:cover;border-radius:12px}
 
         /* === NFT DETAIL CARD IN ITEM MODAL === */
         .nft-detail-section{width:100%;display:none;flex-direction:column;align-items:center;padding-bottom:4px}
@@ -791,21 +784,13 @@
             var cardClass = 'inv-card';
             if (item.challenge && !item.challenge.is_completed) cardClass += ' inv-card-locked';
             if (item.is_upgraded) cardClass += ' inv-card-upgraded';
-            // For upgraded NFTs, use Fragment thumb as static + TGS animation on hover
-            var imgHtml;
-            if (item.is_upgraded && item.fragment_slug) {
-                var thumbUrl = 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp';
-                imgHtml = '<div class="inv-card-img-wrap" data-slug="' + item.fragment_slug + '">' +
-                    '<img class="inv-card-img inv-card-img-static" src="' + thumbUrl + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '" style="border:none;background:none;margin:0;width:100%;height:100%;object-fit:cover;border-radius:0">' +
-                    '<div class="nft-tgs-container" data-tgs="https://fragment.com/file/gifts/' + item.fragment_slug + '/animation.tgs"></div>' +
-                    '</div>';
-            } else {
-                imgHtml = '<img class="inv-card-img" src="' + item.gift_image + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '">';
+            var imgSrc = item.is_upgraded ? (item.gift_image || (item.fragment_slug ? 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp' : '/static/img/default_gift.png')) : item.gift_image;
+            var imgHtml = '<img class="inv-card-img" src="' + imgSrc + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '">';
+            if (item.is_upgraded) {
+                return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + '</div>';
             }
             return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + challengeBadge + '<div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; 
         }).join('') + '</div>';
-        // Add hover/touch TGS animation for upgraded NFTs
-        initTgsHoverAnimations();
     }
 
     function openItemModal(itemId) {
@@ -960,7 +945,6 @@
         // Reset state
         strip.innerHTML = '';
         strip.style.transform = 'translateX(0)';
-        strip.style.opacity = '0';
         roulette.style.display = '';
         resultCard.classList.remove('show');
         animStatus.textContent = '';
@@ -975,20 +959,55 @@
         modal.style.padding = '0';
         animWrap.className = 'upgrade-anim-wrap active';
 
-        // Start the API call
+        // Build a placeholder looping strip using current gift image while API loads
+        var currentImg = selectedItem.gift_image || '/static/img/default_gift.png';
+        var containerW = roulette.offsetWidth || 300;
+        var itemSize = Math.floor(containerW / 3);
+        var rouletteH = 220;
+        var loopCount = 60;
+        for (var li = 0; li < loopCount; li++) {
+            var el = document.createElement('div');
+            el.className = 'upgrade-strip-item';
+            el.style.width = itemSize + 'px';
+            el.style.height = rouletteH + 'px';
+            el.style.padding = '6px';
+            var img = document.createElement('img');
+            img.src = currentImg;
+            el.appendChild(img);
+            strip.appendChild(el);
+        }
+        strip.style.opacity = '1';
+
+        // Start infinite scroll animation while API is loading
+        var scrollSpeed = 8; // px per frame
+        var scrollPos = 0;
+        var maxScroll = loopCount * itemSize;
+        var scrolling = true;
+        function scrollLoop() {
+            if (!scrolling) return;
+            scrollPos += scrollSpeed;
+            if (scrollPos > maxScroll / 2) scrollPos -= maxScroll / 2;
+            strip.style.transform = 'translateX(' + (-scrollPos) + 'px)';
+            requestAnimationFrame(scrollLoop);
+        }
+        requestAnimationFrame(scrollLoop);
+
+        // Start the API call in parallel with the scroll animation
         var upgradeResult = null;
         var upgradeError = null;
-        var fetchPromise = fetch('/api/upgrade-gift', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({user_id: user.id, inventory_id: itemId})
-        }).then(function(r){ return r.json(); }).then(function(d){
-            upgradeResult = d;
-        }).catch(function(e){
+        try {
+            var resp = await fetch('/api/upgrade-gift', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: user.id, inventory_id: itemId})
+            });
+            upgradeResult = await resp.json();
+        } catch (e) {
             upgradeError = e;
-        });
+        }
 
-        await fetchPromise;
+        // Stop the infinite scroll
+        scrolling = false;
 
         if (!upgradeResult || !upgradeResult.success) {
             animStatus.textContent = (upgradeResult && upgradeResult.error) || 'Upgrade failed';
@@ -1006,49 +1025,49 @@
             return;
         }
 
-        // Build roulette strip: 3 images visible, images fill space
+        // Now rebuild strip with real preview images + winner
+        strip.innerHTML = '';
+        strip.style.transform = 'translateX(0)';
+
         var previews = upgradeResult.preview_images || [];
+        if (!previews.length) previews = [currentImg]; // safeguard against empty previews
         var allImages = [];
-        while (allImages.length < 57) {
+        var safety = 0;
+        while (allImages.length < 57 && safety < 200) {
             for (var p = 0; p < previews.length; p++) {
                 allImages.push(previews[p]);
                 if (allImages.length >= 57) break;
             }
+            safety++;
         }
         var winnerPos = allImages.length;
         allImages.push(upgradeResult.new_image); // winner
-        // Add more images AFTER winner so right side isn't empty
         var afterCount = 0;
-        while (afterCount < 6) {
+        var safety2 = 0;
+        while (afterCount < 6 && safety2 < 50) {
             for (var p2 = 0; p2 < previews.length && afterCount < 6; p2++) {
                 allImages.push(previews[p2]);
                 afterCount++;
             }
+            safety2++;
         }
 
-        var containerW = roulette.offsetWidth;
-        var itemSize = Math.floor(containerW / 3);
-        var rouletteH = 220;
-
         for (var i = 0; i < allImages.length; i++) {
-            var el = document.createElement('div');
-            el.className = 'upgrade-strip-item';
-            el.style.width = itemSize + 'px';
-            el.style.height = rouletteH + 'px';
-            el.style.padding = '6px';
-            var img = document.createElement('img');
-            img.src = allImages[i];
-            el.appendChild(img);
-            strip.appendChild(el);
+            var el2 = document.createElement('div');
+            el2.className = 'upgrade-strip-item';
+            el2.style.width = itemSize + 'px';
+            el2.style.height = rouletteH + 'px';
+            el2.style.padding = '6px';
+            var img2 = document.createElement('img');
+            img2.src = allImages[i];
+            el2.appendChild(img2);
+            strip.appendChild(el2);
         }
 
         var targetOffset = (winnerPos * itemSize) + (itemSize / 2) - (containerW / 2);
 
-        // Show strip now that it's built
-        strip.style.opacity = '1';
-
-        // Animate: fast start, smooth deceleration over 2s (tap to skip)
-        var duration = 2000;
+        // Animate: fast start, smooth deceleration over 2.5s (tap to skip)
+        var duration = 2500;
         var startTime = Date.now();
         var skipAnimation = false;
 
@@ -1408,53 +1427,6 @@
         try { if (window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
     }
     function closeGiftReveal() { document.getElementById('giftRevealOverlay').classList.remove('show'); }
-
-    // TGS animation hover support for upgraded NFTs
-    function initTgsHoverAnimations() {
-        document.querySelectorAll('.nft-tgs-container').forEach(function(container) {
-            if (container._tgsInited) return;
-            container._tgsInited = true;
-            var tgsUrl = container.getAttribute('data-tgs');
-            if (!tgsUrl) return;
-            var wrap = container.closest('.inv-card-img-wrap');
-            if (!wrap) return;
-            var anim = null;
-            var loaded = false;
-
-            function loadAndPlay() {
-                if (loaded && anim) { container.style.display = 'block'; wrap.querySelector('.inv-card-img-static').style.display = 'none'; anim.goToAndPlay(0, true); return; }
-                fetch(tgsUrl).then(function(r) { return r.arrayBuffer(); }).then(function(buf) {
-                    try {
-                        var decompressed = pako.inflate(new Uint8Array(buf), { to: 'string' });
-                        var animData = JSON.parse(decompressed);
-                        container.innerHTML = '';
-                        container.style.display = 'block';
-                        wrap.querySelector('.inv-card-img-static').style.display = 'none';
-                        anim = lottie.loadAnimation({
-                            container: container,
-                            renderer: 'svg',
-                            loop: true,
-                            autoplay: true,
-                            animationData: animData
-                        });
-                        loaded = true;
-                    } catch(e) { console.warn('TGS parse error', e); }
-                }).catch(function(e) { console.warn('TGS fetch error', e); });
-            }
-
-            function stopAnim() {
-                container.style.display = 'none';
-                var staticImg = wrap.querySelector('.inv-card-img-static');
-                if (staticImg) staticImg.style.display = '';
-                if (anim) anim.stop();
-            }
-
-            wrap.addEventListener('mouseenter', loadAndPlay);
-            wrap.addEventListener('mouseleave', stopAnim);
-            wrap.addEventListener('touchstart', loadAndPlay, {passive: true});
-            wrap.addEventListener('touchend', function() { setTimeout(stopAnim, 600); }, {passive: true});
-        });
-    }
 
     document.addEventListener('DOMContentLoaded', initUser);
     </script>

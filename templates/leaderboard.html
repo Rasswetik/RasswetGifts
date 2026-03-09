@@ -8,8 +8,7 @@
     <link rel="icon" type="image/png" href="/static/img/logo.png">
     <link rel="stylesheet" href="/static/css/global.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         :root{
@@ -343,10 +342,7 @@
         .profile-inv-item.upgraded{border-color:rgba(255,215,0,.35);background:linear-gradient(180deg,rgba(255,215,0,.06) 0%,rgba(255,140,0,.04) 100%);box-shadow:0 0 12px rgba(255,215,0,.08)}
         .profile-inv-img{width:72px;height:72px;object-fit:contain;margin-bottom:4px}
         .profile-inv-item.upgraded .profile-inv-img{object-fit:cover;border-radius:12px}
-        .profile-inv-item.upgraded .profile-inv-img-wrap{position:relative;width:72px;height:72px;margin:0 auto 4px;border-radius:14px;overflow:hidden;border:2px solid rgba(255,215,0,.35);box-shadow:0 0 10px rgba(255,215,0,.12)}
-        .profile-inv-item.upgraded .profile-inv-img-wrap::before{content:'';position:absolute;inset:0;border-radius:12px;border:1px solid rgba(255,255,255,.15);pointer-events:none;z-index:2}
-        .profile-inv-item.upgraded .profile-inv-img-wrap img{width:100%;height:100%;object-fit:cover;border-radius:12px;margin:0}
-        .profile-inv-item.upgraded .nft-tgs-container{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:1}
+
         .profile-inv-name{font-family:'Inter Variable','Inter',sans-serif;font-size:11px;color:rgba(255,255,255,.8);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;line-height:1.2}
         .profile-inv-price{font-family:'Inter Variable','Inter',sans-serif;font-size:11px;color:#1ee44c;font-weight:700;margin-top:2px}
         .profile-inv-upgraded{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ff8c00);display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1}
@@ -742,60 +738,19 @@
                             var cls = 'profile-inv-item' + (it.is_upgraded ? ' upgraded' : '');
                             h += '<div class="' + cls + '">';
                             if(it.is_upgraded) h += '<div class="profile-inv-upgraded">⬆</div>';
-                            if(it.is_upgraded && it.fragment_slug){
-                                var thumbUrl = 'https://fragment.com/file/gifts/' + it.fragment_slug + '/thumb.webp';
-                                h += '<div class="profile-inv-img-wrap" data-slug="' + it.fragment_slug + '">';
-                                h += '<img class="profile-inv-img" src="' + thumbUrl + '" alt="">';
-                                h += '<div class="nft-tgs-container" data-tgs="https://fragment.com/file/gifts/' + it.fragment_slug + '/animation.tgs"></div>';
-                                h += '</div>';
-                            } else {
-                                h += '<img class="profile-inv-img" src="' + it.image + '" alt="">';
-                            }
+                            var imgSrc = (it.is_upgraded && it.fragment_slug) ? 'https://fragment.com/file/gifts/' + it.fragment_slug + '/thumb.webp' : it.image;
+                            h += '<img class="profile-inv-img" src="' + imgSrc + '" alt="">';
                             h += '<div class="profile-inv-name">' + it.name + '</div>';
                             h += '<div class="profile-inv-price">' + price + ' TON</div>';
                             h += '</div>';
                         }
                         document.getElementById('pcInvGrid').innerHTML = h;
-                        initLbTgsHover();
                     }
                 })
                 .catch(function(){ _pcLoading = false; document.getElementById('pcName').textContent = 'Ошибка'; });
         }
 
-    /* TGS hover animation for upgraded NFTs in leaderboard */
-    function initLbTgsHover(){
-        document.querySelectorAll('.nft-tgs-container').forEach(function(container){
-            if(container._tgsInited) return;
-            container._tgsInited = true;
-            var tgsUrl = container.getAttribute('data-tgs');
-            if(!tgsUrl) return;
-            var wrap = container.parentElement;
-            if(!wrap) return;
-            var anim = null, loaded = false;
-            function play(){
-                if(loaded && anim){container.style.display='block';var s=wrap.querySelector('img');if(s)s.style.display='none';anim.goToAndPlay(0,true);return;}
-                fetch(tgsUrl).then(function(r){return r.arrayBuffer();}).then(function(buf){
-                    try{
-                        var d=pako.inflate(new Uint8Array(buf),{to:'string'});
-                        var ad=JSON.parse(d);
-                        container.innerHTML='';container.style.display='block';
-                        var s=wrap.querySelector('img');if(s)s.style.display='none';
-                        anim=lottie.loadAnimation({container:container,renderer:'svg',loop:true,autoplay:true,animationData:ad});
-                        loaded=true;
-                    }catch(e){}
-                }).catch(function(){});
-            }
-            function stop(){
-                container.style.display='none';
-                var s=wrap.querySelector('img');if(s)s.style.display='';
-                if(anim)anim.stop();
-            }
-            wrap.addEventListener('mouseenter',play);
-            wrap.addEventListener('mouseleave',stop);
-            wrap.addEventListener('touchstart',play,{passive:true});
-            wrap.addEventListener('touchend',function(){setTimeout(stop,600);},{passive:true});
-        });
-    }
+
     </script>
 </body>
 </html>

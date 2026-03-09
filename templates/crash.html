@@ -11,8 +11,7 @@
 <title>CRASH</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="/static/js/telegram-auth.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
@@ -1801,10 +1800,7 @@ tc-root *{pointer-events:auto}
 .profile-inv-item.upgraded .profile-inv-img{
     object-fit:cover;border-radius:12px;
 }
-.profile-inv-item.upgraded .profile-inv-img-wrap{position:relative;width:72px;height:72px;margin:0 auto 4px;border-radius:14px;overflow:hidden;border:2px solid rgba(255,215,0,.35);box-shadow:0 0 10px rgba(255,215,0,.12)}
-.profile-inv-item.upgraded .profile-inv-img-wrap::before{content:'';position:absolute;inset:0;border-radius:12px;border:1px solid rgba(255,255,255,.15);pointer-events:none;z-index:2}
-.profile-inv-item.upgraded .profile-inv-img-wrap img{width:100%;height:100%;object-fit:cover;border-radius:12px;margin:0}
-.profile-inv-item.upgraded .nft-tgs-container{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:1}
+
 .profile-inv-name{
     font-family:'Inter Variable','Inter',sans-serif;
     font-size:11px;color:rgba(255,255,255,.8);font-weight:600;
@@ -1979,10 +1975,7 @@ tc-root *{pointer-events:auto}
 .inv-card .inv-val{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:11px;color:#0088cc;margin-top:3px;display:flex;align-items:center;justify-content:center;gap:3px}
 .inv-card .inv-val img{width:12px;height:12px}
 .inv-card.upgraded{border-color:rgba(255,215,0,.3);background:linear-gradient(135deg,rgba(255,215,0,.06),rgba(255,180,0,.03));box-shadow:0 0 14px rgba(255,215,0,.07)}
-.inv-card.upgraded .inv-card-img-wrap{position:relative;width:48px;height:48px;margin:0 auto 4px;border-radius:10px;overflow:hidden;border:2px solid rgba(255,215,0,.35);box-shadow:0 0 8px rgba(255,215,0,.12)}
-.inv-card.upgraded .inv-card-img-wrap::before{content:'';position:absolute;inset:0;border-radius:8px;border:1px solid rgba(255,255,255,.15);pointer-events:none;z-index:2}
-.inv-card.upgraded .inv-card-img-wrap img{width:100%;height:100%;object-fit:cover;border-radius:8px;margin:0;filter:none}
-.inv-card.upgraded .nft-tgs-container{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:1}
+.inv-card.upgraded img{object-fit:cover;border-radius:10px}
 .inv-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px}
 /* Confirm button for gifts */
 .confirm-gifts-btn{width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#6B7A8D,#556270);color:#fff;font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:800;font-size:15px;cursor:pointer;transition:all .2s;box-shadow:0 8px 25px rgba(120,135,160,.3);margin-top:12px;display:none}
@@ -6509,41 +6502,6 @@ async function confirmStarsBet(){
     }catch(e){ showToast('Network error','err'); }
 }
 
-/* TGS hover animation for upgraded NFTs in crash */
-function initCrashTgsHover(){
-    document.querySelectorAll('.nft-tgs-container').forEach(function(container){
-        if(container._tgsInited) return;
-        container._tgsInited = true;
-        var tgsUrl = container.getAttribute('data-tgs');
-        if(!tgsUrl) return;
-        var wrap = container.parentElement;
-        if(!wrap) return;
-        var anim = null, loaded = false;
-        function play(){
-            if(loaded && anim){container.style.display='block';var s=wrap.querySelector('img');if(s)s.style.display='none';anim.goToAndPlay(0,true);return;}
-            fetch(tgsUrl).then(function(r){return r.arrayBuffer();}).then(function(buf){
-                try{
-                    var d=pako.inflate(new Uint8Array(buf),{to:'string'});
-                    var ad=JSON.parse(d);
-                    container.innerHTML='';container.style.display='block';
-                    var s=wrap.querySelector('img');if(s)s.style.display='none';
-                    anim=lottie.loadAnimation({container:container,renderer:'svg',loop:true,autoplay:true,animationData:ad});
-                    loaded=true;
-                }catch(e){}
-            }).catch(function(){});
-        }
-        function stop(){
-            container.style.display='none';
-            var s=wrap.querySelector('img');if(s)s.style.display='';
-            if(anim)anim.stop();
-        }
-        wrap.addEventListener('mouseenter',play);
-        wrap.addEventListener('mouseleave',stop);
-        wrap.addEventListener('touchstart',play,{passive:true});
-        wrap.addEventListener('touchend',function(){setTimeout(stop,600);},{passive:true});
-    });
-}
-
 async function loadInventory(){
     if(!userData || !userData.id) return;
     try{
@@ -6561,23 +6519,18 @@ async function loadInventory(){
             var isSelected = selectedGifts.some(function(g){ return g.id === i.id; });
             var tonVal = (i.gift_value / 100).toFixed(2);
             var upgradedCls = i.is_upgraded ? ' upgraded' : '';
-            var imgHtml;
-            if (i.is_upgraded && i.fragment_slug) {
-                var thumbUrl = 'https://fragment.com/file/gifts/' + i.fragment_slug + '/thumb.webp';
-                imgHtml = '<div class="inv-card-img-wrap" data-slug="' + i.fragment_slug + '">' +
-                    '<img src="' + thumbUrl + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
-                    '<div class="nft-tgs-container" data-tgs="https://fragment.com/file/gifts/' + i.fragment_slug + '/animation.tgs"></div>' +
-                    '</div>';
-            } else {
-                imgHtml = '<img src="' + (i.gift_image || '/static/img/gift.png') + '" alt="" onerror="this.src=\'/static/img/gift.png\'">';
+            var imgSrc = i.is_upgraded ? (i.gift_image || (i.fragment_slug ? 'https://fragment.com/file/gifts/' + i.fragment_slug + '/thumb.webp' : '/static/img/gift.png')) : (i.gift_image || '/static/img/gift.png');
+            if (i.is_upgraded) {
+                return '<div class="inv-card' + upgradedCls + (isSelected ? ' selected' : '') + '" data-id="' + i.id + '" onclick="toggleGiftSelection(' + i.id + ')">' +
+                    '<img src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
+                '</div>';
             }
-            return '<div class="inv-card' + upgradedCls + (isSelected ? ' selected' : '') + '" data-id="' + i.id + '" onclick="toggleGiftSelection(' + i.id + ')">' +
-                imgHtml +
+            return '<div class="inv-card' + (isSelected ? ' selected' : '') + '" data-id="' + i.id + '" onclick="toggleGiftSelection(' + i.id + ')">' +
+                '<img src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
                 '<div class="inv-name">' + (i.gift_name || 'Gift') + '</div>' +
                 '<div class="inv-val">' + tonVal + '<img src="/static/img/tons/ton_1.svg"></div>' +
             '</div>';
         }).join('');
-        initCrashTgsHover();
         updateSelectedSummary();
     }catch(e){
         $('invGrid').innerHTML = '<div class="inv-empty">Loading error</div>';
@@ -9655,21 +9608,13 @@ function openProfileCard(userId){
                     var cls = 'profile-inv-item' + (it.is_upgraded ? ' upgraded' : '');
                     h += '<div class="' + cls + '">';
                     if(it.is_upgraded) h += '<div class="profile-inv-upgraded">⬆</div>';
-                    if(it.is_upgraded && it.fragment_slug){
-                        var thumbUrl = 'https://fragment.com/file/gifts/' + it.fragment_slug + '/thumb.webp';
-                        h += '<div class="profile-inv-img-wrap" data-slug="' + it.fragment_slug + '">';
-                        h += '<img class="profile-inv-img" src="' + thumbUrl + '" alt="">';
-                        h += '<div class="nft-tgs-container" data-tgs="https://fragment.com/file/gifts/' + it.fragment_slug + '/animation.tgs"></div>';
-                        h += '</div>';
-                    } else {
-                        h += '<img class="profile-inv-img" src="' + it.image + '" alt="">';
-                    }
+                    var imgSrc = (it.is_upgraded && it.fragment_slug) ? 'https://fragment.com/file/gifts/' + it.fragment_slug + '/thumb.webp' : it.image;
+                    h += '<img class="profile-inv-img" src="' + imgSrc + '" alt="">';
                     h += '<div class="profile-inv-name">' + it.name + '</div>';
                     h += '<div class="profile-inv-price">' + price + ' TON</div>';
                     h += '</div>';
                 }
                 document.getElementById('pcInvGrid').innerHTML = h;
-                initCrashTgsHover();
             }
         })
         .catch(function(){ _pcLoading = false; document.getElementById('pcName').textContent = 'Ошибка'; });

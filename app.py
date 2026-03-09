@@ -7735,11 +7735,11 @@ _NFT_BACKDROPS = [
     'Forest Green','Dusty Pink','Warm Grey','Arctic White',
 ]
 
-def _scrape_fragment_gift_attributes(slug, nft_number):
+def _scrape_fragment_gift_attributes(slug, nft_number, timeout=3):
     """Scrape real Model/Backdrop/Symbol from fragment.com/gift/{slug}-{number}."""
     try:
         url = f'https://fragment.com/gift/{slug}-{nft_number}'
-        resp = _fragment_get(url)
+        resp = _fragment_get(url, timeout=timeout)
         if resp.status_code != 200:
             return None
         html = resp.text
@@ -7777,6 +7777,7 @@ def _pick_nft_attributes(slug, gift_value_stars=0, nft_number=None):
     if nft_number and slug:
         real_attrs = _scrape_fragment_gift_attributes(slug, nft_number)
         if real_attrs:
+            logger.info(f'Fragment scrape OK for {slug}-{nft_number}: {real_attrs}')
             model_name = real_attrs.get('model', {}).get('value', 'Classic')
             symbol = real_attrs.get('symbol', {}).get('value', _rnd.choice(_NFT_SYMBOLS))
             backdrop = real_attrs.get('backdrop', {}).get('value', _rnd.choice(_NFT_BACKDROPS))
@@ -7802,6 +7803,8 @@ def _pick_nft_attributes(slug, gift_value_stars=0, nft_number=None):
             symbol_price = round(base_ton * 0.9, 2)
             backdrop_price = round(base_ton * 0.9, 2)
             return model_name, symbol, backdrop, model_r, symbol_r, backdrop_r, model_price, symbol_price, backdrop_price
+        else:
+            logger.warning(f'Fragment scrape returned no attrs for {slug}-{nft_number}, using fallback')
 
     # Fallback: pick from cache/random
     model_name = None
@@ -7908,15 +7911,18 @@ def upgrade_gift():
         # Build NFT image URL
         new_image = f'https://nft.fragment.com/gift/{slug}-{nft_num}.webp'
 
-        # Generate 20 random preview images for roulette animation
+        # Generate preview images for roulette animation (safe for small collections)
+        want_previews = min(20, max(max_num - 1, 1))
         preview_nums = set()
-        while len(preview_nums) < 20:
+        attempts = 0
+        while len(preview_nums) < want_previews and attempts < 500:
             n = random.randint(1, max_num)
             if n != nft_num:
                 preview_nums.add(n)
+            attempts += 1
         preview_images = [f'https://nft.fragment.com/gift/{slug}-{n}.webp' for n in preview_nums]
 
-        # Pick NFT attributes (model, symbol, backdrop) — scrape real Fragment page
+        # Pick NFT attributes (model, symbol, backdrop) — scrape real Fragment page (short timeout)
         nft_model, nft_symbol, nft_backdrop, model_r, symbol_r, backdrop_r, model_p, symbol_p, backdrop_p = _pick_nft_attributes(slug, gift.get('gift_value', 0), nft_number=nft_num)
 
         cursor.execute('''UPDATE inventory
