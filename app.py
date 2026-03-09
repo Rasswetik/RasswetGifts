@@ -3953,6 +3953,11 @@ def lobby_page():
     """Страница лобби"""
     return render_template('lobby.html')
 
+@app.route('/games')
+def games_page():
+    """Страница выбора игр"""
+    return render_template('games.html')
+
 @app.route('/upgrade')
 def upgrade_page():
     """Страница апгрейда → пока редирект на инвентарь"""
@@ -4391,7 +4396,12 @@ def ultimate_crash_place_bet_gift():
         gift_name = gift_dict.get('gift_name', 'Gift')
         gift_image = gift_dict.get('gift_image', '')
         gift_value = gift_dict.get('gift_value', 0)
+        gift_id_val = gift_dict.get('gift_id')
         bet_amount = gift_value
+
+        if gift_id_val and int(gift_id_val) in NON_BETTABLE_GIFT_IDS:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Этот подарок нельзя использовать в краше'})
 
         if bet_amount < 10:
             conn.close()
@@ -4516,6 +4526,12 @@ def ultimate_crash_place_bet_multi_gift():
         if len(gifts) != len(inventory_ids):
             conn.close()
             return jsonify({'success': False, 'error': 'Некоторые подарки не найдены'})
+
+        # Проверяем что ни один подарок не запрещён для краша
+        for g in gifts:
+            if g[4] and int(g[4]) in NON_BETTABLE_GIFT_IDS:
+                conn.close()
+                return jsonify({'success': False, 'error': f'Подарок "{g[1]}" нельзя использовать в краше'})
 
         # Считаем общую стоимость
         total_value = sum(g[3] for g in gifts)
@@ -7781,7 +7797,10 @@ def _get_collection_max_number(slug):
 
 
 # Gift IDs that cannot be upgraded (regular Telegram gifts)
-NON_UPGRADEABLE_GIFT_IDS = {90}
+NON_UPGRADEABLE_GIFT_IDS = {90, 110}   # 110 = Woman Bear
+
+# Gift IDs that cannot be used in crash betting (only withdraw/sell)
+NON_BETTABLE_GIFT_IDS = {110}          # Woman Bear
 
 # NFT attribute pools for upgrade (loaded from fragment_catalog_cache at runtime)
 _NFT_SYMBOLS = [

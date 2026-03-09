@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rasswet Gifts — Игры</title>
+    <link rel="icon" href="/static/img/logo.png" type="image/png">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --text: #fff;
+            --text-2: rgba(255,255,255,.5);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --nav-h: 60px;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        a { text-decoration: none; color: inherit; }
+
+        .games-container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 14px 16px 120px;
+            min-height: 100vh;
+        }
+
+        .games-title {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .games-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+        }
+
+        .game-card {
+            position: relative;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+            width: 100%;
+            min-height: 160px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        .game-card:active { transform: scale(0.97); }
+        .game-card.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(0.6);
+        }
+
+        .game-card-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 20px 24px;
+            min-height: inherit;
+            width: 100%;
+            position: relative;
+            z-index: 3;
+        }
+
+        .game-card-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .game-card-text {
+            font-size: 26px;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.1;
+        }
+
+        .game-card-badges {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .game-card-badge {
+            width: 22px;
+            height: 22px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(8px);
+        }
+        .game-card-badge img { width: 14px; height: 14px; }
+
+        .game-card-gif {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5));
+            position: absolute;
+            right: 16px;
+            bottom: 10px;
+        }
+
+        .game-card-tag {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.5px;
+            z-index: 5;
+        }
+
+        /* Card themes */
+        .game-card-crash {
+            background: radial-gradient(136.32% 93.18% at 70.03% 11.93%, #af3000, #480d00 45.34%, #350a00);
+        }
+        .game-card-cases {
+            background: radial-gradient(136.32% 93.18% at 70.03% 11.93%, #001aaf, #000548 45.34%, #000548);
+        }
+        .game-card-upgrade {
+            background: radial-gradient(136.32% 93.18% at 70.03% 11.93%, #333, #1a1a1a 45.34%, #111);
+        }
+
+        /* ═══ GRILL / BLOCKS ANIMATION ═══ */
+        .display-box {
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 4px 4px 28.3px rgba(255, 255, 255, 0.15) inset;
+        }
+        .grill-animation {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .grill-bars {
+            display: flex;
+            width: max-content;
+            height: 100%;
+            position: absolute;
+            bottom: 0; left: 0;
+            z-index: 1;
+            animation: grillScroll 3s linear infinite;
+        }
+        .grill-bars::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(60.53% 108.33% at 51.43% -8.33%,
+                #6c76ff, #2b00c8 37.5%, #6521cb 57.52%, #000548 92.14%);
+            opacity: 0.25;
+            z-index: 1;
+        }
+        .grill-bar {
+            flex: 0 0 auto;
+            width: 35px;
+            min-width: 35px;
+            height: 100%;
+            background: rgba(217, 217, 217, 0.25);
+            margin-right: 12px;
+        }
+        @keyframes grillScroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-47px); }
+        }
+        .grid-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 2;
+            overflow: hidden;
+            opacity: 0.12;
+        }
+        .grid-track {
+            position: relative;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            animation: gridScrollY 4.5s linear infinite;
+        }
+        .grid-track svg { width: 100%; flex-shrink: 0; }
+        @keyframes gridScrollY {
+            0%   { transform: translateY(-167px); }
+            100% { transform: translateY(0); }
+        }
+
+        /* Ripple */
+        @keyframes ripple {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        /* ═══ BOTTOM NAV ═══ */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 100;
+            background: rgba(15, 15, 17, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: var(--safe-bottom);
+        }
+        .nav-inner {
+            max-width: 480px;
+            margin: 0 auto;
+            display: flex;
+            height: 60px;
+        }
+        .bnav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            color: var(--text-2);
+            font-weight: 500;
+            transition: color .2s;
+            text-decoration: none;
+            padding: 8px 0;
+        }
+        .bnav-item.active { color: #fff; }
+        .bnav-item svg { width: 24px; height: 24px; }
+        .bnav-item.active svg { transform: scale(1.1); }
+        .bnav-item img.nav-ico { width: 22px; height: 22px; opacity: .64; }
+        .bnav-item.active img.nav-ico { opacity: 1; }
+        .bnav-label { font-size: 10px; font-weight: 600; }
+
+        @media (max-width: 360px) {
+            .game-card { min-height: 140px; }
+            .game-card-text { font-size: 22px; }
+            .game-card-gif { width: 100px; height: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="games-container">
+        <div class="games-title">🎮 Игры</div>
+
+        <div class="games-menu">
+            <!-- CRASH -->
+            <div class="game-card game-card-crash display-box" onclick="window.location.href='/crash'">
+                <div class="grill-animation">
+                    <div class="grill-bars">
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                    </div>
+                    <div class="grid-overlay">
+                        <div class="grid-track"></div>
+                    </div>
+                </div>
+                <div class="game-card-content">
+                    <div class="game-card-info">
+                        <span class="game-card-text">Краш</span>
+                        <div class="game-card-badges">
+                            <div class="game-card-badge"><img src="/static/img/ton.png" alt=""></div>
+                            <div class="game-card-badge"><img src="/static/img/star.png" alt=""></div>
+                        </div>
+                    </div>
+                    <img src="/static/gifs/crash.gif" alt="Crash" class="game-card-gif" loading="lazy">
+                </div>
+                <div class="game-card-tag" style="background:linear-gradient(135deg,#ff6b35,#e74c3c);">LIVE</div>
+            </div>
+
+            <!-- CASES -->
+            <div class="game-card game-card-cases display-box" onclick="window.location.href='/cases'">
+                <div class="grill-animation">
+                    <div class="grill-bars">
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                    </div>
+                    <div class="grid-overlay">
+                        <div class="grid-track"></div>
+                    </div>
+                </div>
+                <div class="game-card-content">
+                    <div class="game-card-info">
+                        <span class="game-card-text">Кейсы</span>
+                        <div class="game-card-badges">
+                            <div class="game-card-badge"><img src="/static/img/ton.png" alt=""></div>
+                            <div class="game-card-badge"><img src="/static/img/star.png" alt=""></div>
+                        </div>
+                    </div>
+                    <img src="/static/gifs/cases.gif" alt="Cases" class="game-card-gif" loading="lazy">
+                </div>
+            </div>
+
+            <!-- UPGRADES (disabled) -->
+            <div class="game-card game-card-upgrade display-box disabled">
+                <div class="grill-animation">
+                    <div class="grill-bars">
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
+                    </div>
+                    <div class="grid-overlay">
+                        <div class="grid-track"></div>
+                    </div>
+                </div>
+                <div class="game-card-content">
+                    <div class="game-card-info">
+                        <span class="game-card-text">Апгрейды</span>
+                        <div class="game-card-badges">
+                            <div class="game-card-badge"><img src="/static/img/star.png" alt=""></div>
+                        </div>
+                    </div>
+                    <img src="/static/gifs/upg.gif" alt="Upgrades" class="game-card-gif" loading="lazy">
+                </div>
+                <div class="game-card-tag" style="background:rgba(255,255,255,0.15);">СКОРО</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+        <div class="nav-inner">
+            <a class="bnav-item" href="/games">
+                <img class="nav-ico" src="/static/img/games.png" alt="">
+                <span class="bnav-label">Игры</span>
+            </a>
+            <a class="bnav-item" href="/news">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
+                <span class="bnav-label">Новости</span>
+            </a>
+            <a class="bnav-item" href="/leaderboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+                <span class="bnav-label">Топ</span>
+            </a>
+            <a class="bnav-item" href="/inventory">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span class="bnav-label">Профиль</span>
+            </a>
+        </div>
+    </nav>
+
+    <script>
+    // Generate SVG grid pattern for grill animation
+    (function() {
+        const gridSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="167" viewBox="0 0 480 167" fill="none"><g stroke="rgba(255,255,255,0.4)" stroke-width="0.5">' +
+            Array.from({length: 12}, function(_, i) { return '<line x1="'+(i*40)+'" y1="0" x2="'+(i*40)+'" y2="167"/>'; }).join('') +
+            Array.from({length: 8}, function(_, i) { return '<line x1="0" y1="'+(i*24)+'" x2="480" y2="'+(i*24)+'"/>'; }).join('') +
+            '</g></svg>';
+        document.querySelectorAll('.grid-track').forEach(function(track) {
+            track.innerHTML = gridSvg + gridSvg + gridSvg;
+        });
+    })();
+
+    // Ripple effect
+    document.querySelectorAll('.game-card:not(.disabled)').forEach(function(card) {
+        card.addEventListener('click', function(e) {
+            var ripple = document.createElement('span');
+            var rect = this.getBoundingClientRect();
+            var size = Math.max(rect.width, rect.height);
+            ripple.style.cssText = 'position:absolute;border-radius:50%;background:rgba(255,255,255,0.25);transform:scale(0);animation:ripple 0.8s ease-out;width:'+size+'px;height:'+size+'px;top:'+(e.clientY-rect.top-size/2)+'px;left:'+(e.clientX-rect.left-size/2)+'px;z-index:1;pointer-events:none;';
+            this.appendChild(ripple);
+            setTimeout(function() { ripple.remove(); }, 800);
+        });
+    });
+
+    // Highlight active nav
+    (function() {
+        var path = window.location.pathname;
+        document.querySelectorAll('.bnav-item').forEach(function(el) {
+            if (el.getAttribute('href') === path) el.classList.add('active');
+        });
+    })();
+
+    // Telegram WebApp
+    if (window.Telegram && Telegram.WebApp) {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        Telegram.WebApp.setHeaderColor('#0a0a0f');
+        Telegram.WebApp.setBackgroundColor('#0a0a0f');
+    }
+    </script>
+</body>
+</html>
