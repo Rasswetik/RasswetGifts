@@ -7,11 +7,10 @@
 <link rel="stylesheet" href="/static/css/global.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
-@font-face{font-family:'LilitaOne';src:url('/static/fonts/lilitaone-regular-webfont.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0000-024F,U+0300-036F,U+1E00-1EFF,U+2000-206F,U+2070-209F,U+20A0-20CF,U+2100-214F}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{
-    font-family:'LilitaOne','Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     background:#1A1E2A;
     color:#fff;
     -webkit-font-smoothing:antialiased;
@@ -209,16 +208,16 @@ select.form-input option{background:#1A1E2A;color:#fff}
     max-height:300px;overflow-y:auto;padding:4px;
 }
 .gift-card{
-    background:rgba(255,255,255,.04);border-radius:14px;padding:12px;
-    text-align:center;cursor:pointer;border:2px solid transparent;
-    transition:all .2s;
+    background:transparent;border-radius:14px;padding:8px;
+    text-align:center;cursor:pointer;border:1.5px solid rgba(255,255,255,.1);
+    transition:all .15s;
 }
-.gift-card:hover{border-color:rgba(120,135,160,.3)}
-.gift-card.selected{border-color:#1EE44C;background:rgba(30,228,76,.1)}
-.gift-card img{width:60px;height:60px;object-fit:contain;margin-bottom:8px}
-.gift-card-name{font-size:11px;color:rgba(255,255,255,.6);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gift-card-value{font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:4px;margin-top:4px}
-.gift-card-value img{width:14px;height:14px}
+.gift-card:hover{border-color:rgba(255,255,255,.25)}
+.gift-card.selected{border-color:#1EE44C;background:rgba(30,228,76,.06)}
+.gift-card img{width:56px;height:56px;object-fit:contain;border-radius:10px;background:rgba(255,255,255,.05);padding:4px}
+.gift-card-name{font-size:10px;color:rgba(255,255,255,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:6px}
+.gift-card-value{font-size:12px;font-weight:600;color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center;gap:3px;margin-top:3px}
+.gift-card-value img{width:12px;height:12px}
 
 /* User Detail Modal Sections */
 .detail-section{
@@ -466,7 +465,7 @@ select.form-input option{background:#1A1E2A;color:#fff}
     
     <!-- Settings Section -->
     <div class="section" id="sectionSettings">
-        <div class="detail-section">
+        <div class="detail-section" style="background:rgba(255,255,255,.03);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px">
             <div class="detail-section-title">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                 Crash Game
@@ -479,8 +478,43 @@ select.form-input option{background:#1A1E2A;color:#fff}
                 <div class="detail-row-label">Размер пула</div>
                 <div class="detail-row-value" id="crashPool">—</div>
             </div>
+            <div class="detail-row">
+                <div class="detail-row-label">Текущий RTP</div>
+                <div class="detail-row-value" id="crashRtp">—</div>
+            </div>
+            <!-- RTP -->
+            <div class="form-group" style="margin-top:12px">
+                <label class="form-label">Установить RTP (%)</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <input type="number" class="form-input" id="rtpInput" placeholder="85" min="1" max="100" step="1" value="85" style="flex:1">
+                    <button class="btn btn-primary" onclick="setRtp()" style="white-space:nowrap;padding:14px 20px">SET</button>
+                </div>
+            </div>
+            <!-- Next Multiplier -->
+            <div class="form-group" style="margin-top:12px">
+                <label class="form-label">Следующий множитель (x)</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <input type="number" class="form-input" id="nextMultInput" placeholder="2.5" min="1.01" step="0.01" style="flex:1">
+                    <button class="btn btn-primary" onclick="setNextMultiplier()" style="white-space:nowrap;padding:14px 20px">SET</button>
+                </div>
+            </div>
+            <!-- Range -->
+            <div class="form-group" style="margin-top:12px">
+                <label class="form-label">Диапазон коэффициентов</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                    <input type="number" class="form-input" id="rangeMin" placeholder="1.01" min="1.01" step="0.01" style="flex:1">
+                    <span style="color:rgba(255,255,255,.4)">—</span>
+                    <input type="number" class="form-input" id="rangeMax" placeholder="50" min="1.01" step="0.1" style="flex:1">
+                    <button class="btn btn-primary" onclick="setRange()" style="white-space:nowrap;padding:14px 20px">SET</button>
+                </div>
+            </div>
+            <!-- Manual mode + Force crash -->
+            <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn" id="manualModeBtn" style="flex:1;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7)" onclick="toggleManualMode()">⚪ Ручной: ВЫКЛ</button>
+                <button class="btn" style="flex:1;background:rgba(220,60,80,.25);color:#F96999" onclick="forceCrash()">⚡ Force Crash</button>
+            </div>
         </div>
-        <button class="btn btn-primary" onclick="loadStats()">Обновить статистику</button>
+        <button class="btn btn-primary" onclick="loadStats()" style="margin-top:12px">🔄 Обновить</button>
     </div>
     
     <!-- Withdrawals Section -->
@@ -1225,6 +1259,77 @@ async function loadStats(){
             $('statGifts').textContent = d.stats.total_gifts_given || 0;
         }
     }catch(e){ console.error(e); }
+    loadCrashStatus();
+}
+
+// Crash Admin Controls
+async function loadCrashStatus(){
+    try{
+        var r = await fetch('/api/admin/crash/status?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success){
+            var g = d.game || {};
+            $('crashStatus').textContent = g.status || '—';
+            $('crashPool').textContent = formatTon(g.pool || 0);
+            var rtp = d.rtp;
+            $('crashRtp').textContent = rtp != null ? (rtp * 100).toFixed(1) + '%' : '—';
+            if(rtp != null) $('rtpInput').value = Math.round(rtp * 100);
+            var ctrl = d.admin_control || {};
+            var manualEl = $('manualModeBtn');
+            if(manualEl) manualEl.textContent = ctrl.manual_mode ? '🟢 Ручной: ВКЛ' : '⚪ Ручной: ВЫКЛ';
+            if(ctrl.use_custom_range && $('rangeMin') && $('rangeMax')){
+                $('rangeMin').value = ctrl.multiplier_min || 1.01;
+                $('rangeMax').value = ctrl.multiplier_max || 50;
+            }
+        }
+    }catch(e){ console.error('crash status error', e); }
+}
+
+async function setRtp(){
+    var val = parseFloat($('rtpInput').value);
+    if(!val || val < 1 || val > 100){ showToast('RTP: 1-100', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/crash/set-rtp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, rtp: val}) });
+        var d = await r.json();
+        if(d.success){ showToast(d.message, 'ok'); loadCrashStatus(); } else showToast(d.error, 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function forceCrash(){
+    try{
+        var r = await fetch('/api/admin/crash/force-crash', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID}) });
+        var d = await r.json();
+        if(d.success){ showToast('⚡ ' + d.message, 'ok'); } else showToast(d.error, 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function setNextMultiplier(){
+    var val = parseFloat($('nextMultInput').value);
+    if(!val || val < 1.01){ showToast('Мин 1.01x', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/crash/set-next', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, multiplier: val}) });
+        var d = await r.json();
+        if(d.success){ showToast(d.message, 'ok'); } else showToast(d.error, 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function setRange(){
+    var min = parseFloat($('rangeMin').value);
+    var max = parseFloat($('rangeMax').value);
+    if(!min || !max || min < 1.01){ showToast('Мин 1.01x', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/crash/set-range', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, min: min, max: max, enabled: true}) });
+        var d = await r.json();
+        if(d.success){ showToast(d.message, 'ok'); } else showToast(d.error, 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function toggleManualMode(){
+    try{
+        var r = await fetch('/api/admin/crash/toggle-manual', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID}) });
+        var d = await r.json();
+        if(d.success){ showToast(d.message, 'ok'); loadCrashStatus(); } else showToast(d.error, 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
 // Promo
@@ -1846,7 +1951,7 @@ async function loadGiftsForAdd(){
 }
 
 function renderAddGifts(gifts){
-    $('addGiftGrid').innerHTML = gifts.slice(0, 50).map(g => {
+    $('addGiftGrid').innerHTML = gifts.map(g => {
         var img = g.image || g.image_url || '/static/img/gift.png';
         var selected = selectedGiftToAdd && selectedGiftToAdd.id === g.id ? ' selected' : '';
         return '<div class="gift-card' + selected + '" onclick="selectGiftToAdd(\'' + g.id + '\')">' +
@@ -1864,7 +1969,7 @@ function filterAddGifts(){
 }
 
 function selectGiftToAdd(giftId){
-    selectedGiftToAdd = allGifts.find(g => g.id === giftId);
+    selectedGiftToAdd = allGifts.find(g => String(g.id) === String(giftId));
     renderAddGifts(allGifts.filter(g => {
         var q = $('addGiftSearch').value.toLowerCase();
         return (g.name || '').toLowerCase().includes(q);
