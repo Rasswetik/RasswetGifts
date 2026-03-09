@@ -2010,11 +2010,19 @@ def _create_all_tables(conn):
     errors = []
     for name, sql in tables_sql.items():
         try:
+            # On PostgreSQL, use SAVEPOINTs so one failure doesn't abort the whole transaction
+            if USE_POSTGRES:
+                conn.execute("SAVEPOINT sp_create_table")
             conn.execute(sql)
             ok += 1
         except Exception as e:
             errors.append(f"{name}: {e}")
             logger.error(f"❌ Таблица {name}: {e}")
+            if USE_POSTGRES:
+                try:
+                    conn.execute("ROLLBACK TO SAVEPOINT sp_create_table")
+                except:
+                    pass
 
     # Коммитим с обработкой ошибок
     try:
@@ -2071,9 +2079,13 @@ def _create_all_tables(conn):
     ]
     for _col_name, _col_type in _inv_migrate_cols:
         try:
+            if USE_POSTGRES:
+                conn.execute("SAVEPOINT sp_migrate")
             conn.execute(f"ALTER TABLE inventory ADD COLUMN {_col_name} {_col_type}")
         except Exception:
-            pass  # column already exists
+            if USE_POSTGRES:
+                try: conn.execute("ROLLBACK TO SAVEPOINT sp_migrate")
+                except: pass
     try:
         conn.commit()
     except Exception as mig_e:
@@ -2092,9 +2104,13 @@ def _create_all_tables(conn):
     ]
     for _col_name, _col_type in _usr_migrate_cols:
         try:
+            if USE_POSTGRES:
+                conn.execute("SAVEPOINT sp_migrate")
             conn.execute(f"ALTER TABLE users ADD COLUMN {_col_name} {_col_type}")
         except Exception:
-            pass
+            if USE_POSTGRES:
+                try: conn.execute("ROLLBACK TO SAVEPOINT sp_migrate")
+                except: pass
     try:
         conn.commit()
     except Exception as mig_e:
@@ -2217,14 +2233,22 @@ def init_db():
         if USE_POSTGRES:
             try:
                 conn = _pg_get_connection()
-                _create_all_tables(conn)
+                result = _create_all_tables(conn)
                 conn.commit()
                 conn.close()
+                if result is False:
+                    logger.error("❌ PostgreSQL: _create_all_tables returned False")
+                    return False
                 _db_ready = True
                 logger.info("✅ PostgreSQL database initialized")
                 return True
             except Exception as e:
                 logger.error(f"❌ PostgreSQL init failed: {e}")
+                try:
+                    conn.rollback()
+                    conn.close()
+                except:
+                    pass
                 return False
 
         # Проверяем диск
@@ -18093,6 +18117,19 @@ def api_user_profile_card(user_id):
                 'is_upgraded': bool(ir[4])
             })
 
+        # Level progress info
+        cur_lvl = row[7] or 1
+        exp = row[8] or 0
+        cur_lvl_info = next((l for l in LEVEL_SYSTEM if l["level"] == cur_lvl), None)
+        nxt_lvl_info = next((l for l in LEVEL_SYSTEM if l["level"] == cur_lvl + 1), None)
+        if cur_lvl_info and nxt_lvl_info:
+            lvl_progress = ((exp - cur_lvl_info["exp_required"]) /
+                           max(nxt_lvl_info["exp_required"] - cur_lvl_info["exp_required"], 1)) * 100
+            nxt_exp = nxt_lvl_info["exp_required"]
+        else:
+            lvl_progress = 100
+            nxt_exp = exp
+
         conn.close()
         return jsonify({
             'success': True,
@@ -18104,11 +18141,14 @@ def api_user_profile_card(user_id):
                 'cases_opened': row[4],
                 'crash_bets': row[5],
                 'total_volume': row[6],
-                'level': row[7],
-                'experience': row[8],
+                'level': cur_lvl,
+                'experience': exp,
                 'rank': rank,
                 'monthly_turnover': monthly,
-                'inventory': inventory
+                'inventory': inventory,
+                'level_progress': min(max(lvl_progress, 0), 100),
+                'next_level_exp': nxt_exp,
+                'current_level_exp': cur_lvl_info["exp_required"] if cur_lvl_info else 0
             }
         })
     except Exception as e:

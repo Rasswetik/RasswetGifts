@@ -1723,68 +1723,69 @@ tc-root *{pointer-events:auto}
 .profile-overlay.show{opacity:1;visibility:visible}
 .profile-card{
     width:100%;max-width:480px;
-    height:50vh;
+    max-height:75vh;overflow-y:auto;
     background:linear-gradient(180deg,#1e2330 0%,#161b26 100%);
     border-radius:20px 20px 0 0;
     display:flex;flex-direction:column;align-items:center;
     padding:0 20px 24px;
     transform:translateY(100%);
     transition:transform .35s cubic-bezier(.32,1,.23,1);
-    position:relative;overflow:hidden;
+    position:relative;
 }
 .profile-overlay.show .profile-card{transform:translateY(0)}
 .profile-handle{
     width:40px;height:4px;border-radius:2px;
     background:rgba(255,255,255,.2);margin:10px auto 16px;flex-shrink:0;
 }
-.profile-avatar-wrap{
-    width:72px;height:72px;border-radius:50%;overflow:hidden;
-    border:2.5px solid rgba(253,161,0,.5);
-    box-shadow:0 0 25px rgba(253,161,0,.15);
-    flex-shrink:0;margin-bottom:8px;
-}
-.profile-avatar-wrap img{width:100%;height:100%;object-fit:cover;display:block}
 .profile-name{
     font-family:'Inter Variable','Inter',sans-serif;
-    font-size:18px;font-weight:800;color:#fff;
-    margin-bottom:2px;text-align:center;
+    font-size:20px;font-weight:800;color:#fff;
+    margin-bottom:4px;text-align:center;
 }
-.profile-username{
-    font-size:12px;color:rgba(255,255,255,.35);font-weight:600;
-    margin-bottom:16px;text-align:center;
+/* Level progress bar */
+.pc-level-wrap{
+    width:100%;max-width:280px;margin-bottom:16px;
 }
-.profile-stats{
-    display:grid;grid-template-columns:1fr 1fr;gap:8px;
-    width:100%;flex:1;overflow-y:auto;
+.pc-level-label{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:11px;color:rgba(255,255,255,.4);font-weight:600;
+    margin-bottom:4px;
 }
-.profile-stat{
+.pc-level-label span:first-child{color:rgba(253,161,0,.9);font-weight:700}
+.pc-level-bg{
+    height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;
+}
+.pc-level-fill{
+    height:100%;border-radius:3px;
+    background:linear-gradient(90deg,#fda100,#ff6b00);
+    transition:width .6s ease;
+}
+.pc-level-text{
+    font-size:10px;color:rgba(255,255,255,.3);text-align:center;margin-top:3px;
+}
+/* Stat rows */
+.pc-stat-rows{
+    width:100%;display:flex;flex-direction:column;gap:8px;margin-bottom:16px;
+}
+.pc-stat-row{
+    display:flex;align-items:center;gap:10px;
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
-    border-radius:14px;padding:12px 10px;
-    display:flex;flex-direction:column;align-items:center;gap:6px;
-    text-align:center;
+    border-radius:12px;padding:10px 14px;
 }
-.profile-stat-icon{
-    width:28px;height:28px;display:flex;align-items:center;justify-content:center;
-    border-radius:8px;flex-shrink:0;
+.pc-stat-row img{width:22px;height:22px;flex-shrink:0}
+.pc-stat-row svg{width:22px;height:22px;flex-shrink:0}
+.pc-stat-row-label{
+    font-size:12px;color:rgba(255,255,255,.45);font-weight:600;
 }
-.profile-stat-icon svg{width:18px;height:18px}
-.profile-stat-icon.gold{background:rgba(253,161,0,.15);color:#FDA100}
-.profile-stat-icon.green{background:rgba(30,228,76,.15);color:#1EE44C}
-.profile-stat-icon.blue{background:rgba(59,130,246,.15);color:#3B82F6}
-.profile-stat-icon.purple{background:rgba(168,85,247,.15);color:#A855F7}
-.profile-stat-icon.red{background:rgba(249,105,153,.15);color:#F96999}
-.profile-stat-icon.cyan{background:rgba(6,182,212,.15);color:#06B6D4}
-.profile-stat-val{
+.pc-stat-row-val{
+    margin-left:auto;
     font-family:'Inter Variable','Inter',sans-serif;
-    font-size:16px;font-weight:800;color:#fff;line-height:1;
+    font-size:14px;font-weight:800;color:#fff;
 }
-.profile-stat-label{
-    font-size:10px;font-weight:600;color:rgba(255,255,255,.35);
-    text-transform:uppercase;letter-spacing:.5px;
-}
+/* Inventory */
 .profile-inv-title{
     font-size:14px;font-weight:700;color:rgba(255,255,255,.5);
-    margin-top:16px;margin-bottom:8px;text-align:left;
+    margin-top:4px;margin-bottom:8px;text-align:left;width:100%;
 }
 .profile-inv-grid{
     display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
@@ -1794,21 +1795,29 @@ tc-root *{pointer-events:auto}
     background:rgba(255,255,255,.04);border-radius:12px;
     padding:8px 4px 6px;display:flex;flex-direction:column;
     align-items:center;position:relative;overflow:hidden;
+    border:1.5px solid transparent;
+}
+.profile-inv-item.upgraded{
+    border-color:rgba(255,215,0,.35);
+    background:linear-gradient(180deg,rgba(255,215,0,.06) 0%,rgba(255,140,0,.04) 100%);
+    box-shadow:0 0 12px rgba(255,215,0,.08);
 }
 .profile-inv-img{
-    width:56px;height:56px;object-fit:contain;margin-bottom:4px;
+    width:72px;height:72px;object-fit:contain;margin-bottom:4px;
 }
 .profile-inv-name{
-    font-size:10px;color:rgba(255,255,255,.7);
+    font-family:'Inter Variable','Inter',sans-serif;
+    font-size:11px;color:rgba(255,255,255,.8);font-weight:600;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     max-width:100%;text-align:center;line-height:1.2;
 }
 .profile-inv-price{
-    font-size:10px;color:#1ee44c;font-weight:700;margin-top:2px;
+    font-family:'Inter Variable','Inter',sans-serif;
+    font-size:11px;color:#1ee44c;font-weight:700;margin-top:2px;
 }
 .profile-inv-upgraded{
     position:absolute;top:3px;right:3px;
-    width:16px;height:16px;border-radius:50%;
+    width:18px;height:18px;border-radius:50%;
     background:linear-gradient(135deg,#ffd700,#ff8c00);
     display:flex;align-items:center;justify-content:center;
     font-size:9px;line-height:1;
@@ -9508,10 +9517,13 @@ function hideBetInfoDisplay(){
     overlay.innerHTML =
         '<div class="profile-card" id="profileCard">' +
             '<div class="profile-handle"></div>' +
-            '<div class="profile-avatar-wrap"><img id="pcAvatar" src="/static/img/default_avatar.png" alt=""></div>' +
             '<div class="profile-name" id="pcName">—</div>' +
-            '<div class="profile-username" id="pcUsername"></div>' +
-            '<div class="profile-stats" id="pcStats"></div>' +
+            '<div class="pc-level-wrap" id="pcLevelWrap">' +
+                '<div class="pc-level-label"><span id="pcLevelNum">Ур. 1</span><span id="pcLevelPct">0%</span></div>' +
+                '<div class="pc-level-bg"><div class="pc-level-fill" id="pcLevelFill" style="width:0%"></div></div>' +
+                '<div class="pc-level-text" id="pcLevelText">0 / 100 TON</div>' +
+            '</div>' +
+            '<div class="pc-stat-rows" id="pcStatRows"></div>' +
             '<div class="profile-inv-title" id="pcInvTitle" style="display:none">Инвентарь</div>' +
             '<div class="profile-inv-grid" id="pcInvGrid"></div>' +
             '<button class="profile-close-btn" onclick="closeProfileCard()">Закрыть</button>' +
@@ -9531,11 +9543,13 @@ function openProfileCard(userId){
     _pcLoading = true;
     var o = document.getElementById('profileOverlay');
     document.getElementById('pcName').textContent = 'Загрузка…';
-    document.getElementById('pcUsername').textContent = '';
-    document.getElementById('pcStats').innerHTML = '';
+    document.getElementById('pcStatRows').innerHTML = '';
     document.getElementById('pcInvGrid').innerHTML = '';
     document.getElementById('pcInvTitle').style.display = 'none';
-    document.getElementById('pcAvatar').src = '/static/img/default_avatar.png';
+    document.getElementById('pcLevelFill').style.width = '0%';
+    document.getElementById('pcLevelText').textContent = '';
+    document.getElementById('pcLevelNum').textContent = '';
+    document.getElementById('pcLevelPct').textContent = '';
     o.classList.add('show');
 
     fetch('/api/user-profile/' + userId)
@@ -9544,32 +9558,38 @@ function openProfileCard(userId){
             _pcLoading = false;
             if(!d.success || !d.profile){ document.getElementById('pcName').textContent = 'Не найден'; return; }
             var p = d.profile;
-            document.getElementById('pcAvatar').src = p.photo_url || '/static/img/default_avatar.png';
             document.getElementById('pcName').textContent = p.first_name || 'User';
-            document.getElementById('pcUsername').textContent = p.username ? ('@' + p.username) : '';
 
-            var tonMonth = (p.monthly_turnover / 100).toFixed(2);
+            /* Level bar */
+            var pct = Math.min(Math.max(p.level_progress || 0, 0), 100);
+            document.getElementById('pcLevelNum').textContent = 'Ур. ' + p.level;
+            document.getElementById('pcLevelPct').textContent = Math.round(pct) + '%';
+            document.getElementById('pcLevelFill').style.width = pct + '%';
+            var expCur = ((p.experience || 0) / 100).toFixed(1);
+            var expNext = ((p.next_level_exp || 0) / 100).toFixed(1);
+            document.getElementById('pcLevelText').textContent = expCur + ' / ' + expNext + ' TON';
+
+            /* Stat rows */
             var tonTotal = (p.total_volume / 100).toFixed(2);
+            var tonMonth = (p.monthly_turnover / 100).toFixed(2);
+            var cupSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="#fda100" stroke-width="2" style="width:22px;height:22px"><path d="M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18M4 22h16M18 2H6v7a6 6 0 0012 0V2z"/></svg>';
 
-            document.getElementById('pcStats').innerHTML =
-                _pcStat('gold',
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
-                    p.level, 'Уровень') +
-                _pcStat('purple',
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18M4 22h16M18 2H6v7a6 6 0 0012 0V2z"/></svg>',
-                    '#' + p.rank, 'Место в рейтинге') +
-                _pcStat('green',
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
-                    tonMonth + ' TON', 'Оборот за месяц') +
-                _pcStat('blue',
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
-                    tonTotal + ' TON', 'Общий оборот') +
-                _pcStat('red',
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/><path d="m12 15-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/></svg>',
-                    p.crash_bets, 'Ставок в краше') +
-                _pcStat('cyan',
-                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>',
-                    p.cases_opened, 'Кейсов открыто');
+            document.getElementById('pcStatRows').innerHTML =
+                '<div class="pc-stat-row">' +
+                    '<img src="/static/img/ton.png" alt="">' +
+                    '<span class="pc-stat-row-label">Общий оборот</span>' +
+                    '<span class="pc-stat-row-val">' + tonTotal + ' TON</span>' +
+                '</div>' +
+                '<div class="pc-stat-row">' +
+                    '<img src="/static/img/ton.png" alt="">' +
+                    '<span class="pc-stat-row-label">Оборот за месяц</span>' +
+                    '<span class="pc-stat-row-val">' + tonMonth + ' TON</span>' +
+                '</div>' +
+                '<div class="pc-stat-row">' +
+                    cupSvg +
+                    '<span class="pc-stat-row-label">Место в рейтинге</span>' +
+                    '<span class="pc-stat-row-val">#' + p.rank + '</span>' +
+                '</div>';
 
             /* Inventory */
             var inv = p.inventory || [];
@@ -9579,7 +9599,8 @@ function openProfileCard(userId){
                 for(var i=0;i<inv.length;i++){
                     var it = inv[i];
                     var price = (it.value / 100).toFixed(2);
-                    h += '<div class="profile-inv-item">';
+                    var cls = 'profile-inv-item' + (it.is_upgraded ? ' upgraded' : '');
+                    h += '<div class="' + cls + '">';
                     if(it.is_upgraded) h += '<div class="profile-inv-upgraded">⬆</div>';
                     h += '<img class="profile-inv-img" src="' + it.image + '" alt="">';
                     h += '<div class="profile-inv-name">' + it.name + '</div>';
@@ -9592,13 +9613,7 @@ function openProfileCard(userId){
         .catch(function(){ _pcLoading = false; document.getElementById('pcName').textContent = 'Ошибка'; });
 }
 
-function _pcStat(color, iconSvg, value, label){
-    return '<div class="profile-stat">' +
-        '<div class="profile-stat-icon ' + color + '">' + iconSvg + '</div>' +
-        '<div class="profile-stat-val">' + value + '</div>' +
-        '<div class="profile-stat-label">' + label + '</div>' +
-    '</div>';
-}
+/* No longer needed — _pcStat removed, using row layout now */
 
 /* ============================================================
    SOUND SYSTEM - Enhanced with rich synth sounds + volume control
