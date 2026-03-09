@@ -95,6 +95,10 @@ def _translate_query(sql):
             "SELECT tablename AS name FROM pg_tables WHERE schemaname = 'public'",
             out, flags=re.IGNORECASE
         )
+    # SQLite uses "value" as string literal; PG treats "value" as identifier.
+    # Convert double-quoted values in SET/WHERE clauses to single quotes.
+    # Match = "word" patterns (status = "crashed", etc.)
+    out = re.sub(r'''=\s*"([^"]*)"''', r"= '\1'", out)
     # Append ON CONFLICT DO NOTHING for INSERT OR IGNORE queries
     if _is_insert_or_ignore:
         out = out.rstrip().rstrip(';') + ' ON CONFLICT DO NOTHING'

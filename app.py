@@ -3420,6 +3420,11 @@ def start_ultimate_crash_loop():
         # Persistent connection for game loop — re-created only on error
         loop_conn = None
         tick_counter = 0
+        # In-memory multiplier tracking (source of truth during flying)
+        live_mult = 1.0
+        live_game_id = 0
+        live_status = 'waiting'
+        live_target = 5.0
 
         def get_loop_conn():
             nonlocal loop_conn
@@ -3434,6 +3439,24 @@ def start_ultimate_crash_loop():
                 except: pass
             loop_conn = None
 
+        def do_crash(conn, cursor, gid, crash_mult, tgt_mult):
+            """Common crash logic — updates DB, history, bets, cache"""
+            nonlocal live_status
+            live_status = 'crashed'
+            cursor.execute("UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ? WHERE id = ?",
+                         (crash_mult, gid))
+            cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (gid, crash_mult))
+            cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (gid,))
+            cursor.execute('''
+                UPDATE users SET total_loss = total_loss + (
+                    SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
+                    WHERE game_id = ? AND status = 'lost' AND user_id = users.id
+                ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
+            ''', (gid, gid))
+            _crash_bots_on_crash(gid)
+            update_crash_cache(gid, 'crashed', crash_mult, tgt_mult, 0)
+            conn.commit()
+
         while True:
             if not _db_ready:
                 time.sleep(2)
@@ -3443,7 +3466,77 @@ def start_ultimate_crash_loop():
                 cursor = conn.cursor()
                 tick_counter += 1
 
-                # Ищем активную игру
+                # During flying, skip heavy DB reads — use in-memory state
+                if live_status == 'flying' and live_game_id > 0:
+                    # Only check admin control + increment multiplier in memory
+                    admin_ctrl = get_admin_crash_control()
+                    if admin_ctrl.get('force_crash'):
+                        set_admin_crash_control('force_crash', False)
+                        do_crash(conn, cursor, live_game_id, live_mult, live_target)
+                        logger.info(f"💥 ADMIN FORCE CRASH на {live_mult:.2f}x")
+                        time.sleep(0.10)
+                        continue
+
+                    if live_mult < live_target:
+                        # AI RTP check (every 5th tick, only above 3x)
+                        if live_mult > 3.0 and tick_counter % 5 == 0:
+                            try:
+                                if ai_should_force_crash(live_game_id, live_mult, conn):
+                                    do_crash(conn, cursor, live_game_id, live_mult, live_target)
+                                    logger.info(f"💥 AI RTP CRASH на {live_mult:.2f}x")
+                                    time.sleep(0.10)
+                                    continue
+                            except Exception as ai_e:
+                                logger.error(f"AI mid-round error: {ai_e}")
+
+                        # Calculate increment based on live_mult (in-memory, always fresh)
+                        if live_mult < 1.1:
+                            base_increment = 0.03
+                        elif live_mult < 1.5:
+                            base_increment = 0.06
+                        elif live_mult < 2.0:
+                            base_increment = 0.10
+                        elif live_mult < 3.0:
+                            base_increment = 0.16
+                        elif live_mult < 5.0:
+                            base_increment = 0.25
+                        elif live_mult < 10.0:
+                            base_increment = 0.40
+                        else:
+                            base_increment = 0.60
+
+                        speed_boost = live_mult * 0.025
+                        increment = round(max(base_increment, speed_boost), 2)
+                        increment = min(increment, 2.0)
+
+                        # Random crash chance
+                        crash_chance = 0.01 * (live_mult / 10)
+                        if random.random() < crash_chance:
+                            do_crash(conn, cursor, live_game_id, live_mult, live_target)
+                            logger.info(f"💥 Случайный краш на {live_mult:.2f}x")
+                        else:
+                            new_multiplier = round(live_mult + increment, 2)
+                            if new_multiplier >= live_target:
+                                do_crash(conn, cursor, live_game_id, live_target, live_target)
+                                logger.info(f"💥 Достигнут целевой множитель {live_target:.2f}x")
+                            else:
+                                live_mult = new_multiplier
+                                progress = new_multiplier / live_target if live_target > 0 else 0
+                                time_remaining = max(0.5, 15.0 * (1 - progress))
+                                update_crash_cache(live_game_id, 'flying', new_multiplier, live_target, time_remaining)
+                                # Sync to DB every 10th tick (reduced from 5 for PG perf)
+                                if tick_counter % 10 == 0:
+                                    cursor.execute('UPDATE ultimate_crash_games SET current_multiplier = ? WHERE id = ?',
+                                                 (new_multiplier, live_game_id))
+                                    conn.commit()
+                    else:
+                        do_crash(conn, cursor, live_game_id, live_mult, live_target)
+                        logger.info(f"💥 Игра #{live_game_id} завершена на {live_mult:.2f}x")
+
+                    time.sleep(0.10)
+                    continue
+
+                # Non-flying phases: read from DB
                 cursor.execute('''
                     SELECT id, status, start_time, current_multiplier, target_multiplier
                     FROM ultimate_crash_games
@@ -3456,7 +3549,7 @@ def start_ultimate_crash_loop():
                 if game:
                     game_id, status, start_time, current_mult, target_mult = game
 
-                    # Преобразуем время
+                    # Parse start_time
                     if isinstance(start_time, str):
                         try:
                             if '.' in start_time:
@@ -3472,16 +3565,18 @@ def start_ultimate_crash_loop():
                     current_mult_float = float(current_mult) if current_mult else 1.0
                     target_mult_float = float(target_mult) if target_mult else 5.0
 
-                    # Обработка разных фаз (без waiting - сразу counting)
                     if status == 'waiting':
-                        # Сразу переходим в counting
-                        cursor.execute('UPDATE ultimate_crash_games SET status = "counting", start_time = CURRENT_TIMESTAMP WHERE id = ?', (game_id,))
+                        cursor.execute("UPDATE ultimate_crash_games SET status = 'counting', start_time = CURRENT_TIMESTAMP WHERE id = ?", (game_id,))
                         update_crash_cache(game_id, 'counting', 1.0, target_mult_float, 5.0)
+                        live_game_id = game_id
+                        live_status = 'counting'
+                        live_target = target_mult_float
+                        live_mult = 1.0
                     elif status == 'counting':
                         time_remaining = max(0, 5.0 - elapsed)
                         update_crash_cache(game_id, 'counting', 1.0, target_mult_float, time_remaining)
-                        if elapsed >= 5:  # 5 секунд отсчёта для ставок
-                            # AI RTP: Adjust target multiplier based on who bet this round
+                        if elapsed >= 5:
+                            # AI RTP: Adjust target multiplier
                             try:
                                 adjusted_target = ai_adjust_target_multiplier(target_mult_float, game_id, conn)
                                 if adjusted_target != target_mult_float:
@@ -3490,149 +3585,40 @@ def start_ultimate_crash_loop():
                                                  (adjusted_target, game_id))
                             except Exception as ai_e:
                                 logger.error(f"AI RTP pre-round error: {ai_e}")
-                            
-                            # Lock phase transition to prevent late bets
+
                             with _crash_phase_lock:
                                 _crash_phase_transitioning = True
-                            # Update cache FIRST (so bet endpoints see 'flying' immediately)
                             update_crash_cache(game_id, 'flying', 1.0, target_mult_float, 15.0)
-                            cursor.execute('UPDATE ultimate_crash_games SET status = "flying" WHERE id = ?', (game_id,))
+                            cursor.execute("UPDATE ultimate_crash_games SET status = 'flying' WHERE id = ?", (game_id,))
                             conn.commit()
                             with _crash_phase_lock:
                                 _crash_phase_transitioning = False
+                            # Switch to in-memory flying mode
+                            live_game_id = game_id
+                            live_status = 'flying'
+                            live_target = target_mult_float
+                            live_mult = 1.0
                     elif status == 'flying':
-                        # Check for admin force crash
-                        admin_ctrl = get_admin_crash_control()
-                        if admin_ctrl.get('force_crash'):
-                            set_admin_crash_control('force_crash', False)
-                            cursor.execute('UPDATE ultimate_crash_games SET status = "crashed" WHERE id = ?', (game_id,))
-                            cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (game_id, current_mult_float))
-                            cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (game_id,))
-                            cursor.execute('''
-                                UPDATE users SET total_loss = total_loss + (
-                                    SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
-                                    WHERE game_id = ? AND status = 'lost' AND user_id = users.id
-                                ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
-                            ''', (game_id, game_id))
-                            _crash_bots_on_crash(game_id)
-                            update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
-                            logger.info(f"💥 ADMIN FORCE CRASH на {current_mult_float:.2f}x")
-                            conn.commit()
-                            time.sleep(0.10)
-                            continue
-                        
-                        # Увеличиваем множитель
-
-                        if current_mult_float < target_mult_float:
-                            # AI RTP check — force crash if profitable players would extract too much
-                            if current_mult_float > 3.0 and tick_counter % 5 == 0:
-                                if ai_should_force_crash(game_id, current_mult_float, conn):
-                                    cursor.execute('UPDATE ultimate_crash_games SET status = "crashed" WHERE id = ?', (game_id,))
-                                    cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (game_id, current_mult_float))
-                                    cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (game_id,))
-                                    cursor.execute('''
-                                        UPDATE users SET total_loss = total_loss + (
-                                            SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
-                                            WHERE game_id = ? AND status = 'lost' AND user_id = users.id
-                                        ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
-                                    ''', (game_id, game_id))
-                                    _crash_bots_on_crash(game_id)
-                                    update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
-                                    logger.info(f"💥 AI RTP CRASH на {current_mult_float:.2f}x")
-                                    conn.commit()
-                                    time.sleep(0.10)
-                                    continue
-                            
-                            # Aggressive acceleration: fast after 1.1x
-                            if current_mult_float < 1.1:
-                                base_increment = 0.03
-                            elif current_mult_float < 1.5:
-                                base_increment = 0.06
-                            elif current_mult_float < 2.0:
-                                base_increment = 0.10
-                            elif current_mult_float < 3.0:
-                                base_increment = 0.16
-                            elif current_mult_float < 5.0:
-                                base_increment = 0.25
-                            elif current_mult_float < 10.0:
-                                base_increment = 0.40
-                            else:
-                                base_increment = 0.60
-
-                            speed_boost = current_mult_float * 0.025
-                            increment = round(max(base_increment, speed_boost), 2)
-                            increment = min(increment, 2.0)
-
-                            # Случайный краш
-                            crash_chance = 0.01 * (current_mult_float / 10)
-                            if random.random() < crash_chance:
-                                cursor.execute('UPDATE ultimate_crash_games SET status = "crashed" WHERE id = ?', (game_id,))
-                                # Save to history and process lost bets
-                                cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (game_id, current_mult_float))
-                                cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (game_id,))
-                                # Track losses for users
-                                cursor.execute('''
-                                    UPDATE users SET total_loss = total_loss + (
-                                        SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
-                                        WHERE game_id = ? AND status = 'lost' AND user_id = users.id
-                                    ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
-                                ''', (game_id, game_id))
-                                update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
-                                logger.info(f"💥 Случайный краш на {current_mult_float:.2f}x")
-                            else:
-                                new_multiplier = round(current_mult_float + increment, 2)
-                                if new_multiplier >= target_mult_float:
-                                    cursor.execute('UPDATE ultimate_crash_games SET status = "crashed", current_multiplier = ? WHERE id = ?',
-                                                 (target_mult_float, game_id))
-                                    cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (game_id, target_mult_float))
-                                    cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (game_id,))
-                                    # Track losses for users
-                                    cursor.execute('''
-                                        UPDATE users SET total_loss = total_loss + (
-                                            SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
-                                            WHERE game_id = ? AND status = 'lost' AND user_id = users.id
-                                        ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
-                                    ''', (game_id, game_id))
-                                    update_crash_cache(game_id, 'crashed', target_mult_float, target_mult_float, 0)
-                                    logger.info(f"💥 Достигнут целевой множитель {target_mult_float:.2f}x")
-                                else:
-                                    # Update cache immediately (clients see it fast)
-                                    progress = new_multiplier / target_mult_float if target_mult_float > 0 else 0
-                                    time_remaining = max(0.5, 15.0 * (1 - progress))
-                                    update_crash_cache(game_id, 'flying', new_multiplier, target_mult_float, time_remaining)
-                                    # Write to DB only every 5th tick to reduce I/O
-                                    if tick_counter % 5 == 0:
-                                        cursor.execute('UPDATE ultimate_crash_games SET current_multiplier = ? WHERE id = ?',
-                                                     (new_multiplier, game_id))
-                        else:
-                            cursor.execute('UPDATE ultimate_crash_games SET status = "crashed" WHERE id = ?', (game_id,))
-                            cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (game_id, current_mult_float))
-                            cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (game_id,))
-                            # Track losses for users
-                            cursor.execute('''
-                                UPDATE users SET total_loss = total_loss + (
-                                    SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
-                                    WHERE game_id = ? AND status = 'lost' AND user_id = users.id
-                                ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
-                            ''', (game_id, game_id))
-                            update_crash_cache(game_id, 'crashed', current_mult_float, target_mult_float, 0)
-                            logger.info(f"💥 Игра #{game_id} завершена на {current_mult_float:.2f}x")
+                        # Game was already flying when loop (re)started — sync in-memory
+                        live_game_id = game_id
+                        live_status = 'flying'
+                        live_target = target_mult_float
+                        live_mult = max(current_mult_float, 1.0)
 
                     conn.commit()
                 else:
-                    # No active game - check if last game just crashed (give time to display)
+                    # No active game
+                    live_status = 'none'
                     cursor.execute('''
                         SELECT id, status, current_multiplier FROM ultimate_crash_games
                         ORDER BY id DESC LIMIT 1
                     ''')
                     last_game = cursor.fetchone()
                     if last_game and last_game[1] == 'crashed':
-                        # Wait 3 seconds after crash so players see the result
                         time.sleep(3.0)
 
                     target_multiplier = generate_extreme_crash_multiplier()
-                    
-                    # Check for admin control of multiplier
+
                     admin_ctrl = get_admin_crash_control()
                     if admin_ctrl.get('next_multiplier'):
                         target_multiplier = float(admin_ctrl['next_multiplier'])
@@ -3643,32 +3629,30 @@ def start_ultimate_crash_loop():
                         max_m = admin_ctrl.get('multiplier_max', 50.0)
                         target_multiplier = round(random.uniform(min_m, max_m), 2)
                         logger.info(f"🎮 ADMIN RANGE multiplier: {target_multiplier}x ({min_m}-{max_m})")
-                    
+
                     cursor.execute('''
                         INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
                         VALUES ('waiting', ?, CURRENT_TIMESTAMP)
                     ''', (target_multiplier,))
                     conn.commit()
-                    # Clean old user bets cache
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 Новая Crash игра, target: {target_multiplier}x")
 
-                time.sleep(0.10)  # Tick interval — fast for smooth multiplier
+                time.sleep(0.10)
 
             except Exception as e:
                 err_msg = str(e)
                 reset_loop_conn()
-                # При ошибках БД - пробуем восстановить
+                live_status = 'none'  # Reset in-memory state on error
                 if 'malformed' in err_msg or 'disk' in err_msg or 'lock' in err_msg:
                     try:
-                        # Удаляем временные файлы WAL
                         for ext in ['-wal', '-shm', '-journal']:
                             p = DB_PATH + ext
                             if os.path.exists(p):
                                 os.remove(p)
                     except:
                         pass
-                
+
                 if not hasattr(game_loop, '_last_err') or game_loop._last_err != err_msg:
                     logger.error(f"❌ Ошибка в игровом цикле: {e}")
                     game_loop._last_err = err_msg
@@ -3677,7 +3661,7 @@ def start_ultimate_crash_loop():
                     game_loop._err_count = getattr(game_loop, '_err_count', 0) + 1
                     if game_loop._err_count % 30 == 0:
                         logger.error(f"❌ Ошибка в игровом цикле (повтор x{game_loop._err_count}): {e}")
-                time.sleep(3)  # Увеличена пауза при ошибках
+                time.sleep(3)
 
     thread = threading.Thread(target=game_loop, daemon=True)
     thread.start()
@@ -9009,7 +8993,7 @@ def ultimate_crash_game_state():
                 time_remaining = max(0, 15 - elapsed)
                 if time_remaining <= 0:
                     next_phase = 'counting'
-                    cursor.execute('UPDATE ultimate_crash_games SET status = "counting" WHERE id = ?', (game_id,))
+                    cursor.execute("UPDATE ultimate_crash_games SET status = 'counting' WHERE id = ?", (game_id,))
                     conn.commit()
                     time_remaining = 5
             # Фаза 2: Отсчет (5 секунд)
@@ -9017,7 +9001,7 @@ def ultimate_crash_game_state():
                 time_remaining = max(0, 5 - (elapsed - 15))
                 if time_remaining <= 0:
                     next_phase = 'flying'
-                    cursor.execute('UPDATE ultimate_crash_games SET status = "flying" WHERE id = ?', (game_id,))
+                    cursor.execute("UPDATE ultimate_crash_games SET status = 'flying' WHERE id = ?", (game_id,))
                     conn.commit()
                     time_remaining = 30  # Максимальное время полета
             # Фаза 3: Полет
