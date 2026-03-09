@@ -3960,8 +3960,8 @@ def games_page():
 
 @app.route('/upgrade')
 def upgrade_page():
-    """Страница апгрейда → пока редирект на инвентарь"""
-    return redirect('/inventory')
+    """Страница апгрейда подарков"""
+    return render_template('upgrade.html')
 
 @app.route('/leaderboard')
 def leaderboard_page():
@@ -8794,6 +8794,148 @@ def get_upgrade_possible_gifts():
     except Exception as e:
         logger.error(f"❌ Ошибка получения подарков: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/upgrade-multi', methods=['POST'])
+def upgrade_multi_gifts():
+    """Апгрейд: ставка до 6 подарков, шанс = сумма стоимости / цена цели"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        inventory_ids = data.get('inventory_ids', [])
+        target_gift_id = data.get('target_gift_id')
+
+        if not user_id or not inventory_ids or not target_gift_id:
+            return jsonify({'success': False, 'error': 'Не все параметры указаны'})
+
+        if len(inventory_ids) > 6:
+            return jsonify({'success': False, 'error': 'Максимум 6 подарков'})
+
+        if len(inventory_ids) != len(set(inventory_ids)):
+            return jsonify({'success': False, 'error': 'Дубликаты подарков'})
+
+        gifts = build_fragment_first_gifts_catalog()
+        target_gift = next((g for g in gifts if g.get('id') == target_gift_id or
+                            g.get('gift_key') == str(target_gift_id) or
+                            g.get('fragment_slug') == str(target_gift_id)), None)
+        if not target_gift:
+            return jsonify({'success': False, 'error': 'Целевой подарок не найден'})
+
+        target_value = target_gift.get('value', 0)
+        if target_value <= 0:
+            return jsonify({'success': False, 'error': 'Некорректная цена цели'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            placeholders = ','.join(['?'] * len(inventory_ids))
+            cursor.execute(
+                f'SELECT id, gift_name, gift_value, gift_id FROM inventory WHERE id IN ({placeholders}) AND user_id = ?',
+                inventory_ids + [user_id]
+            )
+            rows = cursor.fetchall()
+
+            if len(rows) != len(inventory_ids):
+                conn.close()
+                return jsonify({'success': False, 'error': 'Некоторые подарки не найдены'})
+
+            for row in rows:
+                if row[3] in NON_UPGRADEABLE_GIFT_IDS:
+                    conn.close()
+                    return jsonify({'success': False, 'error': f'Подарок "{row[1]}" нельзя использовать в апгрейде'})
+
+            total_value = sum(r[2] for r in rows)
+            bet_names = ', '.join(r[1] for r in rows)
+
+            if total_value >= target_value:
+                conn.close()
+                return jsonify({'success': False, 'error': 'Сумма ставки должна быть меньше цены цели'})
+
+            base_chance = max(2, min((total_value / target_value) * 100, 80))
+            displayed_chance = round(base_chance, 1)
+
+            real_chance = base_chance
+            if target_value > 10000:
+                real_chance = base_chance * 0.3
+            elif target_value > 5000:
+                real_chance = base_chance * 0.4
+            elif target_value > 2000:
+                real_chance = base_chance * 0.6
+            elif target_value > 1000:
+                real_chance = base_chance * 0.8
+            real_chance = max(5, real_chance)
+
+            cursor.execute('SELECT COALESCE(first_name, username, ?) FROM users WHERE id = ?', ('Игрок', user_id))
+            user_row = cursor.fetchone()
+            user_name = (user_row[0] if user_row and user_row[0] else 'Игрок')
+
+            logger.info(f"🎯 Multi-upgrade: user={user_id}, {len(inventory_ids)} gifts, "
+                        f"total={total_value} -> target={target_value}, "
+                        f"displayed={displayed_chance}%, real={real_chance:.1f}%")
+
+            success = random.random() * 100 <= real_chance
+
+            if success:
+                keep_id = rows[0][0]
+                cursor.execute(
+                    'UPDATE inventory SET gift_id=?, gift_name=?, gift_image=?, gift_value=? WHERE id=?',
+                    (target_gift['id'], target_gift['name'], target_gift['image'], target_value, keep_id)
+                )
+                delete_ids = [r[0] for r in rows if r[0] != keep_id]
+                if delete_ids:
+                    dp = ','.join(['?'] * len(delete_ids))
+                    cursor.execute(f'DELETE FROM inventory WHERE id IN ({dp})', delete_ids)
+
+                exp_gained = max(5, (target_value - total_value) // 50)
+                cursor.execute('UPDATE users SET experience = experience + ? WHERE id = ?', (exp_gained, user_id))
+
+                cursor.execute(
+                    'INSERT INTO user_history (user_id, operation_type, amount, description) VALUES (?, ?, 0, ?)',
+                    (user_id, 'upgrade_success', f'Успешный апгрейд: {bet_names} -> {target_gift["name"]}')
+                )
+                cursor.execute(
+                    'INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name) VALUES (?,?,?,?,?,?)',
+                    (user_id, user_name, target_gift['name'], target_gift['image'], target_value, 'Upgrade')
+                )
+                logger.info(f"✅ Multi-upgrade SUCCESS: {bet_names} -> {target_gift['name']}")
+            else:
+                dp = ','.join(['?'] * len(inventory_ids))
+                cursor.execute(f'DELETE FROM inventory WHERE id IN ({dp})', inventory_ids)
+
+                cursor.execute(
+                    'INSERT INTO user_history (user_id, operation_type, amount, description) VALUES (?, ?, 0, ?)',
+                    (user_id, 'upgrade_failure', f'Неудачный апгрейд: {bet_names}')
+                )
+                logger.info(f"❌ Multi-upgrade FAIL: {bet_names}")
+
+            conn.commit()
+
+            return jsonify({
+                'success': True,
+                'upgrade_success': success,
+                'chance': displayed_chance,
+                'new_gift': target_gift if success else None,
+                'message': 'Успешный апгрейд!' if success else 'Апгрейд не удался'
+            })
+
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e):
+                conn.close()
+                time.sleep(0.1)
+                return upgrade_multi_gifts()
+            raise e
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"❌ Multi-upgrade error: {e}")
+            return jsonify({'success': False, 'error': 'Ошибка обработки апгрейда'})
+        finally:
+            conn.close()
+
+    except Exception as e:
+        logger.error(f"❌ Multi-upgrade outer error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
 
 @app.route('/api/gifts')
 def api_gifts():

@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Rasswet — Апгрейд</title>
+<link rel="icon" href="/static/img/logo.png" type="image/png">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#111117;--card:#191920;--border:rgba(255,255,255,.08);--text:#fff;--text2:rgba(255,255,255,.5);--accent:#6c5ce7;--green:#1EE44C;--red:#F96999;--safe-bottom:env(safe-area-inset-bottom,0px)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;min-height:100vh}
+a{text-decoration:none;color:inherit}
+
+/* ═══ TOP BAR ═══ */
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;position:relative;z-index:10}
+.top-left{display:flex;align-items:center;gap:10px}
+.top-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.12);flex-shrink:0}
+.top-nick{font-size:14px;font-weight:700;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-right-btns{display:flex;gap:8px;align-items:center}
+.bal-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(120,135,160,.1);border:1px solid rgba(120,135,160,.25);font-weight:700;font-size:13px;color:#fff;backdrop-filter:blur(5px)}
+.bal-pill img{width:16px;height:16px}
+.bal-plus{width:28px;height:28px;border-radius:50%;border:1px solid rgba(120,135,160,.45);background:rgba(120,135,160,.3);color:#A0B0C4;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.bal-plus:active{transform:scale(.9)}
+
+/* ═══ MAIN CONTENT ═══ */
+.upgrade-wrap{max-width:480px;margin:0 auto;padding:0 16px 130px;display:flex;flex-direction:column;align-items:center;gap:16px}
+
+/* ═══ WHEEL ═══ */
+.wheel-container{position:relative;width:280px;height:280px;margin:8px auto 0}
+.wheel-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.wheel-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:18}
+.wheel-green{fill:none;stroke:var(--green);stroke-width:18;stroke-linecap:round;filter:drop-shadow(0 0 8px rgba(30,228,76,.4));transition:stroke-dasharray .5s,stroke-dashoffset .5s}
+.wheel-red{fill:none;stroke:var(--red);stroke-width:18;stroke-linecap:round;filter:drop-shadow(0 0 8px rgba(249,105,153,.4));transition:stroke-dasharray .5s,stroke-dashoffset .5s}
+.wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:140px;height:140px;border-radius:50%;background:var(--card);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:border-color .4s}
+.wheel-center img{width:90px;height:90px;object-fit:contain;display:none}
+.wheel-center .wheel-placeholder{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text2)}
+.wheel-center .wheel-placeholder svg{width:40px;height:40px;stroke:rgba(255,255,255,.15);fill:none;stroke-width:1.5}
+.wheel-center .wheel-placeholder span{font-size:11px;font-weight:600}
+.wheel-pointer{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:20px;height:20px;z-index:5}
+.wheel-pointer svg{width:20px;height:20px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+/* Spinner around wheel */
+.wheel-spinner{position:absolute;top:-4px;left:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border-radius:50%;border:3px solid transparent;border-top:3px solid rgba(255,255,255,.25);animation:none;pointer-events:none}
+.wheel-spinner.spinning{animation:wheelSpin 1s linear infinite}
+@keyframes wheelSpin{to{transform:rotate(360deg)}}
+
+/* Chance display */
+.chance-display{text-align:center;margin-top:-4px}
+.chance-value{font-size:32px;font-weight:900;color:var(--text);line-height:1}
+.chance-label{font-size:12px;color:var(--text2);font-weight:600;margin-top:2px}
+
+/* ═══ PANELS ═══ */
+.panels{width:100%;display:flex;flex-direction:column;gap:10px}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+.panel-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.panel-title svg{width:14px;height:14px;stroke:currentColor;fill:none}
+
+/* Gift slots */
+.gift-slots{display:flex;gap:8px;flex-wrap:wrap}
+.gift-slot{width:56px;height:56px;border-radius:12px;border:2px dashed rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;background:rgba(255,255,255,.02)}
+.gift-slot:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.04)}
+.gift-slot.filled{border:2px solid rgba(108,92,231,.4);background:rgba(108,92,231,.08)}
+.gift-slot.filled img{width:44px;height:44px;object-fit:contain}
+.gift-slot .slot-remove{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:var(--red);display:none;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.gift-slot.filled .slot-remove{display:flex}
+.gift-slot .slot-remove svg{width:10px;height:10px;stroke:#fff;stroke-width:3;fill:none}
+.gift-slot .slot-plus{stroke:rgba(255,255,255,.15);fill:none;width:20px;height:20px}
+.slot-value{position:absolute;bottom:1px;left:0;right:0;font-size:8px;font-weight:700;color:var(--text2);text-align:center;background:rgba(0,0,0,.5);padding:1px 0;border-radius:0 0 10px 10px}
+
+/* Target panel */
+.target-slot{width:100%;height:64px;border-radius:14px;border:2px dashed rgba(255,255,255,.12);display:flex;align-items:center;gap:12px;padding:0 14px;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.02)}
+.target-slot:hover{border-color:rgba(255,255,255,.25)}
+.target-slot.filled{border:2px solid rgba(108,92,231,.4);background:rgba(108,92,231,.06)}
+.target-slot img{width:48px;height:48px;object-fit:contain;display:none}
+.target-slot .target-info{display:flex;flex-direction:column;gap:2px}
+.target-slot .target-name{font-size:14px;font-weight:700;color:#fff}
+.target-slot .target-price{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px}
+.target-slot .target-price img{width:12px;height:12px;display:inline}
+.target-placeholder{display:flex;align-items:center;gap:10px;color:var(--text2)}
+.target-placeholder svg{width:28px;height:28px;stroke:rgba(255,255,255,.15);fill:none;stroke-width:1.5}
+.target-placeholder span{font-size:13px;font-weight:600}
+
+/* ═══ UPGRADE BUTTON ═══ */
+.upgrade-btn{width:100%;height:56px;border-radius:16px;border:none;background:linear-gradient(135deg,#444,#333);color:rgba(255,255,255,.3);font-size:16px;font-weight:800;cursor:not-allowed;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .3s;position:relative;overflow:hidden}
+.upgrade-btn.ready{background:linear-gradient(135deg,#6c5ce7,#a855f7);color:#fff;cursor:pointer;box-shadow:0 8px 30px rgba(108,92,231,.35)}
+.upgrade-btn.ready:active{transform:scale(.97)}
+.upgrade-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2.5}
+.upgrade-btn.win{background:linear-gradient(135deg,#059669,#10b981)!important;color:#fff!important;cursor:default}
+.upgrade-btn.fail{background:linear-gradient(135deg,#dc2626,#ef4444)!important;color:#fff!important;cursor:default}
+
+/* ═══ GIFT PICKER MODAL ═══ */
+.picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:5000;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(6px);transition:opacity .3s,visibility .3s}
+.picker-overlay.show{opacity:1;visibility:visible}
+.picker-modal{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:70vh;padding:20px 16px calc(20px + var(--safe-bottom));transform:translateY(100%);transition:transform .35s cubic-bezier(.175,.885,.32,1.275);display:flex;flex-direction:column}
+.picker-overlay.show .picker-modal{transform:translateY(0)}
+.picker-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.picker-title{font-size:16px;font-weight:800}
+.picker-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(255,255,255,.08);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.picker-close svg{width:16px;height:16px;stroke:#fff;stroke-width:2;fill:none}
+.picker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;overflow-y:auto;flex:1;padding-bottom:10px}
+.picker-item{aspect-ratio:1;border-radius:14px;border:2px solid var(--border);background:rgba(255,255,255,.03);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .2s;padding:6px}
+.picker-item:hover{border-color:rgba(108,92,231,.4);background:rgba(108,92,231,.06)}
+.picker-item.selected{border-color:var(--accent);background:rgba(108,92,231,.12)}
+.picker-item.disabled{opacity:.35;pointer-events:none}
+.picker-item img{width:48px;height:48px;object-fit:contain}
+.picker-item-name{font-size:9px;font-weight:600;color:var(--text2);text-align:center;line-height:1.1;max-height:20px;overflow:hidden}
+.picker-item-value{font-size:10px;font-weight:700;color:var(--text)}
+
+/* ═══ TARGET PICKER MODAL ═══ */
+.target-picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:5000;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(6px);transition:opacity .3s,visibility .3s}
+.target-picker-overlay.show{opacity:1;visibility:visible}
+.target-picker-modal{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:70vh;padding:20px 16px calc(20px + var(--safe-bottom));transform:translateY(100%);transition:transform .35s cubic-bezier(.175,.885,.32,1.275);display:flex;flex-direction:column}
+.target-picker-overlay.show .target-picker-modal{transform:translateY(0)}
+.target-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1;padding-bottom:10px}
+.target-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;border:1px solid var(--border);background:rgba(255,255,255,.02);cursor:pointer;transition:all .2s}
+.target-item:hover{border-color:rgba(108,92,231,.4);background:rgba(108,92,231,.06)}
+.target-item img{width:44px;height:44px;object-fit:contain;flex-shrink:0}
+.target-item-info{flex:1;min-width:0}
+.target-item-name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.target-item-price{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px}
+.target-item-price img{width:12px;height:12px}
+.target-item-chance{font-size:13px;font-weight:800;color:var(--green);white-space:nowrap}
+
+/* ═══ DEPOSIT MODALS (reused from crash) ═══ */
+.deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5650;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
+.deposit-overlay.show{opacity:1;visibility:visible}
+.deposit-modal{background:linear-gradient(180deg,#1E2538,#151B2D);border-radius:24px;width:90%;max-width:360px;padding:24px 20px;transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid rgba(0,136,204,.2)}
+.deposit-overlay.show .deposit-modal{transform:scale(1)}
+.deposit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.deposit-title{font-weight:800;font-size:18px;color:#fff}
+.deposit-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.15);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.deposit-close svg{width:14px;height:14px;stroke:#F96999;fill:none;stroke-width:2}
+.deposit-methods{display:flex;gap:10px}
+.deposit-method-btn{flex:1;padding:16px 10px;border-radius:16px;border:1px solid rgba(120,135,160,.25);background:rgba(120,135,160,.08);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .2s}
+.deposit-method-btn:hover{background:rgba(120,135,160,.15);transform:translateY(-2px)}
+.deposit-method-btn:active{transform:scale(.97)}
+.deposit-method-btn img{width:36px;height:36px}
+.deposit-method-btn span{font-weight:700;font-size:13px;color:#fff}
+
+/* ═══ RESULT OVERLAY ═══ */
+.result-overlay{position:fixed;inset:0;z-index:6000;display:none;align-items:center;justify-content:center;pointer-events:none}
+.result-overlay.show{display:flex}
+.confetti-canvas{position:fixed;inset:0;z-index:6001;pointer-events:none}
+
+/* Flash effect */
+.wheel-center.flash-red{animation:flashRed 0.4s ease 3}
+@keyframes flashRed{0%,100%{border-color:var(--border);box-shadow:none}50%{border-color:var(--red);box-shadow:0 0 30px rgba(249,105,153,.5)}}
+.wheel-center.flash-green{animation:flashGreen 0.4s ease 3}
+@keyframes flashGreen{0%,100%{border-color:var(--border);box-shadow:none}50%{border-color:var(--green);box-shadow:0 0 30px rgba(30,228,76,.5)}}
+
+/* Sad/happy SVG in center */
+.wheel-result-icon{display:none;width:60px;height:60px}
+.wheel-result-icon.show{display:block}
+
+/* ═══ BOTTOM NAV ═══ */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:100;width:100%;max-width:480px;height:72px;padding:0 8px calc(var(--safe-bottom) + 8px);background:rgba(26,30,42,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-around}
+.bnav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 16px;border-radius:12px;background:transparent;border:none;color:rgba(255,255,255,.4);font-weight:600;cursor:pointer;transition:all .3s;text-decoration:none;position:relative}
+.bnav-item svg{width:24px;height:24px;flex-shrink:0;stroke:currentColor;fill:none;transition:transform .3s}
+.bnav-item span{font-size:10px;font-weight:600}
+.bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
+.bnav-item:active{transform:scale(.9)}
+.bnav-item.active svg{transform:scale(1.1)}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+    <div class="top-left">
+        <img class="top-avatar" id="topAvatar" src="/static/img/default_avatar.png" alt="">
+        <span class="top-nick" id="topNick">—</span>
+    </div>
+    <div class="top-right-btns">
+        <div class="bal-pill">
+            <img src="/static/img/ton.png" alt="">
+            <span id="balVal">0.00</span>
+        </div>
+        <button class="bal-plus" onclick="openDeposit()">+</button>
+    </div>
+</div>
+
+<div class="upgrade-wrap">
+    <!-- WHEEL -->
+    <div class="wheel-container" id="wheelContainer">
+        <div class="wheel-spinner" id="wheelSpinner"></div>
+        <!-- Pointer at top -->
+        <div class="wheel-pointer">
+            <svg viewBox="0 0 20 20"><polygon points="10,18 3,4 17,4" fill="#fff" stroke="rgba(0,0,0,.3)" stroke-width="1"/></svg>
+        </div>
+        <svg class="wheel-svg" viewBox="0 0 200 200" id="wheelSvg">
+            <circle class="wheel-bg" cx="100" cy="100" r="82"/>
+            <circle class="wheel-green" id="wheelGreen" cx="100" cy="100" r="82" stroke-dasharray="0 515.22" stroke-dashoffset="0"/>
+            <circle class="wheel-red" id="wheelRed" cx="100" cy="100" r="82" stroke-dasharray="0 515.22" stroke-dashoffset="0"/>
+        </svg>
+        <div class="wheel-center" id="wheelCenter">
+            <img id="wheelCenterImg" src="" alt="">
+            <svg class="wheel-result-icon" id="resultSad" viewBox="0 0 60 60"><circle cx="30" cy="30" r="28" fill="none" stroke="#F96999" stroke-width="2"/><circle cx="20" cy="24" r="2.5" fill="#F96999"/><circle cx="40" cy="24" r="2.5" fill="#F96999"/><path d="M20 42c4-6 16-6 20 0" fill="none" stroke="#F96999" stroke-width="2" stroke-linecap="round"/></svg>
+            <svg class="wheel-result-icon" id="resultHappy" viewBox="0 0 60 60"><circle cx="30" cy="30" r="28" fill="none" stroke="#1EE44C" stroke-width="2"/><circle cx="20" cy="24" r="2.5" fill="#1EE44C"/><circle cx="40" cy="24" r="2.5" fill="#1EE44C"/><path d="M20 38c4 6 16 6 20 0" fill="none" stroke="#1EE44C" stroke-width="2" stroke-linecap="round"/></svg>
+            <div class="wheel-placeholder" id="wheelPlaceholder">
+                <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" stroke-width="1.5"/><path d="M14 20h12M20 14v12" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <span>Выбери цель</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHANCE -->
+    <div class="chance-display" id="chanceDisplay" style="display:none">
+        <div class="chance-value" id="chanceValue">0%</div>
+        <div class="chance-label">шанс победы</div>
+    </div>
+
+    <!-- PANELS -->
+    <div class="panels">
+        <!-- Bet gifts panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13"/><path d="M3 12h18"/><path d="M7.5 8C7.5 8 7 2 12 5c0 0 .5-3.5 4.5-.5S12 8 12 8"/></svg>
+                Подарки для ставки <span style="color:rgba(255,255,255,.25);font-weight:500;font-size:11px;margin-left:4px">(до 6)</span>
+            </div>
+            <div class="gift-slots" id="giftSlots">
+                <div class="gift-slot" onclick="openGiftPicker()">
+                    <svg class="slot-plus" viewBox="0 0 20 20"><line x1="10" y1="5" x2="10" y2="15" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="10" x2="15" y2="10" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Target panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                Целевой подарок
+            </div>
+            <div class="target-slot" id="targetSlot" onclick="openTargetPicker()">
+                <div class="target-placeholder" id="targetPlaceholder">
+                    <svg viewBox="0 0 28 28"><circle cx="14" cy="14" r="12"/><path d="M14 8v12M8 14h12" stroke-linecap="round"/></svg>
+                    <span>Выбрать цель</span>
+                </div>
+                <img id="targetImg" src="" alt="">
+                <div class="target-info" id="targetInfo" style="display:none">
+                    <div class="target-name" id="targetName"></div>
+                    <div class="target-price"><img src="/static/img/ton.png" alt=""><span id="targetPrice"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPGRADE BUTTON -->
+    <button class="upgrade-btn" id="upgradeBtn" disabled onclick="doUpgrade()">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+        <span id="upgradeBtnText">АПГРЕЙД</span>
+    </button>
+</div>
+
+<!-- GIFT PICKER -->
+<div class="picker-overlay" id="giftPickerOverlay" onclick="if(event.target===this)closeGiftPicker()">
+    <div class="picker-modal">
+        <div class="picker-header">
+            <div class="picker-title">Выбери подарки</div>
+            <button class="picker-close" onclick="closeGiftPicker()"><svg viewBox="0 0 16 16"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></button>
+        </div>
+        <div class="picker-grid" id="giftPickerGrid"></div>
+    </div>
+</div>
+
+<!-- TARGET PICKER -->
+<div class="target-picker-overlay" id="targetPickerOverlay" onclick="if(event.target===this)closeTargetPicker()">
+    <div class="target-picker-modal">
+        <div class="picker-header">
+            <div class="picker-title">Выбери цель</div>
+            <button class="picker-close" onclick="closeTargetPicker()"><svg viewBox="0 0 16 16"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></button>
+        </div>
+        <div class="target-list" id="targetList"></div>
+    </div>
+</div>
+
+<!-- DEPOSIT MODAL -->
+<div class="deposit-overlay" id="depositOverlay" onclick="if(event.target===this)closeDeposit()">
+    <div class="deposit-modal">
+        <div class="deposit-header">
+            <div class="deposit-title">Пополнение</div>
+            <button class="deposit-close" onclick="closeDeposit()"><svg viewBox="0 0 14 14"><line x1="3" y1="3" x2="11" y2="11"/><line x1="11" y1="3" x2="3" y2="11"/></svg></button>
+        </div>
+        <div class="deposit-methods">
+            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
+                <img src="/static/img/ton.png" alt="TON" onerror="this.src='/static/img/plus.png'">
+                <span>TON</span>
+            </button>
+            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
+                <img src="/static/img/star.png" alt="Stars">
+                <span>Stars</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- CONFETTI CANVAS -->
+<canvas class="confetti-canvas" id="confettiCanvas"></canvas>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+    <a class="bnav-item" href="/games">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
+        <span>Игры</span>
+    </a>
+    <a class="bnav-item" href="/news">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
+        <span>Новости</span>
+    </a>
+    <a class="bnav-item" href="/leaderboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+        <span>Топ</span>
+    </a>
+    <a class="bnav-item" href="/inventory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Профиль</span>
+    </a>
+</nav>
+
+<script>
+var tg = window.Telegram && Telegram.WebApp;
+var userId = null;
+if(tg){tg.ready();tg.expand();tg.setHeaderColor('#111117');tg.setBackgroundColor('#111117');if(tg.initDataUnsafe&&tg.initDataUnsafe.user)userId=tg.initDataUnsafe.user.id;}
+
+var userInventory = [];
+var selectedGifts = []; // array of inventory items {id, name, image, value}
+var targetGift = null;  // catalog gift object
+var possibleTargets = [];
+var isSpinning = false;
+var CIRC = 2 * Math.PI * 82; // ~515.22
+
+// ═══ TOP BAR ═══
+async function loadTopBar(){
+    if(!userId)return;
+    try{
+        var r=await fetch('/api/user/'+userId);
+        var d=await r.json();
+        if(d.success&&d.user){
+            var u=d.user;
+            document.getElementById('topNick').textContent=u.first_name||u.username||'User';
+            if(u.photo_url)document.getElementById('topAvatar').src=u.photo_url;
+            document.getElementById('balVal').textContent=((u.balance_stars||0)/100).toFixed(2);
+        }
+    }catch(e){}
+}
+
+// ═══ LOAD INVENTORY ═══
+async function loadInventory(){
+    if(!userId)return;
+    try{
+        var r=await fetch('/api/inventory/'+userId);
+        var d=await r.json();
+        if(d.success){
+            userInventory=d.inventory.filter(function(it){
+                return !it.is_withdrawing && !it.challenge_locked;
+            });
+        }
+    }catch(e){}
+}
+
+// ═══ GIFT PICKER ═══
+function openGiftPicker(){
+    if(isSpinning)return;
+    var grid=document.getElementById('giftPickerGrid');
+    grid.innerHTML='';
+    var selectedIds=selectedGifts.map(function(g){return g.id});
+    userInventory.forEach(function(it){
+        var isSelected=selectedIds.indexOf(it.id)!==-1;
+        var atMax=selectedGifts.length>=6&&!isSelected;
+        var div=document.createElement('div');
+        div.className='picker-item'+(isSelected?' selected':'')+(atMax?' disabled':'');
+        div.innerHTML='<img src="'+it.gift_image+'" alt="" onerror="this.src=\'/static/img/gift.png\'">'
+            +'<div class="picker-item-name">'+it.gift_name+'</div>'
+            +'<div class="picker-item-value">'+((it.gift_value||0)/100).toFixed(2)+'</div>';
+        div.onclick=function(){
+            if(atMax)return;
+            if(isSelected){
+                selectedGifts=selectedGifts.filter(function(g){return g.id!==it.id});
+            }else{
+                if(selectedGifts.length>=6)return;
+                selectedGifts.push({id:it.id,name:it.gift_name,image:it.gift_image,value:it.gift_value,gift_id:it.gift_id});
+            }
+            renderSlots();
+            updateWheel();
+            openGiftPicker(); // re-render picker
+        };
+        grid.appendChild(div);
+    });
+    document.getElementById('giftPickerOverlay').classList.add('show');
+}
+function closeGiftPicker(){document.getElementById('giftPickerOverlay').classList.remove('show')}
+
+// ═══ RENDER GIFT SLOTS ═══
+function renderSlots(){
+    var container=document.getElementById('giftSlots');
+    container.innerHTML='';
+    selectedGifts.forEach(function(g,i){
+        var slot=document.createElement('div');
+        slot.className='gift-slot filled';
+        slot.innerHTML='<img src="'+g.image+'" alt="" onerror="this.src=\'/static/img/gift.png\'">'
+            +'<div class="slot-value">'+((g.value||0)/100).toFixed(2)+'</div>'
+            +'<div class="slot-remove" onclick="event.stopPropagation();removeGift('+i+')"><svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg></div>';
+        container.appendChild(slot);
+    });
+    if(selectedGifts.length<6){
+        var add=document.createElement('div');
+        add.className='gift-slot';
+        add.onclick=openGiftPicker;
+        add.innerHTML='<svg class="slot-plus" viewBox="0 0 20 20"><line x1="10" y1="5" x2="10" y2="15" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="10" x2="15" y2="10" stroke-width="2" stroke-linecap="round"/></svg>';
+        container.appendChild(add);
+    }
+}
+
+function removeGift(index){
+    if(isSpinning)return;
+    selectedGifts.splice(index,1);
+    renderSlots();
+    updateWheel();
+}
+
+// ═══ TARGET PICKER ═══
+async function openTargetPicker(){
+    if(isSpinning)return;
+    if(selectedGifts.length===0){alert('Сначала выбери подарки для ставки');return;}
+    var totalValue=selectedGifts.reduce(function(s,g){return s+g.value},0);
+    var list=document.getElementById('targetList');
+    list.innerHTML='<div style="text-align:center;padding:30px;color:rgba(255,255,255,.4)">Загрузка...</div>';
+    document.getElementById('targetPickerOverlay').classList.add('show');
+
+    try{
+        // Use first selected gift to query possible targets, but we'll filter by total value
+        var r=await fetch('/api/upgrade-possible-gifts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,current_gift_id:selectedGifts[0].id})});
+        var d=await r.json();
+        if(!d.success){list.innerHTML='<div style="text-align:center;padding:30px;color:var(--red)">'+d.error+'</div>';return;}
+        // Filter by total value and recalculate chances
+        possibleTargets=[];
+        var minTarget=totalValue*1.2;
+        d.possible_gifts.forEach(function(g){
+            if(g.value>totalValue){
+                var chance=Math.max(2,Math.min((totalValue/g.value)*100,80));
+                g.upgrade_chance=Math.round(chance*10)/10;
+                possibleTargets.push(g);
+            }
+        });
+        // Also include any gifts from full catalog with value > totalValue
+        possibleTargets.sort(function(a,b){return a.value-b.value});
+        renderTargetList();
+    }catch(e){
+        list.innerHTML='<div style="text-align:center;padding:30px;color:var(--red)">Ошибка загрузки</div>';
+    }
+}
+function closeTargetPicker(){document.getElementById('targetPickerOverlay').classList.remove('show')}
+
+function renderTargetList(){
+    var list=document.getElementById('targetList');
+    list.innerHTML='';
+    if(possibleTargets.length===0){
+        list.innerHTML='<div style="text-align:center;padding:30px;color:rgba(255,255,255,.4)">Нет доступных целей</div>';
+        return;
+    }
+    possibleTargets.forEach(function(g){
+        var div=document.createElement('div');
+        div.className='target-item';
+        div.innerHTML='<img src="'+g.image+'" alt="" onerror="this.src=\'/static/img/gift.png\'">'
+            +'<div class="target-item-info"><div class="target-item-name">'+g.name+'</div>'
+            +'<div class="target-item-price"><img src="/static/img/ton.png" alt="">'+((g.value||0)/100).toFixed(2)+' TON</div></div>'
+            +'<div class="target-item-chance">'+g.upgrade_chance+'%</div>';
+        div.onclick=function(){
+            selectTarget(g);
+            closeTargetPicker();
+        };
+        list.appendChild(div);
+    });
+}
+
+function selectTarget(g){
+    targetGift=g;
+    document.getElementById('targetPlaceholder').style.display='none';
+    document.getElementById('targetImg').src=g.image;
+    document.getElementById('targetImg').style.display='block';
+    document.getElementById('targetInfo').style.display='flex';
+    document.getElementById('targetName').textContent=g.name;
+    document.getElementById('targetPrice').textContent=((g.value||0)/100).toFixed(2)+' TON';
+    document.getElementById('targetSlot').classList.add('filled');
+    // Update wheel center
+    document.getElementById('wheelPlaceholder').style.display='none';
+    document.getElementById('wheelCenterImg').src=g.image;
+    document.getElementById('wheelCenterImg').style.display='block';
+    updateWheel();
+}
+
+// ═══ WHEEL UPDATE ═══
+function updateWheel(){
+    var totalValue=selectedGifts.reduce(function(s,g){return s+g.value},0);
+    var btn=document.getElementById('upgradeBtn');
+    var chanceEl=document.getElementById('chanceDisplay');
+
+    if(!targetGift||selectedGifts.length===0){
+        // Grey wheel
+        document.getElementById('wheelGreen').setAttribute('stroke-dasharray','0 '+CIRC);
+        document.getElementById('wheelRed').setAttribute('stroke-dasharray','0 '+CIRC);
+        chanceEl.style.display='none';
+        btn.classList.remove('ready');
+        btn.disabled=true;
+        return;
+    }
+
+    var chance=Math.max(2,Math.min((totalValue/targetGift.value)*100,80));
+    chance=Math.round(chance*10)/10;
+    var greenLen=(chance/100)*CIRC;
+    var redLen=CIRC-greenLen;
+
+    document.getElementById('wheelGreen').setAttribute('stroke-dasharray',greenLen+' '+CIRC);
+    document.getElementById('wheelGreen').setAttribute('stroke-dashoffset','0');
+    document.getElementById('wheelRed').setAttribute('stroke-dasharray',redLen+' '+CIRC);
+    document.getElementById('wheelRed').setAttribute('stroke-dashoffset','-'+greenLen);
+
+    document.getElementById('chanceValue').textContent=chance+'%';
+    chanceEl.style.display='block';
+
+    if(totalValue<targetGift.value){
+        btn.classList.add('ready');
+        btn.disabled=false;
+    }else{
+        btn.classList.remove('ready');
+        btn.disabled=true;
+    }
+    btn.classList.remove('win','fail');
+    document.getElementById('upgradeBtnText').textContent='АПГРЕЙД';
+}
+
+// ═══ UPGRADE SPIN ═══
+async function doUpgrade(){
+    if(isSpinning||!targetGift||selectedGifts.length===0)return;
+    isSpinning=true;
+    var btn=document.getElementById('upgradeBtn');
+    btn.disabled=true;
+    btn.classList.remove('ready');
+    document.getElementById('upgradeBtnText').textContent='КРУТИМ...';
+
+    // Hide result icons
+    document.getElementById('resultSad').classList.remove('show');
+    document.getElementById('resultHappy').classList.remove('show');
+    document.getElementById('wheelCenterImg').style.display='block';
+
+    // Start spinner
+    document.getElementById('wheelSpinner').classList.add('spinning');
+
+    // Start spinning animation on the wheel SVG
+    var wheelSvg=document.getElementById('wheelSvg');
+    var spinDuration=3000+Math.random()*1500;
+    var startTime=Date.now();
+    var baseRotation=-90;
+    var spinId;
+
+    function animateSpin(){
+        var elapsed=Date.now()-startTime;
+        var progress=Math.min(elapsed/spinDuration,1);
+        // Ease out cubic
+        var eased=1-Math.pow(1-progress,3);
+        var totalRotation=baseRotation+360*6*eased+Math.random()*2;
+        wheelSvg.style.transform='rotate('+totalRotation+'deg)';
+        if(progress<1){
+            spinId=requestAnimationFrame(animateSpin);
+        }
+    }
+    animateSpin();
+
+    // Make API call
+    var invIds=selectedGifts.map(function(g){return g.id});
+    try{
+        var r=await fetch('/api/upgrade-multi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,inventory_ids:invIds,target_gift_id:targetGift.id||targetGift.gift_key||targetGift.fragment_slug})});
+        var d=await r.json();
+
+        // Wait for spin to finish
+        await new Promise(function(resolve){setTimeout(resolve,Math.max(0,spinDuration-(Date.now()-startTime)+200))});
+        cancelAnimationFrame(spinId);
+        document.getElementById('wheelSpinner').classList.remove('spinning');
+
+        if(!d.success){
+            alert(d.error||'Ошибка');
+            resetAfterSpin();
+            return;
+        }
+
+        // Determine final rotation based on result
+        var chance=d.chance;
+        var greenAngle=(chance/100)*360;
+        var finalAngle;
+        if(d.upgrade_success){
+            // Land on green zone (0 to greenAngle from top)
+            finalAngle=-90+greenAngle*0.5;
+        }else{
+            // Land on red zone
+            finalAngle=-90+greenAngle+((360-greenAngle)*0.5);
+        }
+        wheelSvg.style.transition='transform 0.5s ease-out';
+        wheelSvg.style.transform='rotate('+finalAngle+'deg)';
+
+        setTimeout(function(){
+            wheelSvg.style.transition='';
+            showResult(d);
+        },600);
+
+    }catch(e){
+        cancelAnimationFrame(spinId);
+        document.getElementById('wheelSpinner').classList.remove('spinning');
+        alert('Ошибка сети');
+        resetAfterSpin();
+    }
+}
+
+function showResult(d){
+    var center=document.getElementById('wheelCenter');
+    var btn=document.getElementById('upgradeBtn');
+
+    if(d.upgrade_success){
+        // WIN
+        center.classList.add('flash-green');
+        document.getElementById('wheelCenterImg').style.display='none';
+        document.getElementById('resultHappy').classList.add('show');
+        btn.classList.add('win');
+        document.getElementById('upgradeBtnText').textContent='ПОБЕДА!';
+        launchConfetti();
+    }else{
+        // LOSE
+        center.classList.add('flash-red');
+        document.getElementById('wheelCenterImg').style.display='none';
+        document.getElementById('resultSad').classList.add('show');
+        btn.classList.add('fail');
+        document.getElementById('upgradeBtnText').textContent='Неудача';
+    }
+
+    // Reload data after 3 seconds
+    setTimeout(function(){
+        center.classList.remove('flash-red','flash-green');
+        resetAfterSpin();
+        loadInventory();
+        loadTopBar();
+    },3500);
+}
+
+function resetAfterSpin(){
+    isSpinning=false;
+    selectedGifts=[];
+    targetGift=null;
+    renderSlots();
+    // Reset target
+    document.getElementById('targetPlaceholder').style.display='flex';
+    document.getElementById('targetImg').style.display='none';
+    document.getElementById('targetInfo').style.display='none';
+    document.getElementById('targetSlot').classList.remove('filled');
+    // Reset wheel center
+    document.getElementById('wheelPlaceholder').style.display='flex';
+    document.getElementById('wheelCenterImg').style.display='none';
+    document.getElementById('resultSad').classList.remove('show');
+    document.getElementById('resultHappy').classList.remove('show');
+    // Reset wheel SVG
+    document.getElementById('wheelSvg').style.transform='rotate(-90deg)';
+    updateWheel();
+}
+
+// ═══ CONFETTI ═══
+function launchConfetti(){
+    var canvas=document.getElementById('confettiCanvas');
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+    var ctx=canvas.getContext('2d');
+    var particles=[];
+    var colors=['#1EE44C','#FDA100','#6c5ce7','#00b4ff','#F96999','#fff'];
+    for(var i=0;i<120;i++){
+        particles.push({
+            x:canvas.width/2+(Math.random()-.5)*100,
+            y:canvas.height/2,
+            vx:(Math.random()-.5)*12,
+            vy:-Math.random()*14-4,
+            w:Math.random()*8+3,
+            h:Math.random()*6+2,
+            color:colors[Math.floor(Math.random()*colors.length)],
+            rot:Math.random()*360,
+            rv:(Math.random()-.5)*10,
+            life:1
+        });
+    }
+    function drawConfetti(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        var alive=false;
+        particles.forEach(function(p){
+            if(p.life<=0)return;
+            alive=true;
+            p.x+=p.vx;
+            p.y+=p.vy;
+            p.vy+=0.35;
+            p.rot+=p.rv;
+            p.life-=0.008;
+            ctx.save();
+            ctx.translate(p.x,p.y);
+            ctx.rotate(p.rot*Math.PI/180);
+            ctx.globalAlpha=Math.max(0,p.life);
+            ctx.fillStyle=p.color;
+            ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+            ctx.restore();
+        });
+        if(alive)requestAnimationFrame(drawConfetti);
+        else ctx.clearRect(0,0,canvas.width,canvas.height);
+    }
+    drawConfetti();
+}
+
+// ═══ DEPOSIT ═══
+function openDeposit(){document.getElementById('depositOverlay').classList.add('show')}
+function closeDeposit(){document.getElementById('depositOverlay').classList.remove('show')}
+
+// ═══ INIT ═══
+loadTopBar();
+loadInventory();
+</script>
+</body>
+</html>
