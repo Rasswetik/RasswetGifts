@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="/static/css/global.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        @font-face{font-display:swap;font-family:'Inter Variable';font-style:normal;font-weight:100 900;src:url(/static/fonts/inter-cyrillic-wght-normal.DqGufNeO.woff2) format("woff2-variations");unicode-range:U+301,U+400-45F,U+490-491,U+4B0-4B1,U+2116}
-        @font-face{font-display:swap;font-family:'Inter Variable';font-style:normal;font-weight:100 900;src:url(/static/fonts/inter-latin-wght-normal.Dx4kXJAl.woff2) format("woff2-variations");unicode-range:U+??,U+131,U+152-153,U+2BB-2BC,U+2C6,U+2DA,U+2DC,U+304,U+308,U+329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+        @font-face{font-family:'LilitaOne';src:url('/static/fonts/lilitaone-regular-webfont.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0000-024F,U+0300-036F,U+1E00-1EFF,U+2000-206F,U+2070-209F,U+20A0-20CF,U+2100-214F}
+        @font-face{font-family:'LilitaOne';src:url('/static/fonts/LilitaOne_BSS.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0400-04FF,U+0500-052F,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}
 
         *{margin:0;padding:0;box-sizing:border-box}
         :root{
@@ -25,7 +25,7 @@
             --bronze:#CD7F32;
         }
         body{
-            font-family:'Inter Variable','Inter',-apple-system,sans-serif;
+            font-family:'LilitaOne','Inter Variable','Inter',-apple-system,sans-serif;
             background:var(--bg);color:var(--text);
             min-height:100vh;-webkit-font-smoothing:antialiased;
         }
@@ -140,40 +140,74 @@
 
         /* ── Pedestal (3D-effect) ── */
         .podium-pedestal{
-            width:100%;border-radius:16px 16px 0 0;
+            width:100%;border-radius:14px 14px 0 0;
             display:flex;flex-direction:column;align-items:center;
             justify-content:flex-start;
             padding:14px 6px 14px;position:relative;
             margin-top:0;
-            overflow:hidden;
+            overflow:visible;
+            transform:perspective(600px) rotateX(2deg);
+            transform-origin:bottom center;
         }
-        .podium-pedestal::after{
-            content:'';position:absolute;bottom:0;left:0;right:0;height:40%;
-            background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.15) 100%);
-            pointer-events:none;border-radius:0 0 0 0;
-        }
+        /* Top highlight strip */
         .podium-pedestal::before{
-            content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
-            background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);
+            content:'';position:absolute;top:0;left:0;right:0;height:3px;
+            border-radius:14px 14px 0 0;
+            background:linear-gradient(90deg,transparent 5%,rgba(255,255,255,.35) 50%,transparent 95%);
+            z-index:2;
         }
+        /* Bottom shadow for depth */
+        .podium-pedestal::after{
+            content:'';position:absolute;bottom:0;left:0;right:0;height:50%;
+            background:linear-gradient(180deg,transparent 0%,rgba(0,0,0,.25) 100%);
+            pointer-events:none;border-radius:0;
+        }
+        /* Left/right side face illusion */
+        .podium-pedestal-wrap{position:relative;width:100%}
+        .podium-pedestal-wrap::before,
+        .podium-pedestal-wrap::after{
+            content:'';position:absolute;bottom:0;width:8px;
+            pointer-events:none;z-index:-1;
+        }
+        .podium-pedestal-wrap::before{
+            left:-6px;top:8px;
+            background:linear-gradient(90deg,rgba(0,0,0,.3),rgba(0,0,0,.1));
+            border-radius:4px 0 0 0;
+            transform:skewY(-4deg);transform-origin:top right;
+        }
+        .podium-pedestal-wrap::after{
+            right:-6px;top:8px;
+            background:linear-gradient(270deg,rgba(0,0,0,.3),rgba(0,0,0,.1));
+            border-radius:0 4px 0 0;
+            transform:skewY(4deg);transform-origin:top left;
+        }
+
         .podium-slot.p1 .podium-pedestal{
             height:140px;
-            background:linear-gradient(180deg,rgba(253,190,19,.25) 0%,rgba(253,161,0,.12) 40%,rgba(253,161,0,.04) 100%);
-            border:1px solid rgba(253,161,0,.25);border-bottom:none;
-            box-shadow:inset 0 2px 15px rgba(253,161,0,.1),0 -4px 20px rgba(253,161,0,.08);
+            background:linear-gradient(180deg,rgba(253,190,19,.35) 0%,rgba(253,161,0,.18) 30%,rgba(253,161,0,.06) 100%);
+            border:1px solid rgba(253,161,0,.3);border-bottom:none;
+            box-shadow:inset 0 4px 20px rgba(253,161,0,.15),0 -6px 30px rgba(253,161,0,.12),0 8px 25px rgba(0,0,0,.4);
         }
+        .podium-slot.p1 .podium-pedestal-wrap::before{background:linear-gradient(90deg,rgba(180,120,0,.3),rgba(180,120,0,.05))}
+        .podium-slot.p1 .podium-pedestal-wrap::after{background:linear-gradient(270deg,rgba(180,120,0,.3),rgba(180,120,0,.05))}
+
         .podium-slot.p2 .podium-pedestal{
             height:100px;
-            background:linear-gradient(180deg,rgba(192,192,192,.18) 0%,rgba(160,160,160,.06) 40%,rgba(160,160,160,.02) 100%);
-            border:1px solid rgba(192,192,192,.15);border-bottom:none;
-            box-shadow:inset 0 2px 10px rgba(192,192,192,.08),0 -4px 15px rgba(192,192,192,.05);
+            background:linear-gradient(180deg,rgba(192,192,192,.25) 0%,rgba(160,160,160,.10) 30%,rgba(160,160,160,.03) 100%);
+            border:1px solid rgba(192,192,192,.2);border-bottom:none;
+            box-shadow:inset 0 3px 15px rgba(192,192,192,.1),0 -4px 20px rgba(192,192,192,.08),0 8px 20px rgba(0,0,0,.35);
         }
+        .podium-slot.p2 .podium-pedestal-wrap::before{background:linear-gradient(90deg,rgba(140,140,140,.25),rgba(140,140,140,.05))}
+        .podium-slot.p2 .podium-pedestal-wrap::after{background:linear-gradient(270deg,rgba(140,140,140,.25),rgba(140,140,140,.05))}
+
         .podium-slot.p3 .podium-pedestal{
             height:80px;
-            background:linear-gradient(180deg,rgba(205,127,50,.18) 0%,rgba(184,115,51,.06) 40%,rgba(184,115,51,.02) 100%);
-            border:1px solid rgba(205,127,50,.15);border-bottom:none;
-            box-shadow:inset 0 2px 10px rgba(205,127,50,.08),0 -4px 15px rgba(205,127,50,.05);
+            background:linear-gradient(180deg,rgba(205,127,50,.25) 0%,rgba(184,115,51,.10) 30%,rgba(184,115,51,.03) 100%);
+            border:1px solid rgba(205,127,50,.2);border-bottom:none;
+            box-shadow:inset 0 3px 12px rgba(205,127,50,.1),0 -4px 18px rgba(205,127,50,.08),0 8px 20px rgba(0,0,0,.35);
         }
+        .podium-slot.p3 .podium-pedestal-wrap::before{background:linear-gradient(90deg,rgba(150,90,30,.25),rgba(150,90,30,.05))}
+        .podium-slot.p3 .podium-pedestal-wrap::after{background:linear-gradient(270deg,rgba(150,90,30,.25),rgba(150,90,30,.05))}
 
         /* Prize inside pedestal */
         .podium-prize{margin-bottom:2px;position:relative;z-index:1}
@@ -493,10 +527,10 @@
                             <img src="${avatar}" alt="" onerror="this.src='/static/img/avatar-default.png'">
                         </div>
                         <div class="podium-medal"><img src="${placeGif}" alt="${rank}"></div>
-                        <div class="podium-pedestal">
+                        <div class="podium-pedestal-wrap"><div class="podium-pedestal">
                             ${prizeHtml}
                             <div class="podium-turnover">${turnover} TON</div>
-                        </div>
+                        </div></div>
                     </div>`;
                 }
 

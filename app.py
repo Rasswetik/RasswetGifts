@@ -3514,24 +3514,25 @@ def start_ultimate_crash_loop():
                                 logger.error(f"AI mid-round error: {ai_e}")
 
                         # Calculate increment based on live_mult (in-memory, always fresh)
+                        # Slower, smoother growth curve
                         if live_mult < 1.1:
-                            base_increment = 0.03
+                            base_increment = 0.01
                         elif live_mult < 1.5:
-                            base_increment = 0.06
+                            base_increment = 0.02
                         elif live_mult < 2.0:
-                            base_increment = 0.10
+                            base_increment = 0.04
                         elif live_mult < 3.0:
-                            base_increment = 0.16
+                            base_increment = 0.06
                         elif live_mult < 5.0:
-                            base_increment = 0.25
+                            base_increment = 0.10
                         elif live_mult < 10.0:
-                            base_increment = 0.40
+                            base_increment = 0.18
                         else:
-                            base_increment = 0.60
+                            base_increment = 0.30
 
-                        speed_boost = live_mult * 0.025
+                        speed_boost = live_mult * 0.012
                         increment = round(max(base_increment, speed_boost), 2)
-                        increment = min(increment, 2.0)
+                        increment = min(increment, 1.0)
 
                         # Random crash chance
                         crash_chance = 0.01 * (live_mult / 10)
@@ -7569,16 +7570,44 @@ def withdraw_gift():
         except Exception:
             pass
 
+        # Send Telegram message to user about manual withdrawal processing
+        gift_name_display = gift.get('gift_name', 'Подарок')
+        try:
+            tg_send(user_id,
+                f"📦 <b>Заявка на вывод #{withdrawal_id}</b>\n\n"
+                f"Нам не удалось вывести подарок <b>{gift_name_display}</b> автоматически.\n"
+                f"Ожидайте вывода вручную, приносим извинения.\n\n"
+                f"Статус можно проверить в инвентаре.")
+        except Exception as tg_err:
+            logger.warning(f"Не удалось отправить TG сообщение пользователю {user_id}: {tg_err}")
+
         logger.info(f"✅ Создана заявка на вывод #{withdrawal_id} для пользователя {user_id}")
         return jsonify({
             'success': True,
-            'message': '✅ Заявка на вывод создана! Ожидайте обработки.',
+            'message': '📦 Заявка создана! Ожидайте вывода вручную.',
             'withdrawal_id': withdrawal_id
         })
 
     except Exception as e:
         logger.error(f"❌ Ошибка создания заявки на вывод: {e}")
-        return jsonify({'success': False, 'error': str(e)})
+        # Even on error, try to send a message and create a fallback withdrawal
+        try:
+            data = request.get_json()
+            uid = data.get('user_id')
+            inv_id = data.get('gift_id')
+            if uid:
+                conn2 = get_db_connection()
+                cur2 = conn2.cursor()
+                cur2.execute('SELECT gift_name FROM inventory WHERE id = ? AND user_id = ?', (inv_id, uid))
+                grow = cur2.fetchone()
+                gname = grow[0] if grow else 'Подарок'
+                tg_send(uid,
+                    f"📦 Нам не удалось вывести подарок <b>{gname}</b> (#{inv_id}) автоматически.\n"
+                    f"Ожидайте вывода вручную, приносим извинения.")
+                conn2.close()
+        except Exception:
+            pass
+        return jsonify({'success': False, 'error': 'Произошла ошибка, заявка передана администратору'})
 
 
 UPGRADE_COST_STARS = 10  # 0.1 TON = 10 stars
@@ -7610,6 +7639,10 @@ def _get_collection_max_number(slug):
     return _fragment_supply_cache.get(slug, 5000)
 
 
+# Gift IDs that cannot be upgraded (regular Telegram gifts)
+NON_UPGRADEABLE_GIFT_IDS = {90}
+
+
 @app.route('/api/upgrade-gift', methods=['POST'])
 def upgrade_gift():
     """Upgrade a random gift to an NFT-linked gift"""
@@ -7639,6 +7672,11 @@ def upgrade_gift():
         if gift.get('crate_id'):
             conn.close()
             return jsonify({'success': False, 'error': 'Cannot upgrade a crate'})
+
+        # Non-upgradeable gifts (regular Telegram gifts)
+        if gift.get('gift_id') in NON_UPGRADEABLE_GIFT_IDS:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Этот подарок нельзя улучшить'})
 
         # Check active challenge
         cursor.execute('SELECT id FROM promo_gift_challenges WHERE inventory_id = ? AND is_completed = FALSE', (inventory_id,))
@@ -8003,6 +8041,11 @@ def upgrade_gift_fast():
 
         current_gift_db_id, gift_name, current_value = current_gift
 
+        # Non-upgradeable gifts
+        if current_gift_db_id in NON_UPGRADEABLE_GIFT_IDS:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Этот подарок нельзя улучшить'})
+
         cursor.execute('SELECT COALESCE(first_name, username, ?) FROM users WHERE id = ?', ('Игрок', user_id))
         user_row = cursor.fetchone()
         user_name = (user_row[0] if user_row and user_row[0] else 'Игрок')
@@ -8120,7 +8163,7 @@ def upgrade_gift_chance():
         cursor = conn.cursor()
 
         try:
-            cursor.execute('SELECT gift_name, gift_value FROM inventory WHERE id = ? AND user_id = ?',
+            cursor.execute('SELECT gift_name, gift_value, gift_id FROM inventory WHERE id = ? AND user_id = ?',
                          (current_gift_id, user_id))
             current_gift = cursor.fetchone()
 
@@ -8128,7 +8171,12 @@ def upgrade_gift_chance():
                 conn.close()
                 return jsonify({'success': False, 'error': 'Подарок не найден'})
 
-            gift_name, current_value = current_gift
+            gift_name, current_value = current_gift[0], current_gift[1]
+
+            # Non-upgradeable gifts
+            if current_gift[2] in NON_UPGRADEABLE_GIFT_IDS:
+                conn.close()
+                return jsonify({'success': False, 'error': 'Этот подарок нельзя улучшить'})
 
             cursor.execute('SELECT COALESCE(first_name, username, ?) FROM users WHERE id = ?', ('Игрок', user_id))
             user_row = cursor.fetchone()

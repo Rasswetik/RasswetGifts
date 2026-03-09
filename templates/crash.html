@@ -12,12 +12,13 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="/static/js/telegram-auth.js"></script>
 <style>
-
+@font-face{font-family:'LilitaOne';src:url('/static/fonts/lilitaone-regular-webfont.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0000-024F,U+0300-036F,U+1E00-1EFF,U+2000-206F,U+2070-209F,U+20A0-20CF,U+2100-214F}
+@font-face{font-family:'LilitaOne';src:url('/static/fonts/LilitaOne_BSS.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0400-04FF,U+0500-052F,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F}
 
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{
-    font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-family:'LilitaOne','Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     background:#1C2233;
     color:#fff;
     -webkit-font-smoothing:antialiased;
@@ -1201,7 +1202,7 @@ tc-root *{pointer-events:auto}
 .game-field::after{display:none}
 .game-field.flying::after{display:none}
 
-.game-field.flying::before{opacity:1;animation-duration:2s;}
+.game-field.flying::before{opacity:1;animation-duration:4s;}
 
 /* Subtle glow during flight */
 .game-field.flying{
@@ -5898,9 +5899,9 @@ function render(){
         if(multGrowthRate > 0){
             dispMult += multGrowthRate * dt;
             /* Don't run too far ahead — cap growth but never decrease */
-            var maxExtrapolation = prevServMult + multGrowthRate * 350;
+            var maxExtrapolation = prevServMult + multGrowthRate * 500;
             if(dispMult > maxExtrapolation){
-                multGrowthRate *= 0.5; /* slow down instead of snapping back */
+                multGrowthRate *= 0.7; /* slow down gently instead of snapping back */
             }
         }
         /* Ensure display never falls below 1.0 */
@@ -5913,27 +5914,27 @@ function render(){
             var isShowingGift = _rw.classList.contains('showing-gift');
             if(!isShowingGift){
                 var tilt = 0;
-                if(dispMult >= 2.0) tilt = Math.min(35, (dispMult - 2.0) * 5.8);
-                var sc = Math.min(1.15, 1 + Math.max(0, dispMult - 1.5) * 0.02);
+                if(dispMult >= 2.0) tilt = Math.min(30, (dispMult - 2.0) * 3.5);
+                var sc = Math.min(1.12, 1 + Math.max(0, dispMult - 1.5) * 0.015);
                 _rImg.style.transform = 'rotate(' + tilt.toFixed(1) + 'deg) scale(' + sc.toFixed(2) + ')';
                 /* Only update animationDuration when value actually changes */
                 var newDur;
                 if(dispMult >= 2.0){
-                    newDur = Math.max(0.15, 1.0 - (dispMult - 2.0) * 0.25).toFixed(2) + 's';
+                    newDur = Math.max(0.4, 1.5 - (dispMult - 2.0) * 0.12).toFixed(2) + 's';
                 } else {
-                    newDur = '1s';
+                    newDur = '1.5s';
                 }
                 if(newDur !== _prevAnimDur){ _rw.style.animationDuration = newDur; _prevAnimDur = newDur; }
             } else {
                 var sc = Math.min(1.08, 1 + (dispMult - 1) * 0.01);
                 _rImg.style.transform = 'scale(' + sc.toFixed(2) + ')';
-                if(_prevAnimDur !== '1s'){ _rw.style.animationDuration = '1s'; _prevAnimDur = '1s'; }
+                if(_prevAnimDur !== '1.5s'){ _rw.style.animationDuration = '1.5s'; _prevAnimDur = '1.5s'; }
             }
         }
 
         /* Dynamic grid speed — only update when visually changed */
         if(_gf){
-            var gs = Math.max(0.5, 8.0 - (dispMult - 1) * 1.2).toFixed(1) + 's';
+            var gs = Math.max(1.5, 12.0 - (dispMult - 1) * 0.8).toFixed(1) + 's';
             if(gs !== _prevGridS){ _gf.style.setProperty('--grid-speed', gs); _prevGridS = gs; }
         }
 
