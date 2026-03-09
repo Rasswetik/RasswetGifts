@@ -12,7 +12,6 @@
             --text: #fff;
             --text-2: rgba(255,255,255,.5);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
-            --nav-h: 60px;
         }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         body {
@@ -24,18 +23,77 @@
         }
         a { text-decoration: none; color: inherit; }
 
+        /* ═══ TOP BAR ═══ */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+        .top-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,.15);
+            flex-shrink: 0;
+        }
+        .top-nick {
+            font-size: 14px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+        }
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .top-balance {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,.06);
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .top-balance img { width: 16px; height: 16px; }
+        .top-online {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,.5);
+        }
+        .top-online-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulseDot 2s ease infinite;
+        }
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .4; }
+        }
+
         .games-container {
             max-width: 480px;
             margin: 0 auto;
-            padding: 14px 16px 120px;
-            min-height: 100vh;
-        }
-
-        .games-title {
-            font-size: 22px;
-            font-weight: 800;
-            margin-bottom: 16px;
-            text-align: center;
+            padding: 4px 16px 120px;
+            min-height: calc(100vh - 60px);
         }
 
         .games-menu {
@@ -58,9 +116,9 @@
         }
         .game-card:active { transform: scale(0.97); }
         .game-card.disabled {
-            opacity: 0.5;
+            opacity: 0.45;
             pointer-events: none;
-            filter: grayscale(0.6);
+            filter: grayscale(0.7);
         }
 
         .game-card-content {
@@ -94,16 +152,30 @@
         }
 
         .game-card-badge {
-            width: 22px;
-            height: 22px;
-            border-radius: 6px;
+            width: 24px;
+            height: 24px;
+            border-radius: 7px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.12);
             backdrop-filter: blur(8px);
         }
-        .game-card-badge img { width: 14px; height: 14px; }
+        .game-card-badge svg { width: 14px; height: 14px; }
+
+        .game-card-players {
+            position: absolute;
+            top: 12px;
+            left: 16px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255,255,255,.7);
+            z-index: 5;
+        }
+        .game-card-players svg { width: 14px; height: 14px; opacity: .7; }
 
         .game-card-gif {
             width: 120px;
@@ -213,39 +285,41 @@
         /* ═══ BOTTOM NAV ═══ */
         .bottom-nav {
             position: fixed;
-            bottom: 0; left: 0; right: 0;
+            bottom: 0; left: 50%; transform: translateX(-50%);
             z-index: 100;
-            background: rgba(15, 15, 17, 0.85);
+            width: 100%; max-width: 480px;
+            height: 72px;
+            padding: 0 8px calc(var(--safe-bottom) + 8px);
+            background: rgba(26,30,42,.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border-top: 1px solid rgba(255, 255, 255, 0.05);
-            padding-bottom: var(--safe-bottom);
-        }
-        .nav-inner {
-            max-width: 480px;
-            margin: 0 auto;
             display: flex;
-            height: 60px;
+            align-items: center;
+            justify-content: space-around;
         }
         .bnav-item {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 3px;
-            color: var(--text-2);
-            font-weight: 500;
-            transition: color .2s;
+            gap: 4px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,.4);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .3s cubic-bezier(.4,0,.2,1);
             text-decoration: none;
-            padding: 8px 0;
+            position: relative;
         }
-        .bnav-item.active { color: #fff; }
-        .bnav-item svg { width: 24px; height: 24px; }
+        .bnav-item svg { width: 24px; height: 24px; flex-shrink: 0; stroke: currentColor; fill: none; transition: transform .3s; }
+        .bnav-item span { font-size: 10px; font-weight: 600; }
+        .bnav-item.active { background: rgba(255,255,255,.08); color: #fff; }
+        .bnav-item:active { transform: scale(.9); }
         .bnav-item.active svg { transform: scale(1.1); }
-        .bnav-item img.nav-ico { width: 22px; height: 22px; opacity: .64; }
-        .bnav-item.active img.nav-ico { opacity: 1; }
-        .bnav-label { font-size: 10px; font-weight: 600; }
 
         @media (max-width: 360px) {
             .game-card { min-height: 140px; }
@@ -255,9 +329,25 @@
     </style>
 </head>
 <body>
-    <div class="games-container">
-        <div class="games-title">🎮 Игры</div>
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <img class="top-avatar" id="topAvatar" src="/static/img/default_avatar.png" alt="">
+            <span class="top-nick" id="topNick">—</span>
+        </div>
+        <div class="top-bar-right">
+            <div class="top-balance">
+                <img src="/static/img/ton.png" alt="">
+                <span id="topBalance">0.00</span>
+            </div>
+            <div class="top-online">
+                <span class="top-online-dot"></span>
+                <span id="topOnline">0</span>
+            </div>
+        </div>
+    </div>
 
+    <div class="games-container">
         <div class="games-menu">
             <!-- CRASH -->
             <div class="game-card game-card-crash display-box" onclick="window.location.href='/crash'">
@@ -277,12 +367,13 @@
                     <div class="game-card-info">
                         <span class="game-card-text">Краш</span>
                         <div class="game-card-badges">
-                            <div class="game-card-badge"><img src="/static/img/ton.png" alt=""></div>
-                            <div class="game-card-badge"><img src="/static/img/star.png" alt=""></div>
+                            <div class="game-card-badge"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" stroke="#58a6ff" stroke-width="2" fill="rgba(88,166,255,.15)"/><path d="M12 8v4m0 0v4m0-4h4m-4 0H8" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/></svg></div>
+                            <div class="game-card-badge"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="13" rx="2" stroke="#ff6b9d" stroke-width="2" fill="rgba(255,107,157,.1)"/><path d="M12 8v13" stroke="#ff6b9d" stroke-width="2"/><path d="M3 12h18" stroke="#ff6b9d" stroke-width="1.5"/><path d="M7.5 8C7.5 8 7 2 12 5c0 0 .5-3.5 4.5-.5S12 8 12 8" stroke="#ff6b9d" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
                         </div>
                     </div>
                     <img src="/static/gifs/crash.gif" alt="Crash" class="game-card-gif" loading="lazy">
                 </div>
+                <div class="game-card-players"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="crashPlayerCount">0 играют</span></div>
                 <div class="game-card-tag" style="background:linear-gradient(135deg,#ff6b35,#e74c3c);">LIVE</div>
             </div>
 
@@ -304,12 +395,12 @@
                     <div class="game-card-info">
                         <span class="game-card-text">Кейсы</span>
                         <div class="game-card-badges">
-                            <div class="game-card-badge"><img src="/static/img/ton.png" alt=""></div>
-                            <div class="game-card-badge"><img src="/static/img/star.png" alt=""></div>
+                            <div class="game-card-badge"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" stroke="#58a6ff" stroke-width="2" fill="rgba(88,166,255,.15)"/><path d="M12 8v4m0 0v4m0-4h4m-4 0H8" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/></svg></div>
                         </div>
                     </div>
                     <img src="/static/gifs/cases.gif" alt="Cases" class="game-card-gif" loading="lazy">
                 </div>
+                <div class="game-card-players"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="casesPlayerCount">0 играют</span></div>
             </div>
 
             <!-- UPGRADES (disabled) -->
@@ -330,7 +421,7 @@
                     <div class="game-card-info">
                         <span class="game-card-text">Апгрейды</span>
                         <div class="game-card-badges">
-                            <div class="game-card-badge"><img src="/static/img/star.png" alt=""></div>
+                            <div class="game-card-badge"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="13" rx="2" stroke="#ff6b9d" stroke-width="2" fill="rgba(255,107,157,.1)"/><path d="M12 8v13" stroke="#ff6b9d" stroke-width="2"/><path d="M3 12h18" stroke="#ff6b9d" stroke-width="1.5"/><path d="M7.5 8C7.5 8 7 2 12 5c0 0 .5-3.5 4.5-.5S12 8 12 8" stroke="#ff6b9d" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
                         </div>
                     </div>
                     <img src="/static/gifs/upg.gif" alt="Upgrades" class="game-card-gif" loading="lazy">
@@ -342,30 +433,28 @@
 
     <!-- BOTTOM NAV -->
     <nav class="bottom-nav">
-        <div class="nav-inner">
-            <a class="bnav-item" href="/games">
-                <img class="nav-ico" src="/static/img/games.png" alt="">
-                <span class="bnav-label">Игры</span>
-            </a>
-            <a class="bnav-item" href="/news">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
-                <span class="bnav-label">Новости</span>
-            </a>
-            <a class="bnav-item" href="/leaderboard">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-                <span class="bnav-label">Топ</span>
-            </a>
-            <a class="bnav-item" href="/inventory">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                <span class="bnav-label">Профиль</span>
-            </a>
-        </div>
+        <a class="bnav-item active" href="/games">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
+            <span>Игры</span>
+        </a>
+        <a class="bnav-item" href="/news">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
+            <span>Новости</span>
+        </a>
+        <a class="bnav-item" href="/leaderboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+            <span>Топ</span>
+        </a>
+        <a class="bnav-item" href="/inventory">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Профиль</span>
+        </a>
     </nav>
 
     <script>
     // Generate SVG grid pattern for grill animation
     (function() {
-        const gridSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="167" viewBox="0 0 480 167" fill="none"><g stroke="rgba(255,255,255,0.4)" stroke-width="0.5">' +
+        var gridSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="167" viewBox="0 0 480 167" fill="none"><g stroke="rgba(255,255,255,0.4)" stroke-width="0.5">' +
             Array.from({length: 12}, function(_, i) { return '<line x1="'+(i*40)+'" y1="0" x2="'+(i*40)+'" y2="167"/>'; }).join('') +
             Array.from({length: 8}, function(_, i) { return '<line x1="0" y1="'+(i*24)+'" x2="480" y2="'+(i*24)+'"/>'; }).join('') +
             '</g></svg>';
@@ -386,21 +475,48 @@
         });
     });
 
-    // Highlight active nav
-    (function() {
-        var path = window.location.pathname;
-        document.querySelectorAll('.bnav-item').forEach(function(el) {
-            if (el.getAttribute('href') === path) el.classList.add('active');
-        });
-    })();
-
     // Telegram WebApp
-    if (window.Telegram && Telegram.WebApp) {
-        Telegram.WebApp.ready();
-        Telegram.WebApp.expand();
-        Telegram.WebApp.setHeaderColor('#0a0a0f');
-        Telegram.WebApp.setBackgroundColor('#0a0a0f');
+    var tg = window.Telegram && Telegram.WebApp;
+    var userId = null;
+    if (tg) {
+        tg.ready();
+        tg.expand();
+        tg.setHeaderColor('#0a0a0f');
+        tg.setBackgroundColor('#0a0a0f');
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            userId = tg.initDataUnsafe.user.id;
+        }
     }
+
+    // Load user data for top bar
+    async function loadTopBar() {
+        if (!userId) return;
+        try {
+            var r = await fetch('/api/user/' + userId);
+            var d = await r.json();
+            if (d.success && d.user) {
+                var u = d.user;
+                document.getElementById('topNick').textContent = u.first_name || u.username || 'User';
+                if (u.photo_url) document.getElementById('topAvatar').src = u.photo_url;
+                var bal = ((u.balance_stars || 0) / 100).toFixed(2);
+                document.getElementById('topBalance').textContent = bal;
+            }
+        } catch(e) {}
+    }
+
+    async function loadOnline() {
+        try {
+            var r = await fetch('/api/online-count');
+            var d = await r.json();
+            document.getElementById('topOnline').textContent = (d.count || 0);
+            document.getElementById('crashPlayerCount').textContent = Math.max(5, Math.floor((d.count || 10) * 0.6 + Math.random() * 5)) + ' играют';
+            document.getElementById('casesPlayerCount').textContent = Math.max(3, Math.floor((d.count || 10) * 0.4 + Math.random() * 5)) + ' играют';
+        } catch(e) {}
+    }
+
+    loadTopBar();
+    loadOnline();
+    setInterval(loadOnline, 15000);
     </script>
 </body>
 </html>
