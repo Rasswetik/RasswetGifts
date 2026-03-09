@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="/static/css/global.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/static/js/telegram-auth.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         :root{
@@ -46,18 +48,27 @@
         .bal-plus:hover{background:rgba(107,122,141,.3)}
 
         /* === PROFILE SECTION === */
-        .profile-section{display:flex;flex-direction:column;align-items:center;margin-bottom:24px;animation:fadeInUp .5s ease}
+        .profile-section{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;animation:fadeInUp .5s ease;padding:20px 16px 16px;background:linear-gradient(180deg,rgba(255,255,255,.03) 0%,transparent 100%);border-radius:20px;border:1px solid rgba(255,255,255,.04);position:relative;overflow:hidden}
+        .profile-section::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:200px;height:200px;background:radial-gradient(circle,rgba(107,122,141,.12) 0%,transparent 70%);pointer-events:none}
         @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-        .avatar-wrap{width:120px;height:120px;border-radius:50%;border:3px solid rgba(255,255,255,.1);overflow:hidden;margin-bottom:14px;background:var(--surface);transition:transform .3s,box-shadow .3s}
+        .avatar-wrap{width:96px;height:96px;border-radius:50%;border:3px solid rgba(107,122,141,.3);overflow:hidden;margin-bottom:12px;background:var(--surface);transition:transform .3s,box-shadow .3s;box-shadow:0 0 24px rgba(107,122,141,.15);position:relative;z-index:1}
         .avatar-wrap:active{transform:scale(.95)}
         .avatar-wrap img{width:100%;height:100%;object-fit:cover}
-        .profile-name{font-size:22px;font-weight:800;margin-bottom:8px;text-align:center}
+        .profile-name{font-size:18px;font-weight:800;margin-bottom:4px;text-align:center;letter-spacing:-.2px}
+        .profile-uid{font-size:11px;color:var(--text3);margin-bottom:12px;font-weight:500}
 
-        /* === LEVEL BAR (thinner) === */
-        .level-bar-wrap{width:100%;max-width:300px;margin-bottom:20px;padding:0 8px}
-        .level-bar-bg{width:100%;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;border:none}
+        /* === LEVEL BAR === */
+        .level-bar-wrap{width:100%;max-width:260px;margin-bottom:16px;padding:0}
+        .level-bar-bg{width:100%;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;border:none}
         .level-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-light));border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-        .level-bar-text{font-size:11px;color:var(--text3);text-align:center;margin-top:4px;font-weight:600}
+        .level-bar-text{font-size:10px;color:var(--text3);text-align:center;margin-top:4px;font-weight:600}
+
+        /* === PROFILE STATS ROW === */
+        .profile-stats{display:flex;gap:8px;width:100%;margin-bottom:4px}
+        .profile-stat{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 6px;background:rgba(255,255,255,.03);border-radius:12px;border:1px solid rgba(255,255,255,.04)}
+        .profile-stat-val{font-size:15px;font-weight:800;color:#fff;display:flex;align-items:center;gap:4px;line-height:1}
+        .profile-stat-val img{width:14px;height:14px;flex-shrink:0}
+        .profile-stat-label{font-size:9px;color:var(--text3);font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
 
         /* === ACTION BUTTONS === */
         .action-row{display:flex;gap:10px;width:100%;margin-bottom:24px}
@@ -200,7 +211,13 @@
         .inv-card-challenge svg{width:11px;height:11px;stroke:rgba(255,255,255,.5);fill:none}
         .inv-card-locked{opacity:.85;border:1px solid rgba(99,102,241,.3)}
         .inv-card-upgraded{border:1.5px solid rgba(255,215,0,.3);background:linear-gradient(135deg,rgba(255,215,0,.06) 0%,rgba(255,180,0,.03) 100%);box-shadow:0 0 14px rgba(255,215,0,.07)}
-        .inv-card-upgraded .inv-card-img{border-radius:12px;padding:0;background:transparent}
+        .inv-card-upgraded .inv-card-img-wrap{position:relative;width:72px;height:72px;margin:0 auto 6px;border-radius:14px;overflow:hidden;background:rgba(255,255,255,.04);border:2px solid rgba(255,215,0,.35);box-shadow:0 0 10px rgba(255,215,0,.12),inset 0 0 8px rgba(255,215,0,.05)}
+        .inv-card-upgraded .inv-card-img-wrap::before{content:'';position:absolute;inset:0;border-radius:12px;border:1px solid rgba(255,255,255,.15);pointer-events:none;z-index:2}
+        .inv-card-upgraded .inv-card-img{border-radius:12px;padding:0;background:transparent;border:none;box-shadow:none}
+        .nft-tgs-container{position:absolute;inset:0;width:100%;height:100%;display:none;z-index:1}
+        .inv-card .nft-hover-anim,.inv-card .nft-tgs-container{display:none;position:absolute;inset:0;border-radius:12px;z-index:1}
+        .inv-card:hover .nft-hover-anim,.inv-card:hover .nft-tgs-container{display:block}
+        .inv-card:hover .inv-card-img-static{display:none}
 
         /* === NFT DETAIL CARD IN ITEM MODAL === */
         .nft-detail-section{width:100%;display:none;flex-direction:column;align-items:center;padding-bottom:4px}
@@ -272,10 +289,13 @@
 
         @media(max-width:380px){
             .page{padding:0 8px 80px}
-            .profile-name{font-size:18px}
+            .profile-name{font-size:16px}
             .inv-grid{gap:5px;grid-template-columns:repeat(2,1fr)}
             .inv-card{padding:6px}
             .inv-card-img{width:60px;height:60px}
+            .profile-stats{gap:5px}
+            .profile-stat{padding:8px 4px}
+            .profile-stat-val{font-size:13px}
         }
 
         /* ═══════════ DEPOSIT OVERLAY ═══════════ */
@@ -392,9 +412,24 @@
                 <img id="userAvatar" src="/static/img/default_avatar.png" alt="Avatar">
             </div>
             <div class="profile-name" id="userName">Loading...</div>
+            <div class="profile-uid" id="userUid"></div>
             <div class="level-bar-wrap">
                 <div class="level-bar-bg"><div class="level-bar-fill" id="levelBar" style="width:0%"></div></div>
                 <div class="level-bar-text" id="levelText">0 / 100 TON</div>
+            </div>
+            <div class="profile-stats">
+                <div class="profile-stat">
+                    <div class="profile-stat-val"><img src="/static/img/ton.png" alt="TON"> <span id="statBalance">0.00</span></div>
+                    <div class="profile-stat-label">Balance</div>
+                </div>
+                <div class="profile-stat">
+                    <div class="profile-stat-val"><span id="statGifts">0</span></div>
+                    <div class="profile-stat-label">Gifts</div>
+                </div>
+                <div class="profile-stat">
+                    <div class="profile-stat-val"><span id="statLevel">1</span></div>
+                    <div class="profile-stat-label">Level</div>
+                </div>
             </div>
         </div>
 
@@ -671,11 +706,16 @@
         if (!user) return;
         var name = user.first_name || 'User';
         var level = user.current_level || 1;
-        document.getElementById('userName').textContent = name + ' \u00B7 ' + level + ' level';
+        document.getElementById('userName').textContent = name;
+        document.getElementById('userUid').textContent = 'Level ' + level;
         var avatar = document.getElementById('userAvatar');
         var isDemo = !user.photo_url || user.photo_url === '' || user.photo_url.indexOf('default') !== -1;
         avatar.src = isDemo ? '/static/img/default_avatar.png' : user.photo_url;
-        document.getElementById('hdrBalance').textContent = formatTon(starsToTon(user.balance_stars));
+        var bal = formatTon(starsToTon(user.balance_stars));
+        document.getElementById('hdrBalance').textContent = bal;
+        document.getElementById('statBalance').textContent = bal;
+        document.getElementById('statGifts').textContent = inventory.length || 0;
+        document.getElementById('statLevel').textContent = level;
         var li = user.level_info;
         if (li) {
             var pct = li.progress_percentage || 0;
@@ -738,7 +778,7 @@
     function closeRewardsModal() { document.getElementById('rewardsOverlay').classList.remove('show'); }
     function onRewardClick(level, unlocked) { var lv = levelRewards.find(function(l){ return l.level === level; }); if (!lv || !lv.reward) return; if (unlocked) showNotif('Level ' + level + ': ' + (lv.reward.name || 'Reward')); else showNotif(t('reachLevel').replace('{lvl}', level), false); vibrateIfOn(); }
 
-    async function loadInventory() { try { var r = await fetch('/api/inventory/' + user.id); var d = await r.json(); if (d.success) { inventory = d.inventory || []; renderInventory(); } } catch (e) {} }
+    async function loadInventory() { try { var r = await fetch('/api/inventory/' + user.id); var d = await r.json(); if (d.success) { inventory = d.inventory || []; renderInventory(); document.getElementById('statGifts').textContent = inventory.length; } } catch (e) {} }
 
     function renderInventory() {
         var c = document.getElementById('inventoryContainer');
@@ -751,8 +791,21 @@
             var cardClass = 'inv-card';
             if (item.challenge && !item.challenge.is_completed) cardClass += ' inv-card-locked';
             if (item.is_upgraded) cardClass += ' inv-card-upgraded';
-            return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')"><img class="inv-card-img" src="' + item.gift_image + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '">' + challengeBadge + '<div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; 
+            // For upgraded NFTs, use Fragment thumb as static + TGS animation on hover
+            var imgHtml;
+            if (item.is_upgraded && item.fragment_slug) {
+                var thumbUrl = 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp';
+                imgHtml = '<div class="inv-card-img-wrap" data-slug="' + item.fragment_slug + '">' +
+                    '<img class="inv-card-img inv-card-img-static" src="' + thumbUrl + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '" style="border:none;background:none;margin:0;width:100%;height:100%;object-fit:cover;border-radius:0">' +
+                    '<div class="nft-tgs-container" data-tgs="https://fragment.com/file/gifts/' + item.fragment_slug + '/animation.tgs"></div>' +
+                    '</div>';
+            } else {
+                imgHtml = '<img class="inv-card-img" src="' + item.gift_image + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '">';
+            }
+            return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + challengeBadge + '<div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; 
         }).join('') + '</div>';
+        // Add hover/touch TGS animation for upgraded NFTs
+        initTgsHoverAnimations();
     }
 
     function openItemModal(itemId) {
@@ -1355,6 +1408,53 @@
         try { if (window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback) Telegram.WebApp.HapticFeedback.notificationOccurred('success'); } catch(e){}
     }
     function closeGiftReveal() { document.getElementById('giftRevealOverlay').classList.remove('show'); }
+
+    // TGS animation hover support for upgraded NFTs
+    function initTgsHoverAnimations() {
+        document.querySelectorAll('.nft-tgs-container').forEach(function(container) {
+            if (container._tgsInited) return;
+            container._tgsInited = true;
+            var tgsUrl = container.getAttribute('data-tgs');
+            if (!tgsUrl) return;
+            var wrap = container.closest('.inv-card-img-wrap');
+            if (!wrap) return;
+            var anim = null;
+            var loaded = false;
+
+            function loadAndPlay() {
+                if (loaded && anim) { container.style.display = 'block'; wrap.querySelector('.inv-card-img-static').style.display = 'none'; anim.goToAndPlay(0, true); return; }
+                fetch(tgsUrl).then(function(r) { return r.arrayBuffer(); }).then(function(buf) {
+                    try {
+                        var decompressed = pako.inflate(new Uint8Array(buf), { to: 'string' });
+                        var animData = JSON.parse(decompressed);
+                        container.innerHTML = '';
+                        container.style.display = 'block';
+                        wrap.querySelector('.inv-card-img-static').style.display = 'none';
+                        anim = lottie.loadAnimation({
+                            container: container,
+                            renderer: 'svg',
+                            loop: true,
+                            autoplay: true,
+                            animationData: animData
+                        });
+                        loaded = true;
+                    } catch(e) { console.warn('TGS parse error', e); }
+                }).catch(function(e) { console.warn('TGS fetch error', e); });
+            }
+
+            function stopAnim() {
+                container.style.display = 'none';
+                var staticImg = wrap.querySelector('.inv-card-img-static');
+                if (staticImg) staticImg.style.display = '';
+                if (anim) anim.stop();
+            }
+
+            wrap.addEventListener('mouseenter', loadAndPlay);
+            wrap.addEventListener('mouseleave', stopAnim);
+            wrap.addEventListener('touchstart', loadAndPlay, {passive: true});
+            wrap.addEventListener('touchend', function() { setTimeout(stopAnim, 600); }, {passive: true});
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', initUser);
     </script>

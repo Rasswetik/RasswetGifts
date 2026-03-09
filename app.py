@@ -2125,6 +2125,21 @@ def _create_all_tables(conn):
     except Exception as mig_e:
         logger.warning(f"Users migration: {mig_e}")
 
+    # Migrate ultimate_crash_bets: add gift_data column for storing full gift info
+    for _col_name, _col_type in [('gift_data', 'TEXT DEFAULT NULL'), ('gift_name', 'TEXT DEFAULT NULL')]:
+        try:
+            if USE_POSTGRES:
+                conn.execute("SAVEPOINT sp_migrate")
+            conn.execute(f"ALTER TABLE ultimate_crash_bets ADD COLUMN {_col_name} {_col_type}")
+        except Exception:
+            if USE_POSTGRES:
+                try: conn.execute("ROLLBACK TO SAVEPOINT sp_migrate")
+                except: pass
+    try:
+        conn.commit()
+    except Exception as mig_e:
+        logger.warning(f"Crash bets migration: {mig_e}")
+
     # === Bonus system tables ===
     try:
         conn.execute('''CREATE TABLE IF NOT EXISTS levels (
@@ -2438,17 +2453,21 @@ def safe_init_db(max_retries=3):
     logger.error("❌ init_db провалилась после всех попыток")
     return False
 
-def add_history_record(user_id, operation_type, amount, description):
-    """Добавляет запись в историю операций"""
+def add_history_record(user_id, operation_type, amount, description, cursor=None):
+    """Добавляет запись в историю операций. Если передан cursor — использует его без нового соединения."""
     try:
+        if cursor:
+            cursor.execute('''
+                INSERT INTO user_history (user_id, operation_type, amount, description)
+                VALUES (?, ?, ?, ?)
+            ''', (user_id, operation_type, amount, description))
+            return True
         conn = get_db_connection()
-        cursor = conn.cursor()
-
-        cursor.execute('''
+        cur = conn.cursor()
+        cur.execute('''
             INSERT INTO user_history (user_id, operation_type, amount, description)
             VALUES (?, ?, ?, ?)
         ''', (user_id, operation_type, amount, description))
-
         conn.commit()
         conn.close()
         return True
@@ -4329,7 +4348,7 @@ def ultimate_crash_place_bet():
 
 @app.route('/api/ultimate-crash/place-bet-gift', methods=['POST'])
 def ultimate_crash_place_bet_gift():
-    """Ставка подарком из инвентаря"""
+    """Ставка подарком из инвентаря — сохраняем полные данные для возврата"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -4341,17 +4360,19 @@ def ultimate_crash_place_bet_gift():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute('''
-            SELECT id, gift_name, gift_image, gift_value
-            FROM inventory WHERE id = ? AND user_id = ? AND is_withdrawing = 0
-        ''', (inventory_id, user_id))
-        gift = cursor.fetchone()
+        # Fetch ALL inventory columns for full gift restore on cashout
+        cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ? AND is_withdrawing = 0', (inventory_id, user_id))
+        raw = cursor.fetchone()
 
-        if not gift:
+        if not raw:
             conn.close()
             return jsonify({'success': False, 'error': 'Подарок не найден в инвентаре'})
 
-        inv_id, gift_name, gift_image, gift_value = gift
+        columns = [desc[0] for desc in cursor.description]
+        gift_dict = dict(zip(columns, raw))
+        gift_name = gift_dict.get('gift_name', 'Gift')
+        gift_image = gift_dict.get('gift_image', '')
+        gift_value = gift_dict.get('gift_value', 0)
         bet_amount = gift_value
 
         if bet_amount < 10:
@@ -4376,7 +4397,6 @@ def ultimate_crash_place_bet_gift():
             if game_status not in ('waiting', 'counting'):
                 conn.close()
                 return jsonify({'success': False, 'error': 'Игра уже началась'})
-            # Проверяем время до старта - если < 1.5 сек, отклоняем
             cached = get_crash_cache()
             if cached.get('status') == 'counting' and cached.get('time_remaining', 5) < 1.5:
                 conn.close()
@@ -4395,10 +4415,32 @@ def ultimate_crash_place_bet_gift():
         # Увеличиваем счётчик ставок и объём
         cursor.execute('UPDATE users SET total_crash_bets = COALESCE(total_crash_bets, 0) + 1, total_bet_volume = COALESCE(total_bet_volume, 0) + ? WHERE id = ?', (gift_value, user_id,))
 
+        # Store full gift data as JSON for cashout restore
+        gift_data_json = json.dumps({
+            'gift_id': gift_dict.get('gift_id'),
+            'gift_name': gift_name,
+            'gift_image': gift_image,
+            'gift_value': gift_value,
+            'is_upgraded': bool(gift_dict.get('is_upgraded')),
+            'nft_number': gift_dict.get('nft_number'),
+            'nft_model': gift_dict.get('nft_model'),
+            'nft_symbol': gift_dict.get('nft_symbol'),
+            'nft_backdrop': gift_dict.get('nft_backdrop'),
+            'nft_model_rarity': gift_dict.get('nft_model_rarity'),
+            'nft_symbol_rarity': gift_dict.get('nft_symbol_rarity'),
+            'nft_backdrop_rarity': gift_dict.get('nft_backdrop_rarity'),
+            'nft_model_price': gift_dict.get('nft_model_price'),
+            'nft_symbol_price': gift_dict.get('nft_symbol_price'),
+            'nft_backdrop_price': gift_dict.get('nft_backdrop_price'),
+            'crate_id': gift_dict.get('crate_id'),
+            'crate_name': gift_dict.get('crate_name'),
+            'crate_image': gift_dict.get('crate_image'),
+        }, ensure_ascii=False)
+
         cursor.execute('''
-            INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, bet_type, gift_image, status)
-            VALUES (?, ?, ?, ?, 'gift', ?, 'active')
-        ''', (game_id, user_id, bet_amount, bet_amount, gift_image))
+            INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, bet_type, gift_image, gift_name, gift_data, status)
+            VALUES (?, ?, ?, ?, 'gift', ?, ?, ?, 'active')
+        ''', (game_id, user_id, bet_amount, bet_amount, gift_image, gift_name, gift_data_json))
         bet_id = cursor.lastrowid
 
         cursor.execute('''
@@ -4540,16 +4582,15 @@ def ultimate_crash_place_bet_multi_gift():
 
 @app.route('/api/ultimate-crash/cashout-simple', methods=['POST'])
 def ultimate_crash_cashout_simple():
-    """Кэшаут с интеграцией подарков - если выигрыш >= мин. стоимости подарка, выдаём подарок"""
+    """Кэшаут: при ставке подарком — возвращаем оригинал + разницу подарками. При звёздах — подарки."""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
-        client_mult = data.get('client_mult')  # Client's displayed multiplier
+        client_mult = data.get('client_mult')
 
         if not user_id:
             return jsonify({'success': False, 'error': 'ID пользователя не указан'})
 
-        # Quick cache check — use cached multiplier for instant response
         cached = get_crash_cache()
         if cached.get('status') != 'flying':
             return jsonify({'success': False, 'error': 'Нет активной игры'})
@@ -4559,155 +4600,158 @@ def ultimate_crash_cashout_simple():
         cursor = conn.cursor()
 
         try:
-            # BEGIN IMMEDIATE to prevent double-cashout race
             cursor.execute('BEGIN IMMEDIATE')
 
-            # Получаем активную игру
             cursor.execute('''
                 SELECT id, current_multiplier FROM ultimate_crash_games
-                WHERE status = 'flying'
-                ORDER BY id DESC LIMIT 1
+                WHERE status = 'flying' ORDER BY id DESC LIMIT 1
             ''')
-
             game = cursor.fetchone()
-
             if not game:
-                conn.rollback()
-                conn.close()
+                conn.rollback(); conn.close()
                 return jsonify({'success': False, 'error': 'Нет активной игры'})
 
             game_id = game[0]
-            # Use the fresher of: DB multiplier vs cache multiplier
             db_mult = float(game[1]) if game[1] else 1.0
             server_mult = max(db_mult, cached_mult)
-            
-            # Use client multiplier if provided and within reasonable tolerance
-            # This prevents visual mismatch where user sees one number but gets different payout
+
             current_mult = server_mult
             if client_mult is not None:
                 try:
-                    client_mult = float(client_mult)
-                    # Allow client mult if it's at least 1.0 and not more than 15% above server
-                    # (accounts for client-side extrapolation between server updates)
-                    if client_mult >= 1.0 and client_mult <= server_mult * 1.15 + 0.05:
-                        current_mult = client_mult
+                    cm = float(client_mult)
+                    if cm >= 1.0 and cm <= server_mult * 1.15 + 0.05:
+                        current_mult = cm
                 except (ValueError, TypeError):
                     pass
 
-            # Получаем ставку пользователя
             cursor.execute('''
-                SELECT id, bet_amount FROM ultimate_crash_bets
+                SELECT id, bet_amount, bet_type, gift_data, gift_name, gift_image
+                FROM ultimate_crash_bets
                 WHERE game_id = ? AND user_id = ? AND status = 'active'
                 ORDER BY created_at DESC LIMIT 1
             ''', (game_id, user_id))
-
             bet = cursor.fetchone()
-
             if not bet:
-                conn.rollback()
-                conn.close()
+                conn.rollback(); conn.close()
                 return jsonify({'success': False, 'error': 'Активная ставка не найдена'})
 
-            bet_id, bet_amount = bet
-
-            # Расчет выигрыша
+            bet_id, bet_amount, bet_type, gift_data_raw, bet_gift_name, bet_gift_image = bet
             win_amount = int(bet_amount * current_mult)
 
-            # Пытаемся найти подходящий подарок (originals only)
-            gift_awarded = None
-            gifts = build_fragment_first_gifts_catalog()
-            
-            if gifts and win_amount >= 5:
-                sorted_gifts = sorted(gifts, key=lambda g: g.get('value', 0))
-                suitable_gifts = [g for g in sorted_gifts if g.get('value', 0) <= win_amount and g.get('value', 0) > 0]
-                if suitable_gifts:
-                    gift_awarded = suitable_gifts[-1]
-
-            # Обновляем ставку
+            # Mark bet as cashed out
             cursor.execute('''
-                UPDATE ultimate_crash_bets
-                SET status = 'cashed_out',
-                    cashout_multiplier = ?,
-                    win_amount = ?
+                UPDATE ultimate_crash_bets SET status = 'cashed_out', cashout_multiplier = ?, win_amount = ?
                 WHERE id = ? AND status = 'active'
             ''', (current_mult, win_amount, bet_id))
-
-            # Check if update actually changed a row (prevents double cashout)
             if cursor.rowcount == 0:
-                conn.rollback()
-                conn.close()
+                conn.rollback(); conn.close()
                 return jsonify({'success': False, 'error': 'Ставка уже забрана'})
 
-            # Получаем имя пользователя
             cursor.execute('SELECT first_name FROM users WHERE id = ?', (user_id,))
             user_row = cursor.fetchone()
             user_name = user_row[0] if user_row else f'User_{user_id}'
 
-            if gift_awarded:
-                gift_image = gift_awarded.get('image', '/static/img/star.png')
-                if gift_image and gift_image.startswith('data:'):
-                    gift_image = '/static/img/star.png'
-                
-                cursor.execute('''
-                    INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (user_id, gift_awarded['id'], gift_awarded['name'], gift_image, gift_awarded.get('value', 0)))
+            awarded_gifts = []
+            remaining_value = win_amount
 
-                if gift_awarded.get('type') != 'ton_balance':
-                    cursor.execute('SELECT 1 FROM user_gift_index WHERE user_id = ? AND gift_name = ?', (user_id, gift_awarded['name']))
-                    is_new_gift = not cursor.fetchone()
-                    cursor.execute('INSERT OR IGNORE INTO user_gift_index (user_id, gift_name) VALUES (?, ?)',
-                                 (user_id, gift_awarded['name']))
-                    
-                    if is_new_gift:
-                        try:
-                            cursor.execute('''INSERT INTO admin_notifications 
-                                (title, message, image_url, notif_type, target_user_id)
-                                VALUES (?, ?, ?, 'gift_index', ?)''',
-                                (gift_awarded['name'], f'Новый подарок в вашей коллекции!',
-                                 gift_image, user_id))
-                        except:
-                            pass
+            # === Gift bet: return original gift first ===
+            if bet_type == 'gift' and gift_data_raw:
+                try:
+                    gd = json.loads(gift_data_raw)
+                except Exception:
+                    gd = None
 
-                cursor.execute('''
-                    INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ''', (user_id, user_name, gift_awarded['name'], gift_image, gift_awarded.get('value', 0), 'Crash'))
+                if gd and gd.get('gift_name'):
+                    # Restore original gift to inventory with all NFT attributes
+                    ins_cols = ['user_id', 'gift_id', 'gift_name', 'gift_image', 'gift_value']
+                    ins_vals = [user_id, gd.get('gift_id'), gd['gift_name'], gd.get('gift_image', ''), gd.get('gift_value', bet_amount)]
+                    if gd.get('is_upgraded'):
+                        ins_cols += ['is_upgraded', 'nft_number', 'nft_model', 'nft_symbol', 'nft_backdrop',
+                                     'nft_model_rarity', 'nft_symbol_rarity', 'nft_backdrop_rarity',
+                                     'nft_model_price', 'nft_symbol_price', 'nft_backdrop_price']
+                        ins_vals += [True, gd.get('nft_number'), gd.get('nft_model'), gd.get('nft_symbol'), gd.get('nft_backdrop'),
+                                     gd.get('nft_model_rarity'), gd.get('nft_symbol_rarity'), gd.get('nft_backdrop_rarity'),
+                                     gd.get('nft_model_price'), gd.get('nft_symbol_price'), gd.get('nft_backdrop_price')]
+                    if gd.get('crate_id'):
+                        ins_cols += ['crate_id', 'crate_name', 'crate_image']
+                        ins_vals += [gd.get('crate_id'), gd.get('crate_name'), gd.get('crate_image')]
+                    placeholders = ', '.join(['?' for _ in ins_vals])
+                    cursor.execute(f'INSERT INTO inventory ({", ".join(ins_cols)}) VALUES ({placeholders})', ins_vals)
 
-                gift_value = gift_awarded.get('value', 0)
-                star_difference = max(0, win_amount - gift_value)
-                if star_difference > 0:
+                    awarded_gifts.append({
+                        'name': gd['gift_name'],
+                        'image': gd.get('gift_image', ''),
+                        'value': gd.get('gift_value', bet_amount),
+                        'is_original': True
+                    })
+                    remaining_value = win_amount - bet_amount  # profit only
+                else:
+                    remaining_value = win_amount
+
+            # === Fill remaining value with gifts from catalog ===
+            catalog = build_fragment_first_gifts_catalog()
+            if catalog and remaining_value >= 5:
+                sorted_catalog = sorted(catalog, key=lambda g: g.get('value', 0), reverse=True)
+                fill_rounds = 0
+                while remaining_value >= 5 and fill_rounds < 20:
+                    fill_rounds += 1
+                    best_gift = None
+                    for g in sorted_catalog:
+                        gv = g.get('value', 0)
+                        if 0 < gv <= remaining_value:
+                            best_gift = g
+                            break
+                    if not best_gift:
+                        break
+
+                    g_image = best_gift.get('image', '/static/img/star.png')
+                    if g_image and g_image.startswith('data:'):
+                        g_image = '/static/img/star.png'
+                    g_value = best_gift.get('value', 0)
+
                     cursor.execute('''
-                        UPDATE users
-                        SET balance_stars = balance_stars + ?,
-                            total_earned_stars = total_earned_stars + ?
-                        WHERE id = ?
-                    ''', (star_difference, star_difference, user_id))
+                        INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (user_id, best_gift.get('id', 0), best_gift['name'], g_image, g_value))
 
+                    cursor.execute('''
+                        INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ''', (user_id, user_name, best_gift['name'], g_image, g_value, 'Crash'))
+
+                    # Gift index
+                    try:
+                        cursor.execute('SELECT 1 FROM user_gift_index WHERE user_id = ? AND gift_name = ?', (user_id, best_gift['name']))
+                        if not cursor.fetchone():
+                            cursor.execute('INSERT OR IGNORE INTO user_gift_index (user_id, gift_name) VALUES (?, ?)', (user_id, best_gift['name']))
+                    except Exception:
+                        pass
+
+                    awarded_gifts.append({
+                        'name': best_gift['name'],
+                        'image': g_image,
+                        'value': g_value
+                    })
+                    remaining_value -= g_value
+
+            # Any small leftover → stars
+            if remaining_value > 0:
                 cursor.execute('''
-                    INSERT INTO user_history (user_id, operation_type, amount, description)
-                    VALUES (?, 'ultimate_crash_win', ?, ?)
-                ''', (user_id, win_amount, f'Выигрыш в Crash x{current_mult:.2f}: {gift_awarded["name"]} + {star_difference}⭐'))
-            else:
-                cursor.execute('''
-                    UPDATE users
-                    SET balance_stars = balance_stars + ?,
-                        total_earned_stars = total_earned_stars + ?
+                    UPDATE users SET balance_stars = balance_stars + ?, total_earned_stars = total_earned_stars + ?
                     WHERE id = ?
-                ''', (win_amount, win_amount, user_id))
+                ''', (remaining_value, remaining_value, user_id))
 
-                cursor.execute('''
-                    INSERT INTO user_history (user_id, operation_type, amount, description)
-                    VALUES (?, 'ultimate_crash_win', ?, ?)
-                ''', (user_id, win_amount, f'Выигрыш в Crash: x{current_mult:.2f}'))
+            # History
+            desc_parts = []
+            for ag in awarded_gifts:
+                desc_parts.append(ag['name'])
+            if remaining_value > 0:
+                desc_parts.append(f'{remaining_value}⭐')
+            cursor.execute('''
+                INSERT INTO user_history (user_id, operation_type, amount, description)
+                VALUES (?, 'ultimate_crash_win', ?, ?)
+            ''', (user_id, win_amount, f'Crash x{current_mult:.2f}: {", ".join(desc_parts)}'))
 
-                cursor.execute('''
-                    INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ''', (user_id, user_name, f'Stars x{current_mult:.2f}',
-                      '/static/img/star.png', win_amount, 'Crash'))
-
-            # Получаем новый баланс ДО commit (внутри транзакции)
             cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
             new_balance = cursor.fetchone()[0]
 
@@ -4720,45 +4764,40 @@ def ultimate_crash_cashout_simple():
 
         conn.close()
 
-        # Update gift challenge progress (bet turnover)
         try:
             if bet_amount > 0:
                 update_gift_challenge_progress(user_id, bet_amount)
-        except Exception as gc_err:
-            logger.error(f"Gift challenge update error: {gc_err}")
+                update_user_wager_progress(user_id, bet_amount)
+        except Exception:
+            pass
 
-        # Experience based on bet (1:1 turnover) - now added on bet placement, not cashout
-        # exp_gained = bet_amount (removed - exp is added when placing bet)
-
-        # Формируем ответ
         response = {
             'success': True,
             'win_amount': win_amount,
             'multiplier': current_mult,
             'new_balance': new_balance,
+            'awarded_gifts': awarded_gifts,
+            'star_remainder': remaining_value if remaining_value > 0 else 0,
         }
 
-        if gift_awarded:
-            gift_img = gift_awarded.get('image', '/static/img/star.png')
-            if gift_img and gift_img.startswith('data:'):
-                gift_img = '/static/img/star.png'
-            g_val = gift_awarded.get('value', 0)
-            s_diff = max(0, win_amount - g_val)
+        if awarded_gifts:
+            main_gift = awarded_gifts[0]
             response['gift'] = {
-                'id': gift_awarded['id'],
-                'name': gift_awarded['name'],
-                'image': gift_img,
-                'value': g_val
+                'id': 0,
+                'name': main_gift['name'],
+                'image': main_gift['image'],
+                'value': main_gift['value']
             }
-            response['star_difference'] = s_diff
-            if s_diff > 0:
-                response['message'] = f'Вы выиграли {gift_awarded["name"]} + {s_diff}⭐!'
-            else:
-                response['message'] = f'Вы выиграли подарок: {gift_awarded["name"]}!'
-            logger.info(f"✅ Crash кэшаут подарок: {gift_awarded['name']} ({g_val}⭐) +{s_diff}⭐ x{current_mult:.2f}")
+            if len(awarded_gifts) > 1:
+                response['extra_gifts'] = awarded_gifts[1:]
+            total_gift_value = sum(g['value'] for g in awarded_gifts)
+            star_diff = max(0, win_amount - total_gift_value)
+            response['star_difference'] = star_diff
+            response['message'] = f'Вы выиграли {len(awarded_gifts)} подарков x{current_mult:.2f}!'
+            logger.info(f"✅ Crash cashout: {len(awarded_gifts)} gifts, {remaining_value}⭐ remainder, x{current_mult:.2f}")
         else:
-            response['message'] = f'Вы выиграли {win_amount} звёзд!'
-            logger.info(f"✅ Crash кэшаут звёзды: {win_amount} x{current_mult:.2f}")
+            response['message'] = f'Вы выиграли {win_amount}⭐!'
+            logger.info(f"✅ Crash cashout stars: {win_amount} x{current_mult:.2f}")
 
         return jsonify(response)
 
@@ -6955,6 +6994,29 @@ def update_gift_challenge_progress(user_id, wager_amount_stars, conn=None):
             except: pass
 
 
+def update_user_wager_progress(user_id, wager_amount_stars, conn=None):
+    """Update user_wagers wagered_amount based on bet turnover.
+    When wagered_amount >= wager_requirement, wager is completed and bonus is unlocked."""
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE user_wagers 
+            SET wagered_amount = MIN(wagered_amount + ?, wager_requirement)
+            WHERE user_id = ? AND wagered_amount < wager_requirement
+        ''', (wager_amount_stars, user_id))
+        conn.commit()
+        if close_conn: conn.close()
+    except Exception as e:
+        logger.error(f"User wager progress error: {e}")
+        if close_conn:
+            try: conn.close()
+            except: pass
+
+
 @app.route('/api/user/<int:user_id>/case-history/<int:case_id>')
 def user_case_history(user_id, case_id):
     """Получить историю открытий кейса пользователем"""
@@ -7673,9 +7735,75 @@ _NFT_BACKDROPS = [
     'Forest Green','Dusty Pink','Warm Grey','Arctic White',
 ]
 
-def _pick_nft_attributes(slug, gift_value_stars=0):
-    """Pick random Model/Symbol/Backdrop from known data for a collection."""
+def _scrape_fragment_gift_attributes(slug, nft_number):
+    """Scrape real Model/Backdrop/Symbol from fragment.com/gift/{slug}-{number}."""
+    try:
+        url = f'https://fragment.com/gift/{slug}-{nft_number}'
+        resp = _fragment_get(url)
+        if resp.status_code != 200:
+            return None
+        html = resp.text
+        attrs = {}
+        # Parse table-cell pairs: trait_type → value with rarity percentage
+        # Pattern: <td>...<div class="table-cell">Model</div>...</td><td>...<div class="table-cell-value tm-value"><a>Gummy Frog</a>...3%</div>
+        attr_pattern = re.compile(
+            r'<div[^>]*class="[^"]*table-cell[^"]*"[^>]*>\s*(Model|Backdrop|Symbol)\s*</div>'
+            r'.*?<div[^>]*class="[^"]*table-cell-value[^"]*"[^>]*>(.*?)</div>',
+            flags=re.IGNORECASE | re.DOTALL
+        )
+        for attr_name, value_html in attr_pattern.findall(html):
+            attr_key = attr_name.strip().lower()
+            # Extract text value
+            val_match = re.search(r'<a[^>]*>([^<]+)</a>', value_html)
+            if not val_match:
+                val_match = re.search(r'>([^<]+)<', value_html)
+            value_text = val_match.group(1).strip() if val_match else ''
+            # Extract rarity percentage
+            pct_match = re.search(r'([\d.]+)\s*%', value_html)
+            rarity = float(pct_match.group(1)) if pct_match else None
+            if value_text:
+                attrs[attr_key] = {'value': value_text, 'rarity': rarity}
+        if attrs:
+            return attrs
+    except Exception as e:
+        logger.warning(f'Fragment gift scrape failed for {slug}-{nft_number}: {e}')
+    return None
+
+def _pick_nft_attributes(slug, gift_value_stars=0, nft_number=None):
+    """Pick Model/Symbol/Backdrop — first try scraping real Fragment page, fallback to cache/random."""
     import random as _rnd
+
+    # Try scraping real attributes from Fragment
+    if nft_number and slug:
+        real_attrs = _scrape_fragment_gift_attributes(slug, nft_number)
+        if real_attrs:
+            model_name = real_attrs.get('model', {}).get('value', 'Classic')
+            symbol = real_attrs.get('symbol', {}).get('value', _rnd.choice(_NFT_SYMBOLS))
+            backdrop = real_attrs.get('backdrop', {}).get('value', _rnd.choice(_NFT_BACKDROPS))
+            model_r = real_attrs.get('model', {}).get('rarity') or round(_rnd.uniform(0.5, 8.0), 1)
+            symbol_r = real_attrs.get('symbol', {}).get('rarity') or round(_rnd.uniform(0.5, 8.0), 1)
+            backdrop_r = real_attrs.get('backdrop', {}).get('rarity') or round(_rnd.uniform(0.5, 8.0), 1)
+            base_ton = (gift_value_stars / 100.0) if gift_value_stars else 5.0
+            # Try to get real model floor price from cache
+            model_floor = None
+            try:
+                with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                slug_models = cache.get('models', {}).get(slug, [])
+                for m in slug_models:
+                    if _slugify_fragment_name(m.get('model_name', '')) == _slugify_fragment_name(model_name):
+                        mf = m.get('getgems_model_floor_ton')
+                        if mf:
+                            model_floor = float(mf)
+                        break
+            except Exception:
+                pass
+            model_price = round(model_floor if model_floor and model_floor > 0 else base_ton, 2)
+            symbol_price = round(base_ton * 0.9, 2)
+            backdrop_price = round(base_ton * 0.9, 2)
+            return model_name, symbol, backdrop, model_r, symbol_r, backdrop_r, model_price, symbol_price, backdrop_price
+
+    # Fallback: pick from cache/random
     model_name = None
     model_floor = None
     try:
@@ -7699,7 +7827,6 @@ def _pick_nft_attributes(slug, gift_value_stars=0):
     model_r = round(_rnd.uniform(0.5, 8.0), 1)
     symbol_r = round(_rnd.uniform(0.5, 8.0), 1)
     backdrop_r = round(_rnd.uniform(0.5, 8.0), 1)
-    # Attribute TON prices: model from getgems floor, others derived from gift value
     base_ton = (gift_value_stars / 100.0) if gift_value_stars else 5.0
     model_price = round(model_floor if model_floor and model_floor > 0 else base_ton * _rnd.uniform(0.8, 1.4), 2)
     symbol_price = round(base_ton * _rnd.uniform(0.7, 1.3), 2)
@@ -7789,8 +7916,8 @@ def upgrade_gift():
                 preview_nums.add(n)
         preview_images = [f'https://nft.fragment.com/gift/{slug}-{n}.webp' for n in preview_nums]
 
-        # Pick NFT attributes (model, symbol, backdrop)
-        nft_model, nft_symbol, nft_backdrop, model_r, symbol_r, backdrop_r, model_p, symbol_p, backdrop_p = _pick_nft_attributes(slug, gift.get('gift_value', 0))
+        # Pick NFT attributes (model, symbol, backdrop) — scrape real Fragment page
+        nft_model, nft_symbol, nft_backdrop, model_r, symbol_r, backdrop_r, model_p, symbol_p, backdrop_p = _pick_nft_attributes(slug, gift.get('gift_value', 0), nft_number=nft_num)
 
         cursor.execute('''UPDATE inventory
             SET gift_name = ?, gift_image = ?, is_upgraded = 1, nft_number = ?,
@@ -11422,6 +11549,7 @@ def get_withdrawals():
 @app.route('/api/admin/update-withdrawal-status', methods=['POST'])
 def update_withdrawal_status():
     """Обновление статуса заявки на вывод"""
+    conn = None
     try:
         data = request.get_json()
         admin_id = data.get('admin_id')
@@ -11453,13 +11581,14 @@ def update_withdrawal_status():
         if status in ['approved', 'rejected', 'error']:
             if status == 'approved':
                 cursor.execute('DELETE FROM inventory WHERE id = ?', (inventory_id,))
-                add_history_record(user_id, 'withdraw_approved', 0, f'Вывод одобрен: {gift_name}')
+                add_history_record(user_id, 'withdraw_approved', 0, f'Вывод одобрен: {gift_name}', cursor=cursor)
             else:
                 cursor.execute('UPDATE inventory SET is_withdrawing = FALSE WHERE id = ?', (inventory_id,))
-                add_history_record(user_id, 'withdraw_rejected', 0, f'Вывод отклонен: {gift_name}')
+                add_history_record(user_id, 'withdraw_rejected', 0, f'Вывод отклонен: {gift_name}', cursor=cursor)
 
         conn.commit()
         conn.close()
+        conn = None
 
         logger.info(f"🛠️ Админ {admin_id} изменил статус заявки #{withdrawal_id} на {status}")
         return jsonify({
@@ -11469,6 +11598,11 @@ def update_withdrawal_status():
 
     except Exception as e:
         logger.error(f"❌ Ошибка обновления статуса вывода: {e}")
+        if conn:
+            try: conn.rollback()
+            except: pass
+            try: conn.close()
+            except: pass
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/crash/customizations')
@@ -18246,14 +18380,47 @@ def api_user_profile_card(user_id):
             FROM inventory WHERE user_id = ?
             ORDER BY received_at DESC LIMIT 30''', (user_id,))
         inv_rows = cursor.fetchall()
+
+        # Build slug lookup from gifts catalog
+        local_gifts = load_gifts_cached() or []
+        local_by_id = {}
+        local_by_name = {}
+        for gift in local_gifts:
+            gid = gift.get('id')
+            if gid is not None:
+                try:
+                    local_by_id[int(gid)] = gift
+                except Exception:
+                    pass
+            nk = _normalize_gift_name_for_match(gift.get('name'))
+            if nk and nk not in local_by_name:
+                local_by_name[nk] = gift
+
         inventory = []
         for ir in inv_rows:
+            gift_id_val = ir[0]
+            raw_name = ir[1] or 'Gift'
+            name_key = _normalize_gift_name_for_match(raw_name)
+            local_meta = None
+            if gift_id_val is not None:
+                try:
+                    local_meta = local_by_id.get(int(gift_id_val))
+                except Exception:
+                    pass
+            if not local_meta and name_key:
+                local_meta = local_by_name.get(name_key)
+            frag_slug = ''
+            if local_meta:
+                frag_slug = (local_meta.get('fragment_slug') or '').strip().lower()
+            if not frag_slug:
+                frag_slug = _slugify_fragment_name(raw_name)
             inventory.append({
-                'gift_id': ir[0],
-                'name': ir[1] or 'Gift',
+                'gift_id': gift_id_val,
+                'name': raw_name,
                 'image': ir[2] or '/static/img/gift.png',
                 'value': ir[3] or 0,
-                'is_upgraded': bool(ir[4])
+                'is_upgraded': bool(ir[4]),
+                'fragment_slug': frag_slug or None
             })
 
         # Level progress info
