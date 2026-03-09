@@ -7797,7 +7797,7 @@ def _get_collection_max_number(slug):
 
 
 # Gift IDs that cannot be upgraded (regular Telegram gifts)
-NON_UPGRADEABLE_GIFT_IDS = {90, 110}   # 110 = Woman Bear
+NON_UPGRADEABLE_GIFT_IDS = {90}
 
 # Gift IDs that cannot be used in crash betting (only withdraw/sell)
 NON_BETTABLE_GIFT_IDS = {110}          # Woman Bear
@@ -8815,9 +8815,10 @@ def upgrade_multi_gifts():
             return jsonify({'success': False, 'error': 'Дубликаты подарков'})
 
         gifts = build_fragment_first_gifts_catalog()
-        target_gift = next((g for g in gifts if g.get('id') == target_gift_id or
-                            g.get('gift_key') == str(target_gift_id) or
-                            g.get('fragment_slug') == str(target_gift_id)), None)
+        tid = str(target_gift_id).strip().lower()
+        target_gift = next((g for g in gifts if
+                            g.get('fragment_slug', '') == tid or
+                            str(g.get('id', '')) == tid), None)
         if not target_gift:
             return jsonify({'success': False, 'error': 'Целевой подарок не найден'})
 
