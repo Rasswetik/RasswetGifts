@@ -7907,9 +7907,113 @@ def _pick_nft_attributes(slug, gift_value_stars=0, nft_number=None):
     return model_name, symbol, backdrop, model_r, symbol_r, backdrop_r, model_price, symbol_price, backdrop_price
 
 
+@app.route('/api/pre-upgrade', methods=['POST'])
+def pre_upgrade_gift():
+    """Phase 1: validate gift, pick NFT number, scrape Fragment for real data, return preview.
+    Does NOT commit the upgrade — that happens in /api/upgrade-gift with the returned nft_number."""
+    try:
+        data = request.get_json()
+        user_id = int(data.get('user_id', 0))
+        inventory_id = int(data.get('inventory_id', 0))
+        if not user_id or not inventory_id:
+            return jsonify({'success': False, 'error': 'Missing data'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
+        raw = cursor.fetchone()
+        if not raw:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Gift not found'})
+        columns = [desc[0] for desc in cursor.description]
+        gift = dict(zip(columns, raw))
+
+        if gift.get('is_upgraded'):
+            conn.close()
+            return jsonify({'success': False, 'error': 'Already upgraded'})
+        if gift.get('crate_id'):
+            conn.close()
+            return jsonify({'success': False, 'error': 'Cannot upgrade a crate'})
+        if gift.get('gift_id') in NON_UPGRADEABLE_GIFT_IDS:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Этот подарок нельзя улучшить'})
+
+        cursor.execute('SELECT id FROM promo_gift_challenges WHERE inventory_id = ? AND is_completed = FALSE', (inventory_id,))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'error': 'Gift locked by challenge'})
+
+        gift_value_stars = gift.get('gift_value', 0)
+        upgrade_cost = _calc_upgrade_cost_stars(gift_value_stars)
+
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+        if not row or row[0] < upgrade_cost:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Insufficient balance'})
+        conn.close()
+
+        # Determine slug
+        gift_image = gift.get('gift_image', '')
+        slug_match = re.search(r'/gifts/([a-z0-9]+)/', gift_image)
+        if slug_match:
+            slug = slug_match.group(1)
+        else:
+            gift_name = gift.get('gift_name', 'Gift')
+            base_name = re.sub(r'\s*\(random\)|\s*#\d+', '', gift_name, flags=re.IGNORECASE).strip()
+            slug = _slugify_fragment_name(base_name)
+
+        # Pick NFT number
+        max_num = _get_collection_max_number(slug)
+        nft_num = random.randint(1, max_num)
+
+        gift_name = gift.get('gift_name', 'Gift')
+        base_name = re.sub(r'\s*\(random\)|\s*#\d+', '', gift_name, flags=re.IGNORECASE).strip()
+        new_name = f'{base_name} #{nft_num}'
+        new_image = f'https://nft.fragment.com/gift/{slug}-{nft_num}.webp'
+
+        # Scrape Fragment page for real attributes (longer timeout since we have loading screen)
+        nft_model, nft_symbol, nft_backdrop, model_r, symbol_r, backdrop_r, model_p, symbol_p, backdrop_p = _pick_nft_attributes(slug, gift_value_stars, nft_number=nft_num)
+
+        # Generate preview images for roulette
+        want_previews = min(20, max(max_num - 1, 1))
+        preview_nums = set()
+        attempts = 0
+        while len(preview_nums) < want_previews and attempts < 500:
+            n = random.randint(1, max_num)
+            if n != nft_num:
+                preview_nums.add(n)
+            attempts += 1
+        preview_images = [f'https://nft.fragment.com/gift/{slug}-{n}.webp' for n in preview_nums]
+
+        return jsonify({
+            'success': True,
+            'nft_number': nft_num,
+            'new_name': new_name,
+            'new_image': new_image,
+            'slug': slug,
+            'preview_images': preview_images,
+            'nft_model': nft_model,
+            'nft_symbol': nft_symbol,
+            'nft_backdrop': nft_backdrop,
+            'nft_model_rarity': model_r,
+            'nft_symbol_rarity': symbol_r,
+            'nft_backdrop_rarity': backdrop_r,
+            'nft_model_price': model_p,
+            'nft_symbol_price': symbol_p,
+            'nft_backdrop_price': backdrop_p,
+            'upgrade_cost': upgrade_cost,
+        })
+
+    except Exception as e:
+        logger.error(f"Pre-upgrade error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/api/upgrade-gift', methods=['POST'])
 def upgrade_gift():
-    """Upgrade a random gift to an NFT-linked gift"""
+    """Upgrade a random gift to an NFT-linked gift. Accepts optional pre-determined nft_number."""
     conn = None
     try:
         data = request.get_json()
@@ -7973,9 +8077,13 @@ def upgrade_gift():
             base_name = re.sub(r'\s*\(random\)|\s*#\d+', '', gift_name, flags=re.IGNORECASE).strip()
             slug = _slugify_fragment_name(base_name)
 
-        # Generate NFT number within valid collection range
+        # Use pre-determined nft_number from /api/pre-upgrade if provided
+        pre_nft_num = data.get('nft_number')
         max_num = _get_collection_max_number(slug)
-        nft_num = random.randint(1, max_num)
+        if pre_nft_num and isinstance(pre_nft_num, int) and 1 <= pre_nft_num <= max_num:
+            nft_num = pre_nft_num
+        else:
+            nft_num = random.randint(1, max_num)
 
         # Clean base name (remove "(Random)" or "#xxx")
         gift_name = gift.get('gift_name', 'Gift')
@@ -7996,8 +8104,20 @@ def upgrade_gift():
             attempts += 1
         preview_images = [f'https://nft.fragment.com/gift/{slug}-{n}.webp' for n in preview_nums]
 
-        # Pick NFT attributes (model, symbol, backdrop) — scrape real Fragment page (short timeout)
-        nft_model, nft_symbol, nft_backdrop, model_r, symbol_r, backdrop_r, model_p, symbol_p, backdrop_p = _pick_nft_attributes(slug, gift.get('gift_value', 0), nft_number=nft_num)
+        # Use pre-determined attributes from /api/pre-upgrade if provided, else scrape/fallback
+        pre_attrs = data.get('nft_attrs')
+        if pre_attrs and isinstance(pre_attrs, dict) and pre_attrs.get('nft_model'):
+            nft_model = pre_attrs['nft_model']
+            nft_symbol = pre_attrs.get('nft_symbol', random.choice(_NFT_SYMBOLS))
+            nft_backdrop = pre_attrs.get('nft_backdrop', random.choice(_NFT_BACKDROPS))
+            model_r = pre_attrs.get('nft_model_rarity', 5.0)
+            symbol_r = pre_attrs.get('nft_symbol_rarity', 5.0)
+            backdrop_r = pre_attrs.get('nft_backdrop_rarity', 5.0)
+            model_p = pre_attrs.get('nft_model_price', 5.0)
+            symbol_p = pre_attrs.get('nft_symbol_price', 4.5)
+            backdrop_p = pre_attrs.get('nft_backdrop_price', 4.5)
+        else:
+            nft_model, nft_symbol, nft_backdrop, model_r, symbol_r, backdrop_r, model_p, symbol_p, backdrop_p = _pick_nft_attributes(slug, gift.get('gift_value', 0), nft_number=nft_num)
 
         cursor.execute('''UPDATE inventory
             SET gift_name = ?, gift_image = ?, is_upgraded = 1, nft_number = ?,

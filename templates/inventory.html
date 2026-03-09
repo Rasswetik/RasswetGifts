@@ -183,6 +183,12 @@
         .upgrade-anim-wrap{display:none;flex-direction:column;align-items:center;width:100%;padding:0;position:relative}
         .upgrade-anim-wrap.active{display:flex}
 
+        .upgrade-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;height:220px;gap:16px}
+        .upgrade-loading-spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.15);border-top-color:#F96999;border-radius:50%;animation:upgSpin .8s linear infinite}
+        @keyframes upgSpin{to{transform:rotate(360deg)}}
+        .upgrade-loading-text{font-size:14px;font-weight:600;color:rgba(255,255,255,.6);letter-spacing:.3px}
+        .upgrade-loading-detail{font-size:11px;color:rgba(255,255,255,.35);margin-top:-8px}
+
         .upgrade-roulette{position:relative;width:100%;height:220px;overflow:hidden;border-radius:0;background:transparent;margin-bottom:0}
         .upgrade-roulette::before,.upgrade-roulette::after{content:'';position:absolute;top:0;bottom:0;width:40px;z-index:3;pointer-events:none}
         .upgrade-roulette::before{left:0;background:linear-gradient(90deg,#1C2233 0%,transparent 100%)}
@@ -518,6 +524,10 @@
             </div>
 
             <div class="upgrade-anim-wrap" id="upgradeAnimWrap">
+                <div class="upgrade-loading" id="upgradeLoading" style="display:none">
+                    <div class="upgrade-loading-spinner"></div>
+                    <div class="upgrade-loading-text">Подготовка NFT...</div>
+                </div>
                 <div class="upgrade-roulette" id="upgradeRoulette">
                     <div class="upgrade-strip" id="upgradeStrip"></div>
                 </div>
@@ -944,17 +954,18 @@
         var resultImg = document.getElementById('upgradeResultImg');
         var resultName = document.getElementById('upgradeResultName');
         var animStatus = document.getElementById('upgradeStatus');
+        var loadingEl = document.getElementById('upgradeLoading');
         var modal = document.querySelector('.item-modal');
         var handle = document.querySelector('.item-modal-handle');
 
         // Reset state
         strip.innerHTML = '';
         strip.style.transform = 'translateX(0)';
-        roulette.style.display = '';
+        roulette.style.display = 'none';
         resultCard.classList.remove('show');
         animStatus.textContent = '';
 
-        // Hide EVERYTHING in modal — name, image, price, challenge, actions, handle
+        // Hide modal content, show animation wrapper with loading spinner
         document.getElementById('itemModalActions').style.display = 'none';
         document.getElementById('itemModalImg').style.display = 'none';
         document.getElementById('itemModalChallenge').style.display = 'none';
@@ -963,59 +974,25 @@
         if (handle) handle.style.display = 'none';
         modal.style.padding = '0';
         animWrap.className = 'upgrade-anim-wrap active';
+        loadingEl.style.display = 'flex';
 
-        // Build a placeholder looping strip using current gift image while API loads
-        var currentImg = selectedItem.gift_image || '/static/img/default_gift.png';
-        var containerW = roulette.offsetWidth || 300;
-        var itemSize = Math.floor(containerW / 3);
-        var rouletteH = 220;
-        var loopCount = 60;
-        for (var li = 0; li < loopCount; li++) {
-            var el = document.createElement('div');
-            el.className = 'upgrade-strip-item';
-            el.style.width = itemSize + 'px';
-            el.style.height = rouletteH + 'px';
-            el.style.padding = '6px';
-            var img = document.createElement('img');
-            img.src = currentImg;
-            el.appendChild(img);
-            strip.appendChild(el);
-        }
-        strip.style.opacity = '1';
-
-        // Start infinite scroll animation while API is loading
-        var scrollSpeed = 8; // px per frame
-        var scrollPos = 0;
-        var maxScroll = loopCount * itemSize;
-        var scrolling = true;
-        function scrollLoop() {
-            if (!scrolling) return;
-            scrollPos += scrollSpeed;
-            if (scrollPos > maxScroll / 2) scrollPos -= maxScroll / 2;
-            strip.style.transform = 'translateX(' + (-scrollPos) + 'px)';
-            requestAnimationFrame(scrollLoop);
-        }
-        requestAnimationFrame(scrollLoop);
-
-        // Start the API call in parallel with the scroll animation
-        var upgradeResult = null;
-        var upgradeError = null;
+        // ========== PHASE 1: Pre-upgrade — get NFT data from Fragment ==========
+        var preData = null;
+        var preError = null;
         try {
-            var resp = await fetch('/api/upgrade-gift', {
+            var resp = await fetch('/api/pre-upgrade', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({user_id: user.id, inventory_id: itemId})
             });
-            upgradeResult = await resp.json();
+            preData = await resp.json();
         } catch (e) {
-            upgradeError = e;
+            preError = e;
         }
 
-        // Stop the infinite scroll
-        scrolling = false;
-
-        if (!upgradeResult || !upgradeResult.success) {
-            animStatus.textContent = (upgradeResult && upgradeResult.error) || 'Upgrade failed';
+        if (!preData || !preData.success) {
+            loadingEl.style.display = 'none';
+            animStatus.textContent = (preData && preData.error) || 'Pre-upgrade failed';
             setTimeout(function(){
                 animWrap.className = 'upgrade-anim-wrap';
                 modal.style.padding = '';
@@ -1031,12 +1008,41 @@
             return;
         }
 
-        // Now rebuild strip with real preview images + winner
-        strip.innerHTML = '';
-        strip.style.transform = 'translateX(0)';
+        // ========== Preload images (final + previews) ==========
+        var previews = preData.preview_images || [];
+        var finalImg = preData.new_image;
+        var allUrls = [finalImg].concat(previews.slice(0, 15));
+        var loaded = 0;
+        var totalToLoad = allUrls.length;
 
-        var previews = upgradeResult.preview_images || [];
-        if (!previews.length) previews = [currentImg]; // safeguard against empty previews
+        // Update loading text with NFT info
+        var loadingTextEl = loadingEl.querySelector('.upgrade-loading-text');
+        loadingTextEl.textContent = preData.new_name || 'Загрузка NFT...';
+
+        await new Promise(function(resolve) {
+            var timeout = setTimeout(resolve, 6000); // max wait 6s
+            function oneDone() {
+                loaded++;
+                if (loaded >= totalToLoad) { clearTimeout(timeout); resolve(); }
+            }
+            allUrls.forEach(function(url) {
+                var img = new Image();
+                img.onload = oneDone;
+                img.onerror = oneDone;
+                img.src = url;
+            });
+        });
+
+        // ========== PHASE 2: Build roulette with real NFT images ==========
+        loadingEl.style.display = 'none';
+        roulette.style.display = '';
+
+        var containerW = roulette.offsetWidth || 300;
+        var itemSize = Math.floor(containerW / 3);
+        var rouletteH = 220;
+
+        // Build image array: ~57 random previews, then the winner, then 6 more
+        if (!previews.length) previews = [selectedItem.gift_image || '/static/img/default_gift.png'];
         var allImages = [];
         var safety = 0;
         while (allImages.length < 57 && safety < 200) {
@@ -1047,7 +1053,7 @@
             safety++;
         }
         var winnerPos = allImages.length;
-        allImages.push(upgradeResult.new_image); // winner
+        allImages.push(finalImg);
         var afterCount = 0;
         var safety2 = 0;
         while (afterCount < 6 && safety2 < 50) {
@@ -1059,20 +1065,20 @@
         }
 
         for (var i = 0; i < allImages.length; i++) {
-            var el2 = document.createElement('div');
-            el2.className = 'upgrade-strip-item';
-            el2.style.width = itemSize + 'px';
-            el2.style.height = rouletteH + 'px';
-            el2.style.padding = '6px';
-            var img2 = document.createElement('img');
-            img2.src = allImages[i];
-            el2.appendChild(img2);
-            strip.appendChild(el2);
+            var el = document.createElement('div');
+            el.className = 'upgrade-strip-item';
+            el.style.width = itemSize + 'px';
+            el.style.height = rouletteH + 'px';
+            el.style.padding = '6px';
+            var img = document.createElement('img');
+            img.src = allImages[i];
+            el.appendChild(img);
+            strip.appendChild(el);
         }
 
         var targetOffset = (winnerPos * itemSize) + (itemSize / 2) - (containerW / 2);
 
-        // Animate: fast start, smooth deceleration over 2.5s (tap to skip)
+        // Animate roulette: fast start, smooth deceleration
         var duration = 2500;
         var startTime = Date.now();
         var skipAnimation = false;
@@ -1100,31 +1106,75 @@
         roulette.removeEventListener('click', onSkipTap);
         roulette.removeEventListener('touchstart', onSkipTap);
 
-        // Confetti on full screen
+        // ========== PHASE 3: Commit upgrade to DB ==========
+        var upgradeResult = null;
+        try {
+            var resp2 = await fetch('/api/upgrade-gift', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: user.id,
+                    inventory_id: itemId,
+                    nft_number: preData.nft_number,
+                    nft_attrs: {
+                        nft_model: preData.nft_model,
+                        nft_symbol: preData.nft_symbol,
+                        nft_backdrop: preData.nft_backdrop,
+                        nft_model_rarity: preData.nft_model_rarity,
+                        nft_symbol_rarity: preData.nft_symbol_rarity,
+                        nft_backdrop_rarity: preData.nft_backdrop_rarity,
+                        nft_model_price: preData.nft_model_price,
+                        nft_symbol_price: preData.nft_symbol_price,
+                        nft_backdrop_price: preData.nft_backdrop_price,
+                    }
+                })
+            });
+            upgradeResult = await resp2.json();
+        } catch (e) {
+            upgradeResult = null;
+        }
+
+        if (!upgradeResult || !upgradeResult.success) {
+            animStatus.textContent = (upgradeResult && upgradeResult.error) || 'Upgrade failed';
+            setTimeout(function(){
+                animWrap.className = 'upgrade-anim-wrap';
+                modal.style.padding = '';
+                if (handle) handle.style.display = '';
+                document.getElementById('itemModalName').style.display = '';
+                document.getElementById('itemModalImg').style.display = '';
+                document.getElementById('itemModalPriceWrap').style.display = '';
+                document.getElementById('itemModalActions').style.display = '';
+                btn.disabled = false;
+                var uc = selectedItem && selectedItem.upgrade_cost_stars ? starsToTon(selectedItem.upgrade_cost_stars) : 0.3;
+                btn.textContent = t('upgrade') + ' ' + formatTon(uc) + ' TON';
+            }, 2000);
+            return;
+        }
+
+        // ========== PHASE 4: Show result ==========
         spawnConfetti(document.getElementById('confettiContainer'));
-        animStatus.textContent = 'NFT #' + upgradeResult.nft_number;
+        animStatus.textContent = 'NFT #' + preData.nft_number;
 
         // Update local data immediately
-        selectedItem.gift_name = upgradeResult.new_name;
-        selectedItem.gift_image = upgradeResult.new_image;
+        selectedItem.gift_name = preData.new_name;
+        selectedItem.gift_image = preData.new_image;
         selectedItem.is_upgraded = true;
-        selectedItem.nft_number = upgradeResult.nft_number;
-        selectedItem.nft_model = upgradeResult.nft_model;
-        selectedItem.nft_symbol = upgradeResult.nft_symbol;
-        selectedItem.nft_backdrop = upgradeResult.nft_backdrop;
-        selectedItem.nft_model_rarity = upgradeResult.nft_model_rarity;
-        selectedItem.nft_symbol_rarity = upgradeResult.nft_symbol_rarity;
-        selectedItem.nft_backdrop_rarity = upgradeResult.nft_backdrop_rarity;
-        selectedItem.nft_model_price = upgradeResult.nft_model_price;
-        selectedItem.nft_symbol_price = upgradeResult.nft_symbol_price;
-        selectedItem.nft_backdrop_price = upgradeResult.nft_backdrop_price;
+        selectedItem.nft_number = preData.nft_number;
+        selectedItem.nft_model = preData.nft_model;
+        selectedItem.nft_symbol = preData.nft_symbol;
+        selectedItem.nft_backdrop = preData.nft_backdrop;
+        selectedItem.nft_model_rarity = preData.nft_model_rarity;
+        selectedItem.nft_symbol_rarity = preData.nft_symbol_rarity;
+        selectedItem.nft_backdrop_rarity = preData.nft_backdrop_rarity;
+        selectedItem.nft_model_price = preData.nft_model_price;
+        selectedItem.nft_symbol_price = preData.nft_symbol_price;
+        selectedItem.nft_backdrop_price = preData.nft_backdrop_price;
         await refreshUserData();
         renderInventory();
 
-        // Wait for confetti, then close modal and reopen with new data
+        // Wait for confetti, then close and reopen
         await new Promise(function(r){ setTimeout(r, 1800); });
 
-        // Restore modal structure
         animWrap.className = 'upgrade-anim-wrap';
         strip.innerHTML = '';
         modal.style.padding = '';
@@ -1134,7 +1184,6 @@
         document.getElementById('itemModalPriceWrap').style.display = '';
         document.getElementById('itemModalActions').style.display = '';
 
-        // Close and reopen with updated data
         var reopenId = itemId;
         hideItemModal();
         await new Promise(function(r){ setTimeout(r, 300); });
