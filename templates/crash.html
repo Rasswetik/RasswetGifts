@@ -4892,6 +4892,7 @@ let dispMult = 1.0, servMult = 1.0;
 let hasBet = false, betAmt = 0;
 let activeBetType = 'stars'; /* 'stars' | 'gift' | 'multi' */
 let activeBetGiftImage = null; /* Gift image for display when bet is gift */
+let betIsUpgraded = false; /* true if bet contains any upgraded gift */
 let cashedOut = false;  /* Flag: already cashed out this round */
 let cashedOutBetAmt = 0; /* Bet amount after cashout for gift display */
 let crashDone = false;
@@ -5622,9 +5623,9 @@ function updateRocketImage(){
     const rocketImg = rocketWrap.querySelector('img');
     if(!rocketImg) return;
     
-    /* Если показ подарков отключён - всегда показываеm ракету */
-    if(!settingGiftImg){
-        rocketWrap.classList.remove('cashed-out', 'gift-change');
+    /* Если показ подарков отключён или ставка улучшенным подарком - всегда показываеm ракету */
+    if(!settingGiftImg || betIsUpgraded){
+        rocketWrap.classList.remove('cashed-out', 'gift-change', 'showing-gift');
         if(lastGiftId !== null){
             lastGiftId = null;
             currentAchievableGift = null;
@@ -6025,6 +6026,7 @@ async function updStatus(){
         if(newRound){
             hasBet = false; betAmt = 0;
             activeBetType = 'stars'; activeBetGiftImage = null;
+            betIsUpgraded = false;
             cashedOut = false; cashedOutBetAmt = 0;
             betPlacedOptimistic = false;
         }
@@ -6386,6 +6388,7 @@ async function processPendingBet(){
             if(d.success){
                 hasBet = true; betAmt = d.bet_amount || bet.amount;
                 activeBetType = 'gift'; activeBetGiftImage = bet.giftImage || null;
+                betIsUpgraded = !!bet.isUpgraded;
                 betPlacedOptimistic = true;
                 userTotalBets++;
                 userBetVolume += (d.bet_amount || bet.amount); checkVolumeUnlock(userBetVolume);
@@ -6407,6 +6410,7 @@ async function processPendingBet(){
             if(d.success){
                 hasBet = true; betAmt = d.bet_amount || bet.amount;
                 activeBetType = 'multi'; activeBetGiftImage = (selectedGifts[0] && selectedGifts[0].image) || null;
+                betIsUpgraded = !!bet.isUpgraded;
                 betPlacedOptimistic = true;
                 userTotalBets++;
                 userBetVolume += (d.bet_amount || bet.amount); checkVolumeUnlock(userBetVolume);
@@ -6494,7 +6498,9 @@ async function loadInventory(){
             var isSelected = selectedGifts.some(function(g){ return g.id === i.id; });
             var tonVal = (i.gift_value / 100).toFixed(2);
             var imgSrc = i.gift_image || (i.fragment_slug ? 'https://fragment.com/file/gifts/' + i.fragment_slug + '/thumb.webp' : '/static/img/gift.png');
-            return '<div class="inv-card' + (isSelected ? ' selected' : '') + '" data-id="' + i.id + '" onclick="toggleGiftSelection(' + i.id + ')">' +
+            var upgBadge = i.is_upgraded ? '<div style="position:absolute;top:4px;right:4px;background:linear-gradient(135deg,#F96999,#E8527A);color:#fff;font-size:8px;font-weight:700;padding:2px 5px;border-radius:6px;z-index:2">NFT</div>' : '';
+            return '<div class="inv-card' + (isSelected ? ' selected' : '') + '" data-id="' + i.id + '" onclick="toggleGiftSelection(' + i.id + ')" style="position:relative">' +
+                upgBadge +
                 '<img src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">' +
                 '<div class="inv-val">' + tonVal + '<img src="/static/img/tons/ton_1.svg"></div>' +
             '</div>';
@@ -6552,10 +6558,14 @@ async function confirmMultiGiftBet(){
     
     var totalValue = selectedGifts.reduce(function(s, g){ return s + g.value; }, 0);
     var giftIds = selectedGifts.map(function(g){ return g.id; });
+    var anyUpgraded = selectedGifts.some(function(g){
+        var inv = inventoryItems.find(function(i){ return i.id === g.id; });
+        return inv && inv.is_upgraded;
+    });
     
     /* If game is flying, queue for next round */
     if(status === 'flying'){
-        pendingBet = {type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: (selectedGifts[0] && selectedGifts[0].image) || null};
+        pendingBet = {type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: (selectedGifts[0] && selectedGifts[0].image) || null, isUpgraded: anyUpgraded};
         closeBetModal();
         showToast('Gifts (' + totalValue + ') next round','ok');
         updateBetButton();
@@ -6573,6 +6583,7 @@ async function confirmMultiGiftBet(){
         if(d.success){
             hasBet = true; betAmt = d.bet_amount || totalValue;
             activeBetType = 'multi'; activeBetGiftImage = (selectedGifts[0] && selectedGifts[0].image) || null;
+            betIsUpgraded = anyUpgraded;
             betPlacedOptimistic = true;
             userTotalBets++;
             userBetVolume += (d.bet_amount || totalValue); checkVolumeUnlock(userBetVolume);
@@ -6591,12 +6602,13 @@ async function confirmMultiGiftBet(){
 async function betGift(invId, name, val){
     if(!userData || !userData.id){ showToast('Auth error','err'); return; }
     var giftImg = null;
+    var isUpg = false;
     var inv = inventoryItems.find(function(i){return i.id === invId});
-    if(inv) giftImg = inv.gift_image || inv.image || null;
+    if(inv){ giftImg = inv.gift_image || inv.image || null; isUpg = !!inv.is_upgraded; }
     
     /* If game is flying, queue for next round */
     if(status === 'flying'){
-        pendingBet = {type: 'gift', amount: val, inventoryId: invId, name: name, giftImage: giftImg};
+        pendingBet = {type: 'gift', amount: val, inventoryId: invId, name: name, giftImage: giftImg, isUpgraded: isUpg};
         closeBetModal();
         showToast('Gift next round','ok');
         updateBetButton();
@@ -6613,6 +6625,7 @@ async function betGift(invId, name, val){
         if(d.success){
             hasBet = true; betAmt = d.bet_amount || val;
             activeBetType = 'gift'; activeBetGiftImage = giftImg;
+            betIsUpgraded = isUpg;
             betPlacedOptimistic = true;
             userTotalBets++;
             userBetVolume += (d.bet_amount || val); checkVolumeUnlock(userBetVolume);
@@ -6725,6 +6738,14 @@ function showWin(d){
     var giftsTotalValue = 0;
     for(var gi=0;gi<allGifts.length;gi++) giftsTotalValue += (allGifts[gi].value || 0);
     var giftsTon = starsToTon(giftsTotalValue);
+
+    /* Separate original (returned) gifts from bonus gifts */
+    var originals = allGifts.filter(function(g){ return g.is_original; });
+    var bonusGifts = allGifts.filter(function(g){ return !g.is_original; });
+    var hasUpgradedOriginal = d.has_upgraded_original || originals.some(function(g){ return g.is_upgraded; });
+    var bonusTotalValue = 0;
+    for(var bi=0;bi<bonusGifts.length;bi++) bonusTotalValue += (bonusGifts[bi].value || 0);
+    var bonusTon = starsToTon(bonusTotalValue);
     
     var html = '';
     
@@ -6750,11 +6771,19 @@ function showWin(d){
     html += '<div class="win-summary-item win-summary-win">Выигрыш <img src="/static/img/tons/ton_1.svg"> ' + formatTon(winTon) + '</div>';
     html += '</div>';
     
-    /* Breakdown */
-    var parts = [];
-    if(giftsTon > 0) parts.push('◇' + formatTon(giftsTon) + ' в подарках');
-    parts.push('◇' + formatTon(balanceTon) + ' на баланс');
-    html += '<div class="win-breakdown">' + parts.join(' и ') + '</div>';
+    /* Breakdown - different for upgraded originals */
+    if(hasUpgradedOriginal && originals.length > 0){
+        var parts = [];
+        parts.push('Возврат: ' + originals.map(function(g){ return g.name; }).join(', '));
+        if(bonusGifts.length > 0) parts.push('+ ◇' + formatTon(bonusTon) + ' в подарках');
+        if(starRemainder > 0) parts.push('+ ◇' + formatTon(balanceTon) + ' на баланс');
+        html += '<div class="win-breakdown">' + parts.join('<br>') + '</div>';
+    } else {
+        var parts = [];
+        if(giftsTon > 0) parts.push('◇' + formatTon(giftsTon) + ' в подарках');
+        parts.push('◇' + formatTon(balanceTon) + ' на баланс');
+        html += '<div class="win-breakdown">' + parts.join(' и ') + '</div>';
+    }
     
     content.innerHTML = html;
     $('winOverlay').classList.add('show');

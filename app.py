@@ -993,6 +993,23 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
                 'source': 'local'
             })
 
+    # 2b) Always include specific custom gifts (not on Fragment)
+    ALWAYS_INCLUDE_GIFT_IDS = {110, 111}  # Woman Bear, Valentine Bear
+    merged_ids = {g.get('id') for g in merged if g.get('id') is not None}
+    for lg in local_gifts:
+        lg_id = lg.get('id')
+        if lg_id in ALWAYS_INCLUDE_GIFT_IDS and lg_id not in merged_ids:
+            merged.append({
+                'id': lg_id,
+                'name': lg.get('name') or 'Gift',
+                'value': int(round(float(lg.get('value', 0)))),
+                'image': _normalize_local_gift_image(lg.get('image')) or '/static/img/default_gift.png',
+                'fragment_slug': '',
+                'fragment_url': '',
+                'fragment_price_ton': None,
+                'source': 'local'
+            })
+
     # 3) Manual TON price overrides DISABLED — prices now always come from gifts.json
     #    (Previously MANUAL_GIFT_PRICES_TON would override the API values)
 
@@ -4674,38 +4691,54 @@ def ultimate_crash_cashout_simple():
 
             awarded_gifts = []
             remaining_value = win_amount
+            has_upgraded_original = False
 
-            # === Gift bet: return original gift first ===
+            # === Gift bet: return original gift(s) first ===
             if bet_type == 'gift' and gift_data_raw:
                 try:
                     gd = json.loads(gift_data_raw)
                 except Exception:
                     gd = None
 
-                if gd and gd.get('gift_name'):
+                # Normalize to list (single gift → [gift], multi-gift → list)
+                gift_list = []
+                if isinstance(gd, list):
+                    gift_list = gd
+                elif isinstance(gd, dict) and gd.get('gift_name'):
+                    gift_list = [gd]
+
+                original_total = 0
+                for single_gd in gift_list:
+                    if not single_gd.get('gift_name'):
+                        continue
                     # Restore original gift to inventory with all NFT attributes
                     ins_cols = ['user_id', 'gift_id', 'gift_name', 'gift_image', 'gift_value']
-                    ins_vals = [user_id, gd.get('gift_id'), gd['gift_name'], gd.get('gift_image', ''), gd.get('gift_value', bet_amount)]
-                    if gd.get('is_upgraded'):
+                    ins_vals = [user_id, single_gd.get('gift_id'), single_gd['gift_name'], single_gd.get('gift_image', ''), single_gd.get('gift_value', 0)]
+                    if single_gd.get('is_upgraded'):
+                        has_upgraded_original = True
                         ins_cols += ['is_upgraded', 'nft_number', 'nft_model', 'nft_symbol', 'nft_backdrop',
                                      'nft_model_rarity', 'nft_symbol_rarity', 'nft_backdrop_rarity',
                                      'nft_model_price', 'nft_symbol_price', 'nft_backdrop_price']
-                        ins_vals += [True, gd.get('nft_number'), gd.get('nft_model'), gd.get('nft_symbol'), gd.get('nft_backdrop'),
-                                     gd.get('nft_model_rarity'), gd.get('nft_symbol_rarity'), gd.get('nft_backdrop_rarity'),
-                                     gd.get('nft_model_price'), gd.get('nft_symbol_price'), gd.get('nft_backdrop_price')]
-                    if gd.get('crate_id'):
+                        ins_vals += [True, single_gd.get('nft_number'), single_gd.get('nft_model'), single_gd.get('nft_symbol'), single_gd.get('nft_backdrop'),
+                                     single_gd.get('nft_model_rarity'), single_gd.get('nft_symbol_rarity'), single_gd.get('nft_backdrop_rarity'),
+                                     single_gd.get('nft_model_price'), single_gd.get('nft_symbol_price'), single_gd.get('nft_backdrop_price')]
+                    if single_gd.get('crate_id'):
                         ins_cols += ['crate_id', 'crate_name', 'crate_image']
-                        ins_vals += [gd.get('crate_id'), gd.get('crate_name'), gd.get('crate_image')]
+                        ins_vals += [single_gd.get('crate_id'), single_gd.get('crate_name'), single_gd.get('crate_image')]
                     placeholders = ', '.join(['?' for _ in ins_vals])
                     cursor.execute(f'INSERT INTO inventory ({", ".join(ins_cols)}) VALUES ({placeholders})', ins_vals)
 
                     awarded_gifts.append({
-                        'name': gd['gift_name'],
-                        'image': gd.get('gift_image', ''),
-                        'value': gd.get('gift_value', bet_amount),
-                        'is_original': True
+                        'name': single_gd['gift_name'],
+                        'image': single_gd.get('gift_image', ''),
+                        'value': single_gd.get('gift_value', 0),
+                        'is_original': True,
+                        'is_upgraded': bool(single_gd.get('is_upgraded'))
                     })
-                    remaining_value = win_amount - bet_amount  # profit only
+                    original_total += single_gd.get('gift_value', 0)
+
+                if gift_list:
+                    remaining_value = win_amount - original_total  # profit only
                 else:
                     remaining_value = win_amount
 
@@ -4800,6 +4833,7 @@ def ultimate_crash_cashout_simple():
             'new_balance': new_balance,
             'awarded_gifts': awarded_gifts,
             'star_remainder': remaining_value if remaining_value > 0 else 0,
+            'has_upgraded_original': has_upgraded_original,
         }
 
         if awarded_gifts:
