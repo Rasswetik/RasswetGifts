@@ -209,8 +209,8 @@
         .inv-card-challenge{position:absolute;top:4px;right:4px;display:flex;align-items:center;justify-content:center;width:18px;height:18px;background:rgba(0,0,0,.5);border-radius:5px}
         .inv-card-challenge svg{width:11px;height:11px;stroke:rgba(255,255,255,.5);fill:none}
         .inv-card-locked{opacity:.85;border:1px solid rgba(99,102,241,.3)}
-        .inv-card-upgraded{border:1px solid rgba(255,255,255,.06);padding:0;overflow:hidden}
-        .inv-card-upgraded .inv-card-img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:14px 14px 0 0;margin:0;display:block}
+        .inv-card-upgraded{border:1px solid rgba(255,255,255,.06);padding:0;overflow:hidden;display:flex;align-items:stretch}
+        .inv-card-upgraded .inv-card-img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:14px;margin:0;display:block}
 
         /* === NFT DETAIL CARD IN ITEM MODAL === */
         .nft-detail-section{width:100%;display:none;flex-direction:column;align-items:center;padding-bottom:4px}
@@ -713,8 +713,12 @@
         if (li) {
             var pct = li.progress_percentage || 0;
             document.getElementById('levelBar').style.width = Math.min(pct, 100) + '%';
-            var cur = formatTon(starsToTon(li.experience || 0));
-            var need = li.next_level_info ? formatTon(starsToTon(li.next_level_info.exp_required || 10000)) : 'MAX';
+            var curLvlExp = li.current_level_info ? (li.current_level_info.exp_required || 0) : 0;
+            var nextLvlExp = li.next_level_info ? (li.next_level_info.exp_required || 0) : curLvlExp;
+            var withinLevel = (li.experience || 0) - curLvlExp;
+            var tierSize = nextLvlExp - curLvlExp;
+            var cur = formatTon(starsToTon(Math.max(0, withinLevel)));
+            var need = tierSize > 0 ? formatTon(starsToTon(tierSize)) : 'MAX';
             document.getElementById('levelText').textContent = cur + ' / ' + need + ' TON';
         }
         document.getElementById('refBalance').textContent = formatTon(starsToTon(user.referral_balance || 0));
@@ -787,7 +791,7 @@
             var imgSrc = item.is_upgraded ? (item.gift_image || (item.fragment_slug ? 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp' : '/static/img/default_gift.png')) : item.gift_image;
             var imgHtml = '<img class="inv-card-img" src="' + imgSrc + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '">';
             if (item.is_upgraded) {
-                return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + '<div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>';
+                return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + '</div>';
             }
             return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + challengeBadge + '<div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; 
         }).join('') + '</div>';

@@ -339,9 +339,9 @@
         .profile-inv-title{font-size:14px;font-weight:700;color:rgba(255,255,255,.5);margin-top:4px;margin-bottom:8px;text-align:left;width:100%}
         .profile-inv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
         .profile-inv-item{background:rgba(255,255,255,.04);border-radius:12px;padding:8px 4px 6px;display:flex;flex-direction:column;align-items:center;position:relative;overflow:hidden;border:1.5px solid transparent}
-        .profile-inv-item.upgraded{border-color:rgba(255,215,0,.35);background:linear-gradient(180deg,rgba(255,215,0,.06) 0%,rgba(255,140,0,.04) 100%);box-shadow:0 0 12px rgba(255,215,0,.08)}
+        .profile-inv-item.upgraded{border-color:rgba(255,215,0,.35);background:linear-gradient(180deg,rgba(255,215,0,.06) 0%,rgba(255,140,0,.04) 100%);box-shadow:0 0 12px rgba(255,215,0,.08);padding:0}
         .profile-inv-img{width:72px;height:72px;object-fit:contain;margin-bottom:4px}
-        .profile-inv-item.upgraded .profile-inv-img{object-fit:cover;border-radius:12px}
+        .profile-inv-item.upgraded .profile-inv-img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:10px;margin:0}
 
         .profile-inv-name{font-family:'Inter Variable','Inter',sans-serif;font-size:11px;color:rgba(255,255,255,.8);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;line-height:1.2}
         .profile-inv-price{font-family:'Inter Variable','Inter',sans-serif;font-size:11px;color:#1ee44c;font-weight:700;margin-top:2px}
@@ -701,8 +701,12 @@
                     document.getElementById('pcLevelNum').textContent = 'Ур. ' + p.level;
                     document.getElementById('pcLevelPct').textContent = Math.round(pct) + '%';
                     document.getElementById('pcLevelFill').style.width = pct + '%';
-                    var expCur = ((p.experience || 0) / 100).toFixed(1);
-                    var expNext = ((p.next_level_exp || 0) / 100).toFixed(1);
+                    var curLvlExp = p.current_level_exp || 0;
+                    var nxtLvlExp = p.next_level_exp || 0;
+                    var withinLevel = (p.experience || 0) - curLvlExp;
+                    var tierSize = nxtLvlExp - curLvlExp;
+                    var expCur = (Math.max(0, withinLevel) / 100).toFixed(1);
+                    var expNext = tierSize > 0 ? (tierSize / 100).toFixed(1) : 'MAX';
                     document.getElementById('pcLevelText').textContent = expCur + ' / ' + expNext + ' TON';
 
                     /* Stat rows */
@@ -740,8 +744,10 @@
                             if(it.is_upgraded) h += '<div class="profile-inv-upgraded">⬆</div>';
                             var imgSrc = (it.is_upgraded && it.fragment_slug) ? 'https://fragment.com/file/gifts/' + it.fragment_slug + '/thumb.webp' : it.image;
                             h += '<img class="profile-inv-img" src="' + imgSrc + '" alt="">';
-                            h += '<div class="profile-inv-name">' + it.name + '</div>';
-                            h += '<div class="profile-inv-price">' + price + ' TON</div>';
+                            if(!it.is_upgraded){
+                                h += '<div class="profile-inv-name">' + it.name + '</div>';
+                                h += '<div class="profile-inv-price">' + price + ' TON</div>';
+                            }
                             h += '</div>';
                         }
                         document.getElementById('pcInvGrid').innerHTML = h;

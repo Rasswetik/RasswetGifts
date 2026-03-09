@@ -473,33 +473,35 @@ def _get_bot_bets_for_api(game_id):
 
 
 # Система уровней - turnover в звёздах (100 stars = 1 TON)
+# Per-level thresholds: 10 TON, 20 TON, 30 TON, ... (cumulative)
+# Progress resets visually after each level-up
 # Rewards: rocket skins and backgrounds ONLY (no stars/tickets)
 LEVEL_SYSTEM = [
     {"level": 1,  "exp_required": 0,       "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "crash",       "reward_bg": None},
     {"level": 2,  "exp_required": 1000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "cosmic"},
-    {"level": 3,  "exp_required": 1500,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "cat",         "reward_bg": None},
-    {"level": 4,  "exp_required": 2500,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 5,  "exp_required": 4000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "dog",         "reward_bg": "rainbow"},
-    {"level": 6,  "exp_required": 7000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 7,  "exp_required": 10000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "banana",      "reward_bg": None},
-    {"level": 8,  "exp_required": 15000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "aurora"},
-    {"level": 9,  "exp_required": 22000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "plane",       "reward_bg": None},
-    {"level": 10, "exp_required": 30000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "rabbit",      "reward_bg": None},
-    {"level": 11, "exp_required": 40000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "neon"},
-    {"level": 12, "exp_required": 55000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "ice",         "reward_bg": None},
-    {"level": 13, "exp_required": 75000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 14, "exp_required": 100000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "unicorn",     "reward_bg": None},
-    {"level": 15, "exp_required": 130000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 16, "exp_required": 170000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "goldenplane", "reward_bg": None},
-    {"level": 17, "exp_required": 220000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 18, "exp_required": 280000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "telegram",    "reward_bg": None},
-    {"level": 19, "exp_required": 350000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 20, "exp_required": 430000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 21, "exp_required": 520000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 22, "exp_required": 620000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 23, "exp_required": 730000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 24, "exp_required": 850000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 25, "exp_required": 1000000, "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "TonTheMoon",  "reward_bg": None},
+    {"level": 3,  "exp_required": 3000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "cat",         "reward_bg": None},
+    {"level": 4,  "exp_required": 6000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 5,  "exp_required": 10000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "dog",         "reward_bg": "rainbow"},
+    {"level": 6,  "exp_required": 15000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 7,  "exp_required": 21000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "banana",      "reward_bg": None},
+    {"level": 8,  "exp_required": 28000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "aurora"},
+    {"level": 9,  "exp_required": 36000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "plane",       "reward_bg": None},
+    {"level": 10, "exp_required": 45000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "rabbit",      "reward_bg": None},
+    {"level": 11, "exp_required": 55000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "neon"},
+    {"level": 12, "exp_required": 66000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "ice",         "reward_bg": None},
+    {"level": 13, "exp_required": 78000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 14, "exp_required": 91000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "unicorn",     "reward_bg": None},
+    {"level": 15, "exp_required": 105000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 16, "exp_required": 120000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "goldenplane", "reward_bg": None},
+    {"level": 17, "exp_required": 136000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 18, "exp_required": 153000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "telegram",    "reward_bg": None},
+    {"level": 19, "exp_required": 171000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 20, "exp_required": 190000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 21, "exp_required": 210000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 22, "exp_required": 231000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 23, "exp_required": 253000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 24, "exp_required": 276000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
+    {"level": 25, "exp_required": 300000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "TonTheMoon",  "reward_bg": None},
 ]
 
 # Background names for display
@@ -4488,7 +4490,8 @@ def ultimate_crash_place_bet_multi_gift():
         # Получаем все подарки
         placeholders = ','.join(['?' for _ in inventory_ids])
         cursor.execute(f'''
-            SELECT id, gift_name, gift_image, gift_value
+            SELECT id, gift_name, gift_image, gift_value, gift_id,
+                   is_upgraded, nft_number, crate_id, crate_name, crate_image
             FROM inventory WHERE id IN ({placeholders}) AND user_id = ? AND is_withdrawing = 0
         ''', inventory_ids + [user_id])
         gifts = cursor.fetchall()
@@ -4547,10 +4550,29 @@ def ultimate_crash_place_bet_multi_gift():
         sorted_gifts = sorted(gifts, key=lambda g: g[3], reverse=True)
         all_images = json.dumps([g[2] for g in sorted_gifts])
         first_gift_image = sorted_gifts[0][2] if sorted_gifts else None
+        all_gift_names = ', '.join([g[1] for g in sorted_gifts])
+
+        # Store full gift data for all gifts so cashout can restore originals
+        gift_data_list = []
+        for g in sorted_gifts:
+            gd = {
+                'gift_id': g[4],
+                'gift_name': g[1],
+                'gift_image': g[2],
+                'gift_value': g[3],
+                'is_upgraded': bool(g[5]),
+                'nft_number': g[6],
+                'crate_id': g[7],
+                'crate_name': g[8],
+                'crate_image': g[9],
+            }
+            gift_data_list.append(gd)
+        gift_data_json = json.dumps(gift_data_list, ensure_ascii=False)
+
         cursor.execute('''
-            INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, bet_type, gift_image, status)
-            VALUES (?, ?, ?, ?, 'gift', ?, 'active')
-        ''', (game_id, user_id, total_value, total_value, all_images if len(sorted_gifts) > 1 else first_gift_image))
+            INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, bet_type, gift_image, gift_name, gift_data, status)
+            VALUES (?, ?, ?, ?, 'gift', ?, ?, ?, 'active')
+        ''', (game_id, user_id, total_value, total_value, all_images if len(sorted_gifts) > 1 else first_gift_image, all_gift_names, gift_data_json))
         bet_id = cursor.lastrowid
 
         cursor.execute('''
@@ -7813,21 +7835,28 @@ def _pick_nft_attributes(slug, gift_value_stars=0, nft_number=None):
         else:
             logger.warning(f'Fragment scrape returned no attrs for {slug}-{nft_number}, using fallback')
 
-    # Fallback: pick from cache/random
+    # Fallback: pick from cache/random with realistic rarity based on model_count
     model_name = None
     model_floor = None
+    model_r = round(_rnd.uniform(1.0, 6.0), 1)
     try:
         with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
             cache = json.load(f)
         models_map = cache.get('models', {})
         slug_models = models_map.get(slug, [])
         if slug_models:
+            # Weight selection by model_count (rarer models are less likely)
             chosen = _rnd.choice(slug_models)
             model_name = chosen.get('model_name', 'Classic')
             mf = chosen.get('getgems_model_floor_ton')
             if mf:
                 try: model_floor = float(mf)
                 except Exception: pass
+            # Calculate rarity from model_count / total_count
+            total_count = sum(m.get('model_count', 0) for m in slug_models)
+            chosen_count = chosen.get('model_count', 0)
+            if total_count > 0 and chosen_count > 0:
+                model_r = round((chosen_count / total_count) * 100, 1)
     except Exception:
         pass
     if not model_name:
@@ -7835,12 +7864,12 @@ def _pick_nft_attributes(slug, gift_value_stars=0, nft_number=None):
     symbol = _rnd.choice(_NFT_SYMBOLS)
     backdrop = _rnd.choice(_NFT_BACKDROPS)
     model_r = round(_rnd.uniform(0.5, 8.0), 1)
-    symbol_r = round(_rnd.uniform(0.5, 8.0), 1)
-    backdrop_r = round(_rnd.uniform(0.5, 8.0), 1)
+    symbol_r = round(100.0 / len(_NFT_SYMBOLS), 1)
+    backdrop_r = round(100.0 / len(_NFT_BACKDROPS), 1)
     base_ton = (gift_value_stars / 100.0) if gift_value_stars else 5.0
-    model_price = round(model_floor if model_floor and model_floor > 0 else base_ton * _rnd.uniform(0.8, 1.4), 2)
-    symbol_price = round(base_ton * _rnd.uniform(0.7, 1.3), 2)
-    backdrop_price = round(base_ton * _rnd.uniform(0.7, 1.3), 2)
+    model_price = round(model_floor if model_floor and model_floor > 0 else base_ton, 2)
+    symbol_price = round(base_ton * 0.9, 2)
+    backdrop_price = round(base_ton * 0.9, 2)
     return model_name, symbol, backdrop, model_r, symbol_r, backdrop_r, model_price, symbol_price, backdrop_price
 
 
