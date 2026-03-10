@@ -1,8 +1,7 @@
-databases:
-  - name: rasswet-gifts-db
-    plan: free
-    databaseName: rasswet_gifts
-    user: rasswet
+# Используем внешнюю бесплатную PostgreSQL от Neon.tech
+# 1. Зарегистрируйся на https://neon.tech
+# 2. Создай проект и скопируй connection string
+# 3. Добавь DATABASE_URL в Dashboard -> Environment
 
 services:
   - type: web
@@ -12,9 +11,7 @@ services:
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --preload
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: rasswet-gifts-db
-          property: connectionString
+        sync: false  # Установи вручную: postgresql://user:pass@host/db от Neon
       - key: PYTHON_VERSION
         value: "3.11.6"
       - key: PORT

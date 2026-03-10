@@ -3885,6 +3885,12 @@ def api_ping():
     return jsonify({'pong': True})
 
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint for monitoring services (UptimeRobot, etc.)"""
+    return jsonify({'status': 'ok', 'db': 'postgres' if USE_POSTGRES else 'sqlite'})
+
+
 @app.route('/ban')
 def ban_page():
     """Страница для забаненных пользователей"""
