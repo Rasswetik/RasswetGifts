@@ -453,6 +453,38 @@ select.form-input option{background:#1A1E2A;color:#fff}
             </div>
             <div class="stat-card-icon"><img src="/static/img/gift.png"></div>
         </div>
+
+        <!-- House Bank Section -->
+        <div class="detail-section" id="houseBankSection" style="margin-top:16px;background:rgba(255,255,255,.03)">
+            <div class="detail-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="12" rx="2" ry="2"/><path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/></svg>
+                Банк сайта
+            </div>
+            <div class="detail-row">
+                <div class="detail-row-label">Баланс</div>
+                <div class="detail-row-value" id="bankBalance">—</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-row-label">Режим</div>
+                <div class="detail-row-value" id="bankMode">—</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-row-label">Поступления</div>
+                <div class="detail-row-value" id="bankMoneyIn">—</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-row-label">Выводы</div>
+                <div class="detail-row-value" id="bankMoneyOut">—</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-row-label">Профит Crash</div>
+                <div class="detail-row-value" id="bankCrashProfit">—</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-row-label">Профит Кейсы</div>
+                <div class="detail-row-value" id="bankCaseProfit">—</div>
+            </div>
+        </div>
     </div>
     
     <!-- Users Section -->
@@ -1426,6 +1458,33 @@ async function loadStats(){
         }
     }catch(e){ console.error(e); }
     loadCrashStatus();
+    loadHouseBank();
+}
+
+// House Bank Stats
+async function loadHouseBank(){
+    try{
+        var r = await fetch('/api/admin/house-bank?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success && d.bank){
+            var b = d.bank;
+            var balStr = formatTon(b.balance);
+            if(b.balance < 0) balStr = '<span style="color:#F96999">' + balStr + '</span>';
+            else if(b.balance > 0) balStr = '<span style="color:#1EE44C">+' + balStr + '</span>';
+            $('bankBalance').innerHTML = balStr;
+            $('bankMode').innerHTML = b.mode_label || '—';
+            $('bankMoneyIn').innerHTML = formatTon(b.money_in || 0);
+            $('bankMoneyOut').innerHTML = formatTon(b.money_out || 0);
+            var crashProfitStr = formatTon(b.crash_profit || 0);
+            if(b.crash_profit < 0) crashProfitStr = '<span style="color:#F96999">' + crashProfitStr + '</span>';
+            else if(b.crash_profit > 0) crashProfitStr = '<span style="color:#1EE44C">+' + crashProfitStr + '</span>';
+            $('bankCrashProfit').innerHTML = crashProfitStr;
+            var caseProfitStr = formatTon(b.case_profit || 0);
+            if(b.case_profit < 0) caseProfitStr = '<span style="color:#F96999">' + caseProfitStr + '</span>';
+            else if(b.case_profit > 0) caseProfitStr = '<span style="color:#1EE44C">+' + caseProfitStr + '</span>';
+            $('bankCaseProfit').innerHTML = caseProfitStr;
+        }
+    }catch(e){ console.error('house bank error', e); }
 }
 
 // Crash Admin Controls

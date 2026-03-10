@@ -6196,6 +6196,21 @@ def open_case():
         # Case-specific RTP adjustment (uses case stats, not crash stats)
         rtp_mode = get_player_case_rtp_mode(user_id)
 
+        # 🏦 Override to nerf if house bank is negative (aggressive mode for cases)
+        try:
+            site_balance = _get_site_profit_balance()
+            if site_balance < -5000:
+                # Aggressive mode: always nerf (cheaper drops)
+                rtp_mode = 'nerf'
+                logger.info(f"🏦 Агрессивный режим кейсов: игрок {user_id} получает дешёвые дропы (баланс: {site_balance})")
+            elif site_balance < -1000:
+                # Tight mode: nerf if not already boosted
+                if rtp_mode != 'boost':
+                    rtp_mode = 'nerf'
+                    logger.info(f"🏦 Ужесточённый режим кейсов: игрок {user_id} получает дешёвые дропы (баланс: {site_balance})")
+        except Exception as e:
+            logger.warning(f"⚠️ Не удалось проверить баланс сайта для кейсов: {e}")
+
         # Minimum drop value = 30% of case cost
         case_cost_ton = float(case.get('cost', 0) or 0)
         if case.get('cost_type') == 'stars':
@@ -6463,6 +6478,19 @@ def open_case_single():
 
         # Case-specific RTP adjustment
         case_rtp_mode = get_player_case_rtp_mode(user_id)
+
+        # 🏦 Override to nerf if house bank is negative (aggressive mode for cases)
+        try:
+            site_balance = _get_site_profit_balance()
+            if site_balance < -5000:
+                case_rtp_mode = 'nerf'
+                logger.info(f"🏦 Агрессивный режим (single): игрок {user_id} получает дешёвые дропы")
+            elif site_balance < -1000:
+                if case_rtp_mode != 'boost':
+                    case_rtp_mode = 'nerf'
+                    logger.info(f"🏦 Ужесточённый режим (single): игрок {user_id} получает дешёвые дропы")
+        except Exception as e:
+            logger.warning(f"⚠️ Не удалось проверить баланс сайта для кейсов: {e}")
 
         # Minimum drop value = 30% of case cost
         s_case_cost_ton = float(case.get('cost', 0) or 0)
@@ -7694,6 +7722,114 @@ def sell_all_gifts():
         logger.error(f"❌ Ошибка массовой продажи подарков: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
+
+@app.route('/api/sell-gifts-batch', methods=['POST'])
+def sell_gifts_batch():
+    """Продажа выбранных подарков из инвентаря (батч)"""
+    try:
+        data = request.get_json()
+        user_id = data['user_id']
+        item_ids = data.get('item_ids', [])
+
+        if not item_ids:
+            return jsonify({'success': False, 'error': 'Не выбраны подарки'})
+
+        logger.info(f"💰 Пользователь {user_id} продает {len(item_ids)} подарков")
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Fetch selected gifts
+        placeholders = ','.join('?' * len(item_ids))
+        cursor.execute(f'''
+            SELECT id, gift_name, gift_value, is_withdrawing, crate_id 
+            FROM inventory 
+            WHERE id IN ({placeholders}) AND user_id = ?
+        ''', item_ids + [user_id])
+        gifts = cursor.fetchall()
+
+        if not gifts:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Подарки не найдены'})
+
+        # Filter out withdrawing and crate items
+        sellable = []
+        for g in gifts:
+            gid, gname, gval, is_withdrawing, crate_id = g
+            if is_withdrawing:
+                continue
+            if crate_id:
+                continue
+            sellable.append((gid, gname, gval or 0))
+
+        if not sellable:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Нет подарков для продажи'})
+
+        # Check for locked by challenges
+        sellable_ids = [g[0] for g in sellable]
+        locked_ids = set()
+        if sellable_ids:
+            ph = ','.join('?' * len(sellable_ids))
+            cursor.execute(f'SELECT inventory_id FROM promo_gift_challenges WHERE inventory_id IN ({ph}) AND is_completed = FALSE', sellable_ids)
+            locked_ids = {r[0] for r in cursor.fetchall()}
+
+        final_sellable = [g for g in sellable if g[0] not in locked_ids]
+        if not final_sellable:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Все подарки заблокированы отыгрышем'})
+
+        total_value = sum(g[2] for g in final_sellable)
+        sold_count = len(final_sellable)
+
+        # Delete sold items
+        ids_to_del = [g[0] for g in final_sellable]
+        ph = ','.join('?' * len(ids_to_del))
+        cursor.execute(f'DELETE FROM inventory WHERE id IN ({ph})', ids_to_del)
+
+        # Update user balance
+        if total_value > 0:
+            cursor.execute('''
+                UPDATE users
+                SET balance_stars = balance_stars + ?,
+                    total_earned_stars = total_earned_stars + ?
+                WHERE id = ?
+            ''', (total_value, total_value, user_id))
+
+        exp_gained = max(1, total_value // 100)
+        cursor.execute('UPDATE users SET experience = experience + ? WHERE id = ?', (exp_gained, user_id))
+
+        try:
+            cursor.execute('''
+                INSERT INTO user_history (user_id, operation_type, amount, description)
+                VALUES (?, 'batch_sell', ?, ?)
+            ''', (user_id, total_value, f'Продажа {sold_count} подарков'))
+        except Exception:
+            pass
+
+        conn.commit()
+
+        cursor.execute('SELECT balance_stars, balance_tickets FROM users WHERE id = ?', (user_id,))
+        new_balance = cursor.fetchone()
+        conn.close()
+
+        logger.info(f"✅ Продано {sold_count} подарков за {total_value} звезд")
+
+        return jsonify({
+            'success': True,
+            'sold_count': sold_count,
+            'total_value': total_value,
+            'new_balance': {
+                'stars': new_balance[0] if new_balance else 0,
+                'tickets': new_balance[1] if new_balance else 0
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка батч продажи: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
 # WITHDRAWAL API
 @app.route('/api/withdraw-gift', methods=['POST'])
 def withdraw_gift():
@@ -8682,6 +8818,20 @@ def upgrade_gift_chance():
             if user_rtp_boost > 40:
                 boost_mult = 1.0 + (user_rtp_boost - 40) / 100.0
                 real_chance = min(real_chance * boost_mult, 95)
+
+            # 🏦 Aggressive mode: reduce chances when site bank is negative
+            try:
+                site_balance = _get_site_profit_balance()
+                if site_balance < -5000:
+                    # Aggressive mode: reduce to 25% of displayed
+                    real_chance = min(real_chance, displayed_chance * 0.25)
+                    logger.info(f"🏦 Агрессивный режим апгрейда: шанс снижен до {real_chance:.1f}%")
+                elif site_balance < -1000:
+                    # Tight mode: reduce to 50% of displayed
+                    real_chance = min(real_chance, displayed_chance * 0.5)
+                    logger.info(f"🏦 Ужесточённый режим апгрейда: шанс снижен до {real_chance:.1f}%")
+            except Exception as e:
+                logger.warning(f"⚠️ Не удалось проверить баланс сайта: {e}")
 
             logger.info(f"🎯 Шансы: отображаемый {displayed_chance}%, реальный {real_chance:.1f}%, цена: {current_value} -> {target_value}")
 
@@ -10829,6 +10979,97 @@ def get_admin_used_promos():
         return jsonify({'success': True, 'promos': promos})
     except Exception as e:
         logger.error(f"❌ Ошибка получения промокодов: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/admin/house-bank', methods=['GET'])
+def get_admin_house_bank():
+    """Получение статистики банка сайта"""
+    try:
+        admin_id = request.args.get('admin_id')
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Total deposits
+        cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM deposits WHERE status = 'completed'")
+        total_deposits = cursor.fetchone()[0] or 0
+
+        # Total star payments
+        cursor.execute('SELECT COALESCE(SUM(amount), 0) FROM stars_payments')
+        total_star_payments = cursor.fetchone()[0] or 0
+
+        # Total gift deposits
+        cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM gift_deposits WHERE status = 'confirmed'")
+        total_gift_deposits = cursor.fetchone()[0] or 0
+
+        # Total withdrawals
+        cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM withdrawals WHERE status IN ('approved', 'completed', 'sent')")
+        total_withdrawals = cursor.fetchone()[0] or 0
+
+        # Crash game stats
+        cursor.execute('SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets')
+        total_crash_bets = cursor.fetchone()[0] or 0
+
+        cursor.execute("SELECT COALESCE(SUM(win_amount), 0) FROM ultimate_crash_bets WHERE status = 'cashed_out'")
+        total_crash_wins = cursor.fetchone()[0] or 0
+
+        # Case opens (cost - won value)
+        cursor.execute('SELECT COALESCE(SUM(cost), 0), COALESCE(SUM(gift_value), 0) FROM case_open_history')
+        case_stats = cursor.fetchone()
+        total_case_spent = case_stats[0] or 0
+        total_case_won = case_stats[1] or 0
+
+        conn.close()
+
+        # Calculate balances
+        money_in = total_deposits + total_star_payments + total_gift_deposits
+        money_out = total_withdrawals
+        crash_net = total_crash_wins - total_crash_bets  # positive = site lost money
+        case_net = total_case_won - total_case_spent  # positive = site lost money
+
+        bank_balance = money_in - money_out - crash_net - case_net
+
+        # Determine mode
+        if bank_balance < -5000:
+            mode = 'aggressive'
+            mode_label = '🔴 Агрессивный режим'
+        elif bank_balance < -1000:
+            mode = 'tight'
+            mode_label = '🟠 Ужесточённый режим'
+        elif bank_balance > 5000:
+            mode = 'loose'
+            mode_label = '🟢 Лояльный режим'
+        else:
+            mode = 'normal'
+            mode_label = '🟡 Нормальный режим'
+
+        return jsonify({
+            'success': True,
+            'bank': {
+                'balance': bank_balance,
+                'balance_ton': round(bank_balance / 100, 2),
+                'mode': mode,
+                'mode_label': mode_label,
+                'money_in': money_in,
+                'money_out': money_out,
+                'crash_profit': -crash_net,  # positive = site profit
+                'case_profit': -case_net,    # positive = site profit
+                'total_deposits': total_deposits,
+                'total_star_payments': total_star_payments,
+                'total_gift_deposits': total_gift_deposits,
+                'total_withdrawals': total_withdrawals,
+                'crash_bets': total_crash_bets,
+                'crash_wins': total_crash_wins,
+                'case_spent': total_case_spent,
+                'case_won': total_case_won
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения банка: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/admin/stats-optimized', methods=['GET'])

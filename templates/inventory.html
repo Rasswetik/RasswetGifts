@@ -94,6 +94,14 @@
 
         /* === INVENTORY SECTION === */
         .section-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+        .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+        .btn-options{
+            padding:8px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.1);
+            background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);
+            font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;
+        }
+        .btn-options:hover{background:rgba(255,255,255,.1)}
+        .btn-options.active{background:rgba(107,122,141,.3);border-color:var(--accent);color:#fff}
         .inv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:24px}
         @media(max-width:380px){
             .inv-grid{grid-template-columns:repeat(2,1fr)}
@@ -101,12 +109,58 @@
         .inv-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:10px 8px;text-align:center;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);position:relative}
         .inv-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
         .inv-card:active{transform:scale(.95)}
+        .inv-card.selected{border-color:var(--accent);background:rgba(107,122,141,.15);box-shadow:0 0 0 2px rgba(107,122,141,.3)}
+        .inv-card.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:18px;height:18px;background:var(--accent);border-radius:50%;font-size:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
         .inv-card-img{width:72px;height:72px;object-fit:contain;margin:0 auto 6px;display:block;transition:transform .25s ease;border-radius:12px}
         .inv-card:hover .inv-card-img{transform:scale(1.08)}
         .inv-card-name{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .inv-card-price{display:flex;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:700;color:var(--accent-light);margin-top:2px;line-height:1}
         .inv-card-price img{width:11px;height:11px;flex-shrink:0;display:block}
         .inv-empty{text-align:center;padding:40px 20px;color:var(--text2);background:var(--surface);border:none;border-radius:16px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+
+        /* === MULTI-SELECT ACTION BAR === */
+        .select-action-bar{
+            position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+            z-index:500;width:calc(100% - 24px);max-width:456px;
+            background:rgba(26,30,42,.95);border-radius:16px;padding:12px 16px;
+            border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px);
+            display:none;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;
+            animation:slideUp .3s ease;
+        }
+        @keyframes slideUp{from{transform:translateX(-50%) translateY(100%);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+        .select-action-bar.show{display:flex}
+        .select-info{font-size:13px;font-weight:600;color:rgba(255,255,255,.7)}
+        .select-info span{color:#fff;font-weight:800}
+        .select-btns{display:flex;gap:8px}
+        .select-btn{padding:10px 18px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+        .select-btn-sell{background:rgba(255,255,255,.1);color:#fff}
+        .select-btn-sell:hover{background:rgba(255,255,255,.15)}
+        .select-btn-withdraw{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+
+        /* === BATCH SELL MODAL === */
+        .batch-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:1000;display:none;align-items:center;justify-content:center}
+        .batch-modal-overlay.show{display:flex}
+        .batch-modal{background:linear-gradient(160deg,rgba(30,33,40,1),rgba(20,22,28,1));border:1px solid rgba(255,255,255,.08);border-radius:20px;width:92%;max-width:380px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column}
+        .batch-modal-header{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
+        .batch-modal-title{font-size:17px;font-weight:800;color:#fff}
+        .batch-modal-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(255,255,255,.08);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .batch-modal-list{flex:1;overflow-y:auto;padding:12px 16px;max-height:320px}
+        .batch-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+        .batch-item:last-child{border-bottom:none}
+        .batch-item-num{font-size:12px;font-weight:700;color:rgba(255,255,255,.4);min-width:24px}
+        .batch-item-img{width:40px;height:40px;border-radius:10px;object-fit:contain;background:rgba(255,255,255,.05)}
+        .batch-item-info{flex:1;min-width:0}
+        .batch-item-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .batch-item-price{font-size:12px;font-weight:700;color:var(--accent-light);display:flex;align-items:center;gap:4px}
+        .batch-item-price img{width:12px;height:12px}
+        .batch-modal-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.2)}
+        .batch-total{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+        .batch-total-label{font-size:14px;color:rgba(255,255,255,.6)}
+        .batch-total-value{font-size:20px;font-weight:800;color:#fff;display:flex;align-items:center;gap:6px}
+        .batch-total-value img{width:18px;height:18px}
+        .batch-confirm-btn{width:100%;padding:16px;border-radius:14px;border:none;font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.1);color:rgba(255,255,255,.5)}
+        .batch-confirm-btn.ready{background:linear-gradient(135deg,#fff,#e0e0e0);color:#000}
+        .batch-confirm-btn:disabled{cursor:not-allowed}
 
         /* === NOTIFICATION (fixed: no gap when hidden) === */
         .notif{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-120%);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:12px 24px;border-radius:14px;font-weight:600;font-size:14px;z-index:10000;transition:transform .4s cubic-bezier(.4,0,.2,1),opacity .4s;max-width:90%;text-align:center;box-shadow:0 8px 25px rgba(0,0,0,.4);opacity:0;pointer-events:none}
@@ -463,9 +517,39 @@
             </div>
         </div>
 
-        <div class="section-title">Inventory</div>
+        <div class="section-header">
+            <div class="section-title">Inventory</div>
+            <button class="btn-options" id="optionsBtn" onclick="toggleSelectMode()">Опции</button>
+        </div>
         <div id="inventoryContainer">
             <div class="inv-empty">Inventory is empty</div>
+        </div>
+    </div>
+
+    <!-- Multi-Select Action Bar -->
+    <div class="select-action-bar" id="selectActionBar">
+        <div class="select-info">Выбрано: <span id="selectedCount">0</span></div>
+        <div class="select-btns">
+            <button class="select-btn select-btn-sell" onclick="openBatchSellModal()">Продать</button>
+            <button class="select-btn select-btn-withdraw" onclick="batchWithdraw()">Вывести</button>
+        </div>
+    </div>
+
+    <!-- Batch Sell Modal -->
+    <div class="batch-modal-overlay" id="batchSellModal" onclick="if(event.target===this)closeBatchSellModal()">
+        <div class="batch-modal">
+            <div class="batch-modal-header">
+                <div class="batch-modal-title">Подтвердите действие</div>
+                <button class="batch-modal-close" onclick="closeBatchSellModal()">✕</button>
+            </div>
+            <div class="batch-modal-list" id="batchItemsList"></div>
+            <div class="batch-modal-footer">
+                <div class="batch-total">
+                    <div class="batch-total-label">Общая сумма продажи:</div>
+                    <div class="batch-total-value" id="batchTotalValue"><img src="/static/img/ton.png"> <span>0.00</span> TON</div>
+                </div>
+                <button class="batch-confirm-btn" id="batchConfirmBtn" onclick="confirmBatchSell()" disabled>Подождите 3 секунды</button>
+            </div>
         </div>
     </div>
 
@@ -658,6 +742,8 @@
     let inventory = [];
     let selectedItem = null;
     let levelRewards = [];
+    let selectMode = false;
+    let selectedItems = new Set();
     const ADMIN_ID = 5257227756;
 
     let currentLang = localStorage.getItem('app_lang') || 'en';
@@ -794,13 +880,144 @@
             var cardClass = 'inv-card';
             if (item.challenge && !item.challenge.is_completed) cardClass += ' inv-card-locked';
             if (item.is_upgraded) cardClass += ' inv-card-upgraded';
+            if (selectedItems.has(item.id)) cardClass += ' selected';
             var imgSrc = item.is_upgraded ? (item.gift_image || (item.fragment_slug ? 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp' : '/static/img/default_gift.png')) : item.gift_image;
+            var clickHandler = selectMode ? 'toggleSelectItem(' + item.id + ')' : 'openItemModal(' + item.id + ')';
             var imgHtml = '<img class="inv-card-img" src="' + imgSrc + '" alt="' + item.gift_name + '" onerror="' + onerrorHandler + '">';
             if (item.is_upgraded) {
-                return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + '</div>';
+                return '<div class="' + cardClass + '" onclick="' + clickHandler + '">' + imgHtml + '</div>';
             }
-            return '<div class="' + cardClass + '" onclick="openItemModal(' + item.id + ')">' + imgHtml + challengeBadge + '<div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; 
+            return '<div class="' + cardClass + '" onclick="' + clickHandler + '">' + imgHtml + challengeBadge + '<div class="inv-card-name">' + item.gift_name + '</div><div class="inv-card-price"><img src="' + getTonIcon() + '"> ' + formatTon(ton) + '</div></div>'; 
         }).join('') + '</div>';
+    }
+
+    function toggleSelectMode() {
+        selectMode = !selectMode;
+        selectedItems.clear();
+        document.getElementById('optionsBtn').classList.toggle('active', selectMode);
+        document.getElementById('selectActionBar').classList.toggle('show', false);
+        renderInventory();
+        vibrateIfOn();
+    }
+
+    function toggleSelectItem(itemId) {
+        if (selectedItems.has(itemId)) {
+            selectedItems.delete(itemId);
+        } else {
+            selectedItems.add(itemId);
+        }
+        vibrateIfOn();
+        renderInventory();
+        updateSelectActionBar();
+    }
+
+    function updateSelectActionBar() {
+        var bar = document.getElementById('selectActionBar');
+        var count = selectedItems.size;
+        document.getElementById('selectedCount').textContent = count;
+        bar.classList.toggle('show', count > 0);
+    }
+
+    function openBatchSellModal() {
+        if (selectedItems.size === 0) return;
+        var list = document.getElementById('batchItemsList');
+        var totalStars = 0;
+        var html = '';
+        var idx = 1;
+        selectedItems.forEach(function(itemId) {
+            var item = inventory.find(function(i) { return i.id === itemId; });
+            if (item) {
+                var ton = starsToTon(item.gift_value);
+                totalStars += item.gift_value || 0;
+                html += '<div class="batch-item">' +
+                    '<div class="batch-item-num">' + idx + '.</div>' +
+                    '<img class="batch-item-img" src="' + item.gift_image + '" alt="">' +
+                    '<div class="batch-item-info">' +
+                        '<div class="batch-item-name">' + item.gift_name + '</div>' +
+                        '<div class="batch-item-price"><img src="/static/img/ton.png"> ' + formatTon(ton) + ' TON</div>' +
+                    '</div>' +
+                '</div>';
+                idx++;
+            }
+        });
+        list.innerHTML = html;
+        document.querySelector('#batchTotalValue span').textContent = formatTon(starsToTon(totalStars));
+        document.getElementById('batchSellModal').classList.add('show');
+        startBatchCountdown();
+    }
+
+    function closeBatchSellModal() {
+        document.getElementById('batchSellModal').classList.remove('show');
+        if (window.batchCountdownTimer) {
+            clearInterval(window.batchCountdownTimer);
+            window.batchCountdownTimer = null;
+        }
+    }
+
+    function startBatchCountdown() {
+        var btn = document.getElementById('batchConfirmBtn');
+        btn.disabled = true;
+        btn.classList.remove('ready');
+        var seconds = 3;
+        btn.textContent = 'Подождите ' + seconds + ' секунды';
+        
+        if (window.batchCountdownTimer) clearInterval(window.batchCountdownTimer);
+        
+        window.batchCountdownTimer = setInterval(function() {
+            seconds--;
+            if (seconds > 0) {
+                btn.textContent = 'Подождите ' + seconds + ' секунд' + (seconds === 1 ? 'у' : 'ы');
+            } else {
+                clearInterval(window.batchCountdownTimer);
+                window.batchCountdownTimer = null;
+                btn.disabled = false;
+                btn.classList.add('ready');
+                btn.textContent = 'Подтвердить';
+            }
+        }, 1000);
+    }
+
+    async function confirmBatchSell() {
+        var btn = document.getElementById('batchConfirmBtn');
+        if (btn.disabled) return;
+        
+        btn.disabled = true;
+        btn.textContent = 'Продаём...';
+        
+        var itemIds = Array.from(selectedItems);
+        try {
+            var r = await fetch('/api/sell-gifts-batch', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({user_id: user.id, item_ids: itemIds})
+            });
+            var d = await r.json();
+            if (d.success) {
+                showNotif('Продано ' + d.sold_count + ' подарков!');
+                closeBatchSellModal();
+                selectMode = false;
+                selectedItems.clear();
+                document.getElementById('optionsBtn').classList.remove('active');
+                document.getElementById('selectActionBar').classList.remove('show');
+                await refreshUserData();
+                loadInventory();
+            } else {
+                showNotif(d.error || 'Ошибка продажи', true);
+                btn.disabled = false;
+                btn.classList.add('ready');
+                btn.textContent = 'Подтвердить';
+            }
+        } catch (e) {
+            showNotif('Ошибка сети', true);
+            btn.disabled = false;
+            btn.classList.add('ready');
+            btn.textContent = 'Подтвердить';
+        }
+    }
+
+    async function batchWithdraw() {
+        if (selectedItems.size === 0) return;
+        showNotif('Вывод нескольких подарков скоро появится');
     }
 
     function openItemModal(itemId) {
