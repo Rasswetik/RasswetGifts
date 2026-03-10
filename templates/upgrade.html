@@ -268,6 +268,9 @@ var tg=window.Telegram&&Telegram.WebApp;
 var userId=null;
 if(tg){tg.ready();tg.expand();tg.setHeaderColor('#0d1117');tg.setBackgroundColor('#0d1117');if(tg.initDataUnsafe&&tg.initDataUnsafe.user)userId=tg.initDataUnsafe.user.id;}
 
+// Use Telegram native popup instead of browser alert (hides URL)
+function showTgAlert(msg,cb){if(tg&&tg.showAlert){tg.showAlert(msg,cb);}else{alert(msg);if(cb)cb();}}
+
 var userInventory=[];
 var selectedGift=null;
 var targetGift=null;
@@ -360,7 +363,7 @@ function toggleInventory(){
 function toggleTargets(){
     if(isSpinning)return;
     if(!selectedGift){
-        alert('Сначала выбери подарок для апгрейда');
+        showTgAlert('Сначала выбери подарок для апгрейда');
         return;
     }
     var invSec=document.getElementById('inventorySection');
@@ -560,7 +563,7 @@ async function doUpgrade(){
     }catch(e){
         document.getElementById('wheelGlow').classList.remove('spinning');
         pointerWrap.style.transform='rotate(0deg)';
-        alert('Ошибка сети');resetAfterSpin();
+        showTgAlert('Ошибка сети');resetAfterSpin();
     }
 }
 

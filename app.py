@@ -18982,13 +18982,26 @@ def api_admin_backgrounds_list():
 
 @app.route('/api/admin/get-gifts-list', methods=['GET'])
 def api_admin_gifts_list():
-    """Список подарков из gifts.json для выбора"""
+    """Список подарков (полный каталог включая модели Fragment)"""
     try:
-        gifts = load_gifts()
-        result = [{'id': g['id'], 'name': g['name'], 'value': g.get('value', 0), 'image': g.get('image', '')} for g in gifts]
-        result.sort(key=lambda x: x['value'])
+        all_gifts = build_full_catalog_with_models()
+        if not all_gifts:
+            all_gifts = load_gifts_cached() or load_gifts()
+        result = []
+        for g in all_gifts:
+            gid = g.get('id') or g.get('gift_key') or g.get('fragment_slug') or ''
+            result.append({
+                'id': gid,
+                'gift_key': g.get('gift_key', ''),
+                'fragment_slug': g.get('fragment_slug', ''),
+                'name': g.get('name', 'Gift'),
+                'value': g.get('value', 0),
+                'image': g.get('image', '/static/img/gift.png')
+            })
+        result.sort(key=lambda x: x.get('value', 0), reverse=True)
         return jsonify({'success': True, 'gifts': result})
-    except:
+    except Exception as e:
+        logger.error(f"Error loading gifts list: {e}")
         return jsonify({'success': True, 'gifts': []})
 
 
@@ -19270,12 +19283,14 @@ def api_leaderboard():
             if not all_gifts:
                 all_gifts = load_gifts_cached() or []
             for gift in all_gifts:
-                gid = str(gift.get('id') or gift.get('gift_key') or '')
-                if gid:
-                    reward_gifts_map[gid] = {
-                        'gift_name': gift.get('name') or 'Подарок',
-                        'gift_image': gift.get('image') or '/static/img/gift.png'
-                    }
+                gift_data = {
+                    'gift_name': gift.get('name') or 'Подарок',
+                    'gift_image': gift.get('image') or '/static/img/gift.png'
+                }
+                # Map by all possible identifiers
+                for key in [gift.get('id'), gift.get('gift_key'), gift.get('fragment_slug')]:
+                    if key:
+                        reward_gifts_map[str(key)] = gift_data
         except Exception:
             reward_gifts_map = {}
 
