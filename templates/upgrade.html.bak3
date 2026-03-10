@@ -15,6 +15,7 @@
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
 a{text-decoration:none;color:inherit}
 
+/* TOP BAR */
 .top-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px}
 .top-left{display:flex;align-items:center;gap:10px}
 .top-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover}
@@ -24,32 +25,32 @@ a{text-decoration:none;color:inherit}
 .bal-pill img{width:16px;height:16px}
 .bal-plus{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
+/* MAIN */
 .upgrade-wrap{max-width:480px;margin:0 auto;padding:0 16px 100px;display:flex;flex-direction:column;align-items:center;gap:12px}
 .page-title{font-size:20px;font-weight:800;padding:8px 0}
 
 /* WHEEL */
-.wheel-section{padding:16px 0 12px;display:flex;flex-direction:column;align-items:center}
-.wheel-container{position:relative;width:220px;height:220px}
-.wheel-svg{position:absolute;inset:0;width:100%;height:100%}
-.wheel-green-arc{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;background:#0d1117;border:2px solid #2a3544;display:flex;align-items:center;justify-content:center;z-index:5}
-.wheel-center img{width:50px;height:50px;object-fit:contain;display:none}
-.chance-pct{font-size:18px;font-weight:800;color:var(--text2)}
+.wheel-section{padding:20px 0 12px;display:flex;flex-direction:column;align-items:center}
+.wheel-container{position:relative;width:180px;height:180px}
+.wheel-outer-ring{position:absolute;inset:-6px;border-radius:50%;padding:3px;background:linear-gradient(135deg,#f59e0b,#ea580c,#dc2626)}
+.wheel-outer-ring::before{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--bg)}
+.wheel-svg{width:100%;height:100%;transform:rotate(-90deg);position:relative;z-index:1}
+.wheel-bg{fill:none;stroke:rgba(255,255,255,.03);stroke-width:22}
+.wheel-progress{fill:none;stroke:var(--green);stroke-width:22;stroke-linecap:round;transition:stroke-dasharray .5s}
+.wheel-pointer-wrap{position:absolute;top:50%;left:50%;width:0;height:0;z-index:10}
+.wheel-pointer{position:absolute;left:-4px;top:-96px;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 6px rgba(255,255,255,.8)}
+.wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:110px;height:110px;border-radius:50%;background:linear-gradient(180deg,#1a1f26,#12161c);border:2px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;z-index:2}
+.wheel-center img{width:70px;height:70px;object-fit:contain;display:none}
+.chance-pct{font-size:22px;font-weight:800;color:var(--text2)}
+.wheel-glow{position:absolute;inset:-6px;border-radius:50%;pointer-events:none}
+.wheel-glow.spinning{animation:glowPulse 1s infinite}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 10px rgba(245,158,11,.2)}50%{box-shadow:0 0 25px rgba(245,158,11,.4)}}
 .wheel-center.flash-green{animation:flashG .4s ease 3}
 .wheel-center.flash-red{animation:flashR .4s ease 3}
-@keyframes flashG{50%{border-color:var(--green);box-shadow:0 0 20px rgba(30,228,76,.5)}}
-@keyframes flashR{50%{border-color:var(--red);box-shadow:0 0 20px rgba(249,105,153,.5)}}
-.wheel-result-icon{display:none;width:36px;height:36px}
+@keyframes flashG{50%{border-color:var(--green);box-shadow:0 0 30px rgba(30,228,76,.4)}}
+@keyframes flashR{50%{border-color:var(--red);box-shadow:0 0 30px rgba(249,105,153,.4)}}
+.wheel-result-icon{display:none;width:44px;height:44px}
 .wheel-result-icon.show{display:block}
-
-/* Pointer */
-.wheel-pointer-wrap{position:absolute;top:50%;left:50%;width:0;height:0;z-index:10}
-.wheel-pointer{position:absolute;left:50%;bottom:0;transform:translateX(-50%) translateY(-96px);width:12px;height:18px}
-.wheel-pointer img{width:100%;height:100%}
-
-.wheel-glow{position:absolute;inset:0;border-radius:50%;pointer-events:none;opacity:0;transition:opacity .3s}
-.wheel-glow.spinning{opacity:1;animation:glowPulse .8s infinite}
-@keyframes glowPulse{0%,100%{box-shadow:0 0 15px rgba(245,158,11,.15)}50%{box-shadow:0 0 35px rgba(245,158,11,.35)}}
 
 /* UPGRADE BTN */
 .upgrade-btn{width:100%;height:50px;border-radius:14px;border:none;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(37,99,235,.3)}
@@ -59,12 +60,11 @@ a{text-decoration:none;color:inherit}
 
 /* CARDS */
 .cards-row{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
-.card{background:rgba(22,27,34,.8);border:1.5px dashed rgba(255,255,255,.1);border-radius:16px;padding:20px 12px;display:flex;flex-direction:column;align-items:center;min-height:140px;justify-content:center;cursor:pointer}
+.card{background:rgba(22,27,34,.8);border:1.5px dashed rgba(255,255,255,.1);border-radius:16px;padding:28px 12px 24px;display:flex;flex-direction:column;align-items:center;min-height:150px;justify-content:center;cursor:pointer}
 .card.has-gift{border-style:solid;border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.05)}
-.card-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px}
-.card-icon{width:48px;height:48px;opacity:.4}
-.card-icon img{width:100%;height:100%;object-fit:contain}
-.card-text{font-size:12px;font-weight:500;color:rgba(255,255,255,.35);text-align:center;line-height:1.3}
+.card-placeholder{display:flex;flex-direction:column;align-items:center;gap:12px}
+.card-icon svg{width:44px;height:44px;stroke:rgba(255,255,255,.25);stroke-width:1.2;fill:none}
+.card-text{font-size:13px;font-weight:500;color:rgba(255,255,255,.4);text-align:center;line-height:1.3}
 .gift-preview{display:none;flex-direction:column;align-items:center;gap:6px}
 .card.has-gift .gift-preview{display:flex}
 .card.has-gift .card-placeholder{display:none}
@@ -75,38 +75,45 @@ a{text-decoration:none;color:inherit}
 
 /* BUTTONS */
 .btns-row{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.select-btn{height:44px;border-radius:12px;border:none;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
-.select-btn.active{box-shadow:0 0 0 2px var(--blue)}
+.select-btn{height:44px;border-radius:12px;border:none;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
 .select-btn:first-child{background:linear-gradient(135deg,#1e3a5f,#1e40af);color:#fff}
 .select-btn:last-child{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
 
-/* INLINE LISTS */
-.inline-section{width:100%;display:none;margin-top:8px}
-.inline-section.show{display:block}
-.section-title{font-size:14px;font-weight:700;margin-bottom:10px;color:var(--text2)}
-.inline-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.inline-item{border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:10px 6px 8px;transition:all .2s}
-.inline-item:hover{background:rgba(255,255,255,.06)}
-.inline-item.selected{border-color:var(--blue);background:rgba(59,130,246,.1)}
-.inline-item img{width:56px;height:56px;object-fit:contain;margin-bottom:4px}
-.inline-item-name{font-size:9px;font-weight:600;color:var(--text2);text-align:center;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.inline-item-value{font-size:10px;font-weight:700;margin-top:2px;display:flex;align-items:center;gap:2px}
-.inline-item-value img{width:10px;height:10px}
+/* EMPTY STATE */
+.empty-state{width:100%;padding:40px 16px 20px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.empty-state-title{font-size:18px;font-weight:800}
+.empty-state-text{font-size:14px;color:rgba(255,255,255,.45)}
+.empty-state-btn{margin-top:14px;padding:12px 28px;border-radius:12px;border:none;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
 
-/* Target items in list format */
-.target-list-inline{display:flex;flex-direction:column;gap:6px}
-.target-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);cursor:pointer;transition:all .2s}
-.target-row:hover{background:rgba(255,255,255,.05)}
-.target-row.selected{border-color:var(--green);background:rgba(30,228,76,.08)}
-.target-row img{width:40px;height:40px;object-fit:contain}
-.target-row-info{flex:1;min-width:0}
-.target-row-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.target-row-price{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:3px}
-.target-row-price img{width:10px;height:10px}
-.target-row-chance{font-size:13px;font-weight:800;color:var(--green)}
+/* PICKER */
+.picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:5000;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(10px);transition:opacity .3s,visibility .3s}
+.picker-overlay.show{opacity:1;visibility:visible}
+.picker-modal{background:linear-gradient(180deg,#1E2538,#151B2D);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:75vh;padding:20px 16px calc(20px + var(--safe-bottom));transform:translateY(100%);transition:transform .35s;display:flex;flex-direction:column}
+.picker-overlay.show .picker-modal{transform:translateY(0)}
+.picker-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.picker-title{font-size:16px;font-weight:800}
+.picker-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.1);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.picker-close svg{width:14px;height:14px;stroke:var(--red);stroke-width:2.5;fill:none}
+.picker-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;overflow-y:auto;flex:1}
+.picker-item{border-radius:16px;border:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.02);display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:10px 6px 8px}
+.picker-item.selected{border-color:var(--blue);background:rgba(59,130,246,.08)}
+.picker-item img{width:68px;height:68px;object-fit:contain;margin-bottom:6px}
+.picker-item-name{font-size:10px;font-weight:600;color:var(--text2)}
+.picker-item-value{font-size:11px;font-weight:700;margin-top:2px}
 
-/* Empty message */
-.empty-msg{text-align:center;padding:24px;color:rgba(255,255,255,.35);font-size:13px}
+/* TARGET PICKER */
+.target-picker-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:5000;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(10px);transition:opacity .3s,visibility .3s}
+.target-picker-overlay.show{opacity:1;visibility:visible}
+.target-picker-modal{background:linear-gradient(180deg,#1E2538,#151B2D);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:75vh;padding:20px 16px calc(20px + var(--safe-bottom));transform:translateY(100%);transition:transform .35s;display:flex;flex-direction:column}
+.target-picker-overlay.show .target-picker-modal{transform:translateY(0)}
+.target-list{display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1}
+.target-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.02);cursor:pointer}
+.target-item img{width:44px;height:44px;object-fit:contain}
+.target-item-info{flex:1;min-width:0}
+.target-item-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.target-item-price{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:4px}
+.target-item-price img{width:12px;height:12px}
+.target-item-chance{font-size:13px;font-weight:800;color:var(--green)}
 
 /* DEPOSIT */
 .deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5650;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
@@ -150,21 +157,14 @@ a{text-decoration:none;color:inherit}
     <!-- WHEEL -->
     <div class="wheel-section">
         <div class="wheel-container">
+            <div class="wheel-outer-ring"></div>
             <div class="wheel-glow" id="wheelGlow"></div>
-            <img class="wheel-svg" src="/static/img/upgrade-wheel.svg" alt="">
-            <svg class="wheel-green-arc" id="greenArc" viewBox="0 0 220 220">
-                <defs>
-                    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#22c55e"/>
-                        <stop offset="100%" stop-color="#4ade80"/>
-                    </linearGradient>
-                </defs>
-                <path id="greenPath" d="" fill="none" stroke="url(#greenGrad)" stroke-width="4" stroke-linecap="round"/>
+            <svg class="wheel-svg" viewBox="0 0 200 200">
+                <circle class="wheel-bg" cx="100" cy="100" r="82"/>
+                <circle class="wheel-progress" id="wheelProgress" cx="100" cy="100" r="82" stroke-dasharray="0 515.22"/>
             </svg>
             <div class="wheel-pointer-wrap" id="pointerWrap">
-                <div class="wheel-pointer">
-                    <img src="/static/img/upgrade-pointer.svg" alt="">
-                </div>
+                <div class="wheel-pointer"></div>
             </div>
             <div class="wheel-center" id="wheelCenter">
                 <img id="wheelCenterImg" src="" alt="">
@@ -177,14 +177,22 @@ a{text-decoration:none;color:inherit}
 
     <!-- UPGRADE BUTTON -->
     <button class="upgrade-btn" id="upgradeBtn" disabled onclick="doUpgrade()">
-        <span id="upgradeBtnText">Апгрейд</span>
+        <span id="upgradeBtnText">Апгрейд 🚀</span>
     </button>
 
     <!-- CARDS -->
     <div class="cards-row">
-        <div class="card" id="leftCard" onclick="toggleInventory()">
+        <div class="card" id="leftCard" onclick="openGiftPicker()">
             <div class="card-placeholder">
-                <div class="card-icon"><img src="/static/img/gift.png" alt=""></div>
+                <div class="card-icon">
+                    <svg viewBox="0 0 48 48" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="22" width="36" height="20" rx="2"/>
+                        <rect x="4" y="16" width="40" height="8" rx="2"/>
+                        <path d="M24 16v26"/>
+                        <path d="M24 16c-3-4-9-6-9 0h9"/>
+                        <path d="M24 16c3-4 9-6 9 0h-9"/>
+                    </svg>
+                </div>
                 <div class="card-text">Выберите ваш<br>подарок</div>
             </div>
             <div class="gift-preview">
@@ -193,9 +201,17 @@ a{text-decoration:none;color:inherit}
                 <div class="gift-preview-value"><img src="/static/img/ton.png" alt=""><span id="leftGiftValue"></span></div>
             </div>
         </div>
-        <div class="card" id="rightCard" onclick="toggleTargets()">
+        <div class="card" id="rightCard" onclick="openTargetPicker()">
             <div class="card-placeholder">
-                <div class="card-icon"><img src="/static/img/gift.png" alt=""></div>
+                <div class="card-icon">
+                    <svg viewBox="0 0 48 48" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="6" y="22" width="36" height="20" rx="2"/>
+                        <rect x="4" y="16" width="40" height="8" rx="2"/>
+                        <path d="M24 16v26"/>
+                        <path d="M24 16c-3-4-9-6-9 0h9"/>
+                        <path d="M24 16c3-4 9-6 9 0h-9"/>
+                    </svg>
+                </div>
                 <div class="card-text">Выберите желаемый<br>подарок</div>
             </div>
             <div class="gift-preview">
@@ -208,20 +224,37 @@ a{text-decoration:none;color:inherit}
 
     <!-- BUTTONS -->
     <div class="btns-row">
-        <button class="select-btn" id="btnInventory" onclick="toggleInventory()">Инвентарь</button>
-        <button class="select-btn" id="btnTargets" onclick="toggleTargets()">Желаемый</button>
+        <button class="select-btn" onclick="openGiftPicker()">Инвентарь</button>
+        <button class="select-btn" onclick="openTargetPicker()">Желаемый</button>
     </div>
 
-    <!-- INLINE INVENTORY SECTION -->
-    <div class="inline-section" id="inventorySection">
-        <div class="section-title">Ваш инвентарь</div>
-        <div class="inline-grid" id="inventoryGrid"></div>
+    <!-- EMPTY STATE -->
+    <div class="empty-state" id="emptyState">
+        <div class="empty-state-title">Нет подарков</div>
+        <div class="empty-state-text">Начните открывать кейсы</div>
+        <button class="empty-state-btn" onclick="window.location.href='/'">К кейсам</button>
     </div>
+</div>
 
-    <!-- INLINE TARGETS SECTION -->
-    <div class="inline-section" id="targetsSection">
-        <div class="section-title">Желаемые подарки</div>
-        <div class="target-list-inline" id="targetsList"></div>
+<!-- GIFT PICKER -->
+<div class="picker-overlay" id="giftPickerOverlay" onclick="if(event.target===this)closeGiftPicker()">
+    <div class="picker-modal">
+        <div class="picker-header">
+            <div class="picker-title">Выбери подарок</div>
+            <button class="picker-close" onclick="closeGiftPicker()"><svg viewBox="0 0 14 14"><line x1="3" y1="3" x2="11" y2="11"/><line x1="11" y1="3" x2="3" y2="11"/></svg></button>
+        </div>
+        <div class="picker-grid" id="giftPickerGrid"></div>
+    </div>
+</div>
+
+<!-- TARGET PICKER -->
+<div class="target-picker-overlay" id="targetPickerOverlay" onclick="if(event.target===this)closeTargetPicker()">
+    <div class="target-picker-modal">
+        <div class="picker-header">
+            <div class="picker-title">Выбери цель</div>
+            <button class="picker-close" onclick="closeTargetPicker()"><svg viewBox="0 0 14 14"><line x1="3" y1="3" x2="11" y2="11"/><line x1="11" y1="3" x2="3" y2="11"/></svg></button>
+        </div>
+        <div class="target-list" id="targetList"></div>
     </div>
 </div>
 
@@ -270,26 +303,7 @@ var selectedGift=null;
 var targetGift=null;
 var possibleTargets=[];
 var isSpinning=false;
-var currentChance=0;
-var activeSection=null; // 'inventory' or 'targets'
-
-function drawGreenArc(chance){
-    var path=document.getElementById('greenPath');
-    if(!chance||chance<=0){path.setAttribute('d','');return;}
-    var cx=110,cy=110,r=106;
-    var startAngle=-90;
-    var endAngle=startAngle+(chance/100)*360;
-    var start=polarToCartesian(cx,cy,r,startAngle);
-    var end=polarToCartesian(cx,cy,r,endAngle);
-    var largeArc=endAngle-startAngle>180?1:0;
-    var d='M '+start.x+' '+start.y+' A '+r+' '+r+' 0 '+largeArc+' 1 '+end.x+' '+end.y;
-    path.setAttribute('d',d);
-}
-
-function polarToCartesian(cx,cy,r,angle){
-    var rad=(angle-90)*Math.PI/180;
-    return{x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)};
-}
+var CIRC=2*Math.PI*82;
 
 async function loadTopBar(){
     if(!userId)return;
@@ -310,73 +324,33 @@ async function loadInventory(){
         var r=await fetch('/api/inventory/'+userId);var d=await r.json();
         if(d.success){
             userInventory=d.inventory.filter(function(it){return !it.is_withdrawing&&!it.challenge_locked});
-            renderInventoryGrid();
+            updateEmptyState();
         }
     }catch(e){}
 }
 
-function renderInventoryGrid(){
-    var grid=document.getElementById('inventoryGrid');
-    grid.innerHTML='';
+function updateEmptyState(){
+    document.getElementById('emptyState').style.display=userInventory.length===0?'flex':'none';
+}
+
+function openGiftPicker(){
+    if(isSpinning)return;
+    var grid=document.getElementById('giftPickerGrid');grid.innerHTML='';
     if(userInventory.length===0){
-        grid.innerHTML='<div class="empty-msg" style="grid-column:1/-1">Ничего нет</div>';
-        return;
-    }
-    userInventory.forEach(function(it){
-        var isSelected=selectedGift&&selectedGift.id===it.id;
-        var div=document.createElement('div');
-        div.className='inline-item'+(isSelected?' selected':'');
-        div.innerHTML='<img src="'+it.gift_image+'" alt=""><div class="inline-item-name">'+it.gift_name+'</div><div class="inline-item-value"><img src="/static/img/ton.png">'+((it.gift_value||0)/100).toFixed(2)+'</div>';
-        div.onclick=function(){selectGift(it);};
-        grid.appendChild(div);
-    });
-}
-
-function toggleInventory(){
-    if(isSpinning)return;
-    var invSec=document.getElementById('inventorySection');
-    var tarSec=document.getElementById('targetsSection');
-    var btnInv=document.getElementById('btnInventory');
-    var btnTar=document.getElementById('btnTargets');
-    
-    if(activeSection==='inventory'){
-        invSec.classList.remove('show');
-        btnInv.classList.remove('active');
-        activeSection=null;
+        grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:30px;color:rgba(255,255,255,.4)">Нет подарков в инвентаре</div>';
     }else{
-        invSec.classList.add('show');
-        tarSec.classList.remove('show');
-        btnInv.classList.add('active');
-        btnTar.classList.remove('active');
-        activeSection='inventory';
-        renderInventoryGrid();
+        userInventory.forEach(function(it){
+            var isSelected=selectedGift&&selectedGift.id===it.id;
+            var div=document.createElement('div');
+            div.className='picker-item'+(isSelected?' selected':'');
+            div.innerHTML='<img src="'+it.gift_image+'" alt=""><div class="picker-item-name">'+it.gift_name+'</div><div class="picker-item-value">'+((it.gift_value||0)/100).toFixed(2)+'</div>';
+            div.onclick=function(){selectGift(it);closeGiftPicker();};
+            grid.appendChild(div);
+        });
     }
+    document.getElementById('giftPickerOverlay').classList.add('show');
 }
-
-function toggleTargets(){
-    if(isSpinning)return;
-    if(!selectedGift){
-        alert('Сначала выбери подарок для апгрейда');
-        return;
-    }
-    var invSec=document.getElementById('inventorySection');
-    var tarSec=document.getElementById('targetsSection');
-    var btnInv=document.getElementById('btnInventory');
-    var btnTar=document.getElementById('btnTargets');
-    
-    if(activeSection==='targets'){
-        tarSec.classList.remove('show');
-        btnTar.classList.remove('active');
-        activeSection=null;
-    }else{
-        tarSec.classList.add('show');
-        invSec.classList.remove('show');
-        btnTar.classList.add('active');
-        btnInv.classList.remove('active');
-        activeSection='targets';
-        loadPossibleTargets();
-    }
-}
+function closeGiftPicker(){document.getElementById('giftPickerOverlay').classList.remove('show')}
 
 function selectGift(g){
     selectedGift={id:g.id,name:g.gift_name,image:g.gift_image,value:g.gift_value,gift_id:g.gift_id};
@@ -385,65 +359,53 @@ function selectGift(g){
     document.getElementById('leftGiftName').textContent=g.gift_name;
     document.getElementById('leftGiftValue').textContent=((g.gift_value||0)/100).toFixed(2);
     if(targetGift)resetTarget();
-    renderInventoryGrid();
     updateWheel();
-    
-    // Auto close inventory
-    document.getElementById('inventorySection').classList.remove('show');
-    document.getElementById('btnInventory').classList.remove('active');
-    activeSection=null;
 }
 
 function resetTarget(){
     targetGift=null;
-    currentChance=0;
     document.getElementById('rightCard').classList.remove('has-gift');
     document.getElementById('wheelCenterImg').style.display='none';
     document.getElementById('chancePct').style.display='block';
-    drawGreenArc(0);
 }
 
-async function loadPossibleTargets(){
-    var list=document.getElementById('targetsList');
-    list.innerHTML='<div class="empty-msg">Загрузка...</div>';
+async function openTargetPicker(){
+    if(isSpinning)return;
+    if(!selectedGift){alert('Сначала выбери подарок для апгрейда');return;}
+    var list=document.getElementById('targetList');
+    list.innerHTML='<div style="text-align:center;padding:30px;color:rgba(255,255,255,.4)">Загрузка...</div>';
+    document.getElementById('targetPickerOverlay').classList.add('show');
     try{
         var r=await fetch('/api/upgrade-possible-gifts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,current_gift_id:selectedGift.id})});
         var d=await r.json();
-        if(!d.success){list.innerHTML='<div class="empty-msg" style="color:var(--red)">'+d.error+'</div>';return;}
+        if(!d.success){list.innerHTML='<div style="text-align:center;padding:30px;color:var(--red)">'+d.error+'</div>';return;}
         possibleTargets=[];
         d.possible_gifts.forEach(function(g){
-            // Показываем подарки от 1x до 10x цены (шанс от 100% до 10%)
-            if(g.value>selectedGift.value && g.value<=selectedGift.value*10){
-                var chance=Math.max(10,Math.min((selectedGift.value/g.value)*100,100));
+            if(g.value>selectedGift.value){
+                var chance=Math.max(10,Math.min((selectedGift.value/g.value)*100,75));
                 g.upgrade_chance=Math.round(chance*10)/10;
                 possibleTargets.push(g);
             }
         });
         possibleTargets.sort(function(a,b){return a.value-b.value});
-        renderTargetsList();
-    }catch(e){list.innerHTML='<div class="empty-msg" style="color:var(--red)">Ошибка загрузки</div>';}
+        renderTargetList();
+    }catch(e){list.innerHTML='<div style="text-align:center;padding:30px;color:var(--red)">Ошибка загрузки</div>';}
 }
+function closeTargetPicker(){document.getElementById('targetPickerOverlay').classList.remove('show')}
 
-function renderTargetsList(){
-    var list=document.getElementById('targetsList');
-    list.innerHTML='';
-    if(possibleTargets.length===0){
-        list.innerHTML='<div class="empty-msg">Ничего нет</div>';
-        return;
-    }
+function renderTargetList(){
+    var list=document.getElementById('targetList');list.innerHTML='';
+    if(possibleTargets.length===0){list.innerHTML='<div style="text-align:center;padding:30px;color:rgba(255,255,255,.4)">Нет доступных целей</div>';return;}
     possibleTargets.forEach(function(g){
-        var isSelected=targetGift&&(targetGift.id===g.id||targetGift.fragment_slug===g.fragment_slug);
-        var div=document.createElement('div');
-        div.className='target-row'+(isSelected?' selected':'');
-        div.innerHTML='<img src="'+g.image+'" alt=""><div class="target-row-info"><div class="target-row-name">'+g.name+'</div><div class="target-row-price"><img src="/static/img/ton.png">'+((g.value||0)/100).toFixed(2)+' TON</div></div><div class="target-row-chance">'+g.upgrade_chance+'%</div>';
-        div.onclick=function(){selectTarget(g);};
+        var div=document.createElement('div');div.className='target-item';
+        div.innerHTML='<img src="'+g.image+'" alt=""><div class="target-item-info"><div class="target-item-name">'+g.name+'</div><div class="target-item-price"><img src="/static/img/ton.png" alt="">'+((g.value||0)/100).toFixed(2)+' TON</div></div><div class="target-item-chance">'+g.upgrade_chance+'%</div>';
+        div.onclick=function(){selectTarget(g);closeTargetPicker();};
         list.appendChild(div);
     });
 }
 
 function selectTarget(g){
     targetGift=g;
-    currentChance=g.upgrade_chance;
     document.getElementById('rightCard').classList.add('has-gift');
     document.getElementById('rightGiftImg').src=g.image;
     document.getElementById('rightGiftName').textContent=g.name;
@@ -451,53 +413,38 @@ function selectTarget(g){
     document.getElementById('wheelCenterImg').src=g.image;
     document.getElementById('wheelCenterImg').style.display='block';
     document.getElementById('chancePct').style.display='none';
-    drawGreenArc(currentChance);
-    renderTargetsList();
     updateWheel();
-    
-    // Auto close targets
-    document.getElementById('targetsSection').classList.remove('show');
-    document.getElementById('btnTargets').classList.remove('active');
-    activeSection=null;
 }
 
 function updateWheel(){
     var btn=document.getElementById('upgradeBtn');
     var chancePct=document.getElementById('chancePct');
+    var progress=document.getElementById('wheelProgress');
 
     if(!targetGift||!selectedGift){
+        progress.setAttribute('stroke-dasharray','0 '+CIRC);
         chancePct.textContent='0.00%';
         btn.disabled=true;
-        drawGreenArc(0);
         return;
     }
 
-    // Шанс от 10% до 100% (можно ставить на подарок до 10x дороже)
-    var chance=Math.max(10,Math.min((selectedGift.value/targetGift.value)*100,100));
+    var chance=Math.max(10,Math.min((selectedGift.value/targetGift.value)*100,75));
     chance=Math.round(chance*10)/10;
-    currentChance=chance;
-    drawGreenArc(chance);
+    var greenLen=(chance/100)*CIRC;
+    progress.setAttribute('stroke-dasharray',greenLen+' '+CIRC);
 
-    if(selectedGift.value<targetGift.value && targetGift.value<=selectedGift.value*10){
+    if(selectedGift.value<targetGift.value){
         btn.disabled=false;
     }else{
         btn.disabled=true;
     }
     btn.classList.remove('win','fail');
-    document.getElementById('upgradeBtnText').textContent='Апгрейд';
+    document.getElementById('upgradeBtnText').textContent='Апгрейд 🚀';
 }
 
 async function doUpgrade(){
     if(isSpinning||!targetGift||!selectedGift)return;
     isSpinning=true;
-    
-    // Hide sections
-    document.getElementById('inventorySection').classList.remove('show');
-    document.getElementById('targetsSection').classList.remove('show');
-    document.getElementById('btnInventory').classList.remove('active');
-    document.getElementById('btnTargets').classList.remove('active');
-    activeSection=null;
-    
     var btn=document.getElementById('upgradeBtn');
     btn.disabled=true;
     document.getElementById('upgradeBtnText').textContent='Крутим...';
@@ -505,12 +452,13 @@ async function doUpgrade(){
     document.getElementById('resultHappy').classList.remove('show');
     document.getElementById('wheelGlow').classList.add('spinning');
 
+    var displayChance=Math.max(10,Math.min((selectedGift.value/targetGift.value)*100,75));
+    displayChance=Math.round(displayChance*10)/10;
     document.getElementById('wheelCenterImg').style.display='none';
     document.getElementById('chancePct').style.display='block';
-    document.getElementById('chancePct').textContent=currentChance.toFixed(2)+'%';
+    document.getElementById('chancePct').textContent=displayChance.toFixed(2)+'%';
 
     var pointerWrap=document.getElementById('pointerWrap');
-    pointerWrap.style.transition='none';
     pointerWrap.style.transform='rotate(0deg)';
 
     try{
@@ -525,34 +473,28 @@ async function doUpgrade(){
         var chance=d.chance;
         var greenAngle=(chance/100)*360;
         var landAngle;
-        
-        // Финальный угол - близко к границе зоны для напряжения
         if(d.upgrade_success){
-            // Успех - приземляемся в зелёной зоне, но близко к границе
-            landAngle=Math.random()*greenAngle*0.6+greenAngle*0.2;
+            landAngle=Math.random()*greenAngle*.8+greenAngle*.1;
         }else{
-            // Неудача - приземляемся в красной зоне, но близко к границе
             var redSize=360-greenAngle;
-            landAngle=greenAngle+Math.random()*redSize*0.3+redSize*0.05;
+            landAngle=greenAngle+Math.random()*redSize*.8+redSize*.1;
         }
-        
-        // Много оборотов для непредсказуемости (8-12 полных оборотов)
-        var totalSpin=360*(8+Math.floor(Math.random()*5))+landAngle;
-        
-        // Долгая анимация 5-7 секунд
-        var spinDuration=5000+Math.random()*2000;
-        
-        void pointerWrap.offsetWidth;
-        
-        // Анимация с несколькими фазами замедления
-        pointerWrap.style.transition='transform '+spinDuration+'ms cubic-bezier(0.1, 0.4, 0.2, 1)';
-        pointerWrap.style.transform='rotate('+totalSpin+'deg)';
+        var totalSpin=360*(5+Math.floor(Math.random()*3))+landAngle;
+        var spinDuration=3000+Math.random()*800;
+        var startTime=Date.now();
 
-        setTimeout(function(){
-            document.getElementById('wheelGlow').classList.remove('spinning');
-            showResult(d);
-        }, spinDuration);
-        
+        function animateSpin(){
+            var elapsed=Date.now()-startTime;
+            var t=Math.min(elapsed/spinDuration,1);
+            var eased=1-Math.pow(1-t,4);
+            pointerWrap.style.transform='rotate('+(totalSpin*eased)+'deg)';
+            if(t<1){requestAnimationFrame(animateSpin);}
+            else{
+                document.getElementById('wheelGlow').classList.remove('spinning');
+                showResult(d);
+            }
+        }
+        animateSpin();
     }catch(e){
         document.getElementById('wheelGlow').classList.remove('spinning');
         pointerWrap.style.transform='rotate(0deg)';
@@ -568,13 +510,13 @@ function showResult(d){
         center.classList.add('flash-green');
         document.getElementById('resultHappy').classList.add('show');
         btn.classList.add('win');
-        document.getElementById('upgradeBtnText').textContent='Победа!';
+        document.getElementById('upgradeBtnText').textContent='Победа! 🎉';
         launchConfetti();
     }else{
         center.classList.add('flash-red');
         document.getElementById('resultSad').classList.add('show');
         btn.classList.add('fail');
-        document.getElementById('upgradeBtnText').textContent='Неудача';
+        document.getElementById('upgradeBtnText').textContent='Неудача 😔';
     }
     setTimeout(function(){
         center.classList.remove('flash-red','flash-green');
@@ -586,7 +528,6 @@ function resetAfterSpin(){
     isSpinning=false;
     selectedGift=null;
     targetGift=null;
-    currentChance=0;
     document.getElementById('leftCard').classList.remove('has-gift');
     document.getElementById('rightCard').classList.remove('has-gift');
     document.getElementById('wheelCenterImg').style.display='none';
@@ -594,10 +535,7 @@ function resetAfterSpin(){
     document.getElementById('chancePct').textContent='0.00%';
     document.getElementById('resultSad').classList.remove('show');
     document.getElementById('resultHappy').classList.remove('show');
-    var pointerWrap=document.getElementById('pointerWrap');
-    pointerWrap.style.transition='none';
-    pointerWrap.style.transform='rotate(0deg)';
-    drawGreenArc(0);
+    document.getElementById('pointerWrap').style.transform='rotate(0deg)';
     updateWheel();
 }
 
