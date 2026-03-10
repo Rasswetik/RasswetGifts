@@ -994,7 +994,8 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
             })
 
     # 2b) Always include specific custom gifts (not on Fragment)
-    ALWAYS_INCLUDE_GIFT_IDS = {110, 111}  # Woman Bear, Valentine Bear
+    # REMOVED: Woman Bear (110) and Valentine Bear (111) - no longer forced
+    ALWAYS_INCLUDE_GIFT_IDS = set()  # Empty - no forced gifts
     merged_ids = {g.get('id') for g in merged if g.get('id') is not None}
     for lg in local_gifts:
         lg_id = lg.get('id')
@@ -7842,7 +7843,7 @@ def _get_collection_max_number(slug):
 NON_UPGRADEABLE_GIFT_IDS = {90}
 
 # Gift IDs that cannot be used in crash betting (only withdraw/sell)
-NON_BETTABLE_GIFT_IDS = {110}          # Woman Bear
+NON_BETTABLE_GIFT_IDS = {110, 111}     # Woman Bear, Valentine Bear
 
 # NFT attribute pools for upgrade (loaded from fragment_catalog_cache at runtime)
 _NFT_SYMBOLS = [
