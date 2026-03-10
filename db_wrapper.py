@@ -16,6 +16,15 @@ logger = logging.getLogger(__name__)
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 USE_POSTGRES = bool(DATABASE_URL)
 
+# ⚠️ ВАЖНО: Логируем какая БД используется при импорте модуля
+if USE_POSTGRES:
+    print(f"🐘 DATABASE MODE: PostgreSQL (DATABASE_URL set)")
+    logger.info(f"🐘 Using PostgreSQL database")
+else:
+    print("⚠️ DATABASE MODE: SQLite (WARNING: Data will be LOST on redeploy!)")
+    print("⚠️ Set DATABASE_URL environment variable for persistent storage!")
+    logger.warning("⚠️ Using SQLite - data will be lost on redeploy!")
+
 # ── PostgreSQL support via psycopg2 ──────────────────────────────
 if USE_POSTGRES:
     try:
@@ -23,7 +32,9 @@ if USE_POSTGRES:
         import psycopg2.extras
         import psycopg2.pool
         _pg_pool = None
+        print("✅ psycopg2 loaded successfully")
     except ImportError:
+        print("❌ psycopg2 not installed, falling back to SQLite!")
         logger.error("psycopg2 not installed, falling back to SQLite")
         USE_POSTGRES = False
 

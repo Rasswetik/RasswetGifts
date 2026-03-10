@@ -3889,7 +3889,31 @@ def api_ping():
 @app.route('/health')
 def health_check():
     """Health check endpoint for monitoring services (UptimeRobot, etc.)"""
-    return jsonify({'status': 'ok', 'db': 'postgres' if USE_POSTGRES else 'sqlite'})
+    db_type = 'postgres' if USE_POSTGRES else 'sqlite'
+    warning = None
+    if not USE_POSTGRES:
+        warning = 'CRITICAL: SQLite mode - data will be LOST on redeploy! Set DATABASE_URL!'
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM users")
+        user_count = cursor.fetchone()[0]
+        conn.close()
+        return jsonify({
+            'status': 'ok',
+            'db': db_type,
+            'users': user_count,
+            'warning': warning,
+            'persistent': USE_POSTGRES
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'db': db_type,
+            'error': str(e),
+            'warning': warning,
+            'persistent': USE_POSTGRES
+        }), 500
 
 
 @app.route('/ban')
@@ -19604,6 +19628,17 @@ if __name__ == '__main__':
     print("\n" + "=" * 60)
     print("🎮 RasswetGifts — Запуск сервера")
     print("=" * 60)
+    
+    # ⚠️ Проверка базы данных
+    if USE_POSTGRES:
+        print("🐘 База данных: PostgreSQL (данные сохраняются)")
+    else:
+        print("⚠️ " + "=" * 54 + " ⚠️")
+        print("⚠️  ВНИМАНИЕ: Используется SQLite!")
+        print("⚠️  Данные будут ПОТЕРЯНЫ при редеплое!")
+        print("⚠️  Установите DATABASE_URL для PostgreSQL!")
+        print("⚠️ " + "=" * 54 + " ⚠️")
+    
     print(f"\n🚀 Flask сервер:  http://{host}:{port}")
     print(f"🎰 Crash игра:    http://{host}:{port}/crash")
     print("🤖 Telegram бот:  webhook")
