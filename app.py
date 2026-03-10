@@ -18986,7 +18986,7 @@ def api_leaderboard():
                     COALESCE(u.total_bet_volume, 0) as volume
                 FROM users u
                 WHERE u.id > 0 AND COALESCE(u.total_bet_volume, 0) > 0
-                ORDER BY volume DESC LIMIT 50''')
+                ORDER BY volume DESC LIMIT 100''')
             fallback_users = []
             for i, row in enumerate(cursor.fetchall(), 1):
                 fallback_users.append({
@@ -18998,6 +18998,19 @@ def api_leaderboard():
                     'turnover': row[4] or 0,
                     'reward': None,
                     'is_bot': False
+                })
+            # Fill remaining with placeholders up to 100
+            for i in range(len(fallback_users) + 1, 101):
+                fallback_users.append({
+                    'position': i,
+                    'user_id': None,
+                    'first_name': '???',
+                    'username': None,
+                    'photo_url': '/static/img/avatar.svg',
+                    'turnover': 0,
+                    'reward': None,
+                    'is_bot': False,
+                    'is_placeholder': True
                 })
             conn.close()
             return jsonify({
@@ -19059,7 +19072,7 @@ def api_leaderboard():
             GROUP BY u.id, u.first_name, u.username, u.photo_url
             HAVING COALESCE(SUM(ucb.bet_amount), 0) > 0
             ORDER BY period_volume DESC, u.id ASC
-            LIMIT 50''', (period_start,))
+            LIMIT 100''', (period_start,))
         combined_entries = []
         for row in cursor.fetchall():
             combined_entries.append({
@@ -19112,7 +19125,7 @@ def api_leaderboard():
                     COALESCE(u.total_bet_volume, 0) as volume
                 FROM users u
                 WHERE u.id > 0 AND COALESCE(u.total_bet_volume, 0) > 0
-                ORDER BY volume DESC LIMIT 50''')
+                ORDER BY volume DESC LIMIT 100''')
             for row in cursor.fetchall():
                 combined_entries.append({
                     'user_id': row[0],
@@ -19124,7 +19137,7 @@ def api_leaderboard():
                 })
         
         users = []
-        for i, row in enumerate(combined_entries[:50], 1):
+        for i, row in enumerate(combined_entries[:100], 1):
             reward = config_data['rewards'].get(str(i), None)
             users.append({
                 'position': i,
@@ -19135,6 +19148,21 @@ def api_leaderboard():
                 'turnover': row['turnover'],
                 'reward': reward,
                 'is_bot': bool(row.get('is_bot'))
+            })
+        
+        # Fill remaining positions with placeholders up to 100
+        for i in range(len(users) + 1, 101):
+            reward = config_data['rewards'].get(str(i), None)
+            users.append({
+                'position': i,
+                'user_id': None,
+                'first_name': '???',
+                'username': None,
+                'photo_url': '/static/img/avatar.svg',
+                'turnover': 0,
+                'reward': reward,
+                'is_bot': False,
+                'is_placeholder': True
             })
         
         conn.close()
