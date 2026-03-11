@@ -11,6 +11,7 @@ import sqlite3
 import logging
 import time
 import threading
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,13 @@ def _translate_query(sql):
         'id BIGINT PRIMARY KEY',
         out, flags=re.IGNORECASE
     )
+    # Convert common *_id columns to BIGINT to safely hold large external ids (Telegram user ids)
+    def _replace_int_id(m):
+        name = m.group(1)
+        if name.lower().endswith('_id') and name.lower() != 'id':
+            return f"{name} BIGINT"
+        return m.group(0)
+    out = re.sub(r"\b([A-Za-z_][A-Za-z0-9_]*)\s+INTEGER\b", _replace_int_id, out, flags=re.IGNORECASE)
     # datetime('now') → NOW()
     out = re.sub(r"datetime\(\s*'now'\s*\)", 'NOW()', out, flags=re.IGNORECASE)
     # date('now') → CURRENT_DATE
@@ -200,9 +208,10 @@ class PgCursorWrapper:
 
 class PgConnectionWrapper:
     """Wraps a psycopg2 connection to look like sqlite3.Connection."""
-    def __init__(self, pg_conn, semaphore=None):
+    def __init__(self, pg_conn, semaphore=None, pool_key=None):
         self._conn = pg_conn
         self._semaphore = semaphore
+        self._pool_key = pool_key
         self._closed = False
 
     def cursor(self):
@@ -231,7 +240,11 @@ class PgConnectionWrapper:
                 # If rollback fails, continue to attempt returning/closing
                 pass
             try:
-                _pg_pool.putconn(self._conn)
+                # Return using the same key we used to get the connection
+                if getattr(self, '_pool_key', None) is not None:
+                    _pg_pool.putconn(self._conn, self._pool_key)
+                else:
+                    _pg_pool.putconn(self._conn)
             except Exception:
                 try:
                     self._conn.close()
@@ -312,9 +325,11 @@ def get_pg_connection():
             raise Exception("Timeout waiting for DB connection slot")
 
     try:
-        raw = _pg_pool.getconn()
+        # Use a unique key for this acquired connection so putconn can return it safely
+        pool_key = uuid.uuid4().hex
+        raw = _pg_pool.getconn(pool_key)
         raw.autocommit = False
-        return PgConnectionWrapper(raw, semaphore=_pg_semaphore)
+        return PgConnectionWrapper(raw, semaphore=_pg_semaphore, pool_key=pool_key)
     except Exception as e:
         # Release semaphore if we failed to obtain a raw connection
         if _pg_semaphore:
