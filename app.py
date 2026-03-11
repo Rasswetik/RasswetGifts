@@ -327,8 +327,8 @@ def _load_crash_bots():
     """Load crash bots config from DB into memory"""
     global _crash_bots_cache
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
         # settings
         cursor.execute('SELECT enabled, min_active_bots, max_active_bots, min_real_players_threshold FROM crash_bots_settings WHERE id = 1')
         row = cursor.fetchone()
@@ -556,28 +556,27 @@ def _sync_levels_from_db():
     """Загружает уровни из БД. Если пусто — заполняет из LEVEL_SYSTEM по умолчанию."""
     global LEVEL_SYSTEM
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM levels')
-        count = cursor.fetchone()[0]
-        if count == 0:
-            # Seed DB with default levels
-            for lvl in LEVEL_SYSTEM:
-                cursor.execute('''INSERT OR IGNORE INTO levels (level, exp_required, reward_stars, reward_tickets) 
-                    VALUES (?, ?, ?, ?)''',
-                    (lvl['level'], lvl['exp_required'], lvl['reward_stars'], lvl['reward_tickets']))
-            conn.commit()
-            logger.info(f"📊 Сохранено {len(LEVEL_SYSTEM)} уровней в БД")
-        else:
-            # Load from DB
-            cursor.execute('SELECT level, exp_required, reward_stars, reward_tickets FROM levels ORDER BY level')
-            rows = cursor.fetchall()
-            LEVEL_SYSTEM = [
-                {"level": r[0], "exp_required": r[1], "reward_stars": r[2], "reward_tickets": r[3]}
-                for r in rows
-            ]
-            logger.info(f"📊 Загружено {len(LEVEL_SYSTEM)} уровней из БД")
-        conn.close()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM levels')
+            count = cursor.fetchone()[0]
+            if count == 0:
+                # Seed DB with default levels
+                for lvl in LEVEL_SYSTEM:
+                    cursor.execute('''INSERT OR IGNORE INTO levels (level, exp_required, reward_stars, reward_tickets) 
+                        VALUES (?, ?, ?, ?)''',
+                        (lvl['level'], lvl['exp_required'], lvl['reward_stars'], lvl['reward_tickets']))
+                conn.commit()
+                logger.info(f"📊 Сохранено {len(LEVEL_SYSTEM)} уровней в БД")
+            else:
+                # Load from DB
+                cursor.execute('SELECT level, exp_required, reward_stars, reward_tickets FROM levels ORDER BY level')
+                rows = cursor.fetchall()
+                LEVEL_SYSTEM = [
+                    {"level": r[0], "exp_required": r[1], "reward_stars": r[2], "reward_tickets": r[3]}
+                    for r in rows
+                ]
+                logger.info(f"📊 Загружено {len(LEVEL_SYSTEM)} уровней из БД")
     except Exception as e:
         logger.error(f"❌ Ошибка загрузки уровней из БД: {e}")
 
@@ -3467,33 +3466,31 @@ def _get_site_profit_balance():
             if now - _site_balance_cache['ts'] < _SITE_BALANCE_TTL:
                 return _site_balance_cache['value']
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
 
-        # Total deposits (money in)
-        cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM deposits WHERE status = 'completed'")
-        total_deposits = cursor.fetchone()[0]
+            # Total deposits (money in)
+            cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM deposits WHERE status = 'completed'")
+            total_deposits = cursor.fetchone()[0]
 
-        # Total star payments (money in)
-        cursor.execute('SELECT COALESCE(SUM(amount), 0) FROM stars_payments')
-        total_star_payments = cursor.fetchone()[0]
+            # Total star payments (money in)
+            cursor.execute('SELECT COALESCE(SUM(amount), 0) FROM stars_payments')
+            total_star_payments = cursor.fetchone()[0]
 
-        # Total gift deposits (money in)
-        cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM gift_deposits WHERE status = 'confirmed'")
-        total_gift_deposits = cursor.fetchone()[0]
+            # Total gift deposits (money in)
+            cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM gift_deposits WHERE status = 'confirmed'")
+            total_gift_deposits = cursor.fetchone()[0]
 
-        # Total withdrawals (money out)
-        cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM withdrawals WHERE status IN ('approved', 'completed', 'sent')")
-        total_withdrawals = cursor.fetchone()[0]
+            # Total withdrawals (money out)
+            cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM withdrawals WHERE status IN ('approved', 'completed', 'sent')")
+            total_withdrawals = cursor.fetchone()[0]
 
-        # Crash game: total bets (money in) vs total wins (money out)
-        cursor.execute('SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets')
-        total_crash_bets = cursor.fetchone()[0]
+            # Crash game: total bets (money in) vs total wins (money out)
+            cursor.execute('SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets')
+            total_crash_bets = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COALESCE(SUM(win_amount), 0) FROM ultimate_crash_bets WHERE status = 'cashed_out'")
-        total_crash_wins = cursor.fetchone()[0]
-
-        conn.close()
+            cursor.execute("SELECT COALESCE(SUM(win_amount), 0) FROM ultimate_crash_bets WHERE status = 'cashed_out'")
+            total_crash_wins = cursor.fetchone()[0]
 
         # Site profit = external money in - external money out - crash net payout
         money_in = total_deposits + total_star_payments + total_gift_deposits
@@ -4237,14 +4234,13 @@ def ultimate_crash_simple_status():
                 user_bet = bet_cache.get('bet')
             else:
                 try:
-                    conn = _quick_db_conn(5)
-                    cursor = conn.cursor()
-                    cursor.execute("SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1", (cached['id'], user_id))
-                    bet = cursor.fetchone()
-                    conn.close()
-                    if bet:
-                        user_bet = {'id': bet[0], 'bet_amount': bet[1], 'status': bet[2]}
-                    _user_bets_cache[cache_key] = {'bet': user_bet, 'ts': time.time()}
+                    with _quick_db_conn(5) as conn:
+                        cursor = conn.cursor()
+                        cursor.execute("SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1", (cached['id'], user_id))
+                        bet = cursor.fetchone()
+                        if bet:
+                            user_bet = {'id': bet[0], 'bet_amount': bet[1], 'status': bet[2]}
+                        _user_bets_cache[cache_key] = {'bet': user_bet, 'ts': time.time()}
                 except:
                     pass
         
@@ -4252,13 +4248,12 @@ def ultimate_crash_simple_status():
         user_balance = None
         if user_id:
             try:
-                conn2 = _quick_db_conn(3)
-                c2 = conn2.cursor()
-                c2.execute("SELECT balance_stars FROM users WHERE id = ?", (user_id,))
-                row = c2.fetchone()
-                conn2.close()
-                if row:
-                    user_balance = row[0]
+                with _quick_db_conn(3) as conn2:
+                    c2 = conn2.cursor()
+                    c2.execute("SELECT balance_stars FROM users WHERE id = ?", (user_id,))
+                    row = c2.fetchone()
+                    if row:
+                        user_balance = row[0]
             except:
                 pass
         
@@ -4266,37 +4261,34 @@ def ultimate_crash_simple_status():
     
     # Fallback - если кэш устарел
     try:
-        conn = _quick_db_conn(5)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, status, current_multiplier, target_multiplier FROM ultimate_crash_games WHERE status IN ('waiting', 'counting', 'flying', 'crashed') ORDER BY id DESC LIMIT 1")
-        game = cursor.fetchone()
-        
-        if game:
-            game_id, status, current_mult, target_mult = game
-            game_data = {
-                'id': game_id,
-                'status': status,
-                'current_multiplier': float(current_mult) if current_mult else 1.0,
-                'target_multiplier': float(target_mult) if target_mult else 5.0,
-                'time_remaining': 5.0
-            }
+        with _quick_db_conn(5) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, status, current_multiplier, target_multiplier FROM ultimate_crash_games WHERE status IN ('waiting', 'counting', 'flying', 'crashed') ORDER BY id DESC LIMIT 1")
+            game = cursor.fetchone()
             
-            user_bet = None
-            user_balance = None
-            if user_id:
-                cursor.execute("SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1", (game_id, user_id))
-                bet = cursor.fetchone()
-                if bet:
-                    user_bet = {'id': bet[0], 'bet_amount': bet[1], 'status': bet[2]}
-                cursor.execute("SELECT balance_stars FROM users WHERE id = ?", (user_id,))
-                brow = cursor.fetchone()
-                if brow:
-                    user_balance = brow[0]
-            
-            conn.close()
-            return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance, 'rtp': _get_cached_crash_rtp()})
-        
-        conn.close()
+            if game:
+                game_id, status, current_mult, target_mult = game
+                game_data = {
+                    'id': game_id,
+                    'status': status,
+                    'current_multiplier': float(current_mult) if current_mult else 1.0,
+                    'target_multiplier': float(target_mult) if target_mult else 5.0,
+                    'time_remaining': 5.0
+                }
+                
+                user_bet = None
+                user_balance = None
+                if user_id:
+                    cursor.execute("SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1", (game_id, user_id))
+                    bet = cursor.fetchone()
+                    if bet:
+                        user_bet = {'id': bet[0], 'bet_amount': bet[1], 'status': bet[2]}
+                    cursor.execute("SELECT balance_stars FROM users WHERE id = ?", (user_id,))
+                    brow = cursor.fetchone()
+                    if brow:
+                        user_balance = brow[0]
+                
+                return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance, 'rtp': _get_cached_crash_rtp()})
     except:
         pass
     
@@ -4331,113 +4323,107 @@ def ultimate_crash_place_bet():
         if cached_status == 'counting' and cached.get('time_remaining', 5) < 0.3:
             return jsonify({'success': False, 'error': 'Слишком поздно! Ставка на след. раунд'})
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            try:
+                # Use BEGIN IMMEDIATE for atomic balance check + deduction
+                cursor.execute('BEGIN IMMEDIATE')
 
-        try:
-            # Use BEGIN IMMEDIATE for atomic balance check + deduction
-            cursor.execute('BEGIN IMMEDIATE')
+                # Проверяем баланс и total_loss
+                cursor.execute('SELECT balance_stars, COALESCE(total_loss, 0) FROM users WHERE id = ?', (user_id,))
+                user = cursor.fetchone()
 
-            # Проверяем баланс и total_loss
-            cursor.execute('SELECT balance_stars, COALESCE(total_loss, 0) FROM users WHERE id = ?', (user_id,))
-            user = cursor.fetchone()
+                if not user:
+                    conn.rollback()
+                    return jsonify({'success': False, 'error': 'Пользователь не найден'})
 
-            if not user:
-                conn.rollback()
-                conn.close()
-                return jsonify({'success': False, 'error': 'Пользователь не найден'})
+                current_balance = user[0] or 0
+                total_loss = user[1] or 0
 
-            current_balance = user[0] or 0
-            total_loss = user[1] or 0
+                if current_balance < bet_amount:
+                    conn.rollback()
+                    return jsonify({'success': False, 'error': f'Недостаточно средств. Баланс: {current_balance}'})
 
-            if current_balance < bet_amount:
-                conn.rollback()
-                conn.close()
-                return jsonify({'success': False, 'error': f'Недостаточно средств. Баланс: {current_balance}'})
-
-            # Получаем активную игру (waiting или counting)
-            cursor.execute('''
-                SELECT id, status FROM ultimate_crash_games
-                WHERE status IN ('waiting', 'counting')
-                ORDER BY id DESC LIMIT 1
-            ''')
-
-            game = cursor.fetchone()
-
-            if not game:
-                # Создаем новую игру сразу в counting
-                base_multiplier = round(random.uniform(3.0, 10.0), 2)
-                
-                if total_loss >= 5000 and bet_amount <= total_loss * 0.2:
-                    boost_chance = min(0.5, total_loss / 50000)
-                    if random.random() < boost_chance:
-                        base_multiplier = round(random.uniform(4.0, 15.0), 2)
-                elif total_loss >= 2000 and bet_amount <= total_loss * 0.3:
-                    boost_chance = min(0.3, total_loss / 30000)
-                    if random.random() < boost_chance:
-                        base_multiplier = round(random.uniform(3.5, 10.0), 2)
-                elif total_loss >= 500 and bet_amount <= total_loss * 0.4:
-                    if random.random() < 0.15:
-                        base_multiplier = round(random.uniform(3.0, 8.0), 2)
-                
-                target_multiplier = base_multiplier
+                # Получаем активную игру (waiting или counting)
                 cursor.execute('''
-                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                    VALUES ('counting', ?, CURRENT_TIMESTAMP)
-                ''', (target_multiplier,))
-                game_id = cursor.lastrowid
-                game_status = 'counting'
-            else:
-                game_id, game_status = game
+                    SELECT id, status FROM ultimate_crash_games
+                    WHERE status IN ('waiting', 'counting')
+                    ORDER BY id DESC LIMIT 1
+                ''')
 
-            if game_status not in ('waiting', 'counting'):
-                conn.rollback()
-                conn.close()
-                return jsonify({'success': False, 'error': 'Игра уже началась'})
+                game = cursor.fetchone()
 
-            # Проверяем, есть ли уже ставка
-            cursor.execute('''
-                SELECT id FROM ultimate_crash_bets
-                WHERE game_id = ? AND user_id = ? AND status = 'active'
-            ''', (game_id, user_id))
+                if not game:
+                    # Создаем новую игру сразу в counting
+                    base_multiplier = round(random.uniform(3.0, 10.0), 2)
 
-            existing_bet = cursor.fetchone()
+                    if total_loss >= 5000 and bet_amount <= total_loss * 0.2:
+                        boost_chance = min(0.5, total_loss / 50000)
+                        if random.random() < boost_chance:
+                            base_multiplier = round(random.uniform(4.0, 15.0), 2)
+                    elif total_loss >= 2000 and bet_amount <= total_loss * 0.3:
+                        boost_chance = min(0.3, total_loss / 30000)
+                        if random.random() < boost_chance:
+                            base_multiplier = round(random.uniform(3.5, 10.0), 2)
+                    elif total_loss >= 500 and bet_amount <= total_loss * 0.4:
+                        if random.random() < 0.15:
+                            base_multiplier = round(random.uniform(3.0, 8.0), 2)
 
-            if existing_bet:
-                conn.rollback()
-                conn.close()
-                return jsonify({'success': False, 'error': 'У вас уже есть активная ставка'})
+                    target_multiplier = base_multiplier
+                    cursor.execute('''
+                        INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
+                        VALUES ('counting', ?, CURRENT_TIMESTAMP)
+                    ''', (target_multiplier,))
+                    game_id = cursor.lastrowid
+                    game_status = 'counting'
+                else:
+                    game_id, game_status = game
 
-            # Списываем средства и увеличиваем счётчик ставок и объём
-            cursor.execute('UPDATE users SET balance_stars = balance_stars - ?, total_crash_bets = COALESCE(total_crash_bets, 0) + 1, total_bet_volume = COALESCE(total_bet_volume, 0) + ? WHERE id = ?',
-                         (bet_amount, bet_amount, user_id))
+                if game_status not in ('waiting', 'counting'):
+                    conn.rollback()
+                    return jsonify({'success': False, 'error': 'Игра уже началась'})
 
-            # Создаем ставку
-            cursor.execute('''
-                INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, bet_type, status)
-                VALUES (?, ?, ?, ?, 'stars', 'active')
-            ''', (game_id, user_id, bet_amount, bet_amount))
+                # Проверяем, есть ли уже ставка
+                cursor.execute('''
+                    SELECT id FROM ultimate_crash_bets
+                    WHERE game_id = ? AND user_id = ? AND status = 'active'
+                ''', (game_id, user_id))
 
-            bet_id = cursor.lastrowid
+                existing_bet = cursor.fetchone()
 
-            # Добавляем в историю
-            cursor.execute('''
-                INSERT INTO user_history (user_id, operation_type, amount, description)
-                VALUES (?, 'ultimate_crash_bet', ?, ?)
-            ''', (user_id, -bet_amount, f'Ставка в Ultimate Crash: {bet_amount}'))
+                if existing_bet:
+                    conn.rollback()
+                    return jsonify({'success': False, 'error': 'У вас уже есть активная ставка'})
 
-            # Получаем новый баланс
-            cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
-            new_balance = cursor.fetchone()[0]
+                # Списываем средства и увеличиваем счётчик ставок и объём
+                cursor.execute('UPDATE users SET balance_stars = balance_stars - ?, total_crash_bets = COALESCE(total_crash_bets, 0) + 1, total_bet_volume = COALESCE(total_bet_volume, 0) + ? WHERE id = ?',
+                             (bet_amount, bet_amount, user_id))
 
-            conn.commit()
-        except Exception as inner_e:
-            try: conn.rollback()
-            except: pass
-            conn.close()
-            raise inner_e
+                # Создаем ставку
+                cursor.execute('''
+                    INSERT INTO ultimate_crash_bets (game_id, user_id, bet_amount, gift_value, bet_type, status)
+                    VALUES (?, ?, ?, ?, 'stars', 'active')
+                ''', (game_id, user_id, bet_amount, bet_amount))
 
-        conn.close()
+                bet_id = cursor.lastrowid
+
+                # Добавляем в историю
+                cursor.execute('''
+                    INSERT INTO user_history (user_id, operation_type, amount, description)
+                    VALUES (?, 'ultimate_crash_bet', ?, ?)
+                ''', (user_id, -bet_amount, f'Ставка в Ultimate Crash: {bet_amount}'))
+
+                # Получаем новый баланс
+                cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+                new_balance = cursor.fetchone()[0]
+
+                conn.commit()
+            except Exception as inner_e:
+                try:
+                    conn.rollback()
+                except:
+                    pass
+                raise inner_e
 
         # Очищаем кэш ставок для этого пользователя
         cache_key = (game_id, user_id)
@@ -5147,22 +5133,22 @@ def telegram_auth():
 def get_user_data(user_id):
     """Получение данных пользователя"""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
 
-        cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
-        user = cursor.fetchone()
+            cursor.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+            user = cursor.fetchone()
 
-        if not user:
-            logger.warning(f"⚠️ Пользователь {user_id} не найден")
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+            if not user:
+                logger.warning(f"⚠️ Пользователь {user_id} не найден")
+                return jsonify({'success': False, 'error': 'Пользователь не найден'})
 
-        # Get column names for robust access
-        col_names = [desc[0] for desc in cursor.description]
-        user_row = dict(zip(col_names, user))
+            # Get column names for robust access
+            col_names = [desc[0] for desc in cursor.description]
+            user_row = dict(zip(col_names, user))
 
-        cursor.execute('SELECT * FROM inventory WHERE user_id = ? ORDER BY received_at DESC', (user_id,))
-        inventory = cursor.fetchall()
+            cursor.execute('SELECT * FROM inventory WHERE user_id = ? ORDER BY received_at DESC', (user_id,))
+            inventory = cursor.fetchall()
 
         level_info = get_user_level_info(user_id)
 
@@ -5203,7 +5189,7 @@ def get_user_data(user_id):
                 'is_withdrawing': bool(item[7])
             })
 
-        conn.close()
+        # connection closed automatically by context manager
         return jsonify({
             'success': True,
             'user': user_dict,
@@ -5228,11 +5214,10 @@ def set_user_currency_mode():
         if not user_id:
             return jsonify({'success': False, 'error': 'user_id required'})
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('UPDATE users SET currency_mode = ? WHERE id = ?', (mode, user_id))
-        conn.commit()
-        conn.close()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE users SET currency_mode = ? WHERE id = ?', (mode, user_id))
+            conn.commit()
         return jsonify({'success': True, 'mode': mode})
     except Exception as e:
         logger.error(f"set_user_currency_mode error: {e}")
@@ -5242,12 +5227,12 @@ def set_user_currency_mode():
 def get_user_inventory(user_id):
     """Получение инвентаря пользователя"""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
 
-        cursor.execute('SELECT * FROM inventory WHERE user_id = ? ORDER BY received_at DESC', (user_id,))
-        columns = [desc[0] for desc in cursor.description]
-        inventory = cursor.fetchall()
+            cursor.execute('SELECT * FROM inventory WHERE user_id = ? ORDER BY received_at DESC', (user_id,))
+            columns = [desc[0] for desc in cursor.description]
+            inventory = cursor.fetchall()
 
         # Load active gift challenges for this user
         challenge_map = {}
@@ -5270,7 +5255,7 @@ def get_user_inventory(user_id):
         except Exception:
             pass
 
-        conn.close()
+        # connection closed by context manager
 
         local_gifts = load_gifts_cached() or []
         local_by_id = {}
@@ -10517,7 +10502,6 @@ def get_recent_ultimate_crash_bets():
         ''', (current_game_id, limit,))
 
         bets = cursor.fetchall()
-        conn.close()
 
         bets_list = []
         for bet in bets:
