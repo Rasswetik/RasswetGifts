@@ -340,10 +340,37 @@ def get_pg_connection():
             raise Exception("Timeout waiting for DB connection slot")
 
     try:
-        # Use a unique key for this acquired connection so putconn can return it safely
-        pool_key = uuid.uuid4().hex
-        raw = _pg_pool.getconn(pool_key)
-        raw.autocommit = False
+        # Try to get a healthy connection (retry if a bad/aborted conn is returned)
+        attempts = 0
+        while True:
+            pool_key = uuid.uuid4().hex
+            raw = _pg_pool.getconn(pool_key)
+            # Ensure no unfinished transactions remain
+            try:
+                raw.rollback()
+            except Exception:
+                pass
+
+            # Attempt to set autocommit / session state outside of transaction.
+            try:
+                raw.autocommit = False
+                break
+            except Exception as se:
+                # If setting session fails (e.g., set_session cannot be used inside a transaction),
+                # drop/close this connection and try another one.
+                logger.warning(f"PG conn session setup failed: {se}; refreshing connection (attempt {attempts+1})")
+                try:
+                    _pg_pool.putconn(raw, pool_key, close=True)
+                except Exception:
+                    try:
+                        raw.close()
+                    except Exception:
+                        pass
+                attempts += 1
+                if attempts >= 3:
+                    raise
+                time.sleep(0.1)
+
         # Instrumentation: increment in-use counter and log
         try:
             global _pg_in_use

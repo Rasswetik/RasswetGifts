@@ -2295,11 +2295,31 @@ def init_db():
                     logger.error("❌ PostgreSQL: _create_all_tables returned False")
                     return False
 
-                # Sync news.json -> news table so admin/news shows entries
+                # Ensure crates table exists (create if missing)
                 try:
-                    _sync_news_to_db(conn)
+                    try:
+                        init_crates_tables(conn.cursor())
+                    except Exception:
+                        # If cursor-level init fails, try with own connection
+                        init_crates_tables()
                 except Exception as e:
-                    logger.warning(f"News sync during init failed: {e}")
+                    logger.warning(f"Crates init during DB init failed: {e}")
+
+                # Sync news.json -> news table using a fresh connection so a failure
+                # doesn't abort the main init transaction
+                try:
+                    c2 = _pg_get_connection()
+                    try:
+                        _sync_news_to_db(c2)
+                    except Exception as e:
+                        logger.warning(f"News sync during init failed: {e}")
+                    finally:
+                        try:
+                            c2.close()
+                        except Exception:
+                            pass
+                except Exception as e:
+                    logger.warning(f"News sync connection failed: {e}")
 
                 try:
                     conn.commit()
