@@ -17108,9 +17108,12 @@ def _lazy_init():
             threading.Thread(target=setup_telegram_webhook, daemon=True).start()
         except Exception as e:
             logger.error(f"❌ Не удалось настроить webhook: {e}")
-        # NFT Gift Monitor
+        # NFT Gift Monitor — allow disabling via environment (temporary mitigation)
         try:
-            start_nft_monitor()
+            if os.getenv('DISABLE_NFT_MONITOR', '').lower() not in ('1', 'true', 'yes', 'y'):
+                start_nft_monitor()
+            else:
+                logger.info("NFT Monitor disabled via DISABLE_NFT_MONITOR env")
         except Exception as e:
             logger.error(f"❌ Не удалось запустить NFT Monitor: {e}")
         # Pre-fetch Fragment catalog in background
