@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # app.py - main application file
-from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, make_response
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, make_response, g, has_request_context
 import sqlite3
 import json
 import os
@@ -1406,6 +1406,12 @@ def get_db_connection():
     """Получает соединение с базой данных с защитой от повреждений.
     При наличии DATABASE_URL использует PostgreSQL через db_wrapper."""
     global _db_ready
+    # Reuse a single connection per Flask request to avoid repeated pool get/put
+    try:
+        if has_request_context() and getattr(g, '_db_conn', None):
+            return g._db_conn
+    except Exception:
+        pass
 
     if USE_POSTGRES:
         conn = _pg_get_connection()
@@ -1416,7 +1422,16 @@ def get_db_connection():
                 _db_ready = True
             except Exception as e:
                 logger.error(f"PG table creation error: {e}")
-                conn.rollback()
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+        # Cache connection on request context so multiple calls reuse it
+        try:
+            if has_request_context():
+                g._db_conn = conn
+        except Exception:
+            pass
         return conn
     
     for attempt in range(3):
@@ -1459,6 +1474,24 @@ def get_db_connection():
     
     # Последняя попытка
     return sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
+
+
+@app.teardown_request
+def _close_request_db(exc=None):
+    """Close per-request cached DB connection (if any)."""
+    try:
+        conn = getattr(g, '_db_conn', None)
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+            try:
+                del g._db_conn
+            except Exception:
+                pass
+    except Exception:
+        pass
 
 def _nuke_db():
     """Полностью удаляет все файлы БД (вызывать под _db_lock!)"""

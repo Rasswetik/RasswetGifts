@@ -24,6 +24,8 @@ PG_MIN_CONN = int(os.environ.get('PG_MIN_CONN', '2'))
 PG_MAX_CONN = int(os.environ.get('PG_MAX_CONN', '30'))
 # How long to wait (seconds) when acquiring the pool semaphore
 PG_SEM_TIMEOUT = int(os.environ.get('PG_SEM_TIMEOUT', '30'))
+# Pre-warm pool on init? Set to '0' or 'false' to disable
+PG_PREWARM = os.environ.get('PG_PREWARM', '1').lower() not in ('0', 'false', 'no', 'n')
 
 # ⚠️ ВАЖНО: Логируем какая БД используется при импорте модуля
 if USE_POSTGRES:
@@ -315,6 +317,23 @@ def _init_pg_pool():
             _pg_semaphore = threading.BoundedSemaphore(PG_MAX_CONN)
         except Exception:
             _pg_semaphore = None
+        # Optionally pre-warm the pool to avoid first-connection latency
+        if PG_PREWARM:
+            try:
+                for i in range(max(1, PG_MIN_CONN)):
+                    k = uuid.uuid4().hex
+                    try:
+                        c = _pg_pool.getconn(k)
+                        try:
+                            c.autocommit = False
+                        except Exception:
+                            pass
+                        _pg_pool.putconn(c, k)
+                    except Exception as e:
+                        logger.warning(f"PG pool prewarm getconn failed: {e}")
+                logger.info(f"✅ Pre-warmed PG pool with {max(1, PG_MIN_CONN)} connections")
+            except Exception as e:
+                logger.warning(f"PG pool prewarm failed: {e}")
     except Exception as e:
         logger.error(f"❌ Failed to init PG pool: {e}")
         raise
