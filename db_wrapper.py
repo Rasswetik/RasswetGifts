@@ -10,6 +10,7 @@ import re
 import sqlite3
 import logging
 import time
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ if USE_POSTGRES:
         import psycopg2.extras
         import psycopg2.pool
         _pg_pool = None
+        _pg_semaphore = None
         print("✅ psycopg2 loaded successfully")
     except ImportError:
         print("❌ psycopg2 not installed, falling back to SQLite!")
@@ -198,8 +200,10 @@ class PgCursorWrapper:
 
 class PgConnectionWrapper:
     """Wraps a psycopg2 connection to look like sqlite3.Connection."""
-    def __init__(self, pg_conn):
+    def __init__(self, pg_conn, semaphore=None):
         self._conn = pg_conn
+        self._semaphore = semaphore
+        self._closed = False
 
     def cursor(self):
         return PgCursorWrapper(self._conn.cursor())
@@ -216,10 +220,28 @@ class PgConnectionWrapper:
         self._conn.rollback()
 
     def close(self):
+        if getattr(self, '_closed', False):
+            return
+        self._closed = True
         if USE_POSTGRES and _pg_pool:
-            _pg_pool.putconn(self._conn)
+            try:
+                _pg_pool.putconn(self._conn)
+            except Exception:
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
         else:
-            self._conn.close()
+            try:
+                self._conn.close()
+            except Exception:
+                pass
+        # Release semaphore slot if we acquired one
+        if getattr(self, '_semaphore', None):
+            try:
+                self._semaphore.release()
+            except Exception:
+                pass
 
     def __enter__(self):
         return self
@@ -231,11 +253,11 @@ class PgConnectionWrapper:
         # Safety: if object is garbage-collected without explicit close,
         # try returning connection to pool to avoid leaks.
         try:
-            if USE_POSTGRES and _pg_pool and getattr(self, '_conn', None):
-                try:
-                    _pg_pool.putconn(self._conn)
-                except Exception:
-                    pass
+            # Ensure we properly close (which will also release semaphore)
+            try:
+                self.close()
+            except Exception:
+                pass
         except Exception:
             pass
 
@@ -252,6 +274,12 @@ def _init_pg_pool():
             dsn=DATABASE_URL
         )
         logger.info(f"✅ PostgreSQL connection pool initialized (max={PG_MAX_CONN})")
+        # Semaphore to throttle simultaneous callers to at most PG_MAX_CONN
+        global _pg_semaphore
+        try:
+            _pg_semaphore = threading.BoundedSemaphore(PG_MAX_CONN)
+        except Exception:
+            _pg_semaphore = None
     except Exception as e:
         logger.error(f"❌ Failed to init PG pool: {e}")
         raise
@@ -261,32 +289,34 @@ def get_pg_connection():
     """Get a PostgreSQL connection from the pool, wrapped for compatibility."""
     if _pg_pool is None:
         _init_pg_pool()
-    # Try to get a connection from the pool with backoff if exhausted
-    retries = 40
-    delay = 0.05
-    last_exc = None
-    for i in range(retries):
+    # Ensure semaphore exists (created during pool init). Fall back to no-semaphore if unavailable.
+    global _pg_semaphore
+    if _pg_semaphore is None:
         try:
-            raw = _pg_pool.getconn()
-            raw.autocommit = False
-            return PgConnectionWrapper(raw)
-        except Exception as e:
-            last_exc = e
-            msg = str(e).lower()
-            if 'connection pool exhausted' in msg or 'pool' in msg or 'exhausted' in msg:
-                # Log pool status if available
-                try:
-                    available = _pg_pool._pool.qsize()
-                    logger.warning(f"PG pool exhausted, retrying ({i+1}/{retries})... (used={PG_MAX_CONN - available}/{PG_MAX_CONN})")
-                except Exception:
-                    logger.warning(f"PG pool exhausted, retrying ({i+1}/{retries})...")
-                time.sleep(delay)
-                continue
-            # re-raise unexpected exceptions
-            raise
-    # If we get here, raise the last exception
-    logger.error(f"❌ Could not obtain PG connection: {last_exc}")
-    raise last_exc
+            _pg_semaphore = threading.BoundedSemaphore(PG_MAX_CONN)
+        except Exception:
+            _pg_semaphore = None
+
+    # Acquire a slot to avoid spamming the pool when it's exhausted.
+    if _pg_semaphore:
+        acquired = _pg_semaphore.acquire(timeout=15)
+        if not acquired:
+            logger.error("❌ Timeout waiting for DB connection slot (too many concurrent DB users)")
+            raise Exception("Timeout waiting for DB connection slot")
+
+    try:
+        raw = _pg_pool.getconn()
+        raw.autocommit = False
+        return PgConnectionWrapper(raw, semaphore=_pg_semaphore)
+    except Exception as e:
+        # Release semaphore if we failed to obtain a raw connection
+        if _pg_semaphore:
+            try:
+                _pg_semaphore.release()
+            except Exception:
+                pass
+        logger.error(f"❌ Failed to get conn from pool: {e}")
+        raise
 
 
 # ── Public API ───────────────────────────────────────────────────
