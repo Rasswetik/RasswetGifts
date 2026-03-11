@@ -113,6 +113,19 @@ def _translate_query(sql):
     # BOOLEAN defaults in SQLite are often written as 0/1 — convert to TRUE/FALSE for Postgres
     out = re.sub(r'\bBOOLEAN\b\s+DEFAULT\s+0\b', 'BOOLEAN DEFAULT FALSE', out, flags=re.IGNORECASE)
     out = re.sub(r'\bBOOLEAN\b\s+DEFAULT\s+1\b', 'BOOLEAN DEFAULT TRUE', out, flags=re.IGNORECASE)
+    # Convert boolean-like assignments/comparisons (e.g. is_active = 0) to TRUE/FALSE
+    def _is_bool_col(name: str) -> bool:
+        return bool(re.search(r"^(?:is_|has_)", name, flags=re.IGNORECASE) or
+                    re.search(r"(?:active|enabled|visible|locked|bann?ed|deleted|upgrad|confirm|verify)", name, flags=re.IGNORECASE))
+
+    def _bool_replace(m):
+        col = m.group(1)
+        val = m.group(2)
+        if _is_bool_col(col):
+            return f"{col} = {'FALSE' if val == '0' else 'TRUE'}"
+        return m.group(0)
+
+    out = re.sub(r"\b([A-Za-z_][A-Za-z0-9_]*)\b\s*=\s*(0|1)\b", _bool_replace, out, flags=re.IGNORECASE)
     # SQLite uses "value" as string literal; PG treats "value" as identifier.
     # Convert double-quoted values in SET/WHERE clauses to single quotes.
     # Match = "word" patterns (status = "crashed", etc.)
