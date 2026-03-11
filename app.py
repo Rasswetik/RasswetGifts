@@ -340,8 +340,11 @@ def _load_crash_bots():
                 'min_real_players_threshold': row[3] or 3,
             }
         else:
-            # Auto-enable bots on first run
-            conn.execute('INSERT OR IGNORE INTO crash_bots_settings (id, enabled, min_active_bots, max_active_bots, min_real_players_threshold) VALUES (1, 1, 2, 5, 3)')
+            # Auto-enable bots on first run — use params so booleans are passed correctly
+            conn.execute(
+                'INSERT OR IGNORE INTO crash_bots_settings (id, enabled, min_active_bots, max_active_bots, min_real_players_threshold) VALUES (?, ?, ?, ?, ?)',
+                (1, True, 2, 5, 3)
+            )
             conn.commit()
             _crash_bots_cache['enabled'] = True
             _crash_bots_cache['settings'] = {'min_active_bots': 2, 'max_active_bots': 5, 'min_real_players_threshold': 3}
@@ -424,8 +427,8 @@ def _seed_default_bots(conn, count=100):
         cashout_max = round(_rnd.uniform(max(2.0, cashout_min + 0.2), 5.5), 2)
 
         conn.execute(
-            'INSERT INTO crash_bots_config (bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active) VALUES (?,?,?,?,?,?,1)',
-            (name, avatar, min_bet, max_bet, cashout_min, cashout_max)
+            'INSERT INTO crash_bots_config (bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            (name, avatar, min_bet, max_bet, cashout_min, cashout_max, True)
         )
         created += 1
         idx += 1
@@ -2527,6 +2530,12 @@ def init_db():
                 logger.info(f"✅ Crash боты загружены: {len(_crash_bots_cache.get('bots', []))} ботов, enabled={_crash_bots_cache.get('enabled')}")
             except Exception as be:
                 logger.warning(f"⚠️ Ошибка загрузки crash ботов: {be}")
+            # Ensure level crates are seeded after DB and bots are ready
+            try:
+                init_level_crates()
+                logger.info("✅ Level crates ensured")
+            except Exception as e:
+                logger.warning(f"⚠️ init_level_crates failed: {e}")
             
             return True
 
@@ -10770,6 +10779,10 @@ def api_admin_crash_bots_settings():
         threshold = data.get('min_real_players_threshold')
 
         conn = get_db_connection()
+        # Ensure booleans are passed as Python bools (None if not provided)
+        enabled_val = None
+        if enabled is not None:
+            enabled_val = bool(enabled)
         conn.execute('''INSERT INTO crash_bots_settings (id, enabled, min_active_bots, max_active_bots, min_real_players_threshold, updated_at)
             VALUES (1, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(id) DO UPDATE SET
@@ -10779,7 +10792,7 @@ def api_admin_crash_bots_settings():
                 min_real_players_threshold = COALESCE(excluded.min_real_players_threshold, min_real_players_threshold),
                 updated_at = CURRENT_TIMESTAMP
         ''', (
-            1 if enabled else 0 if enabled is not None else None,
+            enabled_val,
             min_bots, max_bots, threshold
         ))
         conn.commit()
@@ -10836,8 +10849,8 @@ def api_admin_crash_bots_add():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('''INSERT INTO crash_bots_config (bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, 1)''',
-            (bot_name, avatar_url, min_bet, max_bet, cashout_min, cashout_max))
+            VALUES (?, ?, ?, ?, ?, ?, ?)''',
+            (bot_name, avatar_url, min_bet, max_bet, cashout_min, cashout_max, True))
         bot_id = cursor.lastrowid
         conn.commit()
         conn.close()
@@ -10869,7 +10882,11 @@ def api_admin_crash_bots_update():
                            ('is_active','is_active')]:
             if field in data:
                 updates.append(f'{col} = ?')
-                params.append(data[field])
+                # Ensure booleans are passed as Python bools for Postgres
+                if field == 'is_active':
+                    params.append(True if data[field] else False)
+                else:
+                    params.append(data[field])
         if updates:
             params.append(bot_id)
             conn.execute(f'UPDATE crash_bots_config SET {", ".join(updates)} WHERE id = ?', params)
@@ -10930,8 +10947,8 @@ def api_admin_crash_bots_generate():
             used_names.add(name)
             avatar = _BOT_AVATARS[i % len(_BOT_AVATARS)]
             conn.execute('''INSERT INTO crash_bots_config (bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active)
-                VALUES (?, ?, ?, ?, ?, ?, 1)''',
-                (name, avatar, min_bet, max_bet, cashout_min, cashout_max))
+                VALUES (?, ?, ?, ?, ?, ?, ?)''',
+                (name, avatar, min_bet, max_bet, cashout_min, cashout_max, True))
             created += 1
         conn.commit()
         conn.close()
@@ -11890,13 +11907,13 @@ def api_claim_news_reward():
         # Записываем прочтение и награду
         if read_row:
             cursor.execute('''
-                UPDATE news_reads SET reward_claimed = 1, read_at = CURRENT_TIMESTAMP
+                UPDATE news_reads SET reward_claimed = ?, read_at = CURRENT_TIMESTAMP
                 WHERE user_id = ? AND news_id = ?
-            ''', (user_id, news_id))
+            ''', (True, user_id, news_id))
         else:
             cursor.execute('''
-                INSERT INTO news_reads (user_id, news_id, reward_claimed) VALUES (?, ?, 1)
-            ''', (user_id, news_id))
+                INSERT INTO news_reads (user_id, news_id, reward_claimed) VALUES (?, ?, ?)
+            ''', (user_id, news_id, True))
         
         # Начисляем награду
         if reward_amount > 0:
@@ -14136,8 +14153,8 @@ def ensure_daily_tasks():
             for t in DEFAULT_DAILY_TASKS:
                 cursor.execute('''
                     INSERT INTO daily_tasks (task_type, case_id, target_value, reward_stars, description, is_active)
-                    VALUES (?, ?, ?, ?, ?, 1)
-                ''', (t['task_type'], t['case_id'], t['target_value'], t['reward_stars'], t['description']))
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (t['task_type'], t['case_id'], t['target_value'], t['reward_stars'], t['description'], True))
             conn.commit()
             logger.info(f"Auto-generated {len(DEFAULT_DAILY_TASKS)} default daily tasks")
         conn.close()
@@ -15773,12 +15790,8 @@ def _get_level_crate_id(crate_key):
         return None
 
 
-# Initialize on import
-try:
-    init_crates_tables()
-    init_level_crates()
-except:
-    pass
+# NOTE: avoid running DB initialization at import time (can race with pool init).
+# Crates/level seeding is performed during application lazy initialization (_lazy_init).
 
 
 @app.route('/api/admin/crates', methods=['GET', 'POST'])
@@ -19144,11 +19157,10 @@ def api_admin_backgrounds_list():
 
 @app.route('/api/admin/get-gifts-list', methods=['GET'])
 def api_admin_gifts_list():
-    """Список подарков (полный каталог включая модели Fragment)"""
+    """Список подарков — только оригиналы из gifts.json (без моделей)"""
     try:
-        all_gifts = build_full_catalog_with_models()
-        if not all_gifts:
-            all_gifts = load_gifts_cached() or load_gifts()
+        # Return only local gifts from gifts.json (no fragment/model entries)
+        all_gifts = load_gifts_cached() or load_gifts()
         result = []
         for g in all_gifts:
             gid = g.get('id') or g.get('gift_key') or g.get('fragment_slug') or ''
@@ -19178,7 +19190,7 @@ def api_toggle_admin_notification():
         notif_id = data.get('id')
         is_active = data.get('is_active', True)
         conn = get_db_connection()
-        conn.execute('UPDATE admin_notifications SET is_active = ? WHERE id = ?', (1 if is_active else 0, notif_id))
+        conn.execute('UPDATE admin_notifications SET is_active = ? WHERE id = ?', (True if is_active else False, notif_id))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
@@ -19634,15 +19646,15 @@ def api_admin_leaderboard():
             conn.execute('UPDATE leaderboard_config SET is_active = 0')
             cursor = conn.cursor()
             cursor.execute('''INSERT INTO leaderboard_config (period_start, period_end, rewards_json, title, is_active)
-                VALUES (?, ?, ?, ?, 1)''', (period_start, period_end, rewards_json, title))
+                VALUES (?, ?, ?, ?, ?)''', (period_start, period_end, rewards_json, title, True))
             lb_id = cursor.lastrowid
             
             # Create notification about new leaderboard for all users
             conn.execute('''INSERT INTO admin_notifications 
                 (title, message, notif_type, target_user_id, is_active)
-                VALUES (?, ?, 'leaderboard', 0, 1)''',
+                VALUES (?, ?, 'leaderboard', ?, ?)''',
                 (f'Новый лидерборд: {title}', 
-                 f'Стартовал новый лидерборд! Соревнуйтесь за призы до {period_end}'))
+                 f'Стартовал новый лидерборд! Соревнуйтесь за призы до {period_end}', 0, True))
             
             conn.commit()
             conn.close()
@@ -19663,7 +19675,7 @@ def api_admin_leaderboard():
             if is_active:
                 conn.execute('UPDATE leaderboard_config SET is_active = 0')
             conn.execute('''UPDATE leaderboard_config SET rewards_json = ?, title = ?, is_active = ?
-                WHERE id = ?''', (rewards_json, title, 1 if is_active else 0, lb_id))
+                WHERE id = ?''', (rewards_json, title, True if is_active else False, lb_id))
             conn.commit()
             conn.close()
             return jsonify({'success': True})
@@ -19731,10 +19743,10 @@ def api_admin_leaderboard_distribute():
                 # Give reward via notification
                 conn.execute('''INSERT INTO admin_notifications 
                     (title, message, notif_type, target_user_id, reward_type, reward_data, is_active)
-                    VALUES (?, ?, 'leaderboard', ?, ?, ?, 1)''',
+                    VALUES (?, ?, 'leaderboard', ?, ?, ?, ?)''',
                     (f'{title} - Место #{i}', 
                      f'Поздравляем! Вы заняли {i} место в лидерборде с оборотом {turnover}',
-                     user_id, reward_type, str(reward_amount)))
+                     user_id, reward_type, str(reward_amount), True))
                 
                 distributed += 1
         
