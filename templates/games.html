@@ -185,6 +185,11 @@
             position: absolute;
             right: 16px;
             bottom: 10px;
+            z-index: 4;
+            pointer-events: none;
+            transform-origin: center;
+            will-change: transform;
+            animation: floatGif 4.5s ease-in-out infinite;
         }
 
         .game-card-tag {
@@ -347,6 +352,27 @@
             .game-card { min-height: 140px; }
             .game-card-text { font-size: 22px; }
             .game-card-gif { width: 100px; height: 100px; }
+        }
+
+        /* Floating animation for game GIFs */
+        @keyframes floatGif {
+            0%   { transform: translateY(0) rotate(0deg) scale(1); }
+            25%  { transform: translateY(-6px) rotate(-1deg) scale(1.02); }
+            50%  { transform: translateY(0) rotate(0deg) scale(1); }
+            75%  { transform: translateY(-3px) rotate(1deg) scale(1.01); }
+            100% { transform: translateY(0) rotate(0deg) scale(1); }
+        }
+
+        /* Pause animation for disabled cards to indicate inactive state */
+        .game-card.disabled .game-card-gif {
+            animation-play-state: paused;
+            opacity: 0.85;
+        }
+
+        /* Slight lift on hover for non-disabled cards (complements float) */
+        .game-card:not(.disabled):hover .game-card-gif {
+            transform: translateY(-10px) scale(1.06);
+            transition: transform 220ms ease;
         }
     </style>
 </head>
