@@ -3471,7 +3471,7 @@ def _get_site_profit_balance():
         cursor = conn.cursor()
 
         # Total deposits (money in)
-        cursor.execute('SELECT COALESCE(SUM(amount), 0) FROM deposits WHERE status = "completed"')
+        cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM deposits WHERE status = 'completed'")
         total_deposits = cursor.fetchone()[0]
 
         # Total star payments (money in)
@@ -3479,18 +3479,18 @@ def _get_site_profit_balance():
         total_star_payments = cursor.fetchone()[0]
 
         # Total gift deposits (money in)
-        cursor.execute('SELECT COALESCE(SUM(gift_value), 0) FROM gift_deposits WHERE status = "confirmed"')
+        cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM gift_deposits WHERE status = 'confirmed'")
         total_gift_deposits = cursor.fetchone()[0]
 
         # Total withdrawals (money out)
-        cursor.execute('SELECT COALESCE(SUM(gift_value), 0) FROM withdrawals WHERE status IN ("approved", "completed", "sent")')
+        cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM withdrawals WHERE status IN ('approved', 'completed', 'sent')")
         total_withdrawals = cursor.fetchone()[0]
 
         # Crash game: total bets (money in) vs total wins (money out)
         cursor.execute('SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets')
         total_crash_bets = cursor.fetchone()[0]
 
-        cursor.execute('SELECT COALESCE(SUM(win_amount), 0) FROM ultimate_crash_bets WHERE status = "cashed_out"')
+        cursor.execute("SELECT COALESCE(SUM(win_amount), 0) FROM ultimate_crash_bets WHERE status = 'cashed_out'")
         total_crash_wins = cursor.fetchone()[0]
 
         conn.close()
