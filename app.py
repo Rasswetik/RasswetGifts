@@ -2279,11 +2279,33 @@ def init_db():
             try:
                 conn = _pg_get_connection()
                 result = _create_all_tables(conn)
-                conn.commit()
-                conn.close()
                 if result is False:
+                    try:
+                        conn.rollback()
+                    except:
+                        pass
+                    try:
+                        conn.close()
+                    except:
+                        pass
                     logger.error("❌ PostgreSQL: _create_all_tables returned False")
                     return False
+
+                # Sync news.json -> news table so admin/news shows entries
+                try:
+                    _sync_news_to_db(conn)
+                except Exception as e:
+                    logger.warning(f"News sync during init failed: {e}")
+
+                try:
+                    conn.commit()
+                except Exception:
+                    pass
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
                 _db_ready = True
                 logger.info("✅ PostgreSQL database initialized")
                 return True
@@ -11860,6 +11882,67 @@ def _save_news_json(data):
     news_file = os.path.join(BASE_PATH, 'data', 'news.json')
     with open(news_file, 'w', encoding='utf-8-sig') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def _sync_news_to_db(conn):
+    """Sync entries from data/news.json into the `news` DB table (insert or update)."""
+    try:
+        news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+        if not os.path.exists(news_file):
+            return
+        with open(news_file, 'r', encoding='utf-8-sig') as f:
+            data = json.load(f)
+        for n in data.get('news', []):
+            nid = n.get('id')
+            if nid is None:
+                continue
+            title = n.get('title', '')
+            content = n.get('content', '')
+            title_en = n.get('title_en', '')
+            content_en = n.get('content_en', '')
+            image_url = n.get('cover') or n.get('banner') or n.get('image_url') or ''
+            reward_amount = int(n.get('reward_amount', 0) or 0)
+            is_active = 1 if n.get('is_active', True) else 0
+            created_at = n.get('created_at')
+
+            cur = conn.cursor()
+            cur.execute('SELECT id FROM news WHERE id = ?', (nid,))
+            if cur.fetchone():
+                try:
+                    cur.execute('''
+                        UPDATE news SET title = ?, content = ?, title_en = ?, content_en = ?, image_url = ?, reward_amount = ?, is_active = ?, created_at = ?
+                        WHERE id = ?
+                    ''', (title, content, title_en, content_en, image_url, reward_amount, is_active, created_at, nid))
+                except Exception:
+                    # fallback: try individual update without created_at if binding fails
+                    try:
+                        cur.execute('''
+                            UPDATE news SET title = ?, content = ?, title_en = ?, content_en = ?, image_url = ?, reward_amount = ?, is_active = ?
+                            WHERE id = ?
+                        ''', (title, content, title_en, content_en, image_url, reward_amount, is_active, nid))
+                    except Exception:
+                        pass
+            else:
+                try:
+                    cur.execute('''
+                        INSERT INTO news (id, title, content, title_en, content_en, image_url, reward_amount, is_active, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (nid, title, content, title_en, content_en, image_url, reward_amount, is_active, created_at))
+                except Exception:
+                    # fallback: insert without created_at
+                    try:
+                        cur.execute('''
+                            INSERT INTO news (id, title, content, title_en, content_en, image_url, reward_amount, is_active)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (nid, title, content, title_en, content_en, image_url, reward_amount, is_active))
+                    except Exception:
+                        pass
+        try:
+            conn.commit()
+        except Exception:
+            pass
+    except Exception as e:
+        logger.warning(f"News sync error: {e}")
 
 @app.route('/api/admin/news-json', methods=['GET'])
 def admin_news_json_list():

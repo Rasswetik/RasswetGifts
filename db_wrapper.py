@@ -223,6 +223,18 @@ class PgConnectionWrapper:
     def __exit__(self, *args):
         self.close()
 
+    def __del__(self):
+        # Safety: if object is garbage-collected without explicit close,
+        # try returning connection to pool to avoid leaks.
+        try:
+            if USE_POSTGRES and _pg_pool and getattr(self, '_conn', None):
+                try:
+                    _pg_pool.putconn(self._conn)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
 
 def _init_pg_pool():
     """Initialize the PostgreSQL connection pool (called once)."""
@@ -244,9 +256,27 @@ def get_pg_connection():
     """Get a PostgreSQL connection from the pool, wrapped for compatibility."""
     if _pg_pool is None:
         _init_pg_pool()
-    raw = _pg_pool.getconn()
-    raw.autocommit = False
-    return PgConnectionWrapper(raw)
+    # Try to get a connection from the pool with backoff if exhausted
+    retries = 40
+    delay = 0.05
+    last_exc = None
+    for i in range(retries):
+        try:
+            raw = _pg_pool.getconn()
+            raw.autocommit = False
+            return PgConnectionWrapper(raw)
+        except Exception as e:
+            last_exc = e
+            msg = str(e).lower()
+            if 'connection pool exhausted' in msg or 'pool' in msg or 'exhausted' in msg:
+                logger.warning(f"PG pool exhausted, retrying ({i+1}/{retries})...")
+                time.sleep(delay)
+                continue
+            # re-raise unexpected exceptions
+            raise
+    # If we get here, raise the last exception
+    logger.error(f"❌ Could not obtain PG connection: {last_exc}")
+    raise last_exc
 
 
 # ── Public API ───────────────────────────────────────────────────
