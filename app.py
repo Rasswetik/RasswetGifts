@@ -64,7 +64,7 @@ fragment_models_cache_time = {}
 # Site balance cache to reduce frequent DB reads (hot path)
 _site_balance_cache = {'value': 0, 'ts': 0}
 _site_balance_lock = threading.Lock()
-_SITE_BALANCE_TTL = float(os.getenv('SITE_BALANCE_TTL', '3.0'))
+_SITE_BALANCE_TTL = float(os.getenv('SITE_BALANCE_TTL', '10.0'))
 
 # ── Manual gift prices in TON (override Fragment/local prices) ──────────────
 MANUAL_GIFT_PRICES_TON = {
@@ -3665,8 +3665,9 @@ def start_ultimate_crash_loop():
                                 progress = new_multiplier / live_target if live_target > 0 else 0
                                 time_remaining = max(0.5, 15.0 * (1 - progress))
                                 update_crash_cache(live_game_id, 'flying', new_multiplier, live_target, time_remaining)
-                                # Sync to DB every 10th tick (reduced from 5 for PG perf)
-                                if tick_counter % 10 == 0:
+                                # Sync to DB less frequently to reduce DB load
+                                # Sync to DB every 20th tick (was 10)
+                                if tick_counter % 20 == 0:
                                     cursor.execute('UPDATE ultimate_crash_games SET current_multiplier = ? WHERE id = ?',
                                                  (new_multiplier, live_game_id))
                                     conn.commit()

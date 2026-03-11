@@ -12,6 +12,7 @@ import logging
 import time
 import threading
 import uuid
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,8 @@ USE_POSTGRES = bool(DATABASE_URL)
 # Connection pool sizing can be tuned via environment variables
 PG_MIN_CONN = int(os.environ.get('PG_MIN_CONN', '2'))
 PG_MAX_CONN = int(os.environ.get('PG_MAX_CONN', '30'))
+# How long to wait (seconds) when acquiring the pool semaphore
+PG_SEM_TIMEOUT = int(os.environ.get('PG_SEM_TIMEOUT', '30'))
 
 # ⚠️ ВАЖНО: Логируем какая БД используется при импорте модуля
 if USE_POSTGRES:
@@ -39,6 +42,8 @@ if USE_POSTGRES:
         import psycopg2.pool
         _pg_pool = None
         _pg_semaphore = None
+        # Instrumentation: currently allocated connections
+        _pg_in_use = 0
         print("✅ psycopg2 loaded successfully")
     except ImportError:
         print("❌ psycopg2 not installed, falling back to SQLite!")
@@ -262,6 +267,16 @@ class PgConnectionWrapper:
                 self._semaphore.release()
             except Exception:
                 pass
+        # Instrumentation: decrement in-use counter and log
+        try:
+            global _pg_in_use
+            _pg_in_use = max(0, _pg_in_use - 1)
+        except Exception:
+            pass
+        try:
+            logger.debug(f"PG pool released: in_use={_pg_in_use}/{PG_MAX_CONN} thread={threading.current_thread().name}")
+        except Exception:
+            pass
 
     def __enter__(self):
         return self
@@ -319,7 +334,7 @@ def get_pg_connection():
 
     # Acquire a slot to avoid spamming the pool when it's exhausted.
     if _pg_semaphore:
-        acquired = _pg_semaphore.acquire(timeout=15)
+        acquired = _pg_semaphore.acquire(timeout=PG_SEM_TIMEOUT)
         if not acquired:
             logger.error("❌ Timeout waiting for DB connection slot (too many concurrent DB users)")
             raise Exception("Timeout waiting for DB connection slot")
@@ -329,6 +344,16 @@ def get_pg_connection():
         pool_key = uuid.uuid4().hex
         raw = _pg_pool.getconn(pool_key)
         raw.autocommit = False
+        # Instrumentation: increment in-use counter and log
+        try:
+            global _pg_in_use
+            _pg_in_use += 1
+        except Exception:
+            pass
+        try:
+            logger.debug(f"PG pool acquired: in_use={_pg_in_use}/{PG_MAX_CONN} thread={threading.current_thread().name}")
+        except Exception:
+            pass
         return PgConnectionWrapper(raw, semaphore=_pg_semaphore, pool_key=pool_key)
     except Exception as e:
         # Release semaphore if we failed to obtain a raw connection
@@ -337,7 +362,12 @@ def get_pg_connection():
                 _pg_semaphore.release()
             except Exception:
                 pass
-        logger.error(f"❌ Failed to get conn from pool: {e}")
+        # Add stack for easier debugging of where acquisition failed
+        try:
+            st = ''.join(traceback.format_stack(limit=6))
+        except Exception:
+            st = ''
+        logger.error(f"❌ Failed to get conn from pool: {e}\n{st}")
         raise
 
 
