@@ -214,8 +214,7 @@ def _init_pg_pool():
     try:
         _pg_pool = psycopg2.pool.ThreadedConnectionPool(
             minconn=2, maxconn=30,
-            dsn=DATABASE_URL,
-            options='-c statement_timeout=30000'
+            dsn=DATABASE_URL
         )
         logger.info("✅ PostgreSQL connection pool initialized (max=30)")
     except Exception as e:
