@@ -61,6 +61,11 @@ fragment_cache_time = None
 fragment_models_cache = {}
 fragment_models_cache_time = {}
 
+# Site balance cache to reduce frequent DB reads (hot path)
+_site_balance_cache = {'value': 0, 'ts': 0}
+_site_balance_lock = threading.Lock()
+_SITE_BALANCE_TTL = float(os.getenv('SITE_BALANCE_TTL', '3.0'))
+
 # ── Manual gift prices in TON (override Fragment/local prices) ──────────────
 MANUAL_GIFT_PRICES_TON = {
     'ufc strike': 15.3,
@@ -3455,47 +3460,56 @@ def generate_extreme_crash_multiplier():
 
 def _get_site_profit_balance():
     """Calculate the site's profit/loss from all deposits, withdrawals, and crash game results"""
+    # Use short in-memory caching to avoid heavy DB usage from hot paths
     try:
+        now = time.time()
+        with _site_balance_lock:
+            if now - _site_balance_cache['ts'] < _SITE_BALANCE_TTL:
+                return _site_balance_cache['value']
+
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+
         # Total deposits (money in)
         cursor.execute('SELECT COALESCE(SUM(amount), 0) FROM deposits WHERE status = "completed"')
         total_deposits = cursor.fetchone()[0]
-        
+
         # Total star payments (money in)
         cursor.execute('SELECT COALESCE(SUM(amount), 0) FROM stars_payments')
         total_star_payments = cursor.fetchone()[0]
-        
+
         # Total gift deposits (money in)
         cursor.execute('SELECT COALESCE(SUM(gift_value), 0) FROM gift_deposits WHERE status = "confirmed"')
         total_gift_deposits = cursor.fetchone()[0]
-        
+
         # Total withdrawals (money out)
         cursor.execute('SELECT COALESCE(SUM(gift_value), 0) FROM withdrawals WHERE status IN ("approved", "completed", "sent")')
         total_withdrawals = cursor.fetchone()[0]
-        
+
         # Crash game: total bets (money in) vs total wins (money out)
         cursor.execute('SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets')
         total_crash_bets = cursor.fetchone()[0]
-        
+
         cursor.execute('SELECT COALESCE(SUM(win_amount), 0) FROM ultimate_crash_bets WHERE status = "cashed_out"')
         total_crash_wins = cursor.fetchone()[0]
-        
+
         conn.close()
-        
+
         # Site profit = external money in - external money out - crash net payout
-        # External deposits are real money in; withdrawals are real money out
-        # Crash: bets stay on platform, wins leave platform balance
-        # Net crash cost to site = wins - bets (positive means site lost money)
         money_in = total_deposits + total_star_payments + total_gift_deposits
         money_out = total_withdrawals
-        crash_net = total_crash_wins - total_crash_bets  # positive = site lost money
-        
-        return money_in - money_out - crash_net
+        crash_net = total_crash_wins - total_crash_bets
+
+        result = money_in - money_out - crash_net
+        with _site_balance_lock:
+            _site_balance_cache['value'] = result
+            _site_balance_cache['ts'] = now
+        return result
     except Exception as e:
         logger.error(f"Error calculating site balance: {e}")
-        return 0  # Neutral if can't calculate
+        # Fallback to last cached value if present
+        with _site_balance_lock:
+            return _site_balance_cache.get('value', 0)
 
 def start_crash_loop():
     def loop():

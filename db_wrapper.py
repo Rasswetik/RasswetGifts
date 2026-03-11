@@ -16,6 +16,10 @@ logger = logging.getLogger(__name__)
 DATABASE_URL = os.environ.get('DATABASE_URL', '')
 USE_POSTGRES = bool(DATABASE_URL)
 
+# Connection pool sizing can be tuned via environment variables
+PG_MIN_CONN = int(os.environ.get('PG_MIN_CONN', '2'))
+PG_MAX_CONN = int(os.environ.get('PG_MAX_CONN', '30'))
+
 # ⚠️ ВАЖНО: Логируем какая БД используется при импорте модуля
 if USE_POSTGRES:
     print(f"🐘 DATABASE MODE: PostgreSQL (DATABASE_URL set)")
@@ -242,11 +246,12 @@ def _init_pg_pool():
     if _pg_pool is not None:
         return
     try:
+        logger.info(f"Initializing PostgreSQL pool: min={PG_MIN_CONN} max={PG_MAX_CONN}")
         _pg_pool = psycopg2.pool.ThreadedConnectionPool(
-            minconn=2, maxconn=30,
+            minconn=PG_MIN_CONN, maxconn=PG_MAX_CONN,
             dsn=DATABASE_URL
         )
-        logger.info("✅ PostgreSQL connection pool initialized (max=30)")
+        logger.info(f"✅ PostgreSQL connection pool initialized (max={PG_MAX_CONN})")
     except Exception as e:
         logger.error(f"❌ Failed to init PG pool: {e}")
         raise
@@ -269,7 +274,12 @@ def get_pg_connection():
             last_exc = e
             msg = str(e).lower()
             if 'connection pool exhausted' in msg or 'pool' in msg or 'exhausted' in msg:
-                logger.warning(f"PG pool exhausted, retrying ({i+1}/{retries})...")
+                # Log pool status if available
+                try:
+                    available = _pg_pool._pool.qsize()
+                    logger.warning(f"PG pool exhausted, retrying ({i+1}/{retries})... (used={PG_MAX_CONN - available}/{PG_MAX_CONN})")
+                except Exception:
+                    logger.warning(f"PG pool exhausted, retrying ({i+1}/{retries})...")
                 time.sleep(delay)
                 continue
             # re-raise unexpected exceptions
