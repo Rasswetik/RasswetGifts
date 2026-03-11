@@ -223,7 +223,13 @@ class PgConnectionWrapper:
         if getattr(self, '_closed', False):
             return
         self._closed = True
+        # Ensure any open transaction is rolled back before returning connection
         if USE_POSTGRES and _pg_pool:
+            try:
+                self._conn.rollback()
+            except Exception:
+                # If rollback fails, continue to attempt returning/closing
+                pass
             try:
                 _pg_pool.putconn(self._conn)
             except Exception:
@@ -236,6 +242,7 @@ class PgConnectionWrapper:
                 self._conn.close()
             except Exception:
                 pass
+
         # Release semaphore slot if we acquired one
         if getattr(self, '_semaphore', None):
             try:
