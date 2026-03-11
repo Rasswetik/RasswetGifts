@@ -108,6 +108,11 @@ def _translate_query(sql):
             "SELECT tablename AS name FROM pg_tables WHERE schemaname = 'public'",
             out, flags=re.IGNORECASE
         )
+    # DATETIME (SQLite) -> TIMESTAMP (Postgres)
+    out = re.sub(r'\bDATETIME\b', 'TIMESTAMP', out, flags=re.IGNORECASE)
+    # BOOLEAN defaults in SQLite are often written as 0/1 — convert to TRUE/FALSE for Postgres
+    out = re.sub(r'\bBOOLEAN\b\s+DEFAULT\s+0\b', 'BOOLEAN DEFAULT FALSE', out, flags=re.IGNORECASE)
+    out = re.sub(r'\bBOOLEAN\b\s+DEFAULT\s+1\b', 'BOOLEAN DEFAULT TRUE', out, flags=re.IGNORECASE)
     # SQLite uses "value" as string literal; PG treats "value" as identifier.
     # Convert double-quoted values in SET/WHERE clauses to single quotes.
     # Match = "word" patterns (status = "crashed", etc.)
