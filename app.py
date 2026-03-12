@@ -193,6 +193,19 @@ _crash_bots_cache = {
 }
 _crash_bots_active = {}   # game_id -> [{bot_id, name, avatar, bet_amount, cashout_mult, status}]
 
+# In-memory user balance cache — avoids hitting DB on every 120ms status poll
+_user_balance_cache: dict = {}  # user_id -> {'balance': int, 'ts': float}
+_USER_BALANCE_CACHE_TTL = 4.0   # seconds
+
+def _get_cached_balance(user_id) -> int | None:
+    entry = _user_balance_cache.get(user_id)
+    if entry and (time.time() - entry['ts']) < _USER_BALANCE_CACHE_TTL:
+        return entry['balance']
+    return None
+
+def _set_cached_balance(user_id, balance: int):
+    _user_balance_cache[user_id] = {'balance': balance, 'ts': time.time()}
+
 # In-memory cache for crash game (updated by game loop)
 _crash_game_cache = {
     'id': 0,
@@ -4329,37 +4342,39 @@ def ultimate_crash_simple_status():
             'time_remaining': cached['time_remaining']
         }
         
-        # Кэшированные ставки пользователя (кэш 5 сек)
+        # Кэшированные ставки и баланс пользователя — один DB-запрос если нет в кэше
         user_bet = None
+        user_balance = None
         if user_id:
+            uid_int = int(user_id)
             cache_key = (cached['id'], user_id)
             bet_cache = _user_bets_cache.get(cache_key)
-            if bet_cache and time.time() - bet_cache.get('ts', 0) < 5:
+            bet_cached = bet_cache and time.time() - bet_cache.get('ts', 0) < 5
+            bal_cached = _get_cached_balance(uid_int) is not None
+
+            if bet_cached:
                 user_bet = bet_cache.get('bet')
-            else:
+            if bal_cached:
+                user_balance = _get_cached_balance(uid_int)
+
+            if not bet_cached or not bal_cached:
+                # Single connection for both queries
                 try:
                     with _quick_db_conn(5) as conn:
                         cursor = conn.cursor()
-                        cursor.execute("SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1", (cached['id'], user_id))
-                        bet = cursor.fetchone()
-                        if bet:
-                            user_bet = {'id': bet[0], 'bet_amount': bet[1], 'status': bet[2]}
-                        _user_bets_cache[cache_key] = {'bet': user_bet, 'ts': time.time()}
-                except:
+                        if not bet_cached:
+                            cursor.execute("SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1", (cached['id'], uid_int))
+                            bet = cursor.fetchone()
+                            user_bet = {'id': bet[0], 'bet_amount': bet[1], 'status': bet[2]} if bet else None
+                            _user_bets_cache[cache_key] = {'bet': user_bet, 'ts': time.time()}
+                        if not bal_cached:
+                            cursor.execute("SELECT balance_stars FROM users WHERE id = ?", (uid_int,))
+                            brow = cursor.fetchone()
+                            if brow:
+                                user_balance = brow[0]
+                                _set_cached_balance(uid_int, user_balance)
+                except Exception:
                     pass
-        
-        # Fetch user balance alongside status for real-time display
-        user_balance = None
-        if user_id:
-            try:
-                with _quick_db_conn(3) as conn2:
-                    c2 = conn2.cursor()
-                    c2.execute("SELECT balance_stars FROM users WHERE id = ?", (user_id,))
-                    row = c2.fetchone()
-                    if row:
-                        user_balance = row[0]
-            except:
-                pass
         
         return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance, 'rtp': _get_cached_crash_rtp()})
     
@@ -4529,10 +4544,11 @@ def ultimate_crash_place_bet():
                     pass
                 raise inner_e
 
-        # Очищаем кэш ставок для этого пользователя
+        # Очищаем кэш ставок и баланса для этого пользователя
         cache_key = (game_id, user_id)
         if cache_key in _user_bets_cache:
             del _user_bets_cache[cache_key]
+        _user_balance_cache.pop(user_id, None)
 
         # Add experience based on bet amount (turnover) - 1:1
         try:
@@ -5024,6 +5040,9 @@ def ultimate_crash_cashout_simple():
             except: pass
             conn.close()
             raise inner_e
+
+        # Invalidate balance cache so next poll reflects winnings immediately
+        _user_balance_cache.pop(user_id, None)
 
         conn.close()
 
