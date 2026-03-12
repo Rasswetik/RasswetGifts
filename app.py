@@ -61,6 +61,12 @@ fragment_cache_time = None
 fragment_models_cache = {}
 fragment_models_cache_time = {}
 
+# ── MRKT Marketplace Configuration ────────────────────────────────────────────
+MRKT_TOKEN = os.getenv('MRKT_TOKEN', '9396e614-f48d-4c01-9921-62259987b37d')
+MRKT_API_BASE = 'https://api.tgmrkt.io/api/v1'
+MRKT_CDN_BASE = 'https://cdn.tgmrkt.io'
+MRKT_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
+
 # Site balance cache to reduce frequent DB reads (hot path)
 _site_balance_cache = {'value': 0, 'ts': 0}
 _site_balance_lock = threading.Lock()
@@ -8083,7 +8089,147 @@ def withdraw_gift():
         return jsonify({'success': False, 'error': 'Произошла ошибка, заявка передана администратору'})
 
 
-UPGRADE_MIN_STARS = 30   # 0.3 TON
+# ── MRKT Marketplace Withdrawal ───────────────────────────────────────────────
+
+@app.route('/api/mrkt/gifts', methods=['GET'])
+def mrkt_search_gifts():
+    """Search MRKT for cheapest gifts by collection name (gift_name from inventory)."""
+    name = request.args.get('name', '').strip()
+    if not name:
+        return jsonify({'success': False, 'error': 'name required'})
+    try:
+        headers = {'Authorization': MRKT_TOKEN}
+        payload = {
+            'collectionNames': [name],
+            'modelNames': [],
+            'backdropNames': [],
+            'symbolNames': [],
+            'ordering': 'Price',
+            'lowToHigh': True,
+            'maxPrice': None,
+            'minPrice': None,
+            'mintable': None,
+            'number': None,
+            'count': 20,
+            'cursor': '',
+            'query': None,
+            'promotedFirst': False,
+        }
+        r = http_requests.post(f'{MRKT_API_BASE}/gifts/saling', headers=headers, json=payload, timeout=10)
+        data = r.json()
+        gifts_raw = data.get('gifts', [])
+        result = []
+        for g in gifts_raw:
+            # Price: API returns nanoTons (1 TON = 1e9) or plain TON
+            price_nano = (g.get('priceNanoTons') or g.get('price') or 0)
+            price_ton = price_nano / 1_000_000_000 if price_nano > 1_000_000 else float(price_nano)
+            # Image: try multiple field names, resolve relative paths
+            img = (g.get('imageUrl') or g.get('previewUrl') or g.get('image') or
+                   g.get('gifUrl') or g.get('thumbnailUrl') or '')
+            if img and not img.startswith('http'):
+                img = f'{MRKT_CDN_BASE}/{img.lstrip("/")}'
+            result.append({
+                'id': g.get('id'),
+                'number': g.get('number') or g.get('giftNumber') or g.get('serialNumber'),
+                'price_ton': round(price_ton, 4),
+                'model': g.get('modelName') or g.get('model') or '',
+                'backdrop': g.get('backdropName') or g.get('backdrop') or '',
+                'image': img,
+            })
+        return jsonify({'success': True, 'gifts': result})
+    except Exception as e:
+        logger.error(f'MRKT search error: {e}')
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/mrkt/buy-withdraw', methods=['POST'])
+def mrkt_buy_withdraw():
+    """Deduct 0.4 TON fee, buy gift on MRKT, mark inventory item as withdrawing."""
+    try:
+        data = request.get_json()
+        user_id = int(data['user_id'])
+        inventory_id = int(data['inventory_id'])
+        mrkt_gift_id = str(data['mrkt_gift_id'])
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Verify user balance
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+        balance = row[0] or 0
+        if balance < MRKT_WITHDRAW_FEE_STARS:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Недостаточно баланса. Нужно 0.4 TON для вывода'})
+
+        # Verify inventory item belongs to user and not already withdrawing
+        cursor.execute('SELECT gift_name, gift_image, gift_value, is_withdrawing FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
+        inv = cursor.fetchone()
+        if not inv:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Подарок не найден в инвентаре'})
+        gift_name, gift_image, gift_value, is_withdrawing = inv
+        if is_withdrawing:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Подарок уже в процессе вывода'})
+
+        # ── Buy on MRKT ───────────────────────────────────────────────────────
+        # NOTE: Buy endpoint is POST /gifts/{id}/buy — update if MRKT changes API
+        headers = {'Authorization': MRKT_TOKEN}
+        buy_resp = http_requests.post(
+            f'{MRKT_API_BASE}/gifts/{mrkt_gift_id}/buy',
+            headers=headers, json={}, timeout=15
+        )
+        logger.info(f'MRKT buy response {buy_resp.status_code}: {buy_resp.text[:200]}')
+
+        if buy_resp.status_code not in (200, 201):
+            conn.close()
+            try:
+                err_body = buy_resp.json()
+                err_msg = err_body.get('message') or err_body.get('error') or 'Ошибка покупки на MRKT'
+            except Exception:
+                err_msg = f'MRKT ответил {buy_resp.status_code}'
+            if buy_resp.status_code == 402 or 'balance' in err_msg.lower():
+                err_msg = 'Недостаточно баланса на MRKT-аккаунте'
+            return jsonify({'success': False, 'error': err_msg})
+
+        # ── Success: deduct fee, update state ─────────────────────────────────
+        cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
+                       (MRKT_WITHDRAW_FEE_STARS, user_id))
+        cursor.execute('UPDATE inventory SET is_withdrawing = TRUE WHERE id = ?', (inventory_id,))
+
+        cursor.execute('''
+            INSERT INTO withdrawals (user_id, inventory_id, gift_name, gift_image, gift_value,
+                                     telegram_username, user_photo_url, user_first_name, status)
+            SELECT ?, ?, ?, ?, ?, username, photo_url, first_name, 'processing'
+            FROM users WHERE id = ?
+        ''', (user_id, inventory_id, gift_name, gift_image, gift_value, user_id))
+        withdrawal_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        try:
+            add_history_record(user_id, 'withdraw', -MRKT_WITHDRAW_FEE_STARS,
+                               f'Вывод через MRKT: {gift_name} (MRKT id={mrkt_gift_id})')
+        except Exception:
+            pass
+
+        try:
+            tg_send(user_id,
+                    f"📦 <b>Вывод #{withdrawal_id}</b>\n\n"
+                    f"Подарок <b>{gift_name}</b> куплен на MRKT.\n"
+                    f"Ожидайте передачи на ваш аккаунт.")
+        except Exception:
+            pass
+
+        return jsonify({'success': True, 'withdrawal_id': withdrawal_id})
+
+    except Exception as e:
+        logger.error(f'MRKT buy-withdraw error: {e}\n{traceback.format_exc()}')
+        return jsonify({'success': False, 'error': 'Внутренняя ошибка сервера'})
 UPGRADE_MAX_STARS = 1000 # 10 TON
 
 def _calc_upgrade_cost_stars(gift_value_stars):
