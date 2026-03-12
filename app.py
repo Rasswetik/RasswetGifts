@@ -2118,6 +2118,22 @@ def _create_all_tables(conn):
         'CREATE INDEX IF NOT EXISTS idx_crash_bets_status ON ultimate_crash_bets(status)',
         'CREATE INDEX IF NOT EXISTS idx_inventory_user ON inventory(user_id)',
         'CREATE INDEX IF NOT EXISTS idx_user_history_user ON user_history(user_id)',
+        # Additional indexes for frequently queried columns
+        'CREATE INDEX IF NOT EXISTS idx_users_bet_volume ON users(total_bet_volume DESC)',
+        'CREATE INDEX IF NOT EXISTS idx_admin_notif_active ON admin_notifications(is_active, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_admin_notif_target ON admin_notifications(target_user_id, is_active)',
+        'CREATE INDEX IF NOT EXISTS idx_leaderboard_active ON leaderboard_config(is_active)',
+        'CREATE INDEX IF NOT EXISTS idx_shop_deals_active ON shop_deals(is_active)',
+        'CREATE INDEX IF NOT EXISTS idx_inventory_user_withdraw ON inventory(user_id, is_withdrawing)',
+        'CREATE INDEX IF NOT EXISTS idx_crash_bets_user_status ON ultimate_crash_bets(user_id, status)',
+        'CREATE INDEX IF NOT EXISTS idx_udp_user_date ON user_daily_progress(user_id, date)',
+        'CREATE INDEX IF NOT EXISTS idx_news_active ON news(is_active, created_at)',
+        'CREATE INDEX IF NOT EXISTS idx_promo_codes_active ON promo_codes(is_active)',
+        'CREATE INDEX IF NOT EXISTS idx_withdrawals_user ON withdrawals(user_id, status)',
+        'CREATE INDEX IF NOT EXISTS idx_crash_games_simple_status ON crash_games(status)',
+        'CREATE INDEX IF NOT EXISTS idx_case_open_user ON case_open_history(user_id)',
+        'CREATE INDEX IF NOT EXISTS idx_win_history_user ON win_history(user_id)',
+        'CREATE INDEX IF NOT EXISTS idx_quests_active ON crash_quests(is_active)',
     ]
     for idx_sql in indexes:
         try:
@@ -3574,12 +3590,31 @@ def start_crash_loop():
     def loop():
         while not _db_ready:
             time.sleep(1)
+
+        # Persistent connection — reacquired only on error (avoids 120 pool ops/min)
+        loop_conn = None
+
+        def get_loop_conn():
+            nonlocal loop_conn
+            if loop_conn is None:
+                loop_conn = get_db_connection()
+            return loop_conn
+
+        def reset_loop_conn():
+            nonlocal loop_conn
+            if loop_conn:
+                try:
+                    loop_conn.close()
+                except Exception:
+                    pass
+            loop_conn = None
+
         while True:
             if not _db_ready:
                 time.sleep(2)
                 continue
             try:
-                conn = get_db_connection()
+                conn = get_loop_conn()
                 cur = conn.cursor()
 
                 cur.execute("SELECT id,status,current_multiplier FROM crash_games ORDER BY id DESC LIMIT 1")
@@ -3589,20 +3624,20 @@ def start_crash_loop():
                     cur.execute("INSERT INTO crash_games(status,current_multiplier) VALUES('flying',1.0)")
                     conn.commit()
                 else:
-                    gid,status,mult = game
+                    gid, status, mult = game
                     if status == "flying":
-                        mult = float(mult) + random.uniform(0.05,0.25)
+                        mult = float(mult) + random.uniform(0.05, 0.25)
 
                         if random.random() < 0.03:
                             cur.execute("UPDATE crash_games SET status='crashed' WHERE id=?", (gid,))
                         else:
-                            cur.execute("UPDATE crash_games SET current_multiplier=? WHERE id=?", (round(mult,2),gid))
+                            cur.execute("UPDATE crash_games SET current_multiplier=? WHERE id=?", (round(mult, 2), gid))
 
                         conn.commit()
 
-                conn.close()
             except Exception as e:
                 logger.debug(f"crash_loop err: {e}")
+                reset_loop_conn()
                 time.sleep(3)
                 continue
             time.sleep(0.5)

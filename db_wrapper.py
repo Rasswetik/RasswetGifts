@@ -13,6 +13,7 @@ import time
 import threading
 import uuid
 import traceback
+from functools import lru_cache
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ DATABASE_URL = os.environ.get('DATABASE_URL', '')
 USE_POSTGRES = bool(DATABASE_URL)
 
 # Connection pool sizing can be tuned via environment variables
-PG_MIN_CONN = int(os.environ.get('PG_MIN_CONN', '2'))
+PG_MIN_CONN = int(os.environ.get('PG_MIN_CONN', '5'))
 PG_MAX_CONN = int(os.environ.get('PG_MAX_CONN', '30'))
 # How long to wait (seconds) when acquiring the pool semaphore
 PG_SEM_TIMEOUT = int(os.environ.get('PG_SEM_TIMEOUT', '30'))
@@ -53,8 +54,9 @@ if USE_POSTGRES:
         USE_POSTGRES = False
 
 
+@lru_cache(maxsize=2048)
 def _translate_query(sql):
-    """Convert SQLite-flavoured SQL to PostgreSQL-compatible SQL."""
+    """Convert SQLite-flavoured SQL to PostgreSQL-compatible SQL. Cached to avoid regex overhead."""
     if not USE_POSTGRES:
         return sql
     # ? → %s parameter markers
