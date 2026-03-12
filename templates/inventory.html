@@ -646,7 +646,7 @@
             <div class="item-modal-actions" id="itemModalActions">
                 <button class="item-modal-btn item-modal-sell" id="itemModalSellBtn" onclick="sellItem()">Sell</button>
                 <button class="item-modal-btn item-modal-upgrade" id="itemModalUpgradeBtn" onclick="upgradeItem()" style="display:none">Upgrade</button>
-                <button class="item-modal-btn item-modal-withdraw-nft" id="itemModalWithdrawBtn" onclick="openMrktPicker()" style="display:none">Вывести 0.4 TON</button>
+                <button class="item-modal-btn item-modal-withdraw-nft" id="itemModalWithdrawBtn" onclick="withdrawItem()" style="display:none">Вывести &minus; 0.4 TON</button>
                 <button class="item-modal-btn item-modal-claim" id="itemModalClaimBtn" onclick="claimChallenge()" style="display:none">Claim</button>
             </div>
         </div>
@@ -1118,7 +1118,7 @@
             sellBtn.textContent = t('sell');
             sellBtn.disabled = item.is_withdrawing;
             withdrawBtn.style.display = '';
-            withdrawBtn.textContent = 'Вывести 0.4 TON';
+            withdrawBtn.textContent = 'Вывести − 0.4 TON';
             withdrawBtn.disabled = item.is_withdrawing;
         } else {
             // Normal view
@@ -1152,7 +1152,7 @@
                 sellBtn.disabled = item.is_withdrawing;
                 // Upgrade hidden — show withdraw button for all normal gifts
                 withdrawBtn.style.display = '';
-                withdrawBtn.textContent = 'Вывести 0.4 TON';
+                withdrawBtn.textContent = 'Вывести − 0.4 TON';
                 withdrawBtn.disabled = item.is_withdrawing;
             }
         }
@@ -1458,96 +1458,39 @@
 
     var _mrktSelectedGiftId = null;
 
-    function openMrktPicker() {
+    async function withdrawItem() {
         if (!selectedItem) return;
-        _mrktSelectedGiftId = null;
-        document.getElementById('mrktConfirmBtn').disabled = true;
-        document.getElementById('mrktConfirmBtn').textContent = 'Выбрать подарок';
-        var grid = document.getElementById('mrktGrid');
-        grid.innerHTML = '<div class="mrkt-loading">Загрузка подарков с MRKT...</div>';
-        var name = selectedItem.gift_name || '';
-        document.getElementById('mrktSubtitle').textContent = name;
-        hideItemModal();
-        document.getElementById('mrktOverlay').classList.add('show');
-        fetch('/api/mrkt/gifts?name=' + encodeURIComponent(name))
-            .then(function(r){ return r.json(); })
-            .then(function(d){
-                if (!d.success || !d.gifts || d.gifts.length === 0) {
-                    grid.innerHTML = '<div class="mrkt-empty">Подарки не найдены на MRKT.<br>Попробуйте позже.</div>';
-                    return;
-                }
-                renderMrktGifts(d.gifts);
-            })
-            .catch(function(){ grid.innerHTML = '<div class="mrkt-empty">Ошибка загрузки. Попробуйте позже.</div>'; });
-    }
-
-    function renderMrktGifts(gifts) {
-        var grid = document.getElementById('mrktGrid');
-        grid.innerHTML = '';
-        gifts.forEach(function(g) {
-            var card = document.createElement('div');
-            card.className = 'mrkt-card';
-            card.dataset.mrktId = g.id;
-            var imgSrc = g.image || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>';
-            card.innerHTML =
-                '<img src="' + imgSrc + '" loading="lazy" onerror="this.style.opacity=\'0.2\'">' +
-                '<div class="mrkt-num">#' + (g.number || '?') + '</div>' +
-                '<div class="mrkt-price">' + (g.price_ton ? g.price_ton.toFixed(2) : '?') + ' TON</div>';
-            card.onclick = function() {
-                document.querySelectorAll('.mrkt-card').forEach(function(c){ c.classList.remove('selected'); });
-                card.classList.add('selected');
-                _mrktSelectedGiftId = g.id;
-                var btn = document.getElementById('mrktConfirmBtn');
-                btn.disabled = false;
-                btn.textContent = 'Купить #' + (g.number || g.id.slice(0,8)) + ' за ' + (g.price_ton ? g.price_ton.toFixed(2) : '?') + ' TON';
-            };
-            grid.appendChild(card);
-        });
-    }
-
-    function closeMrktPicker() {
-        document.getElementById('mrktOverlay').classList.remove('show');
-        _mrktSelectedGiftId = null;
-    }
-
-    async function confirmMrktWithdraw() {
-        if (!selectedItem && !_mrktSelectedGiftId) return;
-        if (!_mrktSelectedGiftId) { showNotif('Выберите подарок', true); return; }
-        var btn = document.getElementById('mrktConfirmBtn');
+        var btn = document.getElementById('itemModalWithdrawBtn');
         btn.disabled = true;
         btn.textContent = 'Покупка...';
         try {
             var r = await fetch('/api/mrkt/buy-withdraw', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_id: user.id,
-                    inventory_id: selectedItem ? selectedItem.id : _currentInventoryId,
-                    mrkt_gift_id: _mrktSelectedGiftId
-                })
+                body: JSON.stringify({user_id: user.id, inventory_id: selectedItem.id})
             });
             var d = await r.json();
             if (d.success) {
-                closeMrktPicker();
+                hideItemModal();
                 showNotif('✅ Подарок куплен на MRKT! Ожидайте передачи.');
                 await refreshUserData();
                 loadInventory();
             } else {
                 btn.disabled = false;
-                btn.textContent = 'Попробовать снова';
+                btn.textContent = 'Вывести − 0.4 TON';
                 showNotif(d.error || 'Ошибка вывода', true);
             }
         } catch(e) {
             btn.disabled = false;
-            btn.textContent = 'Попробовать снова';
+            btn.textContent = 'Вывести − 0.4 TON';
             showNotif('Ошибка соединения', true);
         }
     }
 
-    async function withdrawItem() {
-        // Legacy path for NFT items — redirect to MRKT picker
-        openMrktPicker();
-    }
+    function openMrktPicker() { withdrawItem(); }
+    function closeMrktPicker() {}
+    function renderMrktGifts() {}
+    async function confirmMrktWithdraw() {}
 
     function showSellAllModal() { var sellable = inventory.filter(function(i){return !i.is_withdrawing}); if (!sellable.length) { showNotif(t('noGifts'), true); return; } var total = sellable.reduce(function(s,i){return s + (i.gift_value || 0)}, 0); document.getElementById('sellAllTotal').textContent = formatTon(starsToTon(total)) + ' TON'; document.getElementById('sellAllModal').classList.add('show'); }
     function hideSellAllModal() { document.getElementById('sellAllModal').classList.remove('show'); }
