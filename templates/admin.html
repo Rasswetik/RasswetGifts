@@ -1077,7 +1077,21 @@ select.form-input option{background:#1A1E2A;color:#fff}
     </div>
 </div>
 
-<script>
+    <!-- Gift Picker Modal (shared) -->
+    <div class="modal-overlay" id="giftPickerModal">
+        <div class="modal-sheet" style="max-height:85vh">
+            <div class="modal-handle"></div>
+            <div class="modal-title">Выберите подарок</div>
+            <div style="padding:8px">
+                <div class="gift-grid" id="giftPickerGrid" style="max-height:60vh;overflow-y:auto"></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:12px">
+                <button class="btn btn-primary" onclick="closeGiftPicker()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
 var ADMIN_ID = 5257227756;
 var tg = window.Telegram && window.Telegram.WebApp;
 var currentTgUser = null;
@@ -1316,40 +1330,78 @@ function addRewardRow(pos, type, amount, giftId){
             '<button type="button" onclick="this.closest(\'.lb-reward-row\').remove()" style="padding:6px 10px;background:rgba(249,105,153,.2);color:#F96999;border:none;border-radius:6px;cursor:pointer;font-size:12px;margin-left:8px">✕</button>' +
         '</div>' +
         '<input type="hidden" class="lb-gift-input" value="' + giftVal + '">' +
-        '<div class="gift-grid" style="display:' + (rewardType === 'gift' ? 'grid' : 'none') + ';width:100%;margin-top:8px"></div>';
+        '<div class="selected-gift-preview" style="display:' + (rewardType === 'gift' ? 'block' : 'none') + ';margin-top:8px"></div>' +
+        '<div style="margin-top:8px;display:' + (rewardType === 'gift' ? 'block' : 'none') + '"><button class="lb-choose-btn btn btn-sm" onclick="openGiftPickerForRow(this)">Выбрать подарок</button></div>';
 
     $('lbRewardsContainer').appendChild(row);
 
-    // Populate gift grid
-    var grid = row.querySelector('.gift-grid');
-    lbGiftsLoaded.forEach(function(g) {
-        var gid = g.id || g.gift_key || '';
-        var card = document.createElement('div');
-        card.className = 'gift-card' + (String(gid) === String(giftVal) ? ' selected' : '');
-        var img = g.image || '/static/img/gift.png';
-        card.innerHTML = '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">' +
-                         '<div class="gift-card-name">' + escapeHtml(g.name || '') + '</div>' +
-                         '<div class="gift-card-value"><img src="/static/img/tons/ton_1.svg">' + (g.value||0) + '</div>';
-        card.onclick = function(){
-            row.querySelectorAll('.gift-card').forEach(function(c){ c.classList.remove('selected'); });
-            card.classList.add('selected');
-            row.querySelector('.lb-gift-input').value = gid;
-        };
-        grid.appendChild(card);
-    });
+    // If gift already selected, render preview
+    if(giftVal && lbGiftsLoaded && lbGiftsLoaded.length){
+        var preview = row.querySelector('.selected-gift-preview');
+        var g = lbGiftsLoaded.find(function(x){ return String(x.id||x.gift_key||'') === String(giftVal); });
+        if(g && preview){
+            var img = g.image || '/static/img/gift.png';
+            preview.innerHTML = '<div style="display:flex;align-items:center;gap:8px">' +
+                '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'" style="width:48px;height:48px;object-fit:contain;border-radius:8px;padding:4px">' +
+                '<div style="text-align:left"><div style="font-size:13px;font-weight:700">' + escapeHtml(g.name||'') + '</div><div style="font-size:12px;color:rgba(255,255,255,.6)"><img src="/static/img/tons/ton_1.svg" style="width:12px;height:12px;vertical-align:middle;margin-right:6px">' + (g.value||0) + '</div></div>' +
+            '</div>';
+        }
+    }
 }
 
 function onRewardTypeChange(sel){
     var row = sel.closest('.lb-reward-row');
     var tonInput = row.querySelector('.lb-ton-input');
-    var giftGrid = row.querySelector('.gift-grid');
+    var preview = row.querySelector('.selected-gift-preview');
+    var chooseBtn = row.querySelector('.lb-choose-btn');
     if(sel.value === 'ton'){
         tonInput.style.display = 'block';
-        giftGrid.style.display = 'none';
+        if(preview) preview.style.display = 'none';
+        if(chooseBtn) chooseBtn.style.display = 'none';
     } else {
         tonInput.style.display = 'none';
-        giftGrid.style.display = 'grid';
+        if(preview) preview.style.display = 'block';
+        if(chooseBtn) chooseBtn.style.display = 'inline-block';
     }
+}
+
+// Gift picker modal (single shared instance)
+var giftPickerTargetRow = null;
+async function openGiftPickerForRow(btn){
+    var row = btn.closest('.lb-reward-row');
+    if(!row) return;
+    giftPickerTargetRow = row;
+    await loadLbGifts();
+    var modal = $('giftPickerModal');
+    var grid = modal.querySelector('.gift-grid');
+    if(!grid.dataset.populated){
+        grid.innerHTML = '';
+        lbGiftsLoaded.forEach(function(g){
+            var gid = g.id || g.gift_key || '';
+            var card = document.createElement('div');
+            card.className = 'gift-card';
+            var img = g.image || '/static/img/gift.png';
+            card.innerHTML = '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">' +
+                             '<div class="gift-card-name">' + escapeHtml(g.name||'') + '</div>' +
+                             '<div class="gift-card-value"><img src="/static/img/tons/ton_1.svg">' + (g.value||0) + '</div>';
+            card.onclick = function(){
+                if(!giftPickerTargetRow) return;
+                giftPickerTargetRow.querySelector('.lb-gift-input').value = gid;
+                var preview = giftPickerTargetRow.querySelector('.selected-gift-preview');
+                if(preview) preview.innerHTML = card.innerHTML;
+                closeGiftPicker();
+            };
+            grid.appendChild(card);
+        });
+        grid.dataset.populated = '1';
+    }
+    modal.classList.add('show');
+}
+
+function closeGiftPicker(){
+    var modal = $('giftPickerModal');
+    if(modal) modal.classList.remove('show');
+    giftPickerTargetRow = null;
 }
 
 function initLbRewards(){

@@ -2776,7 +2776,7 @@ def _grant_level_rewards(user_id, new_level):
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT id, reward_type, reward_data, description FROM level_rewards WHERE level = ? AND is_active = 1', (new_level,))
+        cursor.execute('SELECT id, reward_type, reward_data, description FROM level_rewards WHERE level = ? AND is_active = TRUE', (new_level,))
         rewards = cursor.fetchall()
         for rw in rewards:
             rw_id, rw_type, rw_data_str, rw_desc = rw
@@ -11971,7 +11971,7 @@ def _sync_news_to_db(conn):
             content_en = n.get('content_en', '')
             image_url = n.get('cover') or n.get('banner') or n.get('image_url') or ''
             reward_amount = int(n.get('reward_amount', 0) or 0)
-            is_active = 1 if n.get('is_active', True) else 0
+            is_active = True if n.get('is_active', True) else False
             created_at = n.get('created_at')
 
             cur = conn.cursor()
@@ -14147,7 +14147,7 @@ def ensure_daily_tasks():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM daily_tasks WHERE is_active = 1')
+        cursor.execute('SELECT COUNT(*) FROM daily_tasks WHERE is_active = TRUE')
         count = cursor.fetchone()[0]
         if count == 0:
             for t in DEFAULT_DAILY_TASKS:
@@ -14215,7 +14215,7 @@ def get_rewards_info(user_id):
         
         # Daily tasks
         today = datetime.now().strftime('%Y-%m-%d')
-        cursor.execute('SELECT id, task_type, case_id, target_value, reward_stars, description FROM daily_tasks WHERE is_active = 1')
+        cursor.execute('SELECT id, task_type, case_id, target_value, reward_stars, description FROM daily_tasks WHERE is_active = TRUE')
         tasks = cursor.fetchall()
         
         daily_tasks = []
@@ -14411,9 +14411,9 @@ def update_daily_task_progress(user_id, task_type, amount=1, case_id=None):
         
         # Get active tasks of this type
         if task_type == 'open_case' and case_id:
-            cursor.execute('SELECT id, target_value, case_id FROM daily_tasks WHERE is_active = 1 AND task_type = ?', (task_type,))
+            cursor.execute('SELECT id, target_value, case_id FROM daily_tasks WHERE is_active = TRUE AND task_type = ?', (task_type,))
         else:
-            cursor.execute('SELECT id, target_value, case_id FROM daily_tasks WHERE is_active = 1 AND task_type = ?', (task_type,))
+            cursor.execute('SELECT id, target_value, case_id FROM daily_tasks WHERE is_active = TRUE AND task_type = ?', (task_type,))
         
         tasks = cursor.fetchall()
         
@@ -15202,10 +15202,10 @@ def get_shop_deals():
 
         now = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
         cursor.execute('''SELECT id, title, description, section, items, price, old_price, currency,
-                          duration_hours, starts_at, ends_at, icon, created_at
-                          FROM shop_deals WHERE is_active = 1
-                          AND (ends_at IS NULL OR ends_at > ?)
-                          ORDER BY sort_order ASC, id DESC''', (now,))
+                  duration_hours, starts_at, ends_at, icon, created_at
+                  FROM shop_deals WHERE is_active = TRUE
+                  AND (ends_at IS NULL OR ends_at > ?)
+                  ORDER BY sort_order ASC, id DESC''', (now,))
         deals = cursor.fetchall()
 
         # Get user's owned items + purchases
@@ -15456,7 +15456,7 @@ def purchase_shop_deal():
             return jsonify({'success': False, 'error': 'Уже куплено'})
 
         # Get deal
-        cursor.execute('SELECT id, title, items, price, currency, ends_at FROM shop_deals WHERE id = ? AND is_active = 1', (deal_id,))
+        cursor.execute('SELECT id, title, items, price, currency, ends_at FROM shop_deals WHERE id = ? AND is_active = TRUE', (deal_id,))
         deal = cursor.fetchone()
         if not deal:
             conn.close()
@@ -15645,7 +15645,7 @@ def admin_shop_deals():
             cursor = conn.cursor()
             cursor.execute('''INSERT INTO shop_deals (title, description, section, items, price, old_price,
                               currency, duration_hours, starts_at, ends_at, is_active, sort_order, icon)
-                              VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, 1, ?, ?)''',
+                              VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, TRUE, ?, ?)''',
                           (title, description, section, items, price, old_price, currency,
                            duration_hours, ends_at, sort_order, icon))
             conn.commit()
@@ -15664,7 +15664,7 @@ def admin_toggle_shop_deal():
             return jsonify({'success': False, 'error': 'Доступ запрещен'})
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('UPDATE shop_deals SET is_active = ? WHERE id = ?', (1 if data.get('is_active') else 0, data['deal_id']))
+        cursor.execute('UPDATE shop_deals SET is_active = ? WHERE id = ?', (True if data.get('is_active') else False, data['deal_id']))
         conn.commit()
         conn.close()
         return jsonify({'success': True})
@@ -15931,23 +15931,23 @@ def admin_promote_crate():
             # Create shop deal if not exists
             if promo_deal_id:
                 # Reactivate existing deal
-                cursor.execute('UPDATE shop_deals SET is_active = 1 WHERE id = ?', (promo_deal_id,))
+                cursor.execute('UPDATE shop_deals SET is_active = TRUE WHERE id = ?', (promo_deal_id,))
             else:
                 items = json.dumps([{'type': 'crate', 'crate_id': crate_id, 'name': name}], ensure_ascii=False)
                 cursor.execute('''INSERT INTO shop_deals (title, description, section, items, price, old_price, currency, duration_hours, starts_at, ends_at, is_active, sort_order, icon)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, NULL, 1, 0, ?)''',
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 0, CURRENT_TIMESTAMP, NULL, TRUE, 0, ?)''',
                     (f'Кейс: {name}', desc or f'Кейс {name}', 'cases', items, int(price or 0), 0, currency or 'stars', image or ''))
                 promo_deal_id = cursor.lastrowid
 
-            cursor.execute('UPDATE crates SET is_promoted = 1, promo_deal_id = ? WHERE id = ?', (promo_deal_id, crate_id))
+            cursor.execute('UPDATE crates SET is_promoted = TRUE, promo_deal_id = ? WHERE id = ?', (promo_deal_id, crate_id))
             conn.commit()
             conn.close()
             return jsonify({'success': True, 'promo_deal_id': promo_deal_id})
         else:
             # Unpromote: deactivate linked shop deal if exists
             if promo_deal_id:
-                cursor.execute('UPDATE shop_deals SET is_active = 0 WHERE id = ?', (promo_deal_id,))
-            cursor.execute('UPDATE crates SET is_promoted = 0, promo_deal_id = NULL WHERE id = ?', (crate_id,))
+                cursor.execute('UPDATE shop_deals SET is_active = FALSE WHERE id = ?', (promo_deal_id,))
+            cursor.execute('UPDATE crates SET is_promoted = FALSE, promo_deal_id = NULL WHERE id = ?', (crate_id,))
             conn.commit()
             conn.close()
             return jsonify({'success': True})
@@ -16036,7 +16036,7 @@ def get_crates():
         init_crates_tables(cursor)
         conn.commit()
         
-        cursor.execute('SELECT * FROM crates WHERE is_active = 1 ORDER BY sort_order ASC, id DESC')
+        cursor.execute('SELECT * FROM crates WHERE is_active = TRUE ORDER BY sort_order ASC, id DESC')
         crates = []
         for row in cursor.fetchall():
             crate = dict(row)
@@ -16068,7 +16068,7 @@ def open_crate():
         conn.commit()
         
         # Get crate
-        cursor.execute('SELECT * FROM crates WHERE id = ? AND is_active = 1', (crate_id,))
+        cursor.execute('SELECT * FROM crates WHERE id = ? AND is_active = TRUE', (crate_id,))
         crate = cursor.fetchone()
         if not crate:
             conn.close()
@@ -16240,7 +16240,7 @@ def get_crash_quests():
         )''')
         conn.commit()
         
-        cursor.execute('SELECT id, title, description, quest_type, target_value, reward_type, reward_amount, reward_data, icon, condition_value, parent_id, created_at FROM crash_quests WHERE is_active = 1 ORDER BY sort_order ASC, id ASC')
+        cursor.execute('SELECT id, title, description, quest_type, target_value, reward_type, reward_amount, reward_data, icon, condition_value, parent_id, created_at FROM crash_quests WHERE is_active = TRUE ORDER BY sort_order ASC, id ASC')
         quests = cursor.fetchall()
         
         # Load user's owned items for compensation checks
@@ -16536,7 +16536,7 @@ def claim_crash_quest():
         cursor = conn.cursor()
         
         # Get quest info
-        cursor.execute('SELECT id, target_value, reward_type, reward_amount, reward_data, title, quest_type, condition_value, created_at FROM crash_quests WHERE id = ? AND is_active = 1', (quest_id,))
+        cursor.execute('SELECT id, target_value, reward_type, reward_amount, reward_data, title, quest_type, condition_value, created_at FROM crash_quests WHERE id = ? AND is_active = TRUE', (quest_id,))
         quest = cursor.fetchone()
         if not quest:
             conn.close()
@@ -16655,7 +16655,7 @@ def claim_crash_quest():
         # Check if any child quests become unlocked by completing this quest
         next_quest = None
         try:
-            cursor.execute('SELECT id, title, description, icon FROM crash_quests WHERE parent_id = ? AND is_active = 1 LIMIT 1', (qid,))
+            cursor.execute('SELECT id, title, description, icon FROM crash_quests WHERE parent_id = ? AND is_active = TRUE LIMIT 1', (qid,))
             child = cursor.fetchone()
             if child:
                 next_quest = {
@@ -18867,7 +18867,7 @@ def api_pending_notifications():
         # Админские уведомления (общие + персональные)
         cursor.execute('''SELECT id, title, message, image_url, created_at, notif_type, reward_type, reward_data
             FROM admin_notifications 
-            WHERE is_active = 1 AND created_at > datetime('now', '-7 day')
+            WHERE is_active = TRUE AND created_at > datetime('now', '-7 day')
             AND (target_user_id IS NULL OR target_user_id = ?)
             ORDER BY created_at DESC LIMIT 20''', (user_id,))
         notifications = []
@@ -19404,7 +19404,7 @@ def api_leaderboard():
         # Get active leaderboard config
         cursor.execute('''SELECT id, period_start, period_end, rewards_json, title 
             FROM leaderboard_config 
-            WHERE is_active = 1 AND period_end > datetime('now')
+            WHERE is_active = TRUE AND period_end > datetime('now')
             ORDER BY created_at DESC LIMIT 1''')
         config = cursor.fetchone()
         
@@ -19643,7 +19643,7 @@ def api_admin_leaderboard():
             
             conn = get_db_connection()
             # Deactivate other leaderboards
-            conn.execute('UPDATE leaderboard_config SET is_active = 0')
+            conn.execute('UPDATE leaderboard_config SET is_active = FALSE')
             cursor = conn.cursor()
             cursor.execute('''INSERT INTO leaderboard_config (period_start, period_end, rewards_json, title, is_active)
                 VALUES (?, ?, ?, ?, ?)''', (period_start, period_end, rewards_json, title, True))
@@ -19673,7 +19673,7 @@ def api_admin_leaderboard():
             
             conn = get_db_connection()
             if is_active:
-                conn.execute('UPDATE leaderboard_config SET is_active = 0')
+                conn.execute('UPDATE leaderboard_config SET is_active = FALSE')
             conn.execute('''UPDATE leaderboard_config SET rewards_json = ?, title = ?, is_active = ?
                 WHERE id = ?''', (rewards_json, title, True if is_active else False, lb_id))
             conn.commit()
@@ -19751,7 +19751,7 @@ def api_admin_leaderboard_distribute():
                 distributed += 1
         
         # Deactivate leaderboard
-        conn.execute('UPDATE leaderboard_config SET is_active = 0 WHERE id = ?', (lb_id,))
+        conn.execute('UPDATE leaderboard_config SET is_active = FALSE WHERE id = ?', (lb_id,))
         conn.commit()
         conn.close()
         
