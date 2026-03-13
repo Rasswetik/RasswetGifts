@@ -1,0 +1,814 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1C2233">
+<title>Lucky Buy — Rasswet</title>
+<link rel="icon" href="/static/img/logo.png" type="image/png">
+<link rel="stylesheet" href="/static/css/global.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="/static/js/telegram-auth.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
+body{
+  font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:#1C2233;color:#fff;
+  -webkit-font-smoothing:antialiased;min-height:100vh;
+}
+
+/* TOP BAR */
+.top-bar{
+  position:fixed;top:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;
+  z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,8px) + 8px) 16px 10px;
+  background:rgba(28,34,51,.92);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.top-left{display:flex;align-items:center;gap:10px}
+.top-avatar{
+  width:34px;height:34px;border-radius:50%;
+  object-fit:cover;flex-shrink:0;
+  border:1.5px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.06);
+}
+.top-nick{
+  font-size:14px;font-weight:700;
+  color:rgba(255,255,255,.9);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:140px;
+}
+.top-right{display:flex;align-items:center;gap:8px}
+.bal-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 12px;border-radius:20px;
+  background:rgba(120,135,160,.1);
+  border:1px solid rgba(120,135,160,.2);
+  font-weight:700;font-size:13px;color:#fff;
+}
+.bal-pill img{width:16px;height:16px;flex-shrink:0}
+.bal-plus{
+  width:28px;height:28px;border-radius:50%;border:none;
+  background:rgba(120,135,160,.25);color:rgba(255,255,255,.8);
+  font-size:16px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(120,135,160,.35);transition:all .2s;
+}
+.bal-plus:active{transform:scale(.9)}
+
+/* PAGE */
+.page{
+  max-width:480px;margin:0 auto;
+  padding-top:calc(env(safe-area-inset-top,8px) + 62px);
+  padding-bottom:24px;min-height:100vh;
+}
+
+/* SEARCH */
+.search-wrap{padding:12px 14px 4px}
+.search-box{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:10px 14px;
+  transition:border-color .2s;
+}
+.search-box:focus-within{border-color:rgba(255,255,255,.2)}
+.search-box svg{flex-shrink:0;opacity:.35;stroke:currentColor;stroke-width:2;fill:none}
+.search-input{
+  flex:1;background:none;border:none;outline:none;
+  color:#fff;font-size:14px;font-weight:500;font-family:inherit;
+}
+.search-input::placeholder{color:rgba(255,255,255,.25)}
+
+/* SECTION */
+.section-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px 8px;
+}
+.section-lbl{font-size:13px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.4px;text-transform:uppercase}
+.section-count{
+  font-size:11px;font-weight:700;color:rgba(255,255,255,.3);
+  background:rgba(255,255,255,.05);padding:3px 9px;border-radius:20px;
+}
+
+/* GIFT GRID */
+.gift-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  padding:0 12px 20px;
+}
+.gift-card{
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:16px;padding:14px 10px 12px;
+  cursor:pointer;
+  transition:border-color .2s,background .2s,transform .15s;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  position:relative;overflow:hidden;
+}
+.gift-card:active{transform:scale(.96)}
+.gift-card:hover{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.05)}
+.gift-img-wrap{
+  width:88px;height:88px;display:flex;align-items:center;justify-content:center;
+  border-radius:12px;background:rgba(255,255,255,.04);flex-shrink:0;
+}
+.gift-img-wrap img{width:76px;height:76px;object-fit:contain}
+.gift-name{
+  font-size:11px;font-weight:600;color:rgba(255,255,255,.8);
+  text-align:center;line-height:1.3;word-break:break-word;width:100%;
+}
+.gift-prices{display:flex;flex-direction:column;align-items:center;gap:1px;width:100%}
+.gift-orig{font-size:10px;color:rgba(255,255,255,.25);font-weight:500;text-decoration:line-through}
+.gift-buy{
+  display:flex;align-items:center;gap:4px;
+  font-size:13px;font-weight:800;color:#78A0CC;
+}
+.gift-buy img{width:13px;height:13px}
+
+/* EMPTY */
+.empty-state{
+  display:none;flex-direction:column;align-items:center;
+  padding:48px 20px;gap:10px;color:rgba(255,255,255,.25);
+}
+.empty-state svg{stroke:currentColor;fill:none;stroke-width:1.5;opacity:.4}
+.empty-state p{font-size:13px;font-weight:600}
+
+/* ===== MODAL ===== */
+.lb-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:#131825;
+  display:flex;flex-direction:column;
+  max-width:480px;margin:0 auto;
+  opacity:0;pointer-events:none;transition:opacity .28s;
+}
+.lb-overlay.show{opacity:1;pointer-events:all}
+
+/* Modal header */
+.lb-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,12px) + 14px) 16px 12px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;
+}
+.lb-title{font-size:17px;font-weight:800;color:#fff;letter-spacing:-.2px}
+.lb-close{
+  width:32px;height:32px;border-radius:50%;border:none;
+  background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .2s;
+}
+.lb-close svg{stroke:currentColor;fill:none;stroke-width:2.5;width:16px;height:16px}
+.lb-close:active{background:rgba(255,255,255,.12);transform:scale(.9)}
+
+/* Gift preview strip */
+.lb-gift-strip{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  flex-shrink:0;
+  background:rgba(255,255,255,.02);
+}
+.lb-gift-thumb{
+  width:52px;height:52px;border-radius:12px;
+  background:rgba(255,255,255,.05);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.lb-gift-thumb img{width:44px;height:44px;object-fit:contain}
+.lb-gift-info{flex:1;min-width:0}
+.lb-gift-name{font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-gift-orig{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+
+/* Roulette */
+.lb-roulette{
+  flex-shrink:0;position:relative;overflow:hidden;
+  padding:16px 0;
+}
+.lb-track{
+  display:flex;gap:8px;padding:0 16px;
+  transform:translateX(0);
+  will-change:transform;transition:none;
+}
+.lb-slot{
+  flex-shrink:0;width:86px;height:86px;
+  border-radius:14px;
+  border:1.5px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;overflow:hidden;
+}
+.lb-slot img{width:58px;height:58px;object-fit:contain}
+.lb-slot-name{font-size:8px;font-weight:700;color:rgba(255,255,255,.4);text-align:center;padding:0 4px;line-height:1.3;word-break:break-word}
+.lb-slot.s-gift{border-color:rgba(120,160,204,.3);background:rgba(120,160,204,.06)}
+.lb-slot.s-empty{border-color:rgba(255,255,255,.05)}
+.lb-slot.s-winner{
+  border-color:#78A0CC;
+  background:rgba(120,160,204,.12);
+  box-shadow:0 0 16px rgba(120,160,204,.35);
+}
+.lb-slot-empty-txt{font-size:9px;font-weight:900;letter-spacing:1px;color:rgba(255,80,80,.45);text-transform:uppercase}
+.lb-arrow{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:0;height:0;
+  border-left:7px solid transparent;border-right:7px solid transparent;
+  border-top:10px solid rgba(120,160,204,.7);
+  z-index:2;
+}
+.lb-arrow-bot{
+  position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  width:0;height:0;
+  border-left:7px solid transparent;border-right:7px solid transparent;
+  border-bottom:10px solid rgba(120,160,204,.7);
+  z-index:2;
+}
+.lb-center-line{
+  position:absolute;top:0;bottom:0;left:50%;
+  width:1px;
+  background:linear-gradient(to bottom,transparent,rgba(120,160,204,.35),transparent);
+  pointer-events:none;z-index:1;
+}
+
+/* Controls */
+.lb-controls{
+  flex:1;display:flex;flex-direction:column;
+  padding:16px 16px calc(env(safe-area-inset-bottom,0) + 20px);
+  gap:14px;overflow-y:auto;
+}
+.ctrl-row{display:flex;align-items:center;justify-content:space-between}
+.ctrl-label{font-size:13px;font-weight:600;color:rgba(255,255,255,.45)}
+.ctrl-val{
+  font-size:15px;font-weight:800;color:#fff;
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.12);
+  padding:3px 12px;border-radius:10px;min-width:54px;text-align:center;
+}
+.lb-range{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:5px;
+  background:rgba(255,255,255,.08);
+  border-radius:3px;outline:none;cursor:pointer;
+}
+.lb-range::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:18px;height:18px;
+  background:#78A0CC;border-radius:50%;
+  cursor:pointer;border:2px solid #1C2233;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
+}
+.lb-range::-moz-range-thumb{
+  width:18px;height:18px;background:#78A0CC;border-radius:50%;
+  border:2px solid #1C2233;cursor:pointer;
+}
+.slider-labels{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.2);margin-top:3px}
+
+.cost-card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.cost-label{font-size:12px;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.3px}
+.cost-val{display:flex;align-items:center;gap:6px;font-size:18px;font-weight:900;color:#fff}
+.cost-val img{width:18px;height:18px}
+
+.demo-row{display:flex;gap:8px}
+.demo-btn{
+  flex:1;padding:10px;border-radius:11px;border:none;
+  cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;
+  transition:all .18s;
+}
+.demo-btn.off{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4)}
+.demo-btn.on{background:rgba(120,160,204,.15);border:1px solid rgba(120,160,204,.3);color:#78A0CC}
+
+.spin-btn{
+  width:100%;padding:15px;border-radius:14px;border:none;cursor:pointer;
+  font-size:15px;font-weight:800;font-family:inherit;letter-spacing:-.1px;
+  background:rgba(120,160,204,.2);
+  color:#A8C8F0;
+  border:1.5px solid rgba(120,160,204,.35);
+  transition:all .2s;
+}
+.spin-btn:active{transform:scale(.97)}
+.spin-btn:disabled{background:rgba(255,255,255,.05);color:rgba(255,255,255,.25);border-color:rgba(255,255,255,.07);cursor:not-allowed;transform:none}
+.spin-btn.active-state{
+  background:rgba(120,160,204,.25);
+  color:#C0D8F0;
+  border-color:rgba(120,160,204,.5);
+}
+
+/* ===== RESULT ===== */
+.res-overlay{
+  position:absolute;inset:0;z-index:10;
+  background:#131825;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px;gap:0;
+  opacity:0;pointer-events:none;transition:opacity .35s;
+}
+.res-overlay.show{opacity:1;pointer-events:all}
+.res-icon{
+  margin-bottom:18px;
+  animation:resPop .45s cubic-bezier(.175,.885,.32,1.275) both;
+}
+@keyframes resPop{
+  from{opacity:0;transform:scale(.4) translateY(30px)}
+  to{opacity:1;transform:scale(1) translateY(0)}
+}
+.res-img-box{
+  width:130px;height:130px;border-radius:20px;
+  background:rgba(120,160,204,.08);
+  border:1.5px solid rgba(120,160,204,.25);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 32px rgba(120,160,204,.2);
+}
+.res-img-box img{width:108px;height:108px;object-fit:contain}
+.res-empty-box{
+  width:130px;height:130px;border-radius:20px;
+  background:rgba(255,80,80,.06);
+  border:1.5px solid rgba(255,80,80,.18);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  box-shadow:0 0 28px rgba(255,80,80,.12);
+}
+.res-empty-txt{
+  font-size:18px;font-weight:900;letter-spacing:3px;
+  color:rgba(255,80,80,.5);text-transform:uppercase;
+}
+.res-title{
+  font-size:22px;font-weight:900;letter-spacing:-.3px;margin-bottom:4px;margin-top:18px;
+}
+.res-title.win{color:#A8C8F0}
+.res-title.lose{color:rgba(255,255,255,.45)}
+.res-name{font-size:15px;font-weight:700;color:rgba(255,255,255,.8);text-align:center;max-width:260px}
+.res-sub{font-size:12px;color:rgba(255,255,255,.3);margin-top:4px;margin-bottom:24px}
+.res-btns{display:flex;gap:10px;width:100%;max-width:280px}
+.res-btn{
+  flex:1;padding:13px;border-radius:13px;border:none;
+  font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;transition:all .2s;
+}
+.res-btn.sell{
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.6);
+}
+.res-btn.sell:active{transform:scale(.96)}
+.res-btn.ok{
+  background:rgba(120,160,204,.2);
+  border:1.5px solid rgba(120,160,204,.4);
+  color:#A8C8F0;
+}
+.res-btn.ok:active{transform:scale(.96)}
+.res-btn.ok-only{
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.5);
+  width:100%;
+}
+.res-btn.ok-only:active{transform:scale(.96)}
+
+/* TOAST */
+.toast{
+  position:fixed;top:calc(env(safe-area-inset-top,0px) + 60px);
+  left:50%;transform:translateX(-50%) translateY(-10px);
+  background:rgba(25,32,48,.97);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;padding:9px 18px;
+  font-size:13px;font-weight:600;color:rgba(255,255,255,.8);
+  z-index:9999;opacity:0;transition:all .25s;pointer-events:none;
+  white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.4);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(120,160,204,.4);color:#A8C8F0}
+.toast.err{border-color:rgba(255,80,80,.3);color:rgba(255,110,110,.8)}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-left">
+    <img class="top-avatar" id="topAvatar" src="/static/img/default_avatar.png" alt=""
+         onerror="this.src='/static/img/default_avatar.png'">
+    <span class="top-nick" id="topNick">...</span>
+  </div>
+  <div class="top-right">
+    <div class="bal-pill">
+      <img src="/static/img/ton.png" alt="TON">
+      <span id="balVal">0.00</span>
+    </div>
+    <button class="bal-plus" onclick="openDepositHint()">+</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- SEARCH -->
+  <div class="search-wrap">
+    <div class="search-box">
+      <svg width="15" height="15" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="search-input" id="searchInput" type="text" placeholder="Поиск..." autocomplete="off">
+    </div>
+  </div>
+
+  <!-- SECTION HEADER -->
+  <div class="section-hdr">
+    <span class="section-lbl">Подарки</span>
+    <span class="section-count" id="giftCount">0</span>
+  </div>
+
+  <!-- GRID -->
+  <div class="gift-grid" id="giftGrid">
+    {% for gift in gifts %}
+    <div class="gift-card"
+         data-id="{{ gift.id }}"
+         data-name="{{ gift.name|lower }}"
+         data-value="{{ gift.value }}"
+         data-image="{{ gift.image }}"
+         data-full-name="{{ gift.name }}">
+      <div class="gift-img-wrap">
+        <img src="{{ gift.image }}" alt="{{ gift.name }}" loading="lazy"
+             onerror="this.src='/static/img/star.png'">
+      </div>
+      <div class="gift-name">{{ gift.name.replace(' (Random)', '') }}</div>
+      <div class="gift-prices">
+        <div class="gift-orig">{{ "%.2f"|format(gift.value / 100) }} TON</div>
+        <div class="gift-buy">
+          <img src="/static/img/ton.png" alt="TON">
+          <span>{{ "%.2f"|format(gift.value / 10000) }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="empty-state" id="emptyState">
+    <svg width="40" height="40" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <p>Ничего не найдено</p>
+  </div>
+
+</div>
+
+<!-- LUCKY BUY MODAL -->
+<div class="lb-overlay" id="lbOverlay">
+
+  <!-- Header -->
+  <div class="lb-header">
+    <span class="lb-title">Lucky Buy</span>
+    <button class="lb-close" onclick="closeLuckyBuy()">
+      <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <!-- Gift strip -->
+  <div class="lb-gift-strip">
+    <div class="lb-gift-thumb">
+      <img id="lbThumbImg" src="/static/img/star.png" alt="">
+    </div>
+    <div class="lb-gift-info">
+      <div class="lb-gift-name" id="lbGiftName">—</div>
+      <div class="lb-gift-orig" id="lbGiftOrig">— TON оригинально</div>
+    </div>
+  </div>
+
+  <!-- Roulette strip -->
+  <div class="lb-roulette" id="lbRoulette">
+    <div class="lb-arrow"></div>
+    <div class="lb-arrow-bot"></div>
+    <div class="lb-center-line"></div>
+    <div class="lb-track" id="lbTrack"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="lb-controls">
+
+    <!-- Chance -->
+    <div>
+      <div class="ctrl-row" style="margin-bottom:8px">
+        <span class="ctrl-label">Шанс победы</span>
+        <span class="ctrl-val" id="lbChanceVal">50%</span>
+      </div>
+      <input class="lb-range" type="range" id="lbRange" min="1" max="95" value="50"
+             oninput="onChanceInput(this.value)">
+      <div class="slider-labels"><span>1%</span><span>95%</span></div>
+    </div>
+
+    <!-- Cost -->
+    <div class="cost-card">
+      <span class="cost-label">Стоимость</span>
+      <div class="cost-val">
+        <img src="/static/img/ton.png" alt="TON">
+        <span id="lbCostVal">0.00</span>
+      </div>
+    </div>
+
+    <!-- Demo -->
+    <div class="demo-row">
+      <button class="demo-btn on" id="btnReal" onclick="setDemo(false)">Реальный</button>
+      <button class="demo-btn off" id="btnDemo" onclick="setDemo(true)">Демо</button>
+    </div>
+
+    <!-- Spin -->
+    <button class="spin-btn active-state" id="spinBtn" onclick="doSpin()">
+      РАСКРУТИТЬ — <span id="spinBtnCost">0.00</span> TON
+    </button>
+
+  </div>
+
+  <!-- Result -->
+  <div class="res-overlay" id="resOverlay">
+    <div class="res-icon" id="resIcon"></div>
+    <div class="res-title" id="resTitle"></div>
+    <div class="res-name" id="resName"></div>
+    <div class="res-sub" id="resSub"></div>
+    <div class="res-btns" id="resBtns"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var $ = function(id){ return document.getElementById(id); };
+function fmtTon(stars){ var t=Number(stars||0)/100; return t>=100?t.toFixed(0):t>=10?t.toFixed(1):t.toFixed(2); }
+
+/* ===== TOAST ===== */
+var _tt;
+function toast(msg, type){
+  var el=$('toast');
+  el.textContent=msg;
+  el.className='toast show'+(type==='ok'?' ok':type==='err'?' err':'');
+  clearTimeout(_tt);
+  _tt=setTimeout(function(){el.classList.remove('show');},2600);
+}
+
+/* ===== STATE ===== */
+var userData=null, curGift=null, curChance=50, demoMode=false, spinning=false;
+
+/* ===== INIT ===== */
+document.addEventListener('DOMContentLoaded', function(){
+  if(window.Telegram&&Telegram.WebApp){
+    try{Telegram.WebApp.ready();Telegram.WebApp.expand();}catch(e){}
+    try{Telegram.WebApp.setHeaderColor('#1C2233');Telegram.WebApp.setBackgroundColor('#1C2233');}catch(e){}
+  }
+  initUser();
+  initGrid();
+  updateRangeTrack($('lbRange'));
+});
+
+/* ===== AUTH ===== */
+async function initUser(){
+  try{
+    var s=localStorage.getItem('rasswet_user');
+    if(s){var p=JSON.parse(s);if(p&&p.id){userData=p;applyUser();}}
+  }catch(e){}
+
+  if(!userData||!userData.id){
+    if(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user){
+      var u=Telegram.WebApp.initDataUnsafe.user;
+      userData={id:u.id,first_name:u.first_name,username:u.username||'',photo_url:u.photo_url||'',balance_stars:0};
+      applyUser();
+    }
+  }
+
+  if((!userData||!userData.id)&&typeof telegramAuth==='function'){
+    try{
+      var a=await Promise.race([telegramAuth(),new Promise((_,r)=>setTimeout(()=>r(),5000))]);
+      if(a&&a.id){userData=a;applyUser();}
+    }catch(e){}
+  }
+
+  if(!userData||!userData.id) userData={id:0,first_name:'',balance_stars:0};
+  applyUser();
+
+  if(userData.id){
+    try{
+      var r=await fetch('/api/user/'+userData.id);
+      var d=await r.json();
+      if(d.success){userData=Object.assign({},userData,d.user);applyUser();
+        try{localStorage.setItem('rasswet_user',JSON.stringify(userData));}catch(e){}
+      }
+    }catch(e){}
+  }
+}
+
+function applyUser(){
+  $('balVal').textContent = fmtTon(userData&&userData.balance_stars||0);
+  var nick = (userData&&(userData.username?'@'+userData.username:userData.first_name))||'';
+  $('topNick').textContent = nick;
+  if(userData&&userData.photo_url){
+    $('topAvatar').src=userData.photo_url;
+  }
+}
+
+function openDepositHint(){
+  toast('Пополнение — на странице Краш','');
+}
+
+/* ===== GRID & SEARCH ===== */
+function initGrid(){
+  var cards=document.querySelectorAll('.gift-card');
+  $('giftCount').textContent=cards.length;
+  cards.forEach(function(c){
+    c.addEventListener('click',function(){
+      openLuckyBuy(
+        parseInt(c.dataset.id),
+        c.dataset.fullName,
+        c.dataset.image,
+        parseInt(c.dataset.value)
+      );
+    });
+  });
+  $('searchInput').addEventListener('input',function(){
+    var q=this.value.toLowerCase().trim();
+    var vis=0;
+    cards.forEach(function(c){
+      var show=!q||c.dataset.name.includes(q);
+      c.style.display=show?'':'none';
+      if(show)vis++;
+    });
+    $('giftCount').textContent=vis;
+    $('emptyState').style.display=(vis===0&&q)?'flex':'none';
+  });
+}
+
+/* ===== OPEN MODAL ===== */
+function openLuckyBuy(id,name,image,value){
+  curGift={id:id,name:name,image:image,value:value};
+  curChance=50;
+  demoMode=false;
+  spinning=false;
+
+  $('lbThumbImg').src=image||'/static/img/star.png';
+  $('lbGiftName').textContent=name.replace(' (Random)','');
+  $('lbGiftOrig').textContent=fmtTon(value)+' TON оригинально';
+  $('lbRange').value=50;
+  onChanceInput(50);
+  setDemo(false);
+  buildStrip(50,null);
+  $('resOverlay').classList.remove('show');
+  $('spinBtn').disabled=false;
+  $('lbOverlay').classList.add('show');
+}
+function closeLuckyBuy(){
+  $('lbOverlay').classList.remove('show');
+  spinning=false;
+}
+
+/* ===== CHANCE ===== */
+function onChanceInput(v){
+  curChance=parseInt(v);
+  $('lbChanceVal').textContent=curChance+'%';
+  var cost=calcCostStars(curChance);
+  var ton=fmtTon(cost);
+  $('lbCostVal').textContent=ton;
+  $('spinBtnCost').textContent=ton;
+  updateRangeTrack($('lbRange'));
+  if(!spinning) buildStrip(curChance,null);
+}
+function calcCostStars(ch){ return Math.max(1,Math.round((curGift?curGift.value:0)*ch/100)); }
+function updateRangeTrack(inp){
+  var pct=(inp.value-inp.min)/(inp.max-inp.min)*100;
+  inp.style.background='linear-gradient(to right,#78A0CC 0%,#78A0CC '+pct+'%,rgba(255,255,255,.08) '+pct+'%,rgba(255,255,255,.08) 100%)';
+}
+
+/* ===== DEMO ===== */
+function setDemo(on){
+  demoMode=on;
+  $('btnReal').className='demo-btn '+(on?'off':'on');
+  $('btnDemo').className='demo-btn '+(on?'on':'off');
+}
+
+/* ===== ROULETTE STRIP ===== */
+var SLOT_W=94; /* slot width + gap */
+var CENTER_IDX=22;
+
+function buildStrip(chance,result){
+  /* result: null=random preview | true=win | false=lose */
+  var track=$('lbTrack');
+  var html='';
+  for(var i=0;i<38;i++){
+    var isCenter=(i===CENTER_IDX)&&(result!==null);
+    var showGift;
+    if(isCenter){ showGift=(result===true); }
+    else { showGift=Math.random()<(chance/100); }
+    if(showGift){
+      html+='<div class="lb-slot s-gift">'
+        +'<img src="'+(curGift?curGift.image:'/static/img/star.png')+'" onerror="this.src=\'/static/img/star.png\'" alt="">'
+        +'<div class="lb-slot-name">'+(curGift?curGift.name.replace(' (Random)','').slice(0,14):'')+'</div>'
+        +'</div>';
+    }else{
+      html+='<div class="lb-slot s-empty">'
+        +'<div class="lb-slot-empty-txt">empty</div>'
+        +'</div>';
+    }
+  }
+  track.innerHTML=html;
+  track.style.transition='none';
+  track.style.transform='translateX(0)';
+}
+
+/* center slot x relative to track start: we want it at center of viewport */
+function getCenterOffset(){
+  var wrap=$('lbRoulette');
+  var wrapW=wrap.offsetWidth||320;
+  return -(CENTER_IDX*SLOT_W)+(wrapW/2)-(SLOT_W/2)+16;
+}
+
+/* ===== SPIN ===== */
+async function doSpin(){
+  if(spinning)return;
+    if(!curGift){toast('Выберите подарок','err');return;}
+  var cost=calcCostStars(curChance);
+  if(!demoMode){
+    if(!userData||!userData.id){toast('Войдите через Telegram','err');return;}
+    if((userData.balance_stars||0)<cost){toast('Недостаточно баланса','err');return;}
+  }
+
+  spinning=true;
+  $('spinBtn').disabled=true;
+  $('resOverlay').classList.remove('show');
+
+  buildStrip(curChance,null);
+  var track=$('lbTrack');
+  var finalX=getCenterOffset();
+
+  /* Phase 1: fast fly */
+  void track.offsetWidth;
+  track.style.transition='transform 1.0s cubic-bezier(0.2,0.6,0.4,1)';
+  track.style.transform='translateX('+(finalX*0.5)+'px)';
+
+  /* API call in background */
+  var won=null, newBal=null;
+  var apiPromise=fetch('/api/lucky-buy/spin',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({user_id:userData?userData.id:0,gift_id:curGift.id,chance_percent:curChance,demo:demoMode})
+  }).then(function(r){return r.json();}).catch(function(){return null;});
+
+  await sleep(1050);
+
+  var resp=await apiPromise;
+  if(!resp||!resp.success){
+    toast((resp&&resp.error)||'Ошибка','err');
+    spinning=false;
+    $('spinBtn').disabled=false;
+    track.style.transition='none';track.style.transform='translateX(0)';
+    return;
+  }
+  won=resp.won;
+  if(!demoMode&&resp.new_balance!=null){
+    if(userData)userData.balance_stars=resp.new_balance;
+    applyUser();
+  }
+
+  /* Phase 2: rebuild with result, slow stop */
+  track.style.transition='none';
+  track.style.transform='translateX('+(finalX*0.45)+'px)';
+  void track.offsetWidth;
+  buildStrip(curChance,won);
+  /* position track so we start a bit before final */
+  track.style.transform='translateX('+(finalX*0.42)+'px)';
+  void track.offsetWidth;
+  track.style.transition='transform 2.0s cubic-bezier(0.05,0.8,0.2,1)';
+  track.style.transform='translateX('+finalX+'px)';
+
+  await sleep(2100);
+
+  /* highlight center */
+  var slots=track.querySelectorAll('.lb-slot');
+  if(slots[CENTER_IDX]) slots[CENTER_IDX].classList.add('s-winner');
+
+  await sleep(500);
+
+  showResult(won,curChance);
+  spinning=false;
+  $('spinBtn').disabled=false;
+}
+
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+/* ===== RESULT ===== */
+function showResult(won,chance){
+  var icon=$('resIcon'),title=$('resTitle'),name=$('resName'),sub=$('resSub'),btns=$('resBtns');
+  icon.style.animation='none'; void icon.offsetWidth; icon.style.animation='';
+
+  if(won){
+    icon.innerHTML='<div class="res-img-box"><img src="'+curGift.image+'" onerror="this.src=\'/static/img/star.png\'" alt=""></div>';
+    title.className='res-title win'; title.textContent='Победа';
+    name.textContent=curGift.name.replace(' (Random)','');
+    sub.textContent='Шанс был '+chance+'%'+(demoMode?' — демо режим':'');
+    btns.innerHTML='<button class="res-btn sell" onclick="goInventory()">В инвентарь</button>'
+      +'<button class="res-btn ok" onclick="closeRes()">OK</button>';
+  }else{
+    icon.innerHTML='<div class="res-empty-box"><div class="res-empty-txt">EMPTY</div></div>';
+    title.className='res-title lose'; title.textContent='Пусто';
+    name.textContent='';
+    sub.textContent='Шанс был '+chance+'%'+(demoMode?' — демо режим':'');
+    btns.innerHTML='<button class="res-btn ok-only" onclick="closeRes()">Попробовать ещё</button>';
+  }
+  $('resOverlay').classList.add('show');
+}
+function closeRes(){ $('resOverlay').classList.remove('show'); }
+function goInventory(){ window.location.href='/inventory'; }
+</script>
+</body>
+</html>

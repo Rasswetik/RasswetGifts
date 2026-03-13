@@ -4175,6 +4175,99 @@ def games_page():
     """Страница выбора игр"""
     return render_template('games.html')
 
+@app.route('/lucky-buy')
+def lucky_buy_page():
+    """Страница Lucky Buy"""
+    gifts = load_gifts_cached() or []
+    gifts_sorted = sorted(gifts, key=lambda g: g.get('value', 0))
+    return render_template('lucky_buy.html', gifts=gifts_sorted)
+
+@app.route('/api/lucky-buy/spin', methods=['POST'])
+def lucky_buy_spin():
+    """Lucky Buy: spin for a gift"""
+    import random as _random
+    data = request.get_json(force=True) or {}
+    user_id = data.get('user_id')
+    gift_id = data.get('gift_id')
+    chance_percent = data.get('chance_percent', 50)
+    demo = bool(data.get('demo', False))
+
+    if not user_id or not gift_id:
+        return jsonify({'success': False, 'error': 'Missing fields'})
+
+    try:
+        chance_percent = float(chance_percent)
+        if not (1 <= chance_percent <= 95):
+            return jsonify({'success': False, 'error': 'Invalid chance'})
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'error': 'Invalid chance'})
+
+    # Find gift in cached list
+    gifts = load_gifts_cached() or []
+    gift = next((g for g in gifts if g.get('id') == int(gift_id)), None)
+    if not gift:
+        return jsonify({'success': False, 'error': 'Gift not found'})
+
+    cost_stars = max(1, int(round(gift.get('value', 0) * chance_percent / 100)))
+
+    # Demo mode – just simulate result
+    if demo:
+        won = _random.random() < (chance_percent / 100)
+        return jsonify({'success': True, 'won': won, 'cost_stars': cost_stars, 'demo': True,
+                        'gift': {'id': gift['id'], 'name': gift['name'], 'image': gift.get('image', '')}})
+
+    conn = get_db_connection()
+    try:
+        with conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({'success': False, 'error': 'User not found'})
+            balance = row[0]
+            if balance < cost_stars:
+                return jsonify({'success': False, 'error': 'Insufficient balance'})
+
+            # Deduct cost
+            cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?', (cost_stars, user_id))
+
+            # Roll
+            won = _random.random() < (chance_percent / 100)
+            new_balance = balance - cost_stars
+
+            if won:
+                g_image = gift.get('image', '')
+                if g_image and g_image.startswith('data:'):
+                    g_image = '/static/img/star.png'
+                cursor.execute(
+                    'INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value) VALUES (?, ?, ?, ?, ?)',
+                    (user_id, gift['id'], gift['name'], g_image, gift.get('value', 0))
+                )
+                cursor.execute(
+                    'INSERT INTO user_history (user_id, operation_type, amount, description) VALUES (?, ?, ?, ?)',
+                    (user_id, 'lucky_buy_win', gift.get('value', 0), f"Lucky Buy win: {gift['name']}")
+                )
+
+            cursor.execute(
+                'INSERT INTO user_history (user_id, operation_type, amount, description) VALUES (?, ?, ?, ?)',
+                (user_id, 'lucky_buy_spin', -cost_stars, f"Lucky Buy spin: {gift['name']} @ {chance_percent}%")
+            )
+
+            _set_cached_balance(user_id, new_balance)
+
+        return jsonify({
+            'success': True,
+            'won': won,
+            'cost_stars': cost_stars,
+            'new_balance': new_balance,
+            'gift': {'id': gift['id'], 'name': gift['name'], 'image': gift.get('image', '')}
+        })
+    except Exception as e:
+        logger.error(f'Lucky buy spin error: {e}')
+        return jsonify({'success': False, 'error': 'Server error'})
+    finally:
+        conn.close()
+
 @app.route('/upgrade')
 def upgrade_page():
     """Страница апгрейда подарков"""
@@ -5350,6 +5443,7 @@ def set_user_currency_mode():
 def get_user_inventory(user_id):
     """Получение инвентаря пользователя"""
     try:
+        challenge_map = {}
         with get_db_connection() as conn:
             cursor = conn.cursor()
 
@@ -5357,28 +5451,25 @@ def get_user_inventory(user_id):
             columns = [desc[0] for desc in cursor.description]
             inventory = cursor.fetchall()
 
-        # Load active gift challenges for this user
-        challenge_map = {}
-        try:
-            cursor.execute('''
-                SELECT inventory_id, target_wager, current_wager, is_completed,
-                       gift_name, gift_image, gift_value
-                FROM promo_gift_challenges
-                WHERE user_id = ? AND is_completed = 0
-            ''', (user_id,))
-            for ch_row in cursor.fetchall():
-                challenge_map[ch_row[0]] = {
-                    'target_wager': ch_row[1],
-                    'current_wager': ch_row[2],
-                    'is_completed': bool(ch_row[3]),
-                    'final_gift_name': ch_row[4],
-                    'final_gift_image': ch_row[5],
-                    'final_gift_value': ch_row[6],
-                }
-        except Exception:
-            pass
-
-        # connection closed by context manager
+            # Load active gift challenges for this user
+            try:
+                cursor.execute('''
+                    SELECT inventory_id, target_wager, current_wager, is_completed,
+                           gift_name, gift_image, gift_value
+                    FROM promo_gift_challenges
+                    WHERE user_id = ? AND is_completed = 0
+                ''', (user_id,))
+                for ch_row in cursor.fetchall():
+                    challenge_map[ch_row[0]] = {
+                        'target_wager': ch_row[1],
+                        'current_wager': ch_row[2],
+                        'is_completed': bool(ch_row[3]),
+                        'final_gift_name': ch_row[4],
+                        'final_gift_image': ch_row[5],
+                        'final_gift_value': ch_row[6],
+                    }
+            except Exception:
+                pass
 
         local_gifts = load_gifts_cached() or []
         local_by_id = {}
@@ -8354,6 +8445,7 @@ def mrkt_buy_withdraw():
     except Exception as e:
         logger.error(f'MRKT buy-withdraw error: {e}\n{traceback.format_exc()}')
         return jsonify({'success': False, 'error': 'Внутренняя ошибка сервера'})
+UPGRADE_MIN_STARS = 30  # 0.3 TON
 UPGRADE_MAX_STARS = 1000 # 10 TON
 
 def _calc_upgrade_cost_stars(gift_value_stars):
