@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -362,18 +362,53 @@
         .lead-info-card{
             width:calc(100% - 32px);max-width:400px;
             background:linear-gradient(180deg,#1e2330 0%,#161b26 100%);
-            border-radius:20px;padding:0;overflow:hidden;
+            border-radius:20px;padding:24px 20px 20px;overflow:hidden;
             transform:scale(.9);transition:transform .3s cubic-bezier(.32,.72,0,1);
+            display:flex;flex-direction:column;align-items:center;gap:16px;
         }
         .lead-info-overlay.show .lead-info-card{transform:scale(1)}
-        .lead-info-img{width:100%;display:block;border-radius:20px 20px 0 0}
-        .lead-info-close{
-            width:calc(100% - 32px);margin:12px 16px 16px;padding:12px;
-            border:none;border-radius:12px;background:rgba(255,255,255,.06);
-            color:rgba(255,255,255,.6);font-family:'Inter Variable','Inter',sans-serif;
-            font-size:14px;font-weight:700;cursor:pointer;transition:background .2s;
+        .lead-info-medals{
+            position:relative;width:120px;height:120px;margin:8px auto 0;
         }
-        .lead-info-close:active{background:rgba(255,255,255,.1)}
+        .lead-info-medal{
+            position:absolute;width:60px;height:60px;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            font-size:28px;font-weight:800;
+            box-shadow:0 4px 20px rgba(0,0,0,.4);
+            border:3px solid rgba(255,255,255,.15);
+        }
+        .lead-info-medal.gold{
+            background:linear-gradient(135deg,#FFD700,#FFA500);
+            top:0;left:50%;transform:translateX(-50%);z-index:3;
+            width:68px;height:68px;font-size:32px;
+            border-color:rgba(255,215,0,.4);
+            box-shadow:0 4px 24px rgba(255,215,0,.35);
+        }
+        .lead-info-medal.silver{
+            background:linear-gradient(135deg,#C0C0C0,#8a8a8a);
+            bottom:0;left:6px;z-index:2;
+            box-shadow:0 4px 16px rgba(192,192,192,.25);
+        }
+        .lead-info-medal.bronze{
+            background:linear-gradient(135deg,#CD7F32,#8B4513);
+            bottom:0;right:6px;z-index:1;
+            box-shadow:0 4px 16px rgba(205,127,50,.25);
+        }
+        .lead-info-title{
+            font-size:20px;font-weight:800;text-align:center;color:#fff;
+        }
+        .lead-info-desc{
+            font-size:13px;line-height:1.5;text-align:center;
+            color:rgba(255,255,255,.55);padding:0 8px;
+        }
+        .lead-info-start{
+            width:100%;padding:14px;
+            border:none;border-radius:14px;background:#fff;
+            color:#0f1319;font-family:inherit;
+            font-size:15px;font-weight:700;cursor:pointer;
+            transition:opacity .2s;margin-top:4px;
+        }
+        .lead-info-start:active{opacity:.8}
 
         .bnav{
             position:fixed;bottom:0;left:50%;transform:translateX(-50%);
@@ -637,8 +672,14 @@
             ov.id = 'leadInfoOverlay';
             ov.innerHTML =
                 '<div class="lead-info-card">' +
-                    '<img class="lead-info-img" src="/static/img/lead.png" alt="Как выиграть приз">' +
-                    '<button class="lead-info-close" onclick="closeLeadInfo()">Понятно</button>' +
+                    '<div class="lead-info-medals">' +
+                        '<div class="lead-info-medal gold">\ud83e\udd47</div>' +
+                        '<div class="lead-info-medal silver">\ud83e\udd48</div>' +
+                        '<div class="lead-info-medal bronze">\ud83e\udd49</div>' +
+                    '</div>' +
+                    '<div class="lead-info-title">Как попасть в лидеры?</div>' +
+                    '<div class="lead-info-desc">Играйте в Краш, открывайте Кейсы и делайте Апгрейды. Чем больше сумма ставок за месяц — тем выше вы в рейтинге. Топ-15 игроков получают призы в TON и подарки!</div>' +
+                    '<button class="lead-info-start" onclick="closeLeadInfo();location=\x27/crash\x27">Начать</button>' +
                 '</div>';
             document.body.appendChild(ov);
             ov.addEventListener('click', function(e){ if(e.target === ov) closeLeadInfo(); });

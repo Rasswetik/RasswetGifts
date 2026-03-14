@@ -2313,25 +2313,37 @@ def _create_all_tables(conn):
         conn.commit()  # commit all table creations before migrations
         # Миграция: добавляем case_stars если нет
         try:
+            if USE_POSTGRES: conn.execute("SAVEPOINT sp_bonus_mig")
             conn.execute('ALTER TABLE users ADD COLUMN case_stars INTEGER DEFAULT 0')
         except:
-            conn.rollback()
+            if USE_POSTGRES:
+                try: conn.execute("ROLLBACK TO SAVEPOINT sp_bonus_mig")
+                except: pass
         # Миграция: режим отображения валюты (stars/ton)
         try:
-            conn.execute('ALTER TABLE users ADD COLUMN currency_mode TEXT DEFAULT "stars"')
+            if USE_POSTGRES: conn.execute("SAVEPOINT sp_bonus_mig")
+            conn.execute("ALTER TABLE users ADD COLUMN currency_mode TEXT DEFAULT 'stars'")
         except:
-            conn.rollback()
+            if USE_POSTGRES:
+                try: conn.execute("ROLLBACK TO SAVEPOINT sp_bonus_mig")
+                except: pass
         # Миграция: добавляем новые колонки в admin_notifications
-        for col in ['notif_type TEXT DEFAULT "general"', 'reward_type TEXT DEFAULT NULL', 'reward_data TEXT DEFAULT NULL']:
+        for col in ["notif_type TEXT DEFAULT 'general'", 'reward_type TEXT DEFAULT NULL', 'reward_data TEXT DEFAULT NULL']:
             try:
+                if USE_POSTGRES: conn.execute("SAVEPOINT sp_bonus_mig")
                 conn.execute(f'ALTER TABLE admin_notifications ADD COLUMN {col}')
             except:
-                conn.rollback()
+                if USE_POSTGRES:
+                    try: conn.execute("ROLLBACK TO SAVEPOINT sp_bonus_mig")
+                    except: pass
         # Миграция: добавляем description в user_bonuses если нет
         try:
-            conn.execute('ALTER TABLE user_bonuses ADD COLUMN description TEXT DEFAULT ""')
+            if USE_POSTGRES: conn.execute("SAVEPOINT sp_bonus_mig")
+            conn.execute("ALTER TABLE user_bonuses ADD COLUMN description TEXT DEFAULT ''")
         except:
-            conn.rollback()
+            if USE_POSTGRES:
+                try: conn.execute("ROLLBACK TO SAVEPOINT sp_bonus_mig")
+                except: pass
         conn.commit()
     except Exception as bonus_e:
         logger.warning(f"Bonus tables migration: {bonus_e}")
@@ -3809,8 +3821,11 @@ def start_ultimate_crash_loop():
                 if game:
                     game_id, status, start_time, current_mult, target_mult = game
 
-                    # Parse start_time
-                    if isinstance(start_time, str):
+                    # Parse start_time (handles both str from SQLite and datetime from PostgreSQL)
+                    if hasattr(start_time, 'timetuple'):
+                        # PostgreSQL returns datetime objects directly
+                        start_timestamp = time.mktime(start_time.timetuple())
+                    elif isinstance(start_time, str):
                         try:
                             if '.' in start_time:
                                 start_time = start_time.split('.')[0]
@@ -4177,6 +4192,11 @@ def games_page():
     """Страница выбора игр"""
     return render_template('games.html')
 
+@app.route('/market')
+def market_page():
+    """Страница маркета подарков"""
+    return render_template('market.html')
+
 @app.route('/lucky-buy')
 def lucky_buy_page():
     """Страница Lucky Buy"""
@@ -4185,6 +4205,115 @@ def lucky_buy_page():
     gifts_sorted = [g for g in sorted(gifts, key=lambda x: x.get('value', 0))
                     if g.get('name', '').lower() not in EXCLUDED_GIFTS]
     return render_template('lucky_buy.html', gifts=gifts_sorted)
+
+# ============================================================
+# MARKET API — gifts at +10% markup
+# ============================================================
+
+@app.route('/api/market/gifts', methods=['GET'])
+def api_market_gifts():
+    """Return all gifts with 10% markup for the market page"""
+    try:
+        gifts = load_gifts_cached() or []
+        result = []
+        for g in gifts:
+            val = g.get('value', 0)
+            slug = g.get('fragment_slug', '')
+            name = (g.get('name', '') or '').replace(' (Random)', '').strip()
+            if val <= 0:
+                continue
+            market_price_stars = int(val * 1.1)
+            result.append({
+                'id': g.get('id'),
+                'name': name,
+                'slug': slug,
+                'image': g.get('image', ''),
+                'original_stars': val,
+                'price_stars': market_price_stars,
+                'price_ton': round(market_price_stars / 100, 2),
+            })
+        result.sort(key=lambda x: x['price_stars'], reverse=True)
+        return jsonify({'success': True, 'gifts': result})
+    except Exception as e:
+        logger.error(f"Market gifts error: {e}")
+        return jsonify({'success': True, 'gifts': []})
+
+
+@app.route('/api/market/buy', methods=['POST'])
+def api_market_buy():
+    """Buy a gift from the market (random NFT number from fragment)"""
+    import random as _rnd
+    try:
+        data = request.get_json(force=True) or {}
+        user_id = data.get('user_id')
+        gift_id = data.get('gift_id')
+        if not user_id or not gift_id:
+            return jsonify({'success': False, 'error': 'Missing fields'})
+
+        gifts = load_gifts_cached() or []
+        gift = None
+        for g in gifts:
+            if g.get('id') == gift_id:
+                gift = g
+                break
+        if not gift:
+            return jsonify({'success': False, 'error': 'Подарок не найден'})
+
+        original_val = gift.get('value', 0)
+        market_price = int(original_val * 1.1)
+        slug = gift.get('fragment_slug', '')
+        gift_name = (gift.get('name', '') or '').replace(' (Random)', '').strip()
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+
+        balance = row[0] or 0
+        if balance < market_price:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Недостаточно баланса'})
+
+        # Pick random NFT number if fragment slug available
+        nft_number = _rnd.randint(1, 5000)
+        if slug:
+            gift_image = f'https://nft.fragment.com/gift/{slug.replace(" ", "")}-{nft_number}.medium.jpg'
+        else:
+            gift_image = gift.get('image', '')
+
+        display_name = f'{gift_name} #{nft_number}' if slug else gift_name
+
+        cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?', (market_price, user_id))
+        cursor.execute('''
+            INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value, fragment_slug)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, gift.get('id', -1), display_name, gift_image, original_val, slug))
+
+        conn.commit()
+
+        # Update experience
+        try:
+            update_user_experience(user_id, market_price, conn)
+        except Exception:
+            pass
+
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        new_bal = cursor.fetchone()[0]
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'gift_name': display_name,
+            'gift_image': gift_image,
+            'price_ton': round(market_price / 100, 2),
+            'new_balance': new_bal
+        })
+    except Exception as e:
+        logger.error(f"Market buy error: {e}")
+        return jsonify({'success': False, 'error': 'Ошибка покупки'})
 
 @app.route('/api/lucky-buy/spin', methods=['POST'])
 def lucky_buy_spin():
@@ -10256,7 +10385,10 @@ def ultimate_crash_game_state():
             if start_time:
                 try:
                     # Преобразуем строку времени в timestamp
-                    if isinstance(start_time, str):
+                    if hasattr(start_time, 'timetuple'):
+                        # PostgreSQL returns datetime objects directly
+                        start_dt = start_time
+                    elif isinstance(start_time, str):
                         # Убираем миллисекунды если есть
                         if '.' in start_time:
                             start_time = start_time.split('.')[0]

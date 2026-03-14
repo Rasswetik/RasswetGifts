@@ -135,8 +135,9 @@ def _translate_query(sql):
     # Remove PRAGMA statements entirely
     if re.match(r'^\s*PRAGMA\b', out, re.IGNORECASE):
         return ''
-    # BEGIN IMMEDIATE → BEGIN (PG doesn't support IMMEDIATE)
-    out = re.sub(r'\bBEGIN\s+IMMEDIATE\b', 'BEGIN', out, flags=re.IGNORECASE)
+    # BEGIN / BEGIN IMMEDIATE → skip entirely on PG (autocommit=False auto-manages txns)
+    if re.match(r'^\s*BEGIN(\s+IMMEDIATE)?\s*;?\s*$', out, re.IGNORECASE):
+        return ''
     # sqlite_master table listing → pg equivalent
     if 'sqlite_master' in out.lower():
         out = re.sub(
@@ -163,7 +164,9 @@ def _translate_query(sql):
 
     out = re.sub(r"\b([A-Za-z_][A-Za-z0-9_]*)\b\s*=\s*(0|1)\b", _bool_replace, out, flags=re.IGNORECASE)
     # SQLite uses "value" as string literal; PG treats "value" as identifier.
-    # Convert double-quoted values in SET/WHERE clauses to single quotes.
+    # Convert double-quoted values in DEFAULT, SET, WHERE clauses to single quotes.
+    # DEFAULT "word" patterns (e.g. DEFAULT "stars", DEFAULT "general")
+    out = re.sub(r'\bDEFAULT\s+"([^"]*)"', r"DEFAULT '\1'", out, flags=re.IGNORECASE)
     # Match = "word" patterns (status = "crashed", etc.)
     out = re.sub(r'''=\s*"([^"]*)"''', r"= '\1'", out)
     # Append ON CONFLICT DO NOTHING for INSERT OR IGNORE queries
