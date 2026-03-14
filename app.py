@@ -8286,6 +8286,12 @@ def _portal_fragment_url(collection_name, number):
     return f'https://nft.fragment.com/gift/{slug}-{number}.medium.jpg'
 
 
+def _portal_clean_name(name):
+    """Strip ' (Random)' and similar suffixes from gift name for Portal API lookup."""
+    import re
+    return re.sub(r'\s*\(Random\)\s*$', '', name).strip()
+
+
 def _get_portal_auth():
     """Get cached Portal auth data, refresh if needed."""
     global _portal_auth_data
@@ -8330,7 +8336,7 @@ def _portal_sync_floors():
 
         updated = 0
         for gift in gifts:
-            gname = gift.get('name', '')
+            gname = _portal_clean_name(gift.get('name', ''))
             try:
                 coll = colls.gift(gname)
                 if coll and coll.floor_price:
@@ -8368,6 +8374,7 @@ def portal_search_gifts():
     name = request.args.get('name', '').strip()
     if not name:
         return jsonify({'success': False, 'error': 'name required'})
+    name = _portal_clean_name(name)
     auth = _get_portal_auth()
     if not auth:
         return jsonify({'success': False, 'error': 'Portal auth not configured'})
@@ -8461,10 +8468,11 @@ def portal_buy_withdraw():
         portal_gift_price = None
 
         if not portal_gift_id:
+            clean_name = _portal_clean_name(gift_name)
             loop = asyncio.new_event_loop()
             try:
                 gifts_list = loop.run_until_complete(
-                    portal_search(sort='price_asc', gift_name=gift_name, limit=5, authData=auth)
+                    portal_search(sort='price_asc', gift_name=clean_name, limit=5, authData=auth)
                 )
             finally:
                 loop.close()
