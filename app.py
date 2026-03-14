@@ -348,36 +348,26 @@ def _load_crash_bots():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-        # settings
-        cursor.execute('SELECT enabled, min_active_bots, max_active_bots, min_real_players_threshold FROM crash_bots_settings WHERE id = 1')
-        row = cursor.fetchone()
-        if row:
-            _crash_bots_cache['enabled'] = bool(row[0])
-            _crash_bots_cache['settings'] = {
-                'min_active_bots': row[1] or 2,
-                'max_active_bots': row[2] or 5,
-                'min_real_players_threshold': row[3] or 3,
-            }
-        else:
-            # Auto-enable bots on first run — use params so booleans are passed correctly
-            conn.execute(
-                'INSERT OR IGNORE INTO crash_bots_settings (id, enabled, min_active_bots, max_active_bots, min_real_players_threshold) VALUES (?, ?, ?, ?, ?)',
-                (1, True, 2, 5, 3)
-            )
-            conn.commit()
-            _crash_bots_cache['enabled'] = True
-            _crash_bots_cache['settings'] = {'min_active_bots': 2, 'max_active_bots': 5, 'min_real_players_threshold': 3}
-        # bots list
-        cursor.execute('SELECT id, bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active FROM crash_bots_config ORDER BY id')
-        _crash_bots_cache['bots'] = [{
-            'id': r[0], 'bot_name': r[1], 'avatar_url': r[2],
-            'min_bet': r[3] or 25, 'max_bet': r[4] or 500,
-            'auto_cashout_min': float(r[5] or 1.2), 'auto_cashout_max': float(r[6] or 5.0),
-            'is_active': bool(r[7])
-        } for r in cursor.fetchall()]
-        # Auto-seed bots if none exist
-        if not _crash_bots_cache['bots']:
-            _seed_default_bots(conn, 100)
+            # settings
+            cursor.execute('SELECT enabled, min_active_bots, max_active_bots, min_real_players_threshold FROM crash_bots_settings WHERE id = 1')
+            row = cursor.fetchone()
+            if row:
+                _crash_bots_cache['enabled'] = bool(row[0])
+                _crash_bots_cache['settings'] = {
+                    'min_active_bots': row[1] or 2,
+                    'max_active_bots': row[2] or 5,
+                    'min_real_players_threshold': row[3] or 3,
+                }
+            else:
+                # Auto-enable bots on first run — use params so booleans are passed correctly
+                conn.execute(
+                    'INSERT OR IGNORE INTO crash_bots_settings (id, enabled, min_active_bots, max_active_bots, min_real_players_threshold) VALUES (?, ?, ?, ?, ?)',
+                    (1, True, 2, 5, 3)
+                )
+                conn.commit()
+                _crash_bots_cache['enabled'] = True
+                _crash_bots_cache['settings'] = {'min_active_bots': 2, 'max_active_bots': 5, 'min_real_players_threshold': 3}
+            # bots list
             cursor.execute('SELECT id, bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active FROM crash_bots_config ORDER BY id')
             _crash_bots_cache['bots'] = [{
                 'id': r[0], 'bot_name': r[1], 'avatar_url': r[2],
@@ -385,20 +375,29 @@ def _load_crash_bots():
                 'auto_cashout_min': float(r[5] or 1.2), 'auto_cashout_max': float(r[6] or 5.0),
                 'is_active': bool(r[7])
             } for r in cursor.fetchall()]
-            logger.info(f"Auto-seeded {len(_crash_bots_cache['bots'])} crash bots")
-        elif len(_crash_bots_cache['bots']) < 100:
-            need_count = 100 - len(_crash_bots_cache['bots'])
-            _seed_default_bots(conn, need_count)
-            cursor.execute('SELECT id, bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active FROM crash_bots_config ORDER BY id')
-            _crash_bots_cache['bots'] = [{
-                'id': r[0], 'bot_name': r[1], 'avatar_url': r[2],
-                'min_bet': r[3] or 25, 'max_bet': r[4] or 500,
-                'auto_cashout_min': float(r[5] or 1.2), 'auto_cashout_max': float(r[6] or 5.0),
-                'is_active': bool(r[7])
-            } for r in cursor.fetchall()]
-            logger.info(f"Auto-added {need_count} crash bots to reach 100 total")
-        _crash_bots_cache['loaded'] = True
-        conn.close()
+            # Auto-seed bots if none exist
+            if not _crash_bots_cache['bots']:
+                _seed_default_bots(conn, 100)
+                cursor.execute('SELECT id, bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active FROM crash_bots_config ORDER BY id')
+                _crash_bots_cache['bots'] = [{
+                    'id': r[0], 'bot_name': r[1], 'avatar_url': r[2],
+                    'min_bet': r[3] or 25, 'max_bet': r[4] or 500,
+                    'auto_cashout_min': float(r[5] or 1.2), 'auto_cashout_max': float(r[6] or 5.0),
+                    'is_active': bool(r[7])
+                } for r in cursor.fetchall()]
+                logger.info(f"Auto-seeded {len(_crash_bots_cache['bots'])} crash bots")
+            elif len(_crash_bots_cache['bots']) < 100:
+                need_count = 100 - len(_crash_bots_cache['bots'])
+                _seed_default_bots(conn, need_count)
+                cursor.execute('SELECT id, bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active FROM crash_bots_config ORDER BY id')
+                _crash_bots_cache['bots'] = [{
+                    'id': r[0], 'bot_name': r[1], 'avatar_url': r[2],
+                    'min_bet': r[3] or 25, 'max_bet': r[4] or 500,
+                    'auto_cashout_min': float(r[5] or 1.2), 'auto_cashout_max': float(r[6] or 5.0),
+                    'is_active': bool(r[7])
+                } for r in cursor.fetchall()]
+                logger.info(f"Auto-added {need_count} crash bots to reach 100 total")
+            _crash_bots_cache['loaded'] = True
     except Exception as e:
         logger.warning(f"Bot config load error: {e}")
 
@@ -1430,8 +1429,10 @@ def get_db_connection():
     global _db_ready
     # Reuse a single connection per Flask request to avoid repeated pool get/put
     try:
-        if has_request_context() and getattr(g, '_db_conn', None):
-            return g._db_conn
+        if has_request_context():
+            cached = getattr(g, '_db_conn', None)
+            if cached is not None and not getattr(cached, '_closed', False):
+                return cached
     except Exception:
         pass
 
@@ -17594,17 +17595,14 @@ def ensure_initialized():
                 row = conn.execute(
                     'SELECT is_banned, ban_until FROM users WHERE id = ?', (str(user_id),)
                 ).fetchone()
-                conn.close()
                 if row and row[0]:
                     # Check if temp ban expired
                     if row[1]:
                         from datetime import datetime
                         try:
                             if datetime.now() > datetime.fromisoformat(row[1]):
-                                c2 = get_db_connection()
-                                c2.execute('UPDATE users SET is_banned=0, ban_reason=NULL, ban_until=NULL WHERE id=?', (str(user_id),))
-                                c2.commit()
-                                c2.close()
+                                conn.execute('UPDATE users SET is_banned=0, ban_reason=NULL, ban_until=NULL WHERE id=?', (str(user_id),))
+                                conn.commit()
                                 return  # ban expired, allow
                         except Exception:
                             pass
