@@ -63,7 +63,7 @@ fragment_models_cache_time = {}
 
 # ── Portals Marketplace Configuration ────────────────────────────────────────
 # Auth: first try PORTAL_AUTH_TOKEN (ready-made TMA initData), fallback to session-based
-PORTAL_AUTH_TOKEN = os.getenv('PORTAL_AUTH_TOKEN', '')
+PORTAL_AUTH_TOKEN = os.getenv('PORTAL_AUTH_TOKEN', 'tma user=%7B%22id%22%3A5257227756%2C%22first_name%22%3A%22%D0%98%D0%B3%D0%BE%D1%80%D1%8C%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22Goshan_wow%22%2C%22language_code%22%3A%22ru%22%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2Fi1lLcV--aGv9IWIY_Jzemwf88jHYvRq0VnABZT5rVmRz77HI32Mem9gIQmvCJrVI.svg%22%7D&chat_instance=-7755664271219013834&chat_type=sender&auth_date=1773505359&signature=o7Zqt8YgPhsJ-pxy4zQrZffwzz8S-ebELRR8_SfioI6qMwZtSzDXlooOrh7S98c3IfZaYCiuCJIHsCF7CxfIAA&hash=3e4a89abf3406942055a7d659a56ad4420cf9d36c54386de5e354a8b19c992dc')
 PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
 PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
 PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
