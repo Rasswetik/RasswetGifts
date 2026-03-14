@@ -62,12 +62,13 @@ fragment_models_cache = {}
 fragment_models_cache_time = {}
 
 # ── Portals Marketplace Configuration ────────────────────────────────────────
-# Auth data is cached in memory; refreshed on startup and periodically
+# Auth: first try PORTAL_AUTH_TOKEN (ready-made TMA initData), fallback to session-based
+PORTAL_AUTH_TOKEN = os.getenv('PORTAL_AUTH_TOKEN', '')
 PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
 PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
 PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
 PORTAL_SESSION_NAME = os.getenv('PORTAL_SESSION_NAME', 'portal_account')
-_portal_auth_data = None  # cached authData string
+_portal_auth_data = PORTAL_AUTH_TOKEN or None  # cached authData string
 _portal_auth_lock = threading.Lock()
 PORTAL_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
 
@@ -8290,8 +8291,9 @@ def _get_portal_auth():
     global _portal_auth_data
     if _portal_auth_data:
         return _portal_auth_data
+    # Try session-based auth as fallback
     if not PORTAL_API_ID or not PORTAL_API_HASH:
-        logger.warning("Portal API credentials not configured (PORTAL_API_ID / PORTAL_API_HASH)")
+        logger.warning("Portal auth not configured (set PORTAL_AUTH_TOKEN or PORTAL_API_ID+PORTAL_API_HASH)")
         return None
     try:
         import asyncio
@@ -8302,7 +8304,7 @@ def _get_portal_auth():
                         session_path=PORTAL_SESSION_PATH, session_name=PORTAL_SESSION_NAME)
         )
         loop.close()
-        logger.info("✅ Portal auth data obtained")
+        logger.info("✅ Portal auth data obtained via session")
         return _portal_auth_data
     except Exception as e:
         logger.error(f"❌ Portal auth failed: {e}")

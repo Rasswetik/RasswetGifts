@@ -246,16 +246,22 @@
         .success-ok:active{transform:scale(.97);opacity:.9}
         .item-modal-upgrade{display:none!important}
         .item-modal-withdraw-nft{background:#fff;color:#000;border:none;font-weight:800}
-        /* === WITHDRAW PICKER (full screen) === */
-        .mrkt-overlay{position:fixed;left:0;right:0;bottom:0;top:0;background:rgba(10,12,20,.97);z-index:2000;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);pointer-events:none}
+        /* === WITHDRAW PICKER === */
+        .mrkt-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1999;opacity:0;pointer-events:none;transition:opacity .3s}
+        .mrkt-backdrop.show{opacity:1;pointer-events:auto}
+        .mrkt-overlay{position:fixed;left:0;right:0;bottom:0;background:rgba(18,20,30,.98);z-index:2000;display:flex;flex-direction:column;max-height:85vh;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);pointer-events:none}
         .mrkt-overlay.show{transform:translateY(0);pointer-events:auto}
-        .mrkt-header{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+        @media(min-width:769px){
+            .mrkt-overlay{left:50%;right:auto;bottom:50%;transform:translate(-50%,50%) scale(.95);opacity:0;width:420px;max-height:80vh;border-radius:20px;transition:transform .3s,opacity .3s}
+            .mrkt-overlay.show{transform:translate(-50%,50%) scale(1);opacity:1}
+        }
+        .mrkt-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
         .mrkt-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px}
         .mrkt-subtitle{font-size:13px;color:rgba(255,255,255,.35);margin-top:3px;font-weight:500}
-        .mrkt-close-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);width:34px;height:34px;border-radius:12px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+        .mrkt-close-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);width:34px;height:34px;border-radius:12px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;margin-left:12px}
         .mrkt-close-btn:active{background:rgba(255,255,255,.12);transform:scale(.92)}
         .mrkt-fee-badge{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px 14px;font-size:12px;color:rgba(255,255,255,.4);font-weight:600;text-align:center;margin:10px 16px 0}
-        .mrkt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 16px;overflow-y:auto;flex:1}
+        .mrkt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 16px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
         .mrkt-card{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.07);border-radius:16px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:border-color .2s,background .2s,transform .15s}
         .mrkt-card.selected{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
         .mrkt-card:active{transform:scale(.96)}
@@ -689,7 +695,8 @@
         </div>
     </div>
 
-    <!-- MRKT GIFT PICKER OVERLAY -->
+    <!-- PORTAL GIFT PICKER OVERLAY -->
+    <div class="mrkt-backdrop" id="mrktBackdrop" onclick="closePortalPicker()"></div>
     <div class="mrkt-overlay" id="mrktOverlay">
         <div class="mrkt-header">
             <div>
@@ -698,7 +705,7 @@
             </div>
             <button class="mrkt-close-btn" onclick="closePortalPicker()">&#10005;</button>
         </div>
-        <div class="mrkt-fee-badge">Комиссия: 40 ⭐ с вашего баланса</div>
+        <div class="mrkt-fee-badge">Комиссия вывода: 0.4 TON с баланса</div>
         <div class="mrkt-grid" id="mrktGrid">
             <div class="mrkt-loading">Загрузка подарков с Portal...</div>
         </div>
@@ -1596,6 +1603,7 @@
         confirmBtn.disabled = true;
         confirmBtn.textContent = 'Выбрать подарок';
         ol.classList.add('show');
+        document.getElementById('mrktBackdrop').classList.add('show');
         grid.innerHTML = '<div class="mrkt-loading">Загрузка подарков с Portal...</div>';
         subtitle.textContent = 'Загрузка...';
 
@@ -1648,6 +1656,7 @@
 
     function closePortalPicker() {
         document.getElementById('mrktOverlay').classList.remove('show');
+        document.getElementById('mrktBackdrop').classList.remove('show');
         _portalSelectedGiftId = null;
         _portalGiftsLoaded = [];
     }
