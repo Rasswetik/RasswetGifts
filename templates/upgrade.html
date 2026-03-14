@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="/static/js/telegram-auth.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#0d1117;--card:#161b22;--text:#fff;--text2:rgba(255,255,255,.5);--blue:#2563eb;--green:#1EE44C;--red:#F96999;--safe-bottom:env(safe-area-inset-bottom,0px)}
@@ -264,9 +265,8 @@ a{text-decoration:none;color:inherit}
 </nav>
 
 <script>
-var tg=window.Telegram&&Telegram.WebApp;
+var tg=window.Telegram&&window.Telegram.WebApp;
 var userId=null;
-if(tg){tg.ready();tg.expand();tg.setHeaderColor('#0d1117');tg.setBackgroundColor('#0d1117');if(tg.initDataUnsafe&&tg.initDataUnsafe.user)userId=tg.initDataUnsafe.user.id;}
 
 // Use Telegram native popup instead of browser alert (hides URL)
 function showTgAlert(msg,cb){if(tg&&tg.showAlert){tg.showAlert(msg,cb);}else{alert(msg);if(cb)cb();}}
@@ -633,8 +633,20 @@ function launchConfetti(){
 function openDeposit(){document.getElementById('depositOverlay').classList.add('show')}
 function closeDeposit(){document.getElementById('depositOverlay').classList.remove('show')}
 
-loadTopBar();
-loadInventory();
+(async function() {
+    var auth = await telegramAuth();
+    if (auth && auth.id) {
+        userId = auth.id;
+        if (tg) { tg.setHeaderColor('#0d1117'); tg.setBackgroundColor('#0d1117'); }
+        try {
+            var br = await fetch('/api/check-ban?user_id=' + auth.id);
+            var bd = await br.json();
+            if (bd.banned) { window.location.href = '/ban'; return; }
+        } catch(e) {}
+    }
+    loadTopBar();
+    loadInventory();
+})();
 </script>
 </body>
 </html>

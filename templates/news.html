@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/static/css/global.css">
 <title>Новости</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="/static/js/telegram-auth.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
@@ -276,17 +277,20 @@ body::before{
 <div class="toast" id="toast"></div>
 
 <script>
-(function(){
+(async function(){
     var $ = function(id){ return document.getElementById(id); };
-    var tg = window.Telegram && window.Telegram.WebApp;
     var userId = null;
-    
-    if(tg){
-        tg.ready();
-        tg.expand();
-        tg.setHeaderColor('#1A1E2A');
-        tg.setBackgroundColor('#1A1E2A');
-        userId = tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id;
+
+    var auth = await telegramAuth();
+    if(auth && auth.id){
+        userId = auth.id;
+        try{
+            var br = await fetch('/api/check-ban?user_id=' + auth.id);
+            var bd = await br.json();
+            if(bd.banned){ window.location.href = '/ban'; return; }
+        }catch(e){}
+        var tg = window.Telegram && window.Telegram.WebApp;
+        if(tg){ tg.setHeaderColor('#1A1E2A'); tg.setBackgroundColor('#1A1E2A'); }
     }
     
     function showToast(msg, type){

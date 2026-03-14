@@ -143,7 +143,7 @@
         .batch-modal{background:linear-gradient(160deg,rgba(30,33,40,1),rgba(20,22,28,1));border:1px solid rgba(255,255,255,.08);border-radius:20px;width:92%;max-width:380px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column}
         .batch-modal-header{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
         .batch-modal-title{font-size:17px;font-weight:800;color:#fff}
-        .batch-modal-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(255,255,255,.08);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .batch-modal-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);cursor:pointer;display:flex;align-items:center;justify-content:center}
         .batch-modal-list{flex:1;overflow-y:auto;padding:12px 16px;max-height:320px}
         .batch-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
         .batch-item:last-child{border-bottom:none}
@@ -339,7 +339,7 @@
         .reward-card-img{width:56px;height:56px;object-fit:contain;margin:0 auto;display:block;transition:filter .3s}
         .reward-card-name{font-size:9px;color:var(--text2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
         .reward-card.unlocked .reward-card-name{color:var(--accent-light)}
-        .reward-lock-icon{position:absolute;bottom:8px;right:8px;font-size:14px;opacity:0.7}
+        .reward-lock-icon{position:absolute;bottom:8px;right:8px;opacity:0.6;color:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center}
         .rewards-close-btn{margin:0 20px 20px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;width:calc(100% - 40px);flex-shrink:0}
 
         /* === SELL ALL MODAL === */
@@ -560,7 +560,7 @@
         <div class="batch-modal">
             <div class="batch-modal-header">
                 <div class="batch-modal-title">Подтвердите действие</div>
-                <button class="batch-modal-close" onclick="closeBatchSellModal()">✕</button>
+                <button class="batch-modal-close" onclick="closeBatchSellModal()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="batch-modal-list" id="batchItemsList"></div>
             <div class="batch-modal-footer">
@@ -720,7 +720,7 @@
         <div class="deposit-modal">
             <div class="deposit-header">
                 <div class="deposit-title">Пополнение</div>
-                <button class="deposit-close" onclick="closeDeposit()">✕</button>
+                <button class="deposit-close" onclick="closeDeposit()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="deposit-methods">
                 <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDeposit();openStarsDeposit()">
@@ -740,7 +740,7 @@
         <div class="stars-deposit-modal">
             <div class="stars-deposit-header">
                 <div class="stars-deposit-title">Пополнение Stars</div>
-                <button class="stars-deposit-close" onclick="closeStarsDeposit()">✕</button>
+                <button class="stars-deposit-close" onclick="closeStarsDeposit()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
             </div>
             <div class="stars-deposit-body">
                 <img class="stars-deposit-icon" src="/static/img/star.png" alt="Stars">
@@ -893,7 +893,7 @@
                 var rw = lv.reward || {}; 
                 var img = rw.image || '/static/img/ton.png'; 
                 var fallbackImg = rw.type === 'rocket_skin' ? '/static/gifs/rockets/crash.gif' : '/static/img/ton.png'; 
-                var lockIcon = unlocked ? '' : '<div class="reward-lock-icon">🔒</div>';
+                var lockIcon = unlocked ? '' : '<div class="reward-lock-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>';
                 return '<div class="reward-card ' + cls + '" onclick="onRewardClick(' + lv.level + ',' + (unlocked?1:0) + ')">' +
                     '<div class="reward-card-lvl">' + lv.level + ' lvl</div>' +
                     '<img class="reward-card-img" src="' + img + '" alt="" onerror="this.onerror=null;this.src=\'' + fallbackImg + '\'">' +
@@ -1472,7 +1472,7 @@
             var d = await r.json();
             if (d.success) {
                 hideItemModal();
-                showNotif('✅ Подарок куплен на MRKT! Ожидайте передачи.');
+                showNotif('Подарок куплен на MRKT! Ожидайте передачи.');
                 await refreshUserData();
                 loadInventory();
             } else {
@@ -1620,7 +1620,7 @@
                 row.innerHTML = '<span class="nm-ver">' + (n.version || '') + '</span>' +
                     '<span class="nm-title">' + (n.title || n.title_en || '') + '</span>' +
                     '<button class="nm-toggle ' + (n.is_active ? 'on' : 'off') + '" onclick="toggleNewsActive(' + n.id + ',this)"></button>' +
-                    '<button class="nm-del" onclick="deleteNewsItem(' + n.id + ',this)">✕</button>';
+                    '<button class="nm-del" onclick="deleteNewsItem(' + n.id + ',this)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
                 list.appendChild(row);
             });
         } catch(e) { console.error('News mgmt load error', e); }

@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/static/css/global.css">
 <title>Новость</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="/static/js/telegram-auth.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
@@ -278,17 +279,20 @@ body::before{
 <div class="toast" id="toast"></div>
 
 <script>
-(function(){
-    var tg = window.Telegram && window.Telegram.WebApp;
+(async function(){
     var userId = null;
     var newsId = {{ news_id }};
-    
-    if(tg){
-        tg.ready();
-        tg.expand();
-        tg.setHeaderColor('#1A1E2A');
-        tg.setBackgroundColor('#1A1E2A');
-        userId = tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id;
+
+    var auth = await telegramAuth();
+    if(auth && auth.id){
+        userId = auth.id;
+        try{
+            var br = await fetch('/api/check-ban?user_id=' + auth.id);
+            var bd = await br.json();
+            if(bd.banned){ window.location.href = '/ban'; return; }
+        }catch(e){}
+        var tg = window.Telegram && window.Telegram.WebApp;
+        if(tg){ tg.setHeaderColor('#1A1E2A'); tg.setBackgroundColor('#1A1E2A'); }
     }
     
     function goBack(){
@@ -334,7 +338,7 @@ body::before{
             var d = await r.json();
             
             if(!d.success || !d.news){
-                document.getElementById('newsContent').innerHTML = '<div class="error-state"><div class="error-icon">📰</div><div class="error-text">Новость не найдена</div></div>';
+                document.getElementById('newsContent').innerHTML = '<div class="error-state"><div class="error-icon"><img src="/static/svg/news.svg" style="width:48px;height:48px;opacity:.4;display:block;margin:auto;color:#8CA0BE"></div><div class="error-text">Новость не найдена</div></div>';
                 return;
             }
             
@@ -366,7 +370,7 @@ body::before{
             // Reward section
             if(news.reward_amount > 0){
                 html += '<div class="reward-section">';
-                html += '<div class="reward-title">🎁 Награда за прочтение</div>';
+                html += '<div class="reward-title"><img src="/static/svg/gift.svg" style="width:15px;height:15px;vertical-align:middle;opacity:.7;margin-right:5px"> Награда за прочтение</div>';
                 if(news.claimed){
                     html += '<button class="reward-btn claimed" disabled>✓ Награда получена</button>';
                 } else {
@@ -379,7 +383,7 @@ body::before{
             
         }catch(e){
             console.error('Load news error:', e);
-            document.getElementById('newsContent').innerHTML = '<div class="error-state"><div class="error-icon">❌</div><div class="error-text">Ошибка загрузки</div></div>';
+            document.getElementById('newsContent').innerHTML = '<div class="error-state"><div class="error-icon"><img src="/static/svg/warning.svg" style="width:48px;height:48px;opacity:.4;display:block;margin:auto;color:#8CA0BE"></div><div class="error-text">Ошибка загрузки</div></div>';
         }
     }
     

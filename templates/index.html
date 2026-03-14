@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="/static/img/logo.png">
     <link rel="stylesheet" href="/static/css/global.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/static/js/telegram-auth.js"></script>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         html{font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
@@ -1179,9 +1180,9 @@
             </div>
             <div class="ton-step" id="tonStep3" style="display:none">
                 <div class="ton-success">
-                    <div class="ton-success-icon">✅</div>
+                    <div class="ton-success-icon"><img src="/static/svg/check-circle.svg" style="width:64px;height:64px;color:#1EE44C;display:block"></div>
                     <div class="ton-success-text">Payment successful!</div>
-                    <div class="ton-success-amount">+<span id="tonSuccessStars">0</span> ⭐</div>
+                    <div class="ton-success-amount">+<span id="tonSuccessStars">0</span> Stars</div>
                 </div>
             </div>
         </div>
@@ -1321,23 +1322,25 @@
         document.addEventListener('DOMContentLoaded', init);
 
         async function init() {
-            if (tg) {
-                tg.expand();
-                try{ if(tg.requestFullscreen) tg.requestFullscreen(); }catch(e){}
-                tg.setHeaderColor('#1A1E2A');
-                tg.setBackgroundColor('#1A1E2A');
-                tg.ready();
-                userId = tg.initDataUnsafe?.user?.id;
+            // Auth via telegramAuth() (handles WebApp, localStorage, bot auth)
+            const auth = await telegramAuth();
+            if (auth && auth.id) {
+                userId = auth.id;
             }
-            
-            // Fallback for testing outside Telegram
+
+            // URL param fallback for dev testing
             if (!userId) {
                 const params = new URLSearchParams(window.location.search);
                 userId = params.get('user_id') || null;
             }
-            
-            console.log('Init userId:', userId);
-            
+
+            // Set TG colors (telegramAuth handles ready/expand)
+            if (tg) {
+                try{ if(tg.requestFullscreen) tg.requestFullscreen(); }catch(e){}
+                tg.setHeaderColor('#1A1E2A');
+                tg.setBackgroundColor('#1A1E2A');
+            }
+
             // Проверка бана
             if (userId) {
                 try {
@@ -1866,9 +1869,9 @@
 
         function showSwipeMotivate(qty) {
             var msgs = [
-                ['Удачи! 🍀', 'Поехали! 🚀', 'Вперёд! ⚡'],
-                ['Двойной удар! 💥', 'x2 — Удачи! 🎯', 'Дабл! 🔥'],
-                ['Тройной шанс! 🎰', 'x3 Тебе повезёт! 🌟', 'Три удачи! ✨']
+                ['Удачи!', 'Поехали!', 'Вперёд!'],
+                ['Двойной удар!', 'x2 — Удачи!', 'Дабл!'],
+                ['Тройной шанс!', 'x3 Тебе повезёт!', 'Три удачи!']
             ];
             var group = Math.min(qty, 3) - 1;
             var msg = msgs[group][Math.floor(Math.random() * msgs[group].length)];

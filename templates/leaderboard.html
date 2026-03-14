@@ -8,6 +8,7 @@
     <link rel="icon" type="image/png" href="/static/img/logo.png">
     <link rel="stylesheet" href="/static/css/global.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/static/js/telegram-auth.js"></script>
 
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
@@ -345,7 +346,7 @@
 
         .profile-inv-name{font-family:'Inter Variable','Inter',sans-serif;font-size:11px;color:rgba(255,255,255,.8);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;line-height:1.2}
         .profile-inv-price{font-family:'Inter Variable','Inter',sans-serif;font-size:11px;color:#1ee44c;font-weight:700;margin-top:2px}
-        .profile-inv-upgraded{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ff8c00);display:flex;align-items:center;justify-content:center;font-size:9px;line-height:1}
+        .profile-inv-upgraded{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#ffd700,#ff8c00);display:flex;align-items:center;justify-content:center;color:#fff}
         .profile-close-btn{width:100%;padding:12px;border:none;border-radius:12px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-family:'Inter Variable','Inter',sans-serif;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;flex-shrink:0;transition:background .2s}
         .profile-close-btn:active{background:rgba(255,255,255,.1)}
 
@@ -439,12 +440,22 @@
     </nav>
 
     <script>
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.expand();
-            tg.setHeaderColor('#0f1319');
-            tg.setBackgroundColor('#0f1319');
-        }
+        (async function initLeaderboard() {
+            var auth = await telegramAuth();
+            if (auth && auth.id) {
+                try {
+                    var br = await fetch('/api/check-ban?user_id=' + auth.id);
+                    var bd = await br.json();
+                    if (bd.banned) { window.location.href = '/ban'; return; }
+                } catch(e) {}
+            }
+            var tg = window.Telegram && window.Telegram.WebApp;
+            if (tg) {
+                tg.expand();
+                tg.setHeaderColor('#0f1319');
+                tg.setBackgroundColor('#0f1319');
+            }
+        })();
 
         let endTime = null;
 
@@ -737,7 +748,7 @@
                             var price = (it.value / 100).toFixed(2);
                             var cls = 'profile-inv-item' + (it.is_upgraded ? ' upgraded' : '');
                             h += '<div class="' + cls + '">';
-                            if(it.is_upgraded) h += '<div class="profile-inv-upgraded">⬆</div>';
+                            if(it.is_upgraded) h += '<div class="profile-inv-upgraded"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></div>';
                             var imgSrc = it.image || '/static/img/gift.png';
                             h += '<img class="profile-inv-img" src="' + imgSrc + '" alt="">';
                             if(!it.is_upgraded){

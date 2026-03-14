@@ -23,7 +23,7 @@
         }
         .tg-auth-overlay * { box-sizing: border-box; margin: 0; padding: 0; }
         .tg-auth-wrap { max-width: 400px; width: 100%; }
-        .tg-auth-icon { font-size: 80px; margin-bottom: 30px; }
+        .tg-auth-icon { width: 64px; height: 64px; margin-bottom: 24px; opacity: .7; color: #8CA0BE; }
         .tg-auth-title {
             font-size: 28px; font-weight: 700; margin-bottom: 15px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -121,7 +121,7 @@
         overlay.className = 'tg-auth-overlay';
         overlay.innerHTML = `
             <div class="tg-auth-wrap">
-                <div class="tg-auth-icon">🔐</div>
+                <div class="tg-auth-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
                 <div class="tg-auth-title">Войдите через Telegram</div>
                 <div class="tg-auth-text">Откройте бота и введите команду:</div>
                 <div class="tg-auth-steps">
@@ -154,7 +154,7 @@
             const text = this.textContent;
             navigator.clipboard.writeText(text).then(() => {
                 const el = this;
-                el.textContent = '✅ Скопировано!';
+                el.textContent = '✓ Скопировано!';
                 setTimeout(() => el.textContent = text, 1500);
             }).catch(() => {});
         });
