@@ -4179,8 +4179,10 @@ def games_page():
 @app.route('/lucky-buy')
 def lucky_buy_page():
     """Страница Lucky Buy"""
+    EXCLUDED_GIFTS = {'wuman', 'valentine bear', 'valentines bear', 'valentine'}
     gifts = load_gifts_cached() or []
-    gifts_sorted = sorted(gifts, key=lambda g: g.get('value', 0))
+    gifts_sorted = [g for g in sorted(gifts, key=lambda x: x.get('value', 0))
+                    if g.get('name', '').lower() not in EXCLUDED_GIFTS]
     return render_template('lucky_buy.html', gifts=gifts_sorted)
 
 @app.route('/api/lucky-buy/spin', methods=['POST'])
@@ -4198,7 +4200,7 @@ def lucky_buy_spin():
 
     try:
         chance_percent = float(chance_percent)
-        if not (1 <= chance_percent <= 95):
+        if not (1 <= chance_percent <= 50):
             return jsonify({'success': False, 'error': 'Invalid chance'})
     except (ValueError, TypeError):
         return jsonify({'success': False, 'error': 'Invalid chance'})
@@ -8227,6 +8229,9 @@ def mrkt_search_gifts():
             'promotedFirst': False,
         }
         r = http_requests.post(f'{MRKT_API_BASE}/gifts/saling', headers=headers, json=payload, timeout=10)
+        if not r.text.strip():
+            logger.error(f'MRKT search: empty response (status {r.status_code})')
+            return jsonify({'success': False, 'error': f'MRKT вернул пустой ответ (статус {r.status_code})'})
         data = r.json()
         gifts_raw = data.get('gifts', [])
         result = []
@@ -8299,6 +8304,8 @@ def mrkt_buy_withdraw():
         try:
             search_resp = http_requests.post(f'{MRKT_API_BASE}/gifts/saling',
                                              headers=headers, json=search_payload, timeout=10)
+            if not search_resp.text.strip():
+                raise Exception(f'MRKT вернул пустой ответ (статус {search_resp.status_code})')
             search_data = search_resp.json()
             gifts_list = search_data.get('gifts', [])
         except Exception as se:
@@ -16619,13 +16626,13 @@ def get_crash_quests():
             cursor.execute('ALTER TABLE crash_quests ADD COLUMN condition_value REAL DEFAULT 0')
             conn.commit()
         except:
-            pass
+            conn.rollback()
         # Add parent_id column if missing (migration for parent/child quests)
         try:
             cursor.execute("ALTER TABLE crash_quests ADD COLUMN parent_id INTEGER DEFAULT NULL")
             conn.commit()
         except:
-            pass
+            conn.rollback()
         cursor.execute('''CREATE TABLE IF NOT EXISTS user_quest_progress (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
