@@ -8425,7 +8425,7 @@ def portal_search_gifts():
 
 @app.route('/api/portal/buy-withdraw', methods=['POST'])
 def portal_buy_withdraw():
-    """Buy cheapest matching gift on Portal, deduct fee, mark as withdrawing."""
+    """Buy matching gift on Portal, transfer to user's Telegram, deduct fee."""
     try:
         data = request.get_json()
         user_id = int(data['user_id'])
@@ -8439,15 +8439,19 @@ def portal_buy_withdraw():
         cursor = conn.cursor()
 
         # Verify user balance
-        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        cursor.execute('SELECT balance_stars, username FROM users WHERE id = ?', (user_id,))
         row = cursor.fetchone()
         if not row:
             conn.close()
             return jsonify({'success': False, 'error': 'Пользователь не найден'})
         balance = row[0] or 0
+        tg_username = row[1] or ''
         if balance < PORTAL_WITHDRAW_FEE_STARS:
             conn.close()
             return jsonify({'success': False, 'error': 'Недостаточно баланса. Нужно 0.4 TON для вывода'})
+        if not tg_username:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Установите username в Telegram для вывода'})
 
         # Verify inventory item belongs to user
         cursor.execute('SELECT gift_name, gift_image, gift_value, is_withdrawing FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
@@ -8460,9 +8464,8 @@ def portal_buy_withdraw():
             conn.close()
             return jsonify({'success': False, 'error': 'Подарок уже в процессе вывода'})
 
-        # Find cheapest matching gift on Portal (or use caller-selected)
         import asyncio
-        from aportalsmp.gifts import search as portal_search, buy as portal_buy
+        from aportalsmp.gifts import search as portal_search, buy as portal_buy, transferGifts as portal_transfer
 
         portal_gift_id = data.get('portal_gift_id')
         portal_gift_price = None
@@ -8487,7 +8490,7 @@ def portal_buy_withdraw():
         # Buy on Portal
         loop = asyncio.new_event_loop()
         try:
-            loop.run_until_complete(
+            buy_result = loop.run_until_complete(
                 portal_buy(nft_id=portal_gift_id, price=portal_gift_price, authData=auth)
             )
         except Exception as buy_e:
@@ -8495,21 +8498,53 @@ def portal_buy_withdraw():
             conn.close()
             logger.error(f'Portal buy error: {buy_e}')
             err_msg = str(buy_e)
-            if 'balance' in err_msg.lower():
-                err_msg = 'Недостаточно баланса на Portal-аккаунте'
+            if 'balance' in err_msg.lower() or 'insufficient' in err_msg.lower():
+                err_msg = 'Недостаточно средств на Portal'
             return jsonify({'success': False, 'error': err_msg})
         loop.close()
 
+        # Check buy result for failures
+        if isinstance(buy_result, dict):
+            results = buy_result.get('purchase_results', [])
+            if results and results[0].get('status') == 'failed':
+                reason = results[0].get('reason', '')
+                conn.close()
+                if 'INSUFFICIENT_BALANCE' in reason:
+                    return jsonify({'success': False, 'error': 'Недостаточно средств на Portal'})
+                return jsonify({'success': False, 'error': f'Ошибка покупки: {reason}'})
+            # Get the purchased nft id from response
+            if results and results[0].get('id'):
+                purchased_nft_id = results[0]['id']
+            else:
+                purchased_nft_id = portal_gift_id
+        else:
+            purchased_nft_id = portal_gift_id
+
+        # Transfer the purchased gift to user's Telegram
+        transfer_error = None
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(
+                portal_transfer(nft_ids=[purchased_nft_id], username=tg_username, anonymous=False, authData=auth)
+            )
+            logger.info(f'✅ Portal gift {purchased_nft_id} transferred to @{tg_username}')
+        except Exception as tr_e:
+            transfer_error = str(tr_e)
+            logger.error(f'Portal transfer error: {tr_e}')
+        finally:
+            loop.close()
+
         # Success: deduct fee, update state
+        withdraw_status = 'completed' if not transfer_error else 'processing'
         cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
                        (PORTAL_WITHDRAW_FEE_STARS, user_id))
         cursor.execute('UPDATE inventory SET is_withdrawing = TRUE WHERE id = ?', (inventory_id,))
         cursor.execute('''
             INSERT INTO withdrawals (user_id, inventory_id, gift_name, gift_image, gift_value,
                                      telegram_username, user_photo_url, user_first_name, status)
-            SELECT ?, ?, ?, ?, ?, username, photo_url, first_name, 'processing'
+            SELECT ?, ?, ?, ?, ?, username, photo_url, first_name, ?
             FROM users WHERE id = ?
-        ''', (user_id, inventory_id, gift_name, gift_image, gift_value, user_id))
+        ''', (user_id, inventory_id, gift_name, gift_image, gift_value, withdraw_status, user_id))
         withdrawal_id = cursor.lastrowid
         conn.commit()
         conn.close()
@@ -8520,15 +8555,23 @@ def portal_buy_withdraw():
         except Exception:
             pass
 
-        try:
-            tg_send(user_id,
-                    f"📦 <b>Вывод #{withdrawal_id}</b>\n\n"
-                    f"Подарок <b>{gift_name}</b> куплен на Portal.\n"
-                    f"Ожидайте передачи на ваш аккаунт.")
-        except Exception:
-            pass
-
-        return jsonify({'success': True, 'withdrawal_id': withdrawal_id})
+        if not transfer_error:
+            try:
+                tg_send(user_id,
+                        f"📦 <b>Вывод #{withdrawal_id}</b>\n\n"
+                        f"Подарок <b>{gift_name}</b> отправлен на ваш аккаунт @{tg_username}!")
+            except Exception:
+                pass
+            return jsonify({'success': True, 'withdrawal_id': withdrawal_id, 'transferred': True})
+        else:
+            try:
+                tg_send(user_id,
+                        f"📦 <b>Вывод #{withdrawal_id}</b>\n\n"
+                        f"Подарок <b>{gift_name}</b> куплен на Portal.\n"
+                        f"Автоматическая передача не удалась, передадим вручную.")
+            except Exception:
+                pass
+            return jsonify({'success': True, 'withdrawal_id': withdrawal_id, 'transferred': False})
 
     except Exception as e:
         logger.error(f'Portal buy-withdraw error: {e}\n{traceback.format_exc()}')

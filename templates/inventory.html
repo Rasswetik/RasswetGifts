@@ -220,8 +220,8 @@
         .item-modal img.item-modal-main-img{width:100px;height:100px;object-fit:contain;margin-bottom:10px;border-radius:16px;background:rgba(255,255,255,.06);padding:8px}
         .item-modal-price{display:flex;align-items:center;justify-content:center;gap:5px;font-size:15px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1}
         .item-modal-price img{width:15px;height:15px;flex-shrink:0;display:block}
-        .item-modal-actions{display:flex;gap:10px;width:100%;margin-top:6px}
-        .item-modal-btn{flex:1;padding:14px;border-radius:14px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s}
+        .item-modal-actions{display:flex;gap:10px;width:100%;margin-top:6px;flex-wrap:wrap}
+        .item-modal-btn{flex:1;min-width:0;padding:14px;border-radius:14px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .item-modal-btn:disabled{opacity:.4;cursor:not-allowed}
         .item-modal-sell{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
         /* === SELL CONFIRMATION SCREEN === */
@@ -1175,7 +1175,7 @@
             sellBtn.textContent = t('sell');
             sellBtn.disabled = item.is_withdrawing;
             withdrawBtn.style.display = '';
-            withdrawBtn.textContent = 'Вывести − 0.4 TON';
+            withdrawBtn.textContent = 'Вывод';
             withdrawBtn.disabled = item.is_withdrawing;
         } else {
             // Normal view
@@ -1209,7 +1209,7 @@
                 sellBtn.disabled = item.is_withdrawing;
                 // Upgrade hidden — show withdraw button for all normal gifts
                 withdrawBtn.style.display = '';
-                withdrawBtn.textContent = 'Вывести − 0.4 TON';
+                withdrawBtn.textContent = 'Вывод';
                 withdrawBtn.disabled = item.is_withdrawing;
             }
         }
@@ -1676,7 +1676,11 @@
             if (d.success) {
                 closePortalPicker();
                 hideItemModal();
-                showNotif('Подарок куплен! Ожидайте передачи.');
+                if (d.transferred) {
+                    showNotif('Подарок отправлен на ваш аккаунт!');
+                } else {
+                    showNotif('Подарок куплен! Передадим вручную.');
+                }
                 await refreshUserData();
                 loadInventory();
             } else {
