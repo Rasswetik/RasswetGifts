@@ -2310,27 +2310,28 @@ def _create_all_tables(conn):
             is_active BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
+        conn.commit()  # commit all table creations before migrations
         # Миграция: добавляем case_stars если нет
         try:
             conn.execute('ALTER TABLE users ADD COLUMN case_stars INTEGER DEFAULT 0')
         except:
-            pass
+            conn.rollback()
         # Миграция: режим отображения валюты (stars/ton)
         try:
             conn.execute('ALTER TABLE users ADD COLUMN currency_mode TEXT DEFAULT "stars"')
         except:
-            pass
+            conn.rollback()
         # Миграция: добавляем новые колонки в admin_notifications
         for col in ['notif_type TEXT DEFAULT "general"', 'reward_type TEXT DEFAULT NULL', 'reward_data TEXT DEFAULT NULL']:
             try:
                 conn.execute(f'ALTER TABLE admin_notifications ADD COLUMN {col}')
             except:
-                pass
+                conn.rollback()
         # Миграция: добавляем description в user_bonuses если нет
         try:
             conn.execute('ALTER TABLE user_bonuses ADD COLUMN description TEXT DEFAULT ""')
         except:
-            pass
+            conn.rollback()
         conn.commit()
     except Exception as bonus_e:
         logger.warning(f"Bonus tables migration: {bonus_e}")
@@ -12956,11 +12957,15 @@ def crash_customizations():
         # Добавляем новые колонки если их нет
         try:
             cursor.execute('ALTER TABLE crash_customizations ADD COLUMN access_type TEXT DEFAULT "free"')
-        except: pass
+            conn.commit()
+        except:
+            conn.rollback()
         try:
             cursor.execute('ALTER TABLE crash_customizations ADD COLUMN requirement INTEGER DEFAULT 0')
-        except: pass
-        
+            conn.commit()
+        except:
+            conn.rollback()
+
         # Добавляем дефолтные если их нет - 5 animated backgrounds
         cursor.execute("DELETE FROM crash_customizations WHERE item_type = 'background'")
         bg_data = [
@@ -14033,11 +14038,15 @@ def admin_manage_rockets():
             # Добавляем новые колонки если их нет
             try:
                 cursor.execute('ALTER TABLE crash_customizations ADD COLUMN access_type TEXT DEFAULT "free"')
-            except: pass
+                conn.commit()
+            except:
+                conn.rollback()
             try:
                 cursor.execute('ALTER TABLE crash_customizations ADD COLUMN requirement INTEGER DEFAULT 0')
-            except: pass
-            
+                conn.commit()
+            except:
+                conn.rollback()
+
             # Сохраняем файл
             filename = f"{item_id}.gif"
             filepath = os.path.join(BASE_PATH, 'static', 'gifs', filename)
@@ -14126,11 +14135,15 @@ def admin_manage_backgrounds():
             # Добавляем новые колонки если их нет
             try:
                 cursor.execute('ALTER TABLE crash_customizations ADD COLUMN access_type TEXT DEFAULT "free"')
-            except: pass
+                conn.commit()
+            except:
+                conn.rollback()
             try:
                 cursor.execute('ALTER TABLE crash_customizations ADD COLUMN requirement INTEGER DEFAULT 0')
-            except: pass
-            
+                conn.commit()
+            except:
+                conn.rollback()
+
             # Сохраняем файл
             filename = f"{item_id}.mp4"
             filepath = os.path.join(BASE_PATH, 'static', 'img', filename)
