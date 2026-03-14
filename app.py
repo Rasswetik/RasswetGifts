@@ -62,7 +62,7 @@ fragment_models_cache = {}
 fragment_models_cache_time = {}
 
 # ── MRKT Marketplace Configuration ────────────────────────────────────────────
-MRKT_TOKEN = os.getenv('MRKT_TOKEN', '9396e614-f48d-4c01-9921-62259987b37d')
+MRKT_TOKEN = os.getenv('MRKT_TOKEN', 'aedb8b73-f049-4888-8f11-6603cdb784f8')
 MRKT_API_BASE = 'https://api.tgmrkt.io/api/v1'
 MRKT_CDN_BASE = 'https://cdn.tgmrkt.io'
 MRKT_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
@@ -4324,18 +4324,6 @@ def serve_music(path):
 
 # ==================== API ENDPOINTS ====================
 
-# === DEMO LOGIN (DISABLED) ===
-# Demo login has been removed for security.
-@app.route('/api/demo-login', methods=['POST'])
-def demo_login():
-    """Demo login disabled"""
-    return jsonify({'success': False, 'error': 'Demo login is disabled'}), 403
-
-@app.route('/api/verify-demo-code', methods=['POST'])
-def verify_demo_code():
-    """Demo code verification disabled"""
-    return jsonify({'success': False, 'error': 'Demo codes are disabled'}), 403
-
 # TELEGRAM API
 @app.route('/api/telegram/user', methods=['GET'])
 def get_telegram_user():
@@ -7450,53 +7438,6 @@ def user_case_history(user_id, case_id):
         return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/api/debug-cases', methods=['GET'])
-def debug_cases():
-    """Отладочная информация о кейсах"""
-    try:
-        logger.info("🔍 Отладочная информация о кейсах")
-
-        file_path = os.path.join(BASE_PATH, 'data', 'cases.json')
-        logger.info(f"📁 Путь к файлу cases.json: {file_path}")
-
-        exists = os.path.exists(file_path)
-        logger.info(f"📁 Файл существует: {exists}")
-
-        cases_info = []
-        if exists:
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    logger.info(f"📁 Размер файла: {len(content)} байт")
-
-                    data = json.loads(content)
-                    cases = data.get('cases', [])
-                    logger.info(f"📁 Найдено кейсов: {len(cases)}")
-
-                    for i, case in enumerate(cases[:5]):
-                        cases_info.append({
-                            'id': case.get('id'),
-                            'name': case.get('name'),
-                            'cost': case.get('cost'),
-                            'limited': case.get('limited')
-                        })
-            except Exception as e:
-                logger.error(f"❌ Ошибка чтения файла: {e}")
-
-        return jsonify({
-            'success': True,
-            'file_path': file_path,
-            'exists': exists,
-            'base_path': BASE_PATH,
-            'cases_sample': cases_info,
-            'current_dir': os.getcwd(),
-            'data_dir_exists': os.path.exists(os.path.join(BASE_PATH, 'data'))
-        })
-
-    except Exception as e:
-        logger.error(f"❌ Ошибка отладки: {e}")
-        return jsonify({'success': False, 'error': str(e)})
-
 @app.route('/api/admin/init-db', methods=['POST'])
 def admin_init_db():
     """Принудительная инициализация всех таблиц БД"""
@@ -8205,9 +8146,15 @@ def withdraw_gift():
 
 # ── MRKT Marketplace Withdrawal ───────────────────────────────────────────────
 
+def _mrkt_fragment_url(collection_name, number):
+    """Build fragment.com image URL for a specific numbered gift."""
+    slug = (collection_name or '').replace(' ', '').replace("'", '').replace('.', '')
+    return f'https://nft.fragment.com/gift/{slug}-{number}.medium.jpg'
+
+
 @app.route('/api/mrkt/gifts', methods=['GET'])
 def mrkt_search_gifts():
-    """Search MRKT for cheapest gifts by collection name (gift_name from inventory)."""
+    """Search MRKT for gifts by collection name, filtered to <=5% above floor price."""
     name = request.args.get('name', '').strip()
     if not name:
         return jsonify({'success': False, 'error': 'name required'})
@@ -8232,28 +8179,57 @@ def mrkt_search_gifts():
         r = http_requests.post(f'{MRKT_API_BASE}/gifts/saling', headers=headers, json=payload, timeout=10)
         if not r.text.strip():
             logger.error(f'MRKT search: empty response (status {r.status_code})')
-            return jsonify({'success': False, 'error': f'MRKT вернул пустой ответ (статус {r.status_code})'})
+            return jsonify({'success': False, 'error': f'MRKT пустой ответ ({r.status_code})'})
+
         data = r.json()
         gifts_raw = data.get('gifts', [])
+
+        def _price(g):
+            return g.get('salePrice') or g.get('salePriceWithoutFee') or 0
+
+        # Find floor price: the cheapest listing price
+        floor_nano = 0
+        if gifts_raw:
+            prices = [_price(g) for g in gifts_raw if _price(g) > 0]
+            floor_nano = min(prices) if prices else 0
+        max_nano = int(floor_nano * 1.05) if floor_nano > 0 else 0
+
         result = []
         for g in gifts_raw:
-            # Price: API returns nanoTons (1 TON = 1e9) or plain TON
-            price_nano = (g.get('priceNanoTons') or g.get('price') or 0)
-            price_ton = price_nano / 1_000_000_000 if price_nano > 1_000_000 else float(price_nano)
-            # Image: try multiple field names, resolve relative paths
-            img = (g.get('imageUrl') or g.get('previewUrl') or g.get('image') or
-                   g.get('gifUrl') or g.get('thumbnailUrl') or '')
-            if img and not img.startswith('http'):
-                img = f'{MRKT_CDN_BASE}/{img.lstrip("/")}'
+            price_nano = _price(g)
+            # Filter: only gifts within 5% of floor
+            if max_nano > 0 and price_nano > max_nano:
+                continue
+            price_ton = round(price_nano / 1_000_000_000, 4)
+            coll_name = g.get('collectionName') or g.get('collectionTitle') or name
+            number = g.get('number')
+            gift_type = g.get('giftType', '')
+
+            # Image: fragment.com for numbered gifts, CDN fallback
+            if number:
+                image = _mrkt_fragment_url(coll_name, number)
+            else:
+                thumb = g.get('modelStickerThumbnailKey', '')
+                image = f'{MRKT_CDN_BASE}/{thumb.lstrip("/")}' if thumb else ''
+
             result.append({
                 'id': g.get('id'),
-                'number': g.get('number') or g.get('giftNumber') or g.get('serialNumber'),
-                'price_ton': round(price_ton, 4),
-                'model': g.get('modelName') or g.get('model') or '',
-                'backdrop': g.get('backdropName') or g.get('backdrop') or '',
-                'image': img,
+                'number': number,
+                'price_ton': price_ton,
+                'model': g.get('modelName') or g.get('modelTitle') or '',
+                'backdrop': g.get('backdropName') or g.get('backdropTitle') or '',
+                'image': image,
+                'collection_name': coll_name,
+                'title': g.get('title') or g.get('collectionTitle') or coll_name,
+                'gift_type': gift_type,
+                'gift_name': g.get('name', ''),
             })
-        return jsonify({'success': True, 'gifts': result})
+
+        return jsonify({
+            'success': True,
+            'gifts': result,
+            'floor_price_ton': round(floor_nano / 1_000_000_000, 4) if floor_nano else 0,
+        })
     except Exception as e:
         logger.error(f'MRKT search error: {e}')
         return jsonify({'success': False, 'error': str(e)})
@@ -8292,33 +8268,37 @@ def mrkt_buy_withdraw():
             conn.close()
             return jsonify({'success': False, 'error': 'Подарок уже в процессе вывода'})
 
-        # ── Find cheapest matching gift on MRKT ───────────────────────────────
+        # ── Find cheapest matching gift on MRKT (or use caller-selected gift) ──
         headers = {'Authorization': MRKT_TOKEN}
-        search_payload = {
-            'collectionNames': [gift_name],
-            'modelNames': [], 'backdropNames': [], 'symbolNames': [],
-            'ordering': 'Price', 'lowToHigh': True,
-            'maxPrice': None, 'minPrice': None, 'mintable': None,
-            'number': None, 'count': 5, 'cursor': '',
-            'query': None, 'promotedFirst': False,
-        }
-        try:
-            search_resp = http_requests.post(f'{MRKT_API_BASE}/gifts/saling',
-                                             headers=headers, json=search_payload, timeout=10)
-            if not search_resp.text.strip():
-                raise Exception(f'MRKT вернул пустой ответ (статус {search_resp.status_code})')
-            search_data = search_resp.json()
-            gifts_list = search_data.get('gifts', [])
-        except Exception as se:
-            conn.close()
-            logger.error(f'MRKT search error: {se}')
-            return jsonify({'success': False, 'error': 'Не удалось получить список подарков с MRKT'})
+        mrkt_gift_id = data.get('mrkt_gift_id')  # pre-selected by user in picker
 
-        if not gifts_list:
-            conn.close()
-            return jsonify({'success': False, 'error': f'Подарков «{gift_name}» нет на MRKT'})
+        if not mrkt_gift_id:
+            search_payload = {
+                'collectionNames': [gift_name],
+                'modelNames': [], 'backdropNames': [], 'symbolNames': [],
+                'ordering': 'Price', 'lowToHigh': True,
+                'maxPrice': None, 'minPrice': None, 'mintable': None,
+                'number': None, 'count': 5, 'cursor': '',
+                'query': None, 'promotedFirst': False,
+            }
+            try:
+                search_resp = http_requests.post(f'{MRKT_API_BASE}/gifts/saling',
+                                                 headers=headers, json=search_payload, timeout=10)
+                if not search_resp.text.strip():
+                    raise Exception(f'MRKT вернул пустой ответ (статус {search_resp.status_code})')
+                search_data = search_resp.json()
+                gifts_list = search_data.get('gifts', [])
+            except Exception as se:
+                conn.close()
+                logger.error(f'MRKT search error: {se}')
+                return jsonify({'success': False, 'error': 'Не удалось получить список подарков с MRKT'})
 
-        mrkt_gift_id = gifts_list[0].get('id')
+            if not gifts_list:
+                conn.close()
+                return jsonify({'success': False, 'error': f'Подарков «{gift_name}» нет на MRKT'})
+
+            mrkt_gift_id = gifts_list[0].get('id')
+
         if not mrkt_gift_id:
             conn.close()
             return jsonify({'success': False, 'error': 'Не удалось получить ID подарка с MRKT'})
@@ -9410,51 +9390,6 @@ def upgrade_gift_chance():
 
     except Exception as e:
         logger.error(f"❌ Ошибка апгрейда: {e}")
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/api/debug-upgrade/<int:inventory_id>', methods=['GET'])
-def debug_upgrade(inventory_id):
-    """Отладочная информация для апгрейда"""
-    try:
-        user_id = request.args.get('user_id')
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
-        current_gift = cursor.fetchone()
-
-        gifts = build_fragment_first_gifts_catalog()
-
-        conn.close()
-
-        if not current_gift:
-            return jsonify({
-                'success': False,
-                'error': 'Подарок не найден',
-                'debug_info': {
-                    'inventory_id': inventory_id,
-                    'user_id': user_id,
-                    'total_gifts_loaded': len(gifts) if gifts else 0
-                }
-            })
-
-        return jsonify({
-            'success': True,
-            'debug_info': {
-                'current_gift': {
-                    'inventory_id': current_gift[0],
-                    'user_id': current_gift[1],
-                    'gift_id': current_gift[2],
-                    'gift_name': current_gift[3],
-                    'gift_value': current_gift[5]
-                },
-                'total_gifts_available': len(gifts) if gifts else 0,
-                'gifts_sample': [{'id': g['id'], 'name': g['name'], 'value': g.get('value', 0)} for g in gifts[:5]] if gifts else []
-            }
-        })
-
-    except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/upgrade-possible-gifts', methods=['POST'])
@@ -13045,129 +12980,6 @@ def crash_customizations():
             'default_rocket': 'crash',
             'default_background': 'phone'
         })
-
-@app.route('/api/crash/status')
-def crash_status():
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT id, status, current_multiplier
-        FROM crash_games
-        ORDER BY id DESC LIMIT 1
-    """)
-    game = cur.fetchone()
-
-    if not game:
-        cur.execute("INSERT INTO crash_games(status,current_multiplier) VALUES('waiting',1.0)")
-        conn.commit()
-        conn.close()
-        return jsonify({"status": "waiting", "multiplier": 1.0, "rtp": TARGET_RTP * 100})
-
-    # Calculate actual crash RTP
-    cur.execute('SELECT COALESCE(SUM(bet_amount),0) FROM ultimate_crash_bets')
-    total_bets = cur.fetchone()[0]
-    cur.execute('SELECT COALESCE(SUM(win_amount),0) FROM ultimate_crash_bets WHERE status="cashed_out"')
-    total_wins = cur.fetchone()[0]
-    crash_rtp = round((total_wins / total_bets * 100) if total_bets > 0 else TARGET_RTP * 100, 1)
-    conn.close()
-
-    return jsonify({
-        "game_id": game[0],
-        "status": game[1],
-        "multiplier": float(game[2]),
-        "rtp": crash_rtp
-    })
-
-@app.route('/api/crash/bet', methods=['POST'])
-def crash_bet():
-    data = request.json
-    user_id = data['user_id']
-    amount = int(data['amount'])
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("SELECT balance_stars FROM users WHERE id=?", (user_id,))
-    balance = cur.fetchone()[0]
-
-    if balance < amount:
-        return jsonify({"error": "Недостаточно звёзд"})
-
-    # списываем баланс
-    cur.execute("UPDATE users SET balance_stars = balance_stars - ? WHERE id=?", (amount, user_id))
-
-    # ищем подарок по цене (originals only)
-    gifts = build_fragment_first_gifts_catalog()
-    gift = min(gifts, key=lambda g: abs(g.get("value", 0) - amount))
-
-    # активная игра
-    cur.execute("SELECT id FROM crash_games ORDER BY id DESC LIMIT 1")
-    game_id = cur.fetchone()[0]
-
-    cur.execute("""
-        INSERT INTO crash_bets(game_id,user_id,bet_amount,bet_type,
-        gift_id,gift_name,gift_image,gift_value)
-        VALUES(?,?,?,?,?,?,?,?)
-    """, (
-        game_id, user_id, amount, "stars",
-        gift.get("id") or gift.get("gift_key") or -1, gift["name"], gift.get("image", ''), gift.get("value", 0)
-    ))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"success": True, "gift": gift})
-
-@app.route('/api/crash/cashout', methods=['POST'])
-def crash_cashout():
-    data = request.json
-    user_id = data['user_id']
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("""
-        SELECT b.id,b.bet_amount,b.gift_value,g.current_multiplier
-        FROM crash_bets b
-        JOIN crash_games g ON b.game_id=g.id
-        WHERE b.user_id=? AND b.status='active'
-    """, (user_id,))
-
-    bet = cur.fetchone()
-    if not bet:
-        return jsonify({"error":"Нет активной ставки"})
-
-    bet_id, amount, gift_value, mult = bet
-    win = int(amount * float(mult))
-
-    # если выигрыш превращается в подарок (originals only)
-    gifts = build_fragment_first_gifts_catalog()
-    best_gift = min(gifts, key=lambda g: abs(g.get("value", 0) - win))
-
-    cur.execute("""
-        INSERT INTO inventory(user_id,gift_id,gift_name,gift_image,gift_value)
-        VALUES(?,?,?,?,?)
-    """, (user_id, best_gift.get("id") or -1, best_gift["name"], best_gift.get("image", ''), best_gift.get("value", 0)))
-
-    cur.execute("UPDATE crash_bets SET status='won', win_amount=? WHERE id=?", (win,bet_id))
-
-    conn.commit()
-    conn.close()
-
-    # Update gift challenge progress (bet turnover)
-    try:
-        if amount > 0:
-            update_gift_challenge_progress(user_id, amount)
-    except Exception as gc_err:
-        logger.error(f"Gift challenge update error: {gc_err}")
-
-    return jsonify({
-        "success":True,
-        "multiplier": mult,
-        "reward": best_gift
-    })
-
 
 @app.route('/api/admin/set-case-limit', methods=['POST'])
 def admin_set_case_limit():

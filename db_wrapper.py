@@ -83,6 +83,19 @@ def _translate_query(sql):
     out = re.sub(r"\b([A-Za-z_][A-Za-z0-9_]*)\s+INTEGER\b", _replace_int_id, out, flags=re.IGNORECASE)
     # datetime('now') → NOW()
     out = re.sub(r"datetime\(\s*'now'\s*\)", 'NOW()', out, flags=re.IGNORECASE)
+    # datetime('now', '-N minutes') → NOW() - INTERVAL 'N minutes'
+    def _datetime_modifier(m):
+        sign = m.group(1)
+        num = m.group(2)
+        unit = m.group(3)
+        if sign == '-':
+            return f"NOW() - INTERVAL '{num} {unit}'"
+        else:
+            return f"NOW() + INTERVAL '{num} {unit}'"
+    out = re.sub(
+        r"datetime\(\s*'now'\s*,\s*'([+-])(\d+)\s+(minutes?|hours?|days?|seconds?)'\s*\)",
+        _datetime_modifier, out, flags=re.IGNORECASE
+    )
     # date('now') → CURRENT_DATE
     out = re.sub(r"date\(\s*'now'\s*\)", 'CURRENT_DATE', out, flags=re.IGNORECASE)
     # date('now','start of month') → date_trunc('month', CURRENT_TIMESTAMP)

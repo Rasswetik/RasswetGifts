@@ -1,16 +1,8 @@
-# ⚠️ ВАЖНО: Без DATABASE_URL данные СБРАСЫВАЮТСЯ при каждом редеплое!
-# 
-# ИНСТРУКЦИЯ по настройке PostgreSQL (ОБЯЗАТЕЛЬНО):
-# 1. Зайди на https://neon.tech и зарегистрируйся (бесплатно)
-# 2. Создай новый проект (Create Project)
-# 3. Скопируй Connection String (postgres://...@...neon.tech/neondb?sslmode=require)
-# 4. Зайди в Render Dashboard → твой сервис → Environment
-# 5. Добавь переменную:
-#    Key: DATABASE_URL
-#    Value: (вставь connection string от Neon)
-# 6. Нажми "Save Changes" и сделай Manual Deploy
-#
-# БЕЗ ЭТОГО ШАГА ДАННЫЕ БУДУТ ТЕРЯТЬСЯ!
+# Render deployment config — PostgreSQL on dpg-d6g8b45m5p6s739vp3pg-a
+
+databases:
+  - name: rasswet-gifts-db
+    plan: free
 
 services:
   - type: web
@@ -20,7 +12,9 @@ services:
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --preload
     envVars:
       - key: DATABASE_URL
-        sync: false  # ⚠️ ОБЯЗАТЕЛЬНО установи вручную в Render Dashboard!
+        fromDatabase:
+          name: rasswet-gifts-db
+          property: connectionString
       - key: PYTHON_VERSION
         value: "3.11.6"
       - key: PORT
