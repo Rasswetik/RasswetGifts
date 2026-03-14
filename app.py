@@ -61,11 +61,15 @@ fragment_cache_time = None
 fragment_models_cache = {}
 fragment_models_cache_time = {}
 
-# ── MRKT Marketplace Configuration ────────────────────────────────────────────
-MRKT_TOKEN = os.getenv('MRKT_TOKEN', 'aedb8b73-f049-4888-8f11-6603cdb784f8')
-MRKT_API_BASE = 'https://api.tgmrkt.io/api/v1'
-MRKT_CDN_BASE = 'https://cdn.tgmrkt.io'
-MRKT_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
+# ── Portals Marketplace Configuration ────────────────────────────────────────
+# Auth data is cached in memory; refreshed on startup and periodically
+PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
+PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
+PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
+PORTAL_SESSION_NAME = os.getenv('PORTAL_SESSION_NAME', 'portal_account')
+_portal_auth_data = None  # cached authData string
+_portal_auth_lock = threading.Lock()
+PORTAL_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
 
 # Site balance cache to reduce frequent DB reads (hot path)
 _site_balance_cache = {'value': 0, 'ts': 0}
@@ -8273,104 +8277,154 @@ def withdraw_gift():
         return jsonify({'success': False, 'error': 'Произошла ошибка, заявка передана администратору'})
 
 
-# ── MRKT Marketplace Withdrawal ───────────────────────────────────────────────
+# ── Portals Marketplace Integration ───────────────────────────────────────────
 
-def _mrkt_fragment_url(collection_name, number):
+def _portal_fragment_url(collection_name, number):
     """Build fragment.com image URL for a specific numbered gift."""
     slug = (collection_name or '').replace(' ', '').replace("'", '').replace('.', '')
     return f'https://nft.fragment.com/gift/{slug}-{number}.medium.jpg'
 
 
-@app.route('/api/mrkt/gifts', methods=['GET'])
-def mrkt_search_gifts():
-    """Search MRKT for gifts by collection name, filtered to <=5% above floor price."""
+def _get_portal_auth():
+    """Get cached Portal auth data, refresh if needed."""
+    global _portal_auth_data
+    if _portal_auth_data:
+        return _portal_auth_data
+    if not PORTAL_API_ID or not PORTAL_API_HASH:
+        logger.warning("Portal API credentials not configured (PORTAL_API_ID / PORTAL_API_HASH)")
+        return None
+    try:
+        import asyncio
+        from aportalsmp.auth import update_auth
+        loop = asyncio.new_event_loop()
+        _portal_auth_data = loop.run_until_complete(
+            update_auth(api_id=PORTAL_API_ID, api_hash=PORTAL_API_HASH,
+                        session_path=PORTAL_SESSION_PATH, session_name=PORTAL_SESSION_NAME)
+        )
+        loop.close()
+        logger.info("✅ Portal auth data obtained")
+        return _portal_auth_data
+    except Exception as e:
+        logger.error(f"❌ Portal auth failed: {e}")
+        return None
+
+
+def _portal_sync_floors():
+    """Fetch floor prices from Portal API and update gifts.json values."""
+    auth = _get_portal_auth()
+    if not auth:
+        return {'success': False, 'error': 'Portal auth not configured'}
+    try:
+        import asyncio
+        from aportalsmp.gifts import collections as portal_collections
+        loop = asyncio.new_event_loop()
+        colls = loop.run_until_complete(portal_collections(authData=auth))
+        loop.close()
+        colls_dict = colls.toDict()
+
+        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        with open(gifts_path, 'r', encoding='utf-8') as f:
+            gifts = json.load(f)
+
+        updated = 0
+        for gift in gifts:
+            gname = gift.get('name', '')
+            try:
+                coll = colls.gift(gname)
+                if coll and coll.floor_price:
+                    new_value = int(round(float(coll.floor_price) * 100))  # TON → stars (100 stars = 1 TON)
+                    if new_value > 0:
+                        gift['value'] = new_value
+                        updated += 1
+            except Exception:
+                pass
+
+        with open(gifts_path, 'w', encoding='utf-8') as f:
+            json.dump(gifts, f, ensure_ascii=False, indent=2)
+
+        logger.info(f"✅ Portal floors sync: updated {updated}/{len(gifts)} gifts")
+        return {'success': True, 'updated': updated, 'total': len(gifts)}
+    except Exception as e:
+        logger.error(f"❌ Portal floors sync error: {e}")
+        return {'success': False, 'error': str(e)}
+
+
+@app.route('/api/portal/sync-prices', methods=['POST'])
+def portal_sync_prices():
+    """Admin endpoint: sync gift prices from Portal marketplace floors."""
+    try:
+        result = _portal_sync_floors()
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Portal sync error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/portal/gifts', methods=['GET'])
+def portal_search_gifts():
+    """Search Portal marketplace for gifts by name, sorted by price ascending."""
     name = request.args.get('name', '').strip()
     if not name:
         return jsonify({'success': False, 'error': 'name required'})
+    auth = _get_portal_auth()
+    if not auth:
+        return jsonify({'success': False, 'error': 'Portal auth not configured'})
     try:
-        headers = {'Authorization': MRKT_TOKEN}
-        payload = {
-            'collectionNames': [name],
-            'modelNames': [],
-            'backdropNames': [],
-            'symbolNames': [],
-            'ordering': 'Price',
-            'lowToHigh': True,
-            'maxPrice': None,
-            'minPrice': None,
-            'mintable': None,
-            'number': None,
-            'count': 20,
-            'cursor': '',
-            'query': None,
-            'promotedFirst': False,
-        }
-        r = http_requests.post(f'{MRKT_API_BASE}/gifts/saling', headers=headers, json=payload, timeout=10)
-        if not r.text.strip():
-            logger.error(f'MRKT search: empty response (status {r.status_code})')
-            return jsonify({'success': False, 'error': f'MRKT пустой ответ ({r.status_code})'})
-
-        data = r.json()
-        gifts_raw = data.get('gifts', [])
-
-        def _price(g):
-            return g.get('salePrice') or g.get('salePriceWithoutFee') or 0
-
-        # Find floor price: the cheapest listing price
-        floor_nano = 0
-        if gifts_raw:
-            prices = [_price(g) for g in gifts_raw if _price(g) > 0]
-            floor_nano = min(prices) if prices else 0
-        max_nano = int(floor_nano * 1.05) if floor_nano > 0 else 0
+        import asyncio
+        from aportalsmp.gifts import search as portal_search
+        loop = asyncio.new_event_loop()
+        gifts_list = loop.run_until_complete(
+            portal_search(sort='price_asc', gift_name=name, limit=20, authData=auth)
+        )
+        loop.close()
 
         result = []
-        for g in gifts_raw:
-            price_nano = _price(g)
-            # Filter: only gifts within 5% of floor
-            if max_nano > 0 and price_nano > max_nano:
+        floor_price = None
+        for g in gifts_list:
+            price = float(g.price) if g.price else 0
+            if floor_price is None and price > 0:
+                floor_price = price
+            # Only show gifts within 5% of floor
+            if floor_price and price > floor_price * 1.05:
                 continue
-            price_ton = round(price_nano / 1_000_000_000, 4)
-            coll_name = g.get('collectionName') or g.get('collectionTitle') or name
-            number = g.get('number')
-            gift_type = g.get('giftType', '')
-
-            # Image: fragment.com for numbered gifts, CDN fallback
+            number = g.tg_id
+            coll_name = g.name or name
             if number:
-                image = _mrkt_fragment_url(coll_name, number)
+                image = _portal_fragment_url(coll_name, number)
             else:
-                thumb = g.get('modelStickerThumbnailKey', '')
-                image = f'{MRKT_CDN_BASE}/{thumb.lstrip("/")}' if thumb else ''
-
+                image = g.photo_url or ''
             result.append({
-                'id': g.get('id'),
+                'id': g.id,
                 'number': number,
-                'price_ton': price_ton,
-                'model': g.get('modelName') or g.get('modelTitle') or '',
-                'backdrop': g.get('backdropName') or g.get('backdropTitle') or '',
+                'price_ton': round(price, 4),
+                'model': g.model or '',
+                'backdrop': g.backdrop or '',
                 'image': image,
                 'collection_name': coll_name,
-                'title': g.get('title') or g.get('collectionTitle') or coll_name,
-                'gift_type': gift_type,
-                'gift_name': g.get('name', ''),
+                'title': g.name or coll_name,
             })
 
         return jsonify({
             'success': True,
             'gifts': result,
-            'floor_price_ton': round(floor_nano / 1_000_000_000, 4) if floor_nano else 0,
+            'floor_price_ton': round(floor_price, 4) if floor_price else 0,
         })
     except Exception as e:
-        logger.error(f'MRKT search error: {e}')
+        logger.error(f'Portal search error: {e}')
         return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/api/mrkt/buy-withdraw', methods=['POST'])
-def mrkt_buy_withdraw():
-    """Deduct 0.4 TON fee, auto-buy cheapest matching gift on MRKT, mark item as withdrawing."""
+@app.route('/api/portal/buy-withdraw', methods=['POST'])
+def portal_buy_withdraw():
+    """Buy cheapest matching gift on Portal, deduct fee, mark as withdrawing."""
     try:
         data = request.get_json()
         user_id = int(data['user_id'])
         inventory_id = int(data['inventory_id'])
+
+        auth = _get_portal_auth()
+        if not auth:
+            return jsonify({'success': False, 'error': 'Portal auth not configured'})
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -8382,7 +8436,7 @@ def mrkt_buy_withdraw():
             conn.close()
             return jsonify({'success': False, 'error': 'Пользователь не найден'})
         balance = row[0] or 0
-        if balance < MRKT_WITHDRAW_FEE_STARS:
+        if balance < PORTAL_WITHDRAW_FEE_STARS:
             conn.close()
             return jsonify({'success': False, 'error': 'Недостаточно баланса. Нужно 0.4 TON для вывода'})
 
@@ -8397,62 +8451,48 @@ def mrkt_buy_withdraw():
             conn.close()
             return jsonify({'success': False, 'error': 'Подарок уже в процессе вывода'})
 
-        # ── Find cheapest matching gift on MRKT (or use caller-selected gift) ──
-        headers = {'Authorization': MRKT_TOKEN}
-        mrkt_gift_id = data.get('mrkt_gift_id')  # pre-selected by user in picker
+        # Find cheapest matching gift on Portal (or use caller-selected)
+        import asyncio
+        from aportalsmp.gifts import search as portal_search, buy as portal_buy
 
-        if not mrkt_gift_id:
-            search_payload = {
-                'collectionNames': [gift_name],
-                'modelNames': [], 'backdropNames': [], 'symbolNames': [],
-                'ordering': 'Price', 'lowToHigh': True,
-                'maxPrice': None, 'minPrice': None, 'mintable': None,
-                'number': None, 'count': 5, 'cursor': '',
-                'query': None, 'promotedFirst': False,
-            }
+        portal_gift_id = data.get('portal_gift_id')
+        portal_gift_price = None
+
+        if not portal_gift_id:
+            loop = asyncio.new_event_loop()
             try:
-                search_resp = http_requests.post(f'{MRKT_API_BASE}/gifts/saling',
-                                                 headers=headers, json=search_payload, timeout=10)
-                if not search_resp.text.strip():
-                    raise Exception(f'MRKT вернул пустой ответ (статус {search_resp.status_code})')
-                search_data = search_resp.json()
-                gifts_list = search_data.get('gifts', [])
-            except Exception as se:
-                conn.close()
-                logger.error(f'MRKT search error: {se}')
-                return jsonify({'success': False, 'error': 'Не удалось получить список подарков с MRKT'})
-
+                gifts_list = loop.run_until_complete(
+                    portal_search(sort='price_asc', gift_name=gift_name, limit=5, authData=auth)
+                )
+            finally:
+                loop.close()
             if not gifts_list:
                 conn.close()
-                return jsonify({'success': False, 'error': f'Подарков «{gift_name}» нет на MRKT'})
+                return jsonify({'success': False, 'error': f'Подарков «{gift_name}» нет на Portal'})
+            portal_gift_id = gifts_list[0].id
+            portal_gift_price = float(gifts_list[0].price)
+        else:
+            portal_gift_price = float(data.get('portal_gift_price', 0))
 
-            mrkt_gift_id = gifts_list[0].get('id')
-
-        if not mrkt_gift_id:
+        # Buy on Portal
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(
+                portal_buy(nft_id=portal_gift_id, price=portal_gift_price, authData=auth)
+            )
+        except Exception as buy_e:
+            loop.close()
             conn.close()
-            return jsonify({'success': False, 'error': 'Не удалось получить ID подарка с MRKT'})
-
-        # ── Buy on MRKT ───────────────────────────────────────────────────────
-        buy_resp = http_requests.post(
-            f'{MRKT_API_BASE}/gifts/{mrkt_gift_id}/buy',
-            headers=headers, json={}, timeout=15
-        )
-        logger.info(f'MRKT buy response {buy_resp.status_code}: {buy_resp.text[:200]}')
-
-        if buy_resp.status_code not in (200, 201):
-            conn.close()
-            try:
-                err_body = buy_resp.json()
-                err_msg = err_body.get('message') or err_body.get('error') or 'Ошибка покупки на MRKT'
-            except Exception:
-                err_msg = f'MRKT ответил {buy_resp.status_code}'
-            if buy_resp.status_code == 402 or 'balance' in err_msg.lower():
-                err_msg = 'Недостаточно баланса на MRKT-аккаунте'
+            logger.error(f'Portal buy error: {buy_e}')
+            err_msg = str(buy_e)
+            if 'balance' in err_msg.lower():
+                err_msg = 'Недостаточно баланса на Portal-аккаунте'
             return jsonify({'success': False, 'error': err_msg})
+        loop.close()
 
-        # ── Success: deduct fee, update state ─────────────────────────────────
+        # Success: deduct fee, update state
         cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
-                       (MRKT_WITHDRAW_FEE_STARS, user_id))
+                       (PORTAL_WITHDRAW_FEE_STARS, user_id))
         cursor.execute('UPDATE inventory SET is_withdrawing = TRUE WHERE id = ?', (inventory_id,))
         cursor.execute('''
             INSERT INTO withdrawals (user_id, inventory_id, gift_name, gift_image, gift_value,
@@ -8465,15 +8505,15 @@ def mrkt_buy_withdraw():
         conn.close()
 
         try:
-            add_history_record(user_id, 'withdraw', -MRKT_WITHDRAW_FEE_STARS,
-                               f'Вывод через MRKT: {gift_name} (MRKT id={mrkt_gift_id})')
+            add_history_record(user_id, 'withdraw', -PORTAL_WITHDRAW_FEE_STARS,
+                               f'Вывод через Portal: {gift_name}')
         except Exception:
             pass
 
         try:
             tg_send(user_id,
                     f"📦 <b>Вывод #{withdrawal_id}</b>\n\n"
-                    f"Подарок <b>{gift_name}</b> куплен на MRKT.\n"
+                    f"Подарок <b>{gift_name}</b> куплен на Portal.\n"
                     f"Ожидайте передачи на ваш аккаунт.")
         except Exception:
             pass
@@ -8481,88 +8521,9 @@ def mrkt_buy_withdraw():
         return jsonify({'success': True, 'withdrawal_id': withdrawal_id})
 
     except Exception as e:
-        logger.error(f'MRKT buy-withdraw error: {e}\n{traceback.format_exc()}')
+        logger.error(f'Portal buy-withdraw error: {e}\n{traceback.format_exc()}')
         return jsonify({'success': False, 'error': 'Внутренняя ошибка сервера'})
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Verify user balance
-        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
-        row = cursor.fetchone()
-        if not row:
-            conn.close()
-            return jsonify({'success': False, 'error': 'Пользователь не найден'})
-        balance = row[0] or 0
-        if balance < MRKT_WITHDRAW_FEE_STARS:
-            conn.close()
-            return jsonify({'success': False, 'error': 'Недостаточно баланса. Нужно 0.4 TON для вывода'})
-
-        # Verify inventory item belongs to user and not already withdrawing
-        cursor.execute('SELECT gift_name, gift_image, gift_value, is_withdrawing FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
-        inv = cursor.fetchone()
-        if not inv:
-            conn.close()
-            return jsonify({'success': False, 'error': 'Подарок не найден в инвентаре'})
-        gift_name, gift_image, gift_value, is_withdrawing = inv
-        if is_withdrawing:
-            conn.close()
-            return jsonify({'success': False, 'error': 'Подарок уже в процессе вывода'})
-
-        # ── Buy on MRKT ───────────────────────────────────────────────────────
-        # NOTE: Buy endpoint is POST /gifts/{id}/buy — update if MRKT changes API
-        headers = {'Authorization': MRKT_TOKEN}
-        buy_resp = http_requests.post(
-            f'{MRKT_API_BASE}/gifts/{mrkt_gift_id}/buy',
-            headers=headers, json={}, timeout=15
-        )
-        logger.info(f'MRKT buy response {buy_resp.status_code}: {buy_resp.text[:200]}')
-
-        if buy_resp.status_code not in (200, 201):
-            conn.close()
-            try:
-                err_body = buy_resp.json()
-                err_msg = err_body.get('message') or err_body.get('error') or 'Ошибка покупки на MRKT'
-            except Exception:
-                err_msg = f'MRKT ответил {buy_resp.status_code}'
-            if buy_resp.status_code == 402 or 'balance' in err_msg.lower():
-                err_msg = 'Недостаточно баланса на MRKT-аккаунте'
-            return jsonify({'success': False, 'error': err_msg})
-
-        # ── Success: deduct fee, update state ─────────────────────────────────
-        cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
-                       (MRKT_WITHDRAW_FEE_STARS, user_id))
-        cursor.execute('UPDATE inventory SET is_withdrawing = TRUE WHERE id = ?', (inventory_id,))
-
-        cursor.execute('''
-            INSERT INTO withdrawals (user_id, inventory_id, gift_name, gift_image, gift_value,
-                                     telegram_username, user_photo_url, user_first_name, status)
-            SELECT ?, ?, ?, ?, ?, username, photo_url, first_name, 'processing'
-            FROM users WHERE id = ?
-        ''', (user_id, inventory_id, gift_name, gift_image, gift_value, user_id))
-        withdrawal_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-
-        try:
-            add_history_record(user_id, 'withdraw', -MRKT_WITHDRAW_FEE_STARS,
-                               f'Вывод через MRKT: {gift_name} (MRKT id={mrkt_gift_id})')
-        except Exception:
-            pass
-
-        try:
-            tg_send(user_id,
-                    f"📦 <b>Вывод #{withdrawal_id}</b>\n\n"
-                    f"Подарок <b>{gift_name}</b> куплен на MRKT.\n"
-                    f"Ожидайте передачи на ваш аккаунт.")
-        except Exception:
-            pass
-
-        return jsonify({'success': True, 'withdrawal_id': withdrawal_id})
-
-    except Exception as e:
-        logger.error(f'MRKT buy-withdraw error: {e}\n{traceback.format_exc()}')
-        return jsonify({'success': False, 'error': 'Внутренняя ошибка сервера'})
 UPGRADE_MIN_STARS = 30  # 0.3 TON
 UPGRADE_MAX_STARS = 1000 # 10 TON
 

@@ -242,7 +242,7 @@
         .success-ok{width:100%;max-width:320px;padding:15px;border-radius:14px;border:none;background:#fff;color:#000;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s}
         .success-ok:active{transform:scale(.97);opacity:.9}
         .item-modal-upgrade{display:none!important}
-        .item-modal-withdraw-nft{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.1)}
+        .item-modal-withdraw-nft{background:#fff;color:#000;border:none;font-weight:800}
         /* === WITHDRAW PICKER (full screen) === */
         .mrkt-overlay{position:fixed;inset:0;background:rgba(10,12,20,.97);z-index:2000;display:none;flex-direction:column}
         .mrkt-overlay.show{display:flex}
@@ -672,7 +672,7 @@
             <div class="item-modal-actions" id="itemModalActions">
                 <button class="item-modal-btn item-modal-sell" id="itemModalSellBtn" onclick="showSellConfirm()">Sell</button>
                 <button class="item-modal-btn item-modal-upgrade" id="itemModalUpgradeBtn" onclick="upgradeItem()" style="display:none">Upgrade</button>
-                <button class="item-modal-btn item-modal-withdraw-nft" id="itemModalWithdrawBtn" onclick="withdrawItem()" style="display:none">Вывести &minus; 0.4 TON</button>
+                <button class="item-modal-btn item-modal-withdraw-nft" id="itemModalWithdrawBtn" onclick="withdrawItem()" style="display:none">Вывод</button>
                 <button class="item-modal-btn item-modal-claim" id="itemModalClaimBtn" onclick="claimChallenge()" style="display:none">Claim</button>
             </div>
 
@@ -692,14 +692,14 @@
                 <div class="mrkt-title">Выбор подарка</div>
                 <div class="mrkt-subtitle" id="mrktSubtitle">Загрузка...</div>
             </div>
-            <button class="mrkt-close-btn" onclick="closeMrktPicker()">&#10005;</button>
+            <button class="mrkt-close-btn" onclick="closePortalPicker()">&#10005;</button>
         </div>
-        <div class="mrkt-fee-badge">Комиссия: 0.4 TON с вашего баланса</div>
+        <div class="mrkt-fee-badge">Комиссия: 40 ⭐ с вашего баланса</div>
         <div class="mrkt-grid" id="mrktGrid">
-            <div class="mrkt-loading">Загрузка подарков с MRKT...</div>
+            <div class="mrkt-loading">Загрузка подарков с Portal...</div>
         </div>
         <div class="mrkt-footer">
-            <button class="mrkt-confirm-btn" id="mrktConfirmBtn" disabled onclick="confirmMrktWithdraw()">
+            <button class="mrkt-confirm-btn" id="mrktConfirmBtn" disabled onclick="confirmPortalWithdraw()">
                 Выбрать подарок
             </button>
         </div>
@@ -1575,33 +1575,33 @@
         document.getElementById('successOverlay').classList.remove('show');
     }
 
-    var _mrktSelectedGiftId = null;
-    var _mrktGiftsLoaded = [];
+    var _portalSelectedGiftId = null;
+    var _portalGiftsLoaded = [];
 
-    async function openMrktPicker() {
+    async function openPortalPicker() {
         if (!selectedItem) return;
         var ol = document.getElementById('mrktOverlay');
         var grid = document.getElementById('mrktGrid');
         var subtitle = document.getElementById('mrktSubtitle');
         var confirmBtn = document.getElementById('mrktConfirmBtn');
-        _mrktSelectedGiftId = null;
-        _mrktGiftsLoaded = [];
+        _portalSelectedGiftId = null;
+        _portalGiftsLoaded = [];
         confirmBtn.disabled = true;
         confirmBtn.textContent = 'Выбрать подарок';
         ol.classList.add('show');
-        grid.innerHTML = '<div class="mrkt-loading">Загрузка подарков с MRKT...</div>';
+        grid.innerHTML = '<div class="mrkt-loading">Загрузка подарков с Portal...</div>';
         subtitle.textContent = 'Загрузка...';
 
         var giftName = selectedItem.gift_name || selectedItem.name || '';
         try {
-            var r = await fetch('/api/mrkt/gifts?name=' + encodeURIComponent(giftName));
+            var r = await fetch('/api/portal/gifts?name=' + encodeURIComponent(giftName));
             var d = await r.json();
             if (d.success && d.gifts && d.gifts.length > 0) {
-                _mrktGiftsLoaded = d.gifts;
+                _portalGiftsLoaded = d.gifts;
                 subtitle.textContent = d.gifts.length + ' предложений от ' + (d.floor_price_ton || '?') + ' TON';
-                renderMrktGifts(d.gifts);
+                renderPortalGifts(d.gifts);
             } else {
-                var msg = (!d.success && d.error) ? d.error : 'Нет предложений в пределах 5% от флора';
+                var msg = (!d.success && d.error) ? d.error : 'Нет предложений';
                 grid.innerHTML = '<div class="mrkt-empty">' + msg + '</div>';
                 subtitle.textContent = 'Ничего не найдено';
             }
@@ -1611,56 +1611,56 @@
         }
     }
 
-    function renderMrktGifts(gifts) {
+    function renderPortalGifts(gifts) {
         var grid = document.getElementById('mrktGrid');
         var html = '';
         gifts.forEach(function(g) {
-            var numLabel = g.number ? '#' + g.number : 'Random';
+            var numLabel = g.number ? '#' + g.number : '';
             var numColor = g.number ? '#9b6fee' : 'rgba(255,200,80,.75)';
             var safeId = String(g.id || '').replace(/'/g, '');
-            html += '<div class="mrkt-card" onclick="selectMrktGift(this,\'' + safeId + '\')" data-id="' + safeId + '">'
+            html += '<div class="mrkt-card" onclick="selectPortalGift(this,\'' + safeId + '\')" data-id="' + safeId + '">'
                 + '<div class="mrkt-frame-outer">'
                     + '<div class="mrkt-frame-inner">'
                         + '<img src="' + (g.image || '') + '" onerror="this.src=\'/static/img/star.png\'" loading="lazy" alt="">'
                     + '</div>'
                 + '</div>'
                 + '<div class="mrkt-card-name">' + (g.title || g.collection_name || '') + '</div>'
-                + '<div class="mrkt-card-num" style="color:' + numColor + '">' + numLabel + '</div>'
+                + (numLabel ? '<div class="mrkt-card-num" style="color:' + numColor + '">' + numLabel + '</div>' : '')
                 + '<div class="mrkt-card-price"><img src="/static/img/ton.png">' + g.price_ton + ' TON</div>'
             + '</div>';
         });
         grid.innerHTML = html;
     }
 
-    function selectMrktGift(el, id) {
+    function selectPortalGift(el, id) {
         document.querySelectorAll('.mrkt-card').forEach(function(c){ c.classList.remove('selected'); });
         el.classList.add('selected');
-        _mrktSelectedGiftId = id;
+        _portalSelectedGiftId = id;
         document.getElementById('mrktConfirmBtn').disabled = false;
     }
 
-    function closeMrktPicker() {
+    function closePortalPicker() {
         document.getElementById('mrktOverlay').classList.remove('show');
-        _mrktSelectedGiftId = null;
-        _mrktGiftsLoaded = [];
+        _portalSelectedGiftId = null;
+        _portalGiftsLoaded = [];
     }
 
-    async function confirmMrktWithdraw() {
-        if (!selectedItem || !_mrktSelectedGiftId) return;
+    async function confirmPortalWithdraw() {
+        if (!selectedItem || !_portalSelectedGiftId) return;
         var btn = document.getElementById('mrktConfirmBtn');
         btn.disabled = true;
         btn.textContent = 'Покупка...';
         try {
-            var r = await fetch('/api/mrkt/buy-withdraw', {
+            var r = await fetch('/api/portal/buy-withdraw', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({user_id: user.id, inventory_id: selectedItem.id, mrkt_gift_id: _mrktSelectedGiftId})
+                body: JSON.stringify({user_id: user.id, inventory_id: selectedItem.id, portal_gift_id: _portalSelectedGiftId})
             });
             var d = await r.json();
             if (d.success) {
-                closeMrktPicker();
+                closePortalPicker();
                 hideItemModal();
-                showNotif('Подарок куплен на MRKT! Ожидайте передачи.');
+                showNotif('Подарок куплен! Ожидайте передачи.');
                 await refreshUserData();
                 loadInventory();
             } else {
@@ -1675,7 +1675,7 @@
         }
     }
 
-    async function withdrawItem() { openMrktPicker(); }
+    async function withdrawItem() { openPortalPicker(); }
 
     function showSellAllModal() { var sellable = inventory.filter(function(i){return !i.is_withdrawing}); if (!sellable.length) { showNotif(t('noGifts'), true); return; } var total = sellable.reduce(function(s,i){return s + (i.gift_value || 0)}, 0); document.getElementById('sellAllTotal').textContent = formatTon(starsToTon(total)) + ' TON'; document.getElementById('sellAllModal').classList.add('show'); }
     function hideSellAllModal() { document.getElementById('sellAllModal').classList.remove('show'); }
