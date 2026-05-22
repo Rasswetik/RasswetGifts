@@ -68,6 +68,9 @@ PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
 PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
 PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
 PORTAL_SESSION_NAME = os.getenv('PORTAL_SESSION_NAME', 'portal_account')
+# Auto-sync configuration
+PORTAL_SYNC_ENABLED = os.getenv('PORTAL_SYNC_ENABLED', '1') != '0'
+PORTAL_SYNC_INTERVAL_MINUTES = int(os.getenv('PORTAL_SYNC_INTERVAL_MINUTES', '10'))
 _portal_auth_data = PORTAL_AUTH_TOKEN or None  # cached authData string
 _portal_auth_lock = threading.Lock()
 PORTAL_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
@@ -5392,6 +5395,68 @@ def start_simple_game_loop():
     thread.start()
     logger.info("✅ Простой игровой цикл запущен")
 
+
+def start_portal_price_sync_loop():
+    """Background thread for automatic Portal price synchronization.
+    
+    Runs every PORTAL_SYNC_INTERVAL_MINUTES to fetch latest floor prices
+    from Portal API and update gifts.json automatically.
+    """
+    def sync_loop():
+        logger.info(f"🔄 Portal price sync thread started (interval: {PORTAL_SYNC_INTERVAL_MINUTES} min)")
+        
+        # Wait for DB to be ready
+        while not _db_ready:
+            time.sleep(1)
+        
+        # Initial sync after startup
+        sync_delay = random.randint(30, 120)  # 30-120 seconds delay
+        logger.info(f"📌 First Portal sync in {sync_delay}s...")
+        time.sleep(sync_delay)
+        
+        last_sync_time = time.time()
+        consecutive_failures = 0
+        
+        while True:
+            try:
+                now = time.time()
+                elapsed = (now - last_sync_time) / 60  # Convert to minutes
+                
+                if elapsed >= PORTAL_SYNC_INTERVAL_MINUTES:
+                    logger.info(f"🔄 Starting Portal price sync (last sync: {int(elapsed)}m ago)...")
+                    
+                    # Call the existing _portal_sync_floors function
+                    result = _portal_sync_floors()
+                    
+                    if result.get('success'):
+                        updated_count = result.get('updated', 0)
+                        total_count = result.get('total', 0)
+                        logger.info(f"✅ Portal sync successful: {updated_count}/{total_count} gifts updated")
+                        last_sync_time = now
+                        consecutive_failures = 0
+                    else:
+                        error_msg = result.get('error', 'Unknown error')
+                        logger.warning(f"⚠️  Portal sync failed: {error_msg}")
+                        consecutive_failures += 1
+                        
+                        # Exponential backoff: retry sooner if just failed
+                        if consecutive_failures >= 3:
+                            logger.error(f"🚨 Portal sync failed {consecutive_failures} times, backing off...")
+                            last_sync_time = now  # Reset timer to avoid spam
+                            time.sleep(60)  # Wait 1 minute before retrying
+                            continue
+                
+                # Sleep for a minute before checking again
+                time.sleep(60)
+                
+            except Exception as e:
+                logger.error(f"❌ Portal sync loop error: {e}")
+                consecutive_failures += 1
+                time.sleep(120)  # Wait 2 minutes on error
+    
+    thread = threading.Thread(target=sync_loop, daemon=True)
+    thread.start()
+    logger.info(f"✅ Portal auto price sync loop started (enabled={PORTAL_SYNC_ENABLED}, interval={PORTAL_SYNC_INTERVAL_MINUTES} min)")
 
 
 @app.route('/api/telegram-auth', methods=['POST'])
@@ -17525,6 +17590,14 @@ def _lazy_init():
             start_ultimate_crash_loop()
         except Exception as e:
             logger.error(f"❌ Не удалось запустить Ultimate Crash loop: {e}")
+        # Portal auto-sync prices
+        try:
+            if PORTAL_SYNC_ENABLED:
+                start_portal_price_sync_loop()
+            else:
+                logger.info("🔄 Portal auto-sync disabled via PORTAL_SYNC_ENABLED env")
+        except Exception as e:
+            logger.error(f"❌ Не удалось запустить Portal price sync: {e}")
         # Webhook Telegram
         try:
             threading.Thread(target=setup_telegram_webhook, daemon=True).start()
