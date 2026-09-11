@@ -15,7 +15,7 @@
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1C2233;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
 @keyframes coeffShake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-4px)}20%,40%,60%,80%{transform:translateX(4px)}}
-.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 30px)}
+.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 50px + 3vh)}
 
 /* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:4000;width:100%;max-width:480px;height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);background:rgba(28,34,51,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-top:1px solid rgba(59,130,246,.08);display:flex;align-items:center;justify-content:space-around}
@@ -153,7 +153,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .coeff-box.crashed{background:rgba(220,60,80,.2);color:#F96999;border-color:rgba(249,105,153,.3);animation:coeffShake .5s ease}
 .coeff-box.waiting{background:rgba(30,228,76,.15);color:#1EE44C}
 
-/* BETS — прижат к кнопке */
+/* BETS */
 .bets-section{padding:4px 12px 24px;margin-top:-2px}
 .bets-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .bets-title{font-family:inherit;font-weight:800;font-size:13px;color:#fff}
@@ -202,7 +202,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .confirm-bet-btn:active:not(:disabled){transform:scale(.96)}
 .confirm-bet-btn:disabled{opacity:.45;cursor:not-allowed;transform:none !important}
 
-/* AUTO WITHDRAW ROW — жёсткая высота */
+/* AUTO WITHDRAW ROW */
 .auto-cashout-row{
     display:flex;
     align-items:center;
@@ -246,9 +246,9 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     box-sizing:border-box;
 }
 .autowd-open-btn:active{transform:scale(.97)}
-.autowd-open-btn img{width:18px;height:18px;flex-shrink:0;border-radius:4px;background:rgba(0,0,0,.15);padding:1px;object-fit:contain}
-.autowd-open-btn .autowd-btn-name{flex:1 1 0;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:700}
-.autowd-open-btn .autowd-btn-coeff{background:rgba(0,0,0,.22);padding:1px 5px;border-radius:8px;font-size:9px;font-weight:800;flex-shrink:0}
+.autowd-open-btn img{width:18px !important;height:18px !important;max-width:18px !important;max-height:18px !important;min-width:18px !important;min-height:18px !important;flex:0 0 18px !important;object-fit:contain !important;display:block !important;background:transparent !important;border:none !important;padding:0 !important;border-radius:4px !important;box-sizing:border-box !important}
+.autowd-open-btn .autowd-btn-name{flex:1 1 auto !important;min-width:0 !important;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:700}
+.autowd-open-btn .autowd-btn-coeff{background:rgba(0,0,0,.22);padding:1px 5px;border-radius:8px;font-size:9px;font-weight:800;flex:0 0 auto !important}
 
 /* INVENTORY */
 .selected-summary{display:none;background:rgba(59,130,246,.08);border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1px solid rgba(59,130,246,.15)}
@@ -282,20 +282,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .win-overlay.show{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
 .win-sheet{background:linear-gradient(180deg,#1e2433 0%,#151920 100%);border-radius:20px 20px 0 0;padding:12px 20px calc(24px + env(safe-area-inset-bottom,0));border-top:2px solid rgba(59,130,246,.25);box-shadow:0 -8px 40px rgba(0,0,0,.5);max-width:480px;margin:0 auto}
 .win-sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:0 auto 14px}
-.win-gift-hero{display:flex;align-items:center;justify-content:center;padding:14px 0 16px;position:relative}
-.win-gift-hero::before{content:'';position:absolute;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.25) 0%,transparent 70%);animation:winGlow 2s ease-in-out infinite alternate;pointer-events:none}
-@keyframes winGlow{0%{opacity:.5;transform:scale(.9)}100%{opacity:1;transform:scale(1.1)}}
-.win-gift-hero img{position:relative;z-index:1;width:130px;height:130px;object-fit:contain;border-radius:24px;background:linear-gradient(160deg,rgba(59,130,246,.12),rgba(59,130,246,.02));padding:12px;border:2px solid rgba(59,130,246,.3);box-shadow:0 12px 48px rgba(0,0,0,.6),0 0 60px rgba(59,130,246,.2);animation:winGiftPop .5s cubic-bezier(.34,1.56,.64,1)}
-@keyframes winGiftPop{0%{transform:scale(.5) rotate(-15deg);opacity:0}60%{transform:scale(1.15) rotate(5deg)}100%{transform:scale(1) rotate(0);opacity:1}}
-.win-mult-badge{display:flex;align-items:center;justify-content:center;padding:6px 0 4px}
-.win-mult-badge span{font-family:inherit;font-weight:900;font-size:28px;background:linear-gradient(135deg,#c471f5,#fa71cd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.win-title{text-align:center;font-family:inherit;font-weight:900;font-size:24px;color:#fff;padding:2px 0 8px}
-.win-summary{display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0}
-.win-summary-item{display:flex;align-items:center;gap:4px;font-family:inherit;font-weight:700;font-size:13px;color:rgba(255,255,255,.5)}
-.win-summary-item img{width:14px;height:14px}
-.win-summary-arrow{font-size:14px;color:rgba(255,255,255,.2)}
-.win-summary-win{color:#1EE44C}
-.win-breakdown{text-align:center;padding:4px 0 12px;font-family:inherit;font-weight:600;font-size:12px;color:rgba(255,255,255,.4)}
 .win-collect-btn{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;transition:all .2s;margin-top:4px}
 .win-collect-btn:active{transform:scale(.97);opacity:.85}
 
@@ -352,8 +338,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     flex-shrink:0;
 }
 .autowd-apply-btn:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,.06);box-shadow:none}
-
-/* ★ FIX: Картинка в кнопке "Применить" — строго 22x22 */
 .autowd-apply-btn > img,
 .autowd-apply-btn img{
     width:22px !important;
@@ -371,7 +355,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     border-radius:4px !important;
     box-sizing:border-box !important;
 }
-/* Бейдж коэффициента внутри кнопки */
 .autowd-apply-btn .coeff-badge,
 .autowd-apply-btn > span{
     flex:0 0 auto;
@@ -380,7 +363,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     justify-content:center;
     line-height:1;
 }
-/* Текст "Выберите подарок" */
 .autowd-apply-btn #autowdApplyText{
     flex:0 1 auto;
     min-width:0;
@@ -446,6 +428,15 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .toast.err{border-color:rgba(249,105,153,.2)}
 @keyframes toastUp{from{transform:translateX(-50%) translateY(16px);opacity:0}to{transform:translateX(-50%);opacity:1}}
 
+/* TURBO COUNTER */
+.turbo-counter{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:5;font-weight:900;font-size:min(90px,22vw);line-height:1;letter-spacing:-2px;color:#fff;text-shadow:0 0 20px rgba(59,130,246,.5),0 0 40px rgba(59,130,246,.3),0 4px 12px rgba(0,0,0,.6);pointer-events:none;user-select:none}
+.turbo-counter .tc-x{font-size:.5em;opacity:.7;margin-left:2px}
+.turbo-counter.mid .tc-mult{color:#1EE44C;text-shadow:0 0 30px rgba(30,228,76,.7),0 0 60px rgba(30,228,76,.4)}
+.turbo-counter.high .tc-mult{color:#FFC800;text-shadow:0 0 30px rgba(255,200,0,.8),0 0 60px rgba(255,200,0,.5)}
+.turbo-counter.mega .tc-mult{color:#FF6B9D;text-shadow:0 0 30px rgba(255,107,157,.8),0 0 60px rgba(255,107,157,.5)}
+body.turbo-mode .turbo-counter.active{display:block}
+body.turbo-mode .rocket-wrap{display:none !important}
+
 @media(max-width:600px){
     .game-field{margin:0 8px;border-radius:20px;aspect-ratio:10/9;min-height:auto}
     .rocket-wrap img{width:190px;height:190px}
@@ -467,648 +458,18 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     .cb-gift-side{width:36px;height:36px}
     .auto-cashout-row{min-height:52px;max-height:52px;height:52px;padding:8px}
     .autowd-open-btn{height:34px;font-size:10px;padding:0 8px}
-    .autowd-open-btn img{width:16px;height:16px}
-    .autowd-open-btn .autowd-btn-coeff{font-size:9px;padding:1px 5px}
+    .autowd-open-btn img{width:16px !important;height:16px !important}
 }
 @media(prefers-reduced-motion:reduce){
     *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
 
-/* ══════════════════════════════════════════════════════════════
-   FIX (fix_all.py): кнопка автовывода — иконка 18px
-   ══════════════════════════════════════════════════════════════ */
-.auto-cashout-row{min-height:58px!important;max-height:58px!important;height:58px!important;overflow:hidden!important;box-sizing:border-box!important}
-.autowd-open-btn{height:38px!important;max-height:38px!important;overflow:hidden!important;box-sizing:border-box!important;display:flex!important;align-items:center!important;padding:0 10px!important;gap:5px!important}
-.autowd-open-btn img{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important;min-width:18px!important;min-height:18px!important;flex:0 0 18px!important;object-fit:contain!important;display:block!important;background:transparent!important;border:none!important;padding:0!important;border-radius:4px!important;box-sizing:border-box!important}
-.autowd-open-btn .autowd-btn-name{flex:1 1 auto!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
-.autowd-open-btn .autowd-btn-coeff{flex:0 0 auto!important}
-.autowd-open-btn > img:first-child{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important}
-/* Защита от растягивания в других местах */
-.autowd-row .autowd-thumb img{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important}
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   FIX: Автовывод — кнопка и картинка не раздуваются
-   ══════════════════════════════════════════════════════════════ */
-
-/* Кнопка автовывода — жёсткие размеры */
-.auto-cashout-row{
-    min-height:58px!important;
-    max-height:58px!important;
-    height:58px!important;
-    overflow:hidden!important;
-    box-sizing:border-box!important;
-}
-.autowd-open-btn{
-    height:38px!important;
-    max-height:38px!important;
-    min-height:38px!important;
-    overflow:hidden!important;
-    box-sizing:border-box!important;
-    display:flex!important;
-    align-items:center!important;
-    padding:0 10px!important;
-    gap:6px!important;
-}
-/* Картинка в кнопке — строго 18x18 */
-.autowd-open-btn > img,
-.autowd-open-btn img:first-child{
-    width:18px!important;
-    height:18px!important;
-    max-width:18px!important;
-    max-height:18px!important;
-    min-width:18px!important;
-    min-height:18px!important;
-    flex:0 0 18px!important;
-    object-fit:contain!important;
-    display:block!important;
-    background:transparent!important;
-    border:none!important;
-    padding:0!important;
-    border-radius:4px!important;
-    box-sizing:border-box!important;
-}
-.autowd-open-btn .autowd-btn-name{
-    flex:1 1 auto!important;
-    min-width:0!important;
-    overflow:hidden!important;
-    text-overflow:ellipsis!important;
-    white-space:nowrap!important;
-    font-size:10px!important;
-    font-weight:700!important;
-    text-align:left!important;
-}
-.autowd-open-btn .autowd-btn-coeff{
-    flex:0 0 auto!important;
-    background:rgba(0,0,0,.22)!important;
-    padding:1px 5px!important;
-    border-radius:8px!important;
-    font-size:9px!important;
-    font-weight:800!important;
-}
-
-/* Модалка автовывода — превью подарков тоже фиксируем */
-.autowd-row .autowd-thumb img{
-    width:100%!important;
-    height:100%!important;
-    max-width:100%!important;
-    max-height:100%!important;
-    object-fit:contain!important;
-}
-
-/* Кнопка "Автовывод" в самом низу модалки — картинка не раздувается */
-.autowd-apply-btn img{
-    width:22px!important;
-    height:22px!important;
-    max-width:22px!important;
-    max-height:22px!important;
-    min-width:22px!important;
-    min-height:22px!important;
-    object-fit:contain!important;
-    flex:0 0 22px!important;
-}
-
-/* Кнопка Cash OUT — иконки подарков тоже строго 42x42 */
-.cashout-btn .cb-gift-side{
-    width:42px!important;
-    height:42px!important;
-    max-width:42px!important;
-    max-height:42px!important;
-    min-width:42px!important;
-    min-height:42px!important;
-    object-fit:contain!important;
-    flex:0 0 42px!important;
-    background:transparent!important;
-    border:none!important;
-    padding:0!important;
-}
-
-/* Превью подарков в списке ставок — строго 20x20 */
-.bet-amt .bet-gift-preview{
-    width:20px!important;
-    height:20px!important;
-    max-width:20px!important;
-    max-height:20px!important;
-    min-width:20px!important;
-    min-height:20px!important;
-    object-fit:contain!important;
-    flex:0 0 20px!important;
-}
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   FIX: Модалка автовывода — фикс размеров всех картинок
-   ══════════════════════════════════════════════════════════════ */
-
-/* Модалка — фиксированная высота */
-.autowd-modal{
-    max-height:85vh !important;
-    display:flex !important;
-    flex-direction:column !important;
-    overflow:hidden !important;
-    box-sizing:border-box !important;
-}
-
-/* Хедер */
-.autowd-header{
-    flex-shrink:0 !important;
-}
-.autowd-title img{
-    width:20px !important;
-    height:20px !important;
-    max-width:20px !important;
-    max-height:20px !important;
-    object-fit:contain !important;
-    flex:0 0 20px !important;
-}
-
-/* Сводка */
-.autowd-summary{
-    flex-shrink:0 !important;
-}
-
-/* Поиск */
-.autowd-search-wrap{
-    flex-shrink:0 !important;
-}
-
-/* Список подарков */
-.autowd-list{
-    flex:1 1 auto !important;
-    min-height:150px !important;
-    max-height:340px !important;
-    overflow-y:auto !important;
-    overflow-x:hidden !important;
-    padding:6px 14px !important;
-}
-
-/* Строка подарка */
-.autowd-row{
-    flex-shrink:0 !important;
-    min-height:56px !important;
-    max-height:56px !important;
-    height:56px !important;
-    overflow:hidden !important;
-    box-sizing:border-box !important;
-    display:flex !important;
-    align-items:center !important;
-    gap:10px !important;
-    padding:8px 10px !important;
-}
-
-/* Превью подарка */
-.autowd-thumb{
-    width:40px !important;
-    height:40px !important;
-    min-width:40px !important;
-    max-width:40px !important;
-    min-height:40px !important;
-    max-height:40px !important;
-    flex:0 0 40px !important;
-    border-radius:10px !important;
-    background:rgba(0,0,0,.25) !important;
-    padding:4px !important;
-    box-sizing:border-box !important;
-    border:1px solid rgba(255,255,255,.08) !important;
-    display:flex !important;
-    align-items:center !important;
-    justify-content:center !important;
-    overflow:hidden !important;
-}
-
-/* Картинка внутри превью */
-.autowd-thumb img{
-    width:100% !important;
-    height:100% !important;
-    max-width:100% !important;
-    max-height:100% !important;
-    object-fit:contain !important;
-    display:block !important;
-    background:transparent !important;
-    border:none !important;
-    padding:0 !important;
-}
-
-/* Иконка цены (TON) */
-.autowd-price{
-    flex-shrink:0 !important;
-}
-.autowd-price img{
-    width:11px !important;
-    height:11px !important;
-    max-width:11px !important;
-    max-height:11px !important;
-    object-fit:contain !important;
-    flex:0 0 11px !important;
-}
-
-/* Кнопка "Применить" — фиксированная высота, не растягивается */
-.autowd-apply-btn{
-    flex-shrink:0 !important;
-    margin:10px 14px 14px !important;
-}
-
-/* Общая защита от раздувания картинок внутри autowd */
-.autowd-modal img{
-    max-width:100% !important;
-    max-height:100% !important;
-    object-fit:contain !important;
-}
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   ★ РЕЖИМ ОПТИМИЗАЦИИ — минимальные анимации
-   ══════════════════════════════════════════════════════════════ */
-
-/* Обычная оптимизация */
-.optimize-mode .game-field::before{
-    background-size:80px 80px !important;
-    opacity:.4 !important;
-}
-.optimize-mode .rocket-wrap img{
-    width:120px !important;
-    height:120px !important;
-}
-.optimize-mode .rocket-wrap.showing-gift img{
-    width:120px !important;
-    height:120px !important;
-}
-.optimize-mode .case-particle{
-    display:none !important;
-}
-.optimize-mode .podium-medal img,
-.optimize-mode .settings-item img{
-    animation:none !important;
-}
-.optimize-mode .cb-gift-side.pulse,
-.optimize-mode .cb-gift-side.swap{
-    animation:none !important;
-}
-.optimize-mode .feed-item.new{
-    animation:none !important;
-}
-.optimize-mode .h-pill{
-    transition:none !important;
-}
-.optimize-mode *{
-    animation-duration:.15s !important;
-    animation-iteration-count:1 !important;
-    transition-duration:.08s !important;
-}
-
-/* ТУРБО-РЕЖИМ — отключаем вообще всё */
-.turbo-mode *,
-body.turbo-mode *{
-    animation:none !important;
-    transition:none !important;
-    box-shadow:none !important;
-    filter:none !important;
-    backdrop-filter:none !important;
-    -webkit-backdrop-filter:none !important;
-    text-shadow:none !important;
-    will-change:auto !important;
-}
-.turbo-mode .rocket-wrap,
-body.turbo-mode .rocket-wrap{
-    display:none !important;
-}
-.turbo-mode .boom-wrap,
-body.turbo-mode .boom-wrap{
-    display:none !important;
-}
-.turbo-mode .game-field::before,
-body.turbo-mode .game-field::before{
-    background:none !important;
-}
-.turbo-mode .bottom-nav,
-body.turbo-mode .bottom-nav{
-    backdrop-filter:none !important;
-    -webkit-backdrop-filter:none !important;
-    background:rgba(28,34,51,.98) !important;
-}
-.turbo-mode .countdown-display,
-body.turbo-mode .countdown-display{
-    text-shadow:none !important;
-}
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   ★ ТУРБО-РЕЖИМ: большой счётчик коэф вместо GIF
-   ══════════════════════════════════════════════════════════════ */
-
-/* Скрываем ракету в турбо */
-.turbo-mode .rocket-wrap,
-body.turbo-mode .rocket-wrap{
-    display:none !important;
-}
-
-/* Большой счётчик — показывается только в турбо */
-.turbo-counter{
-    display:none;
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    z-index:5;
-    font-family:'Inter',inherit;
-    font-weight:900;
-    font-size:min(80px, 20vw);
-    line-height:1;
-    letter-spacing:-2px;
-    color:#fff;
-    text-shadow:
-        0 0 20px rgba(59,130,246,.5),
-        0 0 40px rgba(59,130,246,.3),
-        0 4px 12px rgba(0,0,0,.6);
-    pointer-events:none;
-    user-select:none;
-    will-change:contents;
-    transition:none;
-    backface-visibility:hidden;
-    -webkit-backface-visibility:hidden;
-}
-.turbo-counter .tc-mult{
-    display:inline-block;
-}
-.turbo-counter .tc-x{
-    font-size:0.5em;
-    opacity:.7;
-    font-weight:800;
-    margin-left:2px;
-}
-
-/* Показываем счётчик только в турбо или оптимизации во время flying */
-.turbo-mode .turbo-counter.active,
-body.turbo-mode .turbo-counter.active{
-    display:block !important;
-}
-
-/* Цвет счётчика по множителю */
-.turbo-counter.mid .tc-mult{
-    color:#1EE44C;
-    text-shadow:0 0 30px rgba(30,228,76,.7), 0 0 60px rgba(30,228,76,.4), 0 4px 12px rgba(0,0,0,.6);
-}
-.turbo-counter.high .tc-mult{
-    color:#FFC800;
-    text-shadow:0 0 30px rgba(255,200,0,.8), 0 0 60px rgba(255,200,0,.5), 0 4px 12px rgba(0,0,0,.6);
-}
-.turbo-counter.mega .tc-mult{
-    color:#FF6B9D;
-    text-shadow:0 0 30px rgba(255,107,157,.8), 0 0 60px rgba(255,107,157,.5), 0 4px 12px rgba(0,0,0,.6);
-}
-
-/* Пульсация при высоком множителе */
-.turbo-counter.high .tc-mult,
-.turbo-counter.mega .tc-mult{
-    animation:turboCounterPulse .6s ease-in-out infinite;
-}
-@keyframes turboCounterPulse{
-    0%,100%{ transform:scale(1); }
-    50%{ transform:scale(1.08); }
-}
-
-/* В турбо-режиме убираем сетку с поля */
-.turbo-mode .game-field::before,
-body.turbo-mode .game-field::before{
-    background:none !important;
-}
-
-/* Boom в турбо — упрощённый */
-.turbo-mode .boom-wrap img,
-body.turbo-mode .boom-wrap img{
-    width:120px !important;
-    height:120px !important;
-    filter:none !important;
-}
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   ★ FIX: ПРОИЗВОДИТЕЛЬНОСТЬ
-   ══════════════════════════════════════════════════════════════ */
-
-/* Ракета — GPU-ускорение */
-.rocket-wrap{
-    will-change: transform, opacity;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-.rocket-wrap img{
-    will-change: transform;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-
-/* Список ставок — ограничиваем перерисовку */
-.bets-list{
-    contain: layout style;
-    -webkit-contain: layout style;
-    will-change: scroll-position;
-}
-
-/* Счётчик коэффициента */
-.coeff-box,
-.coeff-live{
-    will-change: contents;
-    contain: content;
-}
-
-/* Кнопка cashout — стабильная */
-.cashout-btn{
-    will-change: transform;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-}
-
-/* Игровое поле — GPU */
-.game-field{
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-
-/* Превью подарков в ставках — не грузим каждый кадр */
-.bet-amt .bet-gift-preview{
-    will-change: auto;
-    content-visibility: auto;
-    contain: layout style;
-}
-
-/* В турбо — отключаем все will-change (освобождаем GPU) */
-body.turbo-mode *{
-    will-change: auto !important;
-}
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   ★ FIX: РАКЕТА И СЧЁТЧИК
-   ══════════════════════════════════════════════════════════════ */
-
-/* По умолчанию — ракета ВИДНА, счётчик СКРЫТ */
-.rocket-wrap {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1;
-    pointer-events: auto;
-}
-.rocket-wrap.hide {
-    display: none !important;
-}
-
-.turbo-counter {
-    display: none !important;
-}
-
-/* Показываем счётчик ТОЛЬКО в турбо-режиме во время flying */
-body.turbo-mode .turbo-counter.active,
-html.turbo-mode .turbo-counter.active {
-    display: block !important;
-}
-
-/* В турбо-режиме ракета скрыта */
-body.turbo-mode .rocket-wrap,
-html.turbo-mode .rocket-wrap {
-    display: none !important;
-}
-
-/* В оптимизации — ракета видна, но меньше */
-body.optimize-mode .rocket-wrap img,
-html.optimize-mode .rocket-wrap img {
-    width: 140px !important;
-    height: 140px !important;
-}
-body.optimize-mode .rocket-wrap.showing-gift img,
-html.optimize-mode .rocket-wrap.showing-gift img {
-    width: 150px !important;
-    height: 150px !important;
-}
-
-/* Счётчик — базовые стили */
-.turbo-counter {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%,-50%);
-    z-index: 5;
-    font-family: 'Inter', inherit;
-    font-weight: 900;
-    font-size: min(80px, 20vw);
-    line-height: 1;
-    letter-spacing: -2px;
-    color: #fff;
-    text-shadow: 0 0 20px rgba(59,130,246,.5), 0 0 40px rgba(59,130,246,.3);
-    pointer-events: none;
-    user-select: none;
-}
-.turbo-counter .tc-x {
-    font-size: 0.5em;
-    opacity: .7;
-    font-weight: 800;
-    margin-left: 2px;
-}
-.turbo-counter.mid .tc-mult {
-    color: #1EE44C;
-    text-shadow: 0 0 30px rgba(30,228,76,.7), 0 0 60px rgba(30,228,76,.4);
-}
-.turbo-counter.high .tc-mult {
-    color: #FFC800;
-    text-shadow: 0 0 30px rgba(255,200,0,.8), 0 0 60px rgba(255,200,0,.5);
-}
-.turbo-counter.mega .tc-mult {
-    color: #FF6B9D;
-    text-shadow: 0 0 30px rgba(255,107,157,.8), 0 0 60px rgba(255,107,157,.5);
-}
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   ★ ФИНАЛЬНАЯ ОПТИМИЗАЦИЯ ПРОИЗВОДИТЕЛЬНОСТИ
-   ══════════════════════════════════════════════════════════════ */
-
-/* Всё критичное — на GPU */
-.rocket-wrap,
-.rocket-wrap img,
-.countdown-display,
-.coeff-box,
-.cashout-btn,
-.place-bet-btn,
-.bet-row,
-.bet-avatar,
-.bet-status {
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-
-/* Кнопки — не пересчитываем layout */
-.cashout-btn,
-.place-bet-btn {
-    contain: layout style paint;
-}
-
-/* Список ставок — изолирован */
-.bets-list {
-    contain: layout style;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Игровое поле — изолировано */
-.game-field {
-    contain: layout style paint;
-}
-
-/* Ракета — максимально быстрая */
-.rocket-wrap img {
-    will-change: transform;
-    image-rendering: -webkit-optimize-contrast;
-}
-
-/* Отключаем тяжёлые тени в полёте */
-.game-field.flying {
-    box-shadow: none !important;
-}
-
-/* В оптимизации — ещё агрессивнее */
-body.optimize-mode .game-field::before,
-body.turbo-mode .game-field::before {
-    display: none !important;
-}
-
-body.optimize-mode .bet-avatar img,
-body.turbo-mode .bet-avatar img {
-    filter: none !important;
-}
-
-/* Сглаживание текста */
-.countdown-display,
-.coeff-box,
-.cb-win,
-.bet-amount-text {
-    text-rendering: optimizeSpeed;
-    -webkit-font-smoothing: antialiased;
-}
-
-/* Ускорение тапов */
-button,
-.bottom-nav-item,
-.bet-row {
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-}
-
-/* Оптимизация scroll */
-.bets-list {
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-}
-
+/* ТУРБО РЕЖИМ */
+.turbo-mode .turbo-counter{display:none}
+.turbo-mode .turbo-counter.active{display:block}
+.turbo-mode .rocket-wrap{display:none !important}
+.optimize-mode .rocket-wrap img{width:140px !important;height:140px !important}
+.optimize-mode .rocket-wrap.showing-gift img{width:150px !important;height:150px !important}
 </style>
 </head>
 <body>
@@ -1152,7 +513,6 @@ button,
     <div class="game-field" id="gameField">
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="wait-label" id="waitLabel">Waiting</div>
-        <!-- ★ Турбо-счётчик (только в турбо) -->
         <div class="turbo-counter" id="turboCounter">
             <span class="tc-mult" id="turboMult">1.00</span><span class="tc-x">x</span>
         </div>
@@ -1344,7 +704,6 @@ button,
                 </div>
                 <div class="toggle-switch on" id="autoWithdrawGuardToggle" onclick="toggleAutoWithdrawGuardClick()"></div>
             </div>
-            <!-- ★ КНОПКА ОПТИМИЗАЦИИ -->
             <div class="settings-gift-toggle" id="optimizeSection">
                 <div class="toggle-info">
                     <div class="lbl">⚡ Режим оптимизации</div>
@@ -1373,17 +732,14 @@ button,
         <button class="win-collect-btn" onclick="closeWin()">Получить</button>
     </div>
 </div>
-<script>
-/* ══════════════════════════════════════════════════════════════
-   FIX (fix_all.py): защита от откатов множителя
-   ══════════════════════════════════════════════════════════════ */
-var _serverMultFloor = 1.0;
-var _statusAbort = null;
-var _betsAbort = null;
 
+<script>
 /* ============================================================
    GLOBAL STATE
    ============================================================ */
+var _serverMultFloor = 1.0;
+var _statusAbort = null;
+var _betsAbort = null;
 var userData = null;
 var authReady = false;
 
@@ -1416,14 +772,31 @@ var currentRocket = localStorage.getItem('crash_rocket') || 'crash';
 var showGifts = localStorage.getItem('crash_show_gifts') !== 'off';
 var autoWithdrawGuard = true;
 var autoWithdrawGift = null;
-
-/* Трекинг подарков в Cash OUT */
 var _cbLeftSrc = null;
 var _cbRightSrc = null;
-
-/* Кэш для оптимизации — не сканировать каталог каждый кадр */
 var _lastAchievableWin = -1;
 var _lastAchievableGift = null;
+
+var optimizeMode = localStorage.getItem('crash_optimize') === '1';
+var turboMode = localStorage.getItem('crash_turbo') === '1';
+
+const $ = id => document.getElementById(id);
+
+function formatCrashMoney(stars){
+    var t = Number(stars||0)/100;
+    if(t === 0) return '0.00';
+    if(t >= 100) return t.toFixed(0);
+    if(t >= 10) return t.toFixed(1);
+    return t.toFixed(2);
+}
+function starsToTon(s){ return Number(s||0)/100; }
+function formatTon(t){ return (Math.round(Number(t||0)*100)/100).toFixed(2); }
+
+function updateUI(data){
+    if(!data) return;
+    var el = $('balVal');
+    if(el) el.textContent = formatCrashMoney(data.balance_stars||0);
+}
 
 function loadSavedAutoWithdrawGift(){
     try{
@@ -1468,24 +841,6 @@ function saveAutoWithdrawGift(){
 
 autoWithdrawGift = loadSavedAutoWithdrawGift();
 
-const $ = id => document.getElementById(id);
-
-function formatCrashMoney(stars){
-    var t = Number(stars||0)/100;
-    if(t === 0) return '0.00';
-    if(t >= 100) return t.toFixed(0);
-    if(t >= 10) return t.toFixed(1);
-    return t.toFixed(2);
-}
-function starsToTon(s){ return Number(s||0)/100; }
-function formatTon(t){ return (Math.round(Number(t||0)*100)/100).toFixed(2); }
-
-function updateUI(data){
-    if(!data) return;
-    var el = $('balVal');
-    if(el) el.textContent = formatCrashMoney(data.balance_stars||0);
-}
-
 /* ============================================================
    LOADING
    ============================================================ */
@@ -1518,7 +873,6 @@ function updateUI(data){
     window._ldDone = function(){
         if(bar) bar.style.width = '100%';
         if(txt) txt.textContent = 'READY!';
-        /* ★ FIX: ускорили скрытие лоадера 300→120мс */
         setTimeout(function(){
             var ls = $('ldScreen');
             if(ls){
@@ -1599,7 +953,6 @@ async function initTelegramApp(){
     if(window._ldUpdate) window._ldUpdate(80);
     applyRocket();
 
-    /* ★ FIX: параллельная загрузка всего сразу */
     try{
         await Promise.race([
             Promise.all([
@@ -1614,19 +967,13 @@ async function initTelegramApp(){
     }catch(e){}
 
     if(window._ldUpdate) window._ldUpdate(95);
-
-    /* ★ Сразу запускаем игровой цикл — не ждём подарков */
     updStatus();
     loadBets();
     loadHist();
-
     if(window._ldDone) window._ldDone();
 
     if(savedBetAmount) setBetInputFromStars(savedBetAmount);
-
-    /* ★ Применяем сохранённый режим оптимизации */
     applyOptimizeMode();
-
     updateAutoWithdrawButton();
     syncSettingsToggles();
 
@@ -1642,17 +989,13 @@ async function initTelegramApp(){
         loadBets().finally(() => { _betsPending = false; });
     }
 
-    /* FIX: уменьшили частоту поллинга — меньше лагов на слабых телефонах */
-    /* ★ ЕДИНЫЙ поллинг: статус каждый раз, ставки — только раз в 3 статуса */
     var _pollTick = 0;
     setInterval(function(){
         _pollTick++;
-        /* Статус — всегда */
         if(!_statusPending){
             _statusPending = true;
             updStatus().finally(function(){ _statusPending = false; });
         }
-        /* Ставки — только каждый 5-й тик (реже = меньше нагрузки) */
         if(_pollTick % 5 === 0 && !_betsPending){
             _betsPending = true;
             loadBets().finally(function(){ _betsPending = false; });
@@ -1853,7 +1196,6 @@ async function confirmStarsBet(){
         return;
     }
 
-    /* ★ МГНОВЕННО показываем ставку БЕЗ ожидания сервера */
     hasBet = true;
     betAmt = amt;
     betIsGift = false;
@@ -1872,7 +1214,6 @@ async function confirmStarsBet(){
     try{ playSound('bet'); }catch(e){}
     try{ triggerVibration([30]); }catch(e){}
 
-    /* ★ Отправляем на сервер В ФОНЕ (не блокируем UI) */
     fetch('/api/ultimate-crash/place-bet', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -1884,7 +1225,6 @@ async function confirmStarsBet(){
             try{ localStorage.setItem('rasswet_user', JSON.stringify(userData)); }catch(e){}
             loadBets();
         } else {
-            /* Сервер отклонил — откат */
             hasBet = false;
             betAmt = 0;
             userData.balance_stars = (userData.balance_stars||0) + amt;
@@ -1962,7 +1302,7 @@ async function processPendingBet(){
 }
 
 /* ============================================================
-   CASHOUT — обе иконки = достижимый подарок
+   CASHOUT
    ============================================================ */
 var cashoutLocked = false;
 
@@ -1989,9 +1329,8 @@ function updateCashoutButton(){
 
     var isActive = hasBet && !cashedOut && status === 'flying';
     if(!isActive){
-        /* ★ FIX: если только что был cashout — не прячем кнопку, оставляем серой с PNG */
         if(cashedOut && status === 'flying'){
-            return;  /* оставляем как есть — серая с PNG */
+            return;
         }
         cb.classList.remove('visible');
         return;
@@ -2005,7 +1344,6 @@ function updateCashoutButton(){
     var newWinText = formatCrashMoney(curWin);
     if(win.textContent !== newWinText) win.textContent = newWinText;
 
-    /* Обе иконки = один и тот же подарок (достижимый на текущий выигрыш) */
     var achievable = getAchievableGift(curWin);
     var giftSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
     var isEmpty = !achievable;
@@ -2020,7 +1358,6 @@ function updateCashoutButton(){
             left.classList.add('swap');
         }
     }
-
     if(right.dataset.src !== giftSrc){
         right.dataset.src = giftSrc;
         right.src = giftSrc;
@@ -2038,10 +1375,6 @@ async function doCashout(){
     if(cashoutLocked) return;
     cashoutLocked = true;
 
-    /* ★ КЛИЕНТСКИЙ CASHOUT:
-       Мгновенно фиксируем множитель, показываем результат,
-       потом синхронизируем с сервером в фоне. */
-
     var _frozenMult = Math.max(dispMult, servMult, prevServMult);
     _frozenMult = Math.round((_frozenMult + 0.02) * 100) / 100;
 
@@ -2049,19 +1382,15 @@ async function doCashout(){
     var pb = $('placeBetBtn');
     var instantWin = Math.floor(betAmt * _frozenMult);
 
-    /* Мгновенно показываем результат */
     try{ playSound('cashout'); }catch(e){}
     try{ triggerVibration([50,30,50,30,100]); }catch(e){}
 
-    /* Меняем кнопку BET на сумму выигрыша */
     if(pb){
         pb.style.display = 'block';
         pb.disabled = true;
         pb.innerHTML = '<span class="btn-text">+' + formatCrashMoney(instantWin) + '</span>';
         pb.style.pointerEvents = 'none';
     }
-
-    /* Кнопка cashout: серая + PNG подарка */
     if(btn){
         btn.classList.add('visible');
         btn.classList.add('crash-state');
@@ -2091,16 +1420,12 @@ async function doCashout(){
     cashedOut = true;
     hasBet = false;
 
-    /* Показываем WIN sheet с локальными данными */
     _showLocalWin(_frozenMult, instantWin);
 
-    /* ★ Отправляем на сервер в фоне (не блокируем UI) */
     var bodyData = {
         user_id: userData.id,
         client_mult: _frozenMult
     };
-
-    /* Автовывод подарка */
     if(autoWithdrawGift && autoWithdrawGift.id != null){
         bodyData.preferred_gift_id = autoWithdrawGift.id;
         bodyData.preferred_gift_name = autoWithdrawGift.name || '';
@@ -2109,7 +1434,6 @@ async function doCashout(){
         bodyData.preferred_gift_coeff = autoWithdrawGift.coeff || 0;
     }
 
-    /* Фоновый запрос */
     (async function syncWithServer(){
         try{
             var r = await fetch('/api/ultimate-crash/cashout-simple', {
@@ -2121,21 +1445,17 @@ async function doCashout(){
             if(d.success){
                 userData.balance_stars = d.new_balance;
                 updateUI(userData);
-                /* Обновляем баланс в win sheet */
                 var winBalEl = $('winNewBalance');
                 if(winBalEl) winBalEl.textContent = formatCrashMoney(d.new_balance);
                 try{ playSound('win'); }catch(e){}
                 loadBets();
                 setTimeout(loadBets, 100);
-
-                /* Автовывод сбрасывается после cashout */
                 autoWithdrawGift = null;
                 saveAutoWithdrawGift();
                 updateAutoWithdrawButton();
                 _cbLeftSrc = null; _cbRightSrc = null;
                 _lastAchievableWin = -1;
             } else {
-                /* Сервер не принял — откатываем */
                 cashedOut = false;
                 hasBet = true;
                 if(btn){ btn.className = 'cashout-btn visible'; btn.disabled = false; }
@@ -2150,7 +1470,6 @@ async function doCashout(){
     })();
 }
 
-/* ★ Показ win sheet с локальными данными (мгновенно) */
 function _showLocalWin(mult, winAmount){
     var m = parseFloat(mult).toFixed(2);
     var content = $('winContent');
@@ -2158,7 +1477,6 @@ function _showLocalWin(mult, winAmount){
 
     var winTon = starsToTon(winAmount);
     var betTon = starsToTon(cashedOutBetAmt);
-
     var cashoutGift = getAchievableGift(winAmount);
     var giftImg = cashoutGift ? getGiftImage(cashoutGift) : '/static/img/gift.png';
     var giftName = cashoutGift ? (cashoutGift.name || 'Подарок') : '';
@@ -2197,7 +1515,6 @@ function _showLocalWin(mult, winAmount){
     if(wo) wo.classList.add('show');
     try{ triggerVibration([30,20,60]); }catch(e){}
 }
-
 
 function updateBetButton(){
     var pb = $('placeBetBtn');
@@ -2362,7 +1679,6 @@ async function confirmGiftBet(){
             if(d.success){
                 betAmt = d.bet_amount || totalValue;
                 loadBets();
-                
             } else {
                 hasBet = false;
                 betAmt = 0;
@@ -2388,7 +1704,6 @@ async function confirmGiftBet(){
 var _statusFetching = false;
 async function updStatus(){
     if(!authReady) return;
-    /* ★ Защита от параллельных запросов, но БЕЗ abort */
     if(_statusFetching) return;
     _statusFetching = true;
     try{
@@ -2416,20 +1731,17 @@ async function updStatus(){
             updateUI(userData);
         }
 
-        /* ★ FIX: НЕ сбрасываем hasBet если ставка была подтверждена */
         if(d.user_bet && d.user_bet.status === 'active'){
             hasBet = true;
             betAmt = d.user_bet.bet_amount;
         } else if(d.user_bet && d.user_bet.status === 'cashed_out'){
             hasBet = false;
         }
-        /* Не сбрасываем hasBet при смене статуса — ждём подтверждения сервера */
 
         var newRound = prevGameId !== null && gameId !== prevGameId;
         if(newRound){
             window._lastShownSec = 99;
             countdownShown = -1;
-            /* ★ FIX: сбрасываем только если игрок не сделал ставку */
             if(!hasBet){
                 betAmt = 0;
                 betIsGift = false;
@@ -2524,7 +1836,6 @@ async function updStatus(){
         } else if(status === 'flying'){
             _updateTurboCounter(servMult);
             if(prevSt === 'counting' || prevSt === 'waiting'){
-                /* ★ FIX: сброс множителя в начале flying */
                 dispMult = 1.0;
                 _serverMultFloor = 1.0;
                 prevServMult = 1.0;
@@ -2595,7 +1906,6 @@ async function updStatus(){
             if(coeff){ coeff.className = 'coeff-box crashed'; coeff.textContent = servMult.toFixed(2) + 'x'; }
 
             if(!crashDone){
-                /* Показ boom.gif — force reflow + полный сброс src */
                 if(bm){
                     var boomImg = bm.querySelector('img');
                     if(boomImg){
@@ -2627,7 +1937,7 @@ async function updStatus(){
             betAmt = 0;
         }
     }catch(e){
-        /* Тихо игнорируем ошибки чтобы не спамить консоль */
+        /* ignore */
     }finally{
         _statusFetching = false;
     }
@@ -2694,7 +2004,6 @@ async function loadAutoWithdrawGifts(){
     }
 
     var minVal = _autowdTarget;
-
     _autowdGifts = cat.filter(function(g){
         return (g.value || 0) >= minVal;
     }).sort(function(a,b){ return (a.value||0) - (b.value||0); });
@@ -2786,7 +2095,6 @@ function updateAutoWithdrawApply(){
     var img = getGiftImage(_autowdSelected);
     btn.disabled = false;
 
-    /* ★ FIX: картинка строго 22x22 через inline-стили (двойная защита) */
     btn.innerHTML =
         '<span id="autowdApplyText" style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Автовывод</span>'
         + '<img src="' + img + '" '
@@ -2868,14 +2176,12 @@ async function ensureGiftCatalog(){
             _giftCatalogCache = d.gifts
                 .filter(function(g){ return g.value > 0 && g.type !== 'stars_balance'; })
                 .sort(function(a,b){ return (a.value||0)-(b.value||0); });
-            /* ★ Перестраиваем кэш корзин */
             if(typeof _rebuildGiftCache === 'function') _rebuildGiftCache();
         }
     }catch(e){}
     return _giftCatalogCache || [];
 }
 
-/* ★ FIX: кэш для getGiftImage — быстрее на 10x */
 var _giftImgCache = {};
 function getGiftImage(g){
     if(!g) return '/static/img/gift.png';
@@ -2891,9 +2197,7 @@ function getGiftImage(g){
     return result;
 }
 
-/* Оптимизация: кэшируем результат, не сканируем каталог каждый кадр */
-/* ★ КЭШ getAchievableGift — НЕ сканировать каталог каждый кадр */
-var _giftCache_Buckets = null;  /* [{value, gift}, ...] отсортировано по value */
+var _giftCache_Buckets = null;
 var _giftCache_Len = 0;
 
 function _rebuildGiftCache(){
@@ -2902,18 +2206,16 @@ function _rebuildGiftCache(){
         _giftCache_Len = 0;
         return;
     }
-    /* Создаём "корзины" по 100⭐ — для быстрого поиска */
     var buckets = {};
     for(var i = 0; i < _giftCatalogCache.length; i++){
         var g = _giftCatalogCache[i];
         var v = g.value || 0;
         if(v <= 0) continue;
-        var bucket = Math.floor(v / 100);  /* Шаг 100⭐ = 1 TON */
+        var bucket = Math.floor(v / 100);
         if(!buckets[bucket] || buckets[bucket].value < v){
             buckets[bucket] = g;
         }
     }
-    /* Превращаем в массив */
     var arr = [];
     for(var k in buckets){
         arr.push({ value: buckets[k].value, gift: buckets[k] });
@@ -2934,7 +2236,6 @@ function getAchievableGift(potentialWin){
         return _lastAchievableGift;
     }
     _lastAchievableWin = potentialWin;
-    /* Бинарный поиск */
     var arr = _giftCache_Buckets;
     var lo = 0, hi = arr.length - 1, best = null;
     while(lo <= hi){
@@ -2971,7 +2272,6 @@ function updateRocketImage(){
     var rw = $('rocketWrap');
     if(!rw) return;
 
-    /* ★ FIX: если не в турбо и ракета скрыта — показываем */
     if(!turboMode && !rw.classList.contains('hide')){
         rw.style.display = 'flex';
         rw.style.visibility = 'visible';
@@ -3241,7 +2541,6 @@ function makeOsc(freq, type, gainVal, startT, dur){
     }catch(e){}
 }
 function playSound(type){
-    /* ★ Отключаем звук в режимах оптимизации */
     if(window._soundDisabled || turboMode || optimizeMode) return;
     initAudio();
     if(!audioContext) return;
@@ -3255,7 +2554,6 @@ function playSound(type){
     else if(type === 'win'){ [523,659,784,988].forEach(function(f,i){ makeOsc(f,'triangle',0.12,now+i*0.07,0.35); }); }
 }
 function triggerVibration(pattern){
-    /* ★ Отключаем вибрацию в режимах оптимизации */
     if(window._vibrationDisabled || turboMode || optimizeMode) return;
     try{
         if(typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
@@ -3285,7 +2583,7 @@ function showToast(msg, type){
 }
 
 /* ============================================================
-   RENDER (оптимизирован под телефон)
+   RENDER
    ============================================================ */
 let lastRenderStatus = null;
 let lastRocketUpdateTime = 0;
@@ -3324,7 +2622,6 @@ function onNewServerMult(newMult){
     prevServMult = newMult;
     lastPollTimestamp = now;
 
-    /* ★ Мгновенный отклик — догоняем сервер до -0.05 */
     var gap = newMult - dispMult;
     if(gap > 0.05){
         dispMult = newMult - 0.05;
@@ -3343,7 +2640,6 @@ function render(){
     if(dt > 50) dt = 50;
     lastFrameTime = now;
 
-    /* ★ В оптимизации — 40 FPS (было 30) */
     if(turboMode || optimizeMode){
         if(!window._lastOptRender) window._lastOptRender = 0;
         if(now - window._lastOptRender < 25){
@@ -3353,7 +2649,6 @@ function render(){
         window._lastOptRender = now;
     }
 
-    /* Оптимизация: если вкладка свёрнута — пропускаем кадр */
     if(document.hidden){
         requestAnimationFrame(render);
         return;
@@ -3377,7 +2672,6 @@ function render(){
 
         if(_rw && !_rwFlying){ _rw.classList.add('flying'); _rwFlying = true; }
 
-        /* ★ FIX: показываем/скрываем ракету в зависимости от режима */
         var _rwEl = $('rocketWrap');
         if(_rwEl){
             if(turboMode){
@@ -3410,7 +2704,6 @@ function render(){
                 _coeffBox.textContent = ct;
                 _prevCoeffText = ct;
             }
-            /* ★ Обновляем большой турбо-счётчик */
             _updateTurboCounter(dispMult);
         }
 
@@ -3424,14 +2717,11 @@ function render(){
             if(hasBet || cashedOut) updateCashoutButton();
         }
 
-        /* ★ КЛИЕНТСКИЙ АВТОВЫВОД: срабатывает мгновенно при достижении коэф */
         if(hasBet && !autoCashoutDone){
             if(autoWithdrawGift && autoWithdrawGift.coeff >= 1.1){
-                /* Проверяем по dispMult (клиентский) ИЛИ по servMult */
                 var _currentMult = Math.max(dispMult, servMult);
                 if(_currentMult >= autoWithdrawGift.coeff){
                     autoCashoutDone = true;
-                    /* Мгновенно вызываем cashout */
                     doCashout();
                 }
             }
@@ -3455,10 +2745,8 @@ function render(){
             var sec = Math.max(0, Math.ceil(Math.max(0, lastTimeRemaining - elapsed)));
             if(sec > 5) sec = 5;
 
-            /* ★ FIX: монотонный отсчёт — не даём счётчику вернуться назад */
             if(typeof window._lastShownSec !== 'number') window._lastShownSec = 99;
             if(sec > window._lastShownSec){
-                /* Сервер прислал большее число — игнорируем (джиттер) */
                 sec = window._lastShownSec;
             } else {
                 window._lastShownSec = sec;
@@ -3487,8 +2775,6 @@ function render(){
 /* ============================================================
    BETS LIST
    ============================================================ */
-
-/* ══════ ОПТИМИСТИЧНОЕ ОТОБРАЖЕНИЕ СТАВКИ (мгновенный отклик) ══════ */
 function _addOptimisticBet(amount, type, giftImg){
     try{
         var list = document.getElementById('betsList');
@@ -3519,7 +2805,7 @@ function _addOptimisticBet(amount, type, giftImg){
 
         var bc = document.getElementById('betsCount');
         if(bc) bc.textContent = (parseInt(bc.textContent)||0) + 1;
-    }catch(e){ console.error('optimistic err', e); }
+    }catch(e){}
 }
 
 function _removeOptimisticBets(){
@@ -3528,7 +2814,6 @@ function _removeOptimisticBets(){
 
 async function loadBets(){
     if(status === 'crashed') return;
-    /* ★ В flying не грузим часто — ставки не меняются */
     if(status === 'flying'){
         if(!loadBets._lastFlyingFetch) loadBets._lastFlyingFetch = 0;
         var _now = performance.now();
@@ -3655,130 +2940,6 @@ async function loadHist(){
 /* ============================================================
    WIN SHEET
    ============================================================ */
-function showWin(d){
-    var m = parseFloat(d.multiplier).toFixed(2);
-    var content = $('winContent');
-    if(!content) return;
-
-    var winTon = d.win_amount ? starsToTon(d.win_amount) : 0;
-    var betTon = d.bet_amount ? starsToTon(d.bet_amount) : (cashedOutBetAmt ? starsToTon(cashedOutBetAmt) : 0);
-
-    /* Собираем все подарки */
-    var allGifts = [];
-    if(d.awarded_gifts && d.awarded_gifts.length) allGifts = allGifts.concat(d.awarded_gifts);
-    if(d.gift && !allGifts.find(function(g){ return g.name === d.gift.name; })) allGifts.push(d.gift);
-    if(d.extra_gifts && d.extra_gifts.length){
-        d.extra_gifts.forEach(function(g){
-            if(!allGifts.find(function(x){ return x.name === g.name && x.value === g.value; })) allGifts.push(g);
-        });
-    }
-    allGifts = allGifts.filter(function(g){ return g && (g.image || g.name); });
-
-    var starRemainder = d.star_remainder || 0;
-    var html = '';
-
-    /* ★ НОВЫЙ ВИД: если один подарок — показываем его крупно + "+X TON" */
-    if(allGifts.length === 1){
-        var g = allGifts[0];
-        var gImg = g.image || '/static/img/gift.png';
-        var gValue = g.value || 0;
-        var gValueTon = (gValue / 100).toFixed(2);
-
-        html += '<div class="win-sheet-handle"></div>';
-
-        /* Коэф сверху */
-        html += '<div style="text-align:center;margin-bottom:14px">';
-        html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.1));border:1.5px solid rgba(59,130,246,.4)">';
-        html += '<span style="font-family:inherit;font-weight:900;font-size:28px;color:#3B82F6">' + m + 'x</span>';
-        html += '</div>';
-        html += '</div>';
-
-        /* Крупный подарок */
-        html += '<div style="display:flex;justify-content:center;margin-bottom:16px">';
-        html += '<div style="position:relative;width:180px;height:180px;border-radius:24px;background:radial-gradient(circle,rgba(59,130,246,.15),transparent 70%);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box">';
-        html += '<img src="' + gImg + '" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5))">';
-        html += '</div>';
-        html += '</div>';
-
-        /* Итог: +X TON */
-        html += '<div style="text-align:center;margin-bottom:16px">';
-        html += '<div style="font-family:inherit;font-weight:800;font-size:22px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
-        html += '<span>+' + formatTon(winTon) + '</span>';
-        html += '<img src="/static/img/ton.png" style="width:20px;height:20px">';
-        html += '</div>';
-        html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">';
-        html += 'Ставка: ' + formatTon(betTon) + ' TON · Подарок: ' + gValueTon + ' TON';
-        html += '</div>';
-        html += '</div>';
-
-        if(starRemainder > 0){
-            html += '<div style="text-align:center;font-size:12px;color:rgba(255,255,255,.4);margin-bottom:12px">';
-            html += 'Ещё <b>+' + formatCrashMoney(starRemainder) + ' TON</b> на баланс';
-            html += '</div>';
-        }
-    }
-    /* ★ Если несколько подарков — сетка */
-    else if(allGifts.length > 1){
-        html += '<div class="win-sheet-handle"></div>';
-
-        /* Коэф */
-        html += '<div style="text-align:center;margin-bottom:14px">';
-        html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.1));border:1.5px solid rgba(59,130,246,.4)">';
-        html += '<span style="font-family:inherit;font-weight:900;font-size:28px;color:#3B82F6">' + m + 'x</span>';
-        html += '</div>';
-        html += '</div>';
-
-        /* Сетка подарков */
-        html += '<div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:center;margin-bottom:10px">';
-        html += 'Получено ' + allGifts.length + ' подарков';
-        html += '</div>';
-
-        html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:260px;overflow-y:auto;margin-bottom:14px">';
-        for(var i = 0; i < allGifts.length; i++){
-            var g = allGifts[i];
-            var gImg = g.image || '/static/img/gift.png';
-            var gValue = g.value || 0;
-            html += '<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:12px;padding:6px;text-align:center;box-sizing:border-box">';
-            html += '<img src="' + gImg + '" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;aspect-ratio:1;object-fit:contain;border-radius:8px;background:rgba(0,0,0,.2);padding:4px;box-sizing:border-box;display:block">';
-            html += '<div style="font-size:10px;font-weight:800;color:#8CA0BE;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:2px"><img src="/static/img/ton.png" style="width:10px;height:10px">' + formatTon(gValue/100) + '</div>';
-            html += '</div>';
-        }
-        html += '</div>';
-
-        /* Итог */
-        html += '<div style="text-align:center;margin-bottom:12px">';
-        html += '<div style="font-family:inherit;font-weight:800;font-size:22px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
-        html += '<span>+' + formatTon(winTon) + '</span>';
-        html += '<img src="/static/img/ton.png" style="width:20px;height:20px">';
-        html += '</div>';
-        if(starRemainder > 0){
-            html += '<div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:4px">Ещё +' + formatCrashMoney(starRemainder) + ' TON на баланс</div>';
-        }
-        html += '</div>';
-    }
-    /* Если вообще без подарков — просто выигрыш */
-    else {
-        html += '<div class="win-sheet-handle"></div>';
-        html += '<div style="text-align:center;margin-bottom:14px">';
-        html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.1));border:1.5px solid rgba(59,130,246,.4)">';
-        html += '<span style="font-family:inherit;font-weight:900;font-size:28px;color:#3B82F6">' + m + 'x</span>';
-        html += '</div>';
-        html += '</div>';
-        html += '<div style="text-align:center;margin-bottom:16px">';
-        html += '<div style="font-family:inherit;font-weight:800;font-size:26px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
-        html += '<span>+' + formatTon(winTon) + '</span>';
-        html += '<img src="/static/img/ton.png" style="width:22px;height:22px">';
-        html += '</div>';
-        html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Ставка: ' + formatTon(betTon) + ' TON</div>';
-        html += '</div>';
-    }
-
-    content.innerHTML = html;
-    var wo = $('winOverlay');
-    if(wo) wo.classList.add('show');
-    try{ triggerVibration([30,20,60]); }catch(e){}
-}
-
 function closeWin(){
     var wo = $('winOverlay');
     if(wo) wo.classList.remove('show');
@@ -3790,7 +2951,6 @@ function closeWin(){
 document.addEventListener('DOMContentLoaded', function(){
     initTelegramApp();
 
-    /* ★ FIX: страховка — не даём лоадеру висеть больше 6 сек */
     setTimeout(function(){
         var ls = $('ldScreen');
         if(ls && !ls.classList.contains('hidden')){
@@ -3812,25 +2972,21 @@ document.addEventListener('DOMContentLoaded', function(){
 document.addEventListener('click', initAudio, {once: true});
 document.addEventListener('touchstart', initAudio, {once: true});
 
-/* ══════════════════════════════════════════════════════════════
-   ★ ОПТИМИЗАЦИЯ — отключение анимаций для слабых телефонов
-   ══════════════════════════════════════════════════════════════ */
-
+/* ============================================================
+   OPTIMIZE MODE
+   ============================================================ */
 var optimizeMode = localStorage.getItem('crash_optimize') === '1';
 var turboMode = localStorage.getItem('crash_turbo') === '1';
 
 function applyOptimizeMode(){
-    /* ★ FIX: НЕ трогаем ракету в оптимизации — она должна быть видна */
     var root = document.documentElement;
     var body = document.body;
 
     if(turboMode){
-        /* ЭКСТРЕМАЛЬНАЯ оптимизация — отключаем ВСЁ */
         root.classList.add('turbo-mode');
         body.classList.add('turbo-mode');
         root.classList.remove('optimize-mode');
         body.classList.remove('optimize-mode');
-        /* Отключаем анимации ракеты */
         _turboDisableAll();
     } else if(optimizeMode){
         root.classList.add('optimize-mode');
@@ -3842,7 +2998,6 @@ function applyOptimizeMode(){
         body.classList.remove('optimize-mode', 'turbo-mode');
     }
 
-    /* Обновляем переключатели */
     var oT = $('optimizeToggle');
     if(oT) oT.classList.toggle('on', optimizeMode);
     var tT = $('turboToggle');
@@ -3850,14 +3005,10 @@ function applyOptimizeMode(){
 }
 
 function _turboDisableAll(){
-    /* Отключаем звуки */
     window._soundDisabled = true;
-    /* Отключаем вибрации */
     window._vibrationDisabled = true;
-    /* ★ Ракета скрыта ТОЛЬКО в турбо */
     var rw = $('rocketWrap');
     if(rw) rw.style.display = 'none';
-    /* Отключаем boom-анимацию */
     var bm = $('boomWrap');
     if(bm) bm.style.display = 'none';
 }
@@ -3871,7 +3022,6 @@ function toggleOptimize(){
     localStorage.setItem('crash_optimize', optimizeMode ? '1' : '0');
     applyOptimizeMode();
     showToast(optimizeMode ? '⚡ Режим оптимизации ВКЛ' : 'Режим оптимизации ВЫКЛ', 'ok');
-    /* Перезагружаем для чистого эффекта */
     if(optimizeMode){
         setTimeout(function(){ location.reload(); }, 600);
     }
@@ -3891,10 +3041,35 @@ function toggleTurbo(){
     }
 }
 
-/* Применяем при загрузке */
+function _updateTurboCounter(mult){
+    var counter = $('turboCounter');
+    if(!counter) return;
+    if(!turboMode && !optimizeMode){
+        if(counter.classList.contains('active')) counter.classList.remove('active');
+        return;
+    }
+    if(status !== 'flying'){
+        if(counter.classList.contains('active')) counter.classList.remove('active');
+        return;
+    }
+    counter.classList.add('active');
+    var text = mult.toFixed(2);
+    var multEl = $('turboMult');
+    if(multEl) multEl.textContent = text;
+    var cls = '';
+    if(mult >= 5) cls = 'mega';
+    else if(mult >= 3) cls = 'high';
+    else if(mult >= 1.5) cls = 'mid';
+    counter.classList.remove('mid','high','mega');
+    if(cls) counter.classList.add(cls);
+}
+
+function _hideTurboCounter(){
+    var counter = $('turboCounter');
+    if(counter) counter.classList.remove('active');
+}
+
 applyOptimizeMode();
-
-
 </script>
 
 <nav class="bottom-nav">
