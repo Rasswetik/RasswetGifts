@@ -67,16 +67,22 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 
 /* ROCKET — без чёрной обводки */
 .rocket-wrap{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);z-index:2;transition:opacity .3s;opacity:1;will-change:transform,opacity;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.rocket-wrap img{width:180px;height:180px;object-fit:contain;border:none;background:transparent;transition:transform .2s ease;will-change:transform;image-rendering:auto;transform:translateZ(0)}
+.rocket-wrap img{width:180px;height:180px;object-fit:contain;border:none;background:transparent;transition:transform .3s ease-out;will-change:transform;image-rendering:auto;transform:translateZ(0)}
 .rocket-wrap.showing-gift img{width:180px;height:180px;object-fit:contain;border:none !important;background:transparent !important;padding:0 !important;border-radius:0 !important;box-shadow:none !important;filter:drop-shadow(0 10px 26px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(59,130,246,.28));image-rendering:high-quality}
 .rocket-wrap.hide{opacity:0;pointer-events:none}
 .rocket-wrap.flying img{transform:rotate(18deg) translateZ(0)}
 .rocket-wrap.flying.showing-gift img{transform:scale(1.05) translateZ(0) !important}
 .rocket-wrap.cashed-out img{filter:grayscale(100%) brightness(.7)}
+@keyframes rocketSpeedBoost{
+    0%{filter:drop-shadow(0 0 12px rgba(59,130,246,.3))}
+    50%{filter:drop-shadow(0 0 22px rgba(59,130,246,.65)) brightness(1.08)}
+    100%{filter:drop-shadow(0 0 12px rgba(59,130,246,.3))}
+}
 
-/* BOOM — display:none/flex вместо opacity для надёжности */
+/* BOOM — display:flex для надёжности */
 .boom-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;display:none;align-items:center;justify-content:center}
-.boom-wrap.show{display:flex;animation:boomPop .4s ease-out forwards}
+.boom-wrap.show{display:flex !important;animation:boomPop .4s ease-out forwards}
+.boom-wrap.show img{width:180px;height:180px;object-fit:contain;display:block !important;opacity:1 !important;visibility:visible !important}
 .boom-wrap img{width:180px;height:180px;object-fit:contain;display:block}
 @keyframes boomPop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}50%{transform:translate(-50%,-50%) scale(1.15);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
 .wait-label{font-size:13px;color:rgba(255,255,255,.25);font-weight:600;letter-spacing:1px;text-transform:uppercase;z-index:2;margin-top:8px;display:none}
@@ -105,8 +111,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 }
 .cashout-btn.visible{visibility:visible}
 .cashout-btn:not(:disabled):active{transform:scale(.98)}
-
-/* CRASH STATE — красный */
 .cashout-btn.crash-state{
     background:linear-gradient(135deg,#E8527A,#C42247) !important;
     color:#fff !important;
@@ -196,16 +200,16 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .confirm-bet-btn:active:not(:disabled){transform:scale(.96)}
 .confirm-bet-btn:disabled{opacity:.45;cursor:not-allowed;transform:none !important}
 
-/* AUTO WITHDRAW ROW */
-.auto-cashout-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;padding:12px;border-radius:12px;background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.15)}
-.auto-cashout-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+/* AUTO WITHDRAW ROW — фиксированная высота */
+.auto-cashout-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;padding:12px;border-radius:12px;background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.15);min-height:66px;max-height:66px;overflow:hidden}
+.auto-cashout-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:0 0 40%}
 .auto-cashout-label{font-family:inherit;font-weight:800;font-size:13px;color:#1EE44C}
 .auto-cashout-sub{font-size:10px;color:rgba(255,255,255,.5)}
-.autowd-open-btn{flex:1;padding:11px 14px;border-radius:12px;border:none;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-family:inherit;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s;min-width:0;max-width:70%}
+.autowd-open-btn{flex:1 1 auto;padding:10px 10px;border-radius:12px;border:none;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-family:inherit;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:flex-start;gap:6px;transition:transform .15s;min-width:0;width:100%;max-width:100%;height:42px;overflow:hidden;box-sizing:border-box}
 .autowd-open-btn:active{transform:scale(.97)}
-.autowd-open-btn img{width:18px;height:18px;flex-shrink:0;border-radius:4px;background:rgba(0,0,0,.15);padding:1px;object-fit:contain}
-.autowd-open-btn .autowd-btn-name{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:700}
-.autowd-open-btn .autowd-btn-coeff{background:rgba(0,0,0,.22);padding:2px 8px;border-radius:8px;font-size:11px;font-weight:800;flex-shrink:0}
+.autowd-open-btn img{width:20px;height:20px;flex-shrink:0;border-radius:4px;background:rgba(0,0,0,.15);padding:1px;object-fit:contain}
+.autowd-open-btn .autowd-btn-name{flex:1 1 0;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;font-weight:700}
+.autowd-open-btn .autowd-btn-coeff{background:rgba(0,0,0,.22);padding:2px 6px;border-radius:8px;font-size:10px;font-weight:800;flex-shrink:0}
 
 /* INVENTORY */
 .selected-summary{display:none;background:rgba(59,130,246,.08);border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1px solid rgba(59,130,246,.15)}
@@ -358,6 +362,8 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     .bet-row{padding:8px 10px}
     .cb-center .cb-win{font-size:17px}
     .cb-gift-side{width:38px;height:38px}
+    .auto-cashout-row{min-height:60px;max-height:60px;padding:10px}
+    .autowd-open-btn{height:38px;font-size:11px}
 }
 </style>
 </head>
@@ -818,7 +824,7 @@ async function initTelegramApp(){
     applyRocket();
     if(window._ldUpdate) window._ldUpdate(95);
 
-    /* Каталог подарков — грузим ДО показа UI, чтобы PNG в Cash OUT были сразу */
+    /* Каталог подарков — грузим ДО показа UI */
     try{ await ensureGiftCatalog(); }catch(e){}
 
     if(window._ldDone) window._ldDone();
@@ -829,7 +835,6 @@ async function initTelegramApp(){
 
     if(savedBetAmount) setBetInputFromStars(savedBetAmount);
 
-    /* Автовывод — синхронизируем UI кнопки */
     updateAutoWithdrawButton();
     syncSettingsToggles();
 
@@ -1051,7 +1056,7 @@ async function confirmStarsBet(){
     updateUI(userData);
     closeBetModal();
     updateBetButton();
-    /* МГНОВЕННАЯ реакция на ставку */
+    /* МГНОВЕННАЯ реакция */
     _cbLeftSrc = null; _cbRightSrc = null;
     if($('cbGiftLeft')) $('cbGiftLeft').dataset.src = '';
     if($('cbGiftRight')) $('cbGiftRight').dataset.src = '';
@@ -1152,7 +1157,7 @@ async function processPendingBet(){
 }
 
 /* ============================================================
-   CASHOUT — обновление кнопки (обе иконки = достижимый подарок)
+   CASHOUT — обе иконки = достижимый подарок, мгновенно
    ============================================================ */
 var cashoutLocked = false;
 
@@ -1163,7 +1168,6 @@ function updateCashoutButton(){
     var win = $('cbWin');
     if(!cb || !left || !right || !win) return;
 
-    /* Crashed: показать финальный множитель, красный, без подарков */
     if(status === 'crashed'){
         cb.classList.add('visible');
         cb.disabled = true;
@@ -1178,7 +1182,6 @@ function updateCashoutButton(){
         return;
     }
 
-    /* Не активна: скрыть */
     var isActive = hasBet && !cashedOut && status === 'flying';
     if(!isActive){
         cb.classList.remove('visible');
@@ -1188,18 +1191,15 @@ function updateCashoutButton(){
     cb.disabled = false;
     cb.className = 'cashout-btn visible';
 
-    /* Сумма выигрыша */
     var currentMult = Math.max(dispMult, servMult);
     var curWin = Math.floor((betAmt || 0) * currentMult);
     var newWinText = formatCrashMoney(curWin);
     if(win.textContent !== newWinText) win.textContent = newWinText;
 
-    /* Обе иконки = подарок, который можно забрать на текущий выигрыш */
     var achievable = getAchievableGift(curWin);
     var giftSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
     var isEmpty = !achievable;
 
-    /* Левая */
     if(left.dataset.src !== giftSrc){
         left.dataset.src = giftSrc;
         left.src = giftSrc;
@@ -1211,7 +1211,6 @@ function updateCashoutButton(){
         }
     }
 
-    /* Правая */
     if(right.dataset.src !== giftSrc){
         right.dataset.src = giftSrc;
         right.src = giftSrc;
@@ -1679,12 +1678,13 @@ async function updStatus(){
             if(coeff){ coeff.className = 'coeff-box crashed'; coeff.textContent = servMult.toFixed(2) + 'x'; }
 
             if(!crashDone){
-                /* Показ boom.gif — принудительно */
+                /* Показ boom.gif — force reflow + полный сброс src */
                 if(bm){
                     var boomImg = bm.querySelector('img');
                     if(boomImg){
-                        var freshSrc = '/static/gifs/boom.gif?t=' + Date.now();
-                        boomImg.src = freshSrc;
+                        boomImg.removeAttribute('src');
+                        void boomImg.offsetWidth;
+                        boomImg.src = '/static/gifs/boom.gif?t=' + Date.now();
                     }
                     bm.classList.remove('show');
                     void bm.offsetWidth;
@@ -1899,13 +1899,14 @@ function updateAutoWithdrawButton(){
     btns.forEach(function(btn){
         if(!btn) return;
         if(!autoWithdrawGift){
-            btn.innerHTML = '<img src="/static/img/gift.png" alt=""><span class="autowd-btn-name">Выбрать подарок</span>';
+            btn.innerHTML = '<img src="/static/img/gift.png" alt=""><span class="autowd-btn-name">Выбрать</span>';
             return;
         }
         var img = autoWithdrawGift.image || '/static/img/gift.png';
+        var nameShort = (autoWithdrawGift.name || 'Подарок').substring(0, 10);
         btn.innerHTML =
             '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">'
-            + '<span class="autowd-btn-name">' + (autoWithdrawGift.name || 'Подарок').substring(0, 14) + '</span>'
+            + '<span class="autowd-btn-name">' + nameShort + '</span>'
             + '<span class="autowd-btn-coeff">x' + autoWithdrawGift.coeff.toFixed(2) + '</span>';
     });
 }
@@ -2356,11 +2357,18 @@ function render(){
 
         if(_rw && !_rwFlying){ _rw.classList.add('flying'); _rwFlying = true; }
 
+        /* Ракета: наклон + скорость анимации растут с множителем */
         if(_rw && _rImg && !_rw.classList.contains('showing-gift') && !window._rocketSwitching){
             if(_rImg.complete && _rImg.naturalWidth > 0){
-                var tilt = dispMult >= 2.0 ? Math.min(30, (dispMult - 2.0) * 3.5) : 0;
-                var sc = 1 + Math.max(0, Math.min(dispMult - 1.5, 1)) * 0.015;
+                var tilt = dispMult >= 1.5 ? Math.min(35, (dispMult - 1.5) * 5) : 0;
+                var sc = 1 + Math.max(0, Math.min(dispMult - 1.5, 2)) * 0.03;
+                var speedFactor = Math.max(0.3, Math.min(1.0, 1.0 - (dispMult - 1.0) * 0.12));
                 _rImg.style.transform = 'rotate(' + tilt + 'deg) scale(' + sc + ')';
+                _rImg.style.transition = 'transform .3s ease-out';
+                if(_rImg.dataset.speed !== String(speedFactor.toFixed(2))){
+                    _rImg.dataset.speed = String(speedFactor.toFixed(2));
+                    _rImg.style.animation = 'rocketSpeedBoost ' + speedFactor + 's ease-in-out infinite';
+                }
             }
         }
 
@@ -2378,7 +2386,6 @@ function render(){
             updateRocketImage();
         }
 
-        /* Cash OUT — 30 fps для мгновенной реакции */
         if(now - _lastCashBtnUpdate > 33){
             _lastCashBtnUpdate = now;
             if(hasBet || cashedOut) updateCashoutButton();
@@ -2400,6 +2407,11 @@ function render(){
             dispMult = 1.0;
             prevServMult = 1.0;
             multGrowthRate = 0;
+            if(_rImg){
+                _rImg.style.animation = '';
+                _rImg.style.transform = '';
+                _rImg.dataset.speed = '';
+            }
         }
         if((status === 'counting' || status === 'waiting') && lastTrTimestamp > 0 && lastTimeRemaining <= 10){
             var elapsed = (performance.now() - lastTrTimestamp) / 1000;
