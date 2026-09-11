@@ -1599,6 +1599,27 @@ def _check_disk_space():
 
 def _create_all_tables(conn):
     """Создаёт все таблицы по одной. Возвращает True если ВСЕ ОК."""
+
+    # ── Market migration: гарантируем колонку fragment_slug в inventory ──
+    try:
+        if USE_POSTGRES:
+            conn.execute("SAVEPOINT sp_inv_slug")
+            try:
+                conn.execute("ALTER TABLE inventory ADD COLUMN IF NOT EXISTS fragment_slug TEXT DEFAULT NULL")
+            except Exception:
+                try: conn.execute("ROLLBACK TO SAVEPOINT sp_inv_slug")
+                except Exception: pass
+        else:
+            try:
+                cols = [r[1] for r in conn.execute("PRAGMA table_info(inventory)").fetchall()]
+                if 'fragment_slug' not in cols:
+                    conn.execute("ALTER TABLE inventory ADD COLUMN fragment_slug TEXT DEFAULT NULL")
+            except Exception:
+                pass
+        try: conn.commit()
+        except Exception: pass
+    except Exception as _me:
+        logger.warning(f"fragment_slug migration skipped: {_me}")
     tables_sql = {
         'users': '''CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
@@ -4242,79 +4263,228 @@ def api_market_gifts():
 
 @app.route('/api/market/buy', methods=['POST'])
 def api_market_buy():
-    """Buy a gift from the market (random NFT number from fragment)"""
+    """Buy a gift from the market. Safe for PostgreSQL + SQLite.
+
+    - Не использует fragment_slug в INSERT (эта колонка может отсутствовать)
+    - Правильный SAVEPOINT/rollback для PG
+    - Пишет в user_history и win_history
+    """
     import random as _rnd
+    conn = None
     try:
-        data = request.get_json(force=True) or {}
+        data = request.get_json(force=True, silent=True) or {}
         user_id = data.get('user_id')
         gift_id = data.get('gift_id')
-        if not user_id or not gift_id:
-            return jsonify({'success': False, 'error': 'Missing fields'})
+        if not user_id or gift_id is None:
+            return jsonify({'success': False, 'error': 'Не указан пользователь или подарок'})
 
+        try:
+            user_id_int = int(user_id)
+        except (ValueError, TypeError):
+            return jsonify({'success': False, 'error': 'Неверный ID пользователя'})
+
+        # ── Поиск подарка в каталоге ──
         gifts = load_gifts_cached() or []
         gift = None
         for g in gifts:
-            if g.get('id') == gift_id:
+            if str(g.get('id')) == str(gift_id):
                 gift = g
                 break
         if not gift:
+            for g in gifts:
+                if str(g.get('fragment_slug') or '') == str(gift_id):
+                    gift = g
+                    break
+
+        if not gift:
             return jsonify({'success': False, 'error': 'Подарок не найден'})
 
-        original_val = gift.get('value', 0)
+        original_val = int(gift.get('value', 0) or 0)
+        if original_val <= 0:
+            return jsonify({'success': False, 'error': 'Некорректная цена подарка'})
+
         market_price = int(original_val * 1.1)
-        slug = gift.get('fragment_slug', '')
-        gift_name = (gift.get('name', '') or '').replace(' (Random)', '').strip()
+        if market_price <= 0:
+            return jsonify({'success': False, 'error': 'Некорректная цена'})
+
+        slug = (gift.get('fragment_slug') or '').strip()
+        gift_name = (gift.get('name', '') or '').replace(' (Random)', '').strip() or 'Gift'
 
         conn = get_db_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+
+        # ── Пользователь + баланс + бан ──
+        cursor.execute('SELECT balance_stars, is_banned FROM users WHERE id = ?', (user_id_int,))
         row = cursor.fetchone()
         if not row:
             conn.close()
             return jsonify({'success': False, 'error': 'Пользователь не найден'})
 
-        balance = row[0] or 0
+        balance = int(row[0] or 0)
+        is_banned = bool(row[1]) if len(row) > 1 else False
+        if is_banned:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Вы заблокированы'})
+
         if balance < market_price:
             conn.close()
-            return jsonify({'success': False, 'error': 'Недостаточно баланса'})
+            return jsonify({
+                'success': False,
+                'error': f'Недостаточно средств. Нужно {market_price}, у вас {balance}'
+            })
 
-        # Pick random NFT number if fragment slug available
+        # ── NFT номер + картинка ──
         nft_number = _rnd.randint(1, 5000)
         if slug:
-            gift_image = f'https://nft.fragment.com/gift/{slug.replace(" ", "")}-{nft_number}.medium.jpg'
+            clean_slug = slug.replace(' ', '').replace("'", '').replace('.', '')
+            gift_image = f'https://nft.fragment.com/gift/{clean_slug}-{nft_number}.medium.jpg'
+            display_name = f'{gift_name} #{nft_number}'
         else:
-            gift_image = gift.get('image', '')
+            gift_image = gift.get('image', '') or '/static/img/gift.png'
+            display_name = gift_name
 
-        display_name = f'{gift_name} #{nft_number}' if slug else gift_name
-
-        cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?', (market_price, user_id))
-        cursor.execute('''
-            INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value, fragment_slug)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (user_id, gift.get('id', -1), display_name, gift_image, original_val, slug))
-
-        conn.commit()
-
-        # Update experience
+        # ── gift_id (int или None) ──
+        inv_gift_id = None
+        raw_gid = gift.get('id')
         try:
-            update_user_experience(user_id, market_price, conn)
+            if raw_gid is not None and str(raw_gid).lstrip('-').isdigit():
+                inv_gift_id = int(raw_gid)
+        except (ValueError, TypeError):
+            inv_gift_id = None
+
+        # ── Транзакция: UPDATE + INSERT ──
+        try:
+            if USE_POSTGRES:
+                cursor.execute('SAVEPOINT sp_market')
         except Exception:
             pass
 
-        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
-        new_bal = cursor.fetchone()[0]
+        # Списание
+        cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
+                       (market_price, user_id_int))
+
+        # Определяем, какие колонки inventory реально существуют
+        inv_columns = _get_inventory_columns(cursor)
+
+        cols = ['user_id', 'gift_id', 'gift_name', 'gift_image', 'gift_value']
+        vals = [user_id_int, inv_gift_id, display_name, gift_image, original_val]
+
+        # Если есть fragment_slug — добавим
+        if 'fragment_slug' in inv_columns and slug:
+            cols.append('fragment_slug')
+            vals.append(slug)
+
+        # Если есть nft_number — добавим
+        if 'nft_number' in inv_columns:
+            cols.append('nft_number')
+            vals.append(nft_number)
+
+        placeholders = ', '.join(['?' for _ in cols])
+        sql = f"INSERT INTO inventory ({', '.join(cols)}) VALUES ({placeholders})"
+        cursor.execute(sql, vals)
+
+        try:
+            inv_id = cursor.lastrowid
+            if inv_id is None:
+                cursor.execute('SELECT LASTVAL()' if USE_POSTGRES else 'SELECT last_insert_rowid()')
+                r2 = cursor.fetchone()
+                inv_id = r2[0] if r2 else None
+        except Exception:
+            inv_id = None
+
+        # История
+        try:
+            cursor.execute("""
+                INSERT INTO user_history (user_id, operation_type, amount, description)
+                VALUES (?, 'market_buy', ?, ?)
+            """, (user_id_int, -market_price, f'Покупка в маркете: {display_name}'))
+        except Exception as e:
+            logger.warning(f"market user_history insert failed: {e}")
+
+        # Win history
+        try:
+            cursor.execute('SELECT first_name FROM users WHERE id = ?', (user_id_int,))
+            urow = cursor.fetchone()
+            uname = (urow[0] if urow and urow[0] else f'User_{user_id_int}')
+            cursor.execute("""
+                INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
+                VALUES (?, ?, ?, ?, ?, 'Market')
+            """, (user_id_int, uname, display_name, gift_image, original_val))
+        except Exception as e:
+            logger.warning(f"market win_history insert failed: {e}")
+
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id_int,))
+        nb_row = cursor.fetchone()
+        new_bal = int(nb_row[0] or 0) if nb_row else balance - market_price
+
+        try:
+            if USE_POSTGRES:
+                cursor.execute('RELEASE SAVEPOINT sp_market')
+        except Exception:
+            pass
+
+        conn.commit()
         conn.close()
+        conn = None
+
+        try:
+            add_experience(user_id_int, market_price, f'Market buy {display_name}')
+        except Exception as e:
+            logger.warning(f"market add_experience failed: {e}")
+
+        try:
+            _user_balance_cache.pop(user_id_int, None)
+        except Exception:
+            pass
+        try:
+            if user_id_int in _user_cache:
+                del _user_cache[user_id_int]
+        except Exception:
+            pass
+
+        logger.info(f"🛒 Market buy OK: user={user_id_int}, gift='{display_name}', price={market_price}, inv_id={inv_id}")
 
         return jsonify({
             'success': True,
             'gift_name': display_name,
             'gift_image': gift_image,
             'price_ton': round(market_price / 100, 2),
-            'new_balance': new_bal
+            'price_stars': market_price,
+            'new_balance': new_bal,
+            'inventory_id': inv_id
         })
+
     except Exception as e:
-        logger.error(f"Market buy error: {e}")
-        return jsonify({'success': False, 'error': 'Ошибка покупки'})
+        logger.error(f"Market buy error: {e}\n{traceback.format_exc()}")
+        if conn:
+            try:
+                if USE_POSTGRES:
+                    try: conn.execute('ROLLBACK TO SAVEPOINT sp_market')
+                    except Exception: pass
+                conn.rollback()
+            except Exception:
+                pass
+            try: conn.close()
+            except Exception: pass
+        return jsonify({'success': False, 'error': 'Ошибка покупки, попробуйте ещё раз'})
+
+
+def _get_inventory_columns(cursor):
+    """Возвращает set с именами колонок таблицы inventory.
+    Работает и на PG, и на SQLite."""
+    try:
+        if USE_POSTGRES:
+            cursor.execute("""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'inventory'
+            """)
+            return {r[0] for r in cursor.fetchall()}
+        else:
+            cursor.execute("PRAGMA table_info(inventory)")
+            return {r[1] for r in cursor.fetchall()}
+    except Exception:
+        return set()
+
 
 @app.route('/api/lucky-buy/spin', methods=['POST'])
 def lucky_buy_spin():
