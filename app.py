@@ -270,6 +270,14 @@ def update_crash_cache(game_id, status, current_mult, target_mult, time_remainin
         }
 
 
+def refresh_crash_bet_cache(game_id, target_multiplier=5.0):
+    """Immediately refresh the crash cache after a successful bet so the client sees the round state right away."""
+    try:
+        update_crash_cache(game_id, 'counting', 1.0, float(target_multiplier), 5.0)
+    except Exception:
+        pass
+
+
 # ─── CRASH BOTS HELPERS ───
 _BOT_AVATARS = [
     'https://i.pravatar.cc/100?img=1', 'https://i.pravatar.cc/100?img=2',
@@ -3709,28 +3717,30 @@ def start_ultimate_crash_loop():
                                 logger.error(f"AI mid-round error: {ai_e}")
 
                         # Calculate increment based on live_mult (in-memory, always fresh)
-                        # Slower, smoother growth curve
-                        if live_mult < 1.1:
-                            base_increment = 0.02
-                        elif live_mult < 1.5:
-                            base_increment = 0.045
-                        elif live_mult < 2.0:
+                        # Slower, smoother growth curve for longer and more predictable rounds
+                        if live_mult < 1.2:
+                            base_increment = 0.012
+                        elif live_mult < 1.8:
+                            base_increment = 0.028
+                        elif live_mult < 2.6:
+                            base_increment = 0.05
+                        elif live_mult < 4.0:
                             base_increment = 0.08
-                        elif live_mult < 3.0:
-                            base_increment = 0.13
-                        elif live_mult < 5.0:
-                            base_increment = 0.20
-                        elif live_mult < 10.0:
-                            base_increment = 0.35
+                        elif live_mult < 6.0:
+                            base_increment = 0.12
+                        elif live_mult < 9.0:
+                            base_increment = 0.17
+                        elif live_mult < 14.0:
+                            base_increment = 0.24
                         else:
-                            base_increment = 0.60
+                            base_increment = 0.30
 
-                        speed_boost = live_mult * 0.025
+                        speed_boost = live_mult * 0.012
                         increment = round(max(base_increment, speed_boost), 2)
-                        increment = min(increment, 2.0)
+                        increment = min(increment, 0.9)
 
-                        # Random crash chance
-                        crash_chance = 0.008 * (live_mult / 10)
+                        # Random crash chance with gentler tail pressure
+                        crash_chance = 0.0045 * (live_mult / 10)
                         if random.random() < crash_chance:
                             do_crash(conn, cursor, live_game_id, live_mult, live_target)
                             logger.info(f"💥 Случайный краш на {live_mult:.2f}x")
@@ -4711,6 +4721,8 @@ def ultimate_crash_place_bet():
         if cache_key in _user_bets_cache:
             del _user_bets_cache[cache_key]
         _user_balance_cache.pop(user_id, None)
+        cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
+        refresh_crash_bet_cache(game_id, cached_target)
 
         # Add experience based on bet amount (turnover) - 1:1
         try:
@@ -4852,6 +4864,11 @@ def ultimate_crash_place_bet_gift():
         cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
         new_balance = cursor.fetchone()[0]
         conn.close()
+        try:
+            cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
+            refresh_crash_bet_cache(game_id, cached_target)
+        except Exception:
+            pass
 
         return jsonify({
             'success': True,
@@ -4989,6 +5006,11 @@ def ultimate_crash_place_bet_multi_gift():
         cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
         new_balance = cursor.fetchone()[0]
         conn.close()
+        try:
+            cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
+            refresh_crash_bet_cache(game_id, cached_target)
+        except Exception:
+            pass
 
         return jsonify({
             'success': True,
@@ -5128,6 +5150,51 @@ def ultimate_crash_cashout_simple():
                     remaining_value = win_amount - original_total  # profit only
                 else:
                     remaining_value = win_amount
+
+            # === Preferred auto-withdraw gift (server-side, not only client-side) ===
+            preferred_gift = None
+            if data.get('preferred_gift_id') is not None or data.get('preferred_gift_name'):
+                pref_id = data.get('preferred_gift_id')
+                pref_name = str(data.get('preferred_gift_name') or '').strip()
+                pref_image = data.get('preferred_gift_image') or '/static/img/gift.png'
+                pref_value = int(data.get('preferred_gift_value', 0) or 0)
+                if pref_name and pref_value > 0:
+                    preferred_gift = {
+                        'id': pref_id,
+                        'name': pref_name,
+                        'image': pref_image if pref_image and not pref_image.startswith('data:') else '/static/img/gift.png',
+                        'value': pref_value,
+                    }
+
+            if preferred_gift and bet_type != 'gift' and remaining_value >= preferred_gift.get('value', 0):
+                pref_value = preferred_gift.get('value', 0)
+                pref_image = preferred_gift.get('image', '/static/img/gift.png')
+                if pref_image and pref_image.startswith('data:'):
+                    pref_image = '/static/img/gift.png'
+
+                cursor.execute('''
+                    INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (user_id, preferred_gift.get('id', 0), preferred_gift['name'], pref_image, pref_value))
+
+                cursor.execute('''
+                    INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (user_id, user_name, preferred_gift['name'], pref_image, pref_value, 'Crash'))
+
+                try:
+                    cursor.execute('SELECT 1 FROM user_gift_index WHERE user_id = ? AND gift_name = ?', (user_id, preferred_gift['name']))
+                    if not cursor.fetchone():
+                        cursor.execute('INSERT OR IGNORE INTO user_gift_index (user_id, gift_name) VALUES (?, ?)', (user_id, preferred_gift['name']))
+                except Exception:
+                    pass
+
+                awarded_gifts.append({
+                    'name': preferred_gift['name'],
+                    'image': pref_image,
+                    'value': pref_value,
+                })
+                remaining_value -= pref_value
 
             # === Fill remaining value with gifts from catalog (cached 30s) ===
             _now_cat_ts = time.time()
