@@ -81,6 +81,7 @@ PORTAL_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
 PORTAL_CONFIG_FILE = os.path.join(BASE_PATH, 'data', 'portal_auth.json')
 PORTAL_SESSION_FILE = os.path.join(BASE_PATH, 'data', 'portal_session.txt')
 PORTAL_MARKET_BASE = os.getenv('PORTAL_MARKET_BASE', 'https://portal-market.com')
+PORTAL_PROXY_URL = os.getenv('PORTAL_PROXY_URL', 'http://localhost:8000').rstrip('/')
 PORTAL_PHONE = os.getenv('PORTAL_PHONE', '')
 
 
@@ -128,183 +129,56 @@ def _save_portal_session(s):
 
 
 def _portal_market_request(method, path, token=None, json_body=None):
-    tok = token or _portal_auth_data or PORTAL_AUTH_TOKEN
-    if not tok:
-        return None, 'no_token'
-    url = PORTAL_MARKET_BASE.rstrip('/') + path
+    """HTTP-запрос к FastAPI-прокси Portal Market.
+    
+    Прокси сам обрабатывает авторизацию, нам не нужны initData.
+    """
+    url = PORTAL_PROXY_URL + path
     headers = {
-        'Authorization': tok if tok.startswith('tma ') else f'tma {tok}',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
-        'Origin': PORTAL_MARKET_BASE,
-        'Referer': PORTAL_MARKET_BASE + '/',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-                      '(KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
     }
     try:
         if method.upper() == 'GET':
-            r = http_requests.get(url, headers=headers, timeout=15)
+            r = http_requests.get(url, headers=headers, params=json_body, timeout=30)
         elif method.upper() == 'POST':
-            r = http_requests.post(url, headers=headers, json=json_body, timeout=15)
+            r = http_requests.post(url, headers=headers, json=json_body, timeout=30)
+        elif method.upper() == 'PUT':
+            r = http_requests.put(url, headers=headers, json=json_body, timeout=30)
+        elif method.upper() == 'DELETE':
+            r = http_requests.delete(url, headers=headers, json=json_body, timeout=30)
         else:
             return None, f'unsupported method {method}'
+
         if r.status_code >= 400:
-            return None, f'HTTP {r.status_code}: {r.text[:200]}'
+            try:
+                err = r.json()
+                msg = err.get('detail') or err.get('message') or str(err)
+            except Exception:
+                msg = r.text[:300]
+            return None, f'HTTP {r.status_code}: {msg}'
+
         try:
             return r.json(), None
         except Exception:
             return r.text, None
+    except http_requests.exceptions.ConnectionError:
+        return None, f'Прокси недоступен по адресу {PORTAL_PROXY_URL}. Запустите FastAPI-сервер.'
+    except http_requests.exceptions.Timeout:
+        return None, f'Таймаут запроса к прокси ({PORTAL_PROXY_URL})'
     except Exception as e:
         return None, str(e)
 
 
-# Подхватываем сохранённый токен при старте
-try:
-    _portal_cfg_boot = _load_portal_config()
-    if _portal_cfg_boot.get('auth_token'):
-        PORTAL_AUTH_TOKEN = _portal_cfg_boot['auth_token']
-        _portal_auth_data = PORTAL_AUTH_TOKEN
-        logger.info('Portal Market: token loaded from config')
-except Exception as _pe:
-    logger.warning(f'Portal config preload failed: {_pe}')
-# ══════════════════════════════════════════════════════════════
-
-
-
-# ─── Portal Market auth (REST API) ───
-
-
-# Site balance cache to reduce frequent DB reads (hot path)
-_site_balance_cache = {'value': 0, 'ts': 0}
-_site_balance_lock = threading.Lock()
-_SITE_BALANCE_TTL = float(os.getenv('SITE_BALANCE_TTL', '10.0'))
-
-# ── Manual gift prices in TON (override Fragment/local prices) ──────────────
-MANUAL_GIFT_PRICES_TON = {
-    'ufc strike': 15.3,
-    'valentine box': 11.7,
-    'victory medal': 4.98,
-    'vintage cigar': 33.9,
-    'voodoo doll': 30.9,
-    'westside sign': 111.9,
-    'whip cupcake': 4.4,
-    'winter wreath': 4.49,
-    'witch hat': 6.29,
-    'xmas stocking': 4.33,
-    'swag bag': 5.19,
-    'swiss watch': 55.8,
-    'tama gadget': 4.65,
-    'top hat': 12.8,
-    'toy bear': 44.9,
-    'trapped heart': 14.5,
-    'moon': 5.64,
-    'mousse cake': 4.96,
-    'nail bracelet': 145.9,
-    'neko helmet': 41.1,
-    'party sparkler': 4.3,
-    'perfume bottle': 97.9,
-    'pet snake': 4.55,
-    'precious peach': 438,
-    'pretty posy': 4.7,
-    'rare bird': 29.9,
-    'record': 5.61,
-    'restless jar': 11.3,
-    'sakura flower': 48.9,
-    'santa hat': 12.5,
-    'scared cat': 4.5,
-    'sharp tongue': 5.08,
-    'signet ring': 5.48,
-    'skull flower': 7.2,
-    'sky stilettos': 5.49,
-    'sleigh bell': 5.83,
-    'snake box': 6.17,
-    'loot bag': 162.9,
-    'love candle': 12.3,
-    'love potion': 17,
-    'low rider': 52,
-    'lunar snake': 4.3,
-    'lush bouquet': 6.55,
-    'mad pumpkin': 13.8,
-    'magic potion': 80.9,
-    'mighty arm': 171.9,
-    'mini oscar': 103.7,
-    'money pot': 4.66,
-    'ion gem': 98.5,
-    'ionic dryer': 18.7,
-    'jack-in-the-box': 4.94,
-    'jelly bunny': 8.03,
-    'jester hat': 4.83,
-    'jolly chimp': 7.3,
-    'joyful bundle': 7.11,
-    "khabib's papakha": 25.9,
-    'kissed frog': 67.8,
-    'light sword': 6.3,
-    'lol pop': 4.5,
-    'hanging star': 9.93,
-    'happy brownie': 4.65,
-    'heroic helmet': 255.7,
-    'hex pot': 4.99,
-    'holiday drink': 4.4,
-    'homemade cake': 5.06,
-    'hypno lollipop': 4.84,
-    'ice cream': 4.44,
-    'input key': 6.19,
-    'instant ramen': 4.38,
-    'desk calendar': 6.78,
-    "durov's cap": 708,
-    'jingle bells': 9.53,
-    'plush pepe': 7999,
-    'heart locket': 2199,
-    'artisan brick': 97.7,
-    'astral shard': 199.9,
-    'b-day candle': 4.3,
-    'berry box': 8.81,
-    'big year': 4.72,
-    'bling binky': 35.3,
-    'bonded ring': 58.2,
-    'bow tie': 6.3,
-    'bunny muffin': 8.28,
-    'candy cane': 4.31,
-    'clover pin': 4.7,
-    'cookie heart': 4.95,
-    'crystal ball': 12,
-    'cupid charm': 22.5,
-    'diamond ring': 29.4,
-    'easter egg': 5.63,
-    'electric skull': 33.9,
-    'eternal candle': 6.58,
-    'eternal rose': 29.4,
-    'evil eye': 7.94,
-    'faith amulet': 4.7,
-    'flying broom': 14,
-    'fresh socks': 4.43,
-    'gem signet': 72.3,
-    'genie lamp': 50,
-    'ginger cookie': 4.9,
-}
-# Build a slug-keyed version for matching by fragment_slug
-_MANUAL_PRICES_BY_SLUG = {re.sub(r'[^a-z0-9]+', '', k): v for k, v in MANUAL_GIFT_PRICES_TON.items()}
-_fragment_http_session = None
-fragment_last_error = None
-
-# Кэш пользователей (user_id -> {data, timestamp})
-_user_cache = {}
-_user_cache_duration = 30  # 30 секунд
-
-# Crash bots in-memory state
-_crash_bots_cache = {
-    'enabled': False,
-    'bots': [],
-    'settings': {'min_active_bots': 2, 'max_active_bots': 5, 'min_real_players_threshold': 3},
-    'loaded': False,
-}
-_crash_bots_active = {}   # game_id -> [{bot_id, name, avatar, bet_amount, cashout_mult, status}]
-
-# In-memory user balance cache — avoids hitting DB on every 120ms status poll
-_user_balance_cache: dict = {}  # user_id -> {'balance': int, 'ts': float}
-_USER_BALANCE_CACHE_TTL = 0.5   # seconds
-_USER_BETS_CACHE_TTL = 0.5      # seconds
-
+def _portal_proxy_check():
+    """Проверка доступности прокси."""
+    try:
+        r = http_requests.get(PORTAL_PROXY_URL + '/market/config', timeout=5)
+        if r.status_code < 400:
+            return True, r.json() if r.headers.get('content-type', '').startswith('application/json') else {}
+        return False, f'HTTP {r.status_code}'
+    except Exception as e:
+        return False, str(e)
 def _get_cached_balance(user_id) -> int | None:
     entry = _user_balance_cache.get(user_id)
     if entry and (time.time() - entry['ts']) < _USER_BALANCE_CACHE_TTL:
@@ -8550,208 +8424,160 @@ def _portal_build_image(slug):
 
 
 def _portal_sync_floors():
-    """Полная синхронизация с Portal:
-      • обновляет цены существующих подарков
-      • ДОБАВЛЯЕТ новые коллекции с Portal (name, slug, image, value)
-      • пишет подробный лог
+    """Синхронизация цен с Portal Market через прокси.
+
+    Запрашивает floor-цены коллекций и обновляет gifts.json.
     """
-    auth = _get_portal_auth()
-    if not auth:
-        msg = 'Portal auth не настроен. Проверьте PORTAL_AUTH_TOKEN или PORTAL_API_ID/PORTAL_API_HASH'
-        logger.error(f"❌ {msg}")
-        return {'success': False, 'error': msg}
+    # ── 1. Получаем список коллекций с floor-ценами ──
+    data, err = _portal_market_request('GET', '/market/collections/backdrops/floor')
+    if err:
+        logger.error(f'❌ Portal proxy /collections/backdrops/floor: {err}')
+        # Пробуем альтернативный эндпоинт
+        data, err = _portal_market_request('GET', '/market/nfts/search', json_body={
+            'limit': 500,
+            'sort': 'price_asc',
+        })
+        if err:
+            return {'success': False, 'error': err}
 
+    # ── 2. Нормализуем ответ в список коллекций ──
+    collections = []
+    if isinstance(data, dict):
+        collections = data.get('items') or data.get('collections') or data.get('data') or []
+    elif isinstance(data, list):
+        collections = data
+
+    if not collections:
+        return {'success': False, 'error': 'Portal proxy вернул 0 коллекций'}
+
+    logger.info(f'🌐 Portal proxy: получено {len(collections)} коллекций')
+
+    # ── 3. Загружаем gifts.json ──
+    gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+    if not os.path.exists(gifts_path):
+        return {'success': False, 'error': 'gifts.json not found'}
+
+    with open(gifts_path, 'r', encoding='utf-8') as f:
+        raw = json.load(f)
+
+    wrap = isinstance(raw, dict)
+    gifts = raw.get('gifts', []) if wrap else raw
+
+    # Индексы по slug и имени
+    by_slug = {}
+    by_name = {}
+    max_id = 0
+    for g in gifts:
+        sid = g.get('id')
+        if isinstance(sid, int) and sid > max_id:
+            max_id = sid
+        slug = _portal_slugify(g.get('fragment_slug') or g.get('name', ''))
+        if slug:
+            by_slug[slug] = g
+        nm = _portal_slugify(g.get('name', ''))
+        if nm:
+            by_name[nm] = g
+
+    updated = 0
+    added = 0
+    skipped = 0
+    new_gifts = []
+
+    # ── 4. Обрабатываем каждую коллекцию ──
+    for c in collections:
+        if not isinstance(c, dict):
+            continue
+
+        # Разные форматы прокси — пробуем все возможные поля
+        slug = (
+            c.get('slug') or c.get('collection_slug') or c.get('name') or ''
+        ).strip()
+        name = (c.get('name') or c.get('collection_name') or c.get('slug') or '').strip()
+        floor = (
+            c.get('floor_price') or c.get('floorPrice') or c.get('floor')
+            or c.get('price') or c.get('min_price')
+        )
+
+        try:
+            floor_val = float(floor) if floor is not None else None
+        except (ValueError, TypeError):
+            floor_val = None
+
+        slug_key = _portal_slugify(slug)
+        if not slug_key:
+            skipped += 1
+            continue
+
+        new_value = int(round(floor_val * 100)) if floor_val and floor_val > 0 else 0
+
+        # Ищем существующий подарок
+        existing = by_slug.get(slug_key) or by_name.get(_portal_slugify(name))
+
+        if existing:
+            if new_value > 0 and existing.get('value') != new_value:
+                old_value = existing.get('value', 0)
+                existing['value'] = new_value
+                if floor_val:
+                    existing['fragment_price_ton'] = round(floor_val, 4)
+                updated += 1
+                if updated <= 10:
+                    logger.info(f'💱 {name}: {old_value} → {new_value}⭐ ({floor_val} TON)')
+        else:
+            # Новая коллекция
+            new_gift = {
+                'id': max_id + 1,
+                'name': name or slug,
+                'value': new_value,
+                'image': f'https://fragment.com/file/gifts/{slug_key}/thumb.webp',
+                'fragment_slug': slug_key,
+                'fragment_url': f'https://fragment.com/gifts/{slug_key}',
+            }
+            if floor_val:
+                new_gift['fragment_price_ton'] = round(floor_val, 4)
+
+            gifts.append(new_gift)
+            new_gifts.append(name or slug)
+            max_id += 1
+            added += 1
+            logger.info(f'➕ NEW: {name} (slug={slug_key}) value={new_value}⭐')
+
+    # ── 5. Сохраняем ──
+    with open(gifts_path, 'w', encoding='utf-8') as f:
+        if wrap:
+            json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
+        else:
+            json.dump(gifts, f, ensure_ascii=False, indent=2)
+
+    # Сброс кэша
+    global gifts_cache, gifts_cache_time
+    gifts_cache = None
+    gifts_cache_time = None
+
+    # ── 6. Метка времени ──
     try:
-        import asyncio
-        from aportalsmp.gifts import collections as portal_collections
-        from aportalsmp.gifts import search as portal_search
+        sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+        with open(sync_file, 'w', encoding='utf-8') as sf:
+            json.dump({
+                'timestamp': int(time.time()),
+                'updated': updated,
+                'added': added,
+                'total': len(gifts),
+                'collections': len(collections),
+                'new_gifts': new_gifts[:20],
+            }, sf, ensure_ascii=False)
+    except Exception:
+        pass
 
-        loop = asyncio.new_event_loop()
-        all_colls = []
-        try:
-            # ── 1) Все коллекции с пагинацией ──
-            offset = 0
-            limit = 50
-            page = 0
-            while True:
-                page += 1
-                try:
-                    colls = loop.run_until_complete(
-                        portal_collections(authData=auth, offset=offset, limit=limit)
-                    )
-                    items = _portal_extract_items(colls)
-                    if not items:
-                        logger.info(f"📄 Portal стр.{page}: пусто, стоп")
-                        break
-                    all_colls.extend(items)
-                    logger.info(f"📄 Portal стр.{page}: +{len(items)} (всего {len(all_colls)})")
-                    if len(items) < limit:
-                        break
-                    offset += limit
-                    if offset > 5000:
-                        break
-                except TypeError:
-                    # API не поддерживает offset/limit
-                    colls = loop.run_until_complete(portal_collections(authData=auth))
-                    items = _portal_extract_items(colls)
-                    all_colls.extend(items)
-                    logger.info(f"📄 Portal: получено всё сразу ({len(items)})")
-                    break
-                except Exception as e:
-                    logger.warning(f"⚠️ Portal стр.{page}: {e}")
-                    break
+    logger.info(f'✅ Portal proxy sync DONE: обновлено {updated}, добавлено {added}, всего {len(gifts)}')
 
-            logger.info(f"🌐 Portal: итого коллекций {len(all_colls)}")
-
-            if not all_colls:
-                return {'success': False, 'error': 'Portal вернул 0 коллекций'}
-
-            # ── 2) Парсим и добиваем floor через search если пусто ──
-            parsed = []
-            for coll in all_colls:
-                c = _portal_extract_coll(coll)
-                parsed.append(c)
-
-            no_floor = [c for c in parsed if not c['floor_ton']]
-            if no_floor:
-                logger.info(f"🔍 {len(no_floor)} коллекций без floor — берём через search()")
-                for c in no_floor[:200]:  # ограничим, чтобы не спамить API
-                    try:
-                        found = loop.run_until_complete(
-                            portal_search(sort='price_asc', gift_name=c['name'], limit=1, authData=auth)
-                        )
-                        if found:
-                            p = float(found[0].price) if found[0].price else 0
-                            if p > 0:
-                                c['floor_ton'] = p
-                    except Exception:
-                        pass
-
-        finally:
-            loop.close()
-
-        # ── 3) Загружаем gifts.json ──
-        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
-        if not os.path.exists(gifts_path):
-            return {'success': False, 'error': 'gifts.json not found'}
-
-        with open(gifts_path, 'r', encoding='utf-8') as f:
-            raw = json.load(f)
-
-        wrap = isinstance(raw, dict)
-        gifts = raw.get('gifts', []) if wrap else raw
-
-        # Индексы по slug и по name
-        by_slug = {}
-        by_name = {}
-        max_id = 0
-        for g in gifts:
-            sid = g.get('id')
-            if isinstance(sid, int) and sid > max_id:
-                max_id = sid
-            slug = _portal_slugify(g.get('fragment_slug') or g.get('name', ''))
-            if slug:
-                by_slug[slug] = g
-            nm = _portal_slugify(g.get('name', ''))
-            if nm:
-                by_name[nm] = g
-
-        updated = 0
-        added = 0
-        skipped = 0
-        new_gifts = []
-
-        for c in parsed:
-            slug = _portal_slugify(c['slug'])
-            name = c['name']
-            floor_ton = c['floor_ton']
-
-            if not slug:
-                skipped += 1
-                continue
-
-            new_value = int(round(floor_ton * 100)) if floor_ton else 0
-
-            # Ищем существующий подарок
-            existing = by_slug.get(slug) or by_name.get(_portal_slugify(name))
-
-            if existing:
-                # Обновляем цену
-                if new_value > 0 and existing.get('value') != new_value:
-                    old_value = existing.get('value', 0)
-                    existing['value'] = new_value
-                    if floor_ton:
-                        existing['fragment_price_ton'] = round(floor_ton, 4)
-                    updated += 1
-                    if updated <= 10:
-                        logger.info(f"💱 {name}: {old_value} → {new_value}⭐ ({floor_ton} TON)")
-            else:
-                # НОВАЯ коллекция — добавляем
-                if new_value <= 0:
-                    # Даже без цены добавим, чтобы в след. раз можно было обновить
-                    new_value = 0
-
-                new_gift = {
-                    'id': max_id + 1,
-                    'name': name,
-                    'value': new_value,
-                    'image': _portal_build_image(slug),
-                    'fragment_slug': slug,
-                    'fragment_url': f'https://fragment.com/gifts/{slug}',
-                }
-                if floor_ton:
-                    new_gift['fragment_price_ton'] = round(floor_ton, 4)
-
-                gifts.append(new_gift)
-                new_gifts.append(name)
-                max_id += 1
-                added += 1
-                logger.info(f"➕ NEW: {name} (slug={slug}) value={new_value}⭐")
-
-        # ── 4) Сохраняем gifts.json ──
-        with open(gifts_path, 'w', encoding='utf-8') as f:
-            if wrap:
-                json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
-            else:
-                json.dump(gifts, f, ensure_ascii=False, indent=2)
-
-        # Сброс кэша
-        global gifts_cache, gifts_cache_time
-        gifts_cache = None
-        gifts_cache_time = None
-
-        # ── 5) Метка времени + отчёт ──
-        try:
-            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
-            with open(sync_file, 'w', encoding='utf-8') as sf:
-                json.dump({
-                    'timestamp': int(time.time()),
-                    'updated': updated,
-                    'added': added,
-                    'total': len(gifts),
-                    'collections': len(all_colls),
-                    'new_gifts': new_gifts[:20],
-                }, sf, ensure_ascii=False)
-        except Exception:
-            pass
-
-        logger.info(f"✅ Portal sync DONE: обновлено {updated}, добавлено {added}, всего {len(gifts)}")
-
-        return {
-            'success': True,
-            'updated': updated,
-            'added': added,
-            'total': len(gifts),
-            'collections': len(all_colls),
-            'new_gifts': new_gifts[:20],
-        }
-
-    except Exception as e:
-        logger.error(f"❌ Portal sync error: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        return {'success': False, 'error': str(e)}
-
+    return {
+        'success': True,
+        'updated': updated,
+        'added': added,
+        'total': len(gifts),
+        'collections': len(collections),
+        'new_gifts': new_gifts[:20],
+    }
 
 def _extract_colls_items(colls):
     try:
@@ -20606,6 +20432,18 @@ except Exception as e:
 
 @app.route('/api/portal/auth-status', methods=['GET'])
 def portal_auth_status():
+    """Статус авторизации Portal Market (через прокси — всегда OK, если прокси жив)."""
+    ok, info = _portal_proxy_check()
+    return jsonify({
+        'success': True,
+        'authorized': ok,
+        'has_token': True,
+        'proxy_url': PORTAL_PROXY_URL,
+        'proxy_info': info if ok else None,
+        'error': None if ok else info,
+    })
+
+def portal_auth_status():
     cfg = _load_portal_config()
     tok = cfg.get('auth_token') or ''
     if tok:
@@ -20620,6 +20458,15 @@ def portal_auth_status():
 
 
 @app.route('/api/portal/save-token', methods=['POST'])
+def portal_save_token():
+    """DEPRECATED: прокси сам обрабатывает авторизацию.
+    Оставлено для совместимости с admin.html."""
+    return jsonify({
+        'success': True,
+        'message': 'Авторизация через прокси не требует токена. Просто убедитесь, что FastAPI-прокси запущен.',
+        'proxy_url': PORTAL_PROXY_URL,
+    })
+
 def portal_save_token():
     global _portal_auth_data, PORTAL_AUTH_TOKEN
     data = request.get_json() or {}
@@ -20664,6 +20511,25 @@ def portal_logout():
 
 
 @app.route('/api/portal/status', methods=['GET'])
+def portal_status():
+    """Статус подключения к Portal Market через прокси."""
+    ok, info = _portal_proxy_check()
+    cfg = _load_portal_config()
+    last_sync = _portal_read_last_sync()
+    return jsonify({
+        'success': True,
+        'connected': ok,
+        'proxy_url': PORTAL_PROXY_URL,
+        'proxy_info': info if ok else None,
+        'proxy_error': None if ok else info,
+        'has_token': bool(cfg.get('auth_token')),
+        'info': {
+            'last_sync_ago': last_sync.get('last_sync_ago', 'никогда'),
+            'last_updated': last_sync.get('last_updated', 0),
+            'total_collections': last_sync.get('total_collections', 0),
+        }
+    })
+
 def portal_status():
     cfg = _load_portal_config()
     has_tok = bool(cfg.get('auth_token'))
