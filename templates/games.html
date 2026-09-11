@@ -1,606 +1,658 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rasswet Gifts — Игры</title>
-    <link rel="icon" href="/static/img/logo.png" type="image/png">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="/static/js/telegram-auth.js"></script>
-    <style>
-        :root {
-            --bg: #0a0a0f;
-            --text: #fff;
-            --text-2: rgba(255,255,255,.5);
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-        }
-        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            overflow-x: hidden;
-            min-height: 100vh;
-        }
-        a { text-decoration: none; color: inherit; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Rasswet Gifts — Игры</title>
+<link rel="icon" href="/static/img/logo.png" type="image/png">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="/static/js/telegram-auth.js"></script>
+<style>
+:root {
+    --bg: #0a0a0f;
+    --bg-2: #11111a;
+    --text: #fff;
+    --text-2: rgba(255,255,255,.5);
+    --blue: #2844FB;
+    --blue-light: #4B81F5;
+    --green: #24C38E;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --tg-header: 56px;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    background-image: radial-gradient(ellipse 100% 60% at 50% 0%, #1a1a2e 0%, #0a0a0f 60%);
+    color: var(--text);
+    overflow-x: hidden;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+}
+a { text-decoration: none; color: inherit; }
 
-        /* ═══ TOP BAR ═══ */
-        .top-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 16px;
-            padding-top: calc(12px + env(safe-area-inset-top, 0px));
-            max-width: 480px;
-            margin: 0 auto;
-        }
-        .top-bar-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 0;
-        }
-        .top-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255,255,255,.15);
-            flex-shrink: 0;
-        }
-        .top-nick {
-            font-size: 14px;
-            font-weight: 700;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 120px;
-        }
-        .top-bar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .top-balance {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: rgba(255,255,255,.06);
-            border-radius: 10px;
-            padding: 6px 10px;
-            font-size: 13px;
-            font-weight: 700;
-        }
-        .top-balance img { width: 16px; height: 16px; }
-        .top-online {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            color: rgba(255,255,255,.5);
-        }
-        .top-online-dot {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: #4ade80;
-            animation: pulseDot 2s ease infinite;
-        }
-        @keyframes pulseDot {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .4; }
-        }
+/* ══════════════ TOP BAR ══════════════ */
+.top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    padding-top: calc(var(--safe-top) + var(--tg-header));
+    max-width: 480px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+}
+.top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.top-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(255,255,255,.15);
+    flex-shrink: 0;
+}
+.top-nick {
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+.top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.top-balance {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(40,68,251,.15);
+    border: 1px solid rgba(75,129,245,.3);
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: 700;
+}
+.top-balance img { width: 16px; height: 16px; }
+.top-online {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,.5);
+}
+.top-online-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: pulseDot 2s ease infinite;
+}
+@keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+}
 
-        .games-container {
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 8px 16px 120px;
-            min-height: calc(100vh - 60px);
-        }
+/* ══════════════ CONTAINER ══════════════ */
+.games-container {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 12px 16px 120px;
+    min-height: calc(100vh - 60px);
+}
 
-        .games-menu {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            width: 100%;
-        }
+/* ══════════════ GAME CARD ══════════════ */
+.game-card {
+    position: relative;
+    border: none;
+    border-radius: 24px;
+    cursor: pointer;
+    transition: transform .3s cubic-bezier(.175,.885,.32,1.275);
+    overflow: hidden;
+    width: 100%;
+    height: 160px;
+    margin-bottom: 14px;
+    display: block;
+    text-align: left;
+    padding: 0;
+    background: none;
+}
+.game-card:active { transform: scale(.97); }
 
-        .game-card {
-            position: relative;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            overflow: hidden;
-            width: 100%;
-            min-height: 160px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-        }
-        .game-card:active { transform: scale(0.97); }
-        .game-card.disabled {
-            opacity: 0.45;
-            pointer-events: none;
-            filter: grayscale(0.7);
-        }
+.game-card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 20px 22px;
+    height: 100%;
+    width: 100%;
+    position: relative;
+    z-index: 3;
+}
 
-        .game-card-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            padding: 20px 24px;
-            min-height: inherit;
-            width: 100%;
-            position: relative;
-            z-index: 3;
-        }
+.game-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-self: center;
+}
 
-        .game-card-info {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+.game-card-text {
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.1;
+    letter-spacing: -.5px;
+}
 
-        .game-card-text {
-            font-size: 26px;
-            font-weight: 800;
-            color: #fff;
-            line-height: 1.1;
-        }
+.game-card-players {
+    position: absolute;
+    top: 14px;
+    left: 18px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255,255,255,.65);
+    z-index: 5;
+}
+.game-card-players svg { width: 12px; height: 12px; opacity: .7; }
 
-        .game-card-badges {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
+.game-card-gif {
+    position: absolute;
+    right: 10px;
+    bottom: -8px;
+    width: 130px;
+    height: 130px;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,.5));
+    z-index: 4;
+    pointer-events: none;
+    will-change: transform;
+    animation: floatGif 4.5s ease-in-out infinite;
+}
+@keyframes floatGif {
+    0%   { transform: translateY(0) rotate(0deg); }
+    25%  { transform: translateY(-6px) rotate(-1deg); }
+    50%  { transform: translateY(0) rotate(0deg); }
+    75%  { transform: translateY(-3px) rotate(1deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+}
 
-        .game-card-badge {
-            width: 24px;
-            height: 24px;
-            border-radius: 7px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255,255,255,0.12);
-            backdrop-filter: blur(8px);
-        }
-        .game-card-badge svg { width: 14px; height: 14px; }
+/* Rotate icon (for upgrade wheel) */
+.game-card-gif.rotating {
+    animation: spinContinuous 4s linear infinite;
+}
+@keyframes spinContinuous {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 
-        .game-card-players {
-            position: absolute;
-            top: 12px;
-            left: 16px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 12px;
-            font-weight: 600;
-            color: rgba(255,255,255,.7);
-            z-index: 5;
-        }
-        .game-card-players svg { width: 14px; height: 14px; opacity: .7; }
+/* ─── Colored themes ─── */
+.game-card-crash {
+    background: radial-gradient(130% 90% at 70% 10%, #af3000, #480d00 45%, #350a00);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.game-card-cases {
+    background: radial-gradient(130% 90% at 70% 10%, #001aaf, #000548 45%, #000548);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.game-card-market {
+    background: radial-gradient(130% 90% at 70% 10%, #004d00, #001a00 45%, #001200);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.game-card-upgrade {
+    background: radial-gradient(130% 90% at 70% 10%, #333, #1a1a1a 45%, #111);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
 
-        .game-card-gif {
-            width: 120px;
-            height: 120px;
-            object-fit: contain;
-            filter: drop-shadow(0 8px 24px rgba(0,0,0,0.5));
-            position: absolute;
-            right: 16px;
-            bottom: 10px;
-            z-index: 4;
-            pointer-events: none;
-            transform-origin: center;
-            will-change: transform;
-            animation: floatGif 4.5s ease-in-out infinite;
-        }
+/* ─── Upgrade — рисуем колесо внутри ─── */
+.game-card-upgrade .game-card-gif {
+    display: none; /* скрываем старую гифку, если есть */
+}
 
-        .game-card-tag {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            border-radius: 8px;
-            padding: 4px 10px;
-            font-size: 11px;
-            font-weight: 700;
-            color: #fff;
-            letter-spacing: 0.5px;
-            z-index: 5;
-        }
+.upgrade-wheel-svg {
+    position: absolute;
+    right: 5px;
+    bottom: -15px;
+    width: 160px;
+    height: 160px;
+    z-index: 4;
+    pointer-events: none;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,.5));
+}
+.upgrade-wheel-svg .wheel-ring {
+    fill: none;
+    stroke: #1a1a20;
+    stroke-width: 22;
+}
+.upgrade-wheel-svg .wheel-tick {
+    stroke: #fff;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+.upgrade-wheel-svg .wheel-inner {
+    fill: none;
+    stroke: rgba(255,255,255,.04);
+    stroke-width: 1;
+}
+.upgrade-wheel-svg .wheel-pointer {
+    fill: #fff;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,.8));
+}
+.upgrade-wheel-svg .wheel-green {
+    fill: none;
+    stroke: url(#upgradeGreenGrad);
+    stroke-width: 22;
+}
 
-        /* Card themes */
-        .game-card-crash {
-            background: radial-gradient(136.32% 93.18% at 70.03% 11.93%, #af3000, #480d00 45.34%, #350a00);
-        }
-        .game-card-cases {
-            background: radial-gradient(136.32% 93.18% at 70.03% 11.93%, #001aaf, #000548 45.34%, #000548);
-        }
-        .game-card-upgrade {
-            background: radial-gradient(136.32% 93.18% at 70.03% 11.93%, #333, #1a1a1a 45.34%, #111);
-        }
-        .game-card-market {
-            background: radial-gradient(136.32% 93.18% at 70.03% 11.93%, #004d00, #001a00 45.34%, #001200);
-        }
+/* Вращение колеса */
+@keyframes rotateWheel {
+    0%   { transform: rotate(0deg); }
+    25%  { transform: rotate(45deg); }
+    50%  { transform: rotate(-30deg); }
+    75%  { transform: rotate(15deg); }
+    100% { transform: rotate(0deg); }
+}
 
-        /* LUCKY BUY CARD */
-        .game-card-lucky {
-            background: radial-gradient(136.32% 93.18% at 70.03% 11.93%, #F0A500, #7a4800 45.34%, #3a2200);
-            position: relative;
-            overflow: hidden;
-        }
-        .game-card-lucky::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 100%);
-            transform: translateX(-100%);
-            animation: luckySlide 3s linear infinite;
-            z-index: 2;
-            pointer-events: none;
-        }
-        @keyframes luckySlide {
-            0% { transform: translateX(-100%); }
-            50% { transform: translateX(0%); }
-            100% { transform: translateX(100%); }
-        }
+/* ══════════════ TAGS ══════════════ */
+.game-card-tag {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: .5px;
+    z-index: 5;
+}
 
-        /* ═══ GRILL / BLOCKS ANIMATION ═══ */
-        .display-box {
-            position: relative;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 4px 4px 28.3px rgba(255, 255, 255, 0.15) inset;
-        }
-        .grill-animation {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-            pointer-events: none;
-        }
-        .grill-bars {
-            display: flex;
-            width: max-content;
-            height: 100%;
-            position: absolute;
-            bottom: 0; left: 0;
-            z-index: 1;
-            animation: grillScroll 3s linear infinite;
-        }
-        .grill-bars::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: radial-gradient(60.53% 108.33% at 51.43% -8.33%,
-                #6c76ff, #2b00c8 37.5%, #6521cb 57.52%, #000548 92.14%);
-            opacity: 0.25;
-            z-index: 1;
-        }
-        .grill-bar {
-            flex: 0 0 auto;
-            width: 35px;
-            min-width: 35px;
-            height: 100%;
-            background: rgba(217, 217, 217, 0.25);
-            margin-right: 12px;
-        }
-        @keyframes grillScroll {
-            0%   { transform: translateX(0); }
-            100% { transform: translateX(-47px); }
-        }
-        .grid-overlay {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 2;
-            overflow: hidden;
-            opacity: 0.12;
-        }
-        .grid-track {
-            position: relative;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            animation: gridScrollY 4.5s linear infinite;
-        }
-        .grid-track svg { width: 100%; flex-shrink: 0; }
-        @keyframes gridScrollY {
-            0%   { transform: translateY(-167px); }
-            100% { transform: translateY(0); }
-        }
+/* ══════════════ RIPPLE ══════════════ */
+@keyframes ripple {
+    to { transform: scale(4); opacity: 0; }
+}
 
-        /* Ripple */
-        @keyframes ripple {
-            to { transform: scale(4); opacity: 0; }
-        }
+/* ══════════════ BOTTOM NAV ══════════════ */
+.bottom-nav {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    width: 100%; max-width: 480px;
+    height: 72px;
+    padding: 0 8px calc(var(--safe-bottom) + 8px);
+    background: rgba(10,10,15,.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,.04);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+.bnav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,.4);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .3s;
+    text-decoration: none;
+}
+.bnav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; transition: transform .3s; }
+.bnav-item span { font-size: 10px; font-weight: 600; }
+.bnav-item.active { background: rgba(40,68,251,.12); color: var(--blue-light); }
+.bnav-item:active { transform: scale(.9); }
+.bnav-item.active svg { transform: scale(1.1); }
 
-        /* ═══ BOTTOM NAV ═══ */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0; left: 50%; transform: translateX(-50%);
-            z-index: 100;
-            width: 100%; max-width: 480px;
-            height: 72px;
-            padding: 0 8px calc(var(--safe-bottom) + 8px);
-            background: rgba(26,30,42,.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-        }
-        .bnav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            padding: 8px 16px;
-            border-radius: 12px;
-            background: transparent;
-            border: none;
-            color: rgba(255,255,255,.4);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all .3s cubic-bezier(.4,0,.2,1);
-            text-decoration: none;
-            position: relative;
-        }
-        .bnav-item svg { width: 24px; height: 24px; flex-shrink: 0; stroke: currentColor; fill: none; transition: transform .3s; }
-        .bnav-item span { font-size: 10px; font-weight: 600; }
-        .bnav-item.active { background: rgba(255,255,255,.08); color: #fff; }
-        .bnav-item:active { transform: scale(.9); }
-        .bnav-item.active svg { transform: scale(1.1); }
-
-        @media (max-width: 360px) {
-            .game-card { min-height: 140px; }
-            .game-card-text { font-size: 22px; }
-            .game-card-gif { width: 100px; height: 100px; }
-        }
-
-        /* Floating animation for game GIFs */
-        @keyframes floatGif {
-            0%   { transform: translateY(0) rotate(0deg) scale(1); }
-            25%  { transform: translateY(-6px) rotate(-1deg) scale(1.02); }
-            50%  { transform: translateY(0) rotate(0deg) scale(1); }
-            75%  { transform: translateY(-3px) rotate(1deg) scale(1.01); }
-            100% { transform: translateY(0) rotate(0deg) scale(1); }
-        }
-
-        /* Pause animation for disabled cards to indicate inactive state */
-        .game-card.disabled .game-card-gif {
-            animation-play-state: paused;
-            opacity: 0.85;
-        }
-
-        /* Slight lift on hover for non-disabled cards (complements float) */
-        .game-card:not(.disabled):hover .game-card-gif {
-            transform: translateY(-10px) scale(1.06);
-            transition: transform 220ms ease;
-        }
-    </style>
+@media (max-width: 360px) {
+    .game-card { height: 140px; }
+    .game-card-text { font-size: 21px; }
+    .game-card-gif { width: 110px; height: 110px; }
+    .upgrade-wheel-svg { width: 130px; height: 130px; }
+}
+</style>
 </head>
 <body>
-    <!-- TOP BAR -->
-    <div class="top-bar">
-        <div class="top-bar-left">
-            <img class="top-avatar" id="topAvatar" src="/static/img/default_avatar.png" alt="">
-            <span class="top-nick" id="topNick">—</span>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+    <div class="top-bar-left">
+        <img class="top-avatar" id="topAvatar" src="/static/img/default_avatar.png" alt="">
+        <span class="top-nick" id="topNick">—</span>
+    </div>
+    <div class="top-bar-right">
+        <div class="top-balance">
+            <img src="/static/img/ton.png" alt="">
+            <span id="topBalance">0.00</span>
         </div>
-        <div class="top-bar-right">
-            <div class="top-balance">
-                <img src="/static/img/ton.png" alt="">
-                <span id="topBalance">0.00</span>
-            </div>
-            <div class="top-online">
-                <span class="top-online-dot"></span>
-                <span id="topOnline">0</span>
-            </div>
+        <div class="top-online">
+            <span class="top-online-dot"></span>
+            <span id="topOnline">0</span>
         </div>
     </div>
+</div>
 
-    <div class="games-container">
-        <div class="games-menu">
-            <!-- CRASH -->
-            <div class="game-card game-card-crash display-box" onclick="window.location.href='/crash'">
-                <div class="grill-animation">
-                    <div class="grill-bars">
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                    </div>
-                    <div class="grid-overlay">
-                        <div class="grid-track"></div>
-                    </div>
-                </div>
-                <div class="game-card-content">
-                    <div class="game-card-info">
-                        <span class="game-card-text">Краш</span>
-                        <div class="game-card-badges">
-                            <div class="game-card-badge"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" stroke="#58a6ff" stroke-width="2" fill="rgba(88,166,255,.15)"/><path d="M12 8v4m0 0v4m0-4h4m-4 0H8" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/></svg></div>
-                            <div class="game-card-badge"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="13" rx="2" stroke="#ff6b9d" stroke-width="2" fill="rgba(255,107,157,.1)"/><path d="M12 8v13" stroke="#ff6b9d" stroke-width="2"/><path d="M3 12h18" stroke="#ff6b9d" stroke-width="1.5"/><path d="M7.5 8C7.5 8 7 2 12 5c0 0 .5-3.5 4.5-.5S12 8 12 8" stroke="#ff6b9d" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
-                        </div>
-                    </div>
-                    <img src="/static/gifs/crash.gif" alt="Crash" class="game-card-gif" loading="lazy">
-                </div>
-                <div class="game-card-players"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="crashPlayerCount">0 играют</span></div>
-                <div class="game-card-tag" style="background:linear-gradient(135deg,#ff6b35,#e74c3c);">LIVE</div>
-            </div>
+<div class="games-container">
 
-            <!-- CASES -->
-            <div class="game-card game-card-cases display-box" onclick="window.location.href='/cases'">
-                <div class="grill-animation">
-                    <div class="grill-bars">
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                    </div>
-                    <div class="grid-overlay">
-                        <div class="grid-track"></div>
-                    </div>
-                </div>
-                <div class="game-card-content">
-                    <div class="game-card-info">
-                        <span class="game-card-text">Кейсы</span>
-                        <div class="game-card-badges">
-                            <div class="game-card-badge"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z" stroke="#58a6ff" stroke-width="2" fill="rgba(88,166,255,.15)"/><path d="M12 8v4m0 0v4m0-4h4m-4 0H8" stroke="#58a6ff" stroke-width="2" stroke-linecap="round"/></svg></div>
-                        </div>
-                    </div>
-                    <img src="/static/gifs/cases.gif" alt="Cases" class="game-card-gif" loading="lazy">
-                </div>
-                <div class="game-card-players"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="casesPlayerCount">0 играют</span></div>
-            </div>
-
-            <!-- MARKET -->
-            <div class="game-card game-card-market display-box" onclick="window.location.href='/market'">
-                <div class="grill-animation">
-                    <div class="grill-bars">
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                    </div>
-                    <div class="grid-overlay">
-                        <div class="grid-track"></div>
-                    </div>
-                </div>
-                <div class="game-card-content">
-                    <div class="game-card-info">
-                        <span class="game-card-text">Маркет</span>
-                        <div class="game-card-badges">
-                            <div class="game-card-badge"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="13" rx="2" stroke="#4ade80" stroke-width="2" fill="rgba(74,222,128,.1)"/><path d="M12 8v13" stroke="#4ade80" stroke-width="2"/><path d="M3 12h18" stroke="#4ade80" stroke-width="1.5"/></svg></div>
-                        </div>
-                    </div>
-                    <img src="/static/gifs/market.gif" alt="Market" class="game-card-gif" loading="lazy" onerror="this.onerror=null;this.src='/static/gifs/Hlop.gif'">
-                </div>
-                <div class="game-card-tag" style="background:linear-gradient(135deg,#4ade80,#22c55e);">NEW</div>
-            </div>
-
-            <!-- UPGRADES -->
-            <div class="game-card game-card-upgrade display-box" onclick="window.location.href='/upgrade'">
-                <div class="grill-animation">
-                    <div class="grill-bars">
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                        <div class="grill-bar"></div><div class="grill-bar"></div><div class="grill-bar"></div>
-                    </div>
-                    <div class="grid-overlay">
-                        <div class="grid-track"></div>
-                    </div>
-                </div>
-                <div class="game-card-content">
-                    <div class="game-card-info">
-                        <span class="game-card-text">Апгрейды</span>
-                        <div class="game-card-badges">
-                            <div class="game-card-badge"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="8" width="18" height="13" rx="2" stroke="#ff6b9d" stroke-width="2" fill="rgba(255,107,157,.1)"/><path d="M12 8v13" stroke="#ff6b9d" stroke-width="2"/><path d="M3 12h18" stroke="#ff6b9d" stroke-width="1.5"/><path d="M7.5 8C7.5 8 7 2 12 5c0 0 .5-3.5 4.5-.5S12 8 12 8" stroke="#ff6b9d" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
-                        </div>
-                    </div>
-                    <img src="/static/gifs/upg.gif" alt="Upgrades" class="game-card-gif" loading="lazy">
-                </div>
-                <div class="game-card-tag" style="background:linear-gradient(135deg,#6c5ce7,#a855f7);">NEW</div>
-            </div>
-            <!-- LUCKY BUY hidden from games menu but route still exists -->
+    <!-- ══════════════ CRASH ══════════════ -->
+    <button class="game-card game-card-crash" onclick="goTo('/crash')">
+        <div class="game-card-players">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="crashPlayers">0 играют</span>
         </div>
-    </div>
+        <div class="game-card-content">
+            <div class="game-card-info">
+                <span class="game-card-text">Краш</span>
+            </div>
+            <img src="/static/gifs/rockets/crash.gif" alt="Crash" class="game-card-gif" id="crashGif" loading="lazy">
+        </div>
+        <div class="game-card-tag" style="background:linear-gradient(135deg,#ff6b35,#e74c3c);">LIVE</div>
+    </button>
 
-    <!-- BOTTOM NAV -->
-    <nav class="bottom-nav">
-        <a class="bnav-item active" href="/games">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
-            <span>Игры</span>
-        </a>
-        <a class="bnav-item" href="/news">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
-            <span>Новости</span>
-        </a>
-        <a class="bnav-item" href="/leaderboard">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-            <span>Топ</span>
-        </a>
-        <a class="bnav-item" href="/inventory">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>Профиль</span>
-        </a>
-    </nav>
+    <!-- ══════════════ CASES ══════════════ -->
+    <button class="game-card game-card-cases" onclick="goTo('/cases')">
+        <div class="game-card-players">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="casesPlayers">0 играют</span>
+        </div>
+        <div class="game-card-content">
+            <div class="game-card-info">
+                <span class="game-card-text">Кейсы</span>
+            </div>
+            <img src="/static/gifs/cases.gif" alt="Cases" class="game-card-gif" loading="lazy">
+        </div>
+    </button>
 
-    <script>
-    // Generate SVG grid pattern for grill animation
-    (function() {
-        var gridSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="167" viewBox="0 0 480 167" fill="none"><g stroke="rgba(255,255,255,0.4)" stroke-width="0.5">' +
-            Array.from({length: 12}, function(_, i) { return '<line x1="'+(i*40)+'" y1="0" x2="'+(i*40)+'" y2="167"/>'; }).join('') +
-            Array.from({length: 8}, function(_, i) { return '<line x1="0" y1="'+(i*24)+'" x2="480" y2="'+(i*24)+'"/>'; }).join('') +
-            '</g></svg>';
-        document.querySelectorAll('.grid-track').forEach(function(track) {
-            track.innerHTML = gridSvg + gridSvg + gridSvg;
-        });
-    })();
+    <!-- ══════════════ MARKET ══════════════ -->
+    <button class="game-card game-card-market" onclick="goTo('/market')">
+        <div class="game-card-players">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="marketPlayers">0 играют</span>
+        </div>
+        <div class="game-card-content">
+            <div class="game-card-info">
+                <span class="game-card-text">Маркет</span>
+            </div>
+            <img src="/static/gifs/market.gif" alt="Market" class="game-card-gif" loading="lazy"
+                 onerror="this.onerror=null;this.src='/static/gifs/Hlop.gif'">
+        </div>
+        <div class="game-card-tag" style="background:linear-gradient(135deg,#4ade80,#22c55e);">NEW</div>
+    </button>
 
-    // Ripple effect
-    document.querySelectorAll('.game-card:not(.disabled)').forEach(function(card) {
-        card.addEventListener('click', function(e) {
-            var ripple = document.createElement('span');
-            var rect = this.getBoundingClientRect();
-            var size = Math.max(rect.width, rect.height);
-            ripple.style.cssText = 'position:absolute;border-radius:50%;background:rgba(255,255,255,0.25);transform:scale(0);animation:ripple 0.8s ease-out;width:'+size+'px;height:'+size+'px;top:'+(e.clientY-rect.top-size/2)+'px;left:'+(e.clientX-rect.left-size/2)+'px;z-index:1;pointer-events:none;';
-            this.appendChild(ripple);
-            setTimeout(function() { ripple.remove(); }, 800);
-        });
-    });
+    <!-- ══════════════ UPGRADE — с колесом ══════════════ -->
+    <button class="game-card game-card-upgrade" onclick="goTo('/upgrade')">
+        <div class="game-card-players">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="upgradePlayers">0 играют</span>
+        </div>
+        <div class="game-card-content">
+            <div class="game-card-info">
+                <span class="game-card-text">Апгрейды</span>
+            </div>
+        </div>
 
-    // Telegram auth
-    var userId = null;
-    async function initGames() {
-        var auth = await telegramAuth();
-        if (auth && auth.id) {
-            userId = auth.id;
-            try {
-                var br = await fetch('/api/check-ban?user_id=' + auth.id);
-                var bd = await br.json();
-                if (bd.banned) { window.location.href = '/ban'; return; }
-            } catch(e) {}
-            var tg = window.Telegram && window.Telegram.WebApp;
-            if (tg) { tg.setHeaderColor('#0a0a0f'); tg.setBackgroundColor('#0a0a0f'); }
+        <!-- Красивое анимированное колесо -->
+        <svg class="upgrade-wheel-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="upgradeGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#24C38E"/>
+                    <stop offset="100%" stop-color="#10b981"/>
+                </linearGradient>
+            </defs>
+
+            <!-- Вращающаяся группа (кольцо + зелёная зона + риски) -->
+            <g id="upgradeWheelRotator">
+                <!-- Внешнее кольцо -->
+                <circle class="wheel-ring" cx="100" cy="100" r="86"/>
+
+                <!-- Зелёная зона (дуга 30%) -->
+                <circle class="wheel-green" cx="100" cy="100" r="86"
+                        stroke-dasharray="162 540"
+                        transform="rotate(-90 100 100)"/>
+
+                <!-- Риски -->
+                <g id="upgradeWheelRisks" opacity="0.55"></g>
+
+                <!-- Внутреннее кольцо -->
+                <circle class="wheel-inner" cx="100" cy="100" r="75"/>
+            </g>
+
+            <!-- Стрелка (НЕ вращается) -->
+            <path class="wheel-pointer"
+                  d="M100 30 L88 52 C92 49 108 49 112 52 Z"
+                  stroke="rgba(0,0,0,.3)" stroke-width="1" stroke-linejoin="round"/>
+            <circle cx="100" cy="52" r="4" fill="#fff"/>
+        </svg>
+
+        <div class="game-card-tag" style="background:linear-gradient(135deg,#6c5ce7,#a855f7);">NEW</div>
+    </button>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+    <a class="bnav-item active" href="/games">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="6" width="20" height="12" rx="3"/>
+            <line x1="6" y1="12" x2="10" y2="12"/>
+            <line x1="8" y1="10" x2="8" y2="14"/>
+            <circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/>
+            <circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+        <span>Игры</span>
+    </a>
+    <a class="bnav-item" href="/news">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/>
+        </svg>
+        <span>Новости</span>
+    </a>
+    <a class="bnav-item" href="/leaderboard">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+            <path d="M4 22h16"/>
+            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+            <path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+        </svg>
+        <span>Топ</span>
+    </a>
+    <a class="bnav-item" href="/inventory">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Профиль</span>
+    </a>
+</nav>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   GLOBAL
+   ══════════════════════════════════════════════════════════════ */
+var userId = null;
+var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
+var lastCrashGif = 'crash';
+
+/* ══════════════════════════════════════════════════════════════
+   RANDOM CRASH GIF
+   ══════════════════════════════════════════════════════════════ */
+function randomizeCrashGif(){
+    var img = document.getElementById('crashGif');
+    if(!img) return;
+    /* Выбираем случайный gif, не повторяя предыдущий */
+    var pool = ROCKET_SLOTS.filter(function(r){ return r !== lastCrashGif; });
+    var random = pool[Math.floor(Math.random() * pool.length)];
+    lastCrashGif = random;
+    img.src = '/static/gifs/rockets/' + random + '.gif';
+    img.onerror = function(){
+        this.onerror = null;
+        this.src = '/static/gifs/rockets/crash.gif';
+    };
+}
+
+/* Меняем gif краша каждые 3 секунды */
+setInterval(randomizeCrashGif, 3000);
+
+/* ══════════════════════════════════════════════════════════════
+   UPGRADE WHEEL — риски + вращение
+   ══════════════════════════════════════════════════════════════ */
+(function initUpgradeWheel(){
+    /* Рисуем риски */
+    var risksGroup = document.getElementById('upgradeWheelRisks');
+    if(!risksGroup) return;
+
+    var cx = 100, cy = 100;
+    var rOuter = 86;
+    var html = '';
+    for(var i = 0; i < 60; i++){
+        var angle = (i / 60) * 360;
+        var isMajor = (i % 5 === 0);
+        var len = isMajor ? 7 : 4;
+        var width = isMajor ? 1.8 : 1;
+        var opacity = isMajor ? 0.7 : 0.35;
+        var rad = (angle - 90) * Math.PI / 180;
+        var x1 = cx + Math.cos(rad) * (rOuter - 1);
+        var y1 = cy + Math.sin(rad) * (rOuter - 1);
+        var x2 = cx + Math.cos(rad) * (rOuter - 1 - len);
+        var y2 = cy + Math.sin(rad) * (rOuter - 1 - len);
+        html += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1)
+              + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1)
+              + '" stroke="rgba(255,255,255,' + opacity + ')"'
+              + ' stroke-width="' + width + '" stroke-linecap="round"/>';
+    }
+    risksGroup.innerHTML = html;
+
+    /* Анимация вращения колеса */
+    var rotator = document.getElementById('upgradeWheelRotator');
+    if(!rotator) return;
+
+    var angles = [0, 45, -30, 15, -60, 30, 0];
+    var i = 0;
+
+    function nextAngle(){
+        var target = angles[i % angles.length];
+        rotator.style.transition = 'transform 1.6s cubic-bezier(.34,1.56,.64,1)';
+        rotator.style.transform = 'rotate(' + target + 'deg)';
+        i++;
+    }
+
+    /* Стартуем через 0.5 сек после загрузки */
+    setTimeout(function(){
+        nextAngle();
+        setInterval(nextAngle, 2200);
+    }, 500);
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   NAVIGATION
+   ══════════════════════════════════════════════════════════════ */
+function goTo(url){
+    try{
+        if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
+            Telegram.WebApp.HapticFeedback.impactOccurred('light');
         }
-        loadTopBar();
-        loadOnline();
-        setInterval(loadOnline, 15000);
-    }
-    initGames();
+    }catch(e){}
+    window.location.href = url;
+}
 
-    // Load user data for top bar
-    async function loadTopBar() {
-        if (!userId) return;
-        try {
-            var r = await fetch('/api/user/' + userId);
-            var d = await r.json();
-            if (d.success && d.user) {
-                var u = d.user;
-                document.getElementById('topNick').textContent = u.first_name || u.username || 'User';
-                if (u.photo_url) document.getElementById('topAvatar').src = u.photo_url;
-                var bal = ((u.balance_stars || 0) / 100).toFixed(2);
-                document.getElementById('topBalance').textContent = bal;
+/* ══════════════════════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════════════════════ */
+async function initGames(){
+    var auth = await telegramAuth();
+    if(auth && auth.id){
+        userId = auth.id;
+        try{
+            var br = await fetch('/api/check-ban?user_id=' + auth.id);
+            var bd = await br.json();
+            if(bd && bd.banned){ window.location.href = '/ban'; return; }
+        }catch(e){}
+        try{
+            if(window.Telegram && Telegram.WebApp){
+                Telegram.WebApp.ready();
+                Telegram.WebApp.expand();
+                Telegram.WebApp.setHeaderColor('#0a0a0f');
+                Telegram.WebApp.setBackgroundColor('#0a0a0f');
             }
-        } catch(e) {}
+        }catch(e){}
     }
+    loadTopBar();
+    loadOnline();
+    setInterval(loadOnline, 15000);
+}
 
-    async function loadOnline() {
-        try {
-            var r = await fetch('/api/online-count');
-            var d = await r.json();
-            document.getElementById('topOnline').textContent = (d.count || 0);
-            document.getElementById('crashPlayerCount').textContent = Math.max(5, Math.floor((d.count || 10) * 0.6 + Math.random() * 5)) + ' играют';
-            document.getElementById('casesPlayerCount').textContent = Math.max(3, Math.floor((d.count || 10) * 0.4 + Math.random() * 5)) + ' играют';
-        } catch(e) {}
-    }
+async function loadTopBar(){
+    if(!userId) return;
+    try{
+        var r = await fetch('/api/user/' + userId);
+        var d = await r.json();
+        if(d.success && d.user){
+            var u = d.user;
+            document.getElementById('topNick').textContent = u.first_name || u.username || 'User';
+            if(u.photo_url) document.getElementById('topAvatar').src = u.photo_url;
+            document.getElementById('topBalance').textContent = ((u.balance_stars || 0) / 100).toFixed(2);
+        }
+    }catch(e){}
+}
 
-    </script>
+async function loadOnline(){
+    try{
+        var r = await fetch('/api/online-count');
+        var d = await r.json();
+        var count = d.count || 0;
+        document.getElementById('topOnline').textContent = count;
+
+        /* Счётчики "играют" — рандомизируем вокруг онлайна */
+        var crashN = Math.max(3, Math.floor(count * 0.6 + Math.random() * 5));
+        var casesN = Math.max(2, Math.floor(count * 0.4 + Math.random() * 4));
+        var marketN = Math.max(1, Math.floor(count * 0.3 + Math.random() * 3));
+        var upgN = Math.max(1, Math.floor(count * 0.35 + Math.random() * 3));
+
+        document.getElementById('crashPlayers').textContent = crashN + ' играют';
+        document.getElementById('casesPlayers').textContent = casesN + ' играют';
+        document.getElementById('marketPlayers').textContent = marketN + ' играют';
+        document.getElementById('upgradePlayers').textContent = upgN + ' играют';
+    }catch(e){}
+}
+
+/* ══════════════════════════════════════════════════════════════
+   START
+   ══════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function(){
+    /* Ставим случайный gif сразу */
+    randomizeCrashGif();
+    initGames();
+});
+</script>
+
 </body>
 </html>
