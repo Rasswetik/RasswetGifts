@@ -4452,7 +4452,6 @@ def get_telegram_user():
         return jsonify({'success': False, 'error': str(e)})
 
 
-
 # ==================== ДОПОЛНИТЕЛЬНЫЕ API ДЛЯ ULTIMATE CRASH ====================
 
 # Кэш ставок пользователей (game_id, user_id) -> {bet_data, timestamp}
@@ -8592,137 +8591,6 @@ def _extract_coll_name(coll):
     return getattr(coll, 'name', '') or getattr(coll, 'slug', '')
 
 
-
-@app.route('/api/portal/status', methods=['GET'])
-def portal_status():
-    """Статус подключения к Portal"""
-    try:
-        auth = _get_portal_auth()
-        connected = auth is not None
-        
-        # Считаем коллекции в кэше
-        total_collections = 0
-        try:
-            if os.path.exists(FRAGMENT_DISK_CACHE_FILE):
-                with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
-                    cache = json.load(f)
-                total_collections = len(cache.get('gifts', []))
-        except Exception:
-            pass
-        
-        # Последняя синхронизация
-        last_sync_ago = 'никогда'
-        last_updated = 0
-        try:
-            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
-            if os.path.exists(sync_file):
-                with open(sync_file, 'r', encoding='utf-8') as f:
-                    sd = json.load(f)
-                ts = sd.get('timestamp', 0)
-                if ts:
-                    diff = int(time.time() - ts)
-                    if diff < 60:
-                        last_sync_ago = f'{diff} сек назад'
-                    elif diff < 3600:
-                        last_sync_ago = f'{diff // 60} мин назад'
-                    else:
-                        last_sync_ago = f'{diff // 3600} ч назад'
-                    last_updated = sd.get('updated', 0)
-        except Exception:
-            pass
-        
-        return jsonify({
-            'success': True,
-            'connected': connected,
-            'info': {
-                'total_collections': total_collections,
-                'last_sync_ago': last_sync_ago,
-                'last_updated': last_updated,
-            }
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e), 'connected': False})
-
-
-@app.route('/api/portal/connect', methods=['POST'])
-def portal_connect():
-    """Принудительное подключение к Portal"""
-    try:
-        data = request.get_json() or {}
-        admin_id = data.get('admin_id')
-        if str(admin_id) != str(ADMIN_ID):
-            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-        
-        # Сбрасываем кэш авторизации и пробуем заново
-        global _portal_auth_data
-        _portal_auth_data = None
-        
-        auth = _get_portal_auth()
-        if not auth:
-            return jsonify({
-                'success': False,
-                'error': 'Не удалось авторизоваться. Проверьте PORTAL_AUTH_TOKEN или PORTAL_API_ID/PORTAL_API_HASH'
-            })
-        
-        return jsonify({'success': True, 'message': 'Portal подключён'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-
-@app.route('/api/portal/info', methods=['GET'])
-def portal_info():
-    """Детальная информация о Portal"""
-    try:
-        auth = _get_portal_auth()
-        connected = auth is not None
-        
-        total_collections = 0
-        try:
-            if os.path.exists(FRAGMENT_DISK_CACHE_FILE):
-                with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
-                    cache = json.load(f)
-                total_collections = len(cache.get('gifts', []))
-        except Exception:
-            pass
-        
-        last_sync_ago = 'никогда'
-        last_updated = 0
-        try:
-            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
-            if os.path.exists(sync_file):
-                with open(sync_file, 'r', encoding='utf-8') as f:
-                    sd = json.load(f)
-                ts = sd.get('timestamp', 0)
-                if ts:
-                    diff = int(time.time() - ts)
-                    if diff < 60:
-                        last_sync_ago = f'{diff} сек назад'
-                    elif diff < 3600:
-                        last_sync_ago = f'{diff // 60} мин назад'
-                    else:
-                        last_sync_ago = f'{diff // 3600} ч назад'
-                    last_updated = sd.get('updated', 0)
-        except Exception:
-            pass
-        
-        auth_type = 'token'
-        if PORTAL_API_ID and PORTAL_API_HASH:
-            auth_type = 'session (api_id + api_hash)'
-        
-        return jsonify({
-            'success': True,
-            'info': {
-                'connected': connected,
-                'sync_enabled': PORTAL_SYNC_ENABLED,
-                'interval_minutes': PORTAL_SYNC_INTERVAL_MINUTES,
-                'total_collections': total_collections,
-                'last_sync_ago': last_sync_ago,
-                'last_updated': last_updated,
-                'auth_type': auth_type,
-            }
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
 @app.route('/api/portal/sync-prices', methods=['POST'])
 def portal_sync_prices():
     """Admin endpoint: sync gift prices from Portal marketplace floors."""
@@ -14152,110 +14020,10 @@ def add_gift_to_case():
         return jsonify({'success': False, 'error': str(e)})
 
 
-
-
 # ══════════════════════════════════════════════════════════════
 # PORTAL ADMIN ENDPOINTS
 # ══════════════════════════════════════════════════════════════
 
-def _portal_read_last_sync():
-    """Читает метку последней синхронизации"""
-    try:
-        sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
-        if not os.path.exists(sync_file):
-            return {'last_sync_ago': 'никогда', 'last_updated': 0, 'total_collections': 0}
-        with open(sync_file, 'r', encoding='utf-8') as f:
-            sd = json.load(f)
-        ts = sd.get('timestamp', 0)
-        ago = 'никогда'
-        if ts:
-            diff = int(time.time() - ts)
-            if diff < 60:
-                ago = f'{diff} сек назад'
-            elif diff < 3600:
-                ago = f'{diff // 60} мин назад'
-            else:
-                ago = f'{diff // 3600} ч назад'
-        return {
-            'last_sync_ago': ago,
-            'last_updated': sd.get('updated', 0),
-            'total_collections': sd.get('collections', 0) or sd.get('total', 0),
-        }
-    except Exception:
-        return {'last_sync_ago': 'никогда', 'last_updated': 0, 'total_collections': 0}
-
-
-@app.route('/api/portal/status', methods=['GET'])
-def portal_status():
-    """Статус подключения к Portal"""
-    try:
-        auth = _get_portal_auth()
-        connected = auth is not None
-        info = _portal_read_last_sync()
-        return jsonify({
-            'success': True,
-            'connected': connected,
-            'info': info,
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e), 'connected': False})
-
-
-@app.route('/api/portal/connect', methods=['POST'])
-def portal_connect():
-    """Принудительное подключение к Portal"""
-    try:
-        data = request.get_json() or {}
-        admin_id = data.get('admin_id')
-        if str(admin_id) != str(ADMIN_ID):
-            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-
-        global _portal_auth_data
-        _portal_auth_data = None
-
-        auth = _get_portal_auth()
-        if not auth:
-            return jsonify({
-                'success': False,
-                'error': 'Не удалось авторизоваться. Проверьте PORTAL_AUTH_TOKEN или PORTAL_API_ID/PORTAL_API_HASH'
-            })
-        return jsonify({'success': True, 'message': 'Portal подключён'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-
-@app.route('/api/portal/info', methods=['GET'])
-def portal_info():
-    """Детальная информация о Portal"""
-    try:
-        auth = _get_portal_auth()
-        connected = auth is not None
-        sync_info = _portal_read_last_sync()
-
-        auth_type = 'token'
-        if PORTAL_API_ID and PORTAL_API_HASH:
-            auth_type = 'session'
-
-        return jsonify({
-            'success': True,
-            'info': {
-                'connected': connected,
-                'sync_enabled': PORTAL_SYNC_ENABLED,
-                'interval_minutes': PORTAL_SYNC_INTERVAL_MINUTES,
-                'total_collections': sync_info['total_collections'],
-                'last_sync_ago': sync_info['last_sync_ago'],
-                'last_updated': sync_info['last_updated'],
-                'auth_type': auth_type,
-            }
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-
-
-# ══════════════════════════════════════════════════════════════
-# PORTAL ADMIN ENDPOINTS + search-users
-# ══════════════════════════════════════════════════════════════
 
 def _portal_read_last_sync():
     try:
@@ -14391,28 +14159,6 @@ def portal_test():
         return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/api/admin/search-users', methods=['GET'])
-def api_admin_search_users():
-    """Поиск пользователей для админки"""
-    try:
-        q = (request.args.get('q') or '').strip()
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        if q:
-            cursor.execute(
-                "SELECT id, first_name, username FROM users "
-                "WHERE first_name LIKE ? OR username LIKE ? OR CAST(id AS TEXT) LIKE ? "
-                "ORDER BY id DESC LIMIT 50",
-                (f'%{q}%', f'%{q}%', f'%{q}%')
-            )
-        else:
-            cursor.execute("SELECT id, first_name, username FROM users ORDER BY id DESC LIMIT 50")
-        users = [{'id': r[0], 'name': r[1] or '', 'username': r[2] or ''} for r in cursor.fetchall()]
-        conn.close()
-        return jsonify({'success': True, 'users': users})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e), 'users': []})
-
 @app.route('/api/admin/promo-codes', methods=['GET', 'POST', 'DELETE'])
 def admin_promo_codes_management():
     try:
@@ -14495,7 +14241,6 @@ def admin_promo_codes_management():
     except Exception as e:
         logger.error(f"❌ Ошибка управления промокодами: {e}")
         return jsonify({'success': False, 'error': str(e)})
-
 
 
 @app.route('/api/admin/customization', methods=['GET'])
