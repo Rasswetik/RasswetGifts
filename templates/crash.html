@@ -78,21 +78,62 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .rocket-wrap.flying.showing-gift img{transform:scale(1.05) translateZ(0)}
 .rocket-wrap.cashed-out img{filter:grayscale(100%) brightness(.7)}
 
-/* BOOM */
-.boom-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;display:none;align-items:center;justify-content:center;opacity:0}
-.boom-wrap.show{display:flex;opacity:1;animation:boomPop .5s ease-out forwards}
-.boom-wrap img{width:190px;height:190px;object-fit:contain;display:block}
-@keyframes boomPop{0%{transform:translate(-50%,-50%) scale(.2);opacity:0}40%{transform:translate(-50%,-50%) scale(1.2);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:.95}}
+/* ══════════════════════════════════════════════════════════════
+   BOOM — чёткая одноразовая анимация
+   ══════════════════════════════════════════════════════════════ */
+.boom-wrap{
+    position:absolute;
+    left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    z-index:10;
+    pointer-events:none;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    will-change:transform,opacity;
+}
+.boom-wrap img{
+    width:200px;
+    height:200px;
+    object-fit:contain;
+    display:block;
+    transform:scale(0);
+    opacity:0;
+}
+.boom-wrap.playing{
+    display:flex;
+    animation:boomPlay 1.8s cubic-bezier(.22,.9,.25,1) forwards;
+}
+.boom-wrap.playing img{
+    animation:boomImgPlay 1.8s cubic-bezier(.22,.9,.25,1) forwards;
+}
+@keyframes boomPlay{
+    0%{transform:translate(-50%,-50%) scale(.1);opacity:0}
+    8%{transform:translate(-50%,-50%) scale(1.25);opacity:1}
+    15%{transform:translate(-50%,-50%) scale(1);opacity:1}
+    75%{transform:translate(-50%,-50%) scale(1);opacity:1}
+    100%{transform:translate(-50%,-50%) scale(1.4);opacity:0}
+}
+@keyframes boomImgPlay{
+    0%{transform:scale(0) rotate(-30deg);opacity:0}
+    8%{transform:scale(1.3) rotate(10deg);opacity:1}
+    15%{transform:scale(1) rotate(0deg);opacity:1}
+    75%{transform:scale(1) rotate(0deg);opacity:1}
+    100%{transform:scale(1.2) rotate(0deg);opacity:0}
+}
 
-/* BET AREA */
+/* BET AREA — одна кнопка, переключается через JS */
 .bet-area{padding:6px 12px 4px;position:relative;z-index:100}
-.place-bet-btn{width:100%;padding:15px;border-radius:16px;border:none;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(135deg,#06B6D4,#3B82F6);color:#fff;box-shadow:0 8px 25px rgba(6,182,212,.25);letter-spacing:.5px;text-transform:uppercase;border:2px solid rgba(6,182,212,.3);transition:transform .15s;z-index:101}
+.place-bet-btn{width:100%;padding:15px;border-radius:16px;border:none;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(135deg,#06B6D4,#3B82F6);color:#fff;box-shadow:0 8px 25px rgba(6,182,212,.25);letter-spacing:.5px;text-transform:uppercase;border:2px solid rgba(6,182,212,.3);transition:transform .15s,background .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .place-bet-btn:disabled{opacity:.35;cursor:default;transform:none !important}
 .place-bet-btn:not(:disabled):active{transform:scale(.98)}
+.place-bet-btn.cancel-mode{background:linear-gradient(135deg,#E8527A,#C42247);box-shadow:0 8px 25px rgba(232,82,122,.25);border-color:rgba(232,82,122,.3)}
+.place-bet-btn.bet-placed-mode{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);box-shadow:none;border-color:rgba(255,255,255,.08)}
+.place-bet-btn .btn-text{display:inline-block;pointer-events:none}
 
-/* CASHOUT */
-.cashout-btn{width:100%;padding:12px 14px;border-radius:20px;border:none;font-family:inherit;font-weight:800;font-size:16px;cursor:pointer;background:linear-gradient(135deg,rgba(30,228,76,.95),rgba(24,184,62,.95));color:#061510;box-shadow:0 12px 35px rgba(30,228,76,.25);display:flex;letter-spacing:.4px;text-transform:uppercase;border:2px solid rgba(255,255,255,.1);transition:transform .15s;z-index:101;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;visibility:hidden}
-.cashout-btn.visible{visibility:visible}
+/* CASHOUT — показывается ТОЛЬКО когда есть ставка и летим */
+.cashout-btn{width:100%;padding:12px 14px;border-radius:20px;border:none;font-family:inherit;font-weight:800;font-size:16px;cursor:pointer;background:linear-gradient(135deg,rgba(30,228,76,.95),rgba(24,184,62,.95));color:#061510;box-shadow:0 12px 35px rgba(30,228,76,.25);display:none;letter-spacing:.4px;text-transform:uppercase;border:2px solid rgba(255,255,255,.1);transition:transform .15s;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.cashout-btn.visible{display:flex}
 .cashout-btn:not(:disabled):active{transform:scale(.98)}
 .cashout-btn.crash-state{background:linear-gradient(135deg,#E8527A,#C42247) !important;color:#fff !important;cursor:default;pointer-events:none}
 .cb-gift-side{width:42px;height:42px;flex-shrink:0;object-fit:contain;border:none;background:transparent;padding:0;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));transition:opacity .25s}
@@ -286,6 +327,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 @media(max-width:400px){
     .countdown-display{font-size:min(150px,34vw)}
     .rocket-wrap img{width:150px;height:150px}
+    .boom-wrap img{width:170px;height:170px}
     .bet-row{padding:6px 8px}
     .bet-avatar{width:30px;height:30px;font-size:11px}
     .bet-name{font-size:11px;max-width:85px}
@@ -520,7 +562,6 @@ function isTelegramWebApp(){
     return typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user;
 }
 
-/* Core game state */
 var gameId = 0;
 var prevGameId = 0;
 var status = 'waiting';
@@ -538,19 +579,24 @@ var _betLocked = false;
 var _giftLocked = false;
 var _cashoutLocked = false;
 var autoCashoutDone = false;
+var crashHandled = false;
 
 /* Round timing */
-var countingStartedAt = 0;         // performance.now() when counting started
-var countingDuration = 5.0;        // seconds for countdown
-var lastShownNumber = 99;          // last countdown number displayed
-var goShownForRound = false;       // GO показан для текущего раунда
+var countingStartedAt = 0;
+var countingDuration = 5.0;
+var lastShownNumber = 99;
+var goShownForRound = false;
 var lastCountdownAt = 0;
 
 /* Multiplier growth */
-var multGrowthRate = 0;            // x per ms
-var lastPollAt = 0;                // performance.now() last poll
+var multGrowthRate = 0;
+var lastPollAt = 0;
 var lastPollServerMult = 1.0;
-var pollInterval = 500;            // ms — адаптивно
+var _rafLast = 0;
+var _lastLiveMultUpdate = 0;
+var _lastCoeffUpdate = 0;
+var _lastCashBtnUpdate = 0;
+var _lastRocketUpdate = 0;
 
 /* Bets/history */
 var lastBetsHash = '';
@@ -567,7 +613,7 @@ var autoWithdrawGuard = true;
 var autoWithdrawGift = null;
 var savedBetAmount = localStorage.getItem('crash_bet_amount') || '';
 
-/* Gift catalog cache */
+/* Gift catalog */
 var _giftCatalog = null;
 var _giftCatalogBuckets = null;
 var _giftImgCache = {};
@@ -657,7 +703,7 @@ function showToast(msg, type){
             }
         }, 100);
     };
-    /* Хардкод таймаут — если что-то зависло, скрываем */
+    /* Хардкод таймаут */
     setTimeout(function(){
         var ls = $('ldScreen');
         if(ls && !ls.classList.contains('hidden')){
@@ -672,7 +718,6 @@ function showToast(msg, type){
    ══════════════════════════════════════════════════════════════ */
 async function initAuth(){
     window._ldSet(5);
-    /* Из localStorage */
     try{
         var saved = localStorage.getItem('rasswet_user');
         if(saved){
@@ -681,7 +726,6 @@ async function initAuth(){
         }
     }catch(e){}
 
-    /* Из Telegram */
     if(!userData || !userData.id){
         if(isTelegramWebApp()){
             try{
@@ -708,7 +752,6 @@ async function initAuth(){
 
     window._ldSet(15);
 
-    /* Из telegramAuth() */
     if(!userData || !userData.id){
         try{
             var auth = await Promise.race([
@@ -719,16 +762,13 @@ async function initAuth(){
         }catch(e){}
     }
 
-    /* Fallback */
     if(!userData || !userData.id){
         userData = { id: 0, first_name: 'Player', balance_stars: 0, balance_tickets: 0 };
     }
 
     updateBalanceUI();
-
     window._ldSet(30);
 
-    /* Ban check */
     if(userData.id){
         try{
             var ac = new AbortController();
@@ -742,7 +782,6 @@ async function initAuth(){
 
     window._ldSet(45);
 
-    /* Регистрация */
     if(userData.id){
         registerAndLoad().catch(function(){});
     }
@@ -766,7 +805,6 @@ async function registerAndLoad(){
             try{ localStorage.setItem('rasswet_user', JSON.stringify(userData)); }catch(e){}
         }
     }catch(e){}
-    /* Свежие данные */
     try{
         var r2 = await fetch('/api/user/' + userData.id);
         var d2 = await r2.json();
@@ -781,7 +819,6 @@ async function registerAndLoad(){
    ROCKET
    ══════════════════════════════════════════════════════════════ */
 function getRocketSrc(){ return '/static/gifs/rockets/' + currentRocket + '.gif'; }
-
 function applyRocket(){
     var img = $('rocketImg');
     if(!img) return;
@@ -860,10 +897,11 @@ function getAchievableGift(potentialWin){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   STATUS POLLING
+   POLLING
    ══════════════════════════════════════════════════════════════ */
 var _polling = false;
 var _pollErrors = 0;
+var pollInterval = 400;
 
 async function pollStatus(){
     if(!authReady) return;
@@ -882,13 +920,13 @@ async function pollStatus(){
 
         var d = await r.json();
         _pollErrors = 0;
+        pollInterval = 400;
 
         if(!d || !d.game) return;
         applyServerState(d);
 
     }catch(e){
         _pollErrors++;
-        /* При частых ошибках — увеличиваем интервал */
         if(_pollErrors > 3) pollInterval = 1500;
         else if(_pollErrors > 1) pollInterval = 800;
     }finally{
@@ -908,44 +946,48 @@ function applyServerState(d){
     var newServMult = parseFloat(g.current_multiplier) || 1.0;
     var newTarget = parseFloat(g.target_multiplier) || 5.0;
 
-    /* ═══ DETECT NEW ROUND ═══ */
-    var isNewRound = (prevGameId !== 0) && (newGameId !== prevGameId);
-    var enteringCounting = (newStatus === 'counting') && (status !== 'counting' && status !== 'waiting');
+    /* ── Новый раунд ── */
+    var isNewRound = (gameId !== 0) && (newGameId !== gameId);
 
     if(isNewRound){
         resetRoundState();
     }
 
-    /* ═══ UPDATE STATUS ═══ */
+    /* ── Смена статуса ── */
     prevStatus = status;
     status = newStatus;
 
-    /* ═══ COUNTING START ═══ */
+    /* ── Вход в counting ── */
     if(newStatus === 'counting' && (prevStatus !== 'counting' || countingStartedAt === 0)){
         countingStartedAt = now;
         countingDuration = 5.0;
         lastShownNumber = 99;
         goShownForRound = false;
+        lastCountdownAt = 0;
     }
 
-    /* ═══ FLYING START — GO animation ═══ */
+    /* ── Вход в flying ── */
     if(newStatus === 'flying' && prevStatus !== 'flying'){
         if(!goShownForRound){
             goShownForRound = true;
             showGoAnimation();
         }
-        /* Пересчитать скорость роста */
-        multGrowthRate = 0;
-        lastPollAt = now;
-        lastPollServerMult = newServMult;
+        /* ВАЖНО: в начале полёта множитель ВСЕГДА 1.00x */
+        if(newServMult < 1.05){
+            dispMult = 1.0;
+            servMult = 1.0;
+            lastPollServerMult = 1.0;
+            multGrowthRate = 0;
+            lastPollAt = now;
+        } else {
+            servMult = newServMult;
+            dispMult = Math.max(1.0, newServMult - 0.3);
+            lastPollServerMult = newServMult;
+            lastPollAt = now;
+        }
     }
 
-    /* ═══ CRASHED ═══ */
-    if(newStatus === 'crashed' && prevStatus !== 'crashed'){
-        handleCrash(newServMult);
-    }
-
-    /* ═══ UPDATE MULTIPLIER (flying) ═══ */
+    /* ── Полёт: считаем скорость ── */
     if(newStatus === 'flying'){
         if(newServMult > lastPollServerMult && lastPollAt > 0){
             var elapsed = now - lastPollAt;
@@ -958,18 +1000,28 @@ function applyServerState(d){
         lastPollAt = now;
         servMult = newServMult;
         targetMult = newTarget;
+
+        /* Корректировка dispMult, если сильно отстаёт */
+        if(servMult - dispMult > 0.5) dispMult = servMult - 0.5;
+        if(dispMult - servMult > 0.5) dispMult = servMult + 0.5;
+        if(dispMult < 1.0) dispMult = 1.0;
     } else {
         servMult = newServMult;
         targetMult = newTarget;
     }
 
-    /* ═══ UPDATE USER BALANCE ═══ */
+    /* ── Краш ── */
+    if(newStatus === 'crashed' && prevStatus !== 'crashed'){
+        triggerCrashAnimation(newServMult);
+    }
+
+    /* ── Баланс ── */
     if(d.user_balance !== undefined && d.user_balance !== null && userData){
         userData.balance_stars = d.user_balance;
         updateBalanceUI();
     }
 
-    /* ═══ UPDATE USER BET STATE ═══ */
+    /* ── Ставка юзера ── */
     if(d.user_bet && d.user_bet.status === 'active'){
         if(!hasBet){
             hasBet = true;
@@ -977,17 +1029,10 @@ function applyServerState(d){
         }
     } else if(d.user_bet && d.user_bet.status === 'cashed_out'){
         hasBet = false;
-    } else if(!d.user_bet){
-        /* Сервер не видит ставки — сбрасываем */
-        if(hasBet && status !== 'flying'){
-            hasBet = false;
-            betAmt = 0;
-        }
     }
 
     gameId = newGameId;
 
-    /* ═══ UPDATE UI per status ═══ */
     updateGameFieldUI();
 }
 
@@ -998,6 +1043,7 @@ function resetRoundState(){
     countingStartedAt = 0;
     lastShownNumber = 99;
     goShownForRound = false;
+    lastCountdownAt = 0;
     dispMult = 1.0;
     servMult = 1.0;
     multGrowthRate = 0;
@@ -1009,7 +1055,6 @@ function resetRoundState(){
     _cashoutLocked = false;
     crashHandled = false;
 
-    /* Сброс UI */
     var rw = $('rocketWrap');
     var bm = $('boomWrap');
     var lm = $('liveMult');
@@ -1017,12 +1062,11 @@ function resetRoundState(){
     var gf = $('gameField');
 
     if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','showing-gift','cashed-out'); }
-    if(bm) bm.classList.remove('show');
+    if(bm){ bm.classList.remove('playing'); }
     if(lm) lm.classList.remove('visible');
     if(cd){ cd.classList.remove('active'); cd.textContent = ''; }
     if(gf) gf.classList.remove('flying');
 
-    /* Ракета */
     var ri = $('rocketImg');
     if(ri){
         ri.style.transform = '';
@@ -1031,12 +1075,6 @@ function resetRoundState(){
         if(ri.src.indexOf(currentRocket) === -1) ri.src = src;
     }
 
-    /* Если была ставка от юзера и раунд новый без неё — сбрасываем */
-    if(!pendingBet){
-        /* Не сбрасываем hasBet — сервер скажет */
-    }
-
-    /* Bets list */
     lastBetsHash = '';
     betsGeneration++;
     var bc = $('betsCount');
@@ -1048,12 +1086,10 @@ function resetRoundState(){
     loadHistory();
 }
 
-var crashHandled = false;
-
 /* ══════════════════════════════════════════════════════════════
-   CRASH HANDLER
+   CRASH ANIMATION
    ══════════════════════════════════════════════════════════════ */
-function handleCrash(finalMult){
+function triggerCrashAnimation(finalMult){
     if(crashHandled) return;
     crashHandled = true;
 
@@ -1078,22 +1114,28 @@ function handleCrash(finalMult){
         coeff.textContent = finalMult.toFixed(2) + 'x';
     }
 
-    /* BOOM */
+    /* ── BOOM анимация ── */
     if(bm && bimg){
-        /* Сброс src — заставляет проиграть заново */
-        bimg.src = '';
-        void bimg.offsetWidth;
-        bimg.src = '/static/gifs/boom.gif?t=' + Date.now();
-        bm.classList.remove('show');
+        /* Принудительно сбросить */
+        bm.classList.remove('playing');
         void bm.offsetWidth;
-        bm.classList.add('show');
+
+        /* Пересоздать src, чтобы GIF проиграл с начала */
+        var newSrc = '/static/gifs/boom.gif?t=' + Date.now();
+        bimg.src = newSrc;
+
+        /* Форс reflow */
+        void bimg.offsetWidth;
+
+        /* Запуск */
+        bm.classList.add('playing');
+
+        /* Остановить через 1.8 сек */
         setTimeout(function(){
-            var bw = $('boomWrap');
-            if(bw) bw.classList.remove('show');
-        }, 2200);
+            bm.classList.remove('playing');
+        }, 1900);
     }
 
-    /* Если была ставка — показать проигрыш */
     if(hasBet){
         showToast('CRASH ' + finalMult.toFixed(2) + 'x — ставка проиграна', 'err');
     }
@@ -1125,7 +1167,7 @@ function showGoAnimation(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   UI UPDATERS
+   UI UPDATERS — ЕДИНАЯ ЛОГИКА КНОПОК
    ══════════════════════════════════════════════════════════════ */
 function updateGameFieldUI(){
     var rw = $('rocketWrap');
@@ -1139,7 +1181,7 @@ function updateGameFieldUI(){
         if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
         var ri = $('rocketImg');
         if(ri){ ri.style.transform = ''; ri.style.animation = ''; }
-        if(bm) bm.classList.remove('show');
+        if(bm) bm.classList.remove('playing');
         if(gf) gf.classList.remove('flying');
         if(lm) lm.classList.remove('visible');
         if(coeff){
@@ -1148,7 +1190,7 @@ function updateGameFieldUI(){
         }
     } else if(status === 'flying'){
         if(rw) rw.classList.remove('hide');
-        if(bm) bm.classList.remove('show');
+        if(bm) bm.classList.remove('playing');
         if(gf) gf.classList.add('flying');
         if(lm) lm.classList.add('visible');
         if(coeff){
@@ -1170,40 +1212,39 @@ function updateGameFieldUI(){
     updateCashoutButtonUI();
 }
 
+/* ── ЕДИНАЯ КНОПКА: place / cancel / bet placed ── */
 function updateBetButtonUI(){
     var pb = $('placeBetBtn');
     if(!pb) return;
+
+    pb.classList.remove('cancel-mode', 'bet-placed-mode');
+
+    if(hasBet){
+        /* Ставка уже сделана */
+        pb.innerHTML = '<span class="btn-text">BET PLACED</span>';
+        pb.disabled = true;
+        pb.classList.add('bet-placed-mode');
+        return;
+    }
+
+    if(pendingBet){
+        /* Ставка на след. раунд */
+        pb.innerHTML = '<span class="btn-text">CANCEL (' + formatCrashMoney(pendingBet.amount) + ')</span>';
+        pb.disabled = false;
+        pb.classList.add('cancel-mode');
+        return;
+    }
+
+    /* Обычное состояние */
+    pb.disabled = false;
     if(status === 'flying'){
-        if(pendingBet){
-            pb.innerHTML = '<span class="btn-text">CANCEL (' + formatCrashMoney(pendingBet.amount) + ')</span>';
-            pb.disabled = false;
-        } else {
-            pb.innerHTML = '<span class="btn-text">BET ON NEXT</span>';
-            pb.disabled = false;
-        }
-    } else if(status === 'waiting' || status === 'counting'){
-        if(hasBet){
-            pb.innerHTML = '<span class="btn-text">BET PLACED</span>';
-            pb.disabled = true;
-        } else if(pendingBet){
-            pb.innerHTML = '<span class="btn-text">CANCEL (' + formatCrashMoney(pendingBet.amount) + ')</span>';
-            pb.disabled = false;
-        } else {
-            pb.innerHTML = '<span class="btn-text">Place bet</span>';
-            pb.disabled = false;
-        }
+        pb.innerHTML = '<span class="btn-text">BET ON NEXT</span>';
     } else {
-        /* crashed — ждём next round */
-        if(pendingBet){
-            pb.innerHTML = '<span class="btn-text">CANCEL (' + formatCrashMoney(pendingBet.amount) + ')</span>';
-            pb.disabled = false;
-        } else {
-            pb.innerHTML = '<span class="btn-text">BET ON NEXT</span>';
-            pb.disabled = false;
-        }
+        pb.innerHTML = '<span class="btn-text">Place bet</span>';
     }
 }
 
+/* ── КЭШАУТ: показывается ТОЛЬКО когда есть ставка и летим ── */
 function updateCashoutButtonUI(){
     var cb = $('cashoutBtn');
     var left = $('cbGiftLeft');
@@ -1211,28 +1252,25 @@ function updateCashoutButtonUI(){
     var win = $('cbWin');
     if(!cb || !left || !right || !win) return;
 
-    if(status === 'crashed'){
+    /* Крашнутые состояния — показываем заблокированную кнопку */
+    if(status === 'crashed' && cashedOut){
         cb.classList.add('visible');
         cb.disabled = true;
-        cb.className = 'cashout-btn crash-state visible';
+        cb.classList.add('crash-state');
         win.textContent = 'CRASH ' + (servMult || 1).toFixed(2) + 'x';
-        left.classList.add('empty');
-        right.classList.add('empty');
-        left.src = '/static/img/gift.png';
-        right.src = '/static/img/gift.png';
-        left.dataset.src = '/static/img/gift.png';
-        right.dataset.src = '/static/img/gift.png';
         return;
     }
 
+    /* Скрываем, если нет активной ставки или не летим */
     if(!hasBet || cashedOut || status !== 'flying'){
-        cb.classList.remove('visible');
+        cb.classList.remove('visible', 'crash-state');
         return;
     }
 
+    /* Показываем */
     cb.classList.add('visible');
+    cb.classList.remove('crash-state');
     cb.disabled = false;
-    cb.className = 'cashout-btn visible';
 
     var currentMult = Math.max(dispMult, servMult);
     var curWin = Math.floor((betAmt || 0) * currentMult);
@@ -1256,14 +1294,8 @@ function updateCashoutButtonUI(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   RENDER LOOP — отдельный от polling, обновляет ТОЛЬКО визуал
+   RENDER LOOP
    ══════════════════════════════════════════════════════════════ */
-var _rafLast = 0;
-var _lastLiveMultUpdate = 0;
-var _lastCoeffUpdate = 0;
-var _lastCashBtnUpdate = 0;
-var _lastRocketUpdate = 0;
-
 function renderLoop(ts){
     try{
         requestAnimationFrame(renderLoop);
@@ -1275,13 +1307,12 @@ function renderLoop(ts){
         if(dt > 100) dt = 100;
         _rafLast = now;
 
-        /* COUNTDOWN — counting/waiting */
-        if((status === 'counting') && countingStartedAt > 0){
+        /* COUNTING */
+        if(status === 'counting' && countingStartedAt > 0){
             var elapsed = (now - countingStartedAt) / 1000;
             var remaining = countingDuration - elapsed;
             var sec = Math.max(0, Math.ceil(remaining));
 
-            /* Не увеличиваем — только уменьшаем */
             if(sec > lastShownNumber) sec = lastShownNumber;
             else lastShownNumber = sec;
 
@@ -1297,38 +1328,31 @@ function renderLoop(ts){
             }
         }
 
-        /* FLYING — интерполяция множителя */
+        /* FLYING */
         if(status === 'flying'){
-            /* Плавно растёт */
             if(multGrowthRate > 0){
                 var delta = multGrowthRate * dt;
-                /* Ограничиваем слишком быстрый рост */
                 if(delta > 0.03) delta = 0.03;
                 dispMult += delta;
             }
 
-            /* Не даём отставать от сервера больше чем на 0.5 */
-            if(servMult > dispMult + 0.5){
-                dispMult = servMult - 0.5;
-            }
-            /* Не даём обгонять сервер */
-            if(dispMult > servMult + 0.5){
-                dispMult = servMult + 0.5;
-            }
+            if(servMult > dispMult + 0.5) dispMult = servMult - 0.5;
+            if(dispMult > servMult + 0.5) dispMult = servMult + 0.5;
             if(dispMult < 1.0) dispMult = 1.0;
 
-            /* Ракета — наклон */
+            /* Ракета наклон */
             if(now - _lastRocketUpdate > 200){
                 _lastRocketUpdate = now;
                 var ri = $('rocketImg');
-                if(ri && !$('rocketWrap').classList.contains('showing-gift')){
+                var rw = $('rocketWrap');
+                if(ri && rw && !rw.classList.contains('showing-gift')){
                     var tilt = dispMult >= 1.5 ? Math.min(35, (dispMult - 1.5) * 5) : 0;
                     var sc = 1 + Math.max(0, Math.min(dispMult - 1.5, 2)) * 0.03;
                     ri.style.transform = 'rotate(' + tilt.toFixed(1) + 'deg) scale(' + sc.toFixed(3) + ')';
                 }
             }
 
-            /* Live multiplier */
+            /* Live mult */
             if(now - _lastLiveMultUpdate > 50){
                 _lastLiveMultUpdate = now;
                 var lm = $('liveMult');
@@ -1342,7 +1366,7 @@ function renderLoop(ts){
                 if(cb) cb.textContent = dispMult.toFixed(2) + 'x';
             }
 
-            /* Cashout button (win amount) */
+            /* Cashout button */
             if(now - _lastCashBtnUpdate > 100){
                 _lastCashBtnUpdate = now;
                 if(hasBet && !cashedOut) updateCashoutButtonUI();
@@ -1358,12 +1382,12 @@ function renderLoop(ts){
             }
         }
     }catch(e){
-        /* Никогда не даём RAF упасть */
+        /* никогда не даём RAF упасть */
     }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   BETTING
+   BET
    ══════════════════════════════════════════════════════════════ */
 function onBetBtnClick(){
     if(pendingBet){
@@ -1419,7 +1443,6 @@ async function confirmStarsBet(){
     savedBetAmount = amt;
     try{ localStorage.setItem('crash_bet_amount', amt); }catch(e){}
 
-    /* Если идёт полёт — сохраняем в pending */
     if(status === 'flying'){
         pendingBet = { type: 'stars', amount: amt };
         closeBetModal();
@@ -1631,7 +1654,7 @@ async function doCashout(){
     if(_cashoutLocked) return;
     _cashoutLocked = true;
 
-    var frozenMult = Math.max(dispMult, servMult, prevServMult || 1.0);
+    var frozenMult = Math.max(dispMult, servMult, 1.0);
     frozenMult = Math.round((frozenMult + 0.02) * 100) / 100;
     var instantWin = Math.floor(betAmt * frozenMult);
 
@@ -1639,7 +1662,6 @@ async function doCashout(){
     var pb = $('placeBetBtn');
     var cb = $('cashoutBtn');
     if(pb){
-        pb.style.display = 'block';
         pb.disabled = true;
         pb.innerHTML = '<span class="btn-text">+' + formatCrashMoney(instantWin) + '</span>';
     }
@@ -1692,7 +1714,7 @@ async function doCashout(){
         } else {
             cashedOut = false;
             hasBet = true;
-            if(cb){ cb.className = 'cashout-btn visible'; cb.disabled = false; }
+            if(cb){ cb.classList.remove('crash-state'); cb.disabled = false; }
             if(pb) pb.style.display = 'none';
             showToast(d.error || 'Ошибка синхронизации', 'err');
         }
@@ -1816,7 +1838,6 @@ async function loadBets(){
                 + statusHtml + '</div>';
         }).join('');
     }catch(e){
-        /* ignore */
     }finally{
         _betsFetching = false;
     }
@@ -2134,10 +2155,8 @@ var pollTimer = null;
 
 async function init(){
     await initAuth();
-
     applyRocket();
 
-    /* Preload gift catalog + online count (в фоне) */
     ensureGiftCatalog().catch(function(){});
     fetch('/api/online-count').then(function(r){ return r.json(); }).then(function(d){
         var el = $('onlineCount');
@@ -2146,9 +2165,7 @@ async function init(){
 
     window._ldSet(80);
 
-    /* Первый статус — ждём обязательно */
     try{ await pollStatus(); }catch(e){}
-    /* Первый список ставок */
     loadBets().catch(function(){});
     loadHistory().catch(function(){});
 
@@ -2156,39 +2173,32 @@ async function init(){
     updateAutoWithdrawButton();
     syncSettingsToggles();
 
-    /* Если был сохранён bet — ставим в input */
     if(savedBetAmount){
         var bi = $('betInput');
         if(bi) bi.value = starsToBetInputValue(savedBetAmount);
     }
 
-    /* Запуск polling loop — простой setInterval, не накапливается */
     if(pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(function(){
         pollStatus().catch(function(){});
     }, 400);
 
-    /* Отдельный медленный poll для bets — раз в 2.5с */
     setInterval(function(){
         if(status === 'crashed') return;
         loadBets().catch(function(){});
     }, 2500);
 
-    /* Keepalive */
     setInterval(function(){ fetch('/api/ping').catch(function(){}); }, 30000);
 
-    /* On visible — сразу обновить */
     document.addEventListener('visibilitychange', function(){
         if(!document.hidden){ pollStatus().catch(function(){}); loadBets().catch(function(){}); }
     });
 
-    /* Запуск render loop */
     requestAnimationFrame(renderLoop);
 
     window._ldSet(100);
     window._ldDone();
 
-    /* Периодически обновляем онлайн */
     setInterval(function(){
         fetch('/api/online-count').then(function(r){ return r.json(); }).then(function(d){
             var el = $('onlineCount');
@@ -2197,7 +2207,6 @@ async function init(){
     }, 30000);
 }
 
-/* Modal click-outside handlers */
 document.addEventListener('DOMContentLoaded', function(){
     var bm = $('betModal');
     if(bm) bm.addEventListener('click', function(e){ if(e.target === bm) closeBetModal(); });
@@ -2218,10 +2227,7 @@ document.addEventListener('DOMContentLoaded', function(){
             if(spa) spa.textContent = v > 0 ? v : '0';
         });
     }
-});
 
-/* GO! */
-document.addEventListener('DOMContentLoaded', function(){
     init().catch(function(e){
         console.error('init error', e);
         window._ldDone();
