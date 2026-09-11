@@ -14,11 +14,10 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
     --bg:#0a0a0f;
-    --bg-2:#11111a;
     --text:#fff;
-    --text-2:rgba(255,255,255,.5);
     --green:#24C38E;
     --red:#FF3064;
+    --gold:#FFD700;
     --safe-top:env(safe-area-inset-top, 0px);
     --safe-bottom:env(safe-area-inset-bottom, 0px);
     --tg-header:56px;
@@ -42,303 +41,92 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
    LOADING SCREEN
    ══════════════════════════════════════════════════════════════ */
 .loading-screen{
-    position:fixed;
-    inset:0;
-    background:#0a0a0f;
-    z-index:9999;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:24px;
+    position:fixed;inset:0;background:#0a0a0f;z-index:9999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
     transition:opacity .5s ease, visibility .5s ease;
 }
 .loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
-.loading-wheel{
-    width:180px;
-    height:180px;
-    position:relative;
-    animation:loadingRotate 3s linear infinite;
-}
-@keyframes loadingRotate{
-    from{transform:rotate(0deg)}
-    to{transform:rotate(360deg)}
-}
+.loading-wheel{width:180px;height:180px;position:relative;animation:loadingRotate 3s linear infinite}
+@keyframes loadingRotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 .loading-wheel svg{width:100%;height:100%;display:block}
 .loading-wheel .ld-ring{fill:none;stroke:#1a1a24;stroke-width:18}
 .loading-wheel .ld-green{fill:none;stroke:url(#ldGreenGrad);stroke-width:18;stroke-linecap:round}
 .loading-wheel .ld-tick{stroke:#fff;stroke-width:1.5;stroke-linecap:round}
 .loading-wheel .ld-inner{fill:none;stroke:rgba(255,255,255,.04);stroke-width:1}
-.loading-text{
-    font-size:13px;
-    font-weight:700;
-    color:rgba(255,255,255,.4);
-    letter-spacing:2px;
-    text-transform:uppercase;
-}
-.loading-progress{
-    width:220px;
-    height:4px;
-    background:rgba(255,255,255,.06);
-    border-radius:2px;
-    overflow:hidden;
-}
-.loading-progress-bar{
-    height:100%;
-    width:0%;
-    background:linear-gradient(90deg,#24C38E,#10b981);
-    border-radius:2px;
-    transition:width .3s ease;
-}
-.loading-arrow{
-    position:absolute;
-    top:-10px;
-    left:50%;
-    transform:translateX(-50%);
-    z-index:10;
-    filter:drop-shadow(0 4px 12px rgba(0,0,0,.8));
-}
+.loading-text{font-size:13px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase}
+.loading-progress{width:220px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.loading-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#24C38E,#10b981);border-radius:2px;transition:width .3s ease}
+.loading-arrow{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:10;filter:drop-shadow(0 4px 12px rgba(0,0,0,.8))}
 
 /* ══════════════════════════════════════════════════════════════
    TOP BAR
    ══════════════════════════════════════════════════════════════ */
-.top-bar{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    padding:10px 16px;
-    padding-top:calc(var(--safe-top) + var(--tg-header));
-    position:relative;
-    z-index:10;
-}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;padding-top:calc(var(--safe-top) + var(--tg-header));position:relative;z-index:10}
 .top-left{display:flex;align-items:center;gap:8px}
-.user-pill{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    padding:4px 10px 4px 4px;
-    border-radius:20px;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.04);
-}
+.user-pill{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.04)}
 .top-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover}
-.top-nick{
-    font-size:13px;
-    font-weight:600;
-    max-width:90px;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-}
+.top-nick{font-size:13px;font-weight:600;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .top-right{display:flex;gap:8px;align-items:center}
-.bal-pill{
-    display:flex;
-    align-items:center;
-    gap:5px;
-    padding:6px 12px;
-    border-radius:20px;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.08);
-    font-weight:800;
-    font-size:13px;
-    color:#fff;
-}
+.bal-pill{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-weight:800;font-size:13px}
 .bal-pill img{width:14px;height:14px}
-.bal-plus{
-    width:30px;
-    height:30px;
-    border-radius:50%;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.1);
-    color:rgba(255,255,255,.7);
-    font-size:16px;
-    font-weight:700;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:all .2s;
-}
+.bal-plus{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .2s}
 .bal-plus:active{transform:scale(.9);background:rgba(255,255,255,.12)}
 
 /* ══════════════════════════════════════════════════════════════
    WRAPPER
    ══════════════════════════════════════════════════════════════ */
-.upgrade-wrap{
-    max-width:450px;
-    margin:0 auto;
-    padding:4px 16px calc(var(--safe-bottom) + 100px);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:12px;
-}
+.upgrade-wrap{max-width:450px;margin:0 auto;padding:4px 16px calc(var(--safe-bottom) + 100px);display:flex;flex-direction:column;align-items:center;gap:12px}
 
 /* ══════════════════════════════════════════════════════════════
    ПАНЕЛЬ ВЫБОРА
    ══════════════════════════════════════════════════════════════ */
-.select-panel{
-    width:100%;
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-    margin-bottom:8px;
-}
-.select-card{
-    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
-    border:1px solid rgba(255,255,255,.06);
-    border-radius:20px;
-    padding:14px 12px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:10px;
-    cursor:pointer;
-    transition:all .25s cubic-bezier(.4,0,.2,1);
-    position:relative;
-    min-height:160px;
-    justify-content:center;
-    overflow:hidden;
-}
+.select-panel{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.select-card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);position:relative;min-height:160px;justify-content:center;overflow:hidden}
 .select-card:active{transform:scale(.97)}
-.select-card.has-item{
-    border-color:rgba(36,195,142,.35);
-    background:linear-gradient(180deg, rgba(36,195,142,.06), rgba(36,195,142,.01));
-}
-.select-card-title{
-    font-size:12px;
-    font-weight:700;
-    color:rgba(255,255,255,.5);
-    text-transform:uppercase;
-    letter-spacing:.5px;
-    text-align:center;
-    line-height:1.2;
-}
-.select-empty{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:10px;
-}
-.select-empty-icon{
-    width:56px;
-    height:56px;
-    border-radius:50%;
-    background:rgba(255,255,255,.04);
-    border:2px dashed rgba(255,255,255,.1);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:rgba(255,255,255,.3);
-}
+.select-card.has-item{border-color:rgba(36,195,142,.35);background:linear-gradient(180deg,rgba(36,195,142,.06),rgba(36,195,142,.01))}
+.select-card-title{font-size:12px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;text-align:center;line-height:1.2}
+.select-empty{display:flex;flex-direction:column;align-items:center;gap:10px}
+.select-empty-icon{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.04);border:2px dashed rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.3)}
 .select-empty-icon svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.5}
-.select-empty-text{
-    font-size:11px;
-    color:rgba(255,255,255,.3);
-    font-weight:600;
-}
-.select-filled{
-    display:none;
-    flex-direction:column;
-    align-items:center;
-    gap:6px;
-    width:100%;
-}
+.select-empty-text{font-size:11px;color:rgba(255,255,255,.3);font-weight:600}
+.select-filled{display:none;flex-direction:column;align-items:center;gap:6px;width:100%}
 .select-card.has-item .select-empty{display:none}
 .select-card.has-item .select-filled{display:flex;animation:cardPop .4s cubic-bezier(.34,1.56,.64,1)}
-@keyframes cardPop{
-    0%{transform:scale(.7);opacity:0}
-    60%{transform:scale(1.08)}
-    100%{transform:scale(1);opacity:1}
-}
-.select-img{
-    width:70px;
-    height:70px;
-    object-fit:contain;
-    filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));
-}
-.select-name{
-    font-size:11px;
-    font-weight:700;
-    color:#fff;
-    text-align:center;
-    max-width:100%;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-}
-.select-price{
-    display:inline-flex;
-    align-items:center;
-    gap:4px;
-    padding:3px 10px;
-    background:rgba(255,255,255,.06);
-    border-radius:10px;
-    font-size:11px;
-    font-weight:800;
-    color:rgba(255,255,255,.7);
-    line-height:1;
-}
+@keyframes cardPop{0%{transform:scale(.7);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.select-img{width:70px;height:70px;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))}
+.select-name{font-size:11px;font-weight:700;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.select-price{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(255,255,255,.06);border-radius:10px;font-size:11px;font-weight:800;color:rgba(255,255,255,.7);line-height:1}
 .select-price img{width:11px;height:11px}
-.select-chance{
-    display:inline-flex;
-    align-items:center;
-    gap:4px;
-    padding:4px 12px;
-    background:rgba(36,195,142,.12);
-    border:1px solid rgba(36,195,142,.3);
-    border-radius:10px;
-    font-size:13px;
-    font-weight:900;
-    color:var(--green);
-    line-height:1;
-    margin-top:4px;
-}
+.select-chance{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:rgba(36,195,142,.12);border:1px solid rgba(36,195,142,.3);border-radius:10px;font-size:13px;font-weight:900;color:var(--green);line-height:1;margin-top:4px}
 
 /* ══════════════════════════════════════════════════════════════
    КОЛЕСО
    ══════════════════════════════════════════════════════════════ */
-.wheel-section{
-    width:100%;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    padding:12px 0;
-    position:relative;
-}
-.wheel-wrap{
-    position:relative;
-    width:300px;
-    height:300px;
-    margin:0 auto;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-.wheel-pointer{
-    position:absolute;
-    top:-8px;
-    left:50%;
-    transform:translateX(-50%);
-    z-index:10;
-    width:44px;
-    height:44px;
-    pointer-events:none;
-    filter:drop-shadow(0 4px 12px rgba(0,0,0,.9));
-}
+.wheel-section{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0;position:relative}
+.wheel-wrap{position:relative;width:300px;height:300px;margin:0 auto;display:flex;align-items:center;justify-content:center}
+.wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);z-index:10;width:44px;height:44px;pointer-events:none;filter:drop-shadow(0 4px 12px rgba(0,0,0,.9))}
 .wheel-pointer svg{width:100%;height:100%;display:block}
 
-/* ═══ Результат: PNG победы/неудачи ═══ */
+/* ═══ Золотая вспышка (когда появляется шанс) ═══ */
+.gold-ring-hint{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    pointer-events:none;z-index:6;opacity:0;
+    transition:opacity .4s;
+}
+.gold-ring-hint.show{
+    opacity:1;
+    animation:goldPulse 1.2s ease-in-out infinite;
+}
+@keyframes goldPulse{
+    0%,100%{filter:drop-shadow(0 0 8px rgba(255,215,0,.5))}
+    50%{filter:drop-shadow(0 0 28px rgba(255,215,0,.95))}
+}
+
+/* ═══ Результат: PNG в центре ═══ */
 .wheel-result{
-    position:absolute;
-    top:50%;
-    left:50%;
+    position:absolute;top:50%;left:50%;
     transform:translate(-50%,-50%) scale(0);
-    width:200px;
-    height:200px;
-    z-index:20;
-    pointer-events:none;
-    opacity:0;
+    width:180px;height:180px;z-index:20;pointer-events:none;opacity:0;
     transition:opacity .3s ease, transform .3s ease;
 }
 .wheel-result.show{
@@ -347,36 +135,63 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     animation:resultBounce .6s cubic-bezier(.34,1.56,.64,1);
 }
 .wheel-result img{
-    width:100%;
-    height:100%;
-    object-fit:contain;
+    width:100%;height:100%;object-fit:contain;
     filter:drop-shadow(0 0 40px rgba(36,195,142,.6));
 }
 .wheel-result.fail img{
     filter:drop-shadow(0 0 40px rgba(255,48,100,.6));
+    animation:failGlow 1.6s ease-in-out infinite;
+}
+.wheel-result.gold img{
+    filter:drop-shadow(0 0 60px rgba(255,215,0,.95));
+    animation:goldResultGlow 1.2s ease-in-out infinite;
 }
 @keyframes resultBounce{
     0%{transform:translate(-50%,-50%) scale(0)}
     50%{transform:translate(-50%,-50%) scale(1.15)}
     100%{transform:translate(-50%,-50%) scale(1)}
 }
+@keyframes failGlow{
+    0%,100%{filter:drop-shadow(0 0 40px rgba(255,48,100,.6));transform:translate(-50%,-50%) scale(1)}
+    50%{filter:drop-shadow(0 0 70px rgba(255,48,100,.95));transform:translate(-50%,-50%) scale(1.05)}
+}
+@keyframes goldResultGlow{
+    0%,100%{filter:drop-shadow(0 0 50px rgba(255,215,0,.8));transform:translate(-50%,-50%) scale(1)}
+    50%{filter:drop-shadow(0 0 90px rgba(255,215,0,1));transform:translate(-50%,-50%) scale(1.08)}
+}
+
+/* ═══ PNG ставки, летящий в центр (GOLD) ═══ */
+.fly-item{
+    position:absolute;
+    width:80px;height:80px;
+    z-index:18;pointer-events:none;
+    opacity:0;
+    transition:opacity .3s, transform .9s cubic-bezier(.5,-0.3,.7,1.4);
+    filter:drop-shadow(0 0 20px rgba(255,215,0,.8));
+}
+.fly-item img{width:100%;height:100%;object-fit:contain}
+.fly-item.flying{
+    opacity:1;
+    animation:flyToCenter 1.1s cubic-bezier(.5,-0.3,.7,1.4) forwards;
+}
+.fly-item.from-left{transform:translate(-140px,120px) scale(.6) rotate(-180deg)}
+.fly-item.from-right{transform:translate(140px,120px) scale(.6) rotate(180deg)}
+.fly-item.to-center{transform:translate(0,0) scale(1) rotate(0deg)}
+@keyframes flyToCenter{
+    0%{opacity:0}
+    15%{opacity:1}
+    80%{opacity:1}
+    100%{opacity:1}
+}
 
 /* ═══ Вспышка ═══ */
 .wheel-flash{
-    position:absolute;
-    top:50%;
-    left:50%;
+    position:absolute;top:50%;left:50%;
     transform:translate(-50%,-50%);
-    width:300px;
-    height:300px;
-    border-radius:50%;
-    pointer-events:none;
-    z-index:15;
-    opacity:0;
+    width:300px;height:300px;border-radius:50%;
+    pointer-events:none;z-index:15;opacity:0;
 }
-.wheel-flash.show{
-    animation:flashAnim .8s ease-out;
-}
+.wheel-flash.show{animation:flashAnim .8s ease-out}
 @keyframes flashAnim{
     0%{opacity:0;transform:translate(-50%,-50%) scale(0.3)}
     50%{opacity:.8}
@@ -384,26 +199,31 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .wheel-flash.win{background:radial-gradient(circle, rgba(36,195,142,.6) 0%, transparent 70%)}
 .wheel-flash.fail{background:radial-gradient(circle, rgba(255,48,100,.5) 0%, transparent 70%)}
+.wheel-flash.gold{background:radial-gradient(circle, rgba(255,215,0,.85) 0%, transparent 70%)}
 
 /* ═══ Тряска при неудаче ═══ */
 @keyframes wheelShake{
     0%,100%{transform:translateX(0)}
-    10%,30%,50%,70%,90%{transform:translateX(-8px)}
-    20%,40%,60%,80%{transform:translateX(8px)}
+    10%,30%,50%,70%,90%{transform:translateX(-6px)}
+    20%,40%,60%,80%{transform:translateX(6px)}
 }
-.wheel-wrap.shake{
-    animation:wheelShake .5s ease-in-out;
+.wheel-wrap.shake{animation:wheelShake .55s ease-in-out}
+
+/* ═══ "Взрыв" ставки при проигрыше (мягкий) ═══ */
+.wheel-wrap.fail-explode .wheel-result img{
+    animation:softExplode 1.2s ease-out forwards;
+}
+@keyframes softExplode{
+    0%{transform:scale(1);opacity:1;filter:drop-shadow(0 0 40px rgba(255,48,100,.6))}
+    30%{transform:scale(1.15);filter:drop-shadow(0 0 80px rgba(255,48,100,.95)) brightness(1.5)}
+    60%{transform:scale(1.05);opacity:1}
+    100%{transform:scale(1.6);opacity:0;filter:drop-shadow(0 0 0 rgba(255,48,100,0)) blur(8px)}
 }
 
 /* ═══ Звёзды при победе ═══ */
 .star-particle{
-    position:absolute;
-    width:24px;
-    height:24px;
-    pointer-events:none;
-    z-index:25;
-    opacity:0;
-    transform:scale(0);
+    position:absolute;width:24px;height:24px;pointer-events:none;
+    z-index:25;opacity:0;transform:scale(0);
     animation:starPop 1.2s ease-out forwards;
 }
 .star-particle img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 8px rgba(255,215,0,.8))}
@@ -414,390 +234,110 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 
 /* Базовое колесо */
-.wheel-rotator{
-    position:absolute;
-    top:0;left:0;
-    width:100%;
-    height:100%;
-    will-change:transform;
-    transform-origin:50% 50%;
-    backface-visibility:hidden;
-    -webkit-backface-visibility:hidden;
-    transform:translateZ(0);
-}
+.wheel-rotator{position:absolute;top:0;left:0;width:100%;height:100%;will-change:transform;transform-origin:50% 50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(0)}
 .wheel-rotator svg{width:100%;height:100%;display:block}
+.wheel-green-arc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;transform-origin:50% 50%;will-change:transform;transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden}
 
-.wheel-green-arc{
-    position:absolute;
-    top:0;left:0;
-    width:100%;
-    height:100%;
-    pointer-events:none;
-    z-index:1;
-    transform-origin:50% 50%;
-    will-change:transform;
-    transform:translateZ(0);
-    backface-visibility:hidden;
-    -webkit-backface-visibility:hidden;
+/* ═══ Золотая полоса (накладывается на зелёную) ═══ */
+.wheel-gold-arc{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    pointer-events:none;z-index:2;
+    transform-origin:50% 50%;will-change:transform;
+    transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    opacity:0;transition:opacity .35s ease;
+}
+.wheel-gold-arc.visible{opacity:1}
+.wheel-gold-arc.pulsing{animation:goldArcPulse 1s ease-in-out infinite}
+@keyframes goldArcPulse{
+    0%,100%{filter:drop-shadow(0 0 6px rgba(255,215,0,.7))}
+    50%{filter:drop-shadow(0 0 22px rgba(255,215,0,1))}
 }
 
 .wheel-center{
-    position:absolute;
-    top:50%;left:50%;
-    transform:translate(-50%,-50%);
-    width:130px;
-    height:130px;
-    border-radius:50%;
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:130px;height:130px;border-radius:50%;
     background:radial-gradient(circle, #15151c 0%, #0a0a0f 100%);
     border:2px solid rgba(255,255,255,.06);
-    box-shadow:
-        inset 0 0 30px rgba(0,0,0,.9),
-        0 0 0 6px rgba(10,10,15,.95);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:5;
-    overflow:hidden;
-    transition:all .3s ease;
+    box-shadow:inset 0 0 30px rgba(0,0,0,.9),0 0 0 6px rgba(10,10,15,.95);
+    display:flex;align-items:center;justify-content:center;z-index:5;overflow:hidden;
+    transition:box-shadow .3s ease;
 }
-.wheel-center-img{
-    position:absolute;
-    width:80px;
-    height:80px;
-    object-fit:contain;
-    opacity:0;
-    transition:opacity .3s ease;
-    z-index:2;
-    filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));
+.wheel-center.gold-glow{
+    box-shadow:inset 0 0 40px rgba(255,215,0,.3),0 0 0 6px rgba(10,10,15,.95),0 0 40px rgba(255,215,0,.5);
 }
+.wheel-center-img{position:absolute;width:80px;height:80px;object-fit:contain;opacity:0;transition:opacity .3s ease;z-index:2;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
 .wheel-center-img.visible{opacity:1}
-.wheel-center-pct{
-    position:absolute;
-    font-size:28px;
-    font-weight:900;
-    letter-spacing:-1px;
-    color:#fff;
-    opacity:0;
-    transition:opacity .3s ease;
-    z-index:3;
-}
+.wheel-center-pct{position:absolute;font-size:28px;font-weight:900;letter-spacing:-1px;color:#fff;opacity:0;transition:opacity .3s ease;z-index:3}
 .wheel-center-pct.visible{opacity:1}
 
 /* ══════════════════════════════════════════════════════════════
    КНОПКИ
    ══════════════════════════════════════════════════════════════ */
-.actions-row{
-    width:100%;
-    display:flex;
-    gap:10px;
-}
-.btn-main{
-    flex:2;
-    height:56px;
-    border-radius:16px;
-    background:linear-gradient(135deg, #24C38E 0%, #10b981 100%);
-    border:1px solid rgba(36,195,142,.3);
-    color:#fff;
-    font-size:16px;
-    font-weight:800;
-    text-transform:uppercase;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:all .2s;
-    letter-spacing:.5px;
-}
+.actions-row{width:100%;display:flex;gap:10px}
+.btn-main{flex:2;height:56px;border-radius:16px;background:linear-gradient(135deg, #24C38E 0%, #10b981 100%);border:1px solid rgba(36,195,142,.3);color:#fff;font-size:16px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;transition:all .2s;letter-spacing:.5px;position:relative;overflow:hidden}
 .btn-main:not(:disabled):active{transform:scale(.95)}
-.btn-main:disabled{
-    background:rgba(255,255,255,.03);
-    color:rgba(255,255,255,.2);
-    cursor:not-allowed;
-    border-color:rgba(255,255,255,.04);
+.btn-main:disabled{background:rgba(255,255,255,.03);color:rgba(255,255,255,.2);cursor:not-allowed;border-color:rgba(255,255,255,.04)}
+.btn-main.gold-mode{
+    background:linear-gradient(135deg,#FFD700 0%,#FFA500 100%);
+    border-color:rgba(255,215,0,.5);
+    box-shadow:0 0 24px rgba(255,215,0,.4);
+    animation:goldBtnPulse 1.5s ease-in-out infinite;
 }
-.btn-demo{
-    flex:1;
-    height:56px;
-    border-radius:16px;
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.08);
-    color:rgba(255,255,255,.4);
-    font-size:14px;
-    font-weight:800;
-    text-transform:uppercase;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:all .2s;
-    letter-spacing:.5px;
-    cursor:not-allowed;
+@keyframes goldBtnPulse{
+    0%,100%{box-shadow:0 0 24px rgba(255,215,0,.4)}
+    50%{box-shadow:0 0 42px rgba(255,215,0,.85)}
 }
-.btn-demo.enabled{
-    background:linear-gradient(135deg, #2a2a35 0%, #1a1a24 100%);
-    color:#fff;
-    cursor:pointer;
-}
+.btn-demo{flex:1;height:56px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);font-size:14px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;transition:all .2s;letter-spacing:.5px;cursor:not-allowed}
+.btn-demo.enabled{background:linear-gradient(135deg, #2a2a35 0%, #1a1a24 100%);color:#fff;cursor:pointer}
 .btn-demo.enabled:active{transform:scale(.95)}
 
 /* ══════════════════════════════════════════════════════════════
    МОДАЛКИ
    ══════════════════════════════════════════════════════════════ */
-.modal-overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.85);
-    backdrop-filter:blur(8px);
-    -webkit-backdrop-filter:blur(8px);
-    z-index:9000;
-    display:flex;
-    align-items:flex-end;
-    justify-content:center;
-    opacity:0;
-    visibility:hidden;
-    transition:opacity .25s, visibility .25s;
-}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9000;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .25s, visibility .25s}
 .modal-overlay.show{opacity:1;visibility:visible}
-.modal-sheet{
-    background:#0f0f15;
-    border-radius:24px 24px 0 0;
-    width:100%;
-    max-width:450px;
-    max-height:85vh;
-    display:flex;
-    flex-direction:column;
-    transform:translateY(100%);
-    transition:transform .35s cubic-bezier(.32,1,.23,1);
-    border-top:1px solid rgba(255,255,255,.06);
-    overflow:hidden;
-}
+.modal-sheet{background:#0f0f15;border-radius:24px 24px 0 0;width:100%;max-width:450px;max-height:85vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1);border-top:1px solid rgba(255,255,255,.06);overflow:hidden}
 .modal-overlay.show .modal-sheet{transform:translateY(0)}
-.modal-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:18px 20px 12px;
-    border-bottom:1px solid rgba(255,255,255,.04);
-    flex-shrink:0;
-}
-.modal-title{
-    font-size:16px;
-    font-weight:800;
-    color:#fff;
-    display:flex;
-    align-items:center;
-    gap:8px;
-}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;border-bottom:1px solid rgba(255,255,255,.04);flex-shrink:0}
+.modal-title{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
 .modal-title img{width:20px;height:20px;object-fit:contain}
-.modal-close{
-    width:32px;
-    height:32px;
-    border-radius:50%;
-    background:rgba(255,255,255,.06);
-    color:rgba(255,255,255,.6);
-    font-size:16px;
-    font-weight:700;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:transform .15s;
-}
+.modal-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:transform .15s}
 .modal-close:active{transform:scale(.9)}
-.modal-search-wrap{
-    padding:12px 20px;
-    flex-shrink:0;
-    position:relative;
-}
-.modal-search{
-    width:100%;
-    padding:12px 16px 12px 42px;
-    border-radius:14px;
-    border:1.5px solid rgba(255,255,255,.06);
-    background:rgba(255,255,255,.03);
-    color:#fff;
-    font-size:14px;
-    outline:none;
-    transition:all .2s;
-    font-family:inherit;
-}
-.modal-search:focus{
-    border-color:rgba(36,195,142,.4);
-    background:rgba(36,195,142,.04);
-}
+.modal-search-wrap{padding:12px 20px;flex-shrink:0;position:relative}
+.modal-search{width:100%;padding:12px 16px 12px 42px;border-radius:14px;border:1.5px solid rgba(255,255,255,.06);background:rgba(255,255,255,.03);color:#fff;font-size:14px;outline:none;transition:all .2s;font-family:inherit}
+.modal-search:focus{border-color:rgba(36,195,142,.4);background:rgba(36,195,142,.04)}
 .modal-search::placeholder{color:rgba(255,255,255,.3)}
-.modal-search-icon{
-    position:absolute;
-    left:34px;
-    top:50%;
-    transform:translateY(-50%);
-    width:16px;
-    height:16px;
-    stroke:rgba(255,255,255,.35);
-    fill:none;
-    stroke-width:2;
-    pointer-events:none;
-}
-.modal-body{
-    flex:1;
-    overflow-y:auto;
-    padding:0 20px 20px;
-    overscroll-behavior:contain;
-}
+.modal-search-icon{position:absolute;left:34px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:rgba(255,255,255,.35);fill:none;stroke-width:2;pointer-events:none}
+.modal-body{flex:1;overflow-y:auto;padding:0 20px 20px;overscroll-behavior:contain}
 .modal-body::-webkit-scrollbar{width:4px}
 .modal-body::-webkit-scrollbar-thumb{background:rgba(36,195,142,.2);border-radius:2px}
-.modal-grid{
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:10px;
-}
-.modal-item{
-    background:rgba(255,255,255,.03);
-    border:1.5px solid rgba(255,255,255,.06);
-    border-radius:14px;
-    padding:10px 6px 8px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    cursor:pointer;
-    transition:all .2s;
-    position:relative;
-    overflow:hidden;
-    animation:itemIn .3s cubic-bezier(.4,0,.2,1) both;
-}
-@keyframes itemIn{
-    0%{opacity:0;transform:scale(.9)}
-    100%{opacity:1;transform:scale(1)}
-}
+.modal-grid{display:grid;grid-template-columns:repeat(3, 1fr);gap:10px}
+.modal-item{background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.06);border-radius:14px;padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;animation:itemIn .3s cubic-bezier(.4,0,.2,1) both}
+@keyframes itemIn{0%{opacity:0;transform:scale(.9)}100%{opacity:1;transform:scale(1)}}
 .modal-item:active{transform:scale(.96)}
-.modal-item.selected{
-    border-color:rgba(36,195,142,.6);
-    background:rgba(36,195,142,.08);
-}
-.modal-item.selected::after{
-    content:'';
-    position:absolute;
-    top:5px;
-    right:5px;
-    width:20px;
-    height:20px;
-    border-radius:50%;
-    background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>") center center no-repeat, #24C38E;
-    background-size:12px 12px;
-}
-.modal-item-img{
-    width:60px;
-    height:60px;
-    object-fit:contain;
-    margin-bottom:5px;
-    filter:drop-shadow(0 3px 8px rgba(0,0,0,.4));
-}
-.modal-item-name{
-    font-size:10px;
-    font-weight:700;
-    color:rgba(255,255,255,.85);
-    text-align:center;
-    width:100%;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-}
-.modal-item-price{
-    font-size:10px;
-    font-weight:800;
-    color:rgba(255,255,255,.5);
-    background:rgba(255,255,255,.05);
-    padding:3px 8px;
-    border-radius:7px;
-    margin-top:4px;
-    display:inline-flex;
-    align-items:center;
-    gap:3px;
-}
+.modal-item.selected{border-color:rgba(36,195,142,.6);background:rgba(36,195,142,.08)}
+.modal-item.selected::after{content:'';position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>") center center no-repeat, #24C38E;background-size:12px 12px}
+.modal-item-img{width:60px;height:60px;object-fit:contain;margin-bottom:5px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.4))}
+.modal-item-name{font-size:10px;font-weight:700;color:rgba(255,255,255,.85);text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.modal-item-price{font-size:10px;font-weight:800;color:rgba(255,255,255,.5);background:rgba(255,255,255,.05);padding:3px 8px;border-radius:7px;margin-top:4px;display:inline-flex;align-items:center;gap:3px}
 .modal-item-price img{width:9px;height:9px}
-.modal-item-chance{
-    font-size:10px;
-    font-weight:900;
-    color:var(--green);
-    background:rgba(36,195,142,.12);
-    padding:3px 8px;
-    border-radius:7px;
-    margin-top:4px;
-    border:1px solid rgba(36,195,142,.2);
-}
-.modal-empty{
-    grid-column:1/-1;
-    text-align:center;
-    padding:40px 20px;
-    color:rgba(255,255,255,.3);
-    font-size:13px;
-    font-weight:600;
-}
-.modal-empty-icon{
-    width:64px;
-    height:64px;
-    margin:0 auto 16px;
-    opacity:.4;
-}
+.modal-item-chance{font-size:10px;font-weight:900;color:var(--green);background:rgba(36,195,142,.12);padding:3px 8px;border-radius:7px;margin-top:4px;border:1px solid rgba(36,195,142,.2)}
+.modal-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px;font-weight:600}
+.modal-empty-icon{width:64px;height:64px;margin:0 auto 16px;opacity:.4}
 .modal-empty-icon img{width:100%;height:100%;object-fit:contain}
 
 /* ══════════════════════════════════════════════════════════════
    DEPOSIT
    ══════════════════════════════════════════════════════════════ */
-.deposit-overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.85);
-    z-index:9600;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    opacity:0;
-    visibility:hidden;
-    backdrop-filter:blur(8px);
-    transition:opacity .3s,visibility .3s;
-}
+.deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9600;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
 .deposit-overlay.show{opacity:1;visibility:visible}
-.deposit-modal{
-    background:#0f0f15;
-    border-radius:24px;
-    width:90%;
-    max-width:360px;
-    padding:24px 20px;
-    transform:scale(.9);
-    transition:transform .3s;
-    border:1px solid rgba(255,255,255,.06);
-}
+.deposit-modal{background:#0f0f15;border-radius:24px;width:90%;max-width:360px;padding:24px 20px;transform:scale(.9);transition:transform .3s;border:1px solid rgba(255,255,255,.06)}
 .deposit-overlay.show .deposit-modal{transform:scale(1)}
-.deposit-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:16px;
-}
+.deposit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .deposit-title{font-weight:800;font-size:18px}
-.deposit-close{
-    width:32px;
-    height:32px;
-    border-radius:10px;
-    background:rgba(255,255,255,.06);
-    color:rgba(255,255,255,.6);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:16px;
-}
+.deposit-close{width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;font-size:16px}
 .deposit-methods{display:flex;gap:10px}
-.deposit-method{
-    flex:1;
-    padding:16px 10px;
-    border-radius:16px;
-    background:rgba(255,255,255,.03);
-    border:1px solid rgba(255,255,255,.05);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:8px;
-    cursor:pointer;
-    transition:transform .15s;
-}
+.deposit-method{flex:1;padding:16px 10px;border-radius:16px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .15s}
 .deposit-method:active{transform:scale(.96)}
 .deposit-method img{width:36px;height:36px}
 .deposit-method span{font-weight:700;font-size:13px;color:#fff}
@@ -805,36 +345,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ══════════════════════════════════════════════════════════════
    BOTTOM NAV
    ══════════════════════════════════════════════════════════════ */
-.bottom-nav{
-    position:fixed;
-    bottom:0;
-    left:50%;
-    transform:translateX(-50%);
-    z-index:100;
-    width:100%;
-    max-width:450px;
-    height:72px;
-    padding:0 8px calc(var(--safe-bottom) + 8px);
-    background:rgba(10,10,15,.95);
-    backdrop-filter:blur(20px);
-    -webkit-backdrop-filter:blur(20px);
-    border-top:1px solid rgba(255,255,255,.04);
-    display:flex;
-    align-items:center;
-    justify-content:space-around;
-}
-.bnav-item{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:4px;
-    padding:8px 16px;
-    border-radius:12px;
-    color:rgba(255,255,255,.35);
-    font-weight:600;
-    text-decoration:none;
-    transition:all .2s;
-}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:100;width:100%;max-width:450px;height:72px;padding:0 8px calc(var(--safe-bottom) + 8px);background:rgba(10,10,15,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-around}
+.bnav-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 16px;border-radius:12px;color:rgba(255,255,255,.35);font-weight:600;text-decoration:none;transition:all .2s}
 .bnav-item svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;transition:transform .2s}
 .bnav-item span{font-size:10px}
 .bnav-item.active{background:rgba(36,195,142,.1);color:#24C38E}
@@ -844,32 +356,66 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ══════════════════════════════════════════════════════════════
    TOAST
    ══════════════════════════════════════════════════════════════ */
-.toast{
-    position:fixed;
-    top:80px;
-    left:50%;
-    transform:translateX(-50%) translateY(-20px);
-    background:rgba(20,20,30,.95);
-    border:1px solid rgba(255,255,255,.08);
-    padding:12px 20px;
-    border-radius:14px;
-    font-size:13px;
-    font-weight:700;
-    z-index:9999;
-    opacity:0;
-    visibility:hidden;
-    transition:all .3s;
-    max-width:90%;
-    text-align:center;
-    display:flex;
-    align-items:center;
-    gap:8px;
-    justify-content:center;
-}
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);background:rgba(20,20,30,.95);border:1px solid rgba(255,255,255,.08);padding:12px 20px;border-radius:14px;font-size:13px;font-weight:700;z-index:9999;opacity:0;visibility:hidden;transition:all .3s;max-width:90%;text-align:center;display:flex;align-items:center;gap:8px;justify-content:center}
 .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
 .toast img{width:20px;height:20px;object-fit:contain}
 .toast.ok{border-color:rgba(36,195,142,.3);color:#24C38E}
 .toast.err{border-color:rgba(255,48,100,.3);color:#FF3064}
+.toast.gold{border-color:rgba(255,215,0,.4);color:#FFD700}
+
+/* ══════════════════════════════════════════════════════════════
+   GOLD WIN OVERLAY
+   ══════════════════════════════════════════════════════════════ */
+.gold-overlay{
+    position:fixed;inset:0;z-index:9700;
+    background:radial-gradient(circle at center, rgba(255,215,0,.15) 0%, rgba(0,0,0,.92) 70%);
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    opacity:0;visibility:hidden;transition:opacity .4s,visibility .4s;
+    padding:20px;
+}
+.gold-overlay.show{opacity:1;visibility:visible}
+.gold-title{
+    font-size:26px;font-weight:900;
+    background:linear-gradient(135deg,#FFD700,#FFA500,#FFD700);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+    text-shadow:0 0 40px rgba(255,215,0,.6);
+    margin-bottom:20px;letter-spacing:1px;
+    animation:goldTitlePulse 1.2s ease-in-out infinite;
+}
+@keyframes goldTitlePulse{
+    0%,100%{filter:drop-shadow(0 0 10px rgba(255,215,0,.7))}
+    50%{filter:drop-shadow(0 0 30px rgba(255,215,0,1))}
+}
+.gold-gift-img{
+    width:200px;height:200px;object-fit:contain;
+    filter:drop-shadow(0 0 50px rgba(255,215,0,.95));
+    animation:goldGiftSpin 3s ease-in-out infinite;
+    margin-bottom:20px;
+}
+@keyframes goldGiftSpin{
+    0%,100%{transform:rotate(-8deg) scale(1)}
+    50%{transform:rotate(8deg) scale(1.08)}
+}
+.gold-subtitle{
+    font-size:14px;color:rgba(255,255,255,.7);
+    font-weight:600;margin-bottom:8px;text-align:center;
+}
+.gold-value{
+    font-size:22px;font-weight:900;color:#FFD700;
+    display:flex;align-items:center;gap:8px;
+    margin-bottom:24px;text-shadow:0 0 24px rgba(255,215,0,.6);
+}
+.gold-value img{width:22px;height:22px}
+.gold-btn{
+    padding:14px 40px;border-radius:16px;
+    background:linear-gradient(135deg,#FFD700,#FFA500);
+    color:#000;font-size:15px;font-weight:900;
+    text-transform:uppercase;letter-spacing:1px;
+    box-shadow:0 8px 32px rgba(255,215,0,.5);
+    transition:transform .15s;
+}
+.gold-btn:active{transform:scale(.95)}
 
 /* ══════════════════════════════════════════════════════════════
    АДАПТИВ
@@ -882,6 +428,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     .select-card{min-height:150px;padding:12px 10px}
     .select-img{width:60px;height:60px}
     .wheel-pointer{width:40px;height:40px;top:-6px}
+    .fly-item{width:64px;height:64px}
 }
 @media(max-width:340px){
     .wheel-wrap{width:240px;height:240px}
@@ -899,15 +446,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <div style="position:relative;width:180px;height:180px">
         <div class="loading-arrow">
             <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                <path d="M16 28 L8 10 C11 8 21 8 24 10 Z"
-                      fill="#ffffff"
-                      stroke="rgba(0,0,0,.3)"
-                      stroke-width="1"
-                      stroke-linejoin="round"/>
+                <path d="M16 28 L8 10 C11 8 21 8 24 10 Z" fill="#ffffff" stroke="rgba(0,0,0,.3)" stroke-width="1" stroke-linejoin="round"/>
                 <circle cx="16" cy="10" r="3" fill="#ffffff"/>
             </svg>
         </div>
-
         <div class="loading-wheel">
             <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                 <defs>
@@ -917,19 +459,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
                     </linearGradient>
                 </defs>
                 <circle class="ld-ring" cx="100" cy="100" r="86"/>
-                <circle class="ld-green" cx="100" cy="100" r="86"
-                        stroke-dasharray="135 540"
-                        transform="rotate(-90 100 100)"/>
+                <circle class="ld-green" cx="100" cy="100" r="86" stroke-dasharray="135 540" transform="rotate(-90 100 100)"/>
                 <g id="ldRisks"></g>
                 <circle class="ld-inner" cx="100" cy="100" r="75"/>
             </svg>
         </div>
     </div>
-
     <div class="loading-text" id="loadingText">LOADING 0%</div>
-    <div class="loading-progress">
-        <div class="loading-progress-bar" id="loadingBar"></div>
-    </div>
+    <div class="loading-progress"><div class="loading-progress-bar" id="loadingBar"></div></div>
 </div>
 
 <!-- TOP BAR -->
@@ -955,34 +492,26 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         <div class="select-card" id="leftCard" onclick="openInventoryModal()">
             <div class="select-card-title">Ваша ставка</div>
             <div class="select-empty">
-                <div class="select-empty-icon">
-                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                </div>
+                <div class="select-empty-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
                 <div class="select-empty-text">Добавить</div>
             </div>
             <div class="select-filled">
                 <img class="select-img" id="leftGiftImg" src="/static/img/gift.png" alt="">
                 <div class="select-name" id="leftGiftName"></div>
-                <div class="select-price">
-                    <img src="/static/img/ton.png"><span id="leftGiftValue">0.00</span>
-                </div>
+                <div class="select-price"><img src="/static/img/ton.png"><span id="leftGiftValue">0.00</span></div>
             </div>
         </div>
 
         <div class="select-card" id="rightCard" onclick="openTargetsModal()">
             <div class="select-card-title">Желаемый<br>подарок</div>
             <div class="select-empty">
-                <div class="select-empty-icon">
-                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                </div>
+                <div class="select-empty-icon"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
                 <div class="select-empty-text">Добавить</div>
             </div>
             <div class="select-filled">
                 <img class="select-img" id="rightGiftImg" src="/static/img/gift.png" alt="">
                 <div class="select-name" id="rightGiftName"></div>
-                <div class="select-price">
-                    <img src="/static/img/ton.png"><span id="rightGiftValue">0.00</span>
-                </div>
+                <div class="select-price"><img src="/static/img/ton.png"><span id="rightGiftValue">0.00</span></div>
                 <div class="select-chance" id="rightChance" style="display:none">0%</div>
             </div>
         </div>
@@ -991,20 +520,18 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <div class="wheel-section">
         <div class="wheel-wrap" id="wheelWrap">
 
-            <!-- Стрелка -->
             <div class="wheel-pointer">
                 <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M22 38 L12 14 C15 12 29 12 32 14 Z"
-                          fill="#ffffff"
-                          stroke="rgba(0,0,0,.3)"
-                          stroke-width="1"
-                          stroke-linejoin="round"/>
+                    <path d="M22 38 L12 14 C15 12 29 12 32 14 Z" fill="#ffffff" stroke="rgba(0,0,0,.3)" stroke-width="1" stroke-linejoin="round"/>
                     <circle cx="22" cy="14" r="4" fill="#ffffff"/>
                 </svg>
             </div>
 
-            <!-- Вспышка -->
             <div class="wheel-flash" id="wheelFlash"></div>
+
+            <!-- Летящие PNG при GOLD -->
+            <div class="fly-item from-left" id="flyLeft"><img id="flyLeftImg" src="" alt=""></div>
+            <div class="fly-item from-right" id="flyRight"><img id="flyRightImg" src="" alt=""></div>
 
             <!-- Результат -->
             <div class="wheel-result" id="wheelResult">
@@ -1019,26 +546,36 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
                         <stop offset="100%" stop-color="#10b981"/>
                     </linearGradient>
                 </defs>
-                <path id="greenPath" d="" fill="none"
-                      stroke="url(#greenGrad)" stroke-width="20"
-                      stroke-linecap="butt"/>
+                <path id="greenPath" d="" fill="none" stroke="url(#greenGrad)" stroke-width="20" stroke-linecap="butt"/>
             </svg>
 
-            <!-- Базовое колесо -->
+            <!-- Золотая зона (появляется только если шанс gold) -->
+            <svg class="wheel-gold-arc" id="goldArc" viewBox="0 0 240 240">
+                <defs>
+                    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FFD700"/>
+                        <stop offset="50%" stop-color="#FFA500"/>
+                        <stop offset="100%" stop-color="#FFD700"/>
+                    </linearGradient>
+                </defs>
+                <path id="goldPath" d="" fill="none" stroke="url(#goldGrad)" stroke-width="20" stroke-linecap="butt"/>
+            </svg>
+
+            <!-- Золотое свечение-подсказка -->
+            <svg class="gold-ring-hint" id="goldRingHint" viewBox="0 0 240 240">
+                <circle cx="120" cy="120" r="114" fill="none" stroke="#FFD700" stroke-width="2" opacity="0.6"/>
+            </svg>
+
             <div class="wheel-rotator" id="wheelRotator">
                 <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="120" cy="120" r="118" fill="none"
-                            stroke="rgba(255,255,255,.03)" stroke-width="1"/>
-                    <circle cx="120" cy="120" r="104" fill="none"
-                            stroke="#14141a" stroke-width="20"/>
+                    <circle cx="120" cy="120" r="118" fill="none" stroke="rgba(255,255,255,.03)" stroke-width="1"/>
+                    <circle cx="120" cy="120" r="104" fill="none" stroke="#14141a" stroke-width="20"/>
                     <g id="risksGroup" opacity="0.6"></g>
-                    <circle cx="120" cy="120" r="94" fill="none"
-                            stroke="rgba(255,255,255,.02)" stroke-width="1"/>
+                    <circle cx="120" cy="120" r="94" fill="none" stroke="rgba(255,255,255,.02)" stroke-width="1"/>
                 </svg>
             </div>
 
-            <!-- Центр -->
-            <div class="wheel-center">
+            <div class="wheel-center" id="wheelCenter">
                 <img class="wheel-center-img" id="wheelCenterImg" src="" alt="">
                 <span class="wheel-center-pct visible" id="chancePct">0.00%</span>
             </div>
@@ -1059,22 +596,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div class="modal-overlay" id="inventoryModal" onclick="if(event.target===this)closeInventoryModal()">
     <div class="modal-sheet">
         <div class="modal-header">
-            <div class="modal-title">
-                <img src="/static/img/gift.png" alt=""> Ваш инвентарь
-            </div>
+            <div class="modal-title"><img src="/static/img/gift.png" alt=""> Ваш инвентарь</div>
             <button class="modal-close" onclick="closeInventoryModal()">✕</button>
         </div>
         <div class="modal-search-wrap">
-            <input type="text" class="modal-search" id="inventorySearch"
-                   placeholder="Поиск подарков..." oninput="filterInventory()">
-            <svg class="modal-search-icon" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="M21 21l-4.35-4.35"/>
-            </svg>
+            <input type="text" class="modal-search" id="inventorySearch" placeholder="Поиск подарков..." oninput="filterInventory()">
+            <svg class="modal-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         </div>
-        <div class="modal-body">
-            <div class="modal-grid" id="inventoryGrid"></div>
-        </div>
+        <div class="modal-body"><div class="modal-grid" id="inventoryGrid"></div></div>
     </div>
 </div>
 
@@ -1082,22 +611,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div class="modal-overlay" id="targetsModal" onclick="if(event.target===this)closeTargetsModal()">
     <div class="modal-sheet">
         <div class="modal-header">
-            <div class="modal-title">
-                <img src="/static/img/star2.png" alt=""> Желаемый подарок
-            </div>
+            <div class="modal-title"><img src="/static/img/star2.png" alt=""> Желаемый подарок</div>
             <button class="modal-close" onclick="closeTargetsModal()">✕</button>
         </div>
         <div class="modal-search-wrap">
-            <input type="text" class="modal-search" id="targetsSearch"
-                   placeholder="Поиск подарков..." oninput="filterTargets()">
-            <svg class="modal-search-icon" viewBox="0 0 24 24">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="M21 21l-4.35-4.35"/>
-            </svg>
+            <input type="text" class="modal-search" id="targetsSearch" placeholder="Поиск подарков..." oninput="filterTargets()">
+            <svg class="modal-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         </div>
-        <div class="modal-body">
-            <div class="modal-grid" id="targetsGrid"></div>
-        </div>
+        <div class="modal-body"><div class="modal-grid" id="targetsGrid"></div></div>
     </div>
 </div>
 
@@ -1109,36 +630,29 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
             <button class="deposit-close" onclick="closeDeposit()">✕</button>
         </div>
         <div class="deposit-methods">
-            <button class="deposit-method" onclick="closeDeposit();location.href='/crash'">
-                <img src="/static/img/ton.png" alt="TON"><span>TON</span>
-            </button>
-            <button class="deposit-method" onclick="closeDeposit();location.href='/crash'">
-                <img src="/static/img/star.png" alt="Stars"><span>Stars</span>
-            </button>
+            <button class="deposit-method" onclick="closeDeposit();location.href='/crash'"><img src="/static/img/ton.png" alt="TON"><span>TON</span></button>
+            <button class="deposit-method" onclick="closeDeposit();location.href='/crash'"><img src="/static/img/star.png" alt="Stars"><span>Stars</span></button>
         </div>
     </div>
+</div>
+
+<!-- GOLD WIN OVERLAY -->
+<div class="gold-overlay" id="goldOverlay">
+    <div class="gold-title">✨ GOLD WIN ✨</div>
+    <img class="gold-gift-img" id="goldGiftImg" src="/static/img/star2.png" alt="">
+    <div class="gold-subtitle" id="goldGiftName">Подарок</div>
+    <div class="gold-value"><span id="goldGiftValue">0.00</span><img src="/static/img/ton.png" alt=""></div>
+    <button class="gold-btn" onclick="closeGoldOverlay()">Забрать</button>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
-    <a class="bnav-item" href="/games">
-        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg>
-        <span>Игры</span>
-    </a>
-    <a class="bnav-item" href="/news">
-        <svg viewBox="0 0 24 24"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
-        <span>Новости</span>
-    </a>
-    <a class="bnav-item" href="/leaderboard">
-        <svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-        <span>Топ</span>
-    </a>
-    <a class="bnav-item" href="/inventory">
-        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>Профиль</span>
-    </a>
+    <a class="bnav-item" href="/games"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg><span>Игры</span></a>
+    <a class="bnav-item" href="/news"><svg viewBox="0 0 24 24"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg><span>Новости</span></a>
+    <a class="bnav-item" href="/leaderboard"><svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg><span>Топ</span></a>
+    <a class="bnav-item" href="/inventory"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Профиль</span></a>
 </nav>
 
 <script>
@@ -1156,6 +670,12 @@ var currentChance = 0;
 var _inventorySearchQ = '';
 var _targetsSearchQ = '';
 
+/* GOLD: шанс появления золотой полосы 10%, шанс выпадения золота 5% */
+var GOLD_APPEAR_CHANCE = 0.10;   // 10% что золотая полоса появится
+var GOLD_WIN_CHANCE = 0.05;      // 5% что выпадет золото (если полоса появилась)
+var _goldActive = false;         // золотая полоса сейчас на колесе
+var _goldWillWin = false;        // предрешено ли выпадение золота
+
 function $(id){ return document.getElementById(id); }
 
 function showTgAlert(msg, cb){
@@ -1169,7 +689,7 @@ function showToast(msg, type, iconUrl){
     var icon = iconUrl ? '<img src="' + iconUrl + '" alt="">' : '';
     t.innerHTML = icon + '<span>' + msg + '</span>';
     t.className = 'toast show ' + (type || '');
-    setTimeout(function(){ t.classList.remove('show'); }, 2500);
+    setTimeout(function(){ t.classList.remove('show'); }, 2800);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1191,10 +711,7 @@ function showToast(msg, type, iconUrl){
         var y1 = cy + Math.sin(rad) * (rOuter - 1);
         var x2 = cx + Math.cos(rad) * (rOuter - 1 - len);
         var y2 = cy + Math.sin(rad) * (rOuter - 1 - len);
-        html += '<line class="ld-tick" x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1)
-              + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1)
-              + '" stroke="rgba(255,255,255,' + opacity + ')"'
-              + ' stroke-width="' + width + '"/>';
+        html += '<line class="ld-tick" x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="rgba(255,255,255,' + opacity + ')" stroke-width="' + width + '"/>';
     }
     group.innerHTML = html;
 })();
@@ -1243,10 +760,7 @@ var _simInterval = setInterval(function(){
         var y1 = cy + Math.sin(rad) * (rOuter - 1);
         var x2 = cx + Math.cos(rad) * (rOuter - 1 - len);
         var y2 = cy + Math.sin(rad) * (rOuter - 1 - len);
-        html += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1)
-              + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1)
-              + '" stroke="rgba(255,255,255,' + opacity + ')"'
-              + ' stroke-width="' + width + '" stroke-linecap="round"/>';
+        html += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="rgba(255,255,255,' + opacity + ')" stroke-width="' + width + '" stroke-linecap="round"/>';
     }
     group.innerHTML = html;
 })();
@@ -1268,10 +782,62 @@ function drawGreenArc(chance){
     var start = polar(startAngle);
     var end = polar(endAngle);
     var largeArc = (chance > 50) ? 1 : 0;
-    var d = 'M ' + start.x.toFixed(2) + ' ' + start.y.toFixed(2)
-          + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 '
-          + end.x.toFixed(2) + ' ' + end.y.toFixed(2);
+    var d = 'M ' + start.x.toFixed(2) + ' ' + start.y.toFixed(2) + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + end.x.toFixed(2) + ' ' + end.y.toFixed(2);
     path.setAttribute('d', d);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ЗОЛОТАЯ ПОЛОСА (появляется при апгрейде)
+   ══════════════════════════════════════════════════════════════ */
+function showGoldArc(){
+    /* Золотая полоса появляется ПОВЕРХ зелёной, чуть смещена
+       в начале — маленький сегмент (например 1/6 от верха) */
+    var path = $('goldPath');
+    if(!path) return;
+    var cx = 120, cy = 120, r = 104;
+    /* Небольшой золотой сегмент — 25 градусов */
+    var startAngle = -90;
+    var endAngle = startAngle + 25;
+    function polar(a){
+        var rad = a * Math.PI / 180;
+        return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+    }
+    var start = polar(startAngle);
+    var end = polar(endAngle);
+    var d = 'M ' + start.x.toFixed(2) + ' ' + start.y.toFixed(2) + ' A ' + r + ' ' + r + ' 0 0 1 ' + end.x.toFixed(2) + ' ' + end.y.toFixed(2);
+    path.setAttribute('d', d);
+
+    var arc = $('goldArc');
+    var hint = $('goldRingHint');
+    if(arc){ arc.classList.add('visible'); }
+    if(hint){ hint.classList.add('show'); }
+
+    /* Пульсация после появления */
+    setTimeout(function(){
+        if(arc) arc.classList.add('pulsing');
+    }, 400);
+}
+
+function hideGoldArc(){
+    var arc = $('goldArc');
+    var hint = $('goldRingHint');
+    if(arc){ arc.classList.remove('visible','pulsing'); }
+    if(hint){ hint.classList.remove('show'); }
+    _goldActive = false;
+    _goldWillWin = false;
+}
+
+function pulseGoldArcStrong(){
+    /* Когда выпало золото — усилить свечение */
+    var arc = $('goldArc');
+    if(arc){
+        arc.classList.add('visible','pulsing');
+        arc.style.filter = 'drop-shadow(0 0 30px rgba(255,215,0,1))';
+    }
+    var hint = $('goldRingHint');
+    if(hint) hint.classList.add('show');
+    var center = $('wheelCenter');
+    if(center) center.classList.add('gold-glow');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1368,6 +934,7 @@ function _selectGift(it){
         $('rightChance').style.display = 'none';
         drawGreenArc(0);
     }
+    hideGoldArc();
     updateWheel();
     closeInventoryModal();
 
@@ -1471,6 +1038,7 @@ function _selectTarget(g){
     chEl.textContent = g.upgrade_chance + '%';
     chEl.style.display = 'inline-flex';
 
+    hideGoldArc();
     drawGreenArc(currentChance);
     updateWheel();
     closeTargetsModal();
@@ -1499,7 +1067,7 @@ function updateWheel(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   СПИН — общий
+   СПИН
    ══════════════════════════════════════════════════════════════ */
 async function doUpgrade(){
     if(isSpinning || !targetGift || !selectedGift) return;
@@ -1511,13 +1079,22 @@ async function doUpgrade(){
 
     var rotator = $('wheelRotator');
     var greenArc = $('greenArc');
+    var goldArc = $('goldArc');
     if(!rotator || !greenArc) return;
 
+    /* Откат назад перед разгоном */
     rotator.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
     greenArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
+    if(goldArc) goldArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
     rotator.style.transform = 'rotate(-20deg)';
     greenArc.style.transform = 'rotate(-20deg)';
+    if(goldArc) goldArc.style.transform = 'rotate(-20deg)';
 
+    /* GOLD: решаем появится ли золотая полоса (10%) и выиграет ли она (5% от появления) */
+    var willShowGold = Math.random() < GOLD_APPEAR_CHANCE;
+    var goldWillWin = willShowGold && (Math.random() < GOLD_WIN_CHANCE);
+
+    /* Запрос к серверу */
     var result;
     try{
         var r = await fetch('/api/upgrade-multi', {
@@ -1539,6 +1116,7 @@ async function doUpgrade(){
         greenArc.style.transition = 'transform 0.5s ease';
         rotator.style.transform = 'rotate(0deg)';
         greenArc.style.transform = 'rotate(0deg)';
+        if(goldArc) goldArc.style.transform = 'rotate(0deg)';
         btn.disabled = false;
         $('upgradeBtnText').textContent = 'Апгрейд';
         isSpinning = false;
@@ -1546,7 +1124,10 @@ async function doUpgrade(){
         return;
     }
 
-    spinWheel(result.chance, result.upgrade_success, false);
+    /* GOLD перезаписывает исход: если золото выигрывает — считаем как WIN с золотой анимацией */
+    var finalWin = goldWillWin ? true : result.upgrade_success;
+
+    spinWheel(result.chance, finalWin, false, willShowGold, goldWillWin);
 }
 
 function doDemo(){
@@ -1556,47 +1137,101 @@ function doDemo(){
         return;
     }
     isSpinning = true;
-    var isWin = Math.random() * 100 < currentChance;
-    spinWheel(currentChance, isWin, true);
+    var willShowGold = Math.random() < GOLD_APPEAR_CHANCE;
+    var goldWillWin = willShowGold && (Math.random() < GOLD_WIN_CHANCE);
+    var isWin = goldWillWin ? true : (Math.random() * 100 < currentChance);
+    spinWheel(currentChance, isWin, true, willShowGold, goldWillWin);
 }
 
-function spinWheel(chance, isWin, isDemo){
+/* ══════════════════════════════════════════════════════════════
+   СПИН КОЛЕСА
+   ══════════════════════════════════════════════════════════════ */
+function spinWheel(chance, isWin, isDemo, willShowGold, goldWillWin){
     var rotator = $('wheelRotator');
     var greenArc = $('greenArc');
+    var goldArc = $('goldArc');
     if(!rotator || !greenArc) return;
 
+    /* Откат назад */
     rotator.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
     greenArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
+    if(goldArc) goldArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
     rotator.style.transform = 'rotate(-20deg)';
     greenArc.style.transform = 'rotate(-20deg)';
+    if(goldArc) goldArc.style.transform = 'rotate(-20deg)';
 
+    /* Угол приземления */
     var landAngle;
-    if(isWin){
+    if(goldWillWin){
+        /* Приземление в золотой сегмент (-90° начало, ширина 25°) */
+        landAngle = 90 + 5 + Math.random() * 15; /* внутри 25° сегмента */
+    } else if(isWin){
         landAngle = (chance * 0.15) + Math.random() * (chance * 0.7);
     } else {
-        landAngle = chance + Math.random() * (360 - chance);
+        /* Если золото показано, но не выиграло — не попадаем в золотой сегмент */
+        if(willShowGold){
+            var goldStart = 90;
+            var goldEnd = 90 + 25;
+            do {
+                landAngle = chance + Math.random() * (360 - chance);
+            } while(landAngle >= goldStart - 10 && landAngle <= goldEnd + 10);
+        } else {
+            landAngle = chance + Math.random() * (360 - chance);
+        }
     }
 
     var totalSpin = 360 * (10 + Math.floor(Math.random() * 5)) + (360 - landAngle);
-    var spinDuration = 7500;
+    var spinDuration = goldWillWin ? 9500 : 7500;
+
+    /* Через 400мс после отката — показываем золотую полосу (если должна) */
+    if(willShowGold){
+        setTimeout(function(){
+            showGoldArc();
+            _goldActive = true;
+            _goldWillWin = goldWillWin;
+            /* Вспышка, когда появилась */
+            var flash = $('wheelFlash');
+            if(flash){
+                flash.classList.remove('win','fail','gold','show');
+                void flash.offsetWidth;
+                flash.classList.add('gold','show');
+            }
+            showToast('✨ GOLD CHANCE! ✨', 'gold');
+            try{
+                if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+            }catch(e){}
+        }, 350);
+    }
 
     setTimeout(function(){
         var trans = 'transform ' + spinDuration + 'ms cubic-bezier(.15,.7,.15,1)';
         rotator.style.transition = trans;
         greenArc.style.transition = trans;
+        if(goldArc) goldArc.style.transition = trans;
         rotator.style.transform = 'rotate(' + totalSpin + 'deg)';
         greenArc.style.transform = 'rotate(' + totalSpin + 'deg)';
+        if(goldArc) goldArc.style.transform = 'rotate(' + totalSpin + 'deg)';
+
+        /* Если золото выигрывает — замедляем в конце и пульсируем */
+        if(goldWillWin){
+            var slowdownTime = spinDuration - 1500;
+            setTimeout(function(){
+                /* Усилить свечение золотой полосы */
+                pulseGoldArcStrong();
+                showToast('✨ ЗОЛОТО! ✨', 'gold');
+            }, slowdownTime);
+        }
 
         setTimeout(function(){
-            showSpinResult(isWin, isDemo);
+            showSpinResult(isWin, isDemo, goldWillWin);
         }, spinDuration);
     }, 500);
 }
 
 /* ══════════════════════════════════════════════════════════════
-   РЕЗУЛЬТАТ — красивая анимация победы/поражения
+   РЕЗУЛЬТАТ — анимации
    ══════════════════════════════════════════════════════════════ */
-function showSpinResult(isWin, isDemo){
+function showSpinResult(isWin, isDemo, isGold){
     var flash = $('wheelFlash');
     var result = $('wheelResult');
     var resultImg = $('wheelResultImg');
@@ -1604,85 +1239,183 @@ function showSpinResult(isWin, isDemo){
 
     /* Вспышка */
     if(flash){
-        flash.classList.remove('win','fail','show');
+        flash.classList.remove('win','fail','gold','show');
         void flash.offsetWidth;
-        flash.classList.add(isWin ? 'win' : 'fail');
+        flash.classList.add(isGold ? 'gold' : (isWin ? 'win' : 'fail'));
         flash.classList.add('show');
     }
 
-    /* Тряска при неудаче */
-    if(!isWin && wheelWrap){
+    /* Тряска при проигрыше */
+    if(!isWin && !isGold && wheelWrap){
         wheelWrap.classList.remove('shake');
         void wheelWrap.offsetWidth;
         wheelWrap.classList.add('shake');
         setTimeout(function(){ wheelWrap.classList.remove('shake'); }, 600);
     }
 
-    /* Картинка результата */
+    /* PNG результата */
     if(result && resultImg){
-        resultImg.src = isWin ? '/static/gifs/win.gif' : '/static/gifs/lose.gif';
-        resultImg.onerror = function(){
-            this.onerror = null;
-            this.src = isWin ? '/static/img/star2.png' : '/static/img/gift.png';
-        };
-        result.classList.remove('show','fail');
-        void result.offsetWidth;
-        if(!isWin) result.classList.add('fail');
-        result.classList.add('show');
-    }
+        result.classList.remove('show','fail','gold');
 
-    /* Звёздочки разлетаются при победе */
-    if(isWin) spawnStars();
+        if(isGold){
+            /* GOLD WIN: сначала PNG ставки + PNG желаемого летят в центр */
+            startGoldFlyAnimation(function(){
+                /* После прилёта — показываем ПОДАРОК ЦЕЛИ в центре */
+                resultImg.src = targetGift.image || '/static/img/star2.png';
+                resultImg.onerror = function(){
+                    this.onerror = null;
+                    this.src = '/static/img/star2.png';
+                };
+                result.classList.add('show','gold');
+                /* Конфетти и звёзды */
+                spawnStars();
+                launchConfetti();
+                /* Оверлей GOLD */
+                setTimeout(showGoldOverlay, 1200);
+            });
+        } else if(isWin){
+            /* Обычная победа: PNG выигранного подарка в центре */
+            resultImg.src = targetGift.image || '/static/img/star2.png';
+            resultImg.onerror = function(){
+                this.onerror = null;
+                this.src = '/static/img/star2.png';
+            };
+            result.classList.add('show');
+            spawnStars();
+            launchConfetti();
+        } else {
+            /* Проигрыш: PNG ставки в центре, мягко светится и "взрывается" */
+            resultImg.src = selectedGift.image || '/static/img/gift.png';
+            resultImg.onerror = function(){
+                this.onerror = null;
+                this.src = '/static/img/gift.png';
+            };
+            result.classList.add('show','fail');
+            /* Через 1 сек — мягкий "взрыв" */
+            setTimeout(function(){
+                if(wheelWrap){
+                    wheelWrap.classList.add('fail-explode');
+                    setTimeout(function(){ wheelWrap.classList.remove('fail-explode'); }, 1400);
+                }
+            }, 1000);
+        }
+    }
 
     /* Вибрация */
     try{
         if(tg && tg.HapticFeedback){
-            tg.HapticFeedback.notificationOccurred(isWin ? 'success' : 'error');
+            tg.HapticFeedback.notificationOccurred((isWin || isGold) ? 'success' : 'error');
         }
     }catch(e){}
 
     /* Тосты */
-    var toastMsg, toastType;
+    var toastMsg, toastType, toastIcon;
     if(isDemo){
-        toastMsg = isWin ? 'Демо: победа!' : 'Демо: неудача';
-        toastType = isWin ? 'ok' : 'err';
+        toastMsg = isGold ? 'DEMO: GOLD!' : (isWin ? 'Демо: победа!' : 'Демо: неудача');
+        toastType = (isWin || isGold) ? 'ok' : 'err';
     } else {
-        toastMsg = isWin ? 'Апгрейд успешен!' : 'Апгрейд не удался';
-        toastType = isWin ? 'ok' : 'err';
+        toastMsg = isGold ? '✨ GOLD WIN! ✨' : (isWin ? 'Апгрейд успешен!' : 'Апгрейд не удался');
+        toastType = isGold ? 'gold' : ((isWin) ? 'ok' : 'err');
     }
-    var toastIcon = isWin ? '/static/gifs/win.gif' : '/static/gifs/lose.gif';
+    toastIcon = (isWin || isGold) ? '/static/gifs/win.gif' : '/static/gifs/lose.gif';
     showToast(toastMsg, toastType, toastIcon);
 
-    if(isWin) launchConfetti();
-
-    /* Сброс через 2.5 сек */
+    /* Сброс */
+    var resetDelay = isGold ? 4500 : 2500;
     setTimeout(function(){
         hideResult();
         if(isDemo){
-            /* Демо — возвращаем выбор */
             isSpinning = false;
             var rotator = $('wheelRotator');
             var greenArc = $('greenArc');
+            var goldArc = $('goldArc');
             if(rotator){ rotator.style.transition = 'transform 0.6s ease'; rotator.style.transform = 'rotate(0deg)'; }
             if(greenArc){ greenArc.style.transition = 'transform 0.6s ease'; greenArc.style.transform = 'rotate(0deg)'; }
+            if(goldArc){ goldArc.style.transition = 'transform 0.6s ease'; goldArc.style.transform = 'rotate(0deg)'; }
             var btn = $('upgradeBtn'); if(btn) btn.disabled = false;
             var btnText = $('upgradeBtnText'); if(btnText) btnText.textContent = 'Апгрейд';
+            hideGoldArc();
             drawGreenArc(currentChance);
             updateWheel();
         } else {
-            /* Реальный апгрейд — сбрасываем выбор */
             resetAfterSpin();
             loadInventory();
             loadTopBar();
         }
-    }, 2500);
+    }, resetDelay);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GOLD: анимация полёта PNG в центр
+   ══════════════════════════════════════════════════════════════ */
+function startGoldFlyAnimation(callback){
+    var flyLeft = $('flyLeft');
+    var flyRight = $('flyRight');
+    var flyLeftImg = $('flyLeftImg');
+    var flyRightImg = $('flyRightImg');
+
+    if(!flyLeft || !flyRight || !flyLeftImg || !flyRightImg){
+        if(callback) callback();
+        return;
+    }
+
+    /* PNG слева — ставка */
+    flyLeftImg.src = selectedGift.image || '/static/img/gift.png';
+    flyLeftImg.onerror = function(){ this.onerror = null; this.src = '/static/img/gift.png'; };
+    /* PNG справа — желаемый подарок */
+    flyRightImg.src = targetGift.image || '/static/img/star2.png';
+    flyRightImg.onerror = function(){ this.onerror = null; this.src = '/static/img/star2.png'; };
+
+    /* Сброс */
+    flyLeft.classList.remove('flying');
+    flyRight.classList.remove('flying');
+    void flyLeft.offsetWidth;
+    void flyRight.offsetWidth;
+
+    /* Запуск */
+    flyLeft.classList.add('flying');
+    flyRight.classList.add('flying');
+
+    /* Через 1.2 сек — колбэк (PNG цели в центре) */
+    setTimeout(function(){
+        flyLeft.classList.remove('flying');
+        flyRight.classList.remove('flying');
+        if(callback) callback();
+    }, 1200);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GOLD OVERLAY (финальное окно)
+   ══════════════════════════════════════════════════════════════ */
+function showGoldOverlay(){
+    var ov = $('goldOverlay');
+    var img = $('goldGiftImg');
+    var name = $('goldGiftName');
+    var val = $('goldGiftValue');
+
+    if(img){
+        img.src = targetGift.image || '/static/img/star2.png';
+        img.onerror = function(){ this.onerror = null; this.src = '/static/img/star2.png'; };
+    }
+    if(name) name.textContent = targetGift.name || 'GOLD GIFT';
+    if(val){
+        /* Стоимость = ставка + выигрыш */
+        var total = (selectedGift.value || 0) + (targetGift.value || 0);
+        val.textContent = (total / 100).toFixed(2);
+    }
+    if(ov) ov.classList.add('show');
+}
+
+function closeGoldOverlay(){
+    var ov = $('goldOverlay');
+    if(ov) ov.classList.remove('show');
 }
 
 function hideResult(){
     var flash = $('wheelFlash');
     var result = $('wheelResult');
-    if(flash) flash.classList.remove('show','win','fail');
-    if(result) result.classList.remove('show','fail');
+    if(flash) flash.classList.remove('show','win','fail','gold');
+    if(result) result.classList.remove('show','fail','gold');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1691,7 +1424,7 @@ function hideResult(){
 function spawnStars(){
     var wheel = $('wheelWrap');
     if(!wheel) return;
-    var N = 12;
+    var N = 14;
     for(var i = 0; i < N; i++){
         (function(idx){
             setTimeout(function(){
@@ -1713,7 +1446,7 @@ function spawnStars(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   СБРОС ПОСЛЕ СПИНА
+   СБРОС
    ══════════════════════════════════════════════════════════════ */
 function resetAfterSpin(){
     isSpinning = false;
@@ -1733,10 +1466,16 @@ function resetAfterSpin(){
 
     var rotator = $('wheelRotator');
     var greenArc = $('greenArc');
+    var goldArc = $('goldArc');
     if(rotator){ rotator.style.transition = 'transform 0.6s ease'; rotator.style.transform = 'rotate(0deg)'; }
     if(greenArc){ greenArc.style.transition = 'transform 0.6s ease'; greenArc.style.transform = 'rotate(0deg)'; }
+    if(goldArc){ goldArc.style.transition = 'transform 0.6s ease'; goldArc.style.transform = 'rotate(0deg)'; }
+
+    var center = $('wheelCenter');
+    if(center) center.classList.remove('gold-glow');
 
     hideResult();
+    hideGoldArc();
     drawGreenArc(0);
 }
 
@@ -1757,18 +1496,18 @@ function launchConfetti(){
     document.body.appendChild(canvas);
     var ctx = canvas.getContext('2d');
     var particles = [];
-    var colors = ['#24C38E','#10b981','#FFD700','#FF6B9D','#4ade80'];
-    for(var i = 0; i < 100; i++){
+    var colors = ['#24C38E','#10b981','#FFD700','#FF6B9D','#4ade80','#FFA500'];
+    for(var i = 0; i < 130; i++){
         particles.push({
             x: canvas.width / 2 + (Math.random() - .5) * 100,
             y: canvas.height / 2,
-            vx: (Math.random() - .5) * 12,
-            vy: -Math.random() * 14 - 4,
+            vx: (Math.random() - .5) * 14,
+            vy: -Math.random() * 16 - 4,
             w: Math.random() * 8 + 3,
             h: Math.random() * 6 + 2,
             color: colors[Math.floor(Math.random() * colors.length)],
             rot: Math.random() * 360,
-            rv: (Math.random() - .5) * 10,
+            rv: (Math.random() - .5) * 12,
             life: 1
         });
     }
