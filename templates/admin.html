@@ -388,9 +388,9 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
 
         <div class="portal-actions">
-            <button class="portal-btn portal-btn-connect" id="portalConnectBtn" onclick="connectPortal()">
-                <span class="pb-icon">🔌</span>
-                <span class="pb-text">Подключить к Portal</span>
+            <button class="portal-btn portal-btn-connect" id="portalConnectBtn" onclick="openPortalAuth()">
+                <span class="pb-icon">🔑</span>
+                <span class="pb-text">Авторизоваться</span>
             </button>
             <button class="portal-btn portal-btn-sync" id="portalSyncBtn" onclick="syncPortalPrices()">
                 <span class="pb-icon">🔄</span>
@@ -1899,7 +1899,212 @@ if(tg){
         tg.BackButton.show();
     }catch(e){}
 }
+
+/* ============================================================
+   PORTAL AUTH (added by setup_portal.py)
+   ============================================================ */
+function openPortalAuth(){
+    var ov = $('portalAuthOverlay');
+    if(ov) ov.classList.add('show');
+    paLoadStatus();
+}
+
+function closePortalAuth(){
+    var ov = $('portalAuthOverlay');
+    if(ov) ov.classList.remove('show');
+}
+
+function paSwitchTab(tab){
+    var tBtn = $('paTabTokenBtn');
+    var aBtn = $('paTabAccountBtn');
+    var tDiv = $('paTabToken');
+    var aDiv = $('paTabAccount');
+    if(!tBtn || !aBtn || !tDiv || !aDiv) return;
+    if(tab === 'token'){
+        tBtn.classList.add('active'); aBtn.classList.remove('active');
+        tDiv.style.display = 'block'; aDiv.style.display = 'none';
+    } else {
+        aBtn.classList.add('active'); tBtn.classList.remove('active');
+        aDiv.style.display = 'block'; tDiv.style.display = 'none';
+    }
+}
+
+function paStatus(msg, isErr){
+    var el = $('paStatus');
+    if(!el) return;
+    el.style.color = isErr ? '#ef4444' : 'rgba(255,255,255,.6)';
+    el.textContent = msg || '';
+}
+
+async function paLoadStatus(){
+    try{
+        var r = await fetch('/api/portal/auth-status');
+        var d = await r.json();
+        if(d.success){
+            if(d.authorized){
+                paStatus('✅ Авторизован' + (d.phone ? ' (' + d.phone + ')' : ''));
+            } else if(d.has_api){
+                paStatus('⚠️ Есть api_id/api_hash, но нет сессии. Нажмите «Отправить код».');
+                if($('paApiId')) $('paApiId').value = d.api_id || '';
+                if($('paPhone')) $('paPhone').value = d.phone || '';
+            } else if(d.has_token){
+                paStatus('⚠️ Токен есть, но не активен. Сохраните заново.');
+            } else {
+                paStatus('❌ Не авторизован');
+            }
+        }
+    }catch(e){ paStatus('Ошибка проверки статуса', true); }
+}
+
+async function paSaveToken(){
+    var token = ($('paTokenInput').value || '').trim();
+    if(!token){ paStatus('Введите токен', true); return; }
+    paStatus('Сохранение...');
+    try{
+        var r = await fetch('/api/portal/save-token', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, token: token})
+        });
+        var d = await r.json();
+        if(d.success){
+            paStatus('✅ ' + (d.message || 'Токен сохранён'));
+            showToast('Portal: токен сохранён', 'ok');
+            loadPortalStatus();
+        } else {
+            paStatus('❌ ' + (d.error || 'Ошибка'), true);
+        }
+    }catch(e){ paStatus('Ошибка сети', true); }
+}
+
+async function paSendCode(){
+    var api_id = ($('paApiId').value || '').trim();
+    var api_hash = ($('paApiHash').value || '').trim();
+    var phone = ($('paPhone').value || '').trim();
+    if(!api_id || !api_hash || !phone){ paStatus('Заполните api_id, api_hash и телефон', true); return; }
+    paStatus('Отправка кода...');
+    try{
+        var r = await fetch('/api/portal/send-code', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, api_id: api_id, api_hash: api_hash, phone: phone})
+        });
+        var d = await r.json();
+        if(d.success){
+            paStatus('✅ ' + (d.message || 'Код отправлен'));
+            if($('paCodeBox')) $('paCodeBox').style.display = 'block';
+        } else {
+            paStatus('❌ ' + (d.error || 'Ошибка'), true);
+        }
+    }catch(e){ paStatus('Ошибка сети', true); }
+}
+
+async function paVerifyCode(){
+    var phone = ($('paPhone').value || '').trim();
+    var code = ($('paCode').value || '').trim();
+    var password = ($('paPassword') ? $('paPassword').value : '').trim();
+    if(!code){ paStatus('Введите код', true); return; }
+    paStatus('Проверка...');
+    try{
+        var r = await fetch('/api/portal/verify-code', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, phone: phone, code: code, password: password})
+        });
+        var d = await r.json();
+        if(d.success){
+            paStatus('✅ Авторизация успешна!');
+            showToast('Portal: авторизация успешна!', 'ok');
+            loadPortalStatus();
+            setTimeout(closePortalAuth, 1200);
+        } else if(d.error === 'NEED_PASSWORD'){
+            paStatus('Введите пароль 2FA', true);
+            if($('paPassBox')) $('paPassBox').style.display = 'block';
+        } else {
+            paStatus('❌ ' + (d.error || 'Ошибка'), true);
+        }
+    }catch(e){ paStatus('Ошибка сети', true); }
+}
+
+async function paLogout(){
+    if(!confirm('Сбросить авторизацию Portal?')) return;
+    try{
+        var r = await fetch('/api/portal/logout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID})
+        });
+        var d = await r.json();
+        if(d.success){
+            paStatus('Авторизация сброшена');
+            showToast('Portal: сброшено', 'ok');
+            loadPortalStatus();
+        }
+    }catch(e){ paStatus('Ошибка сети', true); }
+}
+
+
 </script>
+
+
+<!-- PORTAL AUTH MODAL (added by setup_portal.py) -->
+<div class="modal-overlay" id="portalAuthOverlay" onclick="if(event.target===this)closePortalAuth()">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">🔑 Авторизация Portal</div>
+
+        <div class="tabs" style="margin-bottom:16px">
+            <button class="tab-btn active" id="paTabTokenBtn" onclick="paSwitchTab('token')">По токену</button>
+            <button class="tab-btn" id="paTabAccountBtn" onclick="paSwitchTab('account')">По аккаунту</button>
+        </div>
+
+        <!-- TAB: TOKEN -->
+        <div id="paTabToken">
+            <div class="form-group">
+                <label class="form-label">PORTAL_AUTH_TOKEN (tma ...)</label>
+                <textarea class="form-input" id="paTokenInput" rows="5" placeholder="tma user=%7B%22id%22..."></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="paSaveToken()">Сохранить токен</button>
+        </div>
+
+        <!-- TAB: ACCOUNT -->
+        <div id="paTabAccount" style="display:none">
+            <div class="form-group">
+                <label class="form-label">API ID</label>
+                <input type="text" class="form-input" id="paApiId" placeholder="1234567">
+            </div>
+            <div class="form-group">
+                <label class="form-label">API HASH</label>
+                <input type="text" class="form-input" id="paApiHash" placeholder="abcdef1234567890...">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Телефон</label>
+                <input type="text" class="form-input" id="paPhone" placeholder="+79001234567">
+            </div>
+            <button class="btn btn-primary" onclick="paSendCode()">Отправить код</button>
+
+            <div id="paCodeBox" style="display:none;margin-top:14px">
+                <div class="form-group">
+                    <label class="form-label">Код из Telegram</label>
+                    <input type="text" class="form-input" id="paCode" placeholder="12345">
+                </div>
+                <div class="form-group" id="paPassBox" style="display:none">
+                    <label class="form-label">Пароль 2FA</label>
+                    <input type="password" class="form-input" id="paPassword" placeholder="Пароль">
+                </div>
+                <button class="btn btn-success" onclick="paVerifyCode()">Подтвердить код</button>
+            </div>
+        </div>
+
+        <div id="paStatus" style="margin-top:14px;font-size:12px;color:rgba(255,255,255,.6);text-align:center"></div>
+
+        <div style="margin-top:16px">
+            <button class="btn btn-secondary" onclick="closePortalAuth()">Закрыть</button>
+            <div style="height:8px"></div>
+            <button class="btn btn-danger" onclick="paLogout()">Сбросить авторизацию</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
