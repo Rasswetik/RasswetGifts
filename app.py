@@ -21,6 +21,10 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import requests as http_requests
 from db_wrapper import USE_POSTGRES, get_connection as _pg_get_connection
+try:
+    import portal_client
+except ImportError:
+    portal_client = None
 
 # Загружаем переменные окружени
 load_dotenv()
@@ -36,7 +40,7 @@ app.secret_key = os.getenv('SECRET_KEY', 'raswet-secret-key-2024')
 # Конфигурация
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 ADMIN_ID = int(os.getenv('ADMIN_ID', '5257227756'))
-TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8224991617:AAF2F7ub0XF9N6wsWyn3PmhdZnYt62KmpRE')
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
 WEBSITE_URL = os.getenv('WEBSITE_URL', 'https://rasswet-gifts.onrender.com')
 TG_API = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
@@ -63,7 +67,7 @@ fragment_models_cache_time = {}
 
 # ── Portals Marketplace Configuration ────────────────────────────────────────
 # Auth: first try PORTAL_AUTH_TOKEN (ready-made TMA initData), fallback to session-based
-PORTAL_AUTH_TOKEN = os.getenv('PORTAL_AUTH_TOKEN', 'tma user=%7B%22id%22%3A5257227756%2C%22first_name%22%3A%22%D0%98%D0%B3%D0%BE%D1%80%D1%8C%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22Goshan_wow%22%2C%22language_code%22%3A%22ru%22%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2Fi1lLcV--aGv9IWIY_Jzemwf88jHYvRq0VnABZT5rVmRz77HI32Mem9gIQmvCJrVI.svg%22%7D&chat_instance=-7755664271219013834&chat_type=sender&auth_date=1773505359&signature=o7Zqt8YgPhsJ-pxy4zQrZffwzz8S-ebELRR8_SfioI6qMwZtSzDXlooOrh7S98c3IfZaYCiuCJIHsCF7CxfIAA&hash=3e4a89abf3406942055a7d659a56ad4420cf9d36c54386de5e354a8b19c992dc')
+PORTAL_AUTH_TOKEN = os.getenv('PORTAL_AUTH_TOKEN', '')
 PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
 PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
 PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
@@ -129,15 +133,9 @@ def _save_portal_session(s):
 
 
 def _portal_market_request(method, path, token=None, json_body=None):
-    """HTTP-запрос к FastAPI-прокси Portal Market.
-    
-    Прокси сам обрабатывает авторизацию, нам не нужны initData.
-    """
+    """HTTP-запрос к FastAPI-прокси Portal Market (portal_proxy.py)."""
     url = PORTAL_PROXY_URL + path
-    headers = {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-    }
+    headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
     try:
         if method.upper() == 'GET':
             r = http_requests.get(url, headers=headers, params=json_body, timeout=30)
@@ -163,11 +161,26 @@ def _portal_market_request(method, path, token=None, json_body=None):
         except Exception:
             return r.text, None
     except http_requests.exceptions.ConnectionError:
-        return None, f'Прокси недоступен по адресу {PORTAL_PROXY_URL}. Запустите FastAPI-сервер.'
+        return None, f'Прокси недоступен ({PORTAL_PROXY_URL}). Запустите portal_proxy.py.'
     except http_requests.exceptions.Timeout:
-        return None, f'Таймаут запроса к прокси ({PORTAL_PROXY_URL})'
+        return None, f'Таймаут прокси ({PORTAL_PROXY_URL})'
     except Exception as e:
         return None, str(e)
+
+
+def _portal_proxy_check():
+    """Проверка доступности прокси."""
+    try:
+        r = http_requests.get(PORTAL_PROXY_URL + '/market/health', timeout=5)
+        if r.status_code < 400:
+            try:
+                return True, r.json()
+            except Exception:
+                return True, {}
+        return False, f'HTTP {r.status_code}'
+    except Exception as e:
+        return False, str(e)
+
 
 
 def _portal_proxy_check():
@@ -2144,6 +2157,9 @@ def _create_all_tables(conn):
         'CREATE INDEX IF NOT EXISTS idx_case_open_user ON case_open_history(user_id)',
         'CREATE INDEX IF NOT EXISTS idx_win_history_user ON win_history(user_id)',
         'CREATE INDEX IF NOT EXISTS idx_quests_active ON crash_quests(is_active)',
+        'CREATE INDEX IF NOT EXISTS idx_crash_bets_game_created ON ultimate_crash_bets(game_id, created_at DESC)',
+        'CREATE INDEX IF NOT EXISTS idx_crash_bets_game_status ON ultimate_crash_bets(game_id, status)',
+        'CREATE INDEX IF NOT EXISTS idx_crash_bets_game_amount ON ultimate_crash_bets(game_id, bet_amount DESC)',
     ]
     for idx_sql in indexes:
         try:
@@ -4430,6 +4446,36 @@ def get_telegram_user():
 # Кэш ставок пользователей (game_id, user_id) -> {bet_data, timestamp}
 _user_bets_cache = {}
 
+# ─── FAST BETS CACHE (fix_crash_bets.py) ───
+_recent_bets_cache = {'data': [], 'ts': 0, 'game_id': 0}
+_recent_bets_lock = threading.Lock()
+_RECENT_BETS_TTL = 0.30
+
+def _get_recent_bets_cached(game_id, limit=30):
+    import time as _t
+    now = _t.time()
+    with _recent_bets_lock:
+        if (_recent_bets_cache['game_id'] == game_id
+                and (now - _recent_bets_cache['ts']) < _RECENT_BETS_TTL):
+            data = _recent_bets_cache['data']
+            if len(data) >= limit:
+                return data[:limit]
+            return data
+    return None
+
+def _set_recent_bets_cached(game_id, data):
+    import time as _t
+    with _recent_bets_lock:
+        _recent_bets_cache['game_id'] = game_id
+        _recent_bets_cache['data'] = data
+        _recent_bets_cache['ts'] = _t.time()
+
+def _invalidate_recent_bets():
+    with _recent_bets_lock:
+        _recent_bets_cache['ts'] = 0
+        _recent_bets_cache['data'] = []
+
+
 def _cleanup_user_bets_cache():
     """Remove stale entries from _user_bets_cache to prevent memory leak"""
     try:
@@ -4473,7 +4519,7 @@ def ultimate_crash_simple_status():
     cache_age = time.time() - cached.get('timestamp', 0)
     
     # Если кэш свежий (< 0.25 сек) - не трогаем БД
-    if cache_age < 0.25 and cached.get('id', 0) > 0:
+    if cache_age < 0.15 and cached.get('id', 0) > 0:
         game_data = {
             'id': cached['id'],
             'status': cached['status'],
@@ -4691,6 +4737,7 @@ def ultimate_crash_place_bet():
         _user_balance_cache.pop(user_id, None)
         cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
         refresh_crash_bet_cache(game_id, cached_target)
+        _invalidate_recent_bets()
 
         # Add experience based on bet amount (turnover) - 1:1
         try:
@@ -4835,6 +4882,7 @@ def ultimate_crash_place_bet_gift():
         try:
             cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
             refresh_crash_bet_cache(game_id, cached_target)
+        _invalidate_recent_bets()
         except Exception:
             pass
 
@@ -4977,6 +5025,7 @@ def ultimate_crash_place_bet_multi_gift():
         try:
             cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
             refresh_crash_bet_cache(game_id, cached_target)
+        _invalidate_recent_bets()
         except Exception:
             pass
 
@@ -5318,6 +5367,7 @@ def ultimate_crash_cashout_simple():
 
         # Invalidate balance cache so next poll reflects winnings immediately
         _user_balance_cache.pop(user_id, None)
+        _invalidate_recent_bets()
 
         conn.close()
 
@@ -8424,160 +8474,147 @@ def _portal_build_image(slug):
 
 
 def _portal_sync_floors():
-    """Синхронизация цен с Portal Market через прокси.
+    """Синхронизация цен через aportalsmp.giftsFloors()."""
+    if portal_client is None or not portal_client.is_available():
+        return {
+            'success': False,
+            'error': 'Portal не готов. Введите токен в админке (Подарки → Авторизация) и установите aportalsmp.'
+        }
 
-    Запрашивает floor-цены коллекций и обновляет gifts.json.
-    """
-    # ── 1. Получаем список коллекций с floor-ценами ──
-    data, err = _portal_market_request('GET', '/market/collections/backdrops/floor')
-    if err:
-        logger.error(f'❌ Portal proxy /collections/backdrops/floor: {err}')
-        # Пробуем альтернативный эндпоинт
-        data, err = _portal_market_request('GET', '/market/nfts/search', json_body={
-            'limit': 500,
-            'sort': 'price_asc',
-        })
-        if err:
-            return {'success': False, 'error': err}
+    try:
+        floors_raw = portal_client.get_floors(use_cache=False)
 
-    # ── 2. Нормализуем ответ в список коллекций ──
-    collections = []
-    if isinstance(data, dict):
-        collections = data.get('items') or data.get('collections') or data.get('data') or []
-    elif isinstance(data, list):
-        collections = data
+        if not floors_raw:
+            return {'success': False, 'error': 'giftsFloors() вернул пустой ответ'}
 
-    if not collections:
-        return {'success': False, 'error': 'Portal proxy вернул 0 коллекций'}
+        logger.info(f'🌐 Portal: получено {len(floors_raw)} коллекций')
 
-    logger.info(f'🌐 Portal proxy: получено {len(collections)} коллекций')
+        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        if not os.path.exists(gifts_path):
+            return {'success': False, 'error': 'gifts.json not found'}
 
-    # ── 3. Загружаем gifts.json ──
-    gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
-    if not os.path.exists(gifts_path):
-        return {'success': False, 'error': 'gifts.json not found'}
+        with open(gifts_path, 'r', encoding='utf-8') as f:
+            raw = json.load(f)
 
-    with open(gifts_path, 'r', encoding='utf-8') as f:
-        raw = json.load(f)
+        wrap = isinstance(raw, dict)
+        gifts = raw.get('gifts', []) if wrap else raw
 
-    wrap = isinstance(raw, dict)
-    gifts = raw.get('gifts', []) if wrap else raw
+        by_slug = {}
+        by_name = {}
+        max_id = 0
+        for g in gifts:
+            sid = g.get('id')
+            if isinstance(sid, int) and sid > max_id:
+                max_id = sid
+            slug = _portal_slugify(g.get('fragment_slug') or g.get('name', ''))
+            if slug:
+                by_slug[slug] = g
+            nm = _portal_slugify(g.get('name', ''))
+            if nm:
+                by_name[nm] = g
 
-    # Индексы по slug и имени
-    by_slug = {}
-    by_name = {}
-    max_id = 0
-    for g in gifts:
-        sid = g.get('id')
-        if isinstance(sid, int) and sid > max_id:
-            max_id = sid
-        slug = _portal_slugify(g.get('fragment_slug') or g.get('name', ''))
-        if slug:
-            by_slug[slug] = g
-        nm = _portal_slugify(g.get('name', ''))
-        if nm:
-            by_name[nm] = g
+        updated = added = skipped = 0
+        new_gifts = []
 
-    updated = 0
-    added = 0
-    skipped = 0
-    new_gifts = []
+        # Нормализуем ответ в список
+        items = []
+        if isinstance(floors_raw, dict):
+            for k, v in floors_raw.items():
+                if isinstance(v, dict):
+                    item = dict(v)
+                    item.setdefault('short_name', k)
+                    item.setdefault('name', v.get('name') or k)
+                    items.append(item)
+                else:
+                    items.append({'short_name': k, 'name': k, 'floor': v})
+        elif isinstance(floors_raw, list):
+            items = floors_raw
 
-    # ── 4. Обрабатываем каждую коллекцию ──
-    for c in collections:
-        if not isinstance(c, dict):
-            continue
+        for raw_item in items:
+            parsed = portal_client.parse_floor_item(raw_item)
+            if not parsed:
+                skipped += 1
+                continue
 
-        # Разные форматы прокси — пробуем все возможные поля
-        slug = (
-            c.get('slug') or c.get('collection_slug') or c.get('name') or ''
-        ).strip()
-        name = (c.get('name') or c.get('collection_name') or c.get('slug') or '').strip()
-        floor = (
-            c.get('floor_price') or c.get('floorPrice') or c.get('floor')
-            or c.get('price') or c.get('min_price')
-        )
+            name = parsed['name']
+            slug_key = _portal_slugify(parsed['slug'])
+            if not slug_key:
+                skipped += 1
+                continue
+
+            new_value = parsed['floor_stars']
+            if new_value <= 0:
+                skipped += 1
+                continue
+
+            existing = by_slug.get(slug_key) or by_name.get(_portal_slugify(name))
+
+            if existing:
+                if existing.get('value') != new_value:
+                    old_v = existing.get('value', 0)
+                    existing['value'] = new_value
+                    existing['fragment_price_ton'] = round(parsed['floor_ton'], 4)
+                    updated += 1
+                    if updated <= 15:
+                        logger.info(f'💱 {name}: {old_v} → {new_value}⭐ ({parsed["floor_ton"]} TON)')
+            else:
+                new_gift = {
+                    'id': max_id + 1,
+                    'name': name,
+                    'value': new_value,
+                    'image': f'https://fragment.com/file/gifts/{slug_key}/thumb.webp',
+                    'fragment_slug': slug_key,
+                    'fragment_url': f'https://fragment.com/gifts/{slug_key}',
+                    'fragment_price_ton': round(parsed['floor_ton'], 4),
+                }
+                gifts.append(new_gift)
+                new_gifts.append(name)
+                max_id += 1
+                added += 1
+                logger.info(f'➕ NEW: {name} (slug={slug_key}) value={new_value}⭐')
+
+        with open(gifts_path, 'w', encoding='utf-8') as f:
+            if wrap:
+                json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
+            else:
+                json.dump(gifts, f, ensure_ascii=False, indent=2)
+
+        global gifts_cache, gifts_cache_time
+        gifts_cache = None
+        gifts_cache_time = None
 
         try:
-            floor_val = float(floor) if floor is not None else None
-        except (ValueError, TypeError):
-            floor_val = None
+            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            with open(sync_file, 'w', encoding='utf-8') as sf:
+                json.dump({
+                    'timestamp': int(time.time()),
+                    'updated': updated,
+                    'added': added,
+                    'total': len(gifts),
+                    'collections': len(items),
+                    'new_gifts': new_gifts[:20],
+                }, sf, ensure_ascii=False)
+        except Exception:
+            pass
 
-        slug_key = _portal_slugify(slug)
-        if not slug_key:
-            skipped += 1
-            continue
+        logger.info(f'✅ Portal sync DONE: обновлено {updated}, добавлено {added}, всего {len(gifts)}')
 
-        new_value = int(round(floor_val * 100)) if floor_val and floor_val > 0 else 0
+        return {
+            'success': True,
+            'updated': updated,
+            'added': added,
+            'total': len(gifts),
+            'collections': len(items),
+            'new_gifts': new_gifts[:20],
+        }
 
-        # Ищем существующий подарок
-        existing = by_slug.get(slug_key) or by_name.get(_portal_slugify(name))
+    except Exception as e:
+        logger.error(f'❌ Portal sync error: {e}')
+        import traceback
+        logger.error(traceback.format_exc())
+        return {'success': False, 'error': str(e)}
 
-        if existing:
-            if new_value > 0 and existing.get('value') != new_value:
-                old_value = existing.get('value', 0)
-                existing['value'] = new_value
-                if floor_val:
-                    existing['fragment_price_ton'] = round(floor_val, 4)
-                updated += 1
-                if updated <= 10:
-                    logger.info(f'💱 {name}: {old_value} → {new_value}⭐ ({floor_val} TON)')
-        else:
-            # Новая коллекция
-            new_gift = {
-                'id': max_id + 1,
-                'name': name or slug,
-                'value': new_value,
-                'image': f'https://fragment.com/file/gifts/{slug_key}/thumb.webp',
-                'fragment_slug': slug_key,
-                'fragment_url': f'https://fragment.com/gifts/{slug_key}',
-            }
-            if floor_val:
-                new_gift['fragment_price_ton'] = round(floor_val, 4)
 
-            gifts.append(new_gift)
-            new_gifts.append(name or slug)
-            max_id += 1
-            added += 1
-            logger.info(f'➕ NEW: {name} (slug={slug_key}) value={new_value}⭐')
-
-    # ── 5. Сохраняем ──
-    with open(gifts_path, 'w', encoding='utf-8') as f:
-        if wrap:
-            json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
-        else:
-            json.dump(gifts, f, ensure_ascii=False, indent=2)
-
-    # Сброс кэша
-    global gifts_cache, gifts_cache_time
-    gifts_cache = None
-    gifts_cache_time = None
-
-    # ── 6. Метка времени ──
-    try:
-        sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
-        with open(sync_file, 'w', encoding='utf-8') as sf:
-            json.dump({
-                'timestamp': int(time.time()),
-                'updated': updated,
-                'added': added,
-                'total': len(gifts),
-                'collections': len(collections),
-                'new_gifts': new_gifts[:20],
-            }, sf, ensure_ascii=False)
-    except Exception:
-        pass
-
-    logger.info(f'✅ Portal proxy sync DONE: обновлено {updated}, добавлено {added}, всего {len(gifts)}')
-
-    return {
-        'success': True,
-        'updated': updated,
-        'added': added,
-        'total': len(gifts),
-        'collections': len(collections),
-        'new_gifts': new_gifts[:20],
-    }
 
 def _extract_colls_items(colls):
     try:
@@ -11251,99 +11288,93 @@ def _parse_gift_images(gift_image_str):
 
 @app.route('/api/ultimate-crash/recent-bets', methods=['GET'])
 def get_recent_ultimate_crash_bets():
-    """Получение ставок текущего раунда"""
+    """Быстрая выдача ставок с кэшем 300ms."""
     try:
-        limit = request.args.get('limit', 20, type=int)
+        limit = request.args.get('limit', 30, type=int)
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        cached_game = get_crash_cache()
+        fast_game_id = cached_game.get('id', 0)
 
-        # Предпочитаем активную игру; если её нет, берём последнюю
-        cursor.execute('''
-            SELECT id, status, current_multiplier
-            FROM ultimate_crash_games
-            WHERE status IN ('waiting', 'counting', 'flying')
-            ORDER BY id DESC LIMIT 1
-        ''')
-        current_game = cursor.fetchone()
-        if not current_game:
-            cursor.execute('''
-                SELECT id, status, current_multiplier FROM ultimate_crash_games
-                ORDER BY id DESC LIMIT 1
-            ''')
-            current_game = cursor.fetchone()
+        if fast_game_id > 0:
+            cached = _get_recent_bets_cached(fast_game_id, limit)
+            if cached is not None:
+                return jsonify({'success': True, 'bets': cached, 'cached': True})
 
-        current_game_id = current_game[0] if current_game else 0
-        current_game_status = current_game[1] if current_game else None
-        current_game_mult = float(current_game[2]) if current_game and current_game[2] else 1.0
+        with _quick_db_conn(5) as conn:
+            cursor = conn.cursor()
 
-        # Self-heal: если боты не сгенерированы для активного раунда, создаём их on-demand
-        if current_game_id and current_game_status in ('waiting', 'counting', 'flying'):
-            if not _crash_bots_cache.get('loaded'):
-                _load_crash_bots()
-            if _crash_bots_cache.get('enabled') and current_game_id not in _crash_bots_active:
-                cursor.execute('SELECT COUNT(*) FROM ultimate_crash_bets WHERE game_id = ?', (current_game_id,))
-                real_count = cursor.fetchone()[0] or 0
-                _generate_bot_bets(current_game_id, real_count)
+            current_game_id = fast_game_id
+            current_game_status = cached_game.get('status')
 
-        cursor.execute('''
-            SELECT
-                ucb.id,
-                ucb.user_id,
-                ucb.bet_amount,
-                ucb.status,
-                ucb.cashout_multiplier,
-                ucb.win_amount,
-                ucb.created_at,
-                u.first_name,
-                u.username,
-                u.photo_url,
-                ucb.bet_type,
-                ucb.gift_image
-            FROM ultimate_crash_bets ucb
-            LEFT JOIN users u ON ucb.user_id = u.id
-            WHERE ucb.game_id = ?
-            ORDER BY ucb.created_at DESC
-            LIMIT ?
-        ''', (current_game_id, limit,))
+            if current_game_id <= 0:
+                cursor.execute("""
+                    SELECT id, status FROM ultimate_crash_games
+                    WHERE status IN ('waiting','counting','flying')
+                    ORDER BY id DESC LIMIT 1
+                """)
+                row = cursor.fetchone()
+                if not row:
+                    cursor.execute("SELECT id, status FROM ultimate_crash_games ORDER BY id DESC LIMIT 1")
+                    row = cursor.fetchone()
+                if row:
+                    current_game_id, current_game_status = row[0], row[1]
 
-        bets = cursor.fetchall()
+            if current_game_id <= 0:
+                return jsonify({'success': True, 'bets': []})
+
+            cursor.execute("""
+                SELECT
+                    ucb.id, ucb.user_id, ucb.bet_amount, ucb.status,
+                    ucb.cashout_multiplier, ucb.win_amount, ucb.created_at,
+                    u.first_name, u.username, u.photo_url,
+                    ucb.bet_type, ucb.gift_image
+                FROM ultimate_crash_bets ucb
+                LEFT JOIN users u ON ucb.user_id = u.id
+                WHERE ucb.game_id = ?
+                ORDER BY ucb.bet_amount DESC, ucb.created_at DESC
+                LIMIT ?
+            """, (current_game_id, limit))
+
+            bets = cursor.fetchall()
 
         bets_list = []
-        for bet in bets:
+        for b in bets:
+            gift_imgs = []
+            raw_img = b[11]
+            if raw_img:
+                try:
+                    parsed = json.loads(raw_img)
+                    if isinstance(parsed, list):
+                        gift_imgs = parsed
+                    else:
+                        gift_imgs = [raw_img]
+                except Exception:
+                    gift_imgs = [raw_img]
+
             bets_list.append({
-                'id': bet[0],
-                'user_id': bet[1],
-                'bet_amount': bet[2],
-                'status': bet[3],
-                'cashout_multiplier': float(bet[4]) if bet[4] else None,
-                'win_amount': bet[5],
-                'created_at': bet[6],
-                'first_name': bet[7],
-                'username': bet[8],
-                'photo_url': bet[9] or '/static/img/default_avatar.png',
-                'bet_type': bet[10] or 'stars',
-                'gift_image': bet[11],
-                'gift_images': _parse_gift_images(bet[11])
+                'id': b[0],
+                'user_id': b[1],
+                'bet_amount': b[2],
+                'status': b[3],
+                'cashout_multiplier': float(b[4]) if b[4] else None,
+                'win_amount': b[5],
+                'created_at': b[6],
+                'first_name': b[7],
+                'username': b[8],
+                'photo_url': b[9] or '/static/img/default_avatar.png',
+                'bet_type': b[10] or 'stars',
+                'gift_image': b[11],
+                'gift_images': gift_imgs,
             })
 
-        # Bots disabled — skip fallback and bot bets
-        # bot_bets = _get_bot_bets_for_api(current_game_id)
-        # bets_list.extend(bot_bets)
+        if current_game_id > 0:
+            _set_recent_bets_cached(current_game_id, bets_list)
 
-        return jsonify({
-            'success': True,
-            'bets': bets_list
-        })
+        return jsonify({'success': True, 'bets': bets_list})
 
     except Exception as e:
-        # Не логируем каждую ошибку - слишком много спама
-        return jsonify({
-            'success': True,
-            'bets': []
-        })
-
-# ==================== ADMIN API ====================
+        logger.error(f'recent-bets error: {e}')
+        return jsonify({'success': True, 'bets': []})
 
 @app.route('/api/admin/crash/status', methods=['GET'])
 def admin_crash_status():
@@ -20430,18 +20461,7 @@ except Exception as e:
 # PORTAL MARKET ROUTES — единый блок (fix_all.py)
 # ══════════════════════════════════════════════════════════════
 
-@app.route('/api/portal/auth-status', methods=['GET'])
-def portal_auth_status():
-    """Статус авторизации Portal Market (через прокси — всегда OK, если прокси жив)."""
-    ok, info = _portal_proxy_check()
-    return jsonify({
-        'success': True,
-        'authorized': ok,
-        'has_token': True,
-        'proxy_url': PORTAL_PROXY_URL,
-        'proxy_info': info if ok else None,
-        'error': None if ok else info,
-    })
+
 
 def portal_auth_status():
     cfg = _load_portal_config()
@@ -20457,15 +20477,7 @@ def portal_auth_status():
     return jsonify({'success': True, 'authorized': False, 'has_token': False})
 
 
-@app.route('/api/portal/save-token', methods=['POST'])
-def portal_save_token():
-    """DEPRECATED: прокси сам обрабатывает авторизацию.
-    Оставлено для совместимости с admin.html."""
-    return jsonify({
-        'success': True,
-        'message': 'Авторизация через прокси не требует токена. Просто убедитесь, что FastAPI-прокси запущен.',
-        'proxy_url': PORTAL_PROXY_URL,
-    })
+
 
 def portal_save_token():
     global _portal_auth_data, PORTAL_AUTH_TOKEN
@@ -20510,25 +20522,125 @@ def portal_logout():
     return jsonify({'success': True, 'message': 'Токен удалён'})
 
 
-@app.route('/api/portal/status', methods=['GET'])
-def portal_status():
-    """Статус подключения к Portal Market через прокси."""
-    ok, info = _portal_proxy_check()
-    cfg = _load_portal_config()
-    last_sync = _portal_read_last_sync()
+
+
+# ══════════════════════════════════════════════════════════════
+# PORTAL MARKET — управление токеном через админку
+# ══════════════════════════════════════════════════════════════
+
+@app.route('/api/portal/token', methods=['GET'])
+def portal_token_get():
+    """Возвращает текущий токен (маскированный)."""
+    try:
+        import portal_client
+    except ImportError:
+        return jsonify({'success': False, 'error': 'portal_client не загружен'})
+
+    token = portal_client.get_token()
     return jsonify({
         'success': True,
-        'connected': ok,
-        'proxy_url': PORTAL_PROXY_URL,
-        'proxy_info': info if ok else None,
-        'proxy_error': None if ok else info,
-        'has_token': bool(cfg.get('auth_token')),
+        'has_token': bool(token),
+        'token_preview': portal_client.token_preview(),
+        'aportalsmp_available': portal_client.APORTALSMP_AVAILABLE,
+    })
+
+
+@app.route('/api/portal/token', methods=['POST'])
+def portal_token_save():
+    """Сохраняет токен Portal Market."""
+    try:
+        import portal_client
+    except ImportError:
+        return jsonify({'success': False, 'error': 'portal_client не загружен'})
+
+    data = request.get_json() or {}
+    token = (data.get('token') or '').strip()
+    admin_id = data.get('admin_id')
+
+    # Проверка админа
+    if str(admin_id) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
+
+    if not token:
+        return jsonify({'success': False, 'error': 'Токен пустой'})
+    if len(token) < 20:
+        return jsonify({'success': False, 'error': 'Токен слишком короткий'})
+
+    # Сохраняем
+    if not portal_client.save_token(token):
+        return jsonify({'success': False, 'error': 'Не удалось сохранить токен'})
+
+    # Проверяем
+    test = portal_client.test_token(token)
+    if test.get('ok'):
+        return jsonify({
+            'success': True,
+            'verified': True,
+            'message': 'Токен сохранён и проверен',
+            'token_preview': portal_client.token_preview(),
+            'collections_count': test.get('collections_count', 0),
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'verified': False,
+            'message': 'Токен сохранён, но не проверен',
+            'error': test.get('error', 'Unknown'),
+            'token_preview': portal_client.token_preview(),
+        })
+
+
+@app.route('/api/portal/token', methods=['DELETE'])
+def portal_token_delete():
+    """Удаляет токен."""
+    try:
+        import portal_client
+    except ImportError:
+        return jsonify({'success': False, 'error': 'portal_client не загружен'})
+
+    data = request.get_json() or {}
+    admin_id = data.get('admin_id')
+
+    if str(admin_id) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
+
+    portal_client.save_token('')
+    return jsonify({'success': True, 'message': 'Токен удалён'})
+
+
+@app.route('/api/portal/status', methods=['GET'])
+def portal_status():
+    """Статус подключения к Portal Market."""
+    if portal_client is None:
+        return jsonify({
+            'success': True,
+            'connected': False,
+            'error': 'portal_client не загружен',
+            'info': {'last_sync_ago': 'никогда', 'last_updated': 0, 'total_collections': 0},
+        })
+
+    connected = portal_client.is_available()
+    last_sync = _portal_read_last_sync()
+
+    error = None
+    if not portal_client.APORTALSMP_AVAILABLE:
+        error = 'aportalsmp не установлен: pip install aportalsmp'
+    elif not portal_client.get_token():
+        error = 'Токен Portal не задан. Введите его в админке.'
+
+    return jsonify({
+        'success': True,
+        'connected': connected,
+        'error': error,
+        'has_token': bool(portal_client.get_token()),
+        'token_preview': portal_client.token_preview(),
         'info': {
             'last_sync_ago': last_sync.get('last_sync_ago', 'никогда'),
             'last_updated': last_sync.get('last_updated', 0),
             'total_collections': last_sync.get('total_collections', 0),
         }
     })
+
 
 def portal_status():
     cfg = _load_portal_config()
@@ -20543,8 +20655,8 @@ def portal_status():
 
 
 if __name__ == '__main__':
-    host = os.getenv('HOST', '127.0.0.1')
-    port = int(os.getenv('PORT', 5000))
+    host = os.getenv('HOST', '0.0.0.0')
+    port = int(os.getenv('PORT', 5000))  # Render передаёт PORT автоматически
     
     # Setup webhook on local run
     setup_telegram_webhook()
