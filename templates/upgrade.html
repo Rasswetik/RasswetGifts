@@ -14,9 +14,9 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
     --bg:#0a0a0f;
+    --bg-2:#11111a;
     --text:#fff;
-    --blue:#2844FB;
-    --blue-light:#4B81F5;
+    --text-2:rgba(255,255,255,.5);
     --green:#24C38E;
     --red:#FF3064;
     --safe-top:env(safe-area-inset-top, 0px);
@@ -33,11 +33,75 @@ body{
     -webkit-font-smoothing:antialiased;
     user-select:none;
     -webkit-user-select:none;
+    overflow:hidden;
 }
 a{text-decoration:none;color:inherit}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 
-/* ═══════════ TOP BAR ═══════════ */
+/* ══════════════════════════════════════════════════════════════
+   LOADING SCREEN
+   ══════════════════════════════════════════════════════════════ */
+.loading-screen{
+    position:fixed;
+    inset:0;
+    background:#0a0a0f;
+    z-index:9999;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:24px;
+    transition:opacity .5s ease, visibility .5s ease;
+}
+.loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.loading-wheel{
+    width:180px;
+    height:180px;
+    position:relative;
+    animation:loadingRotate 3s linear infinite;
+}
+@keyframes loadingRotate{
+    from{transform:rotate(0deg)}
+    to{transform:rotate(360deg)}
+}
+.loading-wheel svg{width:100%;height:100%;display:block}
+.loading-wheel .ld-ring{fill:none;stroke:#1a1a24;stroke-width:18}
+.loading-wheel .ld-green{fill:none;stroke:url(#ldGreenGrad);stroke-width:18;stroke-linecap:round}
+.loading-wheel .ld-tick{stroke:#fff;stroke-width:1.5;stroke-linecap:round}
+.loading-wheel .ld-inner{fill:none;stroke:rgba(255,255,255,.04);stroke-width:1}
+.loading-text{
+    font-size:13px;
+    font-weight:700;
+    color:rgba(255,255,255,.4);
+    letter-spacing:2px;
+    text-transform:uppercase;
+}
+.loading-progress{
+    width:220px;
+    height:4px;
+    background:rgba(255,255,255,.06);
+    border-radius:2px;
+    overflow:hidden;
+}
+.loading-progress-bar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#24C38E,#10b981);
+    border-radius:2px;
+    transition:width .3s ease;
+}
+.loading-arrow{
+    position:absolute;
+    top:-10px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:10;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,.8));
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOP BAR
+   ══════════════════════════════════════════════════════════════ */
 .top-bar{
     display:flex;
     justify-content:space-between;
@@ -73,8 +137,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     gap:5px;
     padding:6px 12px;
     border-radius:20px;
-    background:rgba(40,68,251,.15);
-    border:1px solid rgba(75,129,245,.3);
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
     font-weight:800;
     font-size:13px;
     color:#fff;
@@ -84,9 +148,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     width:30px;
     height:30px;
     border-radius:50%;
-    background:rgba(40,68,251,.2);
-    border:1px solid rgba(75,129,245,.4);
-    color:#4B81F5;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.1);
+    color:rgba(255,255,255,.7);
     font-size:16px;
     font-weight:700;
     display:flex;
@@ -94,9 +158,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     justify-content:center;
     transition:all .2s;
 }
-.bal-plus:active{transform:scale(.9);background:rgba(40,68,251,.35)}
+.bal-plus:active{transform:scale(.9);background:rgba(255,255,255,.12)}
 
-/* ═══════════ WRAPPER ═══════════ */
+/* ══════════════════════════════════════════════════════════════
+   WRAPPER
+   ══════════════════════════════════════════════════════════════ */
 .upgrade-wrap{
     max-width:450px;
     margin:0 auto;
@@ -107,7 +173,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     gap:12px;
 }
 
-/* ═══════════ ПАНЕЛЬ ВЫБОРА ═══════════ */
+/* ══════════════════════════════════════════════════════════════
+   ПАНЕЛЬ ВЫБОРА
+   ══════════════════════════════════════════════════════════════ */
 .select-panel{
     width:100%;
     display:grid;
@@ -133,8 +201,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .select-card:active{transform:scale(.97)}
 .select-card.has-item{
-    border-color:rgba(40,68,251,.4);
-    background:linear-gradient(180deg, rgba(40,68,251,.08), rgba(40,68,251,.01));
+    border-color:rgba(36,195,142,.35);
+    background:linear-gradient(180deg, rgba(36,195,142,.06), rgba(36,195,142,.01));
 }
 .select-card-title{
     font-size:12px;
@@ -160,9 +228,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:24px;
     color:rgba(255,255,255,.3);
 }
+.select-empty-icon svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.5}
 .select-empty-text{
     font-size:11px;
     color:rgba(255,255,255,.3);
@@ -176,7 +244,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     width:100%;
 }
 .select-card.has-item .select-empty{display:none}
-.select-card.has-item .select-filled{display:flex;animation:cardPop .35s cubic-bezier(.34,1.56,.64,1)}
+.select-card.has-item .select-filled{display:flex;animation:cardPop .4s cubic-bezier(.34,1.56,.64,1)}
 @keyframes cardPop{
     0%{transform:scale(.7);opacity:0}
     60%{transform:scale(1.08)}
@@ -203,11 +271,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     align-items:center;
     gap:4px;
     padding:3px 10px;
-    background:rgba(40,68,251,.12);
+    background:rgba(255,255,255,.06);
     border-radius:10px;
     font-size:11px;
     font-weight:800;
-    color:#60A5FA;
+    color:rgba(255,255,255,.7);
     line-height:1;
 }
 .select-price img{width:11px;height:11px}
@@ -226,7 +294,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     margin-top:4px;
 }
 
-/* ═══════════ КОЛЕСО ═══════════ */
+/* ══════════════════════════════════════════════════════════════
+   КОЛЕСО
+   ══════════════════════════════════════════════════════════════ */
 .wheel-section{
     width:100%;
     display:flex;
@@ -245,30 +315,108 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     align-items:center;
     justify-content:center;
 }
-
-/* Стрелка сверху */
 .wheel-pointer{
     position:absolute;
-    top:-6px;
+    top:-8px;
     left:50%;
     transform:translateX(-50%);
     z-index:10;
     width:44px;
     height:44px;
     pointer-events:none;
-    filter:drop-shadow(0 4px 12px rgba(0,0,0,.8));
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,.9));
 }
-.wheel-pointer svg{
+.wheel-pointer svg{width:100%;height:100%;display:block}
+
+/* ═══ Результат: PNG победы/неудачи ═══ */
+.wheel-result{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%) scale(0);
+    width:200px;
+    height:200px;
+    z-index:20;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .3s ease, transform .3s ease;
+}
+.wheel-result.show{
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+    animation:resultBounce .6s cubic-bezier(.34,1.56,.64,1);
+}
+.wheel-result img{
     width:100%;
     height:100%;
-    display:block;
+    object-fit:contain;
+    filter:drop-shadow(0 0 40px rgba(36,195,142,.6));
+}
+.wheel-result.fail img{
+    filter:drop-shadow(0 0 40px rgba(255,48,100,.6));
+}
+@keyframes resultBounce{
+    0%{transform:translate(-50%,-50%) scale(0)}
+    50%{transform:translate(-50%,-50%) scale(1.15)}
+    100%{transform:translate(-50%,-50%) scale(1)}
 }
 
-/* ★ БАЗОВЫЙ КРУГ — часть колеса */
+/* ═══ Вспышка ═══ */
+.wheel-flash{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:300px;
+    height:300px;
+    border-radius:50%;
+    pointer-events:none;
+    z-index:15;
+    opacity:0;
+}
+.wheel-flash.show{
+    animation:flashAnim .8s ease-out;
+}
+@keyframes flashAnim{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(0.3)}
+    50%{opacity:.8}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(1.5)}
+}
+.wheel-flash.win{background:radial-gradient(circle, rgba(36,195,142,.6) 0%, transparent 70%)}
+.wheel-flash.fail{background:radial-gradient(circle, rgba(255,48,100,.5) 0%, transparent 70%)}
+
+/* ═══ Тряска при неудаче ═══ */
+@keyframes wheelShake{
+    0%,100%{transform:translateX(0)}
+    10%,30%,50%,70%,90%{transform:translateX(-8px)}
+    20%,40%,60%,80%{transform:translateX(8px)}
+}
+.wheel-wrap.shake{
+    animation:wheelShake .5s ease-in-out;
+}
+
+/* ═══ Звёзды при победе ═══ */
+.star-particle{
+    position:absolute;
+    width:24px;
+    height:24px;
+    pointer-events:none;
+    z-index:25;
+    opacity:0;
+    transform:scale(0);
+    animation:starPop 1.2s ease-out forwards;
+}
+.star-particle img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 8px rgba(255,215,0,.8))}
+@keyframes starPop{
+    0%{opacity:0;transform:scale(0) rotate(0deg)}
+    20%{opacity:1;transform:scale(1.3) rotate(45deg)}
+    100%{opacity:0;transform:scale(0) rotate(360deg) translateY(-50px)}
+}
+
+/* Базовое колесо */
 .wheel-rotator{
     position:absolute;
-    top:0;
-    left:0;
+    top:0;left:0;
     width:100%;
     height:100%;
     will-change:transform;
@@ -277,17 +425,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     -webkit-backface-visibility:hidden;
     transform:translateZ(0);
 }
-.wheel-rotator svg{
-    width:100%;
-    height:100%;
-    display:block;
-}
+.wheel-rotator svg{width:100%;height:100%;display:block}
 
-/* ★ ЗЕЛЁНАЯ ЗОНА — тоже часть колеса, крутится вместе с ним */
 .wheel-green-arc{
     position:absolute;
-    top:0;
-    left:0;
+    top:0;left:0;
     width:100%;
     height:100%;
     pointer-events:none;
@@ -299,11 +441,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     -webkit-backface-visibility:hidden;
 }
 
-/* Центр колеса */
 .wheel-center{
     position:absolute;
-    top:50%;
-    left:50%;
+    top:50%;left:50%;
     transform:translate(-50%,-50%);
     width:130px;
     height:130px;
@@ -343,7 +483,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .wheel-center-pct.visible{opacity:1}
 
-/* ═══════════ КНОПКИ ═══════════ */
+/* ══════════════════════════════════════════════════════════════
+   КНОПКИ
+   ══════════════════════════════════════════════════════════════ */
 .actions-row{
     width:100%;
     display:flex;
@@ -353,7 +495,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     flex:2;
     height:56px;
     border-radius:16px;
-    background:linear-gradient(90deg,#2844FB,#4B81F5);
+    background:linear-gradient(135deg, #24C38E 0%, #10b981 100%);
+    border:1px solid rgba(36,195,142,.3);
     color:#fff;
     font-size:16px;
     font-weight:800;
@@ -361,14 +504,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     display:flex;
     align-items:center;
     justify-content:center;
-    transition:transform .15s;
+    transition:all .2s;
     letter-spacing:.5px;
 }
 .btn-main:not(:disabled):active{transform:scale(.95)}
 .btn-main:disabled{
-    background:rgba(255,255,255,.05);
-    color:rgba(255,255,255,.25);
+    background:rgba(255,255,255,.03);
+    color:rgba(255,255,255,.2);
     cursor:not-allowed;
+    border-color:rgba(255,255,255,.04);
 }
 .btn-demo{
     flex:1;
@@ -376,19 +520,27 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     border-radius:16px;
     background:rgba(255,255,255,.04);
     border:1px solid rgba(255,255,255,.08);
-    color:#fff;
+    color:rgba(255,255,255,.4);
     font-size:14px;
     font-weight:800;
     text-transform:uppercase;
     display:flex;
     align-items:center;
     justify-content:center;
-    transition:transform .15s;
+    transition:all .2s;
     letter-spacing:.5px;
+    cursor:not-allowed;
 }
-.btn-demo:active{transform:scale(.95)}
+.btn-demo.enabled{
+    background:linear-gradient(135deg, #2a2a35 0%, #1a1a24 100%);
+    color:#fff;
+    cursor:pointer;
+}
+.btn-demo.enabled:active{transform:scale(.95)}
 
-/* ═══════════ МОДАЛКИ ═══════════ */
+/* ══════════════════════════════════════════════════════════════
+   МОДАЛКИ
+   ══════════════════════════════════════════════════════════════ */
 .modal-overlay{
     position:fixed;
     inset:0;
@@ -426,13 +578,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     border-bottom:1px solid rgba(255,255,255,.04);
     flex-shrink:0;
 }
-.modal-title{font-size:16px;font-weight:800;color:#fff}
+.modal-title{
+    font-size:16px;
+    font-weight:800;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+.modal-title img{width:20px;height:20px;object-fit:contain}
 .modal-close{
     width:32px;
     height:32px;
     border-radius:50%;
-    background:rgba(255,48,100,.12);
-    color:var(--red);
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.6);
     font-size:16px;
     font-weight:700;
     display:flex;
@@ -459,8 +619,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     font-family:inherit;
 }
 .modal-search:focus{
-    border-color:rgba(40,68,251,.5);
-    background:rgba(40,68,251,.05);
+    border-color:rgba(36,195,142,.4);
+    background:rgba(36,195,142,.04);
 }
 .modal-search::placeholder{color:rgba(255,255,255,.3)}
 .modal-search-icon{
@@ -482,7 +642,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     overscroll-behavior:contain;
 }
 .modal-body::-webkit-scrollbar{width:4px}
-.modal-body::-webkit-scrollbar-thumb{background:rgba(40,68,251,.2);border-radius:2px}
+.modal-body::-webkit-scrollbar-thumb{background:rgba(36,195,142,.2);border-radius:2px}
 .modal-grid{
     display:grid;
     grid-template-columns:repeat(3, 1fr);
@@ -508,24 +668,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .modal-item:active{transform:scale(.96)}
 .modal-item.selected{
-    border-color:var(--blue);
-    background:rgba(40,68,251,.1);
+    border-color:rgba(36,195,142,.6);
+    background:rgba(36,195,142,.08);
 }
 .modal-item.selected::after{
-    content:'✓';
+    content:'';
     position:absolute;
     top:5px;
     right:5px;
     width:20px;
     height:20px;
     border-radius:50%;
-    background:var(--blue);
-    color:#fff;
-    font-size:11px;
-    font-weight:800;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>") center center no-repeat, #24C38E;
+    background-size:12px 12px;
 }
 .modal-item-img{
     width:60px;
@@ -547,8 +702,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .modal-item-price{
     font-size:10px;
     font-weight:800;
-    color:#60A5FA;
-    background:rgba(40,68,251,.1);
+    color:rgba(255,255,255,.5);
+    background:rgba(255,255,255,.05);
     padding:3px 8px;
     border-radius:7px;
     margin-top:4px;
@@ -575,15 +730,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     font-size:13px;
     font-weight:600;
 }
-.modal-empty::before{
-    content:'📭';
-    display:block;
-    font-size:32px;
-    margin-bottom:12px;
-    opacity:.5;
+.modal-empty-icon{
+    width:64px;
+    height:64px;
+    margin:0 auto 16px;
+    opacity:.4;
 }
+.modal-empty-icon img{width:100%;height:100%;object-fit:contain}
 
-/* ═══════════ DEPOSIT ═══════════ */
+/* ══════════════════════════════════════════════════════════════
+   DEPOSIT
+   ══════════════════════════════════════════════════════════════ */
 .deposit-overlay{
     position:fixed;
     inset:0;
@@ -620,8 +777,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     width:32px;
     height:32px;
     border-radius:10px;
-    background:rgba(255,48,100,.1);
-    color:var(--red);
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.6);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -645,7 +802,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .deposit-method img{width:36px;height:36px}
 .deposit-method span{font-weight:700;font-size:13px;color:#fff}
 
-/* ═══════════ BOTTOM NAV ═══════════ */
+/* ══════════════════════════════════════════════════════════════
+   BOTTOM NAV
+   ══════════════════════════════════════════════════════════════ */
 .bottom-nav{
     position:fixed;
     bottom:0;
@@ -678,11 +837,13 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .bnav-item svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;transition:transform .2s}
 .bnav-item span{font-size:10px}
-.bnav-item.active{background:rgba(40,68,251,.12);color:#4B81F5}
+.bnav-item.active{background:rgba(36,195,142,.1);color:#24C38E}
 .bnav-item.active svg{transform:scale(1.1)}
 .bnav-item:active{transform:scale(.9)}
 
-/* ═══════════ TOAST ═══════════ */
+/* ══════════════════════════════════════════════════════════════
+   TOAST
+   ══════════════════════════════════════════════════════════════ */
 .toast{
     position:fixed;
     top:80px;
@@ -700,12 +861,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     transition:all .3s;
     max-width:90%;
     text-align:center;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    justify-content:center;
 }
 .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
-.toast.ok{border-color:rgba(36,195,142,.3);color:var(--green)}
-.toast.err{border-color:rgba(255,48,100,.3);color:var(--red)}
+.toast img{width:20px;height:20px;object-fit:contain}
+.toast.ok{border-color:rgba(36,195,142,.3);color:#24C38E}
+.toast.err{border-color:rgba(255,48,100,.3);color:#FF3064}
 
-/* ═══════════ АДАПТИВ ═══════════ */
+/* ══════════════════════════════════════════════════════════════
+   АДАПТИВ
+   ══════════════════════════════════════════════════════════════ */
 @media(max-width:380px){
     .wheel-wrap{width:270px;height:270px}
     .wheel-center{width:110px;height:110px}
@@ -713,19 +881,58 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     .wheel-center-pct{font-size:24px}
     .select-card{min-height:150px;padding:12px 10px}
     .select-img{width:60px;height:60px}
-    .wheel-pointer{width:40px;height:40px;top:-4px}
+    .wheel-pointer{width:40px;height:40px;top:-6px}
 }
 @media(max-width:340px){
     .wheel-wrap{width:240px;height:240px}
     .wheel-center{width:100px;height:100px}
     .wheel-center-img{width:58px;height:58px}
     .wheel-center-pct{font-size:22px}
-    .wheel-pointer{width:36px;height:36px;top:-2px}
+    .wheel-pointer{width:36px;height:36px;top:-4px}
 }
 </style>
 </head>
 <body>
 
+<!-- LOADING SCREEN -->
+<div class="loading-screen" id="loadingScreen">
+    <div style="position:relative;width:180px;height:180px">
+        <div class="loading-arrow">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                <path d="M16 28 L8 10 C11 8 21 8 24 10 Z"
+                      fill="#ffffff"
+                      stroke="rgba(0,0,0,.3)"
+                      stroke-width="1"
+                      stroke-linejoin="round"/>
+                <circle cx="16" cy="10" r="3" fill="#ffffff"/>
+            </svg>
+        </div>
+
+        <div class="loading-wheel">
+            <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="ldGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#24C38E"/>
+                        <stop offset="100%" stop-color="#10b981"/>
+                    </linearGradient>
+                </defs>
+                <circle class="ld-ring" cx="100" cy="100" r="86"/>
+                <circle class="ld-green" cx="100" cy="100" r="86"
+                        stroke-dasharray="135 540"
+                        transform="rotate(-90 100 100)"/>
+                <g id="ldRisks"></g>
+                <circle class="ld-inner" cx="100" cy="100" r="75"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="loading-text" id="loadingText">LOADING 0%</div>
+    <div class="loading-progress">
+        <div class="loading-progress-bar" id="loadingBar"></div>
+    </div>
+</div>
+
+<!-- TOP BAR -->
 <div class="top-bar">
     <div class="top-left">
         <div class="user-pill">
@@ -748,7 +955,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         <div class="select-card" id="leftCard" onclick="openInventoryModal()">
             <div class="select-card-title">Ваша ставка</div>
             <div class="select-empty">
-                <div class="select-empty-icon">+</div>
+                <div class="select-empty-icon">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </div>
                 <div class="select-empty-text">Добавить</div>
             </div>
             <div class="select-filled">
@@ -763,7 +972,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         <div class="select-card" id="rightCard" onclick="openTargetsModal()">
             <div class="select-card-title">Желаемый<br>подарок</div>
             <div class="select-empty">
-                <div class="select-empty-icon">+</div>
+                <div class="select-empty-icon">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </div>
                 <div class="select-empty-text">Добавить</div>
             </div>
             <div class="select-filled">
@@ -780,6 +991,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <div class="wheel-section">
         <div class="wheel-wrap" id="wheelWrap">
 
+            <!-- Стрелка -->
             <div class="wheel-pointer">
                 <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M22 38 L12 14 C15 12 29 12 32 14 Z"
@@ -791,7 +1003,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
                 </svg>
             </div>
 
-            <!-- Зелёная зона — часть колеса, крутится вместе -->
+            <!-- Вспышка -->
+            <div class="wheel-flash" id="wheelFlash"></div>
+
+            <!-- Результат -->
+            <div class="wheel-result" id="wheelResult">
+                <img id="wheelResultImg" src="" alt="">
+            </div>
+
+            <!-- Зелёная зона -->
             <svg class="wheel-green-arc" id="greenArc" viewBox="0 0 240 240">
                 <defs>
                     <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -804,23 +1024,20 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
                       stroke-linecap="butt"/>
             </svg>
 
-            <!-- Базовое колесо с рисками -->
+            <!-- Базовое колесо -->
             <div class="wheel-rotator" id="wheelRotator">
                 <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Внешняя тонкая окружность -->
                     <circle cx="120" cy="120" r="118" fill="none"
                             stroke="rgba(255,255,255,.03)" stroke-width="1"/>
-                    <!-- Основное тёмное кольцо -->
                     <circle cx="120" cy="120" r="104" fill="none"
                             stroke="#14141a" stroke-width="20"/>
-                    <!-- Риски -->
                     <g id="risksGroup" opacity="0.6"></g>
-                    <!-- Внутренняя тонкая окружность -->
                     <circle cx="120" cy="120" r="94" fill="none"
                             stroke="rgba(255,255,255,.02)" stroke-width="1"/>
                 </svg>
             </div>
 
+            <!-- Центр -->
             <div class="wheel-center">
                 <img class="wheel-center-img" id="wheelCenterImg" src="" alt="">
                 <span class="wheel-center-pct visible" id="chancePct">0.00%</span>
@@ -833,7 +1050,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         <button class="btn-main" id="upgradeBtn" disabled onclick="doUpgrade()">
             <span id="upgradeBtnText">Апгрейд</span>
         </button>
-        <button class="btn-demo" onclick="doDemo()">Демо</button>
+        <button class="btn-demo" id="demoBtn" onclick="doDemo()" disabled>Демо</button>
     </div>
 
 </div>
@@ -842,7 +1059,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div class="modal-overlay" id="inventoryModal" onclick="if(event.target===this)closeInventoryModal()">
     <div class="modal-sheet">
         <div class="modal-header">
-            <div class="modal-title">🎁 Ваш инвентарь</div>
+            <div class="modal-title">
+                <img src="/static/img/gift.png" alt=""> Ваш инвентарь
+            </div>
             <button class="modal-close" onclick="closeInventoryModal()">✕</button>
         </div>
         <div class="modal-search-wrap">
@@ -863,7 +1082,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 <div class="modal-overlay" id="targetsModal" onclick="if(event.target===this)closeTargetsModal()">
     <div class="modal-sheet">
         <div class="modal-header">
-            <div class="modal-title">✨ Желаемый подарок</div>
+            <div class="modal-title">
+                <img src="/static/img/star2.png" alt=""> Желаемый подарок
+            </div>
             <button class="modal-close" onclick="closeTargetsModal()">✕</button>
         </div>
         <div class="modal-search-wrap">
@@ -942,22 +1163,74 @@ function showTgAlert(msg, cb){
     else { alert(msg); if(cb) cb(); }
 }
 
-function showToast(msg, type){
+function showToast(msg, type, iconUrl){
     var t = $('toast');
     if(!t) return;
-    t.textContent = msg;
+    var icon = iconUrl ? '<img src="' + iconUrl + '" alt="">' : '';
+    t.innerHTML = icon + '<span>' + msg + '</span>';
     t.className = 'toast show ' + (type || '');
     setTimeout(function(){ t.classList.remove('show'); }, 2500);
 }
 
 /* ══════════════════════════════════════════════════════════════
-   РИСКИ НА КОЛЕСЕ
+   LOADING
+   ══════════════════════════════════════════════════════════════ */
+(function initLoadingWheel(){
+    var group = document.getElementById('ldRisks');
+    if(!group) return;
+    var cx = 100, cy = 100, rOuter = 86;
+    var html = '';
+    for(var i = 0; i < 60; i++){
+        var angle = (i / 60) * 360;
+        var isMajor = (i % 5 === 0);
+        var len = isMajor ? 7 : 4;
+        var width = isMajor ? 1.6 : 1;
+        var opacity = isMajor ? 0.7 : 0.35;
+        var rad = (angle - 90) * Math.PI / 180;
+        var x1 = cx + Math.cos(rad) * (rOuter - 1);
+        var y1 = cy + Math.sin(rad) * (rOuter - 1);
+        var x2 = cx + Math.cos(rad) * (rOuter - 1 - len);
+        var y2 = cy + Math.sin(rad) * (rOuter - 1 - len);
+        html += '<line class="ld-tick" x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1)
+              + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1)
+              + '" stroke="rgba(255,255,255,' + opacity + ')"'
+              + ' stroke-width="' + width + '"/>';
+    }
+    group.innerHTML = html;
+})();
+
+var _ldP = 0;
+function setLoadingProgress(pct){
+    if(pct <= _ldP) return;
+    _ldP = pct;
+    var bar = $('loadingBar');
+    var txt = $('loadingText');
+    if(bar) bar.style.width = pct + '%';
+    if(txt) txt.textContent = 'LOADING ' + Math.round(pct) + '%';
+}
+function hideLoadingScreen(){
+    setLoadingProgress(100);
+    setTimeout(function(){
+        var ls = $('loadingScreen');
+        if(ls){ ls.classList.add('hidden'); setTimeout(function(){ ls.style.display = 'none'; }, 500); }
+    }, 200);
+}
+var _simInterval = setInterval(function(){
+    if(_ldP >= 60){ clearInterval(_simInterval); return; }
+    _ldP += 2;
+    var bar = $('loadingBar');
+    var txt = $('loadingText');
+    if(bar) bar.style.width = _ldP + '%';
+    if(txt) txt.textContent = 'LOADING ' + Math.round(_ldP) + '%';
+}, 40);
+
+/* ══════════════════════════════════════════════════════════════
+   РИСКИ
    ══════════════════════════════════════════════════════════════ */
 (function drawRisks(){
     var group = document.getElementById('risksGroup');
     if(!group) return;
-    var cx = 120, cy = 120;
-    var rOuter = 104;
+    var cx = 120, cy = 120, rOuter = 104;
     var html = '';
     for(var i = 0; i < 60; i++){
         var angle = (i / 60) * 360;
@@ -979,38 +1252,25 @@ function showToast(msg, type){
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   ★ ЗЕЛЁНАЯ ЗОНА — рисуем на том же кольце что и риски
+   ЗЕЛЁНАЯ ЗОНА
    ══════════════════════════════════════════════════════════════ */
 function drawGreenArc(chance){
     var path = $('greenPath');
     if(!path) return;
-
-    if(!chance || chance <= 0){
-        path.setAttribute('d', '');
-        return;
-    }
-
-    var cx = 120, cy = 120;
-    var r = 104;
+    if(!chance || chance <= 0){ path.setAttribute('d', ''); return; }
+    var cx = 120, cy = 120, r = 104;
     var startAngle = -90;
     var endAngle = startAngle + (chance / 100) * 360;
-
-    function polar(angleDeg){
-        var rad = angleDeg * Math.PI / 180;
-        return {
-            x: cx + r * Math.cos(rad),
-            y: cy + r * Math.sin(rad)
-        };
+    function polar(a){
+        var rad = a * Math.PI / 180;
+        return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
     }
-
     var start = polar(startAngle);
     var end = polar(endAngle);
     var largeArc = (chance > 50) ? 1 : 0;
-
     var d = 'M ' + start.x.toFixed(2) + ' ' + start.y.toFixed(2)
           + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 '
           + end.x.toFixed(2) + ' ' + end.y.toFixed(2);
-
     path.setAttribute('d', d);
 }
 
@@ -1055,17 +1315,14 @@ function openInventoryModal(){
     _inventorySearchQ = '';
     renderInventoryModal();
 }
-
 function closeInventoryModal(){
     var m = $('inventoryModal');
     if(m) m.classList.remove('show');
 }
-
 function filterInventory(){
     _inventorySearchQ = $('inventorySearch').value.toLowerCase().trim();
     renderInventoryModal();
 }
-
 function renderInventoryModal(){
     var grid = $('inventoryGrid');
     if(!grid) return;
@@ -1075,7 +1332,7 @@ function renderInventoryModal(){
         return (it.gift_name || '').toLowerCase().indexOf(_inventorySearchQ) !== -1;
     });
     if(items.length === 0){
-        grid.innerHTML = '<div class="modal-empty">Ничего нет</div>';
+        grid.innerHTML = '<div class="modal-empty"><div class="modal-empty-icon"><img src="/static/img/gift.png" alt=""></div>Ничего нет</div>';
         return;
     }
     items.forEach(function(it){
@@ -1168,17 +1425,14 @@ function openTargetsModal(){
     _targetsSearchQ = '';
     renderTargetsModal();
 }
-
 function closeTargetsModal(){
     var m = $('targetsModal');
     if(m) m.classList.remove('show');
 }
-
 function filterTargets(){
     _targetsSearchQ = $('targetsSearch').value.toLowerCase().trim();
     renderTargetsModal();
 }
-
 function renderTargetsModal(){
     var grid = $('targetsGrid');
     if(!grid) return;
@@ -1188,7 +1442,7 @@ function renderTargetsModal(){
         return (g.name || '').toLowerCase().indexOf(_targetsSearchQ) !== -1;
     });
     if(items.length === 0){
-        grid.innerHTML = '<div class="modal-empty">Ничего нет</div>';
+        grid.innerHTML = '<div class="modal-empty"><div class="modal-empty-icon"><img src="/static/img/gift.png" alt=""></div>Ничего нет</div>';
         return;
     }
     items.forEach(function(g){
@@ -1217,7 +1471,6 @@ function _selectTarget(g){
     chEl.textContent = g.upgrade_chance + '%';
     chEl.style.display = 'inline-flex';
 
-    /* Рисуем зелёную зону */
     drawGreenArc(currentChance);
     updateWheel();
     closeTargetsModal();
@@ -1228,21 +1481,25 @@ function _selectTarget(g){
    ══════════════════════════════════════════════════════════════ */
 function updateWheel(){
     var btn = $('upgradeBtn');
+    var demoBtn = $('demoBtn');
     var pct = $('chancePct');
+
     if(!targetGift || !selectedGift){
         pct.textContent = '0.00%';
         btn.disabled = true;
+        if(demoBtn){ demoBtn.disabled = true; demoBtn.classList.remove('enabled'); }
         $('upgradeBtnText').textContent = 'Апгрейд';
         drawGreenArc(0);
         return;
     }
     pct.textContent = currentChance.toFixed(2) + '%';
     btn.disabled = false;
+    if(demoBtn){ demoBtn.disabled = false; demoBtn.classList.add('enabled'); }
     $('upgradeBtnText').textContent = 'Апгрейд';
 }
 
 /* ══════════════════════════════════════════════════════════════
-   СПИН — крутим ОБА слоя одновременно (кольцо + зелёная зона)
+   СПИН — общий
    ══════════════════════════════════════════════════════════════ */
 async function doUpgrade(){
     if(isSpinning || !targetGift || !selectedGift) return;
@@ -1256,13 +1513,11 @@ async function doUpgrade(){
     var greenArc = $('greenArc');
     if(!rotator || !greenArc) return;
 
-    /* 1. Небольшой откат влево */
-    rotator.style.transition = 'transform 0.4s cubic-bezier(.4,0,.6,1)';
-    greenArc.style.transition = 'transform 0.4s cubic-bezier(.4,0,.6,1)';
-    rotator.style.transform = 'rotate(-15deg)';
-    greenArc.style.transform = 'rotate(-15deg)';
+    rotator.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
+    greenArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
+    rotator.style.transform = 'rotate(-20deg)';
+    greenArc.style.transform = 'rotate(-20deg)';
 
-    /* 2. Запрос на сервер */
     var result;
     try{
         var r = await fetch('/api/upgrade-multi', {
@@ -1280,8 +1535,8 @@ async function doUpgrade(){
     }
 
     if(!result.success){
-        rotator.style.transition = 'transform 0.4s ease';
-        greenArc.style.transition = 'transform 0.4s ease';
+        rotator.style.transition = 'transform 0.5s ease';
+        greenArc.style.transition = 'transform 0.5s ease';
         rotator.style.transform = 'rotate(0deg)';
         greenArc.style.transform = 'rotate(0deg)';
         btn.disabled = false;
@@ -1291,105 +1546,175 @@ async function doUpgrade(){
         return;
     }
 
-    /* 3. Спин */
-    var chance = result.chance;
+    spinWheel(result.chance, result.upgrade_success, false);
+}
+
+function doDemo(){
+    if(isSpinning) return;
+    if(!selectedGift || !targetGift){
+        showToast('Выберите подарок и цель', 'err', '/static/img/gift.png');
+        return;
+    }
+    isSpinning = true;
+    var isWin = Math.random() * 100 < currentChance;
+    spinWheel(currentChance, isWin, true);
+}
+
+function spinWheel(chance, isWin, isDemo){
+    var rotator = $('wheelRotator');
+    var greenArc = $('greenArc');
+    if(!rotator || !greenArc) return;
+
+    rotator.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
+    greenArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
+    rotator.style.transform = 'rotate(-20deg)';
+    greenArc.style.transform = 'rotate(-20deg)';
+
     var landAngle;
-    if(result.upgrade_success){
+    if(isWin){
         landAngle = (chance * 0.15) + Math.random() * (chance * 0.7);
     } else {
         landAngle = chance + Math.random() * (360 - chance);
     }
 
-    var totalSpin = 360 * (6 + Math.floor(Math.random() * 4)) + (360 - landAngle);
-    var spinDuration = 5500;
+    var totalSpin = 360 * (10 + Math.floor(Math.random() * 5)) + (360 - landAngle);
+    var spinDuration = 7500;
 
     setTimeout(function(){
-        var trans = 'transform ' + spinDuration + 'ms cubic-bezier(.1,.6,.2,1)';
+        var trans = 'transform ' + spinDuration + 'ms cubic-bezier(.15,.7,.15,1)';
         rotator.style.transition = trans;
         greenArc.style.transition = trans;
         rotator.style.transform = 'rotate(' + totalSpin + 'deg)';
         greenArc.style.transform = 'rotate(' + totalSpin + 'deg)';
 
         setTimeout(function(){
-            if(result.upgrade_success){
-                showToast('🎉 Победа!', 'ok');
-                launchConfetti();
-                if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            } else {
-                showToast('😢 Неудача', 'err');
-                if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-            }
-            setTimeout(function(){
-                resetAfterSpin();
-                loadInventory();
-                loadTopBar();
-            }, 2000);
+            showSpinResult(isWin, isDemo);
         }, spinDuration);
-    }, 400);
+    }, 500);
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ДЕМО
+   РЕЗУЛЬТАТ — красивая анимация победы/поражения
    ══════════════════════════════════════════════════════════════ */
-function doDemo(){
-    if(isSpinning) return;
-    isSpinning = true;
+function showSpinResult(isWin, isDemo){
+    var flash = $('wheelFlash');
+    var result = $('wheelResult');
+    var resultImg = $('wheelResultImg');
+    var wheelWrap = $('wheelWrap');
 
-    var btn = $('upgradeBtn');
-    btn.disabled = true;
-
-    var rotator = $('wheelRotator');
-    var greenArc = $('greenArc');
-    if(!rotator || !greenArc) return;
-
-    var demoChance = 20 + Math.random() * 60;
-    drawGreenArc(demoChance);
-
-    var pct = $('chancePct');
-    if(pct){
-        pct.textContent = demoChance.toFixed(2) + '%';
-        pct.classList.add('visible');
+    /* Вспышка */
+    if(flash){
+        flash.classList.remove('win','fail','show');
+        void flash.offsetWidth;
+        flash.classList.add(isWin ? 'win' : 'fail');
+        flash.classList.add('show');
     }
 
-    rotator.style.transition = 'transform 0.4s cubic-bezier(.4,0,.6,1)';
-    greenArc.style.transition = 'transform 0.4s cubic-bezier(.4,0,.6,1)';
-    rotator.style.transform = 'rotate(-15deg)';
-    greenArc.style.transform = 'rotate(-15deg)';
+    /* Тряска при неудаче */
+    if(!isWin && wheelWrap){
+        wheelWrap.classList.remove('shake');
+        void wheelWrap.offsetWidth;
+        wheelWrap.classList.add('shake');
+        setTimeout(function(){ wheelWrap.classList.remove('shake'); }, 600);
+    }
 
-    var totalSpin = 360 * (6 + Math.floor(Math.random() * 4)) + Math.random() * 360;
-    var spinDuration = 5000;
+    /* Картинка результата */
+    if(result && resultImg){
+        resultImg.src = isWin ? '/static/gifs/win.gif' : '/static/gifs/lose.gif';
+        resultImg.onerror = function(){
+            this.onerror = null;
+            this.src = isWin ? '/static/img/star2.png' : '/static/img/gift.png';
+        };
+        result.classList.remove('show','fail');
+        void result.offsetWidth;
+        if(!isWin) result.classList.add('fail');
+        result.classList.add('show');
+    }
 
+    /* Звёздочки разлетаются при победе */
+    if(isWin) spawnStars();
+
+    /* Вибрация */
+    try{
+        if(tg && tg.HapticFeedback){
+            tg.HapticFeedback.notificationOccurred(isWin ? 'success' : 'error');
+        }
+    }catch(e){}
+
+    /* Тосты */
+    var toastMsg, toastType;
+    if(isDemo){
+        toastMsg = isWin ? 'Демо: победа!' : 'Демо: неудача';
+        toastType = isWin ? 'ok' : 'err';
+    } else {
+        toastMsg = isWin ? 'Апгрейд успешен!' : 'Апгрейд не удался';
+        toastType = isWin ? 'ok' : 'err';
+    }
+    var toastIcon = isWin ? '/static/gifs/win.gif' : '/static/gifs/lose.gif';
+    showToast(toastMsg, toastType, toastIcon);
+
+    if(isWin) launchConfetti();
+
+    /* Сброс через 2.5 сек */
     setTimeout(function(){
-        var trans = 'transform ' + spinDuration + 'ms cubic-bezier(.1,.6,.2,1)';
-        rotator.style.transition = trans;
-        greenArc.style.transition = trans;
-        rotator.style.transform = 'rotate(' + totalSpin + 'deg)';
-        greenArc.style.transform = 'rotate(' + totalSpin + 'deg)';
-
-        setTimeout(function(){
-            showToast('🎮 Демо завершено', 'ok');
-
-            setTimeout(function(){
-                isSpinning = false;
-                btn.disabled = false;
-
-                rotator.style.transition = 'transform 0.5s ease';
-                greenArc.style.transition = 'transform 0.5s ease';
-                rotator.style.transform = 'rotate(0deg)';
-                greenArc.style.transform = 'rotate(0deg)';
-
-                if(targetGift && selectedGift){
-                    drawGreenArc(currentChance);
-                    pct.textContent = currentChance.toFixed(2) + '%';
-                } else {
-                    drawGreenArc(0);
-                    pct.textContent = '0.00%';
-                }
-            }, 1000);
-        }, spinDuration);
-    }, 400);
+        hideResult();
+        if(isDemo){
+            /* Демо — возвращаем выбор */
+            isSpinning = false;
+            var rotator = $('wheelRotator');
+            var greenArc = $('greenArc');
+            if(rotator){ rotator.style.transition = 'transform 0.6s ease'; rotator.style.transform = 'rotate(0deg)'; }
+            if(greenArc){ greenArc.style.transition = 'transform 0.6s ease'; greenArc.style.transform = 'rotate(0deg)'; }
+            var btn = $('upgradeBtn'); if(btn) btn.disabled = false;
+            var btnText = $('upgradeBtnText'); if(btnText) btnText.textContent = 'Апгрейд';
+            drawGreenArc(currentChance);
+            updateWheel();
+        } else {
+            /* Реальный апгрейд — сбрасываем выбор */
+            resetAfterSpin();
+            loadInventory();
+            loadTopBar();
+        }
+    }, 2500);
 }
 
+function hideResult(){
+    var flash = $('wheelFlash');
+    var result = $('wheelResult');
+    if(flash) flash.classList.remove('show','win','fail');
+    if(result) result.classList.remove('show','fail');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ЗВЁЗДОЧКИ ПРИ ПОБЕДЕ
+   ══════════════════════════════════════════════════════════════ */
+function spawnStars(){
+    var wheel = $('wheelWrap');
+    if(!wheel) return;
+    var N = 12;
+    for(var i = 0; i < N; i++){
+        (function(idx){
+            setTimeout(function(){
+                var star = document.createElement('div');
+                star.className = 'star-particle';
+                var angle = (idx / N) * 360;
+                var radius = 120 + Math.random() * 40;
+                var rad = angle * Math.PI / 180;
+                var x = Math.cos(rad) * radius;
+                var y = Math.sin(rad) * radius;
+                star.style.left = 'calc(50% + ' + x + 'px)';
+                star.style.top = 'calc(50% + ' + y + 'px)';
+                star.innerHTML = '<img src="/static/img/star.png" alt="">';
+                wheel.appendChild(star);
+                setTimeout(function(){ star.remove(); }, 1500);
+            }, idx * 40);
+        })(i);
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   СБРОС ПОСЛЕ СПИНА
+   ══════════════════════════════════════════════════════════════ */
 function resetAfterSpin(){
     isSpinning = false;
     selectedGift = null;
@@ -1403,17 +1728,15 @@ function resetAfterSpin(){
     $('upgradeBtn').disabled = true;
     $('upgradeBtnText').textContent = 'Апгрейд';
 
+    var demoBtn = $('demoBtn');
+    if(demoBtn){ demoBtn.disabled = true; demoBtn.classList.remove('enabled'); }
+
     var rotator = $('wheelRotator');
     var greenArc = $('greenArc');
-    if(rotator){
-        rotator.style.transition = 'transform 0.5s ease';
-        rotator.style.transform = 'rotate(0deg)';
-    }
-    if(greenArc){
-        greenArc.style.transition = 'transform 0.5s ease';
-        greenArc.style.transform = 'rotate(0deg)';
-    }
+    if(rotator){ rotator.style.transition = 'transform 0.6s ease'; rotator.style.transform = 'rotate(0deg)'; }
+    if(greenArc){ greenArc.style.transition = 'transform 0.6s ease'; greenArc.style.transform = 'rotate(0deg)'; }
 
+    hideResult();
     drawGreenArc(0);
 }
 
@@ -1428,13 +1751,13 @@ function closeDeposit(){ $('depositOverlay').classList.remove('show'); }
    ══════════════════════════════════════════════════════════════ */
 function launchConfetti(){
     var canvas = document.createElement('canvas');
-    canvas.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none';
+    canvas.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none';
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     document.body.appendChild(canvas);
     var ctx = canvas.getContext('2d');
     var particles = [];
-    var colors = ['#24C38E','#2844FB','#FFD700','#FF6B9D','#4B81F5'];
+    var colors = ['#24C38E','#10b981','#FFD700','#FF6B9D','#4ade80'];
     for(var i = 0; i < 100; i++){
         particles.push({
             x: canvas.width / 2 + (Math.random() - .5) * 100,
@@ -1478,6 +1801,7 @@ function launchConfetti(){
    INIT
    ══════════════════════════════════════════════════════════════ */
 (async function init(){
+    setLoadingProgress(5);
     var auth = await telegramAuth();
     if(auth && auth.id){
         userId = auth.id;
@@ -1495,9 +1819,15 @@ function launchConfetti(){
             if(bd.banned){ location.href = '/ban'; return; }
         }catch(e){}
     }
-    loadTopBar();
-    loadInventory();
+    setLoadingProgress(30);
+    await loadTopBar();
+    setLoadingProgress(50);
+    await loadInventory();
+    setLoadingProgress(80);
     updateWheel();
+    setLoadingProgress(100);
+    clearInterval(_simInterval);
+    hideLoadingScreen();
 })();
 </script>
 </body>
