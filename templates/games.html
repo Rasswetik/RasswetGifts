@@ -13,9 +13,6 @@
     --bg-2: #11111a;
     --text: #fff;
     --text-2: rgba(255,255,255,.5);
-    --blue: #2844FB;
-    --blue-light: #4B81F5;
-    --green: #24C38E;
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --tg-header: 56px;
@@ -24,7 +21,9 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
     background: var(--bg);
-    background-image: radial-gradient(ellipse 100% 60% at 50% 0%, #1a1a2e 0%, #0a0a0f 60%);
+    background-image:
+        radial-gradient(ellipse 100% 50% at 50% 0%, #1a1a2e 0%, transparent 60%),
+        radial-gradient(ellipse 80% 40% at 80% 100%, #1a0a1e 0%, transparent 60%);
     color: var(--text);
     overflow-x: hidden;
     min-height: 100vh;
@@ -75,8 +74,8 @@ a { text-decoration: none; color: inherit; }
     display: flex;
     align-items: center;
     gap: 4px;
-    background: rgba(40,68,251,.15);
-    border: 1px solid rgba(75,129,245,.3);
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.1);
     border-radius: 10px;
     padding: 6px 10px;
     font-size: 13px;
@@ -89,12 +88,13 @@ a { text-decoration: none; color: inherit; }
     gap: 4px;
     font-size: 12px;
     font-weight: 600;
-    color: rgba(255,255,255,.5);
+    color: rgba(255,255,255,.6);
 }
 .top-online-dot {
     width: 6px; height: 6px;
     border-radius: 50%;
     background: #4ade80;
+    box-shadow: 0 0 8px rgba(74,222,128,.7);
     animation: pulseDot 2s ease infinite;
 }
 @keyframes pulseDot {
@@ -119,14 +119,32 @@ a { text-decoration: none; color: inherit; }
     transition: transform .3s cubic-bezier(.175,.885,.32,1.275);
     overflow: hidden;
     width: 100%;
-    height: 160px;
+    height: 165px;
     margin-bottom: 14px;
     display: block;
     text-align: left;
     padding: 0;
     background: none;
+    isolation: isolate;
 }
 .game-card:active { transform: scale(.97); }
+
+/* Свечение под карточкой */
+.game-card::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 26px;
+    z-index: -1;
+    opacity: .7;
+    filter: blur(16px);
+    transition: opacity .3s;
+}
+.game-card-crash::before { background: linear-gradient(135deg, #ff5722, #8b0000); }
+.game-card-cases::before { background: linear-gradient(135deg, #3b82f6, #1e3a8a); }
+.game-card-market::before { background: linear-gradient(135deg, #10b981, #064e3b); }
+.game-card-upgrade::before { background: linear-gradient(135deg, #8b5cf6, #4c1d95); }
+.game-card:active::before { opacity: .4; }
 
 .game-card-content {
     display: flex;
@@ -147,11 +165,12 @@ a { text-decoration: none; color: inherit; }
 }
 
 .game-card-text {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 800;
     color: #fff;
     line-height: 1.1;
     letter-spacing: -.5px;
+    text-shadow: 0 2px 12px rgba(0,0,0,.5);
 }
 
 .game-card-players {
@@ -163,19 +182,25 @@ a { text-decoration: none; color: inherit; }
     gap: 5px;
     font-size: 11px;
     font-weight: 600;
-    color: rgba(255,255,255,.65);
+    color: rgba(255,255,255,.75);
     z-index: 5;
+    background: rgba(0,0,0,.3);
+    padding: 4px 10px;
+    border-radius: 20px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.1);
 }
-.game-card-players svg { width: 12px; height: 12px; opacity: .7; }
+.game-card-players svg { width: 11px; height: 11px; opacity: .8; }
 
 .game-card-gif {
     position: absolute;
-    right: 10px;
-    bottom: -8px;
-    width: 130px;
-    height: 130px;
+    right: 8px;
+    bottom: -6px;
+    width: 135px;
+    height: 135px;
     object-fit: contain;
-    filter: drop-shadow(0 8px 24px rgba(0,0,0,.5));
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,.6));
     z-index: 4;
     pointer-events: none;
     will-change: transform;
@@ -189,51 +214,65 @@ a { text-decoration: none; color: inherit; }
     100% { transform: translateY(0) rotate(0deg); }
 }
 
-/* Rotate icon (for upgrade wheel) */
-.game-card-gif.rotating {
-    animation: spinContinuous 4s linear infinite;
-}
-@keyframes spinContinuous {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* ─── Colored themes ─── */
+/* ══════════════ ТЕМЫ КАРТОЧЕК — ярче ══════════════ */
 .game-card-crash {
-    background: radial-gradient(130% 90% at 70% 10%, #af3000, #480d00 45%, #350a00);
-    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    background:
+        radial-gradient(90% 70% at 85% 20%, rgba(255,87,34,.35) 0%, transparent 60%),
+        radial-gradient(120% 100% at 20% 100%, rgba(139,0,0,.55) 0%, transparent 70%),
+        linear-gradient(135deg, #2a0a00 0%, #1a0500 50%, #0f0200 100%);
+    box-shadow:
+        0 8px 32px rgba(255,87,34,.25),
+        inset 0 1px 0 rgba(255,255,255,.08);
+    border: 1px solid rgba(255,87,34,.2);
 }
+
 .game-card-cases {
-    background: radial-gradient(130% 90% at 70% 10%, #001aaf, #000548 45%, #000548);
-    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    background:
+        radial-gradient(90% 70% at 85% 20%, rgba(59,130,246,.35) 0%, transparent 60%),
+        radial-gradient(120% 100% at 20% 100%, rgba(30,58,138,.55) 0%, transparent 70%),
+        linear-gradient(135deg, #001033 0%, #000820 50%, #000410 100%);
+    box-shadow:
+        0 8px 32px rgba(59,130,246,.25),
+        inset 0 1px 0 rgba(255,255,255,.08);
+    border: 1px solid rgba(59,130,246,.2);
 }
+
 .game-card-market {
-    background: radial-gradient(130% 90% at 70% 10%, #004d00, #001a00 45%, #001200);
-    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    background:
+        radial-gradient(90% 70% at 85% 20%, rgba(16,185,129,.35) 0%, transparent 60%),
+        radial-gradient(120% 100% at 20% 100%, rgba(6,78,59,.55) 0%, transparent 70%),
+        linear-gradient(135deg, #001a10 0%, #000d08 50%, #000402 100%);
+    box-shadow:
+        0 8px 32px rgba(16,185,129,.25),
+        inset 0 1px 0 rgba(255,255,255,.08);
+    border: 1px solid rgba(16,185,129,.2);
 }
+
 .game-card-upgrade {
-    background: radial-gradient(130% 90% at 70% 10%, #333, #1a1a1a 45%, #111);
-    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+    background:
+        radial-gradient(90% 70% at 85% 20%, rgba(139,92,246,.35) 0%, transparent 60%),
+        radial-gradient(120% 100% at 20% 100%, rgba(76,29,149,.55) 0%, transparent 70%),
+        linear-gradient(135deg, #160a2a 0%, #0d0518 50%, #06020d 100%);
+    box-shadow:
+        0 8px 32px rgba(139,92,246,.25),
+        inset 0 1px 0 rgba(255,255,255,.08);
+    border: 1px solid rgba(139,92,246,.2);
 }
 
-/* ─── Upgrade — рисуем колесо внутри ─── */
-.game-card-upgrade .game-card-gif {
-    display: none; /* скрываем старую гифку, если есть */
-}
-
+/* ══════════════ UPGRADE WHEEL ══════════════ */
 .upgrade-wheel-svg {
     position: absolute;
-    right: 5px;
-    bottom: -15px;
-    width: 160px;
-    height: 160px;
+    right: 0;
+    bottom: -20px;
+    width: 165px;
+    height: 165px;
     z-index: 4;
     pointer-events: none;
-    filter: drop-shadow(0 8px 24px rgba(0,0,0,.5));
+    filter: drop-shadow(0 8px 24px rgba(139,92,246,.4));
 }
 .upgrade-wheel-svg .wheel-ring {
     fill: none;
-    stroke: #1a1a20;
+    stroke: #1a1a24;
     stroke-width: 22;
 }
 .upgrade-wheel-svg .wheel-tick {
@@ -243,7 +282,7 @@ a { text-decoration: none; color: inherit; }
 }
 .upgrade-wheel-svg .wheel-inner {
     fill: none;
-    stroke: rgba(255,255,255,.04);
+    stroke: rgba(255,255,255,.06);
     stroke-width: 1;
 }
 .upgrade-wheel-svg .wheel-pointer {
@@ -256,32 +295,37 @@ a { text-decoration: none; color: inherit; }
     stroke-width: 22;
 }
 
-/* Вращение колеса */
-@keyframes rotateWheel {
-    0%   { transform: rotate(0deg); }
-    25%  { transform: rotate(45deg); }
-    50%  { transform: rotate(-30deg); }
-    75%  { transform: rotate(15deg); }
-    100% { transform: rotate(0deg); }
-}
-
 /* ══════════════ TAGS ══════════════ */
 .game-card-tag {
     position: absolute;
     top: 14px;
     right: 14px;
     border-radius: 8px;
-    padding: 4px 10px;
+    padding: 5px 11px;
     font-size: 10px;
     font-weight: 800;
     color: #fff;
-    letter-spacing: .5px;
+    letter-spacing: .8px;
     z-index: 5;
+    box-shadow: 0 4px 12px rgba(0,0,0,.4);
+    text-transform: uppercase;
 }
-
-/* ══════════════ RIPPLE ══════════════ */
-@keyframes ripple {
-    to { transform: scale(4); opacity: 0; }
+.tag-live {
+    background: linear-gradient(135deg, #ff6b35, #e74c3c);
+    box-shadow: 0 4px 12px rgba(255,107,53,.5);
+    animation: livePulse 2s ease-in-out infinite;
+}
+@keyframes livePulse {
+    0%, 100% { box-shadow: 0 4px 12px rgba(255,107,53,.5); }
+    50% { box-shadow: 0 4px 20px rgba(255,107,53,.9); }
+}
+.tag-new {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    box-shadow: 0 4px 12px rgba(74,222,128,.5);
+}
+.tag-hot {
+    background: linear-gradient(135deg, #f43f5e, #be123c);
+    box-shadow: 0 4px 12px rgba(244,63,94,.5);
 }
 
 /* ══════════════ BOTTOM NAV ══════════════ */
@@ -294,9 +338,9 @@ a { text-decoration: none; color: inherit; }
     height: 72px;
     padding: 0 8px calc(var(--safe-bottom) + 8px);
     background: rgba(10,10,15,.95);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255,255,255,.04);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(255,255,255,.06);
     display: flex;
     align-items: center;
     justify-content: space-around;
@@ -319,15 +363,24 @@ a { text-decoration: none; color: inherit; }
 }
 .bnav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; transition: transform .3s; }
 .bnav-item span { font-size: 10px; font-weight: 600; }
-.bnav-item.active { background: rgba(40,68,251,.12); color: var(--blue-light); }
+.bnav-item.active {
+    background: linear-gradient(135deg, rgba(139,92,246,.2), rgba(76,29,149,.15));
+    color: #a78bfa;
+    box-shadow: inset 0 0 0 1px rgba(139,92,246,.3);
+}
 .bnav-item:active { transform: scale(.9); }
 .bnav-item.active svg { transform: scale(1.1); }
 
+/* ══════════════ RIPPLE ══════════════ */
+@keyframes ripple {
+    to { transform: scale(4); opacity: 0; }
+}
+
 @media (max-width: 360px) {
-    .game-card { height: 140px; }
-    .game-card-text { font-size: 21px; }
+    .game-card { height: 145px; }
+    .game-card-text { font-size: 22px; }
     .game-card-gif { width: 110px; height: 110px; }
-    .upgrade-wheel-svg { width: 130px; height: 130px; }
+    .upgrade-wheel-svg { width: 135px; height: 135px; }
 }
 </style>
 </head>
@@ -353,7 +406,7 @@ a { text-decoration: none; color: inherit; }
 
 <div class="games-container">
 
-    <!-- ══════════════ CRASH ══════════════ -->
+    <!-- CRASH -->
     <button class="game-card game-card-crash" onclick="goTo('/crash')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -367,10 +420,10 @@ a { text-decoration: none; color: inherit; }
             </div>
             <img src="/static/gifs/rockets/crash.gif" alt="Crash" class="game-card-gif" id="crashGif" loading="lazy">
         </div>
-        <div class="game-card-tag" style="background:linear-gradient(135deg,#ff6b35,#e74c3c);">LIVE</div>
+        <div class="game-card-tag tag-live">LIVE</div>
     </button>
 
-    <!-- ══════════════ CASES ══════════════ -->
+    <!-- CASES -->
     <button class="game-card game-card-cases" onclick="goTo('/cases')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -384,9 +437,10 @@ a { text-decoration: none; color: inherit; }
             </div>
             <img src="/static/gifs/cases.gif" alt="Cases" class="game-card-gif" loading="lazy">
         </div>
+        <div class="game-card-tag tag-hot">HOT</div>
     </button>
 
-    <!-- ══════════════ MARKET ══════════════ -->
+    <!-- MARKET -->
     <button class="game-card game-card-market" onclick="goTo('/market')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -401,10 +455,10 @@ a { text-decoration: none; color: inherit; }
             <img src="/static/gifs/market.gif" alt="Market" class="game-card-gif" loading="lazy"
                  onerror="this.onerror=null;this.src='/static/gifs/Hlop.gif'">
         </div>
-        <div class="game-card-tag" style="background:linear-gradient(135deg,#4ade80,#22c55e);">NEW</div>
+        <div class="game-card-tag tag-new">NEW</div>
     </button>
 
-    <!-- ══════════════ UPGRADE — с колесом ══════════════ -->
+    <!-- UPGRADE — с анимированным колесом -->
     <button class="game-card game-card-upgrade" onclick="goTo('/upgrade')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -418,7 +472,7 @@ a { text-decoration: none; color: inherit; }
             </div>
         </div>
 
-        <!-- Красивое анимированное колесо -->
+        <!-- Анимированное колесо -->
         <svg class="upgrade-wheel-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <linearGradient id="upgradeGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -427,31 +481,22 @@ a { text-decoration: none; color: inherit; }
                 </linearGradient>
             </defs>
 
-            <!-- Вращающаяся группа (кольцо + зелёная зона + риски) -->
             <g id="upgradeWheelRotator">
-                <!-- Внешнее кольцо -->
                 <circle class="wheel-ring" cx="100" cy="100" r="86"/>
-
-                <!-- Зелёная зона (дуга 30%) -->
                 <circle class="wheel-green" cx="100" cy="100" r="86"
                         stroke-dasharray="162 540"
                         transform="rotate(-90 100 100)"/>
-
-                <!-- Риски -->
                 <g id="upgradeWheelRisks" opacity="0.55"></g>
-
-                <!-- Внутреннее кольцо -->
                 <circle class="wheel-inner" cx="100" cy="100" r="75"/>
             </g>
 
-            <!-- Стрелка (НЕ вращается) -->
             <path class="wheel-pointer"
                   d="M100 30 L88 52 C92 49 108 49 112 52 Z"
                   stroke="rgba(0,0,0,.3)" stroke-width="1" stroke-linejoin="round"/>
             <circle cx="100" cy="52" r="4" fill="#fff"/>
         </svg>
 
-        <div class="game-card-tag" style="background:linear-gradient(135deg,#6c5ce7,#a855f7);">NEW</div>
+        <div class="game-card-tag tag-new">NEW</div>
     </button>
 
 </div>
@@ -495,85 +540,79 @@ a { text-decoration: none; color: inherit; }
 </nav>
 
 <script>
-/* ══════════════════════════════════════════════════════════════
-   GLOBAL
-   ══════════════════════════════════════════════════════════════ */
 var userId = null;
 var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
 var lastCrashGif = 'crash';
 
 /* ══════════════════════════════════════════════════════════════
-   RANDOM CRASH GIF
+   СЛУЧАЙНЫЙ GIF ДЛЯ КРАША
    ══════════════════════════════════════════════════════════════ */
 function randomizeCrashGif(){
     var img = document.getElementById('crashGif');
     if(!img) return;
-    /* Выбираем случайный gif, не повторяя предыдущий */
     var pool = ROCKET_SLOTS.filter(function(r){ return r !== lastCrashGif; });
     var random = pool[Math.floor(Math.random() * pool.length)];
     lastCrashGif = random;
-    img.src = '/static/gifs/rockets/' + random + '.gif';
-    img.onerror = function(){
-        this.onerror = null;
-        this.src = '/static/gifs/rockets/crash.gif';
-    };
+    img.style.opacity = '0';
+    img.style.transition = 'opacity .3s';
+    setTimeout(function(){
+        img.src = '/static/gifs/rockets/' + random + '.gif';
+        img.onerror = function(){
+            this.onerror = null;
+            this.src = '/static/gifs/rockets/crash.gif';
+        };
+        img.style.opacity = '1';
+    }, 150);
 }
-
-/* Меняем gif краша каждые 3 секунды */
 setInterval(randomizeCrashGif, 3000);
 
 /* ══════════════════════════════════════════════════════════════
-   UPGRADE WHEEL — риски + вращение
+   КОЛЕСО АПГРЕЙДА
    ══════════════════════════════════════════════════════════════ */
 (function initUpgradeWheel(){
-    /* Рисуем риски */
     var risksGroup = document.getElementById('upgradeWheelRisks');
     if(!risksGroup) return;
 
-    var cx = 100, cy = 100;
-    var rOuter = 86;
+    var cx = 100, cy = 100, rOuter = 86;
     var html = '';
     for(var i = 0; i < 60; i++){
         var angle = (i / 60) * 360;
         var isMajor = (i % 5 === 0);
         var len = isMajor ? 7 : 4;
         var width = isMajor ? 1.8 : 1;
-        var opacity = isMajor ? 0.7 : 0.35;
+        var opacity = isMajor ? 0.75 : 0.4;
         var rad = (angle - 90) * Math.PI / 180;
         var x1 = cx + Math.cos(rad) * (rOuter - 1);
         var y1 = cy + Math.sin(rad) * (rOuter - 1);
         var x2 = cx + Math.cos(rad) * (rOuter - 1 - len);
         var y2 = cy + Math.sin(rad) * (rOuter - 1 - len);
-        html += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1)
+        html += '<line class="wheel-tick" x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1)
               + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1)
               + '" stroke="rgba(255,255,255,' + opacity + ')"'
-              + ' stroke-width="' + width + '" stroke-linecap="round"/>';
+              + ' stroke-width="' + width + '"/>';
     }
     risksGroup.innerHTML = html;
 
-    /* Анимация вращения колеса */
     var rotator = document.getElementById('upgradeWheelRotator');
     if(!rotator) return;
 
+    /* Плавное покачивание туда-сюда */
     var angles = [0, 45, -30, 15, -60, 30, 0];
     var i = 0;
-
     function nextAngle(){
         var target = angles[i % angles.length];
-        rotator.style.transition = 'transform 1.6s cubic-bezier(.34,1.56,.64,1)';
+        rotator.style.transition = 'transform 1.8s cubic-bezier(.34,1.56,.64,1)';
         rotator.style.transform = 'rotate(' + target + 'deg)';
         i++;
     }
-
-    /* Стартуем через 0.5 сек после загрузки */
     setTimeout(function(){
         nextAngle();
-        setInterval(nextAngle, 2200);
+        setInterval(nextAngle, 2400);
     }, 500);
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   NAVIGATION
+   НАВИГАЦИЯ
    ══════════════════════════════════════════════════════════════ */
 function goTo(url){
     try{
@@ -631,7 +670,6 @@ async function loadOnline(){
         var count = d.count || 0;
         document.getElementById('topOnline').textContent = count;
 
-        /* Счётчики "играют" — рандомизируем вокруг онлайна */
         var crashN = Math.max(3, Math.floor(count * 0.6 + Math.random() * 5));
         var casesN = Math.max(2, Math.floor(count * 0.4 + Math.random() * 4));
         var marketN = Math.max(1, Math.floor(count * 0.3 + Math.random() * 3));
@@ -644,11 +682,7 @@ async function loadOnline(){
     }catch(e){}
 }
 
-/* ══════════════════════════════════════════════════════════════
-   START
-   ══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function(){
-    /* Ставим случайный gif сразу */
     randomizeCrashGif();
     initGames();
 });
