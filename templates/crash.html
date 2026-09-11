@@ -885,6 +885,66 @@ body.turbo-mode .boom-wrap img{
     filter:none !important;
 }
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   ★ FIX: ПРОИЗВОДИТЕЛЬНОСТЬ
+   ══════════════════════════════════════════════════════════════ */
+
+/* Ракета — GPU-ускорение */
+.rocket-wrap{
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+.rocket-wrap img{
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* Список ставок — ограничиваем перерисовку */
+.bets-list{
+    contain: layout style;
+    -webkit-contain: layout style;
+    will-change: scroll-position;
+}
+
+/* Счётчик коэффициента */
+.coeff-box,
+.coeff-live{
+    will-change: contents;
+    contain: content;
+}
+
+/* Кнопка cashout — стабильная */
+.cashout-btn{
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Игровое поле — GPU */
+.game-field{
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+/* Превью подарков в ставках — не грузим каждый кадр */
+.bet-amt .bet-gift-preview{
+    will-change: auto;
+    content-visibility: auto;
+    contain: layout style;
+}
+
+/* В турбо — отключаем все will-change (освобождаем GPU) */
+body.turbo-mode *{
+    will-change: auto !important;
+}
+
 </style>
 </head>
 <body>
@@ -1419,9 +1479,21 @@ async function initTelegramApp(){
     }
 
     /* FIX: уменьшили частоту поллинга — меньше лагов на слабых телефонах */
-    setInterval(pollStatus, 100);
-    setInterval(loadUserData, 25000);
-    setInterval(pollBets, 200);
+    /* ★ ЕДИНЫЙ поллинг: статус каждый раз, ставки — только раз в 3 статуса */
+    var _pollTick = 0;
+    setInterval(function(){
+        _pollTick++;
+        /* Статус — всегда */
+        if(!_statusPending){
+            _statusPending = true;
+            updStatus().finally(function(){ _statusPending = false; });
+        }
+        /* Ставки — только каждый 3-й тик (реже = меньше нагрузки) */
+        if(_pollTick % 3 === 0 && !_betsPending){
+            _betsPending = true;
+            loadBets().finally(function(){ _betsPending = false; });
+        }
+    }, 250);
     setInterval(function(){ fetch('/api/ping').catch(()=>{}); }, 30000);
 
     document.addEventListener('visibilitychange', function(){
@@ -2152,13 +2224,22 @@ async function confirmGiftBet(){
 /* ============================================================
    STATUS POLLING
    ============================================================ */
+var _statusAbortCtl = null;
 async function updStatus(){
     if(!authReady) return;
+    /* ★ Отменяем предыдущий запрос если ещё висит */
+    if(_statusAbortCtl){
+        try{ _statusAbortCtl.abort(); }catch(e){}
+    }
+    _statusAbortCtl = new AbortController();
+    var _thisCtl = _statusAbortCtl;
     try{
         var url = '/api/ultimate-crash/simple-status';
         if(userData && userData.id) url += '?user_id=' + userData.id;
-        var r = await fetch(url);
+        var r = await fetch(url, { signal: _thisCtl.signal });
         if(!r.ok) return;
+        /* Проверяем что это последний запрос */
+        if(_thisCtl !== _statusAbortCtl) return;
         var d = await r.json();
         if(!d.success && !d.game) return;
 
@@ -2387,7 +2468,10 @@ async function updStatus(){
             hasBet = false;
             betAmt = 0;
         }
-    }catch(e){ console.error('updStatus:', e); }
+    }catch(e){
+        if(e && e.name === 'AbortError') return;
+        console.error('updStatus:', e);
+    }
 }
 
 /* ============================================================
@@ -2625,6 +2709,8 @@ async function ensureGiftCatalog(){
             _giftCatalogCache = d.gifts
                 .filter(function(g){ return g.value > 0 && g.type !== 'stars_balance'; })
                 .sort(function(a,b){ return (a.value||0)-(b.value||0); });
+            /* ★ Перестраиваем кэш корзин */
+            if(typeof _rebuildGiftCache === 'function') _rebuildGiftCache();
         }
     }catch(e){}
     return _giftCatalogCache || [];
@@ -2647,18 +2733,58 @@ function getGiftImage(g){
 }
 
 /* Оптимизация: кэшируем результат, не сканируем каталог каждый кадр */
+/* ★ КЭШ getAchievableGift — НЕ сканировать каталог каждый кадр */
+var _giftCache_Buckets = null;  /* [{value, gift}, ...] отсортировано по value */
+var _giftCache_Len = 0;
+
+function _rebuildGiftCache(){
+    if(!_giftCatalogCache || !_giftCatalogCache.length){
+        _giftCache_Buckets = [];
+        _giftCache_Len = 0;
+        return;
+    }
+    /* Создаём "корзины" по 100⭐ — для быстрого поиска */
+    var buckets = {};
+    for(var i = 0; i < _giftCatalogCache.length; i++){
+        var g = _giftCatalogCache[i];
+        var v = g.value || 0;
+        if(v <= 0) continue;
+        var bucket = Math.floor(v / 100);  /* Шаг 100⭐ = 1 TON */
+        if(!buckets[bucket] || buckets[bucket].value < v){
+            buckets[bucket] = g;
+        }
+    }
+    /* Превращаем в массив */
+    var arr = [];
+    for(var k in buckets){
+        arr.push({ value: buckets[k].value, gift: buckets[k] });
+    }
+    arr.sort(function(a, b){ return a.value - b.value; });
+    _giftCache_Buckets = arr;
+    _giftCache_Len = arr.length;
+}
+
 function getAchievableGift(potentialWin){
-    if(!_giftCatalogCache || potentialWin < 5) return null;
-    /* Если тот же win что и в прошлый раз — вернуть кэш */
-    if(potentialWin === _lastAchievableWin){
+    if(!_giftCache_Buckets || _giftCache_Len === 0){
+        if(!_giftCatalogCache) return null;
+        _rebuildGiftCache();
+        if(_giftCache_Len === 0) return null;
+    }
+    if(potentialWin < 5) return null;
+    if(potentialWin === _lastAchievableWin && _lastAchievableGift){
         return _lastAchievableGift;
     }
     _lastAchievableWin = potentialWin;
-    var best = null;
-    for(var i = _giftCatalogCache.length - 1; i >= 0; i--){
-        if(_giftCatalogCache[i].value <= potentialWin){
-            best = _giftCatalogCache[i];
-            break;
+    /* Бинарный поиск */
+    var arr = _giftCache_Buckets;
+    var lo = 0, hi = arr.length - 1, best = null;
+    while(lo <= hi){
+        var mid = (lo + hi) >> 1;
+        if(arr[mid].value <= potentialWin){
+            best = arr[mid].gift;
+            lo = mid + 1;
+        } else {
+            hi = mid - 1;
         }
     }
     _lastAchievableGift = best;
@@ -3114,12 +3240,12 @@ function render(){
             _updateTurboCounter(dispMult);
         }
 
-        if(now - lastRocketUpdateTime > 250){
+        if(now - lastRocketUpdateTime > 400){
             lastRocketUpdateTime = now;
             updateRocketImage();
         }
 
-        if(now - _lastCashBtnUpdate > 33){
+        if(now - _lastCashBtnUpdate > 100){
             _lastCashBtnUpdate = now;
             if(hasBet || cashedOut) updateCashoutButton();
         }
@@ -3228,6 +3354,13 @@ function _removeOptimisticBets(){
 
 async function loadBets(){
     if(status === 'crashed') return;
+    /* ★ В flying не грузим часто — ставки не меняются */
+    if(status === 'flying'){
+        if(!loadBets._lastFlyingFetch) loadBets._lastFlyingFetch = 0;
+        var _now = performance.now();
+        if(_now - loadBets._lastFlyingFetch < 2000) return;
+        loadBets._lastFlyingFetch = _now;
+    }
     try{
         var gen = betsGeneration;
         var r = await fetch('/api/ultimate-crash/recent-bets?limit=30');
