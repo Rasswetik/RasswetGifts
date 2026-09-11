@@ -60,29 +60,93 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .game-field{margin:0 12px;border-radius:20px;background:#0B1120;border:1px solid rgba(59,130,246,.12);position:relative;overflow:hidden;min-height:280px;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:1}
 .game-field::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(99,160,255,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(99,160,255,.28) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:1}
 .game-field.flying{box-shadow:inset 0 0 80px rgba(59,130,246,.06),0 0 30px rgba(59,130,246,.08)}
-.countdown-display{font-family:inherit;font-weight:900;font-size:min(200px,42vw);color:rgba(255,255,255,.85);position:absolute;z-index:4;user-select:none;line-height:1;text-shadow:0 0 60px rgba(255,255,255,.15),0 0 30px rgba(160,175,200,.2);opacity:0;pointer-events:none}
-.countdown-display.active{opacity:1;animation:cdPop .3s cubic-bezier(.22,.9,.2,1)}
-@keyframes cdPop{0%{transform:scale(2);opacity:0}60%{transform:scale(.95)}100%{transform:scale(1);opacity:1}}
+
+/* COUNTDOWN */
+.countdown-display{
+    font-family:inherit;font-weight:900;
+    font-size:min(200px,42vw);
+    color:rgba(255,255,255,.85);
+    position:absolute;z-index:4;user-select:none;line-height:1;
+    text-shadow:0 0 60px rgba(255,255,255,.15),0 0 30px rgba(160,175,200,.2);
+    opacity:0;pointer-events:none;
+}
+.countdown-display.active{opacity:1;animation:cdPop .35s cubic-bezier(.22,.9,.2,1)}
+@keyframes cdPop{0%{transform:scale(2.2);opacity:0}60%{transform:scale(.95);opacity:1}100%{transform:scale(1);opacity:1}}
+
+/* LIVE MULTIPLIER (в полёте, крупно) */
+.live-mult{
+    position:absolute;top:8%;left:50%;transform:translateX(-50%);
+    font-family:inherit;font-weight:900;
+    font-size:min(72px,15vw);
+    color:#fff;
+    text-shadow:0 0 40px rgba(59,130,246,.5), 0 0 80px rgba(59,130,246,.3);
+    z-index:3;opacity:0;pointer-events:none;
+    transition:opacity .25s ease;
+    letter-spacing:-2px;
+}
+.live-mult.visible{opacity:1}
 
 /* ROCKET */
-.rocket-wrap{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);z-index:2;transition:opacity .3s;opacity:1;will-change:transform,opacity;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.rocket-wrap img{width:170px;height:170px;object-fit:contain;border:none;background:transparent;transition:transform .3s ease-out;will-change:transform;image-rendering:auto;transform:translateZ(0)}
-.rocket-wrap.showing-gift img{width:170px;height:170px;object-fit:contain;border:none !important;background:transparent !important;padding:0 !important;border-radius:0 !important;box-shadow:none !important;filter:drop-shadow(0 10px 26px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(59,130,246,.28));image-rendering:high-quality}
+.rocket-wrap{
+    position:absolute;top:52%;left:50%;
+    transform:translate(-50%,-50%);
+    z-index:2;transition:opacity .3s;
+    opacity:1;
+    will-change:transform,opacity;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    contain:layout style paint;
+}
+.rocket-wrap img{
+    width:170px;height:170px;object-fit:contain;
+    border:none;background:transparent;
+    transition:transform .3s ease-out;
+    will-change:transform;
+    image-rendering:auto;
+    transform:translateZ(0);
+}
+.rocket-wrap.showing-gift img{
+    width:170px;height:170px;object-fit:contain;
+    border:none !important;background:transparent !important;padding:0 !important;
+    border-radius:0 !important;box-shadow:none !important;
+    filter:drop-shadow(0 10px 26px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(59,130,246,.28));
+    image-rendering:high-quality;
+}
 .rocket-wrap.hide{opacity:0;pointer-events:none}
 .rocket-wrap.flying img{transform:rotate(18deg) translateZ(0)}
 .rocket-wrap.flying.showing-gift img{transform:scale(1.05) translateZ(0) !important}
 .rocket-wrap.cashed-out img{filter:grayscale(100%) brightness(.7)}
 
 /* BOOM */
-.boom-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;display:none;align-items:center;justify-content:center}
-.boom-wrap.show{display:flex !important;animation:boomPop .4s ease-out forwards}
-.boom-wrap.show img{width:180px;height:180px;object-fit:contain;display:block !important;opacity:1 !important;visibility:visible !important}
-.boom-wrap img{width:180px;height:180px;object-fit:contain;display:block}
-@keyframes boomPop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}50%{transform:translate(-50%,-50%) scale(1.15);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.boom-wrap{
+    position:absolute;left:50%;top:50%;
+    transform:translate(-50%,-50%);
+    z-index:10;pointer-events:none;
+    display:none;align-items:center;justify-content:center;
+}
+.boom-wrap.show{display:flex !important;animation:boomPop .5s ease-out forwards}
+.boom-wrap.show img{width:190px;height:190px;object-fit:contain;display:block !important;opacity:1 !important;visibility:visible !important}
+.boom-wrap img{width:190px;height:190px;object-fit:contain;display:block}
+@keyframes boomPop{
+    0%{transform:translate(-50%,-50%) scale(.2);opacity:0}
+    40%{transform:translate(-50%,-50%) scale(1.2);opacity:1}
+    100%{transform:translate(-50%,-50%) scale(1);opacity:.95}
+}
 
 /* BET AREA */
 .bet-area{padding:6px 12px 4px;position:relative;z-index:100}
-.place-bet-btn{width:100%;padding:15px;border-radius:16px;border:none;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;position:relative;overflow:hidden;background:linear-gradient(135deg,#06B6D4,#3B82F6);color:#fff;box-shadow:0 8px 25px rgba(6,182,212,.25),inset 0 1px 1px rgba(255,255,255,.15);letter-spacing:.5px;text-transform:uppercase;border:2px solid rgba(6,182,212,.3);transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;z-index:101}
+.place-bet-btn{
+    width:100%;padding:15px;border-radius:16px;border:none;
+    font-family:inherit;font-weight:800;font-size:15px;
+    cursor:pointer;position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#06B6D4,#3B82F6);color:#fff;
+    box-shadow:0 8px 25px rgba(6,182,212,.25),inset 0 1px 1px rgba(255,255,255,.15);
+    letter-spacing:.5px;text-transform:uppercase;
+    border:2px solid rgba(6,182,212,.3);
+    transition:transform .15s,box-shadow .15s;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+    z-index:101;
+}
 .place-bet-btn:disabled{opacity:.35;cursor:default;transform:none !important}
 .place-bet-btn:not(:disabled):active{transform:scale(.98)}
 .place-bet-btn .btn-text{display:inline-block;pointer-events:none}
@@ -98,7 +162,8 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     display:flex;letter-spacing:.4px;text-transform:uppercase;
     border:2px solid rgba(255,255,255,.1);
     transition:transform .15s,box-shadow .15s;
-    -webkit-tap-highlight-color:transparent;touch-action:manipulation;z-index:101;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+    z-index:101;
     flex-direction:row;align-items:center;justify-content:space-between;gap:10px;
     visibility:hidden;
 }
@@ -106,9 +171,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .cashout-btn:not(:disabled):active{transform:scale(.98)}
 .cashout-btn.crash-state{
     background:linear-gradient(135deg,#E8527A,#C42247) !important;
-    color:#fff !important;
-    cursor:default;
-    pointer-events:none;
+    color:#fff !important;cursor:default;pointer-events:none;
     box-shadow:0 12px 35px rgba(232,82,122,.35), inset 0 1px 1px rgba(255,255,255,.15) !important;
     border-color:rgba(232,82,122,.5) !important;
 }
@@ -196,48 +259,11 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .confirm-bet-btn:disabled{opacity:.45;cursor:not-allowed;transform:none !important}
 
 /* AUTO WITHDRAW ROW */
-.auto-cashout-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-    margin-bottom:12px;
-    padding:10px;
-    border-radius:12px;
-    background:rgba(30,228,76,.08);
-    border:1px solid rgba(30,228,76,.15);
-    min-height:58px;
-    max-height:58px;
-    height:58px;
-    overflow:hidden;
-    box-sizing:border-box;
-}
+.auto-cashout-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;padding:10px;border-radius:12px;background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.15);min-height:58px;max-height:58px;height:58px;overflow:hidden;box-sizing:border-box}
 .auto-cashout-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:0 0 48%;max-width:48%}
 .auto-cashout-label{font-family:inherit;font-weight:800;font-size:12px;color:#1EE44C;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .auto-cashout-sub{font-size:9px;color:rgba(255,255,255,.5);line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.autowd-open-btn{
-    flex:0 0 46%;
-    width:46%;
-    max-width:46%;
-    min-width:0;
-    padding:0 10px;
-    height:38px;
-    border-radius:12px;
-    border:none;
-    background:linear-gradient(135deg,#FFD700,#FFA500);
-    color:#000;
-    font-family:inherit;
-    font-weight:800;
-    font-size:11px;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:flex-start;
-    gap:5px;
-    transition:transform .15s;
-    overflow:hidden;
-    box-sizing:border-box;
-}
+.autowd-open-btn{flex:0 0 46%;width:46%;max-width:46%;min-width:0;padding:0 10px;height:38px;border-radius:12px;border:none;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-family:inherit;font-weight:800;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:flex-start;gap:5px;transition:transform .15s;overflow:hidden;box-sizing:border-box}
 .autowd-open-btn:active{transform:scale(.97)}
 .autowd-open-btn img{width:18px !important;height:18px !important;flex:0 0 18px !important;object-fit:contain !important;display:block !important;background:transparent !important;border:none !important;padding:0 !important;border-radius:4px !important;box-sizing:border-box !important}
 .autowd-open-btn .autowd-btn-name{flex:1 1 auto !important;min-width:0 !important;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:700}
@@ -307,29 +333,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .autowd-price{display:flex;align-items:center;gap:3px;font-family:inherit;font-weight:800;font-size:12px;color:#FFD700;flex-shrink:0}
 .autowd-price img{width:11px;height:11px}
 .autowd-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:12px}
-.autowd-apply-btn{
-    margin:10px 14px 14px;
-    padding:14px;
-    border-radius:14px;
-    border:none;
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;
-    font-family:inherit;
-    font-weight:800;
-    font-size:13px;
-    cursor:pointer;
-    box-shadow:0 8px 24px rgba(59,130,246,.35);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    min-height:52px;
-    max-height:52px;
-    height:52px;
-    overflow:hidden;
-    box-sizing:border-box;
-    flex-shrink:0;
-}
+.autowd-apply-btn{margin:10px 14px 14px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 8px 24px rgba(59,130,246,.35);display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;max-height:52px;height:52px;overflow:hidden;box-sizing:border-box;flex-shrink:0}
 .autowd-apply-btn:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,.06);box-shadow:none}
 .autowd-apply-btn img{width:22px !important;height:22px !important;flex:0 0 22px !important;object-fit:contain !important;display:block !important;background:transparent !important;border:none !important;padding:0 !important;border-radius:4px !important;box-sizing:border-box !important}
 
@@ -458,9 +462,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 
     <div class="game-field" id="gameField">
         <div class="countdown-display" id="cdDisplay"></div>
-        <div class="turbo-counter" id="turboCounter" style="display:none">
-            <span class="tc-mult" id="turboMult">1.00</span><span class="tc-x">x</span>
-        </div>
+        <div class="live-mult" id="liveMult">1.00x</div>
         <div class="rocket-wrap hide" id="rocketWrap">
             <img src="/static/gifs/rockets/crash.gif" alt="">
         </div>
@@ -506,19 +508,14 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
         <div class="modal-handle"></div>
         <div class="modal-title">Place bet</div>
         <div class="modal-tabs">
-            <button class="modal-tab active" id="tabStars" onclick="switchTab('stars')">
-                <img src="/static/img/ton.png"> TON
-            </button>
-            <button class="modal-tab" id="tabInv" onclick="switchTab('inv')">
-                <img src="/static/img/gift.png"> Inventory
-            </button>
+            <button class="modal-tab active" id="tabStars" onclick="switchTab('stars')"><img src="/static/img/ton.png"> TON</button>
+            <button class="modal-tab" id="tabInv" onclick="switchTab('inv')"><img src="/static/img/gift.png"> Inventory</button>
         </div>
 
         <div id="starsSec">
             <div class="bet-input-wrap">
                 <input type="number" id="betInput" placeholder="Enter TON amount (min. 0.1)" min="0.1" step="0.01" inputmode="decimal" oninput="onBetAmountChange()">
             </div>
-
             <div class="auto-cashout-row">
                 <div class="auto-cashout-info">
                     <div class="auto-cashout-label">Автовывод</div>
@@ -529,7 +526,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
                     <span class="autowd-btn-name">Выбрать</span>
                 </button>
             </div>
-
             <button class="confirm-bet-btn" id="confirmBetBtn" onclick="confirmStarsBet()">BET</button>
         </div>
 
@@ -541,11 +537,8 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
                 </div>
                 <button class="clear-selected" onclick="clearSelectedGifts()">Clear</button>
             </div>
-            <div class="inv-grid" id="invGrid">
-                <div class="inv-empty">Loading...</div>
-            </div>
+            <div class="inv-grid" id="invGrid"><div class="inv-empty">Loading...</div></div>
             <button class="confirm-gifts-btn" id="confirmGiftsBtn" onclick="confirmGiftBet()">BET GIFTS</button>
-
             <div class="auto-cashout-row" style="margin-top:12px">
                 <div class="auto-cashout-info">
                     <div class="auto-cashout-label">Автовывод</div>
@@ -564,10 +557,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 <div class="autowd-overlay" id="autowdOverlay">
     <div class="autowd-modal">
         <div class="autowd-header">
-            <div class="autowd-title">
-                <img src="/static/img/lightning.png" onerror="this.src='/static/img/star2.png'" alt="">
-                Автовывод
-            </div>
+            <div class="autowd-title"><img src="/static/img/lightning.png" onerror="this.src='/static/img/star2.png'" alt="">Автовывод</div>
             <button class="autowd-close" onclick="closeAutoWithdraw()">×</button>
         </div>
         <div class="autowd-summary">
@@ -592,14 +582,8 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
             <button class="deposit-close" onclick="closeDepositSelector()">×</button>
         </div>
         <div class="deposit-methods">
-            <button class="deposit-method-btn" onclick="closeDepositSelector();openTonDeposit()">
-                <img src="/static/img/ton.png" alt="TON" onerror="this.src='/static/img/plus.png'">
-                <span>TON</span>
-            </button>
-            <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDepositSelector();openStarsDeposit()">
-                <img src="/static/img/star.png" alt="Stars">
-                <span>Stars</span>
-            </button>
+            <button class="deposit-method-btn" onclick="closeDepositSelector();openTonDeposit()"><img src="/static/img/ton.png" alt="TON" onerror="this.src='/static/img/plus.png'"><span>TON</span></button>
+            <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDepositSelector();openStarsDeposit()"><img src="/static/img/star.png" alt="Stars"><span>Stars</span></button>
         </div>
     </div>
 </div>
@@ -618,8 +602,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
                 <input type="number" class="stars-deposit-input" id="starsDepositAmount" placeholder="100" min="1" max="10000" value="100">
             </div>
             <button class="stars-deposit-pay-btn" id="starsPayBtn" onclick="payWithStars()">
-                <img src="/static/img/star.png" alt="">
-                Pay <span id="starsPayAmount">100</span> Stars
+                <img src="/static/img/star.png" alt="">Pay <span id="starsPayAmount">100</span> Stars
             </button>
             <div id="starsDepositError" style="color:#E8527A;font-size:12px;display:none"></div>
         </div>
@@ -666,9 +649,8 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 
 <script>
 /* ══════════════════════════════════════════════════════════════
-   GLOBAL STATE (объявления строго один раз!)
+   STATE
    ══════════════════════════════════════════════════════════════ */
-var _serverMultFloor = 1.0;
 var userData = null;
 var authReady = false;
 
@@ -676,10 +658,14 @@ function isTelegramWebApp(){
     return typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user;
 }
 
-var gameId = null, prevGameId = null;
-var status = 'counting', prevSt = 'counting';
-var dispMult = 1.0, servMult = 1.0;
-var hasBet = false, betAmt = 0;
+var gameId = null;
+var prevGameId = null;
+var status = 'waiting';
+var prevSt = 'waiting';
+var dispMult = 1.0;
+var servMult = 1.0;
+var hasBet = false;
+var betAmt = 0;
 var betIsGift = false;
 var betGiftImg = null;
 var cashedOut = false;
@@ -688,11 +674,6 @@ var cashedOutGiftImg = null;
 var crashDone = false;
 var lastBetsHash = '';
 var betsGeneration = 0;
-var countdownShown = -1;
-var lastTimeRemaining = 99;
-var lastTrTimestamp = 0;
-var autoCashoutDone = false;
-var boomUntil = 0;
 var pendingBet = null;
 var savedBetAmount = localStorage.getItem('crash_bet_amount') || '';
 var selectedGifts = [];
@@ -706,12 +687,16 @@ var _lastAchievableGift = null;
 var cashoutLocked = false;
 var _betLocked = false;
 var _giftLocked = false;
+var _statusFetching = false;
 
-/* Turbo/Optimize — объявляем ОДИН раз */
-var optimizeMode = localStorage.getItem('crash_optimize') === '1';
-var turboMode = localStorage.getItem('crash_turbo') === '1';
+/* Round tracking */
+var roundStartedAt = 0;          // performance.now() when we first saw counting for this round
+var roundCountdownTotal = 5;     // seconds server gives for counting phase
+var lastShownCountdownNumber = 99;
+var countdownAnimating = false;
+var _goShownForRound = false;
 
-/* Render loop vars */
+/* Render */
 var multGrowthRate = 0;
 var prevServMult = 1.0;
 var lastPollTimestamp = 0;
@@ -722,8 +707,9 @@ var lastRocketUpdateTime = 0;
 var _renderCacheInited = false;
 var _coeffLastUpdate = 0;
 var _lastCashBtnUpdate = 0;
-var _rw = null, _rImg = null, _gf = null, _coeffBox = null, _cdDisp = null;
-var _rwFlying = false, _prevCoeffText = '';
+var _lastLiveMultUpdate = 0;
+var _rw = null, _rImg = null, _gf = null, _coeffBox = null, _cdDisp = null, _liveMult = null;
+var _rwFlying = false;
 var lastRenderStatus = null;
 
 /* Gift catalog */
@@ -737,9 +723,6 @@ var _autowdSelected = null;
 var _autowdBet = 0;
 var _autowdTarget = 0;
 var _autowdGifts = [];
-
-/* Caches */
-var _userBetsCache = {};
 
 var $ = function(id){ return document.getElementById(id); };
 
@@ -807,7 +790,7 @@ function updateUI(data){
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   INIT TELEGRAM
+   INIT
    ══════════════════════════════════════════════════════════════ */
 async function initTelegramApp(){
     if(window._ldUpdate) window._ldUpdate(5);
@@ -890,13 +873,12 @@ async function initTelegramApp(){
     }catch(e){}
 
     if(window._ldUpdate) window._ldUpdate(95);
-    updStatus();
+    await updStatus();
     loadBets();
     loadHist();
     if(window._ldDone) window._ldDone();
 
     if(savedBetAmount) setBetInputFromStars(savedBetAmount);
-    applyOptimizeMode();
     updateAutoWithdrawButton();
     syncSettingsToggles();
 
@@ -992,7 +974,6 @@ function onBetAmountChange(){
     autoWithdrawGift.coeff = Math.round(newCoeff * 100) / 100;
     saveAutoWithdrawGift();
     updateAutoWithdrawButton();
-    showToast('Коэф автовывода: x' + autoWithdrawGift.coeff.toFixed(2), 'ok');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1008,12 +989,10 @@ function openBetModal(){
     if(bi && savedBetAmount) bi.value = starsToBetInputValue(savedBetAmount);
     updateAutoWithdrawButton();
 }
-
 function closeBetModal(){
     var modal = $('betModal');
     if(modal) modal.classList.remove('show');
 }
-
 function cancelPendingBet(){
     pendingBet = null;
     removePendingBetFromUI();
@@ -1029,12 +1008,10 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 function switchTab(tab){
-    var t1 = $('tabStars');
-    var t2 = $('tabInv');
+    var t1 = $('tabStars'); var t2 = $('tabInv');
     if(t1) t1.classList.toggle('active', tab === 'stars');
     if(t2) t2.classList.toggle('active', tab === 'inv');
-    var ss = $('starsSec');
-    var is_ = $('invSec');
+    var ss = $('starsSec'); var is_ = $('invSec');
     if(ss) ss.style.display = tab === 'stars' ? 'block' : 'none';
     if(is_) is_.style.display = tab === 'inv' ? 'block' : 'none';
     if(tab === 'inv') loadInventory();
@@ -1055,7 +1032,7 @@ function setBetInputFromStars(stars){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PENDING BET
+   PENDING BET UI
    ══════════════════════════════════════════════════════════════ */
 function addPendingBetToUI(amount, type, giftImg){
     var list = $('betsList');
@@ -1079,7 +1056,6 @@ function addPendingBetToUI(amount, type, giftImg){
     var bc = $('betsCount');
     if(bc) bc.textContent = (parseInt(bc.textContent)||0) + 1;
 }
-
 function removePendingBetFromUI(){
     var pendingRows = document.querySelectorAll('.bet-row.pending-bet');
     var had = pendingRows.length;
@@ -1133,8 +1109,6 @@ async function confirmStarsBet(){
     if($('cbGiftRight')) $('cbGiftRight').dataset.src = '';
     updateCashoutButton();
     showToast('Ставка '+formatCrashMoney(amt)+' принята!','ok');
-    try{ playSound('bet'); }catch(e){}
-    try{ triggerVibration([30]); }catch(e){}
 
     fetch('/api/ultimate-crash/place-bet', {
         method:'POST',
@@ -1247,9 +1221,7 @@ function updateCashoutButton(){
 
     var isActive = hasBet && !cashedOut && status === 'flying';
     if(!isActive){
-        if(cashedOut && status === 'flying'){
-            return;
-        }
+        if(cashedOut && status === 'flying') return;
         cb.classList.remove('visible');
         return;
     }
@@ -1300,9 +1272,6 @@ async function doCashout(){
     var pb = $('placeBetBtn');
     var instantWin = Math.floor(betAmt * _frozenMult);
 
-    try{ playSound('cashout'); }catch(e){}
-    try{ triggerVibration([50,30,50,30,100]); }catch(e){}
-
     if(pb){
         pb.style.display = 'block';
         pb.disabled = true;
@@ -1313,24 +1282,14 @@ async function doCashout(){
         btn.classList.add('visible');
         btn.classList.add('crash-state');
         btn.disabled = true;
-
         var _cGift = getAchievableGift(instantWin);
         var _cGiftImg = _cGift ? getGiftImage(_cGift) : (betGiftImg || '/static/img/gift.png');
-
         var cbWin = $('cbWin');
         var cbLeft = $('cbGiftLeft');
         var cbRight = $('cbGiftRight');
         if(cbWin) cbWin.textContent = '+' + formatCrashMoney(instantWin);
-        if(cbLeft){
-            cbLeft.src = _cGiftImg;
-            cbLeft.classList.remove('empty');
-            cbLeft.dataset.src = _cGiftImg;
-        }
-        if(cbRight){
-            cbRight.src = _cGiftImg;
-            cbRight.classList.remove('empty');
-            cbRight.dataset.src = _cGiftImg;
-        }
+        if(cbLeft){ cbLeft.src = _cGiftImg; cbLeft.classList.remove('empty'); cbLeft.dataset.src = _cGiftImg; }
+        if(cbRight){ cbRight.src = _cGiftImg; cbRight.classList.remove('empty'); cbRight.dataset.src = _cGiftImg; }
     }
 
     cashedOutBetAmt = betAmt;
@@ -1365,7 +1324,6 @@ async function doCashout(){
                 updateUI(userData);
                 var winBalEl = $('winNewBalance');
                 if(winBalEl) winBalEl.textContent = formatCrashMoney(d.new_balance);
-                try{ playSound('win'); }catch(e){}
                 loadBets();
                 setTimeout(loadBets, 100);
                 autoWithdrawGift = null;
@@ -1402,17 +1360,13 @@ function _showLocalWin(mult, winAmount){
     html += '<div style="text-align:center;margin-bottom:14px">';
     html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.1));border:1.5px solid rgba(59,130,246,.4)">';
     html += '<span style="font-family:inherit;font-weight:900;font-size:28px;color:#3B82F6">' + m + 'x</span>';
-    html += '</div>';
-    html += '</div>';
-
+    html += '</div></div>';
     if(cashoutGift){
         html += '<div style="display:flex;justify-content:center;margin-bottom:16px">';
         html += '<div style="position:relative;width:170px;height:170px;border-radius:24px;background:radial-gradient(circle,rgba(59,130,246,.15),transparent 70%);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box">';
         html += '<img src="' + giftImg + '" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5))">';
-        html += '</div>';
-        html += '</div>';
+        html += '</div></div>';
     }
-
     html += '<div style="text-align:center;margin-bottom:12px">';
     html += '<div style="font-family:inherit;font-weight:800;font-size:22px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
     html += '<span>+' + formatTon(winTon) + '</span>';
@@ -1420,9 +1374,7 @@ function _showLocalWin(mult, winAmount){
     html += '</div>';
     html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">';
     html += 'Ставка: ' + formatTon(betTon) + ' TON';
-    if(giftName){
-        html += ' · Подарок: ' + giftName;
-    }
+    if(giftName) html += ' · Подарок: ' + giftName;
     html += '</div>';
     html += '<div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:8px">Синхронизация с сервером...</div>';
     html += '</div>';
@@ -1430,7 +1382,6 @@ function _showLocalWin(mult, winAmount){
     content.innerHTML = html;
     var wo = $('winOverlay');
     if(wo) wo.classList.add('show');
-    try{ triggerVibration([30,20,60]); }catch(e){}
 }
 
 function updateBetButton(){
@@ -1489,19 +1440,10 @@ function toggleGiftSelection(id){
     var item = inventoryItems.find(function(i){ return i.id === id; });
     if(!item) return;
     var idx = selectedGifts.findIndex(function(g){ return g.id === id; });
-    if(idx >= 0){
-        selectedGifts.splice(idx, 1);
-    } else {
-        if(selectedGifts.length >= MAX_GIFTS){
-            showToast('Максимум ' + MAX_GIFTS + ' подарка', 'err');
-            return;
-        }
-        selectedGifts.push({
-            id: item.id,
-            name: item.gift_name,
-            value: item.gift_value,
-            image: item.gift_image
-        });
+    if(idx >= 0){ selectedGifts.splice(idx, 1); }
+    else {
+        if(selectedGifts.length >= MAX_GIFTS){ showToast('Максимум ' + MAX_GIFTS + ' подарка', 'err'); return; }
+        selectedGifts.push({ id: item.id, name: item.gift_name, value: item.gift_value, image: item.gift_image });
     }
     var cards = document.querySelectorAll('.inv-card');
     for(var i = 0; i < cards.length; i++){
@@ -1524,13 +1466,10 @@ function updateSelectedSummary(){
     var cnt = $('selectedCount');
     var tot = $('selectedTotal');
     var btn = $('confirmGiftsBtn');
-
     var count = selectedGifts.length;
     var total = selectedGifts.reduce(function(s, g){ return s + g.value; }, 0);
-
     if(cnt) cnt.textContent = count;
     if(tot) tot.textContent = (total/100).toFixed(2);
-
     if(count > 0){
         if(sum) sum.classList.add('show');
         if(btn){
@@ -1578,8 +1517,6 @@ async function confirmGiftBet(){
     if($('cbGiftRight')) $('cbGiftRight').dataset.src = '';
     updateCashoutButton();
     showToast('Ставка ' + sGifts.length + ' подарков — принята!','ok');
-    try{ playSound('bet'); }catch(e){}
-    try{ triggerVibration([30]); }catch(e){}
 
     (async function(){
         try{
@@ -1588,11 +1525,7 @@ async function confirmGiftBet(){
                 ? {user_id: userData.id, inventory_id: sGifts[0].id}
                 : {user_id: userData.id, inventory_ids: giftIds};
 
-            var r = await fetch(url, {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify(body)
-            });
+            var r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
             var d = await r.json();
             if(d.success){
                 betAmt = d.bet_amount || totalValue;
@@ -1617,9 +1550,8 @@ async function confirmGiftBet(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   STATUS POLLING — фикс: чтение кэша, минимум DB
+   STATUS POLLING
    ══════════════════════════════════════════════════════════════ */
-var _statusFetching = false;
 async function updStatus(){
     if(!authReady) return;
     if(_statusFetching) return;
@@ -1633,16 +1565,85 @@ async function updStatus(){
         if(!d.success && !d.game) return;
 
         var g = d.game;
+        var wasNewRound = (prevGameId !== null && g.id !== prevGameId);
         prevSt = status;
         status = g.status;
         prevGameId = gameId;
         gameId = g.id;
         servMult = parseFloat(g.current_multiplier) || 1.0;
         var tr = g.time_remaining || 0;
-        lastTimeRemaining = tr;
         lastTrTimestamp = performance.now();
 
-        if(status === 'flying') onNewServerMult(servMult);
+        /* Round reset */
+        if(wasNewRound || (status === 'counting' && prevSt !== 'counting' && prevSt !== 'waiting')){
+            roundStartedAt = performance.now();
+            roundCountdownTotal = 5;
+            lastShownCountdownNumber = 99;
+            _goShownForRound = false;
+            countdownAnimating = false;
+
+            if(!hasBet){
+                betAmt = 0;
+                betIsGift = false;
+                betGiftImg = null;
+            }
+            cashedOut = false;
+            cashedOutBetAmt = 0;
+            cashedOutGiftImg = null;
+            _lastAchievableWin = -1;
+            crashDone = false;
+            dispMult = 1.0;
+            servMult = 1.0;
+            prevServMult = 1.0;
+            _serverMultFloor = 1.0;
+            multGrowthRate = 0;
+            lastPollTimestamp = 0;
+            lastGiftId = null;
+            lastRocketSrc = '';
+            _rwFlying = false;
+            autoCashoutDone = false;
+            cashoutLocked = false;
+
+            if(_rw){
+                _rw.classList.remove('cashed-out','gift-change','showing-gift','flying');
+                var ri = _rw.querySelector('img');
+                if(ri){
+                    var rg = getRocketGif();
+                    lastRocketSrc = rg;
+                    ri.src = rg;
+                    ri.style.transform = '';
+                    ri.style.animation = '';
+                }
+            }
+
+            if(!d.user_bet || d.user_bet.status !== 'active'){
+                hasBet = false;
+                betAmt = 0;
+            }
+
+            betsGeneration++;
+            lastBetsHash = '';
+            var bce = $('betsCount'); if(bce) bce.textContent = '0';
+            var ble = $('betsList'); if(ble) ble.innerHTML = '<div class="no-bets">Waiting for bets...</div>';
+            loadBets();
+            loadHist();
+
+            if(pendingBet && !hasBet){
+                processPendingBet();
+            } else if(pendingBet && hasBet){
+                removePendingBetFromUI();
+            }
+        }
+
+        if(status === 'counting' && prevSt !== 'counting'){
+            roundStartedAt = performance.now();
+            lastShownCountdownNumber = 99;
+            _goShownForRound = false;
+        }
+
+        if(status === 'flying'){
+            onNewServerMult(servMult);
+        }
 
         if(d.user_balance !== undefined && d.user_balance !== null && userData){
             userData.balance_stars = d.user_balance;
@@ -1656,80 +1657,24 @@ async function updStatus(){
             hasBet = false;
         }
 
-        var newRound = prevGameId !== null && gameId !== prevGameId;
-        if(newRound){
-            window._lastShownSec = 99;
-            countdownShown = -1;
-            if(!hasBet){
-                betAmt = 0;
-                betIsGift = false;
-                betGiftImg = null;
-            }
-            cashedOut = false;
-            cashedOutBetAmt = 0;
-            cashedOutGiftImg = null;
-            _lastAchievableWin = -1;
-        }
-
-        var cd = $('cdDisplay');
+        /* Update UI per status */
         var rw = $('rocketWrap');
         var bm = $('boomWrap');
         var gf = $('gameField');
         var pb = $('placeBetBtn');
         var cb = $('cashoutBtn');
         var coeff = $('coeffBox');
+        var cd = $('cdDisplay');
+        var lm = $('liveMult');
 
         if(status === 'waiting' || status === 'counting'){
             if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
             var rImg = rw ? rw.querySelector('img') : null;
-            if(rImg) rImg.style.transform = '';
+            if(rImg){ rImg.style.transform = ''; rImg.style.animation = ''; }
             if(bm) bm.classList.remove('show');
             if(gf) gf.classList.remove('flying');
+            if(lm) lm.classList.remove('visible');
             if(coeff){ coeff.className = 'coeff-box waiting'; coeff.textContent = 'Waiting'; }
-
-            if(newRound || prevSt === 'crashed'){
-                crashDone = false;
-                dispMult = 1;
-                servMult = 1;
-                autoCashoutDone = false;
-                cashoutLocked = false;
-                cashedOut = false;
-                cashedOutBetAmt = 0;
-                cashedOutGiftImg = null;
-                multGrowthRate = 0;
-                prevServMult = 1.0;
-                lastPollTimestamp = 0;
-                lastFrameTime = 0;
-                lastGiftId = null;
-                _lastAchievableWin = -1;
-
-                if(rw){
-                    rw.classList.remove('cashed-out','gift-change','showing-gift');
-                    var ri = rw.querySelector('img');
-                    var rg = getRocketGif();
-                    lastRocketSrc = '';
-                    if(ri){ ri.src = ''; ri.src = rg; }
-                    lastRocketSrc = rg;
-                }
-
-                if(!d.user_bet || d.user_bet.status !== 'active'){
-                    hasBet = false;
-                    betAmt = 0;
-                }
-
-                betsGeneration++;
-                lastBetsHash = '';
-                var bce = $('betsCount'); if(bce) bce.textContent = '0';
-                var ble = $('betsList'); if(ble) ble.innerHTML = '<div class="no-bets">Waiting for bets...</div>';
-                loadBets();
-                loadHist();
-
-                if(pendingBet && !hasBet){
-                    processPendingBet();
-                } else if(pendingBet && hasBet){
-                    removePendingBetFromUI();
-                }
-            }
 
             if(pb){
                 pb.style.display = 'block';
@@ -1749,34 +1694,25 @@ async function updStatus(){
 
         } else if(status === 'flying'){
             if(prevSt === 'counting' || prevSt === 'waiting'){
-                dispMult = 1.0;
-                _serverMultFloor = 1.0;
-                prevServMult = 1.0;
-                multGrowthRate = 0;
-                if(countdownShown !== 'GO'){
-                    var cdGo = $('cdDisplay');
-                    if(cdGo){
-                        cdGo.textContent = 'GO';
-                        cdGo.classList.remove('active');
-                        void cdGo.offsetWidth;
-                        cdGo.classList.add('active');
+                /* GO animation */
+                if(!_goShownForRound){
+                    _goShownForRound = true;
+                    if(cd){
+                        cd.textContent = 'GO';
+                        cd.classList.remove('active');
+                        void cd.offsetWidth;
+                        cd.classList.add('active');
                     }
-                    countdownShown = 'GO';
-                    triggerVibration([120,50,120,50,150]);
                     setTimeout(function(){
-                        var c = $('cdDisplay');
-                        if(c){ c.className = 'countdown-display'; c.textContent = ''; }
-                        countdownShown = -1;
-                    }, 400);
+                        if(cd){ cd.className = 'countdown-display'; cd.textContent = ''; }
+                    }, 450);
                 }
-            } else {
-                if(cd){ cd.className = 'countdown-display'; cd.textContent = ''; }
-                countdownShown = -1;
             }
 
             if(rw) rw.classList.remove('hide');
             if(bm) bm.classList.remove('show');
             if(gf) gf.classList.add('flying');
+            if(lm) lm.classList.add('visible');
             if(coeff) coeff.className = 'coeff-box live';
             if(crashDone) crashDone = false;
 
@@ -1809,10 +1745,10 @@ async function updStatus(){
         } else if(status === 'crashed'){
             if(cd){ cd.className = 'countdown-display'; cd.textContent = ''; }
             var rcImg = rw ? rw.querySelector('img') : null;
-            if(rcImg) rcImg.style.transform = '';
-            countdownShown = -1;
+            if(rcImg){ rcImg.style.transform = ''; rcImg.style.animation = ''; }
             if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
             if(gf) gf.classList.remove('flying');
+            if(lm) lm.classList.remove('visible');
             if(coeff){ coeff.className = 'coeff-box crashed'; coeff.textContent = servMult.toFixed(2) + 'x'; }
 
             if(!crashDone){
@@ -1827,14 +1763,11 @@ async function updStatus(){
                     void bm.offsetWidth;
                     bm.classList.add('show');
                 }
-                boomUntil = Date.now() + 2000;
                 crashDone = true;
                 setTimeout(function(){
                     var bw = $('boomWrap');
                     if(bw) bw.classList.remove('show');
-                }, 2000);
-                try{ playSound('crash'); }catch(e){}
-                triggerVibration([200,80,200,80,200,80,250]);
+                }, 2200);
                 if(hasBet) showToast('Crashed at ' + servMult.toFixed(2) + 'x!','err');
                 hasBet = false;
                 betAmt = 0;
@@ -1876,7 +1809,6 @@ function loadSavedAutoWithdrawGift(){
         return null;
     }
 }
-
 function saveAutoWithdrawGift(){
     if(!autoWithdrawGuard){
         try{ localStorage.removeItem('crash_auto_withdraw_gift'); }catch(e){}
@@ -1896,141 +1828,95 @@ function saveAutoWithdrawGift(){
         }));
     }catch(e){}
 }
-
 autoWithdrawGift = loadSavedAutoWithdrawGift();
 
 function openAutoWithdraw(){
     var so = $('autowdOverlay');
     if(!so) return;
-
     _autowdBet = betAmt || 0;
     if(!_autowdBet){
         var amtInput = $('betInput');
         if(amtInput) _autowdBet = parseBetInputToStars(amtInput.value) || 0;
     }
-    if(!_autowdBet){
-        showToast('Сначала введите сумму ставки','err');
-        return;
-    }
-
+    if(!_autowdBet){ showToast('Сначала введите сумму ставки','err'); return; }
     _autowdTarget = Math.floor(_autowdBet * 1.1);
-
     var betEl = $('autowdBetVal');
     var tgtEl = $('autowdTargetVal');
     if(betEl) betEl.textContent = (starsToTon(_autowdBet)).toFixed(2) + ' TON';
     if(tgtEl) tgtEl.textContent = (starsToTon(_autowdTarget)).toFixed(2) + ' TON';
-
     _autowdSelected = null;
     updateAutoWithdrawApply();
-
     var searchEl = $('autowdSearch');
     if(searchEl) searchEl.value = '';
-
     so.classList.add('show');
     loadAutoWithdrawGifts();
 }
-
 function closeAutoWithdraw(){
     var so = $('autowdOverlay');
     if(so) so.classList.remove('show');
     _autowdSelected = null;
 }
-
 async function loadAutoWithdrawGifts(){
     var list = $('autowdList');
     if(!list) return;
     list.innerHTML = '<div class="autowd-empty">Загрузка...</div>';
-
     if(!_giftCatalogCache || !_giftCatalogCache.length){
         await ensureGiftCatalog();
     }
-
     var cat = _giftCatalogCache || [];
     if(!cat.length){
         list.innerHTML = '<div class="autowd-empty">Не удалось загрузить подарки</div>';
         return;
     }
-
     var minVal = _autowdTarget;
-    _autowdGifts = cat.filter(function(g){
-        return (g.value || 0) >= minVal;
-    }).sort(function(a,b){ return (a.value||0) - (b.value||0); });
-
+    _autowdGifts = cat.filter(function(g){ return (g.value || 0) >= minVal; }).sort(function(a,b){ return (a.value||0) - (b.value||0); });
     if(!_autowdGifts.length){
         _autowdGifts = cat.slice().sort(function(a,b){ return (b.value||0) - (a.value||0); }).slice(0, 10);
     }
-
     renderAutoWithdrawGifts();
 }
-
 function renderAutoWithdrawGifts(){
     var list = $('autowdList');
     if(!list) return;
-
     var search = ($('autowdSearch') ? $('autowdSearch').value : '').toLowerCase().trim();
     var filtered = _autowdGifts;
-
     if(search){
-        filtered = _autowdGifts.filter(function(g){
-            return (g.name || '').toLowerCase().indexOf(search) !== -1;
-        });
+        filtered = _autowdGifts.filter(function(g){ return (g.name || '').toLowerCase().indexOf(search) !== -1; });
     }
-    if(!filtered.length){
-        list.innerHTML = '<div class="autowd-empty">Ничего не найдено</div>';
-        return;
-    }
-
+    if(!filtered.length){ list.innerHTML = '<div class="autowd-empty">Ничего не найдено</div>'; return; }
     var picked = [];
     var usedPrices = {};
     filtered.forEach(function(g){
         var bucket = Math.floor((g.value || 0) / 500);
-        if(!usedPrices[bucket]){
-            usedPrices[bucket] = true;
-            picked.push(g);
-        }
+        if(!usedPrices[bucket]){ usedPrices[bucket] = true; picked.push(g); }
     });
     if(picked.length < 40){
-        filtered.forEach(function(g){
-            if(picked.indexOf(g) === -1 && picked.length < 40){
-                picked.push(g);
-            }
-        });
+        filtered.forEach(function(g){ if(picked.indexOf(g) === -1 && picked.length < 40) picked.push(g); });
     }
     picked = picked.slice(0, 40);
-
     list.innerHTML = picked.map(function(g, idx){
         var gid = String(g.id || g.gift_key || g.fragment_slug || ('gift_' + idx));
         var isSel = _autowdSelected && String(_autowdSelected.id || _autowdSelected.gift_key) === gid;
         var val = g.value || 0;
         var coeff = _autowdBet > 0 ? (val / _autowdBet).toFixed(2) : '?';
         var img = getGiftImage(g);
-
         return '<div class="autowd-row'+(isSel?' selected':'')+'" data-gid="'+gid+'" onclick="selectAutoWithdrawGift(\'' + gid + '\')">'
             + '<div class="autowd-thumb"><img src="'+img+'" onerror="this.src=\'/static/img/gift.png\'"></div>'
-            + '<div class="autowd-info">'
-            +   '<div class="autowd-name">' + (g.name || 'Gift') + '</div>'
-            +   '<div class="autowd-coeff">Коэф: <b>x' + coeff + '</b></div>'
-            + '</div>'
+            + '<div class="autowd-info"><div class="autowd-name">' + (g.name || 'Gift') + '</div>'
+            + '<div class="autowd-coeff">Коэф: <b>x' + coeff + '</b></div></div>'
             + '<div class="autowd-price"><img src="/static/img/ton.png">' + (val/100).toFixed(2) + '</div>'
             + '</div>';
     }).join('');
 }
-
 function filterAutoWithdrawGifts(){ renderAutoWithdrawGifts(); }
-
 function selectAutoWithdrawGift(gid){
-    var gift = _autowdGifts.find(function(g){
-        return String(g.id || g.gift_key || '') === String(gid);
-    });
+    var gift = _autowdGifts.find(function(g){ return String(g.id || g.gift_key || '') === String(gid); });
     if(!gift){ return; }
     _autowdSelected = gift;
     var rows = document.querySelectorAll('.autowd-row');
-    for(var i = 0; i < rows.length; i++){
-        rows[i].classList.toggle('selected', rows[i].dataset.gid === String(gid));
-    }
+    for(var i = 0; i < rows.length; i++) rows[i].classList.toggle('selected', rows[i].dataset.gid === String(gid));
     updateAutoWithdrawApply();
 }
-
 function updateAutoWithdrawApply(){
     var btn = $('autowdApplyBtn');
     if(!btn) return;
@@ -2043,21 +1929,16 @@ function updateAutoWithdrawApply(){
     var coeff = _autowdBet > 0 ? (val / _autowdBet).toFixed(2) : '?';
     var img = getGiftImage(_autowdSelected);
     btn.disabled = false;
-
     btn.innerHTML =
         '<span id="autowdApplyText" style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Автовывод</span>'
-        + '<img src="' + img + '" '
-        +   'style="width:22px !important;height:22px !important;flex:0 0 22px !important;object-fit:contain !important;display:block !important;background:transparent !important;border:none !important;padding:0 !important;border-radius:4px !important;" '
-        +   'onerror="this.src=\'/static/img/gift.png\'">'
+        + '<img src="' + img + '" style="width:22px !important;height:22px !important;flex:0 0 22px !important;object-fit:contain !important;display:block !important;background:transparent !important;border:none !important;padding:0 !important;border-radius:4px !important;" onerror="this.src=\'/static/img/gift.png\'">'
         + '<span class="coeff-badge" style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800;flex:0 0 auto;">x' + coeff + '</span>';
 }
-
 function applyAutoWithdraw(){
     if(!_autowdSelected){ return; }
     var val = _autowdSelected.value || 0;
     var coeff = _autowdBet > 0 ? (val / _autowdBet) : 2.0;
     coeff = Math.max(1.1, Math.min(coeff, 99.99));
-
     autoWithdrawGift = {
         id: _autowdSelected.id,
         name: _autowdSelected.name,
@@ -2065,7 +1946,6 @@ function applyAutoWithdraw(){
         value: _autowdSelected.value,
         coeff: coeff
     };
-
     saveAutoWithdrawGift();
     closeAutoWithdraw();
     setTimeout(function(){
@@ -2075,7 +1955,6 @@ function applyAutoWithdraw(){
     }, 250);
     showToast('Автовывод: ' + (_autowdSelected.name || 'подарок') + ' (x' + coeff.toFixed(2) + ')', 'ok');
 }
-
 function updateAutoWithdrawButton(){
     var btns = [$('autowdMainBtn'), $('autowdMainBtnInv')];
     btns.forEach(function(btn){
@@ -2092,14 +1971,11 @@ function updateAutoWithdrawButton(){
             + '<span class="autowd-btn-coeff">x' + autoWithdrawGift.coeff.toFixed(2) + '</span>';
     });
 }
-
 function toggleAutoWithdrawGuardClick(){
     autoWithdrawGuard = !autoWithdrawGuard;
     localStorage.setItem('crash_auto_withdraw_guard', autoWithdrawGuard ? 'on' : 'off');
-
     var el = $('autoWithdrawGuardToggle');
     if(el) el.classList.toggle('on', autoWithdrawGuard);
-
     if(!autoWithdrawGuard){
         autoWithdrawGift = null;
         try{ localStorage.removeItem('crash_auto_withdraw_gift'); }catch(e){}
@@ -2107,7 +1983,6 @@ function toggleAutoWithdrawGuardClick(){
         showToast('Предохранитель отключён', 'ok');
         return;
     }
-
     saveAutoWithdrawGift();
     showToast('Предохранитель включён', 'ok');
 }
@@ -2121,15 +1996,12 @@ async function ensureGiftCatalog(){
         var r = await fetch('/api/gifts-list?models=0');
         var d = await r.json();
         if(d.success && d.gifts){
-            _giftCatalogCache = d.gifts
-                .filter(function(g){ return g.value > 0 && g.type !== 'stars_balance'; })
-                .sort(function(a,b){ return (a.value||0)-(b.value||0); });
+            _giftCatalogCache = d.gifts.filter(function(g){ return g.value > 0 && g.type !== 'stars_balance'; }).sort(function(a,b){ return (a.value||0)-(b.value||0); });
             _rebuildGiftCache();
         }
     }catch(e){}
     return _giftCatalogCache || [];
 }
-
 function getGiftImage(g){
     if(!g) return '/static/img/gift.png';
     var key = g.id || g.gift_key || g.fragment_slug || g.image;
@@ -2143,12 +2015,9 @@ function getGiftImage(g){
     if(key) _giftImgCache[key] = result;
     return result;
 }
-
 function _rebuildGiftCache(){
     if(!_giftCatalogCache || !_giftCatalogCache.length){
-        _giftCache_Buckets = [];
-        _giftCache_Len = 0;
-        return;
+        _giftCache_Buckets = []; _giftCache_Len = 0; return;
     }
     var buckets = {};
     for(var i = 0; i < _giftCatalogCache.length; i++){
@@ -2156,19 +2025,14 @@ function _rebuildGiftCache(){
         var v = g.value || 0;
         if(v <= 0) continue;
         var bucket = Math.floor(v / 100);
-        if(!buckets[bucket] || buckets[bucket].value < v){
-            buckets[bucket] = g;
-        }
+        if(!buckets[bucket] || buckets[bucket].value < v) buckets[bucket] = g;
     }
     var arr = [];
-    for(var k in buckets){
-        arr.push({ value: buckets[k].value, gift: buckets[k] });
-    }
+    for(var k in buckets) arr.push({ value: buckets[k].value, gift: buckets[k] });
     arr.sort(function(a, b){ return a.value - b.value; });
     _giftCache_Buckets = arr;
     _giftCache_Len = arr.length;
 }
-
 function getAchievableGift(potentialWin){
     if(!_giftCache_Buckets || _giftCache_Len === 0){
         if(!_giftCatalogCache) return null;
@@ -2176,20 +2040,14 @@ function getAchievableGift(potentialWin){
         if(_giftCache_Len === 0) return null;
     }
     if(potentialWin < 5) return null;
-    if(potentialWin === _lastAchievableWin && _lastAchievableGift){
-        return _lastAchievableGift;
-    }
+    if(potentialWin === _lastAchievableWin && _lastAchievableGift) return _lastAchievableGift;
     _lastAchievableWin = potentialWin;
     var arr = _giftCache_Buckets;
     var lo = 0, hi = arr.length - 1, best = null;
     while(lo <= hi){
         var mid = (lo + hi) >> 1;
-        if(arr[mid].value <= potentialWin){
-            best = arr[mid].gift;
-            lo = mid + 1;
-        } else {
-            hi = mid - 1;
-        }
+        if(arr[mid].value <= potentialWin){ best = arr[mid].gift; lo = mid + 1; }
+        else { hi = mid - 1; }
     }
     _lastAchievableGift = best;
     return best;
@@ -2198,10 +2056,7 @@ function getAchievableGift(potentialWin){
 /* ══════════════════════════════════════════════════════════════
    ROCKET
    ══════════════════════════════════════════════════════════════ */
-function getRocketGif(){
-    return '/static/gifs/rockets/' + currentRocket + '.gif';
-}
-
+function getRocketGif(){ return '/static/gifs/rockets/' + currentRocket + '.gif'; }
 function applyRocket(){
     var rw = $('rocketWrap');
     if(!rw) return;
@@ -2211,12 +2066,10 @@ function applyRocket(){
     lastRocketSrc = rg;
     img.src = rg;
 }
-
 function updateRocketImage(){
     var rw = $('rocketWrap');
     if(!rw) return;
-
-    if(!turboMode && !rw.classList.contains('hide')){
+    if(!rw.classList.contains('hide')){
         rw.style.display = 'flex';
         rw.style.visibility = 'visible';
         rw.style.opacity = '1';
@@ -2226,13 +2079,8 @@ function updateRocketImage(){
 
     var showAmt = 0;
     var isGrayscale = false;
-
-    if(hasBet && betAmt > 0){
-        showAmt = betAmt;
-    } else if(cashedOut && cashedOutBetAmt > 0 && status === 'flying'){
-        showAmt = cashedOutBetAmt;
-        isGrayscale = true;
-    }
+    if(hasBet && betAmt > 0){ showAmt = betAmt; }
+    else if(cashedOut && cashedOutBetAmt > 0 && status === 'flying'){ showAmt = cashedOutBetAmt; isGrayscale = true; }
 
     if(!showGifts || !(showAmt > 0 && status === 'flying')){
         rw.classList.remove('cashed-out','gift-change','showing-gift');
@@ -2247,11 +2095,8 @@ function updateRocketImage(){
     var potentialWin = Math.floor(showAmt * dispMult);
     var gift = getAchievableGift(potentialWin);
 
-    if(isGrayscale){
-        rw.classList.add('cashed-out');
-    } else {
-        rw.classList.remove('cashed-out');
-    }
+    if(isGrayscale) rw.classList.add('cashed-out');
+    else rw.classList.remove('cashed-out');
 
     if(gift){
         var gid = gift.value;
@@ -2267,10 +2112,7 @@ function updateRocketImage(){
                 var fb = getRocketGif();
                 if(lastRocketSrc !== fb){ lastRocketSrc = fb; this.src = fb; }
             };
-            if(lastRocketSrc !== imgSrc){
-                lastRocketSrc = imgSrc;
-                ri.src = imgSrc;
-            }
+            if(lastRocketSrc !== imgSrc){ lastRocketSrc = imgSrc; ri.src = imgSrc; }
             rw.classList.add('showing-gift');
         }
     } else {
@@ -2293,7 +2135,6 @@ function syncSettingsToggles(){
     var guardEl = $('autoWithdrawGuardToggle');
     if(guardEl) guardEl.classList.toggle('on', autoWithdrawGuard);
 }
-
 function openSettings(){
     var so = $('settingsOverlay');
     if(so) so.classList.add('show');
@@ -2308,7 +2149,6 @@ document.addEventListener('DOMContentLoaded', function(){
     var so = $('settingsOverlay');
     if(so) so.addEventListener('click', function(e){ if(e.target === this) closeSettings(); });
 });
-
 function toggleShowGiftsClick(){
     showGifts = !showGifts;
     localStorage.setItem('crash_show_gifts', showGifts ? 'on' : 'off');
@@ -2318,7 +2158,6 @@ function toggleShowGiftsClick(){
     updateRocketImage();
     updateCashoutButton();
 }
-
 function renderSettings(){
     var rg = $('rocketGrid');
     if(!rg) return;
@@ -2334,7 +2173,6 @@ function selectRocket(rid){
     if(currentRocket === rid){ closeSettings(); return; }
     if(window._rocketSwitching) return;
     window._rocketSwitching = true;
-
     var newSrc = '/static/gifs/rockets/' + rid + '.gif';
     var test = new Image();
     test.onload = function(){
@@ -2351,7 +2189,6 @@ function selectRocket(rid){
             }
         }
         _rwFlying = false;
-        _prevCoeffText = '';
         window._rocketSwitching = false;
         renderSettings();
         showToast('Ракета изменена!','ok');
@@ -2381,10 +2218,7 @@ function openDepositSelector(){
         }
     }
 }
-function closeDepositSelector(){
-    var so = $('depositOverlay');
-    if(so) so.classList.remove('show');
-}
+function closeDepositSelector(){ var so = $('depositOverlay'); if(so) so.classList.remove('show'); }
 function openTonDeposit(){ showToast('TON пополнение скоро','ok'); }
 function openStarsDeposit(){
     if(!isTelegramWebApp()){ showToast('Stars только в Telegram','err'); return; }
@@ -2393,11 +2227,7 @@ function openStarsDeposit(){
     var ee = $('starsDepositError');
     if(ee) ee.style.display = 'none';
 }
-function closeStarsDeposit(){
-    var so = $('starsDepositOverlay');
-    if(so) so.classList.remove('show');
-}
-
+function closeStarsDeposit(){ var so = $('starsDepositOverlay'); if(so) so.classList.remove('show'); }
 document.addEventListener('DOMContentLoaded', function(){
     var sda = $('starsDepositAmount');
     if(sda){
@@ -2412,7 +2242,6 @@ document.addEventListener('DOMContentLoaded', function(){
     var do_ = $('depositOverlay');
     if(do_) do_.addEventListener('click', function(e){ if(e.target === this) closeDepositSelector(); });
 });
-
 async function payWithStars(){
     var amountEl = $('starsDepositAmount');
     var amount = parseInt(amountEl ? amountEl.value : 0) || 0;
@@ -2426,8 +2255,7 @@ async function payWithStars(){
     if(btn) btn.disabled = true;
     try{
         var r = await fetch('/api/stars/create-invoice', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
+            method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({user_id: userData.id, amount: amount})
         });
         var d = await r.json();
@@ -2456,61 +2284,8 @@ async function payWithStars(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SOUND + VIBRATION + TOAST
+   TOAST
    ══════════════════════════════════════════════════════════════ */
-var audioContext = null;
-var soundMasterGain = null;
-function initAudio(){
-    if(audioContext) return;
-    try{
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        soundMasterGain = audioContext.createGain();
-        soundMasterGain.gain.value = 0.5;
-        soundMasterGain.connect(audioContext.destination);
-    }catch(e){}
-}
-function makeOsc(freq, type, gainVal, startT, dur){
-    if(!soundMasterGain) return;
-    try{
-        var o = audioContext.createOscillator();
-        var g = audioContext.createGain();
-        o.connect(g); g.connect(soundMasterGain);
-        o.frequency.setValueAtTime(freq, startT);
-        o.type = type;
-        g.gain.setValueAtTime(gainVal, startT);
-        g.gain.exponentialRampToValueAtTime(0.001, startT + dur);
-        o.start(startT); o.stop(startT + dur);
-    }catch(e){}
-}
-function playSound(type){
-    if(window._soundDisabled || turboMode || optimizeMode) return;
-    initAudio();
-    if(!audioContext) return;
-    if(audioContext.state === 'suspended') audioContext.resume();
-    var now = audioContext.currentTime;
-    if(type === 'click'){ makeOsc(1200,'sine',0.1,now,0.03); }
-    else if(type === 'bet'){ makeOsc(880,'sine',0.12,now,0.12); makeOsc(1320,'sine',0.1,now+0.02,0.1); }
-    else if(type === 'countdown'){ makeOsc(900,'sine',0.12,now,0.05); }
-    else if(type === 'cashout'){ makeOsc(1400,'sine',0.14,now,0.1); makeOsc(1800,'sine',0.1,now+0.06,0.08); }
-    else if(type === 'crash'){ makeOsc(35,'sine',0.3,now,0.6); makeOsc(70,'triangle',0.18,now+0.06,0.45); }
-    else if(type === 'win'){ [523,659,784,988].forEach(function(f,i){ makeOsc(f,'triangle',0.12,now+i*0.07,0.35); }); }
-}
-function triggerVibration(pattern){
-    if(window._vibrationDisabled || turboMode || optimizeMode) return;
-    try{
-        if(typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
-            Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
-            return;
-        }
-    }catch(e){}
-    try{
-        if(navigator.vibrate){
-            if(Array.isArray(pattern)) navigator.vibrate(pattern.map(function(v){ return Math.min(v*2, 500); }));
-            else navigator.vibrate(Math.min(pattern*2, 500));
-        }
-    }catch(e){}
-}
-
 function showToast(msg, type){
     var existing = document.querySelectorAll('.toast');
     for(var i = 0; i < existing.length; i++) existing[i].remove();
@@ -2526,41 +2301,32 @@ function showToast(msg, type){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   RENDER
+   RENDER LOOP
    ══════════════════════════════════════════════════════════════ */
 function _initRenderCache(){
     _rw = $('rocketWrap');
     _gf = $('gameField');
     _coeffBox = $('coeffBox');
     _cdDisp = $('cdDisplay');
+    _liveMult = $('liveMult');
     if(_rw) _rImg = _rw.querySelector('img');
     _renderCacheInited = true;
 }
 
 function onNewServerMult(newMult){
     var now = performance.now();
-    if(newMult < _serverMultFloor){
-        newMult = _serverMultFloor;
-    } else {
-        _serverMultFloor = newMult;
-    }
+    if(newMult < _serverMultFloor) newMult = _serverMultFloor;
+    else _serverMultFloor = newMult;
     if(lastPollTimestamp > 0 && newMult > prevServMult){
         var elapsed = now - lastPollTimestamp;
-        if(elapsed > 30) multGrowthRate = (newMult - prevServMult) / elapsed;
+        if(elapsed > 30 && elapsed < 2000) multGrowthRate = (newMult - prevServMult) / elapsed;
     }
     prevServMult = newMult;
     lastPollTimestamp = now;
-
     var gap = newMult - dispMult;
-    if(gap > 0.05){
-        dispMult = newMult - 0.05;
-    } else if(gap > 0.01){
-        dispMult = Math.max(dispMult, newMult - 0.01);
-    }
-
-    if(hasBet && !cashedOut && status === 'flying'){
-        updateCashoutButton();
-    }
+    if(gap > 0.05) dispMult = newMult - 0.05;
+    else if(gap > 0.01) dispMult = Math.max(dispMult, newMult - 0.01);
+    if(hasBet && !cashedOut && status === 'flying') updateCashoutButton();
 }
 
 function render(){
@@ -2569,86 +2335,51 @@ function render(){
     if(dt > 50) dt = 50;
     lastFrameTime = now;
 
-    if(turboMode || optimizeMode){
-        if(!window._lastOptRender) window._lastOptRender = 0;
-        if(now - window._lastOptRender < 25){
-            requestAnimationFrame(render);
-            return;
-        }
-        window._lastOptRender = now;
-    }
-
-    if(document.hidden){
-        requestAnimationFrame(render);
-        return;
-    }
-
+    if(document.hidden){ requestAnimationFrame(render); return; }
     if(!_renderCacheInited) _initRenderCache();
-
-    if(window._rocketSwitching){
-        requestAnimationFrame(render);
-        return;
-    }
+    if(window._rocketSwitching){ requestAnimationFrame(render); return; }
 
     if(status === 'flying'){
         if(multGrowthRate > 0){
             var delta = multGrowthRate * dt;
-            if(delta > 0.025) delta = 0.025;
+            if(delta > 0.03) delta = 0.03;
             dispMult += delta;
-            if(dispMult > prevServMult + 0.5) multGrowthRate *= 0.75;
+            if(dispMult > prevServMult + 0.4) multGrowthRate *= 0.8;
         }
         if(dispMult < 1.0) dispMult = 1.0;
 
         if(_rw && !_rwFlying){ _rw.classList.add('flying'); _rwFlying = true; }
 
-        var _rwEl = $('rocketWrap');
-        if(_rwEl){
-            if(turboMode){
-                _rwEl.style.display = 'none';
-            } else {
-                _rwEl.style.display = 'flex';
-                _rwEl.style.visibility = 'visible';
-                _rwEl.style.opacity = '1';
-            }
-        }
-
-        if(_rw && _rImg && !_rw.classList.contains('showing-gift') && !window._rocketSwitching){
+        if(_rImg && _rw && !_rw.classList.contains('showing-gift')){
             if(_rImg.complete && _rImg.naturalWidth > 0){
                 var tilt = dispMult >= 1.5 ? Math.min(35, (dispMult - 1.5) * 5) : 0;
                 var sc = 1 + Math.max(0, Math.min(dispMult - 1.5, 2)) * 0.03;
-                var speedFactor = Math.max(0.3, Math.min(1.0, 1.0 - (dispMult - 1.0) * 0.12));
                 _rImg.style.transform = 'rotate(' + tilt + 'deg) scale(' + sc + ')';
-                _rImg.style.transition = 'transform .3s ease-out';
-                if(_rImg.dataset.speed !== String(speedFactor.toFixed(2))){
-                    _rImg.dataset.speed = String(speedFactor.toFixed(2));
-                    _rImg.style.animation = 'rocketSpeedBoost ' + speedFactor + 's ease-in-out infinite';
-                }
             }
         }
 
-        if(now - _coeffLastUpdate > 12){
+        /* Live multiplier */
+        if(now - _lastLiveMultUpdate > 40){
+            _lastLiveMultUpdate = now;
+            if(_liveMult) _liveMult.textContent = dispMult.toFixed(2) + 'x';
+        }
+
+        if(now - _coeffLastUpdate > 100 && _coeffBox){
             _coeffLastUpdate = now;
-            var ct = dispMult.toFixed(2) + 'x';
-            if(ct !== _prevCoeffText && _coeffBox){
-                _coeffBox.textContent = ct;
-                _prevCoeffText = ct;
-            }
+            _coeffBox.textContent = dispMult.toFixed(2) + 'x';
         }
-
         if(now - lastRocketUpdateTime > 400){
             lastRocketUpdateTime = now;
             updateRocketImage();
         }
-
         if(now - _lastCashBtnUpdate > 100){
             _lastCashBtnUpdate = now;
             if(hasBet || cashedOut) updateCashoutButton();
         }
-
         if(hasBet && !autoCashoutDone){
             if(autoWithdrawGift && autoWithdrawGift.coeff >= 1.1){
-                var _currentMult = Math.max(dispMult, servMult);
-                if(_currentMult >= autoWithdrawGift.coeff){
+                var _cm = Math.max(dispMult, servMult);
+                if(_cm >= autoWithdrawGift.coeff){
                     autoCashoutDone = true;
                     doCashout();
                 }
@@ -2656,43 +2387,35 @@ function render(){
         }
     } else {
         if(lastRenderStatus === 'flying'){
-            updateRocketImage();
             _rwFlying = false;
-            _prevCoeffText = '';
             dispMult = 1.0;
             prevServMult = 1.0;
             multGrowthRate = 0;
-            if(_rImg){
-                _rImg.style.animation = '';
-                _rImg.style.transform = '';
-                _rImg.dataset.speed = '';
-            }
+            if(_rImg){ _rImg.style.animation = ''; _rImg.style.transform = ''; }
         }
-        if((status === 'counting' || status === 'waiting') && lastTrTimestamp > 0){
-            var elapsed = (performance.now() - lastTrTimestamp) / 1000;
-            var sec = Math.max(0, Math.ceil(Math.max(0, lastTimeRemaining - elapsed)));
+
+        if((status === 'counting' || status === 'waiting') && roundStartedAt > 0){
+            var elapsed = (performance.now() - roundStartedAt) / 1000;
+            var sec = Math.max(0, Math.ceil(roundCountdownTotal - elapsed));
             if(sec > 5) sec = 5;
 
-            if(typeof window._lastShownSec !== 'number') window._lastShownSec = 99;
-            if(sec > window._lastShownSec){
-                sec = window._lastShownSec;
+            /* Не увеличиваем и не повторяем */
+            if(sec > lastShownCountdownNumber){
+                sec = lastShownCountdownNumber;
             } else {
-                window._lastShownSec = sec;
+                lastShownCountdownNumber = sec;
             }
 
-            var label = sec > 0 ? String(sec) : 'GO';
-            if(countdownShown !== label){
-                countdownShown = label;
+            if(sec > 0 && countdownShown !== sec && !countdownAnimating){
+                countdownShown = sec;
+                countdownAnimating = true;
                 if(_cdDisp){
-                    _cdDisp.textContent = label;
+                    _cdDisp.textContent = sec;
                     _cdDisp.classList.remove('active');
                     void _cdDisp.offsetWidth;
                     _cdDisp.classList.add('active');
-                    if(label !== 'GO'){
-                        try{ playSound('countdown'); }catch(e){}
-                        try{ triggerVibration([80,30,80]); }catch(e){}
-                    }
                 }
+                setTimeout(function(){ countdownAnimating = false; }, 250);
             }
         }
     }
@@ -2709,18 +2432,14 @@ function _addOptimisticBet(amount, type, giftImg){
         if(!list) return;
         var noBets = list.querySelector('.no-bets');
         if(noBets) noBets.remove();
-
         var myName = (userData && userData.first_name) || 'Вы';
         var ini = (myName[0] || 'U').toUpperCase();
         var photo = (userData && userData.photo_url) || '';
         var avatar = photo ? '<img src="'+photo+'" onerror="this.parentElement.textContent=\''+ini+'\'">' : ini;
-
         var previewHtml = giftImg
             ? '<img class="bet-gift-preview" src="'+giftImg+'" onerror="this.style.display=\'none\'">'
             : '<img class="bet-gift-preview empty" src="/static/img/gift.png" alt="">';
-
         var clockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-
         var row = document.createElement('div');
         var tempId = 'opt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
         row.className = 'bet-row active optimistic';
@@ -2730,12 +2449,10 @@ function _addOptimisticBet(amount, type, giftImg){
             + '<div class="bet-amt">'+previewHtml+'<span class="bet-amount-text">'+formatCrashMoney(amount)+'</span></div></div></div>'
             + '<div class="bet-status active">'+clockSvg+' ×1.00</div>';
         list.insertBefore(row, list.firstChild);
-
         var bc = document.getElementById('betsCount');
         if(bc) bc.textContent = (parseInt(bc.textContent)||0) + 1;
     }catch(e){}
 }
-
 function _removeOptimisticBets(){
     var rows = document.querySelectorAll('.bet-row.optimistic');
     for(var i = 0; i < rows.length; i++) rows[i].remove();
@@ -2746,7 +2463,7 @@ async function loadBets(){
     if(status === 'flying'){
         if(!loadBets._lastFlyingFetch) loadBets._lastFlyingFetch = 0;
         var _now = performance.now();
-        if(_now - loadBets._lastFlyingFetch < 3000) return;
+        if(_now - loadBets._lastFlyingFetch < 2500) return;
         loadBets._lastFlyingFetch = _now;
     }
     try{
@@ -2757,26 +2474,20 @@ async function loadBets(){
         var d = await r.json();
         if(!d.success) return;
         if(gen !== betsGeneration) return;
-
         var bets = (d.bets||[]).sort(function(a,b){ return b.bet_amount - a.bet_amount; });
         var bc = $('betsCount');
         if(bc) bc.textContent = bets.length + (pendingBet ? 1 : 0);
-
         var hash = JSON.stringify(bets.map(function(b){ return b.id+':'+b.status+':'+b.bet_amount; }));
         if(hash === lastBetsHash) return;
         lastBetsHash = hash;
         _removeOptimisticBets();
-
         var list = $('betsList');
         if(!list) return;
         if(!bets.length){
             var pendingRow = list.querySelector('.bet-row.pending-bet');
-            if(!pendingRow){
-                list.innerHTML = '<div class="no-bets">Waiting for bets...</div>';
-            }
+            if(!pendingRow) list.innerHTML = '<div class="no-bets">Waiting for bets...</div>';
             return;
         }
-
         var pendingHtml = '';
         var pendingRow2 = list.querySelector('.bet-row.pending-bet');
         if(pendingRow2) pendingHtml = pendingRow2.outerHTML;
@@ -2787,7 +2498,6 @@ async function loadBets(){
             var hasPhoto = b.photo_url && b.photo_url !== '/static/img/default_avatar.png';
             var avatar = hasPhoto ? '<img src="'+b.photo_url+'" alt="">' : ini;
             var stCls = 'active';
-
             var previewSrc = null;
             if(b.bet_type === 'gift'){
                 if(b.gift_images && b.gift_images.length) previewSrc = b.gift_images[0];
@@ -2796,10 +2506,8 @@ async function loadBets(){
             var previewHtml = previewSrc
                 ? '<img class="bet-gift-preview" data-gift="'+previewSrc+'" src="'+previewSrc+'" onerror="this.style.display=\'none\'">'
                 : '<img class="bet-gift-preview empty" src="/static/img/gift.png" alt="">';
-
             var clockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
             var crashSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>';
-
             var statusHtml = '';
             if(b.status === 'cashed_out'){
                 stCls = 'won';
@@ -2814,8 +2522,7 @@ async function loadBets(){
                     + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px">'
                     +   '<div style="font-size:10px;font-weight:700">×'+coef+'</div>'
                     +   '<div style="font-size:10px;font-weight:800">+'+formatCrashMoney(winAmt)+'</div>'
-                    + '</div>'
-                    + '</div>';
+                    + '</div></div>';
             } else if(b.status === 'lost'){
                 stCls = 'lost';
                 var cc = servMult ? servMult.toFixed(2) : '?';
@@ -2828,7 +2535,6 @@ async function loadBets(){
                     + '<div style="font-size:10px;font-weight:800;color:#8CA0BE">'+formatCrashMoney(potentialWin)+'</div>'
                     + '</div>';
             }
-
             return '<div class="bet-row '+stCls+'" data-bet-id="'+b.id+'" data-status="'+b.status+'">'
                 +'<div class="bet-left"><div class="bet-avatar">'+avatar+'</div>'
                 +'<div class="bet-info"><div class="bet-name">'+name+'</div>'
@@ -2866,20 +2572,16 @@ async function loadHist(){
     }catch(e){}
 }
 
-/* ══════════════════════════════════════════════════════════════
-   WIN SHEET
-   ══════════════════════════════════════════════════════════════ */
 function closeWin(){
     var wo = $('winOverlay');
     if(wo) wo.classList.remove('show');
 }
 
 /* ══════════════════════════════════════════════════════════════
-   INIT
+   BOOT
    ══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function(){
     initTelegramApp();
-
     setTimeout(function(){
         var ls = $('ldScreen');
         if(ls && !ls.classList.contains('hidden')){
@@ -2887,7 +2589,6 @@ document.addEventListener('DOMContentLoaded', function(){
             setTimeout(function(){ ls.style.display = 'none'; }, 300);
         }
     }, 6000);
-
     function updOnline(){
         fetch('/api/online-count').then(function(r){ return r.json(); }).then(function(d){
             var el = $('onlineCount');
@@ -2898,49 +2599,8 @@ document.addEventListener('DOMContentLoaded', function(){
     setInterval(updOnline, 30000);
 });
 
-document.addEventListener('click', initAudio, {once: true});
-document.addEventListener('touchstart', initAudio, {once: true});
-
-/* ══════════════════════════════════════════════════════════════
-   OPTIMIZE / TURBO MODE
-   ══════════════════════════════════════════════════════════════ */
-function applyOptimizeMode(){
-    var root = document.documentElement;
-    var body = document.body;
-
-    if(turboMode){
-        root.classList.add('turbo-mode');
-        body.classList.add('turbo-mode');
-        root.classList.remove('optimize-mode');
-        body.classList.remove('optimize-mode');
-        _turboDisableAll();
-    } else if(optimizeMode){
-        root.classList.add('optimize-mode');
-        body.classList.add('optimize-mode');
-        root.classList.remove('turbo-mode');
-        body.classList.remove('turbo-mode');
-    } else {
-        root.classList.remove('optimize-mode', 'turbo-mode');
-        body.classList.remove('optimize-mode', 'turbo-mode');
-    }
-
-    var oT = $('optimizeToggle');
-    if(oT) oT.classList.toggle('on', optimizeMode);
-    var tT = $('turboToggle');
-    if(tT) tT.classList.toggle('on', turboMode);
-}
-
-function _turboDisableAll(){
-    window._soundDisabled = true;
-    window._vibrationDisabled = true;
-    var rw = $('rocketWrap');
-    if(rw) rw.style.display = 'none';
-    var bm = $('boomWrap');
-    if(bm) bm.style.display = 'none';
-}
-
-applyOptimizeMode();
-
+/* applyOptimizeMode — заглушка для совместимости */
+function applyOptimizeMode(){}
 </script>
 
 <nav class="bottom-nav">
