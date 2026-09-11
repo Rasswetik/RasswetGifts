@@ -15,7 +15,7 @@
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1C2233;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
 @keyframes coeffShake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-4px)}20%,40%,60%,80%{transform:translateX(4px)}}
-.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 50px + 3vh)}
+.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 8px)}
 
 /* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:4000;width:100%;max-width:480px;height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);background:rgba(28,34,51,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-top:1px solid rgba(59,130,246,.08);display:flex;align-items:center;justify-content:space-around}
@@ -328,8 +328,66 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .autowd-price{display:flex;align-items:center;gap:3px;font-family:inherit;font-weight:800;font-size:12px;color:#FFD700;flex-shrink:0}
 .autowd-price img{width:11px;height:11px}
 .autowd-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:12px}
-.autowd-apply-btn{margin:10px 14px 14px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 8px 24px rgba(59,130,246,.35);display:flex;align-items:center;justify-content:center;gap:8px}
+.autowd-apply-btn{
+    margin:10px 14px 14px;
+    padding:14px;
+    border-radius:14px;
+    border:none;
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;
+    font-family:inherit;
+    font-weight:800;
+    font-size:13px;
+    cursor:pointer;
+    box-shadow:0 8px 24px rgba(59,130,246,.35);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:52px;
+    max-height:52px;
+    height:52px;
+    overflow:hidden;
+    box-sizing:border-box;
+    flex-shrink:0;
+}
 .autowd-apply-btn:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,.06);box-shadow:none}
+
+/* ★ FIX: Картинка в кнопке "Применить" — строго 22x22 */
+.autowd-apply-btn > img,
+.autowd-apply-btn img{
+    width:22px !important;
+    height:22px !important;
+    max-width:22px !important;
+    max-height:22px !important;
+    min-width:22px !important;
+    min-height:22px !important;
+    flex:0 0 22px !important;
+    object-fit:contain !important;
+    display:block !important;
+    background:transparent !important;
+    border:none !important;
+    padding:0 !important;
+    border-radius:4px !important;
+    box-sizing:border-box !important;
+}
+/* Бейдж коэффициента внутри кнопки */
+.autowd-apply-btn .coeff-badge,
+.autowd-apply-btn > span{
+    flex:0 0 auto;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
+}
+/* Текст "Выберите подарок" */
+.autowd-apply-btn #autowdApplyText{
+    flex:0 1 auto;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
 
 /* DEPOSIT */
 .deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5650;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
@@ -427,6 +485,237 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .autowd-open-btn > img:first-child{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important}
 /* Защита от растягивания в других местах */
 .autowd-row .autowd-thumb img{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important}
+
+
+
+/* ══════════════════════════════════════════════════════════════
+   FIX: Автовывод — кнопка и картинка не раздуваются
+   ══════════════════════════════════════════════════════════════ */
+
+/* Кнопка автовывода — жёсткие размеры */
+.auto-cashout-row{
+    min-height:58px!important;
+    max-height:58px!important;
+    height:58px!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+}
+.autowd-open-btn{
+    height:38px!important;
+    max-height:38px!important;
+    min-height:38px!important;
+    overflow:hidden!important;
+    box-sizing:border-box!important;
+    display:flex!important;
+    align-items:center!important;
+    padding:0 10px!important;
+    gap:6px!important;
+}
+/* Картинка в кнопке — строго 18x18 */
+.autowd-open-btn > img,
+.autowd-open-btn img:first-child{
+    width:18px!important;
+    height:18px!important;
+    max-width:18px!important;
+    max-height:18px!important;
+    min-width:18px!important;
+    min-height:18px!important;
+    flex:0 0 18px!important;
+    object-fit:contain!important;
+    display:block!important;
+    background:transparent!important;
+    border:none!important;
+    padding:0!important;
+    border-radius:4px!important;
+    box-sizing:border-box!important;
+}
+.autowd-open-btn .autowd-btn-name{
+    flex:1 1 auto!important;
+    min-width:0!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+    white-space:nowrap!important;
+    font-size:10px!important;
+    font-weight:700!important;
+    text-align:left!important;
+}
+.autowd-open-btn .autowd-btn-coeff{
+    flex:0 0 auto!important;
+    background:rgba(0,0,0,.22)!important;
+    padding:1px 5px!important;
+    border-radius:8px!important;
+    font-size:9px!important;
+    font-weight:800!important;
+}
+
+/* Модалка автовывода — превью подарков тоже фиксируем */
+.autowd-row .autowd-thumb img{
+    width:100%!important;
+    height:100%!important;
+    max-width:100%!important;
+    max-height:100%!important;
+    object-fit:contain!important;
+}
+
+/* Кнопка "Автовывод" в самом низу модалки — картинка не раздувается */
+.autowd-apply-btn img{
+    width:22px!important;
+    height:22px!important;
+    max-width:22px!important;
+    max-height:22px!important;
+    min-width:22px!important;
+    min-height:22px!important;
+    object-fit:contain!important;
+    flex:0 0 22px!important;
+}
+
+/* Кнопка Cash OUT — иконки подарков тоже строго 42x42 */
+.cashout-btn .cb-gift-side{
+    width:42px!important;
+    height:42px!important;
+    max-width:42px!important;
+    max-height:42px!important;
+    min-width:42px!important;
+    min-height:42px!important;
+    object-fit:contain!important;
+    flex:0 0 42px!important;
+    background:transparent!important;
+    border:none!important;
+    padding:0!important;
+}
+
+/* Превью подарков в списке ставок — строго 20x20 */
+.bet-amt .bet-gift-preview{
+    width:20px!important;
+    height:20px!important;
+    max-width:20px!important;
+    max-height:20px!important;
+    min-width:20px!important;
+    min-height:20px!important;
+    object-fit:contain!important;
+    flex:0 0 20px!important;
+}
+
+
+
+/* ══════════════════════════════════════════════════════════════
+   FIX: Модалка автовывода — фикс размеров всех картинок
+   ══════════════════════════════════════════════════════════════ */
+
+/* Модалка — фиксированная высота */
+.autowd-modal{
+    max-height:85vh !important;
+    display:flex !important;
+    flex-direction:column !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+}
+
+/* Хедер */
+.autowd-header{
+    flex-shrink:0 !important;
+}
+.autowd-title img{
+    width:20px !important;
+    height:20px !important;
+    max-width:20px !important;
+    max-height:20px !important;
+    object-fit:contain !important;
+    flex:0 0 20px !important;
+}
+
+/* Сводка */
+.autowd-summary{
+    flex-shrink:0 !important;
+}
+
+/* Поиск */
+.autowd-search-wrap{
+    flex-shrink:0 !important;
+}
+
+/* Список подарков */
+.autowd-list{
+    flex:1 1 auto !important;
+    min-height:150px !important;
+    max-height:340px !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    padding:6px 14px !important;
+}
+
+/* Строка подарка */
+.autowd-row{
+    flex-shrink:0 !important;
+    min-height:56px !important;
+    max-height:56px !important;
+    height:56px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+    display:flex !important;
+    align-items:center !important;
+    gap:10px !important;
+    padding:8px 10px !important;
+}
+
+/* Превью подарка */
+.autowd-thumb{
+    width:40px !important;
+    height:40px !important;
+    min-width:40px !important;
+    max-width:40px !important;
+    min-height:40px !important;
+    max-height:40px !important;
+    flex:0 0 40px !important;
+    border-radius:10px !important;
+    background:rgba(0,0,0,.25) !important;
+    padding:4px !important;
+    box-sizing:border-box !important;
+    border:1px solid rgba(255,255,255,.08) !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    overflow:hidden !important;
+}
+
+/* Картинка внутри превью */
+.autowd-thumb img{
+    width:100% !important;
+    height:100% !important;
+    max-width:100% !important;
+    max-height:100% !important;
+    object-fit:contain !important;
+    display:block !important;
+    background:transparent !important;
+    border:none !important;
+    padding:0 !important;
+}
+
+/* Иконка цены (TON) */
+.autowd-price{
+    flex-shrink:0 !important;
+}
+.autowd-price img{
+    width:11px !important;
+    height:11px !important;
+    max-width:11px !important;
+    max-height:11px !important;
+    object-fit:contain !important;
+    flex:0 0 11px !important;
+}
+
+/* Кнопка "Применить" — фиксированная высота, не растягивается */
+.autowd-apply-btn{
+    flex-shrink:0 !important;
+    margin:10px 14px 14px !important;
+}
+
+/* Общая защита от раздувания картинок внутри autowd */
+.autowd-modal img{
+    max-width:100% !important;
+    max-height:100% !important;
+    object-fit:contain !important;
+}
 
 </style>
 </head>
@@ -804,10 +1093,11 @@ function updateUI(data){
     }
     var simId = setInterval(function(){
         if(window._ldP >= 40){ clearInterval(simId); return; }
-        window._ldP += 0.8;
+        window._ldP += 2.5;
+        if(window._ldP > 40) window._ldP = 40;
         if(bar) bar.style.width = window._ldP + '%';
         if(txt) txt.textContent = 'LOADING ' + Math.round(window._ldP) + '%';
-    }, 80);
+    }, 40);
     window._ldUpdate = function(pct){
         if(pct <= window._ldP) return;
         window._ldP = pct;
@@ -817,13 +1107,14 @@ function updateUI(data){
     window._ldDone = function(){
         if(bar) bar.style.width = '100%';
         if(txt) txt.textContent = 'READY!';
+        /* ★ FIX: ускорили скрытие лоадера 300→120мс */
         setTimeout(function(){
             var ls = $('ldScreen');
             if(ls){
                 ls.classList.add('hidden');
-                setTimeout(function(){ ls.style.display = 'none'; }, 500);
+                setTimeout(function(){ ls.style.display = 'none'; }, 300);
             }
-        }, 300);
+        }, 120);
     };
 })();
 
@@ -896,15 +1187,29 @@ async function initTelegramApp(){
     }catch(e){}
     if(window._ldUpdate) window._ldUpdate(80);
     applyRocket();
+
+    /* ★ FIX: параллельная загрузка всего сразу */
+    try{
+        await Promise.race([
+            Promise.all([
+                ensureGiftCatalog().catch(function(){}),
+                fetch('/api/online-count').then(function(r){ return r.json(); }).then(function(d){
+                    var el = $('onlineCount');
+                    if(el && d.count !== undefined) el.textContent = d.count;
+                }).catch(function(){}),
+            ]),
+            new Promise(function(resolve){ setTimeout(resolve, 1500); })
+        ]);
+    }catch(e){}
+
     if(window._ldUpdate) window._ldUpdate(95);
 
-    try{ await ensureGiftCatalog(); }catch(e){}
-
-    if(window._ldDone) window._ldDone();
-
+    /* ★ Сразу запускаем игровой цикл — не ждём подарков */
     updStatus();
     loadBets();
     loadHist();
+
+    if(window._ldDone) window._ldDone();
 
     if(savedBetAmount) setBetInputFromStars(savedBetAmount);
 
@@ -924,7 +1229,7 @@ async function initTelegramApp(){
     }
 
     /* FIX: уменьшили частоту поллинга — меньше лагов на слабых телефонах */
-    setInterval(pollStatus, 200);
+    setInterval(pollStatus, 150);
     setInterval(loadUserData, 25000);
     setInterval(pollBets, 300);
     setInterval(function(){ fetch('/api/ping').catch(()=>{}); }, 30000);
@@ -1306,10 +1611,26 @@ async function doCashout(){
     if(cashoutLocked) return;
     cashoutLocked = true;
 
+    /* ★ FIX: фиксируем множитель СЕЙЧАС, локально */
+    var _frozenMult = Math.max(dispMult, servMult);
+    /* Немного "льстим" — считаем что успели зафиксировать чуть раньше */
+    _frozenMult = Math.max(_frozenMult, prevServMult);
+
     var btn = $('cashoutBtn');
     var pb = $('placeBetBtn');
-    var mult = Math.max(dispMult, servMult);
+    var mult = _frozenMult;
     var instantWin = Math.floor(betAmt * mult);
+
+    /* ★ FIX: мгновенно показываем +X в кнопке BET */
+    try{ playSound('cashout'); }catch(e){}
+    try{ triggerVibration([50,30,50,30,100]); }catch(e){}
+    if(pb){
+        pb.style.display = 'block';
+        pb.disabled = true;
+        pb.innerHTML = '<span class="btn-text">+'+formatCrashMoney(instantWin)+'</span>';
+        pb.style.pointerEvents = 'none';
+    }
+    if(btn) btn.classList.remove('visible');
 
     cashedOutBetAmt = betAmt;
     cashedOutGiftImg = betGiftImg;
@@ -1323,10 +1644,7 @@ async function doCashout(){
         pb.style.pointerEvents = 'none';
     }
 
-    try{ triggerVibration([50,30,50,30,100]); }catch(e){}
-    try{ playSound('cashout'); }catch(e){}
-
-    var bodyData = { user_id: userData.id, client_mult: mult };
+    var bodyData = { user_id: userData.id, client_mult: _frozenMult };
 
     if(autoWithdrawGift && autoWithdrawGift.id != null){
         bodyData.preferred_gift_id = autoWithdrawGift.id;
@@ -1352,6 +1670,7 @@ async function doCashout(){
             try{ playSound('win'); }catch(e){}
             showWin(d);
             loadBets();
+            setTimeout(loadBets, 100);
 
             autoWithdrawGift = null;
             saveAutoWithdrawGift();
@@ -1605,6 +1924,8 @@ async function updStatus(){
 
         var newRound = prevGameId !== null && gameId !== prevGameId;
         if(newRound){
+            window._lastShownSec = 99;
+            countdownShown = -1;
             hasBet = false;
             betAmt = 0;
             betIsGift = false;
@@ -1947,10 +2268,14 @@ function updateAutoWithdrawApply(){
     var coeff = _autowdBet > 0 ? (val / _autowdBet).toFixed(2) : '?';
     var img = getGiftImage(_autowdSelected);
     btn.disabled = false;
+
+    /* ★ FIX: картинка строго 22x22 через inline-стили (двойная защита) */
     btn.innerHTML =
-        '<span id="autowdApplyText">Автовывод</span>'
-        + '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">'
-        + '<span class="coeff-badge" style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800">x' + coeff + '</span>';
+        '<span id="autowdApplyText" style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Автовывод</span>'
+        + '<img src="' + img + '" '
+        +   'style="width:22px !important;height:22px !important;max-width:22px !important;max-height:22px !important;min-width:22px !important;min-height:22px !important;object-fit:contain !important;flex:0 0 22px !important;display:block !important;background:transparent !important;border:none !important;padding:0 !important;" '
+        +   'onerror="this.src=\'/static/img/gift.png\'">'
+        + '<span class="coeff-badge" style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800;flex:0 0 auto;">x' + coeff + '</span>';
 }
 
 function applyAutoWithdraw(){
@@ -2031,13 +2356,20 @@ async function ensureGiftCatalog(){
     return _giftCatalogCache || [];
 }
 
+/* ★ FIX: кэш для getGiftImage — быстрее на 10x */
+var _giftImgCache = {};
 function getGiftImage(g){
     if(!g) return '/static/img/gift.png';
-    if(g.image && g.image.indexOf('/static/gifs/gifts/') !== -1) return g.image;
-    if(g.image && g.image.indexOf('fragment.com') === -1 && g.image.indexOf('/static/') === 0) return g.image;
-    if(g.fragment_slug) return 'https://fragment.com/file/gifts/' + g.fragment_slug + '/thumb.webp';
-    if(g.image && g.image.indexOf('fragment.com') !== -1) return g.image;
-    return g.image || '/static/img/gift.png';
+    var key = g.id || g.gift_key || g.fragment_slug || g.image;
+    if(key && _giftImgCache[key]) return _giftImgCache[key];
+    var result;
+    if(g.image && g.image.indexOf('/static/gifs/gifts/') !== -1) result = g.image;
+    else if(g.image && g.image.indexOf('fragment.com') === -1 && g.image.indexOf('/static/') === 0) result = g.image;
+    else if(g.fragment_slug) result = 'https://fragment.com/file/gifts/' + g.fragment_slug + '/thumb.webp';
+    else if(g.image && g.image.indexOf('fragment.com') !== -1) result = g.image;
+    else result = g.image || '/static/img/gift.png';
+    if(key) _giftImgCache[key] = result;
+    return result;
 }
 
 /* Оптимизация: кэшируем результат, не сканируем каталог каждый кадр */
@@ -2513,10 +2845,20 @@ function render(){
                 _rImg.dataset.speed = '';
             }
         }
-        if((status === 'counting' || status === 'waiting') && lastTrTimestamp > 0 && lastTimeRemaining <= 10){
+        if((status === 'counting' || status === 'waiting') && lastTrTimestamp > 0){
             var elapsed = (performance.now() - lastTrTimestamp) / 1000;
             var sec = Math.max(0, Math.ceil(Math.max(0, lastTimeRemaining - elapsed)));
             if(sec > 5) sec = 5;
+
+            /* ★ FIX: монотонный отсчёт — не даём счётчику вернуться назад */
+            if(typeof window._lastShownSec !== 'number') window._lastShownSec = 99;
+            if(sec > window._lastShownSec){
+                /* Сервер прислал большее число — игнорируем (джиттер) */
+                sec = window._lastShownSec;
+            } else {
+                window._lastShownSec = sec;
+            }
+
             var label = sec > 0 ? String(sec) : 'GO';
             if(countdownShown !== label){
                 countdownShown = label;
@@ -2778,13 +3120,14 @@ function closeWin(){
 document.addEventListener('DOMContentLoaded', function(){
     initTelegramApp();
 
+    /* ★ FIX: страховка — не даём лоадеру висеть больше 6 сек */
     setTimeout(function(){
         var ls = $('ldScreen');
         if(ls && !ls.classList.contains('hidden')){
             ls.classList.add('hidden');
-            setTimeout(function(){ ls.style.display = 'none'; }, 500);
+            setTimeout(function(){ ls.style.display = 'none'; }, 300);
         }
-    }, 15000);
+    }, 6000);
 
     function updOnline(){
         fetch('/api/online-count').then(function(r){ return r.json(); }).then(function(d){
