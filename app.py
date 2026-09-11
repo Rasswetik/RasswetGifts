@@ -4882,7 +4882,7 @@ def ultimate_crash_place_bet_gift():
         try:
             cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
             refresh_crash_bet_cache(game_id, cached_target)
-        _invalidate_recent_bets()
+            _invalidate_recent_bets()
         except Exception:
             pass
 
@@ -5025,7 +5025,7 @@ def ultimate_crash_place_bet_multi_gift():
         try:
             cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
             refresh_crash_bet_cache(game_id, cached_target)
-        _invalidate_recent_bets()
+            _invalidate_recent_bets()
         except Exception:
             pass
 
