@@ -203,7 +203,8 @@ _crash_bots_active = {}   # game_id -> [{bot_id, name, avatar, bet_amount, casho
 
 # In-memory user balance cache — avoids hitting DB on every 120ms status poll
 _user_balance_cache: dict = {}  # user_id -> {'balance': int, 'ts': float}
-_USER_BALANCE_CACHE_TTL = 4.0   # seconds
+_USER_BALANCE_CACHE_TTL = 0.5   # seconds
+_USER_BETS_CACHE_TTL = 0.5      # seconds
 
 def _get_cached_balance(user_id) -> int | None:
     entry = _user_balance_cache.get(user_id)
@@ -3716,26 +3717,26 @@ def start_ultimate_crash_loop():
                             except Exception as ai_e:
                                 logger.error(f"AI mid-round error: {ai_e}")
 
-                        # Requested curve:
+                        # Requested curve with a fast rocket feel:
                         # 1 → 2x in ~5s
                         # 2 → 4x in ~8s
                         # 4 → 10x in ~5s
                         # then faster beyond 10x
                         if live_mult < 2.0:
-                            base_increment = 0.02
+                            base_increment = 0.01
                         elif live_mult < 4.0:
-                            base_increment = 0.03
+                            base_increment = 0.0125
                         elif live_mult < 10.0:
                             base_increment = 0.06
                         else:
                             base_increment = 0.12
 
-                        speed_boost = live_mult * 0.015
-                        increment = round(max(base_increment, speed_boost), 2)
-                        increment = min(increment, 1.2)
+                        speed_boost = live_mult * 0.008
+                        increment = round(max(base_increment, speed_boost), 3)
+                        increment = min(increment, 0.12)
 
-                        # Light random crash chance, but keep round flow smoother
-                        crash_chance = 0.0018 * (live_mult / 10)
+                        # Keep random crash soft so the round feels lively but stable
+                        crash_chance = 0.0012 * (live_mult / 10)
                         if random.random() < crash_chance:
                             do_crash(conn, cursor, live_game_id, live_mult, live_target)
                             logger.info(f"💥 Случайный краш на {live_mult:.2f}x")
@@ -4499,8 +4500,8 @@ def ultimate_crash_simple_status():
     cached = get_crash_cache()
     cache_age = time.time() - cached.get('timestamp', 0)
     
-    # Если кэш свежий (< 2 сек) - не трогаем БД
-    if cache_age < 2.0 and cached.get('id', 0) > 0:
+    # Если кэш свежий (< 0.25 сек) - не трогаем БД
+    if cache_age < 0.25 and cached.get('id', 0) > 0:
         game_data = {
             'id': cached['id'],
             'status': cached['status'],
@@ -4516,7 +4517,7 @@ def ultimate_crash_simple_status():
             uid_int = int(user_id)
             cache_key = (cached['id'], user_id)
             bet_cache = _user_bets_cache.get(cache_key)
-            bet_cached = bet_cache and time.time() - bet_cache.get('ts', 0) < 5
+            bet_cached = bet_cache and time.time() - bet_cache.get('ts', 0) < _USER_BETS_CACHE_TTL
             bal_cached = _get_cached_balance(uid_int) is not None
 
             if bet_cached:
