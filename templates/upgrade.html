@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Rasswet — Апгрейд</title>
 <link rel="icon" href="/static/img/logo.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,136 +12,116 @@
 <script src="/static/js/telegram-auth.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--bg:#0d1117;--card:#161b22;--text:#fff;--text2:rgba(255,255,255,.5);--blue:#2563eb;--green:#1EE44C;--red:#F96999;--safe-bottom:env(safe-area-inset-bottom,0px)}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+:root{
+    --bg:#0d1117;
+    --card:#161b22;
+    --text:#fff;
+    --text2:rgba(255,255,255,.5);
+    --blue:#2563eb;
+    --green:#1EE44C;
+    --red:#F96999;
+    --safe-top:env(safe-area-inset-top, 0px);
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+}
+html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
+body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    padding-top:var(--safe-top);
+    padding-bottom:var(--safe-bottom);
+}
 a{text-decoration:none;color:inherit}
 
-.top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px}
+/* ══════════ TOP BAR — сдвинут под Telegram ══════════ */
+.top-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 16px;
+    padding-top:calc(var(--safe-top) + 60px);
+    position:relative;
+    z-index:10;
+}
 .top-left{display:flex;align-items:center;gap:8px}
+.user-pill{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:5px 12px 5px 5px;
+    border-radius:20px;
+    background:rgba(120,135,160,.1);
+    border:1px solid rgba(120,135,160,.25);
+    backdrop-filter:blur(5px);
+}
 .top-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover}
-.top-nick{font-size:14px;font-weight:600}
+.top-nick{font-size:14px;font-weight:600;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .top-right-btns{display:flex;gap:8px;align-items:center}
-.bal-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(120,135,160,.1);border:1px solid rgba(120,135,160,.25);font-weight:700;font-size:13px;backdrop-filter:blur(5px)}
-.bal-pill img{width:16px;height:16px}
-.bal-plus{width:28px;height:28px;border-radius:50%;border:1px solid rgba(120,135,160,.45);background:rgba(120,135,160,.3);color:#A0B0C4;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.user-pill{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border-radius:20px;background:rgba(120,135,160,.1);border:1px solid rgba(120,135,160,.25);backdrop-filter:blur(5px)}
+.bal-pill{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 12px;
+    border-radius:20px;
+    background:rgba(120,135,160,.1);
+    border:1px solid rgba(120,135,160,.25);
+    font-weight:700;
+    font-size:13px;
+    backdrop-filter:blur(5px);
+}
+.bal-pill img{width:16px;height:16px;flex-shrink:0}
+.bal-plus{
+    width:28px;
+    height:28px;
+    border-radius:50%;
+    border:1px solid rgba(120,135,160,.45);
+    background:rgba(120,135,160,.3);
+    color:#A0B0C4;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+}
 
-.upgrade-wrap{max-width:480px;margin:0 auto;padding:0 16px 100px;display:flex;flex-direction:column;align-items:center;gap:12px}
-.page-title{font-size:20px;font-weight:800;padding:8px 0}
+/* ══════════ WRAPPER ══════════ */
+.upgrade-wrap{
+    max-width:480px;
+    margin:0 auto;
+    padding:8px 16px calc(var(--safe-bottom) + 100px);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+}
+.page-title{
+    font-size:24px;
+    font-weight:900;
+    padding:8px 0 4px;
+    background:linear-gradient(135deg, #fff, #93c5fd);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    letter-spacing:-.5px;
+    text-align:center;
+    width:100%;
+}
 
-/* WHEEL */
-.wheel-section{padding:16px 0 12px;display:flex;flex-direction:column;align-items:center}
-.wheel-container{position:relative;width:220px;height:220px}
-.wheel-svg{position:absolute;inset:0;width:100%;height:100%}
-.wheel-green-arc{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:76px;height:76px;border-radius:50%;background:#0d1117;border:2px solid #2a3544;display:flex;align-items:center;justify-content:center;z-index:5}
-.wheel-center img{width:50px;height:50px;object-fit:contain;display:none}
-.chance-pct{font-size:18px;font-weight:800;color:var(--text2)}
-.wheel-center.flash-green{animation:flashG .4s ease 3}
-.wheel-center.flash-red{animation:flashR .4s ease 3}
-@keyframes flashG{50%{border-color:var(--green);box-shadow:0 0 20px rgba(30,228,76,.5)}}
-@keyframes flashR{50%{border-color:var(--red);box-shadow:0 0 20px rgba(249,105,153,.5)}}
-.wheel-result-icon{display:none;width:36px;height:36px}
-.wheel-result-icon.show{display:block}
-
-/* Pointer */
-.wheel-pointer-wrap{position:absolute;top:50%;left:50%;width:0;height:0;z-index:10;transform-origin:center center}
-.wheel-pointer{position:absolute;left:50%;top:0;transform:translateX(-50%) translateY(-118px);width:22px;height:26px}
-.wheel-pointer img{width:100%;height:100%}
-
-.wheel-glow{position:absolute;inset:0;border-radius:50%;pointer-events:none;opacity:0;transition:opacity .3s}
-.wheel-glow.spinning{opacity:1;animation:glowPulse .8s infinite}
-@keyframes glowPulse{0%,100%{box-shadow:0 0 15px rgba(245,158,11,.15)}50%{box-shadow:0 0 35px rgba(245,158,11,.35)}}
-
-/* UPGRADE BTN */
-.upgrade-btn{width:100%;height:50px;border-radius:14px;border:none;background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(37,99,235,.3)}
-.upgrade-btn:disabled{background:#1f2937;color:rgba(255,255,255,.3);cursor:not-allowed;box-shadow:none}
-.upgrade-btn.win{background:linear-gradient(135deg,#059669,var(--green))!important}
-.upgrade-btn.fail{background:linear-gradient(135deg,#dc2626,var(--red))!important}
-
-/* CARDS */
-.cards-row{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
-.card{background:rgba(22,27,34,.8);border:1.5px dashed rgba(255,255,255,.1);border-radius:16px;padding:20px 12px;display:flex;flex-direction:column;align-items:center;min-height:140px;justify-content:center;cursor:pointer}
-.card.has-gift{border-style:solid;border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.05)}
-.card-placeholder{display:flex;flex-direction:column;align-items:center;gap:10px}
-.card-icon{width:48px;height:48px;opacity:.4}
-.card-icon img{width:100%;height:100%;object-fit:contain}
-.card-text{font-size:12px;font-weight:500;color:rgba(255,255,255,.35);text-align:center;line-height:1.3}
-.gift-preview{display:none;flex-direction:column;align-items:center;gap:6px}
-.card.has-gift .gift-preview{display:flex}
-.card.has-gift .card-placeholder{display:none}
-.gift-preview img{width:64px;height:64px;object-fit:contain}
-.gift-preview-name{font-size:11px;font-weight:600;color:#fff;text-align:center;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.gift-preview-value{font-size:10px;color:var(--text2);display:flex;align-items:center;gap:3px}
-.gift-preview-value img{width:10px;height:10px}
-
-/* BUTTONS */
-.btns-row{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.select-btn{height:44px;border-radius:12px;border:none;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
-.select-btn.active{box-shadow:0 0 0 2px var(--blue)}
-.select-btn:first-child{background:linear-gradient(135deg,#1e3a5f,#1e40af);color:#fff}
-.select-btn:last-child{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
-
-/* INLINE LISTS */
-.inline-section{width:100%;display:none;margin-top:8px}
-.inline-section.show{display:block}
-.section-title{font-size:14px;font-weight:700;margin-bottom:10px;color:var(--text2)}
-.inline-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.inline-item{border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:10px 6px 8px;transition:all .2s}
-.inline-item:hover{background:rgba(255,255,255,.06)}
-.inline-item.selected{border-color:var(--blue);background:rgba(59,130,246,.1)}
-.inline-item img{width:56px;height:56px;object-fit:contain;margin-bottom:4px}
-.inline-item-name{font-size:9px;font-weight:600;color:var(--text2);text-align:center;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.inline-item-value{font-size:10px;font-weight:700;margin-top:2px;display:flex;align-items:center;gap:2px}
-.inline-item-value img{width:10px;height:10px}
-
-/* Target items in list format */
-.target-list-inline{display:flex;flex-direction:column;gap:6px}
-.target-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);cursor:pointer;transition:all .2s}
-.target-row:hover{background:rgba(255,255,255,.05)}
-.target-row.selected{border-color:var(--green);background:rgba(30,228,76,.08)}
-.target-row img{width:40px;height:40px;object-fit:contain}
-.target-row-info{flex:1;min-width:0}
-.target-row-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.target-row-price{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:3px}
-.target-row-price img{width:10px;height:10px}
-.target-row-chance{font-size:13px;font-weight:800;color:var(--green)}
-
-/* Empty message */
-.empty-msg{text-align:center;padding:24px;color:rgba(255,255,255,.35);font-size:13px}
-
-/* DEPOSIT */
-.deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5650;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
-.deposit-overlay.show{opacity:1;visibility:visible}
-.deposit-modal{background:linear-gradient(180deg,#1E2538,#151B2D);border-radius:24px;width:90%;max-width:360px;padding:24px 20px;transform:scale(.9);transition:transform .3s}
-.deposit-overlay.show .deposit-modal{transform:scale(1)}
-.deposit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.deposit-title{font-weight:800;font-size:18px}
-.deposit-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.1);cursor:pointer;display:flex;align-items:center;justify-content:center}
-.deposit-close svg{width:14px;height:14px;stroke:var(--red);fill:none;stroke-width:2}
-.deposit-methods{display:flex;gap:10px}
-.deposit-method-btn{flex:1;padding:16px 10px;border-radius:16px;border:1px solid rgba(255,255,255,.05);background:rgba(255,255,255,.03);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px}
-.deposit-method-btn img{width:36px;height:36px}
-.deposit-method-btn span{font-weight:700;font-size:13px;color:#fff}
-.confetti-canvas{position:fixed;inset:0;z-index:6001;pointer-events:none}
-
-/* BOTTOM NAV */
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:100;width:100%;max-width:480px;height:72px;padding:0 8px calc(var(--safe-bottom) + 8px);background:rgba(13,17,23,.95);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-around}
-.bnav-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 16px;border-radius:12px;color:rgba(255,255,255,.4);font-weight:600;text-decoration:none}
-.bnav-item svg{width:24px;height:24px;stroke:currentColor;fill:none}
-.bnav-item span{font-size:10px}
-.bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
-
-
-/* ══════════════════════════════════════════════════════════════
-   ★ IMPROVED UPGRADE — свечение, анимации, UX
-   ══════════════════════════════════════════════════════════════ */
-
-/* ─── КОЛЕСО — улучшенное свечение ─── */
+/* ══════════ КОЛЕСО ══════════ */
+.wheel-section{
+    padding:8px 0 4px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
 .wheel-container{
     position:relative;
-    width:240px;
-    height:240px;
+    width:230px;
+    height:230px;
     margin:0 auto;
     filter:drop-shadow(0 0 30px rgba(59,130,246,.15));
     transition:filter .4s ease;
@@ -155,8 +135,6 @@ a{text-decoration:none;color:inherit}
 .wheel-container.fail{
     filter:drop-shadow(0 0 50px rgba(249,105,153,.4));
 }
-
-/* Пульсирующее свечение вокруг колеса */
 .wheel-container::before{
     content:'';
     position:absolute;
@@ -178,7 +156,6 @@ a{text-decoration:none;color:inherit}
 .wheel-container.fail::before{
     background:radial-gradient(circle, rgba(249,105,153,.25) 0%, transparent 70%);
 }
-
 @keyframes wheelGlowPulse{
     0%,100%{ transform:scale(1); opacity:.6; }
     50%{ transform:scale(1.08); opacity:1; }
@@ -191,8 +168,6 @@ a{text-decoration:none;color:inherit}
     0%,100%{ transform:scale(1); opacity:.9; }
     50%{ transform:scale(1.15); opacity:1; }
 }
-
-/* Вращающийся внешний обод */
 .wheel-container::after{
     content:'';
     position:absolute;
@@ -209,16 +184,20 @@ a{text-decoration:none;color:inherit}
 @keyframes wheelRingRotate{
     to{ transform:rotate(360deg); }
 }
-
-/* Обновлённый wheel-svg */
 .wheel-svg{
+    position:absolute;
+    inset:0;
     width:100%;
     height:100%;
     filter:drop-shadow(0 4px 16px rgba(0,0,0,.6));
-    transition:filter .3s ease;
 }
-
-/* ─── ЦЕНТР — теперь ярче ─── */
+.wheel-green-arc{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+}
 .wheel-center{
     position:absolute;
     top:50%;
@@ -233,26 +212,47 @@ a{text-decoration:none;color:inherit}
     align-items:center;
     justify-content:center;
     z-index:5;
+    overflow:hidden;
     box-shadow:
         inset 0 0 20px rgba(59,130,246,.15),
         0 0 0 4px rgba(13,17,23,.8),
         0 0 30px rgba(59,130,246,.2);
     transition:all .3s ease;
 }
-
+.wheel-center img,
+.wheel-center .chance-pct{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    transition:opacity .35s ease, transform .35s ease;
+}
 .wheel-center img{
     width:52px;
     height:52px;
     object-fit:contain;
-    display:none;
+    display:block;
     filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));
-    animation:centerImgPop .4s cubic-bezier(.34,1.56,.64,1);
 }
-@keyframes centerImgPop{
-    0%{ transform:scale(.3); opacity:0; }
-    100%{ transform:scale(1); opacity:1; }
+.wheel-center img.hidden,
+.wheel-center .chance-pct.hidden{
+    opacity:0;
+    transform:translate(-50%,-50%) scale(.6);
+    pointer-events:none;
+    z-index:1;
 }
-
+.wheel-center img.visible,
+.wheel-center .chance-pct.visible{
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+    z-index:2;
+    animation:centerSwap .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes centerSwap{
+    0%{ transform:translate(-50%,-50%) scale(.7); opacity:0; }
+    50%{ transform:translate(-50%,-50%) scale(1.1); opacity:1; }
+    100%{ transform:translate(-50%,-50%) scale(1); opacity:1; }
+}
 .chance-pct{
     font-size:20px;
     font-weight:900;
@@ -262,7 +262,6 @@ a{text-decoration:none;color:inherit}
     background-clip:text;
     letter-spacing:-.5px;
 }
-
 .wheel-center.flash-green{
     animation:flashGreen .5s ease 4;
     border-color:rgba(30,228,76,.6);
@@ -279,6 +278,10 @@ a{text-decoration:none;color:inherit}
         0 0 0 4px rgba(13,17,23,.8),
         0 0 50px rgba(249,105,153,.5);
 }
+.wheel-center.alternating{
+    animation:centerAlternate 1.5s ease-in-out infinite;
+    border-color:rgba(245,158,11,.5);
+}
 @keyframes flashGreen{
     0%,100%{ transform:translate(-50%,-50%) scale(1); }
     50%{ transform:translate(-50%,-50%) scale(1.1); }
@@ -287,194 +290,68 @@ a{text-decoration:none;color:inherit}
     0%,100%{ transform:translate(-50%,-50%) scale(1); }
     50%{ transform:translate(-50%,-50%) scale(1.08); }
 }
+@keyframes centerAlternate{
+    0%,100%{
+        box-shadow:
+            inset 0 0 20px rgba(59,130,246,.15),
+            0 0 0 4px rgba(13,17,23,.8),
+            0 0 30px rgba(59,130,246,.2);
+    }
+    50%{
+        box-shadow:
+            inset 0 0 30px rgba(59,130,246,.3),
+            0 0 0 4px rgba(13,17,23,.8),
+            0 0 50px rgba(59,130,246,.5);
+    }
+}
+.wheel-result-icon{
+    display:none;
+    width:36px;
+    height:36px;
+}
+.wheel-result-icon.show{display:block}
 
-/* ─── СТРЕЛКА — ярче ─── */
+/* Стрелка */
+.wheel-pointer-wrap{
+    position:absolute;
+    top:50%;
+    left:50%;
+    width:0;
+    height:0;
+    z-index:10;
+    transform-origin:center center;
+}
+.wheel-pointer{
+    position:absolute;
+    left:50%;
+    top:0;
+    transform:translateX(-50%) translateY(-124px);
+    width:22px;
+    height:26px;
+}
 .wheel-pointer img{
-    filter:drop-shadow(0 2px 6px rgba(0,0,0,.8)) drop-shadow(0 0 8px rgba(245,158,11,.4));
-}
-
-/* ─── КАРТОЧКИ подарков ─── */
-.card{
-    background:linear-gradient(160deg, rgba(22,27,34,.95), rgba(15,20,27,.95));
-    border:1.5px solid rgba(255,255,255,.08);
-    border-radius:18px;
-    padding:20px 12px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    min-height:150px;
-    justify-content:center;
-    cursor:pointer;
-    position:relative;
-    overflow:hidden;
-    transition:all .3s cubic-bezier(.4,0,.2,1);
-}
-.card::before{
-    content:'';
-    position:absolute;
-    inset:0;
-    background:radial-gradient(circle at 50% 0%, rgba(59,130,246,.08) 0%, transparent 70%);
-    opacity:0;
-    transition:opacity .3s ease;
-    pointer-events:none;
-}
-.card:hover{
-    transform:translateY(-3px);
-    border-color:rgba(59,130,246,.3);
-    box-shadow:0 8px 24px rgba(0,0,0,.4), 0 0 0 1px rgba(59,130,246,.1);
-}
-.card:hover::before{ opacity:1; }
-.card:active{ transform:scale(.98); }
-
-.card.has-gift{
-    border-style:solid;
-    border-color:rgba(59,130,246,.4);
-    background:linear-gradient(160deg, rgba(59,130,246,.08), rgba(15,20,27,.95));
-    box-shadow:0 0 0 1px rgba(59,130,246,.2), 0 8px 24px rgba(0,0,0,.4);
-}
-.card.has-gift::after{
-    content:'';
-    position:absolute;
-    top:8px;
-    right:8px;
-    width:8px;
-    height:8px;
-    border-radius:50%;
-    background:#10b981;
-    box-shadow:0 0 12px #10b981;
-    animation:dotPulse 2s ease-in-out infinite;
-}
-@keyframes dotPulse{
-    0%,100%{ opacity:1; transform:scale(1); }
-    50%{ opacity:.6; transform:scale(.85); }
-}
-
-/* Слот пустой — анимированная иконка */
-.card-placeholder{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:12px;
-}
-.card-icon{
-    width:52px;
-    height:52px;
-    opacity:.5;
-    transition:all .3s ease;
-}
-.card:hover .card-icon{
-    opacity:.9;
-    transform:scale(1.08) rotate(-5deg);
-    filter:drop-shadow(0 0 12px rgba(59,130,246,.4));
-}
-.card-icon img{
     width:100%;
     height:100%;
-    object-fit:contain;
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.8)) drop-shadow(0 0 8px rgba(245,158,11,.4));
 }
-.card-text{
-    font-size:12px;
-    font-weight:600;
-    color:rgba(255,255,255,.45);
-    text-align:center;
-    line-height:1.4;
-    transition:color .3s ease;
+.wheel-glow{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .3s;
 }
-.card:hover .card-text{ color:rgba(255,255,255,.7); }
-
-/* Подарок в слоте — с анимацией появления */
-.gift-preview{
-    display:none;
-    flex-direction:column;
-    align-items:center;
-    gap:8px;
-    width:100%;
+.wheel-glow.spinning{
+    opacity:1;
+    animation:glowPulse .8s infinite;
 }
-.card.has-gift .gift-preview{
-    display:flex;
-    animation:giftAppear .45s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes giftAppear{
-    0%{ transform:scale(.5) rotate(-10deg); opacity:0; }
-    60%{ transform:scale(1.1) rotate(3deg); }
-    100%{ transform:scale(1) rotate(0); opacity:1; }
+@keyframes glowPulse{
+    0%,100%{ box-shadow:0 0 15px rgba(245,158,11,.15); }
+    50%{ box-shadow:0 0 35px rgba(245,158,11,.35); }
 }
 
-.gift-preview img{
-    width:72px;
-    height:72px;
-    object-fit:contain;
-    filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));
-    animation:giftFloat 3s ease-in-out infinite;
-}
-@keyframes giftFloat{
-    0%,100%{ transform:translateY(0); }
-    50%{ transform:translateY(-4px); }
-}
-
-.gift-preview-name{
-    font-size:12px;
-    font-weight:700;
-    color:#fff;
-    text-align:center;
-    max-width:110px;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-}
-.gift-preview-value{
-    font-size:11px;
-    color:rgba(255,255,255,.55);
-    display:flex;
-    align-items:center;
-    gap:4px;
-    padding:3px 8px;
-    background:rgba(59,130,246,.1);
-    border-radius:8px;
-    font-weight:700;
-    color:#60A5FA;
-}
-.gift-preview-value img{ width:11px; height:11px; animation:none; }
-
-/* ─── КНОПКИ ВЫБОРА ─── */
-.select-btn{
-    height:48px;
-    border-radius:14px;
-    border:1.5px solid rgba(255,255,255,.08);
-    font-family:inherit;
-    font-size:14px;
-    font-weight:700;
-    cursor:pointer;
-    transition:all .25s cubic-bezier(.4,0,.2,1);
-    position:relative;
-    overflow:hidden;
-}
-.select-btn:first-child{
-    background:linear-gradient(135deg, #1e3a5f, #1e40af);
-    color:#fff;
-    border-color:rgba(59,130,246,.3);
-}
-.select-btn:last-child{
-    background:rgba(255,255,255,.06);
-    color:rgba(255,255,255,.65);
-}
-.select-btn:hover{
-    transform:translateY(-2px);
-    box-shadow:0 8px 24px rgba(0,0,0,.3);
-}
-.select-btn:active{
-    transform:scale(.97);
-}
-.select-btn.active{
-    box-shadow:0 0 0 2px #3B82F6, 0 8px 24px rgba(59,130,246,.35);
-    border-color:#3B82F6;
-    color:#fff;
-}
-.select-btn.active:last-child{
-    background:linear-gradient(135deg, #3B82F6, #2563EB);
-}
-
-/* ─── КНОПКА UPGRADE ─── */
+/* ══════════ КНОПКА UPGRADE ══════════ */
 .upgrade-btn{
     width:100%;
     height:56px;
@@ -542,21 +419,208 @@ a{text-decoration:none;color:inherit}
     40%,80%{ transform:translateX(6px); }
 }
 
-/* ─── ИНВЕНТАРЬ — сетка подарков ─── */
+/* ══════════ КАРТОЧКИ ВЫБОРА ══════════ */
+.cards-row{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:4px;
+}
+.card{
+    background:linear-gradient(160deg, rgba(22,27,34,.95), rgba(15,20,27,.95));
+    border:1.5px solid rgba(255,255,255,.08);
+    border-radius:18px;
+    padding:20px 12px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height:150px;
+    justify-content:center;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+    transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+.card::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:radial-gradient(circle at 50% 0%, rgba(59,130,246,.08) 0%, transparent 70%);
+    opacity:0;
+    transition:opacity .3s ease;
+    pointer-events:none;
+}
+.card:hover{
+    transform:translateY(-3px);
+    border-color:rgba(59,130,246,.3);
+    box-shadow:0 8px 24px rgba(0,0,0,.4), 0 0 0 1px rgba(59,130,246,.1);
+}
+.card:hover::before{ opacity:1; }
+.card:active{ transform:scale(.98); }
+.card.has-gift{
+    border-style:solid;
+    border-color:rgba(59,130,246,.4);
+    background:linear-gradient(160deg, rgba(59,130,246,.08), rgba(15,20,27,.95));
+    box-shadow:0 0 0 1px rgba(59,130,246,.2), 0 8px 24px rgba(0,0,0,.4);
+}
+.card.has-gift::after{
+    content:'';
+    position:absolute;
+    top:8px;
+    right:8px;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#10b981;
+    box-shadow:0 0 12px #10b981;
+    animation:dotPulse 2s ease-in-out infinite;
+}
+@keyframes dotPulse{
+    0%,100%{ opacity:1; transform:scale(1); }
+    50%{ opacity:.6; transform:scale(.85); }
+}
+.card-placeholder{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+}
+.card-icon{
+    width:52px;
+    height:52px;
+    opacity:.5;
+    transition:all .3s ease;
+}
+.card:hover .card-icon{
+    opacity:.9;
+    transform:scale(1.08) rotate(-5deg);
+    filter:drop-shadow(0 0 12px rgba(59,130,246,.4));
+}
+.card-icon img{width:100%;height:100%;object-fit:contain}
+.card-text{
+    font-size:12px;
+    font-weight:600;
+    color:rgba(255,255,255,.45);
+    text-align:center;
+    line-height:1.4;
+    transition:color .3s ease;
+}
+.card:hover .card-text{ color:rgba(255,255,255,.7); }
+
+.gift-preview{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    width:100%;
+}
+.card.has-gift .gift-preview{
+    display:flex;
+    animation:giftAppear .45s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes giftAppear{
+    0%{ transform:scale(.5) rotate(-10deg); opacity:0; }
+    60%{ transform:scale(1.1) rotate(3deg); }
+    100%{ transform:scale(1) rotate(0); opacity:1; }
+}
+.gift-preview img{
+    width:72px;
+    height:72px;
+    object-fit:contain;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));
+    animation:giftFloat 3s ease-in-out infinite;
+}
+@keyframes giftFloat{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-4px); }
+}
+.gift-preview-name{
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+    text-align:center;
+    max-width:110px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+.gift-preview-value{
+    font-size:11px;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    padding:3px 8px;
+    background:rgba(59,130,246,.1);
+    border-radius:8px;
+    font-weight:700;
+    color:#60A5FA;
+}
+.gift-preview-value img{
+    width:12px !important;
+    height:12px !important;
+    max-width:12px !important;
+    max-height:12px !important;
+    animation:none !important;
+    object-fit:contain;
+}
+
+/* ══════════ КНОПКИ ВЫБОРА ══════════ */
+.btns-row{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+.select-btn{
+    height:48px;
+    border-radius:14px;
+    border:1.5px solid rgba(255,255,255,.08);
+    font-family:inherit;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    transition:all .25s cubic-bezier(.4,0,.2,1);
+    position:relative;
+    overflow:hidden;
+}
+.select-btn:first-child{
+    background:linear-gradient(135deg, #1e3a5f, #1e40af);
+    color:#fff;
+    border-color:rgba(59,130,246,.3);
+}
+.select-btn:last-child{
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.65);
+}
+.select-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+.select-btn:active{
+    transform:scale(.97);
+}
+.select-btn.active{
+    box-shadow:0 0 0 2px #3B82F6, 0 8px 24px rgba(59,130,246,.35);
+    border-color:#3B82F6;
+    color:#fff;
+}
+.select-btn.active:last-child{
+    background:linear-gradient(135deg, #3B82F6, #2563EB);
+}
+
+/* ══════════ INLINE СЕКЦИИ ══════════ */
 .inline-section{
     width:100%;
     display:none;
     margin-top:12px;
     animation:sectionSlide .35s cubic-bezier(.4,0,.2,1);
 }
-.inline-section.show{
-    display:block;
-}
+.inline-section.show{ display:block; }
 @keyframes sectionSlide{
     0%{ opacity:0; transform:translateY(-10px); }
     100%{ opacity:1; transform:translateY(0); }
 }
-
 .section-title{
     font-size:13px;
     font-weight:700;
@@ -577,16 +641,21 @@ a{text-decoration:none;color:inherit}
     border-radius:2px;
 }
 
-/* Сетка инвентаря — 3 колонки */
+/* ══════════ ИНВЕНТАРЬ — 3 В РЯД ══════════ */
+#inventoryGrid,
 .inline-grid{
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:10px;
-    max-height:420px;
-    overflow-y:auto;
-    padding:2px;
+    display:grid !important;
+    grid-template-columns:repeat(3, 1fr) !important;
+    gap:10px !important;
+    max-height:480px !important;
+    overflow-y:auto !important;
+    padding:4px !important;
+    width:100% !important;
+    box-sizing:border-box !important;
 }
+#inventoryGrid::-webkit-scrollbar,
 .inline-grid::-webkit-scrollbar{ width:4px; }
+#inventoryGrid::-webkit-scrollbar-thumb,
 .inline-grid::-webkit-scrollbar-thumb{ background:rgba(59,130,246,.3); border-radius:2px; }
 
 .inline-item{
@@ -597,10 +666,12 @@ a{text-decoration:none;color:inherit}
     flex-direction:column;
     align-items:center;
     cursor:pointer;
-    padding:12px 8px 10px;
+    padding:10px 6px 8px;
     transition:all .3s cubic-bezier(.4,0,.2,1);
     position:relative;
     overflow:hidden;
+    width:100%;
+    box-sizing:border-box;
 }
 .inline-item::before{
     content:'';
@@ -645,30 +716,30 @@ a{text-decoration:none;color:inherit}
     0%{ transform:scale(0); }
     100%{ transform:scale(1); }
 }
-
 .inline-item img{
-    width:60px;
-    height:60px;
+    width:56px !important;
+    height:56px !important;
+    max-width:56px !important;
+    max-height:56px !important;
     object-fit:contain;
-    margin-bottom:6px;
+    margin-bottom:4px;
     filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));
     transition:transform .3s ease;
 }
 .inline-item:hover img{ transform:scale(1.08); }
-
 .inline-item-name{
     font-size:10px;
     font-weight:700;
     color:rgba(255,255,255,.85);
     text-align:center;
-    max-width:80px;
+    width:100%;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
     line-height:1.2;
 }
 .inline-item-value{
-    font-size:11px;
+    font-size:10px;
     font-weight:800;
     margin-top:5px;
     display:flex;
@@ -680,115 +751,159 @@ a{text-decoration:none;color:inherit}
     color:#60A5FA;
 }
 .inline-item-value img{
-    width:10px;
-    height:10px;
-    margin:0;
+    width:10px !important;
+    height:10px !important;
+    max-width:10px !important;
+    max-height:10px !important;
+    margin:0 !important;
+    animation:none !important;
 }
 .inline-item.selected .inline-item-value{
     background:rgba(59,130,246,.25);
     color:#fff;
 }
 
-/* ─── СПИСОК ЖЕЛАЕМЫХ ─── */
+/* ══════════ ЖЕЛАЕМЫЕ — 3 В РЯД ══════════ */
+#targetsList,
 .target-list-inline{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    max-height:420px;
-    overflow-y:auto;
-    padding:2px;
+    display:grid !important;
+    grid-template-columns:repeat(3, 1fr) !important;
+    gap:10px !important;
+    max-height:480px !important;
+    overflow-y:auto !important;
+    padding:4px !important;
+    width:100% !important;
+    box-sizing:border-box !important;
 }
+#targetsList::-webkit-scrollbar,
 .target-list-inline::-webkit-scrollbar{ width:4px; }
+#targetsList::-webkit-scrollbar-thumb,
 .target-list-inline::-webkit-scrollbar-thumb{ background:rgba(30,228,76,.3); border-radius:2px; }
 
-.target-row{
-    display:flex;
-    align-items:center;
-    gap:12px;
-    padding:12px 14px;
-    border-radius:14px;
-    border:1.5px solid rgba(255,255,255,.06);
-    background:linear-gradient(160deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-    cursor:pointer;
-    transition:all .25s cubic-bezier(.4,0,.2,1);
-    position:relative;
-    overflow:hidden;
+#targetsList .target-row,
+.target-list-inline .target-row{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    padding:10px 6px 8px !important;
+    gap:6px !important;
+    min-height:auto !important;
+    height:auto !important;
+    width:100% !important;
+    box-sizing:border-box !important;
+    border-radius:14px !important;
+    border:1.5px solid rgba(255,255,255,.06) !important;
+    background:linear-gradient(160deg, rgba(255,255,255,.03), rgba(255,255,255,.01)) !important;
+    cursor:pointer !important;
+    transition:all .25s cubic-bezier(.4,0,.2,1) !important;
+    position:relative !important;
+    overflow:hidden !important;
     animation:targetRowIn .35s cubic-bezier(.4,0,.2,1) both;
 }
 @keyframes targetRowIn{
-    0%{ opacity:0; transform:translateX(-10px); }
-    100%{ opacity:1; transform:translateX(0); }
+    0%{ opacity:0; transform:translateY(8px); }
+    100%{ opacity:1; transform:translateY(0); }
 }
-
-.target-row:hover{
-    transform:translateX(4px);
-    background:linear-gradient(160deg, rgba(30,228,76,.08), rgba(30,228,76,.03));
-    border-color:rgba(30,228,76,.3);
-    box-shadow:0 4px 16px rgba(0,0,0,.3);
+#targetsList .target-row:hover{
+    transform:translateY(-3px) !important;
+    border-color:rgba(30,228,76,.4) !important;
+    box-shadow:0 8px 20px rgba(0,0,0,.4) !important;
 }
-.target-row.selected{
-    border-color:#1EE44C;
-    background:linear-gradient(160deg, rgba(30,228,76,.15), rgba(30,228,76,.05));
-    box-shadow:0 0 0 1px #1EE44C, 0 8px 24px rgba(30,228,76,.25);
+#targetsList .target-row.selected{
+    border-color:#1EE44C !important;
+    background:linear-gradient(160deg, rgba(30,228,76,.15), rgba(30,228,76,.05)) !important;
+    box-shadow:0 0 0 2px #1EE44C, 0 8px 20px rgba(30,228,76,.25) !important;
 }
-.target-row.selected::before{
-    content:'';
+#targetsList .target-row.selected::before{ display:none !important; }
+#targetsList .target-row.selected::after{
+    content:'✓';
     position:absolute;
-    left:0;
-    top:0;
-    bottom:0;
-    width:3px;
-    background:linear-gradient(180deg, #1EE44C, #10b981);
-    border-radius:0 3px 3px 0;
-}
-
-.target-row img{
-    width:44px;
-    height:44px;
-    object-fit:contain;
-    filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));
-    flex-shrink:0;
-    transition:transform .3s ease;
-}
-.target-row:hover img{ transform:scale(1.1) rotate(-5deg); }
-
-.target-row-info{
-    flex:1;
-    min-width:0;
-}
-.target-row-name{
-    font-size:13px;
-    font-weight:700;
+    top:6px;
+    right:6px;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:linear-gradient(135deg, #1EE44C, #10b981);
     color:#fff;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-}
-.target-row-price{
-    font-size:11px;
-    color:rgba(255,255,255,.5);
+    font-size:12px;
+    font-weight:800;
     display:flex;
     align-items:center;
-    gap:4px;
-    margin-top:3px;
-    font-weight:600;
+    justify-content:center;
+    box-shadow:0 2px 8px rgba(30,228,76,.5);
+    animation:checkPop .3s cubic-bezier(.34,1.56,.64,1);
+    z-index:2;
 }
-.target-row-price img{ width:10px; height:10px; filter:none; }
-
-.target-row-chance{
-    font-size:14px;
-    font-weight:900;
-    color:#1EE44C;
-    padding:6px 12px;
-    border-radius:10px;
-    background:rgba(30,228,76,.1);
-    border:1px solid rgba(30,228,76,.2);
-    flex-shrink:0;
-    letter-spacing:-.3px;
+#targetsList .target-row img{
+    width:56px !important;
+    height:56px !important;
+    max-width:56px !important;
+    max-height:56px !important;
+    object-fit:contain !important;
+    margin-bottom:2px !important;
+    filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));
+    order:1;
+}
+#targetsList .target-row-info{
+    width:100% !important;
+    text-align:center !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    gap:4px !important;
+    order:2;
+}
+#targetsList .target-row-name{
+    font-size:10px !important;
+    font-weight:700;
+    color:rgba(255,255,255,.85);
+    width:100% !important;
+    text-align:center !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    line-height:1.2 !important;
+    order:1;
+}
+#targetsList .target-row-price{
+    font-size:10px !important;
+    justify-content:center !important;
+    margin-top:0 !important;
+    color:#60A5FA !important;
+    background:rgba(59,130,246,.12) !important;
+    padding:2px 6px !important;
+    border-radius:6px !important;
+    font-weight:800 !important;
+    display:flex !important;
+    align-items:center !important;
+    gap:3px !important;
+    order:2;
+}
+#targetsList .target-row-price img{
+    width:10px !important;
+    height:10px !important;
+    max-width:10px !important;
+    max-height:10px !important;
+    margin:0 !important;
+    filter:none !important;
+    order:0;
+}
+#targetsList .target-row-chance{
+    font-size:11px !important;
+    padding:3px 8px !important;
+    border-radius:8px !important;
+    background:rgba(30,228,76,.15) !important;
+    border:1px solid rgba(30,228,76,.3) !important;
+    color:#1EE44C !important;
+    font-weight:900 !important;
+    margin-top:2px !important;
+    letter-spacing:-.3px !important;
+    order:3;
 }
 
-/* ─── Пусто ─── */
+/* ══════════ ПУСТО ══════════ */
 .empty-msg{
+    grid-column:1/-1;
     text-align:center;
     padding:40px 20px;
     color:rgba(255,255,255,.35);
@@ -803,41 +918,173 @@ a{text-decoration:none;color:inherit}
     opacity:.5;
 }
 
-/* ─── ЗАГОЛОВОК СТРАНИЦЫ ─── */
-.page-title{
-    font-size:24px;
-    font-weight:900;
-    padding:12px 0;
-    background:linear-gradient(135deg, #fff, #93c5fd);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
-    letter-spacing:-.5px;
-    text-align:center;
+/* ══════════ DEPOSIT ══════════ */
+.deposit-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.85);
+    z-index:5650;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    visibility:hidden;
+    backdrop-filter:blur(8px);
+    transition:opacity .3s,visibility .3s;
+}
+.deposit-overlay.show{ opacity:1; visibility:visible; }
+.deposit-modal{
+    background:linear-gradient(180deg,#1E2538,#151B2D);
+    border-radius:24px;
+    width:90%;
+    max-width:360px;
+    padding:24px 20px;
+    transform:scale(.9);
+    transition:transform .3s;
+    margin-bottom:calc(var(--safe-bottom) + 20px);
+}
+.deposit-overlay.show .deposit-modal{ transform:scale(1); }
+.deposit-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.deposit-title{ font-weight:800; font-size:18px; }
+.deposit-close{
+    width:32px;
+    height:32px;
+    border-radius:10px;
+    border:none;
+    background:rgba(249,105,153,.1);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+.deposit-close svg{ width:14px; height:14px; stroke:var(--red); fill:none; stroke-width:2; }
+.deposit-methods{ display:flex; gap:10px; }
+.deposit-method-btn{
+    flex:1;
+    padding:16px 10px;
+    border-radius:16px;
+    border:1px solid rgba(255,255,255,.05);
+    background:rgba(255,255,255,.03);
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+}
+.deposit-method-btn img{ width:36px; height:36px; }
+.deposit-method-btn span{ font-weight:700; font-size:13px; color:#fff; }
+
+.confetti-canvas{
+    position:fixed;
+    inset:0;
+    z-index:6001;
+    pointer-events:none;
 }
 
-/* ─── АДАПТИВ ─── */
+/* ══════════ BOTTOM NAV ══════════ */
+.bottom-nav{
+    position:fixed;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:100;
+    width:100%;
+    max-width:480px;
+    height:72px;
+    padding:0 8px calc(var(--safe-bottom) + 8px);
+    background:rgba(13,17,23,.95);
+    backdrop-filter:blur(20px);
+    border-top:1px solid rgba(255,255,255,.05);
+    display:flex;
+    align-items:center;
+    justify-content:space-around;
+}
+.bnav-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    padding:8px 16px;
+    border-radius:12px;
+    color:rgba(255,255,255,.4);
+    font-weight:600;
+    text-decoration:none;
+}
+.bnav-item svg{ width:24px; height:24px; stroke:currentColor; fill:none; }
+.bnav-item span{ font-size:10px; }
+.bnav-item.active{ background:rgba(255,255,255,.08); color:#fff; }
+
+/* ══════════ TON иконка — жёсткие размеры ══════════ */
+img[src*="ton.png"],
+img[src*="/ton.png"],
+img[src*="ton_"]{
+    width:14px !important;
+    height:14px !important;
+    max-width:14px !important;
+    max-height:14px !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    object-fit:contain !important;
+    display:inline-block !important;
+    vertical-align:middle !important;
+    flex-shrink:0 !important;
+}
+.bal-pill img[src*="ton.png"]{
+    width:16px !important;
+    height:16px !important;
+    max-width:16px !important;
+    max-height:16px !important;
+}
+
+/* ══════════ АДАПТИВ ══════════ */
 @media(max-width:400px){
     .wheel-container{ width:200px; height:200px; }
+    .wheel-pointer{ transform:translateX(-50%) translateY(-110px); }
     .wheel-center{ width:72px; height:72px; }
     .wheel-center img{ width:44px; height:44px; }
-    .inline-item img{ width:52px; height:52px; }
+    .inline-item img,
+    #targetsList .target-row img{ width:52px !important; height:52px !important; }
     .gift-preview img{ width:64px; height:64px; }
     .upgrade-btn{ height:52px; font-size:15px; }
+    .page-title{ font-size:20px; }
+}
+@media(max-width:340px){
+    #inventoryGrid,
+    .inline-grid,
+    #targetsList,
+    .target-list-inline{
+        grid-template-columns:repeat(2, 1fr) !important;
+    }
+}
+@media(max-height:700px){
+    .top-bar{ padding-top:calc(var(--safe-top) + 50px); }
+    .upgrade-wrap{ padding-top:2px; gap:8px; }
+    .page-title{ font-size:20px; padding:4px 0 2px; }
+    .wheel-section{ padding:4px 0 2px; }
 }
 
-/* Отключаем анимации в оптимизации */
+/* Оптимизация */
 .optimize-mode .wheel-container::before,
 .optimize-mode .wheel-container::after,
 .optimize-mode .gift-preview img,
-.optimize-mode .target-row img{
+.optimize-mode .wheel-center.alternating{
     animation:none !important;
 }
-
+.turbo-mode *,
+body.turbo-mode *{
+    animation:none !important;
+    transition:none !important;
+    box-shadow:none !important;
+    filter:none !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    text-shadow:none !important;
+}
 </style>
 </head>
 <body>
 
+<!-- TOP BAR -->
 <div class="top-bar">
     <div class="top-left">
         <div class="user-pill">
@@ -846,7 +1093,10 @@ a{text-decoration:none;color:inherit}
         </div>
     </div>
     <div class="top-right-btns">
-        <div class="bal-pill"><img src="/static/img/ton.png" alt=""><span id="balVal">0.00</span></div>
+        <div class="bal-pill">
+            <img src="/static/img/ton.png" alt="">
+            <span id="balVal">0.00</span>
+        </div>
         <button class="bal-plus" onclick="openDeposit()">+</button>
     </div>
 </div>
@@ -854,7 +1104,7 @@ a{text-decoration:none;color:inherit}
 <div class="upgrade-wrap">
     <div class="page-title">Апгрейд</div>
 
-    <!-- WHEEL -->
+    <!-- КОЛЕСО -->
     <div class="wheel-section">
         <div class="wheel-container">
             <div class="wheel-glow" id="wheelGlow"></div>
@@ -874,20 +1124,30 @@ a{text-decoration:none;color:inherit}
                 </div>
             </div>
             <div class="wheel-center" id="wheelCenter">
-                <img id="wheelCenterImg" src="" alt="">
+                <img id="wheelCenterImg" src="" alt="" class="hidden">
                 <span class="chance-pct" id="chancePct">0.00%</span>
-                <svg class="wheel-result-icon" id="resultSad" viewBox="0 0 60 60"><circle cx="30" cy="30" r="28" fill="none" stroke="#F96999" stroke-width="2"/><circle cx="20" cy="24" r="2.5" fill="#F96999"/><circle cx="40" cy="24" r="2.5" fill="#F96999"/><path d="M20 42c4-6 16-6 20 0" fill="none" stroke="#F96999" stroke-width="2" stroke-linecap="round"/></svg>
-                <svg class="wheel-result-icon" id="resultHappy" viewBox="0 0 60 60"><circle cx="30" cy="30" r="28" fill="none" stroke="#1EE44C" stroke-width="2"/><circle cx="20" cy="24" r="2.5" fill="#1EE44C"/><circle cx="40" cy="24" r="2.5" fill="#1EE44C"/><path d="M20 38c4 6 16 6 20 0" fill="none" stroke="#1EE44C" stroke-width="2" stroke-linecap="round"/></svg>
+                <svg class="wheel-result-icon" id="resultSad" viewBox="0 0 60 60">
+                    <circle cx="30" cy="30" r="28" fill="none" stroke="#F96999" stroke-width="2"/>
+                    <circle cx="20" cy="24" r="2.5" fill="#F96999"/>
+                    <circle cx="40" cy="24" r="2.5" fill="#F96999"/>
+                    <path d="M20 42c4-6 16-6 20 0" fill="none" stroke="#F96999" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <svg class="wheel-result-icon" id="resultHappy" viewBox="0 0 60 60">
+                    <circle cx="30" cy="30" r="28" fill="none" stroke="#1EE44C" stroke-width="2"/>
+                    <circle cx="20" cy="24" r="2.5" fill="#1EE44C"/>
+                    <circle cx="40" cy="24" r="2.5" fill="#1EE44C"/>
+                    <path d="M20 38c4 6 16 6 20 0" fill="none" stroke="#1EE44C" stroke-width="2" stroke-linecap="round"/>
+                </svg>
             </div>
         </div>
     </div>
 
-    <!-- UPGRADE BUTTON -->
+    <!-- КНОПКА UPGRADE -->
     <button class="upgrade-btn" id="upgradeBtn" disabled onclick="doUpgrade()">
         <span id="upgradeBtnText">Апгрейд</span>
     </button>
 
-    <!-- CARDS -->
+    <!-- КАРТОЧКИ -->
     <div class="cards-row">
         <div class="card" id="leftCard" onclick="toggleInventory()">
             <div class="card-placeholder">
@@ -913,19 +1173,19 @@ a{text-decoration:none;color:inherit}
         </div>
     </div>
 
-    <!-- BUTTONS -->
+    <!-- КНОПКИ ВЫБОРА -->
     <div class="btns-row">
         <button class="select-btn" id="btnInventory" onclick="toggleInventory()">Инвентарь</button>
         <button class="select-btn" id="btnTargets" onclick="toggleTargets()">Желаемый</button>
     </div>
 
-    <!-- INLINE INVENTORY SECTION -->
+    <!-- ИНВЕНТАРЬ -->
     <div class="inline-section" id="inventorySection">
         <div class="section-title">Ваш инвентарь</div>
         <div class="inline-grid" id="inventoryGrid"></div>
     </div>
 
-    <!-- INLINE TARGETS SECTION -->
+    <!-- ЖЕЛАЕМЫЕ -->
     <div class="inline-section" id="targetsSection">
         <div class="section-title">Желаемые подарки</div>
         <div class="target-list-inline" id="targetsList"></div>
@@ -937,17 +1197,24 @@ a{text-decoration:none;color:inherit}
     <div class="deposit-modal">
         <div class="deposit-header">
             <div class="deposit-title">Пополнение</div>
-            <button class="deposit-close" onclick="closeDeposit()"><svg viewBox="0 0 14 14"><line x1="3" y1="3" x2="11" y2="11"/><line x1="11" y1="3" x2="3" y2="11"/></svg></button>
+            <button class="deposit-close" onclick="closeDeposit()">
+                <svg viewBox="0 0 14 14"><line x1="3" y1="3" x2="11" y2="11"/><line x1="11" y1="3" x2="3" y2="11"/></svg>
+            </button>
         </div>
         <div class="deposit-methods">
-            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'"><img src="/static/img/ton.png" alt="TON"><span>TON</span></button>
-            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'"><img src="/static/img/star.png" alt="Stars"><span>Stars</span></button>
+            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
+                <img src="/static/img/ton.png" alt="TON"><span>TON</span>
+            </button>
+            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
+                <img src="/static/img/star.png" alt="Stars"><span>Stars</span>
+            </button>
         </div>
     </div>
 </div>
 
 <canvas class="confetti-canvas" id="confettiCanvas"></canvas>
 
+<!-- BOTTOM NAV -->
 <nav class="bottom-nav">
     <a class="bnav-item" href="/games">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
@@ -968,495 +1235,220 @@ a{text-decoration:none;color:inherit}
 </nav>
 
 <script>
-var tg=window.Telegram&&window.Telegram.WebApp;
-var userId=null;
+/* ══════════════════════════════════════════════════════════════
+   GLOBAL STATE
+   ══════════════════════════════════════════════════════════════ */
+var tg = window.Telegram && window.Telegram.WebApp;
+var userId = null;
+var userInventory = [];
+var selectedGift = null;
+var targetGift = null;
+var possibleTargets = [];
+var isSpinning = false;
+var currentChance = 0;
+var activeSection = null;
 
-// Use Telegram native popup instead of browser alert (hides URL)
-function showTgAlert(msg,cb){if(tg&&tg.showAlert){tg.showAlert(msg,cb);}else{alert(msg);if(cb)cb();}}
+function $(id){ return document.getElementById(id); }
 
-var userInventory=[];
-var selectedGift=null;
-var targetGift=null;
-var possibleTargets=[];
-var isSpinning=false;
-var currentChance=0;
-var activeSection=null; // 'inventory' or 'targets'
+function showTgAlert(msg, cb){
+    if(tg && tg.showAlert){ tg.showAlert(msg, cb); }
+    else { alert(msg); if(cb) cb(); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   КОЛЕСО — отрисовка зелёной зоны
+   ══════════════════════════════════════════════════════════════ */
+function polarToCartesian(cx, cy, r, angle){
+    var rad = (angle - 90) * Math.PI / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
 
 function drawGreenArc(chance){
-    var path=document.getElementById('greenPath');
-    if(!chance||chance<=0){path.setAttribute('d','');return;}
-    var cx=110,cy=110,r=106;
-    var startAngle=0;
-    var endAngle=startAngle+(chance/100)*360;
-    var start=polarToCartesian(cx,cy,r,startAngle);
-    var end=polarToCartesian(cx,cy,r,endAngle);
-    var largeArc=endAngle-startAngle>180?1:0;
-    var d='M '+start.x+' '+start.y+' A '+r+' '+r+' 0 '+largeArc+' 1 '+end.x+' '+end.y;
-    path.setAttribute('d',d);
+    var path = $('greenPath');
+    if(!path) return;
+    if(!chance || chance <= 0){ path.setAttribute('d', ''); return; }
+    var cx = 110, cy = 110, r = 106;
+    var startAngle = 0;
+    var endAngle = startAngle + (chance / 100) * 360;
+    var start = polarToCartesian(cx, cy, r, startAngle);
+    var end = polarToCartesian(cx, cy, r, endAngle);
+    var largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
+    var d = 'M ' + start.x + ' ' + start.y + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + end.x + ' ' + end.y;
+    path.setAttribute('d', d);
 }
 
-function polarToCartesian(cx,cy,r,angle){
-    var rad=(angle-90)*Math.PI/180;
-    return{x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)};
-}
-// Зелёная зона начинается сверху (angle=0 → верх), стрелка rotate(0deg) тоже указывает вверх
+/* ══════════════════════════════════════════════════════════════
+   ЧЕРЕДОВАНИЕ PNG ↔ ПРОЦЕНТ В ЦЕНТРЕ
+   ══════════════════════════════════════════════════════════════ */
+var _centerInterval = null;
 
+function _startCenterAlternate(gift){
+    _stopCenterAlternate();
+    var center = $('wheelCenter');
+    var img = $('wheelCenterImg');
+    var pct = $('chancePct');
+    if(!center || !img || !pct) return;
+
+    if(gift && gift.image){
+        img.src = gift.image;
+        img.onerror = function(){
+            this.onerror = null;
+            this.src = '/static/img/gift.png';
+        };
+    } else {
+        img.src = '/static/img/gift.png';
+    }
+
+    img.classList.add('visible');
+    img.classList.remove('hidden');
+    pct.classList.add('hidden');
+    pct.classList.remove('visible');
+    center.classList.add('alternating');
+
+    var showingImg = true;
+    _centerInterval = setInterval(function(){
+        if(showingImg){
+            img.classList.remove('visible');
+            img.classList.add('hidden');
+            pct.classList.remove('hidden');
+            void pct.offsetWidth;
+            pct.classList.add('visible');
+        } else {
+            pct.classList.remove('visible');
+            pct.classList.add('hidden');
+            img.classList.remove('hidden');
+            void img.offsetWidth;
+            img.classList.add('visible');
+        }
+        showingImg = !showingImg;
+    }, 700);
+}
+
+function _stopCenterAlternate(){
+    if(_centerInterval){
+        clearInterval(_centerInterval);
+        _centerInterval = null;
+    }
+    var center = $('wheelCenter');
+    if(center) center.classList.remove('alternating');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TOP BAR / USER
+   ══════════════════════════════════════════════════════════════ */
 async function loadTopBar(){
-    if(!userId)return;
+    if(!userId) return;
     try{
-        var r=await fetch('/api/user/'+userId);var d=await r.json();
-        if(d.success&&d.user){
-            var u=d.user;
-            document.getElementById('topNick').textContent=u.first_name||u.username||'User';
-            if(u.photo_url)document.getElementById('topAvatar').src=u.photo_url;
-            document.getElementById('balVal').textContent=((u.balance_stars||0)/100).toFixed(2);
+        var r = await fetch('/api/user/' + userId);
+        var d = await r.json();
+        if(d.success && d.user){
+            var u = d.user;
+            $('topNick').textContent = u.first_name || u.username || 'User';
+            if(u.photo_url) $('topAvatar').src = u.photo_url;
+            $('balVal').textContent = ((u.balance_stars || 0) / 100).toFixed(2);
         }
     }catch(e){}
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ИНВЕНТАРЬ
+   ══════════════════════════════════════════════════════════════ */
 async function loadInventory(){
-    if(!userId)return;
+    if(!userId) return;
     try{
-        var r=await fetch('/api/inventory/'+userId);var d=await r.json();
+        var r = await fetch('/api/inventory/' + userId);
+        var d = await r.json();
         if(d.success){
-            userInventory=d.inventory.filter(function(it){return !it.is_withdrawing&&!it.challenge_locked});
+            userInventory = (d.inventory || []).filter(function(it){
+                return !it.is_withdrawing && !it.challenge_locked;
+            });
             renderInventoryGrid();
         }
     }catch(e){}
 }
 
 function renderInventoryGrid(){
-    var grid=document.getElementById('inventoryGrid');
-    grid.innerHTML='';
-    if(userInventory.length===0){
-        grid.innerHTML='<div class="empty-msg" style="grid-column:1/-1">Ничего нет</div>';
+    var grid = $('inventoryGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    if(userInventory.length === 0){
+        grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Ничего нет</div>';
         return;
     }
     userInventory.forEach(function(it){
-        var isSelected=selectedGift&&selectedGift.id===it.id;
-        var div=document.createElement('div');
-        div.className='inline-item'+(isSelected?' selected':'');
-        div.innerHTML='<img src="'+it.gift_image+'" alt=""><div class="inline-item-name">'+it.gift_name+'</div><div class="inline-item-value"><img src="/static/img/ton.png">'+((it.gift_value||0)/100).toFixed(2)+'</div>';
-        div.onclick=function(){selectGift(it);};
+        var isSelected = selectedGift && selectedGift.id === it.id;
+        var div = document.createElement('div');
+        div.className = 'inline-item' + (isSelected ? ' selected' : '');
+        var imgSrc = it.gift_image || '/static/img/gift.png';
+        div.innerHTML =
+            '<img src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">'
+            + '<div class="inline-item-name">' + (it.gift_name || 'Gift') + '</div>'
+            + '<div class="inline-item-value"><img src="/static/img/ton.png">' + ((it.gift_value || 0) / 100).toFixed(2) + '</div>';
+        div.onclick = function(){ selectGift(it); };
         grid.appendChild(div);
     });
 }
 
-function toggleInventory(){
-    if(isSpinning)return;
-    var invSec=document.getElementById('inventorySection');
-    var tarSec=document.getElementById('targetsSection');
-    var btnInv=document.getElementById('btnInventory');
-    var btnTar=document.getElementById('btnTargets');
-    
-    if(activeSection==='inventory'){
-        invSec.classList.remove('show');
-        btnInv.classList.remove('active');
-        activeSection=null;
-    }else{
-        invSec.classList.add('show');
-        tarSec.classList.remove('show');
-        btnInv.classList.add('active');
-        btnTar.classList.remove('active');
-        activeSection='inventory';
-        renderInventoryGrid();
-    }
-}
-
-function toggleTargets(){
-    if(isSpinning)return;
-    if(!selectedGift){
-        showTgAlert('Сначала выбери подарок для апгрейда');
-        return;
-    }
-    var invSec=document.getElementById('inventorySection');
-    var tarSec=document.getElementById('targetsSection');
-    var btnInv=document.getElementById('btnInventory');
-    var btnTar=document.getElementById('btnTargets');
-    
-    if(activeSection==='targets'){
-        tarSec.classList.remove('show');
-        btnTar.classList.remove('active');
-        activeSection=null;
-    }else{
-        tarSec.classList.add('show');
-        invSec.classList.remove('show');
-        btnTar.classList.add('active');
-        btnInv.classList.remove('active');
-        activeSection='targets';
-        loadPossibleTargets();
-    }
-}
-
 function selectGift(g){
-    selectedGift={id:g.id,name:g.gift_name,image:g.gift_image,value:g.gift_value,gift_id:g.gift_id};
-    document.getElementById('leftCard').classList.add('has-gift');
-    document.getElementById('leftGiftImg').src=g.gift_image;
-    document.getElementById('leftGiftName').textContent=g.gift_name;
-    document.getElementById('leftGiftValue').textContent=((g.gift_value||0)/100).toFixed(2);
-    if(targetGift)resetTarget();
+    selectedGift = {
+        id: g.id,
+        name: g.gift_name,
+        image: g.gift_image,
+        value: g.gift_value,
+        gift_id: g.gift_id
+    };
+    $('leftCard').classList.add('has-gift');
+    $('leftGiftImg').src = g.gift_image;
+    $('leftGiftName').textContent = g.gift_name;
+    $('leftGiftValue').textContent = ((g.gift_value || 0) / 100).toFixed(2);
+
+    if(targetGift) resetTarget();
     renderInventoryGrid();
     updateWheel();
 
-    /* ★ Автоматически открываем вкладку "Желаемый" через 400мс */
-    document.getElementById('inventorySection').classList.remove('show');
-    document.getElementById('btnInventory').classList.remove('active');
+    /* Скрываем инвентарь */
+    $('inventorySection').classList.remove('show');
+    $('btnInventory').classList.remove('active');
 
-    /* Плавный скролл к карточкам */
+    /* Автопереход к желаемым */
     setTimeout(function(){
         try{
-            var leftCard = document.getElementById('leftCard');
-            if(leftCard && leftCard.scrollIntoView){
-                leftCard.scrollIntoView({behavior:'smooth', block:'center'});
-            }
+            $('leftCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
         }catch(e){}
     }, 100);
 
-    /* Открываем список желаемых */
     setTimeout(function(){
-        try{
-            var tarSec = document.getElementById('targetsSection');
-            var btnTar = document.getElementById('btnTargets');
-            if(tarSec && btnTar){
-                tarSec.classList.add('show');
-                btnTar.classList.add('active');
-                if(typeof activeSection !== 'undefined') activeSection = 'targets';
-                /* Загружаем возможные цели */
-                if(typeof loadPossibleTargets === 'function'){
-                    loadPossibleTargets();
-                }
-            }
-        }catch(e){ console.error('auto-open targets error', e); }
+        var tarSec = $('targetsSection');
+        var btnTar = $('btnTargets');
+        if(tarSec && btnTar){
+            tarSec.classList.add('show');
+            btnTar.classList.add('active');
+            activeSection = 'targets';
+            loadPossibleTargets();
+        }
     }, 400);
 }
 
 function resetTarget(){
-    targetGift=null;
-    currentChance=0;
-    document.getElementById('rightCard').classList.remove('has-gift');
-    document.getElementById('wheelCenterImg').style.display='none';
-    document.getElementById('chancePct').style.display='block';
+    targetGift = null;
+    currentChance = 0;
+    $('rightCard').classList.remove('has-gift');
+    $('wheelCenterImg').classList.remove('visible');
+    $('wheelCenterImg').classList.add('hidden');
+    $('chancePct').classList.remove('hidden');
+    $('chancePct').classList.add('visible');
     drawGreenArc(0);
 }
 
-async function loadPossibleTargets(){
-    var list=document.getElementById('targetsList');
-    list.innerHTML='<div class="empty-msg">Загрузка...</div>';
-    try{
-        var r=await fetch('/api/upgrade-possible-gifts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,current_gift_id:selectedGift.id})});
-        var d=await r.json();
-        if(!d.success){list.innerHTML='<div class="empty-msg" style="color:var(--red)">'+d.error+'</div>';return;}
-        possibleTargets=[];
-        d.possible_gifts.forEach(function(g){
-            // Показываем подарки от 1x до 10x цены (шанс от 100% до 10%)
-            if(g.value>selectedGift.value && g.value<=selectedGift.value*10){
-                var chance=Math.max(10,Math.min((selectedGift.value/g.value)*100,100));
-                g.upgrade_chance=Math.round(chance*10)/10;
-                possibleTargets.push(g);
-            }
-        });
-        possibleTargets.sort(function(a,b){return a.value-b.value});
-        renderTargetsList();
-    }catch(e){list.innerHTML='<div class="empty-msg" style="color:var(--red)">Ошибка загрузки</div>';}
-}
-
-function renderTargetsList(){
-    var list=document.getElementById('targetsList');
-    list.innerHTML='';
-    if(possibleTargets.length===0){
-        list.innerHTML='<div class="empty-msg">Ничего нет</div>';
-        return;
-    }
-    possibleTargets.forEach(function(g){
-        var isSelected=targetGift&&(targetGift.id===g.id||targetGift.fragment_slug===g.fragment_slug);
-        var div=document.createElement('div');
-        div.className='target-row'+(isSelected?' selected':'');
-        div.innerHTML='<img src="'+g.image+'" alt=""><div class="target-row-info"><div class="target-row-name">'+g.name+'</div><div class="target-row-price"><img src="/static/img/ton.png">'+((g.value||0)/100).toFixed(2)+' TON</div></div><div class="target-row-chance">'+g.upgrade_chance+'%</div>';
-        div.onclick=function(){selectTarget(g);};
-        list.appendChild(div);
-    });
-}
-
-function selectTarget(g){
-    targetGift=g;
-    currentChance=g.upgrade_chance;
-    document.getElementById('rightCard').classList.add('has-gift');
-    document.getElementById('rightGiftImg').src=g.image;
-    document.getElementById('rightGiftName').textContent=g.name;
-    document.getElementById('rightGiftValue').textContent=((g.value||0)/100).toFixed(2);
-    document.getElementById('wheelCenterImg').src=g.image;
-    document.getElementById('wheelCenterImg').style.display='block';
-    document.getElementById('chancePct').style.display='none';
-    drawGreenArc(currentChance);
-    renderTargetsList();
-    updateWheel();
-    
-    // Auto close targets
-    document.getElementById('targetsSection').classList.remove('show');
-    document.getElementById('btnTargets').classList.remove('active');
-    activeSection=null;
-}
-
-function updateWheel(){
-    var btn=document.getElementById('upgradeBtn');
-    var chancePct=document.getElementById('chancePct');
-
-    if(!targetGift||!selectedGift){
-        chancePct.textContent='0.00%';
-        btn.disabled=true;
-        drawGreenArc(0);
-        return;
-    }
-
-    // Шанс от 10% до 100% (можно ставить на подарок до 10x дороже)
-    var chance=Math.max(10,Math.min((selectedGift.value/targetGift.value)*100,100));
-    chance=Math.round(chance*10)/10;
-    currentChance=chance;
-    drawGreenArc(chance);
-
-    if(selectedGift.value<targetGift.value && targetGift.value<=selectedGift.value*10){
-        btn.disabled=false;
-    }else{
-        btn.disabled=true;
-    }
-    btn.classList.remove('win','fail');
-    document.getElementById('upgradeBtnText').textContent='Апгрейд';
-}
-
-async function doUpgrade(){
-    if(isSpinning||!targetGift||!selectedGift)return;
-    isSpinning=true;
-
-    /* ★ Добавляем класс spinning на колесо */
-    var wheelCont = document.querySelector('.wheel-container');
-    if(wheelCont){
-        wheelCont.classList.remove('win','fail');
-        wheelCont.classList.add('spinning');
-    }
-
-    /* ★ Анимация нажатия кнопки */
-    animateUpgradeClick();
-    
-    // Hide sections
-    document.getElementById('inventorySection').classList.remove('show');
-    document.getElementById('targetsSection').classList.remove('show');
-    document.getElementById('btnInventory').classList.remove('active');
-    document.getElementById('btnTargets').classList.remove('active');
-    activeSection=null;
-    
-    var btn=document.getElementById('upgradeBtn');
-    btn.disabled=true;
-    document.getElementById('upgradeBtnText').textContent='Крутим...';
-    document.getElementById('resultSad').classList.remove('show');
-    document.getElementById('resultHappy').classList.remove('show');
-    document.getElementById('wheelGlow').classList.add('spinning');
-
-    document.getElementById('wheelCenterImg').style.display='none';
-    document.getElementById('chancePct').style.display='block';
-    document.getElementById('chancePct').textContent=currentChance.toFixed(2)+'%';
-
-    var pointerWrap=document.getElementById('pointerWrap');
-    pointerWrap.style.transition='none';
-    pointerWrap.style.transform='rotate(0deg)';
-
-    try{
-        var r=await fetch('/api/upgrade-multi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:userId,inventory_ids:[selectedGift.id],target_gift_id:targetGift.fragment_slug||targetGift.id})});
-        var d=await r.json();
-
-        if(!d.success){
-            document.getElementById('wheelGlow').classList.remove('spinning');
-            alert(d.error||'Ошибка');resetAfterSpin();return;
-        }
-
-        var chance=d.chance;
-        var greenAngle=(chance/100)*360;
-        var landAngle;
-        
-        // Финальный угол - близко к границе зоны для напряжения
-        if(d.upgrade_success){
-            // Успех - приземляемся в зелёной зоне, но близко к границе
-            landAngle=Math.random()*greenAngle*0.6+greenAngle*0.2;
-        }else{
-            // Неудача - приземляемся в красной зоне, но близко к границе
-            var redSize=360-greenAngle;
-            landAngle=greenAngle+Math.random()*redSize*0.3+redSize*0.05;
-        }
-        
-        // Много оборотов для непредсказуемости (8-12 полных оборотов)
-        var totalSpin=360*(8+Math.floor(Math.random()*5))+landAngle;
-        
-        // Долгая анимация 5-7 секунд
-        var spinDuration=5000+Math.random()*2000;
-        
-        void pointerWrap.offsetWidth;
-        
-        // Анимация с несколькими фазами замедления
-        pointerWrap.style.transition='transform '+spinDuration+'ms cubic-bezier(0.1, 0.4, 0.2, 1)';
-        pointerWrap.style.transform='rotate('+totalSpin+'deg)';
-
-        setTimeout(function(){
-            document.getElementById('wheelGlow').classList.remove('spinning');
-            showResult(d);
-        }, spinDuration);
-        
-    }catch(e){
-        document.getElementById('wheelGlow').classList.remove('spinning');
-        pointerWrap.style.transform='rotate(0deg)';
-        showTgAlert('Ошибка сети');resetAfterSpin();
-    }
-}
-
-function showResult(d){
-    var center=document.getElementById('wheelCenter');
-    var btn=document.getElementById('upgradeBtn');
-    var wheelCont = document.querySelector('.wheel-container');
-    if(wheelCont) wheelCont.classList.remove('spinning');
-
-    document.getElementById('chancePct').style.display='none';
-    if(d.upgrade_success){
-        center.classList.add('flash-green');
-        document.getElementById('resultHappy').classList.add('show');
-        btn.classList.add('win');
-        document.getElementById('upgradeBtnText').textContent='Победа!';
-        if(wheelCont) wheelCont.classList.add('win');
-        launchConfetti();
-    }else{
-        center.classList.add('flash-red');
-        document.getElementById('resultSad').classList.add('show');
-        btn.classList.add('fail');
-        document.getElementById('upgradeBtnText').textContent='Неудача';
-        if(wheelCont) wheelCont.classList.add('fail');
-    }
-    setTimeout(function(){
-        center.classList.remove('flash-red','flash-green');
-        resetAfterSpin();loadInventory();loadTopBar();
-    },3500);
-}
-
-function resetAfterSpin(){
-    isSpinning=false;
-    selectedGift=null;
-    targetGift=null;
-    currentChance=0;
-    document.getElementById('leftCard').classList.remove('has-gift');
-    document.getElementById('rightCard').classList.remove('has-gift');
-    document.getElementById('wheelCenterImg').style.display='none';
-    document.getElementById('chancePct').style.display='block';
-    document.getElementById('chancePct').textContent='0.00%';
-    document.getElementById('resultSad').classList.remove('show');
-    document.getElementById('resultHappy').classList.remove('show');
-    var pointerWrap=document.getElementById('pointerWrap');
-    pointerWrap.style.transition='none';
-    pointerWrap.style.transform='rotate(0deg)';
-
-    /* ★ Убираем классы win/fail с колеса */
-    var wheelCont = document.querySelector('.wheel-container');
-    if(wheelCont){
-        wheelCont.classList.remove('win','fail','spinning');
-    }
-
-    drawGreenArc(0);
-    updateWheel();
-
-    /* ★ Открываем инвентарь заново после сброса */
-    setTimeout(function(){
-        try{
-            var invSec = document.getElementById('inventorySection');
-            var tarSec = document.getElementById('targetsSection');
-            var btnInv = document.getElementById('btnInventory');
-            var btnTar = document.getElementById('btnTargets');
-            if(invSec) invSec.classList.add('show');
-            if(tarSec) tarSec.classList.remove('show');
-            if(btnInv) btnInv.classList.add('active');
-            if(btnTar) btnTar.classList.remove('active');
-            if(typeof activeSection !== 'undefined') activeSection = 'inventory';
-        }catch(e){}
-    }, 500);
-}
-
-function launchConfetti(){
-    var canvas=document.getElementById('confettiCanvas');
-    canvas.width=window.innerWidth;canvas.height=window.innerHeight;
-    var ctx=canvas.getContext('2d');var particles=[];
-    var colors=['#1EE44C','#06B6D4','#3B82F6','#00b4ff','#FDA100','#fff'];
-    for(var i=0;i<120;i++){
-        particles.push({x:canvas.width/2+(Math.random()-.5)*100,y:canvas.height/2,vx:(Math.random()-.5)*12,vy:-Math.random()*14-4,w:Math.random()*8+3,h:Math.random()*6+2,color:colors[Math.floor(Math.random()*colors.length)],rot:Math.random()*360,rv:(Math.random()-.5)*10,life:1});
-    }
-    function draw(){
-        ctx.clearRect(0,0,canvas.width,canvas.height);var alive=false;
-        particles.forEach(function(p){
-            if(p.life<=0)return;alive=true;
-            p.x+=p.vx;p.y+=p.vy;p.vy+=0.35;p.rot+=p.rv;p.life-=0.008;
-            ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);
-            ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;
-            ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();
-        });
-        if(alive)requestAnimationFrame(draw);else ctx.clearRect(0,0,canvas.width,canvas.height);
-    }
-    draw();
-}
-
-function openDeposit(){document.getElementById('depositOverlay').classList.add('show')}
-function closeDeposit(){document.getElementById('depositOverlay').classList.remove('show')}
-
-(async function() {
-    var auth = await telegramAuth();
-    if (auth && auth.id) {
-        userId = auth.id;
-        if (tg) { tg.setHeaderColor('#0d1117'); tg.setBackgroundColor('#0d1117'); }
-        try {
-            var br = await fetch('/api/check-ban?user_id=' + auth.id);
-            var bd = await br.json();
-            if (bd.banned) { window.location.href = '/ban'; return; }
-        } catch(e) {}
-    }
-    loadTopBar();
-    loadInventory();
-
-    /* ★ Открываем инвентарь сразу при заходе */
-    setTimeout(function(){
-        try{
-            if(typeof openInventoryOnStart === 'function'){
-                openInventoryOnStart();
-            } else {
-                /* Ручное открытие */
-                var invSec = document.getElementById('inventorySection');
-                var tarSec = document.getElementById('targetsSection');
-                var btnInv = document.getElementById('btnInventory');
-                var btnTar = document.getElementById('btnTargets');
-                if(invSec) invSec.classList.add('show');
-                if(tarSec) tarSec.classList.remove('show');
-                if(btnInv) btnInv.classList.add('active');
-                if(btnTar) btnTar.classList.remove('active');
-                if(typeof activeSection !== 'undefined') activeSection = 'inventory';
-            }
-        }catch(e){ console.error('auto-open inventory error', e); }
-    }, 300);
-})();
-
-/* ★ Функция для открытия инвентаря при заходе */
-function openInventoryOnStart(){
-    var invSec = document.getElementById('inventorySection');
-    var tarSec = document.getElementById('targetsSection');
-    var btnInv = document.getElementById('btnInventory');
-    var btnTar = document.getElementById('btnTargets');
-    if(invSec) invSec.classList.add('show');
-    if(tarSec) tarSec.classList.remove('show');
-    if(btnInv) btnInv.classList.add('active');
-    if(btnTar) btnTar.classList.remove('active');
-    if(typeof activeSection !== 'undefined') activeSection = 'inventory';
-    if(typeof renderInventoryGrid === 'function'){
-        renderInventoryGrid();
-    }
-}
-
-/* ★ Красивое переключение между вкладками */
-function smoothToggleInventory(){
-    if(typeof isSpinning !== 'undefined' && isSpinning) return;
-    var invSec = document.getElementById('inventorySection');
-    var tarSec = document.getElementById('targetsSection');
-    var btnInv = document.getElementById('btnInventory');
-    var btnTar = document.getElementById('btnTargets');
+/* ══════════════════════════════════════════════════════════════
+   ВКЛАДКИ
+   ══════════════════════════════════════════════════════════════ */
+function toggleInventory(){
+    if(isSpinning) return;
+    var invSec = $('inventorySection');
+    var tarSec = $('targetsSection');
+    var btnInv = $('btnInventory');
+    var btnTar = $('btnTargets');
 
     if(activeSection === 'inventory'){
         invSec.classList.remove('show');
@@ -1468,25 +1460,20 @@ function smoothToggleInventory(){
         btnInv.classList.add('active');
         btnTar.classList.remove('active');
         activeSection = 'inventory';
-        if(typeof renderInventoryGrid === 'function') renderInventoryGrid();
+        renderInventoryGrid();
     }
 }
 
-/* ★ Плавное переключение к желаемым */
-function smoothToggleTargets(){
-    if(typeof isSpinning !== 'undefined' && isSpinning) return;
+function toggleTargets(){
+    if(isSpinning) return;
     if(!selectedGift){
-        if(typeof showTgAlert === 'function'){
-            showTgAlert('Сначала выбери подарок для апгрейда');
-        } else {
-            alert('Сначала выбери подарок для апгрейда');
-        }
+        showTgAlert('Сначала выбери подарок для апгрейда');
         return;
     }
-    var invSec = document.getElementById('inventorySection');
-    var tarSec = document.getElementById('targetsSection');
-    var btnInv = document.getElementById('btnInventory');
-    var btnTar = document.getElementById('btnTargets');
+    var invSec = $('inventorySection');
+    var tarSec = $('targetsSection');
+    var btnInv = $('btnInventory');
+    var btnTar = $('btnTargets');
 
     if(activeSection === 'targets'){
         tarSec.classList.remove('show');
@@ -1498,36 +1485,441 @@ function smoothToggleTargets(){
         btnTar.classList.add('active');
         btnInv.classList.remove('active');
         activeSection = 'targets';
-        if(typeof loadPossibleTargets === 'function') loadPossibleTargets();
+        loadPossibleTargets();
     }
 }
 
-/* ★ Анимация при нажатии кнопки UPGRADE */
-function animateUpgradeClick(){
-    var btn = document.getElementById('upgradeBtn');
-    if(!btn) return;
-    btn.style.transform = 'scale(0.95)';
-    setTimeout(function(){
-        btn.style.transform = '';
-    }, 150);
+/* ══════════════════════════════════════════════════════════════
+   ЖЕЛАЕМЫЕ
+   ══════════════════════════════════════════════════════════════ */
+async function loadPossibleTargets(){
+    var list = $('targetsList');
+    if(!list) return;
+    list.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Загрузка...</div>';
+    try{
+        var r = await fetch('/api/upgrade-possible-gifts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                current_gift_id: selectedGift.id
+            })
+        });
+        var d = await r.json();
+        if(!d.success){
+            list.innerHTML = '<div class="empty-msg" style="grid-column:1/-1;color:var(--red)">' + (d.error || 'Ошибка') + '</div>';
+            return;
+        }
+        possibleTargets = [];
+        (d.possible_gifts || []).forEach(function(g){
+            if(g.value > selectedGift.value && g.value <= selectedGift.value * 10){
+                var chance = Math.max(10, Math.min((selectedGift.value / g.value) * 100, 100));
+                g.upgrade_chance = Math.round(chance * 10) / 10;
+                possibleTargets.push(g);
+            }
+        });
+        possibleTargets.sort(function(a, b){ return a.value - b.value; });
+        renderTargetsList();
+    }catch(e){
+        list.innerHTML = '<div class="empty-msg" style="grid-column:1/-1;color:var(--red)">Ошибка загрузки</div>';
+    }
 }
 
-</script>
-<script>
-/* ★ Проверяем режим оптимизации из localStorage */
+function renderTargetsList(){
+    var list = $('targetsList');
+    if(!list) return;
+    list.innerHTML = '';
+    if(possibleTargets.length === 0){
+        list.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Ничего нет</div>';
+        return;
+    }
+    possibleTargets.forEach(function(g){
+        var isSelected = targetGift && (targetGift.id === g.id || targetGift.fragment_slug === g.fragment_slug);
+        var div = document.createElement('div');
+        div.className = 'target-row' + (isSelected ? ' selected' : '');
+        var imgSrc = g.image || '/static/img/gift.png';
+        div.innerHTML =
+            '<img src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">'
+            + '<div class="target-row-info">'
+            +   '<div class="target-row-name">' + (g.name || 'Gift') + '</div>'
+            +   '<div class="target-row-price"><img src="/static/img/ton.png">' + ((g.value || 0) / 100).toFixed(2) + ' TON</div>'
+            + '</div>'
+            + '<div class="target-row-chance">' + g.upgrade_chance + '%</div>';
+        div.onclick = function(){ selectTarget(g); };
+        list.appendChild(div);
+    });
+}
+
+function selectTarget(g){
+    targetGift = g;
+    currentChance = g.upgrade_chance;
+    $('rightCard').classList.add('has-gift');
+    $('rightGiftImg').src = g.image;
+    $('rightGiftName').textContent = g.name;
+    $('rightGiftValue').textContent = ((g.value || 0) / 100).toFixed(2);
+
+    /* Показываем картинку в центре (не чередуем пока не начался спин) */
+    $('wheelCenterImg').src = g.image;
+    $('wheelCenterImg').classList.remove('visible');
+    $('wheelCenterImg').classList.add('hidden');
+    $('chancePct').classList.remove('hidden');
+    $('chancePct').classList.add('visible');
+
+    drawGreenArc(currentChance);
+    renderTargetsList();
+    updateWheel();
+
+    /* Скрываем желаемые */
+    $('targetsSection').classList.remove('show');
+    $('btnTargets').classList.remove('active');
+    activeSection = null;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   КНОПКА UPGRADE
+   ══════════════════════════════════════════════════════════════ */
+function updateWheel(){
+    var btn = $('upgradeBtn');
+    var chancePct = $('chancePct');
+
+    if(!targetGift || !selectedGift){
+        chancePct.textContent = '0.00%';
+        btn.disabled = true;
+        drawGreenArc(0);
+        _stopCenterAlternate();
+        chancePct.classList.remove('hidden');
+        chancePct.classList.add('visible');
+        return;
+    }
+
+    var chance = Math.max(10, Math.min((selectedGift.value / targetGift.value) * 100, 100));
+    chance = Math.round(chance * 10) / 10;
+    currentChance = chance;
+    drawGreenArc(chance);
+
+    if(selectedGift.value < targetGift.value && targetGift.value <= selectedGift.value * 10){
+        btn.disabled = false;
+    } else {
+        btn.disabled = true;
+    }
+    btn.classList.remove('win', 'fail');
+    $('upgradeBtnText').textContent = 'Апгрейд';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   СПИН
+   ══════════════════════════════════════════════════════════════ */
+async function doUpgrade(){
+    if(isSpinning || !targetGift || !selectedGift) return;
+    isSpinning = true;
+
+    /* Скрываем секции */
+    $('inventorySection').classList.remove('show');
+    $('targetsSection').classList.remove('show');
+    $('btnInventory').classList.remove('active');
+    $('btnTargets').classList.remove('active');
+    activeSection = null;
+
+    var btn = $('upgradeBtn');
+    btn.disabled = true;
+    $('upgradeBtnText').textContent = 'Крутим...';
+    $('resultSad').classList.remove('show');
+    $('resultHappy').classList.remove('show');
+
+    var wheelCont = document.querySelector('.wheel-container');
+    if(wheelCont){
+        wheelCont.classList.remove('win', 'fail');
+        wheelCont.classList.add('spinning');
+    }
+
+    var glow = $('wheelGlow');
+    if(glow) glow.classList.add('spinning');
+
+    /* Запускаем чередование */
+    _startCenterAlternate(targetGift);
+
+    /* Крутим стрелку */
+    var pointerWrap = $('pointerWrap');
+    pointerWrap.style.transition = 'none';
+    pointerWrap.style.transform = 'rotate(0deg)';
+
+    try{
+        var r = await fetch('/api/upgrade-multi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                inventory_ids: [selectedGift.id],
+                target_gift_id: targetGift.fragment_slug || targetGift.id
+            })
+        });
+        var d = await r.json();
+
+        if(!d.success){
+            _stopCenterAlternate();
+            if(glow) glow.classList.remove('spinning');
+            if(wheelCont) wheelCont.classList.remove('spinning');
+            showTgAlert(d.error || 'Ошибка');
+            resetAfterSpin();
+            return;
+        }
+
+        var chance = d.chance;
+        var greenAngle = (chance / 100) * 360;
+        var landAngle;
+
+        if(d.upgrade_success){
+            landAngle = Math.random() * greenAngle * 0.6 + greenAngle * 0.2;
+        } else {
+            var redSize = 360 - greenAngle;
+            landAngle = greenAngle + Math.random() * redSize * 0.3 + redSize * 0.05;
+        }
+
+        var totalSpin = 360 * (8 + Math.floor(Math.random() * 5)) + landAngle;
+        var spinDuration = 5000 + Math.random() * 2000;
+
+        void pointerWrap.offsetWidth;
+        pointerWrap.style.transition = 'transform ' + spinDuration + 'ms cubic-bezier(0.1, 0.4, 0.2, 1)';
+        pointerWrap.style.transform = 'rotate(' + totalSpin + 'deg)';
+
+        setTimeout(function(){
+            if(glow) glow.classList.remove('spinning');
+            if(wheelCont) wheelCont.classList.remove('spinning');
+            showResult(d);
+        }, spinDuration);
+
+    } catch(e){
+        _stopCenterAlternate();
+        if(glow) glow.classList.remove('spinning');
+        if(wheelCont) wheelCont.classList.remove('spinning');
+        pointerWrap.style.transform = 'rotate(0deg)';
+        showTgAlert('Ошибка сети');
+        resetAfterSpin();
+    }
+}
+
+function showResult(d){
+    var center = $('wheelCenter');
+    var btn = $('upgradeBtn');
+
+    /* Останавливаем чередование */
+    _stopCenterAlternate();
+
+    /* Показываем только процент */
+    var imgEl = $('wheelCenterImg');
+    var pctEl = $('chancePct');
+    if(imgEl){
+        imgEl.classList.remove('visible');
+        imgEl.classList.add('hidden');
+    }
+    if(pctEl){
+        pctEl.classList.remove('hidden');
+        pctEl.classList.add('visible');
+    }
+
+    if(d.upgrade_success){
+        center.classList.add('flash-green');
+        $('resultHappy').classList.add('show');
+        btn.classList.add('win');
+        $('upgradeBtnText').textContent = 'Победа!';
+        var wheelCont = document.querySelector('.wheel-container');
+        if(wheelCont) wheelCont.classList.add('win');
+        launchConfetti();
+    } else {
+        center.classList.add('flash-red');
+        $('resultSad').classList.add('show');
+        btn.classList.add('fail');
+        $('upgradeBtnText').textContent = 'Неудача';
+        var wheelCont2 = document.querySelector('.wheel-container');
+        if(wheelCont2) wheelCont2.classList.add('fail');
+    }
+
+    setTimeout(function(){
+        center.classList.remove('flash-red', 'flash-green');
+        resetAfterSpin();
+        loadInventory();
+        loadTopBar();
+    }, 3500);
+}
+
+function resetAfterSpin(){
+    isSpinning = false;
+    _stopCenterAlternate();
+
+    selectedGift = null;
+    targetGift = null;
+    currentChance = 0;
+
+    $('leftCard').classList.remove('has-gift');
+    $('rightCard').classList.remove('has-gift');
+    $('wheelCenterImg').classList.remove('visible');
+    $('wheelCenterImg').classList.add('hidden');
+    $('chancePct').classList.remove('hidden');
+    $('chancePct').classList.add('visible');
+    $('chancePct').textContent = '0.00%';
+    $('resultSad').classList.remove('show');
+    $('resultHappy').classList.remove('show');
+
+    var pointerWrap = $('pointerWrap');
+    pointerWrap.style.transition = 'none';
+    pointerWrap.style.transform = 'rotate(0deg)';
+
+    var wheelCont = document.querySelector('.wheel-container');
+    if(wheelCont) wheelCont.classList.remove('win', 'fail', 'spinning');
+
+    drawGreenArc(0);
+    updateWheel();
+
+    /* Открываем инвентарь заново */
+    setTimeout(function(){
+        var invSec = $('inventorySection');
+        var tarSec = $('targetsSection');
+        var btnInv = $('btnInventory');
+        var btnTar = $('btnTargets');
+        if(invSec) invSec.classList.add('show');
+        if(tarSec) tarSec.classList.remove('show');
+        if(btnInv) btnInv.classList.add('active');
+        if(btnTar) btnTar.classList.remove('active');
+        activeSection = 'inventory';
+    }, 500);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   КОНФЕТТИ
+   ══════════════════════════════════════════════════════════════ */
+function launchConfetti(){
+    var canvas = $('confettiCanvas');
+    if(!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var ctx = canvas.getContext('2d');
+    var particles = [];
+    var colors = ['#1EE44C', '#06B6D4', '#3B82F6', '#00b4ff', '#FDA100', '#fff'];
+    for(var i = 0; i < 120; i++){
+        particles.push({
+            x: canvas.width / 2 + (Math.random() - .5) * 100,
+            y: canvas.height / 2,
+            vx: (Math.random() - .5) * 12,
+            vy: -Math.random() * 14 - 4,
+            w: Math.random() * 8 + 3,
+            h: Math.random() * 6 + 2,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rot: Math.random() * 360,
+            rv: (Math.random() - .5) * 10,
+            life: 1
+        });
+    }
+    function draw(){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var alive = false;
+        particles.forEach(function(p){
+            if(p.life <= 0) return;
+            alive = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.35;
+            p.rot += p.rv;
+            p.life -= 0.008;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot * Math.PI / 180);
+            ctx.globalAlpha = Math.max(0, p.life);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.restore();
+        });
+        if(alive) requestAnimationFrame(draw);
+        else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    draw();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DEPOSIT
+   ══════════════════════════════════════════════════════════════ */
+function openDeposit(){ $('depositOverlay').classList.add('show'); }
+function closeDeposit(){ $('depositOverlay').classList.remove('show'); }
+
+/* ══════════════════════════════════════════════════════════════
+   MINI APP PADDINGS
+   ══════════════════════════════════════════════════════════════ */
+(function applyMiniAppPaddings(){
+    try{
+        if(!tg) return;
+        var safeTop = 0;
+        var safeBottom = 0;
+        try{
+            if(tg.contentSafeAreaInset){
+                safeTop = tg.contentSafeAreaInset.top || 0;
+                safeBottom = tg.contentSafeAreaInset.bottom || 0;
+            }
+        }catch(e){}
+        var minTop = 60;
+        var extraTop = Math.max(minTop, safeTop + 10);
+        document.documentElement.style.setProperty('--safe-top', extraTop + 'px');
+        document.documentElement.style.setProperty('--safe-bottom', safeBottom + 'px');
+    }catch(e){}
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════════════════════ */
+(async function init(){
+    var auth = await telegramAuth();
+    if(auth && auth.id){
+        userId = auth.id;
+        if(tg){
+            try{
+                tg.ready();
+                tg.expand();
+                tg.setHeaderColor('#0d1117');
+                tg.setBackgroundColor('#0d1117');
+                if(tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+            }catch(e){}
+        }
+        try{
+            var br = await fetch('/api/check-ban?user_id=' + auth.id);
+            var bd = await br.json();
+            if(bd.banned){ window.location.href = '/ban'; return; }
+        }catch(e){}
+    }
+    loadTopBar();
+    loadInventory();
+
+    /* Открываем инвентарь при заходе */
+    setTimeout(function(){
+        var invSec = $('inventorySection');
+        var btnInv = $('btnInventory');
+        if(invSec) invSec.classList.add('show');
+        if(btnInv) btnInv.classList.add('active');
+        activeSection = 'inventory';
+        renderInventoryGrid();
+    }, 300);
+})();
+
+/* Применяем режим оптимизации из crash */
 (function(){
     try{
-        var turbo = localStorage.getItem('crash_turbo') === '1';
-        var opt = localStorage.getItem('crash_optimize') === '1';
-        if(turbo){
+        if(localStorage.getItem('crash_turbo') === '1'){
             document.documentElement.classList.add('turbo-mode');
             document.body.classList.add('turbo-mode');
-        } else if(opt){
+        } else if(localStorage.getItem('crash_optimize') === '1'){
             document.documentElement.classList.add('optimize-mode');
             document.body.classList.add('optimize-mode');
         }
     }catch(e){}
 })();
+
+/* Звуки */
+var audioContext = null;
+function initAudio(){
+    if(audioContext) return;
+    try{
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }catch(e){}
+}
+document.addEventListener('click', initAudio, { once: true });
+document.addEventListener('touchstart', initAudio, { once: true });
 </script>
 </body>
 </html>
