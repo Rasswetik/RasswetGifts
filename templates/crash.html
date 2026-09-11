@@ -25,8 +25,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
     padding-bottom:80px;
     padding-top:calc(env(safe-area-inset-top,20px) + 50px + 5vh);
 }
-@media(min-width:768px){.container{max-width:480px}}
-@media(min-width:1100px){.container{max-width:480px}}
 
 /* BOTTOM NAV */
 .bottom-nav{
@@ -113,12 +111,42 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .countdown-display.active{opacity:1;animation:cdPop .3s cubic-bezier(.22,.9,.2,1)}
 @keyframes cdPop{0%{transform:scale(2);opacity:0}60%{transform:scale(.95)}100%{transform:scale(1);opacity:1}}
 
-.rocket-wrap{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);z-index:2;transition:opacity .3s;opacity:1}
-.rocket-wrap img{width:180px;height:180px;object-fit:contain;transition:filter .3s,transform .2s;will-change:transform;-webkit-backface-visibility:hidden;backface-visibility:hidden}
-.rocket-wrap.showing-gift img{width:200px;height:200px;filter:drop-shadow(0 4px 20px rgba(0,0,0,.4));border-radius:20px;border:1.5px solid rgba(255,255,255,.3);object-fit:cover}
+/* ROCKET — ИСПРАВЛЕНО: без квадратов, с качеством */
+.rocket-wrap{
+    position:absolute;top:52%;left:50%;
+    transform:translate(-50%,-50%);
+    z-index:2;transition:opacity .3s;
+    opacity:1;
+    will-change:transform,opacity;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+}
+.rocket-wrap img{
+    width:180px;height:180px;
+    object-fit:contain;
+    border-radius:0;
+    border:none;
+    background:transparent;
+    transition:transform .2s ease;
+    will-change:transform;
+    image-rendering:auto;
+    transform:translateZ(0);
+}
+.rocket-wrap.showing-gift img{
+    width:180px;
+    height:180px;
+    object-fit:contain;
+    border-radius:20px;
+    border:1.5px solid rgba(255,255,255,.25);
+    background:rgba(0,0,0,.25);
+    padding:8px;
+    box-shadow:0 8px 32px rgba(0,0,0,.5), 0 0 40px rgba(59,130,246,.15);
+    image-rendering:high-quality;
+    filter:drop-shadow(0 4px 20px rgba(0,0,0,.4));
+}
 .rocket-wrap.hide{opacity:0;pointer-events:none}
-.rocket-wrap.flying img{transform:rotate(18deg)}
-.rocket-wrap.flying.showing-gift img{transform:scale(1.05) !important}
+.rocket-wrap.flying img{transform:rotate(18deg) translateZ(0)}
+.rocket-wrap.flying.showing-gift img{transform:scale(1.05) translateZ(0) !important}
 .rocket-wrap.cashed-out img{filter:grayscale(100%) brightness(.7)}
 
 .boom-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);opacity:0;z-index:10;pointer-events:none;display:flex;align-items:center;justify-content:center}
@@ -230,8 +258,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .modal-handle{width:36px;height:4px;background:rgba(120,135,160,.2);border-radius:2px;margin:0 auto 16px}
 .modal-title{font-family:inherit;font-weight:900;font-size:17px;margin-bottom:18px;text-align:center;color:#fff}
 .modal-tabs{display:flex;gap:3px;margin-bottom:16px;background:rgba(255,255,255,.02);border-radius:12px;padding:4px}
-.modal-tab{flex:1;padding:10px;border-radius:9px;border:none;background:transparent;color:rgba(255,255,255,.35);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;outline:none}
+.modal-tab{flex:1;padding:10px;border-radius:9px;border:none;background:transparent;color:rgba(255,255,255,.35);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;outline:none;display:flex;align-items:center;justify-content:center;gap:4px}
 .modal-tab.active{background:rgba(59,130,246,.12);color:#3B82F6;border:1px solid rgba(59,130,246,.3)}
+.modal-tab img{width:14px;height:14px;vertical-align:middle}
 
 .bet-input-wrap{display:flex;gap:8px;margin-bottom:14px}
 .bet-input-wrap input{flex:1;padding:14px 18px;border-radius:14px;border:1px solid rgba(59,130,246,.15);background:rgba(59,130,246,.05);color:#fff;font-size:17px;font-family:inherit;font-weight:700;outline:none;transition:border-color .1s;text-align:center;caret-color:#3B82F6}
@@ -241,7 +270,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .confirm-bet-btn{width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;transition:all .1s;box-shadow:0 4px 16px rgba(59,130,246,.3);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .confirm-bet-btn:active:not(:disabled){transform:scale(.96)}
 .confirm-bet-btn:disabled{opacity:.45;cursor:not-allowed;transform:none !important}
-.confirm-bet-btn.loading{opacity:.6;cursor:wait}
 
 .auto-cashout-row{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px;border-radius:12px;background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.15)}
 .auto-cashout-toggle{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-family:inherit;font-weight:700;font-size:11px;color:rgba(255,255,255,.5)}
@@ -253,10 +281,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .auto-cashout-input{width:65px;padding:8px;border-radius:9px;border:1.5px solid rgba(30,228,76,.25);background:rgba(30,228,76,.04);color:#1EE44C;font-size:13px;font-family:inherit;font-weight:700;outline:none;text-align:center;caret-color:#1EE44C}
 .auto-cashout-input:focus{border-color:rgba(30,228,76,.5);background:rgba(30,228,76,.08)}
 
-/* ═════════ ИСПРАВЛЕННАЯ СЕТКА ПОДАРКОВ В МОДАЛКЕ ═════════ */
-.inv-bet-section{display:none}
-.inv-bet-section.show{display:block}
-
+/* ИСПРАВЛЕННАЯ СЕТКА ПОДАРКОВ ДЛЯ СТАВОК */
 .selected-summary{display:none;background:rgba(59,130,246,.08);border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1px solid rgba(59,130,246,.15)}
 .selected-summary.show{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .selected-info{display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -265,12 +290,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .selected-total img{width:15px;height:15px}
 .clear-selected{padding:8px 12px;border-radius:9px;border:none;background:rgba(249,105,153,.15);color:#E8527A;font-family:inherit;font-weight:700;font-size:11px;cursor:pointer;flex-shrink:0}
 
-/* 3 КОЛОНКИ, РОВНО, БЕЗ ОБРЕЗКИ */
 .inv-grid{
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr));
     gap:8px;
-    max-height:380px;
+    max-height:420px;
     overflow-y:auto;
     overflow-x:hidden;
     padding:4px;
@@ -280,10 +304,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .inv-grid::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
 
 .inv-card{
-    background:rgba(255,255,255,.02);
-    border:1px solid rgba(59,130,246,.1);
-    border-radius:12px;
-    padding:0;
+    background:linear-gradient(160deg,rgba(59,130,246,.06),rgba(59,130,246,.02));
+    border:1.5px solid rgba(59,130,246,.15);
+    border-radius:14px;
+    padding:6px;
     text-align:center;
     cursor:pointer;
     transition:all .15s;
@@ -294,41 +318,70 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
     flex-direction:column;
     overflow:hidden;
     box-sizing:border-box;
-    aspect-ratio:1 / 1.15;
 }
-@supports not (aspect-ratio:1 / 1.15){
-    .inv-card{height:0;padding-bottom:115%}
+.inv-card:hover{
+    border-color:rgba(59,130,246,.4);
+    background:linear-gradient(160deg,rgba(59,130,246,.12),rgba(59,130,246,.04));
+    transform:translateY(-2px);
 }
 .inv-card:active{transform:scale(.96)}
-.inv-card.selected{border-color:#3B82F6;background:rgba(59,130,246,.12)}
-.inv-card.selected::after{content:'✓';position:absolute;top:4px;right:4px;width:20px;height:20px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2;box-shadow:0 2px 8px rgba(59,130,246,.4)}
+.inv-card.selected{
+    border-color:#3B82F6;
+    background:rgba(59,130,246,.18);
+    box-shadow:0 0 0 2px rgba(59,130,246,.4), 0 0 20px rgba(59,130,246,.25);
+}
+.inv-card.selected::after{
+    content:'✓';
+    position:absolute;top:6px;right:6px;
+    width:22px;height:22px;
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    border-radius:50%;color:#fff;font-size:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;z-index:2;
+    box-shadow:0 2px 8px rgba(59,130,246,.5);
+}
 .inv-card img{
     width:100%;
     height:auto;
-    aspect-ratio:1 / 1;
-    object-fit:cover;
-    margin:0;
+    aspect-ratio:1/1;
+    object-fit:contain;
+    margin:0 0 4px 0;
     display:block;
     flex-shrink:0;
-    border-radius:12px 12px 0 0;
-    background:rgba(0,0,0,.15);
+    border-radius:8px;
+    background:rgba(0,0,0,.2);
+    padding:4px;
+    box-sizing:border-box;
+    image-rendering:-webkit-optimize-contrast;
 }
 .inv-card .inv-name{
     font-family:inherit;font-weight:700;font-size:10px;
-    color:rgba(255,255,255,.75);
-    padding:4px 4px 2px;
+    color:rgba(255,255,255,.85);
+    padding:2px 2px 3px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    flex-grow:1;display:flex;align-items:center;justify-content:center;
+    line-height:1.2;
     min-height:0;
 }
 .inv-card .inv-val{
-    font-family:inherit;font-weight:800;font-size:11px;color:#3B82F6;
-    padding:2px 4px 5px;
-    display:flex;align-items:center;justify-content:center;gap:2px;
-    flex-shrink:0;
-    line-height:1;
+    font-family:inherit;font-weight:800;font-size:11px;color:#8CA0BE;
+    padding:3px 4px 4px;
+    display:flex;align-items:center;justify-content:center;gap:3px;
+    flex-shrink:0;line-height:1;
+    background:rgba(59,130,246,.08);
+    border-radius:6px;
+    margin-top:2px;
 }
-.inv-card .inv-val img{width:11px;height:11px;aspect-ratio:auto;border-radius:0;object-fit:contain;background:none}
+.inv-card .inv-val img{
+    width:12px;
+    height:12px;
+    aspect-ratio:auto;
+    border-radius:0;
+    object-fit:contain;
+    background:none;
+    padding:0;
+    margin:0;
+}
+.inv-card.selected .inv-val{color:#fff;background:rgba(59,130,246,.2)}
 .inv-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px}
 
 .confirm-gifts-btn{width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;transition:all .1s;box-shadow:0 4px 16px rgba(59,130,246,.3);margin-top:12px;display:none}
@@ -341,8 +394,18 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .win-overlay.show{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
 .win-sheet{background:linear-gradient(180deg,#1e2433 0%,#151920 100%);border-radius:20px 20px 0 0;padding:12px 20px calc(24px + env(safe-area-inset-bottom,0));border-top:2px solid rgba(59,130,246,.25);box-shadow:0 -8px 40px rgba(0,0,0,.5);max-width:480px;margin:0 auto}
 .win-sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:0 auto 14px}
-.win-gift-hero{display:flex;align-items:center;justify-content:center;padding:8px 0 10px}
-.win-gift-hero img{width:100px;height:100px;object-fit:cover;border-radius:20px;background:rgba(255,255,255,.06);filter:drop-shadow(0 6px 16px rgba(0,0,0,.5))}
+.win-gift-hero{display:flex;align-items:center;justify-content:center;padding:12px 0 14px}
+.win-gift-hero img{
+    width:120px;height:120px;
+    object-fit:contain;
+    border-radius:22px;
+    background:linear-gradient(160deg,rgba(59,130,246,.1),rgba(59,130,246,.02));
+    padding:10px;
+    border:1.5px solid rgba(59,130,246,.25);
+    box-shadow:0 10px 40px rgba(0,0,0,.5), 0 0 40px rgba(59,130,246,.15);
+    image-rendering:-webkit-optimize-contrast;
+    filter:drop-shadow(0 6px 20px rgba(0,0,0,.4));
+}
 .win-mult-badge{display:flex;align-items:center;justify-content:center;padding:6px 0 4px}
 .win-mult-badge span{font-family:inherit;font-weight:900;font-size:28px;background:linear-gradient(135deg,#c471f5,#fa71cd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .win-title{text-align:center;font-family:inherit;font-weight:900;font-size:24px;color:#fff;padding:2px 0 8px}
@@ -517,14 +580,13 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
         <div class="modal-title">Place bet</div>
         <div class="modal-tabs">
             <button class="modal-tab active" id="tabStars" onclick="switchTab('stars')">
-                <img src="/static/img/ton.png" style="width:14px;height:14px;vertical-align:middle"> TON
+                <img src="/static/img/ton.png"> TON
             </button>
             <button class="modal-tab" id="tabInv" onclick="switchTab('inv')">
-                <img src="/static/img/gift.png" style="width:14px;height:14px;vertical-align:middle"> Inventory
+                <img src="/static/img/gift.png"> Inventory
             </button>
         </div>
 
-        <!-- STARS SECTION -->
         <div id="starsSec">
             <div class="bet-input-wrap">
                 <input type="number" id="betInput" placeholder="Enter TON amount (min. 0.1)" min="0.1" step="0.01" inputmode="decimal">
@@ -543,7 +605,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
             <button class="confirm-bet-btn" id="confirmBetBtn" onclick="confirmStarsBet()">BET</button>
         </div>
 
-        <!-- INVENTORY SECTION -->
         <div id="invSec" style="display:none">
             <div class="selected-summary" id="selectedSummary">
                 <div class="selected-info">
@@ -628,7 +689,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 
 <script>
 /* ==================================================
-   CRASH CORE — FIXED VERSION
+   CRASH CORE — FIXED v3
    ================================================== */
 
 var userData = null;
@@ -638,7 +699,6 @@ function isTelegramWebApp(){
     return typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user;
 }
 
-/* State */
 let gameId = null, prevGameId = null;
 let status = 'counting', prevSt = 'counting';
 let dispMult = 1.0, servMult = 1.0;
@@ -664,7 +724,7 @@ let currentRocket = localStorage.getItem('crash_rocket') || 'crash';
 
 const $ = id => document.getElementById(id);
 
-/* ---------- helpers ---------- */
+/* helpers */
 function formatCrashMoney(stars){
     var t = Number(stars||0)/100;
     if(t === 0) return '0.00';
@@ -681,7 +741,7 @@ function updateUI(data){
     if(el) el.textContent = formatCrashMoney(data.balance_stars||0);
 }
 
-/* ---------- LOADING ---------- */
+/* LOADING */
 (function(){
     var bar = $('ldProgressBar');
     var txt = $('ldTxt');
@@ -724,7 +784,7 @@ function updateUI(data){
     };
 })();
 
-/* ---------- AUTH ---------- */
+/* AUTH */
 async function initTelegramApp(){
     if(window._ldUpdate) window._ldUpdate(5);
 
@@ -781,7 +841,6 @@ async function initTelegramApp(){
     authReady = true;
     if(window._ldUpdate) window._ldUpdate(30);
 
-    /* Ban check */
     if(userData.id){
         try{
             const ac = new AbortController();
@@ -794,7 +853,6 @@ async function initTelegramApp(){
 
     if(window._ldUpdate) window._ldUpdate(50);
 
-    /* Load customizations */
     try{
         const rc = await fetch('/api/crash/customizations');
         const rd = await rc.json();
@@ -805,17 +863,14 @@ async function initTelegramApp(){
 
     if(window._ldUpdate) window._ldUpdate(80);
 
-    /* Apply rocket */
     applyRocket();
-
     if(window._ldUpdate) window._ldUpdate(95);
-
     if(window._ldDone) window._ldDone();
 
-    /* Start polling */
     updStatus();
     loadBets();
     loadHist();
+    ensureGiftCatalog();
 
     if(savedBetAmount) setBetInputFromStars(savedBetAmount);
 
@@ -872,16 +927,14 @@ async function registerUser(){
     }catch(e){}
 }
 
-/* ---------- BET MODAL ---------- */
+/* BET MODAL */
 function openBetModal(){
     try{ playSound('click'); }catch(e){}
     if(pendingBet){ cancelPendingBet(); return; }
     if(hasBet){ showToast('Ставка уже сделана','err'); return; }
-
     var modal = $('betModal');
     if(!modal) return;
     modal.classList.add('show');
-
     var bi = $('betInput');
     if(bi && savedBetAmount) bi.value = starsToBetInputValue(savedBetAmount);
 }
@@ -916,7 +969,7 @@ function switchTab(tab){
     if(tab === 'inv') loadInventory();
 }
 
-/* ---------- INPUT HELPERS ---------- */
+/* Input helpers */
 function starsToBetInputValue(stars){
     var tons = Number(stars||0)/100;
     return (Math.round(tons*100)/100).toString().replace(/\.00$/,'').replace(/(\.\d)0$/,'$1');
@@ -931,38 +984,31 @@ function setBetInputFromStars(stars){
     if(i) i.value = starsToBetInputValue(stars);
 }
 
-/* ---------- CONFIRM STARS BET ---------- */
+/* BET — OPTIMISTIC (быстро) */
 var _betLocked = false;
 async function confirmStarsBet(){
     if(_betLocked) return;
     if(!userData || !userData.id){ showToast('Auth error','err'); return; }
-
     var input = $('betInput');
     if(!input) return;
     var amt = parseBetInputToStars(input.value);
-
     if(!amt || amt < 10){ showToast('Мин. 0.1 TON','err'); return; }
     if(amt > (userData.balance_stars||0)){ showToast('Недостаточно средств','err'); return; }
 
     _betLocked = true;
-    var btn = $('confirmBetBtn');
-    if(btn){ btn.disabled = true; btn.textContent = 'Обработка...'; }
-
     savedBetAmount = amt;
     try{ localStorage.setItem('crash_bet_amount', amt); }catch(e){}
 
-    /* Queue if flying */
     if(status === 'flying'){
         pendingBet = {type:'stars', amount: amt};
         closeBetModal();
         showToast('Ставка на след. раунд','ok');
         updateBetButton();
-        if(btn){ btn.disabled = false; btn.textContent = 'BET'; }
         _betLocked = false;
         return;
     }
 
-    /* Instant optimistic UI */
+    /* Мгновенный UI */
     hasBet = true;
     betAmt = amt;
     betIsGift = false;
@@ -970,45 +1016,50 @@ async function confirmStarsBet(){
     userData.balance_stars = (userData.balance_stars||0) - amt;
     updateUI(userData);
     closeBetModal();
+    updateBetButton();
+    showToast('Ставка '+formatCrashMoney(amt)+' принята!','ok');
+    try{ playSound('bet'); }catch(e){}
+    try{ triggerVibration([30]); }catch(e){}
 
-    try{
-        var r = await fetch('/api/ultimate-crash/place-bet', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({user_id: userData.id, bet_amount: amt})
-        });
-        var d = await r.json();
-        if(d.success){
-            userData.balance_stars = d.new_balance;
-            updateUI(userData);
-            try{ playSound('bet'); }catch(e){}
-            showToast('Ставка '+formatCrashMoney(amt)+' принята!','ok');
-            loadBets();
-        } else {
-            /* Revert */
+    /* Фоново на сервер */
+    (async function(){
+        try{
+            var r = await fetch('/api/ultimate-crash/place-bet', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({user_id: userData.id, bet_amount: amt})
+            });
+            var d = await r.json();
+            if(d.success){
+                userData.balance_stars = d.new_balance;
+                updateUI(userData);
+                try{ localStorage.setItem('rasswet_user', JSON.stringify(userData)); }catch(e){}
+                loadBets();
+            } else {
+                hasBet = false;
+                betAmt = 0;
+                userData.balance_stars = (userData.balance_stars||0) + amt;
+                updateUI(userData);
+                var err = (d.error||'').toLowerCase();
+                if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1){
+                    pendingBet = {type:'stars', amount: amt};
+                    showToast('Ставка на след. раунд','ok');
+                } else {
+                    showToast(d.error || 'Ошибка','err');
+                }
+                updateBetButton();
+            }
+        }catch(e){
             hasBet = false;
             betAmt = 0;
             userData.balance_stars = (userData.balance_stars||0) + amt;
             updateUI(userData);
-            var err = (d.error||'').toLowerCase();
-            if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1){
-                pendingBet = {type:'stars', amount: amt};
-                showToast('Ставка на след. раунд','ok');
-                updateBetButton();
-            } else {
-                showToast(d.error || 'Ошибка','err');
-            }
+            updateBetButton();
+            showToast('Ошибка сети','err');
+        }finally{
+            _betLocked = false;
         }
-    }catch(e){
-        hasBet = false;
-        betAmt = 0;
-        userData.balance_stars = (userData.balance_stars||0) + amt;
-        updateUI(userData);
-        showToast('Ошибка сети','err');
-    }finally{
-        if(btn){ btn.disabled = false; btn.textContent = 'BET'; }
-        _betLocked = false;
-    }
+    })();
 }
 
 async function processPendingBet(){
@@ -1025,10 +1076,25 @@ async function processPendingBet(){
             if(d.success){
                 hasBet = true;
                 betAmt = bet.amount;
-                betIsGift = false;
                 userData.balance_stars = d.new_balance;
                 updateUI(userData);
                 showToast('Ставка принята!','ok');
+                loadBets();
+            }
+        }catch(e){}
+    } else if(bet.type === 'gift' && bet.inventoryId){
+        try{
+            var rg = await fetch('/api/ultimate-crash/place-bet-gift', {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({user_id: userData.id, inventory_id: bet.inventoryId})
+            });
+            var dg = await rg.json();
+            if(dg.success){
+                hasBet = true;
+                betAmt = dg.bet_amount || bet.amount;
+                betIsGift = true;
+                betGiftImg = bet.giftImage || null;
+                showToast('Ставка подарком принята!','ok');
                 loadBets();
             }
         }catch(e){}
@@ -1036,7 +1102,7 @@ async function processPendingBet(){
     updateBetButton();
 }
 
-/* ---------- CASHOUT ---------- */
+/* CASHOUT */
 var cashoutLocked = false;
 async function doCashout(){
     if(!hasBet || !userData || !userData.id) return;
@@ -1061,9 +1127,6 @@ async function doCashout(){
 
     try{ triggerVibration([50,30,50,30,100]); }catch(e){}
     try{ playSound('cashout'); }catch(e){}
-
-    /* Update own bet row instantly */
-    updateMyBetRow(dispMult, instantWin, betGiftImg);
 
     try{
         var r = await fetch('/api/ultimate-crash/cashout-simple', {
@@ -1101,24 +1164,6 @@ async function doCashout(){
     }
 }
 
-/* Update own bet row immediately */
-function updateMyBetRow(mult, winAmt, giftImg){
-    if(!userData) return;
-    var myName = userData.first_name || 'Player';
-    var rows = document.querySelectorAll('.bet-row');
-    rows.forEach(function(row){
-        var nameEl = row.querySelector('.bet-name');
-        if(nameEl && nameEl.textContent === myName){
-            row.className = 'bet-row won';
-            var statusEl = row.querySelector('.bet-status');
-            if(statusEl){
-                statusEl.className = 'bet-status won';
-                statusEl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> x' + mult.toFixed(2) + ' +' + formatCrashMoney(winAmt);
-            }
-        }
-    });
-}
-
 function updateBetButton(){
     var pb = $('placeBetBtn');
     if(!pb) return;
@@ -1137,7 +1182,7 @@ function updateBetButton(){
     }
 }
 
-/* ---------- INVENTORY (gift bet) ---------- */
+/* INVENTORY */
 async function loadInventory(){
     if(!userData || !userData.id) return;
     try{
@@ -1162,9 +1207,9 @@ async function loadInventory(){
             var tonVal = (i.gift_value/100).toFixed(2);
             var img = i.gift_image || '/static/img/gift.png';
             return '<div class="inv-card'+(isSel?' selected':'')+'" data-id="'+i.id+'" onclick="toggleGiftSelection('+i.id+')">'
-                +'<img src="'+img+'" onerror="this.src=\'/static/img/gift.png\'" loading="lazy">'
+                +'<img src="'+img+'" onerror="this.src=\'/static/img/gift.png\'" loading="lazy" alt="">'
                 +'<div class="inv-name">'+(i.gift_name||'').substring(0,16)+'</div>'
-                +'<div class="inv-val">'+tonVal+'<span style="margin-left:2px">TON</span></div>'
+                +'<div class="inv-val"><img src="/static/img/ton.png" alt="">'+tonVal+'</div>'
                 +'</div>';
         }).join('');
     }catch(e){}
@@ -1223,46 +1268,58 @@ async function confirmGiftBet(){
     if(!userData || !userData.id) return;
 
     _giftLocked = true;
-    var btn = $('confirmGiftsBtn');
-    if(btn){ btn.disabled = true; btn.textContent = 'Обработка...'; }
+    var sGift = selectedGift;
 
     if(status === 'flying'){
-        pendingBet = {type:'gift', amount: selectedGift.value, inventoryId: selectedGift.id, giftImage: selectedGift.image};
+        pendingBet = {type:'gift', amount: sGift.value, inventoryId: sGift.id, giftImage: sGift.image};
         closeBetModal();
         showToast('Подарок на след. раунд','ok');
         updateBetButton();
-        if(btn){ btn.disabled = false; }
         _giftLocked = false;
         return;
     }
 
-    try{
-        var r = await fetch('/api/ultimate-crash/place-bet-gift', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({user_id: userData.id, inventory_id: selectedGift.id})
-        });
-        var d = await r.json();
-        if(d.success){
-            hasBet = true;
-            betAmt = d.bet_amount || selectedGift.value;
-            betIsGift = true;
-            betGiftImg = selectedGift.image;
-            closeBetModal();
-            showToast('Ставка подарком принята!','ok');
-            loadBets();
-        } else {
-            showToast(d.error || 'Ошибка','err');
+    hasBet = true;
+    betAmt = sGift.value;
+    betIsGift = true;
+    betGiftImg = sGift.image;
+    closeBetModal();
+    updateBetButton();
+    showToast('Ставка подарком принята!','ok');
+    try{ playSound('bet'); }catch(e){}
+    try{ triggerVibration([30]); }catch(e){}
+
+    (async function(){
+        try{
+            var r = await fetch('/api/ultimate-crash/place-bet-gift', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({user_id: userData.id, inventory_id: sGift.id})
+            });
+            var d = await r.json();
+            if(d.success){
+                betAmt = d.bet_amount || sGift.value;
+                loadBets();
+            } else {
+                hasBet = false;
+                betAmt = 0;
+                betGiftImg = null;
+                showToast(d.error || 'Ошибка','err');
+                updateBetButton();
+            }
+        }catch(e){
+            hasBet = false;
+            betAmt = 0;
+            betGiftImg = null;
+            showToast('Ошибка сети','err');
+            updateBetButton();
+        }finally{
+            _giftLocked = false;
         }
-    }catch(e){
-        showToast('Ошибка сети','err');
-    }finally{
-        if(btn){ btn.disabled = false; }
-        _giftLocked = false;
-    }
+    })();
 }
 
-/* ---------- STATUS POLLING ---------- */
+/* STATUS POLLING */
 async function updStatus(){
     if(!authReady) return;
     try{
@@ -1290,7 +1347,6 @@ async function updStatus(){
             updateUI(userData);
         }
 
-        /* Sync bet state */
         if(d.user_bet && d.user_bet.status === 'active'){
             hasBet = true;
             betAmt = d.user_bet.bet_amount;
@@ -1345,8 +1401,8 @@ async function updStatus(){
                 prevServMult = 1.0;
                 lastPollTimestamp = 0;
                 lastFrameTime = 0;
+                lastGiftId = null;
 
-                /* Reset rocket */
                 if(rw){
                     rw.classList.remove('cashed-out','gift-change','showing-gift');
                     var ri = rw.querySelector('img');
@@ -1488,7 +1544,7 @@ async function updStatus(){
     }catch(e){ console.error('updStatus:', e); }
 }
 
-/* ---------- RENDER ---------- */
+/* RENDER */
 let lastRenderStatus = null;
 let lastRocketUpdateTime = 0;
 let multGrowthRate = 0;
@@ -1530,20 +1586,28 @@ function render(){
 
     if(!_renderCacheInited) _initRenderCache();
 
+    if(window._rocketSwitching){
+        requestAnimationFrame(render);
+        return;
+    }
+
     if(status === 'flying'){
         if(multGrowthRate > 0){
             var delta = multGrowthRate * dt;
+            if(delta > 0.05) delta = 0.05;
             dispMult += delta;
-            if(dispMult > prevServMult + 1.0) multGrowthRate *= 0.6;
+            if(dispMult > prevServMult + 0.5) multGrowthRate *= 0.5;
         }
         if(dispMult < 1.0) dispMult = 1.0;
 
         if(_rw && !_rwFlying){ _rw.classList.add('flying'); _rwFlying = true; }
 
-        if(_rw && _rImg && !_rw.classList.contains('showing-gift')){
-            var tilt = dispMult >= 2.0 ? Math.min(30, (dispMult - 2.0) * 3.5) : 0;
-            var sc = 1 + Math.max(0, Math.min(dispMult - 1.5, 1)) * 0.015;
-            _rImg.style.transform = 'rotate(' + tilt + 'deg) scale(' + sc + ')';
+        if(_rw && _rImg && !_rw.classList.contains('showing-gift') && !window._rocketSwitching){
+            if(_rImg.complete && _rImg.naturalWidth > 0){
+                var tilt = dispMult >= 2.0 ? Math.min(30, (dispMult - 2.0) * 3.5) : 0;
+                var sc = 1 + Math.max(0, Math.min(dispMult - 1.5, 1)) * 0.015;
+                _rImg.style.transform = 'rotate(' + tilt + 'deg) scale(' + sc + ')';
+            }
         }
 
         if(now - _coeffLastUpdate > 33){
@@ -1555,13 +1619,11 @@ function render(){
             }
         }
 
-        /* Update rocket gift if needed (throttled) */
         if(now - lastRocketUpdateTime > 250){
             lastRocketUpdateTime = now;
             updateRocketImage();
         }
 
-        /* Auto cashout */
         if(hasBet && !autoCashoutDone){
             var acCb = $('autoCashoutCheck');
             if(acCb && acCb.checked){
@@ -1606,7 +1668,7 @@ function render(){
     requestAnimationFrame(render);
 }
 
-/* ---------- ROCKET IMAGE ---------- */
+/* ROCKET */
 function getRocketGif(){
     return '/static/gifs/rockets/' + currentRocket + '.gif';
 }
@@ -1627,7 +1689,6 @@ function updateRocketImage(){
     var ri = rw.querySelector('img');
     if(!ri) return;
 
-    /* Determine if we should show a gift */
     var showAmt = 0;
     var isGrayscale = false;
 
@@ -1640,7 +1701,6 @@ function updateRocketImage(){
 
     if(showAmt > 0 && status === 'flying'){
         var potentialWin = Math.floor(showAmt * dispMult);
-        /* Get achievable gift from catalog */
         var gift = getAchievableGift(potentialWin);
 
         if(isGrayscale){
@@ -1684,7 +1744,7 @@ function updateRocketImage(){
     }
 }
 
-/* Simple catalog cache for achievable gifts */
+/* Gift catalog */
 var _giftCatalogCache = null;
 async function ensureGiftCatalog(){
     if(_giftCatalogCache) return _giftCatalogCache;
@@ -1712,7 +1772,7 @@ function getAchievableGift(potentialWin){
     return best;
 }
 
-/* ---------- BETS ---------- */
+/* BETS */
 async function loadBets(){
     if(status === 'crashed') return;
     try{
@@ -1746,7 +1806,6 @@ async function loadBets(){
             var avatar = hasPhoto ? '<img src="'+b.photo_url+'" alt="">' : ini;
             var stCls = 'active';
 
-            /* Bet icon: gift stack or TON */
             var giftImages = (b.bet_type === 'gift' && b.gift_images && b.gift_images.length) ? b.gift_images : null;
             var betIconHtml = '';
             if(giftImages){
@@ -1785,7 +1844,7 @@ async function loadBets(){
     }catch(e){}
 }
 
-/* ---------- HISTORY ---------- */
+/* HISTORY */
 async function loadHist(){
     try{
         var r = await fetch('/api/ultimate-crash/history?limit=15');
@@ -1811,7 +1870,7 @@ async function loadHist(){
     }catch(e){}
 }
 
-/* ---------- SOUND / VIBRATION ---------- */
+/* SOUND */
 var audioContext = null;
 var soundMasterGain = null;
 
@@ -1869,7 +1928,7 @@ function triggerVibration(pattern){
     }catch(e){}
 }
 
-/* ---------- TOAST ---------- */
+/* TOAST */
 function showToast(msg, type){
     document.querySelectorAll('.toast').forEach(function(t){ t.remove(); });
     var t = document.createElement('div');
@@ -1883,7 +1942,7 @@ function showToast(msg, type){
     }, 2500);
 }
 
-/* ---------- WIN ---------- */
+/* WIN — со всеми подарками */
 function showWin(d){
     var m = parseFloat(d.multiplier).toFixed(2);
     var content = $('winContent');
@@ -1892,12 +1951,13 @@ function showWin(d){
     var betTon = d.bet_amount ? starsToTon(d.bet_amount) : (cashedOutBetAmt ? starsToTon(cashedOutBetAmt) : 0);
     var gifts = d.awarded_gifts || [];
     if(!gifts.length && d.gift) gifts = [d.gift];
+    var starRemainder = d.star_remainder || 0;
 
     var html = '';
 
     if(gifts.length > 0){
         html += '<div class="win-gift-hero">';
-        html += '<img src="' + (gifts[0].image || '/static/img/star.png') + '" onerror="this.src=\'/static/img/star.png\'">';
+        html += '<img src="' + (gifts[0].image || '/static/img/star.png') + '" onerror="this.src=\'/static/img/star.png\'" alt="">';
         html += '</div>';
     }
 
@@ -1909,8 +1969,28 @@ function showWin(d){
     html += '<div class="win-summary-item win-summary-win">Выигрыш <img src="/static/img/ton.png"> ' + formatTon(winTon) + '</div>';
     html += '</div>';
 
-    if(gifts.length > 1){
-        html += '<div class="win-breakdown">+' + (gifts.length - 1) + ' подарков</div>';
+    if(gifts.length > 0){
+        html += '<div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">';
+        html += '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;text-align:center">Получено подарков: ' + gifts.length + '</div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:220px;overflow-y:auto">';
+        for(var j = 0; j < gifts.length; j++){
+            var g = gifts[j];
+            html += '<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:12px;padding:6px;text-align:center">';
+            html += '<img src="' + (g.image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;aspect-ratio:1;object-fit:contain;border-radius:8px;background:rgba(0,0,0,.2);padding:4px;box-sizing:border-box;display:block">';
+            html += '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.85);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (g.name || 'Gift') + '</div>';
+            html += '<div style="font-size:10px;font-weight:800;color:#8CA0BE;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:2px"><img src="/static/img/ton.png" style="width:10px;height:10px">' + formatTon((g.value||0)/100) + '</div>';
+            html += '</div>';
+        }
+        if(starRemainder > 0){
+            html += '<div style="background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.2);border-radius:12px;padding:6px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;aspect-ratio:1">';
+            html += '<div style="font-size:22px;font-weight:900;color:#1EE44C;line-height:1">+' + formatCrashMoney(starRemainder) + '</div>';
+            html += '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.6);margin-top:2px">TON остаток</div>';
+            html += '</div>';
+        }
+        html += '</div>';
+        html += '</div>';
+    } else if(starRemainder > 0){
+        html += '<div class="win-breakdown">+' + formatCrashMoney(starRemainder) + ' TON на баланс</div>';
     }
 
     content.innerHTML = html;
@@ -1924,7 +2004,7 @@ function closeWin(){
     if(wo) wo.classList.remove('show');
 }
 
-/* ---------- SETTINGS ---------- */
+/* SETTINGS */
 function openSettings(){
     var so = $('settingsOverlay');
     if(so) so.classList.add('show');
@@ -1954,14 +2034,45 @@ function renderSettings(){
 }
 
 function selectRocket(rid){
-    currentRocket = rid;
-    localStorage.setItem('crash_rocket', rid);
-    applyRocket();
-    renderSettings();
-    showToast('Ракета изменена!','ok');
+    if(currentRocket === rid){
+        closeSettings();
+        return;
+    }
+    if(window._rocketSwitching) return;
+    window._rocketSwitching = true;
+
+    var newSrc = '/static/gifs/rockets/' + rid + '.gif';
+    var test = new Image();
+    test.onload = function(){
+        currentRocket = rid;
+        localStorage.setItem('crash_rocket', rid);
+
+        var rw = document.getElementById('rocketWrap');
+        if(rw){
+            var img = rw.querySelector('img');
+            if(img){
+                img.style.transform = '';
+                rw.classList.remove('flying','showing-gift','cashed-out','gift-change');
+                lastRocketSrc = newSrc;
+                img.src = newSrc;
+            }
+        }
+        _rwFlying = false;
+        _prevCoeffText = '';
+        window._rocketSwitching = false;
+
+        renderSettings();
+        showToast('Ракета изменена!','ok');
+        setTimeout(closeSettings, 200);
+    };
+    test.onerror = function(){
+        window._rocketSwitching = false;
+        showToast('Ошибка загрузки ракеты','err');
+    };
+    test.src = newSrc;
 }
 
-/* ---------- DEPOSIT ---------- */
+/* DEPOSIT */
 function openDepositSelector(){
     var so = $('depositOverlay');
     if(so) so.classList.add('show');
@@ -1980,9 +2091,7 @@ function closeDepositSelector(){
     var so = $('depositOverlay');
     if(so) so.classList.remove('show');
 }
-function openTonDeposit(){
-    showToast('TON пополнение скоро','ok');
-}
+function openTonDeposit(){ showToast('TON пополнение скоро','ok'); }
 function openStarsDeposit(){
     if(!isTelegramWebApp()){ showToast('Stars только в Telegram','err'); return; }
     var so = $('starsDepositOverlay');
@@ -2052,14 +2161,10 @@ async function payWithStars(){
     }
 }
 
-/* ---------- INIT ---------- */
+/* INIT */
 document.addEventListener('DOMContentLoaded', function(){
-    /* Preload gift catalog for rocket→gift swap */
-    ensureGiftCatalog();
-
     initTelegramApp();
 
-    /* Safety */
     setTimeout(function(){
         var ls = $('ldScreen');
         if(ls && !ls.classList.contains('hidden')){
@@ -2068,7 +2173,6 @@ document.addEventListener('DOMContentLoaded', function(){
         }
     }, 15000);
 
-    /* Online */
     function updOnline(){
         fetch('/api/online-count').then(function(r){ return r.json(); }).then(function(d){
             var el = $('onlineCount');
