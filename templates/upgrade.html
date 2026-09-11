@@ -131,6 +131,709 @@ a{text-decoration:none;color:inherit}
 .bnav-item svg{width:24px;height:24px;stroke:currentColor;fill:none}
 .bnav-item span{font-size:10px}
 .bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
+
+
+/* ══════════════════════════════════════════════════════════════
+   ★ IMPROVED UPGRADE — свечение, анимации, UX
+   ══════════════════════════════════════════════════════════════ */
+
+/* ─── КОЛЕСО — улучшенное свечение ─── */
+.wheel-container{
+    position:relative;
+    width:240px;
+    height:240px;
+    margin:0 auto;
+    filter:drop-shadow(0 0 30px rgba(59,130,246,.15));
+    transition:filter .4s ease;
+}
+.wheel-container.spinning{
+    filter:drop-shadow(0 0 60px rgba(245,158,11,.35)) drop-shadow(0 0 100px rgba(245,158,11,.2));
+}
+.wheel-container.win{
+    filter:drop-shadow(0 0 60px rgba(30,228,76,.5)) drop-shadow(0 0 100px rgba(30,228,76,.25));
+}
+.wheel-container.fail{
+    filter:drop-shadow(0 0 50px rgba(249,105,153,.4));
+}
+
+/* Пульсирующее свечение вокруг колеса */
+.wheel-container::before{
+    content:'';
+    position:absolute;
+    inset:-20px;
+    border-radius:50%;
+    background:radial-gradient(circle, rgba(59,130,246,.12) 0%, transparent 70%);
+    z-index:-1;
+    animation:wheelGlowPulse 3s ease-in-out infinite;
+    pointer-events:none;
+}
+.wheel-container.spinning::before{
+    background:radial-gradient(circle, rgba(245,158,11,.25) 0%, transparent 70%);
+    animation:wheelGlowSpin 1.2s ease-in-out infinite;
+}
+.wheel-container.win::before{
+    background:radial-gradient(circle, rgba(30,228,76,.3) 0%, transparent 70%);
+    animation:wheelGlowWin 1.5s ease-in-out infinite;
+}
+.wheel-container.fail::before{
+    background:radial-gradient(circle, rgba(249,105,153,.25) 0%, transparent 70%);
+}
+
+@keyframes wheelGlowPulse{
+    0%,100%{ transform:scale(1); opacity:.6; }
+    50%{ transform:scale(1.08); opacity:1; }
+}
+@keyframes wheelGlowSpin{
+    0%,100%{ transform:scale(1.05); opacity:.8; }
+    50%{ transform:scale(1.15); opacity:1; }
+}
+@keyframes wheelGlowWin{
+    0%,100%{ transform:scale(1); opacity:.9; }
+    50%{ transform:scale(1.15); opacity:1; }
+}
+
+/* Вращающийся внешний обод */
+.wheel-container::after{
+    content:'';
+    position:absolute;
+    inset:-8px;
+    border-radius:50%;
+    border:2px dashed rgba(59,130,246,.15);
+    animation:wheelRingRotate 20s linear infinite;
+    pointer-events:none;
+}
+.wheel-container.spinning::after{
+    border-color:rgba(245,158,11,.35);
+    animation-duration:2s;
+}
+@keyframes wheelRingRotate{
+    to{ transform:rotate(360deg); }
+}
+
+/* Обновлённый wheel-svg */
+.wheel-svg{
+    width:100%;
+    height:100%;
+    filter:drop-shadow(0 4px 16px rgba(0,0,0,.6));
+    transition:filter .3s ease;
+}
+
+/* ─── ЦЕНТР — теперь ярче ─── */
+.wheel-center{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    width:84px;
+    height:84px;
+    border-radius:50%;
+    background:radial-gradient(circle, #1a2030 0%, #0d1117 100%);
+    border:2px solid rgba(59,130,246,.3);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:5;
+    box-shadow:
+        inset 0 0 20px rgba(59,130,246,.15),
+        0 0 0 4px rgba(13,17,23,.8),
+        0 0 30px rgba(59,130,246,.2);
+    transition:all .3s ease;
+}
+
+.wheel-center img{
+    width:52px;
+    height:52px;
+    object-fit:contain;
+    display:none;
+    filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));
+    animation:centerImgPop .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes centerImgPop{
+    0%{ transform:scale(.3); opacity:0; }
+    100%{ transform:scale(1); opacity:1; }
+}
+
+.chance-pct{
+    font-size:20px;
+    font-weight:900;
+    background:linear-gradient(135deg, #3B82F6, #60A5FA);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    letter-spacing:-.5px;
+}
+
+.wheel-center.flash-green{
+    animation:flashGreen .5s ease 4;
+    border-color:rgba(30,228,76,.6);
+    box-shadow:
+        inset 0 0 30px rgba(30,228,76,.25),
+        0 0 0 4px rgba(13,17,23,.8),
+        0 0 50px rgba(30,228,76,.5);
+}
+.wheel-center.flash-red{
+    animation:flashRed .5s ease 4;
+    border-color:rgba(249,105,153,.6);
+    box-shadow:
+        inset 0 0 30px rgba(249,105,153,.25),
+        0 0 0 4px rgba(13,17,23,.8),
+        0 0 50px rgba(249,105,153,.5);
+}
+@keyframes flashGreen{
+    0%,100%{ transform:translate(-50%,-50%) scale(1); }
+    50%{ transform:translate(-50%,-50%) scale(1.1); }
+}
+@keyframes flashRed{
+    0%,100%{ transform:translate(-50%,-50%) scale(1); }
+    50%{ transform:translate(-50%,-50%) scale(1.08); }
+}
+
+/* ─── СТРЕЛКА — ярче ─── */
+.wheel-pointer img{
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.8)) drop-shadow(0 0 8px rgba(245,158,11,.4));
+}
+
+/* ─── КАРТОЧКИ подарков ─── */
+.card{
+    background:linear-gradient(160deg, rgba(22,27,34,.95), rgba(15,20,27,.95));
+    border:1.5px solid rgba(255,255,255,.08);
+    border-radius:18px;
+    padding:20px 12px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height:150px;
+    justify-content:center;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+    transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+.card::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:radial-gradient(circle at 50% 0%, rgba(59,130,246,.08) 0%, transparent 70%);
+    opacity:0;
+    transition:opacity .3s ease;
+    pointer-events:none;
+}
+.card:hover{
+    transform:translateY(-3px);
+    border-color:rgba(59,130,246,.3);
+    box-shadow:0 8px 24px rgba(0,0,0,.4), 0 0 0 1px rgba(59,130,246,.1);
+}
+.card:hover::before{ opacity:1; }
+.card:active{ transform:scale(.98); }
+
+.card.has-gift{
+    border-style:solid;
+    border-color:rgba(59,130,246,.4);
+    background:linear-gradient(160deg, rgba(59,130,246,.08), rgba(15,20,27,.95));
+    box-shadow:0 0 0 1px rgba(59,130,246,.2), 0 8px 24px rgba(0,0,0,.4);
+}
+.card.has-gift::after{
+    content:'';
+    position:absolute;
+    top:8px;
+    right:8px;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#10b981;
+    box-shadow:0 0 12px #10b981;
+    animation:dotPulse 2s ease-in-out infinite;
+}
+@keyframes dotPulse{
+    0%,100%{ opacity:1; transform:scale(1); }
+    50%{ opacity:.6; transform:scale(.85); }
+}
+
+/* Слот пустой — анимированная иконка */
+.card-placeholder{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+}
+.card-icon{
+    width:52px;
+    height:52px;
+    opacity:.5;
+    transition:all .3s ease;
+}
+.card:hover .card-icon{
+    opacity:.9;
+    transform:scale(1.08) rotate(-5deg);
+    filter:drop-shadow(0 0 12px rgba(59,130,246,.4));
+}
+.card-icon img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+.card-text{
+    font-size:12px;
+    font-weight:600;
+    color:rgba(255,255,255,.45);
+    text-align:center;
+    line-height:1.4;
+    transition:color .3s ease;
+}
+.card:hover .card-text{ color:rgba(255,255,255,.7); }
+
+/* Подарок в слоте — с анимацией появления */
+.gift-preview{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    width:100%;
+}
+.card.has-gift .gift-preview{
+    display:flex;
+    animation:giftAppear .45s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes giftAppear{
+    0%{ transform:scale(.5) rotate(-10deg); opacity:0; }
+    60%{ transform:scale(1.1) rotate(3deg); }
+    100%{ transform:scale(1) rotate(0); opacity:1; }
+}
+
+.gift-preview img{
+    width:72px;
+    height:72px;
+    object-fit:contain;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));
+    animation:giftFloat 3s ease-in-out infinite;
+}
+@keyframes giftFloat{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-4px); }
+}
+
+.gift-preview-name{
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+    text-align:center;
+    max-width:110px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+.gift-preview-value{
+    font-size:11px;
+    color:rgba(255,255,255,.55);
+    display:flex;
+    align-items:center;
+    gap:4px;
+    padding:3px 8px;
+    background:rgba(59,130,246,.1);
+    border-radius:8px;
+    font-weight:700;
+    color:#60A5FA;
+}
+.gift-preview-value img{ width:11px; height:11px; animation:none; }
+
+/* ─── КНОПКИ ВЫБОРА ─── */
+.select-btn{
+    height:48px;
+    border-radius:14px;
+    border:1.5px solid rgba(255,255,255,.08);
+    font-family:inherit;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    transition:all .25s cubic-bezier(.4,0,.2,1);
+    position:relative;
+    overflow:hidden;
+}
+.select-btn:first-child{
+    background:linear-gradient(135deg, #1e3a5f, #1e40af);
+    color:#fff;
+    border-color:rgba(59,130,246,.3);
+}
+.select-btn:last-child{
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.65);
+}
+.select-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+.select-btn:active{
+    transform:scale(.97);
+}
+.select-btn.active{
+    box-shadow:0 0 0 2px #3B82F6, 0 8px 24px rgba(59,130,246,.35);
+    border-color:#3B82F6;
+    color:#fff;
+}
+.select-btn.active:last-child{
+    background:linear-gradient(135deg, #3B82F6, #2563EB);
+}
+
+/* ─── КНОПКА UPGRADE ─── */
+.upgrade-btn{
+    width:100%;
+    height:56px;
+    border-radius:16px;
+    border:none;
+    background:linear-gradient(135deg, #2563eb, #3b82f6);
+    color:#fff;
+    font-family:inherit;
+    font-size:16px;
+    font-weight:800;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 8px 24px rgba(37,99,235,.35);
+    transition:all .3s cubic-bezier(.4,0,.2,1);
+    letter-spacing:.3px;
+}
+.upgrade-btn::before{
+    content:'';
+    position:absolute;
+    top:0;
+    left:-100%;
+    width:100%;
+    height:100%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
+    transition:left .6s;
+}
+.upgrade-btn:not(:disabled):hover::before{
+    left:100%;
+}
+.upgrade-btn:not(:disabled):hover{
+    transform:translateY(-2px);
+    box-shadow:0 12px 32px rgba(37,99,235,.5), 0 0 0 1px rgba(59,130,246,.3);
+}
+.upgrade-btn:not(:disabled):active{
+    transform:translateY(0) scale(.98);
+}
+.upgrade-btn:disabled{
+    background:rgba(255,255,255,.05);
+    color:rgba(255,255,255,.3);
+    cursor:not-allowed;
+    box-shadow:none;
+}
+.upgrade-btn.win{
+    background:linear-gradient(135deg, #059669, #10b981) !important;
+    box-shadow:0 8px 32px rgba(16,185,129,.5), 0 0 0 2px rgba(16,185,129,.4) !important;
+    animation:btnWinPulse 1s ease-in-out infinite;
+}
+.upgrade-btn.fail{
+    background:linear-gradient(135deg, #dc2626, #ef4444) !important;
+    box-shadow:0 8px 32px rgba(239,68,68,.5), 0 0 0 2px rgba(239,68,68,.4) !important;
+    animation:btnFailShake .5s ease;
+}
+@keyframes btnWinPulse{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.02); }
+}
+@keyframes btnFailShake{
+    0%,100%{ transform:translateX(0); }
+    20%,60%{ transform:translateX(-6px); }
+    40%,80%{ transform:translateX(6px); }
+}
+
+/* ─── ИНВЕНТАРЬ — сетка подарков ─── */
+.inline-section{
+    width:100%;
+    display:none;
+    margin-top:12px;
+    animation:sectionSlide .35s cubic-bezier(.4,0,.2,1);
+}
+.inline-section.show{
+    display:block;
+}
+@keyframes sectionSlide{
+    0%{ opacity:0; transform:translateY(-10px); }
+    100%{ opacity:1; transform:translateY(0); }
+}
+
+.section-title{
+    font-size:13px;
+    font-weight:700;
+    color:rgba(255,255,255,.5);
+    margin-bottom:12px;
+    padding-left:2px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+}
+.section-title::before{
+    content:'';
+    width:3px;
+    height:14px;
+    background:linear-gradient(180deg, #3B82F6, #2563EB);
+    border-radius:2px;
+}
+
+/* Сетка инвентаря — 3 колонки */
+.inline-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+    max-height:420px;
+    overflow-y:auto;
+    padding:2px;
+}
+.inline-grid::-webkit-scrollbar{ width:4px; }
+.inline-grid::-webkit-scrollbar-thumb{ background:rgba(59,130,246,.3); border-radius:2px; }
+
+.inline-item{
+    border-radius:14px;
+    border:1.5px solid rgba(255,255,255,.08);
+    background:linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    cursor:pointer;
+    padding:12px 8px 10px;
+    transition:all .3s cubic-bezier(.4,0,.2,1);
+    position:relative;
+    overflow:hidden;
+}
+.inline-item::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:radial-gradient(circle at 50% 30%, rgba(59,130,246,.15) 0%, transparent 70%);
+    opacity:0;
+    transition:opacity .3s ease;
+    pointer-events:none;
+}
+.inline-item:hover{
+    transform:translateY(-3px);
+    border-color:rgba(59,130,246,.4);
+    box-shadow:0 8px 20px rgba(0,0,0,.4);
+}
+.inline-item:hover::before{ opacity:1; }
+.inline-item.selected{
+    border-color:#3B82F6;
+    background:linear-gradient(160deg, rgba(59,130,246,.15), rgba(59,130,246,.05));
+    box-shadow:0 0 0 1px #3B82F6, 0 8px 20px rgba(59,130,246,.3);
+}
+.inline-item.selected::after{
+    content:'✓';
+    position:absolute;
+    top:6px;
+    right:6px;
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:linear-gradient(135deg, #3B82F6, #2563EB);
+    color:#fff;
+    font-size:12px;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 2px 8px rgba(59,130,246,.5);
+    animation:checkPop .3s cubic-bezier(.34,1.56,.64,1);
+    z-index:2;
+}
+@keyframes checkPop{
+    0%{ transform:scale(0); }
+    100%{ transform:scale(1); }
+}
+
+.inline-item img{
+    width:60px;
+    height:60px;
+    object-fit:contain;
+    margin-bottom:6px;
+    filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));
+    transition:transform .3s ease;
+}
+.inline-item:hover img{ transform:scale(1.08); }
+
+.inline-item-name{
+    font-size:10px;
+    font-weight:700;
+    color:rgba(255,255,255,.85);
+    text-align:center;
+    max-width:80px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    line-height:1.2;
+}
+.inline-item-value{
+    font-size:11px;
+    font-weight:800;
+    margin-top:5px;
+    display:flex;
+    align-items:center;
+    gap:3px;
+    padding:3px 8px;
+    border-radius:8px;
+    background:rgba(59,130,246,.12);
+    color:#60A5FA;
+}
+.inline-item-value img{
+    width:10px;
+    height:10px;
+    margin:0;
+}
+.inline-item.selected .inline-item-value{
+    background:rgba(59,130,246,.25);
+    color:#fff;
+}
+
+/* ─── СПИСОК ЖЕЛАЕМЫХ ─── */
+.target-list-inline{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-height:420px;
+    overflow-y:auto;
+    padding:2px;
+}
+.target-list-inline::-webkit-scrollbar{ width:4px; }
+.target-list-inline::-webkit-scrollbar-thumb{ background:rgba(30,228,76,.3); border-radius:2px; }
+
+.target-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 14px;
+    border-radius:14px;
+    border:1.5px solid rgba(255,255,255,.06);
+    background:linear-gradient(160deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    cursor:pointer;
+    transition:all .25s cubic-bezier(.4,0,.2,1);
+    position:relative;
+    overflow:hidden;
+    animation:targetRowIn .35s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes targetRowIn{
+    0%{ opacity:0; transform:translateX(-10px); }
+    100%{ opacity:1; transform:translateX(0); }
+}
+
+.target-row:hover{
+    transform:translateX(4px);
+    background:linear-gradient(160deg, rgba(30,228,76,.08), rgba(30,228,76,.03));
+    border-color:rgba(30,228,76,.3);
+    box-shadow:0 4px 16px rgba(0,0,0,.3);
+}
+.target-row.selected{
+    border-color:#1EE44C;
+    background:linear-gradient(160deg, rgba(30,228,76,.15), rgba(30,228,76,.05));
+    box-shadow:0 0 0 1px #1EE44C, 0 8px 24px rgba(30,228,76,.25);
+}
+.target-row.selected::before{
+    content:'';
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    width:3px;
+    background:linear-gradient(180deg, #1EE44C, #10b981);
+    border-radius:0 3px 3px 0;
+}
+
+.target-row img{
+    width:44px;
+    height:44px;
+    object-fit:contain;
+    filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));
+    flex-shrink:0;
+    transition:transform .3s ease;
+}
+.target-row:hover img{ transform:scale(1.1) rotate(-5deg); }
+
+.target-row-info{
+    flex:1;
+    min-width:0;
+}
+.target-row-name{
+    font-size:13px;
+    font-weight:700;
+    color:#fff;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.target-row-price{
+    font-size:11px;
+    color:rgba(255,255,255,.5);
+    display:flex;
+    align-items:center;
+    gap:4px;
+    margin-top:3px;
+    font-weight:600;
+}
+.target-row-price img{ width:10px; height:10px; filter:none; }
+
+.target-row-chance{
+    font-size:14px;
+    font-weight:900;
+    color:#1EE44C;
+    padding:6px 12px;
+    border-radius:10px;
+    background:rgba(30,228,76,.1);
+    border:1px solid rgba(30,228,76,.2);
+    flex-shrink:0;
+    letter-spacing:-.3px;
+}
+
+/* ─── Пусто ─── */
+.empty-msg{
+    text-align:center;
+    padding:40px 20px;
+    color:rgba(255,255,255,.35);
+    font-size:13px;
+    font-weight:600;
+}
+.empty-msg::before{
+    content:'📭';
+    display:block;
+    font-size:32px;
+    margin-bottom:12px;
+    opacity:.5;
+}
+
+/* ─── ЗАГОЛОВОК СТРАНИЦЫ ─── */
+.page-title{
+    font-size:24px;
+    font-weight:900;
+    padding:12px 0;
+    background:linear-gradient(135deg, #fff, #93c5fd);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    letter-spacing:-.5px;
+    text-align:center;
+}
+
+/* ─── АДАПТИВ ─── */
+@media(max-width:400px){
+    .wheel-container{ width:200px; height:200px; }
+    .wheel-center{ width:72px; height:72px; }
+    .wheel-center img{ width:44px; height:44px; }
+    .inline-item img{ width:52px; height:52px; }
+    .gift-preview img{ width:64px; height:64px; }
+    .upgrade-btn{ height:52px; font-size:15px; }
+}
+
+/* Отключаем анимации в оптимизации */
+.optimize-mode .wheel-container::before,
+.optimize-mode .wheel-container::after,
+.optimize-mode .gift-preview img,
+.optimize-mode .target-row img{
+    animation:none !important;
+}
+
 </style>
 </head>
 <body>
@@ -394,11 +1097,37 @@ function selectGift(g){
     if(targetGift)resetTarget();
     renderInventoryGrid();
     updateWheel();
-    
-    // Auto close inventory
+
+    /* ★ Автоматически открываем вкладку "Желаемый" через 400мс */
     document.getElementById('inventorySection').classList.remove('show');
     document.getElementById('btnInventory').classList.remove('active');
-    activeSection=null;
+
+    /* Плавный скролл к карточкам */
+    setTimeout(function(){
+        try{
+            var leftCard = document.getElementById('leftCard');
+            if(leftCard && leftCard.scrollIntoView){
+                leftCard.scrollIntoView({behavior:'smooth', block:'center'});
+            }
+        }catch(e){}
+    }, 100);
+
+    /* Открываем список желаемых */
+    setTimeout(function(){
+        try{
+            var tarSec = document.getElementById('targetsSection');
+            var btnTar = document.getElementById('btnTargets');
+            if(tarSec && btnTar){
+                tarSec.classList.add('show');
+                btnTar.classList.add('active');
+                if(typeof activeSection !== 'undefined') activeSection = 'targets';
+                /* Загружаем возможные цели */
+                if(typeof loadPossibleTargets === 'function'){
+                    loadPossibleTargets();
+                }
+            }
+        }catch(e){ console.error('auto-open targets error', e); }
+    }, 400);
 }
 
 function resetTarget(){
@@ -497,6 +1226,16 @@ function updateWheel(){
 async function doUpgrade(){
     if(isSpinning||!targetGift||!selectedGift)return;
     isSpinning=true;
+
+    /* ★ Добавляем класс spinning на колесо */
+    var wheelCont = document.querySelector('.wheel-container');
+    if(wheelCont){
+        wheelCont.classList.remove('win','fail');
+        wheelCont.classList.add('spinning');
+    }
+
+    /* ★ Анимация нажатия кнопки */
+    animateUpgradeClick();
     
     // Hide sections
     document.getElementById('inventorySection').classList.remove('show');
@@ -570,18 +1309,23 @@ async function doUpgrade(){
 function showResult(d){
     var center=document.getElementById('wheelCenter');
     var btn=document.getElementById('upgradeBtn');
+    var wheelCont = document.querySelector('.wheel-container');
+    if(wheelCont) wheelCont.classList.remove('spinning');
+
     document.getElementById('chancePct').style.display='none';
     if(d.upgrade_success){
         center.classList.add('flash-green');
         document.getElementById('resultHappy').classList.add('show');
         btn.classList.add('win');
         document.getElementById('upgradeBtnText').textContent='Победа!';
+        if(wheelCont) wheelCont.classList.add('win');
         launchConfetti();
     }else{
         center.classList.add('flash-red');
         document.getElementById('resultSad').classList.add('show');
         btn.classList.add('fail');
         document.getElementById('upgradeBtnText').textContent='Неудача';
+        if(wheelCont) wheelCont.classList.add('fail');
     }
     setTimeout(function(){
         center.classList.remove('flash-red','flash-green');
@@ -604,8 +1348,30 @@ function resetAfterSpin(){
     var pointerWrap=document.getElementById('pointerWrap');
     pointerWrap.style.transition='none';
     pointerWrap.style.transform='rotate(0deg)';
+
+    /* ★ Убираем классы win/fail с колеса */
+    var wheelCont = document.querySelector('.wheel-container');
+    if(wheelCont){
+        wheelCont.classList.remove('win','fail','spinning');
+    }
+
     drawGreenArc(0);
     updateWheel();
+
+    /* ★ Открываем инвентарь заново после сброса */
+    setTimeout(function(){
+        try{
+            var invSec = document.getElementById('inventorySection');
+            var tarSec = document.getElementById('targetsSection');
+            var btnInv = document.getElementById('btnInventory');
+            var btnTar = document.getElementById('btnTargets');
+            if(invSec) invSec.classList.add('show');
+            if(tarSec) tarSec.classList.remove('show');
+            if(btnInv) btnInv.classList.add('active');
+            if(btnTar) btnTar.classList.remove('active');
+            if(typeof activeSection !== 'undefined') activeSection = 'inventory';
+        }catch(e){}
+    }, 500);
 }
 
 function launchConfetti(){
@@ -646,6 +1412,121 @@ function closeDeposit(){document.getElementById('depositOverlay').classList.remo
     }
     loadTopBar();
     loadInventory();
+
+    /* ★ Открываем инвентарь сразу при заходе */
+    setTimeout(function(){
+        try{
+            if(typeof openInventoryOnStart === 'function'){
+                openInventoryOnStart();
+            } else {
+                /* Ручное открытие */
+                var invSec = document.getElementById('inventorySection');
+                var tarSec = document.getElementById('targetsSection');
+                var btnInv = document.getElementById('btnInventory');
+                var btnTar = document.getElementById('btnTargets');
+                if(invSec) invSec.classList.add('show');
+                if(tarSec) tarSec.classList.remove('show');
+                if(btnInv) btnInv.classList.add('active');
+                if(btnTar) btnTar.classList.remove('active');
+                if(typeof activeSection !== 'undefined') activeSection = 'inventory';
+            }
+        }catch(e){ console.error('auto-open inventory error', e); }
+    }, 300);
+})();
+
+/* ★ Функция для открытия инвентаря при заходе */
+function openInventoryOnStart(){
+    var invSec = document.getElementById('inventorySection');
+    var tarSec = document.getElementById('targetsSection');
+    var btnInv = document.getElementById('btnInventory');
+    var btnTar = document.getElementById('btnTargets');
+    if(invSec) invSec.classList.add('show');
+    if(tarSec) tarSec.classList.remove('show');
+    if(btnInv) btnInv.classList.add('active');
+    if(btnTar) btnTar.classList.remove('active');
+    if(typeof activeSection !== 'undefined') activeSection = 'inventory';
+    if(typeof renderInventoryGrid === 'function'){
+        renderInventoryGrid();
+    }
+}
+
+/* ★ Красивое переключение между вкладками */
+function smoothToggleInventory(){
+    if(typeof isSpinning !== 'undefined' && isSpinning) return;
+    var invSec = document.getElementById('inventorySection');
+    var tarSec = document.getElementById('targetsSection');
+    var btnInv = document.getElementById('btnInventory');
+    var btnTar = document.getElementById('btnTargets');
+
+    if(activeSection === 'inventory'){
+        invSec.classList.remove('show');
+        btnInv.classList.remove('active');
+        activeSection = null;
+    } else {
+        invSec.classList.add('show');
+        tarSec.classList.remove('show');
+        btnInv.classList.add('active');
+        btnTar.classList.remove('active');
+        activeSection = 'inventory';
+        if(typeof renderInventoryGrid === 'function') renderInventoryGrid();
+    }
+}
+
+/* ★ Плавное переключение к желаемым */
+function smoothToggleTargets(){
+    if(typeof isSpinning !== 'undefined' && isSpinning) return;
+    if(!selectedGift){
+        if(typeof showTgAlert === 'function'){
+            showTgAlert('Сначала выбери подарок для апгрейда');
+        } else {
+            alert('Сначала выбери подарок для апгрейда');
+        }
+        return;
+    }
+    var invSec = document.getElementById('inventorySection');
+    var tarSec = document.getElementById('targetsSection');
+    var btnInv = document.getElementById('btnInventory');
+    var btnTar = document.getElementById('btnTargets');
+
+    if(activeSection === 'targets'){
+        tarSec.classList.remove('show');
+        btnTar.classList.remove('active');
+        activeSection = null;
+    } else {
+        tarSec.classList.add('show');
+        invSec.classList.remove('show');
+        btnTar.classList.add('active');
+        btnInv.classList.remove('active');
+        activeSection = 'targets';
+        if(typeof loadPossibleTargets === 'function') loadPossibleTargets();
+    }
+}
+
+/* ★ Анимация при нажатии кнопки UPGRADE */
+function animateUpgradeClick(){
+    var btn = document.getElementById('upgradeBtn');
+    if(!btn) return;
+    btn.style.transform = 'scale(0.95)';
+    setTimeout(function(){
+        btn.style.transform = '';
+    }, 150);
+}
+
+</script>
+<script>
+/* ★ Проверяем режим оптимизации из localStorage */
+(function(){
+    try{
+        var turbo = localStorage.getItem('crash_turbo') === '1';
+        var opt = localStorage.getItem('crash_optimize') === '1';
+        if(turbo){
+            document.documentElement.classList.add('turbo-mode');
+            document.body.classList.add('turbo-mode');
+        } else if(opt){
+            document.documentElement.classList.add('optimize-mode');
+            document.body.classList.add('optimize-mode');
+        }
+    }catch(e){}
 })();
 </script>
 </body>
