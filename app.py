@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 import requests as http_requests
 from db_wrapper import USE_POSTGRES, get_connection as _pg_get_connection
 
-# Загружаем переменные окружени
+# Загружаем переменные оружени
 load_dotenv()
 
 # Настройка логирования
