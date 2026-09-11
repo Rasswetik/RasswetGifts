@@ -75,6 +75,65 @@ _portal_auth_data = PORTAL_AUTH_TOKEN or None  # cached authData string
 _portal_auth_lock = threading.Lock()
 PORTAL_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
 
+# ─── Portal auth persistence (added by setup_portal.py) ───
+PORTAL_CONFIG_FILE = os.path.join(BASE_PATH, 'data', 'portal_auth.json')
+PORTAL_SESSION_FILE = os.path.join(BASE_PATH, 'data', 'portal_session.txt')
+
+def _load_portal_config():
+    if not os.path.exists(PORTAL_CONFIG_FILE):
+        return {}
+    try:
+        with open(PORTAL_CONFIG_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f) or {}
+    except Exception as e:
+        logger.warning(f'Portal config read failed: {e}')
+        return {}
+
+def _save_portal_config(cfg):
+    try:
+        os.makedirs(os.path.dirname(PORTAL_CONFIG_FILE), exist_ok=True)
+        with open(PORTAL_CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f'Portal config save failed: {e}')
+        return False
+
+def _load_portal_session():
+    try:
+        if os.path.exists(PORTAL_SESSION_FILE):
+            with open(PORTAL_SESSION_FILE, 'r', encoding='utf-8') as f:
+                return f.read().strip() or None
+    except Exception:
+        pass
+    return None
+
+def _save_portal_session(s):
+    try:
+        os.makedirs(os.path.dirname(PORTAL_SESSION_FILE), exist_ok=True)
+        with open(PORTAL_SESSION_FILE, 'w', encoding='utf-8') as f:
+            f.write(s or '')
+        return True
+    except Exception as e:
+        logger.error(f'Portal session save failed: {e}')
+        return False
+
+# Подхватываем сохранённый конфиг при старте
+try:
+    _portal_cfg = _load_portal_config()
+    if _portal_cfg.get('auth_token'):
+        PORTAL_AUTH_TOKEN = _portal_cfg['auth_token']
+        _portal_auth_data = PORTAL_AUTH_TOKEN
+    if _portal_cfg.get('api_id'):
+        PORTAL_API_ID = str(_portal_cfg['api_id'])
+    if _portal_cfg.get('api_hash'):
+        PORTAL_API_HASH = _portal_cfg['api_hash']
+    PORTAL_PHONE = _portal_cfg.get('phone', os.getenv('PORTAL_PHONE', ''))
+except Exception as _pe:
+    logger.warning(f'Portal config preload failed: {_pe}')
+    PORTAL_PHONE = os.getenv('PORTAL_PHONE', '')
+# ─── /Portal auth persistence ───
+
 # Site balance cache to reduce frequent DB reads (hot path)
 _site_balance_cache = {'value': 0, 'ts': 0}
 _site_balance_lock = threading.Lock()
@@ -8401,7 +8460,34 @@ def _get_portal_auth():
     global _portal_auth_data
     if _portal_auth_data:
         return _portal_auth_data
-    # Try session-based auth as fallback
+    # 1) Try saved StringSession from data/portal_session.txt
+    try:
+        saved_session = _load_portal_session()
+        if saved_session and PORTAL_API_ID and PORTAL_API_HASH:
+            import asyncio
+            from telethon.sync import TelegramClient
+            from telethon.sessions import StringSession
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                client = TelegramClient(StringSession(saved_session), int(PORTAL_API_ID), PORTAL_API_HASH, loop=loop)
+                client.connect()
+                ok = client.is_user_authorized()
+                client.disconnect()
+                if ok:
+                    _portal_auth_data = {
+                        'session': saved_session,
+                        'api_id': int(PORTAL_API_ID),
+                        'api_hash': PORTAL_API_HASH,
+                    }
+                    logger.info('✅ Portal auth via saved StringSession')
+                    return _portal_auth_data
+            finally:
+                loop.close()
+    except Exception as e:
+        logger.warning(f'Portal saved-session check failed: {e}')
+
+    # 2) Fallback: aportalsmp.update_auth with API_ID/HASH
     if not PORTAL_API_ID or not PORTAL_API_HASH:
         logger.warning("Portal auth not configured (set PORTAL_AUTH_TOKEN or PORTAL_API_ID+PORTAL_API_HASH)")
         return None
@@ -20631,6 +20717,228 @@ try:
     setup_telegram_webhook()
 except Exception as e:
     logger.error(f"Initial webhook setup error: {e}")
+
+
+
+
+# ══════════════════════════════════════════════════════════════
+# PORTAL AUTH — упрощённая авторизация (added by setup_portal.py)
+# ══════════════════════════════════════════════════════════════
+
+@app.route('/api/portal/auth-status', methods=['GET'])
+def portal_auth_status():
+    cfg = _load_portal_config()
+    has_session = bool(_load_portal_session())
+    authorized = bool(_portal_auth_data)
+    return jsonify({
+        'success': True,
+        'authorized': authorized,
+        'has_token': bool(cfg.get('auth_token')),
+        'has_api': bool(cfg.get('api_id') and cfg.get('api_hash')),
+        'has_session': has_session,
+        'phone': cfg.get('phone', ''),
+        'api_id': cfg.get('api_id', ''),
+    })
+
+
+@app.route('/api/portal/save-token', methods=['POST'])
+def portal_save_token():
+    global _portal_auth_data, PORTAL_AUTH_TOKEN
+    data = request.get_json() or {}
+    admin_id = data.get('admin_id')
+    if str(admin_id) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    token = (data.get('token') or '').strip()
+    if not token:
+        return jsonify({'success': False, 'error': 'Пустой токен'})
+    if not token.startswith('tma '):
+        return jsonify({'success': False, 'error': 'Токен должен начинаться с "tma "'})
+    cfg = _load_portal_config()
+    cfg['auth_token'] = token
+    cfg.pop('api_id', None)
+    cfg.pop('api_hash', None)
+    if not _save_portal_config(cfg):
+        return jsonify({'success': False, 'error': 'Не удалось сохранить'})
+    PORTAL_AUTH_TOKEN = token
+    _portal_auth_data = token
+    logger.info('Portal token saved via admin panel')
+    return jsonify({'success': True, 'message': 'Токен сохранён'})
+
+
+@app.route('/api/portal/save-api', methods=['POST'])
+def portal_save_api():
+    global PORTAL_API_ID, PORTAL_API_HASH, PORTAL_PHONE, _portal_auth_data
+    data = request.get_json() or {}
+    admin_id = data.get('admin_id')
+    if str(admin_id) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    api_id = str(data.get('api_id') or '').strip()
+    api_hash = (data.get('api_hash') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    if not api_id or not api_hash:
+        return jsonify({'success': False, 'error': 'Нужны api_id и api_hash'})
+    cfg = _load_portal_config()
+    cfg['api_id'] = api_id
+    cfg['api_hash'] = api_hash
+    cfg['phone'] = phone
+    cfg.pop('auth_token', None)
+    if not _save_portal_config(cfg):
+        return jsonify({'success': False, 'error': 'Не удалось сохранить'})
+    PORTAL_API_ID = api_id
+    PORTAL_API_HASH = api_hash
+    PORTAL_PHONE = phone
+    _portal_auth_data = None
+    logger.info('Portal api_id/api_hash saved')
+    return jsonify({'success': True, 'message': 'Данные сохранены'})
+
+
+# Хранилище незавершённых логинов (phone_code_hash)
+_portal_pending = {}
+_portal_pending_lock = threading.Lock()
+
+
+@app.route('/api/portal/send-code', methods=['POST'])
+def portal_send_code():
+    global PORTAL_API_ID, PORTAL_API_HASH, PORTAL_PHONE
+    data = request.get_json() or {}
+    admin_id = data.get('admin_id')
+    if str(admin_id) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+    api_id = str(data.get('api_id') or PORTAL_API_ID or '').strip()
+    api_hash = (data.get('api_hash') or PORTAL_API_HASH or '').strip()
+    phone = (data.get('phone') or PORTAL_PHONE or '').strip()
+
+    if not api_id or not api_hash or not phone:
+        return jsonify({'success': False, 'error': 'Нужны api_id, api_hash и phone'})
+
+    # Сохраним в конфиг
+    cfg = _load_portal_config()
+    cfg['api_id'] = api_id
+    cfg['api_hash'] = api_hash
+    cfg['phone'] = phone
+    cfg.pop('auth_token', None)
+    _save_portal_config(cfg)
+    PORTAL_API_ID = api_id
+    PORTAL_API_HASH = api_hash
+    PORTAL_PHONE = phone
+
+    try:
+        from telethon.sync import TelegramClient
+        from telethon.sessions import StringSession
+        import asyncio
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            client = TelegramClient(StringSession(), int(api_id), api_hash, loop=loop)
+            client.connect()
+            if client.is_user_authorized():
+                s = StringSession.save(client.session)
+                client.disconnect()
+                _save_portal_session(s)
+                return jsonify({'success': True, 'already_authorized': True, 'message': 'Уже авторизован'})
+            sent = client.send_code_request(phone)
+            phone_code_hash = sent.phone_code_hash
+            with _portal_pending_lock:
+                _portal_pending[phone] = {
+                    'api_id': api_id,
+                    'api_hash': api_hash,
+                    'phone_code_hash': phone_code_hash,
+                }
+            client.disconnect()
+        finally:
+            loop.close()
+
+        return jsonify({'success': True, 'message': f'Код отправлен на {phone}'})
+    except Exception as e:
+        logger.error(f'Portal send-code error: {e}')
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/portal/verify-code', methods=['POST'])
+def portal_verify_code():
+    global _portal_auth_data
+    data = request.get_json() or {}
+    admin_id = data.get('admin_id')
+    if str(admin_id) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+    phone = (data.get('phone') or PORTAL_PHONE or '').strip()
+    code = (data.get('code') or '').strip()
+    password = (data.get('password') or '').strip()
+
+    if not phone or not code:
+        return jsonify({'success': False, 'error': 'Нужны phone и code'})
+
+    with _portal_pending_lock:
+        pending = _portal_pending.get(phone)
+    if not pending:
+        return jsonify({'success': False, 'error': 'Сначала запросите код'})
+
+    api_id = pending['api_id']
+    api_hash = pending['api_hash']
+    phone_code_hash = pending['phone_code_hash']
+
+    try:
+        from telethon.sync import TelegramClient
+        from telethon.sessions import StringSession
+        from telethon.errors import SessionPasswordNeededError
+        import asyncio
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            client = TelegramClient(StringSession(), int(api_id), api_hash, loop=loop)
+            client.connect()
+            try:
+                client.sign_in(phone=phone, code=code, phone_code_hash=phone_code_hash)
+            except SessionPasswordNeededError:
+                if not password:
+                    client.disconnect()
+                    return jsonify({'success': False, 'error': 'NEED_PASSWORD',
+                                    'message': 'Введите пароль 2FA'})
+                client.sign_in(password=password)
+
+            s = StringSession.save(client.session)
+            client.disconnect()
+        finally:
+            loop.close()
+
+        _save_portal_session(s)
+        # Сбросим кэш — теперь _get_portal_auth() подхватит сессию
+        _portal_auth_data = {
+            'session': s,
+            'api_id': int(api_id),
+            'api_hash': api_hash,
+        }
+        with _portal_pending_lock:
+            _portal_pending.pop(phone, None)
+
+        logger.info('Portal authorized via phone+code')
+        return jsonify({'success': True, 'message': 'Авторизация успешна'})
+    except Exception as e:
+        logger.error(f'Portal verify-code error: {e}')
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/portal/logout', methods=['POST'])
+def portal_logout():
+    global _portal_auth_data
+    data = request.get_json() or {}
+    admin_id = data.get('admin_id')
+    if str(admin_id) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    try:
+        if os.path.exists(PORTAL_SESSION_FILE):
+            os.remove(PORTAL_SESSION_FILE)
+    except Exception:
+        pass
+    cfg = _load_portal_config()
+    cfg.pop('auth_token', None)
+    _save_portal_config(cfg)
+    _portal_auth_data = None
+    return jsonify({'success': True, 'message': 'Разлогинен'})
 
 
 if __name__ == '__main__':
