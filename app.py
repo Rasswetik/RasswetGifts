@@ -3750,9 +3750,9 @@ def start_ultimate_crash_loop():
                                 progress = new_multiplier / live_target if live_target > 0 else 0
                                 time_remaining = max(0.5, 15.0 * (1 - progress))
                                 update_crash_cache(live_game_id, 'flying', new_multiplier, live_target, time_remaining)
-                                # Sync to DB less frequently to reduce DB load
-                                # Sync to DB every 30th tick (was 20)
-                                if tick_counter % 30 == 0:
+                                # Sync to DB frequently enough to avoid the front-end seeing stale values
+                                # every 5 ticks (~0.25s), which prevents the "freeze every 1.5s" effect
+                                if tick_counter % 5 == 0:
                                     cursor.execute('UPDATE ultimate_crash_games SET current_multiplier = ? WHERE id = ?',
                                                  (new_multiplier, live_game_id))
                                     conn.commit()
@@ -5192,7 +5192,7 @@ def ultimate_crash_cashout_simple():
                 })
                 remaining_value -= pref_value
 
-            # === Fill remaining value with gifts from catalog (cached 30s) ===
+            # === Fill remaining value with gifts from catalog (cached 30s), but always fall back to local gifts ===
             _now_cat_ts = time.time()
             _cat_cache = getattr(ultimate_crash_cashout_simple, '_catalog_cache', None)
             if not _cat_cache or (_now_cat_ts - _cat_cache.get('ts', 0)) > 30:
@@ -5201,9 +5201,70 @@ def ultimate_crash_cashout_simple():
                     _cat_sorted = sorted(_cat, key=lambda g: g.get('value', 0), reverse=True) if _cat else []
                 except Exception:
                     _cat_sorted = []
+                if not _cat_sorted:
+                    try:
+                        _local = load_gifts_cached() or []
+                        _cat_sorted = sorted(
+                            [
+                                {
+                                    'id': g.get('id'),
+                                    'name': g.get('name') or 'Gift',
+                                    'value': int(round(float(g.get('value', 0) or 0))),
+                                    'image': _normalize_local_gift_image(g.get('image')) or '/static/img/default_gift.png',
+                                }
+                                for g in _local if (g.get('value') or 0) > 0
+                            ],
+                            key=lambda g: g.get('value', 0),
+                            reverse=True
+                        )
+                    except Exception:
+                        _cat_sorted = []
                 _cat_cache = {'ts': _now_cat_ts, 'sorted': _cat_sorted}
                 ultimate_crash_cashout_simple._catalog_cache = _cat_cache
             sorted_catalog = _cat_cache['sorted']
+
+            # Always give at least one gift on cashout when there is a win,
+            # even if no preferred gift was chosen or the catalog lookup is sparse.
+            if not awarded_gifts and win_amount > 0 and sorted_catalog:
+                fallback_candidates = [g for g in sorted_catalog if int(g.get('value', 0) or 0) > 0]
+                if fallback_candidates:
+                    fallback_best = None
+                    for entry in fallback_candidates:
+                        entry_value = int(entry.get('value', 0) or 0)
+                        if entry_value <= remaining_value:
+                            fallback_best = entry
+                            break
+                    if fallback_best is None:
+                        fallback_best = fallback_candidates[-1]
+
+                    g_image = fallback_best.get('image', '/static/img/star.png')
+                    if g_image and g_image.startswith('data:'):
+                        g_image = '/static/img/star.png'
+                    g_value = int(fallback_best.get('value', 0) or 0)
+
+                    cursor.execute('''
+                        INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (user_id, fallback_best.get('id', 0), fallback_best['name'], g_image, g_value))
+
+                    cursor.execute('''
+                        INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ''', (user_id, user_name, fallback_best['name'], g_image, g_value, 'Crash'))
+
+                    try:
+                        cursor.execute('SELECT 1 FROM user_gift_index WHERE user_id = ? AND gift_name = ?', (user_id, fallback_best['name']))
+                        if not cursor.fetchone():
+                            cursor.execute('INSERT OR IGNORE INTO user_gift_index (user_id, gift_name) VALUES (?, ?)', (user_id, fallback_best['name']))
+                    except Exception:
+                        pass
+
+                    awarded_gifts.append({
+                        'name': fallback_best['name'],
+                        'image': g_image,
+                        'value': g_value,
+                    })
+                    remaining_value = max(0, remaining_value - g_value)
 
             if sorted_catalog and remaining_value >= 5:
                 fill_rounds = 0
