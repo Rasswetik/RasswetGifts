@@ -3627,13 +3627,23 @@ def _get_site_profit_balance():
         with _site_balance_lock:
             return _site_balance_cache.get('value', 0)
 
-def start_crash_loop():
-    def loop():
+def start_ultimate_crash_loop():
+
+    """Запускает простой игровой цикл"""
+    def game_loop():
+        global _crash_phase_transitioning
         while not _db_ready:
             time.sleep(1)
+        logger.info("🚀 Запущен игровой цикл Ultimate Crash")
 
-        # Persistent connection — reacquired only on error (avoids 120 pool ops/min)
+        # Persistent connection for game loop — re-created only on error
         loop_conn = None
+        tick_counter = 0
+        # In-memory multiplier tracking (source of truth during flying)
+        live_mult = 1.0
+        live_game_id = 0
+        live_status = 'waiting'
+        live_target = 5.0
 
         def get_loop_conn():
             nonlocal loop_conn
@@ -3644,11 +3654,27 @@ def start_crash_loop():
         def reset_loop_conn():
             nonlocal loop_conn
             if loop_conn:
-                try:
-                    loop_conn.close()
-                except Exception:
-                    pass
+                try: loop_conn.close()
+                except: pass
             loop_conn = None
+
+        def do_crash(conn, cursor, gid, crash_mult, tgt_mult):
+            """Common crash logic — updates DB, history, bets, cache"""
+            nonlocal live_status
+            live_status = 'crashed'
+            cursor.execute("UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ? WHERE id = ?",
+                         (crash_mult, gid))
+            cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (gid, crash_mult))
+            cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (gid,))
+            cursor.execute('''
+                UPDATE users SET total_loss = total_loss + (
+                    SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
+                    WHERE game_id = ? AND status = 'lost' AND user_id = users.id
+                ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
+            ''', (gid, gid))
+            _crash_bots_on_crash(gid)
+            update_crash_cache(gid, 'crashed', crash_mult, tgt_mult, 0)
+            conn.commit()
 
         while True:
             if not _db_ready:
@@ -3656,37 +3682,10 @@ def start_crash_loop():
                 continue
             try:
                 conn = get_loop_conn()
-                cur = conn.cursor()
+                cursor = conn.cursor()
+                tick_counter += 1
 
-                cur.execute("SELECT id,status,current_multiplier FROM crash_games ORDER BY id DESC LIMIT 1")
-                game = cur.fetchone()
-
-                if not game or game[1] == "crashed":
-                    cur.execute("INSERT INTO crash_games(status,current_multiplier) VALUES('flying',1.0)")
-                    conn.commit()
-                else:
-                    gid, status, mult = game
-                    if status == "flying":
-                        mult = float(mult) + random.uniform(0.05, 0.25)
-
-                        if random.random() < 0.03:
-                            cur.execute("UPDATE crash_games SET status='crashed' WHERE id=?", (gid,))
-                        else:
-                            cur.execute("UPDATE crash_games SET current_multiplier=? WHERE id=?", (round(mult, 2), gid))
-
-                        conn.commit()
-
-            except Exception as e:
-                logger.debug(f"crash_loop err: {e}")
-                reset_loop_conn()
-                time.sleep(3)
-                continue
-            time.sleep(0.5)
-
-    threading.Thread(target=loop, daemon=True).start()
-
-
-                # During flying, skip heavy DB reads — use in-memory state (УСКОРЕНО ×2)
+                # During flying, skip heavy DB reads — use in-memory state
                 if live_status == 'flying' and live_game_id > 0:
                     # Only check admin control + increment multiplier in memory
                     admin_ctrl = get_admin_crash_control()
@@ -3698,7 +3697,7 @@ def start_crash_loop():
                         continue
 
                     if live_mult < live_target:
-                        # AI RTP check (every 8th tick, only above 3x) — реже для скорости
+                        # AI RTP check (every 8th tick, only above 3x)
                         if live_mult > 3.0 and tick_counter % 8 == 0:
                             try:
                                 if ai_should_force_crash(live_game_id, live_mult, conn):
@@ -3709,7 +3708,8 @@ def start_crash_loop():
                             except Exception as ai_e:
                                 logger.error(f"AI mid-round error: {ai_e}")
 
-                        # Ускоренный рост множителя (×2 быстрее чем раньше)
+                        # Calculate increment based on live_mult (in-memory, always fresh)
+                        # Slower, smoother growth curve
                         if live_mult < 1.1:
                             base_increment = 0.02
                         elif live_mult < 1.5:
@@ -3744,7 +3744,8 @@ def start_crash_loop():
                                 progress = new_multiplier / live_target if live_target > 0 else 0
                                 time_remaining = max(0.5, 15.0 * (1 - progress))
                                 update_crash_cache(live_game_id, 'flying', new_multiplier, live_target, time_remaining)
-                                # Sync to DB every 30th tick (было 20)
+                                # Sync to DB less frequently to reduce DB load
+                                # Sync to DB every 30th tick (was 20)
                                 if tick_counter % 30 == 0:
                                     cursor.execute('UPDATE ultimate_crash_games SET current_multiplier = ? WHERE id = ?',
                                                  (new_multiplier, live_game_id))
@@ -3755,7 +3756,7 @@ def start_crash_loop():
 
                     time.sleep(0.05)
                     continue
-                # Non-flying phases: read from DB
+
                 cursor.execute('''
                     SELECT id, status, start_time, current_multiplier, target_multiplier
                     FROM ultimate_crash_games
@@ -3860,7 +3861,7 @@ def start_crash_loop():
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 Новая Crash игра, target: {target_multiplier}x")
 
-                time.sleep(0.10)
+                time.sleep(0.05)
 
             except Exception as e:
                 err_msg = str(e)
@@ -4600,8 +4601,8 @@ def ultimate_crash_place_bet():
             return jsonify({'success': False, 'error': 'Игра уже началась! Ставка на след. раунд'})
         if cached_status == 'crashed':
             return jsonify({'success': False, 'error': 'Раунд завершён. Ставка на след. раунд'})
-        if cached_status == 'counting' and cached.get('time_remaining', 5) < 0.3:
-            return jsonify({'success': False, 'error': 'Слишком поздно! Ставка на след. раунд'})
+        if cached_status == 'counting' and cached.get('time_remaining', 5) <= 2.0:
+            return jsonify({'success': False, 'error': 'Ставки закрыты за 2 секунды до конца раунда'})
 
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -4796,9 +4797,9 @@ def ultimate_crash_place_bet_gift():
                 conn.close()
                 return jsonify({'success': False, 'error': 'Игра уже началась'})
             cached = get_crash_cache()
-            if cached.get('status') == 'counting' and cached.get('time_remaining', 5) < 1.5:
+            if cached.get('status') == 'counting' and cached.get('time_remaining', 5) <= 2.0:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Слишком поздно! Ставка на след. раунд'})
+                return jsonify({'success': False, 'error': 'Ставки закрыты за 2 секунды до конца раунда'})
 
         cursor.execute('''
             SELECT id FROM ultimate_crash_bets
@@ -4929,11 +4930,11 @@ def ultimate_crash_place_bet_multi_gift():
             if game_status not in ('waiting', 'counting'):
                 conn.close()
                 return jsonify({'success': False, 'error': 'Игра уже началась'})
-            # Проверяем время до старта - если < 1.5 сек, отклоняем
+            # Проверяем время до старта - если <= 2.0 сек, отклоняем
             cached = get_crash_cache()
-            if cached.get('status') == 'counting' and cached.get('time_remaining', 5) < 1.5:
+            if cached.get('status') == 'counting' and cached.get('time_remaining', 5) <= 2.0:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Слишком поздно! Ставка на след. раунд'})
+                return jsonify({'success': False, 'error': 'Ставки закрыты за 2 секунды до конца раунда'})
 
         cursor.execute('''
             SELECT id FROM ultimate_crash_bets
@@ -5128,19 +5129,36 @@ def ultimate_crash_cashout_simple():
                 else:
                     remaining_value = win_amount
 
-            # === Fill remaining value with gifts from catalog ===
-            catalog = build_fragment_first_gifts_catalog()
-            if catalog and remaining_value >= 5:
-                sorted_catalog = sorted(catalog, key=lambda g: g.get('value', 0), reverse=True)
+            # === Fill remaining value with gifts from catalog (cached 30s) ===
+            _now_cat_ts = time.time()
+            _cat_cache = getattr(ultimate_crash_cashout_simple, '_catalog_cache', None)
+            if not _cat_cache or (_now_cat_ts - _cat_cache.get('ts', 0)) > 30:
+                try:
+                    _cat = build_fragment_first_gifts_catalog()
+                    _cat_sorted = sorted(_cat, key=lambda g: g.get('value', 0), reverse=True) if _cat else []
+                except Exception:
+                    _cat_sorted = []
+                _cat_cache = {'ts': _now_cat_ts, 'sorted': _cat_sorted}
+                ultimate_crash_cashout_simple._catalog_cache = _cat_cache
+            sorted_catalog = _cat_cache['sorted']
+
+            if sorted_catalog and remaining_value >= 5:
                 fill_rounds = 0
                 while remaining_value >= 5 and fill_rounds < 20:
                     fill_rounds += 1
                     best_gift = None
-                    for g in sorted_catalog:
-                        gv = g.get('value', 0)
-                        if 0 < gv <= remaining_value:
-                            best_gift = g
-                            break
+                    # Бинарный поиск самого дорогого подарка, влезающего в remaining_value
+                    lo, hi = 0, len(sorted_catalog) - 1
+                    found_idx = -1
+                    while lo <= hi:
+                        mid = (lo + hi) // 2
+                        if sorted_catalog[mid].get('value', 0) <= remaining_value:
+                            found_idx = mid
+                            lo = mid + 1
+                        else:
+                            hi = mid - 1
+                    if found_idx >= 0 and sorted_catalog[found_idx].get('value', 0) > 0:
+                        best_gift = sorted_catalog[found_idx]
                     if not best_gift:
                         break
 
@@ -5293,47 +5311,6 @@ def ultimate_crash_current_gift():
         return jsonify({'success': True, 'gift': None})
 
 # ==================== АВТОМАТИЗАЦИЯ ИГРОВОГО ЦИКЛА ====================
-
-def start_simple_game_loop():
-    """Запускает упрощенный игровой цикл"""
-    def game_loop():
-        logger.info("🚀 Запущен упрощенный игровой цикл")
-
-        while True:
-            try:
-                # Пауза между играми
-                time.sleep(3)
-
-                conn = get_db_connection()
-                cursor = conn.cursor()
-
-                # Создаем новую игру если нет активной
-                cursor.execute('''
-                    SELECT COUNT(*) FROM ultimate_crash_games
-                    WHERE status IN ('waiting', 'counting', 'flying')
-                ''')
-                active_games = cursor.fetchone()[0]
-
-                if active_games == 0:
-                    target_multiplier = round(random.uniform(3.0, 10.0), 2)
-                    cursor.execute('''
-                        INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                        VALUES ('waiting', ?, CURRENT_TIMESTAMP)
-                    ''', (target_multiplier,))
-                    game_id = cursor.lastrowid
-                    conn.commit()
-                    logger.info(f"🆕 Создана новая игра #{game_id}")
-
-                conn.close()
-
-            except Exception as e:
-                logger.error(f"❌ Ошибка игрового цикла: {e}")
-                time.sleep(5)
-
-    thread = threading.Thread(target=game_loop, daemon=True)
-    thread.start()
-    logger.info("✅ Простой игровой цикл запущен")
-
 
 def start_portal_price_sync_loop():
     """Background thread for automatic Portal price synchronization.
@@ -14927,22 +14904,36 @@ def api_online_count():
 
 @app.route('/api/gifts-list', methods=['GET'])
 def api_gifts_list():
-    """Return gifts catalog for UI: originals + all models from Fragment cache"""
+    """Return gifts catalog for UI: originals + all models from Fragment cache (cached 60s)"""
     try:
         force_refresh = request.args.get('refresh', '0') in ('1', 'true', 'yes')
         include_models = request.args.get('models', '0') not in ('0', 'false', 'no')
+
+        _cache = getattr(api_gifts_list, '_cache', None)
+        if _cache is None:
+            _cache = {}
+            api_gifts_list._cache = _cache
+        cache_key = 'models' if include_models else 'orig'
+        now_ts = time.time()
+        hit = _cache.get(cache_key)
+        if hit and not force_refresh and (now_ts - hit['ts']) < 60:
+            return jsonify(hit['data'])
+
         if include_models:
             merged = build_full_catalog_with_models(force_refresh=force_refresh)
         else:
             merged = build_fragment_first_gifts_catalog(force_refresh=force_refresh)
-        return jsonify({
+
+        payload = {
             'success': True,
             'gifts': merged,
             'fragment_sync': True,
             'fragment_only_mode': FRAGMENT_ONLY_CATALOG,
             'fragment_error': fragment_last_error,
             'offline_fallback_used': any(str(g.get('source')) == 'local_offline_fallback' for g in (merged or []))
-        })
+        }
+        _cache[cache_key] = {'ts': now_ts, 'data': payload}
+        return jsonify(payload)
     except Exception as e:
         logger.error(f"Gifts list error: {e}")
         return jsonify({'success': True, 'gifts': []})
@@ -17521,10 +17512,6 @@ def _lazy_init():
         except Exception as e:
             logger.error(f"❌ Ошибка инициализации БД: {e}")
         # Запуск игровых циклов
-        try:
-            start_crash_loop()
-        except Exception as e:
-            logger.error(f"❌ Не удалось запустить Crash loop: {e}")
         try:
             start_ultimate_crash_loop()
         except Exception as e:
