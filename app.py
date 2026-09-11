@@ -8433,9 +8433,9 @@ def _portal_sync_floors():
         from aportalsmp.gifts import search as portal_search
 
         loop = asyncio.new_event_loop()
+        all_colls = []
         try:
             # ── 1) Получаем ВСЕ коллекции с пагинацией ──
-            all_colls = []
             offset = 0
             limit = 50
             while True:
@@ -8446,9 +8446,8 @@ def _portal_sync_floors():
                     colls_dict = colls.toDict() if hasattr(colls, 'toDict') else {}
                     items = colls_dict.get('collections') or colls_dict.get('items') or []
                     if not items:
-                        # Пробуем как список
                         try:
-                            items = list(colls)  # если это итерируемый объект
+                            items = list(colls)
                         except Exception:
                             items = []
                     if not items:
@@ -8457,10 +8456,9 @@ def _portal_sync_floors():
                     if len(items) < limit:
                         break
                     offset += limit
-                    if offset > 2000:  # защита от бесконечного цикла
+                    if offset > 2000:
                         break
                 except TypeError:
-                    # API не поддерживает offset/limit — берём всё, что есть
                     colls = loop.run_until_complete(portal_collections(authData=auth))
                     colls_dict = colls.toDict() if hasattr(colls, 'toDict') else {}
                     items = colls_dict.get('collections') or colls_dict.get('items') or []
@@ -8474,7 +8472,7 @@ def _portal_sync_floors():
 
             logger.info(f"🌐 Portal: получено {len(all_colls)} коллекций")
 
-            # ── 2) Строим map: slug/name → floor_price_ton ──
+            # ── 2) Строим map: slug/name -> floor_price_ton ──
             floors_by_slug = {}
             floors_by_name = {}
             for coll in all_colls:
@@ -8500,8 +8498,7 @@ def _portal_sync_floors():
                 if name:
                     floors_by_name[name] = floor_val
 
-            # ── 3) Дополнительно: для каждой коллекции берём floor через search (самый дешёвый подарок) ──
-            # Это нужно, если в collections() floor_price пустой
+            # ── 3) Дополнительно: floor через search для коллекций без цены ──
             for coll in all_colls:
                 try:
                     if isinstance(coll, dict):
@@ -8515,7 +8512,7 @@ def _portal_sync_floors():
                         continue
                     slug_key = re.sub(r'[^a-z0-9]+', '', cname_clean.lower())
                     if slug_key in floors_by_slug:
-                        continue  # уже есть цена
+                        continue
                     try:
                         found = loop.run_until_complete(
                             portal_search(sort='price_asc', gift_name=cname_clean, limit=1, authData=auth)
@@ -8565,7 +8562,7 @@ def _portal_sync_floors():
                 floor = floors_by_name[name_key]
 
             if floor and floor > 0:
-                new_value = int(round(floor * 100))  # TON → stars (100 stars = 1 TON)
+                new_value = int(round(floor * 100))
                 if new_value > 0 and new_value != gift.get('value'):
                     gift['value'] = new_value
                     gift['fragment_price_ton'] = round(floor, 4)
@@ -8577,17 +8574,31 @@ def _portal_sync_floors():
             else:
                 json.dump(gifts, f, ensure_ascii=False, indent=2)
 
-        # Сбрасываем кэш подарков
         global gifts_cache, gifts_cache_time
         gifts_cache = None
         gifts_cache_time = None
+
+        # ── 5) Сохраняем метку времени синхронизации ──
+        try:
+            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            with open(sync_file, 'w', encoding='utf-8') as sf:
+                json.dump({
+                    'timestamp': int(time.time()),
+                    'updated': updated,
+                    'total': len(gifts),
+                    'collections': len(all_colls),
+                }, sf)
+        except Exception:
+            pass
 
         logger.info(f"✅ Portal floors sync: обновлено {updated}/{len(gifts)} подарков, коллекций: {len(all_colls)}")
         return {'success': True, 'updated': updated, 'total': len(gifts), 'collections': len(all_colls)}
 
     except Exception as e:
-        logger.error(f"❌ Portal floors sync error: {e}\n{traceback.format_exc()}")
+        logger.error(f"❌ Portal floors sync error: {e}")
         return {'success': False, 'error': str(e)}
+
+
 
 @app.route('/api/portal/status', methods=['GET'])
 def portal_status():
@@ -14148,51 +14159,138 @@ def add_gift_to_case():
         return jsonify({'success': False, 'error': str(e)})
 
 
+
+
+# ══════════════════════════════════════════════════════════════
+# PORTAL ADMIN ENDPOINTS
+# ══════════════════════════════════════════════════════════════
+
+def _portal_read_last_sync():
+    """Читает метку последней синхронизации"""
+    try:
+        sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+        if not os.path.exists(sync_file):
+            return {'last_sync_ago': 'никогда', 'last_updated': 0, 'total_collections': 0}
+        with open(sync_file, 'r', encoding='utf-8') as f:
+            sd = json.load(f)
+        ts = sd.get('timestamp', 0)
+        ago = 'никогда'
+        if ts:
+            diff = int(time.time() - ts)
+            if diff < 60:
+                ago = f'{diff} сек назад'
+            elif diff < 3600:
+                ago = f'{diff // 60} мин назад'
+            else:
+                ago = f'{diff // 3600} ч назад'
+        return {
+            'last_sync_ago': ago,
+            'last_updated': sd.get('updated', 0),
+            'total_collections': sd.get('collections', 0) or sd.get('total', 0),
+        }
+    except Exception:
+        return {'last_sync_ago': 'никогда', 'last_updated': 0, 'total_collections': 0}
+
+
+@app.route('/api/portal/status', methods=['GET'])
+def portal_status():
+    """Статус подключения к Portal"""
+    try:
+        auth = _get_portal_auth()
+        connected = auth is not None
+        info = _portal_read_last_sync()
+        return jsonify({
+            'success': True,
+            'connected': connected,
+            'info': info,
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e), 'connected': False})
+
+
+@app.route('/api/portal/connect', methods=['POST'])
+def portal_connect():
+    """Принудительное подключение к Portal"""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        global _portal_auth_data
+        _portal_auth_data = None
+
+        auth = _get_portal_auth()
+        if not auth:
+            return jsonify({
+                'success': False,
+                'error': 'Не удалось авторизоваться. Проверьте PORTAL_AUTH_TOKEN или PORTAL_API_ID/PORTAL_API_HASH'
+            })
+        return jsonify({'success': True, 'message': 'Portal подключён'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/portal/info', methods=['GET'])
+def portal_info():
+    """Детальная информация о Portal"""
+    try:
+        auth = _get_portal_auth()
+        connected = auth is not None
+        sync_info = _portal_read_last_sync()
+
+        auth_type = 'token'
+        if PORTAL_API_ID and PORTAL_API_HASH:
+            auth_type = 'session'
+
+        return jsonify({
+            'success': True,
+            'info': {
+                'connected': connected,
+                'sync_enabled': PORTAL_SYNC_ENABLED,
+                'interval_minutes': PORTAL_SYNC_INTERVAL_MINUTES,
+                'total_collections': sync_info['total_collections'],
+                'last_sync_ago': sync_info['last_sync_ago'],
+                'last_updated': sync_info['last_updated'],
+                'auth_type': auth_type,
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/api/admin/promo-codes', methods=['GET', 'POST', 'DELETE'])
 def admin_promo_codes_management():
     """Управление промокодами"""
     try:
-        admin_id = request.args.get('admin_id') or (request.json or {}).get('admin_id')
+        admin_id = request.args.get('admin_id') or (request.get_json(silent=True) or {}).get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
             return jsonify({'success': False, 'error': 'Доступ запрещен'})
 
         if request.method == 'GET':
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute('''
-                SELECT id, code, reward_stars, reward_tickets, reward_type, max_uses, used_count,
-                       created_at, expires_at, is_active
-                FROM promo_codes
-                ORDER BY created_at DESC
-            ''')
+            cursor.execute("SELECT id, code, reward_stars, reward_tickets, reward_type, max_uses, used_count, created_at, expires_at, is_active FROM promo_codes ORDER BY created_at DESC")
             promos = cursor.fetchall()
             conn.close()
-
             promos_list = []
             for promo in promos:
                 promos_list.append({
-                    'id': promo[0],
-                    'code': promo[1],
-                    'reward_stars': promo[2],
-                    'reward_tickets': promo[3],
-                    'reward_type': promo[4] or 'stars',
-                    'max_uses': promo[5],
-                    'used_count': promo[6],
-                    'created_at': promo[7],
-                    'expires_at': promo[8],
-                    'is_active': bool(promo[9])
+                    'id': promo[0], 'code': promo[1], 'reward_stars': promo[2],
+                    'reward_tickets': promo[3], 'reward_type': promo[4] or 'stars',
+                    'max_uses': promo[5], 'used_count': promo[6],
+                    'created_at': promo[7], 'expires_at': promo[8], 'is_active': bool(promo[9])
                 })
             return jsonify({'success': True, 'promo_codes': promos_list})
 
         elif request.method == 'POST':
-            data = request.json
+            data = request.get_json() or {}
 
             code = (data.get('code') or '').upper().strip()
             if not code:
                 characters = string.ascii_uppercase + string.digits
                 code = ''.join(random.choice(characters) for _ in range(8))
 
-            # === FIX: приводим все числа к безопасным значениям ===
+            # FIX: безопасные числа
             try:
                 reward_stars = int(data.get('reward_stars', 0) or 0)
             except (ValueError, TypeError):
@@ -14202,9 +14300,8 @@ def admin_promo_codes_management():
             except (ValueError, TypeError):
                 reward_tickets = 0
 
-            # Ограничиваем максимальные значения, чтобы не выходить за пределы INTEGER
-            reward_stars = max(0, min(reward_stars, 2_000_000_000))
-            reward_tickets = max(0, min(reward_tickets, 2_000_000_000))
+            reward_stars = max(0, min(reward_stars, 2000000000))
+            reward_tickets = max(0, min(reward_tickets, 2000000000))
 
             reward_type = data.get('reward_type', 'stars')
             reward_data = data.get('reward_data', {})
@@ -14213,7 +14310,7 @@ def admin_promo_codes_management():
                 max_uses = int(data.get('max_uses', 1) or 1)
             except (ValueError, TypeError):
                 max_uses = 1
-            max_uses = max(0, min(max_uses, 1_000_000))
+            max_uses = max(0, min(max_uses, 1000000))
 
             try:
                 expires_days = int(data.get('expires_days', 30) or 0)
@@ -14228,15 +14325,13 @@ def admin_promo_codes_management():
 
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute('SELECT id FROM promo_codes WHERE code = ?', (code,))
+            cursor.execute("SELECT id FROM promo_codes WHERE code = ?", (code,))
             if cursor.fetchone():
                 conn.close()
                 return jsonify({'success': False, 'error': 'Промокод с таким кодом уже существует'})
 
-            cursor.execute('''
-                INSERT INTO promo_codes (code, reward_stars, reward_tickets, reward_type, reward_data, max_uses, expires_at, created_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (code, reward_stars, reward_tickets, reward_type, reward_data_json, max_uses, expires_at, ADMIN_ID))
+            cursor.execute("INSERT INTO promo_codes (code, reward_stars, reward_tickets, reward_type, reward_data, max_uses, expires_at, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (code, reward_stars, reward_tickets, reward_type, reward_data_json, max_uses, expires_at, ADMIN_ID))
 
             promo_id = cursor.lastrowid
             conn.commit()
@@ -14247,21 +14342,18 @@ def admin_promo_codes_management():
                 'success': True,
                 'message': f'Промокод {code} успешно создан!',
                 'promo_code': {
-                    'id': promo_id,
-                    'code': code,
-                    'reward_type': reward_type,
-                    'reward_stars': reward_stars,
-                    'reward_tickets': reward_tickets,
-                    'max_uses': max_uses,
-                    'expires_at': expires_at
+                    'id': promo_id, 'code': code, 'reward_type': reward_type,
+                    'reward_stars': reward_stars, 'reward_tickets': reward_tickets,
+                    'max_uses': max_uses, 'expires_at': expires_at
                 }
             })
 
         elif request.method == 'DELETE':
-            promo_id = request.json['id']
+            data = request.get_json(silent=True) or {}
+            promo_id = data.get('id')
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute('DELETE FROM promo_codes WHERE id = ?', (promo_id,))
+            cursor.execute("DELETE FROM promo_codes WHERE id = ?", (promo_id,))
             conn.commit()
             conn.close()
             logger.info(f"🛠️ Админ {admin_id} удалил промокод #{promo_id}")
@@ -14270,6 +14362,9 @@ def admin_promo_codes_management():
     except Exception as e:
         logger.error(f"❌ Ошибка управления промокодами: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+
+
 @app.route('/api/admin/customization', methods=['GET'])
 def admin_get_customization():
     """Получение списка кастомизации (ракеты и фоны)"""
