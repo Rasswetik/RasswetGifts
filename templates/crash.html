@@ -416,48 +416,18 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
 }
 
-/* FIX (fix_all.py): кнопка автовывода — иконка не растягивается */
-.auto-withdraw-btn,
-.auto-btn,
-.preferred-gift-btn,
-#autoWithdrawBtn,
-button[data-action="auto-withdraw"],
-.gift-btn,
-.auto-withdraw-preview,
-.auto-withdraw,
-.auto-withdraw-select {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 6px 10px !important;
-    width: auto !important;
-    height: auto !important;
-    min-width: 48px !important;
-    min-height: 48px !important;
-    max-width: 80px !important;
-    max-height: 60px !important;
-    overflow: hidden !important;
-    background: rgba(255,255,255,.06);
-    border-radius: 12px;
-}
-.auto-withdraw-btn img,
-.auto-btn img,
-.preferred-gift-btn img,
-#autoWithdrawBtn img,
-button[data-action="auto-withdraw"] img,
-.gift-btn img,
-.auto-withdraw-preview img,
-.auto-withdraw img,
-.auto-withdraw-select img {
-    width: 28px !important;
-    height: 28px !important;
-    max-width: 28px !important;
-    max-height: 28px !important;
-    object-fit: contain !important;
-    display: inline-block !important;
-    flex-shrink: 0 !important;
-    border-radius: 6px;
-}
+/* ══════════════════════════════════════════════════════════════
+   FIX (fix_all.py): кнопка автовывода — иконка 18px
+   ══════════════════════════════════════════════════════════════ */
+.auto-cashout-row{min-height:58px!important;max-height:58px!important;height:58px!important;overflow:hidden!important;box-sizing:border-box!important}
+.autowd-open-btn{height:38px!important;max-height:38px!important;overflow:hidden!important;box-sizing:border-box!important;display:flex!important;align-items:center!important;padding:0 10px!important;gap:5px!important}
+.autowd-open-btn img{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important;min-width:18px!important;min-height:18px!important;flex:0 0 18px!important;object-fit:contain!important;display:block!important;background:transparent!important;border:none!important;padding:0!important;border-radius:4px!important;box-sizing:border-box!important}
+.autowd-open-btn .autowd-btn-name{flex:1 1 auto!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.autowd-open-btn .autowd-btn-coeff{flex:0 0 auto!important}
+.autowd-open-btn > img:first-child{width:18px!important;height:18px!important;max-width:18px!important;max-height:18px!important}
+/* Защита от растягивания в других местах */
+.autowd-row .autowd-thumb img{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important}
+
 </style>
 </head>
 <body>
@@ -704,6 +674,13 @@ button[data-action="auto-withdraw"] img,
     </div>
 </div>
 <script>
+/* ══════════════════════════════════════════════════════════════
+   FIX (fix_all.py): защита от откатов множителя
+   ══════════════════════════════════════════════════════════════ */
+var _serverMultFloor = 1.0;
+var _statusAbort = null;
+var _betsAbort = null;
+
 /* ============================================================
    GLOBAL STATE
    ============================================================ */
@@ -946,9 +923,10 @@ async function initTelegramApp(){
         loadBets().finally(() => { _betsPending = false; });
     }
 
-    setInterval(pollStatus, 250);
-    setInterval(loadUserData, 20000);
-    setInterval(pollBets, 800);
+    /* FIX: уменьшили частоту поллинга — меньше лагов на слабых телефонах */
+    setInterval(pollStatus, 400);
+    setInterval(loadUserData, 25000);
+    setInterval(pollBets, 1200);
     setInterval(function(){ fetch('/api/ping').catch(()=>{}); }, 30000);
 
     document.addEventListener('visibilitychange', function(){
@@ -2430,6 +2408,12 @@ function _initRenderCache(){
 
 function onNewServerMult(newMult){
     var now = performance.now();
+    /* FIX: сервер не может откатить множитель ниже того, что уже показали */
+    if(newMult < _serverMultFloor){
+        newMult = _serverMultFloor;
+    } else {
+        _serverMultFloor = newMult;
+    }
     if(lastPollTimestamp > 0 && newMult > prevServMult){
         var elapsed = now - lastPollTimestamp;
         if(elapsed > 30) multGrowthRate = (newMult - prevServMult) / elapsed;
