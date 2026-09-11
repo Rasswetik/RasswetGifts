@@ -15,7 +15,7 @@
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1C2233;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
 @keyframes coeffShake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-4px)}20%,40%,60%,80%{transform:translateX(4px)}}
-.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 50px + 3vh)}
+.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 30px)}
 
 /* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:4000;width:100%;max-width:480px;height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);background:rgba(28,34,51,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-top:1px solid rgba(59,130,246,.08);display:flex;align-items:center;justify-content:space-around}
@@ -717,6 +717,83 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     object-fit:contain !important;
 }
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   ★ РЕЖИМ ОПТИМИЗАЦИИ — минимальные анимации
+   ══════════════════════════════════════════════════════════════ */
+
+/* Обычная оптимизация */
+.optimize-mode .game-field::before{
+    background-size:80px 80px !important;
+    opacity:.4 !important;
+}
+.optimize-mode .rocket-wrap img{
+    width:120px !important;
+    height:120px !important;
+}
+.optimize-mode .rocket-wrap.showing-gift img{
+    width:120px !important;
+    height:120px !important;
+}
+.optimize-mode .case-particle{
+    display:none !important;
+}
+.optimize-mode .podium-medal img,
+.optimize-mode .settings-item img{
+    animation:none !important;
+}
+.optimize-mode .cb-gift-side.pulse,
+.optimize-mode .cb-gift-side.swap{
+    animation:none !important;
+}
+.optimize-mode .feed-item.new{
+    animation:none !important;
+}
+.optimize-mode .h-pill{
+    transition:none !important;
+}
+.optimize-mode *{
+    animation-duration:.15s !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.08s !important;
+}
+
+/* ТУРБО-РЕЖИМ — отключаем вообще всё */
+.turbo-mode *,
+body.turbo-mode *{
+    animation:none !important;
+    transition:none !important;
+    box-shadow:none !important;
+    filter:none !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    text-shadow:none !important;
+    will-change:auto !important;
+}
+.turbo-mode .rocket-wrap,
+body.turbo-mode .rocket-wrap{
+    display:none !important;
+}
+.turbo-mode .boom-wrap,
+body.turbo-mode .boom-wrap{
+    display:none !important;
+}
+.turbo-mode .game-field::before,
+body.turbo-mode .game-field::before{
+    background:none !important;
+}
+.turbo-mode .bottom-nav,
+body.turbo-mode .bottom-nav{
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+    background:rgba(28,34,51,.98) !important;
+}
+.turbo-mode .countdown-display,
+body.turbo-mode .countdown-display{
+    text-shadow:none !important;
+}
+
 </style>
 </head>
 <body>
@@ -947,6 +1024,21 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
                     <div class="desc">Сохранять выбранный автовывод после перезагрузки</div>
                 </div>
                 <div class="toggle-switch on" id="autoWithdrawGuardToggle" onclick="toggleAutoWithdrawGuardClick()"></div>
+            </div>
+            <!-- ★ КНОПКА ОПТИМИЗАЦИИ -->
+            <div class="settings-gift-toggle" id="optimizeSection">
+                <div class="toggle-info">
+                    <div class="lbl">⚡ Режим оптимизации</div>
+                    <div class="desc">Минимум анимаций, меньше лагов на слабых телефонах</div>
+                </div>
+                <div class="toggle-switch" id="optimizeToggle" onclick="toggleOptimize()"></div>
+            </div>
+            <div class="settings-gift-toggle" style="background:rgba(255,100,100,.06);border-color:rgba(255,100,100,.15)">
+                <div class="toggle-info">
+                    <div class="lbl">🚨 Экстренная оптимизация</div>
+                    <div class="desc">Отключает ВСЕ анимации, вибрации, звуки. Максимальный FPS</div>
+                </div>
+                <div class="toggle-switch" id="turboToggle" onclick="toggleTurbo()"></div>
             </div>
             <div class="settings-grid" id="rocketGrid"></div>
         </div>
@@ -1212,6 +1304,9 @@ async function initTelegramApp(){
     if(window._ldDone) window._ldDone();
 
     if(savedBetAmount) setBetInputFromStars(savedBetAmount);
+
+    /* ★ Применяем сохранённый режим оптимизации */
+    applyOptimizeMode();
 
     updateAutoWithdrawButton();
     syncSettingsToggles();
@@ -1566,6 +1661,10 @@ function updateCashoutButton(){
 
     var isActive = hasBet && !cashedOut && status === 'flying';
     if(!isActive){
+        /* ★ FIX: если только что был cashout — не прячем кнопку, оставляем серой с PNG */
+        if(cashedOut && status === 'flying'){
+            return;  /* оставляем как есть — серая с PNG */
+        }
         cb.classList.remove('visible');
         return;
     }
@@ -1630,7 +1729,19 @@ async function doCashout(){
         pb.innerHTML = '<span class="btn-text">+'+formatCrashMoney(instantWin)+'</span>';
         pb.style.pointerEvents = 'none';
     }
-    if(btn) btn.classList.remove('visible');
+    /* ★ Кнопка cashout: серая + PNG подарка */
+    if(btn){
+        btn.classList.add('visible');
+        btn.classList.add('crash-state');
+        btn.disabled = true;
+        var _cWin = instantWin;
+        var _cGift = getAchievableGift(_cWin);
+        var _cGiftImg = _cGift ? getGiftImage(_cGift) : (betGiftImg || '/static/img/gift.png');
+        var cbW = $('cbWin'), cbL = $('cbGiftLeft'), cbR = $('cbGiftRight');
+        if(cbW) cbW.textContent = '+' + formatCrashMoney(instantWin);
+        if(cbL){ cbL.src = _cGiftImg; cbL.classList.remove('empty'); cbL.dataset.src = _cGiftImg; }
+        if(cbR){ cbR.src = _cGiftImg; cbR.classList.remove('empty'); cbR.dataset.src = _cGiftImg; }
+    }
 
     cashedOutBetAmt = betAmt;
     cashedOutGiftImg = betGiftImg;
@@ -2016,6 +2127,11 @@ async function updStatus(){
 
         } else if(status === 'flying'){
             if(prevSt === 'counting' || prevSt === 'waiting'){
+                /* ★ FIX: сброс множителя в начале flying */
+                dispMult = 1.0;
+                _serverMultFloor = 1.0;
+                prevServMult = 1.0;
+                multGrowthRate = 0;
                 if(countdownShown !== 'GO'){
                     var cdGo = $('cdDisplay');
                     if(cdGo){
@@ -2674,6 +2790,8 @@ function makeOsc(freq, type, gainVal, startT, dur){
     }catch(e){}
 }
 function playSound(type){
+    /* ★ Отключаем звук в режимах оптимизации */
+    if(window._soundDisabled || turboMode || optimizeMode) return;
     initAudio();
     if(!audioContext) return;
     if(audioContext.state === 'suspended') audioContext.resume();
@@ -2686,6 +2804,8 @@ function playSound(type){
     else if(type === 'win'){ [523,659,784,988].forEach(function(f,i){ makeOsc(f,'triangle',0.12,now+i*0.07,0.35); }); }
 }
 function triggerVibration(pattern){
+    /* ★ Отключаем вибрацию в режимах оптимизации */
+    if(window._vibrationDisabled || turboMode || optimizeMode) return;
     try{
         if(typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
             Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
@@ -2741,7 +2861,6 @@ function _initRenderCache(){
 
 function onNewServerMult(newMult){
     var now = performance.now();
-    /* FIX: сервер не может откатить множитель ниже того, что уже показали */
     if(newMult < _serverMultFloor){
         newMult = _serverMultFloor;
     } else {
@@ -2753,7 +2872,19 @@ function onNewServerMult(newMult){
     }
     prevServMult = newMult;
     lastPollTimestamp = now;
-    if(dispMult < newMult - 0.05) dispMult = newMult - 0.01;
+
+    /* ★ FIX: плавный рост — dispMult догоняет сервер НЕ БОЛЕЕ чем на 0.03 за кадр,
+       и НИКОГДА не прыгает резко.
+       Максимум отставания: 0.15x от сервера. */
+    var gap = newMult - dispMult;
+    if(gap > 0.15){
+        /* Если слишком большое отставание — плавно догоняем максимум до -0.15 */
+        dispMult = newMult - 0.15;
+    } else if(gap > 0.03){
+        /* Малый разрыв — плавно подтягиваемся */
+        dispMult = Math.max(dispMult, newMult - 0.03);
+    }
+
     if(hasBet && !cashedOut && status === 'flying'){
         updateCashoutButton();
     }
@@ -2764,6 +2895,16 @@ function render(){
     var dt = lastFrameTime > 0 ? (now - lastFrameTime) : 16;
     if(dt > 60) dt = 60;
     lastFrameTime = now;
+
+    /* ★ Режим оптимизации — обновляем раз в 50мс (20 FPS хватит) */
+    if(turboMode || optimizeMode){
+        if(!window._lastOptRender) window._lastOptRender = 0;
+        if(now - window._lastOptRender < 50){
+            requestAnimationFrame(render);
+            return;
+        }
+        window._lastOptRender = now;
+    }
 
     /* Оптимизация: если вкладка свёрнута — пропускаем кадр */
     if(document.hidden){
@@ -2781,7 +2922,7 @@ function render(){
     if(status === 'flying'){
         if(multGrowthRate > 0){
             var delta = multGrowthRate * dt;
-            if(delta > 0.02) delta = 0.02;
+            if(delta > 0.025) delta = 0.025;
             dispMult += delta;
             if(dispMult > prevServMult + 0.5) multGrowthRate *= 0.75;
         }
@@ -3198,6 +3339,89 @@ document.addEventListener('DOMContentLoaded', function(){
 
 document.addEventListener('click', initAudio, {once: true});
 document.addEventListener('touchstart', initAudio, {once: true});
+
+/* ══════════════════════════════════════════════════════════════
+   ★ ОПТИМИЗАЦИЯ — отключение анимаций для слабых телефонов
+   ══════════════════════════════════════════════════════════════ */
+
+var optimizeMode = localStorage.getItem('crash_optimize') === '1';
+var turboMode = localStorage.getItem('crash_turbo') === '1';
+
+function applyOptimizeMode(){
+    var root = document.documentElement;
+    var body = document.body;
+
+    if(turboMode){
+        /* ЭКСТРЕМАЛЬНАЯ оптимизация — отключаем ВСЁ */
+        root.classList.add('turbo-mode');
+        body.classList.add('turbo-mode');
+        root.classList.remove('optimize-mode');
+        body.classList.remove('optimize-mode');
+        /* Отключаем анимации ракеты */
+        _turboDisableAll();
+    } else if(optimizeMode){
+        root.classList.add('optimize-mode');
+        body.classList.add('optimize-mode');
+        root.classList.remove('turbo-mode');
+        body.classList.remove('turbo-mode');
+    } else {
+        root.classList.remove('optimize-mode', 'turbo-mode');
+        body.classList.remove('optimize-mode', 'turbo-mode');
+    }
+
+    /* Обновляем переключатели */
+    var oT = $('optimizeToggle');
+    if(oT) oT.classList.toggle('on', optimizeMode);
+    var tT = $('turboToggle');
+    if(tT) tT.classList.toggle('on', turboMode);
+}
+
+function _turboDisableAll(){
+    /* Отключаем звуки */
+    window._soundDisabled = true;
+    /* Отключаем вибрации */
+    window._vibrationDisabled = true;
+    /* Скрываем ракету-гиф (оставляем только множитель) */
+    var rw = $('rocketWrap');
+    if(rw) rw.style.display = 'none';
+    /* Отключаем boom-анимацию */
+    var bm = $('boomWrap');
+    if(bm) bm.style.display = 'none';
+}
+
+function toggleOptimize(){
+    optimizeMode = !optimizeMode;
+    if(optimizeMode && turboMode){
+        turboMode = false;
+        localStorage.setItem('crash_turbo', '0');
+    }
+    localStorage.setItem('crash_optimize', optimizeMode ? '1' : '0');
+    applyOptimizeMode();
+    showToast(optimizeMode ? '⚡ Режим оптимизации ВКЛ' : 'Режим оптимизации ВЫКЛ', 'ok');
+    /* Перезагружаем для чистого эффекта */
+    if(optimizeMode){
+        setTimeout(function(){ location.reload(); }, 600);
+    }
+}
+
+function toggleTurbo(){
+    turboMode = !turboMode;
+    if(turboMode && optimizeMode){
+        optimizeMode = false;
+        localStorage.setItem('crash_optimize', '0');
+    }
+    localStorage.setItem('crash_turbo', turboMode ? '1' : '0');
+    applyOptimizeMode();
+    showToast(turboMode ? '🚨 Турбо-режим ВКЛ' : 'Турбо-режим ВЫКЛ', 'ok');
+    if(turboMode){
+        setTimeout(function(){ location.reload(); }, 600);
+    }
+}
+
+/* Применяем при загрузке */
+applyOptimizeMode();
+
+
 </script>
 
 <nav class="bottom-nav">
