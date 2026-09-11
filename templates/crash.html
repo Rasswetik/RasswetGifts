@@ -13,8 +13,6 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1C2233;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background:none;z-index:-1}
-body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;background:none}
 @keyframes coeffShake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-4px)}20%,40%,60%,80%{transform:translateX(4px)}}
 
 .container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 50px + 5vh)}
@@ -67,10 +65,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .countdown-display.active{opacity:1;animation:cdPop .3s cubic-bezier(.22,.9,.2,1)}
 @keyframes cdPop{0%{transform:scale(2);opacity:0}60%{transform:scale(.95)}100%{transform:scale(1);opacity:1}}
 
-/* ROCKET */
+/* ROCKET — БЕЗ чёрной обводки, чистый PNG с drop-shadow */
 .rocket-wrap{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);z-index:2;transition:opacity .3s;opacity:1;will-change:transform,opacity;backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.rocket-wrap img{width:180px;height:180px;object-fit:contain;border-radius:0;border:none;background:transparent;transition:transform .2s ease;will-change:transform;image-rendering:auto;transform:translateZ(0)}
-.rocket-wrap.showing-gift img{width:180px;height:180px;object-fit:contain;border-radius:20px;border:1.5px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25);padding:8px;box-shadow:0 8px 32px rgba(0,0,0,.5), 0 0 40px rgba(59,130,246,.15);image-rendering:high-quality;filter:drop-shadow(0 4px 20px rgba(0,0,0,.4))}
+.rocket-wrap img{width:180px;height:180px;object-fit:contain;border:none;background:transparent;transition:transform .2s ease;will-change:transform;image-rendering:auto;transform:translateZ(0)}
+.rocket-wrap.showing-gift img{width:180px;height:180px;object-fit:contain;border:none !important;background:transparent !important;padding:0 !important;border-radius:0 !important;box-shadow:none !important;filter:drop-shadow(0 10px 26px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(59,130,246,.28));image-rendering:high-quality}
 .rocket-wrap.hide{opacity:0;pointer-events:none}
 .rocket-wrap.flying img{transform:rotate(18deg) translateZ(0)}
 .rocket-wrap.flying.showing-gift img{transform:scale(1.05) translateZ(0) !important}
@@ -88,16 +86,39 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .place-bet-btn:not(:disabled):active{transform:scale(.98)}
 .place-bet-btn .btn-text{display:inline-block;pointer-events:none}
 
-.cashout-btn{width:100%;padding:14px 16px;border-radius:20px;border:none;font-family:inherit;font-weight:800;font-size:16px;cursor:pointer;position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(30,228,76,.9),rgba(24,184,62,.9));color:#061510;box-shadow:0 12px 35px rgba(30,228,76,.25),inset 0 1px 1px rgba(255,255,255,.15);display:none;letter-spacing:.5px;text-transform:uppercase;border:2px solid rgba(255,255,255,.1);transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;z-index:101;display:flex;align-items:center;justify-content:space-between;gap:10px}
+/* CASHOUT BUTTON — Cash OUT + 2 реальных PNG подарка (ИСПРАВЛЕНО: только display:flex) */
+.cashout-btn{
+    width:100%;padding:12px 14px;border-radius:20px;border:none;
+    font-family:inherit;font-weight:800;font-size:16px;cursor:pointer;
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,rgba(30,228,76,.95),rgba(24,184,62,.95));
+    color:#061510;
+    box-shadow:0 12px 35px rgba(30,228,76,.25),inset 0 1px 1px rgba(255,255,255,.15);
+    display:flex;letter-spacing:.4px;text-transform:uppercase;
+    border:2px solid rgba(255,255,255,.1);
+    transition:transform .15s,box-shadow .15s;
+    -webkit-tap-highlight-color:transparent;touch-action:manipulation;z-index:101;
+    flex-direction:row;align-items:center;justify-content:space-between;gap:10px;
+    visibility:hidden;
+}
+.cashout-btn.visible{visibility:visible}
 .cashout-btn:not(:disabled):active{transform:scale(.98)}
 .cashout-btn.crash-state{background:linear-gradient(135deg,rgba(220,60,80,.9),rgba(180,40,60,.9));color:#fff;cursor:default;pointer-events:none}
-.cashout-btn .cb-gift-side{width:26px;height:26px;object-fit:contain;border-radius:8px;background:rgba(255,255,255,.06);padding:3px;box-sizing:border-box;flex-shrink:0;opacity:1;transition:opacity .2s, filter .2s}
-.cashout-btn .cb-gift-side.empty{opacity:.55;filter:grayscale(1)}
-.cashout-btn .cb-center{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;min-width:0}
-.cashout-btn .cb-label{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.8}
-.cashout-btn .cb-win{font-size:18px;font-weight:900;line-height:1.1;letter-spacing:0}
-.cashout-btn .cb-top{display:flex;justify-content:space-between;align-items:center;width:100%;font-size:12px;font-weight:700;opacity:.75;margin-bottom:2px;letter-spacing:0}
-.cashout-btn .cb-bottom{font-size:18px;font-weight:900;line-height:1.1;letter-spacing:0}
+.cb-gift-side{
+    width:44px;height:44px;flex-shrink:0;object-fit:contain;
+    border:none !important;background:transparent !important;padding:0 !important;
+    filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+    image-rendering:high-quality;
+}
+.cb-gift-side.empty{opacity:.3}
+.cb-gift-side.pulse{animation:cbPulse .55s ease}
+.cb-gift-side.swap{animation:cbSwap .5s ease}
+@keyframes cbPulse{0%{transform:scale(1)}50%{transform:scale(1.22) rotate(-8deg)}100%{transform:scale(1)}}
+@keyframes cbSwap{0%{transform:scale(1) rotate(0);opacity:1}45%{transform:scale(.5) rotate(120deg);opacity:.2}55%{transform:scale(.5) rotate(-120deg);opacity:.2}100%{transform:scale(1) rotate(0);opacity:1}}
+.cb-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;min-width:0}
+.cb-center .cb-label{font-size:12px;font-weight:800;letter-spacing:1px;opacity:.85;text-transform:uppercase}
+.cb-center .cb-win{font-size:20px;font-weight:900;letter-spacing:.3px;white-space:nowrap;transition:color .3s}
 
 /* HISTORY */
 .history-section{padding:8px 12px}
@@ -119,7 +140,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .bets-title{font-family:inherit;font-weight:800;font-size:14px;color:#fff}
 .bets-count{font-size:12px;color:rgba(140,160,190,.8);font-weight:700;background:rgba(107,122,141,.15);padding:3px 10px;border-radius:10px}
 .bets-list{display:flex;flex-direction:column;gap:6px;max-height:350px;overflow-y:auto}
-.bet-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:14px;background:rgba(28,34,51,.85);gap:10px}
+.bet-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:14px;background:rgba(28,34,51,.85);gap:10px;transition:background .3s}
 .bet-row.won{background:rgba(30,228,76,.06)}
 .bet-row.lost{background:rgba(249,105,153,.04)}
 .bet-row.pending-bet{background:rgba(59,130,246,.06);border:1.5px dashed rgba(59,130,246,.5)}
@@ -128,12 +149,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .bet-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .bet-info{display:flex;flex-direction:column;gap:2px;min-width:0}
 .bet-name{font-weight:700;font-size:13px;color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bet-amt{font-size:12px;color:rgba(140,160,190,.7);font-weight:600;display:flex;align-items:center;gap:4px}
-.bet-amt img{width:13px;height:13px;object-fit:contain;flex-shrink:0}
-.bet-gift-stack{display:flex;align-items:center;flex-shrink:0}
-.bet-gift-stack img{width:22px;height:22px;object-fit:cover;border-radius:4px;background:rgba(0,0,0,.3);margin-left:-6px}
-.bet-gift-stack img:first-child{margin-left:0}
-.bet-gift-stack .bet-gift-more{width:18px;height:18px;border-radius:50%;background:rgba(59,130,246,.3);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff;margin-left:-4px;flex-shrink:0}
+/* Ставка в раунде: [PNG подарка 22×22] [Сумма] */
+.bet-amt{font-size:12px;color:rgba(140,160,190,.7);font-weight:600;display:flex;align-items:center;gap:6px}
+.bet-amt .bet-gift-preview{
+    width:22px;height:22px;object-fit:contain;flex-shrink:0;
+    border:none !important;background:transparent !important;padding:0 !important;
+    filter:drop-shadow(0 1px 3px rgba(0,0,0,.4));
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+}
+.bet-amt .bet-gift-preview.swap{animation:cbSwap .5s ease}
+.bet-amt .bet-gift-preview.empty{opacity:.35}
+.bet-amt .bet-amount-text{font-weight:800;color:#fff;font-size:13px}
 .bet-status{display:flex;align-items:center;gap:6px;flex-shrink:0;padding:5px 10px;border-radius:10px;font-family:inherit;font-weight:700;font-size:12px}
 .bet-status svg{width:14px;height:14px;flex-shrink:0}
 .bet-status.active{background:rgba(107,122,141,.12);color:rgba(160,180,200,.8)}
@@ -166,7 +192,6 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .auto-cashout-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .auto-cashout-label{font-family:inherit;font-weight:800;font-size:13px;color:#1EE44C}
 .auto-cashout-sub{font-size:10px;color:rgba(255,255,255,.5)}
-
 .autowd-open-btn{flex:1;padding:11px 14px;border-radius:12px;border:none;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-family:inherit;font-weight:800;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:transform .15s;min-width:0;max-width:70%}
 .autowd-open-btn:active{transform:scale(.97)}
 .autowd-open-btn img{width:18px;height:18px;flex-shrink:0;border-radius:4px;background:rgba(0,0,0,.15);padding:1px;object-fit:contain}
@@ -181,19 +206,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .selected-total{font-family:inherit;font-weight:800;font-size:15px;color:#3B82F6;display:flex;align-items:center;gap:4px}
 .selected-total img{width:15px;height:15px}
 .clear-selected{padding:8px 12px;border-radius:9px;border:none;background:rgba(249,105,153,.15);color:#E8527A;font-family:inherit;font-weight:700;font-size:11px;cursor:pointer;flex-shrink:0}
-
 .inv-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-height:420px;overflow-y:auto;overflow-x:hidden;padding:4px;box-sizing:border-box}
 .inv-grid::-webkit-scrollbar{width:3px}
 .inv-grid::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
-
 .inv-card{background:linear-gradient(160deg,rgba(59,130,246,.06),rgba(59,130,246,.02));border:1.5px solid rgba(59,130,246,.15);border-radius:14px;padding:6px;text-align:center;cursor:pointer;transition:all .15s;position:relative;min-width:0;max-width:100%;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box}
 .inv-card:hover{border-color:rgba(59,130,246,.4);background:linear-gradient(160deg,rgba(59,130,246,.12),rgba(59,130,246,.04));transform:translateY(-2px)}
 .inv-card:active{transform:scale(.96)}
 .inv-card.selected{border-color:#3B82F6;background:rgba(59,130,246,.18);box-shadow:0 0 0 2px rgba(59,130,246,.4), 0 0 20px rgba(59,130,246,.25)}
-.inv-card.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2;box-shadow:0 2px 8px rgba(59,130,246,.5)}
-.inv-card img{width:100%;height:auto;aspect-ratio:1/1;object-fit:contain;margin:0 0 4px 0;display:block;flex-shrink:0;border-radius:8px;background:rgba(0,0,0,.2);padding:4px;box-sizing:border-box;image-rendering:-webkit-optimize-contrast}
-.inv-card .inv-name{font-family:inherit;font-weight:700;font-size:10px;color:rgba(255,255,255,.85);padding:2px 2px 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2;min-height:0}
-.inv-card .inv-val{font-family:inherit;font-weight:800;font-size:11px;color:#8CA0BE;padding:3px 4px 4px;display:flex;align-items:center;justify-content:center;gap:3px;flex-shrink:0;line-height:1;background:rgba(59,130,246,.08);border-radius:6px;margin-top:2px}
+.inv-card.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
+.inv-card img{width:100%;height:auto;aspect-ratio:1/1;object-fit:contain;margin:0 0 4px 0;display:block;flex-shrink:0;border-radius:8px;background:rgba(0,0,0,.2);padding:4px;box-sizing:border-box}
+.inv-card .inv-name{font-family:inherit;font-weight:700;font-size:10px;color:rgba(255,255,255,.85);padding:2px 2px 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
+.inv-card .inv-val{font-family:inherit;font-weight:800;font-size:11px;color:#8CA0BE;padding:3px 4px 4px;display:flex;align-items:center;justify-content:center;gap:3px;line-height:1;background:rgba(59,130,246,.08);border-radius:6px;margin-top:2px}
 .inv-card .inv-val img{width:12px;height:12px;aspect-ratio:auto;border-radius:0;object-fit:contain;background:none;padding:0;margin:0}
 .inv-card.selected .inv-val{color:#fff;background:rgba(59,130,246,.2)}
 .inv-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px}
@@ -210,7 +233,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .win-gift-hero{display:flex;align-items:center;justify-content:center;padding:14px 0 16px;position:relative}
 .win-gift-hero::before{content:'';position:absolute;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(59,130,246,.25) 0%,transparent 70%);animation:winGlow 2s ease-in-out infinite alternate;pointer-events:none}
 @keyframes winGlow{0%{opacity:.5;transform:scale(.9)}100%{opacity:1;transform:scale(1.1)}}
-.win-gift-hero img{position:relative;z-index:1;width:130px;height:130px;object-fit:contain;border-radius:24px;background:linear-gradient(160deg,rgba(59,130,246,.12),rgba(59,130,246,.02));padding:12px;border:2px solid rgba(59,130,246,.3);box-shadow:0 12px 48px rgba(0,0,0,.6),0 0 60px rgba(59,130,246,.2);image-rendering:-webkit-optimize-contrast;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5));animation:winGiftPop .5s cubic-bezier(.34,1.56,.64,1)}
+.win-gift-hero img{position:relative;z-index:1;width:130px;height:130px;object-fit:contain;border-radius:24px;background:linear-gradient(160deg,rgba(59,130,246,.12),rgba(59,130,246,.02));padding:12px;border:2px solid rgba(59,130,246,.3);box-shadow:0 12px 48px rgba(0,0,0,.6),0 0 60px rgba(59,130,246,.2);animation:winGiftPop .5s cubic-bezier(.34,1.56,.64,1)}
 @keyframes winGiftPop{0%{transform:scale(.5) rotate(-15deg);opacity:0}60%{transform:scale(1.15) rotate(5deg)}100%{transform:scale(1) rotate(0);opacity:1}}
 .win-mult-badge{display:flex;align-items:center;justify-content:center;padding:6px 0 4px}
 .win-mult-badge span{font-family:inherit;font-weight:900;font-size:28px;background:linear-gradient(135deg,#c471f5,#fa71cd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
@@ -227,58 +250,45 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 /* AUTO WITHDRAW MODAL */
 .autowd-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:6500;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
 .autowd-overlay.show{opacity:1;visibility:visible}
-.autowd-modal{background:linear-gradient(180deg,#1a2030,#0f1420);border-radius:24px;width:95%;max-width:440px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid rgba(59,130,246,.2);box-shadow:0 20px 60px rgba(0,0,0,.7)}
+.autowd-modal{background:linear-gradient(180deg,#1a2030,#0f1420);border-radius:24px;width:95%;max-width:440px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid rgba(59,130,246,.2)}
 .autowd-overlay.show .autowd-modal{transform:scale(1)}
 .autowd-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06)}
 .autowd-title{font-family:inherit;font-weight:800;font-size:18px;color:#fff;display:flex;align-items:center;gap:8px}
 .autowd-title img{width:22px;height:22px;flex-shrink:0}
-.autowd-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.15);color:#F96999;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;padding:0}
-.autowd-close:active{transform:scale(.9)}
-.autowd-close img{width:14px;height:14px}
+.autowd-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.15);color:#F96999;font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .autowd-summary{padding:14px 20px;background:rgba(59,130,246,.06);border-bottom:1px solid rgba(59,130,246,.1);display:flex;flex-direction:column;gap:6px}
 .autowd-summary-row{display:flex;justify-content:space-between;align-items:center;font-family:inherit;font-size:13px;color:rgba(255,255,255,.6)}
 .autowd-summary-val{font-weight:800;color:#fff;font-size:14px}
 .autowd-summary-val.gold{color:#FFD700;font-size:15px}
 .autowd-search-wrap{padding:12px 20px 8px}
-.autowd-search{width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-family:inherit;font-size:14px;outline:none;transition:border-color .2s;box-sizing:border-box}
+.autowd-search{width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-family:inherit;font-size:14px;outline:none;box-sizing:border-box}
 .autowd-search:focus{border-color:rgba(59,130,246,.4);background:rgba(59,130,246,.08)}
-.autowd-search::placeholder{color:rgba(255,255,255,.3)}
 .autowd-list{flex:1;overflow-y:auto;padding:8px 16px;display:flex;flex-direction:column;gap:8px;min-height:220px;max-height:450px}
-.autowd-list::-webkit-scrollbar{width:4px}
-.autowd-list::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
 .autowd-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.06);border-radius:14px;cursor:pointer;transition:all .2s;position:relative}
-.autowd-row:hover{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.3);transform:translateX(2px)}
-.autowd-row.selected{background:rgba(59,130,246,.15);border-color:#3B82F6;box-shadow:0 0 0 2px rgba(59,130,246,.3), 0 0 20px rgba(59,130,246,.2)}
-.autowd-row.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:20px;height:20px;background:#3B82F6;border-radius:50%;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(59,130,246,.5)}
+.autowd-row:hover{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.3)}
+.autowd-row.selected{background:rgba(59,130,246,.15);border-color:#3B82F6;box-shadow:0 0 0 2px rgba(59,130,246,.3)}
+.autowd-row.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:20px;height:20px;background:#3B82F6;border-radius:50%;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .autowd-thumb{width:44px;height:44px;flex-shrink:0;border-radius:10px;background:rgba(0,0,0,.25);padding:4px;box-sizing:border-box;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center}
-.autowd-thumb img{width:100%;height:100%;object-fit:contain;image-rendering:-webkit-optimize-contrast}
+.autowd-thumb img{width:100%;height:100%;object-fit:contain}
 .autowd-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .autowd-name{font-family:inherit;font-weight:700;font-size:12px;color:rgba(255,255,255,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.autowd-coeff{font-family:inherit;font-weight:800;font-size:11px;color:#8CA0BE;display:flex;align-items:center;gap:3px}
-.autowd-coeff.green{color:#1EE44C}
-.autowd-coeff.orange{color:#FFA500}
+.autowd-coeff{font-family:inherit;font-weight:800;font-size:11px;color:#8CA0BE}
 .autowd-price{display:flex;align-items:center;gap:3px;font-family:inherit;font-weight:800;font-size:13px;color:#FFD700;flex-shrink:0}
 .autowd-price img{width:12px;height:12px}
 .autowd-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px}
-.autowd-apply-btn{margin:12px 16px 16px;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;transition:all .2s;box-shadow:0 8px 24px rgba(59,130,246,.35);display:flex;align-items:center;justify-content:center;gap:8px}
-.autowd-apply-btn:active:not(:disabled){transform:scale(.98)}
+.autowd-apply-btn{margin:12px 16px 16px;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 8px 24px rgba(59,130,246,.35);display:flex;align-items:center;justify-content:center;gap:8px}
 .autowd-apply-btn:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,.06);box-shadow:none}
-.autowd-apply-btn img{width:20px;height:20px;flex-shrink:0;border-radius:6px;background:rgba(0,0,0,.2);padding:2px;object-fit:contain}
-.autowd-apply-btn .coeff-badge{background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800}
 
 /* DEPOSIT */
 .deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5650;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
 .deposit-overlay.show{opacity:1;visibility:visible}
-.deposit-modal{background:linear-gradient(180deg,#1E2538,#151B2D);border-radius:24px;width:90%;max-width:360px;padding:24px 20px;transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid rgba(255,255,255,.1)}
+.deposit-modal{background:linear-gradient(180deg,#1E2538,#151B2D);border-radius:24px;width:90%;max-width:360px;padding:24px 20px;transform:scale(.9);transition:transform .3s;border:1px solid rgba(255,255,255,.1)}
 .deposit-overlay.show .deposit-modal{transform:scale(1)}
 .deposit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .deposit-title{font-family:inherit;font-weight:800;font-size:18px;color:#fff}
 .deposit-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#F96999;font-size:18px;font-weight:700;padding:0}
-.deposit-close img{width:14px;height:14px}
 .deposit-methods{display:flex;gap:12px}
 .deposit-method-btn{position:relative;flex:1;padding:20px 14px;border-radius:16px;border:none;background:rgba(255,255,255,.04);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .2s;border:2px solid rgba(255,255,255,.06)}
-.deposit-method-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);transform:translateY(-2px)}
-.deposit-method-btn:active{transform:scale(.97)}
 .deposit-method-btn img{width:48px;height:48px;object-fit:contain}
 .deposit-method-btn span{font-family:inherit;font-weight:700;font-size:13px;color:#fff}
 .deposit-method-btn.disabled{opacity:.35;pointer-events:none;filter:grayscale(1)}
@@ -286,21 +296,17 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 /* STARS DEPOSIT */
 .stars-deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5750;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
 .stars-deposit-overlay.show{opacity:1;visibility:visible}
-.stars-deposit-modal{background:linear-gradient(180deg,#1E2538,#151B2D);border-radius:24px;width:92%;max-width:380px;overflow:hidden;transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid rgba(255,255,255,.1)}
+.stars-deposit-modal{background:linear-gradient(180deg,#1E2538,#151B2D);border-radius:24px;width:92%;max-width:380px;overflow:hidden;transform:scale(.9);transition:transform .3s;border:1px solid rgba(255,255,255,.1)}
 .stars-deposit-overlay.show .stars-deposit-modal{transform:scale(1)}
 .stars-deposit-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06)}
 .stars-deposit-title{font-family:inherit;font-weight:800;font-size:16px;color:#fff}
 .stars-deposit-close{width:32px;height:32px;border-radius:50%;border:none;background:rgba(249,105,153,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#F96999;font-size:18px;font-weight:700;padding:0}
-.stars-deposit-close img{width:14px;height:14px}
 .stars-deposit-body{padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:18px}
 .stars-deposit-icon{width:64px;height:64px;object-fit:contain}
 .stars-deposit-label{font-family:inherit;font-size:13px;color:rgba(255,255,255,.5);text-align:center}
-.stars-deposit-input-wrap{width:100%;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:14px;padding:12px 16px;border:2px solid rgba(255,255,255,.08);transition:border-color .2s}
-.stars-deposit-input-wrap:focus-within{border-color:rgba(255,193,7,.4)}
+.stars-deposit-input-wrap{width:100%;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:14px;padding:12px 16px;border:2px solid rgba(255,255,255,.08)}
 .stars-deposit-input{flex:1;background:none;border:none;outline:none;color:#fff;font-family:inherit;font-size:20px;font-weight:700;text-align:center}
-.stars-deposit-input::placeholder{color:rgba(255,255,255,.2)}
-.stars-deposit-pay-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#FFC107,#FF9800);color:#000;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
-.stars-deposit-pay-btn:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(255,193,7,.3)}
+.stars-deposit-pay-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#FFC107,#FF9800);color:#000;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
 .stars-deposit-pay-btn:disabled{opacity:.5;pointer-events:none}
 .stars-deposit-pay-btn img{width:18px;height:18px}
 
@@ -313,18 +319,15 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .settings-content::-webkit-scrollbar{display:none}
 .settings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .settings-item{background:rgba(255,255,255,.04);border-radius:16px;padding:12px;text-align:center;cursor:pointer;position:relative;border:2px solid transparent;transition:all .2s}
-.settings-item:hover{background:rgba(255,255,255,.08)}
 .settings-item.active{border-color:rgba(59,130,246,.6);background:rgba(59,130,246,.1)}
 .settings-item img{width:60px;height:60px;object-fit:contain;border-radius:12px}
-
-/* SETTINGS — iOS toggle */
 .settings-gift-toggle{margin-bottom:16px;padding:14px;border-radius:14px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);display:flex;align-items:center;justify-content:space-between;gap:12px}
 .settings-gift-toggle .toggle-info{flex:1;min-width:0}
 .settings-gift-toggle .lbl{font-family:inherit;font-weight:700;font-size:14px;color:#fff}
 .settings-gift-toggle .desc{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
 .toggle-switch{position:relative;width:52px;height:30px;min-width:52px;background:rgba(60,60,80,.7);border-radius:15px;cursor:pointer;transition:background .3s;flex-shrink:0;border:1px solid rgba(255,255,255,.08)}
-.toggle-switch::after{content:'';position:absolute;width:24px;height:24px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 8px rgba(0,0,0,.4)}
-.toggle-switch.on{background:linear-gradient(135deg,#3B82F6,#2563EB);box-shadow:0 0 16px rgba(59,130,246,.4)}
+.toggle-switch::after{content:'';position:absolute;width:24px;height:24px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.toggle-switch.on{background:linear-gradient(135deg,#3B82F6,#2563EB)}
 .toggle-switch.on::after{transform:translateX(22px)}
 
 /* TOAST */
@@ -344,14 +347,9 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
     .game-field{aspect-ratio:10/9;min-height:auto;margin:0 6px;border-radius:16px}
     .rocket-wrap img{width:180px;height:180px}
     .rocket-wrap.showing-gift img{width:195px;height:195px}
-    .top-bar{padding:8px 12px}
-    .bal-pill-crash{padding:5px 10px;font-size:12px}
     .bet-row{padding:8px 10px}
-    .inv-card .inv-name{font-size:9px}
-    .inv-card .inv-val{font-size:10px}
-    .autowd-open-btn{font-size:11px;padding:10px 8px}
-    .cashout-btn .cb-bottom{font-size:15px}
-    .cashout-btn .cb-top{font-size:11px}
+    .cb-center .cb-win{font-size:17px}
+    .cb-gift-side{width:38px;height:38px}
 }
 </style>
 </head>
@@ -612,8 +610,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
         <button class="win-collect-btn" onclick="closeWin()">Получить</button>
     </div>
 </div>
-
 <script>
+/* ============================================================
+   GLOBAL STATE
+   ============================================================ */
 var userData = null;
 var authReady = false;
 
@@ -621,31 +621,35 @@ function isTelegramWebApp(){
     return typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user;
 }
 
-let gameId = null, prevGameId = null;
-let status = 'counting', prevSt = 'counting';
-let dispMult = 1.0, servMult = 1.0;
-let hasBet = false, betAmt = 0;
-let betIsGift = false;
-let betGiftImg = null;
-let cashedOut = false;
-let cashedOutBetAmt = 0;
-let cashedOutGiftImg = null;
-let crashDone = false;
-let lastBetsHash = '';
-let betsGeneration = 0;
-let countdownShown = -1;
-let lastTimeRemaining = 99;
-let lastTrTimestamp = 0;
-let autoCashoutDone = false;
-let boomUntil = 0;
-let pendingBet = null;
-let savedBetAmount = localStorage.getItem('crash_bet_amount') || '';
-let selectedGifts = [];
-let inventoryItems = [];
-let currentRocket = localStorage.getItem('crash_rocket') || 'crash';
-let showGifts = localStorage.getItem('crash_show_gifts') !== 'off';
-let autoWithdrawGuard = true;
-let autoWithdrawGift = null;
+var gameId = null, prevGameId = null;
+var status = 'counting', prevSt = 'counting';
+var dispMult = 1.0, servMult = 1.0;
+var hasBet = false, betAmt = 0;
+var betIsGift = false;
+var betGiftImg = null;
+var cashedOut = false;
+var cashedOutBetAmt = 0;
+var cashedOutGiftImg = null;
+var crashDone = false;
+var lastBetsHash = '';
+var betsGeneration = 0;
+var countdownShown = -1;
+var lastTimeRemaining = 99;
+var lastTrTimestamp = 0;
+var autoCashoutDone = false;
+var boomUntil = 0;
+var pendingBet = null;
+var savedBetAmount = localStorage.getItem('crash_bet_amount') || '';
+var selectedGifts = [];
+var inventoryItems = [];
+var currentRocket = localStorage.getItem('crash_rocket') || 'crash';
+var showGifts = localStorage.getItem('crash_show_gifts') !== 'off';
+var autoWithdrawGuard = true;
+var autoWithdrawGift = null;
+
+/* Трекинг подарков в кнопке Cash OUT — чтобы не менять src каждый кадр */
+var _cbLeftSrc = null;
+var _cbRightSrc = null;
 
 function loadSavedAutoWithdrawGift(){
     try{
@@ -694,7 +698,6 @@ function saveAutoWithdrawGift(){
 }
 
 autoWithdrawGift = loadSavedAutoWithdrawGift();
-syncSettingsToggles();
 
 const $ = id => document.getElementById(id);
 
@@ -714,7 +717,9 @@ function updateUI(data){
     if(el) el.textContent = formatCrashMoney(data.balance_stars||0);
 }
 
-/* LOADING */
+/* ============================================================
+   LOADING
+   ============================================================ */
 (function(){
     var bar = $('ldProgressBar');
     var txt = $('ldTxt');
@@ -753,6 +758,9 @@ function updateUI(data){
     };
 })();
 
+/* ============================================================
+   TELEGRAM INIT
+   ============================================================ */
 async function initTelegramApp(){
     if(window._ldUpdate) window._ldUpdate(5);
     const saved = localStorage.getItem('rasswet_user');
@@ -820,15 +828,21 @@ async function initTelegramApp(){
     if(window._ldUpdate) window._ldUpdate(80);
     applyRocket();
     if(window._ldUpdate) window._ldUpdate(95);
+
+    /* Каталог подарков — грузим ДО показа UI, чтобы PNG в Cash OUT были сразу */
+    try{ await ensureGiftCatalog(); }catch(e){}
+
     if(window._ldDone) window._ldDone();
 
     updStatus();
     loadBets();
     loadHist();
 
-    setTimeout(function(){ ensureGiftCatalog(); }, 1500);
-
     if(savedBetAmount) setBetInputFromStars(savedBetAmount);
+
+    /* Автовывод — синхронизируем UI кнопки */
+    updateAutoWithdrawButton();
+    syncSettingsToggles();
 
     var _statusPending = false, _betsPending = false;
     function pollStatus(){
@@ -883,7 +897,9 @@ async function registerUser(){
     }catch(e){}
 }
 
-/* СБРОС АВТОВЫВОДА ПРИ СМЕНЕ СУММЫ */
+/* ============================================================
+   BET AMOUNT CHANGE — сброс автовывода при неверном коэф.
+   ============================================================ */
 function onBetAmountChange(){
     if(!autoWithdrawGift) return;
     var input = $('betInput');
@@ -894,28 +910,29 @@ function onBetAmountChange(){
     var giftValue = autoWithdrawGift.value || 0;
     var newCoeff = newAmt > 0 ? (giftValue / newAmt) : 0;
 
-    /* Если коэф < 1.1 — сбрасываем */
     if(newCoeff < 1.1){
         autoWithdrawGift = null;
+        saveAutoWithdrawGift();
         updateAutoWithdrawButton();
         showToast('Автовывод сброшен — нужен коэф от 1.1x', 'err');
         return;
     }
-    /* Если коэф > 99 — сбрасываем */
     if(newCoeff > 99){
         autoWithdrawGift = null;
+        saveAutoWithdrawGift();
         updateAutoWithdrawButton();
         showToast('Автовывод сброшен — ставка слишком мала', 'err');
         return;
     }
-    /* Обновляем коэф */
     autoWithdrawGift.coeff = Math.round(newCoeff * 100) / 100;
     saveAutoWithdrawGift();
     updateAutoWithdrawButton();
     showToast('Коэф автовывода: x' + autoWithdrawGift.coeff.toFixed(2), 'ok');
 }
 
-/* BET MODAL */
+/* ============================================================
+   BET MODAL
+   ============================================================ */
 function openBetModal(){
     try{ playSound('click'); }catch(e){}
     if(pendingBet){ cancelPendingBet(); return; }
@@ -973,23 +990,25 @@ function setBetInputFromStars(stars){
     if(i) i.value = starsToBetInputValue(stars);
 }
 
-/* PENDING BET в UI */
+/* ============================================================
+   PENDING BET в UI
+   ============================================================ */
 function addPendingBetToUI(amount, type, giftImg){
     var list = $('betsList');
     if(!list) return;
     document.querySelectorAll('.bet-row.pending-bet').forEach(function(r){ r.remove(); });
     var myName = (userData && userData.first_name) || 'Вы';
     var ini = myName[0].toUpperCase();
-    var betIconHtml = giftImg
-        ? '<div class="bet-gift-stack"><img src="'+giftImg+'" onerror="this.src=\'/static/img/gift.png\'"></div>'
-        : '<img src="/static/img/tons/ton_1.svg">';
+    var previewHtml = giftImg
+        ? '<img class="bet-gift-preview" src="'+giftImg+'" onerror="this.style.display=\'none\'">'
+        : '<img class="bet-gift-preview empty" src="/static/img/gift.png" alt="">';
     var clockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
     var row = document.createElement('div');
     row.className = 'bet-row pending-bet';
     row.innerHTML =
         '<div class="bet-left"><div class="bet-avatar">'+ini+'</div>'
         + '<div class="bet-info"><div class="bet-name">'+myName+'</div>'
-        + '<div class="bet-amt">'+betIconHtml+' '+formatCrashMoney(amount)+'</div></div></div>'
+        + '<div class="bet-amt">'+previewHtml+'<span class="bet-amount-text">'+formatCrashMoney(amount)+'</span></div></div></div>'
         + '<div class="bet-status pending">'+clockSvg+' След. раунд</div>';
     list.insertBefore(row, list.firstChild);
     var bc = $('betsCount');
@@ -1008,7 +1027,9 @@ function removePendingBetFromUI(){
     }
 }
 
-/* CONFIRM STARS BET */
+/* ============================================================
+   CONFIRM STARS BET
+   ============================================================ */
 var _betLocked = false;
 async function confirmStarsBet(){
     if(_betLocked) return;
@@ -1041,6 +1062,9 @@ async function confirmStarsBet(){
     updateUI(userData);
     closeBetModal();
     updateBetButton();
+    /* Сразу обновляем кнопку Cash OUT чтобы не было пустых иконок */
+    _cbLeftSrc = null; _cbRightSrc = null;
+    updateCashoutButton();
     showToast('Ставка '+formatCrashMoney(amt)+' принята!','ok');
     try{ playSound('bet'); }catch(e){}
     try{ triggerVibration([30]); }catch(e){}
@@ -1065,7 +1089,7 @@ async function confirmStarsBet(){
                 userData.balance_stars = (userData.balance_stars||0) + amt;
                 updateUI(userData);
                 var err = (d.error||'').toLowerCase();
-                if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1){
+                if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1 || err.indexOf('2 сек') !== -1){
                     pendingBet = {type:'stars', amount: amt};
                     addPendingBetToUI(amt, 'stars');
                     showToast('Ставка на след. раунд','ok');
@@ -1106,6 +1130,8 @@ async function processPendingBet(){
                 updateUI(userData);
                 showToast('Ставка принята!','ok');
                 loadBets();
+                _cbLeftSrc = null; _cbRightSrc = null;
+                updateCashoutButton();
             }
         }catch(e){}
     } else if(bet.type === 'multi' && bet.inventoryIds && bet.inventoryIds.length){
@@ -1122,14 +1148,90 @@ async function processPendingBet(){
                 betGiftImg = bet.giftImage || null;
                 showToast('Ставка подарками принята!','ok');
                 loadBets();
+                _cbLeftSrc = null; _cbRightSrc = null;
+                updateCashoutButton();
             }
         }catch(e){}
     }
     updateBetButton();
 }
 
-/* CASHOUT */
+/* ============================================================
+   CASHOUT — обновление кнопки без перерисовки DOM
+   ============================================================ */
 var cashoutLocked = false;
+
+function updateCashoutButton(){
+    var cb = $('cashoutBtn');
+    var left = $('cbGiftLeft');
+    var right = $('cbGiftRight');
+    var win = $('cbWin');
+    if(!cb || !left || !right || !win) return;
+
+    if(status === 'crashed'){
+        cb.classList.add('visible');
+        cb.disabled = true;
+        cb.className = 'cashout-btn crash-state visible';
+        win.textContent = 'CRASH ' + (servMult || 1).toFixed(2) + 'x';
+        left.src = (betIsGift && betGiftImg) ? betGiftImg : '/static/img/gift.png';
+        left.classList.toggle('empty', !(betIsGift && betGiftImg));
+        right.src = '/static/img/gift.png';
+        right.classList.add('empty');
+        return;
+    }
+
+    var isActive = hasBet && !cashedOut && status === 'flying';
+    if(!isActive){
+        cb.classList.remove('visible');
+        return;
+    }
+    cb.classList.add('visible');
+    cb.disabled = false;
+    cb.className = 'cashout-btn visible';
+
+    var currentMult = Math.max(dispMult, servMult);
+    var curWin = Math.floor((betAmt || 0) * currentMult);
+    var newWinText = formatCrashMoney(curWin);
+    if(win.textContent !== newWinText) win.textContent = newWinText;
+
+    /* Левый — подарок текущей ставки (реальный PNG) */
+    var leftSrc = (betIsGift && betGiftImg) ? betGiftImg : '/static/img/gift.png';
+    var leftEmpty = !(betIsGift && betGiftImg);
+    if(leftSrc !== _cbLeftSrc){
+        _cbLeftSrc = leftSrc;
+        left.src = leftSrc;
+        left.classList.remove('pulse','swap');
+        void left.offsetWidth;
+        left.classList.add(leftEmpty ? 'empty' : 'pulse');
+    }
+    left.classList.toggle('empty', leftEmpty);
+
+    /* Правый — подарок, который можно забрать на текущий выигрыш */
+    if(!showGifts){
+        if(right.style.display !== 'none') right.style.display = 'none';
+        return;
+    }
+    if(right.style.display === 'none') right.style.display = '';
+
+    var achievable = getAchievableGift(curWin);
+    var rightSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
+    var rightEmpty = !achievable;
+
+    if(rightSrc !== _cbRightSrc){
+        var hadSrc = !!_cbRightSrc;
+        _cbRightSrc = rightSrc;
+        right.src = rightSrc;
+        right.classList.toggle('empty', rightEmpty);
+        if(hadSrc && !rightEmpty){
+            right.classList.remove('swap');
+            void right.offsetWidth;
+            right.classList.add('swap');
+        }
+    } else {
+        right.classList.toggle('empty', rightEmpty);
+    }
+}
+
 async function doCashout(){
     if(!hasBet || !userData || !userData.id) return;
     if(cashoutLocked) return;
@@ -1144,7 +1246,7 @@ async function doCashout(){
     cashedOutGiftImg = betGiftImg;
     cashedOut = true;
 
-    if(btn) btn.style.display = 'none';
+    if(btn) btn.classList.remove('visible');
     if(pb){
         pb.style.display = 'block';
         pb.disabled = true;
@@ -1155,10 +1257,7 @@ async function doCashout(){
     try{ triggerVibration([50,30,50,30,100]); }catch(e){}
     try{ playSound('cashout'); }catch(e){}
 
-    var bodyData = {
-        user_id: userData.id,
-        client_mult: mult
-    };
+    var bodyData = { user_id: userData.id, client_mult: mult };
 
     if(autoWithdrawGift && autoWithdrawGift.id != null){
         bodyData.preferred_gift_id = autoWithdrawGift.id;
@@ -1188,11 +1287,12 @@ async function doCashout(){
             autoWithdrawGift = null;
             saveAutoWithdrawGift();
             updateAutoWithdrawButton();
+            _cbLeftSrc = null; _cbRightSrc = null;
         } else {
             cashedOut = false;
             cashedOutGiftImg = null;
             hasBet = true;
-            if(btn){ btn.style.display='flex'; btn.disabled=false; btn.className='cashout-btn'; }
+            if(btn){ btn.className = 'cashout-btn visible'; btn.disabled = false; }
             if(pb) pb.style.display = 'none';
             showToast(d.error || 'Ошибка','err');
         }
@@ -1200,50 +1300,12 @@ async function doCashout(){
         cashedOut = false;
         cashedOutGiftImg = null;
         hasBet = true;
-        if(btn){ btn.style.display='block'; btn.disabled=false; btn.className='cashout-btn'; }
+        if(btn){ btn.className = 'cashout-btn visible'; btn.disabled = false; }
         if(pb) pb.style.display = 'none';
         showToast('Ошибка сети','err');
     }finally{
         cashoutLocked = false;
     }
-}
-
-function updateCashoutButton(){
-    var cb = $('cashoutBtn');
-    var left = $('cbGiftLeft');
-    var right = $('cbGiftRight');
-    var win = $('cbWin');
-    if(!cb || !left || !right || !win) return;
-
-    if(status === 'crashed'){
-        cb.style.display = 'flex';
-        cb.disabled = true;
-        cb.className = 'cashout-btn crash-state';
-        win.textContent = 'CRASH ' + (servMult || 1).toFixed(2) + 'x';
-        left.src = (betIsGift && betGiftImg) ? betGiftImg : '/static/img/gift.png';
-        left.classList.toggle('empty', !(betIsGift && betGiftImg));
-        right.src = '/static/img/gift.png';
-        right.classList.add('empty');
-        return;
-    }
-
-    var isActive = hasBet && !cashedOut && status === 'flying';
-    cb.style.display = isActive ? 'flex' : 'none';
-    cb.disabled = !isActive;
-    cb.className = 'cashout-btn';
-
-    var currentMult = Math.max(dispMult, servMult);
-    var curWin = Math.floor((betAmt || 0) * currentMult);
-    win.textContent = isActive ? formatCrashMoney(curWin) : '0.00';
-
-    var leftSrc = (betIsGift && betGiftImg) ? betGiftImg : '/static/img/gift.png';
-    left.src = leftSrc;
-    left.classList.toggle('empty', !(betIsGift && betGiftImg));
-
-    var achievable = getAchievableGift(curWin);
-    var rightSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
-    right.src = rightSrc;
-    right.classList.toggle('empty', !achievable);
 }
 
 function updateBetButton(){
@@ -1264,7 +1326,9 @@ function updateBetButton(){
     }
 }
 
-/* INVENTORY */
+/* ============================================================
+   INVENTORY
+   ============================================================ */
 var MAX_GIFTS = 3;
 
 async function loadInventory(){
@@ -1381,6 +1445,8 @@ async function confirmGiftBet(){
     closeBetModal();
     clearSelectedGifts();
     updateBetButton();
+    _cbLeftSrc = null; _cbRightSrc = null;
+    updateCashoutButton();
     showToast('Ставка ' + sGifts.length + ' подарков — принята!','ok');
     try{ playSound('bet'); }catch(e){}
     try{ triggerVibration([30]); }catch(e){}
@@ -1421,7 +1487,9 @@ async function confirmGiftBet(){
     })();
 }
 
-/* STATUS POLLING */
+/* ============================================================
+   STATUS POLLING
+   ============================================================ */
 async function updStatus(){
     if(!authReady) return;
     try{
@@ -1470,6 +1538,7 @@ async function updStatus(){
             cashedOut = false;
             cashedOutBetAmt = 0;
             cashedOutGiftImg = null;
+            _cbLeftSrc = null; _cbRightSrc = null;
         }
 
         var cd = $('cdDisplay');
@@ -1547,7 +1616,7 @@ async function updStatus(){
                     pb.innerHTML = '<span class="btn-text">Place bet</span>';
                 }
             }
-            if(cb) cb.style.display = 'none';
+            if(cb) cb.classList.remove('visible');
 
         } else if(status === 'flying'){
             if(prevSt === 'counting' || prevSt === 'waiting'){
@@ -1586,14 +1655,10 @@ async function updStatus(){
                     pb.style.pointerEvents = 'none';
                     pb.innerHTML = '<span class="btn-text">WIN!</span>';
                 }
-                if(cb){ cb.style.display = 'none'; }
+                if(cb) cb.classList.remove('visible');
             } else if(hasBet){
                 if(pb) pb.style.display = 'none';
-                if(cb){
-                    cb.style.display = 'flex';
-                    cb.disabled = false;
-                    cb.className = 'cashout-btn';
-                }
+                updateCashoutButton();
             } else {
                 if(pb){
                     pb.style.display = 'block';
@@ -1602,7 +1667,7 @@ async function updStatus(){
                     if(pendingBet) pb.innerHTML = '<span class="btn-text">CANCEL ('+formatCrashMoney(pendingBet.amount)+')</span>';
                     else pb.innerHTML = '<span class="btn-text">BET ON NEXT</span>';
                 }
-                if(cb) cb.style.display = 'none';
+                if(cb) cb.classList.remove('visible');
             }
 
         } else if(status === 'crashed'){
@@ -1637,278 +1702,16 @@ async function updStatus(){
             }
 
             if(pb) pb.style.display = 'none';
-            if(cb){
-                cb.style.display = 'flex';
-                cb.disabled = true;
-                cb.className = 'cashout-btn crash-state';
-                var cbWin = $('cbWin');
-                if(cbWin) cbWin.textContent = 'CRASH ' + servMult.toFixed(2) + 'x';
-            }
+            updateCashoutButton();
             hasBet = false;
             betAmt = 0;
         }
     }catch(e){ console.error('updStatus:', e); }
 }
 
-/* RENDER */
-let lastRenderStatus = null;
-let lastRocketUpdateTime = 0;
-let multGrowthRate = 0;
-let prevServMult = 1.0;
-let lastPollTimestamp = 0;
-let lastFrameTime = 0;
-let lastGiftId = null;
-let lastRocketSrc = '';
-var _rw = null, _rImg = null, _gf = null, _coeffBox = null, _cdDisp = null;
-var _rwFlying = false, _prevCoeffText = '';
-var _renderCacheInited = false;
-var _coeffLastUpdate = 0;
-var _lastCashBtnUpdate = 0;
-
-function _initRenderCache(){
-    _rw = $('rocketWrap');
-    _gf = $('gameField');
-    _coeffBox = $('coeffBox');
-    _cdDisp = $('cdDisplay');
-    if(_rw) _rImg = _rw.querySelector('img');
-    _renderCacheInited = true;
-}
-
-function onNewServerMult(newMult){
-    var now = performance.now();
-    if(lastPollTimestamp > 0 && newMult > prevServMult){
-        var elapsed = now - lastPollTimestamp;
-        if(elapsed > 30) multGrowthRate = (newMult - prevServMult) / elapsed;
-    }
-    prevServMult = newMult;
-    lastPollTimestamp = now;
-    if(dispMult < newMult - 0.05) dispMult = newMult - 0.01;
-}
-
-function render(){
-    var now = performance.now();
-    var dt = lastFrameTime > 0 ? (now - lastFrameTime) : 16;
-    if(dt > 100) dt = 100;
-    lastFrameTime = now;
-
-    if(!_renderCacheInited) _initRenderCache();
-
-    if(window._rocketSwitching){
-        requestAnimationFrame(render);
-        return;
-    }
-
-    if(status === 'flying'){
-        if(multGrowthRate > 0){
-            var delta = multGrowthRate * dt;
-            if(delta > 0.03) delta = 0.03;
-            dispMult += delta;
-            if(dispMult > prevServMult + 0.8) multGrowthRate *= 0.7;
-        }
-        if(dispMult < 1.0) dispMult = 1.0;
-
-        if(_rw && !_rwFlying){ _rw.classList.add('flying'); _rwFlying = true; }
-
-        if(_rw && _rImg && !_rw.classList.contains('showing-gift') && !window._rocketSwitching){
-            if(_rImg.complete && _rImg.naturalWidth > 0){
-                var tilt = dispMult >= 2.0 ? Math.min(30, (dispMult - 2.0) * 3.5) : 0;
-                var sc = 1 + Math.max(0, Math.min(dispMult - 1.5, 1)) * 0.015;
-                _rImg.style.transform = 'rotate(' + tilt + 'deg) scale(' + sc + ')';
-            }
-        }
-
-        if(now - _coeffLastUpdate > 33){
-            _coeffLastUpdate = now;
-            var ct = dispMult.toFixed(2) + 'x';
-            if(ct !== _prevCoeffText && _coeffBox){
-                _coeffBox.textContent = ct;
-                _prevCoeffText = ct;
-            }
-        }
-
-        if(now - lastRocketUpdateTime > 250){
-            lastRocketUpdateTime = now;
-            updateRocketImage();
-        }
-
-        var cb = $('cashoutBtn');
-        if(cb && (hasBet || status === 'crashed')){
-            updateCashoutButton();
-        }
-
-        if(hasBet && !autoCashoutDone){
-            if(autoWithdrawGift && autoWithdrawGift.coeff >= 1.1){
-                if(dispMult >= autoWithdrawGift.coeff){
-                    autoCashoutDone = true;
-                    doCashout();
-                }
-            }
-        }
-    } else {
-        if(lastRenderStatus === 'flying'){
-            updateRocketImage();
-            _rwFlying = false;
-            _prevCoeffText = '';
-            dispMult = 1.0;
-            prevServMult = 1.0;
-            multGrowthRate = 0;
-        }
-        if((status === 'counting' || status === 'waiting') && lastTrTimestamp > 0 && lastTimeRemaining <= 10){
-            var elapsed = (performance.now() - lastTrTimestamp) / 1000;
-            var sec = Math.max(0, Math.ceil(Math.max(0, lastTimeRemaining - elapsed)));
-            if(sec > 5) sec = 5;
-            var label = sec > 0 ? String(sec) : 'GO';
-            if(countdownShown !== label){
-                countdownShown = label;
-                if(_cdDisp){
-                    _cdDisp.textContent = label;
-                    _cdDisp.classList.remove('active');
-                    void _cdDisp.offsetWidth;
-                    _cdDisp.classList.add('active');
-                    if(label !== 'GO'){
-                        try{ playSound('countdown'); }catch(e){}
-                        try{ triggerVibration([80,30,80]); }catch(e){}
-                    }
-                }
-            }
-        }
-    }
-    lastRenderStatus = status;
-    requestAnimationFrame(render);
-}
-
-/* ROCKET */
-function getRocketGif(){
-    return '/static/gifs/rockets/' + currentRocket + '.gif';
-}
-
-function applyRocket(){
-    var rw = $('rocketWrap');
-    if(!rw) return;
-    var img = rw.querySelector('img');
-    if(!img) return;
-    var rg = getRocketGif();
-    lastRocketSrc = rg;
-    img.src = rg;
-}
-
-function updateRocketImage(){
-    var rw = $('rocketWrap');
-    if(!rw) return;
-    var ri = rw.querySelector('img');
-    if(!ri) return;
-
-    var showAmt = 0;
-    var isGrayscale = false;
-
-    if(hasBet && betAmt > 0){
-        showAmt = betAmt;
-    } else if(cashedOut && cashedOutBetAmt > 0 && status === 'flying'){
-        showAmt = cashedOutBetAmt;
-        isGrayscale = true;
-    }
-
-    if(!showGifts || !(showAmt > 0 && status === 'flying')){
-        rw.classList.remove('cashed-out','gift-change','showing-gift');
-        if(lastGiftId !== null){
-            lastGiftId = null;
-            var rg0 = getRocketGif();
-            if(lastRocketSrc !== rg0){ lastRocketSrc = rg0; ri.src = rg0; }
-        }
-        return;
-    }
-
-    var potentialWin = Math.floor(showAmt * dispMult);
-    var gift = getAchievableGift(potentialWin);
-
-    if(isGrayscale){
-        rw.classList.add('cashed-out');
-    } else {
-        rw.classList.remove('cashed-out');
-    }
-
-    if(gift){
-        var gid = gift.value;
-        if(lastGiftId !== gid){
-            lastGiftId = gid;
-            var imgSrc = getGiftImage(gift);
-            ri.onerror = function(){
-                this.onerror = null;
-                if(this.src.indexOf('/static/') !== -1 && gift.fragment_slug){
-                    this.src = 'https://fragment.com/file/gifts/' + gift.fragment_slug + '/thumb.webp';
-                    return;
-                }
-                var fb = getRocketGif();
-                if(lastRocketSrc !== fb){ lastRocketSrc = fb; this.src = fb; }
-            };
-            if(lastRocketSrc !== imgSrc){
-                lastRocketSrc = imgSrc;
-                ri.src = imgSrc;
-            }
-            rw.classList.add('showing-gift');
-        }
-    } else {
-        if(lastGiftId !== null){
-            lastGiftId = null;
-            var rg = getRocketGif();
-            if(lastRocketSrc !== rg){ lastRocketSrc = rg; ri.src = rg; }
-        }
-        rw.classList.remove('showing-gift');
-        if(!isGrayscale) rw.classList.remove('cashed-out');
-    }
-}
-
-/* GIFT CATALOG */
-var _giftCatalogCache = null;
-async function ensureGiftCatalog(){
-    if(_giftCatalogCache) return _giftCatalogCache;
-    try{
-        var r = await fetch('/api/gifts-list?models=0');
-        var d = await r.json();
-        if(d.success && d.gifts){
-            _giftCatalogCache = d.gifts
-                .filter(function(g){ return g.value > 0 && g.type !== 'stars_balance'; })
-                .sort(function(a,b){ return (a.value||0)-(b.value||0); });
-        }
-    }catch(e){}
-    return _giftCatalogCache || [];
-}
-
-/* Приоритет: /static/gifs/gifts/ → Fragment */
-function getGiftImage(g){
-    if(!g) return '/static/img/gift.png';
-    /* 1. Уже локальный */
-    if(g.image && g.image.indexOf('/static/gifs/gifts/') !== -1){
-        return g.image;
-    }
-    /* 2. Обычная картинка не fragment */
-    if(g.image && g.image.indexOf('fragment.com') === -1 && g.image.indexOf('/static/') === 0){
-        return g.image;
-    }
-    /* 3. Fragment slug */
-    if(g.fragment_slug){
-        return 'https://fragment.com/file/gifts/' + g.fragment_slug + '/thumb.webp';
-    }
-    /* 4. Обычный URL с Fragment */
-    if(g.image && g.image.indexOf('fragment.com') !== -1){
-        return g.image;
-    }
-    return g.image || '/static/img/gift.png';
-}
-
-function getAchievableGift(potentialWin){
-    if(!_giftCatalogCache || potentialWin < 5) return null;
-    var best = null;
-    for(var i = _giftCatalogCache.length - 1; i >= 0; i--){
-        if(_giftCatalogCache[i].value <= potentialWin){
-            best = _giftCatalogCache[i];
-            break;
-        }
-    }
-    return best;
-}
-
-/* AUTO WITHDRAW */
+/* ============================================================
+   AUTO WITHDRAW
+   ============================================================ */
 var _autowdSelected = null;
 var _autowdBet = 0;
 var _autowdTarget = 0;
@@ -2021,24 +1824,18 @@ function renderAutoWithdrawGifts(){
         var coeff = _autowdBet > 0 ? (val / _autowdBet).toFixed(2) : '?';
         var img = getGiftImage(g);
 
-        var coeffClass = 'green';
-        if(parseFloat(coeff) > 3) coeffClass = 'orange';
-        if(parseFloat(coeff) > 10) coeffClass = '';
-
         return '<div class="autowd-row'+(isSel?' selected':'')+'" data-gid="'+gid+'" onclick="selectAutoWithdrawGift(\'' + gid + '\')">'
             + '<div class="autowd-thumb"><img src="'+img+'" onerror="this.src=\'/static/img/gift.png\'"></div>'
             + '<div class="autowd-info">'
             +   '<div class="autowd-name">' + (g.name || 'Gift') + '</div>'
-            +   '<div class="autowd-coeff '+coeffClass+'">Коэф: <b>x' + coeff + '</b></div>'
+            +   '<div class="autowd-coeff">Коэф: <b>x' + coeff + '</b></div>'
             + '</div>'
             + '<div class="autowd-price"><img src="/static/img/ton.png">' + (val/100).toFixed(2) + '</div>'
             + '</div>';
     }).join('');
 }
 
-function filterAutoWithdrawGifts(){
-    renderAutoWithdrawGifts();
-}
+function filterAutoWithdrawGifts(){ renderAutoWithdrawGifts(); }
 
 function selectAutoWithdrawGift(gid){
     var gift = _autowdGifts.find(function(g){
@@ -2067,7 +1864,7 @@ function updateAutoWithdrawApply(){
     btn.innerHTML =
         '<span id="autowdApplyText">Автовывод</span>'
         + '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">'
-        + '<span class="coeff-badge">x' + coeff + '</span>';
+        + '<span class="coeff-badge" style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800">x' + coeff + '</span>';
 }
 
 function applyAutoWithdraw(){
@@ -2129,266 +1926,133 @@ function toggleAutoWithdrawGuardClick(){
     showToast('Предохранитель включён', 'ok');
 }
 
-/* BETS */
-async function loadBets(){
-    if(status === 'crashed') return;
+/* ============================================================
+   GIFT CATALOG (для подарков в кнопке Cash OUT и автовыводе)
+   ============================================================ */
+var _giftCatalogCache = null;
+async function ensureGiftCatalog(){
+    if(_giftCatalogCache) return _giftCatalogCache;
     try{
-        var gen = betsGeneration;
-        var r = await fetch('/api/ultimate-crash/recent-bets?limit=30');
-        if(!r.ok) return;
-        if(gen !== betsGeneration) return;
+        var r = await fetch('/api/gifts-list?models=0');
         var d = await r.json();
-        if(!d.success) return;
-        if(gen !== betsGeneration) return;
-
-        var bets = (d.bets||[]).sort(function(a,b){ return b.bet_amount - a.bet_amount; });
-        var bc = $('betsCount');
-        if(bc) bc.textContent = bets.length + (pendingBet ? 1 : 0);
-
-        var hash = JSON.stringify(bets.map(function(b){ return b.id+':'+b.status+':'+b.bet_amount; }));
-        if(hash === lastBetsHash) return;
-        lastBetsHash = hash;
-
-        var list = $('betsList');
-        if(!list) return;
-        if(!bets.length){
-            var pendingRow = list.querySelector('.bet-row.pending-bet');
-            if(!pendingRow){
-                list.innerHTML = '<div class="no-bets">Waiting for bets...</div>';
-            }
-            return;
-        }
-
-        var pendingHtml = '';
-        var pendingRow2 = list.querySelector('.bet-row.pending-bet');
-        if(pendingRow2) pendingHtml = pendingRow2.outerHTML;
-
-        list.innerHTML = pendingHtml + bets.map(function(b){
-            var name = b.first_name || ('User '+b.user_id);
-            var ini = (b.first_name||'U')[0].toUpperCase();
-            var hasPhoto = b.photo_url && b.photo_url !== '/static/img/default_avatar.png';
-            var avatar = hasPhoto ? '<img src="'+b.photo_url+'" alt="">' : ini;
-            var stCls = 'active';
-
-            var giftImages = (b.bet_type === 'gift' && b.gift_images && b.gift_images.length) ? b.gift_images : null;
-            var betIconHtml = '';
-            if(giftImages){
-                var shown = giftImages.slice(0, 2);
-                betIconHtml = '<div class="bet-gift-stack">';
-                shown.forEach(function(u){ betIconHtml += '<img src="'+u+'">'; });
-                if(giftImages.length > 2) betIconHtml += '<div class="bet-gift-more">+'+(giftImages.length-2)+'</div>';
-                betIconHtml += '</div>';
-            } else {
-                betIconHtml = '<img src="/static/img/tons/ton_1.svg">';
-            }
-
-            var clockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-            var checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
-            var crashSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>';
-
-            var statusHtml = '';
-            if(b.status === 'cashed_out'){
-                stCls = 'won';
-                var coef = b.cashout_multiplier ? parseFloat(b.cashout_multiplier).toFixed(2) : '?';
-                var winAmt = b.win_amount || 0;
-                var earnedGift = b.won_gift_image || null;
-                var giftHtml = earnedGift
-                    ? '<img src="'+earnedGift+'" style="width:24px;height:24px;object-fit:contain;border-radius:5px;background:rgba(0,0,0,.2);padding:2px" onerror="this.style.display=\'none\'">'
-                    : '';
-                statusHtml = '<div class="bet-status won" style="gap:5px">'
-                    + giftHtml
-                    + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px">'
-                    +   '<div style="font-size:11px;font-weight:700">×'+coef+'</div>'
-                    +   '<div style="font-size:11px;font-weight:800">+'+formatCrashMoney(winAmt)+'</div>'
-                    + '</div>'
-                    + '</div>';
-            } else if(b.status === 'lost'){
-                stCls = 'lost';
-                var cc = servMult ? servMult.toFixed(2) : '?';
-                statusHtml = '<div class="bet-status lost">'+crashSvg+' ×'+cc+'</div>';
-            } else {
-                var potentialWin = Math.floor(b.bet_amount * (servMult || 1));
-                var coefNow = (servMult || 1).toFixed(2);
-                statusHtml = '<div class="bet-status active" style="flex-direction:column;align-items:flex-end;gap:2px;padding:6px 10px">'
-                    + '<div style="display:flex;align-items:center;gap:4px">'+clockSvg+' <span style="font-size:11px">×'+coefNow+'</span></div>'
-                    + '<div style="font-size:11px;font-weight:800;color:#8CA0BE">'+formatCrashMoney(potentialWin)+'</div>'
-                    + '</div>';
-            }
-
-            return '<div class="bet-row '+stCls+'" data-bet-id="'+b.id+'" data-status="'+b.status+'">'
-                +'<div class="bet-left"><div class="bet-avatar">'+avatar+'</div>'
-                +'<div class="bet-info"><div class="bet-name">'+name+'</div>'
-                +'<div class="bet-amt">'+betIconHtml+' '+formatCrashMoney(b.bet_amount)+'</div></div></div>'
-                +statusHtml+'</div>';
-        }).join('');
-    }catch(e){}
-}
-
-/* HISTORY */
-async function loadHist(){
-    try{
-        var r = await fetch('/api/ultimate-crash/history?limit=15');
-        if(!r.ok) return;
-        var d = await r.json();
-        if(!d.success || !d.history) return;
-        var bar = $('histScroll');
-        var coeff = $('coeffBox');
-        if(!bar || !coeff) return;
-        bar.innerHTML = '';
-        bar.appendChild(coeff);
-        d.history.forEach(function(h){
-            var m = parseFloat(h.final_multiplier);
-            var p = document.createElement('div');
-            var c = 'low';
-            if(m >= 5) c = 'mega';
-            else if(m >= 3) c = 'high';
-            else if(m >= 1.5) c = 'mid';
-            p.className = 'h-pill ' + c;
-            p.textContent = m.toFixed(2) + 'x';
-            bar.appendChild(p);
-        });
-    }catch(e){}
-}
-
-/* SOUND */
-var audioContext = null;
-var soundMasterGain = null;
-function initAudio(){
-    if(audioContext) return;
-    try{
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        soundMasterGain = audioContext.createGain();
-        soundMasterGain.gain.value = 0.5;
-        soundMasterGain.connect(audioContext.destination);
-    }catch(e){}
-}
-function makeOsc(freq, type, gainVal, startT, dur){
-    if(!soundMasterGain) return;
-    try{
-        var o = audioContext.createOscillator();
-        var g = audioContext.createGain();
-        o.connect(g); g.connect(soundMasterGain);
-        o.frequency.setValueAtTime(freq, startT);
-        o.type = type;
-        g.gain.setValueAtTime(gainVal, startT);
-        g.gain.exponentialRampToValueAtTime(0.001, startT + dur);
-        o.start(startT); o.stop(startT + dur);
-    }catch(e){}
-}
-function playSound(type){
-    initAudio();
-    if(!audioContext) return;
-    if(audioContext.state === 'suspended') audioContext.resume();
-    var now = audioContext.currentTime;
-    if(type === 'click'){ makeOsc(1200,'sine',0.1,now,0.03); }
-    else if(type === 'bet'){ makeOsc(880,'sine',0.12,now,0.12); makeOsc(1320,'sine',0.1,now+0.02,0.1); }
-    else if(type === 'countdown'){ makeOsc(900,'sine',0.12,now,0.05); }
-    else if(type === 'cashout'){ makeOsc(1400,'sine',0.14,now,0.1); makeOsc(1800,'sine',0.1,now+0.06,0.08); }
-    else if(type === 'crash'){ makeOsc(35,'sine',0.3,now,0.6); makeOsc(70,'triangle',0.18,now+0.06,0.45); }
-    else if(type === 'win'){ [523,659,784,988].forEach(function(f,i){ makeOsc(f,'triangle',0.12,now+i*0.07,0.35); }); }
-}
-function triggerVibration(pattern){
-    try{
-        if(typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
-            Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
-            return;
+        if(d.success && d.gifts){
+            _giftCatalogCache = d.gifts
+                .filter(function(g){ return g.value > 0 && g.type !== 'stars_balance'; })
+                .sort(function(a,b){ return (a.value||0)-(b.value||0); });
         }
     }catch(e){}
-    try{
-        if(navigator.vibrate){
-            if(Array.isArray(pattern)) navigator.vibrate(pattern.map(function(v){ return Math.min(v*2, 500); }));
-            else navigator.vibrate(Math.min(pattern*2, 500));
+    return _giftCatalogCache || [];
+}
+
+function getGiftImage(g){
+    if(!g) return '/static/img/gift.png';
+    if(g.image && g.image.indexOf('/static/gifs/gifts/') !== -1) return g.image;
+    if(g.image && g.image.indexOf('fragment.com') === -1 && g.image.indexOf('/static/') === 0) return g.image;
+    if(g.fragment_slug) return 'https://fragment.com/file/gifts/' + g.fragment_slug + '/thumb.webp';
+    if(g.image && g.image.indexOf('fragment.com') !== -1) return g.image;
+    return g.image || '/static/img/gift.png';
+}
+
+function getAchievableGift(potentialWin){
+    if(!_giftCatalogCache || potentialWin < 5) return null;
+    var best = null;
+    for(var i = _giftCatalogCache.length - 1; i >= 0; i--){
+        if(_giftCatalogCache[i].value <= potentialWin){
+            best = _giftCatalogCache[i];
+            break;
         }
-    }catch(e){}
-}
-
-/* TOAST */
-function showToast(msg, type){
-    document.querySelectorAll('.toast').forEach(function(t){ t.remove(); });
-    var t = document.createElement('div');
-    t.className = 'toast' + (type ? ' '+type : '');
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(function(){
-        t.style.opacity = '0';
-        t.style.transition = 'opacity .3s';
-        setTimeout(function(){ t.remove(); }, 300);
-    }, 2500);
-}
-
-/* WIN */
-function showWin(d){
-    var m = parseFloat(d.multiplier).toFixed(2);
-    var content = $('winContent');
-    if(!content) return;
-    var winTon = d.win_amount ? starsToTon(d.win_amount) : 0;
-    var betTon = d.bet_amount ? starsToTon(d.bet_amount) : (cashedOutBetAmt ? starsToTon(cashedOutBetAmt) : 0);
-
-    var allGifts = [];
-    if(d.awarded_gifts && d.awarded_gifts.length) allGifts = allGifts.concat(d.awarded_gifts);
-    if(d.gift && !allGifts.find(function(g){ return g.name === d.gift.name; })) allGifts.push(d.gift);
-    if(d.extra_gifts && d.extra_gifts.length){
-        d.extra_gifts.forEach(function(g){
-            if(!allGifts.find(function(x){ return x.name === g.name && x.value === g.value; })) allGifts.push(g);
-        });
     }
-    allGifts = allGifts.filter(function(g){ return g && (g.image || g.name) && (g.value || g.image); });
+    return best;
+}
 
-    var starRemainder = d.star_remainder || 0;
-    var html = '';
+/* ============================================================
+   ROCKET
+   ============================================================ */
+function getRocketGif(){
+    return '/static/gifs/rockets/' + currentRocket + '.gif';
+}
 
-    if(allGifts.length > 0){
-        html += '<div class="win-gift-hero">';
-        html += '<img src="' + (allGifts[0].image || '/static/img/star.png') + '" onerror="this.src=\'/static/img/star.png\'" alt="">';
-        html += '</div>';
+function applyRocket(){
+    var rw = $('rocketWrap');
+    if(!rw) return;
+    var img = rw.querySelector('img');
+    if(!img) return;
+    var rg = getRocketGif();
+    lastRocketSrc = rg;
+    img.src = rg;
+}
+
+function updateRocketImage(){
+    var rw = $('rocketWrap');
+    if(!rw) return;
+    var ri = rw.querySelector('img');
+    if(!ri) return;
+
+    var showAmt = 0;
+    var isGrayscale = false;
+
+    if(hasBet && betAmt > 0){
+        showAmt = betAmt;
+    } else if(cashedOut && cashedOutBetAmt > 0 && status === 'flying'){
+        showAmt = cashedOutBetAmt;
+        isGrayscale = true;
     }
 
-    html += '<div class="win-mult-badge"><span>' + m + 'X</span></div>';
-    html += '<div class="win-title">Победа</div>';
-    html += '<div class="win-summary">';
-    html += '<div class="win-summary-item">Ставка <img src="/static/img/ton.png"> ' + formatTon(betTon) + '</div>';
-    html += '<div class="win-summary-arrow">›</div>';
-    html += '<div class="win-summary-item win-summary-win">Выигрыш <img src="/static/img/ton.png"> ' + formatTon(winTon) + '</div>';
-    html += '</div>';
-
-    if(allGifts.length > 0){
-        html += '<div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">';
-        html += '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;text-align:center">Получено подарков: ' + allGifts.length + '</div>';
-        html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:240px;overflow-y:auto">';
-        for(var j = 0; j < allGifts.length; j++){
-            var g = allGifts[j];
-            var gImg = g.image || '/static/img/gift.png';
-            var gName = (g.name || 'Gift').replace(/ #\d+$/, '');
-            var gValue = g.value || 0;
-            html += '<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:12px;padding:6px;text-align:center;box-sizing:border-box">';
-            html += '<img src="' + gImg + '" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;aspect-ratio:1;object-fit:contain;border-radius:8px;background:rgba(0,0,0,.2);padding:4px;box-sizing:border-box;display:block">';
-            html += '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.85);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + gName + '</div>';
-            html += '<div style="font-size:10px;font-weight:800;color:#8CA0BE;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:2px"><img src="/static/img/ton.png" style="width:10px;height:10px">' + formatTon(gValue/100) + '</div>';
-            html += '</div>';
+    if(!showGifts || !(showAmt > 0 && status === 'flying')){
+        rw.classList.remove('cashed-out','gift-change','showing-gift');
+        if(lastGiftId !== null){
+            lastGiftId = null;
+            var rg0 = getRocketGif();
+            if(lastRocketSrc !== rg0){ lastRocketSrc = rg0; ri.src = rg0; }
         }
-        if(starRemainder > 0){
-            html += '<div style="background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.2);border-radius:12px;padding:6px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;box-sizing:border-box">';
-            html += '<div style="font-size:20px;font-weight:900;color:#1EE44C;line-height:1">+' + formatCrashMoney(starRemainder) + '</div>';
-            html += '<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.6);margin-top:2px">TON</div>';
-            html += '</div>';
-        }
-        html += '</div>';
-        html += '</div>';
-    } else if(starRemainder > 0 || winTon > 0){
-        html += '<div class="win-breakdown">+' + formatCrashMoney(starRemainder || d.win_amount || 0) + ' TON на баланс</div>';
+        return;
     }
-    content.innerHTML = html;
-    var wo = $('winOverlay');
-    if(wo) wo.classList.add('show');
-    triggerVibration([30,20,60]);
+
+    var potentialWin = Math.floor(showAmt * dispMult);
+    var gift = getAchievableGift(potentialWin);
+
+    if(isGrayscale){
+        rw.classList.add('cashed-out');
+    } else {
+        rw.classList.remove('cashed-out');
+    }
+
+    if(gift){
+        var gid = gift.value;
+        if(lastGiftId !== gid){
+            lastGiftId = gid;
+            var imgSrc = getGiftImage(gift);
+            ri.onerror = function(){
+                this.onerror = null;
+                if(this.src.indexOf('/static/') !== -1 && gift.fragment_slug){
+                    this.src = 'https://fragment.com/file/gifts/' + gift.fragment_slug + '/thumb.webp';
+                    return;
+                }
+                var fb = getRocketGif();
+                if(lastRocketSrc !== fb){ lastRocketSrc = fb; this.src = fb; }
+            };
+            if(lastRocketSrc !== imgSrc){
+                lastRocketSrc = imgSrc;
+                ri.src = imgSrc;
+            }
+            rw.classList.add('showing-gift');
+        }
+    } else {
+        if(lastGiftId !== null){
+            lastGiftId = null;
+            var rg = getRocketGif();
+            if(lastRocketSrc !== rg){ lastRocketSrc = rg; ri.src = rg; }
+        }
+        rw.classList.remove('showing-gift');
+        if(!isGrayscale) rw.classList.remove('cashed-out');
+    }
 }
 
-function closeWin(){
-    var wo = $('winOverlay');
-    if(wo) wo.classList.remove('show');
-}
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
 
-/* SETTINGS */
 function syncSettingsToggles(){
     var el = $('showGiftsToggle');
     if(el) el.classList.toggle('on', showGifts);
@@ -2418,9 +2082,9 @@ function toggleShowGiftsClick(){
     if(el) el.classList.toggle('on', showGifts);
     showToast(showGifts ? 'Подарки включены' : 'Только ракета', 'ok');
     updateRocketImage();
+    updateCashoutButton();
 }
 
-var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
 function renderSettings(){
     var rg = $('rocketGrid');
     if(!rg) return;
@@ -2466,7 +2130,9 @@ function selectRocket(rid){
     test.src = newSrc;
 }
 
-/* DEPOSIT */
+/* ============================================================
+   DEPOSIT
+   ============================================================ */
 function openDepositSelector(){
     var so = $('depositOverlay');
     if(so) so.classList.add('show');
@@ -2555,9 +2221,412 @@ async function payWithStars(){
     }
 }
 
-/* INIT */
+/* ============================================================
+   SOUND + TOAST + VIBRATION
+   ============================================================ */
+var audioContext = null;
+var soundMasterGain = null;
+function initAudio(){
+    if(audioContext) return;
+    try{
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        soundMasterGain = audioContext.createGain();
+        soundMasterGain.gain.value = 0.5;
+        soundMasterGain.connect(audioContext.destination);
+    }catch(e){}
+}
+function makeOsc(freq, type, gainVal, startT, dur){
+    if(!soundMasterGain) return;
+    try{
+        var o = audioContext.createOscillator();
+        var g = audioContext.createGain();
+        o.connect(g); g.connect(soundMasterGain);
+        o.frequency.setValueAtTime(freq, startT);
+        o.type = type;
+        g.gain.setValueAtTime(gainVal, startT);
+        g.gain.exponentialRampToValueAtTime(0.001, startT + dur);
+        o.start(startT); o.stop(startT + dur);
+    }catch(e){}
+}
+function playSound(type){
+    initAudio();
+    if(!audioContext) return;
+    if(audioContext.state === 'suspended') audioContext.resume();
+    var now = audioContext.currentTime;
+    if(type === 'click'){ makeOsc(1200,'sine',0.1,now,0.03); }
+    else if(type === 'bet'){ makeOsc(880,'sine',0.12,now,0.12); makeOsc(1320,'sine',0.1,now+0.02,0.1); }
+    else if(type === 'countdown'){ makeOsc(900,'sine',0.12,now,0.05); }
+    else if(type === 'cashout'){ makeOsc(1400,'sine',0.14,now,0.1); makeOsc(1800,'sine',0.1,now+0.06,0.08); }
+    else if(type === 'crash'){ makeOsc(35,'sine',0.3,now,0.6); makeOsc(70,'triangle',0.18,now+0.06,0.45); }
+    else if(type === 'win'){ [523,659,784,988].forEach(function(f,i){ makeOsc(f,'triangle',0.12,now+i*0.07,0.35); }); }
+}
+function triggerVibration(pattern){
+    try{
+        if(typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
+            Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
+            return;
+        }
+    }catch(e){}
+    try{
+        if(navigator.vibrate){
+            if(Array.isArray(pattern)) navigator.vibrate(pattern.map(function(v){ return Math.min(v*2, 500); }));
+            else navigator.vibrate(Math.min(pattern*2, 500));
+        }
+    }catch(e){}
+}
+
+function showToast(msg, type){
+    document.querySelectorAll('.toast').forEach(function(t){ t.remove(); });
+    var t = document.createElement('div');
+    t.className = 'toast' + (type ? ' '+type : '');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function(){
+        t.style.opacity = '0';
+        t.style.transition = 'opacity .3s';
+        setTimeout(function(){ t.remove(); }, 300);
+    }, 2500);
+}
+    /* ============================================================
+   RENDER (плавный рост dispMult + обновление Cash OUT)
+   ============================================================ */
+let lastRenderStatus = null;
+let lastRocketUpdateTime = 0;
+let multGrowthRate = 0;
+let prevServMult = 1.0;
+let lastPollTimestamp = 0;
+let lastFrameTime = 0;
+let lastGiftId = null;
+let lastRocketSrc = '';
+var _rw = null, _rImg = null, _gf = null, _coeffBox = null, _cdDisp = null;
+var _rwFlying = false, _prevCoeffText = '';
+var _renderCacheInited = false;
+var _coeffLastUpdate = 0;
+var _lastCashBtnUpdate = 0;
+
+function _initRenderCache(){
+    _rw = $('rocketWrap');
+    _gf = $('gameField');
+    _coeffBox = $('coeffBox');
+    _cdDisp = $('cdDisplay');
+    if(_rw) _rImg = _rw.querySelector('img');
+    _renderCacheInited = true;
+}
+
+function onNewServerMult(newMult){
+    var now = performance.now();
+    if(lastPollTimestamp > 0 && newMult > prevServMult){
+        var elapsed = now - lastPollTimestamp;
+        if(elapsed > 30) multGrowthRate = (newMult - prevServMult) / elapsed;
+    }
+    prevServMult = newMult;
+    lastPollTimestamp = now;
+    if(dispMult < newMult - 0.05) dispMult = newMult - 0.01;
+}
+
+function render(){
+    var now = performance.now();
+    var dt = lastFrameTime > 0 ? (now - lastFrameTime) : 16;
+    if(dt > 100) dt = 100;
+    lastFrameTime = now;
+
+    if(!_renderCacheInited) _initRenderCache();
+
+    if(window._rocketSwitching){
+        requestAnimationFrame(render);
+        return;
+    }
+
+    if(status === 'flying'){
+        /* Плавный рост dispMult (сглаженный по сравнению с сервером) */
+        if(multGrowthRate > 0){
+            var delta = multGrowthRate * dt;
+            if(delta > 0.02) delta = 0.02;
+            dispMult += delta;
+            if(dispMult > prevServMult + 0.5) multGrowthRate *= 0.75;
+        }
+        if(dispMult < 1.0) dispMult = 1.0;
+
+        if(_rw && !_rwFlying){ _rw.classList.add('flying'); _rwFlying = true; }
+
+        /* Лёгкий наклон ракеты при росте множителя */
+        if(_rw && _rImg && !_rw.classList.contains('showing-gift') && !window._rocketSwitching){
+            if(_rImg.complete && _rImg.naturalWidth > 0){
+                var tilt = dispMult >= 2.0 ? Math.min(30, (dispMult - 2.0) * 3.5) : 0;
+                var sc = 1 + Math.max(0, Math.min(dispMult - 1.5, 1)) * 0.015;
+                _rImg.style.transform = 'rotate(' + tilt + 'deg) scale(' + sc + ')';
+            }
+        }
+
+        /* Обновление coeffBox (не чаще 30 fps) */
+        if(now - _coeffLastUpdate > 33){
+            _coeffLastUpdate = now;
+            var ct = dispMult.toFixed(2) + 'x';
+            if(ct !== _prevCoeffText && _coeffBox){
+                _coeffBox.textContent = ct;
+                _prevCoeffText = ct;
+            }
+        }
+
+        /* Подарок вместо ракеты (не чаще 4 fps) */
+        if(now - lastRocketUpdateTime > 250){
+            lastRocketUpdateTime = now;
+            updateRocketImage();
+        }
+
+        /* Кнопка Cash OUT (не чаще 5 fps) */
+        if(now - _lastCashBtnUpdate > 200){
+            _lastCashBtnUpdate = now;
+            if(hasBet || cashedOut) updateCashoutButton();
+        }
+
+        /* Автовывод — срабатывает при достижении coeff */
+        if(hasBet && !autoCashoutDone){
+            if(autoWithdrawGift && autoWithdrawGift.coeff >= 1.1){
+                if(dispMult >= autoWithdrawGift.coeff){
+                    autoCashoutDone = true;
+                    doCashout();
+                }
+            }
+        }
+    } else {
+        /* Сброс после полёта */
+        if(lastRenderStatus === 'flying'){
+            updateRocketImage();
+            _rwFlying = false;
+            _prevCoeffText = '';
+            dispMult = 1.0;
+            prevServMult = 1.0;
+            multGrowthRate = 0;
+        }
+
+        /* Обратный отсчёт до 5 секунд */
+        if((status === 'counting' || status === 'waiting') && lastTrTimestamp > 0 && lastTimeRemaining <= 10){
+            var elapsed = (performance.now() - lastTrTimestamp) / 1000;
+            var sec = Math.max(0, Math.ceil(Math.max(0, lastTimeRemaining - elapsed)));
+            if(sec > 5) sec = 5;
+            var label = sec > 0 ? String(sec) : 'GO';
+            if(countdownShown !== label){
+                countdownShown = label;
+                if(_cdDisp){
+                    _cdDisp.textContent = label;
+                    _cdDisp.classList.remove('active');
+                    void _cdDisp.offsetWidth;
+                    _cdDisp.classList.add('active');
+                    if(label !== 'GO'){
+                        try{ playSound('countdown'); }catch(e){}
+                        try{ triggerVibration([80,30,80]); }catch(e){}
+                    }
+                }
+            }
+        }
+    }
+    lastRenderStatus = status;
+    requestAnimationFrame(render);
+}
+
+/* ============================================================
+   BETS LIST (ставки в раунде с превью подарков)
+   ============================================================ */
+async function loadBets(){
+    if(status === 'crashed') return;
+    try{
+        var gen = betsGeneration;
+        var r = await fetch('/api/ultimate-crash/recent-bets?limit=30');
+        if(!r.ok) return;
+        if(gen !== betsGeneration) return;
+        var d = await r.json();
+        if(!d.success) return;
+        if(gen !== betsGeneration) return;
+
+        var bets = (d.bets||[]).sort(function(a,b){ return b.bet_amount - a.bet_amount; });
+        var bc = $('betsCount');
+        if(bc) bc.textContent = bets.length + (pendingBet ? 1 : 0);
+
+        var hash = JSON.stringify(bets.map(function(b){ return b.id+':'+b.status+':'+b.bet_amount; }));
+        if(hash === lastBetsHash) return;
+        lastBetsHash = hash;
+
+        var list = $('betsList');
+        if(!list) return;
+        if(!bets.length){
+            var pendingRow = list.querySelector('.bet-row.pending-bet');
+            if(!pendingRow){
+                list.innerHTML = '<div class="no-bets">Waiting for bets...</div>';
+            }
+            return;
+        }
+
+        var pendingHtml = '';
+        var pendingRow2 = list.querySelector('.bet-row.pending-bet');
+        if(pendingRow2) pendingHtml = pendingRow2.outerHTML;
+
+        list.innerHTML = pendingHtml + bets.map(function(b){
+            var name = b.first_name || ('User '+b.user_id);
+            var ini = (b.first_name||'U')[0].toUpperCase();
+            var hasPhoto = b.photo_url && b.photo_url !== '/static/img/default_avatar.png';
+            var avatar = hasPhoto ? '<img src="'+b.photo_url+'" alt="">' : ini;
+            var stCls = 'active';
+
+            /* Превью подарка (22×22) слева от суммы */
+            var previewSrc = null;
+            if(b.bet_type === 'gift'){
+                if(b.gift_images && b.gift_images.length) previewSrc = b.gift_images[0];
+                else if(b.gift_image) previewSrc = b.gift_image;
+            }
+            var previewHtml = previewSrc
+                ? '<img class="bet-gift-preview" data-gift="'+previewSrc+'" src="'+previewSrc+'" onerror="this.style.display=\'none\'">'
+                : '<img class="bet-gift-preview empty" src="/static/img/gift.png" alt="">';
+
+            var clockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+            var crashSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>';
+
+            var statusHtml = '';
+            if(b.status === 'cashed_out'){
+                stCls = 'won';
+                var coef = b.cashout_multiplier ? parseFloat(b.cashout_multiplier).toFixed(2) : '?';
+                var winAmt = b.win_amount || 0;
+                var earnedGift = b.won_gift_image || null;
+                var giftHtml = earnedGift
+                    ? '<img src="'+earnedGift+'" style="width:24px;height:24px;object-fit:contain;border-radius:5px;background:rgba(0,0,0,.2);padding:2px" onerror="this.style.display=\'none\'">'
+                    : '';
+                statusHtml = '<div class="bet-status won" style="gap:5px">'
+                    + giftHtml
+                    + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px">'
+                    +   '<div style="font-size:11px;font-weight:700">×'+coef+'</div>'
+                    +   '<div style="font-size:11px;font-weight:800">+'+formatCrashMoney(winAmt)+'</div>'
+                    + '</div>'
+                    + '</div>';
+            } else if(b.status === 'lost'){
+                stCls = 'lost';
+                var cc = servMult ? servMult.toFixed(2) : '?';
+                statusHtml = '<div class="bet-status lost">'+crashSvg+' ×'+cc+'</div>';
+            } else {
+                var potentialWin = Math.floor(b.bet_amount * (servMult || 1));
+                var coefNow = (servMult || 1).toFixed(2);
+                statusHtml = '<div class="bet-status active" style="flex-direction:column;align-items:flex-end;gap:2px;padding:6px 10px">'
+                    + '<div style="display:flex;align-items:center;gap:4px">'+clockSvg+' <span style="font-size:11px">×'+coefNow+'</span></div>'
+                    + '<div style="font-size:11px;font-weight:800;color:#8CA0BE">'+formatCrashMoney(potentialWin)+'</div>'
+                    + '</div>';
+            }
+
+            return '<div class="bet-row '+stCls+'" data-bet-id="'+b.id+'" data-status="'+b.status+'">'
+                +'<div class="bet-left"><div class="bet-avatar">'+avatar+'</div>'
+                +'<div class="bet-info"><div class="bet-name">'+name+'</div>'
+                +'<div class="bet-amt">'+previewHtml+'<span class="bet-amount-text">'+formatCrashMoney(b.bet_amount)+'</span></div></div></div>'
+                +statusHtml+'</div>';
+        }).join('');
+    }catch(e){}
+}
+
+/* ============================================================
+   HISTORY (множители внизу)
+   ============================================================ */
+async function loadHist(){
+    try{
+        var r = await fetch('/api/ultimate-crash/history?limit=15');
+        if(!r.ok) return;
+        var d = await r.json();
+        if(!d.success || !d.history) return;
+        var bar = $('histScroll');
+        var coeff = $('coeffBox');
+        if(!bar || !coeff) return;
+        bar.innerHTML = '';
+        bar.appendChild(coeff);
+        d.history.forEach(function(h){
+            var m = parseFloat(h.final_multiplier);
+            var p = document.createElement('div');
+            var c = 'low';
+            if(m >= 5) c = 'mega';
+            else if(m >= 3) c = 'high';
+            else if(m >= 1.5) c = 'mid';
+            p.className = 'h-pill ' + c;
+            p.textContent = m.toFixed(2) + 'x';
+            bar.appendChild(p);
+        });
+    }catch(e){}
+}
+
+/* ============================================================
+   WIN SHEET
+   ============================================================ */
+function showWin(d){
+    var m = parseFloat(d.multiplier).toFixed(2);
+    var content = $('winContent');
+    if(!content) return;
+    var winTon = d.win_amount ? starsToTon(d.win_amount) : 0;
+    var betTon = d.bet_amount ? starsToTon(d.bet_amount) : (cashedOutBetAmt ? starsToTon(cashedOutBetAmt) : 0);
+
+    var allGifts = [];
+    if(d.awarded_gifts && d.awarded_gifts.length) allGifts = allGifts.concat(d.awarded_gifts);
+    if(d.gift && !allGifts.find(function(g){ return g.name === d.gift.name; })) allGifts.push(d.gift);
+    if(d.extra_gifts && d.extra_gifts.length){
+        d.extra_gifts.forEach(function(g){
+            if(!allGifts.find(function(x){ return x.name === g.name && x.value === g.value; })) allGifts.push(g);
+        });
+    }
+    allGifts = allGifts.filter(function(g){ return g && (g.image || g.name) && (g.value || g.image); });
+
+    var starRemainder = d.star_remainder || 0;
+    var html = '';
+
+    if(allGifts.length > 0){
+        html += '<div class="win-gift-hero">';
+        html += '<img src="' + (allGifts[0].image || '/static/img/star.png') + '" onerror="this.src=\'/static/img/star.png\'" alt="">';
+        html += '</div>';
+    }
+
+    html += '<div class="win-mult-badge"><span>' + m + 'X</span></div>';
+    html += '<div class="win-title">Победа</div>';
+    html += '<div class="win-summary">';
+    html += '<div class="win-summary-item">Ставка <img src="/static/img/ton.png"> ' + formatTon(betTon) + '</div>';
+    html += '<div class="win-summary-arrow">›</div>';
+    html += '<div class="win-summary-item win-summary-win">Выигрыш <img src="/static/img/ton.png"> ' + formatTon(winTon) + '</div>';
+    html += '</div>';
+
+    if(allGifts.length > 0){
+        html += '<div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">';
+        html += '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;text-align:center">Получено подарков: ' + allGifts.length + '</div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:240px;overflow-y:auto">';
+        for(var j = 0; j < allGifts.length; j++){
+            var g = allGifts[j];
+            var gImg = g.image || '/static/img/gift.png';
+            var gName = (g.name || 'Gift').replace(/ #\d+$/, '');
+            var gValue = g.value || 0;
+            html += '<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:12px;padding:6px;text-align:center;box-sizing:border-box">';
+            html += '<img src="' + gImg + '" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;aspect-ratio:1;object-fit:contain;border-radius:8px;background:rgba(0,0,0,.2);padding:4px;box-sizing:border-box;display:block">';
+            html += '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.85);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + gName + '</div>';
+            html += '<div style="font-size:10px;font-weight:800;color:#8CA0BE;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:2px"><img src="/static/img/ton.png" style="width:10px;height:10px">' + formatTon(gValue/100) + '</div>';
+            html += '</div>';
+        }
+        if(starRemainder > 0){
+            html += '<div style="background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.2);border-radius:12px;padding:6px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;box-sizing:border-box">';
+            html += '<div style="font-size:20px;font-weight:900;color:#1EE44C;line-height:1">+' + formatCrashMoney(starRemainder) + '</div>';
+            html += '<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.6);margin-top:2px">TON</div>';
+            html += '</div>';
+        }
+        html += '</div>';
+        html += '</div>';
+    } else if(starRemainder > 0 || winTon > 0){
+        html += '<div class="win-breakdown">+' + formatCrashMoney(starRemainder || d.win_amount || 0) + ' TON на баланс</div>';
+    }
+    content.innerHTML = html;
+    var wo = $('winOverlay');
+    if(wo) wo.classList.add('show');
+    triggerVibration([30,20,60]);
+}
+
+function closeWin(){
+    var wo = $('winOverlay');
+    if(wo) wo.classList.remove('show');
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
 document.addEventListener('DOMContentLoaded', function(){
     initTelegramApp();
+
     setTimeout(function(){
         var ls = $('ldScreen');
         if(ls && !ls.classList.contains('hidden')){
@@ -2565,6 +2634,7 @@ document.addEventListener('DOMContentLoaded', function(){
             setTimeout(function(){ ls.style.display = 'none'; }, 500);
         }
     }, 15000);
+
     function updOnline(){
         fetch('/api/online-count').then(function(r){ return r.json(); }).then(function(d){
             var el = $('onlineCount');
