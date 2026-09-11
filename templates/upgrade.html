@@ -30,21 +30,14 @@ body{
     color:var(--text);
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
-    user-select:none;
-    -webkit-user-select:none;
+    user-select:none;-webkit-user-select:none;
     overflow:hidden;
 }
 a{text-decoration:none;color:inherit}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 
-/* ══════════════════════════════════════════════════════════════
-   LOADING SCREEN
-   ══════════════════════════════════════════════════════════════ */
-.loading-screen{
-    position:fixed;inset:0;background:#0a0a0f;z-index:9999;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;
-    transition:opacity .5s ease, visibility .5s ease;
-}
+/* LOADING */
+.loading-screen{position:fixed;inset:0;background:#0a0a0f;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:opacity .5s ease, visibility .5s ease}
 .loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
 .loading-wheel{width:180px;height:180px;position:relative;animation:loadingRotate 3s linear infinite}
 @keyframes loadingRotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -58,9 +51,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .loading-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#24C38E,#10b981);border-radius:2px;transition:width .3s ease}
 .loading-arrow{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:10;filter:drop-shadow(0 4px 12px rgba(0,0,0,.8))}
 
-/* ══════════════════════════════════════════════════════════════
-   TOP BAR
-   ══════════════════════════════════════════════════════════════ */
+/* TOP BAR */
 .top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;padding-top:calc(var(--safe-top) + var(--tg-header));position:relative;z-index:10}
 .top-left{display:flex;align-items:center;gap:8px}
 .user-pill{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.04)}
@@ -72,14 +63,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .bal-plus{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .2s}
 .bal-plus:active{transform:scale(.9);background:rgba(255,255,255,.12)}
 
-/* ══════════════════════════════════════════════════════════════
-   WRAPPER
-   ══════════════════════════════════════════════════════════════ */
+/* WRAPPER */
 .upgrade-wrap{max-width:450px;margin:0 auto;padding:4px 16px calc(var(--safe-bottom) + 100px);display:flex;flex-direction:column;align-items:center;gap:12px}
 
-/* ══════════════════════════════════════════════════════════════
-   ПАНЕЛЬ ВЫБОРА
-   ══════════════════════════════════════════════════════════════ */
+/* SELECT PANEL */
 .select-panel{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
 .select-card{background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.06);border-radius:20px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);position:relative;min-height:160px;justify-content:center;overflow:hidden}
 .select-card:active{transform:scale(.97)}
@@ -99,98 +86,22 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .select-price img{width:11px;height:11px}
 .select-chance{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;background:rgba(36,195,142,.12);border:1px solid rgba(36,195,142,.3);border-radius:10px;font-size:13px;font-weight:900;color:var(--green);line-height:1;margin-top:4px}
 
-/* ══════════════════════════════════════════════════════════════
-   КОЛЕСО
-   ══════════════════════════════════════════════════════════════ */
+/* WHEEL */
 .wheel-section{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0;position:relative}
 .wheel-wrap{position:relative;width:300px;height:300px;margin:0 auto;display:flex;align-items:center;justify-content:center}
 .wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);z-index:10;width:44px;height:44px;pointer-events:none;filter:drop-shadow(0 4px 12px rgba(0,0,0,.9))}
 .wheel-pointer svg{width:100%;height:100%;display:block}
 
-/* ═══ Золотая вспышка (когда появляется шанс) ═══ */
-.gold-ring-hint{
-    position:absolute;top:0;left:0;width:100%;height:100%;
-    pointer-events:none;z-index:6;opacity:0;
-    transition:opacity .4s;
-}
-.gold-ring-hint.show{
-    opacity:1;
-    animation:goldPulse 1.2s ease-in-out infinite;
-}
+/* GOLD RING HINT (вокруг колеса) */
+.gold-ring-hint{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:6;opacity:0;transition:opacity .4s}
+.gold-ring-hint.show{opacity:1;animation:goldPulse 1.2s ease-in-out infinite}
 @keyframes goldPulse{
     0%,100%{filter:drop-shadow(0 0 8px rgba(255,215,0,.5))}
     50%{filter:drop-shadow(0 0 28px rgba(255,215,0,.95))}
 }
 
-/* ═══ Результат: PNG в центре ═══ */
-.wheel-result{
-    position:absolute;top:50%;left:50%;
-    transform:translate(-50%,-50%) scale(0);
-    width:180px;height:180px;z-index:20;pointer-events:none;opacity:0;
-    transition:opacity .3s ease, transform .3s ease;
-}
-.wheel-result.show{
-    opacity:1;
-    transform:translate(-50%,-50%) scale(1);
-    animation:resultBounce .6s cubic-bezier(.34,1.56,.64,1);
-}
-.wheel-result img{
-    width:100%;height:100%;object-fit:contain;
-    filter:drop-shadow(0 0 40px rgba(36,195,142,.6));
-}
-.wheel-result.fail img{
-    filter:drop-shadow(0 0 40px rgba(255,48,100,.6));
-    animation:failGlow 1.6s ease-in-out infinite;
-}
-.wheel-result.gold img{
-    filter:drop-shadow(0 0 60px rgba(255,215,0,.95));
-    animation:goldResultGlow 1.2s ease-in-out infinite;
-}
-@keyframes resultBounce{
-    0%{transform:translate(-50%,-50%) scale(0)}
-    50%{transform:translate(-50%,-50%) scale(1.15)}
-    100%{transform:translate(-50%,-50%) scale(1)}
-}
-@keyframes failGlow{
-    0%,100%{filter:drop-shadow(0 0 40px rgba(255,48,100,.6));transform:translate(-50%,-50%) scale(1)}
-    50%{filter:drop-shadow(0 0 70px rgba(255,48,100,.95));transform:translate(-50%,-50%) scale(1.05)}
-}
-@keyframes goldResultGlow{
-    0%,100%{filter:drop-shadow(0 0 50px rgba(255,215,0,.8));transform:translate(-50%,-50%) scale(1)}
-    50%{filter:drop-shadow(0 0 90px rgba(255,215,0,1));transform:translate(-50%,-50%) scale(1.08)}
-}
-
-/* ═══ PNG ставки, летящий в центр (GOLD) ═══ */
-.fly-item{
-    position:absolute;
-    width:80px;height:80px;
-    z-index:18;pointer-events:none;
-    opacity:0;
-    transition:opacity .3s, transform .9s cubic-bezier(.5,-0.3,.7,1.4);
-    filter:drop-shadow(0 0 20px rgba(255,215,0,.8));
-}
-.fly-item img{width:100%;height:100%;object-fit:contain}
-.fly-item.flying{
-    opacity:1;
-    animation:flyToCenter 1.1s cubic-bezier(.5,-0.3,.7,1.4) forwards;
-}
-.fly-item.from-left{transform:translate(-140px,120px) scale(.6) rotate(-180deg)}
-.fly-item.from-right{transform:translate(140px,120px) scale(.6) rotate(180deg)}
-.fly-item.to-center{transform:translate(0,0) scale(1) rotate(0deg)}
-@keyframes flyToCenter{
-    0%{opacity:0}
-    15%{opacity:1}
-    80%{opacity:1}
-    100%{opacity:1}
-}
-
-/* ═══ Вспышка ═══ */
-.wheel-flash{
-    position:absolute;top:50%;left:50%;
-    transform:translate(-50%,-50%);
-    width:300px;height:300px;border-radius:50%;
-    pointer-events:none;z-index:15;opacity:0;
-}
+/* FLASH */
+.wheel-flash{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:300px;height:300px;border-radius:50%;pointer-events:none;z-index:15;opacity:0}
 .wheel-flash.show{animation:flashAnim .8s ease-out}
 @keyframes flashAnim{
     0%{opacity:0;transform:translate(-50%,-50%) scale(0.3)}
@@ -201,7 +112,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .wheel-flash.fail{background:radial-gradient(circle, rgba(255,48,100,.5) 0%, transparent 70%)}
 .wheel-flash.gold{background:radial-gradient(circle, rgba(255,215,0,.85) 0%, transparent 70%)}
 
-/* ═══ Тряска при неудаче ═══ */
+/* SHAKE */
 @keyframes wheelShake{
     0%,100%{transform:translateX(0)}
     10%,30%,50%,70%,90%{transform:translateX(-6px)}
@@ -209,43 +120,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .wheel-wrap.shake{animation:wheelShake .55s ease-in-out}
 
-/* ═══ "Взрыв" ставки при проигрыше (мягкий) ═══ */
-.wheel-wrap.fail-explode .wheel-result img{
-    animation:softExplode 1.2s ease-out forwards;
-}
-@keyframes softExplode{
-    0%{transform:scale(1);opacity:1;filter:drop-shadow(0 0 40px rgba(255,48,100,.6))}
-    30%{transform:scale(1.15);filter:drop-shadow(0 0 80px rgba(255,48,100,.95)) brightness(1.5)}
-    60%{transform:scale(1.05);opacity:1}
-    100%{transform:scale(1.6);opacity:0;filter:drop-shadow(0 0 0 rgba(255,48,100,0)) blur(8px)}
-}
-
-/* ═══ Звёзды при победе ═══ */
-.star-particle{
-    position:absolute;width:24px;height:24px;pointer-events:none;
-    z-index:25;opacity:0;transform:scale(0);
-    animation:starPop 1.2s ease-out forwards;
-}
-.star-particle img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 8px rgba(255,215,0,.8))}
-@keyframes starPop{
-    0%{opacity:0;transform:scale(0) rotate(0deg)}
-    20%{opacity:1;transform:scale(1.3) rotate(45deg)}
-    100%{opacity:0;transform:scale(0) rotate(360deg) translateY(-50px)}
-}
-
-/* Базовое колесо */
+/* WHEEL ROTATOR */
 .wheel-rotator{position:absolute;top:0;left:0;width:100%;height:100%;will-change:transform;transform-origin:50% 50%;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(0)}
 .wheel-rotator svg{width:100%;height:100%;display:block}
 .wheel-green-arc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;transform-origin:50% 50%;will-change:transform;transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden}
-
-/* ═══ Золотая полоса (накладывается на зелёную) ═══ */
-.wheel-gold-arc{
-    position:absolute;top:0;left:0;width:100%;height:100%;
-    pointer-events:none;z-index:2;
-    transform-origin:50% 50%;will-change:transform;
-    transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden;
-    opacity:0;transition:opacity .35s ease;
-}
+.wheel-gold-arc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;transform-origin:50% 50%;will-change:transform;transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden;opacity:0;transition:opacity .35s ease}
 .wheel-gold-arc.visible{opacity:1}
 .wheel-gold-arc.pulsing{animation:goldArcPulse 1s ease-in-out infinite}
 @keyframes goldArcPulse{
@@ -253,47 +132,125 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     50%{filter:drop-shadow(0 0 22px rgba(255,215,0,1))}
 }
 
+/* ══════════════════════════════════════════════════════════════
+   WHEEL CENTER — здесь появляется PNG результата
+   ══════════════════════════════════════════════════════════════ */
 .wheel-center{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
     width:130px;height:130px;border-radius:50%;
     background:radial-gradient(circle, #15151c 0%, #0a0a0f 100%);
     border:2px solid rgba(255,255,255,.06);
-    box-shadow:inset 0 0 30px rgba(0,0,0,.9),0 0 0 6px rgba(10,10,15,.95);
-    display:flex;align-items:center;justify-content:center;z-index:5;overflow:hidden;
+    box-shadow:
+        inset 0 0 30px rgba(0,0,0,.9),
+        0 0 0 6px rgba(10,10,15,.95);
+    display:flex;align-items:center;justify-content:center;
+    z-index:5;overflow:hidden;
     transition:box-shadow .3s ease;
 }
 .wheel-center.gold-glow{
-    box-shadow:inset 0 0 40px rgba(255,215,0,.3),0 0 0 6px rgba(10,10,15,.95),0 0 40px rgba(255,215,0,.5);
+    box-shadow:
+        inset 0 0 40px rgba(255,215,0,.35),
+        0 0 0 6px rgba(10,10,15,.95),
+        0 0 45px rgba(255,215,0,.55);
 }
-.wheel-center-img{position:absolute;width:80px;height:80px;object-fit:contain;opacity:0;transition:opacity .3s ease;z-index:2;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
-.wheel-center-img.visible{opacity:1}
-.wheel-center-pct{position:absolute;font-size:28px;font-weight:900;letter-spacing:-1px;color:#fff;opacity:0;transition:opacity .3s ease;z-index:3}
+.wheel-center.fail-glow{
+    box-shadow:
+        inset 0 0 40px rgba(255,48,100,.35),
+        0 0 0 6px rgba(10,10,15,.95),
+        0 0 45px rgba(255,48,100,.5);
+}
+.wheel-center.win-glow{
+    box-shadow:
+        inset 0 0 40px rgba(36,195,142,.35),
+        0 0 0 6px rgba(10,10,15,.95),
+        0 0 45px rgba(36,195,142,.55);
+}
+
+/* Проценты — базовый слой центра */
+.wheel-center-pct{
+    position:absolute;
+    font-size:28px;font-weight:900;letter-spacing:-1px;
+    color:#fff;opacity:0;transition:opacity .3s ease;
+    z-index:3;
+    pointer-events:none;
+}
 .wheel-center-pct.visible{opacity:1}
 
-/* ══════════════════════════════════════════════════════════════
-   КНОПКИ
-   ══════════════════════════════════════════════════════════════ */
+/* ═══ PNG результата — ВНУТРИ центра ═══ */
+.center-result{
+    position:absolute;
+    width:100px;height:100px;
+    z-index:4;
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;
+    transform:scale(0) rotate(-30deg);
+    transition:opacity .35s ease, transform .45s cubic-bezier(.34,1.56,.64,1);
+    pointer-events:none;
+}
+.center-result img{
+    width:100%;height:100%;object-fit:contain;
+    filter:drop-shadow(0 4px 14px rgba(0,0,0,.7));
+}
+.center-result.show{
+    opacity:1;
+    transform:scale(1) rotate(0deg);
+}
+.center-result.show.win img{
+    filter:drop-shadow(0 4px 14px rgba(0,0,0,.7)) drop-shadow(0 0 26px rgba(36,195,142,.9));
+    animation:centerWinPulse 1.2s ease-in-out infinite;
+}
+.center-result.show.gold img{
+    filter:drop-shadow(0 4px 14px rgba(0,0,0,.7)) drop-shadow(0 0 32px rgba(255,215,0,1));
+    animation:centerGoldPulse 1s ease-in-out infinite;
+}
+.center-result.show.fail img{
+    filter:drop-shadow(0 4px 14px rgba(0,0,0,.7)) drop-shadow(0 0 26px rgba(255,48,100,.85));
+}
+@keyframes centerWinPulse{
+    0%,100%{transform:scale(1)}
+    50%{transform:scale(1.08)}
+}
+@keyframes centerGoldPulse{
+    0%,100%{transform:scale(1);filter:drop-shadow(0 4px 14px rgba(0,0,0,.7)) drop-shadow(0 0 30px rgba(255,215,0,.9))}
+    50%{transform:scale(1.12);filter:drop-shadow(0 4px 14px rgba(0,0,0,.7)) drop-shadow(0 0 50px rgba(255,215,0,1))}
+}
+
+/* ═══ FAIL EXPLODE — мягкий взрыв PNG в центре ═══ */
+.center-result.fail-explode img{
+    animation:centerFailExplode 1.15s ease-out forwards;
+}
+@keyframes centerFailExplode{
+    0%{transform:scale(1);opacity:1}
+    25%{transform:scale(1.18);filter:drop-shadow(0 0 50px rgba(255,48,100,1)) brightness(1.6)}
+    55%{transform:scale(1.08);opacity:1}
+    100%{transform:scale(1.55);opacity:0;filter:drop-shadow(0 0 0 rgba(255,48,100,0)) blur(6px)}
+}
+
+/* ═══ Звёздочки победы в центре ═══ */
+.center-star{
+    position:absolute;
+    width:20px;height:20px;
+    z-index:6;pointer-events:none;
+    opacity:0;
+}
+.center-star img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 8px rgba(255,215,0,.9))}
+.center-star.burst{animation:centerStarBurst 1s ease-out forwards}
+@keyframes centerStarBurst{
+    0%{opacity:0;transform:scale(0) rotate(0deg)}
+    30%{opacity:1;transform:scale(1.3) rotate(60deg)}
+    100%{opacity:0;transform:scale(0) rotate(360deg)}
+}
+
+/* ACTIONS */
 .actions-row{width:100%;display:flex;gap:10px}
-.btn-main{flex:2;height:56px;border-radius:16px;background:linear-gradient(135deg, #24C38E 0%, #10b981 100%);border:1px solid rgba(36,195,142,.3);color:#fff;font-size:16px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;transition:all .2s;letter-spacing:.5px;position:relative;overflow:hidden}
+.btn-main{flex:2;height:56px;border-radius:16px;background:linear-gradient(135deg, #24C38E 0%, #10b981 100%);border:1px solid rgba(36,195,142,.3);color:#fff;font-size:16px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;transition:all .2s;letter-spacing:.5px}
 .btn-main:not(:disabled):active{transform:scale(.95)}
 .btn-main:disabled{background:rgba(255,255,255,.03);color:rgba(255,255,255,.2);cursor:not-allowed;border-color:rgba(255,255,255,.04)}
-.btn-main.gold-mode{
-    background:linear-gradient(135deg,#FFD700 0%,#FFA500 100%);
-    border-color:rgba(255,215,0,.5);
-    box-shadow:0 0 24px rgba(255,215,0,.4);
-    animation:goldBtnPulse 1.5s ease-in-out infinite;
-}
-@keyframes goldBtnPulse{
-    0%,100%{box-shadow:0 0 24px rgba(255,215,0,.4)}
-    50%{box-shadow:0 0 42px rgba(255,215,0,.85)}
-}
 .btn-demo{flex:1;height:56px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);font-size:14px;font-weight:800;text-transform:uppercase;display:flex;align-items:center;justify-content:center;transition:all .2s;letter-spacing:.5px;cursor:not-allowed}
 .btn-demo.enabled{background:linear-gradient(135deg, #2a2a35 0%, #1a1a24 100%);color:#fff;cursor:pointer}
 .btn-demo.enabled:active{transform:scale(.95)}
 
-/* ══════════════════════════════════════════════════════════════
-   МОДАЛКИ
-   ══════════════════════════════════════════════════════════════ */
+/* MODALS */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9000;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .25s, visibility .25s}
 .modal-overlay.show{opacity:1;visibility:visible}
 .modal-sheet{background:#0f0f15;border-radius:24px 24px 0 0;width:100%;max-width:450px;max-height:85vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1);border-top:1px solid rgba(255,255,255,.06);overflow:hidden}
@@ -326,9 +283,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .modal-empty-icon{width:64px;height:64px;margin:0 auto 16px;opacity:.4}
 .modal-empty-icon img{width:100%;height:100%;object-fit:contain}
 
-/* ══════════════════════════════════════════════════════════════
-   DEPOSIT
-   ══════════════════════════════════════════════════════════════ */
+/* DEPOSIT */
 .deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9600;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
 .deposit-overlay.show{opacity:1;visibility:visible}
 .deposit-modal{background:#0f0f15;border-radius:24px;width:90%;max-width:360px;padding:24px 20px;transform:scale(.9);transition:transform .3s;border:1px solid rgba(255,255,255,.06)}
@@ -342,9 +297,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .deposit-method img{width:36px;height:36px}
 .deposit-method span{font-weight:700;font-size:13px;color:#fff}
 
-/* ══════════════════════════════════════════════════════════════
-   BOTTOM NAV
-   ══════════════════════════════════════════════════════════════ */
+/* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:100;width:100%;max-width:450px;height:72px;padding:0 8px calc(var(--safe-bottom) + 8px);background:rgba(10,10,15,.95);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;justify-content:space-around}
 .bnav-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 16px;border-radius:12px;color:rgba(255,255,255,.35);font-weight:600;text-decoration:none;transition:all .2s}
 .bnav-item svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;transition:transform .2s}
@@ -353,9 +306,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .bnav-item.active svg{transform:scale(1.1)}
 .bnav-item:active{transform:scale(.9)}
 
-/* ══════════════════════════════════════════════════════════════
-   TOAST
-   ══════════════════════════════════════════════════════════════ */
+/* TOAST */
 .toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);background:rgba(20,20,30,.95);border:1px solid rgba(255,255,255,.08);padding:12px 20px;border-radius:14px;font-size:13px;font-weight:700;z-index:9999;opacity:0;visibility:hidden;transition:all .3s;max-width:90%;text-align:center;display:flex;align-items:center;gap:8px;justify-content:center}
 .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
 .toast img{width:20px;height:20px;object-fit:contain}
@@ -363,77 +314,32 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .toast.err{border-color:rgba(255,48,100,.3);color:#FF3064}
 .toast.gold{border-color:rgba(255,215,0,.4);color:#FFD700}
 
-/* ══════════════════════════════════════════════════════════════
-   GOLD WIN OVERLAY
-   ══════════════════════════════════════════════════════════════ */
-.gold-overlay{
-    position:fixed;inset:0;z-index:9700;
-    background:radial-gradient(circle at center, rgba(255,215,0,.15) 0%, rgba(0,0,0,.92) 70%);
-    display:flex;align-items:center;justify-content:center;flex-direction:column;
-    opacity:0;visibility:hidden;transition:opacity .4s,visibility .4s;
-    padding:20px;
-}
+/* GOLD OVERLAY */
+.gold-overlay{position:fixed;inset:0;z-index:9700;background:radial-gradient(circle at center, rgba(255,215,0,.15) 0%, rgba(0,0,0,.92) 70%);display:flex;align-items:center;justify-content:center;flex-direction:column;opacity:0;visibility:hidden;transition:opacity .4s,visibility .4s;padding:20px}
 .gold-overlay.show{opacity:1;visibility:visible}
-.gold-title{
-    font-size:26px;font-weight:900;
-    background:linear-gradient(135deg,#FFD700,#FFA500,#FFD700);
-    -webkit-background-clip:text;background-clip:text;
-    -webkit-text-fill-color:transparent;
-    text-shadow:0 0 40px rgba(255,215,0,.6);
-    margin-bottom:20px;letter-spacing:1px;
-    animation:goldTitlePulse 1.2s ease-in-out infinite;
-}
-@keyframes goldTitlePulse{
-    0%,100%{filter:drop-shadow(0 0 10px rgba(255,215,0,.7))}
-    50%{filter:drop-shadow(0 0 30px rgba(255,215,0,1))}
-}
-.gold-gift-img{
-    width:200px;height:200px;object-fit:contain;
-    filter:drop-shadow(0 0 50px rgba(255,215,0,.95));
-    animation:goldGiftSpin 3s ease-in-out infinite;
-    margin-bottom:20px;
-}
-@keyframes goldGiftSpin{
-    0%,100%{transform:rotate(-8deg) scale(1)}
-    50%{transform:rotate(8deg) scale(1.08)}
-}
-.gold-subtitle{
-    font-size:14px;color:rgba(255,255,255,.7);
-    font-weight:600;margin-bottom:8px;text-align:center;
-}
-.gold-value{
-    font-size:22px;font-weight:900;color:#FFD700;
-    display:flex;align-items:center;gap:8px;
-    margin-bottom:24px;text-shadow:0 0 24px rgba(255,215,0,.6);
-}
+.gold-title{font-size:26px;font-weight:900;background:linear-gradient(135deg,#FFD700,#FFA500,#FFD700);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 40px rgba(255,215,0,.6);margin-bottom:20px;letter-spacing:1px;animation:goldTitlePulse 1.2s ease-in-out infinite}
+@keyframes goldTitlePulse{0%,100%{filter:drop-shadow(0 0 10px rgba(255,215,0,.7))}50%{filter:drop-shadow(0 0 30px rgba(255,215,0,1))}}
+.gold-gift-img{width:200px;height:200px;object-fit:contain;filter:drop-shadow(0 0 50px rgba(255,215,0,.95));animation:goldGiftSpin 3s ease-in-out infinite;margin-bottom:20px}
+@keyframes goldGiftSpin{0%,100%{transform:rotate(-8deg) scale(1)}50%{transform:rotate(8deg) scale(1.08)}}
+.gold-subtitle{font-size:14px;color:rgba(255,255,255,.7);font-weight:600;margin-bottom:8px;text-align:center}
+.gold-value{font-size:22px;font-weight:900;color:#FFD700;display:flex;align-items:center;gap:8px;margin-bottom:24px;text-shadow:0 0 24px rgba(255,215,0,.6)}
 .gold-value img{width:22px;height:22px}
-.gold-btn{
-    padding:14px 40px;border-radius:16px;
-    background:linear-gradient(135deg,#FFD700,#FFA500);
-    color:#000;font-size:15px;font-weight:900;
-    text-transform:uppercase;letter-spacing:1px;
-    box-shadow:0 8px 32px rgba(255,215,0,.5);
-    transition:transform .15s;
-}
+.gold-btn{padding:14px 40px;border-radius:16px;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-size:15px;font-weight:900;text-transform:uppercase;letter-spacing:1px;box-shadow:0 8px 32px rgba(255,215,0,.5);transition:transform .15s}
 .gold-btn:active{transform:scale(.95)}
 
-/* ══════════════════════════════════════════════════════════════
-   АДАПТИВ
-   ══════════════════════════════════════════════════════════════ */
 @media(max-width:380px){
     .wheel-wrap{width:270px;height:270px}
     .wheel-center{width:110px;height:110px}
-    .wheel-center-img{width:66px;height:66px}
+    .center-result{width:86px;height:86px}
     .wheel-center-pct{font-size:24px}
     .select-card{min-height:150px;padding:12px 10px}
     .select-img{width:60px;height:60px}
     .wheel-pointer{width:40px;height:40px;top:-6px}
-    .fly-item{width:64px;height:64px}
 }
 @media(max-width:340px){
     .wheel-wrap{width:240px;height:240px}
     .wheel-center{width:100px;height:100px}
-    .wheel-center-img{width:58px;height:58px}
+    .center-result{width:76px;height:76px}
     .wheel-center-pct{font-size:22px}
     .wheel-pointer{width:36px;height:36px;top:-4px}
 }
@@ -441,7 +347,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 </head>
 <body>
 
-<!-- LOADING SCREEN -->
+<!-- LOADING -->
 <div class="loading-screen" id="loadingScreen">
     <div style="position:relative;width:180px;height:180px">
         <div class="loading-arrow">
@@ -529,15 +435,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
             <div class="wheel-flash" id="wheelFlash"></div>
 
-            <!-- Летящие PNG при GOLD -->
-            <div class="fly-item from-left" id="flyLeft"><img id="flyLeftImg" src="" alt=""></div>
-            <div class="fly-item from-right" id="flyRight"><img id="flyRightImg" src="" alt=""></div>
-
-            <!-- Результат -->
-            <div class="wheel-result" id="wheelResult">
-                <img id="wheelResultImg" src="" alt="">
-            </div>
-
             <!-- Зелёная зона -->
             <svg class="wheel-green-arc" id="greenArc" viewBox="0 0 240 240">
                 <defs>
@@ -549,7 +446,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
                 <path id="greenPath" d="" fill="none" stroke="url(#greenGrad)" stroke-width="20" stroke-linecap="butt"/>
             </svg>
 
-            <!-- Золотая зона (появляется только если шанс gold) -->
+            <!-- Золотая зона -->
             <svg class="wheel-gold-arc" id="goldArc" viewBox="0 0 240 240">
                 <defs>
                     <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -561,7 +458,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
                 <path id="goldPath" d="" fill="none" stroke="url(#goldGrad)" stroke-width="20" stroke-linecap="butt"/>
             </svg>
 
-            <!-- Золотое свечение-подсказка -->
+            <!-- Золотое кольцо вокруг -->
             <svg class="gold-ring-hint" id="goldRingHint" viewBox="0 0 240 240">
                 <circle cx="120" cy="120" r="114" fill="none" stroke="#FFD700" stroke-width="2" opacity="0.6"/>
             </svg>
@@ -575,9 +472,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
                 </svg>
             </div>
 
+            <!-- ЦЕНТР: здесь проценты И PNG результата -->
             <div class="wheel-center" id="wheelCenter">
-                <img class="wheel-center-img" id="wheelCenterImg" src="" alt="">
                 <span class="wheel-center-pct visible" id="chancePct">0.00%</span>
+                <div class="center-result" id="centerResult">
+                    <img id="centerResultImg" src="" alt="">
+                </div>
+                <div class="center-star" id="centerStar1"><img src="/static/img/star.png" alt=""></div>
+                <div class="center-star" id="centerStar2"><img src="/static/img/star.png" alt=""></div>
+                <div class="center-star" id="centerStar3"><img src="/static/img/star.png" alt=""></div>
+                <div class="center-star" id="centerStar4"><img src="/static/img/star.png" alt=""></div>
             </div>
 
         </div>
@@ -636,7 +540,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     </div>
 </div>
 
-<!-- GOLD WIN OVERLAY -->
+<!-- GOLD OVERLAY -->
 <div class="gold-overlay" id="goldOverlay">
     <div class="gold-title">✨ GOLD WIN ✨</div>
     <img class="gold-gift-img" id="goldGiftImg" src="/static/img/star2.png" alt="">
@@ -670,11 +574,10 @@ var currentChance = 0;
 var _inventorySearchQ = '';
 var _targetsSearchQ = '';
 
-/* GOLD: шанс появления золотой полосы 10%, шанс выпадения золота 5% */
-var GOLD_APPEAR_CHANCE = 0.10;   // 10% что золотая полоса появится
-var GOLD_WIN_CHANCE = 0.05;      // 5% что выпадет золото (если полоса появилась)
-var _goldActive = false;         // золотая полоса сейчас на колесе
-var _goldWillWin = false;        // предрешено ли выпадение золота
+/* GOLD: 10% появления, 5% выпадения (если появилась).
+   ВАЖНО: GOLD не перезаписывает результат сервера — если сервер сказал ПРОИГРЫШ, GOLD не показывается как победа. */
+var GOLD_APPEAR_CHANCE = 0.10;
+var GOLD_WIN_CHANCE = 0.05;
 
 function $(id){ return document.getElementById(id); }
 
@@ -742,7 +645,7 @@ var _simInterval = setInterval(function(){
 }, 40);
 
 /* ══════════════════════════════════════════════════════════════
-   РИСКИ
+   RISKS
    ══════════════════════════════════════════════════════════════ */
 (function drawRisks(){
     var group = document.getElementById('risksGroup');
@@ -766,7 +669,7 @@ var _simInterval = setInterval(function(){
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   ЗЕЛЁНАЯ ЗОНА
+   ARCS
    ══════════════════════════════════════════════════════════════ */
 function drawGreenArc(chance){
     var path = $('greenPath');
@@ -786,16 +689,10 @@ function drawGreenArc(chance){
     path.setAttribute('d', d);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   ЗОЛОТАЯ ПОЛОСА (появляется при апгрейде)
-   ══════════════════════════════════════════════════════════════ */
 function showGoldArc(){
-    /* Золотая полоса появляется ПОВЕРХ зелёной, чуть смещена
-       в начале — маленький сегмент (например 1/6 от верха) */
     var path = $('goldPath');
     if(!path) return;
     var cx = 120, cy = 120, r = 104;
-    /* Небольшой золотой сегмент — 25 градусов */
     var startAngle = -90;
     var endAngle = startAngle + 25;
     function polar(a){
@@ -806,38 +703,23 @@ function showGoldArc(){
     var end = polar(endAngle);
     var d = 'M ' + start.x.toFixed(2) + ' ' + start.y.toFixed(2) + ' A ' + r + ' ' + r + ' 0 0 1 ' + end.x.toFixed(2) + ' ' + end.y.toFixed(2);
     path.setAttribute('d', d);
-
     var arc = $('goldArc');
     var hint = $('goldRingHint');
-    if(arc){ arc.classList.add('visible'); }
-    if(hint){ hint.classList.add('show'); }
-
-    /* Пульсация после появления */
-    setTimeout(function(){
-        if(arc) arc.classList.add('pulsing');
-    }, 400);
+    if(arc) arc.classList.add('visible');
+    if(hint) hint.classList.add('show');
+    setTimeout(function(){ if(arc) arc.classList.add('pulsing'); }, 400);
 }
-
 function hideGoldArc(){
     var arc = $('goldArc');
     var hint = $('goldRingHint');
-    if(arc){ arc.classList.remove('visible','pulsing'); }
-    if(hint){ hint.classList.remove('show'); }
-    _goldActive = false;
-    _goldWillWin = false;
+    if(arc){ arc.classList.remove('visible','pulsing'); arc.style.filter = ''; }
+    if(hint) hint.classList.remove('show');
 }
-
 function pulseGoldArcStrong(){
-    /* Когда выпало золото — усилить свечение */
     var arc = $('goldArc');
-    if(arc){
-        arc.classList.add('visible','pulsing');
-        arc.style.filter = 'drop-shadow(0 0 30px rgba(255,215,0,1))';
-    }
+    if(arc){ arc.classList.add('visible','pulsing'); arc.style.filter = 'drop-shadow(0 0 30px rgba(255,215,0,1))'; }
     var hint = $('goldRingHint');
     if(hint) hint.classList.add('show');
-    var center = $('wheelCenter');
-    if(center) center.classList.add('gold-glow');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -858,7 +740,7 @@ async function loadTopBar(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ИНВЕНТАРЬ
+   INVENTORY
    ══════════════════════════════════════════════════════════════ */
 async function loadInventory(){
     if(!userId) return;
@@ -872,7 +754,6 @@ async function loadInventory(){
         }
     }catch(e){}
 }
-
 function openInventoryModal(){
     if(isSpinning) return;
     var m = $('inventoryModal');
@@ -881,14 +762,8 @@ function openInventoryModal(){
     _inventorySearchQ = '';
     renderInventoryModal();
 }
-function closeInventoryModal(){
-    var m = $('inventoryModal');
-    if(m) m.classList.remove('show');
-}
-function filterInventory(){
-    _inventorySearchQ = $('inventorySearch').value.toLowerCase().trim();
-    renderInventoryModal();
-}
+function closeInventoryModal(){ var m = $('inventoryModal'); if(m) m.classList.remove('show'); }
+function filterInventory(){ _inventorySearchQ = $('inventorySearch').value.toLowerCase().trim(); renderInventoryModal(); }
 function renderInventoryModal(){
     var grid = $('inventoryGrid');
     if(!grid) return;
@@ -914,20 +789,12 @@ function renderInventoryModal(){
         grid.appendChild(div);
     });
 }
-
 function _selectGift(it){
-    selectedGift = {
-        id: it.id,
-        name: it.gift_name,
-        image: it.gift_image,
-        value: it.gift_value,
-        gift_id: it.gift_id
-    };
+    selectedGift = { id: it.id, name: it.gift_name, image: it.gift_image, value: it.gift_value, gift_id: it.gift_id };
     $('leftCard').classList.add('has-item');
     $('leftGiftImg').src = it.gift_image;
     $('leftGiftName').textContent = it.gift_name;
     $('leftGiftValue').textContent = ((it.gift_value || 0) / 100).toFixed(2);
-
     if(targetGift){
         targetGift = null;
         $('rightCard').classList.remove('has-item');
@@ -937,16 +804,13 @@ function _selectGift(it){
     hideGoldArc();
     updateWheel();
     closeInventoryModal();
-
     setTimeout(function(){
-        loadPossibleTargets().then(function(){
-            openTargetsModal();
-        });
+        loadPossibleTargets().then(function(){ openTargetsModal(); });
     }, 300);
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ЖЕЛАЕМЫЕ
+   TARGETS
    ══════════════════════════════════════════════════════════════ */
 async function loadPossibleTargets(){
     if(!selectedGift) return;
@@ -969,13 +833,9 @@ async function loadPossibleTargets(){
         possibleTargets.sort(function(a, b){ return a.value - b.value; });
     }catch(e){}
 }
-
 function openTargetsModal(){
     if(isSpinning) return;
-    if(!selectedGift){
-        showTgAlert('Сначала выбери свой подарок');
-        return;
-    }
+    if(!selectedGift){ showTgAlert('Сначала выбери свой подарок'); return; }
     if(possibleTargets.length === 0){
         loadPossibleTargets().then(function(){
             var m = $('targetsModal');
@@ -992,14 +852,8 @@ function openTargetsModal(){
     _targetsSearchQ = '';
     renderTargetsModal();
 }
-function closeTargetsModal(){
-    var m = $('targetsModal');
-    if(m) m.classList.remove('show');
-}
-function filterTargets(){
-    _targetsSearchQ = $('targetsSearch').value.toLowerCase().trim();
-    renderTargetsModal();
-}
+function closeTargetsModal(){ var m = $('targetsModal'); if(m) m.classList.remove('show'); }
+function filterTargets(){ _targetsSearchQ = $('targetsSearch').value.toLowerCase().trim(); renderTargetsModal(); }
 function renderTargetsModal(){
     var grid = $('targetsGrid');
     if(!grid) return;
@@ -1026,7 +880,6 @@ function renderTargetsModal(){
         grid.appendChild(div);
     });
 }
-
 function _selectTarget(g){
     targetGift = g;
     currentChance = g.upgrade_chance;
@@ -1037,7 +890,6 @@ function _selectTarget(g){
     var chEl = $('rightChance');
     chEl.textContent = g.upgrade_chance + '%';
     chEl.style.display = 'inline-flex';
-
     hideGoldArc();
     drawGreenArc(currentChance);
     updateWheel();
@@ -1045,15 +897,15 @@ function _selectTarget(g){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   КОЛЕСО
+   WHEEL STATE
    ══════════════════════════════════════════════════════════════ */
 function updateWheel(){
     var btn = $('upgradeBtn');
     var demoBtn = $('demoBtn');
     var pct = $('chancePct');
-
     if(!targetGift || !selectedGift){
         pct.textContent = '0.00%';
+        pct.classList.add('visible');
         btn.disabled = true;
         if(demoBtn){ demoBtn.disabled = true; demoBtn.classList.remove('enabled'); }
         $('upgradeBtnText').textContent = 'Апгрейд';
@@ -1061,13 +913,14 @@ function updateWheel(){
         return;
     }
     pct.textContent = currentChance.toFixed(2) + '%';
+    pct.classList.add('visible');
     btn.disabled = false;
     if(demoBtn){ demoBtn.disabled = false; demoBtn.classList.add('enabled'); }
     $('upgradeBtnText').textContent = 'Апгрейд';
 }
 
 /* ══════════════════════════════════════════════════════════════
-   СПИН
+   UPGRADE (server-driven)
    ══════════════════════════════════════════════════════════════ */
 async function doUpgrade(){
     if(isSpinning || !targetGift || !selectedGift) return;
@@ -1082,7 +935,7 @@ async function doUpgrade(){
     var goldArc = $('goldArc');
     if(!rotator || !greenArc) return;
 
-    /* Откат назад перед разгоном */
+    /* Откат */
     rotator.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
     greenArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
     if(goldArc) goldArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
@@ -1090,11 +943,7 @@ async function doUpgrade(){
     greenArc.style.transform = 'rotate(-20deg)';
     if(goldArc) goldArc.style.transform = 'rotate(-20deg)';
 
-    /* GOLD: решаем появится ли золотая полоса (10%) и выиграет ли она (5% от появления) */
-    var willShowGold = Math.random() < GOLD_APPEAR_CHANCE;
-    var goldWillWin = willShowGold && (Math.random() < GOLD_WIN_CHANCE);
-
-    /* Запрос к серверу */
+    /* Запрос к серверу — ЖДЁМ ответ, только потом крутим */
     var result;
     try{
         var r = await fetch('/api/upgrade-multi', {
@@ -1124,10 +973,19 @@ async function doUpgrade(){
         return;
     }
 
-    /* GOLD перезаписывает исход: если золото выигрывает — считаем как WIN с золотой анимацией */
-    var finalWin = goldWillWin ? true : result.upgrade_success;
+    /* ФИНАЛЬНЫЙ результат определяет ИСКЛЮЧИТЕЛЬНО сервер */
+    var serverWin = !!result.upgrade_success;
 
-    spinWheel(result.chance, finalWin, false, willShowGold, goldWillWin);
+    /* GOLD: 10% появления / 5% выпадения.
+       GOLD становится ПОБЕДОЙ только если сервер тоже дал WIN.
+       Если сервер дал FAIL — GOLD всё равно показываем золотой полосой (визуально),
+       но результат будет FAIL. */
+    var willShowGold = Math.random() < GOLD_APPEAR_CHANCE;
+    var goldRoll = Math.random() < GOLD_WIN_CHANCE;
+    var goldWin = willShowGold && goldRoll && serverWin; /* золотая победа — только если сервер подтвердил win */
+    var goldVisible = willShowGold; /* полоса показывается вне зависимости */
+
+    spinWheel(result.chance, serverWin, false, goldVisible, goldWin);
 }
 
 function doDemo(){
@@ -1138,15 +996,16 @@ function doDemo(){
     }
     isSpinning = true;
     var willShowGold = Math.random() < GOLD_APPEAR_CHANCE;
-    var goldWillWin = willShowGold && (Math.random() < GOLD_WIN_CHANCE);
-    var isWin = goldWillWin ? true : (Math.random() * 100 < currentChance);
-    spinWheel(currentChance, isWin, true, willShowGold, goldWillWin);
+    var goldRoll = Math.random() < GOLD_WIN_CHANCE;
+    var isWin = Math.random() * 100 < currentChance;
+    var goldWin = willShowGold && goldRoll && isWin;
+    spinWheel(currentChance, isWin, true, willShowGold, goldWin);
 }
 
 /* ══════════════════════════════════════════════════════════════
-   СПИН КОЛЕСА
+   SPIN WHEEL
    ══════════════════════════════════════════════════════════════ */
-function spinWheel(chance, isWin, isDemo, willShowGold, goldWillWin){
+function spinWheel(chance, isWin, isDemo, goldVisible, goldWin){
     var rotator = $('wheelRotator');
     var greenArc = $('greenArc');
     var goldArc = $('goldArc');
@@ -1162,44 +1021,35 @@ function spinWheel(chance, isWin, isDemo, willShowGold, goldWillWin){
 
     /* Угол приземления */
     var landAngle;
-    if(goldWillWin){
-        /* Приземление в золотой сегмент (-90° начало, ширина 25°) */
-        landAngle = 90 + 5 + Math.random() * 15; /* внутри 25° сегмента */
+    if(goldWin){
+        landAngle = 90 + 5 + Math.random() * 15; /* в золотой сегмент */
     } else if(isWin){
         landAngle = (chance * 0.15) + Math.random() * (chance * 0.7);
     } else {
-        /* Если золото показано, но не выиграло — не попадаем в золотой сегмент */
-        if(willShowGold){
-            var goldStart = 90;
-            var goldEnd = 90 + 25;
-            do {
-                landAngle = chance + Math.random() * (360 - chance);
-            } while(landAngle >= goldStart - 10 && landAngle <= goldEnd + 10);
+        if(goldVisible){
+            var gStart = 90, gEnd = 115;
+            do { landAngle = chance + Math.random() * (360 - chance); }
+            while(landAngle >= gStart - 10 && landAngle <= gEnd + 10);
         } else {
             landAngle = chance + Math.random() * (360 - chance);
         }
     }
 
     var totalSpin = 360 * (10 + Math.floor(Math.random() * 5)) + (360 - landAngle);
-    var spinDuration = goldWillWin ? 9500 : 7500;
+    var spinDuration = goldWin ? 9500 : 7500;
 
-    /* Через 400мс после отката — показываем золотую полосу (если должна) */
-    if(willShowGold){
+    /* Показ золотой полосы через 350мс */
+    if(goldVisible){
         setTimeout(function(){
             showGoldArc();
-            _goldActive = true;
-            _goldWillWin = goldWillWin;
-            /* Вспышка, когда появилась */
             var flash = $('wheelFlash');
             if(flash){
                 flash.classList.remove('win','fail','gold','show');
                 void flash.offsetWidth;
                 flash.classList.add('gold','show');
             }
-            showToast('✨ GOLD CHANCE! ✨', 'gold');
-            try{
-                if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-            }catch(e){}
+            if(goldWin) showToast('✨ GOLD CHANCE! ✨', 'gold');
+            try{ if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning'); }catch(e){}
         }, 350);
     }
 
@@ -1212,30 +1062,29 @@ function spinWheel(chance, isWin, isDemo, willShowGold, goldWillWin){
         greenArc.style.transform = 'rotate(' + totalSpin + 'deg)';
         if(goldArc) goldArc.style.transform = 'rotate(' + totalSpin + 'deg)';
 
-        /* Если золото выигрывает — замедляем в конце и пульсируем */
-        if(goldWillWin){
-            var slowdownTime = spinDuration - 1500;
+        if(goldWin){
             setTimeout(function(){
-                /* Усилить свечение золотой полосы */
                 pulseGoldArcStrong();
                 showToast('✨ ЗОЛОТО! ✨', 'gold');
-            }, slowdownTime);
+            }, spinDuration - 1500);
         }
 
         setTimeout(function(){
-            showSpinResult(isWin, isDemo, goldWillWin);
+            showSpinResult(isWin, isDemo, goldWin);
         }, spinDuration);
     }, 500);
 }
 
 /* ══════════════════════════════════════════════════════════════
-   РЕЗУЛЬТАТ — анимации
+   RESULT ANIMATION — PNG В ЦЕНТРЕ (там где проценты)
    ══════════════════════════════════════════════════════════════ */
 function showSpinResult(isWin, isDemo, isGold){
     var flash = $('wheelFlash');
-    var result = $('wheelResult');
-    var resultImg = $('wheelResultImg');
     var wheelWrap = $('wheelWrap');
+    var center = $('wheelCenter');
+    var centerResult = $('centerResult');
+    var centerResultImg = $('centerResultImg');
+    var pct = $('chancePct');
 
     /* Вспышка */
     if(flash){
@@ -1245,61 +1094,71 @@ function showSpinResult(isWin, isDemo, isGold){
         flash.classList.add('show');
     }
 
+    /* Сброс классов центра */
+    if(center){
+        center.classList.remove('win-glow','fail-glow','gold-glow');
+    }
+    if(centerResult){
+        centerResult.classList.remove('show','win','gold','fail','fail-explode');
+    }
+
+    /* Скрываем проценты, чтобы не мешали PNG */
+    if(pct) pct.classList.remove('visible');
+
     /* Тряска при проигрыше */
-    if(!isWin && !isGold && wheelWrap){
+    if(!isWin && wheelWrap){
         wheelWrap.classList.remove('shake');
         void wheelWrap.offsetWidth;
         wheelWrap.classList.add('shake');
         setTimeout(function(){ wheelWrap.classList.remove('shake'); }, 600);
     }
 
-    /* PNG результата */
-    if(result && resultImg){
-        result.classList.remove('show','fail','gold');
-
+    /* Ждём кадр, чтобы transition отработал */
+    requestAnimationFrame(function(){
+        /* PNG */
         if(isGold){
-            /* GOLD WIN: сначала PNG ставки + PNG желаемого летят в центр */
-            startGoldFlyAnimation(function(){
-                /* После прилёта — показываем ПОДАРОК ЦЕЛИ в центре */
-                resultImg.src = targetGift.image || '/static/img/star2.png';
-                resultImg.onerror = function(){
-                    this.onerror = null;
-                    this.src = '/static/img/star2.png';
-                };
-                result.classList.add('show','gold');
-                /* Конфетти и звёзды */
-                spawnStars();
-                launchConfetti();
-                /* Оверлей GOLD */
-                setTimeout(showGoldOverlay, 1200);
-            });
-        } else if(isWin){
-            /* Обычная победа: PNG выигранного подарка в центре */
-            resultImg.src = targetGift.image || '/static/img/star2.png';
-            resultImg.onerror = function(){
+            /* GOLD WIN: показываем PNG желаемого подарка в центре */
+            centerResultImg.src = (targetGift && targetGift.image) || '/static/img/star2.png';
+            centerResultImg.onerror = function(){
                 this.onerror = null;
                 this.src = '/static/img/star2.png';
             };
-            result.classList.add('show');
-            spawnStars();
+            if(center) center.classList.add('gold-glow');
+            centerResult.classList.add('show','gold');
+            spawnCenterStars();
             launchConfetti();
+            setTimeout(showGoldOverlay, 1200);
+
+        } else if(isWin){
+            /* Обычная победа */
+            centerResultImg.src = (targetGift && targetGift.image) || '/static/img/star2.png';
+            centerResultImg.onerror = function(){
+                this.onerror = null;
+                this.src = '/static/img/star2.png';
+            };
+            if(center) center.classList.add('win-glow');
+            centerResult.classList.add('show','win');
+            spawnCenterStars();
+            launchConfetti();
+
         } else {
-            /* Проигрыш: PNG ставки в центре, мягко светится и "взрывается" */
-            resultImg.src = selectedGift.image || '/static/img/gift.png';
-            resultImg.onerror = function(){
+            /* Проигрыш: PNG ставки в центре, светится и мягко "взрывается" */
+            centerResultImg.src = (selectedGift && selectedGift.image) || '/static/img/gift.png';
+            centerResultImg.onerror = function(){
                 this.onerror = null;
                 this.src = '/static/img/gift.png';
             };
-            result.classList.add('show','fail');
-            /* Через 1 сек — мягкий "взрыв" */
+            if(center) center.classList.add('fail-glow');
+            centerResult.classList.add('show','fail');
+
+            /* Через 1.1 сек — мягкий взрыв */
             setTimeout(function(){
-                if(wheelWrap){
-                    wheelWrap.classList.add('fail-explode');
-                    setTimeout(function(){ wheelWrap.classList.remove('fail-explode'); }, 1400);
+                if(centerResult){
+                    centerResult.classList.add('fail-explode');
                 }
-            }, 1000);
+            }, 1100);
         }
-    }
+    });
 
     /* Вибрация */
     try{
@@ -1321,9 +1180,9 @@ function showSpinResult(isWin, isDemo, isGold){
     showToast(toastMsg, toastType, toastIcon);
 
     /* Сброс */
-    var resetDelay = isGold ? 4500 : 2500;
+    var resetDelay = isGold ? 4500 : 2800;
     setTimeout(function(){
-        hideResult();
+        hideCenterResult();
         if(isDemo){
             isSpinning = false;
             var rotator = $('wheelRotator');
@@ -1346,107 +1205,88 @@ function showSpinResult(isWin, isDemo, isGold){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   GOLD: анимация полёта PNG в центр
+   CENTER STARS (взрыв звёздочек из центра)
    ══════════════════════════════════════════════════════════════ */
-function startGoldFlyAnimation(callback){
-    var flyLeft = $('flyLeft');
-    var flyRight = $('flyRight');
-    var flyLeftImg = $('flyLeftImg');
-    var flyRightImg = $('flyRightImg');
+function spawnCenterStars(){
+    var stars = ['centerStar1','centerStar2','centerStar3','centerStar4'];
+    stars.forEach(function(id, idx){
+        var el = $(id);
+        if(!el) return;
+        el.classList.remove('burst');
+        void el.offsetWidth;
+        /* Разные направления */
+        var dirs = [
+            { x: -60, y: -60 },
+            { x: 60, y: -60 },
+            { x: -60, y: 60 },
+            { x: 60, y: 60 }
+        ];
+        var dir = dirs[idx % dirs.length];
+        el.style.left = '50%';
+        el.style.top = '50%';
+        el.style.marginLeft = '-10px';
+        el.style.marginTop = '-10px';
+        el.style.transform = 'translate(0,0)';
+        el.style.setProperty('--dx', dir.x + 'px');
+        el.style.setProperty('--dy', dir.y + 'px');
+        void el.offsetWidth;
+        el.classList.add('burst');
+        setTimeout(function(){ el.classList.remove('burst'); }, 1100);
+    });
+}
 
-    if(!flyLeft || !flyRight || !flyLeftImg || !flyRightImg){
-        if(callback) callback();
-        return;
+/* Переопределяем анимацию с учётом CSS-переменных */
+(function injectCenterStarKeyframes(){
+    var style = document.createElement('style');
+    style.textContent = `
+        @keyframes centerStarBurst{
+            0%{opacity:0;transform:translate(0,0) scale(0) rotate(0deg)}
+            30%{opacity:1;transform:translate(calc(var(--dx) * .6), calc(var(--dy) * .6)) scale(1.3) rotate(60deg)}
+            100%{opacity:0;transform:translate(var(--dx), var(--dy)) scale(0) rotate(360deg)}
+        }
+    `;
+    document.head.appendChild(style);
+})();
+
+function hideCenterResult(){
+    var centerResult = $('centerResult');
+    if(centerResult){
+        centerResult.classList.remove('show','win','gold','fail','fail-explode');
     }
-
-    /* PNG слева — ставка */
-    flyLeftImg.src = selectedGift.image || '/static/img/gift.png';
-    flyLeftImg.onerror = function(){ this.onerror = null; this.src = '/static/img/gift.png'; };
-    /* PNG справа — желаемый подарок */
-    flyRightImg.src = targetGift.image || '/static/img/star2.png';
-    flyRightImg.onerror = function(){ this.onerror = null; this.src = '/static/img/star2.png'; };
-
-    /* Сброс */
-    flyLeft.classList.remove('flying');
-    flyRight.classList.remove('flying');
-    void flyLeft.offsetWidth;
-    void flyRight.offsetWidth;
-
-    /* Запуск */
-    flyLeft.classList.add('flying');
-    flyRight.classList.add('flying');
-
-    /* Через 1.2 сек — колбэк (PNG цели в центре) */
-    setTimeout(function(){
-        flyLeft.classList.remove('flying');
-        flyRight.classList.remove('flying');
-        if(callback) callback();
-    }, 1200);
+    var center = $('wheelCenter');
+    if(center) center.classList.remove('win-glow','fail-glow','gold-glow');
+    /* Возвращаем проценты */
+    var pct = $('chancePct');
+    if(pct && targetGift) pct.classList.add('visible');
+    if(pct && !targetGift) pct.classList.add('visible');
 }
 
 /* ══════════════════════════════════════════════════════════════
-   GOLD OVERLAY (финальное окно)
+   GOLD OVERLAY
    ══════════════════════════════════════════════════════════════ */
 function showGoldOverlay(){
     var ov = $('goldOverlay');
     var img = $('goldGiftImg');
     var name = $('goldGiftName');
     var val = $('goldGiftValue');
-
     if(img){
-        img.src = targetGift.image || '/static/img/star2.png';
+        img.src = (targetGift && targetGift.image) || '/static/img/star2.png';
         img.onerror = function(){ this.onerror = null; this.src = '/static/img/star2.png'; };
     }
-    if(name) name.textContent = targetGift.name || 'GOLD GIFT';
+    if(name) name.textContent = (targetGift && targetGift.name) || 'GOLD GIFT';
     if(val){
-        /* Стоимость = ставка + выигрыш */
-        var total = (selectedGift.value || 0) + (targetGift.value || 0);
+        var total = ((selectedGift && selectedGift.value) || 0) + ((targetGift && targetGift.value) || 0);
         val.textContent = (total / 100).toFixed(2);
     }
     if(ov) ov.classList.add('show');
 }
-
 function closeGoldOverlay(){
     var ov = $('goldOverlay');
     if(ov) ov.classList.remove('show');
 }
 
-function hideResult(){
-    var flash = $('wheelFlash');
-    var result = $('wheelResult');
-    if(flash) flash.classList.remove('show','win','fail','gold');
-    if(result) result.classList.remove('show','fail','gold');
-}
-
 /* ══════════════════════════════════════════════════════════════
-   ЗВЁЗДОЧКИ ПРИ ПОБЕДЕ
-   ══════════════════════════════════════════════════════════════ */
-function spawnStars(){
-    var wheel = $('wheelWrap');
-    if(!wheel) return;
-    var N = 14;
-    for(var i = 0; i < N; i++){
-        (function(idx){
-            setTimeout(function(){
-                var star = document.createElement('div');
-                star.className = 'star-particle';
-                var angle = (idx / N) * 360;
-                var radius = 120 + Math.random() * 40;
-                var rad = angle * Math.PI / 180;
-                var x = Math.cos(rad) * radius;
-                var y = Math.sin(rad) * radius;
-                star.style.left = 'calc(50% + ' + x + 'px)';
-                star.style.top = 'calc(50% + ' + y + 'px)';
-                star.innerHTML = '<img src="/static/img/star.png" alt="">';
-                wheel.appendChild(star);
-                setTimeout(function(){ star.remove(); }, 1500);
-            }, idx * 40);
-        })(i);
-    }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   СБРОС
+   RESET
    ══════════════════════════════════════════════════════════════ */
 function resetAfterSpin(){
     isSpinning = false;
@@ -1458,6 +1298,7 @@ function resetAfterSpin(){
     $('rightCard').classList.remove('has-item');
     $('rightChance').style.display = 'none';
     $('chancePct').textContent = '0.00%';
+    $('chancePct').classList.add('visible');
     $('upgradeBtn').disabled = true;
     $('upgradeBtnText').textContent = 'Апгрейд';
 
@@ -1471,10 +1312,7 @@ function resetAfterSpin(){
     if(greenArc){ greenArc.style.transition = 'transform 0.6s ease'; greenArc.style.transform = 'rotate(0deg)'; }
     if(goldArc){ goldArc.style.transition = 'transform 0.6s ease'; goldArc.style.transform = 'rotate(0deg)'; }
 
-    var center = $('wheelCenter');
-    if(center) center.classList.remove('gold-glow');
-
-    hideResult();
+    hideCenterResult();
     hideGoldArc();
     drawGreenArc(0);
 }
@@ -1486,7 +1324,7 @@ function openDeposit(){ $('depositOverlay').classList.add('show'); }
 function closeDeposit(){ $('depositOverlay').classList.remove('show'); }
 
 /* ══════════════════════════════════════════════════════════════
-   КОНФЕТТИ
+   CONFETTI
    ══════════════════════════════════════════════════════════════ */
 function launchConfetti(){
     var canvas = document.createElement('canvas');
