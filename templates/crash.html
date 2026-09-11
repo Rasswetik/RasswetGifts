@@ -15,7 +15,7 @@
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1C2233;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
 @keyframes coeffShake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-4px)}20%,40%,60%,80%{transform:translateX(4px)}}
-.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 8px)}
+.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 50px + 3vh)}
 
 /* BOTTOM NAV */
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:4000;width:100%;max-width:480px;height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);background:rgba(28,34,51,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-top:1px solid rgba(59,130,246,.08);display:flex;align-items:center;justify-content:space-around}
@@ -1229,9 +1229,9 @@ async function initTelegramApp(){
     }
 
     /* FIX: уменьшили частоту поллинга — меньше лагов на слабых телефонах */
-    setInterval(pollStatus, 150);
+    setInterval(pollStatus, 100);
     setInterval(loadUserData, 25000);
-    setInterval(pollBets, 300);
+    setInterval(pollBets, 200);
     setInterval(function(){ fetch('/api/ping').catch(()=>{}); }, 30000);
 
     document.addEventListener('visibilitychange', function(){
@@ -1611,10 +1611,10 @@ async function doCashout(){
     if(cashoutLocked) return;
     cashoutLocked = true;
 
-    /* ★ FIX: фиксируем множитель СЕЙЧАС, локально */
-    var _frozenMult = Math.max(dispMult, servMult);
-    /* Немного "льстим" — считаем что успели зафиксировать чуть раньше */
-    _frozenMult = Math.max(_frozenMult, prevServMult);
+    /* ★ FIX: фиксируем множитель СЕЙЧАС, локально, максимально "лестно" */
+    var _frozenMult = Math.max(dispMult, servMult, prevServMult);
+    /* Плюс небольшой бонус для компенсации задержки сети */
+    _frozenMult = Math.round((_frozenMult + 0.02) * 100) / 100;
 
     var btn = $('cashoutBtn');
     var pb = $('placeBetBtn');
@@ -1910,26 +1910,25 @@ async function updStatus(){
             updateUI(userData);
         }
 
+        /* ★ FIX: НЕ сбрасываем hasBet если ставка была подтверждена */
         if(d.user_bet && d.user_bet.status === 'active'){
             hasBet = true;
             betAmt = d.user_bet.bet_amount;
         } else if(d.user_bet && d.user_bet.status === 'cashed_out'){
             hasBet = false;
-        } else if(!cashedOut){
-            if(status !== 'counting' && status !== 'waiting'){
-                hasBet = false;
-                betAmt = 0;
-            }
         }
+        /* Не сбрасываем hasBet при смене статуса — ждём подтверждения сервера */
 
         var newRound = prevGameId !== null && gameId !== prevGameId;
         if(newRound){
             window._lastShownSec = 99;
             countdownShown = -1;
-            hasBet = false;
-            betAmt = 0;
-            betIsGift = false;
-            betGiftImg = null;
+            /* ★ FIX: сбрасываем только если игрок не сделал ставку */
+            if(!hasBet){
+                betAmt = 0;
+                betIsGift = false;
+                betGiftImg = null;
+            }
             cashedOut = false;
             cashedOutBetAmt = 0;
             cashedOutGiftImg = null;
@@ -2763,7 +2762,7 @@ function onNewServerMult(newMult){
 function render(){
     var now = performance.now();
     var dt = lastFrameTime > 0 ? (now - lastFrameTime) : 16;
-    if(dt > 100) dt = 100;
+    if(dt > 60) dt = 60;
     lastFrameTime = now;
 
     /* Оптимизация: если вкладка свёрнута — пропускаем кадр */
@@ -2804,7 +2803,7 @@ function render(){
             }
         }
 
-        if(now - _coeffLastUpdate > 33){
+        if(now - _coeffLastUpdate > 16){
             _coeffLastUpdate = now;
             var ct = dispMult.toFixed(2) + 'x';
             if(ct !== _prevCoeffText && _coeffBox){
@@ -3047,9 +3046,11 @@ function showWin(d){
     var m = parseFloat(d.multiplier).toFixed(2);
     var content = $('winContent');
     if(!content) return;
+
     var winTon = d.win_amount ? starsToTon(d.win_amount) : 0;
     var betTon = d.bet_amount ? starsToTon(d.bet_amount) : (cashedOutBetAmt ? starsToTon(cashedOutBetAmt) : 0);
 
+    /* Собираем все подарки */
     var allGifts = [];
     if(d.awarded_gifts && d.awarded_gifts.length) allGifts = allGifts.concat(d.awarded_gifts);
     if(d.gift && !allGifts.find(function(g){ return g.name === d.gift.name; })) allGifts.push(d.gift);
@@ -3058,55 +3059,111 @@ function showWin(d){
             if(!allGifts.find(function(x){ return x.name === g.name && x.value === g.value; })) allGifts.push(g);
         });
     }
-    allGifts = allGifts.filter(function(g){ return g && (g.image || g.name) && (g.value || g.image); });
+    allGifts = allGifts.filter(function(g){ return g && (g.image || g.name); });
 
     var starRemainder = d.star_remainder || 0;
     var html = '';
 
-    if(allGifts.length > 0){
-        html += '<div class="win-gift-hero">';
-        html += '<img src="' + (allGifts[0].image || '/static/img/star.png') + '" onerror="this.src=\'/static/img/star.png\'" alt="">';
+    /* ★ НОВЫЙ ВИД: если один подарок — показываем его крупно + "+X TON" */
+    if(allGifts.length === 1){
+        var g = allGifts[0];
+        var gImg = g.image || '/static/img/gift.png';
+        var gValue = g.value || 0;
+        var gValueTon = (gValue / 100).toFixed(2);
+
+        html += '<div class="win-sheet-handle"></div>';
+
+        /* Коэф сверху */
+        html += '<div style="text-align:center;margin-bottom:14px">';
+        html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.1));border:1.5px solid rgba(59,130,246,.4)">';
+        html += '<span style="font-family:inherit;font-weight:900;font-size:28px;color:#3B82F6">' + m + 'x</span>';
         html += '</div>';
+        html += '</div>';
+
+        /* Крупный подарок */
+        html += '<div style="display:flex;justify-content:center;margin-bottom:16px">';
+        html += '<div style="position:relative;width:180px;height:180px;border-radius:24px;background:radial-gradient(circle,rgba(59,130,246,.15),transparent 70%);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box">';
+        html += '<img src="' + gImg + '" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5))">';
+        html += '</div>';
+        html += '</div>';
+
+        /* Итог: +X TON */
+        html += '<div style="text-align:center;margin-bottom:16px">';
+        html += '<div style="font-family:inherit;font-weight:800;font-size:22px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
+        html += '<span>+' + formatTon(winTon) + '</span>';
+        html += '<img src="/static/img/ton.png" style="width:20px;height:20px">';
+        html += '</div>';
+        html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">';
+        html += 'Ставка: ' + formatTon(betTon) + ' TON · Подарок: ' + gValueTon + ' TON';
+        html += '</div>';
+        html += '</div>';
+
+        if(starRemainder > 0){
+            html += '<div style="text-align:center;font-size:12px;color:rgba(255,255,255,.4);margin-bottom:12px">';
+            html += 'Ещё <b>+' + formatCrashMoney(starRemainder) + ' TON</b> на баланс';
+            html += '</div>';
+        }
     }
+    /* ★ Если несколько подарков — сетка */
+    else if(allGifts.length > 1){
+        html += '<div class="win-sheet-handle"></div>';
 
-    html += '<div class="win-mult-badge"><span>' + m + 'X</span></div>';
-    html += '<div class="win-title">Победа</div>';
-    html += '<div class="win-summary">';
-    html += '<div class="win-summary-item">Ставка <img src="/static/img/ton.png"> ' + formatTon(betTon) + '</div>';
-    html += '<div class="win-summary-arrow">›</div>';
-    html += '<div class="win-summary-item win-summary-win">Выигрыш <img src="/static/img/ton.png"> ' + formatTon(winTon) + '</div>';
-    html += '</div>';
+        /* Коэф */
+        html += '<div style="text-align:center;margin-bottom:14px">';
+        html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.1));border:1.5px solid rgba(59,130,246,.4)">';
+        html += '<span style="font-family:inherit;font-weight:900;font-size:28px;color:#3B82F6">' + m + 'x</span>';
+        html += '</div>';
+        html += '</div>';
 
-    if(allGifts.length > 0){
-        html += '<div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">';
-        html += '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;text-align:center">Получено подарков: ' + allGifts.length + '</div>';
-        html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:240px;overflow-y:auto">';
-        for(var j = 0; j < allGifts.length; j++){
-            var g = allGifts[j];
+        /* Сетка подарков */
+        html += '<div style="font-size:12px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:center;margin-bottom:10px">';
+        html += 'Получено ' + allGifts.length + ' подарков';
+        html += '</div>';
+
+        html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:260px;overflow-y:auto;margin-bottom:14px">';
+        for(var i = 0; i < allGifts.length; i++){
+            var g = allGifts[i];
             var gImg = g.image || '/static/img/gift.png';
-            var gName = (g.name || 'Gift').replace(/ #\d+$/, '');
             var gValue = g.value || 0;
             html += '<div style="background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);border-radius:12px;padding:6px;text-align:center;box-sizing:border-box">';
             html += '<img src="' + gImg + '" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;aspect-ratio:1;object-fit:contain;border-radius:8px;background:rgba(0,0,0,.2);padding:4px;box-sizing:border-box;display:block">';
-            html += '<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.85);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + gName + '</div>';
-            html += '<div style="font-size:10px;font-weight:800;color:#8CA0BE;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:2px"><img src="/static/img/ton.png" style="width:10px;height:10px">' + formatTon(gValue/100) + '</div>';
+            html += '<div style="font-size:10px;font-weight:800;color:#8CA0BE;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:2px"><img src="/static/img/ton.png" style="width:10px;height:10px">' + formatTon(gValue/100) + '</div>';
             html += '</div>';
         }
+        html += '</div>';
+
+        /* Итог */
+        html += '<div style="text-align:center;margin-bottom:12px">';
+        html += '<div style="font-family:inherit;font-weight:800;font-size:22px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
+        html += '<span>+' + formatTon(winTon) + '</span>';
+        html += '<img src="/static/img/ton.png" style="width:20px;height:20px">';
+        html += '</div>';
         if(starRemainder > 0){
-            html += '<div style="background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.2);border-radius:12px;padding:6px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100px;box-sizing:border-box">';
-            html += '<div style="font-size:20px;font-weight:900;color:#1EE44C;line-height:1">+' + formatCrashMoney(starRemainder) + '</div>';
-            html += '<div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.6);margin-top:2px">TON</div>';
-            html += '</div>';
+            html += '<div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:4px">Ещё +' + formatCrashMoney(starRemainder) + ' TON на баланс</div>';
         }
         html += '</div>';
-        html += '</div>';
-    } else if(starRemainder > 0 || winTon > 0){
-        html += '<div class="win-breakdown">+' + formatCrashMoney(starRemainder || d.win_amount || 0) + ' TON на баланс</div>';
     }
+    /* Если вообще без подарков — просто выигрыш */
+    else {
+        html += '<div class="win-sheet-handle"></div>';
+        html += '<div style="text-align:center;margin-bottom:14px">';
+        html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.1));border:1.5px solid rgba(59,130,246,.4)">';
+        html += '<span style="font-family:inherit;font-weight:900;font-size:28px;color:#3B82F6">' + m + 'x</span>';
+        html += '</div>';
+        html += '</div>';
+        html += '<div style="text-align:center;margin-bottom:16px">';
+        html += '<div style="font-family:inherit;font-weight:800;font-size:26px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
+        html += '<span>+' + formatTon(winTon) + '</span>';
+        html += '<img src="/static/img/ton.png" style="width:22px;height:22px">';
+        html += '</div>';
+        html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Ставка: ' + formatTon(betTon) + ' TON</div>';
+        html += '</div>';
+    }
+
     content.innerHTML = html;
     var wo = $('winOverlay');
     if(wo) wo.classList.add('show');
-    triggerVibration([30,20,60]);
+    try{ triggerVibration([30,20,60]); }catch(e){}
 }
 
 function closeWin(){
