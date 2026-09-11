@@ -48,6 +48,12 @@ body::before{
     font-weight:800;font-size:18px;color:#fff;
     display:flex;align-items:center;gap:10px;
 }
+.main-menu-btn{
+    border:none;border-radius:12px;padding:8px 10px;font-size:11px;font-weight:800;
+    background:rgba(255,255,255,.08);color:#fff;cursor:pointer;
+    transition:all .2s;white-space:nowrap;
+}
+.main-menu-btn:active{transform:scale(.96)}
 .top-bar-title img{width:24px;height:24px}
 .admin-badge{
     background:linear-gradient(135deg,#F96999,#E8527A);
@@ -61,6 +67,24 @@ body::before{
     color:rgba(255,255,255,.7);transition:all .2s;
 }
 .back-btn:active{transform:scale(.9)}
+
+/* Quick Nav */
+.quick-nav{
+    position:sticky;top:calc(50px + env(safe-area-inset-top, 0px));
+    z-index:90;margin:12px 12px 0;
+    display:flex;gap:8px;overflow-x:auto;padding:8px 4px 4px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+.quick-nav::-webkit-scrollbar{display:none}
+.quick-nav-btn{
+    flex-shrink:0;padding:9px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.04);color:rgba(255,255,255,.7);font-size:11px;font-weight:800;
+    cursor:pointer;transition:all .2s;
+}
+.quick-nav-btn.active{
+    background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;border-color:transparent;
+    box-shadow:0 8px 20px rgba(139,92,246,.3);
+}
 
 /* Bottom Nav */
 .bottom-nav{
@@ -416,7 +440,7 @@ select.form-input option{background:#1A1E2A;color:#fff}
 
 <!-- Top Bar -->
 <div class="top-bar">
-    <button class="back-btn" onclick="goBack()">
+    <button class="back-btn" onclick="goBack()" aria-label="Главное меню">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
     </button>
     <div class="top-bar-title">
@@ -424,7 +448,20 @@ select.form-input option{background:#1A1E2A;color:#fff}
         Admin Panel
         <span class="admin-badge">ADMIN</span>
     </div>
-    <div style="width:40px"></div>
+    <button class="main-menu-btn" onclick="window.location.href='/'">Главное меню</button>
+</div>
+
+<div class="quick-nav">
+    <button class="quick-nav-btn active" data-section="Dashboard" onclick="showSection('Dashboard')">Dashboard</button>
+    <button class="quick-nav-btn" data-section="Settings" onclick="showSection('Settings')">Crash</button>
+    <button class="quick-nav-btn" data-section="Users" onclick="showSection('Users')">Users</button>
+    <button class="quick-nav-btn" data-section="Gifts" onclick="showSection('Gifts')">Gifts</button>
+    <button class="quick-nav-btn" data-section="Promo" onclick="showSection('Promo')">Promo</button>
+    <button class="quick-nav-btn" data-section="Cases" onclick="showSection('Cases')">Cases</button>
+    <button class="quick-nav-btn" data-section="News" onclick="showSection('News')">News</button>
+    <button class="quick-nav-btn" data-section="Withdrawals" onclick="showSection('Withdrawals')">Withdrawals</button>
+    <button class="quick-nav-btn" data-section="Inventory" onclick="showSection('Inventory')">Inventory</button>
+    <button class="quick-nav-btn" data-section="Messages" onclick="showSection('Messages')">Messages</button>
 </div>
 
 <!-- Container -->
@@ -878,47 +915,47 @@ select.form-input option{background:#1A1E2A;color:#fff}
 
 <!-- Bottom Nav -->
 <div class="bottom-nav">
-    <button class="bottom-nav-item active" onclick="showSection('Dashboard')">
+    <button class="bottom-nav-item active" data-section="Dashboard" onclick="showSection('Dashboard')">
         <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         <span>Dashboard</span>
     </button>
-    <button class="bottom-nav-item" onclick="showSection('Users')">
+    <button class="bottom-nav-item" data-section="Users" onclick="showSection('Users')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span>Users</span>
     </button>
-    <button class="bottom-nav-item" onclick="showSection('Gifts')">
+    <button class="bottom-nav-item" data-section="Gifts" onclick="showSection('Gifts')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
         <span>Gifts</span>
     </button>
-    <button class="bottom-nav-item" onclick="showSection('Settings')">
+    <button class="bottom-nav-item" data-section="Settings" onclick="showSection('Settings')">
         <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        <span>Settings</span>
+        <span>Crash</span>
     </button>
-    <button class="bottom-nav-item" onclick="showSection('Withdrawals')">
+    <button class="bottom-nav-item" data-section="Withdrawals" onclick="showSection('Withdrawals')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         <span>Вывод</span>
     </button>
-    <button class="bottom-nav-item" onclick="showSection('Leaderboard')">
+    <button class="bottom-nav-item" data-section="Leaderboard" onclick="showSection('Leaderboard')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         <span>Leaders</span>
     </button>
-    <button class="bottom-nav-item" onclick="showSection('Promo')">
+    <button class="bottom-nav-item" data-section="Promo" onclick="showSection('Promo')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
         <span>Promo</span>
     </button>
-    <button class="bottom-nav-item" onclick="showSection('News')">
+    <button class="bottom-nav-item" data-section="News" onclick="showSection('News')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
         <span>News</span>
     </button>
-    <button class="bottom-nav-item" onclick="showSection('Cases')">
+    <button class="bottom-nav-item" data-section="Cases" onclick="showSection('Cases')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg>
         <span>Cases</span>
     </button>
-    <button class="bottom-nav-item" onclick="showSection('Inventory')">
+    <button class="bottom-nav-item" data-section="Inventory" onclick="showSection('Inventory')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         <span>Инвент.</span>
     </button>
-    <button class="bottom-nav-item" onclick="showSection('Messages')">
+    <button class="bottom-nav-item" data-section="Messages" onclick="showSection('Messages')">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         <span>Msg</span>
     </button>
@@ -1133,24 +1170,34 @@ function $(id){ return document.getElementById(id); }
 
 function goBack(){
     if(tg && tg.close) tg.close();
-    else window.location.href = '/crash';
+    else window.location.href = '/';
 }
 
 function showSection(name){
+    var sectionName = name === 'Crash' ? 'Settings' : name;
+
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
-    $('section' + name).classList.add('active');
-    event.currentTarget.classList.add('active');
-    
-    if(name === 'Users' && allUsers.length === 0) loadUsers();
-    if(name === 'Gifts' && allGifts.length === 0) loadGifts();
-    if(name === 'Dashboard') loadStats();
-    if(name === 'Promo') loadPromoCodes();
-    if(name === 'Withdrawals') loadWithdrawals();
-    if(name === 'Leaderboard') { loadLeaderboards(); if($('lbRewardsContainer').children.length === 0) initLbRewards(); }
-    if(name === 'News') loadNewsList();
-    if(name === 'Cases') loadCasesList();
-    if(name === 'Messages' && allUsers.length === 0) loadUsers();
+    document.querySelectorAll('.quick-nav-btn').forEach(b => b.classList.remove('active'));
+
+    var targetSection = $('section' + sectionName);
+    if(targetSection) targetSection.classList.add('active');
+
+    var activeBottom = document.querySelector('.bottom-nav-item[data-section="' + sectionName + '"]');
+    if(activeBottom) activeBottom.classList.add('active');
+
+    var activeQuick = document.querySelector('.quick-nav-btn[data-section="' + sectionName + '"]');
+    if(activeQuick) activeQuick.classList.add('active');
+
+    if(sectionName === 'Users' && allUsers.length === 0) loadUsers();
+    if(sectionName === 'Gifts' && allGifts.length === 0) loadGifts();
+    if(sectionName === 'Dashboard') loadStats();
+    if(sectionName === 'Promo') loadPromoCodes();
+    if(sectionName === 'Withdrawals') loadWithdrawals();
+    if(sectionName === 'Leaderboard') { loadLeaderboards(); if($('lbRewardsContainer').children.length === 0) initLbRewards(); }
+    if(sectionName === 'News') loadNewsList();
+    if(sectionName === 'Cases') loadCasesList();
+    if(sectionName === 'Messages' && allUsers.length === 0) loadUsers();
 }
 
 function showToast(msg, type){
