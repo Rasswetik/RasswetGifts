@@ -3686,65 +3686,7 @@ def start_crash_loop():
     threading.Thread(target=loop, daemon=True).start()
 
 
-def start_ultimate_crash_loop():
-
-    """Запускает простой игровой цикл"""
-    def game_loop():
-        global _crash_phase_transitioning
-        while not _db_ready:
-            time.sleep(1)
-        logger.info("🚀 Запущен игровой цикл Ultimate Crash")
-
-        # Persistent connection for game loop — re-created only on error
-        loop_conn = None
-        tick_counter = 0
-        # In-memory multiplier tracking (source of truth during flying)
-        live_mult = 1.0
-        live_game_id = 0
-        live_status = 'waiting'
-        live_target = 5.0
-
-        def get_loop_conn():
-            nonlocal loop_conn
-            if loop_conn is None:
-                loop_conn = get_db_connection()
-            return loop_conn
-
-        def reset_loop_conn():
-            nonlocal loop_conn
-            if loop_conn:
-                try: loop_conn.close()
-                except: pass
-            loop_conn = None
-
-        def do_crash(conn, cursor, gid, crash_mult, tgt_mult):
-            """Common crash logic — updates DB, history, bets, cache"""
-            nonlocal live_status
-            live_status = 'crashed'
-            cursor.execute("UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ? WHERE id = ?",
-                         (crash_mult, gid))
-            cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (gid, crash_mult))
-            cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (gid,))
-            cursor.execute('''
-                UPDATE users SET total_loss = total_loss + (
-                    SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
-                    WHERE game_id = ? AND status = 'lost' AND user_id = users.id
-                ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
-            ''', (gid, gid))
-            _crash_bots_on_crash(gid)
-            update_crash_cache(gid, 'crashed', crash_mult, tgt_mult, 0)
-            conn.commit()
-
-        while True:
-            if not _db_ready:
-                time.sleep(2)
-                continue
-            try:
-                conn = get_loop_conn()
-                cursor = conn.cursor()
-                tick_counter += 1
-
-                # During flying, skip heavy DB reads — use in-memory state
+                # During flying, skip heavy DB reads — use in-memory state (УСКОРЕНО ×2)
                 if live_status == 'flying' and live_game_id > 0:
                     # Only check admin control + increment multiplier in memory
                     admin_ctrl = get_admin_crash_control()
@@ -3752,44 +3694,43 @@ def start_ultimate_crash_loop():
                         set_admin_crash_control('force_crash', False)
                         do_crash(conn, cursor, live_game_id, live_mult, live_target)
                         logger.info(f"💥 ADMIN FORCE CRASH на {live_mult:.2f}x")
-                        time.sleep(0.10)
+                        time.sleep(0.05)
                         continue
 
                     if live_mult < live_target:
-                        # AI RTP check (every 5th tick, only above 3x)
-                        if live_mult > 3.0 and tick_counter % 5 == 0:
+                        # AI RTP check (every 8th tick, only above 3x) — реже для скорости
+                        if live_mult > 3.0 and tick_counter % 8 == 0:
                             try:
                                 if ai_should_force_crash(live_game_id, live_mult, conn):
                                     do_crash(conn, cursor, live_game_id, live_mult, live_target)
                                     logger.info(f"💥 AI RTP CRASH на {live_mult:.2f}x")
-                                    time.sleep(0.10)
+                                    time.sleep(0.05)
                                     continue
                             except Exception as ai_e:
                                 logger.error(f"AI mid-round error: {ai_e}")
 
-                        # Calculate increment based on live_mult (in-memory, always fresh)
-                        # Slower, smoother growth curve
+                        # Ускоренный рост множителя (×2 быстрее чем раньше)
                         if live_mult < 1.1:
-                            base_increment = 0.01
-                        elif live_mult < 1.5:
                             base_increment = 0.02
+                        elif live_mult < 1.5:
+                            base_increment = 0.045
                         elif live_mult < 2.0:
-                            base_increment = 0.04
+                            base_increment = 0.08
                         elif live_mult < 3.0:
-                            base_increment = 0.06
+                            base_increment = 0.13
                         elif live_mult < 5.0:
-                            base_increment = 0.10
+                            base_increment = 0.20
                         elif live_mult < 10.0:
-                            base_increment = 0.18
+                            base_increment = 0.35
                         else:
-                            base_increment = 0.30
+                            base_increment = 0.60
 
-                        speed_boost = live_mult * 0.012
+                        speed_boost = live_mult * 0.025
                         increment = round(max(base_increment, speed_boost), 2)
-                        increment = min(increment, 1.0)
+                        increment = min(increment, 2.0)
 
                         # Random crash chance
-                        crash_chance = 0.01 * (live_mult / 10)
+                        crash_chance = 0.008 * (live_mult / 10)
                         if random.random() < crash_chance:
                             do_crash(conn, cursor, live_game_id, live_mult, live_target)
                             logger.info(f"💥 Случайный краш на {live_mult:.2f}x")
@@ -3803,9 +3744,8 @@ def start_ultimate_crash_loop():
                                 progress = new_multiplier / live_target if live_target > 0 else 0
                                 time_remaining = max(0.5, 15.0 * (1 - progress))
                                 update_crash_cache(live_game_id, 'flying', new_multiplier, live_target, time_remaining)
-                                # Sync to DB less frequently to reduce DB load
-                                # Sync to DB every 20th tick (was 10)
-                                if tick_counter % 20 == 0:
+                                # Sync to DB every 30th tick (было 20)
+                                if tick_counter % 30 == 0:
                                     cursor.execute('UPDATE ultimate_crash_games SET current_multiplier = ? WHERE id = ?',
                                                  (new_multiplier, live_game_id))
                                     conn.commit()
@@ -3813,9 +3753,8 @@ def start_ultimate_crash_loop():
                         do_crash(conn, cursor, live_game_id, live_mult, live_target)
                         logger.info(f"💥 Игра #{live_game_id} завершена на {live_mult:.2f}x")
 
-                    time.sleep(0.10)
+                    time.sleep(0.05)
                     continue
-
                 # Non-flying phases: read from DB
                 cursor.execute('''
                     SELECT id, status, start_time, current_multiplier, target_multiplier
