@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 import requests as http_requests
 from db_wrapper import USE_POSTGRES, get_connection as _pg_get_connection
 
-# Загружаем переменные оружени
+# Загружаем переменные окружени
 load_dotenv()
 
 # Настройка логирования
@@ -8421,11 +8421,76 @@ def _get_portal_auth():
         return None
 
 
+# ══════════════════════════════════════════════════════════════
+# PORTAL SYNC — полная синхронизация коллекций с Portal
+# ══════════════════════════════════════════════════════════════
+
+def _portal_extract_items(colls):
+    """Из ответа aportalsmp.collections() вытащить список коллекций."""
+    try:
+        d = colls.toDict() if hasattr(colls, 'toDict') else {}
+        items = d.get('collections') or d.get('items') or []
+        if not items:
+            try:
+                items = list(colls)
+            except Exception:
+                items = []
+        return items or []
+    except Exception:
+        return []
+
+
+def _portal_extract_coll(coll):
+    """Универсально вытащить slug/name/floor из элемента коллекции."""
+    if isinstance(coll, dict):
+        slug = (coll.get('slug') or coll.get('name') or '').strip()
+        name = (coll.get('name') or coll.get('slug') or '').strip()
+        floor = coll.get('floor_price') or coll.get('floorPrice') or coll.get('floor')
+        short_name = coll.get('short_name') or ''
+    else:
+        slug = (getattr(coll, 'slug', None) or getattr(coll, 'name', '') or '').strip()
+        name = (getattr(coll, 'name', '') or getattr(coll, 'slug', '') or '').strip()
+        floor = (getattr(coll, 'floor_price', None)
+                 or getattr(coll, 'floorPrice', None)
+                 or getattr(coll, 'floor', None))
+        short_name = getattr(coll, 'short_name', '') or ''
+
+    try:
+        floor_val = float(floor) if floor is not None else None
+    except (ValueError, TypeError):
+        floor_val = None
+
+    return {
+        'slug': slug,
+        'name': name or slug,
+        'floor_ton': floor_val if (floor_val and floor_val > 0) else None,
+        'short_name': short_name,
+    }
+
+
+def _portal_slugify(name):
+    """'Plush Pepe' -> 'plushpepe', 'Durov’s Cap' -> 'durovscap'"""
+    import re as _re
+    return _re.sub(r'[^a-z0-9]+', '', str(name or '').lower()).strip()
+
+
+def _portal_build_image(slug):
+    """Стандартный thumb URL для Fragment подарка."""
+    return f'https://fragment.com/file/gifts/{slug}/thumb.webp'
+
+
 def _portal_sync_floors():
-    """Синхронизация floor-цен со ВСЕМИ коллекциями Portal."""
+    """Полная синхронизация с Portal:
+      • обновляет цены существующих подарков
+      • ДОБАВЛЯЕТ новые коллекции с Portal (name, slug, image, value)
+      • пишет подробный лог
+    """
     auth = _get_portal_auth()
     if not auth:
-        return {'success': False, 'error': 'Portal auth not configured'}
+        msg = 'Portal auth не настроен. Проверьте PORTAL_AUTH_TOKEN или PORTAL_API_ID/PORTAL_API_HASH'
+        logger.error(f"❌ {msg}")
+        return {'success': False, 'error': msg}
+
     try:
         import asyncio
         from aportalsmp.gifts import collections as portal_collections
@@ -8434,73 +8499,68 @@ def _portal_sync_floors():
         loop = asyncio.new_event_loop()
         all_colls = []
         try:
-            # 1) Все коллекции с пагинацией
+            # ── 1) Все коллекции с пагинацией ──
             offset = 0
             limit = 50
+            page = 0
             while True:
+                page += 1
                 try:
                     colls = loop.run_until_complete(
                         portal_collections(authData=auth, offset=offset, limit=limit)
                     )
-                except TypeError:
-                    colls = loop.run_until_complete(portal_collections(authData=auth))
-                    items = _extract_colls_items(colls)
+                    items = _portal_extract_items(colls)
+                    if not items:
+                        logger.info(f"📄 Portal стр.{page}: пусто, стоп")
+                        break
                     all_colls.extend(items)
+                    logger.info(f"📄 Portal стр.{page}: +{len(items)} (всего {len(all_colls)})")
+                    if len(items) < limit:
+                        break
+                    offset += limit
+                    if offset > 5000:
+                        break
+                except TypeError:
+                    # API не поддерживает offset/limit
+                    colls = loop.run_until_complete(portal_collections(authData=auth))
+                    items = _portal_extract_items(colls)
+                    all_colls.extend(items)
+                    logger.info(f"📄 Portal: получено всё сразу ({len(items)})")
+                    break
+                except Exception as e:
+                    logger.warning(f"⚠️ Portal стр.{page}: {e}")
                     break
 
-                items = _extract_colls_items(colls)
-                if not items:
-                    break
-                all_colls.extend(items)
-                if len(items) < limit:
-                    break
-                offset += limit
-                if offset > 3000:
-                    break
+            logger.info(f"🌐 Portal: итого коллекций {len(all_colls)}")
 
-            logger.info(f"🌐 Portal: получено {len(all_colls)} коллекций")
+            if not all_colls:
+                return {'success': False, 'error': 'Portal вернул 0 коллекций'}
 
-            # 2) floor по slug/name
-            floors_by_slug = {}
-            floors_by_name = {}
+            # ── 2) Парсим и добиваем floor через search если пусто ──
+            parsed = []
             for coll in all_colls:
-                slug, floor, name = _extract_coll_fields(coll)
-                if not slug or floor is None:
-                    continue
-                try:
-                    floor_val = float(floor)
-                except (ValueError, TypeError):
-                    continue
-                if floor_val <= 0:
-                    continue
-                floors_by_slug[slug] = floor_val
-                if name:
-                    floors_by_name[name] = floor_val
+                c = _portal_extract_coll(coll)
+                parsed.append(c)
 
-            # 3) fallback через search
-            for coll in all_colls:
-                cname = _extract_coll_name(coll)
-                if not cname:
-                    continue
-                cname_clean = re.sub(r'\s*\(Random\)\s*$', '', str(cname)).strip()
-                slug_key = re.sub(r'[^a-z0-9]+', '', cname_clean.lower())
-                if not slug_key or slug_key in floors_by_slug:
-                    continue
-                try:
-                    found = loop.run_until_complete(
-                        portal_search(sort='price_asc', gift_name=cname_clean, limit=1, authData=auth)
-                    )
-                    if found:
-                        p = float(found[0].price) if found[0].price else 0
-                        if p > 0:
-                            floors_by_slug[slug_key] = p
-                            floors_by_name[cname_clean.lower()] = p
-                except Exception:
-                    pass
+            no_floor = [c for c in parsed if not c['floor_ton']]
+            if no_floor:
+                logger.info(f"🔍 {len(no_floor)} коллекций без floor — берём через search()")
+                for c in no_floor[:200]:  # ограничим, чтобы не спамить API
+                    try:
+                        found = loop.run_until_complete(
+                            portal_search(sort='price_asc', gift_name=c['name'], limit=1, authData=auth)
+                        )
+                        if found:
+                            p = float(found[0].price) if found[0].price else 0
+                            if p > 0:
+                                c['floor_ton'] = p
+                    except Exception:
+                        pass
+
         finally:
             loop.close()
 
-        # 4) gifts.json
+        # ── 3) Загружаем gifts.json ──
         gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
         if not os.path.exists(gifts_path):
             return {'success': False, 'error': 'gifts.json not found'}
@@ -8511,50 +8571,117 @@ def _portal_sync_floors():
         wrap = isinstance(raw, dict)
         gifts = raw.get('gifts', []) if wrap else raw
 
+        # Индексы по slug и по name
+        by_slug = {}
+        by_name = {}
+        max_id = 0
+        for g in gifts:
+            sid = g.get('id')
+            if isinstance(sid, int) and sid > max_id:
+                max_id = sid
+            slug = _portal_slugify(g.get('fragment_slug') or g.get('name', ''))
+            if slug:
+                by_slug[slug] = g
+            nm = _portal_slugify(g.get('name', ''))
+            if nm:
+                by_name[nm] = g
+
         updated = 0
-        for gift in gifts:
-            gname = gift.get('name', '')
-            gname_clean = re.sub(r'\s*\(Random\)\s*$', '', gname).strip()
-            slug = (gift.get('fragment_slug') or '').strip().lower()
-            name_key = gname_clean.lower()
-            slug_key = re.sub(r'[^a-z0-9]+', '', name_key)
+        added = 0
+        skipped = 0
+        new_gifts = []
 
-            floor = floors_by_slug.get(slug) or floors_by_slug.get(slug_key) or floors_by_name.get(name_key)
-            if floor and floor > 0:
-                new_value = int(round(floor * 100))
-                if new_value > 0 and new_value != gift.get('value'):
-                    gift['value'] = new_value
-                    gift['fragment_price_ton'] = round(floor, 4)
+        for c in parsed:
+            slug = _portal_slugify(c['slug'])
+            name = c['name']
+            floor_ton = c['floor_ton']
+
+            if not slug:
+                skipped += 1
+                continue
+
+            new_value = int(round(floor_ton * 100)) if floor_ton else 0
+
+            # Ищем существующий подарок
+            existing = by_slug.get(slug) or by_name.get(_portal_slugify(name))
+
+            if existing:
+                # Обновляем цену
+                if new_value > 0 and existing.get('value') != new_value:
+                    old_value = existing.get('value', 0)
+                    existing['value'] = new_value
+                    if floor_ton:
+                        existing['fragment_price_ton'] = round(floor_ton, 4)
                     updated += 1
+                    if updated <= 10:
+                        logger.info(f"💱 {name}: {old_value} → {new_value}⭐ ({floor_ton} TON)")
+            else:
+                # НОВАЯ коллекция — добавляем
+                if new_value <= 0:
+                    # Даже без цены добавим, чтобы в след. раз можно было обновить
+                    new_value = 0
 
+                new_gift = {
+                    'id': max_id + 1,
+                    'name': name,
+                    'value': new_value,
+                    'image': _portal_build_image(slug),
+                    'fragment_slug': slug,
+                    'fragment_url': f'https://fragment.com/gifts/{slug}',
+                }
+                if floor_ton:
+                    new_gift['fragment_price_ton'] = round(floor_ton, 4)
+
+                gifts.append(new_gift)
+                new_gifts.append(name)
+                max_id += 1
+                added += 1
+                logger.info(f"➕ NEW: {name} (slug={slug}) value={new_value}⭐")
+
+        # ── 4) Сохраняем gifts.json ──
         with open(gifts_path, 'w', encoding='utf-8') as f:
             if wrap:
                 json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
             else:
                 json.dump(gifts, f, ensure_ascii=False, indent=2)
 
+        # Сброс кэша
         global gifts_cache, gifts_cache_time
         gifts_cache = None
         gifts_cache_time = None
 
-        # 5) Метка времени
+        # ── 5) Метка времени + отчёт ──
         try:
             sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
             with open(sync_file, 'w', encoding='utf-8') as sf:
                 json.dump({
                     'timestamp': int(time.time()),
                     'updated': updated,
+                    'added': added,
                     'total': len(gifts),
                     'collections': len(all_colls),
-                }, sf)
+                    'new_gifts': new_gifts[:20],
+                }, sf, ensure_ascii=False)
         except Exception:
             pass
 
-        logger.info(f"✅ Portal sync: {updated}/{len(gifts)} обновлено, коллекций: {len(all_colls)}")
-        return {'success': True, 'updated': updated, 'total': len(gifts), 'collections': len(all_colls)}
+        logger.info(f"✅ Portal sync DONE: обновлено {updated}, добавлено {added}, всего {len(gifts)}")
+
+        return {
+            'success': True,
+            'updated': updated,
+            'added': added,
+            'total': len(gifts),
+            'collections': len(all_colls),
+            'new_gifts': new_gifts[:20],
+        }
+
     except Exception as e:
         logger.error(f"❌ Portal sync error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return {'success': False, 'error': str(e)}
+
 
 
 def _extract_colls_items(colls):
