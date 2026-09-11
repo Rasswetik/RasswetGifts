@@ -924,9 +924,9 @@ async function initTelegramApp(){
     }
 
     /* FIX: уменьшили частоту поллинга — меньше лагов на слабых телефонах */
-    setInterval(pollStatus, 400);
+    setInterval(pollStatus, 200);
     setInterval(loadUserData, 25000);
-    setInterval(pollBets, 1200);
+    setInterval(pollBets, 300);
     setInterval(function(){ fetch('/api/ping').catch(()=>{}); }, 30000);
 
     document.addEventListener('visibilitychange', function(){
@@ -1130,6 +1130,7 @@ async function confirmStarsBet(){
     updateUI(userData);
     closeBetModal();
     updateBetButton();
+    _addOptimisticBet(amt, 'stars', null);
     _cbLeftSrc = null; _cbRightSrc = null;
     _lastAchievableWin = -1;
     if($('cbGiftLeft')) $('cbGiftLeft').dataset.src = '';
@@ -1152,7 +1153,7 @@ async function confirmStarsBet(){
                 updateUI(userData);
                 try{ localStorage.setItem('rasswet_user', JSON.stringify(userData)); }catch(e){}
                 loadBets();
-                setTimeout(loadBets, 100);
+                
             } else {
                 hasBet = false;
                 betAmt = 0;
@@ -1512,6 +1513,7 @@ async function confirmGiftBet(){
     betIsGift = true;
     betGiftImg = firstImg;
     closeBetModal();
+    _addOptimisticBet(totalValue, 'gift', firstImg);
     clearSelectedGifts();
     updateBetButton();
     _cbLeftSrc = null; _cbRightSrc = null;
@@ -1539,7 +1541,7 @@ async function confirmGiftBet(){
             if(d.success){
                 betAmt = d.bet_amount || totalValue;
                 loadBets();
-                setTimeout(loadBets, 150);
+                
             } else {
                 hasBet = false;
                 betAmt = 0;
@@ -2538,6 +2540,45 @@ function render(){
 /* ============================================================
    BETS LIST
    ============================================================ */
+
+/* ══════ ОПТИМИСТИЧНОЕ ОТОБРАЖЕНИЕ СТАВКИ (мгновенный отклик) ══════ */
+function _addOptimisticBet(amount, type, giftImg){
+    try{
+        var list = document.getElementById('betsList');
+        if(!list) return;
+        var noBets = list.querySelector('.no-bets');
+        if(noBets) noBets.remove();
+
+        var myName = (userData && userData.first_name) || 'Вы';
+        var ini = (myName[0] || 'U').toUpperCase();
+        var photo = (userData && userData.photo_url) || '';
+        var avatar = photo ? '<img src="'+photo+'" onerror="this.parentElement.textContent=\''+ini+'\'">' : ini;
+
+        var previewHtml = giftImg
+            ? '<img class="bet-gift-preview" src="'+giftImg+'" onerror="this.style.display=\'none\'">'
+            : '<img class="bet-gift-preview empty" src="/static/img/gift.png" alt="">';
+
+        var clockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+
+        var row = document.createElement('div');
+        var tempId = 'opt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        row.className = 'bet-row active optimistic';
+        row.dataset.optimistic = tempId;
+        row.innerHTML = '<div class="bet-left"><div class="bet-avatar">'+avatar+'</div>'
+            + '<div class="bet-info"><div class="bet-name">'+myName+'</div>'
+            + '<div class="bet-amt">'+previewHtml+'<span class="bet-amount-text">'+formatCrashMoney(amount)+'</span></div></div></div>'
+            + '<div class="bet-status active">'+clockSvg+' ×1.00</div>';
+        list.insertBefore(row, list.firstChild);
+
+        var bc = document.getElementById('betsCount');
+        if(bc) bc.textContent = (parseInt(bc.textContent)||0) + 1;
+    }catch(e){ console.error('optimistic err', e); }
+}
+
+function _removeOptimisticBets(){
+    document.querySelectorAll('.bet-row.optimistic').forEach(function(r){ r.remove(); });
+}
+
 async function loadBets(){
     if(status === 'crashed') return;
     try{
@@ -2556,6 +2597,7 @@ async function loadBets(){
         var hash = JSON.stringify(bets.map(function(b){ return b.id+':'+b.status+':'+b.bet_amount; }));
         if(hash === lastBetsHash) return;
         lastBetsHash = hash;
+        _removeOptimisticBets();
 
         var list = $('betsList');
         if(!list) return;
