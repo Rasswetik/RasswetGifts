@@ -260,6 +260,25 @@ _admin_crash_control = {
 }
 _admin_control_lock = threading.Lock()
 
+# ─── Трекер последних крашей (анти-стрик) ───
+_last_crash_multipliers = []
+_last_crash_lock = threading.Lock()
+
+def _track_crash_multiplier(mult):
+    """Запоминает последний множитель, чтобы не давать сразу 4x+ подряд."""
+    with _last_crash_lock:
+        _last_crash_multipliers.append(float(mult))
+        if len(_last_crash_multipliers) > 5:
+            _last_crash_multipliers.pop(0)
+
+def _get_recent_max():
+    """Возвращает макс множитель из последних 3 игр."""
+    with _last_crash_lock:
+        recent = _last_crash_multipliers[-3:]
+        return max(recent) if recent else 0.0
+
+
+
 def get_admin_crash_control():
     """Get admin crash control state"""
     with _admin_control_lock:
@@ -3538,6 +3557,14 @@ def generate_extreme_crash_multiplier():
     Base multiplier generation — will be adjusted by ai_adjust_target_multiplier
     once bets are placed. Tightened distribution for better house edge.
     """
+    # ★ FIX: анти-стрик — после 4x+ даём не больше 2.5x
+    _recent_max = _get_recent_max()
+    if _recent_max >= 4.0:
+        # Последние игры были жирными — ограничиваем текущую
+        return round(random.uniform(1.3, 2.5), 2)
+    if _recent_max >= 3.0:
+        return round(random.uniform(1.5, 3.5), 2)
+
     site_balance = _get_site_profit_balance()
     r = random.random()
     
@@ -3702,6 +3729,7 @@ def start_ultimate_crash_loop():
             ''', (gid, gid))
             _crash_bots_on_crash(gid)
             update_crash_cache(gid, 'crashed', crash_mult, tgt_mult, 0)
+            _track_crash_multiplier(crash_mult)
             conn.commit()
 
         while True:
