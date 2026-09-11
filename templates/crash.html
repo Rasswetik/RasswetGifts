@@ -156,7 +156,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .confirm-bet-btn:active:not(:disabled){transform:scale(.96)}
 .confirm-bet-btn:disabled{opacity:.45;cursor:not-allowed;transform:none !important}
 
-/* AUTO WITHDRAW ROW — без чекбокса */
+/* AUTO WITHDRAW ROW */
 .auto-cashout-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;padding:12px;border-radius:12px;background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.15)}
 .auto-cashout-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
 .auto-cashout-label{font-family:inherit;font-weight:800;font-size:13px;color:#1EE44C}
@@ -311,11 +311,16 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 .settings-item:hover{background:rgba(255,255,255,.08)}
 .settings-item.active{border-color:rgba(59,130,246,.6);background:rgba(59,130,246,.1)}
 .settings-item img{width:60px;height:60px;object-fit:contain;border-radius:12px}
-.settings-gift-toggle{margin-bottom:16px;padding:14px;border-radius:14px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15)}
-.settings-gift-toggle label{display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:12px}
+
+/* SETTINGS — iOS toggle */
+.settings-gift-toggle{margin-bottom:16px;padding:14px;border-radius:14px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.settings-gift-toggle .toggle-info{flex:1;min-width:0}
 .settings-gift-toggle .lbl{font-family:inherit;font-weight:700;font-size:14px;color:#fff}
 .settings-gift-toggle .desc{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
-.settings-gift-toggle input[type="checkbox"]{width:22px;height:22px;cursor:pointer;accent-color:#3B82F6;flex-shrink:0}
+.toggle-switch{position:relative;width:52px;height:30px;min-width:52px;background:rgba(60,60,80,.7);border-radius:15px;cursor:pointer;transition:background .3s;flex-shrink:0;border:1px solid rgba(255,255,255,.08)}
+.toggle-switch::after{content:'';position:absolute;width:24px;height:24px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.toggle-switch.on{background:linear-gradient(135deg,#3B82F6,#2563EB);box-shadow:0 0 16px rgba(59,130,246,.4)}
+.toggle-switch.on::after{transform:translateX(22px)}
 
 /* TOAST */
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(20,20,20,.95);backdrop-filter:blur(4px);padding:10px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.06);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:7000;color:#fff;font-family:inherit;font-weight:700;font-size:13px;animation:toastUp .3s ease;max-width:90%;text-align:center}
@@ -434,7 +439,7 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
 
         <div id="starsSec">
             <div class="bet-input-wrap">
-                <input type="number" id="betInput" placeholder="Enter TON amount (min. 0.1)" min="0.1" step="0.01" inputmode="decimal">
+                <input type="number" id="betInput" placeholder="Enter TON amount (min. 0.1)" min="0.1" step="0.01" inputmode="decimal" oninput="onBetAmountChange()">
             </div>
 
             <div class="auto-cashout-row">
@@ -568,13 +573,11 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;bac
         </div>
         <div class="settings-content">
             <div class="settings-gift-toggle">
-                <label>
-                    <div>
-                        <div class="lbl">Показывать подарки</div>
-                        <div class="desc">Вместо ракеты — подарок при достижимом выигрыше</div>
-                    </div>
-                    <input type="checkbox" id="showGiftsToggle" onchange="toggleShowGifts(this)">
-                </label>
+                <div class="toggle-info">
+                    <div class="lbl">Показывать подарки</div>
+                    <div class="desc">Вместо ракеты — подарок при достижимом выигрыше</div>
+                </div>
+                <div class="toggle-switch on" id="showGiftsToggle" onclick="toggleShowGiftsClick()"></div>
             </div>
             <div class="settings-grid" id="rocketGrid"></div>
         </div>
@@ -648,7 +651,6 @@ function updateUI(data){
     var txt = $('ldTxt');
     var imgs = document.querySelectorAll('.ld-panel img');
     window._ldP = 0;
-
     for(var i = 0; i < imgs.length; i++){
         (function(idx){
             setTimeout(function(){
@@ -657,21 +659,18 @@ function updateUI(data){
             }, idx * 60);
         })(i);
     }
-
     var simId = setInterval(function(){
         if(window._ldP >= 40){ clearInterval(simId); return; }
         window._ldP += 0.8;
         if(bar) bar.style.width = window._ldP + '%';
         if(txt) txt.textContent = 'LOADING ' + Math.round(window._ldP) + '%';
     }, 80);
-
     window._ldUpdate = function(pct){
         if(pct <= window._ldP) return;
         window._ldP = pct;
         if(bar) bar.style.width = pct + '%';
         if(txt) txt.textContent = 'LOADING ' + Math.round(pct) + '%';
     };
-
     window._ldDone = function(){
         if(bar) bar.style.width = '100%';
         if(txt) txt.textContent = 'READY!';
@@ -687,7 +686,6 @@ function updateUI(data){
 
 async function initTelegramApp(){
     if(window._ldUpdate) window._ldUpdate(5);
-
     const saved = localStorage.getItem('rasswet_user');
     if(saved){
         try{
@@ -695,7 +693,6 @@ async function initTelegramApp(){
             if(p && p.id) userData = p;
         }catch(e){}
     }
-
     if(!userData || !userData.id){
         if(isTelegramWebApp()){
             try{
@@ -714,9 +711,7 @@ async function initTelegramApp(){
             }catch(e){}
         }
     }
-
     if(window._ldUpdate) window._ldUpdate(15);
-
     if(!userData || !userData.id){
         try{
             const a = await Promise.race([
@@ -726,21 +721,16 @@ async function initTelegramApp(){
             if(a && a.id) userData = a;
         }catch(e){}
     }
-
     if(!userData || !userData.id){
         userData = {id: 0, first_name: 'Player', balance_stars: 0, balance_tickets: 0};
     }
-
     updateUI(userData);
-
     if(userData.id){
         registerUser();
         loadUserData();
     }
-
     authReady = true;
     if(window._ldUpdate) window._ldUpdate(30);
-
     if(userData.id){
         try{
             const ac = new AbortController();
@@ -750,9 +740,7 @@ async function initTelegramApp(){
             if(bd.success && bd.banned){ window.location.href = '/ban'; return; }
         }catch(e){}
     }
-
     if(window._ldUpdate) window._ldUpdate(50);
-
     try{
         const rc = await fetch('/api/crash/customizations');
         const rd = await rc.json();
@@ -760,7 +748,6 @@ async function initTelegramApp(){
             window._rocketsData = rd.rockets || [];
         }
     }catch(e){}
-
     if(window._ldUpdate) window._ldUpdate(80);
     applyRocket();
     if(window._ldUpdate) window._ldUpdate(95);
@@ -770,7 +757,6 @@ async function initTelegramApp(){
     loadBets();
     loadHist();
 
-    /* Каталог в фоне */
     setTimeout(function(){ ensureGiftCatalog(); }, 1500);
 
     if(savedBetAmount) setBetInputFromStars(savedBetAmount);
@@ -787,7 +773,7 @@ async function initTelegramApp(){
         loadBets().finally(() => { _betsPending = false; });
     }
 
-    setInterval(pollStatus, 500);
+    setInterval(pollStatus, 400);
     setInterval(loadUserData, 20000);
     setInterval(pollBets, 1200);
     setInterval(function(){ fetch('/api/ping').catch(()=>{}); }, 30000);
@@ -826,6 +812,37 @@ async function registerUser(){
             try{ localStorage.setItem('rasswet_user', JSON.stringify(userData)); }catch(e){}
         }
     }catch(e){}
+}
+
+/* СБРОС АВТОВЫВОДА ПРИ СМЕНЕ СУММЫ */
+function onBetAmountChange(){
+    if(!autoWithdrawGift) return;
+    var input = $('betInput');
+    if(!input) return;
+    var newAmt = parseBetInputToStars(input.value) || 0;
+    if(newAmt <= 0) return;
+
+    var giftValue = autoWithdrawGift.value || 0;
+    var newCoeff = newAmt > 0 ? (giftValue / newAmt) : 0;
+
+    /* Если коэф < 1.1 — сбрасываем */
+    if(newCoeff < 1.1){
+        autoWithdrawGift = null;
+        updateAutoWithdrawButton();
+        showToast('Автовывод сброшен — нужен коэф от 1.1x', 'err');
+        return;
+    }
+    /* Если коэф > 99 — сбрасываем */
+    if(newCoeff > 99){
+        autoWithdrawGift = null;
+        updateAutoWithdrawButton();
+        showToast('Автовывод сброшен — ставка слишком мала', 'err');
+        return;
+    }
+    /* Обновляем коэф */
+    autoWithdrawGift.coeff = Math.round(newCoeff * 100) / 100;
+    updateAutoWithdrawButton();
+    showToast('Коэф автовывода: x' + autoWithdrawGift.coeff.toFixed(2), 'ok');
 }
 
 /* BET MODAL */
@@ -890,18 +907,13 @@ function setBetInputFromStars(stars){
 function addPendingBetToUI(amount, type, giftImg){
     var list = $('betsList');
     if(!list) return;
-
     document.querySelectorAll('.bet-row.pending-bet').forEach(function(r){ r.remove(); });
-
     var myName = (userData && userData.first_name) || 'Вы';
     var ini = myName[0].toUpperCase();
-
     var betIconHtml = giftImg
         ? '<div class="bet-gift-stack"><img src="'+giftImg+'" onerror="this.src=\'/static/img/gift.png\'"></div>'
         : '<img src="/static/img/tons/ton_1.svg">';
-
     var clockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-
     var row = document.createElement('div');
     row.className = 'bet-row pending-bet';
     row.innerHTML =
@@ -909,9 +921,7 @@ function addPendingBetToUI(amount, type, giftImg){
         + '<div class="bet-info"><div class="bet-name">'+myName+'</div>'
         + '<div class="bet-amt">'+betIconHtml+' '+formatCrashMoney(amount)+'</div></div></div>'
         + '<div class="bet-status pending">'+clockSvg+' След. раунд</div>';
-
     list.insertBefore(row, list.firstChild);
-
     var bc = $('betsCount');
     if(bc) bc.textContent = (parseInt(bc.textContent)||0) + 1;
 }
@@ -978,6 +988,7 @@ async function confirmStarsBet(){
                 updateUI(userData);
                 try{ localStorage.setItem('rasswet_user', JSON.stringify(userData)); }catch(e){}
                 loadBets();
+                setTimeout(loadBets, 100);
             } else {
                 hasBet = false;
                 betAmt = 0;
@@ -1047,7 +1058,7 @@ async function processPendingBet(){
     updateBetButton();
 }
 
-/* CASHOUT — передаёт preferred_gift_id */
+/* CASHOUT */
 var cashoutLocked = false;
 async function doCashout(){
     if(!hasBet || !userData || !userData.id) return;
@@ -1155,17 +1166,14 @@ async function loadInventory(){
         var d = await r.json();
         var grid = $('invGrid');
         if(!grid) return;
-
         var NON_BET = [110];
         inventoryItems = (d.inventory||[]).filter(function(i){
             return !i.is_withdrawing && i.gift_value >= 25 && NON_BET.indexOf(Number(i.gift_id)) === -1;
         });
-
         if(!inventoryItems.length){
             grid.innerHTML = '<div class="inv-empty">Нет подарков для ставок (мин. 25⭐)</div>';
             return;
         }
-
         grid.innerHTML = inventoryItems.map(function(i){
             var isSel = selectedGifts.some(function(g){ return g.id === i.id; });
             var tonVal = (i.gift_value/100).toFixed(2);
@@ -1182,7 +1190,6 @@ async function loadInventory(){
 function toggleGiftSelection(id){
     var item = inventoryItems.find(function(i){ return i.id === id; });
     if(!item) return;
-
     var idx = selectedGifts.findIndex(function(g){ return g.id === id; });
     if(idx >= 0){
         selectedGifts.splice(idx, 1);
@@ -1285,6 +1292,7 @@ async function confirmGiftBet(){
             if(d.success){
                 betAmt = d.bet_amount || totalValue;
                 loadBets();
+                setTimeout(loadBets, 150);
             } else {
                 hasBet = false;
                 betAmt = 0;
@@ -1476,7 +1484,6 @@ async function updStatus(){
                     cb.style.display = 'block';
                     cb.disabled = false;
                     cb.className = 'cashout-btn';
-                    /* Текст кнопки обновит render() */
                 }
             } else {
                 if(pb){
@@ -1614,7 +1621,6 @@ function render(){
             updateRocketImage();
         }
 
-        /* Кнопка CASHOUT — текст с двумя строками */
         var cb = $('cashoutBtn');
         if(hasBet && cb && cb.style.display !== 'none' && !cashedOut){
             if(now - _lastCashBtnUpdate > 200){
@@ -1632,7 +1638,6 @@ function render(){
             }
         }
 
-        /* Auto-cashout через autoWithdrawGift */
         if(hasBet && !autoCashoutDone){
             if(autoWithdrawGift && autoWithdrawGift.coeff >= 1.1){
                 if(dispMult >= autoWithdrawGift.coeff){
@@ -1650,7 +1655,6 @@ function render(){
             prevServMult = 1.0;
             multGrowthRate = 0;
         }
-
         if((status === 'counting' || status === 'waiting') && lastTrTimestamp > 0 && lastTimeRemaining <= 10){
             var elapsed = (performance.now() - lastTrTimestamp) / 1000;
             var sec = Math.max(0, Math.ceil(Math.max(0, lastTimeRemaining - elapsed)));
@@ -1732,6 +1736,10 @@ function updateRocketImage(){
             var imgSrc = getGiftImage(gift);
             ri.onerror = function(){
                 this.onerror = null;
+                if(this.src.indexOf('/static/') !== -1 && gift.fragment_slug){
+                    this.src = 'https://fragment.com/file/gifts/' + gift.fragment_slug + '/thumb.webp';
+                    return;
+                }
                 var fb = getRocketGif();
                 if(lastRocketSrc !== fb){ lastRocketSrc = fb; this.src = fb; }
             };
@@ -1762,12 +1770,6 @@ async function ensureGiftCatalog(){
         if(d.success && d.gifts){
             _giftCatalogCache = d.gifts
                 .filter(function(g){ return g.value > 0 && g.type !== 'stars_balance'; })
-                .map(function(g){
-                    var localName = (g.name || '').replace(/\s*\(Random\)\s*/i, '').trim();
-                    var localSlug = localName.toLowerCase().replace(/[^a-z0-9]+/g, '_');
-                    g.local_image = '/static/gifs/gifts/' + localSlug + '.png';
-                    return g;
-                })
                 .sort(function(a,b){ return (a.value||0)-(b.value||0); });
         }
     }catch(e){}
@@ -1777,23 +1779,19 @@ async function ensureGiftCatalog(){
 /* Приоритет: /static/gifs/gifts/ → Fragment */
 function getGiftImage(g){
     if(!g) return '/static/img/gift.png';
-
     /* 1. Уже локальный */
     if(g.image && g.image.indexOf('/static/gifs/gifts/') !== -1){
         return g.image;
     }
-    /* 2. Локальный slug */
-    if(g.local_image){
-        return g.local_image;
-    }
-    /* 3. Обычная картинка (не fragment) */
+    /* 2. Обычная картинка не fragment */
     if(g.image && g.image.indexOf('fragment.com') === -1 && g.image.indexOf('/static/') === 0){
         return g.image;
     }
-    /* 4. Fragment */
+    /* 3. Fragment slug */
     if(g.fragment_slug){
         return 'https://fragment.com/file/gifts/' + g.fragment_slug + '/thumb.webp';
     }
+    /* 4. Обычный URL с Fragment */
     if(g.image && g.image.indexOf('fragment.com') !== -1){
         return g.image;
     }
@@ -1827,13 +1825,11 @@ function openAutoWithdraw(){
         var amtInput = $('betInput');
         if(amtInput) _autowdBet = parseBetInputToStars(amtInput.value) || 0;
     }
-
     if(!_autowdBet){
         showToast('Сначала введите сумму ставки','err');
         return;
     }
 
-    /* Минимум 1.1x от ставки */
     _autowdTarget = Math.floor(_autowdBet * 1.1);
 
     var betEl = $('autowdBetVal');
@@ -1885,7 +1881,6 @@ async function loadAutoWithdrawGifts(){
     renderAutoWithdrawGifts();
 }
 
-/* До 40 подарков, по 1 из каждой ценовой корзины */
 function renderAutoWithdrawGifts(){
     var list = $('autowdList');
     if(!list) return;
@@ -1898,13 +1893,11 @@ function renderAutoWithdrawGifts(){
             return (g.name || '').toLowerCase().indexOf(search) !== -1;
         });
     }
-
     if(!filtered.length){
         list.innerHTML = '<div class="autowd-empty">Ничего не найдено</div>';
         return;
     }
 
-    /* Группируем по ценовым корзинам */
     var picked = [];
     var usedPrices = {};
     filtered.forEach(function(g){
@@ -1914,7 +1907,6 @@ function renderAutoWithdrawGifts(){
             picked.push(g);
         }
     });
-
     if(picked.length < 40){
         filtered.forEach(function(g){
             if(picked.indexOf(g) === -1 && picked.length < 40){
@@ -1929,7 +1921,6 @@ function renderAutoWithdrawGifts(){
         var isSel = _autowdSelected && String(_autowdSelected.id || _autowdSelected.gift_key) === gid;
         var val = g.value || 0;
         var coeff = _autowdBet > 0 ? (val / _autowdBet).toFixed(2) : '?';
-
         var img = getGiftImage(g);
 
         var coeffClass = 'green';
@@ -1957,28 +1948,23 @@ function selectAutoWithdrawGift(gid){
     });
     if(!gift){ return; }
     _autowdSelected = gift;
-
     document.querySelectorAll('.autowd-row').forEach(function(r){
         r.classList.toggle('selected', r.dataset.gid === String(gid));
     });
-
     updateAutoWithdrawApply();
 }
 
 function updateAutoWithdrawApply(){
     var btn = $('autowdApplyBtn');
     if(!btn) return;
-
     if(!_autowdSelected){
         btn.disabled = true;
         btn.innerHTML = '<span id="autowdApplyText">Выберите подарок</span>';
         return;
     }
-
     var val = _autowdSelected.value || 0;
     var coeff = _autowdBet > 0 ? (val / _autowdBet).toFixed(2) : '?';
     var img = getGiftImage(_autowdSelected);
-
     btn.disabled = false;
     btn.innerHTML =
         '<span id="autowdApplyText">Автовывод</span>'
@@ -1988,7 +1974,6 @@ function updateAutoWithdrawApply(){
 
 function applyAutoWithdraw(){
     if(!_autowdSelected){ return; }
-
     var val = _autowdSelected.value || 0;
     var coeff = _autowdBet > 0 ? (val / _autowdBet) : 2.0;
     coeff = Math.max(1.1, Math.min(coeff, 99.99));
@@ -2002,17 +1987,14 @@ function applyAutoWithdraw(){
     };
 
     closeAutoWithdraw();
-
     setTimeout(function(){
         var modal = $('betModal');
         if(modal) modal.classList.add('show');
         updateAutoWithdrawButton();
     }, 250);
-
     showToast('Автовывод: ' + (_autowdSelected.name || 'подарок') + ' (x' + coeff.toFixed(2) + ')', 'ok');
 }
 
-/* Обновляем ОБЕ кнопки в модалке */
 function updateAutoWithdrawButton(){
     var btns = [$('autowdMainBtn'), $('autowdMainBtnInv')];
     btns.forEach(function(btn){
@@ -2052,7 +2034,6 @@ async function loadBets(){
         var list = $('betsList');
         if(!list) return;
         if(!bets.length){
-            /* Оставляем pending-ставку если есть */
             var pendingRow = list.querySelector('.bet-row.pending-bet');
             if(!pendingRow){
                 list.innerHTML = '<div class="no-bets">Waiting for bets...</div>';
@@ -2091,13 +2072,29 @@ async function loadBets(){
             if(b.status === 'cashed_out'){
                 stCls = 'won';
                 var coef = b.cashout_multiplier ? parseFloat(b.cashout_multiplier).toFixed(2) : '?';
-                statusHtml = '<div class="bet-status won">'+checkSvg+' x'+coef+' +'+formatCrashMoney(b.win_amount||0)+'</div>';
+                var winAmt = b.win_amount || 0;
+                var earnedGift = b.won_gift_image || null;
+                var giftHtml = earnedGift
+                    ? '<img src="'+earnedGift+'" style="width:24px;height:24px;object-fit:contain;border-radius:5px;background:rgba(0,0,0,.2);padding:2px" onerror="this.style.display=\'none\'">'
+                    : '';
+                statusHtml = '<div class="bet-status won" style="gap:5px">'
+                    + giftHtml
+                    + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px">'
+                    +   '<div style="font-size:11px;font-weight:700">×'+coef+'</div>'
+                    +   '<div style="font-size:11px;font-weight:800">+'+formatCrashMoney(winAmt)+'</div>'
+                    + '</div>'
+                    + '</div>';
             } else if(b.status === 'lost'){
                 stCls = 'lost';
                 var cc = servMult ? servMult.toFixed(2) : '?';
-                statusHtml = '<div class="bet-status lost">'+crashSvg+' x'+cc+'</div>';
+                statusHtml = '<div class="bet-status lost">'+crashSvg+' ×'+cc+'</div>';
             } else {
-                statusHtml = '<div class="bet-status active">'+clockSvg+' В игре</div>';
+                var potentialWin = Math.floor(b.bet_amount * (servMult || 1));
+                var coefNow = (servMult || 1).toFixed(2);
+                statusHtml = '<div class="bet-status active" style="flex-direction:column;align-items:flex-end;gap:2px;padding:6px 10px">'
+                    + '<div style="display:flex;align-items:center;gap:4px">'+clockSvg+' <span style="font-size:11px">×'+coefNow+'</span></div>'
+                    + '<div style="font-size:11px;font-weight:800;color:#8CA0BE">'+formatCrashMoney(potentialWin)+'</div>'
+                    + '</div>';
             }
 
             return '<div class="bet-row '+stCls+'" data-bet-id="'+b.id+'" data-status="'+b.status+'">'
@@ -2138,7 +2135,6 @@ async function loadHist(){
 /* SOUND */
 var audioContext = null;
 var soundMasterGain = null;
-
 function initAudio(){
     if(audioContext) return;
     try{
@@ -2148,23 +2144,19 @@ function initAudio(){
         soundMasterGain.connect(audioContext.destination);
     }catch(e){}
 }
-
 function makeOsc(freq, type, gainVal, startT, dur){
     if(!soundMasterGain) return;
     try{
         var o = audioContext.createOscillator();
         var g = audioContext.createGain();
-        o.connect(g);
-        g.connect(soundMasterGain);
+        o.connect(g); g.connect(soundMasterGain);
         o.frequency.setValueAtTime(freq, startT);
         o.type = type;
         g.gain.setValueAtTime(gainVal, startT);
         g.gain.exponentialRampToValueAtTime(0.001, startT + dur);
-        o.start(startT);
-        o.stop(startT + dur);
+        o.start(startT); o.stop(startT + dur);
     }catch(e){}
 }
-
 function playSound(type){
     initAudio();
     if(!audioContext) return;
@@ -2177,7 +2169,6 @@ function playSound(type){
     else if(type === 'crash'){ makeOsc(35,'sine',0.3,now,0.6); makeOsc(70,'triangle',0.18,now+0.06,0.45); }
     else if(type === 'win'){ [523,659,784,988].forEach(function(f,i){ makeOsc(f,'triangle',0.12,now+i*0.07,0.35); }); }
 }
-
 function triggerVibration(pattern){
     try{
         if(typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
@@ -2212,7 +2203,6 @@ function showWin(d){
     var m = parseFloat(d.multiplier).toFixed(2);
     var content = $('winContent');
     if(!content) return;
-
     var winTon = d.win_amount ? starsToTon(d.win_amount) : 0;
     var betTon = d.bet_amount ? starsToTon(d.bet_amount) : (cashedOutBetAmt ? starsToTon(cashedOutBetAmt) : 0);
 
@@ -2269,7 +2259,6 @@ function showWin(d){
     } else if(starRemainder > 0 || winTon > 0){
         html += '<div class="win-breakdown">+' + formatCrashMoney(starRemainder || d.win_amount || 0) + ' TON на баланс</div>';
     }
-
     content.innerHTML = html;
     var wo = $('winOverlay');
     if(wo) wo.classList.add('show');
@@ -2285,8 +2274,8 @@ function closeWin(){
 function openSettings(){
     var so = $('settingsOverlay');
     if(so) so.classList.add('show');
-    var cb = $('showGiftsToggle');
-    if(cb) cb.checked = showGifts;
+    var el = $('showGiftsToggle');
+    if(el) el.classList.toggle('on', showGifts);
     renderSettings();
 }
 function closeSettings(){
@@ -2298,15 +2287,16 @@ document.addEventListener('DOMContentLoaded', function(){
     if(so) so.addEventListener('click', function(e){ if(e.target === this) closeSettings(); });
 });
 
-function toggleShowGifts(cb){
-    showGifts = !!cb.checked;
+function toggleShowGiftsClick(){
+    showGifts = !showGifts;
     localStorage.setItem('crash_show_gifts', showGifts ? 'on' : 'off');
+    var el = $('showGiftsToggle');
+    if(el) el.classList.toggle('on', showGifts);
     showToast(showGifts ? 'Подарки включены' : 'Только ракета', 'ok');
     updateRocketImage();
 }
 
 var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
-
 function renderSettings(){
     var rg = $('rocketGrid');
     if(!rg) return;
@@ -2318,7 +2308,6 @@ function renderSettings(){
             +'</div>';
     }).join('');
 }
-
 function selectRocket(rid){
     if(currentRocket === rid){ closeSettings(); return; }
     if(window._rocketSwitching) return;
@@ -2329,7 +2318,6 @@ function selectRocket(rid){
     test.onload = function(){
         currentRocket = rid;
         localStorage.setItem('crash_rocket', rid);
-
         var rw = document.getElementById('rocketWrap');
         if(rw){
             var img = rw.querySelector('img');
@@ -2343,7 +2331,6 @@ function selectRocket(rid){
         _rwFlying = false;
         _prevCoeffText = '';
         window._rocketSwitching = false;
-
         renderSettings();
         showToast('Ракета изменена!','ok');
         setTimeout(closeSettings, 200);
@@ -2447,7 +2434,6 @@ async function payWithStars(){
 /* INIT */
 document.addEventListener('DOMContentLoaded', function(){
     initTelegramApp();
-
     setTimeout(function(){
         var ls = $('ldScreen');
         if(ls && !ls.classList.contains('hidden')){
@@ -2455,7 +2441,6 @@ document.addEventListener('DOMContentLoaded', function(){
             setTimeout(function(){ ls.style.display = 'none'; }, 500);
         }
     }, 15000);
-
     function updOnline(){
         fetch('/api/online-count').then(function(r){ return r.json(); }).then(function(d){
             var el = $('onlineCount');
