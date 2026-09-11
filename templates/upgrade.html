@@ -13,7 +13,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-    --bg:#0b0b18;
+    --bg:#0a0a0f;
     --text:#fff;
     --blue:#2844FB;
     --blue-light:#4B81F5;
@@ -26,7 +26,8 @@
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    background:var(--bg);
+    background:#0a0a0f;
+    background-image:radial-gradient(ellipse 100% 60% at 50% 0%, #1a1a2e 0%, #0a0a0f 60%);
     color:var(--text);
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
@@ -54,6 +55,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     padding:4px 10px 4px 4px;
     border-radius:20px;
     background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.04);
 }
 .top-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover}
 .top-nick{
@@ -71,8 +73,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     gap:5px;
     padding:6px 12px;
     border-radius:20px;
-    background:linear-gradient(180deg,#f4a10d,#e08c00);
-    box-shadow:inset 0 0 10px rgba(255,255,255,.3);
+    background:rgba(40,68,251,.15);
+    border:1px solid rgba(75,129,245,.3);
     font-weight:800;
     font-size:13px;
     color:#fff;
@@ -82,14 +84,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     width:30px;
     height:30px;
     border-radius:50%;
-    background:rgba(255,255,255,.08);
-    color:#fff;
+    background:rgba(40,68,251,.2);
+    border:1px solid rgba(75,129,245,.4);
+    color:#4B81F5;
     font-size:16px;
     font-weight:700;
     display:flex;
     align-items:center;
     justify-content:center;
+    transition:all .2s;
 }
+.bal-plus:active{transform:scale(.9);background:rgba(40,68,251,.35)}
 
 /* ═══════════ WRAPPER ═══════════ */
 .upgrade-wrap{
@@ -102,7 +107,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     gap:12px;
 }
 
-/* ═══════════ ПАНЕЛЬ ВЫБОРА СВЕРХУ ═══════════ */
+/* ═══════════ ПАНЕЛЬ ВЫБОРА ═══════════ */
 .select-panel{
     width:100%;
     display:grid;
@@ -111,8 +116,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     margin-bottom:8px;
 }
 .select-card{
-    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-    border:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+    border:1px solid rgba(255,255,255,.06);
     border-radius:20px;
     padding:14px 12px;
     display:flex;
@@ -129,13 +134,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .select-card:active{transform:scale(.97)}
 .select-card.has-item{
     border-color:rgba(40,68,251,.4);
-    background:linear-gradient(180deg, rgba(40,68,251,.1), rgba(40,68,251,.02));
-    box-shadow:0 0 20px rgba(40,68,251,.15);
+    background:linear-gradient(180deg, rgba(40,68,251,.08), rgba(40,68,251,.01));
 }
 .select-card-title{
     font-size:12px;
     font-weight:700;
-    color:rgba(255,255,255,.6);
+    color:rgba(255,255,255,.5);
     text-transform:uppercase;
     letter-spacing:.5px;
     text-align:center;
@@ -151,17 +155,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     width:56px;
     height:56px;
     border-radius:50%;
-    background:rgba(255,255,255,.06);
-    border:2px dashed rgba(255,255,255,.15);
+    background:rgba(255,255,255,.04);
+    border:2px dashed rgba(255,255,255,.1);
     display:flex;
     align-items:center;
     justify-content:center;
     font-size:24px;
-    color:rgba(255,255,255,.4);
+    color:rgba(255,255,255,.3);
 }
 .select-empty-text{
     font-size:11px;
-    color:rgba(255,255,255,.35);
+    color:rgba(255,255,255,.3);
     font-weight:600;
 }
 .select-filled{
@@ -172,7 +176,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     width:100%;
 }
 .select-card.has-item .select-empty{display:none}
-.select-card.has-item .select-filled{display:flex}
+.select-card.has-item .select-filled{display:flex;animation:cardPop .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes cardPop{
+    0%{transform:scale(.7);opacity:0}
+    60%{transform:scale(1.08)}
+    100%{transform:scale(1);opacity:1}
+}
 .select-img{
     width:70px;
     height:70px;
@@ -194,7 +203,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     align-items:center;
     gap:4px;
     padding:3px 10px;
-    background:rgba(40,68,251,.15);
+    background:rgba(40,68,251,.12);
     border-radius:10px;
     font-size:11px;
     font-weight:800;
@@ -207,8 +216,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     align-items:center;
     gap:4px;
     padding:4px 12px;
-    background:linear-gradient(135deg, rgba(36,195,142,.2), rgba(36,195,142,.1));
-    border:1px solid rgba(36,195,142,.4);
+    background:rgba(36,195,142,.12);
+    border:1px solid rgba(36,195,142,.3);
     border-radius:10px;
     font-size:13px;
     font-weight:900;
@@ -217,41 +226,51 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     margin-top:4px;
 }
 
-/* ═══════════ КОЛЕСО СНИЗУ ═══════════ */
+/* ═══════════ КОЛЕСО ═══════════ */
 .wheel-section{
     width:100%;
     display:flex;
     flex-direction:column;
     align-items:center;
+    justify-content:center;
     padding:12px 0;
     position:relative;
 }
 .wheel-wrap{
     position:relative;
-    width:100%;
-    max-width:320px;
-    aspect-ratio:1/1;
+    width:300px;
+    height:300px;
     margin:0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
 }
+
+/* Стрелка сверху */
 .wheel-pointer{
     position:absolute;
-    top:0;
+    top:-6px;
     left:50%;
     transform:translateX(-50%);
     z-index:10;
     width:44px;
     height:44px;
     pointer-events:none;
-    filter:drop-shadow(0 4px 12px rgba(0,0,0,.7));
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,.8));
 }
 .wheel-pointer svg{
     width:100%;
     height:100%;
     display:block;
 }
+
+/* ★ БАЗОВЫЙ КРУГ — часть колеса */
 .wheel-rotator{
     position:absolute;
-    inset:0;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
     will-change:transform;
     transform-origin:50% 50%;
     backface-visibility:hidden;
@@ -263,6 +282,24 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     height:100%;
     display:block;
 }
+
+/* ★ ЗЕЛЁНАЯ ЗОНА — тоже часть колеса, крутится вместе с ним */
+.wheel-green-arc{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+    z-index:1;
+    transform-origin:50% 50%;
+    will-change:transform;
+    transform:translateZ(0);
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+}
+
+/* Центр колеса */
 .wheel-center{
     position:absolute;
     top:50%;
@@ -271,12 +308,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     width:130px;
     height:130px;
     border-radius:50%;
-    background:radial-gradient(circle, #1a1a24 0%, #0d0d15 100%);
-    border:2px solid rgba(255,255,255,.08);
+    background:radial-gradient(circle, #15151c 0%, #0a0a0f 100%);
+    border:2px solid rgba(255,255,255,.06);
     box-shadow:
-        inset 0 0 30px rgba(0,0,0,.7),
-        0 0 0 6px rgba(11,11,24,.9),
-        0 0 40px rgba(40,68,251,.15);
+        inset 0 0 30px rgba(0,0,0,.9),
+        0 0 0 6px rgba(10,10,15,.95);
     display:flex;
     align-items:center;
     justify-content:center;
@@ -300,69 +336,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     font-size:28px;
     font-weight:900;
     letter-spacing:-1px;
-    background:linear-gradient(135deg, #fff, #93c5fd);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
+    color:#fff;
     opacity:0;
     transition:opacity .3s ease;
     z-index:3;
 }
 .wheel-center-pct.visible{opacity:1}
-
-/* Цвет по риску */
-.wheel-wrap.risk-low .wheel-center{
-    border-color:rgba(36,195,142,.6);
-    box-shadow:
-        inset 0 0 30px rgba(0,0,0,.7),
-        0 0 0 6px rgba(11,11,24,.9),
-        0 0 60px rgba(36,195,142,.5);
-}
-.wheel-wrap.risk-low .wheel-center-pct{
-    background:linear-gradient(135deg, #24C38E, #10b981);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
-}
-.wheel-wrap.risk-mid .wheel-center{
-    border-color:rgba(40,68,251,.6);
-    box-shadow:
-        inset 0 0 30px rgba(0,0,0,.7),
-        0 0 0 6px rgba(11,11,24,.9),
-        0 0 60px rgba(40,68,251,.5);
-}
-.wheel-wrap.risk-mid .wheel-center-pct{
-    background:linear-gradient(135deg, #4B81F5, #60A5FA);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
-}
-.wheel-wrap.risk-high .wheel-center{
-    border-color:rgba(168,85,247,.6);
-    box-shadow:
-        inset 0 0 30px rgba(0,0,0,.7),
-        0 0 0 6px rgba(11,11,24,.9),
-        0 0 60px rgba(168,85,247,.5);
-}
-.wheel-wrap.risk-high .wheel-center-pct{
-    background:linear-gradient(135deg, #a855f7, #c084fc);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
-}
-.wheel-wrap.risk-mega .wheel-center{
-    border-color:rgba(245,158,11,.6);
-    box-shadow:
-        inset 0 0 30px rgba(0,0,0,.7),
-        0 0 0 6px rgba(11,11,24,.9),
-        0 0 60px rgba(245,158,11,.5);
-}
-.wheel-wrap.risk-mega .wheel-center-pct{
-    background:linear-gradient(135deg, #f59e0b, #fbbf24);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
-}
 
 /* ═══════════ КНОПКИ ═══════════ */
 .actions-row{
@@ -382,22 +361,21 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     display:flex;
     align-items:center;
     justify-content:center;
-    box-shadow:inset 0 0 10px rgba(255,255,255,.2);
     transition:transform .15s;
+    letter-spacing:.5px;
 }
 .btn-main:not(:disabled):active{transform:scale(.95)}
 .btn-main:disabled{
-    background:rgba(255,255,255,.06);
-    color:rgba(255,255,255,.3);
-    box-shadow:none;
+    background:rgba(255,255,255,.05);
+    color:rgba(255,255,255,.25);
     cursor:not-allowed;
 }
 .btn-demo{
     flex:1;
     height:56px;
     border-radius:16px;
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.08);
     color:#fff;
     font-size:14px;
     font-weight:800;
@@ -406,6 +384,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     align-items:center;
     justify-content:center;
     transition:transform .15s;
+    letter-spacing:.5px;
 }
 .btn-demo:active{transform:scale(.95)}
 
@@ -413,7 +392,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .modal-overlay{
     position:fixed;
     inset:0;
-    background:rgba(0,0,0,.75);
+    background:rgba(0,0,0,.85);
     backdrop-filter:blur(8px);
     -webkit-backdrop-filter:blur(8px);
     z-index:9000;
@@ -426,7 +405,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .modal-overlay.show{opacity:1;visibility:visible}
 .modal-sheet{
-    background:linear-gradient(180deg, #1a1a24 0%, #0f0f15 100%);
+    background:#0f0f15;
     border-radius:24px 24px 0 0;
     width:100%;
     max-width:450px;
@@ -435,7 +414,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     flex-direction:column;
     transform:translateY(100%);
     transition:transform .35s cubic-bezier(.32,1,.23,1);
-    border-top:1px solid rgba(255,255,255,.08);
+    border-top:1px solid rgba(255,255,255,.06);
     overflow:hidden;
 }
 .modal-overlay.show .modal-sheet{transform:translateY(0)}
@@ -444,7 +423,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     align-items:center;
     justify-content:space-between;
     padding:18px 20px 12px;
-    border-bottom:1px solid rgba(255,255,255,.06);
+    border-bottom:1px solid rgba(255,255,255,.04);
     flex-shrink:0;
 }
 .modal-title{font-size:16px;font-weight:800;color:#fff}
@@ -452,7 +431,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     width:32px;
     height:32px;
     border-radius:50%;
-    background:rgba(255,48,100,.15);
+    background:rgba(255,48,100,.12);
     color:var(--red);
     font-size:16px;
     font-weight:700;
@@ -471,8 +450,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     width:100%;
     padding:12px 16px 12px 42px;
     border-radius:14px;
-    border:1.5px solid rgba(255,255,255,.08);
-    background:rgba(255,255,255,.04);
+    border:1.5px solid rgba(255,255,255,.06);
+    background:rgba(255,255,255,.03);
     color:#fff;
     font-size:14px;
     outline:none;
@@ -481,9 +460,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .modal-search:focus{
     border-color:rgba(40,68,251,.5);
-    background:rgba(40,68,251,.08);
+    background:rgba(40,68,251,.05);
 }
-.modal-search::placeholder{color:rgba(255,255,255,.35)}
+.modal-search::placeholder{color:rgba(255,255,255,.3)}
 .modal-search-icon{
     position:absolute;
     left:34px;
@@ -491,7 +470,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     transform:translateY(-50%);
     width:16px;
     height:16px;
-    stroke:rgba(255,255,255,.4);
+    stroke:rgba(255,255,255,.35);
     fill:none;
     stroke-width:2;
     pointer-events:none;
@@ -503,15 +482,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     overscroll-behavior:contain;
 }
 .modal-body::-webkit-scrollbar{width:4px}
-.modal-body::-webkit-scrollbar-thumb{background:rgba(40,68,251,.3);border-radius:2px}
+.modal-body::-webkit-scrollbar-thumb{background:rgba(40,68,251,.2);border-radius:2px}
 .modal-grid{
     display:grid;
     grid-template-columns:repeat(3, 1fr);
     gap:10px;
 }
 .modal-item{
-    background:linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-    border:1.5px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.03);
+    border:1.5px solid rgba(255,255,255,.06);
     border-radius:14px;
     padding:10px 6px 8px;
     display:flex;
@@ -521,12 +500,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     transition:all .2s;
     position:relative;
     overflow:hidden;
+    animation:itemIn .3s cubic-bezier(.4,0,.2,1) both;
+}
+@keyframes itemIn{
+    0%{opacity:0;transform:scale(.9)}
+    100%{opacity:1;transform:scale(1)}
 }
 .modal-item:active{transform:scale(.96)}
 .modal-item.selected{
     border-color:var(--blue);
-    background:linear-gradient(160deg, rgba(40,68,251,.15), rgba(40,68,251,.05));
-    box-shadow:0 0 0 2px var(--blue);
+    background:rgba(40,68,251,.1);
 }
 .modal-item.selected::after{
     content:'✓';
@@ -565,7 +548,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     font-size:10px;
     font-weight:800;
     color:#60A5FA;
-    background:rgba(40,68,251,.15);
+    background:rgba(40,68,251,.1);
     padding:3px 8px;
     border-radius:7px;
     margin-top:4px;
@@ -578,17 +561,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     font-size:10px;
     font-weight:900;
     color:var(--green);
-    background:rgba(36,195,142,.15);
+    background:rgba(36,195,142,.12);
     padding:3px 8px;
     border-radius:7px;
     margin-top:4px;
-    border:1px solid rgba(36,195,142,.25);
+    border:1px solid rgba(36,195,142,.2);
 }
 .modal-empty{
     grid-column:1/-1;
     text-align:center;
     padding:40px 20px;
-    color:rgba(255,255,255,.35);
+    color:rgba(255,255,255,.3);
     font-size:13px;
     font-weight:600;
 }
@@ -616,13 +599,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .deposit-overlay.show{opacity:1;visibility:visible}
 .deposit-modal{
-    background:linear-gradient(180deg,#1a1a24,#0f0f15);
+    background:#0f0f15;
     border-radius:24px;
     width:90%;
     max-width:360px;
     padding:24px 20px;
     transform:scale(.9);
     transition:transform .3s;
+    border:1px solid rgba(255,255,255,.06);
 }
 .deposit-overlay.show .deposit-modal{transform:scale(1)}
 .deposit-header{
@@ -648,8 +632,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     flex:1;
     padding:16px 10px;
     border-radius:16px;
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.06);
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.05);
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -672,10 +656,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     max-width:450px;
     height:72px;
     padding:0 8px calc(var(--safe-bottom) + 8px);
-    background:rgba(11,11,24,.95);
+    background:rgba(10,10,15,.95);
     backdrop-filter:blur(20px);
     -webkit-backdrop-filter:blur(20px);
-    border-top:1px solid rgba(255,255,255,.05);
+    border-top:1px solid rgba(255,255,255,.04);
     display:flex;
     align-items:center;
     justify-content:space-around;
@@ -687,14 +671,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     gap:4px;
     padding:8px 16px;
     border-radius:12px;
-    color:rgba(255,255,255,.4);
+    color:rgba(255,255,255,.35);
     font-weight:600;
     text-decoration:none;
     transition:all .2s;
 }
-.bnav-item svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2}
+.bnav-item svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;transition:transform .2s}
 .bnav-item span{font-size:10px}
-.bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
+.bnav-item.active{background:rgba(40,68,251,.12);color:#4B81F5}
+.bnav-item.active svg{transform:scale(1.1)}
+.bnav-item:active{transform:scale(.9)}
 
 /* ═══════════ TOAST ═══════════ */
 .toast{
@@ -703,7 +689,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     left:50%;
     transform:translateX(-50%) translateY(-20px);
     background:rgba(20,20,30,.95);
-    border:1px solid rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.08);
     padding:12px 20px;
     border-radius:14px;
     font-size:13px;
@@ -716,23 +702,30 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     text-align:center;
 }
 .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
-.toast.ok{border-color:rgba(36,195,142,.4);color:var(--green)}
-.toast.err{border-color:rgba(255,48,100,.4);color:var(--red)}
+.toast.ok{border-color:rgba(36,195,142,.3);color:var(--green)}
+.toast.err{border-color:rgba(255,48,100,.3);color:var(--red)}
 
 /* ═══════════ АДАПТИВ ═══════════ */
 @media(max-width:380px){
-    .wheel-wrap{max-width:280px}
+    .wheel-wrap{width:270px;height:270px}
     .wheel-center{width:110px;height:110px}
     .wheel-center-img{width:66px;height:66px}
     .wheel-center-pct{font-size:24px}
     .select-card{min-height:150px;padding:12px 10px}
     .select-img{width:60px;height:60px}
+    .wheel-pointer{width:40px;height:40px;top:-4px}
+}
+@media(max-width:340px){
+    .wheel-wrap{width:240px;height:240px}
+    .wheel-center{width:100px;height:100px}
+    .wheel-center-img{width:58px;height:58px}
+    .wheel-center-pct{font-size:22px}
+    .wheel-pointer{width:36px;height:36px;top:-2px}
 }
 </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div class="top-bar">
     <div class="top-left">
         <div class="user-pill">
@@ -751,7 +744,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 <div class="upgrade-wrap">
 
-    <!-- ПАНЕЛЬ ВЫБОРА СВЕРХУ -->
     <div class="select-panel">
         <div class="select-card" id="leftCard" onclick="openInventoryModal()">
             <div class="select-card-title">Ваша ставка</div>
@@ -785,36 +777,50 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         </div>
     </div>
 
-    <!-- КОЛЕСО СНИЗУ -->
     <div class="wheel-section">
         <div class="wheel-wrap" id="wheelWrap">
 
-            <!-- Стрелка сверху внутри колеса -->
             <div class="wheel-pointer">
                 <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M22 38 L12 14 C15 12 29 12 32 14 Z"
                           fill="#ffffff"
-                          stroke="rgba(0,0,0,.2)"
+                          stroke="rgba(0,0,0,.3)"
                           stroke-width="1"
                           stroke-linejoin="round"/>
                     <circle cx="22" cy="14" r="4" fill="#ffffff"/>
                 </svg>
             </div>
 
-            <!-- Вращающийся круг -->
+            <!-- Зелёная зона — часть колеса, крутится вместе -->
+            <svg class="wheel-green-arc" id="greenArc" viewBox="0 0 240 240">
+                <defs>
+                    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#24C38E"/>
+                        <stop offset="100%" stop-color="#10b981"/>
+                    </linearGradient>
+                </defs>
+                <path id="greenPath" d="" fill="none"
+                      stroke="url(#greenGrad)" stroke-width="20"
+                      stroke-linecap="butt"/>
+            </svg>
+
+            <!-- Базовое колесо с рисками -->
             <div class="wheel-rotator" id="wheelRotator">
                 <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Внешняя тонкая окружность -->
                     <circle cx="120" cy="120" r="118" fill="none"
-                            stroke="rgba(255,255,255,.04)" stroke-width="1"/>
-                    <circle cx="120" cy="120" r="104" fill="none"
-                            stroke="#1a1a20" stroke-width="20"/>
-                    <g id="risksGroup" opacity="0.5"></g>
-                    <circle cx="120" cy="120" r="94" fill="none"
                             stroke="rgba(255,255,255,.03)" stroke-width="1"/>
+                    <!-- Основное тёмное кольцо -->
+                    <circle cx="120" cy="120" r="104" fill="none"
+                            stroke="#14141a" stroke-width="20"/>
+                    <!-- Риски -->
+                    <g id="risksGroup" opacity="0.6"></g>
+                    <!-- Внутренняя тонкая окружность -->
+                    <circle cx="120" cy="120" r="94" fill="none"
+                            stroke="rgba(255,255,255,.02)" stroke-width="1"/>
                 </svg>
             </div>
 
-            <!-- Центр -->
             <div class="wheel-center">
                 <img class="wheel-center-img" id="wheelCenterImg" src="" alt="">
                 <span class="wheel-center-pct visible" id="chancePct">0.00%</span>
@@ -823,12 +829,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         </div>
     </div>
 
-    <!-- КНОПКИ -->
     <div class="actions-row">
         <button class="btn-main" id="upgradeBtn" disabled onclick="doUpgrade()">
             <span id="upgradeBtnText">Апгрейд</span>
         </button>
-        <button class="btn-demo" onclick="toggleDemo()">Демо</button>
+        <button class="btn-demo" onclick="doDemo()">Демо</button>
     </div>
 
 </div>
@@ -893,7 +898,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <!-- BOTTOM NAV -->
@@ -918,7 +922,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 <script>
 /* ══════════════════════════════════════════════════════════════
-   GLOBAL STATE
+   STATE
    ══════════════════════════════════════════════════════════════ */
 var tg = window.Telegram && window.Telegram.WebApp;
 var userId = null;
@@ -930,7 +934,6 @@ var isSpinning = false;
 var currentChance = 0;
 var _inventorySearchQ = '';
 var _targetsSearchQ = '';
-var _demoMode = false;
 
 function $(id){ return document.getElementById(id); }
 
@@ -948,7 +951,7 @@ function showToast(msg, type){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   РИСКИ ПО КРУГУ
+   РИСКИ НА КОЛЕСЕ
    ══════════════════════════════════════════════════════════════ */
 (function drawRisks(){
     var group = document.getElementById('risksGroup');
@@ -961,7 +964,7 @@ function showToast(msg, type){
         var isMajor = (i % 5 === 0);
         var len = isMajor ? 8 : 5;
         var width = isMajor ? 1.8 : 1;
-        var opacity = isMajor ? 0.7 : 0.35;
+        var opacity = isMajor ? 0.7 : 0.3;
         var rad = (angle - 90) * Math.PI / 180;
         var x1 = cx + Math.cos(rad) * (rOuter - 1);
         var y1 = cy + Math.sin(rad) * (rOuter - 1);
@@ -976,17 +979,39 @@ function showToast(msg, type){
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   ЦВЕТ ПО РИСКУ
+   ★ ЗЕЛЁНАЯ ЗОНА — рисуем на том же кольце что и риски
    ══════════════════════════════════════════════════════════════ */
-function _updateRiskColor(coeff){
-    var w = $('wheelWrap');
-    if(!w) return;
-    w.classList.remove('risk-low','risk-mid','risk-high','risk-mega');
-    if(!coeff || coeff <= 0) return;
-    if(coeff >= 1.1 && coeff < 1.7) w.classList.add('risk-low');
-    else if(coeff >= 1.7 && coeff < 2.2) w.classList.add('risk-mid');
-    else if(coeff >= 2.2 && coeff < 5.0) w.classList.add('risk-high');
-    else if(coeff >= 5.0) w.classList.add('risk-mega');
+function drawGreenArc(chance){
+    var path = $('greenPath');
+    if(!path) return;
+
+    if(!chance || chance <= 0){
+        path.setAttribute('d', '');
+        return;
+    }
+
+    var cx = 120, cy = 120;
+    var r = 104;
+    var startAngle = -90;
+    var endAngle = startAngle + (chance / 100) * 360;
+
+    function polar(angleDeg){
+        var rad = angleDeg * Math.PI / 180;
+        return {
+            x: cx + r * Math.cos(rad),
+            y: cy + r * Math.sin(rad)
+        };
+    }
+
+    var start = polar(startAngle);
+    var end = polar(endAngle);
+    var largeArc = (chance > 50) ? 1 : 0;
+
+    var d = 'M ' + start.x.toFixed(2) + ' ' + start.y.toFixed(2)
+          + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 '
+          + end.x.toFixed(2) + ' ' + end.y.toFixed(2);
+
+    path.setAttribute('d', d);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1084,13 +1109,11 @@ function _selectGift(it){
         targetGift = null;
         $('rightCard').classList.remove('has-item');
         $('rightChance').style.display = 'none';
-        var w = $('wheelWrap');
-        if(w) w.classList.remove('risk-low','risk-mid','risk-high','risk-mega');
+        drawGreenArc(0);
     }
     updateWheel();
     closeInventoryModal();
 
-    /* Автооткрытие целей */
     setTimeout(function(){
         loadPossibleTargets().then(function(){
             openTargetsModal();
@@ -1194,14 +1217,14 @@ function _selectTarget(g){
     chEl.textContent = g.upgrade_chance + '%';
     chEl.style.display = 'inline-flex';
 
-    var coeff = g.value / selectedGift.value;
-    _updateRiskColor(coeff);
+    /* Рисуем зелёную зону */
+    drawGreenArc(currentChance);
     updateWheel();
     closeTargetsModal();
 }
 
 /* ══════════════════════════════════════════════════════════════
-   КОЛЕСО — обновление
+   КОЛЕСО
    ══════════════════════════════════════════════════════════════ */
 function updateWheel(){
     var btn = $('upgradeBtn');
@@ -1210,6 +1233,7 @@ function updateWheel(){
         pct.textContent = '0.00%';
         btn.disabled = true;
         $('upgradeBtnText').textContent = 'Апгрейд';
+        drawGreenArc(0);
         return;
     }
     pct.textContent = currentChance.toFixed(2) + '%';
@@ -1218,7 +1242,7 @@ function updateWheel(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   СПИН
+   СПИН — крутим ОБА слоя одновременно (кольцо + зелёная зона)
    ══════════════════════════════════════════════════════════════ */
 async function doUpgrade(){
     if(isSpinning || !targetGift || !selectedGift) return;
@@ -1229,11 +1253,14 @@ async function doUpgrade(){
     $('upgradeBtnText').textContent = 'Крутим...';
 
     var rotator = $('wheelRotator');
-    if(!rotator) return;
+    var greenArc = $('greenArc');
+    if(!rotator || !greenArc) return;
 
-    /* 1. Чуть влево */
+    /* 1. Небольшой откат влево */
     rotator.style.transition = 'transform 0.4s cubic-bezier(.4,0,.6,1)';
+    greenArc.style.transition = 'transform 0.4s cubic-bezier(.4,0,.6,1)';
     rotator.style.transform = 'rotate(-15deg)';
+    greenArc.style.transform = 'rotate(-15deg)';
 
     /* 2. Запрос на сервер */
     var result;
@@ -1254,7 +1281,9 @@ async function doUpgrade(){
 
     if(!result.success){
         rotator.style.transition = 'transform 0.4s ease';
+        greenArc.style.transition = 'transform 0.4s ease';
         rotator.style.transform = 'rotate(0deg)';
+        greenArc.style.transform = 'rotate(0deg)';
         btn.disabled = false;
         $('upgradeBtnText').textContent = 'Апгрейд';
         isSpinning = false;
@@ -1262,22 +1291,24 @@ async function doUpgrade(){
         return;
     }
 
-    /* 3. Основной спин */
+    /* 3. Спин */
     var chance = result.chance;
-    var greenAngle = (chance / 100) * 360;
     var landAngle;
     if(result.upgrade_success){
-        landAngle = Math.random() * greenAngle * 0.5 + greenAngle * 0.25;
+        landAngle = (chance * 0.15) + Math.random() * (chance * 0.7);
     } else {
-        var redSize = 360 - greenAngle;
-        landAngle = greenAngle + Math.random() * redSize * 0.3 + redSize * 0.1;
+        landAngle = chance + Math.random() * (360 - chance);
     }
-    var totalSpin = 360 * (6 + Math.floor(Math.random() * 4)) + landAngle;
+
+    var totalSpin = 360 * (6 + Math.floor(Math.random() * 4)) + (360 - landAngle);
     var spinDuration = 5500;
 
     setTimeout(function(){
-        rotator.style.transition = 'transform ' + spinDuration + 'ms cubic-bezier(.1,.6,.2,1)';
+        var trans = 'transform ' + spinDuration + 'ms cubic-bezier(.1,.6,.2,1)';
+        rotator.style.transition = trans;
+        greenArc.style.transition = trans;
         rotator.style.transform = 'rotate(' + totalSpin + 'deg)';
+        greenArc.style.transform = 'rotate(' + totalSpin + 'deg)';
 
         setTimeout(function(){
             if(result.upgrade_success){
@@ -1297,6 +1328,68 @@ async function doUpgrade(){
     }, 400);
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ДЕМО
+   ══════════════════════════════════════════════════════════════ */
+function doDemo(){
+    if(isSpinning) return;
+    isSpinning = true;
+
+    var btn = $('upgradeBtn');
+    btn.disabled = true;
+
+    var rotator = $('wheelRotator');
+    var greenArc = $('greenArc');
+    if(!rotator || !greenArc) return;
+
+    var demoChance = 20 + Math.random() * 60;
+    drawGreenArc(demoChance);
+
+    var pct = $('chancePct');
+    if(pct){
+        pct.textContent = demoChance.toFixed(2) + '%';
+        pct.classList.add('visible');
+    }
+
+    rotator.style.transition = 'transform 0.4s cubic-bezier(.4,0,.6,1)';
+    greenArc.style.transition = 'transform 0.4s cubic-bezier(.4,0,.6,1)';
+    rotator.style.transform = 'rotate(-15deg)';
+    greenArc.style.transform = 'rotate(-15deg)';
+
+    var totalSpin = 360 * (6 + Math.floor(Math.random() * 4)) + Math.random() * 360;
+    var spinDuration = 5000;
+
+    setTimeout(function(){
+        var trans = 'transform ' + spinDuration + 'ms cubic-bezier(.1,.6,.2,1)';
+        rotator.style.transition = trans;
+        greenArc.style.transition = trans;
+        rotator.style.transform = 'rotate(' + totalSpin + 'deg)';
+        greenArc.style.transform = 'rotate(' + totalSpin + 'deg)';
+
+        setTimeout(function(){
+            showToast('🎮 Демо завершено', 'ok');
+
+            setTimeout(function(){
+                isSpinning = false;
+                btn.disabled = false;
+
+                rotator.style.transition = 'transform 0.5s ease';
+                greenArc.style.transition = 'transform 0.5s ease';
+                rotator.style.transform = 'rotate(0deg)';
+                greenArc.style.transform = 'rotate(0deg)';
+
+                if(targetGift && selectedGift){
+                    drawGreenArc(currentChance);
+                    pct.textContent = currentChance.toFixed(2) + '%';
+                } else {
+                    drawGreenArc(0);
+                    pct.textContent = '0.00%';
+                }
+            }, 1000);
+        }, spinDuration);
+    }, 400);
+}
+
 function resetAfterSpin(){
     isSpinning = false;
     selectedGift = null;
@@ -1311,21 +1404,17 @@ function resetAfterSpin(){
     $('upgradeBtnText').textContent = 'Апгрейд';
 
     var rotator = $('wheelRotator');
+    var greenArc = $('greenArc');
     if(rotator){
         rotator.style.transition = 'transform 0.5s ease';
         rotator.style.transform = 'rotate(0deg)';
     }
+    if(greenArc){
+        greenArc.style.transition = 'transform 0.5s ease';
+        greenArc.style.transform = 'rotate(0deg)';
+    }
 
-    var w = $('wheelWrap');
-    if(w) w.classList.remove('risk-low','risk-mid','risk-high','risk-mega');
-}
-
-/* ══════════════════════════════════════════════════════════════
-   ДЕМО
-   ══════════════════════════════════════════════════════════════ */
-function toggleDemo(){
-    _demoMode = !_demoMode;
-    showToast(_demoMode ? '🎮 Демо ВКЛ' : '🎮 Демо ВЫКЛ', 'ok');
+    drawGreenArc(0);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1396,8 +1485,8 @@ function launchConfetti(){
             try{
                 tg.ready();
                 tg.expand();
-                tg.setHeaderColor('#0b0b18');
-                tg.setBackgroundColor('#0b0b18');
+                tg.setHeaderColor('#0a0a0f');
+                tg.setBackgroundColor('#0a0a0f');
             }catch(e){}
         }
         try{
