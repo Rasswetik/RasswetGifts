@@ -794,6 +794,97 @@ body.turbo-mode .countdown-display{
     text-shadow:none !important;
 }
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   ★ ТУРБО-РЕЖИМ: большой счётчик коэф вместо GIF
+   ══════════════════════════════════════════════════════════════ */
+
+/* Скрываем ракету в турбо */
+.turbo-mode .rocket-wrap,
+body.turbo-mode .rocket-wrap{
+    display:none !important;
+}
+
+/* Большой счётчик — показывается только в турбо */
+.turbo-counter{
+    display:none;
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    z-index:5;
+    font-family:'Inter',inherit;
+    font-weight:900;
+    font-size:min(80px, 20vw);
+    line-height:1;
+    letter-spacing:-2px;
+    color:#fff;
+    text-shadow:
+        0 0 20px rgba(59,130,246,.5),
+        0 0 40px rgba(59,130,246,.3),
+        0 4px 12px rgba(0,0,0,.6);
+    pointer-events:none;
+    user-select:none;
+    will-change:contents;
+    transition:none;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+}
+.turbo-counter .tc-mult{
+    display:inline-block;
+}
+.turbo-counter .tc-x{
+    font-size:0.5em;
+    opacity:.7;
+    font-weight:800;
+    margin-left:2px;
+}
+
+/* Показываем счётчик только в турбо или оптимизации во время flying */
+.turbo-mode .turbo-counter.active,
+body.turbo-mode .turbo-counter.active{
+    display:block !important;
+}
+
+/* Цвет счётчика по множителю */
+.turbo-counter.mid .tc-mult{
+    color:#1EE44C;
+    text-shadow:0 0 30px rgba(30,228,76,.7), 0 0 60px rgba(30,228,76,.4), 0 4px 12px rgba(0,0,0,.6);
+}
+.turbo-counter.high .tc-mult{
+    color:#FFC800;
+    text-shadow:0 0 30px rgba(255,200,0,.8), 0 0 60px rgba(255,200,0,.5), 0 4px 12px rgba(0,0,0,.6);
+}
+.turbo-counter.mega .tc-mult{
+    color:#FF6B9D;
+    text-shadow:0 0 30px rgba(255,107,157,.8), 0 0 60px rgba(255,107,157,.5), 0 4px 12px rgba(0,0,0,.6);
+}
+
+/* Пульсация при высоком множителе */
+.turbo-counter.high .tc-mult,
+.turbo-counter.mega .tc-mult{
+    animation:turboCounterPulse .6s ease-in-out infinite;
+}
+@keyframes turboCounterPulse{
+    0%,100%{ transform:scale(1); }
+    50%{ transform:scale(1.08); }
+}
+
+/* В турбо-режиме убираем сетку с поля */
+.turbo-mode .game-field::before,
+body.turbo-mode .game-field::before{
+    background:none !important;
+}
+
+/* Boom в турбо — упрощённый */
+.turbo-mode .boom-wrap img,
+body.turbo-mode .boom-wrap img{
+    width:120px !important;
+    height:120px !important;
+    filter:none !important;
+}
+
 </style>
 </head>
 <body>
@@ -837,6 +928,10 @@ body.turbo-mode .countdown-display{
     <div class="game-field" id="gameField">
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="wait-label" id="waitLabel">Waiting</div>
+        <!-- ★ Турбо-счётчик (только в турбо) -->
+        <div class="turbo-counter" id="turboCounter">
+            <span class="tc-mult" id="turboMult">1.00</span><span class="tc-x">x</span>
+        </div>
         <div class="rocket-wrap hide" id="rocketWrap">
             <img src="/static/gifs/rockets/crash.gif" alt="">
         </div>
@@ -1710,53 +1805,69 @@ async function doCashout(){
     if(cashoutLocked) return;
     cashoutLocked = true;
 
-    /* ★ FIX: фиксируем множитель СЕЙЧАС, локально, максимально "лестно" */
+    /* ★ КЛИЕНТСКИЙ CASHOUT:
+       Мгновенно фиксируем множитель, показываем результат,
+       потом синхронизируем с сервером в фоне. */
+
     var _frozenMult = Math.max(dispMult, servMult, prevServMult);
-    /* Плюс небольшой бонус для компенсации задержки сети */
     _frozenMult = Math.round((_frozenMult + 0.02) * 100) / 100;
 
     var btn = $('cashoutBtn');
     var pb = $('placeBetBtn');
-    var mult = _frozenMult;
-    var instantWin = Math.floor(betAmt * mult);
+    var instantWin = Math.floor(betAmt * _frozenMult);
 
-    /* ★ FIX: мгновенно показываем +X в кнопке BET */
+    /* Мгновенно показываем результат */
     try{ playSound('cashout'); }catch(e){}
     try{ triggerVibration([50,30,50,30,100]); }catch(e){}
+
+    /* Меняем кнопку BET на сумму выигрыша */
     if(pb){
         pb.style.display = 'block';
         pb.disabled = true;
-        pb.innerHTML = '<span class="btn-text">+'+formatCrashMoney(instantWin)+'</span>';
+        pb.innerHTML = '<span class="btn-text">+' + formatCrashMoney(instantWin) + '</span>';
         pb.style.pointerEvents = 'none';
     }
-    /* ★ Кнопка cashout: серая + PNG подарка */
+
+    /* Кнопка cashout: серая + PNG подарка */
     if(btn){
         btn.classList.add('visible');
         btn.classList.add('crash-state');
         btn.disabled = true;
-        var _cWin = instantWin;
-        var _cGift = getAchievableGift(_cWin);
+
+        var _cGift = getAchievableGift(instantWin);
         var _cGiftImg = _cGift ? getGiftImage(_cGift) : (betGiftImg || '/static/img/gift.png');
-        var cbW = $('cbWin'), cbL = $('cbGiftLeft'), cbR = $('cbGiftRight');
-        if(cbW) cbW.textContent = '+' + formatCrashMoney(instantWin);
-        if(cbL){ cbL.src = _cGiftImg; cbL.classList.remove('empty'); cbL.dataset.src = _cGiftImg; }
-        if(cbR){ cbR.src = _cGiftImg; cbR.classList.remove('empty'); cbR.dataset.src = _cGiftImg; }
+
+        var cbWin = $('cbWin');
+        var cbLeft = $('cbGiftLeft');
+        var cbRight = $('cbGiftRight');
+        if(cbWin) cbWin.textContent = '+' + formatCrashMoney(instantWin);
+        if(cbLeft){
+            cbLeft.src = _cGiftImg;
+            cbLeft.classList.remove('empty');
+            cbLeft.dataset.src = _cGiftImg;
+        }
+        if(cbRight){
+            cbRight.src = _cGiftImg;
+            cbRight.classList.remove('empty');
+            cbRight.dataset.src = _cGiftImg;
+        }
     }
 
     cashedOutBetAmt = betAmt;
     cashedOutGiftImg = betGiftImg;
     cashedOut = true;
+    hasBet = false;
 
-    if(btn) btn.classList.remove('visible');
-    if(pb){
-        pb.style.display = 'block';
-        pb.disabled = true;
-        pb.innerHTML = '<span class="btn-text">+'+formatCrashMoney(instantWin)+'</span>';
-        pb.style.pointerEvents = 'none';
-    }
+    /* Показываем WIN sheet с локальными данными */
+    _showLocalWin(_frozenMult, instantWin);
 
-    var bodyData = { user_id: userData.id, client_mult: _frozenMult };
+    /* ★ Отправляем на сервер в фоне (не блокируем UI) */
+    var bodyData = {
+        user_id: userData.id,
+        client_mult: _frozenMult
+    };
 
+    /* Автовывод подарка */
     if(autoWithdrawGift && autoWithdrawGift.id != null){
         bodyData.preferred_gift_id = autoWithdrawGift.id;
         bodyData.preferred_gift_name = autoWithdrawGift.name || '';
@@ -1765,48 +1876,95 @@ async function doCashout(){
         bodyData.preferred_gift_coeff = autoWithdrawGift.coeff || 0;
     }
 
-    try{
-        var r = await fetch('/api/ultimate-crash/cashout-simple', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify(bodyData)
-        });
-        var d = await r.json();
-        if(d.success){
-            hasBet = false;
-            betAmt = 0;
-            betGiftImg = null;
-            userData.balance_stars = d.new_balance;
-            updateUI(userData);
-            try{ playSound('win'); }catch(e){}
-            showWin(d);
-            loadBets();
-            setTimeout(loadBets, 100);
+    /* Фоновый запрос */
+    (async function syncWithServer(){
+        try{
+            var r = await fetch('/api/ultimate-crash/cashout-simple', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bodyData)
+            });
+            var d = await r.json();
+            if(d.success){
+                userData.balance_stars = d.new_balance;
+                updateUI(userData);
+                /* Обновляем баланс в win sheet */
+                var winBalEl = $('winNewBalance');
+                if(winBalEl) winBalEl.textContent = formatCrashMoney(d.new_balance);
+                try{ playSound('win'); }catch(e){}
+                loadBets();
+                setTimeout(loadBets, 100);
 
-            autoWithdrawGift = null;
-            saveAutoWithdrawGift();
-            updateAutoWithdrawButton();
-            _cbLeftSrc = null; _cbRightSrc = null;
-            _lastAchievableWin = -1;
-        } else {
-            cashedOut = false;
-            cashedOutGiftImg = null;
-            hasBet = true;
-            if(btn){ btn.className = 'cashout-btn visible'; btn.disabled = false; }
-            if(pb) pb.style.display = 'none';
-            showToast(d.error || 'Ошибка','err');
+                /* Автовывод сбрасывается после cashout */
+                autoWithdrawGift = null;
+                saveAutoWithdrawGift();
+                updateAutoWithdrawButton();
+                _cbLeftSrc = null; _cbRightSrc = null;
+                _lastAchievableWin = -1;
+            } else {
+                /* Сервер не принял — откатываем */
+                cashedOut = false;
+                hasBet = true;
+                if(btn){ btn.className = 'cashout-btn visible'; btn.disabled = false; }
+                if(pb) pb.style.display = 'none';
+                showToast(d.error || 'Ошибка синхронизации', 'err');
+            }
+        }catch(e){
+            showToast('Синхронизация не удалась', 'err');
+        }finally{
+            cashoutLocked = false;
         }
-    }catch(e){
-        cashedOut = false;
-        cashedOutGiftImg = null;
-        hasBet = true;
-        if(btn){ btn.className = 'cashout-btn visible'; btn.disabled = false; }
-        if(pb) pb.style.display = 'none';
-        showToast('Ошибка сети','err');
-    }finally{
-        cashoutLocked = false;
-    }
+    })();
 }
+
+/* ★ Показ win sheet с локальными данными (мгновенно) */
+function _showLocalWin(mult, winAmount){
+    var m = parseFloat(mult).toFixed(2);
+    var content = $('winContent');
+    if(!content) return;
+
+    var winTon = starsToTon(winAmount);
+    var betTon = starsToTon(cashedOutBetAmt);
+
+    var cashoutGift = getAchievableGift(winAmount);
+    var giftImg = cashoutGift ? getGiftImage(cashoutGift) : '/static/img/gift.png';
+    var giftName = cashoutGift ? (cashoutGift.name || 'Подарок') : '';
+
+    var html = '';
+    html += '<div style="text-align:center;margin-bottom:14px">';
+    html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.1));border:1.5px solid rgba(59,130,246,.4)">';
+    html += '<span style="font-family:inherit;font-weight:900;font-size:28px;color:#3B82F6">' + m + 'x</span>';
+    html += '</div>';
+    html += '</div>';
+
+    if(cashoutGift){
+        html += '<div style="display:flex;justify-content:center;margin-bottom:16px">';
+        html += '<div style="position:relative;width:170px;height:170px;border-radius:24px;background:radial-gradient(circle,rgba(59,130,246,.15),transparent 70%);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box">';
+        html += '<img src="' + giftImg + '" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5))">';
+        html += '</div>';
+        html += '</div>';
+    }
+
+    html += '<div style="text-align:center;margin-bottom:12px">';
+    html += '<div style="font-family:inherit;font-weight:800;font-size:22px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
+    html += '<span>+' + formatTon(winTon) + '</span>';
+    html += '<img src="/static/img/ton.png" style="width:20px;height:20px">';
+    html += '</div>';
+    html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">';
+    html += 'Ставка: ' + formatTon(betTon) + ' TON';
+    if(giftName){
+        html += ' · Подарок: ' + giftName;
+    }
+    html += '</div>';
+    html += '<div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:8px">Синхронизация с сервером...</div>';
+    html += '</div>';
+
+    content.innerHTML = html;
+    var wo = $('winOverlay');
+    if(wo) wo.classList.add('show');
+    try{ triggerVibration([30,20,60]); }catch(e){}
+}
+
 
 function updateBetButton(){
     var pb = $('placeBetBtn');
@@ -2187,6 +2345,7 @@ async function updStatus(){
             }
 
         } else if(status === 'crashed'){
+            _hideTurboCounter();
             if(cd){ cd.className = 'countdown-display'; cd.textContent = ''; }
             var rcImg = rw ? rw.querySelector('img') : null;
             if(rcImg) rcImg.style.transform = '';
@@ -2896,10 +3055,10 @@ function render(){
     if(dt > 60) dt = 60;
     lastFrameTime = now;
 
-    /* ★ Режим оптимизации — обновляем раз в 50мс (20 FPS хватит) */
+    /* ★ Режим оптимизации — обновляем раз в 33мс (30 FPS) */
     if(turboMode || optimizeMode){
         if(!window._lastOptRender) window._lastOptRender = 0;
-        if(now - window._lastOptRender < 50){
+        if(now - window._lastOptRender < 33){
             requestAnimationFrame(render);
             return;
         }
@@ -2951,6 +3110,8 @@ function render(){
                 _coeffBox.textContent = ct;
                 _prevCoeffText = ct;
             }
+            /* ★ Обновляем большой турбо-счётчик */
+            _updateTurboCounter(dispMult);
         }
 
         if(now - lastRocketUpdateTime > 250){
@@ -2963,10 +3124,14 @@ function render(){
             if(hasBet || cashedOut) updateCashoutButton();
         }
 
+        /* ★ КЛИЕНТСКИЙ АВТОВЫВОД: срабатывает мгновенно при достижении коэф */
         if(hasBet && !autoCashoutDone){
             if(autoWithdrawGift && autoWithdrawGift.coeff >= 1.1){
-                if(dispMult >= autoWithdrawGift.coeff){
+                /* Проверяем по dispMult (клиентский) ИЛИ по servMult */
+                var _currentMult = Math.max(dispMult, servMult);
+                if(_currentMult >= autoWithdrawGift.coeff){
                     autoCashoutDone = true;
+                    /* Мгновенно вызываем cashout */
                     doCashout();
                 }
             }
