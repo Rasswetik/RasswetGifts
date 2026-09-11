@@ -3716,31 +3716,26 @@ def start_ultimate_crash_loop():
                             except Exception as ai_e:
                                 logger.error(f"AI mid-round error: {ai_e}")
 
-                        # Calculate increment based on live_mult (in-memory, always fresh)
-                        # Slower, smoother growth curve for longer and more predictable rounds
-                        if live_mult < 1.2:
-                            base_increment = 0.012
-                        elif live_mult < 1.8:
-                            base_increment = 0.028
-                        elif live_mult < 2.6:
-                            base_increment = 0.05
+                        # Requested curve:
+                        # 1 → 2x in ~5s
+                        # 2 → 4x in ~8s
+                        # 4 → 10x in ~5s
+                        # then faster beyond 10x
+                        if live_mult < 2.0:
+                            base_increment = 0.02
                         elif live_mult < 4.0:
-                            base_increment = 0.08
-                        elif live_mult < 6.0:
-                            base_increment = 0.12
-                        elif live_mult < 9.0:
-                            base_increment = 0.17
-                        elif live_mult < 14.0:
-                            base_increment = 0.24
+                            base_increment = 0.03
+                        elif live_mult < 10.0:
+                            base_increment = 0.06
                         else:
-                            base_increment = 0.30
+                            base_increment = 0.12
 
-                        speed_boost = live_mult * 0.012
+                        speed_boost = live_mult * 0.015
                         increment = round(max(base_increment, speed_boost), 2)
-                        increment = min(increment, 0.9)
+                        increment = min(increment, 1.2)
 
-                        # Random crash chance with gentler tail pressure
-                        crash_chance = 0.0045 * (live_mult / 10)
+                        # Light random crash chance, but keep round flow smoother
+                        crash_chance = 0.0018 * (live_mult / 10)
                         if random.random() < crash_chance:
                             do_crash(conn, cursor, live_game_id, live_mult, live_target)
                             logger.info(f"💥 Случайный краш на {live_mult:.2f}x")
