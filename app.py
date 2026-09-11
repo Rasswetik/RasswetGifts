@@ -21,10 +21,6 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import requests as http_requests
 from db_wrapper import USE_POSTGRES, get_connection as _pg_get_connection
-try:
-    import portal_client
-except ImportError:
-    portal_client = None
 
 # Загружаем переменные окружени
 load_dotenv()
@@ -33,15 +29,34 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def _log_startup_config():
+    """Логирует состояние критичных настроек при старте."""
+    logger.info('═' * 50)
+    logger.info('📋 Стартовая конфигурация:')
+    logger.info(f'   ADMIN_ID: {ADMIN_ID}')
+    logger.info(f'   TELEGRAM_BOT_TOKEN: {"✅ задан" if TELEGRAM_BOT_TOKEN else "❌ НЕ ЗАДАН"}')
+    logger.info(f'   WEBSITE_URL: {WEBSITE_URL}')
+    logger.info(f'   DATABASE_URL: {"✅ postgres" if os.getenv("DATABASE_URL") else "⚠️ sqlite"}')
+    logger.info(f'   PORTAL_AUTH_TOKEN: {"✅ задан" if PORTAL_AUTH_TOKEN else "❌ не задан"}')
+    logger.info(f'   FRAGMENT_SYNC_ENABLED: {FRAGMENT_SYNC_ENABLED}')
+    logger.info(f'   PORTAL_SYNC_ENABLED: {PORTAL_SYNC_ENABLED}')
+    logger.info('═' * 50)
+
+
+
+# ─── Global state: _user_balance_cache ───
+_user_balance_cache = {}
+
+
 # Создаем приложение Flask
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'raswet-secret-key-2024')
+app.secret_key = 'rsw_FsL1QH7R8yIqB6_nGVoFNk15zfwy2LSU4lNcGs7FMHE'
 
 # Конфигурация
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
-ADMIN_ID = int(os.getenv('ADMIN_ID', '5257227756'))
-TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
-WEBSITE_URL = os.getenv('WEBSITE_URL', 'https://rasswet-gifts.onrender.com')
+ADMIN_ID = 5257227756
+TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8224991617:AAF2F7ub0XF9N6wsWyn3PmhdZnYt62KmpRE').strip()
+WEBSITE_URL = 'https://rasswet-gifts.onrender.com'
 TG_API = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_FILE_SIZE = 16 * 1024 * 1024
@@ -67,7 +82,7 @@ fragment_models_cache_time = {}
 
 # ── Portals Marketplace Configuration ────────────────────────────────────────
 # Auth: first try PORTAL_AUTH_TOKEN (ready-made TMA initData), fallback to session-based
-PORTAL_AUTH_TOKEN = os.getenv('PORTAL_AUTH_TOKEN', '')
+PORTAL_AUTH_TOKEN = ''
 PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
 PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
 PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
@@ -79,119 +94,137 @@ _portal_auth_data = PORTAL_AUTH_TOKEN or None  # cached authData string
 _portal_auth_lock = threading.Lock()
 PORTAL_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
 
-# ══════════════════════════════════════════════════════════════
-# PORTAL MARKET — единый блок (fix_all.py)
-# ══════════════════════════════════════════════════════════════
-PORTAL_CONFIG_FILE = os.path.join(BASE_PATH, 'data', 'portal_auth.json')
-PORTAL_SESSION_FILE = os.path.join(BASE_PATH, 'data', 'portal_session.txt')
-PORTAL_MARKET_BASE = os.getenv('PORTAL_MARKET_BASE', 'https://portal-market.com')
-PORTAL_PROXY_URL = os.getenv('PORTAL_PROXY_URL', 'http://localhost:8000').rstrip('/')
-PORTAL_PHONE = os.getenv('PORTAL_PHONE', '')
+# Site balance cache to reduce frequent DB reads (hot path)
+_site_balance_cache = {'value': 0, 'ts': 0}
+_site_balance_lock = threading.Lock()
+_SITE_BALANCE_TTL = float(os.getenv('SITE_BALANCE_TTL', '10.0'))
 
+# ── Manual gift prices in TON (override Fragment/local prices) ──────────────
+MANUAL_GIFT_PRICES_TON = {
+    'ufc strike': 15.3,
+    'valentine box': 11.7,
+    'victory medal': 4.98,
+    'vintage cigar': 33.9,
+    'voodoo doll': 30.9,
+    'westside sign': 111.9,
+    'whip cupcake': 4.4,
+    'winter wreath': 4.49,
+    'witch hat': 6.29,
+    'xmas stocking': 4.33,
+    'swag bag': 5.19,
+    'swiss watch': 55.8,
+    'tama gadget': 4.65,
+    'top hat': 12.8,
+    'toy bear': 44.9,
+    'trapped heart': 14.5,
+    'moon': 5.64,
+    'mousse cake': 4.96,
+    'nail bracelet': 145.9,
+    'neko helmet': 41.1,
+    'party sparkler': 4.3,
+    'perfume bottle': 97.9,
+    'pet snake': 4.55,
+    'precious peach': 438,
+    'pretty posy': 4.7,
+    'rare bird': 29.9,
+    'record': 5.61,
+    'restless jar': 11.3,
+    'sakura flower': 48.9,
+    'santa hat': 12.5,
+    'scared cat': 4.5,
+    'sharp tongue': 5.08,
+    'signet ring': 5.48,
+    'skull flower': 7.2,
+    'sky stilettos': 5.49,
+    'sleigh bell': 5.83,
+    'snake box': 6.17,
+    'loot bag': 162.9,
+    'love candle': 12.3,
+    'love potion': 17,
+    'low rider': 52,
+    'lunar snake': 4.3,
+    'lush bouquet': 6.55,
+    'mad pumpkin': 13.8,
+    'magic potion': 80.9,
+    'mighty arm': 171.9,
+    'mini oscar': 103.7,
+    'money pot': 4.66,
+    'ion gem': 98.5,
+    'ionic dryer': 18.7,
+    'jack-in-the-box': 4.94,
+    'jelly bunny': 8.03,
+    'jester hat': 4.83,
+    'jolly chimp': 7.3,
+    'joyful bundle': 7.11,
+    "khabib's papakha": 25.9,
+    'kissed frog': 67.8,
+    'light sword': 6.3,
+    'lol pop': 4.5,
+    'hanging star': 9.93,
+    'happy brownie': 4.65,
+    'heroic helmet': 255.7,
+    'hex pot': 4.99,
+    'holiday drink': 4.4,
+    'homemade cake': 5.06,
+    'hypno lollipop': 4.84,
+    'ice cream': 4.44,
+    'input key': 6.19,
+    'instant ramen': 4.38,
+    'desk calendar': 6.78,
+    "durov's cap": 708,
+    'jingle bells': 9.53,
+    'plush pepe': 7999,
+    'heart locket': 2199,
+    'artisan brick': 97.7,
+    'astral shard': 199.9,
+    'b-day candle': 4.3,
+    'berry box': 8.81,
+    'big year': 4.72,
+    'bling binky': 35.3,
+    'bonded ring': 58.2,
+    'bow tie': 6.3,
+    'bunny muffin': 8.28,
+    'candy cane': 4.31,
+    'clover pin': 4.7,
+    'cookie heart': 4.95,
+    'crystal ball': 12,
+    'cupid charm': 22.5,
+    'diamond ring': 29.4,
+    'easter egg': 5.63,
+    'electric skull': 33.9,
+    'eternal candle': 6.58,
+    'eternal rose': 29.4,
+    'evil eye': 7.94,
+    'faith amulet': 4.7,
+    'flying broom': 14,
+    'fresh socks': 4.43,
+    'gem signet': 72.3,
+    'genie lamp': 50,
+    'ginger cookie': 4.9,
+}
+# Build a slug-keyed version for matching by fragment_slug
+_MANUAL_PRICES_BY_SLUG = {re.sub(r'[^a-z0-9]+', '', k): v for k, v in MANUAL_GIFT_PRICES_TON.items()}
+_fragment_http_session = None
+fragment_last_error = None
 
-def _load_portal_config():
-    if not os.path.exists(PORTAL_CONFIG_FILE):
-        return {}
-    try:
-        with open(PORTAL_CONFIG_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f) or {}
-    except Exception as e:
-        logger.warning(f'Portal config read failed: {e}')
-        return {}
+# Кэш пользователей (user_id -> {data, timestamp})
+_user_cache = {}
+_user_cache_duration = 30  # 30 секунд
 
+# Crash bots in-memory state
+_crash_bots_cache = {
+    'enabled': False,
+    'bots': [],
+    'settings': {'min_active_bots': 2, 'max_active_bots': 5, 'min_real_players_threshold': 3},
+    'loaded': False,
+}
+_crash_bots_active = {}   # game_id -> [{bot_id, name, avatar, bet_amount, cashout_mult, status}]
 
-def _save_portal_config(cfg):
-    try:
-        os.makedirs(os.path.dirname(PORTAL_CONFIG_FILE), exist_ok=True)
-        with open(PORTAL_CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(cfg, f, ensure_ascii=False, indent=2)
-        return True
-    except Exception as e:
-        logger.error(f'Portal config save failed: {e}')
-        return False
+# In-memory user balance cache — avoids hitting DB on every 120ms status poll
+_user_balance_cache: dict = {}  # user_id -> {'balance': int, 'ts': float}
+_USER_BALANCE_CACHE_TTL = 0.5   # seconds
+_USER_BETS_CACHE_TTL = 0.5      # seconds
 
-
-def _load_portal_session():
-    try:
-        if os.path.exists(PORTAL_SESSION_FILE):
-            with open(PORTAL_SESSION_FILE, 'r', encoding='utf-8') as f:
-                return f.read().strip() or None
-    except Exception:
-        pass
-    return None
-
-
-def _save_portal_session(s):
-    try:
-        os.makedirs(os.path.dirname(PORTAL_SESSION_FILE), exist_ok=True)
-        with open(PORTAL_SESSION_FILE, 'w', encoding='utf-8') as f:
-            f.write(s or '')
-        return True
-    except Exception as e:
-        logger.error(f'Portal session save failed: {e}')
-        return False
-
-
-def _portal_market_request(method, path, token=None, json_body=None):
-    """HTTP-запрос к FastAPI-прокси Portal Market (portal_proxy.py)."""
-    url = PORTAL_PROXY_URL + path
-    headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
-    try:
-        if method.upper() == 'GET':
-            r = http_requests.get(url, headers=headers, params=json_body, timeout=30)
-        elif method.upper() == 'POST':
-            r = http_requests.post(url, headers=headers, json=json_body, timeout=30)
-        elif method.upper() == 'PUT':
-            r = http_requests.put(url, headers=headers, json=json_body, timeout=30)
-        elif method.upper() == 'DELETE':
-            r = http_requests.delete(url, headers=headers, json=json_body, timeout=30)
-        else:
-            return None, f'unsupported method {method}'
-
-        if r.status_code >= 400:
-            try:
-                err = r.json()
-                msg = err.get('detail') or err.get('message') or str(err)
-            except Exception:
-                msg = r.text[:300]
-            return None, f'HTTP {r.status_code}: {msg}'
-
-        try:
-            return r.json(), None
-        except Exception:
-            return r.text, None
-    except http_requests.exceptions.ConnectionError:
-        return None, f'Прокси недоступен ({PORTAL_PROXY_URL}). Запустите portal_proxy.py.'
-    except http_requests.exceptions.Timeout:
-        return None, f'Таймаут прокси ({PORTAL_PROXY_URL})'
-    except Exception as e:
-        return None, str(e)
-
-
-def _portal_proxy_check():
-    """Проверка доступности прокси."""
-    try:
-        r = http_requests.get(PORTAL_PROXY_URL + '/market/health', timeout=5)
-        if r.status_code < 400:
-            try:
-                return True, r.json()
-            except Exception:
-                return True, {}
-        return False, f'HTTP {r.status_code}'
-    except Exception as e:
-        return False, str(e)
-
-
-
-def _portal_proxy_check():
-    """Проверка доступности прокси."""
-    try:
-        r = http_requests.get(PORTAL_PROXY_URL + '/market/config', timeout=5)
-        if r.status_code < 400:
-            return True, r.json() if r.headers.get('content-type', '').startswith('application/json') else {}
-        return False, f'HTTP {r.status_code}'
-    except Exception as e:
-        return False, str(e)
 def _get_cached_balance(user_id) -> int | None:
     entry = _user_balance_cache.get(user_id)
     if entry and (time.time() - entry['ts']) < _USER_BALANCE_CACHE_TTL:
@@ -2157,9 +2190,6 @@ def _create_all_tables(conn):
         'CREATE INDEX IF NOT EXISTS idx_case_open_user ON case_open_history(user_id)',
         'CREATE INDEX IF NOT EXISTS idx_win_history_user ON win_history(user_id)',
         'CREATE INDEX IF NOT EXISTS idx_quests_active ON crash_quests(is_active)',
-        'CREATE INDEX IF NOT EXISTS idx_crash_bets_game_created ON ultimate_crash_bets(game_id, created_at DESC)',
-        'CREATE INDEX IF NOT EXISTS idx_crash_bets_game_status ON ultimate_crash_bets(game_id, status)',
-        'CREATE INDEX IF NOT EXISTS idx_crash_bets_game_amount ON ultimate_crash_bets(game_id, bet_amount DESC)',
     ]
     for idx_sql in indexes:
         try:
@@ -4441,40 +4471,11 @@ def get_telegram_user():
         return jsonify({'success': False, 'error': str(e)})
 
 
+
 # ==================== ДОПОЛНИТЕЛЬНЫЕ API ДЛЯ ULTIMATE CRASH ====================
 
 # Кэш ставок пользователей (game_id, user_id) -> {bet_data, timestamp}
 _user_bets_cache = {}
-
-# ─── FAST BETS CACHE (fix_crash_bets.py) ───
-_recent_bets_cache = {'data': [], 'ts': 0, 'game_id': 0}
-_recent_bets_lock = threading.Lock()
-_RECENT_BETS_TTL = 0.30
-
-def _get_recent_bets_cached(game_id, limit=30):
-    import time as _t
-    now = _t.time()
-    with _recent_bets_lock:
-        if (_recent_bets_cache['game_id'] == game_id
-                and (now - _recent_bets_cache['ts']) < _RECENT_BETS_TTL):
-            data = _recent_bets_cache['data']
-            if len(data) >= limit:
-                return data[:limit]
-            return data
-    return None
-
-def _set_recent_bets_cached(game_id, data):
-    import time as _t
-    with _recent_bets_lock:
-        _recent_bets_cache['game_id'] = game_id
-        _recent_bets_cache['data'] = data
-        _recent_bets_cache['ts'] = _t.time()
-
-def _invalidate_recent_bets():
-    with _recent_bets_lock:
-        _recent_bets_cache['ts'] = 0
-        _recent_bets_cache['data'] = []
-
 
 def _cleanup_user_bets_cache():
     """Remove stale entries from _user_bets_cache to prevent memory leak"""
@@ -4519,7 +4520,7 @@ def ultimate_crash_simple_status():
     cache_age = time.time() - cached.get('timestamp', 0)
     
     # Если кэш свежий (< 0.25 сек) - не трогаем БД
-    if cache_age < 0.15 and cached.get('id', 0) > 0:
+    if cache_age < 0.25 and cached.get('id', 0) > 0:
         game_data = {
             'id': cached['id'],
             'status': cached['status'],
@@ -4737,7 +4738,6 @@ def ultimate_crash_place_bet():
         _user_balance_cache.pop(user_id, None)
         cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
         refresh_crash_bet_cache(game_id, cached_target)
-        _invalidate_recent_bets()
 
         # Add experience based on bet amount (turnover) - 1:1
         try:
@@ -4882,7 +4882,6 @@ def ultimate_crash_place_bet_gift():
         try:
             cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
             refresh_crash_bet_cache(game_id, cached_target)
-            _invalidate_recent_bets()
         except Exception:
             pass
 
@@ -5025,7 +5024,6 @@ def ultimate_crash_place_bet_multi_gift():
         try:
             cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
             refresh_crash_bet_cache(game_id, cached_target)
-            _invalidate_recent_bets()
         except Exception:
             pass
 
@@ -5367,7 +5365,6 @@ def ultimate_crash_cashout_simple():
 
         # Invalidate balance cache so next poll reflects winnings immediately
         _user_balance_cache.pop(user_id, None)
-        _invalidate_recent_bets()
 
         conn.close()
 
@@ -8419,76 +8416,143 @@ def _portal_clean_name(name):
     return re.sub(r'\s*\(Random\)\s*$', '', name).strip()
 
 
-def _portal_extract_items(colls):
-    """Из ответа aportalsmp.collections() вытащить список коллекций."""
+def _get_portal_auth():
+    """Get cached Portal auth data, refresh if needed."""
+    global _portal_auth_data
+    if _portal_auth_data:
+        return _portal_auth_data
+    # Try session-based auth as fallback
+    if not PORTAL_API_ID or not PORTAL_API_HASH:
+        logger.warning("Portal auth not configured (set PORTAL_AUTH_TOKEN or PORTAL_API_ID+PORTAL_API_HASH)")
+        return None
     try:
-        d = colls.toDict() if hasattr(colls, 'toDict') else {}
-        items = d.get('collections') or d.get('items') or []
-        if not items:
-            try:
-                items = list(colls)
-            except Exception:
-                items = []
-        return items or []
-    except Exception:
-        return []
-
-
-def _portal_extract_coll(coll):
-    """Универсально вытащить slug/name/floor из элемента коллекции."""
-    if isinstance(coll, dict):
-        slug = (coll.get('slug') or coll.get('name') or '').strip()
-        name = (coll.get('name') or coll.get('slug') or '').strip()
-        floor = coll.get('floor_price') or coll.get('floorPrice') or coll.get('floor')
-        short_name = coll.get('short_name') or ''
-    else:
-        slug = (getattr(coll, 'slug', None) or getattr(coll, 'name', '') or '').strip()
-        name = (getattr(coll, 'name', '') or getattr(coll, 'slug', '') or '').strip()
-        floor = (getattr(coll, 'floor_price', None)
-                 or getattr(coll, 'floorPrice', None)
-                 or getattr(coll, 'floor', None))
-        short_name = getattr(coll, 'short_name', '') or ''
-
-    try:
-        floor_val = float(floor) if floor is not None else None
-    except (ValueError, TypeError):
-        floor_val = None
-
-    return {
-        'slug': slug,
-        'name': name or slug,
-        'floor_ton': floor_val if (floor_val and floor_val > 0) else None,
-        'short_name': short_name,
-    }
-
-
-def _portal_slugify(name):
-    """'Plush Pepe' -> 'plushpepe', 'Durov’s Cap' -> 'durovscap'"""
-    import re as _re
-    return _re.sub(r'[^a-z0-9]+', '', str(name or '').lower()).strip()
-
-
-def _portal_build_image(slug):
-    """Стандартный thumb URL для Fragment подарка."""
-    return f'https://fragment.com/file/gifts/{slug}/thumb.webp'
+        import asyncio
+        from aportalsmp.auth import update_auth
+        loop = asyncio.new_event_loop()
+        _portal_auth_data = loop.run_until_complete(
+            update_auth(api_id=PORTAL_API_ID, api_hash=PORTAL_API_HASH,
+                        session_path=PORTAL_SESSION_PATH, session_name=PORTAL_SESSION_NAME)
+        )
+        loop.close()
+        logger.info("✅ Portal auth data obtained via session")
+        return _portal_auth_data
+    except Exception as e:
+        logger.error(f"❌ Portal auth failed: {e}")
+        return None
 
 
 def _portal_sync_floors():
-    """Синхронизация цен через aportalsmp.giftsFloors()."""
-    if portal_client is None or not portal_client.is_available():
-        return {
-            'success': False,
-            'error': 'Portal не готов. Введите токен в админке (Подарки → Авторизация) и установите aportalsmp.'
-        }
-
+    """Fetch floor prices from Portal API for ALL collections and update gifts.json values."""
+    auth = _get_portal_auth()
+    if not auth:
+        return {'success': False, 'error': 'Portal auth not configured'}
     try:
-        floors_raw = portal_client.get_floors(use_cache=False)
+        import asyncio
+        from aportalsmp.gifts import collections as portal_collections
+        from aportalsmp.gifts import search as portal_search
 
-        if not floors_raw:
-            return {'success': False, 'error': 'giftsFloors() вернул пустой ответ'}
+        loop = asyncio.new_event_loop()
+        try:
+            # ── 1) Получаем ВСЕ коллекции с пагинацией ──
+            all_colls = []
+            offset = 0
+            limit = 50
+            while True:
+                try:
+                    colls = loop.run_until_complete(
+                        portal_collections(authData=auth, offset=offset, limit=limit)
+                    )
+                    colls_dict = colls.toDict() if hasattr(colls, 'toDict') else {}
+                    items = colls_dict.get('collections') or colls_dict.get('items') or []
+                    if not items:
+                        # Пробуем как список
+                        try:
+                            items = list(colls)  # если это итерируемый объект
+                        except Exception:
+                            items = []
+                    if not items:
+                        break
+                    all_colls.extend(items)
+                    if len(items) < limit:
+                        break
+                    offset += limit
+                    if offset > 2000:  # защита от бесконечного цикла
+                        break
+                except TypeError:
+                    # API не поддерживает offset/limit — берём всё, что есть
+                    colls = loop.run_until_complete(portal_collections(authData=auth))
+                    colls_dict = colls.toDict() if hasattr(colls, 'toDict') else {}
+                    items = colls_dict.get('collections') or colls_dict.get('items') or []
+                    if not items:
+                        try:
+                            items = list(colls)
+                        except Exception:
+                            items = []
+                    all_colls.extend(items)
+                    break
 
-        logger.info(f'🌐 Portal: получено {len(floors_raw)} коллекций')
+            logger.info(f"🌐 Portal: получено {len(all_colls)} коллекций")
 
+            # ── 2) Строим map: slug/name → floor_price_ton ──
+            floors_by_slug = {}
+            floors_by_name = {}
+            for coll in all_colls:
+                if isinstance(coll, dict):
+                    slug = (coll.get('slug') or coll.get('name') or '').strip().lower()
+                    floor = coll.get('floor_price') or coll.get('floorPrice') or coll.get('floor')
+                    name = (coll.get('name') or '').strip().lower()
+                else:
+                    slug = (getattr(coll, 'slug', None) or getattr(coll, 'name', '') or '').strip().lower()
+                    floor = (getattr(coll, 'floor_price', None)
+                             or getattr(coll, 'floorPrice', None)
+                             or getattr(coll, 'floor', None))
+                    name = (getattr(coll, 'name', '') or '').strip().lower()
+                if not slug or floor is None:
+                    continue
+                try:
+                    floor_val = float(floor)
+                except (ValueError, TypeError):
+                    continue
+                if floor_val <= 0:
+                    continue
+                floors_by_slug[slug] = floor_val
+                if name:
+                    floors_by_name[name] = floor_val
+
+            # ── 3) Дополнительно: для каждой коллекции берём floor через search (самый дешёвый подарок) ──
+            # Это нужно, если в collections() floor_price пустой
+            for coll in all_colls:
+                try:
+                    if isinstance(coll, dict):
+                        cname = coll.get('name') or coll.get('slug') or ''
+                    else:
+                        cname = getattr(coll, 'name', '') or getattr(coll, 'slug', '')
+                    if not cname:
+                        continue
+                    cname_clean = re.sub(r'\s*\(Random\)\s*$', '', str(cname)).strip()
+                    if not cname_clean:
+                        continue
+                    slug_key = re.sub(r'[^a-z0-9]+', '', cname_clean.lower())
+                    if slug_key in floors_by_slug:
+                        continue  # уже есть цена
+                    try:
+                        found = loop.run_until_complete(
+                            portal_search(sort='price_asc', gift_name=cname_clean, limit=1, authData=auth)
+                        )
+                        if found and len(found) > 0:
+                            price = float(found[0].price) if found[0].price else 0
+                            if price > 0:
+                                floors_by_slug[slug_key] = price
+                                floors_by_name[cname_clean.lower()] = price
+                    except Exception:
+                        pass
+                except Exception:
+                    continue
+
+        finally:
+            loop.close()
+
+        # ── 4) Обновляем gifts.json ──
         gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
         if not os.path.exists(gifts_path):
             return {'success': False, 'error': 'gifts.json not found'}
@@ -8496,160 +8560,184 @@ def _portal_sync_floors():
         with open(gifts_path, 'r', encoding='utf-8') as f:
             raw = json.load(f)
 
-        wrap = isinstance(raw, dict)
-        gifts = raw.get('gifts', []) if wrap else raw
+        if isinstance(raw, dict):
+            gifts = raw.get('gifts', [])
+            wrap_dict = True
+        else:
+            gifts = raw
+            wrap_dict = False
 
-        by_slug = {}
-        by_name = {}
-        max_id = 0
-        for g in gifts:
-            sid = g.get('id')
-            if isinstance(sid, int) and sid > max_id:
-                max_id = sid
-            slug = _portal_slugify(g.get('fragment_slug') or g.get('name', ''))
-            if slug:
-                by_slug[slug] = g
-            nm = _portal_slugify(g.get('name', ''))
-            if nm:
-                by_name[nm] = g
+        updated = 0
+        for gift in gifts:
+            gname = gift.get('name', '')
+            gname_clean = re.sub(r'\s*\(Random\)\s*$', '', gname).strip()
+            slug = (gift.get('fragment_slug') or '').strip().lower()
+            name_key = gname_clean.lower()
+            slug_key = re.sub(r'[^a-z0-9]+', '', name_key)
 
-        updated = added = skipped = 0
-        new_gifts = []
+            floor = None
+            if slug and slug in floors_by_slug:
+                floor = floors_by_slug[slug]
+            elif slug_key and slug_key in floors_by_slug:
+                floor = floors_by_slug[slug_key]
+            elif name_key and name_key in floors_by_name:
+                floor = floors_by_name[name_key]
 
-        # Нормализуем ответ в список
-        items = []
-        if isinstance(floors_raw, dict):
-            for k, v in floors_raw.items():
-                if isinstance(v, dict):
-                    item = dict(v)
-                    item.setdefault('short_name', k)
-                    item.setdefault('name', v.get('name') or k)
-                    items.append(item)
-                else:
-                    items.append({'short_name': k, 'name': k, 'floor': v})
-        elif isinstance(floors_raw, list):
-            items = floors_raw
-
-        for raw_item in items:
-            parsed = portal_client.parse_floor_item(raw_item)
-            if not parsed:
-                skipped += 1
-                continue
-
-            name = parsed['name']
-            slug_key = _portal_slugify(parsed['slug'])
-            if not slug_key:
-                skipped += 1
-                continue
-
-            new_value = parsed['floor_stars']
-            if new_value <= 0:
-                skipped += 1
-                continue
-
-            existing = by_slug.get(slug_key) or by_name.get(_portal_slugify(name))
-
-            if existing:
-                if existing.get('value') != new_value:
-                    old_v = existing.get('value', 0)
-                    existing['value'] = new_value
-                    existing['fragment_price_ton'] = round(parsed['floor_ton'], 4)
+            if floor and floor > 0:
+                new_value = int(round(floor * 100))  # TON → stars (100 stars = 1 TON)
+                if new_value > 0 and new_value != gift.get('value'):
+                    gift['value'] = new_value
+                    gift['fragment_price_ton'] = round(floor, 4)
                     updated += 1
-                    if updated <= 15:
-                        logger.info(f'💱 {name}: {old_v} → {new_value}⭐ ({parsed["floor_ton"]} TON)')
-            else:
-                new_gift = {
-                    'id': max_id + 1,
-                    'name': name,
-                    'value': new_value,
-                    'image': f'https://fragment.com/file/gifts/{slug_key}/thumb.webp',
-                    'fragment_slug': slug_key,
-                    'fragment_url': f'https://fragment.com/gifts/{slug_key}',
-                    'fragment_price_ton': round(parsed['floor_ton'], 4),
-                }
-                gifts.append(new_gift)
-                new_gifts.append(name)
-                max_id += 1
-                added += 1
-                logger.info(f'➕ NEW: {name} (slug={slug_key}) value={new_value}⭐')
 
         with open(gifts_path, 'w', encoding='utf-8') as f:
-            if wrap:
+            if wrap_dict:
                 json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
             else:
                 json.dump(gifts, f, ensure_ascii=False, indent=2)
 
+        # Сбрасываем кэш подарков
         global gifts_cache, gifts_cache_time
         gifts_cache = None
         gifts_cache_time = None
 
-        try:
-            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
-            with open(sync_file, 'w', encoding='utf-8') as sf:
-                json.dump({
-                    'timestamp': int(time.time()),
-                    'updated': updated,
-                    'added': added,
-                    'total': len(gifts),
-                    'collections': len(items),
-                    'new_gifts': new_gifts[:20],
-                }, sf, ensure_ascii=False)
-        except Exception:
-            pass
-
-        logger.info(f'✅ Portal sync DONE: обновлено {updated}, добавлено {added}, всего {len(gifts)}')
-
-        return {
-            'success': True,
-            'updated': updated,
-            'added': added,
-            'total': len(gifts),
-            'collections': len(items),
-            'new_gifts': new_gifts[:20],
-        }
+        logger.info(f"✅ Portal floors sync: обновлено {updated}/{len(gifts)} подарков, коллекций: {len(all_colls)}")
+        return {'success': True, 'updated': updated, 'total': len(gifts), 'collections': len(all_colls)}
 
     except Exception as e:
-        logger.error(f'❌ Portal sync error: {e}')
-        import traceback
-        logger.error(traceback.format_exc())
+        logger.error(f"❌ Portal floors sync error: {e}\n{traceback.format_exc()}")
         return {'success': False, 'error': str(e)}
 
-
-
-def _extract_colls_items(colls):
+@app.route('/api/portal/status', methods=['GET'])
+def portal_status():
+    """Статус подключения к Portal"""
     try:
-        d = colls.toDict() if hasattr(colls, 'toDict') else {}
-        items = d.get('collections') or d.get('items') or []
-        if not items:
-            try:
-                items = list(colls)
-            except Exception:
-                items = []
-        return items or []
-    except Exception:
-        return []
+        auth = _get_portal_auth()
+        connected = auth is not None
+        
+        # Считаем коллекции в кэше
+        total_collections = 0
+        try:
+            if os.path.exists(FRAGMENT_DISK_CACHE_FILE):
+                with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                total_collections = len(cache.get('gifts', []))
+        except Exception:
+            pass
+        
+        # Последняя синхронизация
+        last_sync_ago = 'никогда'
+        last_updated = 0
+        try:
+            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            if os.path.exists(sync_file):
+                with open(sync_file, 'r', encoding='utf-8') as f:
+                    sd = json.load(f)
+                ts = sd.get('timestamp', 0)
+                if ts:
+                    diff = int(time.time() - ts)
+                    if diff < 60:
+                        last_sync_ago = f'{diff} сек назад'
+                    elif diff < 3600:
+                        last_sync_ago = f'{diff // 60} мин назад'
+                    else:
+                        last_sync_ago = f'{diff // 3600} ч назад'
+                    last_updated = sd.get('updated', 0)
+        except Exception:
+            pass
+        
+        return jsonify({
+            'success': True,
+            'connected': connected,
+            'info': {
+                'total_collections': total_collections,
+                'last_sync_ago': last_sync_ago,
+                'last_updated': last_updated,
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e), 'connected': False})
 
 
-def _extract_coll_fields(coll):
-    if isinstance(coll, dict):
-        slug = (coll.get('slug') or coll.get('name') or '').strip().lower()
-        floor = coll.get('floor_price') or coll.get('floorPrice') or coll.get('floor')
-        name = (coll.get('name') or '').strip().lower()
-    else:
-        slug = (getattr(coll, 'slug', None) or getattr(coll, 'name', '') or '').strip().lower()
-        floor = (getattr(coll, 'floor_price', None)
-                 or getattr(coll, 'floorPrice', None)
-                 or getattr(coll, 'floor', None))
-        name = (getattr(coll, 'name', '') or '').strip().lower()
-    return slug, floor, name
+@app.route('/api/portal/connect', methods=['POST'])
+def portal_connect():
+    """Принудительное подключение к Portal"""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        
+        # Сбрасываем кэш авторизации и пробуем заново
+        global _portal_auth_data
+        _portal_auth_data = None
+        
+        auth = _get_portal_auth()
+        if not auth:
+            return jsonify({
+                'success': False,
+                'error': 'Не удалось авторизоваться. Проверьте PORTAL_AUTH_TOKEN или PORTAL_API_ID/PORTAL_API_HASH'
+            })
+        
+        return jsonify({'success': True, 'message': 'Portal подключён'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 
-def _extract_coll_name(coll):
-    if isinstance(coll, dict):
-        return coll.get('name') or coll.get('slug') or ''
-    return getattr(coll, 'name', '') or getattr(coll, 'slug', '')
-
-
+@app.route('/api/portal/info', methods=['GET'])
+def portal_info():
+    """Детальная информация о Portal"""
+    try:
+        auth = _get_portal_auth()
+        connected = auth is not None
+        
+        total_collections = 0
+        try:
+            if os.path.exists(FRAGMENT_DISK_CACHE_FILE):
+                with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                total_collections = len(cache.get('gifts', []))
+        except Exception:
+            pass
+        
+        last_sync_ago = 'никогда'
+        last_updated = 0
+        try:
+            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            if os.path.exists(sync_file):
+                with open(sync_file, 'r', encoding='utf-8') as f:
+                    sd = json.load(f)
+                ts = sd.get('timestamp', 0)
+                if ts:
+                    diff = int(time.time() - ts)
+                    if diff < 60:
+                        last_sync_ago = f'{diff} сек назад'
+                    elif diff < 3600:
+                        last_sync_ago = f'{diff // 60} мин назад'
+                    else:
+                        last_sync_ago = f'{diff // 3600} ч назад'
+                    last_updated = sd.get('updated', 0)
+        except Exception:
+            pass
+        
+        auth_type = 'token'
+        if PORTAL_API_ID and PORTAL_API_HASH:
+            auth_type = 'session (api_id + api_hash)'
+        
+        return jsonify({
+            'success': True,
+            'info': {
+                'connected': connected,
+                'sync_enabled': PORTAL_SYNC_ENABLED,
+                'interval_minutes': PORTAL_SYNC_INTERVAL_MINUTES,
+                'total_collections': total_collections,
+                'last_sync_ago': last_sync_ago,
+                'last_updated': last_updated,
+                'auth_type': auth_type,
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 @app.route('/api/portal/sync-prices', methods=['POST'])
 def portal_sync_prices():
     """Admin endpoint: sync gift prices from Portal marketplace floors."""
@@ -11288,93 +11376,99 @@ def _parse_gift_images(gift_image_str):
 
 @app.route('/api/ultimate-crash/recent-bets', methods=['GET'])
 def get_recent_ultimate_crash_bets():
-    """Быстрая выдача ставок с кэшем 300ms."""
+    """Получение ставок текущего раунда"""
     try:
-        limit = request.args.get('limit', 30, type=int)
+        limit = request.args.get('limit', 20, type=int)
 
-        cached_game = get_crash_cache()
-        fast_game_id = cached_game.get('id', 0)
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-        if fast_game_id > 0:
-            cached = _get_recent_bets_cached(fast_game_id, limit)
-            if cached is not None:
-                return jsonify({'success': True, 'bets': cached, 'cached': True})
+        # Предпочитаем активную игру; если её нет, берём последнюю
+        cursor.execute('''
+            SELECT id, status, current_multiplier
+            FROM ultimate_crash_games
+            WHERE status IN ('waiting', 'counting', 'flying')
+            ORDER BY id DESC LIMIT 1
+        ''')
+        current_game = cursor.fetchone()
+        if not current_game:
+            cursor.execute('''
+                SELECT id, status, current_multiplier FROM ultimate_crash_games
+                ORDER BY id DESC LIMIT 1
+            ''')
+            current_game = cursor.fetchone()
 
-        with _quick_db_conn(5) as conn:
-            cursor = conn.cursor()
+        current_game_id = current_game[0] if current_game else 0
+        current_game_status = current_game[1] if current_game else None
+        current_game_mult = float(current_game[2]) if current_game and current_game[2] else 1.0
 
-            current_game_id = fast_game_id
-            current_game_status = cached_game.get('status')
+        # Self-heal: если боты не сгенерированы для активного раунда, создаём их on-demand
+        if current_game_id and current_game_status in ('waiting', 'counting', 'flying'):
+            if not _crash_bots_cache.get('loaded'):
+                _load_crash_bots()
+            if _crash_bots_cache.get('enabled') and current_game_id not in _crash_bots_active:
+                cursor.execute('SELECT COUNT(*) FROM ultimate_crash_bets WHERE game_id = ?', (current_game_id,))
+                real_count = cursor.fetchone()[0] or 0
+                _generate_bot_bets(current_game_id, real_count)
 
-            if current_game_id <= 0:
-                cursor.execute("""
-                    SELECT id, status FROM ultimate_crash_games
-                    WHERE status IN ('waiting','counting','flying')
-                    ORDER BY id DESC LIMIT 1
-                """)
-                row = cursor.fetchone()
-                if not row:
-                    cursor.execute("SELECT id, status FROM ultimate_crash_games ORDER BY id DESC LIMIT 1")
-                    row = cursor.fetchone()
-                if row:
-                    current_game_id, current_game_status = row[0], row[1]
+        cursor.execute('''
+            SELECT
+                ucb.id,
+                ucb.user_id,
+                ucb.bet_amount,
+                ucb.status,
+                ucb.cashout_multiplier,
+                ucb.win_amount,
+                ucb.created_at,
+                u.first_name,
+                u.username,
+                u.photo_url,
+                ucb.bet_type,
+                ucb.gift_image
+            FROM ultimate_crash_bets ucb
+            LEFT JOIN users u ON ucb.user_id = u.id
+            WHERE ucb.game_id = ?
+            ORDER BY ucb.created_at DESC
+            LIMIT ?
+        ''', (current_game_id, limit,))
 
-            if current_game_id <= 0:
-                return jsonify({'success': True, 'bets': []})
-
-            cursor.execute("""
-                SELECT
-                    ucb.id, ucb.user_id, ucb.bet_amount, ucb.status,
-                    ucb.cashout_multiplier, ucb.win_amount, ucb.created_at,
-                    u.first_name, u.username, u.photo_url,
-                    ucb.bet_type, ucb.gift_image
-                FROM ultimate_crash_bets ucb
-                LEFT JOIN users u ON ucb.user_id = u.id
-                WHERE ucb.game_id = ?
-                ORDER BY ucb.bet_amount DESC, ucb.created_at DESC
-                LIMIT ?
-            """, (current_game_id, limit))
-
-            bets = cursor.fetchall()
+        bets = cursor.fetchall()
 
         bets_list = []
-        for b in bets:
-            gift_imgs = []
-            raw_img = b[11]
-            if raw_img:
-                try:
-                    parsed = json.loads(raw_img)
-                    if isinstance(parsed, list):
-                        gift_imgs = parsed
-                    else:
-                        gift_imgs = [raw_img]
-                except Exception:
-                    gift_imgs = [raw_img]
-
+        for bet in bets:
             bets_list.append({
-                'id': b[0],
-                'user_id': b[1],
-                'bet_amount': b[2],
-                'status': b[3],
-                'cashout_multiplier': float(b[4]) if b[4] else None,
-                'win_amount': b[5],
-                'created_at': b[6],
-                'first_name': b[7],
-                'username': b[8],
-                'photo_url': b[9] or '/static/img/default_avatar.png',
-                'bet_type': b[10] or 'stars',
-                'gift_image': b[11],
-                'gift_images': gift_imgs,
+                'id': bet[0],
+                'user_id': bet[1],
+                'bet_amount': bet[2],
+                'status': bet[3],
+                'cashout_multiplier': float(bet[4]) if bet[4] else None,
+                'win_amount': bet[5],
+                'created_at': bet[6],
+                'first_name': bet[7],
+                'username': bet[8],
+                'photo_url': bet[9] or '/static/img/default_avatar.png',
+                'bet_type': bet[10] or 'stars',
+                'gift_image': bet[11],
+                'gift_images': _parse_gift_images(bet[11])
             })
 
-        if current_game_id > 0:
-            _set_recent_bets_cached(current_game_id, bets_list)
+        # Bots disabled — skip fallback and bot bets
+        # bot_bets = _get_bot_bets_for_api(current_game_id)
+        # bets_list.extend(bot_bets)
 
-        return jsonify({'success': True, 'bets': bets_list})
+        return jsonify({
+            'success': True,
+            'bets': bets_list
+        })
 
     except Exception as e:
-        logger.error(f'recent-bets error: {e}')
-        return jsonify({'success': True, 'bets': []})
+        # Не логируем каждую ошибку - слишком много спама
+        return jsonify({
+            'success': True,
+            'bets': []
+        })
+
+# ==================== ADMIN API ====================
 
 @app.route('/api/admin/crash/status', methods=['GET'])
 def admin_crash_status():
@@ -14073,118 +14167,128 @@ def add_gift_to_case():
         return jsonify({'success': False, 'error': str(e)})
 
 
-# ══════════════════════════════════════════════════════════════
-# PORTAL ADMIN ENDPOINTS
-# ══════════════════════════════════════════════════════════════
-
-
-def _portal_read_last_sync():
-    try:
-        sf = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
-        if not os.path.exists(sf):
-            return {'last_sync_ago': 'никогда', 'last_updated': 0, 'total_collections': 0}
-        with open(sf, 'r', encoding='utf-8') as f:
-            sd = json.load(f)
-        ts = sd.get('timestamp', 0)
-        ago = 'никогда'
-        if ts:
-            diff = int(time.time() - ts)
-            ago = (f'{diff} сек назад' if diff < 60 else
-                   f'{diff // 60} мин назад' if diff < 3600 else
-                   f'{diff // 3600} ч назад')
-        return {
-            'last_sync_ago': ago,
-            'last_updated': sd.get('updated', 0),
-            'total_collections': sd.get('collections', 0) or sd.get('total', 0),
-        }
-    except Exception:
-        return {'last_sync_ago': 'никогда', 'last_updated': 0, 'total_collections': 0}
-
-
 @app.route('/api/admin/promo-codes', methods=['GET', 'POST', 'DELETE'])
 def admin_promo_codes_management():
+    """Управление промокодами"""
     try:
-        admin_id = request.args.get('admin_id') or (request.get_json(silent=True) or {}).get('admin_id')
+        admin_id = request.args.get('admin_id') or (request.json or {}).get('admin_id')
         if not admin_id or int(admin_id) != ADMIN_ID:
             return jsonify({'success': False, 'error': 'Доступ запрещен'})
 
         if request.method == 'GET':
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT id, code, reward_stars, reward_tickets, reward_type, max_uses, used_count, created_at, expires_at, is_active FROM promo_codes ORDER BY created_at DESC")
-            rows = cursor.fetchall()
+            cursor.execute('''
+                SELECT id, code, reward_stars, reward_tickets, reward_type, max_uses, used_count,
+                       created_at, expires_at, is_active
+                FROM promo_codes
+                ORDER BY created_at DESC
+            ''')
+            promos = cursor.fetchall()
             conn.close()
-            return jsonify({'success': True, 'promo_codes': [{
-                'id': r[0], 'code': r[1], 'reward_stars': r[2], 'reward_tickets': r[3],
-                'reward_type': r[4] or 'stars', 'max_uses': r[5], 'used_count': r[6],
-                'created_at': r[7], 'expires_at': r[8], 'is_active': bool(r[9])
-            } for r in rows]})
+
+            promos_list = []
+            for promo in promos:
+                promos_list.append({
+                    'id': promo[0],
+                    'code': promo[1],
+                    'reward_stars': promo[2],
+                    'reward_tickets': promo[3],
+                    'reward_type': promo[4] or 'stars',
+                    'max_uses': promo[5],
+                    'used_count': promo[6],
+                    'created_at': promo[7],
+                    'expires_at': promo[8],
+                    'is_active': bool(promo[9])
+                })
+            return jsonify({'success': True, 'promo_codes': promos_list})
 
         elif request.method == 'POST':
-            data = request.get_json() or {}
+            data = request.json
+
             code = (data.get('code') or '').upper().strip()
             if not code:
-                chars = string.ascii_uppercase + string.digits
-                code = ''.join(random.choice(chars) for _ in range(8))
+                characters = string.ascii_uppercase + string.digits
+                code = ''.join(random.choice(characters) for _ in range(8))
 
-            def _safe_int(v, d=0, mx=2000000000):
-                try: return max(0, min(int(v or 0), mx))
-                except Exception: return d
+            # === FIX: приводим все числа к безопасным значениям ===
+            try:
+                reward_stars = int(data.get('reward_stars', 0) or 0)
+            except (ValueError, TypeError):
+                reward_stars = 0
+            try:
+                reward_tickets = int(data.get('reward_tickets', 0) or 0)
+            except (ValueError, TypeError):
+                reward_tickets = 0
 
-            reward_stars = _safe_int(data.get('reward_stars', 0))
-            reward_tickets = _safe_int(data.get('reward_tickets', 0))
-            max_uses = _safe_int(data.get('max_uses', 1), 1, 1000000)
-            expires_days = _safe_int(data.get('expires_days', 30), 30, 3650)
+            # Ограничиваем максимальные значения, чтобы не выходить за пределы INTEGER
+            reward_stars = max(0, min(reward_stars, 2_000_000_000))
+            reward_tickets = max(0, min(reward_tickets, 2_000_000_000))
 
             reward_type = data.get('reward_type', 'stars')
             reward_data = data.get('reward_data', {})
+
+            try:
+                max_uses = int(data.get('max_uses', 1) or 1)
+            except (ValueError, TypeError):
+                max_uses = 1
+            max_uses = max(0, min(max_uses, 1_000_000))
+
+            try:
+                expires_days = int(data.get('expires_days', 30) or 0)
+            except (ValueError, TypeError):
+                expires_days = 30
+
             expires_at = None
             if expires_days > 0:
                 expires_at = (datetime.now() + timedelta(days=expires_days)).isoformat()
+
             reward_data_json = json.dumps(reward_data, ensure_ascii=False) if reward_data else None
 
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM promo_codes WHERE code = ?", (code,))
+            cursor.execute('SELECT id FROM promo_codes WHERE code = ?', (code,))
             if cursor.fetchone():
                 conn.close()
                 return jsonify({'success': False, 'error': 'Промокод с таким кодом уже существует'})
 
-            cursor.execute(
-                "INSERT INTO promo_codes (code, reward_stars, reward_tickets, reward_type, reward_data, max_uses, expires_at, created_by) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                (code, reward_stars, reward_tickets, reward_type, reward_data_json, max_uses, expires_at, ADMIN_ID)
-            )
+            cursor.execute('''
+                INSERT INTO promo_codes (code, reward_stars, reward_tickets, reward_type, reward_data, max_uses, expires_at, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (code, reward_stars, reward_tickets, reward_type, reward_data_json, max_uses, expires_at, ADMIN_ID))
+
             promo_id = cursor.lastrowid
             conn.commit()
             conn.close()
-            logger.info(f"🛠️ Админ {admin_id} создал промокод: {code}")
+
+            logger.info(f"🛠️ Админ {admin_id} создал промокод: {code} (тип: {reward_type})")
             return jsonify({
                 'success': True,
-                'message': f'Промокод {code} создан!',
+                'message': f'Промокод {code} успешно создан!',
                 'promo_code': {
-                    'id': promo_id, 'code': code, 'reward_type': reward_type,
-                    'reward_stars': reward_stars, 'reward_tickets': reward_tickets,
-                    'max_uses': max_uses, 'expires_at': expires_at
+                    'id': promo_id,
+                    'code': code,
+                    'reward_type': reward_type,
+                    'reward_stars': reward_stars,
+                    'reward_tickets': reward_tickets,
+                    'max_uses': max_uses,
+                    'expires_at': expires_at
                 }
             })
 
         elif request.method == 'DELETE':
-            data = request.get_json(silent=True) or {}
-            promo_id = data.get('id')
+            promo_id = request.json['id']
             conn = get_db_connection()
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM promo_codes WHERE id = ?", (promo_id,))
+            cursor.execute('DELETE FROM promo_codes WHERE id = ?', (promo_id,))
             conn.commit()
             conn.close()
             logger.info(f"🛠️ Админ {admin_id} удалил промокод #{promo_id}")
-            return jsonify({'success': True, 'message': 'Промокод удален'})
+            return jsonify({'success': True, 'message': 'Промокод успешно удален'})
 
     except Exception as e:
         logger.error(f"❌ Ошибка управления промокодами: {e}")
         return jsonify({'success': False, 'error': str(e)})
-
-
 @app.route('/api/admin/customization', methods=['GET'])
 def admin_get_customization():
     """Получение списка кастомизации (ракеты и фоны)"""
@@ -18826,12 +18930,19 @@ def telegram_webhook():
 
 # --- Webhook setup ---
 def setup_telegram_webhook():
-    """Регистрирует webhook в Telegram (с поддержкой Business Bot)"""
+    """Регистрирует webhook в Telegram (с проверкой токена)."""
+    # ─── Guard: проверяем токен ───
+    if not TELEGRAM_BOT_TOKEN or len(TELEGRAM_BOT_TOKEN) < 20 or ':' not in TELEGRAM_BOT_TOKEN:
+        logger.warning('⚠️ TELEGRAM_BOT_TOKEN не задан или неверный формат. Webhook пропущен.')
+        return False
+
+    if not WEBSITE_URL or 'localhost' in WEBSITE_URL or '127.0.0.1' in WEBSITE_URL:
+        logger.warning(f'⚠️ WEBSITE_URL = {WEBSITE_URL}. Telegram не сможет достучаться. Webhook пропущен.')
+        return False
+
     webhook_url = f"{WEBSITE_URL}/webhook/{TELEGRAM_BOT_TOKEN}"
     try:
-        # Удаляем старый webhook/polling
         tg_api('deleteWebhook', drop_pending_updates=True)
-        # Ставим новый webhook с allowed_updates включая business bot
         allowed = [
             'message', 'callback_query', 'pre_checkout_query',
             'business_connection', 'business_message',
@@ -18839,20 +18950,24 @@ def setup_telegram_webhook():
         ]
         r = tg_api('setWebhook', url=webhook_url, allowed_updates=allowed)
         if r.get('ok'):
-            logger.info(f"✅ Telegram webhook установлен: {webhook_url} (с Business Bot)")
+            logger.info(f'✅ Telegram webhook установлен: {webhook_url}')
         else:
-            logger.error(f"❌ Webhook error: {r}")
+            err = r.get('description', 'unknown')
+            logger.warning(f'⚠️ Webhook не установлен: {err}')
+            return False
         # Команды бота
         tg_api('setMyCommands', commands=[
             {'command': 'start', 'description': 'Запустить бота'},
             {'command': 'auth', 'description': 'Авторизация на сайте'},
             {'command': 'admin', 'description': 'Админ-панель'}
         ])
+        return True
     except Exception as e:
-        logger.error(f"❌ Webhook setup error: {e}")
+        logger.error(f'❌ Webhook setup error: {e}')
+        return False
 
 
-# ==================== BONUS SYSTEM API ====================
+
 
 @app.route('/api/user-bonuses', methods=['GET'])
 def api_user_bonuses():
@@ -20448,215 +20563,9 @@ except Exception as e:
     logger.error(f"Initial webhook setup error: {e}")
 
 
-# ══════════════════════════════════════════════════════════════
-
-
-# ══════════════════════════════════════════════════════════════
-# PORTAL MARKET AUTH (portal-market.com REST API)
-# ══════════════════════════════════════════════════════════════
-
-
-
-# ══════════════════════════════════════════════════════════════
-# PORTAL MARKET ROUTES — единый блок (fix_all.py)
-# ══════════════════════════════════════════════════════════════
-
-
-
-def portal_auth_status():
-    cfg = _load_portal_config()
-    tok = cfg.get('auth_token') or ''
-    if tok:
-        data, err = _portal_market_request('GET', '/api/users/auth')
-        if err:
-            return jsonify({'success': True, 'authorized': False, 'has_token': True,
-                            'error': err, 'token_preview': tok[:40] + '...'})
-        user = data if isinstance(data, dict) else {}
-        return jsonify({'success': True, 'authorized': True, 'has_token': True,
-                        'user': user, 'token_preview': tok[:40] + '...'})
-    return jsonify({'success': True, 'authorized': False, 'has_token': False})
-
-
-
-
-def portal_save_token():
-    global _portal_auth_data, PORTAL_AUTH_TOKEN
-    data = request.get_json() or {}
-    if str(data.get('admin_id')) != str(ADMIN_ID):
-        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-    token = (data.get('token') or '').strip()
-    if not token:
-        return jsonify({'success': False, 'error': 'Пустой токен'})
-    if not token.startswith('tma '):
-        return jsonify({'success': False, 'error': 'Токен должен начинаться с "tma "'})
-    if 'hash=' not in token:
-        return jsonify({'success': False, 'error': 'В токене нет hash — это не initData'})
-
-    check, err = _portal_market_request('GET', '/api/users/auth', token=token)
-    if err:
-        return jsonify({'success': False, 'error': f'Токен не принят: {err}'})
-
-    cfg = _load_portal_config()
-    cfg['auth_token'] = token
-    cfg['saved_at'] = datetime.utcnow().isoformat() + 'Z'
-    if not _save_portal_config(cfg):
-        return jsonify({'success': False, 'error': 'Не удалось сохранить файл'})
-    PORTAL_AUTH_TOKEN = token
-    _portal_auth_data = token
-    logger.info('Portal Market: token saved & verified')
-    user_info = check if isinstance(check, dict) else {}
-    return jsonify({'success': True, 'message': 'Токен сохранён и проверен', 'user': user_info})
-
-
-@app.route('/api/portal/logout', methods=['POST'])
-def portal_logout():
-    global _portal_auth_data, PORTAL_AUTH_TOKEN
-    data = request.get_json() or {}
-    if str(data.get('admin_id')) != str(ADMIN_ID):
-        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-    cfg = _load_portal_config()
-    cfg.pop('auth_token', None)
-    _save_portal_config(cfg)
-    _portal_auth_data = None
-    PORTAL_AUTH_TOKEN = ''
-    return jsonify({'success': True, 'message': 'Токен удалён'})
-
-
-
-
-# ══════════════════════════════════════════════════════════════
-# PORTAL MARKET — управление токеном через админку
-# ══════════════════════════════════════════════════════════════
-
-@app.route('/api/portal/token', methods=['GET'])
-def portal_token_get():
-    """Возвращает текущий токен (маскированный)."""
-    try:
-        import portal_client
-    except ImportError:
-        return jsonify({'success': False, 'error': 'portal_client не загружен'})
-
-    token = portal_client.get_token()
-    return jsonify({
-        'success': True,
-        'has_token': bool(token),
-        'token_preview': portal_client.token_preview(),
-        'aportalsmp_available': portal_client.APORTALSMP_AVAILABLE,
-    })
-
-
-@app.route('/api/portal/token', methods=['POST'])
-def portal_token_save():
-    """Сохраняет токен Portal Market."""
-    try:
-        import portal_client
-    except ImportError:
-        return jsonify({'success': False, 'error': 'portal_client не загружен'})
-
-    data = request.get_json() or {}
-    token = (data.get('token') or '').strip()
-    admin_id = data.get('admin_id')
-
-    # Проверка админа
-    if str(admin_id) != str(ADMIN_ID):
-        return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
-
-    if not token:
-        return jsonify({'success': False, 'error': 'Токен пустой'})
-    if len(token) < 20:
-        return jsonify({'success': False, 'error': 'Токен слишком короткий'})
-
-    # Сохраняем
-    if not portal_client.save_token(token):
-        return jsonify({'success': False, 'error': 'Не удалось сохранить токен'})
-
-    # Проверяем
-    test = portal_client.test_token(token)
-    if test.get('ok'):
-        return jsonify({
-            'success': True,
-            'verified': True,
-            'message': 'Токен сохранён и проверен',
-            'token_preview': portal_client.token_preview(),
-            'collections_count': test.get('collections_count', 0),
-        })
-    else:
-        return jsonify({
-            'success': True,
-            'verified': False,
-            'message': 'Токен сохранён, но не проверен',
-            'error': test.get('error', 'Unknown'),
-            'token_preview': portal_client.token_preview(),
-        })
-
-
-@app.route('/api/portal/token', methods=['DELETE'])
-def portal_token_delete():
-    """Удаляет токен."""
-    try:
-        import portal_client
-    except ImportError:
-        return jsonify({'success': False, 'error': 'portal_client не загружен'})
-
-    data = request.get_json() or {}
-    admin_id = data.get('admin_id')
-
-    if str(admin_id) != str(ADMIN_ID):
-        return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
-
-    portal_client.save_token('')
-    return jsonify({'success': True, 'message': 'Токен удалён'})
-
-
-@app.route('/api/portal/status', methods=['GET'])
-def portal_status():
-    """Статус подключения к Portal Market."""
-    if portal_client is None:
-        return jsonify({
-            'success': True,
-            'connected': False,
-            'error': 'portal_client не загружен',
-            'info': {'last_sync_ago': 'никогда', 'last_updated': 0, 'total_collections': 0},
-        })
-
-    connected = portal_client.is_available()
-    last_sync = _portal_read_last_sync()
-
-    error = None
-    if not portal_client.APORTALSMP_AVAILABLE:
-        error = 'aportalsmp не установлен: pip install aportalsmp'
-    elif not portal_client.get_token():
-        error = 'Токен Portal не задан. Введите его в админке.'
-
-    return jsonify({
-        'success': True,
-        'connected': connected,
-        'error': error,
-        'has_token': bool(portal_client.get_token()),
-        'token_preview': portal_client.token_preview(),
-        'info': {
-            'last_sync_ago': last_sync.get('last_sync_ago', 'никогда'),
-            'last_updated': last_sync.get('last_updated', 0),
-            'total_collections': last_sync.get('total_collections', 0),
-        }
-    })
-
-
-def portal_status():
-    cfg = _load_portal_config()
-    has_tok = bool(cfg.get('auth_token'))
-    auth_ok, user = False, None
-    if has_tok:
-        data, err = _portal_market_request('GET', '/api/users/auth')
-        auth_ok = (err is None)
-        if auth_ok and isinstance(data, dict):
-            user = data
-    return jsonify({'success': True, 'connected': auth_ok, 'has_token': has_tok, 'user': user})
-
-
 if __name__ == '__main__':
-    host = os.getenv('HOST', '0.0.0.0')
-    port = int(os.getenv('PORT', 5000))  # Render передаёт PORT автоматически
+    host = os.getenv('HOST', '127.0.0.1')
+    port = int(os.getenv('PORT', 5000))
     
     # Setup webhook on local run
     setup_telegram_webhook()
