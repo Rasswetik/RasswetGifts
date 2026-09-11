@@ -115,6 +115,68 @@ body::before{
 .section{display:none;padding:12px}
 .section.active{display:block}
 
+/* Admin Home */
+.admin-home{
+    display:block;padding:12px 12px 24px;
+}
+.admin-home.hidden{display:none}
+.home-header{
+    padding:8px 4px 16px;
+}
+.home-title{
+    font-size:28px;font-weight:900;letter-spacing:-0.04em;
+    color:#fff;margin-bottom:6px;
+}
+.home-subtitle{
+    font-size:13px;color:rgba(255,255,255,.55);font-weight:600;
+}
+.home-grid{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+}
+.home-tile{
+    border:none;border-radius:24px;padding:18px 14px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 10px 20px rgba(0,0,0,.18);
+    display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
+    min-height:150px;cursor:pointer;transition:all .2s ease;
+    text-align:left;color:#fff;position:relative;overflow:hidden;
+}
+.home-tile::before{
+    content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.08),transparent 45%);
+    pointer-events:none;
+}
+.home-tile:active{transform:scale(.98)}
+.home-tile:hover{border-color:rgba(255,255,255,.18);background:linear-gradient(180deg,rgba(255,255,255,.11),rgba(255,255,255,.05));}
+.home-tile-icon{
+    width:54px;height:54px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+    font-size:28px;background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(59,130,246,.16));
+    margin-bottom:18px;position:relative;z-index:1;
+}
+.home-tile-label{
+    font-size:18px;font-weight:800;letter-spacing:-0.02em;position:relative;z-index:1;
+}
+.home-tile-desc{
+    margin-top:6px;font-size:11px;line-height:1.3;color:rgba(255,255,255,.58);position:relative;z-index:1;
+}
+.home-tile-tag{
+    position:absolute;right:12px;top:12px;padding:5px 8px;border-radius:999px;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);
+    font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7);
+}
+
+/* Section Action Tiles */
+.section-action-grid{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0;
+}
+.action-tile{
+    border:none;border-radius:16px;padding:12px 10px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.08);color:#fff;font-weight:800;font-size:12px;
+    display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;transition:all .2s;
+}
+.action-tile.primary{background:linear-gradient(135deg,#6B7A8D,#556270)}
+.action-tile.warn{background:linear-gradient(135deg,#F59E0B,#E11D48)}
+.action-tile.success{background:linear-gradient(135deg,#22C55E,#16A34A)}
+.action-tile:active{transform:scale(.97)}
+
 /* Cards */
 .stat-card{
     background:rgba(255,255,255,.04);border-radius:16px;padding:16px;
@@ -466,7 +528,82 @@ select.form-input option{background:#1A1E2A;color:#fff}
 
 <!-- Container -->
 <div class="container">
-    
+
+    <div class="admin-home" id="adminHome">
+        <div class="home-header">
+            <div class="home-title">Админ панель</div>
+            <div class="home-subtitle">Выберите раздел для управления</div>
+        </div>
+        <div class="home-grid">
+            <button class="home-tile" data-section="Dashboard" onclick="showSection('Dashboard')">
+                <span class="home-tile-tag">Stats</span>
+                <span class="home-tile-icon">📊</span>
+                <span class="home-tile-label">Dashboard</span>
+                <span class="home-tile-desc">Статистика, банк и оборот</span>
+            </button>
+            <button class="home-tile" data-section="Users" onclick="showSection('Users')">
+                <span class="home-tile-tag">Users</span>
+                <span class="home-tile-icon">👥</span>
+                <span class="home-tile-label">Users</span>
+                <span class="home-tile-desc">Пользователи и профили</span>
+            </button>
+            <button class="home-tile" data-section="Gifts" onclick="showSection('Gifts')">
+                <span class="home-tile-tag">Catalog</span>
+                <span class="home-tile-icon">🎁</span>
+                <span class="home-tile-label">Gifts</span>
+                <span class="home-tile-desc">Подарки и каталог</span>
+            </button>
+            <button class="home-tile" data-section="Settings" onclick="showSection('Settings')">
+                <span class="home-tile-tag">Crash</span>
+                <span class="home-tile-icon">💥</span>
+                <span class="home-tile-label">Crash</span>
+                <span class="home-tile-desc">Управление краш-игрой</span>
+            </button>
+            <button class="home-tile" data-section="Promo" onclick="showSection('Promo')">
+                <span class="home-tile-tag">Promo</span>
+                <span class="home-tile-icon">🎟️</span>
+                <span class="home-tile-label">Promo</span>
+                <span class="home-tile-desc">Промокоды и Gift Challenge</span>
+            </button>
+            <button class="home-tile" data-section="Cases" onclick="showSection('Cases')">
+                <span class="home-tile-tag">Cases</span>
+                <span class="home-tile-icon">📦</span>
+                <span class="home-tile-label">Cases</span>
+                <span class="home-tile-desc">Кейсы и настройки</span>
+            </button>
+            <button class="home-tile" data-section="News" onclick="showSection('News')">
+                <span class="home-tile-tag">Content</span>
+                <span class="home-tile-icon">📰</span>
+                <span class="home-tile-label">News</span>
+                <span class="home-tile-desc">Новости и публикации</span>
+            </button>
+            <button class="home-tile" data-section="Withdrawals" onclick="showSection('Withdrawals')">
+                <span class="home-tile-tag">Pay</span>
+                <span class="home-tile-icon">💸</span>
+                <span class="home-tile-label">Withdrawals</span>
+                <span class="home-tile-desc">Заявки на вывод</span>
+            </button>
+            <button class="home-tile" data-section="Leaderboard" onclick="showSection('Leaderboard')">
+                <span class="home-tile-tag">Rank</span>
+                <span class="home-tile-icon">🏆</span>
+                <span class="home-tile-label">Leaderboard</span>
+                <span class="home-tile-desc">Турниры и награды</span>
+            </button>
+            <button class="home-tile" data-section="Inventory" onclick="showSection('Inventory')">
+                <span class="home-tile-tag">Items</span>
+                <span class="home-tile-icon">🗂️</span>
+                <span class="home-tile-label">Inventory</span>
+                <span class="home-tile-desc">Инвентарь пользователей</span>
+            </button>
+            <button class="home-tile" data-section="Messages" onclick="showSection('Messages')">
+                <span class="home-tile-tag">Inbox</span>
+                <span class="home-tile-icon">💬</span>
+                <span class="home-tile-label">Messages</span>
+                <span class="home-tile-desc">Рассылки и сообщения</span>
+            </button>
+        </div>
+    </div>
+
     <!-- Dashboard Section -->
     <div class="section active" id="sectionDashboard">
         <div class="stat-card">
@@ -565,6 +702,11 @@ select.form-input option{background:#1A1E2A;color:#fff}
                 <div class="detail-row-label">Текущий RTP</div>
                 <div class="detail-row-value" id="crashRtp">—</div>
             </div>
+            <div class="section-action-grid">
+                <button class="action-tile primary" onclick="toggleManualMode()">⚪ Режим</button>
+                <button class="action-tile warn" onclick="forceCrash()">⚡ Crash</button>
+                <button class="action-tile success" onclick="loadStats()">🔄 Обновить</button>
+            </div>
             <!-- RTP -->
             <div class="form-group" style="margin-top:12px">
                 <label class="form-label">Установить RTP (%)</label>
@@ -603,10 +745,10 @@ select.form-input option{background:#1A1E2A;color:#fff}
     <!-- Withdrawals Section -->
     <div class="section" id="sectionWithdrawals">
         <div class="tabs">
-            <button class="tab active" onclick="filterWithdrawals('all')">Все</button>
-            <button class="tab" onclick="filterWithdrawals('pending')">Ожидают</button>
-            <button class="tab" onclick="filterWithdrawals('approved')">Одобрено</button>
-            <button class="tab" onclick="filterWithdrawals('rejected')">Отклонено</button>
+            <button class="tab active" onclick="filterWithdrawals('all', this)">Все</button>
+            <button class="tab" onclick="filterWithdrawals('pending', this)">Ожидают</button>
+            <button class="tab" onclick="filterWithdrawals('approved', this)">Одобрено</button>
+            <button class="tab" onclick="filterWithdrawals('rejected', this)">Отклонено</button>
         </div>
         <div id="withdrawalsList" class="withdrawal-list">
             <div class="loading"></div>
@@ -1158,7 +1300,10 @@ async function verifyAdminAccess() {
 }
 
 verifyAdminAccess().then(function(ok){
-    if(ok) loadStats();
+    if(ok){
+        showHome();
+        loadStats();
+    }
 });
 
 var allUsers = [];
@@ -1169,13 +1314,20 @@ var selectedGiftToAdd = null;
 function $(id){ return document.getElementById(id); }
 
 function goBack(){
-    if(tg && tg.close) tg.close();
-    else window.location.href = '/';
+    showHome();
+}
+
+function showHome(){
+    document.getElementById('adminHome').classList.remove('hidden');
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.quick-nav-btn').forEach(b => b.classList.remove('active'));
 }
 
 function showSection(name){
     var sectionName = name === 'Crash' ? 'Settings' : name;
 
+    document.getElementById('adminHome').classList.add('hidden');
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.quick-nav-btn').forEach(b => b.classList.remove('active'));
@@ -1232,10 +1384,10 @@ async function loadWithdrawals(status){
     }
 }
 
-function filterWithdrawals(status){
+function filterWithdrawals(status, btn){
     currentWithdrawalFilter = status;
     document.querySelectorAll('#sectionWithdrawals .tab').forEach(t => t.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    if(btn) btn.classList.add('active');
     loadWithdrawals(status);
 }
 
