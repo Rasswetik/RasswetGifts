@@ -3742,13 +3742,13 @@ def start_ultimate_crash_loop():
                         # 4 → 10x in ~5s
                         # then faster beyond 10x
                         if live_mult < 2.0:
-                            base_increment = 0.01
+                            base_increment = 0.018
                         elif live_mult < 4.0:
-                            base_increment = 0.0125
+                            base_increment = 0.025
                         elif live_mult < 10.0:
-                            base_increment = 0.06
+                            base_increment = 0.08
                         else:
-                            base_increment = 0.12
+                            base_increment = 0.15
 
                         speed_boost = live_mult * 0.008
                         increment = round(max(base_increment, speed_boost), 3)
@@ -4626,7 +4626,7 @@ def ultimate_crash_place_bet():
             return jsonify({'success': False, 'error': 'Игра уже началась! Ставка на след. раунд'})
         if cached_status == 'crashed':
             return jsonify({'success': False, 'error': 'Раунд завершён. Ставка на след. раунд'})
-        if cached_status == 'counting' and cached.get('time_remaining', 5) <= 2.0:
+        if cached_status == 'counting' and cached.get('time_remaining', 5) <= 0.5:
             return jsonify({'success': False, 'error': 'Ставки закрыты за 2 секунды до конца раунда'})
 
         with get_db_connection() as conn:
@@ -4739,6 +4739,7 @@ def ultimate_crash_place_bet():
         cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
         refresh_crash_bet_cache(game_id, cached_target)
 
+
         # Add experience based on bet amount (turnover) - 1:1
         try:
             add_experience(user_id, bet_amount, f"Crash bet {bet_amount}")
@@ -4824,7 +4825,7 @@ def ultimate_crash_place_bet_gift():
                 conn.close()
                 return jsonify({'success': False, 'error': 'Игра уже началась'})
             cached = get_crash_cache()
-            if cached.get('status') == 'counting' and cached.get('time_remaining', 5) <= 2.0:
+            if cached.get('status') == 'counting' and cached.get('time_remaining', 5) <= 0.5:
                 conn.close()
                 return jsonify({'success': False, 'error': 'Ставки закрыты за 2 секунды до конца раунда'})
 
@@ -4882,6 +4883,7 @@ def ultimate_crash_place_bet_gift():
         try:
             cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
             refresh_crash_bet_cache(game_id, cached_target)
+
         except Exception:
             pass
 
@@ -4964,7 +4966,7 @@ def ultimate_crash_place_bet_multi_gift():
                 return jsonify({'success': False, 'error': 'Игра уже началась'})
             # Проверяем время до старта - если <= 2.0 сек, отклоняем
             cached = get_crash_cache()
-            if cached.get('status') == 'counting' and cached.get('time_remaining', 5) <= 2.0:
+            if cached.get('status') == 'counting' and cached.get('time_remaining', 5) <= 0.5:
                 conn.close()
                 return jsonify({'success': False, 'error': 'Ставки закрыты за 2 секунды до конца раунда'})
 
@@ -5024,6 +5026,7 @@ def ultimate_crash_place_bet_multi_gift():
         try:
             cached_target = float(get_crash_cache().get('target_multiplier', 5.0) or 5.0)
             refresh_crash_bet_cache(game_id, cached_target)
+
         except Exception:
             pass
 
