@@ -1,251 +1,299 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#1A1E2A">
-    <title>Profile - Rasswet Gifts</title>
-    <link rel="icon" type="image/png" href="/static/img/logo.png">
-    <link rel="stylesheet" href="/static/css/global.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="/static/js/telegram-auth.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1A1E2A">
+<title>Profile - Rasswet Gifts</title>
+<link rel="icon" type="image/png" href="/static/img/logo.png">
+<link rel="stylesheet" href="/static/css/global.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="/static/js/telegram-auth.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+html,body{overflow-x:hidden;width:100%;max-width:100vw}
 :root{
-    --bg:#1A1E2A;--surface:rgba(255,255,255,.04);--surface2:rgba(255,255,255,.08);
-    --border:rgba(255,255,255,.06);
-    --accent:#6B7A8D;--accent2:#556270;--accent-light:#8CA0BE;--accent-hi:#A0B0C4;
-    --green:#1EE44C;--gold:#FDA100;--pink:#F96999;--red:#E53935;
-    --text:#fff;--text2:rgba(255,255,255,.5);--text3:rgba(255,255,255,.4);
+  --bg:#1A1E2A;--surface:rgba(255,255,255,.04);--surface2:rgba(255,255,255,.08);
+  --border:rgba(255,255,255,.06);
+  --accent:#6B7A8D;--accent2:#556270;--accent-light:#8CA0BE;
+  --green:#1EE44C;--gold:#FDA100;--pink:#F96999;--red:#E53935;
+  --text:#fff;--text2:rgba(255,255,255,.5);--text3:rgba(255,255,255,.4);
 }
 html{font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
-body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column;align-items:center}
-body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#12151C 0%,#1A1E2A 50%,#0E1017 100%);z-index:-1;pointer-events:none}
-.page{width:100%;max-width:480px;margin:0 auto;padding:calc(env(safe-area-inset-top,20px) + 50px) 12px calc(env(safe-area-inset-bottom,0px) + 90px);position:relative;min-height:100vh;display:flex;flex-direction:column}
+body{
+  font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;
+  display:flex;flex-direction:column;align-items:center;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background:linear-gradient(180deg,#12151C 0%,#1A1E2A 50%,#0E1017 100%);
+  z-index:-1;pointer-events:none;
+}
+.page{
+  width:100%;max-width:480px;margin:0 auto;
+  padding:calc(env(safe-area-inset-top,20px) + 16px) 10px calc(env(safe-area-inset-bottom,0px) + 90px);
+  position:relative;min-height:100vh;display:flex;flex-direction:column;
+  box-sizing:border-box;overflow-x:hidden;
+}
 
-.top-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:4px}
+/* TOP BAR */
+.top-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;margin-bottom:4px}
 .top-bar-left{display:flex;align-items:center;gap:6px}
 .top-bar-right{display:flex;align-items:center;gap:6px}
-.top-icon-btn{width:36px;height:36px;border-radius:12px;border:none;background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;overflow:hidden}
+.top-icon-btn{
+  width:36px;height:36px;border-radius:12px;border:none;background:var(--surface);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;overflow:hidden;
+}
 .top-icon-btn:hover{background:var(--surface2)}
 .top-icon-btn svg{width:18px;height:18px;opacity:.7;color:#fff}
 .top-icon-btn.vibration-off svg{opacity:.3;color:#646C86}
 .top-icon-btn img.lang-flag{width:22px;height:22px;object-fit:cover;border-radius:4px}
-.bal-pill{display:flex;align-items:center;gap:5px;background:rgba(107,122,141,.12);border:1px solid rgba(107,122,141,.2);border-radius:20px;padding:6px 14px;font-size:14px;font-weight:700;line-height:1}
+.bal-pill{
+  display:flex;align-items:center;gap:5px;background:rgba(107,122,141,.12);
+  border:1px solid rgba(107,122,141,.2);border-radius:20px;padding:6px 12px;
+  font-size:13px;font-weight:700;line-height:1;
+}
 .bal-pill img{width:16px;height:16px;flex-shrink:0;display:block}
-.bal-plus{width:28px;height:28px;border-radius:50%;background:rgba(107,122,141,.2);border:1px solid rgba(107,122,141,.3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:rgba(255,255,255,.7);font-weight:700;transition:all .2s;line-height:1}
-.bal-plus:hover{background:rgba(107,122,141,.3)}
+.bal-plus{
+  width:28px;height:28px;border-radius:50%;background:rgba(107,122,141,.2);
+  border:1px solid rgba(107,122,141,.3);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;color:rgba(255,255,255,.7);font-weight:700;transition:all .2s;line-height:1;
+}
 
-.profile-section{display:flex;flex-direction:column;align-items:center;margin-bottom:20px;animation:fadeInUp .5s ease;padding:20px 16px 16px;background:linear-gradient(180deg,rgba(255,255,255,.03) 0%,transparent 100%);border-radius:20px;border:1px solid rgba(255,255,255,.04);position:relative;overflow:hidden}
-.profile-section::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:200px;height:200px;background:radial-gradient(circle,rgba(107,122,141,.12) 0%,transparent 70%);pointer-events:none}
+/* PROFILE */
+.profile-section{
+  display:flex;flex-direction:column;align-items:center;margin-bottom:20px;
+  animation:fadeInUp .5s ease;padding:18px 14px 14px;
+  background:linear-gradient(180deg,rgba(255,255,255,.03) 0%,transparent 100%);
+  border-radius:20px;border:1px solid rgba(255,255,255,.04);
+  position:relative;overflow:hidden;
+}
+.profile-section::before{
+  content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
+  width:200px;height:200px;background:radial-gradient(circle,rgba(107,122,141,.12) 0%,transparent 70%);
+  pointer-events:none;
+}
 @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.avatar-wrap{width:96px;height:96px;border-radius:50%;border:3px solid rgba(107,122,141,.3);overflow:hidden;margin-bottom:12px;background:var(--surface);transition:transform .3s,box-shadow .3s;box-shadow:0 0 24px rgba(107,122,141,.15);position:relative;z-index:1}
-.avatar-wrap:active{transform:scale(.95)}
+.avatar-wrap{
+  width:90px;height:90px;border-radius:50%;border:3px solid rgba(107,122,141,.3);
+  overflow:hidden;margin-bottom:12px;background:var(--surface);
+  transition:transform .3s,box-shadow .3s;box-shadow:0 0 24px rgba(107,122,141,.15);
+  position:relative;z-index:1;
+}
 .avatar-wrap img{width:100%;height:100%;object-fit:cover}
 .profile-name{font-size:18px;font-weight:800;margin-bottom:4px;text-align:center;letter-spacing:-.2px}
 .profile-uid{font-size:11px;color:var(--text3);margin-bottom:12px;font-weight:500}
-.level-bar-wrap{width:100%;max-width:260px;margin-bottom:16px;padding:0}
-.level-bar-bg{width:100%;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;border:none}
+.level-bar-wrap{width:100%;max-width:260px;margin-bottom:16px}
+.level-bar-bg{width:100%;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
 .level-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-light));border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
 .level-bar-text{font-size:10px;color:var(--text3);text-align:center;margin-top:4px;font-weight:600}
-.profile-stats{display:flex;gap:8px;width:100%;margin-bottom:4px}
-.profile-stat{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 6px;background:rgba(255,255,255,.03);border-radius:12px;border:1px solid rgba(255,255,255,.04)}
-.profile-stat-val{font-size:15px;font-weight:800;color:#fff;display:flex;align-items:center;gap:4px;line-height:1}
+.profile-stats{display:flex;gap:8px;width:100%}
+.profile-stat{
+  flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px;
+  background:rgba(255,255,255,.03);border-radius:12px;border:1px solid rgba(255,255,255,.04);
+}
+.profile-stat-val{font-size:14px;font-weight:800;color:#fff;display:flex;align-items:center;gap:4px;line-height:1}
 .profile-stat-val img{width:14px;height:14px;flex-shrink:0}
 .profile-stat-label{font-size:9px;color:var(--text3);font-weight:600;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
 
-.action-row{display:flex;gap:10px;width:100%;margin-bottom:24px}
-.btn-action{flex:1;padding:14px;border-radius:14px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);text-align:center}
+/* ACTION */
+.action-row{display:flex;gap:10px;width:100%;margin-bottom:20px}
+.btn-action{
+  flex:1;padding:14px;border-radius:14px;border:none;font-family:inherit;font-size:14px;
+  font-weight:700;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);text-align:center;
+}
 .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 15px rgba(107,122,141,.3)}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(107,122,141,.4)}
-.btn-primary:active{transform:translateY(1px);box-shadow:0 2px 8px rgba(107,122,141,.2)}
+.btn-primary:active{transform:scale(.97)}
 .btn-outline{background:transparent;color:var(--accent-light);border:1.5px solid var(--accent)}
-.btn-outline:hover{background:rgba(107,122,141,.1)}
 .btn-outline:active{background:rgba(107,122,141,.2);transform:scale(.97)}
 
-.ref-card{background:linear-gradient(160deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.02) 100%);border:none;border-radius:18px;padding:18px;margin-bottom:24px;position:relative;overflow:hidden}
-.ref-card::before{content:'';position:absolute;top:0;right:0;width:200px;height:100%;background:radial-gradient(circle at 80% 50%,rgba(107,122,141,.08) 0%,transparent 70%);pointer-events:none}
-.ref-card-title{font-size:18px;font-weight:800;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px}
+/* REFERRAL */
+.ref-card{
+  background:linear-gradient(160deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.02) 100%);
+  border-radius:18px;padding:16px;margin-bottom:24px;position:relative;overflow:hidden;
+}
+.ref-card::before{
+  content:'';position:absolute;top:0;right:0;width:200px;height:100%;
+  background:radial-gradient(circle at 80% 50%,rgba(107,122,141,.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+.ref-card-title{font-size:16px;font-weight:800;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px}
 .ref-card-desc{font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:10px;max-width:65%}
 .ref-stats{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-.ref-stat{display:flex;align-items:center;gap:4px;background:var(--surface2);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600}
+.ref-stat{display:flex;align-items:center;gap:4px;background:var(--surface2);border-radius:20px;padding:5px 10px;font-size:11px;font-weight:600}
 .ref-stat img,.ref-stat svg{width:14px;height:14px;flex-shrink:0}
-.ref-links{display:flex;gap:16px}
+.ref-links{display:flex;gap:14px;flex-wrap:wrap}
 .ref-link{font-size:13px;font-weight:600;color:var(--accent-light);cursor:pointer;background:none;border:none;font-family:inherit}
 .ref-link:hover{text-decoration:underline}
 .ref-decor{position:absolute;right:0;top:0;width:100%;height:100%;object-fit:cover;opacity:.18;pointer-events:none;border-radius:18px}
 
+/* SECTION */
 .section-title{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.btn-options{padding:8px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
-.btn-options:hover{background:rgba(255,255,255,.1)}
+.btn-options{
+  padding:8px 14px;border-radius:10px;border:1.5px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;
+}
 .btn-options.active{background:rgba(107,122,141,.3);border-color:var(--accent);color:#fff}
 
-/* ═══════════ ИСПРАВЛЕННАЯ СЕТКА — 3 РОВНЫЕ КОЛОНКИ ═══════════ */
+/* ═══════════ ИСПРАВЛЕННАЯ СЕТКА ═══════════ */
 .inv-grid{
-    display:grid;
-    grid-template-columns:repeat(3, minmax(0, 1fr));
-    gap:8px;
-    margin-bottom:24px;
-    width:100%;
-}
-@media(max-width:360px){
-    .inv-grid{gap:6px}
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:6px;
+  margin-bottom:24px;
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
 }
 
 .inv-card{
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.06);
-    border-radius:14px;
-    padding:0;
-    text-align:center;
-    cursor:pointer;
-    transition:transform .2s, box-shadow .2s, border-color .2s;
-    position:relative;
-    overflow:hidden;
-    min-width:0;
-    display:flex;
-    flex-direction:column;
-    aspect-ratio:1 / 1.25;
-    width:100%;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:12px;
+  padding:0;
+  text-align:center;
+  cursor:pointer;
+  transition:transform .2s, box-shadow .2s, border-color .2s;
+  position:relative;
+  overflow:hidden;
+  min-width:0;
+  max-width:100%;
+  display:flex;
+  flex-direction:column;
+  aspect-ratio:1 / 1.2;
+  width:100%;
+  box-sizing:border-box;
 }
-@supports not (aspect-ratio: 1 / 1.25){
-    .inv-card{height:0;padding-bottom:125%}
-    .inv-card > *{position:absolute;left:0;right:0}
-    .inv-card-img{top:0;height:80%;object-fit:cover}
-    .inv-card-name{bottom:18px}
-    .inv-card-price{bottom:4px}
+@supports not (aspect-ratio: 1 / 1.2){
+  .inv-card{height:0;padding-bottom:120%}
+  .inv-card > *{position:absolute;left:0;right:0}
+  .inv-card-img{top:0;height:78%;object-fit:cover;padding:0}
+  .inv-card-name{bottom:16px}
+  .inv-card-price{bottom:2px}
 }
-.inv-card:hover{
-    transform:translateY(-2px);
-    box-shadow:0 6px 18px rgba(0,0,0,.3);
-    border-color:rgba(140,160,190,.2);
-}
-.inv-card:active{transform:scale(.96)}
+.inv-card:active{transform:scale(.95)}
 
 .inv-card.selected{
-    border-color:var(--accent);
-    background:rgba(107,122,141,.15);
-    box-shadow:0 0 0 2px rgba(107,122,141,.3);
+  border-color:var(--accent);
+  background:rgba(107,122,141,.15);
+  box-shadow:0 0 0 2px rgba(107,122,141,.3);
 }
 .inv-card.selected::after{
-    content:'✓';
-    position:absolute;
-    top:6px;
-    right:6px;
-    width:20px;
-    height:20px;
-    background:var(--accent);
-    border-radius:50%;
-    font-size:11px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    color:#fff;
-    font-weight:700;
-    z-index:2;
-    box-shadow:0 2px 6px rgba(0,0,0,.4);
+  content:'✓';
+  position:absolute;top:4px;right:4px;
+  width:18px;height:18px;
+  background:var(--accent);border-radius:50%;
+  font-size:10px;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:700;z-index:2;
+  box-shadow:0 2px 6px rgba(0,0,0,.4);
 }
 
 .inv-card-img{
-    width:100%;
-    height:auto;
-    aspect-ratio:1 / 1;
-    object-fit:contain;
-    background:rgba(0,0,0,.15);
-    margin:0;
-    display:block;
-    padding:4px;
-    flex-shrink:0;
+  width:100%;height:auto;
+  aspect-ratio:1 / 1;
+  object-fit:contain;
+  background:rgba(0,0,0,.15);
+  margin:0;display:block;padding:2px;
+  flex-shrink:0;box-sizing:border-box;
 }
 @supports not (aspect-ratio: 1 / 1){
-    .inv-card-img{height:80%;object-fit:cover;padding:0}
+  .inv-card-img{height:78%;object-fit:cover;padding:0}
 }
 
 .inv-card-name{
-    font-size:10px;
-    font-weight:600;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    padding:4px 4px 2px;
-    line-height:1.2;
-    color:rgba(255,255,255,.85);
-    flex:1;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:0;
+  font-size:9px;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  padding:3px 2px 1px;line-height:1.1;
+  color:rgba(255,255,255,.85);
+  flex:1;display:flex;align-items:center;justify-content:center;
+  min-height:0;
 }
 .inv-card-price{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:3px;
-    font-size:11px;
-    font-weight:700;
-    color:var(--accent-light);
-    padding:2px 4px 6px;
-    line-height:1;
-    flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;gap:2px;
+  font-size:10px;font-weight:700;color:var(--accent-light);
+  padding:1px 2px 4px;line-height:1;flex-shrink:0;
 }
-.inv-card-price img{width:11px;height:11px;flex-shrink:0;display:block}
+.inv-card-price img{width:10px;height:10px;flex-shrink:0;display:block}
 
 .inv-card.inv-card-upgraded{padding:0;overflow:hidden}
 .inv-card.inv-card-upgraded .inv-card-img{
-    aspect-ratio:1 / 1;
-    object-fit:cover;
-    padding:0;
-    height:auto;
+  aspect-ratio:1 / 1;object-fit:cover;padding:0;height:auto;
 }
 
 .inv-card-challenge{
-    position:absolute;
-    top:4px;
-    left:4px;
-    width:18px;
-    height:18px;
-    background:rgba(0,0,0,.6);
-    border-radius:6px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:2;
+  position:absolute;top:4px;left:4px;
+  width:16px;height:16px;
+  background:rgba(0,0,0,.6);border-radius:5px;
+  display:flex;align-items:center;justify-content:center;z-index:2;
 }
-.inv-card-challenge svg{
-    width:11px;
-    height:11px;
-    stroke:rgba(255,255,255,.8);
-    fill:none;
-    stroke-width:2.5;
-}
+.inv-card-challenge svg{width:10px;height:10px;stroke:rgba(255,255,255,.8);fill:none;stroke-width:2.5}
+
 .inv-card-locked{border-color:rgba(99,102,241,.3)}
 
+/* Мобильная адаптация */
 @media(max-width:380px){
-    .inv-card-name{font-size:9px}
-    .inv-card-price{font-size:10px}
-    .inv-card-price img{width:10px;height:10px}
+  .inv-grid{gap:5px}
+  .inv-card-name{font-size:8px}
+  .inv-card-price{font-size:9px}
+  .inv-card-price img{width:9px;height:9px}
+}
+@media(max-width:340px){
+  .inv-grid{gap:4px}
+  .inv-card-name{font-size:7px}
+  .inv-card-price{font-size:8px}
+  .inv-card-price img{width:8px;height:8px}
 }
 
-.inv-search{width:100%;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-size:14px;font-weight:500;font-family:inherit;outline:none;margin-bottom:10px;transition:border-color .2s}
+.inv-search{
+  width:100%;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.04);color:#fff;font-size:14px;font-weight:500;
+  font-family:inherit;outline:none;margin-bottom:10px;transition:border-color .2s;
+  box-sizing:border-box;
+}
 .inv-search::placeholder{color:rgba(255,255,255,.25)}
 .inv-search:focus{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.06)}
-.inv-empty{text-align:center;padding:40px 20px;color:var(--text2);background:var(--surface);border:none;border-radius:16px;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.inv-empty{
+  text-align:center;padding:40px 20px;color:var(--text2);
+  background:var(--surface);border-radius:16px;min-height:200px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+}
 
-.select-action-bar{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:500;width:calc(100% - 24px);max-width:456px;background:rgba(26,30,42,.95);border-radius:16px;padding:12px 16px;border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px);display:none;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;animation:slideUp .3s ease}
-@keyframes slideUp{from{transform:translateX(-50%) translateY(100%);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+/* ACTION BAR */
+.select-action-bar{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+  z-index:500;width:calc(100% - 20px);max-width:460px;
+  background:rgba(26,30,42,.95);border-radius:16px;padding:12px 16px;
+  border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px);
+  display:none;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;
+  box-sizing:border-box;
+}
 .select-action-bar.show{display:flex}
 .select-info{font-size:13px;font-weight:600;color:rgba(255,255,255,.7)}
 .select-info span{color:#fff;font-weight:800}
 .select-btns{display:flex;gap:8px}
-.select-btn{padding:10px 18px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+.select-btn{padding:10px 16px;border-radius:12px;border:none;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
 .select-btn-sell{background:rgba(255,255,255,.1);color:#fff}
-.select-btn-sell:hover{background:rgba(255,255,255,.15)}
 .select-btn-withdraw{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
 
-.batch-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:1000;display:none;align-items:center;justify-content:center}
-.batch-modal-overlay.show{display:flex}
-.batch-modal{background:linear-gradient(160deg,rgba(30,33,40,1),rgba(20,22,28,1));border:1px solid rgba(255,255,255,.08);border-radius:20px;width:92%;max-width:380px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column}
+/* MODALS */
+.batch-modal-overlay,.rewards-overlay,.modal-overlay,.item-modal-overlay,.deposit-overlay,.stars-deposit-overlay,.promo-overlay,.gift-reveal-overlay{
+  position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;
+}
+.batch-modal-overlay.show,.rewards-overlay.show,.modal-overlay.show,.item-modal-overlay.show,.stars-deposit-overlay.show,.promo-overlay.show,.gift-reveal-overlay.show{display:flex}
+.deposit-overlay.open{display:flex}
+.batch-modal-overlay,.modal-overlay,.gift-reveal-overlay{background:rgba(0,0,0,.85);backdrop-filter:blur(8px)}
+.rewards-overlay,.item-modal-overlay,.deposit-overlay,.stars-deposit-overlay,.promo-overlay{background:rgba(0,0,0,.7);backdrop-filter:blur(6px)}
+.item-modal-overlay{align-items:flex-end}
+.rewards-overlay{align-items:flex-end}
+
+.batch-modal{
+  background:linear-gradient(160deg,rgba(30,33,40,1),rgba(20,22,28,1));
+  border:1px solid rgba(255,255,255,.08);border-radius:20px;
+  width:92%;max-width:380px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;
+}
 .batch-modal-header{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
 .batch-modal-title{font-size:17px;font-weight:800;color:#fff}
 .batch-modal-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -267,103 +315,26 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backg
 .batch-confirm-btn.ready{background:linear-gradient(135deg,#fff,#e0e0e0);color:#000}
 .batch-confirm-btn:disabled{cursor:not-allowed}
 
-.notif{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-120%);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:12px 24px;border-radius:14px;font-weight:600;font-size:14px;z-index:10000;transition:transform .4s cubic-bezier(.4,0,.2,1),opacity .4s;max-width:90%;text-align:center;box-shadow:0 8px 25px rgba(0,0,0,.4);opacity:0;pointer-events:none}
-.notif.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
-.notif.error{background:linear-gradient(135deg,#E53935,#D32F2F)}
-
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:4000;width:100%;max-width:480px;height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);background:rgba(26,30,42,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-around}
-.bnav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 16px;border-radius:12px;background:transparent;border:none;color:rgba(255,255,255,.4);font-family:inherit;font-weight:600;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);text-decoration:none;position:relative}
-.bnav-item svg{width:24px;height:24px;flex-shrink:0;stroke:currentColor;fill:none;transition:transform .3s cubic-bezier(.4,0,.2,1)}
-.bnav-item span{font-size:10px;font-weight:600}
-.bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
-.bnav-item:active{transform:scale(.9)}
-
-.admin-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:12px;display:none}
-
-.news-mgmt{display:none;margin-bottom:24px}
-.news-mgmt-toggle{width:100%;padding:12px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
-.news-mgmt-toggle svg{width:16px;height:16px;opacity:.5;transition:transform .2s}
-.news-mgmt-toggle.open svg{transform:rotate(180deg)}
-.news-mgmt-list{display:none;flex-direction:column;gap:6px}
-.news-mgmt-list.show{display:flex}
-.nm-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
-.nm-ver{font-size:12px;font-weight:800;color:var(--accent-light);min-width:32px}
-.nm-title{flex:1;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nm-toggle{width:36px;height:20px;border-radius:10px;border:none;cursor:pointer;position:relative;transition:background .2s}
-.nm-toggle.on{background:#34D399}
-.nm-toggle.off{background:rgba(255,255,255,.15)}
-.nm-toggle::after{content:'';position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s}
-.nm-toggle.on::after{left:18px}
-.nm-toggle.off::after{left:2px}
-.nm-del{width:28px;height:28px;border-radius:8px;border:none;background:rgba(239,68,68,.15);color:#ef4444;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-
-.item-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:1001;display:none;align-items:flex-end;justify-content:center}
-.item-modal-overlay.show{display:flex}
-.item-modal{background:linear-gradient(180deg,rgba(30,35,50,.97) 0%,rgba(22,26,38,.99) 100%);border-radius:24px 24px 0 0;width:100%;max-width:480px;min-height:30vh;text-align:center;box-shadow:0 -4px 40px rgba(0,0,0,.5);animation:sheetUp .3s ease;display:flex;flex-direction:column;align-items:center;padding:0 20px calc(80px + env(safe-area-inset-bottom,0));position:relative;overflow:hidden}
+.item-modal{
+  background:linear-gradient(180deg,rgba(30,35,50,.97) 0%,rgba(22,26,38,.99) 100%);
+  border-radius:24px 24px 0 0;width:100%;max-width:480px;
+  min-height:30vh;text-align:center;
+  box-shadow:0 -4px 40px rgba(0,0,0,.5);animation:sheetUp .3s ease;
+  display:flex;flex-direction:column;align-items:center;
+  padding:0 20px calc(80px + env(safe-area-inset-bottom,0));
+  position:relative;overflow:hidden;
+}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .item-modal-handle{width:40px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:10px auto 14px;flex-shrink:0}
 .item-modal-name{font-size:16px;font-weight:700;margin-bottom:6px;color:#fff}
 .item-modal img.item-modal-main-img{width:100px;height:100px;object-fit:contain;margin-bottom:10px;border-radius:16px;background:rgba(255,255,255,.06);padding:8px}
-.item-modal-price{display:flex;align-items:center;justify-content:center;gap:5px;font-size:15px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1}
-.item-modal-price img{width:15px;height:15px;flex-shrink:0;display:block}
+.item-modal-price{display:flex;align-items:center;justify-content:center;gap:5px;font-size:15px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:14px}
+.item-modal-price img{width:15px;height:15px}
 .item-modal-actions{display:flex;gap:10px;width:100%;margin-top:6px;flex-wrap:wrap}
 .item-modal-btn{flex:1;min-width:0;padding:14px;border-radius:14px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item-modal-btn:disabled{opacity:.4;cursor:not-allowed}
 .item-modal-sell{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
-
-.sell-confirm-screen{display:none;flex-direction:column;align-items:center;width:100%;padding:10px 0 0}
-.sell-confirm-screen.show{display:flex}
-.sell-confirm-gif{width:120px;height:120px;object-fit:contain;margin-bottom:16px}
-.sell-confirm-text{font-size:15px;font-weight:600;color:rgba(255,255,255,.85);text-align:center;line-height:1.5;margin-bottom:20px}
-.sell-confirm-text span{color:#fff;font-weight:800}
-.sell-confirm-btn{width:100%;padding:15px;border-radius:14px;border:none;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .3s ease}
-.sell-confirm-btn.waiting{background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);cursor:not-allowed}
-.sell-confirm-btn.ready{background:#fff;color:#000;cursor:pointer}
-.sell-confirm-btn.ready:active{transform:scale(.97);opacity:.9}
-.sell-confirm-cancel{width:100%;padding:12px;border-radius:14px;border:none;background:transparent;color:rgba(255,255,255,.4);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
-
-.success-overlay{position:fixed;inset:0;z-index:3000;background:rgba(10,12,20,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px}
-.success-overlay.show{display:flex}
-.success-gif{width:140px;height:140px;object-fit:contain;margin-bottom:20px}
-.success-title{font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:6px}
-.success-price{font-size:14px;font-weight:600;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:5px;margin-bottom:28px}
-.success-price img{width:14px;height:14px}
-.success-ok{width:100%;max-width:320px;padding:15px;border-radius:14px;border:none;background:#fff;color:#000;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s}
-.success-ok:active{transform:scale(.97);opacity:.9}
-
-.item-modal-upgrade{display:none!important}
 .item-modal-withdraw-nft{background:#fff;color:#000;border:none;font-weight:800}
-
-.mrkt-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1999;opacity:0;pointer-events:none;transition:opacity .3s}
-.mrkt-backdrop.show{opacity:1;pointer-events:auto}
-.mrkt-overlay{position:fixed;left:0;right:0;bottom:0;background:rgba(18,20,30,.98);z-index:2000;display:flex;flex-direction:column;max-height:85vh;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);pointer-events:none}
-.mrkt-overlay.show{transform:translateY(0);pointer-events:auto}
-@media(min-width:769px){
-    .mrkt-overlay{left:50%;right:auto;bottom:50%;transform:translate(-50%,50%) scale(.95);opacity:0;width:420px;max-height:80vh;border-radius:20px;transition:transform .3s,opacity .3s}
-    .mrkt-overlay.show{transform:translate(-50%,50%) scale(1);opacity:1}
-}
-.mrkt-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
-.mrkt-title{font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px}
-.mrkt-subtitle{font-size:13px;color:rgba(255,255,255,.35);margin-top:3px;font-weight:500}
-.mrkt-close-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);width:34px;height:34px;border-radius:12px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;margin-left:12px}
-.mrkt-close-btn:active{background:rgba(255,255,255,.12);transform:scale(.92)}
-.mrkt-fee-badge{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px 14px;font-size:12px;color:rgba(255,255,255,.4);font-weight:600;text-align:center;margin:10px 16px 0}
-.mrkt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 16px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
-.mrkt-card{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.07);border-radius:16px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:border-color .2s,background .2s,transform .15s}
-.mrkt-card.selected{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
-.mrkt-card:active{transform:scale(.96)}
-.mrkt-frame-outer{width:100%;aspect-ratio:1;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:5px;display:flex;align-items:center;justify-content:center}
-.mrkt-frame-inner{width:100%;height:100%;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:5px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.mrkt-frame-inner img{width:100%;height:100%;object-fit:contain;border-radius:5px}
-.mrkt-card-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.7);text-align:center;line-height:1.3;width:100%}
-.mrkt-card-num{font-size:11px;font-weight:700;text-align:center;color:rgba(255,255,255,.35)}
-.mrkt-card-price{font-size:12px;font-weight:800;color:rgba(255,255,255,.5);text-align:center;display:flex;align-items:center;gap:3px;justify-content:center}
-.mrkt-card-price img{width:12px;height:12px}
-.mrkt-footer{padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.mrkt-confirm-btn{width:100%;padding:15px;border-radius:14px;border:none;background:#fff;color:#000;font-size:15px;font-weight:800;cursor:pointer;transition:opacity .2s,transform .15s;font-family:inherit}
-.mrkt-confirm-btn:disabled{opacity:.25;cursor:not-allowed}
-.mrkt-confirm-btn:not(:disabled):active{transform:scale(.97)}
-.mrkt-loading{text-align:center;color:rgba(255,255,255,.3);padding:48px 20px;font-size:14px;font-weight:600}
-.mrkt-empty{text-align:center;color:rgba(255,255,255,.25);padding:48px 20px;font-size:13px;font-weight:600;line-height:1.6}
 .item-modal-claim{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:15px}
 
 .item-modal-challenge{width:100%;margin-bottom:14px}
@@ -375,456 +346,375 @@ body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;backg
 
 .nft-detail-section{width:100%;display:none;flex-direction:column;align-items:center;padding-bottom:4px}
 .nft-detail-section.show{display:flex}
-.nft-detail-img-wrap{position:relative;width:180px;height:180px;margin-bottom:14px;border-radius:20px;overflow:hidden;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.15)}
+.nft-detail-img-wrap{width:160px;height:160px;margin-bottom:14px;border-radius:20px;overflow:hidden;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.15)}
 .nft-detail-img-wrap img{width:100%;height:100%;object-fit:cover}
-.nft-detail-name{font-size:18px;font-weight:700;color:#fff;margin-bottom:2px;display:flex;align-items:center;gap:6px}
-.nft-detail-name .nft-chevron{font-size:14px;color:rgba(255,255,255,.35)}
-.nft-detail-number{font-size:13px;color:rgba(255,255,255,.35);font-weight:600;margin-bottom:14px}
-.nft-attrs-card{width:100%;background:transparent;border-top:1px solid rgba(255,255,255,.08);border-radius:0;overflow:hidden}
-.nft-attr-row{display:flex;align-items:center;padding:13px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
+.nft-detail-name{font-size:16px;font-weight:700;color:#fff;margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.nft-detail-number{font-size:12px;color:rgba(255,255,255,.35);font-weight:600;margin-bottom:12px}
+.nft-attrs-card{width:100%;border-top:1px solid rgba(255,255,255,.08)}
+.nft-attr-row{display:flex;align-items:center;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
 .nft-attr-row:last-child{border-bottom:none}
-.nft-attr-label{font-size:13px;color:rgba(255,255,255,.4);font-weight:500;min-width:72px}
-.nft-attr-val{font-size:14px;color:#fff;font-weight:700;flex:1}
+.nft-attr-label{font-size:12px;color:rgba(255,255,255,.4);font-weight:500;min-width:70px}
+.nft-attr-val{font-size:13px;color:#fff;font-weight:700;flex:1}
 .nft-attr-rarity{font-size:10px;color:rgba(255,255,255,.35);margin-left:4px;font-weight:600}
-.nft-attr-ton{display:none}
-.nft-price-row{display:flex;align-items:center;justify-content:space-between;padding:13px 4px;border-top:1px solid rgba(255,255,255,.06)}
-.nft-price-label{font-size:13px;color:rgba(255,255,255,.4);font-weight:500}
-.nft-price-val{font-size:15px;color:#fff;font-weight:700}
+.nft-price-row{display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-top:1px solid rgba(255,255,255,.06)}
+.nft-price-label{font-size:12px;color:rgba(255,255,255,.4);font-weight:500}
+.nft-price-val{font-size:14px;color:#fff;font-weight:700}
 
-.rewards-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:1002;display:none;align-items:flex-end;justify-content:center}
-.rewards-overlay.show{display:flex}
+.sell-confirm-screen{display:none;flex-direction:column;align-items:center;width:100%;padding:10px 0 0}
+.sell-confirm-screen.show{display:flex}
+.sell-confirm-gif{width:110px;height:110px;object-fit:contain;margin-bottom:16px}
+.sell-confirm-text{font-size:15px;font-weight:600;color:rgba(255,255,255,.85);text-align:center;line-height:1.5;margin-bottom:20px}
+.sell-confirm-text span{color:#fff;font-weight:800}
+.sell-confirm-btn{width:100%;padding:15px;border-radius:14px;border:none;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:all .3s ease}
+.sell-confirm-btn.waiting{background:rgba(255,255,255,.08);color:rgba(255,255,255,.35);cursor:not-allowed}
+.sell-confirm-btn.ready{background:#fff;color:#000}
+.sell-confirm-cancel{width:100%;padding:12px;border-radius:14px;border:none;background:transparent;color:rgba(255,255,255,.4);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
+
+.success-overlay{position:fixed;inset:0;z-index:3000;background:rgba(10,12,20,.97);display:none;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px}
+.success-overlay.show{display:flex}
+.success-gif{width:130px;height:130px;object-fit:contain;margin-bottom:20px}
+.success-title{font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:6px}
+.success-price{font-size:14px;font-weight:600;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:5px;margin-bottom:28px}
+.success-price img{width:14px;height:14px}
+.success-ok{width:100%;max-width:320px;padding:15px;border-radius:14px;border:none;background:#fff;color:#000;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+
+.mrkt-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1999;opacity:0;pointer-events:none;transition:opacity .3s}
+.mrkt-backdrop.show{opacity:1;pointer-events:auto}
+.mrkt-overlay{position:fixed;left:0;right:0;bottom:0;background:rgba(18,20,30,.98);z-index:2000;display:flex;flex-direction:column;max-height:85vh;border-radius:20px 20px 0 0;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);pointer-events:none}
+.mrkt-overlay.show{transform:translateY(0);pointer-events:auto}
+.mrkt-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.mrkt-title{font-size:18px;font-weight:800;color:#fff}
+.mrkt-subtitle{font-size:13px;color:rgba(255,255,255,.35);margin-top:3px;font-weight:500}
+.mrkt-close-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);width:34px;height:34px;border-radius:12px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:12px}
+.mrkt-fee-badge{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:7px 14px;font-size:12px;color:rgba(255,255,255,.4);font-weight:600;text-align:center;margin:10px 16px 0}
+.mrkt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 16px;overflow-y:auto;flex:1}
+.mrkt-card{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.07);border-radius:16px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all .15s}
+.mrkt-card.selected{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.08)}
+.mrkt-frame-outer{width:100%;aspect-ratio:1;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.08);border-radius:12px;padding:5px;display:flex;align-items:center;justify-content:center}
+.mrkt-frame-inner{width:100%;height:100%;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:5px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mrkt-frame-inner img{width:100%;height:100%;object-fit:contain;border-radius:5px}
+.mrkt-card-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.7);text-align:center;line-height:1.3;width:100%}
+.mrkt-card-num{font-size:11px;font-weight:700;text-align:center;color:rgba(255,255,255,.35)}
+.mrkt-card-price{font-size:12px;font-weight:800;color:rgba(255,255,255,.5);text-align:center;display:flex;align-items:center;gap:3px;justify-content:center}
+.mrkt-card-price img{width:12px;height:12px}
+.mrkt-footer{padding:12px 16px calc(env(safe-area-inset-bottom,0px) + 12px);border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.mrkt-confirm-btn{width:100%;padding:15px;border-radius:14px;border:none;background:#fff;color:#000;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit}
+.mrkt-confirm-btn:disabled{opacity:.25;cursor:not-allowed}
+.mrkt-loading{text-align:center;color:rgba(255,255,255,.3);padding:48px 20px;font-size:14px;font-weight:600}
+.mrkt-empty{text-align:center;color:rgba(255,255,255,.25);padding:48px 20px;font-size:13px;font-weight:600;line-height:1.6}
+
+.deposit-modal,.promo-modal,.stars-deposit-modal{
+  background:linear-gradient(180deg,#161923,#0F1219);border-radius:24px;
+  width:92%;max-width:360px;padding:24px 20px;border:1px solid rgba(255,255,255,.1);
+}
+.deposit-header,.promo-header,.stars-deposit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.deposit-title,.promo-title,.stars-deposit-title{font-weight:800;font-size:18px;color:#fff}
+.deposit-close,.promo-close,.stars-deposit-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#f96989;font-size:16px}
+.deposit-methods{display:flex;gap:12px}
+.deposit-method-btn{flex:1;padding:20px 14px;border-radius:16px;border:2px solid rgba(255,255,255,.06);background:rgba(255,255,255,.04);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px}
+.deposit-method-btn img{width:48px;height:48px;object-fit:contain}
+.deposit-method-btn span{font-weight:700;font-size:13px;color:#fff}
+.deposit-method-btn.disabled{opacity:.35;pointer-events:none;filter:grayscale(1)}
+
+.promo-input-wrap{display:flex;gap:10px;margin-bottom:16px}
+.promo-input{flex:1;padding:14px 16px;border:2px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;font-size:16px;font-weight:600;text-transform:uppercase;font-family:inherit;letter-spacing:2px;text-align:center}
+.promo-input:focus{outline:none;border-color:var(--accent)}
+.promo-submit{padding:14px 20px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap}
+.promo-error{color:#f96989;font-size:12px;text-align:center;display:none;margin-bottom:12px}
+
+.stars-deposit-body{padding:20px;display:flex;flex-direction:column;align-items:center;gap:16px}
+.stars-deposit-icon{width:64px;height:64px}
+.stars-deposit-label{text-align:center;color:rgba(255,255,255,.6);font-size:13px;line-height:1.5}
+.stars-deposit-input-wrap{width:100%;background:rgba(255,255,255,.05);border-radius:14px;padding:4px}
+.stars-deposit-input{width:100%;padding:14px;border:none;border-radius:12px;background:transparent;color:#fff;font-size:20px;font-weight:700;text-align:center;font-family:inherit;outline:none}
+.stars-deposit-pay-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.stars-deposit-pay-btn img{width:20px;height:20px}
+
+.notif{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-120%);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:12px 24px;border-radius:14px;font-weight:600;font-size:14px;z-index:10000;transition:transform .4s,opacity .4s;max-width:90%;text-align:center;box-shadow:0 8px 25px rgba(0,0,0,.4);opacity:0;pointer-events:none}
+.notif.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+.notif.error{background:linear-gradient(135deg,#E53935,#D32F2F)}
+
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:4000;width:100%;max-width:480px;height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);background:rgba(26,30,42,.9);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-around}
+.bnav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 12px;border-radius:12px;background:transparent;border:none;color:rgba(255,255,255,.4);font-family:inherit;font-weight:600;cursor:pointer;text-decoration:none}
+.bnav-item svg{width:24px;height:24px;stroke:currentColor;fill:none}
+.bnav-item span{font-size:10px;font-weight:600}
+.bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
+
 .rewards-sheet{background:linear-gradient(180deg,rgba(22,24,30,1),rgba(14,16,21,1));border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;border-top:1px solid rgba(255,255,255,.08);animation:sheetUp .3s ease}
-@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .rewards-handle{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:12px auto 0}
 .rewards-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px}
 .rewards-title{font-size:15px;font-weight:700;background:var(--surface2);border-radius:20px;padding:6px 16px}
 .rewards-level{font-size:14px;font-weight:700;color:var(--text2)}
 .rewards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:8px 20px 20px;overflow-y:auto;flex:1}
-.reward-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 8px;text-align:center;position:relative;cursor:pointer;transition:all .2s}
-.reward-card.locked .reward-card-img{filter:grayscale(100%) brightness(.5);opacity:.6}
-.reward-card.unlocked{border-color:rgba(107,122,141,.25);background:rgba(107,122,141,.1)}
+.reward-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px 8px;text-align:center;position:relative;cursor:pointer}
 .reward-card-lvl{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:6px;text-align:left}
-.reward-card-img{width:56px;height:56px;object-fit:contain;margin:0 auto;display:block;transition:filter .3s}
-.reward-card-name{font-size:9px;color:var(--text2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.reward-card.unlocked .reward-card-name{color:var(--accent-light)}
-.reward-lock-icon{position:absolute;bottom:8px;right:8px;opacity:0.6;color:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center}
-.rewards-close-btn{margin:0 20px 20px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;width:calc(100% - 40px);flex-shrink:0}
+.reward-card-img{width:56px;height:56px;object-fit:contain;margin:0 auto;display:block}
+.reward-card-name{font-size:9px;color:var(--text2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rewards-close-btn{margin:0 20px 20px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;width:calc(100% - 40px)}
 
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:1000;display:none;align-items:center;justify-content:center}
-.modal-overlay.show{display:flex}
 .modal-box{background:linear-gradient(160deg,rgba(20,22,28,1),rgba(14,16,21,1));border:1px solid var(--border);border-radius:16px;padding:24px;width:90%;max-width:360px}
 .modal-title{font-size:18px;font-weight:700;color:var(--accent-light);margin-bottom:6px;text-align:center}
-.sell-modal-info{text-align:center;margin-bottom:16px;font-size:14px;color:var(--text2)}
-.sell-modal-total{font-size:20px;font-weight:800;color:var(--accent-light);text-align:center;margin-bottom:16px}
 .modal-btns{display:flex;gap:10px}
 .modal-btn{flex:1;padding:12px;border-radius:12px;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
 .modal-btn-cancel{background:var(--surface2);color:#fff}
 .modal-btn-confirm{background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff}
 
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:rgba(255,255,255,.02);border-radius:3px}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+.gift-reveal-img{width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 0 40px rgba(64,156,255,.5))}
+.gift-reveal-name{font-size:22px;font-weight:800;color:#fff;text-align:center;margin-top:20px}
+.gift-reveal-btn{margin-top:20px;padding:12px 32px;border-radius:14px;border:none;background:var(--accent);color:#fff;font-weight:700;font-size:15px;cursor:pointer}
 
-.deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:400;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
-.deposit-overlay.open{opacity:1;visibility:visible}
-.deposit-modal{background:linear-gradient(180deg,#161923,#0F1219);border-radius:24px;width:90%;max-width:360px;padding:24px 20px;transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid rgba(255,255,255,.1)}
-.deposit-overlay.open .deposit-modal{transform:scale(1)}
-.deposit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.deposit-title{font-weight:800;font-size:18px;color:#fff}
-.deposit-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:#f96989;font-size:18px}
-.deposit-close:hover{background:rgba(249,105,153,.25)}
-.deposit-methods{display:flex;gap:12px}
-.deposit-method-btn{flex:1;padding:20px 14px;border-radius:16px;border:2px solid rgba(255,255,255,.06);background:rgba(255,255,255,.04);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .2s}
-.deposit-method-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);transform:translateY(-2px)}
-.deposit-method-btn:active{transform:scale(.97)}
-.deposit-method-btn img{width:48px;height:48px;object-fit:contain}
-.deposit-method-btn span{font-weight:700;font-size:13px;color:#fff}
-.deposit-method-btn.disabled{opacity:.35;pointer-events:none;filter:grayscale(1)}
-
-.stars-deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:450;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
-.stars-deposit-overlay.show{opacity:1;visibility:visible}
-.stars-deposit-modal{background:linear-gradient(180deg,#161923,#0F1219);border-radius:24px;width:92%;max-width:380px;overflow:hidden;transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid rgba(255,255,255,.1)}
-.stars-deposit-overlay.show .stars-deposit-modal{transform:scale(1)}
-.stars-deposit-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06)}
-.stars-deposit-title{font-weight:800;font-size:16px;color:#fff}
-.stars-deposit-close{width:32px;height:32px;border-radius:50%;border:none;background:rgba(249,105,153,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#f96989;font-size:16px;transition:background .2s}
-.stars-deposit-body{padding:20px;display:flex;flex-direction:column;align-items:center;gap:16px}
-.stars-deposit-icon{width:64px;height:64px}
-.stars-deposit-label{text-align:center;color:rgba(255,255,255,.6);font-size:13px;line-height:1.5}
-.stars-deposit-input-wrap{width:100%;background:rgba(255,255,255,.05);border-radius:14px;padding:4px}
-.stars-deposit-input{width:100%;padding:14px;border:none;border-radius:12px;background:transparent;color:#fff;font-size:20px;font-weight:700;text-align:center;font-family:inherit}
-.stars-deposit-input:focus{outline:none}
-.stars-deposit-error{color:#f96989;font-size:12px;display:none;text-align:center}
-.stars-deposit-pay-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
-.stars-deposit-pay-btn:disabled{opacity:.5;pointer-events:none}
-.stars-deposit-pay-btn img{width:20px;height:20px}
-
-.promo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);z-index:400;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s}
-.promo-overlay.show{opacity:1;visibility:visible}
-.promo-modal{background:linear-gradient(180deg,#161923,#0F1219);border-radius:24px;width:92%;max-width:380px;padding:24px 20px;transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid rgba(255,255,255,.1)}
-.promo-overlay.show .promo-modal{transform:scale(1)}
-.promo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.promo-title{font-weight:800;font-size:18px;color:#fff;display:flex;align-items:center;gap:8px}
-.promo-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#f96989;font-size:18px;transition:all .2s}
-.promo-input-wrap{display:flex;gap:10px;margin-bottom:16px}
-.promo-input{flex:1;padding:14px 16px;border:2px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.05);color:#fff;font-size:16px;font-weight:600;text-transform:uppercase;font-family:inherit;letter-spacing:2px;text-align:center}
-.promo-input:focus{outline:none;border-color:var(--accent)}
-.promo-input::placeholder{color:rgba(255,255,255,.25);text-transform:none;letter-spacing:0;font-weight:400}
-.promo-submit{padding:14px 20px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent-light));color:#fff;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .2s}
-.promo-submit:active{transform:scale(.95)}
-.promo-submit:disabled{opacity:.5;pointer-events:none}
-.promo-error{color:#f96989;font-size:12px;text-align:center;display:none;margin-bottom:12px}
-.promo-progress-section{margin-top:16px;padding:16px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);display:none}
-.promo-progress-title{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.promo-progress-gift{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.promo-progress-gift img{width:48px;height:48px;border-radius:10px;object-fit:contain}
-.promo-progress-gift-info{flex:1}
-.promo-progress-gift-name{font-weight:700;font-size:14px;color:#fff}
-.promo-progress-gift-val{font-size:12px;color:var(--accent)}
-.promo-progress-bar-wrap{width:100%;height:10px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden}
-.promo-progress-bar{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--accent),var(--green));transition:width .5s ease;min-width:0}
-.promo-progress-text{text-align:center;font-size:11px;color:rgba(255,255,255,.5);margin-top:6px}
-
-.deposit-history-section{margin-top:16px;padding:14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
-.deposit-history-title{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.deposit-history-title svg{width:14px;height:14px;stroke:rgba(255,255,255,.4);fill:none}
-.deposit-history-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
-.deposit-history-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.03)}
-.deposit-history-left{display:flex;align-items:center;gap:8px}
-.deposit-history-icon{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center}
-.deposit-history-icon svg{width:14px;height:14px;stroke:rgba(255,255,255,.4);fill:none}
-.deposit-history-type{font-size:12px;color:rgba(255,255,255,.5)}
-.deposit-history-amount{font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:4px}
-.deposit-history-amount img{width:12px;height:12px}
-.deposit-history-date{font-size:10px;color:rgba(255,255,255,.3)}
-.deposit-history-empty{font-size:12px;color:rgba(255,255,255,.3);text-align:center;padding:12px}
-
-.gift-reveal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;opacity:0;visibility:hidden;transition:opacity .4s,visibility .4s}
-.gift-reveal-overlay.show{opacity:1;visibility:visible}
-.gift-reveal-img{width:140px;height:140px;object-fit:contain;animation:giftPop .6s cubic-bezier(.175,.885,.32,1.275);filter:drop-shadow(0 0 40px rgba(64,156,255,.5))}
-.gift-reveal-name{font-size:22px;font-weight:800;color:#fff;text-align:center;animation:giftFade .5s .3s both}
-.gift-reveal-sub{font-size:14px;color:var(--accent);animation:giftFade .5s .5s both}
-.gift-reveal-btn{margin-top:10px;padding:12px 32px;border-radius:14px;border:none;background:var(--accent);color:#fff;font-weight:700;font-size:15px;cursor:pointer;animation:giftFade .5s .7s both}
-@keyframes giftPop{0%{transform:scale(0) rotate(-15deg);opacity:0}60%{transform:scale(1.2) rotate(5deg)}100%{transform:scale(1) rotate(0);opacity:1}}
-@keyframes giftFade{0%{opacity:0;transform:translateY(15px)}100%{opacity:1;transform:translateY(0)}}
-
+/* Bottom на мобилке */
 @media(max-width:380px){
-    .page{padding:0 8px 80px}
-    .profile-name{font-size:16px}
-    .profile-stats{gap:5px}
-    .profile-stat{padding:8px 4px}
-    .profile-stat-val{font-size:13px}
+  .page{padding-left:8px;padding-right:8px}
+  .profile-name{font-size:16px}
 }
 </style>
 </head>
 <body>
 <div class="page">
+
 <div class="top-bar">
-    <div class="top-bar-left">
-        <div class="top-icon-btn" id="langBtn" onclick="toggleLang()" title="Language">
-            <img class="lang-flag" id="langFlag" src="/static/gifs/eg.gif" alt="EN">
-        </div>
-        <div class="top-icon-btn" id="vibBtn" onclick="toggleVibration()" title="Vibration">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-        </div>
-    </div>
-    <div class="top-bar-right">
-        <div class="bal-pill">
-            <img src="/static/img/ton.png" alt="TON" id="hdrTonIcon">
-            <span id="hdrBalance">0.00</span>
-        </div>
-        <div class="bal-plus" onclick="openDeposit()" title="Top Up">+</div>
-    </div>
+  <div class="top-bar-left">
+    <div class="top-icon-btn" id="langBtn" onclick="toggleLang()"><img class="lang-flag" id="langFlag" src="/static/gifs/eg.gif" alt="EN"></div>
+    <div class="top-icon-btn" id="vibBtn" onclick="toggleVibration()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+  </div>
+  <div class="top-bar-right">
+    <div class="bal-pill"><img src="/static/img/ton.png" alt="TON"><span id="hdrBalance">0.00</span></div>
+    <div class="bal-plus" onclick="openDeposit()">+</div>
+  </div>
 </div>
 
 <div class="profile-section">
-    <div class="avatar-wrap">
-        <img id="userAvatar" src="/static/img/default_avatar.png" alt="Avatar">
-    </div>
-    <div class="profile-name" id="userName">Loading...</div>
-    <div class="profile-uid" id="userUid"></div>
-    <div class="level-bar-wrap">
-        <div class="level-bar-bg"><div class="level-bar-fill" id="levelBar" style="width:0%"></div></div>
-        <div class="level-bar-text" id="levelText">0 / 100 TON</div>
-    </div>
-    <div class="profile-stats">
-        <div class="profile-stat">
-            <div class="profile-stat-val"><img src="/static/img/ton.png" alt="TON"> <span id="statBalance">0.00</span></div>
-            <div class="profile-stat-label">Balance</div>
-        </div>
-        <div class="profile-stat">
-            <div class="profile-stat-val"><span id="statGifts">0</span></div>
-            <div class="profile-stat-label">Gifts</div>
-        </div>
-        <div class="profile-stat">
-            <div class="profile-stat-val"><span id="statLevel">1</span></div>
-            <div class="profile-stat-label">Level</div>
-        </div>
-    </div>
+  <div class="avatar-wrap"><img id="userAvatar" src="/static/img/default_avatar.png" alt="Avatar"></div>
+  <div class="profile-name" id="userName">Loading...</div>
+  <div class="profile-uid" id="userUid"></div>
+  <div class="level-bar-wrap">
+    <div class="level-bar-bg"><div class="level-bar-fill" id="levelBar" style="width:0%"></div></div>
+    <div class="level-bar-text" id="levelText">0 / 100 TON</div>
+  </div>
+  <div class="profile-stats">
+    <div class="profile-stat"><div class="profile-stat-val"><img src="/static/img/ton.png" alt=""> <span id="statBalance">0.00</span></div><div class="profile-stat-label">Balance</div></div>
+    <div class="profile-stat"><div class="profile-stat-val"><span id="statGifts">0</span></div><div class="profile-stat-label">Gifts</div></div>
+    <div class="profile-stat"><div class="profile-stat-val"><span id="statLevel">1</span></div><div class="profile-stat-label">Level</div></div>
+  </div>
 </div>
 
 <div class="action-row">
-    <button class="btn-action btn-primary" onclick="openDeposit()">Deposit</button>
-    <button class="btn-action btn-outline" onclick="openPromoModal()">Промокод</button>
+  <button class="btn-action btn-primary" onclick="openDeposit()">Deposit</button>
+  <button class="btn-action btn-outline" onclick="openPromoModal()">Промокод</button>
 </div>
 
-<button class="admin-btn" id="adminBtn" onclick="window.location.href='/admin'">Admin Panel</button>
-
-<div class="news-mgmt" id="newsMgmt">
-    <button class="news-mgmt-toggle" id="newsMgmtToggle" onclick="toggleNewsMgmt()">
-        News Management
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
-    <div class="news-mgmt-list" id="newsMgmtList"></div>
-</div>
+<button class="admin-btn" id="adminBtn" onclick="window.location.href='/admin'" style="display:none">Admin Panel</button>
 
 <div class="ref-card">
-    <img class="ref-decor" src="/static/img/ref_banner.png" alt="" onerror="this.style.display='none'">
-    <div class="ref-card-title">REFERRALS</div>
-    <div class="ref-card-desc">Invite friends and get 10% of your friends' deposits!</div>
-    <div class="ref-stats">
-        <div class="ref-stat"><img src="/static/img/ton.png" alt="TON"> <span id="refBalance">0.00</span> TON</div>
-        <div class="ref-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> <span id="refCount">0</span></div>
-        <div class="ref-stat" style="cursor:pointer" onclick="showTerms()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></div>
-    </div>
-    <div class="ref-links">
-        <button class="ref-link" onclick="inviteFriends()">Invite friends</button>
-        <button class="ref-link" onclick="copyRefLink()">Copy link</button>
-        <button class="ref-link" id="refWithdrawBtn" onclick="withdrawRefBalance()" style="color:var(--green)">Withdraw</button>
-    </div>
+  <img class="ref-decor" src="/static/img/ref_banner.png" alt="" onerror="this.style.display='none'">
+  <div class="ref-card-title">REFERRALS</div>
+  <div class="ref-card-desc">Invite friends and get 10%!</div>
+  <div class="ref-stats">
+    <div class="ref-stat"><img src="/static/img/ton.png" alt="TON"> <span id="refBalance">0.00</span> TON</div>
+    <div class="ref-stat"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> <span id="refCount">0</span></div>
+  </div>
+  <div class="ref-links">
+    <button class="ref-link" onclick="inviteFriends()">Invite friends</button>
+    <button class="ref-link" onclick="copyRefLink()">Copy link</button>
+    <button class="ref-link" onclick="withdrawRefBalance()" style="color:var(--green)">Withdraw</button>
+  </div>
 </div>
 
 <div class="section-header">
-    <div class="section-title">Inventory</div>
-    <button class="btn-options" id="optionsBtn" onclick="toggleSelectMode()">Опции</button>
+  <div class="section-title">Inventory</div>
+  <button class="btn-options" id="optionsBtn" onclick="toggleSelectMode()">Опции</button>
 </div>
 <input class="inv-search" id="invSearch" type="text" placeholder="Поиск подарков..." oninput="renderInventory()">
 <div id="inventoryContainer">
-    <div class="inv-empty">Inventory is empty</div>
+  <div class="inv-empty">Inventory is empty</div>
 </div>
+
 </div>
 
 <div class="select-action-bar" id="selectActionBar">
-    <div class="select-info">Выбрано: <span id="selectedCount">0</span></div>
-    <div class="select-btns">
-        <button class="select-btn select-btn-sell" onclick="openBatchSellModal()">Продать</button>
-        <button class="select-btn select-btn-withdraw" onclick="batchWithdraw()">Вывести</button>
-    </div>
+  <div class="select-info">Выбрано: <span id="selectedCount">0</span></div>
+  <div class="select-btns">
+    <button class="select-btn select-btn-sell" onclick="openBatchSellModal()">Продать</button>
+    <button class="select-btn select-btn-withdraw" onclick="batchWithdraw()">Вывести</button>
+  </div>
 </div>
 
 <div class="batch-modal-overlay" id="batchSellModal" onclick="if(event.target===this)closeBatchSellModal()">
-    <div class="batch-modal">
-        <div class="batch-modal-header">
-            <div class="batch-modal-title">Подтвердите действие</div>
-            <button class="batch-modal-close" onclick="closeBatchSellModal()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
-        <div class="batch-modal-list" id="batchItemsList"></div>
-        <div class="batch-modal-footer">
-            <div class="batch-total">
-                <div class="batch-total-label">Общая сумма продажи:</div>
-                <div class="batch-total-value" id="batchTotalValue"><img src="/static/img/ton.png"> <span>0.00</span> TON</div>
-            </div>
-            <button class="batch-confirm-btn" id="batchConfirmBtn" onclick="confirmBatchSell()" disabled>Подождите 3 секунды</button>
-        </div>
+  <div class="batch-modal">
+    <div class="batch-modal-header">
+      <div class="batch-modal-title">Подтвердите действие</div>
+      <button class="batch-modal-close" onclick="closeBatchSellModal()">✕</button>
     </div>
+    <div class="batch-modal-list" id="batchItemsList"></div>
+    <div class="batch-modal-footer">
+      <div class="batch-total">
+        <div class="batch-total-label">Общая сумма продажи:</div>
+        <div class="batch-total-value" id="batchTotalValue"><img src="/static/img/ton.png"> <span>0.00</span> TON</div>
+      </div>
+      <button class="batch-confirm-btn" id="batchConfirmBtn" onclick="confirmBatchSell()" disabled>Подождите 3 секунды</button>
+    </div>
+  </div>
 </div>
 
 <div class="rewards-overlay" id="rewardsOverlay" onclick="if(event.target===this)closeRewardsModal()">
-    <div class="rewards-sheet">
-        <div class="rewards-handle"></div>
-        <div class="rewards-header">
-            <div class="rewards-title">Rewards</div>
-            <div class="rewards-level" id="rewardsUserLevel">1 lvl</div>
-        </div>
-        <div class="rewards-grid" id="rewardsGrid"></div>
-        <button class="rewards-close-btn" onclick="closeRewardsModal()">Close</button>
+  <div class="rewards-sheet">
+    <div class="rewards-handle"></div>
+    <div class="rewards-header">
+      <div class="rewards-title">Rewards</div>
+      <div class="rewards-level" id="rewardsUserLevel">1 lvl</div>
     </div>
+    <div class="rewards-grid" id="rewardsGrid"></div>
+    <button class="rewards-close-btn" onclick="closeRewardsModal()">Close</button>
+  </div>
 </div>
 
 <div class="modal-overlay" id="sellAllModal">
-    <div class="modal-box">
-        <div class="modal-title">Sell all gifts?</div>
-        <div class="sell-modal-info">All gifts will be sold</div>
-        <div class="sell-modal-total" id="sellAllTotal">0.00 TON</div>
-        <div class="modal-btns">
-            <button class="modal-btn modal-btn-cancel" onclick="hideSellAllModal()">Cancel</button>
-            <button class="modal-btn modal-btn-confirm" onclick="confirmSellAll()">Sell</button>
-        </div>
+  <div class="modal-box">
+    <div class="modal-title">Sell all gifts?</div>
+    <div class="modal-btns">
+      <button class="modal-btn modal-btn-cancel" onclick="hideSellAllModal()">Cancel</button>
+      <button class="modal-btn modal-btn-confirm" onclick="confirmSellAll()">Sell</button>
     </div>
+  </div>
 </div>
 
 <div class="item-modal-overlay" id="itemModal" onclick="if(event.target===this)hideItemModal()">
-    <div class="item-modal">
-        <div class="item-modal-handle"></div>
-        <div class="item-modal-name" id="itemModalName"></div>
-        <img class="item-modal-main-img" id="itemModalImg" src="" alt="">
-        <div class="item-modal-price" id="itemModalPriceWrap"><img src="/static/img/ton.png" id="itemModalTonIcon"> <span id="itemModalPrice">0</span> TON</div>
-
-        <div class="nft-detail-section" id="nftDetailSection">
-            <div class="nft-detail-img-wrap">
-                <img id="nftDetailImg" src="" alt="">
-            </div>
-            <div class="nft-detail-name"><span id="nftDetailNameText"></span><span class="nft-chevron">›</span></div>
-            <div class="nft-detail-number" id="nftDetailNumber"></div>
-            <div class="nft-attrs-card" id="nftAttrsCard">
-                <div class="nft-attr-row"><span class="nft-attr-label">Model</span><span class="nft-attr-val" id="nftAttrModel">—</span><span class="nft-attr-rarity" id="nftAttrModelR"></span><span class="nft-attr-ton" id="nftAttrModelTon"></span></div>
-                <div class="nft-attr-row"><span class="nft-attr-label">Symbol</span><span class="nft-attr-val" id="nftAttrSymbol">—</span><span class="nft-attr-rarity" id="nftAttrSymbolR"></span><span class="nft-attr-ton" id="nftAttrSymbolTon"></span></div>
-                <div class="nft-attr-row"><span class="nft-attr-label">Backdrop</span><span class="nft-attr-val" id="nftAttrBackdrop">—</span><span class="nft-attr-rarity" id="nftAttrBackdropR"></span><span class="nft-attr-ton" id="nftAttrBackdropTon"></span></div>
-                <div class="nft-price-row"><span class="nft-price-label">Min. Price</span><span class="nft-price-val" id="nftMinPrice">0 TON</span></div>
-            </div>
-        </div>
-
-        <div class="item-modal-challenge" id="itemModalChallenge" style="display:none">
-            <div class="challenge-label"><svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Wager</div>
-            <div class="challenge-bar-wrap">
-                <div class="challenge-bar" id="challengeBar" style="width:0%"></div>
-            </div>
-            <div class="challenge-text" id="challengeText">0 / 0 TON</div>
-        </div>
-
-        <div class="item-modal-actions" id="itemModalActions">
-            <button class="item-modal-btn item-modal-sell" id="itemModalSellBtn" onclick="showSellConfirm()">Sell</button>
-            <button class="item-modal-btn item-modal-withdraw-nft" id="itemModalWithdrawBtn" onclick="withdrawItem()" style="display:none">Вывод</button>
-            <button class="item-modal-btn item-modal-claim" id="itemModalClaimBtn" onclick="claimChallenge()" style="display:none">Claim</button>
-        </div>
-
-        <div class="sell-confirm-screen" id="sellConfirmScreen">
-            <img class="sell-confirm-gif" src="/static/gifs/quest.gif" alt="">
-            <div class="sell-confirm-text" id="sellConfirmText">Вы точно хотите продать подарок за <span id="sellConfirmPrice">0</span> TON?</div>
-            <button class="sell-confirm-btn waiting" id="sellConfirmBtn" disabled onclick="doConfirmedSell()">Подождите 3...</button>
-            <button class="sell-confirm-cancel" onclick="hideSellConfirm()">Отмена</button>
-        </div>
+  <div class="item-modal">
+    <div class="item-modal-handle"></div>
+    <div class="item-modal-name" id="itemModalName"></div>
+    <img class="item-modal-main-img" id="itemModalImg" src="" alt="">
+    <div class="item-modal-price" id="itemModalPriceWrap"><img src="/static/img/ton.png"> <span id="itemModalPrice">0</span> TON</div>
+    <div class="nft-detail-section" id="nftDetailSection">
+      <div class="nft-detail-img-wrap"><img id="nftDetailImg" src="" alt=""></div>
+      <div class="nft-detail-name"><span id="nftDetailNameText"></span></div>
+      <div class="nft-detail-number" id="nftDetailNumber"></div>
+      <div class="nft-attrs-card">
+        <div class="nft-attr-row"><span class="nft-attr-label">Model</span><span class="nft-attr-val" id="nftAttrModel">—</span><span class="nft-attr-rarity" id="nftAttrModelR"></span></div>
+        <div class="nft-attr-row"><span class="nft-attr-label">Symbol</span><span class="nft-attr-val" id="nftAttrSymbol">—</span><span class="nft-attr-rarity" id="nftAttrSymbolR"></span></div>
+        <div class="nft-attr-row"><span class="nft-attr-label">Backdrop</span><span class="nft-attr-val" id="nftAttrBackdrop">—</span><span class="nft-attr-rarity" id="nftAttrBackdropR"></span></div>
+        <div class="nft-price-row"><span class="nft-price-label">Min. Price</span><span class="nft-price-val" id="nftMinPrice">0 TON</span></div>
+      </div>
     </div>
+    <div class="item-modal-challenge" id="itemModalChallenge" style="display:none">
+      <div class="challenge-label"><svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Wager</div>
+      <div class="challenge-bar-wrap"><div class="challenge-bar" id="challengeBar" style="width:0%"></div></div>
+      <div class="challenge-text" id="challengeText">0 / 0 TON</div>
+    </div>
+    <div class="item-modal-actions" id="itemModalActions">
+      <button class="item-modal-btn item-modal-sell" id="itemModalSellBtn" onclick="showSellConfirm()">Sell</button>
+      <button class="item-modal-btn item-modal-withdraw-nft" id="itemModalWithdrawBtn" onclick="withdrawItem()" style="display:none">Вывод</button>
+      <button class="item-modal-btn item-modal-claim" id="itemModalClaimBtn" onclick="claimChallenge()" style="display:none">Claim</button>
+    </div>
+    <div class="sell-confirm-screen" id="sellConfirmScreen">
+      <img class="sell-confirm-gif" src="/static/gifs/quest.gif" alt="">
+      <div class="sell-confirm-text">Вы точно хотите продать подарок за <span id="sellConfirmPrice">0</span> TON?</div>
+      <button class="sell-confirm-btn waiting" id="sellConfirmBtn" disabled onclick="doConfirmedSell()">Подождите 3...</button>
+      <button class="sell-confirm-cancel" onclick="hideSellConfirm()">Отмена</button>
+    </div>
+  </div>
 </div>
 
 <div class="mrkt-backdrop" id="mrktBackdrop" onclick="closePortalPicker()"></div>
 <div class="mrkt-overlay" id="mrktOverlay">
-    <div class="mrkt-header">
-        <div>
-            <div class="mrkt-title">Выбор подарка</div>
-            <div class="mrkt-subtitle" id="mrktSubtitle">Загрузка...</div>
-        </div>
-        <button class="mrkt-close-btn" onclick="closePortalPicker()">&#10005;</button>
+  <div class="mrkt-header">
+    <div>
+      <div class="mrkt-title">Выбор подарка</div>
+      <div class="mrkt-subtitle" id="mrktSubtitle">Загрузка...</div>
     </div>
-    <div class="mrkt-fee-badge">Комиссия вывода: 0.4 TON с баланса</div>
-    <div class="mrkt-grid" id="mrktGrid">
-        <div class="mrkt-loading">Загрузка подарков с Portal...</div>
-    </div>
-    <div class="mrkt-footer">
-        <button class="mrkt-confirm-btn" id="mrktConfirmBtn" disabled onclick="confirmPortalWithdraw()">
-            Выбрать подарок
-        </button>
-    </div>
+    <button class="mrkt-close-btn" onclick="closePortalPicker()">✕</button>
+  </div>
+  <div class="mrkt-fee-badge">Комиссия вывода: 0.4 TON с баланса</div>
+  <div class="mrkt-grid" id="mrktGrid"><div class="mrkt-loading">Загрузка подарков...</div></div>
+  <div class="mrkt-footer">
+    <button class="mrkt-confirm-btn" id="mrktConfirmBtn" disabled onclick="confirmPortalWithdraw()">Выбрать подарок</button>
+  </div>
 </div>
 
 <div class="promo-overlay" id="promoOverlay" onclick="if(event.target===this)closePromoModal()">
-    <div class="promo-modal">
-        <div class="promo-header">
-            <div class="promo-title">Promo</div>
-            <button class="promo-close" onclick="closePromoModal()">&#10005;</button>
-        </div>
-        <div class="promo-input-wrap">
-            <input class="promo-input" id="promoInput" type="text" placeholder="Enter code" maxlength="20" autocomplete="off">
-            <button class="promo-submit" id="promoSubmitBtn" onclick="activatePromo()">OK</button>
-        </div>
-        <div class="promo-error" id="promoError"></div>
-        <div class="promo-progress-section" id="promoProgressSection">
-            <div class="promo-progress-title">Active promo gift</div>
-            <div class="promo-progress-gift">
-                <img id="promoGiftImg" src="" alt="">
-                <div class="promo-progress-gift-info">
-                    <div class="promo-progress-gift-name" id="promoGiftName"></div>
-                    <div class="promo-progress-gift-val" id="promoGiftVal"></div>
-                </div>
-            </div>
-            <div class="promo-progress-bar-wrap">
-                <div class="promo-progress-bar" id="promoProgressBar" style="width:0%"></div>
-            </div>
-            <div class="promo-progress-text" id="promoProgressText">0 / 0 TON</div>
-        </div>
-        <div class="deposit-history-section" id="depositHistorySection">
-            <div class="deposit-history-title"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 2v20M2 12h20"/><path d="M17 7l-5 5-5-5"/></svg> Deposit history</div>
-            <div class="deposit-history-list" id="depositHistoryList">
-                <div class="deposit-history-empty">Loading...</div>
-            </div>
-        </div>
+  <div class="promo-modal">
+    <div class="promo-header">
+      <div class="promo-title">Promo</div>
+      <button class="promo-close" onclick="closePromoModal()">✕</button>
     </div>
+    <div class="promo-input-wrap">
+      <input class="promo-input" id="promoInput" type="text" placeholder="Enter code" maxlength="20" autocomplete="off">
+      <button class="promo-submit" id="promoSubmitBtn" onclick="activatePromo()">OK</button>
+    </div>
+    <div class="promo-error" id="promoError"></div>
+  </div>
 </div>
 
 <div class="gift-reveal-overlay" id="giftRevealOverlay" onclick="closeGiftReveal()">
-    <img class="gift-reveal-img" id="giftRevealImg" src="">
-    <div class="gift-reveal-name" id="giftRevealName"></div>
-    <div class="gift-reveal-sub" id="giftRevealSub"></div>
-    <button class="gift-reveal-btn" onclick="closeGiftReveal()">Забрать!</button>
+  <img class="gift-reveal-img" id="giftRevealImg" src="">
+  <div class="gift-reveal-name" id="giftRevealName"></div>
+  <button class="gift-reveal-btn" onclick="closeGiftReveal()">Забрать!</button>
 </div>
 
 <div class="deposit-overlay" id="depositOverlay" onclick="if(event.target===this)closeDeposit()">
-    <div class="deposit-modal">
-        <div class="deposit-header">
-            <div class="deposit-title">Пополнение</div>
-            <button class="deposit-close" onclick="closeDeposit()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
-        <div class="deposit-methods">
-            <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDeposit();openStarsDeposit()">
-                <img src="/static/img/star.png" alt="Stars">
-                <span>Stars</span>
-            </button>
-            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
-                <img src="/static/img/ton.png" alt="TON">
-                <span>TON</span>
-            </button>
-        </div>
+  <div class="deposit-modal">
+    <div class="deposit-header">
+      <div class="deposit-title">Пополнение</div>
+      <button class="deposit-close" onclick="closeDeposit()">✕</button>
     </div>
+    <div class="deposit-methods">
+      <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDeposit();openStarsDeposit()">
+        <img src="/static/img/star.png" alt="Stars"><span>Stars</span>
+      </button>
+      <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
+        <img src="/static/img/ton.png" alt="TON"><span>TON</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <div class="stars-deposit-overlay" id="starsDepositOverlay" onclick="if(event.target===this)closeStarsDeposit()">
-    <div class="stars-deposit-modal">
-        <div class="stars-deposit-header">
-            <div class="stars-deposit-title">Пополнение Stars</div>
-            <button class="stars-deposit-close" onclick="closeStarsDeposit()"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
-        <div class="stars-deposit-body">
-            <img class="stars-deposit-icon" src="/static/img/star.png" alt="Stars">
-            <div class="stars-deposit-label">Введите количество Stars<br><small>1 Star = 0.01 TON</small></div>
-            <div class="stars-deposit-input-wrap">
-                <input class="stars-deposit-input" id="starsDepositAmount" type="number" min="1" max="10000" placeholder="100" value="100">
-            </div>
-            <div class="stars-deposit-error" id="starsDepositError"></div>
-            <button class="stars-deposit-pay-btn" id="starsPayBtn" onclick="payWithStars()">
-                <img src="/static/img/star.png" alt=""> Оплатить <span id="starsPayAmount">100</span> Stars
-            </button>
-        </div>
+  <div class="stars-deposit-modal">
+    <div class="stars-deposit-header">
+      <div class="stars-deposit-title">Пополнение Stars</div>
+      <button class="stars-deposit-close" onclick="closeStarsDeposit()">✕</button>
     </div>
+    <div class="stars-deposit-body">
+      <img class="stars-deposit-icon" src="/static/img/star.png" alt="Stars">
+      <div class="stars-deposit-label">Введите количество Stars<br><small>1 Star = 0.01 TON</small></div>
+      <div class="stars-deposit-input-wrap">
+        <input class="stars-deposit-input" id="starsDepositAmount" type="number" min="1" max="10000" placeholder="100" value="100">
+      </div>
+      <div class="stars-deposit-error" id="starsDepositError" style="color:#f96989;font-size:12px;display:none;text-align:center"></div>
+      <button class="stars-deposit-pay-btn" id="starsPayBtn" onclick="payWithStars()">
+        <img src="/static/img/star.png" alt=""> Оплатить <span id="starsPayAmount">100</span> Stars
+      </button>
+    </div>
+  </div>
 </div>
 
 <div class="success-overlay" id="successOverlay">
-    <img class="success-gif" id="successGif" src="/static/gifs/Hlop.gif" alt="">
-    <div class="success-title" id="successTitle"></div>
-    <div class="success-price" id="successPrice"></div>
-    <button class="success-ok" onclick="closeSuccessOverlay()">OK</button>
+  <img class="success-gif" id="successGif" src="/static/gifs/Hlop.gif" alt="">
+  <div class="success-title" id="successTitle"></div>
+  <div class="success-price" id="successPrice"></div>
+  <button class="success-ok" onclick="closeSuccessOverlay()">OK</button>
 </div>
 
 <div class="notif" id="notif"></div>
 
 <nav class="bottom-nav">
-    <a class="bnav-item" href="/games">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
-        <span class="bnav-label" data-t="games">Игры</span>
-    </a>
-    <a class="bnav-item" href="/news">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
-        <span class="bnav-label" data-t="news">News</span>
-    </a>
-    <a class="bnav-item" href="/leaderboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-        <span class="bnav-label" data-t="top">Top</span>
-    </a>
-    <a class="bnav-item active" href="/inventory">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span class="bnav-label" data-t="profile">Profile</span>
-    </a>
+  <a class="bnav-item" href="/games">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg>
+    <span>Игры</span>
+  </a>
+  <a class="bnav-item" href="/news">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
+    <span>Новости</span>
+  </a>
+  <a class="bnav-item" href="/leaderboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+    <span>Топ</span>
+  </a>
+  <a class="bnav-item active" href="/inventory">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Профиль</span>
+  </a>
 </nav>
-
 <script>
 let user = null;
 let inventory = [];
@@ -836,495 +726,810 @@ const ADMIN_ID = 5257227756;
 
 let currentLang = localStorage.getItem('app_lang') || 'en';
 const TRANSLATIONS = {
-    en:{deposit:'Deposit',rewards:'Rewards',referrals:'REFERRALS',refDesc:"Invite friends and get 10% of your friends' deposits!",inviteFriends:'Invite friends',copyLink:'Copy link',terms:'Terms',inventory:'Inventory',emptyInv:'Inventory is empty',sell:'Sell',withdraw:'Withdraw',close:'Close',cancel:'Cancel',sellAll:'Sell all gifts?',allSold:'All gifts will be sold',adminPanel:'Admin Panel',loading:'Loading...',profile:'Profile',linkCopied:'Link copied!',giftSold:'Gift sold!',withdrawReq:'Withdrawal request created!',noGifts:'No gifts to sell',balance:'Balance:',referralsLabel:'Referrals:',games:'Games',news:'News',top:'Top'},
-    ru:{deposit:'Депозит',rewards:'Награды',referrals:'РЕФЕРАЛЫ',refDesc:'Приглашайте друзей и получайте 10%!',inviteFriends:'Пригласить друзей',copyLink:'Копировать',terms:'Условия',inventory:'Инвентарь',emptyInv:'Инвентарь пуст',sell:'Продать',withdraw:'Вывести',close:'Закрыть',cancel:'Отмена',sellAll:'Продать все подарки?',allSold:'Все подарки будут проданы',adminPanel:'Админ панель',loading:'Загрузка...',profile:'Профиль',linkCopied:'Ссылка скопирована!',giftSold:'Подарок продан!',withdrawReq:'Заявка на вывод создана!',noGifts:'Нет подарков',balance:'Баланс:',referralsLabel:'Рефералы:',games:'Игры',news:'Новости',top:'Топ'}
+  en:{deposit:'Deposit',rewards:'Rewards',inviteFriends:'Invite friends',copyLink:'Copy link',inventory:'Inventory',emptyInv:'Inventory is empty',sell:'Sell',withdraw:'Withdraw',cancel:'Cancel',giftSold:'Gift sold!',loading:'Loading...',linkCopied:'Link copied!',noGifts:'No gifts'},
+  ru:{deposit:'Депозит',rewards:'Награды',inviteFriends:'Пригласить',copyLink:'Копировать',inventory:'Инвентарь',emptyInv:'Инвентарь пуст',sell:'Продать',withdraw:'Вывести',cancel:'Отмена',giftSold:'Подарок продан!',loading:'Загрузка...',linkCopied:'Скопировано!',noGifts:'Нет подарков'}
 };
 function t(k){return (TRANSLATIONS[currentLang]||TRANSLATIONS.en)[k]||k}
 function applyTranslations(){document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=t(el.getAttribute('data-t'))})}
-function initLang(){var f=document.getElementById('langFlag');if(currentLang==='en'){f.src='/static/gifs/eg.gif';f.alt='EN'}else{f.src='/static/gifs/ru.gif';f.alt='RU'}applyTranslations()}
+function initLang(){var f=document.getElementById('langFlag');if(!f)return;if(currentLang==='en'){f.src='/static/gifs/eg.gif';f.alt='EN'}else{f.src='/static/gifs/ru.gif';f.alt='RU'}applyTranslations()}
 function toggleLang(){currentLang=currentLang==='ru'?'en':'ru';localStorage.setItem('app_lang',currentLang);initLang();vibrateIfOn();if(user){updateProfile();renderInventory()}}
 
 let vibrationOn = localStorage.getItem('vibration') !== 'off';
-function initVibration(){document.getElementById('vibBtn').classList.toggle('vibration-off',!vibrationOn)}
+function initVibration(){var b=document.getElementById('vibBtn');if(b)b.classList.toggle('vibration-off',!vibrationOn)}
 function toggleVibration(){vibrationOn=!vibrationOn;localStorage.setItem('vibration',vibrationOn?'on':'off');initVibration();if(vibrationOn){try{if(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.HapticFeedback){Telegram.WebApp.HapticFeedback.impactOccurred('medium');return}}catch(e){}if(navigator.vibrate)navigator.vibrate(50)}}
 function vibrateIfOn(){if(!vibrationOn)return;try{if(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.HapticFeedback){Telegram.WebApp.HapticFeedback.impactOccurred('light');return}}catch(e){}if(navigator.vibrate)navigator.vibrate(30)}
 
-document.addEventListener('DOMContentLoaded',function(){initLang();initVibration();if(window.Telegram&&window.Telegram.WebApp){window.Telegram.WebApp.setHeaderColor('#1A1E2A');window.Telegram.WebApp.setBackgroundColor('#1A1E2A')}});
+document.addEventListener('DOMContentLoaded',function(){
+  initLang();initVibration();
+  if(window.Telegram&&window.Telegram.WebApp){
+    try{window.Telegram.WebApp.setHeaderColor('#1A1E2A');window.Telegram.WebApp.setBackgroundColor('#1A1E2A')}catch(e){}
+  }
+});
 
 function getTonIcon(){return '/static/img/ton.png'}
 function starsToTon(s){return Number(s||0)/100}
 function formatTon(t){var v=parseFloat(t)||0;if(v===0)return '0.00';if(v>=100)return v.toFixed(0);if(v>=10)return v.toFixed(1);return v.toFixed(2)}
 
 async function initUser(){
-    var authData = await telegramAuth();
-    if(!authData)return;
-    try{var br=await fetch('/api/check-ban?user_id='+authData.id);var bd=await br.json();if(bd.banned){window.location.href='/ban';return}}catch(e){}
-    try{
-        var r = await fetch('/api/telegram-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(authData)});
-        var d = await r.json();
-        if(d.success){
-            user = d.user;updateProfile();loadInventory();loadLevelRewards();
-            if(user.id==ADMIN_ID){document.getElementById('adminBtn').style.display='block';document.getElementById('newsMgmt').style.display='block';loadNewsMgmt()}
-        }
-    }catch(e){console.error('Init error:',e);showNotif('Error loading data',true)}
+  var authData = null;
+  try{ authData = await telegramAuth(); }catch(e){ console.error('auth fail', e); }
+  if(!authData){ setTimeout(initUser, 1500); return; }
+  try{
+    var br = await fetch('/api/check-ban?user_id='+authData.id);
+    var bd = await br.json();
+    if(bd.banned){ window.location.href='/ban'; return; }
+  }catch(e){}
+  try{
+    var r = await fetch('/api/telegram-auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(authData)});
+    var d = await r.json();
+    if(d.success){
+      user = d.user;
+      updateProfile();
+      loadInventory();
+      loadLevelRewards();
+      if(String(user.id) === String(ADMIN_ID)){
+        var ab = document.getElementById('adminBtn'); if(ab) ab.style.display='block';
+      }
+    }
+  }catch(e){ console.error('initUser:', e); showNotif('Ошибка загрузки', true); }
 }
 
 function updateProfile(){
-    if(!user)return;
-    var name = user.first_name||'User';var level = user.current_level||1;
-    document.getElementById('userName').textContent = name;
-    document.getElementById('userUid').textContent = 'Level '+level;
-    var avatar = document.getElementById('userAvatar');
-    var isDemo = !user.photo_url||user.photo_url===''||user.photo_url.indexOf('default')!==-1;
-    avatar.src = isDemo?'/static/img/default_avatar.png':user.photo_url;
-    var bal = formatTon(starsToTon(user.balance_stars));
-    document.getElementById('hdrBalance').textContent = bal;
-    document.getElementById('statBalance').textContent = bal;
-    document.getElementById('statGifts').textContent = inventory.length||0;
-    document.getElementById('statLevel').textContent = level;
-    var li = user.level_info;
-    if(li){
-        var pct = li.progress_percentage||0;
-        document.getElementById('levelBar').style.width = Math.min(pct,100)+'%';
-        var curLvlExp = li.current_level_info?(li.current_level_info.exp_required||0):0;
-        var nextLvlExp = li.next_level_info?(li.next_level_info.exp_required||0):curLvlExp;
-        var withinLevel = (li.experience||0)-curLvlExp;
-        var tierSize = nextLvlExp-curLvlExp;
-        var cur = formatTon(starsToTon(Math.max(0,withinLevel)));
-        var need = tierSize>0?formatTon(starsToTon(tierSize)):'MAX';
-        document.getElementById('levelText').textContent = cur+' / '+need+' TON';
-    }
-    document.getElementById('refBalance').textContent = formatTon(starsToTon(user.referral_balance||0));
-    document.getElementById('refCount').textContent = user.referral_count||0;
-    applyTranslations();
+  if(!user) return;
+  var name = user.first_name||'User';
+  var level = user.current_level||1;
+  var nm = document.getElementById('userName'); if(nm) nm.textContent = name;
+  var uid = document.getElementById('userUid'); if(uid) uid.textContent = 'Level '+level;
+  var avatar = document.getElementById('userAvatar');
+  if(avatar){
+    var isDemo = !user.photo_url || user.photo_url==='' || String(user.photo_url).indexOf('default')!==-1;
+    avatar.src = isDemo ? '/static/img/default_avatar.png' : user.photo_url;
+  }
+  var bal = formatTon(starsToTon(user.balance_stars));
+  var hb = document.getElementById('hdrBalance'); if(hb) hb.textContent = bal;
+  var sb = document.getElementById('statBalance'); if(sb) sb.textContent = bal;
+  var sg = document.getElementById('statGifts'); if(sg) sg.textContent = inventory.length||0;
+  var sl = document.getElementById('statLevel'); if(sl) sl.textContent = level;
+  var li = user.level_info;
+  if(li){
+    var pct = li.progress_percentage||0;
+    var lb = document.getElementById('levelBar'); if(lb) lb.style.width = Math.min(pct,100)+'%';
+    var curLvlExp = li.current_level_info ? (li.current_level_info.exp_required||0) : 0;
+    var nextLvlExp = li.next_level_info ? (li.next_level_info.exp_required||0) : curLvlExp;
+    var withinLevel = (li.experience||0) - curLvlExp;
+    var tierSize = nextLvlExp - curLvlExp;
+    var cur = formatTon(starsToTon(Math.max(0,withinLevel)));
+    var need = tierSize>0 ? formatTon(starsToTon(tierSize)) : 'MAX';
+    var lt = document.getElementById('levelText'); if(lt) lt.textContent = cur+' / '+need+' TON';
+  }
+  var rb = document.getElementById('refBalance'); if(rb) rb.textContent = formatTon(starsToTon(user.referral_balance||0));
+  var rc = document.getElementById('refCount'); if(rc) rc.textContent = user.referral_count||0;
+  applyTranslations();
 }
 
 async function loadLevelRewards(){
-    try{var r=await fetch('/api/level-rewards');var d=await r.json();if(d.success)levelRewards=d.levels||[]}catch(e){console.error(e)}
+  try{
+    var r = await fetch('/api/level-rewards');
+    var d = await r.json();
+    if(d.success) levelRewards = d.levels || [];
+  }catch(e){ console.error(e); }
 }
 
 async function openRewardsModal(){
-    vibrateIfOn();if(!levelRewards.length)await loadLevelRewards();
-    var userLvl = (user&&user.current_level)||1;
-    document.getElementById('rewardsUserLevel').textContent = userLvl+' lvl';
-    var grid = document.getElementById('rewardsGrid');
-    var all = levelRewards.filter(function(lv){return lv&&lv.reward});
-    if(!all.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text2);padding:40px 20px;font-size:14px">Нет наград</div>'}
-    else{
-        grid.innerHTML = all.map(function(lv){
-            var unlocked = userLvl>=lv.level;
-            var cls = unlocked?'unlocked':'locked';
-            var rw = lv.reward||{};
-            var img = rw.image||'/static/img/ton.png';
-            var lockIcon = unlocked?'':'<div class="reward-lock-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>';
-            return '<div class="reward-card '+cls+'" onclick="onRewardClick('+lv.level+','+(unlocked?1:0)+')">'
-                +'<div class="reward-card-lvl">'+lv.level+' lvl</div>'
-                +'<img class="reward-card-img" src="'+img+'" onerror="this.src=\'/static/img/ton.png\'">'
-                +'<div class="reward-card-name">'+(rw.name||'')+'</div>'+lockIcon+'</div>';
-        }).join('');
-    }
-    document.getElementById('rewardsOverlay').classList.add('show');
+  vibrateIfOn();
+  if(!levelRewards.length) await loadLevelRewards();
+  var userLvl = (user && user.current_level) || 1;
+  var rel = document.getElementById('rewardsUserLevel'); if(rel) rel.textContent = userLvl+' lvl';
+  var grid = document.getElementById('rewardsGrid');
+  if(!grid) return;
+  var all = levelRewards.filter(function(lv){ return lv && lv.reward; });
+  if(!all.length){
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:rgba(255,255,255,.5);padding:40px 20px;font-size:14px">Нет наград</div>';
+  } else {
+    grid.innerHTML = all.map(function(lv){
+      var unlocked = userLvl >= lv.level;
+      var cls = unlocked ? 'unlocked' : 'locked';
+      var rw = lv.reward||{};
+      var img = rw.image || '/static/img/ton.png';
+      var lockIcon = unlocked ? '' : '<div style="position:absolute;bottom:8px;right:8px;opacity:.6;color:rgba(255,255,255,.6)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>';
+      return '<div class="reward-card '+cls+'" onclick="onRewardClick('+lv.level+','+(unlocked?1:0)+')">'
+        +'<div class="reward-card-lvl">'+lv.level+' lvl</div>'
+        +'<img class="reward-card-img" src="'+img+'" onerror="this.src=\'/static/img/ton.png\'">'
+        +'<div class="reward-card-name">'+(rw.name||'')+'</div>'
+        +lockIcon+'</div>';
+    }).join('');
+  }
+  var ro = document.getElementById('rewardsOverlay'); if(ro) ro.classList.add('show');
 }
-function closeRewardsModal(){document.getElementById('rewardsOverlay').classList.remove('show')}
-function onRewardClick(level,unlocked){var lv=levelRewards.find(function(l){return l.level===level});if(!lv||!lv.reward)return;if(unlocked)showNotif('Level '+level+': '+(lv.reward.name||'Reward'));else showNotif('Уровень '+level+' нужен',true);vibrateIfOn()}
+
+function closeRewardsModal(){
+  var ro = document.getElementById('rewardsOverlay'); if(ro) ro.classList.remove('show');
+}
+
+function onRewardClick(level, unlocked){
+  var lv = levelRewards.find(function(l){return l.level===level});
+  if(!lv || !lv.reward) return;
+  if(unlocked) showNotif('Level '+level+': '+(lv.reward.name||'Reward'));
+  else showNotif('Нужен уровень '+level, true);
+  vibrateIfOn();
+}
 
 async function loadInventory(){
-    try{var r=await fetch('/api/inventory/'+user.id);var d=await r.json();if(d.success){inventory=d.inventory||[];renderInventory();document.getElementById('statGifts').textContent=inventory.length}}catch(e){}
+  if(!user) return;
+  try{
+    var r = await fetch('/api/inventory/'+user.id);
+    var d = await r.json();
+    if(d.success){
+      inventory = d.inventory || [];
+      renderInventory();
+      var sg = document.getElementById('statGifts'); if(sg) sg.textContent = inventory.length;
+    }
+  }catch(e){ console.error('loadInventory:', e); }
 }
 
 function renderInventory(){
-    var c = document.getElementById('inventoryContainer');
-    var searchVal = (document.getElementById('invSearch')?document.getElementById('invSearch').value:'').toLowerCase().trim();
-    var filtered = inventory;
-    if(searchVal){filtered = inventory.filter(function(item){return (item.gift_name||item.name||'').toLowerCase().indexOf(searchVal)!==-1})}
-    if(!filtered.length){c.innerHTML='<div class="inv-empty">'+(searchVal?'Ничего не найдено':t('emptyInv'))+'</div>';return}
-    c.innerHTML = '<div class="inv-grid">'+filtered.map(function(item){
-        var ton = starsToTon(item.gift_value);
-        var fragmentFallback = item.fragment_slug ? 'https://fragment.com/file/gifts/'+item.fragment_slug+'/thumb.webp' : '/static/img/default_gift.png';
-        var onerr = "this.onerror=function(){this.src=&quot;/static/img/default_gift.png&quot;};this.src=&quot;"+fragmentFallback+"&quot;";
-        var chBadge = (item.challenge&&!item.challenge.is_completed)?'<div class="inv-card-challenge"><svg viewBox="0 0 24 24" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>':'';
-        var cardClass = 'inv-card';
-        if(item.challenge&&!item.challenge.is_completed)cardClass += ' inv-card-locked';
-        if(item.is_upgraded)cardClass += ' inv-card-upgraded';
-        if(selectedItems.has(item.id))cardClass += ' selected';
-        var imgSrc = item.is_upgraded?(item.gift_image||(item.fragment_slug?'https://fragment.com/file/gifts/'+item.fragment_slug+'/thumb.webp':'/static/img/default_gift.png')):item.gift_image;
-        var click = selectMode?'toggleSelectItem('+item.id+')':'openItemModal('+item.id+')';
-        var imgHtml = '<img class="inv-card-img" src="'+imgSrc+'" alt="'+item.gift_name+'" onerror="'+onerr+'">';
-        if(item.is_upgraded){return '<div class="'+cardClass+'" onclick="'+click+'">'+imgHtml+'</div>'}
-        return '<div class="'+cardClass+'" onclick="'+click+'">'+imgHtml+chBadge+'<div class="inv-card-name">'+item.gift_name+'</div><div class="inv-card-price"><img src="'+getTonIcon()+'"> '+formatTon(ton)+'</div></div>';
-    }).join('')+'</div>';
+  var c = document.getElementById('inventoryContainer');
+  if(!c) return;
+  var searchEl = document.getElementById('invSearch');
+  var searchVal = (searchEl ? searchEl.value : '').toLowerCase().trim();
+  var filtered = inventory;
+  if(searchVal){
+    filtered = inventory.filter(function(item){
+      return (item.gift_name||item.name||'').toLowerCase().indexOf(searchVal) !== -1;
+    });
+  }
+  if(!filtered.length){
+    c.innerHTML = '<div class="inv-empty">'+(searchVal?'Ничего не найдено':t('emptyInv'))+'</div>';
+    return;
+  }
+  c.innerHTML = '<div class="inv-grid">' + filtered.map(function(item){
+    var ton = starsToTon(item.gift_value);
+    var slug = item.fragment_slug || '';
+    var fragmentFallback = slug ? 'https://fragment.com/file/gifts/'+slug+'/thumb.webp' : '/static/img/default_gift.png';
+    var onerr = "this.onerror=null;this.src='" + fragmentFallback + "'";
+    var chBadge = (item.challenge && !item.challenge.is_completed)
+      ? '<div class="inv-card-challenge"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
+      : '';
+    var cardClass = 'inv-card';
+    if(item.challenge && !item.challenge.is_completed) cardClass += ' inv-card-locked';
+    if(item.is_upgraded) cardClass += ' inv-card-upgraded';
+    if(selectedItems.has(item.id)) cardClass += ' selected';
+    var imgSrc = item.is_upgraded
+      ? (item.gift_image || fragmentFallback)
+      : (item.gift_image || fragmentFallback);
+    var click = selectMode ? 'toggleSelectItem('+item.id+')' : 'openItemModal('+item.id+')';
+    var imgHtml = '<img class="inv-card-img" src="'+imgSrc+'" alt="" loading="lazy" onerror="'+onerr+'">';
+    if(item.is_upgraded){
+      return '<div class="'+cardClass+'" onclick="'+click+'">'+imgHtml+'</div>';
+    }
+    return '<div class="'+cardClass+'" onclick="'+click+'">'
+      + imgHtml
+      + chBadge
+      + '<div class="inv-card-name">'+(item.gift_name||'')+'</div>'
+      + '<div class="inv-card-price"><img src="'+getTonIcon()+'"> '+formatTon(ton)+'</div>'
+      + '</div>';
+  }).join('') + '</div>';
 }
 
-function toggleSelectMode(){selectMode=!selectMode;selectedItems.clear();document.getElementById('optionsBtn').classList.toggle('active',selectMode);renderInventory();vibrateIfOn();updateSelectActionBar()}
-function toggleSelectItem(id){if(selectedItems.has(id))selectedItems.delete(id);else selectedItems.add(id);vibrateIfOn();renderInventory();updateSelectActionBar()}
-function updateSelectActionBar(){var bar=document.getElementById('selectActionBar');var cnt=selectedItems.size;document.getElementById('selectedCount').textContent=cnt;bar.classList.toggle('show',cnt>0)}
+function toggleSelectMode(){
+  selectMode = !selectMode;
+  selectedItems.clear();
+  var ob = document.getElementById('optionsBtn'); if(ob) ob.classList.toggle('active', selectMode);
+  renderInventory();
+  vibrateIfOn();
+  updateSelectActionBar();
+}
+function toggleSelectItem(id){
+  if(selectedItems.has(id)) selectedItems.delete(id);
+  else selectedItems.add(id);
+  vibrateIfOn();
+  renderInventory();
+  updateSelectActionBar();
+}
+function updateSelectActionBar(){
+  var bar = document.getElementById('selectActionBar');
+  var cnt = selectedItems.size;
+  var sc = document.getElementById('selectedCount'); if(sc) sc.textContent = cnt;
+  if(bar) bar.classList.toggle('show', cnt>0);
+}
 
 function openBatchSellModal(){
-    if(selectedItems.size===0)return;
-    var list = document.getElementById('batchItemsList');var tot=0;var html='';var idx=1;
-    selectedItems.forEach(function(iid){
-        var item = inventory.find(function(i){return i.id===iid});
-        if(item){var ton=starsToTon(item.gift_value);tot+=item.gift_value||0;
-        html += '<div class="batch-item"><div class="batch-item-num">'+idx+'.</div><img class="batch-item-img" src="'+item.gift_image+'" alt=""><div class="batch-item-info"><div class="batch-item-name">'+item.gift_name+'</div><div class="batch-item-price"><img src="/static/img/ton.png"> '+formatTon(ton)+' TON</div></div></div>';idx++}
-    });
-    list.innerHTML = html;
-    document.querySelector('#batchTotalValue span').textContent = formatTon(starsToTon(tot));
-    document.getElementById('batchSellModal').classList.add('show');
-    startBatchCountdown();
+  if(selectedItems.size===0) return;
+  var list = document.getElementById('batchItemsList');
+  if(!list) return;
+  var tot = 0, html = '', idx = 1;
+  selectedItems.forEach(function(iid){
+    var item = inventory.find(function(i){return i.id===iid});
+    if(item){
+      var ton = starsToTon(item.gift_value);
+      tot += item.gift_value || 0;
+      html += '<div class="batch-item">'
+        + '<div class="batch-item-num">'+idx+'.</div>'
+        + '<img class="batch-item-img" src="'+item.gift_image+'" alt="">'
+        + '<div class="batch-item-info">'
+        + '<div class="batch-item-name">'+item.gift_name+'</div>'
+        + '<div class="batch-item-price"><img src="/static/img/ton.png"> '+formatTon(ton)+' TON</div>'
+        + '</div></div>';
+      idx++;
+    }
+  });
+  list.innerHTML = html;
+  var btv = document.querySelector('#batchTotalValue span'); if(btv) btv.textContent = formatTon(starsToTon(tot));
+  var bsm = document.getElementById('batchSellModal'); if(bsm) bsm.classList.add('show');
+  startBatchCountdown();
 }
-function closeBatchSellModal(){document.getElementById('batchSellModal').classList.remove('show');if(window.batchCountdownTimer){clearInterval(window.batchCountdownTimer);window.batchCountdownTimer=null}}
+function closeBatchSellModal(){
+  var bsm = document.getElementById('batchSellModal'); if(bsm) bsm.classList.remove('show');
+  if(window.batchCountdownTimer){ clearInterval(window.batchCountdownTimer); window.batchCountdownTimer = null; }
+}
 function startBatchCountdown(){
-    var btn = document.getElementById('batchConfirmBtn');btn.disabled=true;btn.classList.remove('ready');
-    var s = 3;btn.textContent = 'Подождите '+s+' секунды';
-    if(window.batchCountdownTimer)clearInterval(window.batchCountdownTimer);
-    window.batchCountdownTimer = setInterval(function(){
-        s--;if(s>0){btn.textContent='Подождите '+s+' секунд'+(s===1?'у':'ы')}
-        else{clearInterval(window.batchCountdownTimer);window.batchCountdownTimer=null;btn.disabled=false;btn.classList.add('ready');btn.textContent='Подтвердить'}
-    },1000);
+  var btn = document.getElementById('batchConfirmBtn');
+  if(!btn) return;
+  btn.disabled = true;
+  btn.classList.remove('ready');
+  var s = 3;
+  btn.textContent = 'Подождите '+s+' секунды';
+  if(window.batchCountdownTimer) clearInterval(window.batchCountdownTimer);
+  window.batchCountdownTimer = setInterval(function(){
+    s--;
+    if(s>0){ btn.textContent = 'Подождите '+s+' секунд'+(s===1?'у':'ы'); }
+    else{
+      clearInterval(window.batchCountdownTimer);
+      window.batchCountdownTimer = null;
+      btn.disabled = false;
+      btn.classList.add('ready');
+      btn.textContent = 'Подтвердить';
+    }
+  }, 1000);
 }
 async function confirmBatchSell(){
-    var btn = document.getElementById('batchConfirmBtn');if(btn.disabled)return;
-    btn.disabled = true;btn.textContent = 'Продаём...';
-    var ids = Array.from(selectedItems);
-    try{
-        var r = await fetch('/api/sell-gifts-batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,item_ids:ids})});
-        var d = await r.json();
-        if(d.success){showNotif('Продано '+d.sold_count+' подарков!');closeBatchSellModal();selectMode=false;selectedItems.clear();document.getElementById('optionsBtn').classList.remove('active');updateSelectActionBar();await refreshUserData();loadInventory()}
-        else{showNotif(d.error||'Ошибка продажи',true);btn.disabled=false;btn.classList.add('ready');btn.textContent='Подтвердить'}
-    }catch(e){showNotif('Ошибка сети',true);btn.disabled=false;btn.classList.add('ready');btn.textContent='Подтвердить'}
+  var btn = document.getElementById('batchConfirmBtn');
+  if(!btn || btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = 'Продаём...';
+  var ids = Array.from(selectedItems);
+  try{
+    var r = await fetch('/api/sell-gifts-batch', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id: user.id, item_ids: ids})
+    });
+    var d = await r.json();
+    if(d.success){
+      showNotif('Продано '+d.sold_count+' подарков!');
+      closeBatchSellModal();
+      selectMode = false;
+      selectedItems.clear();
+      var ob = document.getElementById('optionsBtn'); if(ob) ob.classList.remove('active');
+      updateSelectActionBar();
+      await refreshUserData();
+      loadInventory();
+    } else {
+      showNotif(d.error || 'Ошибка продажи', true);
+      btn.disabled = false;
+      btn.classList.add('ready');
+      btn.textContent = 'Подтвердить';
+    }
+  }catch(e){
+    showNotif('Ошибка сети', true);
+    btn.disabled = false;
+    btn.classList.add('ready');
+    btn.textContent = 'Подтвердить';
+  }
 }
-async function batchWithdraw(){if(selectedItems.size===0)return;showNotif('Вывод нескольких подарков скоро')}
+async function batchWithdraw(){ if(selectedItems.size===0) return; showNotif('Вывод нескольких подарков скоро'); }
 
 function openItemModal(itemId){
-    var item = inventory.find(function(i){return i.id===itemId});
-    if(!item)return;selectedItem = item;vibrateIfOn();
-    var ton = starsToTon(item.gift_value);
-    var nftS = document.getElementById('nftDetailSection');
-    var mainImg = document.getElementById('itemModalImg');
-    var mainName = document.getElementById('itemModalName');
-    var mainPrice = document.getElementById('itemModalPriceWrap');
-    var ch = item.challenge;
-    var chS = document.getElementById('itemModalChallenge');
-    var actS = document.getElementById('itemModalActions');
-    var sellBtn = document.getElementById('itemModalSellBtn');
-    var withBtn = document.getElementById('itemModalWithdrawBtn');
-    var claimBtn = document.getElementById('itemModalClaimBtn');
-    sellBtn.style.display='none';withBtn.style.display='none';claimBtn.style.display='none';
-    nftS.classList.remove('show');
+  var item = inventory.find(function(i){return i.id===itemId});
+  if(!item) return;
+  selectedItem = item;
+  vibrateIfOn();
+  var ton = starsToTon(item.gift_value);
+  var nftS = document.getElementById('nftDetailSection');
+  var mainImg = document.getElementById('itemModalImg');
+  var mainName = document.getElementById('itemModalName');
+  var mainPrice = document.getElementById('itemModalPriceWrap');
+  var ch = item.challenge;
+  var chS = document.getElementById('itemModalChallenge');
+  var actS = document.getElementById('itemModalActions');
+  var sellBtn = document.getElementById('itemModalSellBtn');
+  var withBtn = document.getElementById('itemModalWithdrawBtn');
+  var claimBtn = document.getElementById('itemModalClaimBtn');
+  if(sellBtn) sellBtn.style.display = 'none';
+  if(withBtn) withBtn.style.display = 'none';
+  if(claimBtn) claimBtn.style.display = 'none';
+  if(nftS) nftS.classList.remove('show');
 
-    if(item.is_upgraded){
-        mainImg.style.display='none';mainName.style.display='none';mainPrice.style.display='none';
-        nftS.classList.add('show');
-        document.getElementById('nftDetailImg').src = item.gift_image;
-        var bn = (item.gift_name||'').replace(/#\d+$/,'').trim();
-        document.getElementById('nftDetailNameText').textContent = bn;
-        document.getElementById('nftDetailNumber').textContent = '#'+(item.nft_number||'?');
-        document.getElementById('nftAttrModel').textContent = item.nft_model||'—';
-        document.getElementById('nftAttrSymbol').textContent = item.nft_symbol||'—';
-        document.getElementById('nftAttrBackdrop').textContent = item.nft_backdrop||'—';
-        document.getElementById('nftAttrModelR').textContent = item.nft_model_rarity?item.nft_model_rarity+'%':'';
-        document.getElementById('nftAttrSymbolR').textContent = item.nft_symbol_rarity?item.nft_symbol_rarity+'%':'';
-        document.getElementById('nftAttrBackdropR').textContent = item.nft_backdrop_rarity?item.nft_backdrop_rarity+'%':'';
-        document.getElementById('nftMinPrice').textContent = formatTon(ton)+' TON';
-        chS.style.display='none';actS.style.display='';
-        sellBtn.style.display='';sellBtn.textContent = t('sell');sellBtn.disabled = item.is_withdrawing;
-        withBtn.style.display='';withBtn.textContent = 'Вывод';withBtn.disabled = item.is_withdrawing;
+  if(item.is_upgraded){
+    if(mainImg) mainImg.style.display = 'none';
+    if(mainName) mainName.style.display = 'none';
+    if(mainPrice) mainPrice.style.display = 'none';
+    if(nftS) nftS.classList.add('show');
+    var ndi = document.getElementById('nftDetailImg'); if(ndi) ndi.src = item.gift_image;
+    var bn = (item.gift_name||'').replace(/#\d+$/, '').trim();
+    var ndnt = document.getElementById('nftDetailNameText'); if(ndnt) ndnt.textContent = bn;
+    var ndn = document.getElementById('nftDetailNumber'); if(ndn) ndn.textContent = '#'+(item.nft_number||'?');
+    var nam = document.getElementById('nftAttrModel'); if(nam) nam.textContent = item.nft_model||'—';
+    var nas = document.getElementById('nftAttrSymbol'); if(nas) nas.textContent = item.nft_symbol||'—';
+    var nab = document.getElementById('nftAttrBackdrop'); if(nab) nab.textContent = item.nft_backdrop||'—';
+    var namR = document.getElementById('nftAttrModelR'); if(namR) namR.textContent = item.nft_model_rarity ? item.nft_model_rarity+'%' : '';
+    var nasR = document.getElementById('nftAttrSymbolR'); if(nasR) nasR.textContent = item.nft_symbol_rarity ? item.nft_symbol_rarity+'%' : '';
+    var nabR = document.getElementById('nftAttrBackdropR'); if(nabR) nabR.textContent = item.nft_backdrop_rarity ? item.nft_backdrop_rarity+'%' : '';
+    var nmp = document.getElementById('nftMinPrice'); if(nmp) nmp.textContent = formatTon(ton)+' TON';
+    if(chS) chS.style.display = 'none';
+    if(actS) actS.style.display = '';
+    if(sellBtn){ sellBtn.style.display=''; sellBtn.textContent=t('sell'); sellBtn.disabled = item.is_withdrawing; }
+    if(withBtn){ withBtn.style.display=''; withBtn.textContent='Вывод'; withBtn.disabled = item.is_withdrawing; }
+  } else {
+    if(mainImg){ mainImg.style.display=''; mainImg.src = item.gift_image; }
+    if(mainName){ mainName.style.display=''; mainName.textContent = item.gift_name; }
+    if(mainPrice){ mainPrice.style.display=''; var imp = document.getElementById('itemModalPrice'); if(imp) imp.textContent = formatTon(ton); }
+    if(ch && !ch.is_completed){
+      var pct = ch.target_wager>0 ? Math.min(100,(ch.current_wager/ch.target_wager)*100) : 0;
+      var cb = document.getElementById('challengeBar'); if(cb) cb.style.width = pct.toFixed(1)+'%';
+      var ct = document.getElementById('challengeText');
+      if(ct) ct.textContent = (ch.current_wager/100).toFixed(2)+' / '+(ch.target_wager/100).toFixed(2)+' TON';
+      if(chS) chS.style.display = '';
+      if(actS) actS.style.display = 'none';
+      if(ch.current_wager >= ch.target_wager){
+        if(actS) actS.style.display = '';
+        if(claimBtn) claimBtn.style.display = '';
+      }
+    } else if(item.crate_id){
+      if(chS) chS.style.display='none';
+      if(actS) actS.style.display='none';
     } else {
-        mainImg.style.display='';mainName.style.display='';mainPrice.style.display='';
-        document.getElementById('itemModalImg').src = item.gift_image;
-        document.getElementById('itemModalName').textContent = item.gift_name;
-        document.getElementById('itemModalPrice').textContent = formatTon(ton);
-        if(ch && !ch.is_completed){
-            var pct = ch.target_wager>0?Math.min(100,(ch.current_wager/ch.target_wager)*100):0;
-            document.getElementById('challengeBar').style.width = pct.toFixed(1)+'%';
-            document.getElementById('challengeText').textContent = (ch.current_wager/100).toFixed(2)+' / '+(ch.target_wager/100).toFixed(2)+' TON';
-            chS.style.display='';actS.style.display='none';
-            if(ch.current_wager>=ch.target_wager){actS.style.display='';claimBtn.style.display=''}
-        } else if(item.crate_id){chS.style.display='none';actS.style.display='none'}
-        else{chS.style.display='none';actS.style.display='';
-            sellBtn.style.display='';sellBtn.textContent=t('sell');sellBtn.disabled=item.is_withdrawing;
-            withBtn.style.display='';withBtn.textContent='Вывод';withBtn.disabled=item.is_withdrawing;
-        }
+      if(chS) chS.style.display='none';
+      if(actS) actS.style.display='';
+      if(sellBtn){ sellBtn.style.display=''; sellBtn.textContent=t('sell'); sellBtn.disabled = item.is_withdrawing; }
+      if(withBtn){ withBtn.style.display=''; withBtn.textContent='Вывод'; withBtn.disabled = item.is_withdrawing; }
     }
-    document.getElementById('itemModal').classList.add('show');
+  }
+  var im = document.getElementById('itemModal'); if(im) im.classList.add('show');
 }
 
 function hideItemModal(){
-    document.getElementById('itemModal').classList.remove('show');
-    document.getElementById('itemModalImg').style.display='';
-    document.getElementById('itemModalPriceWrap').style.display='';
-    document.getElementById('itemModalName').style.display='';
-    document.getElementById('nftDetailSection').classList.remove('show');
-    document.getElementById('sellConfirmScreen').classList.remove('show');
-    document.getElementById('itemModalActions').style.display='';
-    if(_sellCountdownTimer){clearInterval(_sellCountdownTimer);_sellCountdownTimer=null}
-    var hnd = document.querySelector('.item-modal-handle');
-    if(hnd)hnd.style.display='';
-    var mdl = document.querySelector('.item-modal');
-    if(mdl)mdl.style.padding='';
-    selectedItem = null;
+  var im = document.getElementById('itemModal'); if(im) im.classList.remove('show');
+  var mi = document.getElementById('itemModalImg'); if(mi) mi.style.display='';
+  var mp = document.getElementById('itemModalPriceWrap'); if(mp) mp.style.display='';
+  var mn = document.getElementById('itemModalName'); if(mn) mn.style.display='';
+  var nd = document.getElementById('nftDetailSection'); if(nd) nd.classList.remove('show');
+  var sc = document.getElementById('sellConfirmScreen'); if(sc) sc.classList.remove('show');
+  var ia = document.getElementById('itemModalActions'); if(ia) ia.style.display='';
+  if(window._sellCountdownTimer){ clearInterval(window._sellCountdownTimer); window._sellCountdownTimer = null; }
+  var hnd = document.querySelector('.item-modal-handle'); if(hnd) hnd.style.display='';
+  var mdl = document.querySelector('.item-modal'); if(mdl) mdl.style.padding='';
+  selectedItem = null;
 }
 
-async function claimChallenge(){if(!selectedItem)return;var btn=document.getElementById('itemModalClaimBtn');btn.disabled=true;btn.textContent='Claiming...';showNotif('Gift claimed!');await loadInventory();hideItemModal()}
-async function sellItem(){showSellConfirm()}
+async function claimChallenge(){
+  if(!selectedItem) return;
+  var btn = document.getElementById('itemModalClaimBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Claiming...'; }
+  showNotif('Gift claimed!');
+  await loadInventory();
+  hideItemModal();
+}
 
 var _sellCountdownTimer = null;
 function showSellConfirm(){
-    if(!selectedItem)return;vibrateIfOn();
-    var ton = formatTon(starsToTon(selectedItem.gift_value));
-    document.getElementById('sellConfirmPrice').textContent = ton;
-    document.getElementById('itemModalActions').style.display='none';
-    document.getElementById('itemModalImg').style.display='none';
-    document.getElementById('itemModalName').style.display='none';
-    document.getElementById('itemModalPriceWrap').style.display='none';
-    document.getElementById('nftDetailSection').classList.remove('show');
-    document.getElementById('itemModalChallenge').style.display='none';
-    var screen = document.getElementById('sellConfirmScreen');screen.classList.add('show');
-    var btn = document.getElementById('sellConfirmBtn');btn.disabled=true;btn.className='sell-confirm-btn waiting';
-    var s=3;btn.textContent='Подождите '+s+'...';
-    if(_sellCountdownTimer)clearInterval(_sellCountdownTimer);
-    _sellCountdownTimer = setInterval(function(){
-        s--;if(s>0){btn.textContent='Подождите '+s+'...'}
-        else{clearInterval(_sellCountdownTimer);_sellCountdownTimer=null;btn.disabled=false;btn.className='sell-confirm-btn ready';btn.textContent='Продать за '+ton+' TON'}
-    },1000);
+  if(!selectedItem) return;
+  vibrateIfOn();
+  var ton = formatTon(starsToTon(selectedItem.gift_value));
+  var scp = document.getElementById('sellConfirmPrice'); if(scp) scp.textContent = ton;
+  var ia = document.getElementById('itemModalActions'); if(ia) ia.style.display='none';
+  var mi = document.getElementById('itemModalImg'); if(mi) mi.style.display='none';
+  var mn = document.getElementById('itemModalName'); if(mn) mn.style.display='none';
+  var mp = document.getElementById('itemModalPriceWrap'); if(mp) mp.style.display='none';
+  var nd = document.getElementById('nftDetailSection'); if(nd) nd.classList.remove('show');
+  var ch = document.getElementById('itemModalChallenge'); if(ch) ch.style.display='none';
+  var sc = document.getElementById('sellConfirmScreen'); if(sc) sc.classList.add('show');
+  var btn = document.getElementById('sellConfirmBtn');
+  if(!btn) return;
+  btn.disabled = true;
+  btn.className = 'sell-confirm-btn waiting';
+  var s = 3;
+  btn.textContent = 'Подождите '+s+'...';
+  if(_sellCountdownTimer) clearInterval(_sellCountdownTimer);
+  _sellCountdownTimer = setInterval(function(){
+    s--;
+    if(s>0){ btn.textContent = 'Подождите '+s+'...'; }
+    else{
+      clearInterval(_sellCountdownTimer);
+      _sellCountdownTimer = null;
+      btn.disabled = false;
+      btn.className = 'sell-confirm-btn ready';
+      btn.textContent = 'Продать за '+ton+' TON';
+    }
+  }, 1000);
 }
 function hideSellConfirm(){
-    if(_sellCountdownTimer){clearInterval(_sellCountdownTimer);_sellCountdownTimer=null}
-    document.getElementById('sellConfirmScreen').classList.remove('show');
-    document.getElementById('itemModalActions').style.display='';
-    document.getElementById('itemModalImg').style.display='';
-    document.getElementById('itemModalName').style.display='';
-    document.getElementById('itemModalPriceWrap').style.display='';
-    if(selectedItem && selectedItem.is_upgraded){
-        document.getElementById('nftDetailSection').classList.add('show');
-        document.getElementById('itemModalImg').style.display='none';
-        document.getElementById('itemModalName').style.display='none';
-        document.getElementById('itemModalPriceWrap').style.display='none';
-    }
+  if(_sellCountdownTimer){ clearInterval(_sellCountdownTimer); _sellCountdownTimer = null; }
+  var sc = document.getElementById('sellConfirmScreen'); if(sc) sc.classList.remove('show');
+  var ia = document.getElementById('itemModalActions'); if(ia) ia.style.display='';
+  var mi = document.getElementById('itemModalImg'); if(mi) mi.style.display='';
+  var mn = document.getElementById('itemModalName'); if(mn) mn.style.display='';
+  var mp = document.getElementById('itemModalPriceWrap'); if(mp) mp.style.display='';
+  if(selectedItem && selectedItem.is_upgraded){
+    var nd = document.getElementById('nftDetailSection'); if(nd) nd.classList.add('show');
+    if(mi) mi.style.display='none';
+    if(mn) mn.style.display='none';
+    if(mp) mp.style.display='none';
+  }
 }
 async function doConfirmedSell(){
-    if(!selectedItem)return;
-    var itemId = selectedItem.id;
-    var tonVal = formatTon(starsToTon(selectedItem.gift_value));
-    var btn = document.getElementById('sellConfirmBtn');btn.disabled=true;btn.textContent='Продаём...';
-    try{
-        var r = await fetch('/api/sell-gift',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,gift_id:itemId})});
-        var d = await r.json();
-        if(d.success){hideItemModal();showSuccessOverlay('Подарок продан!',tonVal);await refreshUserData();loadInventory()}
-        else{btn.disabled=false;btn.className='sell-confirm-btn ready';btn.textContent='Повторить';showNotif(d.error||'Error',true)}
-    }catch(e){btn.disabled=false;btn.className='sell-confirm-btn ready';btn.textContent='Повторить';showNotif('Error selling',true)}
+  if(!selectedItem) return;
+  var itemId = selectedItem.id;
+  var tonVal = formatTon(starsToTon(selectedItem.gift_value));
+  var btn = document.getElementById('sellConfirmBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Продаём...'; }
+  try{
+    var r = await fetch('/api/sell-gift', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id: user.id, gift_id: itemId})
+    });
+    var d = await r.json();
+    if(d.success){
+      hideItemModal();
+      showSuccessOverlay('Подарок продан!', tonVal);
+      await refreshUserData();
+      loadInventory();
+    } else {
+      if(btn){ btn.disabled=false; btn.className='sell-confirm-btn ready'; btn.textContent='Повторить'; }
+      showNotif(d.error || 'Error selling', true);
+    }
+  }catch(e){
+    if(btn){ btn.disabled=false; btn.className='sell-confirm-btn ready'; btn.textContent='Повторить'; }
+    showNotif('Error selling', true);
+  }
 }
 
-function showSuccessOverlay(title,price){
-    document.getElementById('successTitle').textContent = title;
-    document.getElementById('successPrice').innerHTML = price?'<img src="/static/img/ton.png">'+price+' TON':'';
-    document.getElementById('successGif').src = '/static/gifs/Hlop.gif?'+Date.now();
-    document.getElementById('successOverlay').classList.add('show');
+function showSuccessOverlay(title, price){
+  var st = document.getElementById('successTitle'); if(st) st.textContent = title;
+  var sp = document.getElementById('successPrice');
+  if(sp) sp.innerHTML = price ? '<img src="/static/img/ton.png">'+price+' TON' : '';
+  var sg = document.getElementById('successGif'); if(sg) sg.src = '/static/gifs/Hlop.gif?'+Date.now();
+  var so = document.getElementById('successOverlay'); if(so) so.classList.add('show');
 }
-function closeSuccessOverlay(){document.getElementById('successOverlay').classList.remove('show')}
+function closeSuccessOverlay(){
+  var so = document.getElementById('successOverlay'); if(so) so.classList.remove('show');
+}
 
 var _portalSelGiftId = null;
 var _portalGifts = [];
 
 async function openPortalPicker(){
-    if(!selectedItem)return;
-    var ol = document.getElementById('mrktOverlay');var grid = document.getElementById('mrktGrid');
-    var sub = document.getElementById('mrktSubtitle');var cb = document.getElementById('mrktConfirmBtn');
-    _portalSelGiftId = null;_portalGifts = [];cb.disabled = true;cb.textContent = 'Выбрать подарок';
-    ol.classList.add('show');document.getElementById('mrktBackdrop').classList.add('show');
-    grid.innerHTML = '<div class="mrkt-loading">Загрузка...</div>';sub.textContent = 'Загрузка...';
-    var gn = selectedItem.gift_name||selectedItem.name||'';
-    try{
-        var r = await fetch('/api/portal/gifts?name='+encodeURIComponent(gn));
-        var d = await r.json();
-        if(d.success && d.gifts && d.gifts.length){
-            _portalGifts = d.gifts;sub.textContent = d.gifts.length+' предложений от '+(d.floor_price_ton||'?')+' TON';
-            renderPortalGifts(d.gifts);
-        } else {grid.innerHTML = '<div class="mrkt-empty">'+((!d.success&&d.error)||'Нет')+'</div>';sub.textContent='Не найдено'}
-    }catch(e){grid.innerHTML = '<div class="mrkt-empty">Ошибка</div>';sub.textContent='Ошибка'}
+  if(!selectedItem) return;
+  var ol = document.getElementById('mrktOverlay');
+  var grid = document.getElementById('mrktGrid');
+  var sub = document.getElementById('mrktSubtitle');
+  var cb = document.getElementById('mrktConfirmBtn');
+  if(!ol || !grid) return;
+  _portalSelGiftId = null;
+  _portalGifts = [];
+  if(cb){ cb.disabled = true; cb.textContent = 'Выбрать подарок'; }
+  ol.classList.add('show');
+  var bd = document.getElementById('mrktBackdrop'); if(bd) bd.classList.add('show');
+  grid.innerHTML = '<div class="mrkt-loading">Загрузка подарков...</div>';
+  if(sub) sub.textContent = 'Поиск подарка...';
+  var gn = selectedItem.gift_name || selectedItem.name || '';
+  try{
+    var r = await fetch('/api/portal/gifts?name=' + encodeURIComponent(gn));
+    if(!r.ok){
+      grid.innerHTML = '<div class="mrkt-empty">Сервис вывода временно недоступен<br><small style="opacity:.6">Попробуйте позже</small></div>';
+      if(sub) sub.textContent = 'Ошибка сервиса';
+      return;
+    }
+    var d = await r.json();
+    if(d.success && d.gifts && d.gifts.length){
+      _portalGifts = d.gifts;
+      if(sub) sub.textContent = d.gifts.length + ' предложений от ' + (d.floor_price_ton || '?') + ' TON';
+      renderPortalGifts(d.gifts);
+    } else {
+      grid.innerHTML = '<div class="mrkt-empty">' + ((!d.success && d.error) || 'Нет предложений для этого подарка') + '</div>';
+      if(sub) sub.textContent = 'Ничего не найдено';
+    }
+  }catch(e){
+    grid.innerHTML = '<div class="mrkt-empty">Ошибка соединения<br><small style="opacity:.6">Проверьте интернет</small></div>';
+    if(sub) sub.textContent = 'Ошибка';
+  }
 }
+
 function renderPortalGifts(gifts){
-    var grid = document.getElementById('mrktGrid');var html='';
-    gifts.forEach(function(g){
-        var numL = g.number?'#'+g.number:'';
-        var numC = g.number?'#9b6fee':'rgba(255,200,80,.75)';
-        var sid = String(g.id||'').replace(/'/g,'');
-        html += '<div class="mrkt-card" onclick="selectPortalGift(this,\''+sid+'\')" data-id="'+sid+'">'
-            +'<div class="mrkt-frame-outer"><div class="mrkt-frame-inner"><img src="'+(g.image||'')+'" onerror="this.src=\'/static/img/star.png\'" loading="lazy" alt=""></div></div>'
-            +'<div class="mrkt-card-name">'+(g.title||g.collection_name||'')+'</div>'
-            +(numL?'<div class="mrkt-card-num" style="color:'+numC+'">'+numL+'</div>':'')
-            +'<div class="mrkt-card-price"><img src="/static/img/ton.png">'+g.price_ton+' TON</div></div>';
-    });
-    grid.innerHTML = html;
+  var grid = document.getElementById('mrktGrid');
+  if(!grid) return;
+  var html = '';
+  gifts.forEach(function(g){
+    var numL = g.number ? '#'+g.number : '';
+    var numC = g.number ? '#9b6fee' : 'rgba(255,200,80,.75)';
+    var sid = String(g.id||'').replace(/'/g,'');
+    html += '<div class="mrkt-card" onclick="selectPortalGift(this,\''+sid+'\')" data-id="'+sid+'">'
+      + '<div class="mrkt-frame-outer"><div class="mrkt-frame-inner"><img src="'+(g.image||'')+'" onerror="this.src=\'/static/img/star.png\'" loading="lazy" alt=""></div></div>'
+      + '<div class="mrkt-card-name">'+(g.title||g.collection_name||'')+'</div>'
+      + (numL ? '<div class="mrkt-card-num" style="color:'+numC+'">'+numL+'</div>' : '')
+      + '<div class="mrkt-card-price"><img src="/static/img/ton.png">'+g.price_ton+' TON</div>'
+      + '</div>';
+  });
+  grid.innerHTML = html;
 }
-function selectPortalGift(el,id){document.querySelectorAll('.mrkt-card').forEach(function(c){c.classList.remove('selected')});el.classList.add('selected');_portalSelGiftId = id;document.getElementById('mrktConfirmBtn').disabled = false}
-function closePortalPicker(){document.getElementById('mrktOverlay').classList.remove('show');document.getElementById('mrktBackdrop').classList.remove('show');_portalSelGiftId = null;_portalGifts = []}
+
+function selectPortalGift(el, id){
+  document.querySelectorAll('.mrkt-card').forEach(function(c){ c.classList.remove('selected'); });
+  el.classList.add('selected');
+  _portalSelGiftId = id;
+  var cb = document.getElementById('mrktConfirmBtn'); if(cb) cb.disabled = false;
+}
+
+function closePortalPicker(){
+  var ol = document.getElementById('mrktOverlay'); if(ol) ol.classList.remove('show');
+  var bd = document.getElementById('mrktBackdrop'); if(bd) bd.classList.remove('show');
+  _portalSelGiftId = null;
+  _portalGifts = [];
+}
+
 async function confirmPortalWithdraw(){
-    if(!selectedItem||!_portalSelGiftId)return;
-    var btn = document.getElementById('mrktConfirmBtn');btn.disabled=true;btn.textContent='Покупка...';
-    try{
-        var r = await fetch('/api/portal/buy-withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,inventory_id:selectedItem.id,portal_gift_id:_portalSelGiftId})});
-        var d = await r.json();
-        if(d.success){closePortalPicker();hideItemModal();showNotif(d.transferred?'Отправлено!':'Куплено!');await refreshUserData();loadInventory()}
-        else{btn.disabled=false;btn.textContent='Выбрать подарок';showNotif(d.error||'Ошибка',true)}
-    }catch(e){btn.disabled=false;btn.textContent='Выбрать подарок';showNotif('Ошибка',true)}
+  if(!selectedItem || !_portalSelGiftId) return;
+  var btn = document.getElementById('mrktConfirmBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Покупка...'; }
+  try{
+    var r = await fetch('/api/portal/buy-withdraw', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id: user.id, inventory_id: selectedItem.id, portal_gift_id: _portalSelGiftId})
+    });
+    var d = await r.json();
+    if(d.success){
+      closePortalPicker();
+      hideItemModal();
+      showNotif(d.transferred ? 'Отправлено!' : 'Куплено!');
+      await refreshUserData();
+      loadInventory();
+    } else {
+      if(btn){ btn.disabled = false; btn.textContent = 'Выбрать подарок'; }
+      showNotif(d.error || 'Ошибка', true);
+    }
+  }catch(e){
+    if(btn){ btn.disabled = false; btn.textContent = 'Выбрать подарок'; }
+    showNotif('Ошибка', true);
+  }
 }
-async function withdrawItem(){openPortalPicker()}
+
+async function withdrawItem(){ openPortalPicker(); }
 
 function showSellAllModal(){
-    var ss = inventory.filter(function(i){return !i.is_withdrawing});
-    if(!ss.length){showNotif(t('noGifts'),true);return}
-    var tot = ss.reduce(function(s,i){return s+(i.gift_value||0)},0);
-    document.getElementById('sellAllTotal').textContent = formatTon(starsToTon(tot))+' TON';
-    document.getElementById('sellAllModal').classList.add('show');
+  var ss = inventory.filter(function(i){return !i.is_withdrawing});
+  if(!ss.length){ showNotif(t('noGifts'), true); return; }
+  var tot = ss.reduce(function(s,i){return s+(i.gift_value||0)}, 0);
+  var sat = document.getElementById('sellAllTotal');
+  if(sat) sat.textContent = formatTon(starsToTon(tot))+' TON';
+  var sm = document.getElementById('sellAllModal'); if(sm) sm.classList.add('show');
 }
-function hideSellAllModal(){document.getElementById('sellAllModal').classList.remove('show')}
+function hideSellAllModal(){
+  var sm = document.getElementById('sellAllModal'); if(sm) sm.classList.remove('show');
+}
 async function confirmSellAll(){
-    hideSellAllModal();
-    try{
-        var r = await fetch('/api/sell-all-gifts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id})});
-        var d = await r.json();
-        if(d.success){showNotif(t('giftSold')+' x'+d.sold_count);await refreshUserData();loadInventory()}
-        else showNotif(d.error||'Error',true);
-    }catch(e){showNotif('Error',true)}
+  hideSellAllModal();
+  try{
+    var r = await fetch('/api/sell-all-gifts', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id: user.id})
+    });
+    var d = await r.json();
+    if(d.success){
+      showNotif(t('giftSold')+' x'+d.sold_count);
+      await refreshUserData();
+      loadInventory();
+    } else showNotif(d.error || 'Error', true);
+  }catch(e){ showNotif('Error', true); }
 }
 
-function inviteFriends(){if(window.Telegram&&window.Telegram.WebApp){var link='https://t.me/rasswetgifts_bot?start=ref_'+(user.referral_code||user.id);window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent('Open cases!'))}else copyRefLink()}
-function copyRefLink(){var link='https://t.me/rasswetgifts_bot?start=ref_'+(user.referral_code||user.id);navigator.clipboard.writeText(link).then(function(){showNotif(t('linkCopied'))}).catch(function(){showNotif('Failed',true)})}
-function showTerms(){showNotif(t('refDesc'))}
-function openDeposit(){vibrateIfOn();var tg=window.Telegram&&window.Telegram.WebApp;var sb=document.getElementById('starsDepositBtn');if(sb){if(!tg){sb.classList.add('disabled');sb.onclick=null}else{sb.classList.remove('disabled');sb.onclick=function(){closeDeposit();openStarsDeposit()}}}document.getElementById('depositOverlay').classList.add('open')}
-function closeDeposit(){document.getElementById('depositOverlay').classList.remove('open')}
-function openStarsDeposit(){var tg=window.Telegram&&window.Telegram.WebApp;if(!tg){showNotif('Stars только в Telegram',true);return}document.getElementById('starsDepositOverlay').classList.add('show');document.getElementById('starsDepositError').style.display='none'}
-function closeStarsDeposit(){document.getElementById('starsDepositOverlay').classList.remove('show')}
+function inviteFriends(){
+  if(window.Telegram && window.Telegram.WebApp){
+    var link = 'https://t.me/rasswetgifts_bot?start=ref_'+(user.referral_code||user.id);
+    window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url='+encodeURIComponent(link)+'&text='+encodeURIComponent('Open cases!'));
+  } else copyRefLink();
+}
+function copyRefLink(){
+  var link = 'https://t.me/rasswetgifts_bot?start=ref_'+(user.referral_code||user.id);
+  navigator.clipboard.writeText(link).then(function(){
+    showNotif(t('linkCopied'));
+  }).catch(function(){ showNotif('Failed', true); });
+}
+function showTerms(){ showNotif('Invite friends and get 10% of their deposits'); }
 
-document.getElementById('starsDepositAmount').addEventListener('input',function(){var v=parseInt(this.value)||0;document.getElementById('starsPayAmount').textContent=v>0?v:'0'});
-document.getElementById('starsDepositOverlay').addEventListener('click',function(e){if(e.target===this)closeStarsDeposit()});
-document.getElementById('depositOverlay').addEventListener('click',function(e){if(e.target===this)closeDeposit()});
+function openDeposit(){
+  vibrateIfOn();
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var sb = document.getElementById('starsDepositBtn');
+  if(sb){
+    if(!tg){ sb.classList.add('disabled'); sb.onclick = null; }
+    else { sb.classList.remove('disabled'); sb.onclick = function(){ closeDeposit(); openStarsDeposit(); }; }
+  }
+  var do_ = document.getElementById('depositOverlay'); if(do_) do_.classList.add('open');
+}
+function closeDeposit(){
+  var do_ = document.getElementById('depositOverlay'); if(do_) do_.classList.remove('open');
+}
+function openStarsDeposit(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if(!tg){ showNotif('Stars только в Telegram', true); return; }
+  var sdo = document.getElementById('starsDepositOverlay'); if(sdo) sdo.classList.add('show');
+  var sde = document.getElementById('starsDepositError'); if(sde) sde.style.display = 'none';
+}
+function closeStarsDeposit(){
+  var sdo = document.getElementById('starsDepositOverlay'); if(sdo) sdo.classList.remove('show');
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  var sda = document.getElementById('starsDepositAmount');
+  if(sda){
+    sda.addEventListener('input', function(){
+      var v = parseInt(this.value)||0;
+      var spa = document.getElementById('starsPayAmount');
+      if(spa) spa.textContent = v>0 ? v : '0';
+    });
+  }
+  var sdo = document.getElementById('starsDepositOverlay');
+  if(sdo) sdo.addEventListener('click', function(e){ if(e.target===this) closeStarsDeposit(); });
+  var do_ = document.getElementById('depositOverlay');
+  if(do_) do_.addEventListener('click', function(e){ if(e.target===this) closeDeposit(); });
+});
 
 async function payWithStars(){
-    var tg = window.Telegram && window.Telegram.WebApp;
-    var amount = parseInt(document.getElementById('starsDepositAmount').value)||0;
-    if(amount<1||amount>10000){document.getElementById('starsDepositError').textContent='Введите 1-10000';document.getElementById('starsDepositError').style.display='block';return}
-    document.getElementById('starsDepositError').style.display='none';
-    document.getElementById('starsPayBtn').disabled = true;
-    document.getElementById('starsPayBtn').textContent = 'Загрузка...';
-    try{
-        var r = await fetch('/api/stars/create-invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,amount:amount})});
-        var data = await r.json();
-        if(data.success && data.invoice_link){
-            if(tg && tg.openInvoice){
-                tg.openInvoice(data.invoice_link,function(status){
-                    if(status==='paid'){showNotif('+'+amount+' Stars');closeStarsDeposit();refreshUserData()}
-                    else if(status==='cancelled'){showNotif('Отменено',true)}
-                    resetStarsBtn(amount);
-                });
-            } else {window.open(data.invoice_link,'_blank');resetStarsBtn(amount)}
-        } else {document.getElementById('starsDepositError').textContent=data.error||'Ошибка';document.getElementById('starsDepositError').style.display='block';resetStarsBtn(amount)}
-    }catch(e){document.getElementById('starsDepositError').textContent='Ошибка сети';document.getElementById('starsDepositError').style.display='block';resetStarsBtn(amount)}
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var amountEl = document.getElementById('starsDepositAmount');
+  var amount = parseInt(amountEl ? amountEl.value : 0) || 0;
+  var errEl = document.getElementById('starsDepositError');
+  if(amount < 1 || amount > 10000){
+    if(errEl){ errEl.textContent = 'Введите 1-10000'; errEl.style.display = 'block'; }
+    return;
+  }
+  if(errEl) errEl.style.display = 'none';
+  var btn = document.getElementById('starsPayBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Загрузка...'; }
+  try{
+    var r = await fetch('/api/stars/create-invoice', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id: user.id, amount: amount})
+    });
+    var data = await r.json();
+    if(data.success && data.invoice_link){
+      if(tg && tg.openInvoice){
+        tg.openInvoice(data.invoice_link, function(status){
+          if(status === 'paid'){
+            showNotif('+'+amount+' Stars');
+            closeStarsDeposit();
+            refreshUserData();
+          } else if(status === 'cancelled'){
+            showNotif('Отменено', true);
+          }
+          resetStarsBtn(amount);
+        });
+      } else {
+        window.open(data.invoice_link, '_blank');
+        resetStarsBtn(amount);
+      }
+    } else {
+      if(errEl){ errEl.textContent = data.error || 'Ошибка'; errEl.style.display = 'block'; }
+      resetStarsBtn(amount);
+    }
+  }catch(e){
+    if(errEl){ errEl.textContent = 'Ошибка сети'; errEl.style.display = 'block'; }
+    resetStarsBtn(amount);
+  }
 }
-function resetStarsBtn(amount){document.getElementById('starsPayBtn').disabled=false;document.getElementById('starsPayBtn').innerHTML='<img src="/static/img/star.png" alt=""> Оплатить <span id="starsPayAmount">'+amount+'</span> Stars'}
+function resetStarsBtn(amount){
+  var btn = document.getElementById('starsPayBtn');
+  if(btn){
+    btn.disabled = false;
+    btn.innerHTML = '<img src="/static/img/star.png" alt=""> Оплатить <span id="starsPayAmount">'+amount+'</span> Stars';
+  }
+}
 
 async function withdrawRefBalance(){
-    if(!user)return;
-    var refBal = starsToTon(user.referral_balance||0);
-    if(refBal<1){showNotif(currentLang==='ru'?'Минимум 1 TON':'Min 1 TON',true);return}
-    vibrateIfOn();
-    try{
-        var r = await fetch('/api/referral/withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id})});
-        var d = await r.json();
-        if(d.success){showNotif('Переведено!');await refreshUserData()}
-        else showNotif(d.error||'Error',true);
-    }catch(e){showNotif('Error',true)}
+  if(!user) return;
+  var refBal = starsToTon(user.referral_balance||0);
+  if(refBal < 1){ showNotif(currentLang==='ru'?'Минимум 1 TON':'Min 1 TON', true); return; }
+  vibrateIfOn();
+  try{
+    var r = await fetch('/api/referral/withdraw', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id: user.id})
+    });
+    var d = await r.json();
+    if(d.success){ showNotif('Переведено!'); await refreshUserData(); }
+    else showNotif(d.error || 'Error', true);
+  }catch(e){ showNotif('Error', true); }
 }
 
-async function refreshUserData(){try{var r=await fetch('/api/user/'+user.id);var d=await r.json();if(d.success){user=d.user;updateProfile()}}catch(e){}}
-
-function showNotif(msg,isError){
-    var el = document.getElementById('notif');el.textContent = msg;el.className = 'notif'+(isError?' error':'');
-    void el.offsetWidth;el.classList.add('show');
-    clearTimeout(el._hideTimer);
-    el._hideTimer = setTimeout(function(){el.classList.remove('show')},3000);
+async function refreshUserData(){
+  if(!user) return;
+  try{
+    var r = await fetch('/api/user/'+user.id);
+    var d = await r.json();
+    if(d.success){ user = d.user; updateProfile(); }
+  }catch(e){}
 }
 
-function toggleNewsMgmt(){var b=document.getElementById('newsMgmtToggle');var l=document.getElementById('newsMgmtList');b.classList.toggle('open');l.classList.toggle('show')}
-async function loadNewsMgmt(){
-    try{
-        var r = await fetch('/api/admin/news-json?admin_id='+ADMIN_ID);var d = await r.json();
-        if(!d.success)return;
-        var list = document.getElementById('newsMgmtList');list.innerHTML='';
-        d.news.forEach(function(n){
-            var row = document.createElement('div');row.className='nm-item';
-            row.innerHTML = '<span class="nm-ver">'+(n.version||'')+'</span><span class="nm-title">'+(n.title||n.title_en||'')+'</span><button class="nm-toggle '+(n.is_active?'on':'off')+'" onclick="toggleNewsActive('+n.id+',this)"></button><button class="nm-del" onclick="deleteNewsItem('+n.id+',this)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
-            list.appendChild(row);
-        });
-    }catch(e){console.error(e)}
+function showNotif(msg, isError){
+  var el = document.getElementById('notif');
+  if(!el) return;
+  el.textContent = msg;
+  el.className = 'notif' + (isError ? ' error' : '');
+  void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(function(){ el.classList.remove('show'); }, 3000);
 }
-async function toggleNewsActive(id,btn){try{var r=await fetch('/api/admin/news-json/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,news_id:id})});var d=await r.json();if(d.success){btn.classList.toggle('on');btn.classList.toggle('off');showNotif(d.is_active?'Активировано':'Скрыто')}}catch(e){showNotif('Error',true)}}
-async function deleteNewsItem(id,btn){if(!confirm('Delete?'))return;try{var r=await fetch('/api/admin/news-json/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,news_id:id})});var d=await r.json();if(d.success){btn.closest('.nm-item').remove();showNotif('Удалено')}}catch(e){showNotif('Error',true)}}
 
-function openPromoModal(){vibrateIfOn();document.getElementById('promoOverlay').classList.add('show');document.getElementById('promoError').style.display='none';document.getElementById('promoInput').value='';document.getElementById('promoInput').focus();loadPromoProgress();loadDepositHistory()}
-function closePromoModal(){document.getElementById('promoOverlay').classList.remove('show')}
+function openPromoModal(){
+  vibrateIfOn();
+  var po = document.getElementById('promoOverlay'); if(po) po.classList.add('show');
+  var pe = document.getElementById('promoError'); if(pe) pe.style.display = 'none';
+  var pi = document.getElementById('promoInput'); if(pi){ pi.value=''; pi.focus(); }
+}
+function closePromoModal(){
+  var po = document.getElementById('promoOverlay'); if(po) po.classList.remove('show');
+}
 async function activatePromo(){
-    var code = document.getElementById('promoInput').value.trim();
-    if(!code){document.getElementById('promoError').textContent='Введите код';document.getElementById('promoError').style.display='block';return}
-    if(!user)return;
-    document.getElementById('promoSubmitBtn').disabled = true;
-    document.getElementById('promoError').style.display = 'none';
-    try{
-        var r = await fetch('/api/activate-promo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,promo_code:code})});
-        var d = await r.json();
-        if(d.success){
-            vibrateIfOn();
-            if(d.reward_type==='gift_challenge'){showGiftReveal(d.gift_image,d.gift_name,d.message);loadPromoProgress()}
-            else if(d.reward_type==='case_open'){showNotif(d.message||'Кейс разблокирован!')}
-            else{showGiftReveal(d.reward_icon||'/static/img/ton.png',d.message||'Активирован!',d.reward_type==='stars'?'+'+(d.reward_stars||0)+' Stars':'')}
-            await refreshUserData();loadInventory();document.getElementById('promoInput').value='';
-        } else {document.getElementById('promoError').textContent=d.error||'Ошибка';document.getElementById('promoError').style.display='block'}
-    }catch(e){document.getElementById('promoError').textContent='Ошибка';document.getElementById('promoError').style.display='block'}
-    document.getElementById('promoSubmitBtn').disabled = false;
+  var pi = document.getElementById('promoInput');
+  var pe = document.getElementById('promoError');
+  var code = pi ? pi.value.trim() : '';
+  if(!code){ if(pe){ pe.textContent='Введите код'; pe.style.display='block'; } return; }
+  if(!user) return;
+  var btn = document.getElementById('promoSubmitBtn');
+  if(btn) btn.disabled = true;
+  if(pe) pe.style.display = 'none';
+  try{
+    var r = await fetch('/api/activate-promo', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id: user.id, promo_code: code})
+    });
+    var d = await r.json();
+    if(d.success){
+      vibrateIfOn();
+      if(d.reward_type === 'gift_challenge'){
+        showGiftReveal(d.gift_image, d.gift_name, d.message);
+      } else if(d.reward_type === 'case_open'){
+        showNotif(d.message || 'Кейс разблокирован!');
+      } else {
+        showGiftReveal(d.reward_icon || '/static/img/ton.png', d.message || 'Активирован!', d.reward_type === 'stars' ? '+'+(d.reward_stars||0)+' Stars' : '');
+      }
+      await refreshUserData();
+      loadInventory();
+      if(pi) pi.value = '';
+    } else {
+      if(pe){ pe.textContent = d.error || 'Ошибка'; pe.style.display='block'; }
+    }
+  }catch(e){
+    if(pe){ pe.textContent = 'Ошибка'; pe.style.display='block'; }
+  }
+  if(btn) btn.disabled = false;
 }
-document.getElementById('promoInput').addEventListener('keydown',function(e){if(e.key==='Enter')activatePromo()});
-async function loadPromoProgress(){
-    if(!user)return;
-    try{
-        var r = await fetch('/api/promo-challenge/status?user_id='+user.id);
-        var d = await r.json();
-        var sec = document.getElementById('promoProgressSection');
-        if(d.success && d.challenge){
-            var c = d.challenge;sec.style.display='block';
-            document.getElementById('promoGiftImg').src = c.gift_image||'/static/img/gift.png';
-            document.getElementById('promoGiftName').textContent = c.gift_name||'Gift';
-            document.getElementById('promoGiftVal').textContent = (c.current_gift_name||c.gift_name)+' → '+c.gift_name;
-            var pct = Math.min(100,(c.progress/c.target)*100);
-            document.getElementById('promoProgressBar').style.width = pct+'%';
-            document.getElementById('promoProgressText').textContent = (c.progress/100).toFixed(2)+' / '+(c.target/100).toFixed(2)+' TON';
-        } else sec.style.display='none';
-    }catch(e){document.getElementById('promoProgressSection').style.display='none'}
+
+document.addEventListener('DOMContentLoaded', function(){
+  var pi = document.getElementById('promoInput');
+  if(pi) pi.addEventListener('keydown', function(e){ if(e.key === 'Enter') activatePromo(); });
+});
+
+function showGiftReveal(img, name, sub){
+  var gri = document.getElementById('giftRevealImg'); if(gri) gri.src = img || '/static/img/gift.png';
+  var grn = document.getElementById('giftRevealName'); if(grn) grn.textContent = name || '';
+  var gro = document.getElementById('giftRevealOverlay'); if(gro) gro.classList.add('show');
+  try{
+    if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
+      Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    }
+  }catch(e){}
 }
-async function loadDepositHistory(){
-    if(!user)return;
-    var list = document.getElementById('depositHistoryList');
-    try{
-        var r = await fetch('/api/deposit-history/'+user.id);
-        var d = await r.json();
-        if(!d.success||!d.deposits||!d.deposits.length){list.innerHTML='<div class="deposit-history-empty">No deposits yet</div>';return}
-        list.innerHTML = d.deposits.map(function(dep){
-            var ton = (dep.amount/100).toFixed(2);
-            var tl = dep.type==='stars'?'Stars':dep.type==='gift'?'Gift':'SBP';
-            var dateStr = '';
-            if(dep.date){try{var dt=new Date(dep.date);dateStr=dt.toLocaleDateString()}catch(e){}}
-            return '<div class="deposit-history-item"><div class="deposit-history-left"><div class="deposit-history-icon"><svg viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div><div><div class="deposit-history-type">'+tl+(dep.gift_name?': '+dep.gift_name:'')+'</div><div class="deposit-history-date">'+dateStr+'</div></div></div><div class="deposit-history-amount"><img src="/static/img/ton.png"> '+ton+'</div></div>';
-        }).join('');
-    }catch(e){list.innerHTML='<div class="deposit-history-empty">Failed</div>'}
+function closeGiftReveal(){
+  var gro = document.getElementById('giftRevealOverlay'); if(gro) gro.classList.remove('show');
 }
-function showGiftReveal(img,name,sub){
-    document.getElementById('giftRevealImg').src = img||'/static/img/gift.png';
-    document.getElementById('giftRevealName').textContent = name||'';
-    document.getElementById('giftRevealSub').textContent = sub||'';
-    document.getElementById('giftRevealOverlay').classList.add('show');
-    try{if(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.HapticFeedback)Telegram.WebApp.HapticFeedback.notificationOccurred('success')}catch(e){}
-}
-function closeGiftReveal(){document.getElementById('giftRevealOverlay').classList.remove('show')}
 
 document.addEventListener('DOMContentLoaded', initUser);
 </script>
