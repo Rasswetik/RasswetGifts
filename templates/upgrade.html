@@ -13,38 +13,36 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-    --bg:#0d1117;
-    --card:#161b22;
+    --bg:#0b0b18;
     --text:#fff;
-    --text2:rgba(255,255,255,.5);
-    --blue:#2563eb;
-    --green:#1EE44C;
-    --red:#F96999;
-    /* ★ Отступ сверху — оптимизирован под Telegram Mini App */
+    --blue:#2844FB;
+    --blue-light:#4B81F5;
+    --green:#24C38E;
+    --red:#FF3064;
     --safe-top:env(safe-area-inset-top, 0px);
     --safe-bottom:env(safe-area-inset-bottom, 0px);
-    /* ★ Фиксированная высота хедера Telegram */
-    --tg-header:52px;
+    --tg-header:56px;
 }
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     background:var(--bg);
     color:var(--text);
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
+    user-select:none;
+    -webkit-user-select:none;
 }
 a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 
-/* ══════════════════════════════════════════════════════════════
-   TOP BAR — сдвинут ровно под Telegram хедер
-   ══════════════════════════════════════════════════════════════ */
+/* ═══════════ TOP BAR ═══════════ */
 .top-bar{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    padding:8px 16px;
-    padding-top:calc(var(--safe-top) + var(--tg-header) + 8px);
+    padding:10px 16px;
+    padding-top:calc(var(--safe-top) + var(--tg-header));
     position:relative;
     z-index:10;
 }
@@ -54,519 +52,134 @@ a{text-decoration:none;color:inherit}
     align-items:center;
     gap:8px;
     padding:4px 10px 4px 4px;
-    border-radius:18px;
-    background:rgba(120,135,160,.1);
-    border:1px solid rgba(120,135,160,.25);
-    backdrop-filter:blur(5px);
+    border-radius:20px;
+    background:rgba(255,255,255,.06);
 }
 .top-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover}
-.top-nick{font-size:13px;font-weight:600;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.top-right-btns{display:flex;gap:6px;align-items:center}
+.top-nick{
+    font-size:13px;
+    font-weight:600;
+    max-width:90px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+.top-right{display:flex;gap:8px;align-items:center}
 .bal-pill{
     display:flex;
     align-items:center;
     gap:5px;
-    padding:5px 10px;
-    border-radius:18px;
-    background:rgba(120,135,160,.1);
-    border:1px solid rgba(120,135,160,.25);
-    font-weight:700;
-    font-size:12px;
-    backdrop-filter:blur(5px);
-}
-.bal-pill img{width:14px;height:14px;flex-shrink:0}
-.bal-plus{
-    width:26px;
-    height:26px;
-    border-radius:50%;
-    border:1px solid rgba(120,135,160,.45);
-    background:rgba(120,135,160,.3);
-    color:#A0B0C4;
-    font-size:15px;
-    font-weight:700;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    flex-shrink:0;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   WRAPPER — компактный
-   ══════════════════════════════════════════════════════════════ */
-.upgrade-wrap{
-    max-width:480px;
-    margin:0 auto;
-    padding:4px 16px calc(var(--safe-bottom) + 90px);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:10px;
-}
-.page-title{
-    font-size:22px;
-    font-weight:900;
-    padding:4px 0 2px;
-    background:linear-gradient(135deg, #fff, #93c5fd);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
-    letter-spacing:-.5px;
-    text-align:center;
-    width:100%;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   КОЛЕСО
-   ══════════════════════════════════════════════════════════════ */
-.wheel-section{
-    padding:4px 0 2px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-}
-.wheel-container{
-    position:relative;
-    width:210px;
-    height:210px;
-    margin:0 auto;
-    filter:drop-shadow(0 0 30px rgba(59,130,246,.15));
-    transition:filter .4s ease;
-}
-.wheel-container.spinning{
-    filter:drop-shadow(0 0 60px rgba(245,158,11,.35)) drop-shadow(0 0 100px rgba(245,158,11,.2));
-}
-.wheel-container.win{
-    filter:drop-shadow(0 0 60px rgba(30,228,76,.5)) drop-shadow(0 0 100px rgba(30,228,76,.25));
-}
-.wheel-container.fail{
-    filter:drop-shadow(0 0 50px rgba(249,105,153,.4));
-}
-.wheel-container::before{
-    content:'';
-    position:absolute;
-    inset:-18px;
-    border-radius:50%;
-    background:radial-gradient(circle, rgba(59,130,246,.12) 0%, transparent 70%);
-    z-index:-1;
-    animation:wheelGlowPulse 3s ease-in-out infinite;
-    pointer-events:none;
-}
-.wheel-container.spinning::before{
-    background:radial-gradient(circle, rgba(245,158,11,.25) 0%, transparent 70%);
-    animation:wheelGlowSpin 1.2s ease-in-out infinite;
-}
-.wheel-container.win::before{
-    background:radial-gradient(circle, rgba(30,228,76,.3) 0%, transparent 70%);
-    animation:wheelGlowWin 1.5s ease-in-out infinite;
-}
-.wheel-container.fail::before{
-    background:radial-gradient(circle, rgba(249,105,153,.25) 0%, transparent 70%);
-}
-@keyframes wheelGlowPulse{
-    0%,100%{ transform:scale(1); opacity:.6; }
-    50%{ transform:scale(1.08); opacity:1; }
-}
-@keyframes wheelGlowSpin{
-    0%,100%{ transform:scale(1.05); opacity:.8; }
-    50%{ transform:scale(1.15); opacity:1; }
-}
-@keyframes wheelGlowWin{
-    0%,100%{ transform:scale(1); opacity:.9; }
-    50%{ transform:scale(1.15); opacity:1; }
-}
-.wheel-container::after{
-    content:'';
-    position:absolute;
-    inset:-6px;
-    border-radius:50%;
-    border:2px dashed rgba(59,130,246,.15);
-    animation:wheelRingRotate 20s linear infinite;
-    pointer-events:none;
-}
-.wheel-container.spinning::after{
-    border-color:rgba(245,158,11,.35);
-    animation-duration:2s;
-}
-@keyframes wheelRingRotate{
-    to{ transform:rotate(360deg); }
-}
-.wheel-svg{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    filter:drop-shadow(0 4px 16px rgba(0,0,0,.6));
-}
-.wheel-green-arc{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    pointer-events:none;
-}
-.wheel-center{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    width:96px;
-    height:96px;
-    border-radius:50%;
-    background:radial-gradient(circle, #1a2030 0%, #0d1117 100%);
-    border:2px solid rgba(59,130,246,.3);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:5;
-    overflow:hidden;
-    box-shadow:
-        inset 0 0 20px rgba(59,130,246,.15),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 30px rgba(59,130,246,.2);
-    transition:all .3s ease;
-}
-.wheel-center img,
-.wheel-center .chance-pct{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    transition:opacity .35s ease, transform .35s ease;
-}
-.wheel-center img{
-    width:60px;
-    height:60px;
-    object-fit:contain;
-    display:block;
-    filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));
-}
-.wheel-center img.hidden,
-.wheel-center .chance-pct.hidden{
-    opacity:0;
-    transform:translate(-50%,-50%) scale(.6);
-    pointer-events:none;
-    z-index:1;
-}
-.wheel-center img.visible,
-.wheel-center .chance-pct.visible{
-    opacity:1;
-    transform:translate(-50%,-50%) scale(1);
-    z-index:2;
-    animation:centerSwap .4s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes centerSwap{
-    0%{ transform:translate(-50%,-50%) scale(.7); opacity:0; }
-    50%{ transform:translate(-50%,-50%) scale(1.1); opacity:1; }
-    100%{ transform:translate(-50%,-50%) scale(1); opacity:1; }
-}
-.chance-pct{
-    font-size:24px;
-    font-weight:900;
-    background:linear-gradient(135deg, #3B82F6, #60A5FA);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
-    letter-spacing:-.5px;
-}
-.wheel-center.flash-green{
-    animation:flashGreen .5s ease 4;
-    border-color:rgba(30,228,76,.6);
-    box-shadow:
-        inset 0 0 30px rgba(30,228,76,.25),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 50px rgba(30,228,76,.5);
-}
-.wheel-center.flash-red{
-    animation:flashRed .5s ease 4;
-    border-color:rgba(249,105,153,.6);
-    box-shadow:
-        inset 0 0 30px rgba(249,105,153,.25),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 50px rgba(249,105,153,.5);
-}
-.wheel-center.alternating{
-    animation:centerAlternate 1.5s ease-in-out infinite;
-    border-color:rgba(245,158,11,.5);
-}
-@keyframes flashGreen{
-    0%,100%{ transform:translate(-50%,-50%) scale(1); }
-    50%{ transform:translate(-50%,-50%) scale(1.1); }
-}
-@keyframes flashRed{
-    0%,100%{ transform:translate(-50%,-50%) scale(1); }
-    50%{ transform:translate(-50%,-50%) scale(1.08); }
-}
-@keyframes centerAlternate{
-    0%,100%{
-        box-shadow:
-            inset 0 0 20px rgba(59,130,246,.15),
-            0 0 0 4px rgba(13,17,23,.8),
-            0 0 30px rgba(59,130,246,.2);
-    }
-    50%{
-        box-shadow:
-            inset 0 0 30px rgba(59,130,246,.3),
-            0 0 0 4px rgba(13,17,23,.8),
-            0 0 50px rgba(59,130,246,.5);
-    }
-}
-.wheel-result-icon{
-    display:none;
-    width:32px;
-    height:32px;
-}
-.wheel-result-icon.show{display:block}
-.wheel-pointer-wrap{
-    position:absolute;
-    top:50%;
-    left:50%;
-    width:0;
-    height:0;
-    z-index:10;
-    transform-origin:center center;
-}
-.wheel-pointer{
-    position:absolute;
-    left:50%;
-    top:0;
-    transform:translateX(-50%) translateY(-138px);
-    width:24px;
-    height:28px;
-}
-.wheel-pointer img{
-    width:100%;
-    height:100%;
-    filter:drop-shadow(0 2px 6px rgba(0,0,0,.8)) drop-shadow(0 0 8px rgba(245,158,11,.4));
-}
-.wheel-glow{
-    position:absolute;
-    inset:0;
-    border-radius:50%;
-    pointer-events:none;
-    opacity:0;
-    transition:opacity .3s;
-}
-.wheel-glow.spinning{
-    opacity:1;
-    animation:glowPulse .8s infinite;
-}
-@keyframes glowPulse{
-    0%,100%{ box-shadow:0 0 15px rgba(245,158,11,.15); }
-    50%{ box-shadow:0 0 35px rgba(245,158,11,.35); }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   КНОПКА UPGRADE
-   ══════════════════════════════════════════════════════════════ */
-.upgrade-btn{
-    width:100%;
-    height:52px;
-    border-radius:16px;
-    border:none;
-    background:linear-gradient(135deg, #2563eb, #3b82f6);
-    color:#fff;
-    font-family:inherit;
-    font-size:15px;
+    padding:6px 12px;
+    border-radius:20px;
+    background:linear-gradient(180deg,#f4a10d,#e08c00);
+    box-shadow:inset 0 0 10px rgba(255,255,255,.3);
     font-weight:800;
-    cursor:pointer;
+    font-size:13px;
+    color:#fff;
+}
+.bal-pill img{width:14px;height:14px}
+.bal-plus{
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    background:rgba(255,255,255,.08);
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:8px;
-    position:relative;
-    overflow:hidden;
-    box-shadow:0 8px 24px rgba(37,99,235,.35);
-    transition:all .3s cubic-bezier(.4,0,.2,1);
-    letter-spacing:.3px;
-}
-.upgrade-btn::before{
-    content:'';
-    position:absolute;
-    top:0;
-    left:-100%;
-    width:100%;
-    height:100%;
-    background:linear-gradient(90deg, transparent, rgba(255,255,255,.25), transparent);
-    transition:left .6s;
-}
-.upgrade-btn:not(:disabled):hover::before{
-    left:100%;
-}
-.upgrade-btn:not(:disabled):hover{
-    transform:translateY(-2px);
-    box-shadow:0 12px 32px rgba(37,99,235,.5), 0 0 0 1px rgba(59,130,246,.3);
-}
-.upgrade-btn:not(:disabled):active{
-    transform:translateY(0) scale(.98);
-}
-.upgrade-btn:disabled{
-    background:rgba(255,255,255,.05);
-    color:rgba(255,255,255,.3);
-    cursor:not-allowed;
-    box-shadow:none;
-}
-.upgrade-btn.win{
-    background:linear-gradient(135deg, #059669, #10b981) !important;
-    box-shadow:0 8px 32px rgba(16,185,129,.5), 0 0 0 2px rgba(16,185,129,.4) !important;
-    animation:btnWinPulse 1s ease-in-out infinite;
-}
-.upgrade-btn.fail{
-    background:linear-gradient(135deg, #dc2626, #ef4444) !important;
-    box-shadow:0 8px 32px rgba(239,68,68,.5), 0 0 0 2px rgba(239,68,68,.4) !important;
-    animation:btnFailShake .5s ease;
-}
-@keyframes btnWinPulse{
-    0%,100%{ transform:scale(1); }
-    50%{ transform:scale(1.02); }
-}
-@keyframes btnFailShake{
-    0%,100%{ transform:translateX(0); }
-    20%,60%{ transform:translateX(-6px); }
-    40%,80%{ transform:translateX(6px); }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   КАРТОЧКИ — подарок В ячейке
-   ══════════════════════════════════════════════════════════════ */
-.cards-row{
+/* ═══════════ WRAPPER ═══════════ */
+.upgrade-wrap{
+    max-width:450px;
+    margin:0 auto;
+    padding:4px 16px calc(var(--safe-bottom) + 100px);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+}
+
+/* ═══════════ ПАНЕЛЬ ВЫБОРА СВЕРХУ ═══════════ */
+.select-panel{
     width:100%;
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:10px;
-    margin-top:2px;
+    margin-bottom:8px;
 }
-.card{
-    position:relative;
-    background:linear-gradient(160deg, rgba(22,27,34,.95), rgba(15,20,27,.95));
-    border:1.5px solid rgba(255,255,255,.08);
-    border-radius:16px;
+.select-card{
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:20px;
+    padding:14px 12px;
     display:flex;
     flex-direction:column;
     align-items:center;
-    justify-content:center;
-    height:150px;
-    min-height:150px;
-    max-height:150px;
-    padding:12px 8px;
-    cursor:pointer;
-    overflow:hidden;
-    box-sizing:border-box;
-    transition:all .3s cubic-bezier(.4,0,.2,1);
-}
-.card::before{
-    content:'';
-    position:absolute;
-    inset:0;
-    background:radial-gradient(circle at 50% 0%, rgba(59,130,246,.08) 0%, transparent 70%);
-    opacity:0;
-    transition:opacity .3s ease;
-    pointer-events:none;
-}
-.card:hover{
-    transform:translateY(-3px);
-    border-color:rgba(59,130,246,.3);
-    box-shadow:0 8px 24px rgba(0,0,0,.4), 0 0 0 1px rgba(59,130,246,.1);
-}
-.card:hover::before{ opacity:1; }
-.card:active{ transform:scale(.98); }
-.card.has-gift{
-    border-style:solid;
-    border-color:rgba(59,130,246,.4);
-    background:linear-gradient(160deg, rgba(59,130,246,.08), rgba(15,20,27,.95));
-    box-shadow:0 0 0 1px rgba(59,130,246,.2), 0 8px 24px rgba(0,0,0,.4);
-}
-.card.has-gift::after{
-    content:'';
-    position:absolute;
-    top:8px;
-    right:8px;
-    width:8px;
-    height:8px;
-    border-radius:50%;
-    background:#10b981;
-    box-shadow:0 0 12px #10b981;
-    animation:dotPulse 2s ease-in-out infinite;
-}
-@keyframes dotPulse{
-    0%,100%{ opacity:1; transform:scale(1); }
-    50%{ opacity:.6; transform:scale(.85); }
-}
-.card .card-placeholder{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    width:100%;
-    padding:0 10px;
-    box-sizing:border-box;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
     gap:10px;
-    transition:opacity .3s ease;
-    z-index:1;
+    cursor:pointer;
+    transition:all .25s cubic-bezier(.4,0,.2,1);
+    position:relative;
+    min-height:160px;
+    justify-content:center;
+    overflow:hidden;
 }
-.card:hover .card-icon{
-    opacity:.9;
-    transform:scale(1.08) rotate(-5deg);
-    filter:drop-shadow(0 0 12px rgba(59,130,246,.4));
+.select-card:active{transform:scale(.97)}
+.select-card.has-item{
+    border-color:rgba(40,68,251,.4);
+    background:linear-gradient(180deg, rgba(40,68,251,.1), rgba(40,68,251,.02));
+    box-shadow:0 0 20px rgba(40,68,251,.15);
 }
-.card-icon{
-    width:46px;
-    height:46px;
-    opacity:.5;
-    transition:all .3s ease;
-}
-.card-icon img{width:100%;height:100%;object-fit:contain}
-.card-text{
-    font-size:11px;
-    font-weight:600;
-    color:rgba(255,255,255,.45);
+.select-card-title{
+    font-size:12px;
+    font-weight:700;
+    color:rgba(255,255,255,.6);
+    text-transform:uppercase;
+    letter-spacing:.5px;
     text-align:center;
-    line-height:1.35;
-    transition:color .3s ease;
+    line-height:1.2;
 }
-.card:hover .card-text{ color:rgba(255,255,255,.7); }
-
-.card .gift-preview{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    width:100%;
-    padding:0 8px;
-    box-sizing:border-box;
+.select-empty{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+}
+.select-empty-icon{
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    background:rgba(255,255,255,.06);
+    border:2px dashed rgba(255,255,255,.15);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:24px;
+    color:rgba(255,255,255,.4);
+}
+.select-empty-text{
+    font-size:11px;
+    color:rgba(255,255,255,.35);
+    font-weight:600;
+}
+.select-filled{
     display:none;
     flex-direction:column;
     align-items:center;
-    justify-content:center;
-    gap:5px;
-    z-index:2;
+    gap:6px;
+    width:100%;
 }
-.card.has-gift .card-placeholder{opacity:0;pointer-events:none;}
-.card.has-gift .gift-preview{
-    display:flex;
-    animation:giftAppear .45s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes giftAppear{
-    0%{ transform:translate(-50%,-50%) scale(.5) rotate(-10deg); opacity:0; }
-    60%{ transform:translate(-50%,-50%) scale(1.1) rotate(3deg); }
-    100%{ transform:translate(-50%,-50%) scale(1) rotate(0); opacity:1; }
-}
-.gift-preview img{
-    width:64px;
-    height:64px;
+.select-card.has-item .select-empty{display:none}
+.select-card.has-item .select-filled{display:flex}
+.select-img{
+    width:70px;
+    height:70px;
     object-fit:contain;
     filter:drop-shadow(0 4px 12px rgba(0,0,0,.5));
-    animation:giftFloat 3s ease-in-out infinite;
 }
-@keyframes giftFloat{
-    0%,100%{ transform:translateY(0); }
-    50%{ transform:translateY(-4px); }
-}
-.gift-preview-name{
+.select-name{
     font-size:11px;
     font-weight:700;
     color:#fff;
@@ -575,1109 +188,81 @@ a{text-decoration:none;color:inherit}
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
-    line-height:1.2;
 }
-.gift-preview-value{
-    font-size:11px;
+.select-price{
     display:inline-flex;
     align-items:center;
     gap:4px;
-    padding:3px 9px;
-    background:rgba(59,130,246,.15);
-    border:1px solid rgba(59,130,246,.25);
+    padding:3px 10px;
+    background:rgba(40,68,251,.15);
     border-radius:10px;
+    font-size:11px;
     font-weight:800;
     color:#60A5FA;
     line-height:1;
 }
-.gift-preview-value img{
-    width:12px !important;
-    height:12px !important;
-    max-width:12px !important;
-    max-height:12px !important;
-    animation:none !important;
-    object-fit:contain;
-    filter:none;
-    display:inline-block;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   КНОПКИ ВЫБОРА
-   ══════════════════════════════════════════════════════════════ */
-.btns-row{
-    width:100%;
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;
-}
-.select-btn{
-    height:44px;
-    border-radius:14px;
-    border:1.5px solid rgba(255,255,255,.08);
-    font-family:inherit;
-    font-size:13px;
-    font-weight:700;
-    cursor:pointer;
-    transition:all .25s cubic-bezier(.4,0,.2,1);
-    position:relative;
-    overflow:hidden;
-}
-.select-btn:first-child{
-    background:linear-gradient(135deg, #1e3a5f, #1e40af);
-    color:#fff;
-    border-color:rgba(59,130,246,.3);
-}
-.select-btn:last-child{
-    background:rgba(255,255,255,.06);
-    color:rgba(255,255,255,.65);
-}
-.select-btn:hover{
-    transform:translateY(-2px);
-    box-shadow:0 8px 24px rgba(0,0,0,.3);
-}
-.select-btn:active{ transform:scale(.97); }
-.select-btn.active{
-    box-shadow:0 0 0 2px #3B82F6, 0 8px 24px rgba(59,130,246,.35);
-    border-color:#3B82F6;
-    color:#fff;
-}
-.select-btn.active:last-child{
-    background:linear-gradient(135deg, #3B82F6, #2563EB);
-}
-
-/* ══════════════════════════════════════════════════════════════
-   INLINE СЕКЦИИ
-   ══════════════════════════════════════════════════════════════ */
-.inline-section{
-    width:100%;
-    display:none;
-    margin-top:8px;
-    animation:sectionSlide .35s cubic-bezier(.4,0,.2,1);
-}
-.inline-section.show{ display:block; }
-@keyframes sectionSlide{
-    0%{ opacity:0; transform:translateY(-10px); }
-    100%{ opacity:1; transform:translateY(0); }
-}
-.section-title{
-    font-size:12px;
-    font-weight:700;
-    color:rgba(255,255,255,.5);
-    margin-bottom:10px;
-    padding-left:2px;
-    display:flex;
-    align-items:center;
-    gap:8px;
-    text-transform:uppercase;
-    letter-spacing:.5px;
-}
-.section-title::before{
-    content:'';
-    width:3px;
-    height:14px;
-    background:linear-gradient(180deg, #3B82F6, #2563EB);
-    border-radius:2px;
-}
-
-/* ИНВЕНТАРЬ — 3 в ряд */
-#inventoryGrid,
-.inline-grid{
-    display:grid !important;
-    grid-template-columns:repeat(3, 1fr) !important;
-    gap:8px !important;
-    max-height:400px !important;
-    overflow-y:auto !important;
-    padding:2px !important;
-    width:100% !important;
-    box-sizing:border-box !important;
-}
-#inventoryGrid::-webkit-scrollbar,
-.inline-grid::-webkit-scrollbar{ width:4px; }
-#inventoryGrid::-webkit-scrollbar-thumb,
-.inline-grid::-webkit-scrollbar-thumb{ background:rgba(59,130,246,.3); border-radius:2px; }
-
-.inline-item{
-    border-radius:14px;
-    border:1.5px solid rgba(255,255,255,.08);
-    background:linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    cursor:pointer;
-    padding:8px 4px 6px;
-    transition:all .3s cubic-bezier(.4,0,.2,1);
-    position:relative;
-    overflow:hidden;
-    width:100%;
-    box-sizing:border-box;
-    animation:itemAppear .35s cubic-bezier(.4,0,.2,1) both;
-}
-@keyframes itemAppear{
-    0%{ opacity:0; transform:translateY(8px) scale(0.95); }
-    100%{ opacity:1; transform:translateY(0) scale(1); }
-}
-.inline-item::before{
-    content:'';
-    position:absolute;
-    inset:0;
-    background:radial-gradient(circle at 50% 30%, rgba(59,130,246,.15) 0%, transparent 70%);
-    opacity:0;
-    transition:opacity .3s ease;
-    pointer-events:none;
-}
-.inline-item:hover{
-    transform:translateY(-3px);
-    border-color:rgba(59,130,246,.4);
-    box-shadow:0 8px 20px rgba(0,0,0,.4);
-}
-.inline-item:hover::before{ opacity:1; }
-.inline-item.selected{
-    border-color:#3B82F6;
-    background:linear-gradient(160deg, rgba(59,130,246,.15), rgba(59,130,246,.05));
-    animation:itemSelectedGlow 1.5s ease-in-out infinite;
-}
-@keyframes itemSelectedGlow{
-    0%,100%{ box-shadow:0 0 0 1px #3B82F6, 0 8px 20px rgba(59,130,246,.3); }
-    50%{ box-shadow:0 0 0 1px #3B82F6, 0 8px 30px rgba(59,130,246,.6), 0 0 40px rgba(59,130,246,.3); }
-}
-.inline-item.selected::after{
-    content:'✓';
-    position:absolute;
-    top:4px;
-    right:4px;
-    width:20px;
-    height:20px;
-    border-radius:50%;
-    background:linear-gradient(135deg, #3B82F6, #2563EB);
-    color:#fff;
-    font-size:11px;
-    font-weight:800;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    box-shadow:0 2px 8px rgba(59,130,246,.5);
-    animation:checkPop .3s cubic-bezier(.34,1.56,.64,1);
-    z-index:2;
-}
-@keyframes checkPop{
-    0%{ transform:scale(0); }
-    100%{ transform:scale(1); }
-}
-.inline-item img{
-    width:52px !important;
-    height:52px !important;
-    max-width:52px !important;
-    max-height:52px !important;
-    object-fit:contain;
-    margin-bottom:4px;
-    filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));
-    transition:transform .3s ease;
-}
-.inline-item:hover img{ transform:scale(1.08); }
-.inline-item-name{
-    font-size:9px;
-    font-weight:700;
-    color:rgba(255,255,255,.85);
-    text-align:center;
-    width:100%;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    line-height:1.2;
-}
-.inline-item-value{
-    font-size:10px;
-    font-weight:800;
-    margin-top:4px;
-    display:flex;
-    align-items:center;
-    gap:2px;
-    padding:2px 6px;
-    border-radius:7px;
-    background:rgba(59,130,246,.12);
-    color:#60A5FA;
-}
-.inline-item-value img{
-    width:9px !important;
-    height:9px !important;
-    max-width:9px !important;
-    max-height:9px !important;
-    margin:0 !important;
-    animation:none !important;
-}
-.inline-item.selected .inline-item-value{
-    background:rgba(59,130,246,.25);
-    color:#fff;
-}
-
-/* ЖЕЛАЕМЫЕ — 3 в ряд */
-#targetsList,
-.target-list-inline{
-    display:grid !important;
-    grid-template-columns:repeat(3, 1fr) !important;
-    gap:8px !important;
-    max-height:400px !important;
-    overflow-y:auto !important;
-    padding:2px !important;
-    width:100% !important;
-    box-sizing:border-box !important;
-}
-#targetsList::-webkit-scrollbar,
-.target-list-inline::-webkit-scrollbar{ width:4px; }
-#targetsList::-webkit-scrollbar-thumb,
-.target-list-inline::-webkit-scrollbar-thumb{ background:rgba(30,228,76,.3); border-radius:2px; }
-
-#targetsList .target-row,
-.target-list-inline .target-row{
-    display:flex !important;
-    flex-direction:column !important;
-    align-items:center !important;
-    padding:8px 4px 6px !important;
-    gap:4px !important;
-    min-height:auto !important;
-    height:auto !important;
-    width:100% !important;
-    box-sizing:border-box !important;
-    border-radius:14px !important;
-    border:1.5px solid rgba(255,255,255,.06) !important;
-    background:linear-gradient(160deg, rgba(255,255,255,.03), rgba(255,255,255,.01)) !important;
-    cursor:pointer !important;
-    transition:all .25s cubic-bezier(.4,0,.2,1) !important;
-    position:relative !important;
-    overflow:hidden !important;
-    animation:itemAppear .35s cubic-bezier(.4,0,.2,1) both;
-}
-#targetsList .target-row:hover{
-    transform:translateY(-3px) !important;
-    border-color:rgba(30,228,76,.4) !important;
-    box-shadow:0 8px 20px rgba(0,0,0,.4) !important;
-}
-#targetsList .target-row.selected{
-    border-color:#1EE44C !important;
-    background:linear-gradient(160deg, rgba(30,228,76,.15), rgba(30,228,76,.05)) !important;
-    box-shadow:0 0 0 2px #1EE44C, 0 8px 20px rgba(30,228,76,.25) !important;
-}
-#targetsList .target-row.selected::before{ display:none !important; }
-#targetsList .target-row.selected::after{
-    content:'✓';
-    position:absolute;
-    top:4px;
-    right:4px;
-    width:20px;
-    height:20px;
-    border-radius:50%;
-    background:linear-gradient(135deg, #1EE44C, #10b981);
-    color:#fff;
-    font-size:11px;
-    font-weight:800;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    box-shadow:0 2px 8px rgba(30,228,76,.5);
-    animation:checkPop .3s cubic-bezier(.34,1.56,.64,1);
-    z-index:2;
-}
-#targetsList .target-row img{
-    width:52px !important;
-    height:52px !important;
-    max-width:52px !important;
-    max-height:52px !important;
-    object-fit:contain !important;
-    margin-bottom:2px !important;
-    filter:drop-shadow(0 4px 10px rgba(0,0,0,.4));
-    order:1;
-}
-#targetsList .target-row-info{
-    width:100% !important;
-    text-align:center !important;
-    display:flex !important;
-    flex-direction:column !important;
-    align-items:center !important;
-    gap:3px !important;
-    order:2;
-}
-#targetsList .target-row-name{
-    font-size:9px !important;
-    font-weight:700;
-    color:rgba(255,255,255,.85);
-    width:100% !important;
-    text-align:center !important;
-    white-space:nowrap !important;
-    overflow:hidden !important;
-    text-overflow:ellipsis !important;
-    line-height:1.2 !important;
-    order:1;
-}
-#targetsList .target-row-price{
-    font-size:10px !important;
-    justify-content:center !important;
-    margin-top:0 !important;
-    color:#60A5FA !important;
-    background:rgba(59,130,246,.12) !important;
-    padding:2px 6px !important;
-    border-radius:6px !important;
-    font-weight:800 !important;
-    display:flex !important;
-    align-items:center !important;
-    gap:2px !important;
-    order:2;
-}
-#targetsList .target-row-price img{
-    width:9px !important;
-    height:9px !important;
-    max-width:9px !important;
-    max-height:9px !important;
-    margin:0 !important;
-    filter:none !important;
-    order:0;
-}
-#targetsList .target-row-chance{
-    font-size:10px !important;
-    padding:2px 7px !important;
-    border-radius:7px !important;
-    background:rgba(30,228,76,.15) !important;
-    border:1px solid rgba(30,228,76,.3) !important;
-    color:#1EE44C !important;
-    font-weight:900 !important;
-    margin-top:2px !important;
-    letter-spacing:-.3px !important;
-    order:3;
-}
-
-/* ПУСТО */
-.empty-msg{
-    grid-column:1/-1;
-    text-align:center;
-    padding:40px 20px;
-    color:rgba(255,255,255,.35);
-    font-size:13px;
-    font-weight:600;
-}
-.empty-msg::before{
-    content:'📭';
-    display:block;
-    font-size:32px;
-    margin-bottom:12px;
-    opacity:.5;
-}
-
-/* DEPOSIT */
-.deposit-overlay{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.85);
-    z-index:5650;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    opacity:0;
-    visibility:hidden;
-    backdrop-filter:blur(8px);
-    transition:opacity .3s,visibility .3s;
-}
-.deposit-overlay.show{ opacity:1; visibility:visible; }
-.deposit-modal{
-    background:linear-gradient(180deg,#1E2538,#151B2D);
-    border-radius:24px;
-    width:90%;
-    max-width:360px;
-    padding:24px 20px;
-    transform:scale(.9);
-    transition:transform .3s;
-}
-.deposit-overlay.show .deposit-modal{ transform:scale(1); }
-.deposit-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-.deposit-title{ font-weight:800; font-size:18px; }
-.deposit-close{
-    width:32px;
-    height:32px;
-    border-radius:10px;
-    border:none;
-    background:rgba(249,105,153,.1);
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-}
-.deposit-close svg{ width:14px; height:14px; stroke:var(--red); fill:none; stroke-width:2; }
-.deposit-methods{ display:flex; gap:10px; }
-.deposit-method-btn{
-    flex:1;
-    padding:16px 10px;
-    border-radius:16px;
-    border:1px solid rgba(255,255,255,.05);
-    background:rgba(255,255,255,.03);
-    cursor:pointer;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:8px;
-}
-.deposit-method-btn img{ width:36px; height:36px; }
-.deposit-method-btn span{ font-weight:700; font-size:13px; color:#fff; }
-
-.confetti-canvas{
-    position:fixed;
-    inset:0;
-    z-index:6001;
-    pointer-events:none;
-}
-
-/* BOTTOM NAV */
-.bottom-nav{
-    position:fixed;
-    bottom:0;
-    left:50%;
-    transform:translateX(-50%);
-    z-index:100;
-    width:100%;
-    max-width:480px;
-    height:72px;
-    padding:0 8px calc(var(--safe-bottom) + 8px);
-    background:rgba(13,17,23,.95);
-    backdrop-filter:blur(20px);
-    border-top:1px solid rgba(255,255,255,.05);
-    display:flex;
-    align-items:center;
-    justify-content:space-around;
-}
-.bnav-item{
-    display:flex;
-    flex-direction:column;
+.select-price img{width:11px;height:11px}
+.select-chance{
+    display:inline-flex;
     align-items:center;
     gap:4px;
-    padding:8px 16px;
-    border-radius:12px;
-    color:rgba(255,255,255,.4);
-    font-weight:600;
-    text-decoration:none;
-}
-.bnav-item svg{ width:24px; height:24px; stroke:currentColor; fill:none; }
-.bnav-item span{ font-size:10px; }
-.bnav-item.active{ background:rgba(255,255,255,.08); color:#fff; }
-
-/* TON иконка — жёсткие размеры */
-img[src*="ton.png"],
-img[src*="/ton.png"],
-img[src*="ton_"]{
-    width:14px !important;
-    height:14px !important;
-    max-width:14px !important;
-    max-height:14px !important;
-    min-width:0 !important;
-    min-height:0 !important;
-    object-fit:contain !important;
-    display:inline-block !important;
-    vertical-align:middle !important;
-    flex-shrink:0 !important;
-}
-.bal-pill img[src*="ton.png"]{
-    width:14px !important;
-    height:14px !important;
-    max-width:14px !important;
-    max-height:14px !important;
+    padding:4px 12px;
+    background:linear-gradient(135deg, rgba(36,195,142,.2), rgba(36,195,142,.1));
+    border:1px solid rgba(36,195,142,.4);
+    border-radius:10px;
+    font-size:13px;
+    font-weight:900;
+    color:var(--green);
+    line-height:1;
+    margin-top:4px;
 }
 
-/* АДАПТИВ */
-@media(max-width:400px){
-    .wheel-container{ width:190px; height:190px; }
-    .wheel-pointer{ transform:translateX(-50%) translateY(-138px); }
-    .wheel-center{ width:68px; height:68px; }
-    .wheel-center img{ width:42px; height:42px; }
-    .inline-item img,
-    #targetsList .target-row img{ width:48px !important; height:48px !important; }
-    .gift-preview img{ width:58px; height:58px; }
-    .upgrade-btn{ height:48px; font-size:14px; }
-    .page-title{ font-size:20px; }
-    .card{ height:140px; min-height:140px; max-height:140px; }
-}
-@media(max-width:340px){
-    #inventoryGrid,
-    .inline-grid,
-    #targetsList,
-    .target-list-inline{
-        grid-template-columns:repeat(2, 1fr) !important;
-    }
-}
-@media(max-height:700px){
-    :root{ --tg-header:48px; }
-    .upgrade-wrap{ padding-top:2px; gap:8px; }
-    .page-title{ font-size:20px; padding:2px 0; }
-    .wheel-section{ padding:2px 0; }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   ★ ТУРБО НЕ УБИВАЕТ UPGRADE АНИМАЦИИ
-   ══════════════════════════════════════════════════════════════ */
-body.turbo-mode *:not(.upgrade-wrap):not(.upgrade-wrap *),
-html.turbo-mode *:not(.upgrade-wrap):not(.upgrade-wrap *){
-    animation:none !important;
-    transition:none !important;
-    box-shadow:none !important;
-    filter:none !important;
-    backdrop-filter:none !important;
-    -webkit-backdrop-filter:none !important;
-    text-shadow:none !important;
-}
-body.turbo-mode .upgrade-wrap .wheel-container::before,
-html.turbo-mode .upgrade-wrap .wheel-container::before{animation:wheelGlowPulse 3s ease-in-out infinite !important;}
-body.turbo-mode .upgrade-wrap .wheel-container::after,
-html.turbo-mode .upgrade-wrap .wheel-container::after{animation:wheelRingRotate 20s linear infinite !important;}
-body.turbo-mode .upgrade-wrap .wheel-center.alternating,
-html.turbo-mode .upgrade-wrap .wheel-center.alternating{animation:centerAlternate 1.5s ease-in-out infinite !important;}
-body.turbo-mode .upgrade-wrap .wheel-center img.visible,
-html.turbo-mode .upgrade-wrap .wheel-center img.visible,
-body.turbo-mode .upgrade-wrap .wheel-center .chance-pct.visible,
-html.turbo-mode .upgrade-wrap .wheel-center .chance-pct.visible{animation:centerSwap 0.4s cubic-bezier(.34,1.56,.64,1) !important;}
-body.turbo-mode .upgrade-wrap .gift-preview img,
-html.turbo-mode .upgrade-wrap .gift-preview img{animation:giftFloat 4s ease-in-out infinite !important;}
-body.turbo-mode .upgrade-wrap .inline-item,
-html.turbo-mode .upgrade-wrap .inline-item,
-body.turbo-mode .upgrade-wrap .target-row,
-html.turbo-mode .upgrade-wrap .target-row{animation:itemAppear 0.4s cubic-bezier(.4,0,.2,1) both !important;}
-
-
-/* ══════════════════════════════════════════════════════════════
-   ★ ЦВЕТ СВЕЧЕНИЯ ПО КОЭФФИЦИЕНТУ (риск)
-   ══════════════════════════════════════════════════════════════ */
-
-/* По умолчанию (нет цели) — серый/нейтральный */
-.wheel-container::before{
-    background:radial-gradient(circle, rgba(120,135,160,.08) 0%, transparent 70%) !important;
-    animation:wheelGlowNeutral 3s ease-in-out infinite !important;
-}
-@keyframes wheelGlowNeutral{
-    0%,100%{ transform:scale(1); opacity:.4; }
-    50%{ transform:scale(1.05); opacity:.7; }
-}
-
-/* 🟢 ЗЕЛЁНЫЙ — коэф 1.1x – 1.7x (низкий риск) */
-.wheel-container.risk-low::before{
-    background:radial-gradient(circle, rgba(30,228,76,.22) 0%, transparent 70%) !important;
-    animation:wheelGlowGreen 3s ease-in-out infinite !important;
-}
-.wheel-container.risk-low{
-    filter:drop-shadow(0 0 40px rgba(30,228,76,.25)) !important;
-}
-.wheel-container.risk-low::after{
-    border-color:rgba(30,228,76,.3) !important;
-}
-.wheel-container.risk-low .wheel-center{
-    border-color:rgba(30,228,76,.5) !important;
-    box-shadow:
-        inset 0 0 25px rgba(30,228,76,.2),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 40px rgba(30,228,76,.3) !important;
-}
-.wheel-container.risk-low .chance-pct{
-    background:linear-gradient(135deg, #1EE44C, #10b981) !important;
-    -webkit-background-clip:text !important;
-    -webkit-text-fill-color:transparent !important;
-    background-clip:text !important;
-}
-.wheel-container.risk-low.spinning{
-    filter:drop-shadow(0 0 70px rgba(30,228,76,.5)) drop-shadow(0 0 120px rgba(30,228,76,.3)) !important;
-}
-@keyframes wheelGlowGreen{
-    0%,100%{ transform:scale(1); opacity:.7; }
-    50%{ transform:scale(1.08); opacity:1; }
-}
-
-/* 🔵 ГОЛУБОЙ — коэф 1.7x – 2.2x (средний риск) */
-.wheel-container.risk-mid::before{
-    background:radial-gradient(circle, rgba(59,130,246,.25) 0%, transparent 70%) !important;
-    animation:wheelGlowBlue 3s ease-in-out infinite !important;
-}
-.wheel-container.risk-mid{
-    filter:drop-shadow(0 0 40px rgba(59,130,246,.3)) !important;
-}
-.wheel-container.risk-mid::after{
-    border-color:rgba(59,130,246,.35) !important;
-}
-.wheel-container.risk-mid .wheel-center{
-    border-color:rgba(59,130,246,.55) !important;
-    box-shadow:
-        inset 0 0 25px rgba(59,130,246,.25),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 40px rgba(59,130,246,.35) !important;
-}
-.wheel-container.risk-mid .chance-pct{
-    background:linear-gradient(135deg, #3B82F6, #60A5FA) !important;
-    -webkit-background-clip:text !important;
-    -webkit-text-fill-color:transparent !important;
-    background-clip:text !important;
-}
-.wheel-container.risk-mid.spinning{
-    filter:drop-shadow(0 0 70px rgba(59,130,246,.6)) drop-shadow(0 0 120px rgba(59,130,246,.35)) !important;
-}
-@keyframes wheelGlowBlue{
-    0%,100%{ transform:scale(1); opacity:.75; }
-    50%{ transform:scale(1.08); opacity:1; }
-}
-
-/* 🟣 ФИОЛЕТОВЫЙ — коэф 2.2x – 5.0x (высокий риск) */
-.wheel-container.risk-high::before{
-    background:radial-gradient(circle, rgba(168,85,247,.28) 0%, transparent 70%) !important;
-    animation:wheelGlowPurple 3s ease-in-out infinite !important;
-}
-.wheel-container.risk-high{
-    filter:drop-shadow(0 0 45px rgba(168,85,247,.35)) !important;
-}
-.wheel-container.risk-high::after{
-    border-color:rgba(168,85,247,.4) !important;
-}
-.wheel-container.risk-high .wheel-center{
-    border-color:rgba(168,85,247,.6) !important;
-    box-shadow:
-        inset 0 0 30px rgba(168,85,247,.3),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 50px rgba(168,85,247,.4) !important;
-}
-.wheel-container.risk-high .chance-pct{
-    background:linear-gradient(135deg, #a855f7, #c084fc) !important;
-    -webkit-background-clip:text !important;
-    -webkit-text-fill-color:transparent !important;
-    background-clip:text !important;
-}
-.wheel-container.risk-high.spinning{
-    filter:drop-shadow(0 0 80px rgba(168,85,247,.65)) drop-shadow(0 0 130px rgba(168,85,247,.4)) !important;
-}
-@keyframes wheelGlowPurple{
-    0%,100%{ transform:scale(1); opacity:.8; }
-    50%{ transform:scale(1.1); opacity:1; }
-}
-
-/* 🟠 ОРАНЖЕВЫЙ — коэф 5.0x+ (мега-риск) */
-.wheel-container.risk-mega::before{
-    background:radial-gradient(circle, rgba(245,158,11,.32) 0%, transparent 70%) !important;
-    animation:wheelGlowOrange 2s ease-in-out infinite !important;
-}
-.wheel-container.risk-mega{
-    filter:drop-shadow(0 0 55px rgba(245,158,11,.45)) !important;
-}
-.wheel-container.risk-mega::after{
-    border-color:rgba(245,158,11,.5) !important;
-    animation-duration:1.5s !important;
-}
-.wheel-container.risk-mega .wheel-center{
-    border-color:rgba(245,158,11,.7) !important;
-    box-shadow:
-        inset 0 0 35px rgba(245,158,11,.35),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 60px rgba(245,158,11,.5) !important;
-}
-.wheel-container.risk-mega .chance-pct{
-    background:linear-gradient(135deg, #f59e0b, #fbbf24) !important;
-    -webkit-background-clip:text !important;
-    -webkit-text-fill-color:transparent !important;
-    background-clip:text !important;
-    animation:chanceMegaPulse 1.2s ease-in-out infinite;
-}
-.wheel-container.risk-mega.spinning{
-    filter:drop-shadow(0 0 100px rgba(245,158,11,.75)) drop-shadow(0 0 160px rgba(245,158,11,.5)) !important;
-}
-@keyframes wheelGlowOrange{
-    0%,100%{ transform:scale(1); opacity:.85; }
-    50%{ transform:scale(1.12); opacity:1; }
-}
-@keyframes chanceMegaPulse{
-    0%,100%{ transform:translate(-50%,-50%) scale(1); }
-    50%{ transform:translate(-50%,-50%) scale(1.08); }
-}
-
-/* В турбо/оптимизации — все равно показываем цвета */
-body.turbo-mode .wheel-container.risk-low::before,
-body.turbo-mode .wheel-container.risk-mid::before,
-body.turbo-mode .wheel-container.risk-high::before,
-body.turbo-mode .wheel-container.risk-mega::before,
-html.turbo-mode .wheel-container.risk-low::before,
-html.turbo-mode .wheel-container.risk-mid::before,
-html.turbo-mode .wheel-container.risk-high::before,
-html.turbo-mode .wheel-container.risk-mega::before{
-    animation:wheelGlowNeutral 3s ease-in-out infinite !important;
-    animation-name:wheelGlowPulse !important;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   ★ ЦЕНТР — ВСЕГДА ПОКАЗЫВАЕТ ПРОЦЕНТ
-   ══════════════════════════════════════════════════════════════ */
-
-.wheel-center .chance-pct{
-    display:block !important;
-    opacity:1 !important;
-    z-index:3 !important;
-}
-
-/* Картинка центра — только когда явно показана */
-.wheel-center img{
-    opacity:0;
-    z-index:2;
-    pointer-events:none;
-}
-.wheel-center img.visible{
-    opacity:1;
-}
-
-/* Убираем чередование полностью — процент ВСЕГДА виден */
-.wheel-center .chance-pct.hidden{
-    opacity:1 !important;
-    transform:translate(-50%,-50%) scale(1) !important;
-    z-index:3 !important;
-}
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   ★ ОПТИМИЗАЦИЯ ПОД ТЕЛЕФОН
-   ══════════════════════════════════════════════════════════════ */
-
-/* GPU-ускорение колеса */
-.wheel-container{
-    will-change: filter;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-.wheel-container::before,
-.wheel-container::after{
-    will-change: transform, opacity;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-.wheel-center{
-    will-change: transform, box-shadow;
-    transform: translate(-50%, -50%) translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-.wheel-svg,
-.wheel-green-arc{
-    will-change: auto;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-
-/* Карточки — изоляция */
-.card,
-.inline-item,
-.target-row{
-    contain: layout style;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-
-/* Список инвентаря/целей — изоляция скролла */
-.inline-grid,
-.target-list-inline{
-    contain: layout style paint;
-    overscroll-behavior: contain;
-}
-
-/* Кнопка UPGRADE — GPU */
-.upgrade-btn{
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-
-/* Текстовое поле — сглаживание */
-.chance-pct{
-    text-rendering: optimizeSpeed;
-    -webkit-font-smoothing: antialiased;
-}
-
-/* Общая защита от лишних перерисовок */
-*{
-    -webkit-tap-highlight-color: transparent;
-}
-
-/* Улучшенный скроллбар */
-.inline-grid::-webkit-scrollbar,
-.target-list-inline::-webkit-scrollbar{
-    width: 3px;
-}
-.inline-grid::-webkit-scrollbar-track,
-.target-list-inline::-webkit-scrollbar-track{
-    background: transparent;
-}
-
-/* Отключаем лишние анимации в оптимизации */
-body.optimize-mode .wheel-container::before,
-html.optimize-mode .wheel-container::before{
-    animation-duration: 4s !important;
-}
-body.turbo-mode .wheel-container::before,
-html.turbo-mode .wheel-container::before{
-    animation-duration: 5s !important;
-}
-
-/* ★ Улучшенная адаптация под маленькие экраны */
-@media(max-width: 380px){
-    .wheel-container{
-        width: 230px;
-        height: 230px;
-    }
-    .wheel-center{
-        width: 84px;
-        height: 84px;
-    }
-    .wheel-center img{
-        width: 52px;
-        height: 52px;
-    }
-    .chance-pct{
-        font-size: 20px;
-    }
-    .wheel-pointer{
-        transform: translateX(-50%) translateY(-123px);
-        width: 22px;
-        height: 26px;
-    }
-}
-
-@media(max-width: 340px){
-    .wheel-container{
-        width: 210px;
-        height: 210px;
-    }
-    .wheel-center{
-        width: 76px;
-        height: 76px;
-    }
-    .wheel-center img{
-        width: 46px;
-        height: 46px;
-    }
-    .chance-pct{
-        font-size: 18px;
-    }
-    .wheel-pointer{
-        transform: translateX(-50%) translateY(-113px);
-        width: 20px;
-        height: 24px;
-    }
-}
-
-/* ★ Улучшение при малой высоте экрана */
-@media(max-height: 700px){
-    .wheel-container{
-        width: 220px;
-        height: 220px;
-    }
-    .wheel-center{
-        width: 82px;
-        height: 82px;
-    }
-    .chance-pct{
-        font-size: 20px;
-    }
-    .wheel-pointer{
-        transform: translateX(-50%) translateY(-118px);
-    }
-}
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   ★ УЛУЧШЕННЫЕ АНИМАЦИИ
-   ══════════════════════════════════════════════════════════════ */
-
-/* Пульсация свечения — плавная */
-@keyframes glowPulseSmooth{
-    0%, 100%{ opacity:0.75; transform: scale(1); }
-    50%{ opacity:1; transform: scale(1.05); }
-}
-
-/* Вращение обода — плавное */
-@keyframes ringRotateSmooth{
-    from{ transform: rotate(0deg); }
-    to{ transform: rotate(360deg); }
-}
-
-/* Появление карточек */
-@keyframes cardSlideIn{
-    0%{ opacity:0; transform: translateY(20px) scale(0.95); }
-    100%{ opacity:1; transform: translateY(0) scale(1); }
-}
-
-/* Подарок в ячейке — bounce */
-@keyframes giftBounceIn{
-    0%{ opacity:0; transform: translate(-50%, -50%) scale(0.3) rotate(-180deg); }
-    50%{ transform: translate(-50%, -50%) scale(1.15) rotate(10deg); }
-    75%{ transform: translate(-50%, -50%) scale(0.95) rotate(-5deg); }
-    100%{ opacity:1; transform: translate(-50%, -50%) scale(1) rotate(0); }
-}
-
-.card.has-gift .gift-preview{
-    animation: giftBounceIn 0.6s cubic-bezier(.34,1.56,.64,1) !important;
-}
-
-/* Пульсация выбранного */
-@keyframes selectedPulse{
-    0%, 100%{ box-shadow: 0 0 0 2px #3B82F6, 0 8px 20px rgba(59,130,246,.3); }
-    50%{ box-shadow: 0 0 0 2px #3B82F6, 0 8px 30px rgba(59,130,246,.6), 0 0 40px rgba(59,130,246,.25); }
-}
-
-.inline-item.selected{
-    animation: selectedPulse 2s ease-in-out infinite !important;
-}
-
-/* При выборе цели — свечение выбранной карточки */
-.target-row.selected{
-    animation: targetSelectedPulse 2s ease-in-out infinite !important;
-}
-@keyframes targetSelectedPulse{
-    0%, 100%{ box-shadow: 0 0 0 2px #1EE44C, 0 8px 20px rgba(30,228,76,.25); }
-    50%{ box-shadow: 0 0 0 2px #1EE44C, 0 8px 30px rgba(30,228,76,.5), 0 0 40px rgba(30,228,76,.2); }
-}
-
-/* Появление стрелки */
-@keyframes pointerPop{
-    0%{ transform: translateX(-50%) translateY(-138px) scale(0.5); }
-    60%{ transform: translateX(-50%) translateY(-138px) scale(1.15); }
-    100%{ transform: translateX(-50%) translateY(-138px) scale(1); }
-}
-
-/* Кнопка UPGRADE — пульсация при возможности клика */
-.upgrade-btn:not(:disabled){
-    animation: btnReadyPulse 3s ease-in-out infinite;
-}
-@keyframes btnReadyPulse{
-    0%, 100%{ box-shadow: 0 8px 24px rgba(37,99,235,.35); }
-    50%{ box-shadow: 0 8px 32px rgba(37,99,235,.55), 0 0 20px rgba(37,99,235,.3); }
-}
-
-/* Отключаем пульсацию в режиме оптимизации/турбо */
-body.optimize-mode .upgrade-btn:not(:disabled),
-body.turbo-mode .upgrade-btn:not(:disabled),
-html.optimize-mode .upgrade-btn:not(:disabled),
-html.turbo-mode .upgrade-btn:not(:disabled){
-    animation: none !important;
-}
-
-/* ★ При вращении — ускорение свечения */
-.wheel-container.spinning::before{
-    animation-duration: 0.8s !important;
-}
-.wheel-container.spinning::after{
-    animation-duration: 1.5s !important;
-}
-
-/* Победа — пульсация зелёная */
-.wheel-container.win{
-    animation: winPulse 1s ease-in-out infinite;
-}
-@keyframes winPulse{
-    0%, 100%{ transform: scale(1); }
-    50%{ transform: scale(1.02); }
-}
-
-/* Проигрыш — тряска */
-.wheel-container.fail{
-    animation: failShake 0.5s ease;
-}
-@keyframes failShake{
-    0%, 100%{ transform: translateX(0); }
-    20%, 60%{ transform: translateX(-8px); }
-    40%, 80%{ transform: translateX(8px); }
-}
-
-
-
-/* ══════════════════════════════════════════════════════════════
-   ★ КОЛЕСО (как на скриншоте) — риски по кругу
-   ══════════════════════════════════════════════════════════════ */
-
-.wheel-container{
-    position:relative;
-    width:290px;
-    height:290px;
-    margin:0 auto;
-    filter:drop-shadow(0 0 30px rgba(59,130,246,.15));
-    transition:filter .4s ease;
-    will-change: filter;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-}
-
-/* Внешний тёмный круг с рисками (как на фото) */
-.wheel-risks{
-    position:absolute;
-    inset:0;
-    border-radius:50%;
-    z-index:1;
-    pointer-events:none;
-}
-.wheel-risks svg{
+/* ═══════════ КОЛЕСО СНИЗУ ═══════════ */
+.wheel-section{
     width:100%;
-    height:100%;
-    display:block;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:12px 0;
+    position:relative;
 }
-
-/* Внутренний круг — тёмный фон */
-.wheel-inner-circle{
-    position:absolute;
-    top:14%;
-    left:14%;
-    width:72%;
-    height:72%;
-    border-radius:50%;
-    background:#1a1d24;
-    border:2px solid rgba(255,255,255,.04);
-    box-shadow:
-        inset 0 0 40px rgba(0,0,0,.6),
-        0 0 20px rgba(0,0,0,.3);
-    z-index:2;
-    pointer-events:none;
+.wheel-wrap{
+    position:relative;
+    width:100%;
+    max-width:320px;
+    aspect-ratio:1/1;
+    margin:0 auto;
 }
-
-/* Свечение вокруг колеса */
-.wheel-container::before{
-    content:'';
+.wheel-pointer{
     position:absolute;
-    inset:-20px;
-    border-radius:50%;
-    background:radial-gradient(circle, rgba(120,135,160,.15) 0%, transparent 70%);
-    z-index:0;
-    animation:wheelGlowPulse 3s ease-in-out infinite;
-    pointer-events:none;
-    will-change: transform, opacity;
-}
-
-/* Стрелка СВЕРХУ В ЦЕНТРЕ (не снаружи, а внутри колеса) */
-.wheel-pointer-center{
-    position:absolute;
-    top:8%;
+    top:0;
     left:50%;
     transform:translateX(-50%);
-    z-index:6;
-    width:0;
-    height:0;
+    z-index:10;
+    width:44px;
+    height:44px;
     pointer-events:none;
+    filter:drop-shadow(0 4px 12px rgba(0,0,0,.7));
 }
-.wheel-pointer-center svg{
-    width:32px;
-    height:40px;
-    filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));
-    display:block;
-    margin-left:-16px;
-}
-
-/* Зелёная зона (эффект) */
-.wheel-green-arc{
-    position:absolute;
-    inset:0;
+.wheel-pointer svg{
     width:100%;
     height:100%;
-    pointer-events:none;
-    z-index:3;
+    display:block;
 }
-
-/* Центр — процент */
+.wheel-rotator{
+    position:absolute;
+    inset:0;
+    will-change:transform;
+    transform-origin:50% 50%;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    transform:translateZ(0);
+}
+.wheel-rotator svg{
+    width:100%;
+    height:100%;
+    display:block;
+}
 .wheel-center{
     position:absolute;
     top:50%;
@@ -1686,155 +271,145 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     width:130px;
     height:130px;
     border-radius:50%;
-    background:radial-gradient(circle, #1a2030 0%, #0d1117 100%);
-    border:2px solid rgba(59,130,246,.3);
+    background:radial-gradient(circle, #1a1a24 0%, #0d0d15 100%);
+    border:2px solid rgba(255,255,255,.08);
+    box-shadow:
+        inset 0 0 30px rgba(0,0,0,.7),
+        0 0 0 6px rgba(11,11,24,.9),
+        0 0 40px rgba(40,68,251,.15);
     display:flex;
     align-items:center;
     justify-content:center;
     z-index:5;
     overflow:hidden;
-    box-shadow:
-        inset 0 0 20px rgba(59,130,246,.15),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 30px rgba(59,130,246,.2);
     transition:all .3s ease;
-    will-change: transform, box-shadow;
-    transform: translate(-50%, -50%) translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
 }
-
-.wheel-center img,
-.wheel-center .chance-pct{
+.wheel-center-img{
     position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    transition:opacity .35s ease, transform .35s ease;
-    will-change: opacity, transform;
-}
-.wheel-center img{
     width:80px;
     height:80px;
     object-fit:contain;
-    display:block;
+    opacity:0;
+    transition:opacity .3s ease;
+    z-index:2;
     filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));
 }
-.wheel-center img.hidden,
-.wheel-center .chance-pct.hidden{
-    opacity:0;
-    transform:translate(-50%,-50%) scale(.6);
-    pointer-events:none;
-    z-index:1;
-}
-.wheel-center img.visible,
-.wheel-center .chance-pct.visible{
-    opacity:1;
-    transform:translate(-50%,-50%) scale(1);
-    z-index:2;
-    animation:centerSwap .4s cubic-bezier(.34,1.56,.64,1);
-}
-.chance-pct{
-    font-size:32px;
+.wheel-center-img.visible{opacity:1}
+.wheel-center-pct{
+    position:absolute;
+    font-size:28px;
     font-weight:900;
-    background:linear-gradient(135deg, #3B82F6, #60A5FA);
+    letter-spacing:-1px;
+    background:linear-gradient(135deg, #fff, #93c5fd);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
     background-clip:text;
-    letter-spacing:-1px;
+    opacity:0;
+    transition:opacity .3s ease;
+    z-index:3;
 }
-@keyframes centerSwap{
-    0%{ transform:translate(-50%,-50%) scale(.7); opacity:0; }
-    50%{ transform:translate(-50%,-50%) scale(1.1); opacity:1; }
-    100%{ transform:translate(-50%,-50%) scale(1); opacity:1; }
-}
-@keyframes wheelGlowPulse{
-    0%,100%{ transform:scale(1); opacity:.5; }
-    50%{ transform:scale(1.05); opacity:.9; }
-}
+.wheel-center-pct.visible{opacity:1}
 
 /* Цвет по риску */
-.wheel-container.risk-low::before{
-    background:radial-gradient(circle, rgba(30,228,76,.25) 0%, transparent 70%);
-}
-.wheel-container.risk-low .wheel-center{
-    border-color:rgba(30,228,76,.6);
+.wheel-wrap.risk-low .wheel-center{
+    border-color:rgba(36,195,142,.6);
     box-shadow:
-        inset 0 0 25px rgba(30,228,76,.25),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 50px rgba(30,228,76,.4);
+        inset 0 0 30px rgba(0,0,0,.7),
+        0 0 0 6px rgba(11,11,24,.9),
+        0 0 60px rgba(36,195,142,.5);
 }
-.wheel-container.risk-low .chance-pct{
-    background:linear-gradient(135deg, #1EE44C, #10b981);
+.wheel-wrap.risk-low .wheel-center-pct{
+    background:linear-gradient(135deg, #24C38E, #10b981);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
     background-clip:text;
 }
-.wheel-container.risk-mid::before{
-    background:radial-gradient(circle, rgba(59,130,246,.3) 0%, transparent 70%);
-}
-.wheel-container.risk-mid .wheel-center{
-    border-color:rgba(59,130,246,.6);
+.wheel-wrap.risk-mid .wheel-center{
+    border-color:rgba(40,68,251,.6);
     box-shadow:
-        inset 0 0 25px rgba(59,130,246,.25),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 50px rgba(59,130,246,.4);
+        inset 0 0 30px rgba(0,0,0,.7),
+        0 0 0 6px rgba(11,11,24,.9),
+        0 0 60px rgba(40,68,251,.5);
 }
-.wheel-container.risk-high::before{
-    background:radial-gradient(circle, rgba(168,85,247,.35) 0%, transparent 70%);
+.wheel-wrap.risk-mid .wheel-center-pct{
+    background:linear-gradient(135deg, #4B81F5, #60A5FA);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
 }
-.wheel-container.risk-high .wheel-center{
-    border-color:rgba(168,85,247,.65);
+.wheel-wrap.risk-high .wheel-center{
+    border-color:rgba(168,85,247,.6);
     box-shadow:
-        inset 0 0 30px rgba(168,85,247,.3),
-        0 0 0 4px rgba(13,17,23,.8),
-        0 0 55px rgba(168,85,247,.45);
+        inset 0 0 30px rgba(0,0,0,.7),
+        0 0 0 6px rgba(11,11,24,.9),
+        0 0 60px rgba(168,85,247,.5);
 }
-.wheel-container.risk-high .chance-pct{
+.wheel-wrap.risk-high .wheel-center-pct{
     background:linear-gradient(135deg, #a855f7, #c084fc);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
     background-clip:text;
 }
-.wheel-container.risk-mega::before{
-    background:radial-gradient(circle, rgba(245,158,11,.4) 0%, transparent 70%);
-}
-.wheel-container.risk-mega .wheel-center{
-    border-color:rgba(245,158,11,.7);
+.wheel-wrap.risk-mega .wheel-center{
+    border-color:rgba(245,158,11,.6);
     box-shadow:
-        inset 0 0 35px rgba(245,158,11,.35),
-        0 0 0 4px rgba(13,17,23,.8),
+        inset 0 0 30px rgba(0,0,0,.7),
+        0 0 0 6px rgba(11,11,24,.9),
         0 0 60px rgba(245,158,11,.5);
 }
-.wheel-container.risk-mega .chance-pct{
+.wheel-wrap.risk-mega .wheel-center-pct{
     background:linear-gradient(135deg, #f59e0b, #fbbf24);
     -webkit-background-clip:text;
     -webkit-text-fill-color:transparent;
     background-clip:text;
 }
 
-/* ★ Точка отсчёта — белая метка сверху центра */
-.wheel-marker{
-    position:absolute;
-    top:0;
-    left:50%;
-    transform:translateX(-50%);
-    z-index:7;
-    width:0;
-    height:0;
-    pointer-events:none;
+/* ═══════════ КНОПКИ ═══════════ */
+.actions-row{
+    width:100%;
+    display:flex;
+    gap:10px;
 }
-
-/* ★ Убираем старую стрелку-обёртку (мы её заменим на wheel-pointer-center) */
-.wheel-pointer-wrap,
-.wheel-pointer{
-    display:none !important;
+.btn-main{
+    flex:2;
+    height:56px;
+    border-radius:16px;
+    background:linear-gradient(90deg,#2844FB,#4B81F5);
+    color:#fff;
+    font-size:16px;
+    font-weight:800;
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:inset 0 0 10px rgba(255,255,255,.2);
+    transition:transform .15s;
 }
+.btn-main:not(:disabled):active{transform:scale(.95)}
+.btn-main:disabled{
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.3);
+    box-shadow:none;
+    cursor:not-allowed;
+}
+.btn-demo{
+    flex:1;
+    height:56px;
+    border-radius:16px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.1);
+    color:#fff;
+    font-size:14px;
+    font-weight:800;
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:transform .15s;
+}
+.btn-demo:active{transform:scale(.95)}
 
-/* ══════════════════════════════════════════════════════════════
-   МОДАЛКИ ВЫБОРА (инвентарь / желаемое)
-   ══════════════════════════════════════════════════════════════ */
-
+/* ═══════════ МОДАЛКИ ═══════════ */
 .modal-overlay{
     position:fixed;
     inset:0;
@@ -1849,29 +424,21 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     visibility:hidden;
     transition:opacity .25s, visibility .25s;
 }
-.modal-overlay.show{
-    opacity:1;
-    visibility:visible;
-}
-
+.modal-overlay.show{opacity:1;visibility:visible}
 .modal-sheet{
-    background:linear-gradient(180deg, #1a2030 0%, #0f1420 100%);
+    background:linear-gradient(180deg, #1a1a24 0%, #0f0f15 100%);
     border-radius:24px 24px 0 0;
     width:100%;
-    max-width:520px;
+    max-width:450px;
     max-height:85vh;
     display:flex;
     flex-direction:column;
     transform:translateY(100%);
     transition:transform .35s cubic-bezier(.32,1,.23,1);
-    border-top:1px solid rgba(59,130,246,.15);
+    border-top:1px solid rgba(255,255,255,.08);
     overflow:hidden;
 }
-.modal-overlay.show .modal-sheet{
-    transform:translateY(0);
-}
-
-/* Хедер модалки */
+.modal-overlay.show .modal-sheet{transform:translateY(0)}
 .modal-header{
     display:flex;
     align-items:center;
@@ -1880,39 +447,25 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     border-bottom:1px solid rgba(255,255,255,.06);
     flex-shrink:0;
 }
-.modal-title{
-    font-size:17px;
-    font-weight:800;
-    color:#fff;
-    display:flex;
-    align-items:center;
-    gap:8px;
-}
+.modal-title{font-size:16px;font-weight:800;color:#fff}
 .modal-close{
-    width:34px;
-    height:34px;
+    width:32px;
+    height:32px;
     border-radius:50%;
-    border:none;
-    background:rgba(249,105,153,.12);
-    color:#F96999;
-    font-size:18px;
+    background:rgba(255,48,100,.15);
+    color:var(--red);
+    font-size:16px;
     font-weight:700;
-    cursor:pointer;
     display:flex;
     align-items:center;
     justify-content:center;
-    flex-shrink:0;
-    transition:all .2s;
+    transition:transform .15s;
 }
-.modal-close:active{
-    transform:scale(.9);
-    background:rgba(249,105,153,.25);
-}
-
-/* Поиск */
+.modal-close:active{transform:scale(.9)}
 .modal-search-wrap{
     padding:12px 20px;
     flex-shrink:0;
+    position:relative;
 }
 .modal-search{
     width:100%;
@@ -1921,20 +474,16 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     border:1.5px solid rgba(255,255,255,.08);
     background:rgba(255,255,255,.04);
     color:#fff;
-    font-family:inherit;
     font-size:14px;
-    font-weight:500;
     outline:none;
     transition:all .2s;
-    box-sizing:border-box;
+    font-family:inherit;
 }
 .modal-search:focus{
-    border-color:rgba(59,130,246,.5);
-    background:rgba(59,130,246,.08);
+    border-color:rgba(40,68,251,.5);
+    background:rgba(40,68,251,.08);
 }
-.modal-search::placeholder{
-    color:rgba(255,255,255,.35);
-}
+.modal-search::placeholder{color:rgba(255,255,255,.35)}
 .modal-search-icon{
     position:absolute;
     left:34px;
@@ -1947,30 +496,19 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     stroke-width:2;
     pointer-events:none;
 }
-.modal-search-container{
-    position:relative;
-}
-
-/* Тело — сетка */
 .modal-body{
     flex:1;
     overflow-y:auto;
     padding:0 20px 20px;
     overscroll-behavior:contain;
 }
-.modal-body::-webkit-scrollbar{ width:4px; }
-.modal-body::-webkit-scrollbar-thumb{
-    background:rgba(59,130,246,.3);
-    border-radius:2px;
-}
-
+.modal-body::-webkit-scrollbar{width:4px}
+.modal-body::-webkit-scrollbar-thumb{background:rgba(40,68,251,.3);border-radius:2px}
 .modal-grid{
     display:grid;
     grid-template-columns:repeat(3, 1fr);
     gap:10px;
 }
-
-/* Карточка в модалке */
 .modal-item{
     background:linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
     border:1.5px solid rgba(255,255,255,.08);
@@ -1980,24 +518,15 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     flex-direction:column;
     align-items:center;
     cursor:pointer;
-    transition:all .25s cubic-bezier(.4,0,.2,1);
+    transition:all .2s;
     position:relative;
     overflow:hidden;
-    animation:itemAppear .3s cubic-bezier(.4,0,.2,1) both;
 }
-@keyframes itemAppear{
-    0%{ opacity:0; transform:translateY(6px) scale(0.95); }
-    100%{ opacity:1; transform:translateY(0) scale(1); }
-}
-.modal-item:hover{
-    transform:translateY(-2px);
-    border-color:rgba(59,130,246,.4);
-    box-shadow:0 6px 16px rgba(0,0,0,.3);
-}
+.modal-item:active{transform:scale(.96)}
 .modal-item.selected{
-    border-color:#3B82F6;
-    background:linear-gradient(160deg, rgba(59,130,246,.15), rgba(59,130,246,.05));
-    box-shadow:0 0 0 2px #3B82F6, 0 6px 20px rgba(59,130,246,.3);
+    border-color:var(--blue);
+    background:linear-gradient(160deg, rgba(40,68,251,.15), rgba(40,68,251,.05));
+    box-shadow:0 0 0 2px var(--blue);
 }
 .modal-item.selected::after{
     content:'✓';
@@ -2007,15 +536,13 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     width:20px;
     height:20px;
     border-radius:50%;
-    background:linear-gradient(135deg, #3B82F6, #2563EB);
+    background:var(--blue);
     color:#fff;
     font-size:11px;
     font-weight:800;
     display:flex;
     align-items:center;
     justify-content:center;
-    box-shadow:0 2px 6px rgba(59,130,246,.5);
-    z-index:2;
 }
 .modal-item-img{
     width:60px;
@@ -2033,35 +560,30 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
-    line-height:1.2;
 }
 .modal-item-price{
     font-size:10px;
     font-weight:800;
     color:#60A5FA;
-    background:rgba(59,130,246,.12);
-    padding:2px 8px;
+    background:rgba(40,68,251,.15);
+    padding:3px 8px;
     border-radius:7px;
     margin-top:4px;
     display:inline-flex;
     align-items:center;
     gap:3px;
 }
-.modal-item-price img{
-    width:9px;
-    height:9px;
-}
+.modal-item-price img{width:9px;height:9px}
 .modal-item-chance{
     font-size:10px;
     font-weight:900;
-    color:#1EE44C;
-    background:rgba(30,228,76,.15);
-    padding:2px 8px;
+    color:var(--green);
+    background:rgba(36,195,142,.15);
+    padding:3px 8px;
     border-radius:7px;
     margin-top:4px;
-    border:1px solid rgba(30,228,76,.25);
+    border:1px solid rgba(36,195,142,.25);
 }
-
 .modal-empty{
     grid-column:1/-1;
     text-align:center;
@@ -2078,42 +600,134 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     opacity:.5;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   КНОПКА "ДЕМО" рядом с UPGRADE (как на фото)
-   ══════════════════════════════════════════════════════════════ */
-
-.actions-row{
-    width:100%;
+/* ═══════════ DEPOSIT ═══════════ */
+.deposit-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.85);
+    z-index:9600;
     display:flex;
-    gap:10px;
-    margin-top:4px;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    visibility:hidden;
+    backdrop-filter:blur(8px);
+    transition:opacity .3s,visibility .3s;
 }
-.actions-row .upgrade-btn{
+.deposit-overlay.show{opacity:1;visibility:visible}
+.deposit-modal{
+    background:linear-gradient(180deg,#1a1a24,#0f0f15);
+    border-radius:24px;
+    width:90%;
+    max-width:360px;
+    padding:24px 20px;
+    transform:scale(.9);
+    transition:transform .3s;
+}
+.deposit-overlay.show .deposit-modal{transform:scale(1)}
+.deposit-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:16px;
+}
+.deposit-title{font-weight:800;font-size:18px}
+.deposit-close{
+    width:32px;
+    height:32px;
+    border-radius:10px;
+    background:rgba(255,48,100,.1);
+    color:var(--red);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:16px;
+}
+.deposit-methods{display:flex;gap:10px}
+.deposit-method{
     flex:1;
-}
-.demo-btn{
-    padding:14px 20px;
+    padding:16px 10px;
     border-radius:16px;
-    border:none;
-    background:rgba(255,255,255,.06);
-    border:1.5px solid rgba(255,255,255,.1);
-    color:#fff;
-    font-family:inherit;
-    font-size:14px;
-    font-weight:800;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.06);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
     cursor:pointer;
-    transition:all .25s cubic-bezier(.4,0,.2,1);
-    white-space:nowrap;
-    letter-spacing:.3px;
+    transition:transform .15s;
 }
-.demo-btn:active{
-    transform:scale(.96);
-}
-.demo-btn:hover{
-    background:rgba(255,255,255,.1);
-    border-color:rgba(255,255,255,.2);
-}
+.deposit-method:active{transform:scale(.96)}
+.deposit-method img{width:36px;height:36px}
+.deposit-method span{font-weight:700;font-size:13px;color:#fff}
 
+/* ═══════════ BOTTOM NAV ═══════════ */
+.bottom-nav{
+    position:fixed;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:100;
+    width:100%;
+    max-width:450px;
+    height:72px;
+    padding:0 8px calc(var(--safe-bottom) + 8px);
+    background:rgba(11,11,24,.95);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border-top:1px solid rgba(255,255,255,.05);
+    display:flex;
+    align-items:center;
+    justify-content:space-around;
+}
+.bnav-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    padding:8px 16px;
+    border-radius:12px;
+    color:rgba(255,255,255,.4);
+    font-weight:600;
+    text-decoration:none;
+    transition:all .2s;
+}
+.bnav-item svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2}
+.bnav-item span{font-size:10px}
+.bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
+
+/* ═══════════ TOAST ═══════════ */
+.toast{
+    position:fixed;
+    top:80px;
+    left:50%;
+    transform:translateX(-50%) translateY(-20px);
+    background:rgba(20,20,30,.95);
+    border:1px solid rgba(255,255,255,.1);
+    padding:12px 20px;
+    border-radius:14px;
+    font-size:13px;
+    font-weight:700;
+    z-index:9999;
+    opacity:0;
+    visibility:hidden;
+    transition:all .3s;
+    max-width:90%;
+    text-align:center;
+}
+.toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(36,195,142,.4);color:var(--green)}
+.toast.err{border-color:rgba(255,48,100,.4);color:var(--red)}
+
+/* ═══════════ АДАПТИВ ═══════════ */
+@media(max-width:380px){
+    .wheel-wrap{max-width:280px}
+    .wheel-center{width:110px;height:110px}
+    .wheel-center-img{width:66px;height:66px}
+    .wheel-center-pct{font-size:24px}
+    .select-card{min-height:150px;padding:12px 10px}
+    .select-img{width:60px;height:60px}
+}
 </style>
 </head>
 <body>
@@ -2126,7 +740,7 @@ html.turbo-mode .upgrade-btn:not(:disabled){
             <span class="top-nick" id="topNick">—</span>
         </div>
     </div>
-    <div class="top-right-btns">
+    <div class="top-right">
         <div class="bal-pill">
             <img src="/static/img/ton.png" alt="">
             <span id="balVal">0.00</span>
@@ -2136,146 +750,90 @@ html.turbo-mode .upgrade-btn:not(:disabled){
 </div>
 
 <div class="upgrade-wrap">
-    <div class="page-title">Апгрейд</div>
 
-    <!-- КОЛЕСО -->
+    <!-- ПАНЕЛЬ ВЫБОРА СВЕРХУ -->
+    <div class="select-panel">
+        <div class="select-card" id="leftCard" onclick="openInventoryModal()">
+            <div class="select-card-title">Ваша ставка</div>
+            <div class="select-empty">
+                <div class="select-empty-icon">+</div>
+                <div class="select-empty-text">Добавить</div>
+            </div>
+            <div class="select-filled">
+                <img class="select-img" id="leftGiftImg" src="/static/img/gift.png" alt="">
+                <div class="select-name" id="leftGiftName"></div>
+                <div class="select-price">
+                    <img src="/static/img/ton.png"><span id="leftGiftValue">0.00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="select-card" id="rightCard" onclick="openTargetsModal()">
+            <div class="select-card-title">Желаемый<br>подарок</div>
+            <div class="select-empty">
+                <div class="select-empty-icon">+</div>
+                <div class="select-empty-text">Добавить</div>
+            </div>
+            <div class="select-filled">
+                <img class="select-img" id="rightGiftImg" src="/static/img/gift.png" alt="">
+                <div class="select-name" id="rightGiftName"></div>
+                <div class="select-price">
+                    <img src="/static/img/ton.png"><span id="rightGiftValue">0.00</span>
+                </div>
+                <div class="select-chance" id="rightChance" style="display:none">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- КОЛЕСО СНИЗУ -->
     <div class="wheel-section">
-        <div class="wheel-container" id="wheelContainer">
-            <div class="wheel-glow" id="wheelGlow"></div>
+        <div class="wheel-wrap" id="wheelWrap">
 
-            <!-- ★ Риски по кругу (как на фото) -->
-            <div class="wheel-risks">
-                <svg viewBox="0 0 290 290" id="risksSvg">
-                    <defs>
-                        <radialGradient id="rimGrad" cx="50%" cy="50%" r="50%">
-                            <stop offset="85%" stop-color="#1a1d24" stop-opacity="1"/>
-                            <stop offset="92%" stop-color="#252830" stop-opacity="1"/>
-                            <stop offset="100%" stop-color="#1a1d24" stop-opacity="1"/>
-                        </radialGradient>
-                    </defs>
-                    <!-- Внешнее кольцо -->
-                    <circle cx="145" cy="145" r="140" fill="url(#rimGrad)" stroke="rgba(255,255,255,.06)" stroke-width="1"/>
-                    <!-- Риски будут добавлены через JS -->
-                    <g id="risksGroup"></g>
+            <!-- Стрелка сверху внутри колеса -->
+            <div class="wheel-pointer">
+                <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 38 L12 14 C15 12 29 12 32 14 Z"
+                          fill="#ffffff"
+                          stroke="rgba(0,0,0,.2)"
+                          stroke-width="1"
+                          stroke-linejoin="round"/>
+                    <circle cx="22" cy="14" r="4" fill="#ffffff"/>
                 </svg>
             </div>
 
-            <!-- Внутренний тёмный круг -->
-            <div class="wheel-inner-circle"></div>
-
-            <!-- Зелёная зона -->
-            <svg class="wheel-green-arc" id="greenArc" viewBox="0 0 290 290">
-                <defs>
-                    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#22c55e"/>
-                        <stop offset="100%" stop-color="#4ade80"/>
-                    </linearGradient>
-                </defs>
-                <path id="greenPath" d="" fill="none" stroke="url(#greenGrad)" stroke-width="5" stroke-linecap="round"/>
-            </svg>
-
-            <!-- ★ Стрелка СВЕРХУ В ЦЕНТРЕ -->
-            <div class="wheel-pointer-center">
-                <svg viewBox="0 0 32 40" fill="none">
-                    <path d="M16 38 L6 14 Q16 20 26 14 Z" fill="#fff" stroke="rgba(0,0,0,.3)" stroke-width="0.5"/>
-                    <circle cx="16" cy="14" r="3" fill="#fff"/>
+            <!-- Вращающийся круг -->
+            <div class="wheel-rotator" id="wheelRotator">
+                <svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="120" cy="120" r="118" fill="none"
+                            stroke="rgba(255,255,255,.04)" stroke-width="1"/>
+                    <circle cx="120" cy="120" r="104" fill="none"
+                            stroke="#1a1a20" stroke-width="20"/>
+                    <g id="risksGroup" opacity="0.5"></g>
+                    <circle cx="120" cy="120" r="94" fill="none"
+                            stroke="rgba(255,255,255,.03)" stroke-width="1"/>
                 </svg>
             </div>
 
-            <!-- Центр с процентом -->
-            <div class="wheel-center" id="wheelCenter">
-                <img id="wheelCenterImg" src="" alt="" class="hidden">
-                <span class="chance-pct" id="chancePct">0.00%</span>
-                <svg class="wheel-result-icon" id="resultSad" viewBox="0 0 60 60">
-                    <circle cx="30" cy="30" r="28" fill="none" stroke="#F96999" stroke-width="2"/>
-                    <circle cx="20" cy="24" r="2.5" fill="#F96999"/>
-                    <circle cx="40" cy="24" r="2.5" fill="#F96999"/>
-                    <path d="M20 42c4-6 16-6 20 0" fill="none" stroke="#F96999" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <svg class="wheel-result-icon" id="resultHappy" viewBox="0 0 60 60">
-                    <circle cx="30" cy="30" r="28" fill="none" stroke="#1EE44C" stroke-width="2"/>
-                    <circle cx="20" cy="24" r="2.5" fill="#1EE44C"/>
-                    <circle cx="40" cy="24" r="2.5" fill="#1EE44C"/>
-                    <path d="M20 38c4 6 16 6 20 0" fill="none" stroke="#1EE44C" stroke-width="2" stroke-linecap="round"/>
-                </svg>
+            <!-- Центр -->
+            <div class="wheel-center">
+                <img class="wheel-center-img" id="wheelCenterImg" src="" alt="">
+                <span class="wheel-center-pct visible" id="chancePct">0.00%</span>
             </div>
+
         </div>
     </div>
 
-<div class="wheel-center" id="wheelCenter">
-                <img id="wheelCenterImg" src="" alt="" class="hidden">
-                <span class="chance-pct" id="chancePct">0.00%</span>
-                <svg class="wheel-result-icon" id="resultSad" viewBox="0 0 60 60">
-                    <circle cx="30" cy="30" r="28" fill="none" stroke="#F96999" stroke-width="2"/>
-                    <circle cx="20" cy="24" r="2.5" fill="#F96999"/>
-                    <circle cx="40" cy="24" r="2.5" fill="#F96999"/>
-                    <path d="M20 42c4-6 16-6 20 0" fill="none" stroke="#F96999" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <svg class="wheel-result-icon" id="resultHappy" viewBox="0 0 60 60">
-                    <circle cx="30" cy="30" r="28" fill="none" stroke="#1EE44C" stroke-width="2"/>
-                    <circle cx="20" cy="24" r="2.5" fill="#1EE44C"/>
-                    <circle cx="40" cy="24" r="2.5" fill="#1EE44C"/>
-                    <path d="M20 38c4 6 16 6 20 0" fill="none" stroke="#1EE44C" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-            </div>
-        </div>
-    </div>
-
-    <!-- КНОПКА UPGRADE -->
+    <!-- КНОПКИ -->
     <div class="actions-row">
-        <button class="upgrade-btn" id="upgradeBtn" disabled onclick="doUpgrade()">
+        <button class="btn-main" id="upgradeBtn" disabled onclick="doUpgrade()">
             <span id="upgradeBtnText">Апгрейд</span>
         </button>
-        <button class="demo-btn" onclick="toggleDemo()">ДЕМО</button>
+        <button class="btn-demo" onclick="toggleDemo()">Демо</button>
     </div>
 
-    <!-- КАРТОЧКИ -->
-    <div class="cards-row">
-        <div class="card" id="leftCard" onclick="toggleInventory()">
-            <div class="card-placeholder">
-                <div class="card-icon"><img src="/static/img/gift.png" alt=""></div>
-                <div class="card-text">Выберите ваш<br>подарок</div>
-            </div>
-            <div class="gift-preview">
-                <img id="leftGiftImg" src="" alt="">
-                <div class="gift-preview-name" id="leftGiftName"></div>
-                <div class="gift-preview-value"><img src="/static/img/ton.png" alt=""><span id="leftGiftValue"></span></div>
-            </div>
-        </div>
-        <div class="card" id="rightCard" onclick="toggleTargets()">
-            <div class="card-placeholder">
-                <div class="card-icon"><img src="/static/img/gift.png" alt=""></div>
-                <div class="card-text">Выберите желаемый<br>подарок</div>
-            </div>
-            <div class="gift-preview">
-                <img id="rightGiftImg" src="" alt="">
-                <div class="gift-preview-name" id="rightGiftName"></div>
-                <div class="gift-preview-value"><img src="/static/img/ton.png" alt=""><span id="rightGiftValue"></span></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- КНОПКИ ВЫБОРА -->
-    <div class="btns-row">
-        <button class="select-btn" id="btnInventory" onclick="toggleInventory()">Инвентарь</button>
-        <button class="select-btn" id="btnTargets" onclick="toggleTargets()">Желаемый</button>
-    </div>
-
-    <!-- ИНВЕНТАРЬ -->
-    <div class="inline-section" id="inventorySection">
-        <div class="section-title">Ваш инвентарь</div>
-        <div class="inline-grid" id="inventoryGrid"></div>
-    </div>
-
-    <!-- ЖЕЛАЕМЫЕ -->
-    <div class="inline-section" id="targetsSection">
-        <div class="section-title">Желаемые подарки</div>
-        <div class="target-list-inline" id="targetsList"></div>
-    </div>
 </div>
 
-
-<!-- ═══════════════ МОДАЛКА ИНВЕНТАРЯ ═══════════════ -->
+<!-- МОДАЛКА ИНВЕНТАРЯ -->
 <div class="modal-overlay" id="inventoryModal" onclick="if(event.target===this)closeInventoryModal()">
     <div class="modal-sheet">
         <div class="modal-header">
@@ -2283,10 +841,12 @@ html.turbo-mode .upgrade-btn:not(:disabled){
             <button class="modal-close" onclick="closeInventoryModal()">✕</button>
         </div>
         <div class="modal-search-wrap">
-            <div class="modal-search-container">
-                <svg class="modal-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                <input type="text" class="modal-search" id="inventorySearch" placeholder="Поиск подарков..." oninput="filterInventory()">
-            </div>
+            <input type="text" class="modal-search" id="inventorySearch"
+                   placeholder="Поиск подарков..." oninput="filterInventory()">
+            <svg class="modal-search-icon" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21l-4.35-4.35"/>
+            </svg>
         </div>
         <div class="modal-body">
             <div class="modal-grid" id="inventoryGrid"></div>
@@ -2294,7 +854,7 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     </div>
 </div>
 
-<!-- ═══════════════ МОДАЛКА ЖЕЛАЕМОГО ═══════════════ -->
+<!-- МОДАЛКА ЖЕЛАЕМОГО -->
 <div class="modal-overlay" id="targetsModal" onclick="if(event.target===this)closeTargetsModal()">
     <div class="modal-sheet">
         <div class="modal-header">
@@ -2302,10 +862,12 @@ html.turbo-mode .upgrade-btn:not(:disabled){
             <button class="modal-close" onclick="closeTargetsModal()">✕</button>
         </div>
         <div class="modal-search-wrap">
-            <div class="modal-search-container">
-                <svg class="modal-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                <input type="text" class="modal-search" id="targetsSearch" placeholder="Поиск подарков..." oninput="filterTargets()">
-            </div>
+            <input type="text" class="modal-search" id="targetsSearch"
+                   placeholder="Поиск подарков..." oninput="filterTargets()">
+            <svg class="modal-search-icon" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21l-4.35-4.35"/>
+            </svg>
         </div>
         <div class="modal-body">
             <div class="modal-grid" id="targetsGrid"></div>
@@ -2318,39 +880,38 @@ html.turbo-mode .upgrade-btn:not(:disabled){
     <div class="deposit-modal">
         <div class="deposit-header">
             <div class="deposit-title">Пополнение</div>
-            <button class="deposit-close" onclick="closeDeposit()">
-                <svg viewBox="0 0 14 14"><line x1="3" y1="3" x2="11" y2="11"/><line x1="11" y1="3" x2="3" y2="11"/></svg>
-            </button>
+            <button class="deposit-close" onclick="closeDeposit()">✕</button>
         </div>
         <div class="deposit-methods">
-            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
+            <button class="deposit-method" onclick="closeDeposit();location.href='/crash'">
                 <img src="/static/img/ton.png" alt="TON"><span>TON</span>
             </button>
-            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
+            <button class="deposit-method" onclick="closeDeposit();location.href='/crash'">
                 <img src="/static/img/star.png" alt="Stars"><span>Stars</span>
             </button>
         </div>
     </div>
 </div>
 
-<canvas class="confetti-canvas" id="confettiCanvas"></canvas>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
     <a class="bnav-item" href="/games">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
+        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg>
         <span>Игры</span>
     </a>
     <a class="bnav-item" href="/news">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
         <span>Новости</span>
     </a>
     <a class="bnav-item" href="/leaderboard">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
         <span>Топ</span>
     </a>
     <a class="bnav-item" href="/inventory">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span>Профиль</span>
     </a>
 </nav>
@@ -2367,7 +928,9 @@ var targetGift = null;
 var possibleTargets = [];
 var isSpinning = false;
 var currentChance = 0;
-var activeSection = null;
+var _inventorySearchQ = '';
+var _targetsSearchQ = '';
+var _demoMode = false;
 
 function $(id){ return document.getElementById(id); }
 
@@ -2376,57 +939,54 @@ function showTgAlert(msg, cb){
     else { alert(msg); if(cb) cb(); }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   КОЛЕСО — зелёная зона
-   ══════════════════════════════════════════════════════════════ */
-function polarToCartesian(cx, cy, r, angle){
-    var rad = (angle - 90) * Math.PI / 180;
-    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-}
-
-function drawGreenArc(chance){
-    var path = $('greenPath');
-    if(!path) return;
-    if(!chance || chance <= 0){ path.setAttribute('d', ''); return; }
-    var cx = 110, cy = 110, r = 106;
-    var startAngle = 0;
-    var endAngle = startAngle + (chance / 100) * 360;
-    var start = polarToCartesian(cx, cy, r, startAngle);
-    var end = polarToCartesian(cx, cy, r, endAngle);
-    var largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
-    path.setAttribute('d', 'M ' + start.x + ' ' + start.y + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + end.x + ' ' + end.y);
+function showToast(msg, type){
+    var t = $('toast');
+    if(!t) return;
+    t.textContent = msg;
+    t.className = 'toast show ' + (type || '');
+    setTimeout(function(){ t.classList.remove('show'); }, 2500);
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ЧЕРЕДОВАНИЕ PNG ↔ ПРОЦЕНТ
+   РИСКИ ПО КРУГУ
    ══════════════════════════════════════════════════════════════ */
-/* ★ Чередование убрано — процент ВСЕГДА виден */
-var _centerInterval = null;
-
-function _startCenterAlternate(gift){
-    /* Просто убеждаемся что процент виден */
-    _stopCenterAlternate();
-    var center = $('wheelCenter');
-    var img = $('wheelCenterImg');
-    var pct = $('chancePct');
-    if(!center || !img || !pct) return;
-
-    /* Скрываем картинку, показываем процент */
-    img.classList.remove('visible');
-    pct.classList.remove('hidden');
-    pct.classList.add('visible');
-    pct.style.opacity = '1';
-    pct.style.transform = 'translate(-50%,-50%) scale(1)';
-    pct.style.zIndex = '3';
-}
-
-function _stopCenterAlternate(){
-    if(_centerInterval){
-        clearInterval(_centerInterval);
-        _centerInterval = null;
+(function drawRisks(){
+    var group = document.getElementById('risksGroup');
+    if(!group) return;
+    var cx = 120, cy = 120;
+    var rOuter = 104;
+    var html = '';
+    for(var i = 0; i < 60; i++){
+        var angle = (i / 60) * 360;
+        var isMajor = (i % 5 === 0);
+        var len = isMajor ? 8 : 5;
+        var width = isMajor ? 1.8 : 1;
+        var opacity = isMajor ? 0.7 : 0.35;
+        var rad = (angle - 90) * Math.PI / 180;
+        var x1 = cx + Math.cos(rad) * (rOuter - 1);
+        var y1 = cy + Math.sin(rad) * (rOuter - 1);
+        var x2 = cx + Math.cos(rad) * (rOuter - 1 - len);
+        var y2 = cy + Math.sin(rad) * (rOuter - 1 - len);
+        html += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1)
+              + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1)
+              + '" stroke="rgba(255,255,255,' + opacity + ')"'
+              + ' stroke-width="' + width + '" stroke-linecap="round"/>';
     }
-    var center = $('wheelCenter');
-    if(center) center.classList.remove('alternating');
+    group.innerHTML = html;
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   ЦВЕТ ПО РИСКУ
+   ══════════════════════════════════════════════════════════════ */
+function _updateRiskColor(coeff){
+    var w = $('wheelWrap');
+    if(!w) return;
+    w.classList.remove('risk-low','risk-mid','risk-high','risk-mega');
+    if(!coeff || coeff <= 0) return;
+    if(coeff >= 1.1 && coeff < 1.7) w.classList.add('risk-low');
+    else if(coeff >= 1.7 && coeff < 2.2) w.classList.add('risk-mid');
+    else if(coeff >= 2.2 && coeff < 5.0) w.classList.add('risk-high');
+    else if(coeff >= 5.0) w.classList.add('risk-mega');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2458,275 +1018,202 @@ async function loadInventory(){
             userInventory = (d.inventory || []).filter(function(it){
                 return !it.is_withdrawing && !it.challenge_locked;
             });
-            renderInventoryGrid();
         }
     }catch(e){}
 }
 
-function renderInventoryGrid(){
+function openInventoryModal(){
+    if(isSpinning) return;
+    var m = $('inventoryModal');
+    if(m) m.classList.add('show');
+    $('inventorySearch').value = '';
+    _inventorySearchQ = '';
+    renderInventoryModal();
+}
+
+function closeInventoryModal(){
+    var m = $('inventoryModal');
+    if(m) m.classList.remove('show');
+}
+
+function filterInventory(){
+    _inventorySearchQ = $('inventorySearch').value.toLowerCase().trim();
+    renderInventoryModal();
+}
+
+function renderInventoryModal(){
     var grid = $('inventoryGrid');
     if(!grid) return;
     grid.innerHTML = '';
-    if(userInventory.length === 0){
-        grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Ничего нет</div>';
+    var items = userInventory.filter(function(it){
+        if(!_inventorySearchQ) return true;
+        return (it.gift_name || '').toLowerCase().indexOf(_inventorySearchQ) !== -1;
+    });
+    if(items.length === 0){
+        grid.innerHTML = '<div class="modal-empty">Ничего нет</div>';
         return;
     }
-    userInventory.forEach(function(it){
+    items.forEach(function(it){
         var isSelected = selectedGift && selectedGift.id === it.id;
         var div = document.createElement('div');
-        div.className = 'inline-item' + (isSelected ? ' selected' : '');
+        div.className = 'modal-item' + (isSelected ? ' selected' : '');
         var imgSrc = it.gift_image || '/static/img/gift.png';
         div.innerHTML =
-            '<img src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">'
-            + '<div class="inline-item-name">' + (it.gift_name || 'Gift') + '</div>'
-            + '<div class="inline-item-value"><img src="/static/img/ton.png">' + ((it.gift_value || 0) / 100).toFixed(2) + '</div>';
-        div.onclick = function(){ selectGift(it); };
+            '<img class="modal-item-img" src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">'
+            + '<div class="modal-item-name">' + (it.gift_name || 'Gift') + '</div>'
+            + '<div class="modal-item-price"><img src="/static/img/ton.png">' + ((it.gift_value || 0) / 100).toFixed(2) + '</div>';
+        div.onclick = function(){ _selectGift(it); };
         grid.appendChild(div);
     });
 }
 
-function selectGift(g){
+function _selectGift(it){
     selectedGift = {
-        id: g.id,
-        name: g.gift_name,
-        image: g.gift_image,
-        value: g.gift_value,
-        gift_id: g.gift_id
+        id: it.id,
+        name: it.gift_name,
+        image: it.gift_image,
+        value: it.gift_value,
+        gift_id: it.gift_id
     };
-    $('leftCard').classList.add('has-gift');
-    $('leftGiftImg').src = g.gift_image;
-    $('leftGiftName').textContent = g.gift_name;
-    $('leftGiftValue').textContent = ((g.gift_value || 0) / 100).toFixed(2);
+    $('leftCard').classList.add('has-item');
+    $('leftGiftImg').src = it.gift_image;
+    $('leftGiftName').textContent = it.gift_name;
+    $('leftGiftValue').textContent = ((it.gift_value || 0) / 100).toFixed(2);
 
-    if(targetGift) resetTarget();
-    renderInventoryGrid();
+    if(targetGift){
+        targetGift = null;
+        $('rightCard').classList.remove('has-item');
+        $('rightChance').style.display = 'none';
+        var w = $('wheelWrap');
+        if(w) w.classList.remove('risk-low','risk-mid','risk-high','risk-mega');
+    }
     updateWheel();
+    closeInventoryModal();
 
-    $('inventorySection').classList.remove('show');
-    $('btnInventory').classList.remove('active');
-
+    /* Автооткрытие целей */
     setTimeout(function(){
-        try{ $('leftCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-        catch(e){}
-    }, 100);
-
-    setTimeout(function(){
-        var tarSec = $('targetsSection');
-        var btnTar = $('btnTargets');
-        if(tarSec && btnTar){
-            tarSec.classList.add('show');
-            btnTar.classList.add('active');
-            activeSection = 'targets';
-            loadPossibleTargets();
-        }
-    }, 400);
-}
-
-function resetTarget(){
-    targetGift = null;
-    currentChance = 0;
-    $('rightCard').classList.remove('has-gift');
-    $('wheelCenterImg').classList.remove('visible');
-    $('wheelCenterImg').classList.add('hidden');
-    $('chancePct').classList.remove('hidden');
-    $('chancePct').classList.add('visible');
-    drawGreenArc(0);
-}
-
-/* ══════════════════════════════════════════════════════════════
-   ВКЛАДКИ
-   ══════════════════════════════════════════════════════════════ */
-function toggleInventory(){
-    if(isSpinning) return;
-    var invSec = $('inventorySection');
-    var tarSec = $('targetsSection');
-    var btnInv = $('btnInventory');
-    var btnTar = $('btnTargets');
-
-    if(activeSection === 'inventory'){
-        invSec.classList.remove('show');
-        btnInv.classList.remove('active');
-        activeSection = null;
-    } else {
-        invSec.classList.add('show');
-        tarSec.classList.remove('show');
-        btnInv.classList.add('active');
-        btnTar.classList.remove('active');
-        activeSection = 'inventory';
-        renderInventoryGrid();
-    }
-}
-
-function toggleTargets(){
-    if(isSpinning) return;
-    if(!selectedGift){
-        showTgAlert('Сначала выбери подарок для апгрейда');
-        return;
-    }
-    var invSec = $('inventorySection');
-    var tarSec = $('targetsSection');
-    var btnInv = $('btnInventory');
-    var btnTar = $('btnTargets');
-
-    if(activeSection === 'targets'){
-        tarSec.classList.remove('show');
-        btnTar.classList.remove('active');
-        activeSection = null;
-    } else {
-        tarSec.classList.add('show');
-        invSec.classList.remove('show');
-        btnTar.classList.add('active');
-        btnInv.classList.remove('active');
-        activeSection = 'targets';
-        loadPossibleTargets();
-    }
+        loadPossibleTargets().then(function(){
+            openTargetsModal();
+        });
+    }, 300);
 }
 
 /* ══════════════════════════════════════════════════════════════
    ЖЕЛАЕМЫЕ
    ══════════════════════════════════════════════════════════════ */
 async function loadPossibleTargets(){
-    var list = $('targetsList');
-    if(!list) return;
-    list.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Загрузка...</div>';
+    if(!selectedGift) return;
     try{
         var r = await fetch('/api/upgrade-possible-gifts', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, current_gift_id: selectedGift.id })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({user_id: userId, current_gift_id: selectedGift.id})
         });
         var d = await r.json();
-        if(!d.success){
-            list.innerHTML = '<div class="empty-msg" style="grid-column:1/-1;color:var(--red)">' + (d.error || 'Ошибка') + '</div>';
-            return;
-        }
+        if(!d.success) return;
         possibleTargets = [];
         (d.possible_gifts || []).forEach(function(g){
             if(g.value > selectedGift.value && g.value <= selectedGift.value * 10){
-                var chance = Math.max(10, Math.min((selectedGift.value / g.value) * 100, 100));
-                g.upgrade_chance = Math.round(chance * 10) / 10;
+                var ch = Math.max(10, Math.min((selectedGift.value / g.value) * 100, 100));
+                g.upgrade_chance = Math.round(ch * 10) / 10;
                 possibleTargets.push(g);
             }
         });
         possibleTargets.sort(function(a, b){ return a.value - b.value; });
-        renderTargetsList();
-    }catch(e){
-        list.innerHTML = '<div class="empty-msg" style="grid-column:1/-1;color:var(--red)">Ошибка загрузки</div>';
-    }
+    }catch(e){}
 }
 
-function renderTargetsList(){
-    var list = $('targetsList');
-    if(!list) return;
-    list.innerHTML = '';
-    if(possibleTargets.length === 0){
-        list.innerHTML = '<div class="empty-msg" style="grid-column:1/-1">Ничего нет</div>';
+function openTargetsModal(){
+    if(isSpinning) return;
+    if(!selectedGift){
+        showTgAlert('Сначала выбери свой подарок');
         return;
     }
-    possibleTargets.forEach(function(g){
+    if(possibleTargets.length === 0){
+        loadPossibleTargets().then(function(){
+            var m = $('targetsModal');
+            if(m) m.classList.add('show');
+            $('targetsSearch').value = '';
+            _targetsSearchQ = '';
+            renderTargetsModal();
+        });
+        return;
+    }
+    var m = $('targetsModal');
+    if(m) m.classList.add('show');
+    $('targetsSearch').value = '';
+    _targetsSearchQ = '';
+    renderTargetsModal();
+}
+
+function closeTargetsModal(){
+    var m = $('targetsModal');
+    if(m) m.classList.remove('show');
+}
+
+function filterTargets(){
+    _targetsSearchQ = $('targetsSearch').value.toLowerCase().trim();
+    renderTargetsModal();
+}
+
+function renderTargetsModal(){
+    var grid = $('targetsGrid');
+    if(!grid) return;
+    grid.innerHTML = '';
+    var items = possibleTargets.filter(function(g){
+        if(!_targetsSearchQ) return true;
+        return (g.name || '').toLowerCase().indexOf(_targetsSearchQ) !== -1;
+    });
+    if(items.length === 0){
+        grid.innerHTML = '<div class="modal-empty">Ничего нет</div>';
+        return;
+    }
+    items.forEach(function(g){
         var isSelected = targetGift && (targetGift.id === g.id || targetGift.fragment_slug === g.fragment_slug);
         var div = document.createElement('div');
-        div.className = 'target-row' + (isSelected ? ' selected' : '');
+        div.className = 'modal-item' + (isSelected ? ' selected' : '');
         var imgSrc = g.image || '/static/img/gift.png';
         div.innerHTML =
-            '<img src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">'
-            + '<div class="target-row-info">'
-            +   '<div class="target-row-name">' + (g.name || 'Gift') + '</div>'
-            +   '<div class="target-row-price"><img src="/static/img/ton.png">' + ((g.value || 0) / 100).toFixed(2) + '</div>'
-            + '</div>'
-            + '<div class="target-row-chance">' + g.upgrade_chance + '%</div>';
-        div.onclick = function(){ selectTarget(g); };
-        list.appendChild(div);
+            '<img class="modal-item-img" src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">'
+            + '<div class="modal-item-name">' + (g.name || 'Gift') + '</div>'
+            + '<div class="modal-item-price"><img src="/static/img/ton.png">' + ((g.value || 0) / 100).toFixed(2) + '</div>'
+            + '<div class="modal-item-chance">' + g.upgrade_chance + '%</div>';
+        div.onclick = function(){ _selectTarget(g); };
+        grid.appendChild(div);
     });
 }
 
-function selectTarget(g){
+function _selectTarget(g){
     targetGift = g;
     currentChance = g.upgrade_chance;
-    $('rightCard').classList.add('has-gift');
+    $('rightCard').classList.add('has-item');
     $('rightGiftImg').src = g.image;
     $('rightGiftName').textContent = g.name;
     $('rightGiftValue').textContent = ((g.value || 0) / 100).toFixed(2);
+    var chEl = $('rightChance');
+    chEl.textContent = g.upgrade_chance + '%';
+    chEl.style.display = 'inline-flex';
 
-    $('wheelCenterImg').src = g.image;
-    $('wheelCenterImg').classList.remove('visible');
-    $('wheelCenterImg').classList.add('hidden');
-    $('chancePct').classList.remove('hidden');
-    $('chancePct').classList.add('visible');
-
-    drawGreenArc(currentChance);
-    renderTargetsList();
+    var coeff = g.value / selectedGift.value;
+    _updateRiskColor(coeff);
     updateWheel();
-
-    $('targetsSection').classList.remove('show');
-    $('btnTargets').classList.remove('active');
-    activeSection = null;
+    closeTargetsModal();
 }
 
 /* ══════════════════════════════════════════════════════════════
-   КНОПКА UPGRADE
+   КОЛЕСО — обновление
    ══════════════════════════════════════════════════════════════ */
-
-/* ══════════════════════════════════════════════════════════════
-   ★ УСТАНОВКА ЦВЕТА ПО КОЭФФИЦИЕНТУ РИСКА
-   ══════════════════════════════════════════════════════════════ */
-
-function _updateRiskColor(coeff){
-    var cont = document.querySelector('.wheel-container');
-    if(!cont) return;
-
-    /* Убираем старые классы */
-    cont.classList.remove('risk-low', 'risk-mid', 'risk-high', 'risk-mega');
-
-    /* Если коэф не задан — ничего не ставим */
-    if(!coeff || coeff <= 0){
-        return;
-    }
-
-    /* Определяем цвет по диапазону */
-    if(coeff >= 1.1 && coeff < 1.7){
-        cont.classList.add('risk-low');        /* 🟢 зелёный */
-    } else if(coeff >= 1.7 && coeff < 2.2){
-        cont.classList.add('risk-mid');        /* 🔵 голубой */
-    } else if(coeff >= 2.2 && coeff < 5.0){
-        cont.classList.add('risk-high');       /* 🟣 фиолетовый */
-    } else if(coeff >= 5.0){
-        cont.classList.add('risk-mega');       /* 🟠 оранжевый */
-    }
-}
-
 function updateWheel(){
     var btn = $('upgradeBtn');
-    var chancePct = $('chancePct');
-
+    var pct = $('chancePct');
     if(!targetGift || !selectedGift){
-        chancePct.textContent = '0.00%';
+        pct.textContent = '0.00%';
         btn.disabled = true;
-        drawGreenArc(0);
-        _stopCenterAlternate();
-        chancePct.classList.remove('hidden');
-        chancePct.classList.add('visible');
-        /* ★ Сброс цвета */
-        var cont = document.querySelector('.wheel-container');
-        if(cont) cont.classList.remove('risk-low', 'risk-mid', 'risk-high', 'risk-mega');
+        $('upgradeBtnText').textContent = 'Апгрейд';
         return;
     }
-
-    var chance = Math.max(10, Math.min((selectedGift.value / targetGift.value) * 100, 100));
-    chance = Math.round(chance * 10) / 10;
-    currentChance = chance;
-    drawGreenArc(chance);
-
-    /* ★ Устанавливаем цвет свечения по коэффициенту */
-    var coeff = targetGift.value / selectedGift.value;
-    _updateRiskColor(coeff);
-
-    if(selectedGift.value < targetGift.value && targetGift.value <= selectedGift.value * 10){
-        btn.disabled = false;
-    } else {
-        btn.disabled = true;
-    }
-    btn.classList.remove('win', 'fail');
+    pct.textContent = currentChance.toFixed(2) + '%';
+    btn.disabled = false;
     $('upgradeBtnText').textContent = 'Апгрейд';
 }
 
@@ -2740,146 +1227,126 @@ async function doUpgrade(){
     var btn = $('upgradeBtn');
     btn.disabled = true;
     $('upgradeBtnText').textContent = 'Крутим...';
-    $('resultSad').classList.remove('show');
-    $('resultHappy').classList.remove('show');
 
-    /* ★ Запускаем чередование PNG ↔ % */
-    _startCenterAlternate(targetGift);
+    var rotator = $('wheelRotator');
+    if(!rotator) return;
 
+    /* 1. Чуть влево */
+    rotator.style.transition = 'transform 0.4s cubic-bezier(.4,0,.6,1)';
+    rotator.style.transform = 'rotate(-15deg)';
+
+    /* 2. Запрос на сервер */
+    var result;
     try{
         var r = await fetch('/api/upgrade-multi', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 user_id: userId,
                 inventory_ids: [selectedGift.id],
                 target_gift_id: targetGift.fragment_slug || targetGift.id
             })
         });
-        var d = await r.json();
-
-        if(!d.success){
-            _stopCenterAlternate();
-            btn.disabled = false;
-            $('upgradeBtnText').textContent = 'Апгрейд';
-            showTgAlert(d.error || 'Ошибка');
-            resetAfterSpin();
-            return;
-        }
-
-        /* ★ Крутим колесо */
-        _spinWheel(d.upgrade_success, d.chance);
-
+        result = await r.json();
     }catch(e){
-        _stopCenterAlternate();
+        result = {success: false, error: 'Ошибка сети'};
+    }
+
+    if(!result.success){
+        rotator.style.transition = 'transform 0.4s ease';
+        rotator.style.transform = 'rotate(0deg)';
         btn.disabled = false;
         $('upgradeBtnText').textContent = 'Апгрейд';
-        showTgAlert('Ошибка сети');
-        resetAfterSpin();
-    }
-}
-
-
-function showResult(d){
-    var center = $('wheelCenter');
-    var btn = $('upgradeBtn');
-
-    /* ★ Останавливаем чередование */
-    _stopCenterAlternate();
-
-    /* ★ Показываем ТОЛЬКО процент */
-    var imgEl = $('wheelCenterImg');
-    var pctEl = $('chancePct');
-    if(imgEl){
-        imgEl.classList.remove('visible');
-        imgEl.classList.add('hidden');
-    }
-    if(pctEl){
-        pctEl.classList.remove('hidden');
-        pctEl.classList.add('visible');
-        pctEl.style.opacity = '1';
-        pctEl.style.transform = 'translate(-50%,-50%) scale(1)';
+        isSpinning = false;
+        showTgAlert(result.error || 'Ошибка');
+        return;
     }
 
-    if(d.upgrade_success){
-        center.classList.add('flash-green');
-        $('resultHappy').classList.add('show');
-        btn.classList.add('win');
-        $('upgradeBtnText').textContent = 'Победа!';
-        var wc = document.querySelector('.wheel-container');
-        if(wc) wc.classList.add('win');
-        launchConfetti();
+    /* 3. Основной спин */
+    var chance = result.chance;
+    var greenAngle = (chance / 100) * 360;
+    var landAngle;
+    if(result.upgrade_success){
+        landAngle = Math.random() * greenAngle * 0.5 + greenAngle * 0.25;
     } else {
-        center.classList.add('flash-red');
-        $('resultSad').classList.add('show');
-        btn.classList.add('fail');
-        $('upgradeBtnText').textContent = 'Неудача';
-        var wc2 = document.querySelector('.wheel-container');
-        if(wc2) wc2.classList.add('fail');
+        var redSize = 360 - greenAngle;
+        landAngle = greenAngle + Math.random() * redSize * 0.3 + redSize * 0.1;
     }
+    var totalSpin = 360 * (6 + Math.floor(Math.random() * 4)) + landAngle;
+    var spinDuration = 5500;
 
     setTimeout(function(){
-        center.classList.remove('flash-red', 'flash-green');
-        resetAfterSpin();
-        loadInventory();
-        loadTopBar();
-    }, 3500);
-}
+        rotator.style.transition = 'transform ' + spinDuration + 'ms cubic-bezier(.1,.6,.2,1)';
+        rotator.style.transform = 'rotate(' + totalSpin + 'deg)';
 
+        setTimeout(function(){
+            if(result.upgrade_success){
+                showToast('🎉 Победа!', 'ok');
+                launchConfetti();
+                if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            } else {
+                showToast('😢 Неудача', 'err');
+                if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            }
+            setTimeout(function(){
+                resetAfterSpin();
+                loadInventory();
+                loadTopBar();
+            }, 2000);
+        }, spinDuration);
+    }, 400);
+}
 
 function resetAfterSpin(){
     isSpinning = false;
-    _stopCenterAlternate();
-
     selectedGift = null;
     targetGift = null;
     currentChance = 0;
 
-    $('leftCard').classList.remove('has-gift');
-    $('rightCard').classList.remove('has-gift');
-    $('wheelCenterImg').classList.remove('visible');
-    $('wheelCenterImg').classList.add('hidden');
-    $('chancePct').classList.remove('hidden');
-    $('chancePct').classList.add('visible');
-    $('chancePct').style.opacity = '1';
-    $('chancePct').style.transform = 'translate(-50%,-50%) scale(1)';
+    $('leftCard').classList.remove('has-item');
+    $('rightCard').classList.remove('has-item');
+    $('rightChance').style.display = 'none';
     $('chancePct').textContent = '0.00%';
-    $('resultSad').classList.remove('show');
-    $('resultHappy').classList.remove('show');
+    $('upgradeBtn').disabled = true;
+    $('upgradeBtnText').textContent = 'Апгрейд';
 
-    /* ★ Сбрасываем трансформацию колеса */
-    var container = document.querySelector('.wheel-container');
-    if(container){
-        container.style.transition = 'transform 0.5s ease';
-        container.style.transform = 'rotate(0deg)';
-        container.classList.remove('win', 'fail', 'spinning');
-        container.classList.remove('risk-low', 'risk-mid', 'risk-high', 'risk-mega');
+    var rotator = $('wheelRotator');
+    if(rotator){
+        rotator.style.transition = 'transform 0.5s ease';
+        rotator.style.transform = 'rotate(0deg)';
     }
 
-    drawGreenArc(0);
-    updateWheel();
-
-    /* ★ Убираем inline-секции — они не нужны */
-    var invSec = $('inventorySection');
-    var tarSec = $('targetsSection');
-    if(invSec) invSec.style.display = 'none';
-    if(tarSec) tarSec.style.display = 'none';
+    var w = $('wheelWrap');
+    if(w) w.classList.remove('risk-low','risk-mid','risk-high','risk-mega');
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ДЕМО
+   ══════════════════════════════════════════════════════════════ */
+function toggleDemo(){
+    _demoMode = !_demoMode;
+    showToast(_demoMode ? '🎮 Демо ВКЛ' : '🎮 Демо ВЫКЛ', 'ok');
+}
 
+/* ══════════════════════════════════════════════════════════════
+   DEPOSIT
+   ══════════════════════════════════════════════════════════════ */
+function openDeposit(){ $('depositOverlay').classList.add('show'); }
+function closeDeposit(){ $('depositOverlay').classList.remove('show'); }
 
 /* ══════════════════════════════════════════════════════════════
    КОНФЕТТИ
    ══════════════════════════════════════════════════════════════ */
 function launchConfetti(){
-    var canvas = $('confettiCanvas');
-    if(!canvas) return;
+    var canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none';
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
     var ctx = canvas.getContext('2d');
     var particles = [];
-    var colors = ['#1EE44C', '#06B6D4', '#3B82F6', '#00b4ff', '#FDA100', '#fff'];
-    for(var i = 0; i < 120; i++){
+    var colors = ['#24C38E','#2844FB','#FFD700','#FF6B9D','#4B81F5'];
+    for(var i = 0; i < 100; i++){
         particles.push({
             x: canvas.width / 2 + (Math.random() - .5) * 100,
             y: canvas.height / 2,
@@ -2903,26 +1370,20 @@ function launchConfetti(){
             p.y += p.vy;
             p.vy += 0.35;
             p.rot += p.rv;
-            p.life -= 0.008;
+            p.life -= 0.01;
             ctx.save();
             ctx.translate(p.x, p.y);
             ctx.rotate(p.rot * Math.PI / 180);
             ctx.globalAlpha = Math.max(0, p.life);
             ctx.fillStyle = p.color;
-            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
             ctx.restore();
         });
         if(alive) requestAnimationFrame(draw);
-        else ctx.clearRect(0, 0, canvas.width, canvas.height);
+        else canvas.remove();
     }
     draw();
 }
-
-/* ══════════════════════════════════════════════════════════════
-   DEPOSIT
-   ══════════════════════════════════════════════════════════════ */
-function openDeposit(){ $('depositOverlay').classList.add('show'); }
-function closeDeposit(){ $('depositOverlay').classList.remove('show'); }
 
 /* ══════════════════════════════════════════════════════════════
    INIT
@@ -2935,366 +1396,20 @@ function closeDeposit(){ $('depositOverlay').classList.remove('show'); }
             try{
                 tg.ready();
                 tg.expand();
-                tg.setHeaderColor('#0d1117');
-                tg.setBackgroundColor('#0d1117');
+                tg.setHeaderColor('#0b0b18');
+                tg.setBackgroundColor('#0b0b18');
             }catch(e){}
         }
         try{
             var br = await fetch('/api/check-ban?user_id=' + auth.id);
             var bd = await br.json();
-            if(bd.banned){ window.location.href = '/ban'; return; }
+            if(bd.banned){ location.href = '/ban'; return; }
         }catch(e){}
     }
     loadTopBar();
     loadInventory();
-
-    /* ★ Открываем инвентарь при заходе */
-    setTimeout(function(){
-        var invSec = $('inventorySection');
-        var btnInv = $('btnInventory');
-        if(invSec) invSec.classList.add('show');
-        if(btnInv) btnInv.classList.add('active');
-        activeSection = 'inventory';
-        renderInventoryGrid();
-    }, 300);
-})();
-
-/* Применяем режим оптимизации из crash (но НЕ убиваем анимации) */
-(function(){
-    try{
-        if(localStorage.getItem('crash_turbo') === '1'){
-            document.documentElement.classList.add('turbo-mode');
-            document.body.classList.add('turbo-mode');
-        } else if(localStorage.getItem('crash_optimize') === '1'){
-            document.documentElement.classList.add('optimize-mode');
-            document.body.classList.add('optimize-mode');
-        }
-    }catch(e){}
-})();
-
-/* ══════════════════════════════════════════════════════════════
-   ★ РИСКИ ПО КРУГУ (как на фото)
-   ══════════════════════════════════════════════════════════════ */
-(function drawRisks(){
-    var group = document.getElementById('risksGroup');
-    if(!group) return;
-    var cx = 145, cy = 145;
-    var rOuter = 140;
-    var total = 60;
-    var html = '';
-    for(var i = 0; i < total; i++){
-        var angle = (i / total) * 360;
-        var isMajor = (i % 5 === 0);
-        var len = isMajor ? 10 : 6;
-        var width = isMajor ? 2 : 1.2;
-        var rad = (angle - 90) * Math.PI / 180;
-        var x1 = cx + Math.cos(rad) * (rOuter - 2);
-        var y1 = cy + Math.sin(rad) * (rOuter - 2);
-        var x2 = cx + Math.cos(rad) * (rOuter - 2 - len);
-        var y2 = cy + Math.sin(rad) * (rOuter - 2 - len);
-        var opacity = isMajor ? 0.55 : 0.3;
-        html += '<line x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1) + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" stroke="rgba(255,255,255,' + opacity + ')" stroke-width="' + width + '" stroke-linecap="round"/>';
-    }
-    group.innerHTML = html;
-})();
-
-/* ══════════════════════════════════════════════════════════════
-   ★ ЧЕРЕДОВАНИЕ PNG ↔ ПРОЦЕНТ (вернули!)
-   ══════════════════════════════════════════════════════════════ */
-var _centerInterval = null;
-
-function _startCenterAlternate(gift){
-    _stopCenterAlternate();
-    var center = $('wheelCenter');
-    var img = $('wheelCenterImg');
-    var pct = $('chancePct');
-    if(!center || !img || !pct) return;
-
-    if(gift && gift.image){
-        img.src = gift.image;
-        img.onerror = function(){
-            this.onerror = null;
-            this.src = '/static/img/gift.png';
-        };
-    } else {
-        img.src = '/static/img/gift.png';
-    }
-
-    img.classList.add('visible');
-    img.classList.remove('hidden');
-    pct.classList.add('hidden');
-    pct.classList.remove('visible');
-
-    var showingImg = true;
-    _centerInterval = setInterval(function(){
-        if(showingImg){
-            img.classList.remove('visible');
-            img.classList.add('hidden');
-            pct.classList.remove('hidden');
-            void pct.offsetWidth;
-            pct.classList.add('visible');
-        } else {
-            pct.classList.remove('visible');
-            pct.classList.add('hidden');
-            img.classList.remove('hidden');
-            void img.offsetWidth;
-            img.classList.add('visible');
-        }
-        showingImg = !showingImg;
-    }, 700);
-}
-
-function _stopCenterAlternate(){
-    if(_centerInterval){
-        clearInterval(_centerInterval);
-        _centerInterval = null;
-    }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   ★ СПИН КОЛЕСА — сначала в одну сторону, потом в другую
-   ══════════════════════════════════════════════════════════════ */
-
-function _spinWheel(success, chance){
-    var container = document.querySelector('.wheel-container');
-    if(!container) return;
-
-    /* Добавляем класс spin-обратно */
-    container.style.transition = 'transform 0.4s cubic-bezier(.4,0,.6,1)';
-    container.style.transform = 'rotate(-12deg)';
-
-    /* Через 400мс — основной спин */
-    setTimeout(function(){
-        var greenAngle = (chance / 100) * 360;
-        var landAngle;
-
-        if(success){
-            /* Успех — приземляемся в зелёной зоне */
-            landAngle = Math.random() * greenAngle * 0.6 + greenAngle * 0.2;
-        } else {
-            /* Неудача — приземляемся в красной зоне */
-            var redSize = 360 - greenAngle;
-            landAngle = greenAngle + Math.random() * redSize * 0.3 + redSize * 0.05;
-        }
-
-        /* Много оборотов */
-        var totalSpin = 360 * (6 + Math.floor(Math.random() * 4)) + landAngle;
-
-        container.style.transition = 'transform 5.5s cubic-bezier(.1, .6, .2, 1)';
-        container.style.transform = 'rotate(' + totalSpin + 'deg)';
-
-        /* Через 5.5с — результат */
-        setTimeout(function(){
-            showResult({ upgrade_success: success, chance: chance });
-        }, 5500);
-
-    }, 400);
-}
-
-/* ══════════════════════════════════════════════════════════════
-   ★ МОДАЛКИ ИНВЕНТАРЯ И ЖЕЛАЕМОГО
-   ══════════════════════════════════════════════════════════════ */
-
-var _inventorySearchQ = '';
-var _targetsSearchQ = '';
-
-function openInventoryModal(){
-    var m = document.getElementById('inventoryModal');
-    if(m) m.classList.add('show');
-    document.getElementById('inventorySearch').value = '';
-    _inventorySearchQ = '';
-    renderInventoryModal();
-}
-
-function closeInventoryModal(){
-    var m = document.getElementById('inventoryModal');
-    if(m) m.classList.remove('show');
-}
-
-function openTargetsModal(){
-    if(!selectedGift){
-        showTgAlert('Сначала выбери подарок');
-        return;
-    }
-    var m = document.getElementById('targetsModal');
-    if(m) m.classList.add('show');
-    document.getElementById('targetsSearch').value = '';
-    _targetsSearchQ = '';
-    renderTargetsModal();
-}
-
-function closeTargetsModal(){
-    var m = document.getElementById('targetsModal');
-    if(m) m.classList.remove('show');
-}
-
-function filterInventory(){
-    _inventorySearchQ = document.getElementById('inventorySearch').value.toLowerCase().trim();
-    renderInventoryModal();
-}
-
-function filterTargets(){
-    _targetsSearchQ = document.getElementById('targetsSearch').value.toLowerCase().trim();
-    renderTargetsModal();
-}
-
-function renderInventoryModal(){
-    var grid = document.getElementById('inventoryGrid');
-    if(!grid) return;
-    grid.innerHTML = '';
-
-    var items = userInventory.filter(function(it){
-        if(!_inventorySearchQ) return true;
-        return (it.gift_name || '').toLowerCase().indexOf(_inventorySearchQ) !== -1;
-    });
-
-    if(items.length === 0){
-        grid.innerHTML = '<div class="modal-empty">Ничего нет</div>';
-        return;
-    }
-
-    items.forEach(function(it){
-        var isSelected = selectedGift && selectedGift.id === it.id;
-        var div = document.createElement('div');
-        div.className = 'modal-item' + (isSelected ? ' selected' : '');
-        var imgSrc = it.gift_image || '/static/img/gift.png';
-        div.innerHTML =
-            '<img class="modal-item-img" src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">'
-            + '<div class="modal-item-name">' + (it.gift_name || 'Gift') + '</div>'
-            + '<div class="modal-item-price"><img src="/static/img/ton.png">' + ((it.gift_value || 0) / 100).toFixed(2) + '</div>';
-        div.onclick = function(){
-            _selectGiftFromModal(it);
-        };
-        grid.appendChild(div);
-    });
-}
-
-function renderTargetsModal(){
-    var grid = document.getElementById('targetsGrid');
-    if(!grid) return;
-    grid.innerHTML = '';
-
-    var items = possibleTargets.filter(function(g){
-        if(!_targetsSearchQ) return true;
-        return (g.name || '').toLowerCase().indexOf(_targetsSearchQ) !== -1;
-    });
-
-    if(items.length === 0){
-        grid.innerHTML = '<div class="modal-empty">Ничего нет</div>';
-        return;
-    }
-
-    items.forEach(function(g){
-        var isSelected = targetGift && (targetGift.id === g.id || targetGift.fragment_slug === g.fragment_slug);
-        var div = document.createElement('div');
-        div.className = 'modal-item' + (isSelected ? ' selected' : '');
-        var imgSrc = g.image || '/static/img/gift.png';
-        div.innerHTML =
-            '<img class="modal-item-img" src="' + imgSrc + '" alt="" onerror="this.src=\'/static/img/gift.png\'">'
-            + '<div class="modal-item-name">' + (g.name || 'Gift') + '</div>'
-            + '<div class="modal-item-price"><img src="/static/img/ton.png">' + ((g.value || 0) / 100).toFixed(2) + '</div>'
-            + '<div class="modal-item-chance">' + g.upgrade_chance + '%</div>';
-        div.onclick = function(){
-            _selectTargetFromModal(g);
-        };
-        grid.appendChild(div);
-    });
-}
-
-function _selectGiftFromModal(it){
-    selectedGift = {
-        id: it.id,
-        name: it.gift_name,
-        image: it.gift_image,
-        value: it.gift_value,
-        gift_id: it.gift_id
-    };
-    document.getElementById('leftCard').classList.add('has-gift');
-    document.getElementById('leftGiftImg').src = it.gift_image;
-    document.getElementById('leftGiftName').textContent = it.gift_name;
-    document.getElementById('leftGiftValue').textContent = ((it.gift_value || 0) / 100).toFixed(2);
-
-    if(targetGift) resetTarget();
-    renderInventoryModal();
     updateWheel();
-
-    /* Закрываем модалку инвентаря, открываем желаемое */
-    closeInventoryModal();
-    setTimeout(function(){
-        loadPossibleTargets().then(function(){
-            openTargetsModal();
-        });
-    }, 300);
-}
-
-function _selectTargetFromModal(g){
-    targetGift = g;
-    currentChance = g.upgrade_chance;
-    document.getElementById('rightCard').classList.add('has-gift');
-    document.getElementById('rightGiftImg').src = g.image;
-    document.getElementById('rightGiftName').textContent = g.name;
-    document.getElementById('rightGiftValue').textContent = ((g.value || 0) / 100).toFixed(2);
-
-    document.getElementById('wheelCenterImg').src = g.image;
-    document.getElementById('wheelCenterImg').classList.remove('visible');
-    document.getElementById('wheelCenterImg').classList.add('hidden');
-    document.getElementById('chancePct').classList.remove('hidden');
-    document.getElementById('chancePct').classList.add('visible');
-    document.getElementById('chancePct').style.opacity = '1';
-    document.getElementById('chancePct').style.transform = 'translate(-50%,-50%) scale(1)';
-
-    drawGreenArc(currentChance);
-    renderTargetsModal();
-    updateWheel();
-
-    closeTargetsModal();
-}
-
-/* ★ Перебиваем старые функции */
-window.toggleInventory = openInventoryModal;
-window.toggleTargets = openTargetsModal;
-
-/* ★ Удаляем старый код с inline-секциями — они больше не нужны */
-document.addEventListener('DOMContentLoaded', function(){
-    /* Скрываем inline-секции если они остались */
-    var invSec = document.getElementById('inventorySection');
-    var tarSec = document.getElementById('targetsSection');
-    if(invSec) invSec.style.display = 'none';
-    if(tarSec) tarSec.style.display = 'none';
-});
-
-/* ══════════════════════════════════════════════════════════════
-   ★ ДЕМО-РЕЖИМ
-   ══════════════════════════════════════════════════════════════ */
-var _demoMode = false;
-
-function toggleDemo(){
-    _demoMode = !_demoMode;
-    showToast(_demoMode ? '🎮 Демо-режим ВКЛ' : '🎮 Демо-режим ВЫКЛ', 'ok');
-}
-
-/* ══════════════════════════════════════════════════════════════
-   ★ ОБНОВЛЕНИЕ ЗЕЛЁНОЙ АРКИ (для нового viewBox 290x290)
-   ══════════════════════════════════════════════════════════════ */
-function polarToCartesianNew(cx, cy, r, angle){
-    var rad = (angle - 90) * Math.PI / 180;
-    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-}
-
-/* Перебиваем drawGreenArc */
-window.drawGreenArc = function(chance){
-    var path = document.getElementById('greenPath');
-    if(!path) return;
-    if(!chance || chance <= 0){ path.setAttribute('d', ''); return; }
-    var cx = 145, cy = 145, r = 138;
-    var startAngle = 0;
-    var endAngle = startAngle + (chance / 100) * 360;
-    var start = polarToCartesianNew(cx, cy, r, startAngle);
-    var end = polarToCartesianNew(cx, cy, r, endAngle);
-    var largeArc = (endAngle - startAngle) > 180 ? 1 : 0;
-    path.setAttribute('d', 'M ' + start.x.toFixed(1) + ' ' + start.y.toFixed(1) + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + end.x.toFixed(1) + ' ' + end.y.toFixed(1));
-};
-
+})();
 </script>
 </body>
 </html>
