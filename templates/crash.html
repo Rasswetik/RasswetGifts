@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="icon" type="image/png" href="/static/img/logo.png">
+<link rel="preload" as="image" href="/static/gifs/boom.gif">
 <link rel="stylesheet" href="/static/css/global.css">
 <link rel="stylesheet" href="/static/css/crash-backgrounds.css">
 <title>CRASH</title>
@@ -14,7 +15,6 @@
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1C2233;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
 @keyframes coeffShake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-4px)}20%,40%,60%,80%{transform:translateX(4px)}}
-
 .container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 50px + 5vh)}
 
 /* BOTTOM NAV */
@@ -65,7 +65,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .countdown-display.active{opacity:1;animation:cdPop .3s cubic-bezier(.22,.9,.2,1)}
 @keyframes cdPop{0%{transform:scale(2);opacity:0}60%{transform:scale(.95)}100%{transform:scale(1);opacity:1}}
 
-/* ROCKET — БЕЗ чёрной обводки, чистый PNG с drop-shadow */
+/* ROCKET — без чёрной обводки */
 .rocket-wrap{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);z-index:2;transition:opacity .3s;opacity:1;will-change:transform,opacity;backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .rocket-wrap img{width:180px;height:180px;object-fit:contain;border:none;background:transparent;transition:transform .2s ease;will-change:transform;image-rendering:auto;transform:translateZ(0)}
 .rocket-wrap.showing-gift img{width:180px;height:180px;object-fit:contain;border:none !important;background:transparent !important;padding:0 !important;border-radius:0 !important;box-shadow:none !important;filter:drop-shadow(0 10px 26px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(59,130,246,.28));image-rendering:high-quality}
@@ -73,9 +73,11 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .rocket-wrap.flying img{transform:rotate(18deg) translateZ(0)}
 .rocket-wrap.flying.showing-gift img{transform:scale(1.05) translateZ(0) !important}
 .rocket-wrap.cashed-out img{filter:grayscale(100%) brightness(.7)}
-.boom-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);opacity:0;z-index:10;pointer-events:none;display:flex;align-items:center;justify-content:center}
-.boom-wrap img{width:180px;height:180px;object-fit:contain}
-.boom-wrap.show{opacity:1;animation:boomPop .4s ease-out forwards}
+
+/* BOOM — display:none/flex вместо opacity для надёжности */
+.boom-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;display:none;align-items:center;justify-content:center}
+.boom-wrap.show{display:flex;animation:boomPop .4s ease-out forwards}
+.boom-wrap img{width:180px;height:180px;object-fit:contain;display:block}
 @keyframes boomPop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}50%{transform:translate(-50%,-50%) scale(1.15);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
 .wait-label{font-size:13px;color:rgba(255,255,255,.25);font-weight:600;letter-spacing:1px;text-transform:uppercase;z-index:2;margin-top:8px;display:none}
 
@@ -86,7 +88,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .place-bet-btn:not(:disabled):active{transform:scale(.98)}
 .place-bet-btn .btn-text{display:inline-block;pointer-events:none}
 
-/* CASHOUT BUTTON — Cash OUT + 2 реальных PNG подарка (ИСПРАВЛЕНО: только display:flex) */
+/* CASHOUT — зелёная в flying, красная при crashed */
 .cashout-btn{
     width:100%;padding:12px 14px;border-radius:20px;border:none;
     font-family:inherit;font-weight:800;font-size:16px;cursor:pointer;
@@ -103,12 +105,25 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 }
 .cashout-btn.visible{visibility:visible}
 .cashout-btn:not(:disabled):active{transform:scale(.98)}
-.cashout-btn.crash-state{background:linear-gradient(135deg,rgba(220,60,80,.9),rgba(180,40,60,.9));color:#fff;cursor:default;pointer-events:none}
+
+/* CRASH STATE — красный */
+.cashout-btn.crash-state{
+    background:linear-gradient(135deg,#E8527A,#C42247) !important;
+    color:#fff !important;
+    cursor:default;
+    pointer-events:none;
+    box-shadow:0 12px 35px rgba(232,82,122,.35), inset 0 1px 1px rgba(255,255,255,.15) !important;
+    border-color:rgba(232,82,122,.5) !important;
+}
+.cashout-btn.crash-state .cb-win{color:#fff !important}
+.cashout-btn.crash-state .cb-label{opacity:.9 !important}
+.cashout-btn.crash-state .cb-gift-side{filter:drop-shadow(0 3px 8px rgba(0,0,0,.5)) grayscale(.4) !important;opacity:.5 !important}
+
 .cb-gift-side{
     width:44px;height:44px;flex-shrink:0;object-fit:contain;
     border:none !important;background:transparent !important;padding:0 !important;
     filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));
-    transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+    transition:opacity .25s;
     image-rendering:high-quality;
 }
 .cb-gift-side.empty{opacity:.3}
@@ -149,14 +164,8 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .bet-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 .bet-info{display:flex;flex-direction:column;gap:2px;min-width:0}
 .bet-name{font-weight:700;font-size:13px;color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Ставка в раунде: [PNG подарка 22×22] [Сумма] */
 .bet-amt{font-size:12px;color:rgba(140,160,190,.7);font-weight:600;display:flex;align-items:center;gap:6px}
-.bet-amt .bet-gift-preview{
-    width:22px;height:22px;object-fit:contain;flex-shrink:0;
-    border:none !important;background:transparent !important;padding:0 !important;
-    filter:drop-shadow(0 1px 3px rgba(0,0,0,.4));
-    transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;
-}
+.bet-amt .bet-gift-preview{width:22px;height:22px;object-fit:contain;flex-shrink:0;border:none !important;background:transparent !important;padding:0 !important;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4));transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s}
 .bet-amt .bet-gift-preview.swap{animation:cbSwap .5s ease}
 .bet-amt .bet-gift-preview.empty{opacity:.35}
 .bet-amt .bet-amount-text{font-weight:800;color:#fff;font-size:13px}
@@ -336,7 +345,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .toast.err{border-color:rgba(249,105,153,.2)}
 @keyframes toastUp{from{transform:translateX(-50%) translateY(16px);opacity:0}to{transform:translateX(-50%);opacity:1}}
 
-/* MOBILE */
 @media(max-width:600px){
     .game-field{margin:0 8px;border-radius:20px;aspect-ratio:10/9;min-height:auto}
     .rocket-wrap img{width:210px;height:210px}
@@ -501,26 +509,16 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
                 <img src="/static/img/lightning.png" onerror="this.src='/static/img/star2.png'" alt="">
                 Автовывод
             </div>
-            <button class="autowd-close" onclick="closeAutoWithdraw()">
-                <img src="/static/img/exit.png" onerror="this.textContent='×'" alt="">
-            </button>
+            <button class="autowd-close" onclick="closeAutoWithdraw()">×</button>
         </div>
         <div class="autowd-summary">
-            <div class="autowd-summary-row">
-                <span>Ставка:</span>
-                <span class="autowd-summary-val" id="autowdBetVal">0.00 TON</span>
-            </div>
-            <div class="autowd-summary-row">
-                <span>Минимум вывода:</span>
-                <span class="autowd-summary-val gold" id="autowdTargetVal">0.00 TON</span>
-            </div>
+            <div class="autowd-summary-row"><span>Ставка:</span><span class="autowd-summary-val" id="autowdBetVal">0.00 TON</span></div>
+            <div class="autowd-summary-row"><span>Минимум вывода:</span><span class="autowd-summary-val gold" id="autowdTargetVal">0.00 TON</span></div>
         </div>
         <div class="autowd-search-wrap">
             <input type="text" class="autowd-search" id="autowdSearch" placeholder="Поиск подарков..." oninput="filterAutoWithdrawGifts()">
         </div>
-        <div class="autowd-list" id="autowdList">
-            <div class="autowd-empty">Загрузка...</div>
-        </div>
+        <div class="autowd-list" id="autowdList"><div class="autowd-empty">Загрузка...</div></div>
         <button class="autowd-apply-btn" id="autowdApplyBtn" onclick="applyAutoWithdraw()" disabled>
             <span id="autowdApplyText">Выберите подарок</span>
         </button>
@@ -532,9 +530,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     <div class="deposit-modal">
         <div class="deposit-header">
             <div class="deposit-title">Top Up</div>
-            <button class="deposit-close" onclick="closeDepositSelector()">
-                <img src="/static/img/exit.png" onerror="this.textContent='×'" alt="">
-            </button>
+            <button class="deposit-close" onclick="closeDepositSelector()">×</button>
         </div>
         <div class="deposit-methods">
             <button class="deposit-method-btn" onclick="closeDepositSelector();openTonDeposit()">
@@ -554,9 +550,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     <div class="stars-deposit-modal">
         <div class="stars-deposit-header">
             <div class="stars-deposit-title">Top Up Stars</div>
-            <button class="stars-deposit-close" onclick="closeStarsDeposit()">
-                <img src="/static/img/exit.png" onerror="this.textContent='×'" alt="">
-            </button>
+            <button class="stars-deposit-close" onclick="closeStarsDeposit()">×</button>
         </div>
         <div class="stars-deposit-body">
             <img class="stars-deposit-icon" src="/static/img/star.png" alt="Stars">
@@ -656,18 +650,15 @@ function loadSavedAutoWithdrawGift(){
         autoWithdrawGuard = localStorage.getItem('crash_auto_withdraw_guard') !== 'off';
         var raw = localStorage.getItem('crash_auto_withdraw_gift');
         if(!raw) return null;
-
         var parsed = JSON.parse(raw);
         if(!parsed || !parsed.id || !parsed.value || !parsed.coeff){
             localStorage.removeItem('crash_auto_withdraw_gift');
             return null;
         }
-
         if(!autoWithdrawGuard){
             localStorage.removeItem('crash_auto_withdraw_gift');
             return null;
         }
-
         return parsed;
     }catch(e){
         try{ localStorage.removeItem('crash_auto_withdraw_gift'); }catch(_e){}
@@ -680,12 +671,10 @@ function saveAutoWithdrawGift(){
         try{ localStorage.removeItem('crash_auto_withdraw_gift'); }catch(e){}
         return;
     }
-
     if(!autoWithdrawGift || autoWithdrawGift.id == null){
         try{ localStorage.removeItem('crash_auto_withdraw_gift'); }catch(e){}
         return;
     }
-
     try{
         localStorage.setItem('crash_auto_withdraw_gift', JSON.stringify({
             id: autoWithdrawGift.id,
@@ -1062,8 +1051,10 @@ async function confirmStarsBet(){
     updateUI(userData);
     closeBetModal();
     updateBetButton();
-    /* Сразу обновляем кнопку Cash OUT чтобы не было пустых иконок */
+    /* МГНОВЕННАЯ реакция на ставку */
     _cbLeftSrc = null; _cbRightSrc = null;
+    if($('cbGiftLeft')) $('cbGiftLeft').dataset.src = '';
+    if($('cbGiftRight')) $('cbGiftRight').dataset.src = '';
     updateCashoutButton();
     showToast('Ставка '+formatCrashMoney(amt)+' принята!','ok');
     try{ playSound('bet'); }catch(e){}
@@ -1131,6 +1122,8 @@ async function processPendingBet(){
                 showToast('Ставка принята!','ok');
                 loadBets();
                 _cbLeftSrc = null; _cbRightSrc = null;
+                if($('cbGiftLeft')) $('cbGiftLeft').dataset.src = '';
+                if($('cbGiftRight')) $('cbGiftRight').dataset.src = '';
                 updateCashoutButton();
             }
         }catch(e){}
@@ -1149,6 +1142,8 @@ async function processPendingBet(){
                 showToast('Ставка подарками принята!','ok');
                 loadBets();
                 _cbLeftSrc = null; _cbRightSrc = null;
+                if($('cbGiftLeft')) $('cbGiftLeft').dataset.src = '';
+                if($('cbGiftRight')) $('cbGiftRight').dataset.src = '';
                 updateCashoutButton();
             }
         }catch(e){}
@@ -1157,7 +1152,7 @@ async function processPendingBet(){
 }
 
 /* ============================================================
-   CASHOUT — обновление кнопки без перерисовки DOM
+   CASHOUT — обновление кнопки (обе иконки = достижимый подарок)
    ============================================================ */
 var cashoutLocked = false;
 
@@ -1168,18 +1163,22 @@ function updateCashoutButton(){
     var win = $('cbWin');
     if(!cb || !left || !right || !win) return;
 
+    /* Crashed: показать финальный множитель, красный, без подарков */
     if(status === 'crashed'){
         cb.classList.add('visible');
         cb.disabled = true;
         cb.className = 'cashout-btn crash-state visible';
         win.textContent = 'CRASH ' + (servMult || 1).toFixed(2) + 'x';
-        left.src = (betIsGift && betGiftImg) ? betGiftImg : '/static/img/gift.png';
-        left.classList.toggle('empty', !(betIsGift && betGiftImg));
-        right.src = '/static/img/gift.png';
+        left.classList.add('empty');
         right.classList.add('empty');
+        left.src = '/static/img/gift.png';
+        right.src = '/static/img/gift.png';
+        left.dataset.src = '/static/img/gift.png';
+        right.dataset.src = '/static/img/gift.png';
         return;
     }
 
+    /* Не активна: скрыть */
     var isActive = hasBet && !cashedOut && status === 'flying';
     if(!isActive){
         cb.classList.remove('visible');
@@ -1189,46 +1188,39 @@ function updateCashoutButton(){
     cb.disabled = false;
     cb.className = 'cashout-btn visible';
 
+    /* Сумма выигрыша */
     var currentMult = Math.max(dispMult, servMult);
     var curWin = Math.floor((betAmt || 0) * currentMult);
     var newWinText = formatCrashMoney(curWin);
     if(win.textContent !== newWinText) win.textContent = newWinText;
 
-    /* Левый — подарок текущей ставки (реальный PNG) */
-    var leftSrc = (betIsGift && betGiftImg) ? betGiftImg : '/static/img/gift.png';
-    var leftEmpty = !(betIsGift && betGiftImg);
-    if(leftSrc !== _cbLeftSrc){
-        _cbLeftSrc = leftSrc;
-        left.src = leftSrc;
-        left.classList.remove('pulse','swap');
-        void left.offsetWidth;
-        left.classList.add(leftEmpty ? 'empty' : 'pulse');
-    }
-    left.classList.toggle('empty', leftEmpty);
-
-    /* Правый — подарок, который можно забрать на текущий выигрыш */
-    if(!showGifts){
-        if(right.style.display !== 'none') right.style.display = 'none';
-        return;
-    }
-    if(right.style.display === 'none') right.style.display = '';
-
+    /* Обе иконки = подарок, который можно забрать на текущий выигрыш */
     var achievable = getAchievableGift(curWin);
-    var rightSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
-    var rightEmpty = !achievable;
+    var giftSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
+    var isEmpty = !achievable;
 
-    if(rightSrc !== _cbRightSrc){
-        var hadSrc = !!_cbRightSrc;
-        _cbRightSrc = rightSrc;
-        right.src = rightSrc;
-        right.classList.toggle('empty', rightEmpty);
-        if(hadSrc && !rightEmpty){
-            right.classList.remove('swap');
+    /* Левая */
+    if(left.dataset.src !== giftSrc){
+        left.dataset.src = giftSrc;
+        left.src = giftSrc;
+        left.classList.toggle('empty', isEmpty);
+        if(!isEmpty){
+            left.classList.remove('pulse','swap');
+            void left.offsetWidth;
+            left.classList.add('swap');
+        }
+    }
+
+    /* Правая */
+    if(right.dataset.src !== giftSrc){
+        right.dataset.src = giftSrc;
+        right.src = giftSrc;
+        right.classList.toggle('empty', isEmpty);
+        if(!isEmpty){
+            right.classList.remove('pulse','swap');
             void right.offsetWidth;
             right.classList.add('swap');
         }
-    } else {
-        right.classList.toggle('empty', rightEmpty);
     }
 }
 
@@ -1446,6 +1438,8 @@ async function confirmGiftBet(){
     clearSelectedGifts();
     updateBetButton();
     _cbLeftSrc = null; _cbRightSrc = null;
+    if($('cbGiftLeft')) $('cbGiftLeft').dataset.src = '';
+    if($('cbGiftRight')) $('cbGiftRight').dataset.src = '';
     updateCashoutButton();
     showToast('Ставка ' + sGifts.length + ' подарков — принята!','ok');
     try{ playSound('bet'); }catch(e){}
@@ -1555,7 +1549,7 @@ async function updStatus(){
             if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
             var rImg = rw ? rw.querySelector('img') : null;
             if(rImg) rImg.style.transform = '';
-            if(bm && Date.now() >= boomUntil) bm.classList.remove('show');
+            if(bm) bm.classList.remove('show');
             if(gf) gf.classList.remove('flying');
             if(coeff){ coeff.className = 'coeff-box waiting'; coeff.textContent = 'Waiting'; }
 
@@ -1658,6 +1652,10 @@ async function updStatus(){
                 if(cb) cb.classList.remove('visible');
             } else if(hasBet){
                 if(pb) pb.style.display = 'none';
+                if(cb && cb.classList.contains('crash-state')){
+                    cb.classList.remove('crash-state');
+                    cb.disabled = false;
+                }
                 updateCashoutButton();
             } else {
                 if(pb){
@@ -1680,19 +1678,24 @@ async function updStatus(){
             if(gf) gf.classList.remove('flying');
             if(coeff){ coeff.className = 'coeff-box crashed'; coeff.textContent = servMult.toFixed(2) + 'x'; }
 
-            if(bm && Date.now() >= boomUntil && bm.classList.contains('show')) bm.classList.remove('show');
-
             if(!crashDone){
+                /* Показ boom.gif — принудительно */
                 if(bm){
-                    bm.classList.remove('show');
                     var boomImg = bm.querySelector('img');
                     if(boomImg){
-                        boomImg.src = '/static/gifs/boom.gif?t=' + Date.now();
-                        bm.classList.add('show');
+                        var freshSrc = '/static/gifs/boom.gif?t=' + Date.now();
+                        boomImg.src = freshSrc;
                     }
+                    bm.classList.remove('show');
+                    void bm.offsetWidth;
+                    bm.classList.add('show');
                 }
                 boomUntil = Date.now() + 2000;
                 crashDone = true;
+                setTimeout(function(){
+                    var bw = $('boomWrap');
+                    if(bw) bw.classList.remove('show');
+                }, 2000);
                 try{ playSound('crash'); }catch(e){}
                 triggerVibration([200,80,200,80,200,80,250]);
                 if(hasBet) showToast('Crashed at ' + servMult.toFixed(2) + 'x!','err');
@@ -1927,7 +1930,7 @@ function toggleAutoWithdrawGuardClick(){
 }
 
 /* ============================================================
-   GIFT CATALOG (для подарков в кнопке Cash OUT и автовыводе)
+   GIFT CATALOG
    ============================================================ */
 var _giftCatalogCache = null;
 async function ensureGiftCatalog(){
@@ -2222,7 +2225,7 @@ async function payWithStars(){
 }
 
 /* ============================================================
-   SOUND + TOAST + VIBRATION
+   SOUND + VIBRATION
    ============================================================ */
 var audioContext = null;
 var soundMasterGain = null;
@@ -2287,8 +2290,9 @@ function showToast(msg, type){
         setTimeout(function(){ t.remove(); }, 300);
     }, 2500);
 }
-    /* ============================================================
-   RENDER (плавный рост dispMult + обновление Cash OUT)
+
+/* ============================================================
+   RENDER
    ============================================================ */
 let lastRenderStatus = null;
 let lastRocketUpdateTime = 0;
@@ -2322,6 +2326,10 @@ function onNewServerMult(newMult){
     prevServMult = newMult;
     lastPollTimestamp = now;
     if(dispMult < newMult - 0.05) dispMult = newMult - 0.01;
+    /* МГНОВЕННО обновляем Cash OUT при новом серверном значении */
+    if(hasBet && !cashedOut && status === 'flying'){
+        updateCashoutButton();
+    }
 }
 
 function render(){
@@ -2338,7 +2346,6 @@ function render(){
     }
 
     if(status === 'flying'){
-        /* Плавный рост dispMult (сглаженный по сравнению с сервером) */
         if(multGrowthRate > 0){
             var delta = multGrowthRate * dt;
             if(delta > 0.02) delta = 0.02;
@@ -2349,7 +2356,6 @@ function render(){
 
         if(_rw && !_rwFlying){ _rw.classList.add('flying'); _rwFlying = true; }
 
-        /* Лёгкий наклон ракеты при росте множителя */
         if(_rw && _rImg && !_rw.classList.contains('showing-gift') && !window._rocketSwitching){
             if(_rImg.complete && _rImg.naturalWidth > 0){
                 var tilt = dispMult >= 2.0 ? Math.min(30, (dispMult - 2.0) * 3.5) : 0;
@@ -2358,7 +2364,6 @@ function render(){
             }
         }
 
-        /* Обновление coeffBox (не чаще 30 fps) */
         if(now - _coeffLastUpdate > 33){
             _coeffLastUpdate = now;
             var ct = dispMult.toFixed(2) + 'x';
@@ -2368,19 +2373,17 @@ function render(){
             }
         }
 
-        /* Подарок вместо ракеты (не чаще 4 fps) */
         if(now - lastRocketUpdateTime > 250){
             lastRocketUpdateTime = now;
             updateRocketImage();
         }
 
-        /* Кнопка Cash OUT (не чаще 5 fps) */
-        if(now - _lastCashBtnUpdate > 200){
+        /* Cash OUT — 30 fps для мгновенной реакции */
+        if(now - _lastCashBtnUpdate > 33){
             _lastCashBtnUpdate = now;
             if(hasBet || cashedOut) updateCashoutButton();
         }
 
-        /* Автовывод — срабатывает при достижении coeff */
         if(hasBet && !autoCashoutDone){
             if(autoWithdrawGift && autoWithdrawGift.coeff >= 1.1){
                 if(dispMult >= autoWithdrawGift.coeff){
@@ -2390,7 +2393,6 @@ function render(){
             }
         }
     } else {
-        /* Сброс после полёта */
         if(lastRenderStatus === 'flying'){
             updateRocketImage();
             _rwFlying = false;
@@ -2399,8 +2401,6 @@ function render(){
             prevServMult = 1.0;
             multGrowthRate = 0;
         }
-
-        /* Обратный отсчёт до 5 секунд */
         if((status === 'counting' || status === 'waiting') && lastTrTimestamp > 0 && lastTimeRemaining <= 10){
             var elapsed = (performance.now() - lastTrTimestamp) / 1000;
             var sec = Math.max(0, Math.ceil(Math.max(0, lastTimeRemaining - elapsed)));
@@ -2426,7 +2426,7 @@ function render(){
 }
 
 /* ============================================================
-   BETS LIST (ставки в раунде с превью подарков)
+   BETS LIST
    ============================================================ */
 async function loadBets(){
     if(status === 'crashed') return;
@@ -2468,7 +2468,6 @@ async function loadBets(){
             var avatar = hasPhoto ? '<img src="'+b.photo_url+'" alt="">' : ini;
             var stCls = 'active';
 
-            /* Превью подарка (22×22) слева от суммы */
             var previewSrc = null;
             if(b.bet_type === 'gift'){
                 if(b.gift_images && b.gift_images.length) previewSrc = b.gift_images[0];
@@ -2520,7 +2519,7 @@ async function loadBets(){
 }
 
 /* ============================================================
-   HISTORY (множители внизу)
+   HISTORY
    ============================================================ */
 async function loadHist(){
     try{
@@ -2622,7 +2621,7 @@ function closeWin(){
 }
 
 /* ============================================================
-   INIT
+   INIT CALLS
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function(){
     initTelegramApp();
