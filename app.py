@@ -1553,6 +1553,89 @@ def get_db_connection():
     # Последняя попытка
     return sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
 
+@app.route('/api/user-profile/<int:user_id>', methods=['GET'])
+def api_user_profile_card_fixed(user_id):
+    """Public profile card data for popup — FIXED VERSION."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''SELECT id, first_name, username, photo_url,
+                COALESCE(total_cases_opened,0), COALESCE(total_crash_bets,0),
+                COALESCE(total_bet_volume,0), COALESCE(current_level,1),
+                COALESCE(experience,0)
+            FROM users WHERE id = ?''', (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'User not found'})
+
+        # Leaderboard position
+        cursor.execute('''SELECT COUNT(*) FROM users
+            WHERE COALESCE(total_bet_volume,0) > ? AND id > 0''', (row[6] or 0,))
+        rank = (cursor.fetchone()[0] or 0) + 1
+
+        # Monthly turnover
+        cursor.execute('''SELECT COALESCE(SUM(bet_amount),0) FROM ultimate_crash_bets
+            WHERE user_id = ? AND created_at >= date('now','start of month')''', (user_id,))
+        monthly = cursor.fetchone()[0] or 0
+
+        # Inventory
+        cursor.execute('''SELECT gift_id, gift_name, gift_image, gift_value,
+                COALESCE(is_upgraded, 0)
+            FROM inventory WHERE user_id = ?
+            ORDER BY received_at DESC LIMIT 30''', (user_id,))
+        inv_rows = cursor.fetchall()
+
+        inventory = []
+        for ir in inv_rows:
+            img = ir[2] or '/static/img/gift.png'
+            if not img.startswith('http') and not img.startswith('/'):
+                img = '/static/gifs/gifts/' + img
+            inventory.append({
+                'gift_id': ir[0],
+                'name': ir[1] or 'Gift',
+                'image': img,
+                'value': ir[3] or 0,
+                'is_upgraded': bool(ir[4])
+            })
+
+        # Level info
+        cur_lvl = row[7] or 1
+        exp = row[8] or 0
+        cur_lvl_info = next((l for l in LEVEL_SYSTEM if l["level"] == cur_lvl), None)
+        nxt_lvl_info = next((l for l in LEVEL_SYSTEM if l["level"] == cur_lvl + 1), None)
+        if cur_lvl_info and nxt_lvl_info:
+            lvl_progress = ((exp - cur_lvl_info["exp_required"]) /
+                           max(nxt_lvl_info["exp_required"] - cur_lvl_info["exp_required"], 1)) * 100
+            nxt_exp = nxt_lvl_info["exp_required"]
+        else:
+            lvl_progress = 100
+            nxt_exp = exp
+
+        conn.close()
+        return jsonify({
+            'success': True,
+            'profile': {
+                'id': row[0],
+                'first_name': row[1] or 'User',
+                'username': row[2] or '',
+                'photo_url': row[3] or '/static/img/default_avatar.png',
+                'cases_opened': row[4],
+                'crash_bets': row[5],
+                'total_volume': row[6],
+                'level': cur_lvl,
+                'experience': exp,
+                'rank': rank,
+                'monthly_turnover': monthly,
+                'inventory': inventory,
+                'level_progress': min(max(lvl_progress, 0), 100),
+                'next_level_exp': nxt_exp,
+                'current_level_exp': cur_lvl_info["exp_required"] if cur_lvl_info else 0
+            }
+        })
+    except Exception as e:
+        logger.error(f"user_profile_card error: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.teardown_request
 def _close_request_db(exc=None):
