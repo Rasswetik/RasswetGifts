@@ -5579,12 +5579,8 @@ def ultimate_crash_place_bet_gift():
         game = cursor.fetchone()
 
         if not game:
-            target_multiplier = round(random.uniform(3.0, 10.0), 2)
-            cursor.execute('''
-                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                VALUES ('waiting', ?, CURRENT_TIMESTAMP)
-            ''', (target_multiplier,))
-            game_id = cursor.lastrowid
+            conn.close()
+            return jsonify({'success': False, 'error': 'Новый раунд запускается, подождите 1–2 секунды'})
         else:
             game_id, game_status = game
             if game_status not in ('waiting', 'counting'):
@@ -5719,12 +5715,8 @@ def ultimate_crash_place_bet_multi_gift():
         game = cursor.fetchone()
 
         if not game:
-            target_multiplier = round(random.uniform(3.0, 10.0), 2)
-            cursor.execute('''
-                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                VALUES ('waiting', ?, CURRENT_TIMESTAMP)
-            ''', (target_multiplier,))
-            game_id = cursor.lastrowid
+            conn.close()
+            return jsonify({'success': False, 'error': 'Новый раунд запускается, подождите 1–2 секунды'})
         else:
             game_id, game_status = game
             if game_status not in ('waiting', 'counting'):
@@ -5909,81 +5901,10 @@ def ultimate_crash_cashout_simple():
             remaining_value = win_amount
             has_upgraded_original = False
 
-            # === Gift bet: return original gift(s) first ===
-            if bet_type == 'gift' and gift_data_raw:
-                try:
-                    gd = json.loads(gift_data_raw)
-                except Exception:
-                    gd = None
-
-                # Normalize to list (single gift → [gift], multi-gift → list)
-                gift_list = []
-                if isinstance(gd, list):
-                    gift_list = gd
-                elif isinstance(gd, dict) and gd.get('gift_name'):
-                    gift_list = [gd]
-
-                original_total = 0
-                # ★ Количество копий: 1 (обычный) или 2 (бонус-раунд)
-                copies = 2 if is_bonus_round else 1
-
-                for single_gd in gift_list:
-                    if not single_gd.get('gift_name'):
-                        continue
-                    for _copy_idx in range(copies):
-                        # Restore original gift to inventory with all NFT attributes
-                        ins_cols = ['user_id', 'gift_id', 'gift_name', 'gift_image', 'gift_value']
-                        ins_vals = [user_id, single_gd.get('gift_id'), single_gd['gift_name'], single_gd.get('gift_image', ''), single_gd.get('gift_value', 0)]
-                        if single_gd.get('is_upgraded'):
-                            has_upgraded_original = True
-                            ins_cols += ['is_upgraded', 'nft_number', 'nft_model', 'nft_symbol', 'nft_backdrop',
-                                         'nft_model_rarity', 'nft_symbol_rarity', 'nft_backdrop_rarity',
-                                         'nft_model_price', 'nft_symbol_price', 'nft_backdrop_price']
-                            ins_vals += [True, single_gd.get('nft_number'), single_gd.get('nft_model'), single_gd.get('nft_symbol'), single_gd.get('nft_backdrop'),
-                                         single_gd.get('nft_model_rarity'), single_gd.get('nft_symbol_rarity'), single_gd.get('nft_backdrop_rarity'),
-                                         single_gd.get('nft_model_price'), single_gd.get('nft_symbol_price'), single_gd.get('nft_backdrop_price')]
-                        if single_gd.get('crate_id'):
-                            ins_cols += ['crate_id', 'crate_name', 'crate_image']
-                            ins_vals += [single_gd.get('crate_id'), single_gd.get('crate_name'), single_gd.get('crate_image')]
-                        placeholders = ', '.join(['?' for _ in ins_vals])
-                        cursor.execute(f'INSERT INTO inventory ({", ".join(ins_cols)}) VALUES ({placeholders})', ins_vals)
-
-                        awarded_gifts.append({
-                            'name': single_gd['gift_name'] + (' (бонус x2)' if is_bonus_round and _copy_idx == 1 else ''),
-                            'image': single_gd.get('gift_image', ''),
-                            'value': single_gd.get('gift_value', 0),
-                            'is_original': True,
-                            'is_upgraded': bool(single_gd.get('is_upgraded')),
-                            'is_bonus_copy': (_copy_idx == 1)
-                        })
-                        original_total += single_gd.get('gift_value', 0)
-
-                if gift_list:
-                    remaining_value = win_amount - original_total  # profit only
-                else:
-                    remaining_value = win_amount
-
-                # ★ Бонус-раунд: если после возврата оригиналов остаётся ещё много —
-                # даём дополнительный бонусный подарок (gold plane) если ценность позволяет
-                if is_bonus_round and remaining_value >= 100:
-                    try:
-                        _bonus_img = '/static/gifs/rockets/goldenplane.gif'
-                        _bonus_name = 'Gold Plane (BONUS)'
-                        _bonus_val = min(remaining_value // 2, 500)
-                        if _bonus_val >= 50:
-                            cursor.execute('''
-                                INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
-                                VALUES (?, 0, ?, ?, ?)
-                            ''', (user_id, _bonus_name, _bonus_img, _bonus_val))
-                            awarded_gifts.append({
-                                'name': _bonus_name,
-                                'image': _bonus_img,
-                                'value': _bonus_val,
-                                'is_bonus_copy': True
-                            })
-                            remaining_value -= _bonus_val
-                    except Exception as _be:
-                        logger.warning(f"Bonus gift add error: {_be}")
+            # Gift bets are consumed when placed. On win, the original stake is NOT restored.
+            # The player receives NEW reward gift(s) from the Crash reward pool, exactly like a GRAM bet.
+            if bet_type == 'gift':
+                remaining_value = win_amount
 
             # === Preferred auto-withdraw gift (server-side, not only client-side) ===
             preferred_gift = None
@@ -6202,6 +6123,7 @@ def ultimate_crash_cashout_simple():
             'new_balance': new_balance,
             'awarded_gifts': awarded_gifts,
             'star_remainder': remaining_value if remaining_value > 0 else 0,
+            'balance_delta_stars': remaining_value if remaining_value > 0 else 0,
             'has_upgraded_original': has_upgraded_original,
             'is_bonus_round': bool(is_bonus_round),
         }
@@ -9808,7 +9730,7 @@ def portal_auth_status():
 
 @app.route('/api/portal/save-token', methods=['POST'])
 def portal_save_token():
-    """Сохраняет initData токен."""
+    """Сохраняет initData Portal через единый token helper."""
     global _portal_auth_data
     try:
         data = request.get_json() or {}
@@ -9822,40 +9744,45 @@ def portal_save_token():
 
         is_valid, err = _validate_portal_initdata(token)
         if not is_valid:
-            return jsonify({'success': False, 'error': err, 'hint': 'Скопируй ВСЮ строку initData целиком. Начинается с "user=" или "tma user=".'})
+            return jsonify({'success': False, 'error': err, 'hint': 'Скопируй ВСЮ строку initData целиком.'})
 
-        if token.startswith('tma '):
-            token = token[4:]
+        _portal_save_token(token)
+        _portal_auth_data = _portal_get_token()
 
-        token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
-        os.makedirs(os.path.dirname(token_file), exist_ok=True)
-        with open(token_file, 'w', encoding='utf-8') as f:
-            f.write(token)
-
-        os.environ['PORTAL_AUTH_TOKEN'] = token
-        _portal_auth_data = token
-
+        # Быстрая реальная проверка через HTTP API; пустой список не означает,
+        # что токен не сохранён.
+        verified = False
+        warning = None
+        collections_count = 0
         try:
-            import asyncio
-            from aportalsmp.gifts import collections as portal_collections
-            loop = asyncio.new_event_loop()
-            colls = loop.run_until_complete(portal_collections(authData=token, limit=1))
-            loop.close()
-            items = _extract_items(colls)
-            return jsonify({
-                'success': True,
-                'user': {'first_name': 'Portal', 'username': 'user'},
-                'collections_count': len(items),
-                'message': 'Токен сохранён и проверен'
-            })
+            ok, result, _status = _portal_request('GET', '/collections', params={'limit': 1, 'offset': 0}, timeout=12)
+            if ok:
+                verified = True
+                if isinstance(result, dict):
+                    for key in ('collections', 'items', 'result', 'data'):
+                        value = result.get(key)
+                        if isinstance(value, list):
+                            collections_count = len(value)
+                            break
+                elif isinstance(result, list):
+                    collections_count = len(result)
+            else:
+                warning = str(result)
         except Exception as pe:
-            logger.warning(f'Portal verify failed: {pe}')
-            return jsonify({
-                'success': True,
-                'user': {'first_name': 'Portal', 'username': 'user'},
-                'message': 'Токен сохранён (проверка отложена)',
-                'warning': str(pe)
-            })
+            warning = str(pe)
+
+        response = {
+            'success': True,
+            'verified': verified,
+            'has_token': True,
+            'aportalsmp_available': bool(globals().get('_APORTALSMP_AVAILABLE', False)),
+            'collections_count': collections_count,
+            'token_preview': (_portal_get_token()[:20] + '...') if len(_portal_get_token()) > 20 else _portal_get_token(),
+            'message': 'Токен сохранён и Portal отвечает' if verified else 'Токен сохранён; проверка Portal не пройдена',
+        }
+        if warning:
+            response['warning'] = warning
+        return jsonify(response)
     except Exception as e:
         logger.error(f'portal_save_token error: {e}')
         return jsonify({'success': False, 'error': str(e)})
@@ -9890,63 +9817,50 @@ def portal_logout():
 
 @app.route('/api/portal/status', methods=['GET'])
 def portal_status_legacy():
-    """Статус подключения к Portal."""
+    """Единый статус Portal для админки."""
     try:
-        token = ''
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("SELECT value FROM app_settings WHERE key = 'portal_auth_token'")
-            row = cursor.fetchone()
-            conn.close()
-            if row and row[0]:
-                token = str(row[0]).strip()
-        except Exception:
-            pass
-
-        if not token:
-            token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
-        if not token:
-            try:
-                tf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
-                if os.path.exists(tf):
-                    with open(tf, 'r', encoding='utf-8') as f:
-                        token = f.read().strip()
-            except Exception:
-                pass
-
+        token = _portal_get_token() or ''
+        has_token = bool(token)
+        aportalsmp_available = bool(globals().get('_APORTALSMP_AVAILABLE', False))
         connected = False
         user_info = None
         error_msg = None
 
         if token:
             is_valid, err = _validate_portal_initdata(token)
-            if is_valid:
-                if token.startswith('tma '):
-                    token = token[4:]
+            if not is_valid:
+                error_msg = err
+            else:
+                # Сначала проверяем реальный Portal HTTP API. Это надёжнее,
+                # чем считать успешным пустой ответ aportalsmp.
                 try:
-                    import asyncio
-                    from aportalsmp.gifts import collections as portal_collections
-                    loop = asyncio.new_event_loop()
-                    test_colls = loop.run_until_complete(portal_collections(authData=token, limit=1))
-                    loop.close()
-                    items = _extract_items(test_colls)
-                    if items:
+                    ok, data, status = _portal_request('GET', '/collections', params={'limit': 1, 'offset': 0}, timeout=12)
+                    if ok:
+                        items = []
+                        if isinstance(data, dict):
+                            for key in ('collections', 'items', 'result', 'data'):
+                                value = data.get(key)
+                                if isinstance(value, list):
+                                    items = value
+                                    break
+                        elif isinstance(data, list):
+                            items = data
                         connected = True
                         user_info = {'first_name': 'Portal', 'username': 'user'}
+                        if not items:
+                            error_msg = 'Portal доступен, но вернул пустой список коллекций'
                     else:
-                        error_msg = 'Portal вернул пустой список'
+                        error_msg = str(data)
                 except Exception as pe:
-                    error_msg = str(pe)
-            else:
-                error_msg = err
+                    error_msg = f'Проверка Portal не удалась: {pe}'
 
         total_collections = 0
         try:
             if os.path.exists(FRAGMENT_DISK_CACHE_FILE):
                 with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
                     cache = json.load(f)
-                total_collections = len(cache.get('gifts', []))
+                gifts = cache.get('gifts', []) if isinstance(cache, dict) else []
+                total_collections = len(gifts) if isinstance(gifts, list) else 0
         except Exception:
             pass
 
@@ -9959,7 +9873,7 @@ def portal_status_legacy():
                     sd = json.load(f)
                 ts = sd.get('timestamp', 0)
                 if ts:
-                    diff = int(time.time() - ts)
+                    diff = max(0, int(time.time() - ts))
                     if diff < 60:
                         last_sync_ago = f'{diff} сек назад'
                     elif diff < 3600:
@@ -9973,6 +9887,9 @@ def portal_status_legacy():
         return jsonify({
             'success': True,
             'connected': connected,
+            'has_token': has_token,
+            'aportalsmp_available': aportalsmp_available,
+            'token_preview': (token[:20] + '...') if len(token) > 20 else token,
             'info': {
                 'user': user_info,
                 'error': error_msg,
@@ -9983,7 +9900,13 @@ def portal_status_legacy():
         })
     except Exception as e:
         logger.error(f'portal_status error: {e}')
-        return jsonify({'success': False, 'error': str(e), 'connected': False})
+        return jsonify({
+            'success': False,
+            'connected': False,
+            'has_token': bool(_portal_get_token()),
+            'aportalsmp_available': bool(globals().get('_APORTALSMP_AVAILABLE', False)),
+            'error': str(e)
+        })
 
 
 
