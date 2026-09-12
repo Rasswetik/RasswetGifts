@@ -13,20 +13,18 @@
 :root{
     --bg:#1C2233;
     --surface:rgba(255,255,255,.04);
-    --surface-2:rgba(255,255,255,.06);
     --border:rgba(255,255,255,.08);
     --text:#fff;
     --text-2:rgba(255,255,255,.55);
     --text-3:rgba(255,255,255,.35);
     --blue:#3B82F6;
-    --blue-2:#2563EB;
     --green:#24C38E;
     --gold:#FFD700;
     --red:#FF3064;
     --safe-top:env(safe-area-inset-top,20px);
     --safe-bottom:env(safe-area-inset-bottom,0px);
 }
-html,body{height:100%;overflow-x:hidden;overscroll-behavior:none;width:100%;max-width:100vw}
+html,body{height:100%;overflow-x:hidden;overscroll-behavior:none;width:100%}
 body{
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     background:#1C2233;
@@ -34,175 +32,234 @@ body{
     color:var(--text);
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
-    display:flex;flex-direction:column;align-items:center;
 }
-::-webkit-scrollbar{width:5px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(59,130,246,.25);border-radius:3px}
 
+/* ══════════════ PAGE ══════════════ */
 .page{
     width:100%;max-width:480px;margin:0 auto;
-    padding:calc(var(--safe-top) + 58px) 12px calc(var(--safe-bottom) + 96px);
-    position:relative;min-height:100vh;display:flex;flex-direction:column;
-    box-sizing:border-box;overflow-x:hidden;
+    padding:calc(var(--safe-top) + 58px) 14px calc(var(--safe-bottom) + 100px);
+    position:relative;
 }
 
 /* ══════════════ TOP BAR ══════════════ */
-.top-bar{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 12px;gap:8px}
-.top-bar-left{display:flex;align-items:center;gap:6px}
-.top-bar-right{display:flex;align-items:center;gap:6px}
+.top-bar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:8px 0 14px;gap:8px;
+}
+.top-left{display:flex;gap:6px;align-items:center}
 .top-icon-btn{
     width:36px;height:36px;border-radius:12px;
     border:1.5px solid rgba(255,255,255,.08);
     background:rgba(255,255,255,.04);
     display:flex;align-items:center;justify-content:center;
-    cursor:pointer;transition:all .2s;overflow:hidden;
+    cursor:pointer;transition:all .15s;
 }
-.top-icon-btn:active{transform:scale(.9);background:rgba(255,255,255,.08)}
-.top-icon-btn svg{width:18px;height:18px;opacity:.7;color:#fff;stroke:currentColor;fill:none;stroke-width:2}
-.top-icon-btn.vibration-off svg{opacity:.3;color:#646C86}
+.top-icon-btn:active{transform:scale(.9)}
+.top-icon-btn svg{width:18px;height:18px;color:rgba(255,255,255,.7);stroke:currentColor;fill:none;stroke-width:2}
+.top-icon-btn.vibration-off svg{opacity:.3}
 .top-icon-btn img.lang-flag{width:22px;height:22px;object-fit:cover;border-radius:4px}
-
+.top-right{display:flex;gap:6px;align-items:center}
 .bal-pill{
     display:flex;align-items:center;gap:6px;
-    background:rgba(120,135,160,.1);
+    background:rgba(120,135,160,.12);
     border:1px solid rgba(120,135,160,.25);
     border-radius:20px;padding:6px 12px;
-    font-size:13px;font-weight:700;color:#fff;
-    backdrop-filter:blur(5px);
+    font-size:13px;font-weight:800;
 }
-.bal-pill img{width:16px;height:16px;display:block}
+.bal-pill img{width:16px;height:16px}
 .bal-plus{
     width:28px;height:28px;border-radius:50%;
     background:rgba(120,135,160,.3);
     border:1px solid rgba(120,135,160,.45);
     display:flex;align-items:center;justify-content:center;
-    cursor:pointer;font-size:16px;color:#A0B0C4;font-weight:700;
-    transition:all .2s;line-height:1;
+    cursor:pointer;font-size:16px;color:#A0B0C4;font-weight:800;
+    transition:all .15s;
 }
 .bal-plus:active{transform:scale(.9)}
 
 /* ══════════════ PROFILE ══════════════ */
 .profile-section{
     display:flex;flex-direction:column;align-items:center;
-    margin-bottom:16px;padding:20px 14px 16px;
-    background:linear-gradient(180deg,rgba(59,130,246,.06) 0%,rgba(59,130,246,.01) 100%);
+    margin-bottom:16px;padding:22px 14px 18px;
+    background:linear-gradient(180deg,rgba(59,130,246,.08) 0%,rgba(59,130,246,.01) 100%);
     border-radius:22px;
-    border:1.5px solid rgba(59,130,246,.15);
-    position:relative;overflow:hidden;
-    animation:fadeInUp .5s ease;
+    border:1.5px solid rgba(59,130,246,.18);
+    position:relative;
+    overflow:hidden;
 }
 .profile-section::before{
-    content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
-    width:200px;height:200px;
-    background:radial-gradient(circle,rgba(59,130,246,.15) 0%,transparent 70%);
+    content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);
+    width:220px;height:220px;
+    background:radial-gradient(circle,rgba(59,130,246,.18) 0%,transparent 70%);
     pointer-events:none;
 }
-@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
+/* ═══ АВАТАР — чёткий, не искажается ═══ */
 .avatar-wrap{
-    width:88px;height:88px;border-radius:50%;
-    border:3px solid rgba(59,130,246,.4);
-    overflow:hidden;margin-bottom:12px;
-    background:var(--surface);
-    box-shadow:0 0 24px rgba(59,130,246,.25);
+    width:88px;height:88px;min-width:88px;min-height:88px;
+    border-radius:50%;
+    border:3px solid rgba(59,130,246,.5);
+    overflow:hidden;
+    margin-bottom:14px;
+    background:linear-gradient(135deg,#2a3544,#1f2a38);
+    box-shadow:0 0 30px rgba(59,130,246,.3);
+    position:relative;z-index:1;
+    display:flex;align-items:center;justify-content:center;
+}
+.avatar-wrap img{
+    width:100%;height:100%;
+    object-fit:cover;
+    object-position:center;
+    display:block;
+    border-radius:50%;
+}
+.avatar-fallback{
+    width:100%;height:100%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:32px;font-weight:800;color:rgba(255,255,255,.7);
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    border-radius:50%;
+}
+
+.profile-name{
+    font-size:18px;font-weight:800;
+    margin-bottom:4px;text-align:center;
+    letter-spacing:-.2px;position:relative;z-index:1;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    padding:0 10px;
+}
+.profile-uid{
+    font-size:11px;color:var(--text-3);
+    margin-bottom:14px;font-weight:600;
     position:relative;z-index:1;
 }
-.avatar-wrap img{width:100%;height:100%;object-fit:cover}
-.profile-name{font-size:18px;font-weight:800;margin-bottom:4px;text-align:center;letter-spacing:-.2px;position:relative;z-index:1}
-.profile-uid{font-size:11px;color:var(--text-3);margin-bottom:12px;font-weight:600;position:relative;z-index:1}
 
-.level-bar-wrap{width:100%;max-width:280px;margin-bottom:14px;position:relative;z-index:1}
-.level-bar-bg{width:100%;height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
-.level-bar-fill{height:100%;background:linear-gradient(90deg,#3B82F6,#7CAEFF);border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
-.level-bar-text{font-size:10px;color:var(--text-3);text-align:center;margin-top:4px;font-weight:600}
+.level-bar-wrap{width:100%;max-width:280px;margin-bottom:16px;position:relative;z-index:1}
+.level-bar-bg{width:100%;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.level-bar-fill{
+    height:100%;
+    background:linear-gradient(90deg,#3B82F6,#7CAEFF);
+    border-radius:3px;
+    transition:width .6s cubic-bezier(.4,0,.2,1);
+}
+.level-bar-text{font-size:10px;color:var(--text-3);text-align:center;margin-top:5px;font-weight:700}
 
 .profile-stats{display:flex;gap:8px;width:100%;position:relative;z-index:1}
 .profile-stat{
-    flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px;
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    padding:12px 4px;
     background:rgba(255,255,255,.04);
     border:1px solid rgba(255,255,255,.06);
     border-radius:14px;
+    min-width:0;
 }
-.profile-stat-val{font-size:14px;font-weight:800;color:#fff;display:flex;align-items:center;gap:4px;line-height:1}
+.profile-stat-val{
+    font-size:14px;font-weight:800;color:#fff;
+    display:flex;align-items:center;gap:4px;
+    line-height:1;max-width:100%;overflow:hidden;
+}
 .profile-stat-val img{width:14px;height:14px;flex-shrink:0}
-.profile-stat-label{font-size:9px;color:var(--text-3);font-weight:700;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+.profile-stat-val span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-stat-label{
+    font-size:9px;color:var(--text-3);font-weight:700;
+    margin-top:4px;text-transform:uppercase;letter-spacing:.5px;
+}
 
-/* ══════════════ ACTION ══════════════ */
-.action-row{display:flex;gap:10px;width:100%;margin-bottom:14px}
+/* ══════════════ ACTION BUTTONS ══════════════ */
+.action-row{display:flex;gap:10px;width:100%;margin-bottom:12px}
 .btn-action{
-    flex:1;padding:14px;border-radius:14px;border:none;
+    flex:1;padding:15px;border-radius:14px;border:none;
     font-family:inherit;font-size:14px;font-weight:800;
-    cursor:pointer;transition:all .2s;
+    cursor:pointer;transition:transform .15s;
     display:flex;align-items:center;justify-content:center;gap:6px;
 }
+.btn-action:active{transform:scale(.97)}
 .btn-primary{
     background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;box-shadow:0 6px 18px rgba(59,130,246,.35);
+    color:#fff;
+    box-shadow:0 6px 20px rgba(59,130,246,.35);
 }
-.btn-primary:active{transform:scale(.97)}
 .btn-outline{
     background:rgba(59,130,246,.12);
     color:#7CAEFF;
     border:1.5px solid rgba(59,130,246,.35);
 }
-.btn-outline:active{transform:scale(.97);background:rgba(59,130,246,.2)}
 
-/* ══════════════ ADMIN BUTTON ══════════════ */
+/* ══════════════ ADMIN ══════════════ */
 .admin-btn{
-    width:100%;padding:14px;border-radius:14px;
+    width:100%;padding:15px;border-radius:14px;
     background:linear-gradient(135deg,#FFD700,#FFA500);
     border:none;color:#000;font-weight:800;font-size:14px;
-    cursor:pointer;margin-bottom:14px;
+    cursor:pointer;margin-bottom:12px;
     display:flex;align-items:center;justify-content:center;gap:8px;
     box-shadow:0 6px 20px rgba(255,215,0,.4);
-    transition:all .2s;
+    transition:transform .15s;
     text-transform:uppercase;letter-spacing:.5px;
 }
 .admin-btn:active{transform:scale(.97)}
-.admin-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.admin-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ══════════════ REFERRAL ══════════════ */
 .ref-card{
-    background:linear-gradient(160deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.02) 100%);
+    background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
     border:1px solid rgba(255,255,255,.08);
     border-radius:18px;padding:16px;margin-bottom:20px;
     position:relative;overflow:hidden;
 }
-.ref-card::before{
-    content:'';position:absolute;top:0;right:0;width:200px;height:100%;
-    background:radial-gradient(circle at 80% 50%,rgba(59,130,246,.1) 0%,transparent 70%);
-    pointer-events:none;
+.ref-card-title{
+    font-size:15px;font-weight:800;
+    text-transform:uppercase;margin-bottom:6px;
+    letter-spacing:.5px;color:#fff;
 }
-.ref-card-title{font-size:15px;font-weight:800;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px;color:#fff}
-.ref-card-desc{font-size:12px;color:var(--text-2);line-height:1.5;margin-bottom:10px;max-width:70%}
+.ref-card-desc{
+    font-size:12px;color:var(--text-2);
+    line-height:1.5;margin-bottom:12px;max-width:75%;
+}
 .ref-stats{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-.ref-stat{display:flex;align-items:center;gap:4px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);border-radius:20px;padding:5px 10px;font-size:11px;font-weight:700;color:#7CAEFF}
+.ref-stat{
+    display:flex;align-items:center;gap:4px;
+    background:rgba(59,130,246,.1);
+    border:1px solid rgba(59,130,246,.2);
+    border-radius:20px;padding:5px 10px;
+    font-size:11px;font-weight:700;color:#7CAEFF;
+}
 .ref-stat img,.ref-stat svg{width:14px;height:14px;flex-shrink:0}
 .ref-links{display:flex;gap:14px;flex-wrap:wrap}
-.ref-link{font-size:13px;font-weight:700;color:#7CAEFF;cursor:pointer;background:none;border:none;font-family:inherit}
-.ref-link:active{opacity:.7}
+.ref-link{
+    font-size:13px;font-weight:700;color:#7CAEFF;
+    cursor:pointer;background:none;border:none;font-family:inherit;
+    padding:0;transition:opacity .15s;
+}
+.ref-link:active{opacity:.6}
 
 /* ══════════════ SECTION ══════════════ */
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.section-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:12px;gap:8px;
+}
 .section-title{font-size:16px;font-weight:800;color:#fff}
 .btn-options{
-    padding:8px 14px;border-radius:10px;
+    padding:9px 14px;border-radius:10px;
     border:1.5px solid rgba(59,130,246,.25);
     background:rgba(59,130,246,.08);
     color:#7CAEFF;font-size:12px;font-weight:800;
-    cursor:pointer;transition:all .2s;
+    cursor:pointer;transition:all .15s;
+    flex-shrink:0;
 }
-.btn-options.active{background:rgba(59,130,246,.25);border-color:rgba(59,130,246,.5);color:#fff}
+.btn-options.active{
+    background:rgba(59,130,246,.25);
+    border-color:rgba(59,130,246,.5);
+    color:#fff;
+}
 .btn-options:active{transform:scale(.95)}
 
 .inv-search{
     width:100%;padding:12px 16px;border-radius:12px;
     border:1.5px solid rgba(255,255,255,.08);
     background:rgba(255,255,255,.04);
-    color:#fff;font-size:14px;font-weight:500;
+    color:#fff;font-size:14px;font-weight:600;
     font-family:inherit;outline:none;margin-bottom:12px;
-    transition:border-color .2s;
+    transition:border-color .15s,background .15s;
 }
 .inv-search::placeholder{color:rgba(255,255,255,.3)}
 .inv-search:focus{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.06)}
@@ -212,51 +269,58 @@ body{
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr));
     gap:8px;margin-bottom:20px;
-    width:100%;box-sizing:border-box;
+    width:100%;
 }
+
+/* Обычная карточка */
 .inv-card{
     background:rgba(255,255,255,.04);
     border:1.5px solid rgba(255,255,255,.06);
-    border-radius:14px;padding:0;
+    border-radius:14px;
     text-align:center;cursor:pointer;
-    transition:transform .2s,border-color .2s,box-shadow .2s;
+    transition:transform .15s,border-color .15s,box-shadow .15s;
     position:relative;overflow:hidden;
-    min-width:0;max-width:100%;
+    min-width:0;
     display:flex;flex-direction:column;
-    aspect-ratio:1/1.2;
-    width:100%;box-sizing:border-box;
+    aspect-ratio:1/1.25;
+    width:100%;
+    -webkit-tap-highlight-color:transparent;
 }
-.inv-card:active{transform:scale(.95)}
-
+.inv-card:active{transform:scale(.96)}
 .inv-card.selected{
     border-color:#3B82F6;
     background:rgba(59,130,246,.15);
-    box-shadow:0 0 0 2px rgba(59,130,246,.35);
+    box-shadow:0 0 0 2px rgba(59,130,246,.4);
 }
 .inv-card.selected::after{
     content:'✓';position:absolute;top:5px;right:5px;
-    width:20px;height:20px;
+    width:22px;height:22px;
     background:linear-gradient(135deg,#3B82F6,#2563EB);
     border-radius:50%;font-size:11px;
     display:flex;align-items:center;justify-content:center;
-    color:#fff;font-weight:800;z-index:2;
+    color:#fff;font-weight:800;z-index:3;
     box-shadow:0 2px 8px rgba(59,130,246,.5);
 }
 
-.inv-card-img{
-    width:100%;height:auto;
-    aspect-ratio:1/1;
-    object-fit:contain;
+/* Обёртка картинки внутри карточки */
+.inv-card-img-wrap{
+    width:100%;aspect-ratio:1/1;
     background:rgba(0,0,0,.15);
-    margin:0;display:block;padding:4px;
-    flex-shrink:0;box-sizing:border-box;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;overflow:hidden;
     border-radius:12px 12px 0 0;
+}
+.inv-card-img-wrap img{
+    width:100%;height:100%;
+    object-fit:contain;
+    padding:6px;
+    display:block;
 }
 
 .inv-card-name{
     font-size:9px;font-weight:700;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    padding:3px 4px 1px;line-height:1.1;
+    padding:4px 4px 1px;line-height:1.1;
     color:rgba(255,255,255,.85);
     flex:1;display:flex;align-items:center;justify-content:center;
     min-height:0;
@@ -264,65 +328,115 @@ body{
 .inv-card-price{
     display:flex;align-items:center;justify-content:center;gap:3px;
     font-size:10px;font-weight:800;color:#7CAEFF;
-    padding:2px 4px 5px;line-height:1;flex-shrink:0;
+    padding:3px 4px 6px;line-height:1;flex-shrink:0;
 }
-.inv-card-price img{width:10px;height:10px;flex-shrink:0;display:block}
+.inv-card-price img{width:10px;height:10px;display:block}
 
-/* ═══ UPGRADED КАРТОЧКА — закруглённые края PNG, без имени/цены ═══ */
+/* ═══ UPGRADED — только картинка, квадрат, скруглённые края ═══ */
 .inv-card.inv-card-upgraded{
-    padding:0;overflow:hidden;
-    aspect-ratio:1/1;  /* квадрат */
+    padding:0;
+    aspect-ratio:1/1;
     border-radius:14px;
-    border:1.5px solid rgba(255,215,0,.3);
-    background:linear-gradient(180deg,rgba(255,215,0,.06) 0%,rgba(255,140,0,.03) 100%);
+    border:1.5px solid rgba(255,215,0,.4);
+    background:linear-gradient(180deg,rgba(255,215,0,.08),rgba(255,140,0,.03));
+    box-shadow:0 0 14px rgba(255,215,0,.15);
 }
-.inv-card.inv-card-upgraded .inv-card-img{
+.inv-card.inv-card-upgraded .inv-card-img-wrap{
     width:100%;height:100%;
     aspect-ratio:1/1;
+    background:transparent;
+    border-radius:12px;
+    padding:0;
+}
+.inv-card.inv-card-upgraded .inv-card-img-wrap img{
+    width:100%;height:100%;
     object-fit:cover;
     padding:0;
     border-radius:12px;
-    background:transparent;
 }
 
 .inv-card-challenge{
     position:absolute;top:5px;left:5px;
-    width:18px;height:18px;
-    background:rgba(0,0,0,.7);border-radius:6px;
-    display:flex;align-items:center;justify-content:center;z-index:2;
+    width:20px;height:20px;
+    background:rgba(0,0,0,.7);
+    border-radius:6px;
+    display:flex;align-items:center;justify-content:center;
+    z-index:3;
     border:1px solid rgba(255,255,255,.2);
 }
-.inv-card-challenge svg{width:11px;height:11px;stroke:rgba(255,255,255,.9);fill:none;stroke-width:2.5}
+.inv-card-challenge svg{width:11px;height:11px;color:#fff;stroke:currentColor;fill:none;stroke-width:2.5}
+
 .inv-card-locked{border-color:rgba(99,102,241,.4)}
 
 .inv-empty{
-    text-align:center;padding:40px 20px;color:var(--text-2);
-    background:var(--surface);border-radius:16px;
+    text-align:center;padding:50px 20px;color:var(--text-2);
+    background:var(--surface);
+    border-radius:16px;
     border:1px dashed rgba(255,255,255,.1);
     min-height:180px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    font-size:13px;font-weight:600;
+    font-size:13px;font-weight:700;
 }
 
 /* ══════════════ SELECT ACTION BAR ══════════════ */
 .select-action-bar{
-    position:fixed;bottom:calc(var(--safe-bottom) + 86px);left:50%;transform:translateX(-50%);
-    z-index:500;width:calc(100% - 20px);max-width:460px;
-    background:rgba(28,34,51,.96);
+    position:fixed;
+    bottom:calc(var(--safe-bottom) + 86px);
+    left:50%;transform:translateX(-50%) translateY(120%);
+    z-index:500;
+    width:calc(100% - 28px);max-width:452px;
+    background:rgba(28,34,51,.98);
     border-radius:16px;padding:12px 16px;
-    border:1px solid rgba(59,130,246,.25);
-    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-    display:none;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;
-    box-shadow:0 8px 30px rgba(0,0,0,.5);
+    border:1.5px solid rgba(59,130,246,.3);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    box-shadow:0 8px 30px rgba(0,0,0,.6);
+    transition:transform .3s cubic-bezier(.32,1,.23,1);
 }
-.select-action-bar.show{display:flex}
-.select-info{font-size:13px;font-weight:700;color:rgba(255,255,255,.7)}
+.select-action-bar.show{transform:translateX(-50%) translateY(0)}
+.select-info{font-size:13px;font-weight:700;color:rgba(255,255,255,.75)}
 .select-info span{color:#3B82F6;font-weight:900}
 .select-btns{display:flex;gap:8px}
-.select-btn{padding:10px 16px;border-radius:12px;border:none;font-size:13px;font-weight:800;cursor:pointer;transition:all .2s;font-family:inherit}
+.select-btn{
+    padding:11px 16px;border-radius:12px;border:none;
+    font-size:13px;font-weight:800;cursor:pointer;
+    transition:transform .15s;font-family:inherit;
+}
 .select-btn:active{transform:scale(.95)}
-.select-btn-sell{background:rgba(255,255,255,.08);color:#fff}
-.select-btn-withdraw{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;box-shadow:0 4px 14px rgba(59,130,246,.4)}
+.select-btn-sell{background:rgba(255,255,255,.1);color:#fff}
+.select-btn-withdraw{
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;
+    box-shadow:0 4px 14px rgba(59,130,246,.4);
+}
+
+/* ══════════════ BOTTOM NAV ══════════════ */
+.bottom-nav{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    z-index:4000;width:100%;max-width:480px;height:76px;
+    padding:0 8px calc(var(--safe-bottom) + 6px);
+    background:rgba(28,34,51,.95);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border-top:1px solid rgba(59,130,246,.08);
+    display:flex;align-items:center;justify-content:space-around;
+}
+.bnav-item{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;padding:6px 14px;border-radius:12px;
+    color:rgba(255,255,255,.4);
+    font-weight:700;cursor:pointer;
+    transition:all .2s;text-decoration:none;
+    min-height:56px;height:56px;
+    background:transparent;border:none;font-family:inherit;
+}
+.bnav-item svg{
+    width:22px;height:22px;
+    stroke:currentColor;fill:none;
+    stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+}
+.bnav-item span{font-size:10px;font-weight:700;line-height:1}
+.bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
+.bnav-item:active{transform:scale(.9)}
 
 /* ══════════════ MODALS ══════════════ */
 .overlay{
@@ -335,12 +449,180 @@ body{
 .overlay.show{display:flex}
 .overlay.bottom{align-items:flex-end;padding:0}
 
+/* ═══ PROMO MODAL — аккуратный ═══ */
+.promo-modal{
+    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
+    border-radius:24px;
+    width:100%;max-width:380px;
+    padding:24px 22px;
+    border:1px solid rgba(59,130,246,.2);
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.promo-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:20px;
+}
+.promo-title{font-weight:800;font-size:18px;color:#fff}
+.promo-close{
+    width:36px;height:36px;border-radius:12px;border:none;
+    background:rgba(249,105,153,.15);color:#F96999;
+    cursor:pointer;font-size:16px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s;
+}
+.promo-close:active{transform:scale(.9)}
+
+.promo-hint{
+    font-size:12px;color:var(--text-2);
+    margin-bottom:14px;line-height:1.5;font-weight:600;
+}
+
+/* ═══ ВВОД ПРОМОКОДА — крупный, по центру ═══ */
+.promo-input{
+    width:100%;
+    padding:18px 20px;
+    border:2px solid rgba(59,130,246,.3);
+    border-radius:16px;
+    background:rgba(59,130,246,.08);
+    color:#fff;
+    font-size:22px;
+    font-weight:800;
+    font-family:'Courier New',monospace;
+    letter-spacing:4px;
+    text-align:center;
+    text-transform:uppercase;
+    outline:none;
+    transition:all .15s;
+    margin-bottom:16px;
+}
+.promo-input:focus{
+    border-color:rgba(59,130,246,.7);
+    background:rgba(59,130,246,.14);
+    box-shadow:0 0 0 4px rgba(59,130,246,.15);
+}
+.promo-input::placeholder{
+    color:rgba(255,255,255,.2);
+    font-weight:600;
+    letter-spacing:2px;
+    font-size:16px;
+}
+
+.promo-submit{
+    width:100%;
+    padding:16px;
+    border-radius:14px;
+    border:none;
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;
+    font-size:15px;font-weight:800;
+    cursor:pointer;
+    transition:transform .15s;
+    box-shadow:0 6px 20px rgba(59,130,246,.4);
+    text-transform:uppercase;
+    letter-spacing:.5px;
+}
+.promo-submit:active:not(:disabled){transform:scale(.97)}
+.promo-submit:disabled{opacity:.5;cursor:not-allowed}
+
+.promo-error{
+    color:#F96999;font-size:12px;
+    text-align:center;display:none;
+    margin-bottom:12px;font-weight:700;
+    padding:10px;
+    background:rgba(249,105,153,.1);
+    border:1px solid rgba(249,105,153,.25);
+    border-radius:10px;
+}
+.promo-error.show{display:block}
+
+/* ═══ DEPOSIT ═══ */
+.deposit-modal{
+    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
+    border-radius:24px;width:100%;max-width:380px;
+    padding:24px 20px;border:1px solid rgba(59,130,246,.2);
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.deposit-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:20px;
+}
+.deposit-title{font-weight:800;font-size:18px;color:#fff}
+.deposit-close{
+    width:36px;height:36px;border-radius:12px;border:none;
+    background:rgba(249,105,153,.15);color:#F96999;
+    cursor:pointer;font-size:16px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+}
+.deposit-close:active{transform:scale(.9)}
+.deposit-methods{display:flex;gap:12px}
+.deposit-method-btn{
+    flex:1;padding:20px 14px;border-radius:18px;
+    border:1.5px solid rgba(59,130,246,.2);
+    background:rgba(59,130,246,.08);
+    cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    transition:transform .15s;
+    font-family:inherit;
+}
+.deposit-method-btn:active{transform:scale(.96)}
+.deposit-method-btn img{width:48px;height:48px;object-fit:contain}
+.deposit-method-btn span{font-weight:800;font-size:13px;color:#fff}
+.deposit-method-btn.disabled{opacity:.35;pointer-events:none;filter:grayscale(1)}
+
+/* ═══ STARS DEPOSIT ═══ */
+.stars-deposit-modal{
+    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
+    border-radius:24px;width:100%;max-width:400px;
+    border:1px solid rgba(59,130,246,.2);overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
+.stars-deposit-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);
+}
+.stars-deposit-title{font-weight:800;font-size:16px;color:#fff}
+.stars-deposit-close{
+    width:34px;height:34px;border-radius:12px;border:none;
+    background:rgba(249,105,153,.15);color:#F96999;
+    cursor:pointer;font-size:16px;font-weight:700;
+}
+.stars-deposit-body{
+    padding:24px 20px;
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+}
+.stars-deposit-icon{width:64px;height:64px}
+.stars-deposit-label{
+    text-align:center;color:rgba(255,255,255,.6);
+    font-size:13px;line-height:1.5;font-weight:600;
+}
+.stars-deposit-input-wrap{
+    width:100%;background:rgba(255,255,255,.06);
+    border:1.5px solid rgba(255,255,255,.1);
+    border-radius:14px;padding:4px;
+}
+.stars-deposit-input{
+    width:100%;padding:14px;border:none;border-radius:12px;
+    background:transparent;color:#fff;font-size:20px;font-weight:800;
+    text-align:center;font-family:inherit;outline:none;
+}
+.stars-deposit-pay-btn{
+    width:100%;padding:15px;border-radius:14px;border:none;
+    background:linear-gradient(135deg,#FFD700,#FFA500);
+    color:#000;font-size:15px;font-weight:800;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    box-shadow:0 6px 18px rgba(255,215,0,.3);
+    transition:transform .15s;
+}
+.stars-deposit-pay-btn:active{transform:scale(.97)}
+.stars-deposit-pay-btn img{width:20px;height:20px}
+
 /* ═══ ITEM MODAL ═══ */
 .item-modal{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border-radius:24px 24px 0 0;
     width:100%;max-width:480px;
-    min-height:30vh;text-align:center;
+    min-height:30vh;
+    text-align:center;
     box-shadow:0 -4px 40px rgba(0,0,0,.6);
     animation:sheetUp .3s cubic-bezier(.32,1,.23,1);
     display:flex;flex-direction:column;align-items:center;
@@ -349,11 +631,17 @@ body{
     border-top:1px solid rgba(59,130,246,.2);
 }
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.item-modal-handle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:12px auto 14px;flex-shrink:0}
-.item-modal-name{font-size:16px;font-weight:800;margin-bottom:8px;color:#fff;padding:0 8px}
+.item-modal-handle{
+    width:40px;height:4px;background:rgba(255,255,255,.15);
+    border-radius:2px;margin:12px auto 14px;flex-shrink:0;
+}
+.item-modal-name{
+    font-size:16px;font-weight:800;
+    margin-bottom:8px;color:#fff;padding:0 8px;
+}
 .item-modal img.item-modal-main-img{
-    width:110px;height:110px;object-fit:contain;
-    margin-bottom:12px;border-radius:18px;
+    width:120px;height:120px;object-fit:contain;
+    margin-bottom:12px;border-radius:20px;
     background:rgba(0,0,0,.25);padding:10px;
 }
 .item-modal-price{
@@ -362,106 +650,203 @@ body{
     margin-bottom:16px;
 }
 .item-modal-price img{width:16px;height:16px}
+
 .item-modal-actions{display:flex;gap:10px;width:100%;margin-top:6px;flex-wrap:wrap}
 .item-modal-btn{
     flex:1;min-width:0;padding:15px;border-radius:14px;border:none;
     font-family:inherit;font-size:14px;font-weight:800;
-    cursor:pointer;transition:all .15s;
+    cursor:pointer;transition:transform .15s;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .item-modal-btn:active:not(:disabled){transform:scale(.97)}
 .item-modal-btn:disabled{opacity:.4;cursor:not-allowed}
-.item-modal-sell{background:rgba(255,255,255,.08);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.1)}
+.item-modal-sell{background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.1)}
 .item-modal-withdraw-nft{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;box-shadow:0 6px 18px rgba(59,130,246,.4)}
 .item-modal-claim{background:linear-gradient(135deg,#24C38E,#10b981);color:#fff;font-size:15px;box-shadow:0 6px 18px rgba(36,195,142,.4)}
 
+/* Challenge */
 .item-modal-challenge{width:100%;margin-bottom:16px}
-.challenge-label{font-size:13px;font-weight:700;color:rgba(255,255,255,.55);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.challenge-label svg{width:14px;height:14px;stroke:rgba(255,255,255,.45);fill:none}
-.challenge-bar-wrap{width:100%;height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-bottom:6px}
-.challenge-bar{height:100%;background:linear-gradient(90deg,#3B82F6,#7CAEFF);border-radius:4px;transition:width .4s ease}
+.challenge-label{
+    font-size:13px;font-weight:700;color:rgba(255,255,255,.55);
+    margin-bottom:8px;display:flex;align-items:center;gap:6px;
+    justify-content:center;
+}
+.challenge-label svg{width:14px;height:14px;stroke:currentColor;fill:none}
+.challenge-bar-wrap{
+    width:100%;height:8px;background:rgba(255,255,255,.08);
+    border-radius:4px;overflow:hidden;margin-bottom:6px;
+}
+.challenge-bar{
+    height:100%;background:linear-gradient(90deg,#3B82F6,#7CAEFF);
+    border-radius:4px;transition:width .4s ease;
+}
 .challenge-text{font-size:11px;color:rgba(255,255,255,.45);font-weight:600}
 
-/* ═══ NFT DETAIL ═══ */
-.nft-detail-section{width:100%;display:none;flex-direction:column;align-items:center;padding-bottom:4px}
+/* NFT detail */
+.nft-detail-section{
+    width:100%;display:none;flex-direction:column;align-items:center;
+    padding-bottom:4px;
+}
 .nft-detail-section.show{display:flex}
 .nft-detail-img-wrap{
-    width:170px;height:170px;margin-bottom:14px;
-    border-radius:22px;overflow:hidden;
+    width:180px;height:180px;margin-bottom:14px;
+    border-radius:24px;overflow:hidden;
     background:rgba(0,0,0,.25);
-    border:2px solid rgba(255,215,0,.35);
+    border:2px solid rgba(255,215,0,.4);
     box-shadow:0 6px 24px rgba(255,215,0,.2);
+    padding:0;
 }
-.nft-detail-img-wrap img{width:100%;height:100%;object-fit:cover}
-.nft-detail-name{font-size:16px;font-weight:800;color:#fff;margin-bottom:2px;text-align:center}
-.nft-detail-number{font-size:12px;color:rgba(255,255,255,.4);font-weight:700;margin-bottom:14px}
+.nft-detail-img-wrap img{
+    width:100%;height:100%;
+    object-fit:cover;
+    display:block;
+    border-radius:22px;
+}
+.nft-detail-name{
+    font-size:16px;font-weight:800;color:#fff;
+    margin-bottom:2px;text-align:center;
+}
+.nft-detail-number{
+    font-size:12px;color:rgba(255,255,255,.4);
+    font-weight:700;margin-bottom:14px;
+}
 .nft-attrs-card{width:100%;border-top:1px solid rgba(255,255,255,.06)}
-.nft-attr-row{display:flex;align-items:center;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
+.nft-attr-row{
+    display:flex;align-items:center;
+    padding:12px 4px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+}
 .nft-attr-row:last-child{border-bottom:none}
-.nft-attr-label{font-size:12px;color:rgba(255,255,255,.45);font-weight:600;min-width:80px}
+.nft-attr-label{
+    font-size:12px;color:rgba(255,255,255,.45);
+    font-weight:600;min-width:80px;
+}
 .nft-attr-val{font-size:13px;color:#fff;font-weight:800;flex:1}
-.nft-attr-rarity{font-size:10px;color:rgba(255,255,255,.4);margin-left:4px;font-weight:700}
-.nft-price-row{display:flex;align-items:center;justify-content:space-between;padding:12px 4px;border-top:1px solid rgba(255,255,255,.06)}
+.nft-attr-rarity{
+    font-size:10px;color:rgba(255,255,255,.4);
+    margin-left:4px;font-weight:700;
+}
+.nft-price-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 4px;border-top:1px solid rgba(255,255,255,.06);
+}
 .nft-price-label{font-size:12px;color:rgba(255,255,255,.45);font-weight:600}
 .nft-price-val{font-size:14px;color:#FFD700;font-weight:800}
 
-/* ═══ SELL CONFIRM ═══ */
-.sell-confirm-screen{display:none;flex-direction:column;align-items:center;width:100%;padding:10px 0 0}
+/* Sell confirm */
+.sell-confirm-screen{
+    display:none;flex-direction:column;align-items:center;
+    width:100%;padding:10px 0 0;
+}
 .sell-confirm-screen.show{display:flex}
 .sell-confirm-gif{width:120px;height:120px;object-fit:contain;margin-bottom:16px}
-.sell-confirm-text{font-size:15px;font-weight:700;color:rgba(255,255,255,.85);text-align:center;line-height:1.5;margin-bottom:22px}
-.sell-confirm-text span{color:#3B82F6;font-weight:900}
-.sell-confirm-btn{width:100%;padding:16px;border-radius:14px;border:none;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;transition:all .3s ease}
-.sell-confirm-btn.waiting{background:rgba(255,255,255,.06);color:rgba(255,255,255,.35);cursor:not-allowed}
-.sell-confirm-btn.ready{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;box-shadow:0 6px 20px rgba(59,130,246,.4)}
-.sell-confirm-cancel{width:100%;padding:12px;border-radius:14px;border:none;background:transparent;color:rgba(255,255,255,.4);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px}
-
-/* ═══ SUCCESS ═══ */
-.success-overlay{
-    position:fixed;inset:0;z-index:3000;
-    background:rgba(10,12,20,.97);
-    display:none;flex-direction:column;align-items:center;justify-content:center;
-    padding:40px 24px;
+.sell-confirm-text{
+    font-size:15px;font-weight:700;color:rgba(255,255,255,.85);
+    text-align:center;line-height:1.5;margin-bottom:22px;
 }
-.success-overlay.show{display:flex}
-.success-gif{width:130px;height:130px;object-fit:contain;margin-bottom:20px}
-.success-title{font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:6px}
-.success-price{font-size:14px;font-weight:700;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:5px;margin-bottom:28px}
-.success-price img{width:14px;height:14px}
-.success-ok{width:100%;max-width:320px;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(59,130,246,.4)}
-.success-ok:active{transform:scale(.97)}
+.sell-confirm-text span{color:#3B82F6;font-weight:900}
+.sell-confirm-btn{
+    width:100%;padding:16px;border-radius:14px;border:none;
+    font-family:inherit;font-size:15px;font-weight:800;
+    cursor:pointer;transition:all .25s;
+}
+.sell-confirm-btn.waiting{
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.35);
+    cursor:not-allowed;
+}
+.sell-confirm-btn.ready{
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;
+    box-shadow:0 6px 20px rgba(59,130,246,.4);
+}
+.sell-confirm-cancel{
+    width:100%;padding:12px;border-radius:14px;border:none;
+    background:transparent;color:rgba(255,255,255,.4);
+    font-family:inherit;font-size:13px;font-weight:700;
+    cursor:pointer;margin-top:8px;
+}
 
 /* ═══ BATCH MODAL ═══ */
 .batch-modal{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border:1px solid rgba(59,130,246,.2);
-    border-radius:22px;width:92%;max-width:400px;max-height:82vh;
+    border-radius:22px;width:100%;max-width:400px;max-height:82vh;
     overflow:hidden;display:flex;flex-direction:column;
     box-shadow:0 20px 60px rgba(0,0,0,.6);
 }
-.batch-modal-header{padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
+.batch-modal-header{
+    padding:18px 20px 14px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+    display:flex;align-items:center;justify-content:space-between;
+}
 .batch-modal-title{font-size:17px;font-weight:800;color:#fff}
-.batch-modal-close{width:34px;height:34px;border-radius:12px;border:none;background:rgba(249,105,153,.15);color:#F96999;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
+.batch-modal-close{
+    width:34px;height:34px;border-radius:12px;border:none;
+    background:rgba(249,105,153,.15);color:#F96999;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:16px;font-weight:700;
+}
 .batch-modal-list{flex:1;overflow-y:auto;padding:12px 16px;max-height:320px}
-.batch-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.batch-item{
+    display:flex;align-items:center;gap:12px;
+    padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);
+}
 .batch-item:last-child{border-bottom:none}
 .batch-item-num{font-size:12px;font-weight:800;color:rgba(255,255,255,.4);min-width:24px}
-.batch-item-img{width:42px;height:42px;border-radius:12px;object-fit:contain;background:rgba(0,0,0,.25);padding:4px}
+.batch-item-img{
+    width:42px;height:42px;border-radius:12px;
+    object-fit:contain;background:rgba(0,0,0,.25);padding:4px;
+}
 .batch-item-info{flex:1;min-width:0}
-.batch-item-name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.batch-item-price{font-size:12px;font-weight:800;color:#7CAEFF;display:flex;align-items:center;gap:4px}
+.batch-item-name{
+    font-size:13px;font-weight:700;color:#fff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.batch-item-price{
+    font-size:12px;font-weight:800;color:#7CAEFF;
+    display:flex;align-items:center;gap:4px;
+}
 .batch-item-price img{width:12px;height:12px}
-.batch-modal-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.2)}
-.batch-total{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.batch-modal-footer{
+    padding:16px 20px;
+    border-top:1px solid rgba(255,255,255,.06);
+    background:rgba(0,0,0,.2);
+}
+.batch-total{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:14px;
+}
 .batch-total-label{font-size:14px;color:rgba(255,255,255,.65);font-weight:700}
-.batch-total-value{font-size:20px;font-weight:900;color:#fff;display:flex;align-items:center;gap:6px}
+.batch-total-value{
+    font-size:20px;font-weight:900;color:#fff;
+    display:flex;align-items:center;gap:6px;
+}
 .batch-total-value img{width:18px;height:18px}
-.batch-confirm-btn{width:100%;padding:16px;border-radius:14px;border:none;font-size:15px;font-weight:800;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);font-family:inherit}
-.batch-confirm-btn.ready{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;box-shadow:0 6px 18px rgba(59,130,246,.4)}
+.batch-confirm-btn{
+    width:100%;padding:16px;border-radius:14px;border:none;
+    font-size:15px;font-weight:800;cursor:pointer;
+    transition:all .2s;
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.4);
+    font-family:inherit;
+}
+.batch-confirm-btn.ready{
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;
+    box-shadow:0 6px 18px rgba(59,130,246,.4);
+}
 .batch-confirm-btn:disabled{cursor:not-allowed}
 
-/* ═══ PORTAL PICKER — оверлей поверх всего ═══ */
-.mrkt-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1999;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(6px)}
+/* ═══ PORTAL PICKER ═══ */
+.mrkt-backdrop{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.7);
+    z-index:1999;
+    opacity:0;pointer-events:none;
+    transition:opacity .3s;
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
 .mrkt-backdrop.show{opacity:1;pointer-events:auto}
 .mrkt-overlay{
     position:fixed;left:0;right:0;bottom:0;z-index:2000;
@@ -475,8 +860,11 @@ body{
     box-shadow:0 -10px 50px rgba(0,0,0,.6);
 }
 .mrkt-overlay.show{transform:translateY(0);pointer-events:auto}
-
-.mrkt-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.mrkt-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 20px 14px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+}
 .mrkt-title{font-size:17px;font-weight:800;color:#fff}
 .mrkt-subtitle{font-size:12px;color:rgba(255,255,255,.4);margin-top:3px;font-weight:600}
 .mrkt-close-btn{
@@ -484,11 +872,11 @@ body{
     border:none;color:#F96999;
     width:34px;height:34px;border-radius:12px;
     font-size:16px;font-weight:700;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
     flex-shrink:0;margin-left:12px;
 }
 .mrkt-close-btn:active{transform:scale(.9)}
-
 .mrkt-fee-badge{
     background:rgba(255,215,0,.08);
     border:1px solid rgba(255,215,0,.2);
@@ -496,19 +884,17 @@ body{
     font-size:12px;color:#FFD700;font-weight:700;
     text-align:center;margin:12px 16px 0;
 }
-
 .mrkt-grid{
     display:grid;grid-template-columns:1fr 1fr;gap:10px;
     padding:12px 16px 16px;overflow-y:auto;flex:1;
 }
-
-/* ═══ MRKT CARD — закруглённые края PNG ═══ */
 .mrkt-card{
     background:rgba(255,255,255,.04);
     border:1.5px solid rgba(255,255,255,.08);
     border-radius:16px;padding:10px;
     display:flex;flex-direction:column;align-items:center;gap:6px;
     cursor:pointer;transition:all .15s;
+    min-width:0;
 }
 .mrkt-card:active{transform:scale(.97)}
 .mrkt-card.selected{
@@ -520,16 +906,14 @@ body{
     width:100%;aspect-ratio:1;
     background:rgba(0,0,0,.25);
     border:1.5px solid rgba(255,255,255,.08);
-    border-radius:14px;
-    padding:4px;
+    border-radius:14px;padding:4px;
     display:flex;align-items:center;justify-content:center;
     overflow:hidden;
 }
 .mrkt-frame-inner{
     width:100%;height:100%;
     background:rgba(0,0,0,.15);
-    border-radius:10px;
-    padding:4px;
+    border-radius:10px;padding:4px;
     display:flex;align-items:center;justify-content:center;
     overflow:hidden;
 }
@@ -539,86 +923,73 @@ body{
     border-radius:8px;
     display:block;
 }
-.mrkt-card-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.8);text-align:center;line-height:1.3;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mrkt-card-num{font-size:11px;font-weight:800;text-align:center;color:rgba(255,215,0,.8)}
+.mrkt-card-name{
+    font-size:11px;font-weight:700;
+    color:rgba(255,255,255,.8);
+    text-align:center;line-height:1.3;width:100%;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.mrkt-card-num{
+    font-size:11px;font-weight:800;text-align:center;
+    color:rgba(255,215,0,.8);
+}
 .mrkt-card-price{
     font-size:12px;font-weight:800;color:#7CAEFF;
-    text-align:center;display:flex;align-items:center;gap:3px;justify-content:center;
+    text-align:center;display:flex;align-items:center;
+    gap:3px;justify-content:center;
 }
 .mrkt-card-price img{width:12px;height:12px}
-.mrkt-footer{padding:14px 16px calc(var(--safe-bottom) + 14px);border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.mrkt-footer{
+    padding:14px 16px calc(var(--safe-bottom) + 14px);
+    border-top:1px solid rgba(255,255,255,.06);
+    flex-shrink:0;
+}
 .mrkt-confirm-btn{
     width:100%;padding:16px;border-radius:14px;border:none;
     background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;
+    color:#fff;font-size:15px;font-weight:800;
+    cursor:pointer;font-family:inherit;
     box-shadow:0 6px 20px rgba(59,130,246,.4);
-    transition:all .15s;
+    transition:transform .15s;
 }
 .mrkt-confirm-btn:active:not(:disabled){transform:scale(.97)}
 .mrkt-confirm-btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
-.mrkt-loading{text-align:center;color:rgba(255,255,255,.3);padding:48px 20px;font-size:14px;font-weight:600;grid-column:1/-1}
-.mrkt-empty{text-align:center;color:rgba(255,255,255,.3);padding:48px 20px;font-size:13px;font-weight:600;line-height:1.6;grid-column:1/-1}
+.mrkt-loading{
+    text-align:center;color:rgba(255,255,255,.3);
+    padding:48px 20px;font-size:14px;font-weight:600;
+    grid-column:1/-1;
+}
+.mrkt-empty{
+    text-align:center;color:rgba(255,255,255,.3);
+    padding:48px 20px;font-size:13px;font-weight:600;
+    line-height:1.6;grid-column:1/-1;
+}
 
-/* ═══ DEPOSIT ═══ */
-.deposit-modal{
-    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
-    border-radius:24px;width:92%;max-width:360px;
-    padding:24px 20px;border:1px solid rgba(59,130,246,.2);
+/* ═══ SUCCESS ═══ */
+.success-overlay{
+    position:fixed;inset:0;z-index:3000;
+    background:rgba(10,12,20,.97);
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    padding:40px 24px;
 }
-.deposit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.deposit-title{font-weight:800;font-size:18px;color:#fff}
-.deposit-close{width:34px;height:34px;border-radius:12px;border:none;background:rgba(249,105,153,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#F96999;font-size:16px;font-weight:700}
-.deposit-methods{display:flex;gap:12px}
-.deposit-method-btn{
-    flex:1;padding:20px 14px;border-radius:18px;
-    border:1.5px solid rgba(59,130,246,.2);
-    background:rgba(59,130,246,.08);
-    cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;
-    transition:all .15s;
+.success-overlay.show{display:flex}
+.success-gif{width:130px;height:130px;object-fit:contain;margin-bottom:20px}
+.success-title{font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:6px}
+.success-price{
+    font-size:14px;font-weight:700;
+    color:rgba(255,255,255,.55);
+    display:flex;align-items:center;gap:5px;
+    margin-bottom:28px;
 }
-.deposit-method-btn:active{transform:scale(.96);background:rgba(59,130,246,.15)}
-.deposit-method-btn img{width:48px;height:48px;object-fit:contain}
-.deposit-method-btn span{font-weight:800;font-size:13px;color:#fff}
-.deposit-method-btn.disabled{opacity:.35;pointer-events:none;filter:grayscale(1)}
-
-/* ═══ STARS DEPOSIT ═══ */
-.stars-deposit-modal{
-    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
-    border-radius:24px;width:92%;max-width:380px;
-    border:1px solid rgba(59,130,246,.2);overflow:hidden;
+.success-price img{width:14px;height:14px}
+.success-ok{
+    width:100%;max-width:320px;padding:16px;border-radius:14px;border:none;
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;font-size:15px;font-weight:800;
+    cursor:pointer;font-family:inherit;
+    box-shadow:0 6px 20px rgba(59,130,246,.4);
 }
-.stars-deposit-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06)}
-.stars-deposit-title{font-weight:800;font-size:16px;color:#fff}
-.stars-deposit-close{width:34px;height:34px;border-radius:12px;border:none;background:rgba(249,105,153,.15);cursor:pointer;color:#F96999;font-size:16px;font-weight:700}
-.stars-deposit-body{padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:16px}
-.stars-deposit-icon{width:64px;height:64px}
-.stars-deposit-label{text-align:center;color:rgba(255,255,255,.6);font-size:13px;line-height:1.5;font-weight:600}
-.stars-deposit-input-wrap{width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:4px}
-.stars-deposit-input{width:100%;padding:14px;border:none;border-radius:12px;background:transparent;color:#fff;font-size:20px;font-weight:800;text-align:center;font-family:inherit;outline:none}
-.stars-deposit-pay-btn{
-    width:100%;padding:15px;border-radius:14px;border:none;
-    background:linear-gradient(135deg,#FFD700,#FFA500);
-    color:#000;font-size:15px;font-weight:800;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;gap:8px;
-    box-shadow:0 6px 18px rgba(255,215,0,.3);
-}
-.stars-deposit-pay-btn:active{transform:scale(.97)}
-.stars-deposit-pay-btn img{width:20px;height:20px}
-
-/* ═══ PROMO ═══ */
-.promo-modal{
-    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
-    border-radius:24px;width:92%;max-width:360px;
-    padding:24px 20px;border:1px solid rgba(59,130,246,.2);
-}
-.promo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.promo-title{font-weight:800;font-size:18px;color:#fff}
-.promo-close{width:34px;height:34px;border-radius:12px;border:none;background:rgba(249,105,153,.15);cursor:pointer;color:#F96999;font-size:16px;font-weight:700}
-.promo-input-wrap{display:flex;gap:10px;margin-bottom:12px}
-.promo-input{flex:1;padding:14px 16px;border:2px solid rgba(59,130,246,.2);border-radius:14px;background:rgba(59,130,246,.08);color:#fff;font-size:16px;font-weight:800;text-transform:uppercase;font-family:inherit;letter-spacing:2px;text-align:center;outline:none}
-.promo-input:focus{border-color:rgba(59,130,246,.6)}
-.promo-submit{padding:14px 20px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px rgba(59,130,246,.4)}
-.promo-error{color:#F96999;font-size:12px;text-align:center;display:none;font-weight:700}
+.success-ok:active{transform:scale(.97)}
 
 /* ═══ GIFT REVEAL ═══ */
 .gift-reveal-overlay{
@@ -628,53 +999,45 @@ body{
     padding:40px 24px;
 }
 .gift-reveal-overlay.show{display:flex}
-.gift-reveal-img{width:160px;height:160px;object-fit:contain;filter:drop-shadow(0 0 40px rgba(59,130,246,.6));border-radius:24px}
-.gift-reveal-name{font-size:22px;font-weight:800;color:#fff;text-align:center;margin-top:20px;margin-bottom:20px}
-.gift-reveal-btn{padding:14px 32px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 6px 20px rgba(59,130,246,.4)}
+.gift-reveal-img{
+    width:160px;height:160px;object-fit:contain;
+    filter:drop-shadow(0 0 40px rgba(59,130,246,.6));
+    border-radius:24px;
+}
+.gift-reveal-name{
+    font-size:22px;font-weight:800;color:#fff;
+    text-align:center;margin-top:20px;margin-bottom:20px;
+}
+.gift-reveal-btn{
+    padding:14px 32px;border-radius:14px;border:none;
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;font-weight:800;font-size:15px;
+    cursor:pointer;box-shadow:0 6px 20px rgba(59,130,246,.4);
+}
 
 /* ═══ NOTIF ═══ */
 .notif{
-    position:fixed;top:calc(var(--safe-top) + 60px);
+    position:fixed;top:calc(var(--safe-top) + 70px);
     left:50%;transform:translateX(-50%) translateY(-120%);
     background:linear-gradient(135deg,#3B82F6,#2563EB);
     color:#fff;padding:12px 24px;border-radius:14px;
     font-weight:700;font-size:14px;z-index:10000;
-    transition:transform .4s,opacity .4s;
+    transition:transform .3s,opacity .3s;
     max-width:90%;text-align:center;
     box-shadow:0 8px 25px rgba(59,130,246,.4);
     opacity:0;pointer-events:none;
 }
 .notif.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
-.notif.error{background:linear-gradient(135deg,#E53935,#D32F2F);box-shadow:0 8px 25px rgba(229,57,53,.4)}
-
-/* ══════════════ BOTTOM NAV ══════════════ */
-.bottom-nav{
-    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
-    z-index:4000;width:100%;max-width:480px;height:76px;
-    padding:0 8px calc(var(--safe-bottom) + 6px);
-    background:rgba(28,34,51,.94);
-    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-    border-top:1px solid rgba(59,130,246,.08);
-    display:flex;align-items:center;justify-content:space-around;
+.notif.error{
+    background:linear-gradient(135deg,#E53935,#D32F2F);
+    box-shadow:0 8px 25px rgba(229,57,53,.4);
 }
-.bnav-item{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:3px;padding:6px 14px;border-radius:12px;
-    background:transparent;border:none;
-    color:rgba(255,255,255,.4);
-    font-family:inherit;font-weight:600;cursor:pointer;
-    transition:all .3s;text-decoration:none;
-    position:relative;min-height:56px;height:56px;margin:auto 0;
-}
-.bnav-item svg{width:22px;height:22px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.bnav-item span{font-size:10px;font-weight:700;line-height:1}
-.bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
-.bnav-item:active{transform:scale(.9)}
 
 @media(max-width:380px){
     .inv-grid{gap:6px}
     .inv-card-name{font-size:8px}
     .inv-card-price{font-size:9px}
+    .profile-stat-val{font-size:13px}
 }
 </style>
 </head>
@@ -684,29 +1047,40 @@ body{
 
 <!-- TOP BAR -->
 <div class="top-bar">
-    <div class="top-bar-left">
-        <div class="top-icon-btn" id="langBtn" onclick="toggleLang()"><img class="lang-flag" id="langFlag" src="/static/gifs/eg.gif" alt="EN"></div>
+    <div class="top-left">
+        <div class="top-icon-btn" id="langBtn" onclick="toggleLang()"><img class="lang-flag" id="langFlag" src="/static/gifs/ru.gif" alt="RU"></div>
         <div class="top-icon-btn" id="vibBtn" onclick="toggleVibration()"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
     </div>
-    <div class="top-bar-right">
-        <div class="bal-pill"><img src="/static/img/ton.png" alt="TON"><span id="hdrBalance">0.00</span></div>
+    <div class="top-right">
+        <div class="bal-pill"><img src="/static/img/ton.png" alt=""><span id="hdrBalance">0.00</span></div>
         <div class="bal-plus" onclick="openDeposit()">+</div>
     </div>
 </div>
 
 <!-- PROFILE -->
 <div class="profile-section">
-    <div class="avatar-wrap"><img id="userAvatar" src="/static/img/default_avatar.png" alt="Avatar"></div>
-    <div class="profile-name" id="userName">Loading...</div>
+    <div class="avatar-wrap" id="avatarWrap">
+        <div class="avatar-fallback" id="avatarFallback">U</div>
+    </div>
+    <div class="profile-name" id="userName">Загрузка...</div>
     <div class="profile-uid" id="userUid"></div>
     <div class="level-bar-wrap">
         <div class="level-bar-bg"><div class="level-bar-fill" id="levelBar" style="width:0%"></div></div>
         <div class="level-bar-text" id="levelText">0 / 100 TON</div>
     </div>
     <div class="profile-stats">
-        <div class="profile-stat"><div class="profile-stat-val"><img src="/static/img/ton.png" alt=""><span id="statBalance">0.00</span></div><div class="profile-stat-label">Баланс</div></div>
-        <div class="profile-stat"><div class="profile-stat-val"><span id="statGifts">0</span></div><div class="profile-stat-label">Подарки</div></div>
-        <div class="profile-stat"><div class="profile-stat-val"><span id="statLevel">1</span></div><div class="profile-stat-label">Уровень</div></div>
+        <div class="profile-stat">
+            <div class="profile-stat-val"><img src="/static/img/ton.png" alt=""><span id="statBalance">0.00</span></div>
+            <div class="profile-stat-label">Баланс</div>
+        </div>
+        <div class="profile-stat">
+            <div class="profile-stat-val"><span id="statGifts">0</span></div>
+            <div class="profile-stat-label">Подарки</div>
+        </div>
+        <div class="profile-stat">
+            <div class="profile-stat-val"><span id="statLevel">1</span></div>
+            <div class="profile-stat-label">Уровень</div>
+        </div>
     </div>
 </div>
 
@@ -716,7 +1090,7 @@ body{
     <button class="btn-action btn-outline" onclick="openPromoModal()">Промокод</button>
 </div>
 
-<!-- ADMIN BUTTON -->
+<!-- ADMIN -->
 <button class="admin-btn" id="adminBtn" onclick="window.location.href='/admin'" style="display:none">
     <svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg>
     Админ-панель
@@ -727,13 +1101,13 @@ body{
     <div class="ref-card-title">Рефералы</div>
     <div class="ref-card-desc">Пригласи друга — получи 10% с его депозитов</div>
     <div class="ref-stats">
-        <div class="ref-stat"><img src="/static/img/ton.png" alt="TON"><span id="refBalance">0.00</span></div>
+        <div class="ref-stat"><img src="/static/img/ton.png" alt=""><span id="refBalance">0.00</span></div>
         <div class="ref-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span id="refCount">0</span></div>
     </div>
     <div class="ref-links">
         <button class="ref-link" onclick="inviteFriends()">Пригласить</button>
         <button class="ref-link" onclick="copyRefLink()">Копировать</button>
-        <button class="ref-link" onclick="withdrawRefBalance()" style="color:var(--green)">Вывести</button>
+        <button class="ref-link" onclick="withdrawRefBalance()" style="color:#24C38E">Вывести</button>
     </div>
 </div>
 
@@ -787,8 +1161,7 @@ body{
             <button class="item-modal-btn item-modal-claim" id="itemModalClaimBtn" onclick="claimChallenge()" style="display:none">Получить</button>
         </div>
         <div class="sell-confirm-screen" id="sellConfirmScreen">
-            <img class="sell-confirm-gif" src="/static/gifs/quest.gif" alt="" onerror="this.style.display='none'">
-            <div class="sell-confirm-text">Точно продать подарок за <span id="sellConfirmPrice">0</span> TON?</div>
+            <div class="sell-confirm-text">Точно продать за <span id="sellConfirmPrice">0</span> TON?</div>
             <button class="sell-confirm-btn waiting" id="sellConfirmBtn" disabled onclick="doConfirmedSell()">Подождите 3...</button>
             <button class="sell-confirm-cancel" onclick="hideSellConfirm()">Отмена</button>
         </div>
@@ -799,14 +1172,14 @@ body{
 <div class="overlay" id="batchSellModal" onclick="if(event.target===this)closeBatchSellModal()">
     <div class="batch-modal">
         <div class="batch-modal-header">
-            <div class="batch-modal-title">Подтвердите</div>
+            <div class="batch-modal-title">Подтвердите продажу</div>
             <button class="batch-modal-close" onclick="closeBatchSellModal()">✕</button>
         </div>
         <div class="batch-modal-list" id="batchItemsList"></div>
         <div class="batch-modal-footer">
             <div class="batch-total">
                 <div class="batch-total-label">Итого:</div>
-                <div class="batch-total-value"><img src="/static/img/ton.png"><span>0.00</span> TON</div>
+                <div class="batch-total-value"><img src="/static/img/ton.png"><span id="batchTotalValue">0.00</span> TON</div>
             </div>
             <button class="batch-confirm-btn" id="batchConfirmBtn" onclick="confirmBatchSell()" disabled>Подождите 3...</button>
         </div>
@@ -827,6 +1200,20 @@ body{
     <div class="mrkt-grid" id="mrktGrid"><div class="mrkt-loading">Загрузка подарков...</div></div>
     <div class="mrkt-footer">
         <button class="mrkt-confirm-btn" id="mrktConfirmBtn" disabled onclick="confirmPortalWithdraw()">Выбрать подарок</button>
+    </div>
+</div>
+
+<!-- PROMO -->
+<div class="overlay" id="promoOverlay" onclick="if(event.target===this)closePromoModal()">
+    <div class="promo-modal">
+        <div class="promo-header">
+            <div class="promo-title">Промокод</div>
+            <button class="promo-close" onclick="closePromoModal()">✕</button>
+        </div>
+        <div class="promo-hint">Введите код, чтобы получить награду</div>
+        <input class="promo-input" id="promoInput" type="text" placeholder="КОД" maxlength="24" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+        <div class="promo-error" id="promoError"></div>
+        <button class="promo-submit" id="promoSubmitBtn" onclick="activatePromo()">Активировать</button>
     </div>
 </div>
 
@@ -869,21 +1256,6 @@ body{
     </div>
 </div>
 
-<!-- PROMO -->
-<div class="overlay" id="promoOverlay" onclick="if(event.target===this)closePromoModal()">
-    <div class="promo-modal">
-        <div class="promo-header">
-            <div class="promo-title">Промокод</div>
-            <button class="promo-close" onclick="closePromoModal()">✕</button>
-        </div>
-        <div class="promo-input-wrap">
-            <input class="promo-input" id="promoInput" type="text" placeholder="Введите код" maxlength="20" autocomplete="off">
-            <button class="promo-submit" id="promoSubmitBtn" onclick="activatePromo()">OK</button>
-        </div>
-        <div class="promo-error" id="promoError"></div>
-    </div>
-</div>
-
 <!-- GIFT REVEAL -->
 <div class="gift-reveal-overlay" id="giftRevealOverlay" onclick="closeGiftReveal()">
     <img class="gift-reveal-img" id="giftRevealImg" src="">
@@ -893,7 +1265,7 @@ body{
 
 <!-- SUCCESS -->
 <div class="success-overlay" id="successOverlay">
-    <img class="success-gif" id="successGif" src="/static/gifs/Hlop.gif" alt="">
+    <img class="success-gif" id="successGif" src="/static/gifs/Hlop.gif" alt="" onerror="this.style.display='none'">
     <div class="success-title" id="successTitle"></div>
     <div class="success-price" id="successPrice"></div>
     <button class="success-ok" onclick="closeSuccessOverlay()">OK</button>
@@ -928,14 +1300,12 @@ body{
 let user = null;
 let inventory = [];
 let selectedItem = null;
-let levelRewards = [];
 let selectMode = false;
 let selectedItems = new Set();
 const ADMIN_ID = 5257227756;
+const _imgCache = {};
 
 function $(id){ return document.getElementById(id); }
-
-function getTonIcon(){ return '/static/img/ton.png'; }
 function starsToTon(s){ return Number(s || 0) / 100; }
 function formatTon(t){
     var v = parseFloat(t) || 0;
@@ -947,7 +1317,10 @@ function formatTon(t){
 
 /* Vibration */
 let vibrationOn = localStorage.getItem('vibration') !== 'off';
-function initVibration(){ var b = $('vibBtn'); if(b) b.classList.toggle('vibration-off', !vibrationOn); }
+function initVibration(){
+    var b = $('vibBtn');
+    if(b) b.classList.toggle('vibration-off', !vibrationOn);
+}
 function toggleVibration(){
     vibrationOn = !vibrationOn;
     localStorage.setItem('vibration', vibrationOn ? 'on' : 'off');
@@ -965,7 +1338,7 @@ function vibrateIfOn(){
     if(navigator.vibrate) navigator.vibrate(30);
 }
 
-/* Lang (простой переключатель) */
+/* Lang */
 let currentLang = localStorage.getItem('app_lang') || 'ru';
 function initLang(){
     var f = $('langFlag');
@@ -1016,29 +1389,48 @@ async function initUser(){
             user = d.user;
             updateProfile();
             loadInventory();
-            loadLevelRewards();
             if(String(user.id) === String(ADMIN_ID)){
                 var ab = $('adminBtn');
                 if(ab) ab.style.display = 'flex';
             }
         }
-    }catch(e){
-        console.error('initUser:', e);
-        showNotif('Ошибка загрузки', true);
-    }
+    }catch(e){ console.error('initUser:', e); showNotif('Ошибка загрузки', true); }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   UPDATE PROFILE — с чётким аватаром
+   ══════════════════════════════════════════════════════════════ */
 function updateProfile(){
     if(!user) return;
     var name = user.first_name || 'User';
     var level = user.current_level || 1;
+
     var nm = $('userName'); if(nm) nm.textContent = name;
     var uid = $('userUid'); if(uid) uid.textContent = 'Уровень ' + level;
 
-    var avatar = $('userAvatar');
-    if(avatar){
-        var isDemo = !user.photo_url || user.photo_url === '' || String(user.photo_url).indexOf('default') !== -1;
-        avatar.src = isDemo ? '/static/img/default_avatar.png' : user.photo_url;
+    /* ═══ АВАТАР — с fallback на букву ═══ */
+    var avatarWrap = $('avatarWrap');
+    if(avatarWrap){
+        var photoUrl = user.photo_url;
+        var validPhoto = photoUrl && photoUrl !== '' && String(photoUrl).indexOf('default_avatar') === -1;
+        if(validPhoto){
+            // Загружаем img
+            var img = document.createElement('img');
+            img.alt = 'Avatar';
+            img.onerror = function(){
+                // Не загрузилась — показываем букву
+                avatarWrap.innerHTML = '<div class="avatar-fallback">' + (name[0] || 'U').toUpperCase() + '</div>';
+            };
+            img.onload = function(){
+                // Убираем fallback
+                avatarWrap.innerHTML = '';
+                avatarWrap.appendChild(img);
+            };
+            img.src = photoUrl;
+        } else {
+            // Сразу fallback
+            avatarWrap.innerHTML = '<div class="avatar-fallback">' + (name[0] || 'U').toUpperCase() + '</div>';
+        }
     }
 
     var bal = formatTon(starsToTon(user.balance_stars));
@@ -1064,14 +1456,6 @@ function updateProfile(){
     var rc = $('refCount'); if(rc) rc.textContent = user.referral_count || 0;
 }
 
-async function loadLevelRewards(){
-    try{
-        var r = await fetch('/api/level-rewards');
-        var d = await r.json();
-        if(d.success) levelRewards = d.levels || [];
-    }catch(e){ console.error(e); }
-}
-
 /* ══════════════════════════════════════════════════════════════
    INVENTORY
    ══════════════════════════════════════════════════════════════ */
@@ -1095,6 +1479,18 @@ function isUpgraded(item){
     return false;
 }
 
+function getGiftImage(item){
+    var key = item.id + '_' + (item.gift_image || '');
+    if(_imgCache[key]) return _imgCache[key];
+    var img = item.gift_image || '';
+    if(!img){
+        if(item.fragment_slug) img = 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp';
+        else img = '/static/img/default_gift.png';
+    }
+    _imgCache[key] = img;
+    return img;
+}
+
 function renderInventory(){
     var c = $('inventoryContainer');
     if(!c) return;
@@ -1110,12 +1506,13 @@ function renderInventory(){
         c.innerHTML = '<div class="inv-empty">' + (searchVal ? 'Ничего не найдено' : 'Инвентарь пуст') + '</div>';
         return;
     }
-    c.innerHTML = '<div class="inv-grid">' + filtered.map(function(item){
+
+    var html = '<div class="inv-grid">';
+    filtered.forEach(function(item){
         var ton = starsToTon(item.gift_value);
-        var slug = item.fragment_slug || '';
-        var fragmentFallback = slug ? 'https://fragment.com/file/gifts/' + slug + '/thumb.webp' : '/static/img/default_gift.png';
-        var onerr = "this.onerror=null;this.src='" + fragmentFallback + "'";
         var upgraded = isUpgraded(item);
+        var imgSrc = getGiftImage(item);
+        var onerr = "this.onerror=null;this.src='/static/img/default_gift.png'";
 
         var chBadge = (item.challenge && !item.challenge.is_completed)
             ? '<div class="inv-card-challenge"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
@@ -1126,25 +1523,30 @@ function renderInventory(){
         if(upgraded) cardClass += ' inv-card-upgraded';
         if(selectedItems.has(item.id)) cardClass += ' selected';
 
-        var imgSrc = item.gift_image || fragmentFallback;
         var click = selectMode ? 'toggleSelectItem(' + item.id + ')' : 'openItemModal(' + item.id + ')';
 
-        /* ═══ Upgraded: только картинка, обрезанные края ═══ */
         if(upgraded){
-            return '<div class="' + cardClass + '" onclick="' + click + '">'
-                + '<img class="inv-card-img" src="' + imgSrc + '" alt="" loading="lazy" onerror="' + onerr + '">'
+            /* Upgraded: только картинка в квадрате */
+            html += '<div class="' + cardClass + '" onclick="' + click + '">'
+                + '<div class="inv-card-img-wrap">'
+                + '<img src="' + imgSrc + '" alt="" loading="lazy" onerror="' + onerr + '">'
+                + '</div>'
                 + chBadge
                 + '</div>';
+        } else {
+            /* Обычный подарок */
+            html += '<div class="' + cardClass + '" onclick="' + click + '">'
+                + '<div class="inv-card-img-wrap">'
+                + '<img src="' + imgSrc + '" alt="" loading="lazy" onerror="' + onerr + '">'
+                + '</div>'
+                + chBadge
+                + '<div class="inv-card-name">' + (item.gift_name || '') + '</div>'
+                + '<div class="inv-card-price"><img src="/static/img/ton.png">' + formatTon(ton) + '</div>'
+                + '</div>';
         }
-
-        /* ═══ Обычный подарок ═══ */
-        return '<div class="' + cardClass + '" onclick="' + click + '">'
-            + '<img class="inv-card-img" src="' + imgSrc + '" alt="" loading="lazy" onerror="' + onerr + '">'
-            + chBadge
-            + '<div class="inv-card-name">' + (item.gift_name || '') + '</div>'
-            + '<div class="inv-card-price"><img src="' + getTonIcon() + '">' + formatTon(ton) + '</div>'
-            + '</div>';
-    }).join('') + '</div>';
+    });
+    html += '</div>';
+    c.innerHTML = html;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1191,7 +1593,7 @@ function openBatchSellModal(){
             tot += item.gift_value || 0;
             html += '<div class="batch-item">'
                 + '<div class="batch-item-num">' + idx + '.</div>'
-                + '<img class="batch-item-img" src="' + (item.gift_image || '/static/img/gift.png') + '" alt="">'
+                + '<img class="batch-item-img" src="' + getGiftImage(item) + '" alt="" onerror="this.src=\'/static/img/default_gift.png\'">'
                 + '<div class="batch-item-info">'
                 + '<div class="batch-item-name">' + (item.gift_name || '') + '</div>'
                 + '<div class="batch-item-price"><img src="/static/img/ton.png">' + formatTon(ton) + ' TON</div>'
@@ -1200,8 +1602,7 @@ function openBatchSellModal(){
         }
     });
     list.innerHTML = html;
-    var btv = document.querySelector('#batchTotalValue span');
-    if(btv) btv.textContent = formatTon(starsToTon(tot));
+    var btv = $('batchTotalValue'); if(btv) btv.textContent = formatTon(starsToTon(tot));
     var bsm = $('batchSellModal'); if(bsm) bsm.classList.add('show');
     startBatchCountdown();
 }
@@ -1322,7 +1723,7 @@ function openItemModal(itemId){
         if(sellBtn){ sellBtn.style.display = ''; sellBtn.textContent = 'Продать'; sellBtn.disabled = item.is_withdrawing; }
         if(withBtn){ withBtn.style.display = ''; withBtn.textContent = 'Вывод'; withBtn.disabled = item.is_withdrawing; }
     } else {
-        if(mainImg){ mainImg.style.display = ''; mainImg.src = item.gift_image; }
+        if(mainImg){ mainImg.style.display = ''; mainImg.src = getGiftImage(item); }
         if(mainName){ mainName.style.display = ''; mainName.textContent = item.gift_name; }
         if(mainPrice){ mainPrice.style.display = ''; var imp = $('itemModalPrice'); if(imp) imp.textContent = formatTon(ton); }
 
@@ -1682,20 +2083,20 @@ function resetStarsBtn(amount){
 function openPromoModal(){
     vibrateIfOn();
     var po = $('promoOverlay'); if(po) po.classList.add('show');
-    var pe = $('promoError'); if(pe) pe.style.display = 'none';
-    var pi = $('promoInput'); if(pi){ pi.value = ''; pi.focus(); }
+    var pe = $('promoError'); if(pe){ pe.classList.remove('show'); pe.textContent = ''; }
+    var pi = $('promoInput'); if(pi){ pi.value = ''; setTimeout(function(){ pi.focus(); }, 100); }
 }
 function closePromoModal(){ var po = $('promoOverlay'); if(po) po.classList.remove('show'); }
 
 async function activatePromo(){
     var pi = $('promoInput');
     var pe = $('promoError');
-    var code = pi ? pi.value.trim() : '';
-    if(!code){ if(pe){ pe.textContent = 'Введите код'; pe.style.display = 'block'; } return; }
+    var code = pi ? pi.value.trim().toUpperCase() : '';
+    if(!code){ if(pe){ pe.textContent = 'Введите код'; pe.classList.add('show'); } return; }
     if(!user) return;
     var btn = $('promoSubmitBtn');
-    if(btn) btn.disabled = true;
-    if(pe) pe.style.display = 'none';
+    if(btn){ btn.disabled = true; btn.textContent = 'Проверка...'; }
+    if(pe){ pe.classList.remove('show'); pe.textContent = ''; }
     try{
         var r = await fetch('/api/activate-promo', {
             method:'POST',
@@ -1705,6 +2106,7 @@ async function activatePromo(){
         var d = await r.json();
         if(d.success){
             vibrateIfOn();
+            closePromoModal();
             if(d.reward_type === 'gift_challenge'){
                 showGiftReveal(d.gift_image, d.gift_name);
             } else if(d.reward_type === 'case_open'){
@@ -1714,14 +2116,13 @@ async function activatePromo(){
             }
             await refreshUserData();
             loadInventory();
-            if(pi) pi.value = '';
         } else {
-            if(pe){ pe.textContent = d.error || 'Ошибка'; pe.style.display = 'block'; }
+            if(pe){ pe.textContent = d.error || 'Неверный код'; pe.classList.add('show'); }
         }
     }catch(e){
-        if(pe){ pe.textContent = 'Ошибка'; pe.style.display = 'block'; }
+        if(pe){ pe.textContent = 'Ошибка сети'; pe.classList.add('show'); }
     }
-    if(btn) btn.disabled = false;
+    if(btn){ btn.disabled = false; btn.textContent = 'Активировать'; }
 }
 
 document.addEventListener('DOMContentLoaded', function(){
