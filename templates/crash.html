@@ -13,13 +13,59 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
 body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1C2233;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
-.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:80px;padding-top:calc(env(safe-area-inset-top,20px) + 50px + 3vh)}
 
-/* BOTTOM NAV */
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:4000;width:100%;max-width:480px;height:72px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 8px);background:rgba(28,34,51,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-top:1px solid rgba(59,130,246,.08);display:flex;align-items:center;justify-content:space-around}
-.bottom-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 16px;border-radius:12px;background:transparent;border:none;color:rgba(255,255,255,.4);font-family:inherit;font-weight:600;cursor:pointer;transition:all .3s;text-decoration:none;position:relative}
-.bottom-nav-item svg{width:24px;height:24px;flex-shrink:0;stroke:currentColor;fill:none}
-.bottom-nav-item span{font-size:10px;font-weight:600}
+/* Всё приподнято на 40px вверх от прошлого */
+.container{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    padding-bottom:90px;
+    padding-top:calc(env(safe-area-inset-top,20px) + 40px);
+}
+
+/* ══════════════ BOTTOM NAV — центрирование по вертикали ══════════════ */
+.bottom-nav{
+    position:fixed;
+    bottom:0;left:50%;
+    transform:translateX(-50%);
+    z-index:4000;
+    width:100%;max-width:480px;
+    height:76px;
+    padding:0 8px calc(env(safe-area-inset-bottom,0) + 6px);
+    background:rgba(28,34,51,.92);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    border-top:1px solid rgba(59,130,246,.08);
+    display:flex;
+    align-items:center;
+    justify-content:space-around;
+}
+.bottom-nav-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;      /* центрируем по вертикали */
+    gap:3px;
+    padding:6px 14px;
+    border-radius:12px;
+    background:transparent;
+    border:none;
+    color:rgba(255,255,255,.4);
+    font-family:inherit;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .3s;
+    text-decoration:none;
+    position:relative;
+    min-height:56px;             /* чтобы иконка+текст центрировались */
+    height:56px;
+    margin:auto 0;               /* центрируем относительно строки */
+}
+.bottom-nav-item svg{width:22px;height:22px;flex-shrink:0;stroke:currentColor;fill:none}
+.bottom-nav-item span{font-size:10px;font-weight:600;line-height:1}
 .bottom-nav-item.active{background:rgba(255,255,255,.08);color:#fff}
 .bottom-nav-item:active{transform:scale(.9)}
 
@@ -65,10 +111,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .countdown-display.active{opacity:1;animation:cdPop .35s cubic-bezier(.22,.9,.2,1)}
 @keyframes cdPop{0%{transform:scale(2.2);opacity:0}60%{transform:scale(.95);opacity:1}100%{transform:scale(1);opacity:1}}
 
-/* LIVE MULTIPLIER */
-.live-mult{position:absolute;top:8%;left:50%;transform:translateX(-50%);font-family:inherit;font-weight:900;font-size:min(68px,14vw);color:#fff;text-shadow:0 0 40px rgba(59,130,246,.5);z-index:3;opacity:0;transition:opacity .25s;letter-spacing:-2px;pointer-events:none}
-.live-mult.visible{opacity:1}
-
 /* ROCKET */
 .rocket-wrap{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);z-index:2;transition:opacity .3s;opacity:1;will-change:transform,opacity}
 .rocket-wrap img{width:170px;height:170px;object-fit:contain;border:none;background:transparent;transition:transform .3s ease-out;will-change:transform;transform:translateZ(0)}
@@ -78,47 +120,13 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .rocket-wrap.flying.showing-gift img{transform:scale(1.05) translateZ(0)}
 .rocket-wrap.cashed-out img{filter:grayscale(100%) brightness(.7)}
 
-/* BOOM — чёткая одноразовая анимация */
-.boom-wrap{
-    position:absolute;
-    left:50%;top:50%;
-    transform:translate(-50%,-50%);
-    z-index:10;
-    pointer-events:none;
-    display:none;
-    align-items:center;
-    justify-content:center;
-    will-change:transform,opacity;
-}
-.boom-wrap img{
-    width:200px;
-    height:200px;
-    object-fit:contain;
-    display:block;
-    transform:scale(0);
-    opacity:0;
-}
-.boom-wrap.playing{
-    display:flex;
-    animation:boomPlay 1.8s cubic-bezier(.22,.9,.25,1) forwards;
-}
-.boom-wrap.playing img{
-    animation:boomImgPlay 1.8s cubic-bezier(.22,.9,.25,1) forwards;
-}
-@keyframes boomPlay{
-    0%{transform:translate(-50%,-50%) scale(.1);opacity:0}
-    8%{transform:translate(-50%,-50%) scale(1.25);opacity:1}
-    15%{transform:translate(-50%,-50%) scale(1);opacity:1}
-    75%{transform:translate(-50%,-50%) scale(1);opacity:1}
-    100%{transform:translate(-50%,-50%) scale(1.4);opacity:0}
-}
-@keyframes boomImgPlay{
-    0%{transform:scale(0) rotate(-30deg);opacity:0}
-    8%{transform:scale(1.3) rotate(10deg);opacity:1}
-    15%{transform:scale(1) rotate(0deg);opacity:1}
-    75%{transform:scale(1) rotate(0deg);opacity:1}
-    100%{transform:scale(1.2) rotate(0deg);opacity:0}
-}
+/* BOOM */
+.boom-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;display:none;align-items:center;justify-content:center;will-change:transform,opacity}
+.boom-wrap img{width:200px;height:200px;object-fit:contain;display:block;transform:scale(0);opacity:0}
+.boom-wrap.playing{display:flex;animation:boomPlay 1.8s cubic-bezier(.22,.9,.25,1) forwards}
+.boom-wrap.playing img{animation:boomImgPlay 1.8s cubic-bezier(.22,.9,.25,1) forwards}
+@keyframes boomPlay{0%{transform:translate(-50%,-50%) scale(.1);opacity:0}8%{transform:translate(-50%,-50%) scale(1.25);opacity:1}15%{transform:translate(-50%,-50%) scale(1);opacity:1}75%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(1.4);opacity:0}}
+@keyframes boomImgPlay{0%{transform:scale(0) rotate(-30deg);opacity:0}8%{transform:scale(1.3) rotate(10deg);opacity:1}15%{transform:scale(1) rotate(0deg);opacity:1}75%{transform:scale(1) rotate(0deg);opacity:1}100%{transform:scale(1.2) rotate(0deg);opacity:0}}
 
 /* BET AREA — ЕДИНАЯ КНОПКА */
 .bet-area{padding:8px 12px 4px;position:relative;z-index:100}
@@ -150,14 +158,11 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .action-btn:not(:disabled):active{transform:scale(.98)}
 .action-btn .btn-text{display:inline-block;pointer-events:none}
 
-/* State: cancel — красная */
 .action-btn.state-cancel{
     background:linear-gradient(135deg,#E8527A,#C42247);
     box-shadow:0 8px 25px rgba(232,82,122,.25);
     border-color:rgba(232,82,122,.3);
 }
-
-/* State: placed — серая неактивная */
 .action-btn.state-placed{
     background:rgba(255,255,255,.05);
     color:rgba(255,255,255,.35);
@@ -165,8 +170,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     border-color:rgba(255,255,255,.08);
     cursor:default;
 }
-
-/* State: cashout — зелёная, с подарками */
 .action-btn.state-cashout{
     background:linear-gradient(135deg,#1EE44C,#18b83e);
     color:#061510;
@@ -175,8 +178,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     padding:12px 14px;
     justify-content:space-between;
 }
-
-/* State: crashed — красная заблокированная */
 .action-btn.state-crashed{
     background:linear-gradient(135deg,#E8527A,#C42247);
     color:#fff;
@@ -187,8 +188,15 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     padding:12px 14px;
     justify-content:space-between;
 }
+.action-btn.state-syncing{
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;
+    cursor:wait;
+    pointer-events:none;
+    padding:12px 14px;
+    justify-content:space-between;
+}
 
-/* Составляющие кэшаута */
 .action-btn .cb-gift-side{
     width:42px;height:42px;flex-shrink:0;object-fit:contain;
     border:none;background:transparent;padding:0;
@@ -198,6 +206,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 }
 .action-btn.state-cashout .cb-gift-side{display:block}
 .action-btn.state-crashed .cb-gift-side{display:block;opacity:.5;filter:grayscale(.5)}
+.action-btn.state-syncing .cb-gift-side{display:block;opacity:.7}
 .action-btn .cb-gift-side.empty{opacity:.3}
 
 .action-btn .cb-center{
@@ -210,9 +219,19 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     min-width:0;
 }
 .action-btn.state-cashout .cb-center,
-.action-btn.state-crashed .cb-center{display:flex}
+.action-btn.state-crashed .cb-center,
+.action-btn.state-syncing .cb-center{display:flex}
 .action-btn .cb-label{font-size:12px;font-weight:800;letter-spacing:1px;opacity:.85;text-transform:uppercase}
 .action-btn .cb-win{font-size:20px;font-weight:900;letter-spacing:.3px;white-space:nowrap}
+
+.action-btn .cb-spinner{
+    width:22px;height:22px;
+    border:2.5px solid rgba(255,255,255,.25);
+    border-top-color:#fff;
+    border-radius:50%;
+    animation:btnSpin .8s linear infinite;
+}
+@keyframes btnSpin{to{transform:rotate(360deg)}}
 
 /* HISTORY */
 .history-section{padding:4px 12px 2px}
@@ -274,7 +293,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .confirm-bet-btn:disabled{opacity:.45;cursor:not-allowed}
 
 /* AUTO WITHDRAW ROW */
-.auto-cashout-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;padding:10px;border-radius:12px;background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.15);min-height:58px;height:58px;box-sizing:border-box}
+.auto-cashout-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;padding:10px;border-radius:12px;background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.15);min-height:58px;height:58px}
 .auto-cashout-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:0 0 48%;max-width:48%}
 .auto-cashout-label{font-family:inherit;font-weight:800;font-size:12px;color:#1EE44C;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .auto-cashout-sub{font-size:9px;color:rgba(255,255,255,.5);line-height:1.1}
@@ -450,7 +469,6 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 
     <div class="game-field" id="gameField">
         <div class="countdown-display" id="cdDisplay"></div>
-        <div class="live-mult" id="liveMult">1.00x</div>
         <div class="rocket-wrap hide" id="rocketWrap">
             <img src="/static/gifs/rockets/crash.gif" alt="" id="rocketImg">
         </div>
@@ -641,6 +659,7 @@ var pendingBet = null;
 var _betLocked = false;
 var _giftLocked = false;
 var _cashoutLocked = false;
+var _syncingWin = false;
 var autoCashoutDone = false;
 var crashHandled = false;
 
@@ -658,7 +677,6 @@ var lastPollServerMult = 1.0;
 
 /* RAF */
 var _rafLast = 0;
-var _lastLiveMultUpdate = 0;
 var _lastCoeffUpdate = 0;
 var _lastBtnUpdate = 0;
 var _lastRocketUpdate = 0;
@@ -964,10 +982,11 @@ function getAchievableGift(potentialWin){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   POLLING
+   POLLING — setTimeout-цепочка, не накапливается
    ══════════════════════════════════════════════════════════════ */
+var _pollTimer = null;
 var _polling = false;
-var _pollErrors = 0;
+var _pollDelay = 400;
 
 async function pollStatus(){
     if(!authReady) return;
@@ -982,19 +1001,22 @@ async function pollStatus(){
 
         var r = await fetch(url, { signal: ac.signal });
         clearTimeout(tId);
-        if(!r.ok) throw new Error('bad status');
-
+        if(!r.ok) throw new Error('bad');
         var d = await r.json();
-        _pollErrors = 0;
-
-        if(!d || !d.game) return;
-        applyServerState(d);
-
+        _pollDelay = 400;
+        if(d && d.game) applyServerState(d);
     }catch(e){
-        _pollErrors++;
+        /* растём при ошибках, но не блокируем */
+        _pollDelay = Math.min(2000, _pollDelay + 200);
     }finally{
         _polling = false;
+        scheduleNextPoll();
     }
+}
+
+function scheduleNextPoll(){
+    if(_pollTimer) clearTimeout(_pollTimer);
+    _pollTimer = setTimeout(function(){ pollStatus(); }, _pollDelay);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1010,15 +1032,11 @@ function applyServerState(d){
     var newTarget = parseFloat(g.target_multiplier) || 5.0;
 
     var isNewRound = (gameId !== 0) && (newGameId !== gameId);
-
-    if(isNewRound){
-        resetRoundState();
-    }
+    if(isNewRound) resetRoundState();
 
     prevStatus = status;
     status = newStatus;
 
-    /* counting start */
     if(newStatus === 'counting' && (prevStatus !== 'counting' || countingStartedAt === 0)){
         countingStartedAt = now;
         countingDuration = 5.0;
@@ -1027,7 +1045,6 @@ function applyServerState(d){
         lastCountdownAt = 0;
     }
 
-    /* flying start */
     if(newStatus === 'flying' && prevStatus !== 'flying'){
         if(!goShownForRound){
             goShownForRound = true;
@@ -1047,7 +1064,6 @@ function applyServerState(d){
         }
     }
 
-    /* flying growth */
     if(newStatus === 'flying'){
         if(newServMult > lastPollServerMult && lastPollAt > 0){
             var elapsed = now - lastPollAt;
@@ -1069,18 +1085,15 @@ function applyServerState(d){
         targetMult = newTarget;
     }
 
-    /* crash */
     if(newStatus === 'crashed' && prevStatus !== 'crashed'){
         triggerCrashAnimation(newServMult);
     }
 
-    /* balance */
     if(d.user_balance !== undefined && d.user_balance !== null && userData){
         userData.balance_stars = d.user_balance;
         updateBalanceUI();
     }
 
-    /* user bet */
     if(d.user_bet && d.user_bet.status === 'active'){
         if(!hasBet){
             hasBet = true;
@@ -1113,19 +1126,20 @@ function resetRoundState(){
     cashedOutBetAmt = 0;
     autoCashoutDone = false;
     _cashoutLocked = false;
+    _syncingWin = false;
     crashHandled = false;
 
     var rw = $('rocketWrap');
     var bm = $('boomWrap');
-    var lm = $('liveMult');
     var cd = $('cdDisplay');
     var gf = $('gameField');
+    var coeff = $('coeffBox');
 
     if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','showing-gift','cashed-out'); }
     if(bm){ bm.classList.remove('playing'); }
-    if(lm) lm.classList.remove('visible');
     if(cd){ cd.classList.remove('active'); cd.textContent = ''; }
     if(gf) gf.classList.remove('flying');
+    if(coeff){ coeff.className = 'coeff-box waiting'; coeff.textContent = 'Waiting'; }
 
     var ri = $('rocketImg');
     if(ri){
@@ -1157,7 +1171,6 @@ function triggerCrashAnimation(finalMult){
     var bimg = $('boomImg');
     var rw = $('rocketWrap');
     var gf = $('gameField');
-    var lm = $('liveMult');
     var coeff = $('coeffBox');
 
     servMult = finalMult;
@@ -1165,7 +1178,6 @@ function triggerCrashAnimation(finalMult){
 
     if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
     if(gf) gf.classList.remove('flying');
-    if(lm) lm.classList.remove('visible');
     if(coeff){
         coeff.className = 'coeff-box crashed';
         coeff.textContent = finalMult.toFixed(2) + 'x';
@@ -1218,7 +1230,6 @@ function updateGameFieldUI(){
     var rw = $('rocketWrap');
     var bm = $('boomWrap');
     var gf = $('gameField');
-    var lm = $('liveMult');
     var coeff = $('coeffBox');
     var cd = $('cdDisplay');
 
@@ -1228,7 +1239,6 @@ function updateGameFieldUI(){
         if(ri){ ri.style.transform = ''; ri.style.animation = ''; }
         if(bm) bm.classList.remove('playing');
         if(gf) gf.classList.remove('flying');
-        if(lm) lm.classList.remove('visible');
         if(coeff){
             coeff.className = 'coeff-box waiting';
             coeff.textContent = 'Waiting';
@@ -1237,7 +1247,6 @@ function updateGameFieldUI(){
         if(rw) rw.classList.remove('hide');
         if(bm) bm.classList.remove('playing');
         if(gf) gf.classList.add('flying');
-        if(lm) lm.classList.add('visible');
         if(coeff){
             coeff.className = 'coeff-box';
             coeff.textContent = dispMult.toFixed(2) + 'x';
@@ -1245,7 +1254,6 @@ function updateGameFieldUI(){
     } else if(status === 'crashed'){
         if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
         if(gf) gf.classList.remove('flying');
-        if(lm) lm.classList.remove('visible');
         if(coeff){
             coeff.className = 'coeff-box crashed';
             coeff.textContent = servMult.toFixed(2) + 'x';
@@ -1255,7 +1263,7 @@ function updateGameFieldUI(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ACTION BUTTON — ЕДИНАЯ, БЕЗ ДУБЛИРОВАНИЯ
+   ACTION BUTTON — единая, без дублирования
    ══════════════════════════════════════════════════════════════ */
 function updateActionButton(){
     var btn = $('actionBtn');
@@ -1265,7 +1273,16 @@ function updateActionButton(){
     var html = '';
     var disabled = false;
 
-    if(status === 'crashed'){
+    if(_syncingWin){
+        newState = 'syncing';
+        var cgS = getAchievableGift(cashedOutBetAmt * servMult);
+        var cgiS = cgS ? getGiftImage(cgS) : '/static/img/gift.png';
+        html = '<img class="cb-gift-side empty" src="' + cgiS + '" alt="">'
+            + '<div class="cb-center"><span class="cb-label">Syncing</span>'
+            + '<span class="cb-win" style="font-size:14px">Please wait...</span></div>'
+            + '<div class="cb-spinner"></div>';
+        disabled = true;
+    } else if(status === 'crashed'){
         newState = 'crashed';
         var crashGift = cashedOutBetAmt > 0 ? getAchievableGift(cashedOutBetAmt * servMult) : null;
         var crashImg = crashGift ? getGiftImage(crashGift) : '/static/img/gift.png';
@@ -1300,7 +1317,7 @@ function updateActionButton(){
         html = '<span class="btn-text">Place bet</span>';
     }
 
-    /* Для cashout — если только win обновился, точечно меняем текст */
+    /* Точечное обновление win в state-cashout */
     if(newState === 'cashout' && btn.classList.contains('state-cashout')){
         var currentMult2 = Math.max(dispMult, servMult);
         var curWin2 = Math.floor((betAmt || 0) * currentMult2);
@@ -1327,7 +1344,6 @@ function updateActionButton(){
         return;
     }
 
-    /* Проверяем, нужно ли перестроить */
     var key = newState + '|' + (disabled ? '1' : '0');
     if(_lastBtnKey === key) return;
     _lastBtnKey = key;
@@ -1337,6 +1353,7 @@ function updateActionButton(){
     else if(newState === 'placed') btn.classList.add('state-placed');
     else if(newState === 'cashout') btn.classList.add('state-cashout');
     else if(newState === 'crashed') btn.classList.add('state-crashed');
+    else if(newState === 'syncing') btn.classList.add('state-syncing');
 
     btn.innerHTML = html;
     btn.disabled = disabled;
@@ -1360,7 +1377,6 @@ function onActionBtnClick(){
     openBetModal();
 }
 
-/* Старые обёртки чтобы не падало */
 function updateBetButtonUI(){ updateActionButton(); }
 function updateCashoutButtonUI(){ updateActionButton(); }
 
@@ -1370,7 +1386,6 @@ function updateCashoutButtonUI(){ updateActionButton(); }
 function renderLoop(ts){
     try{
         requestAnimationFrame(renderLoop);
-
         if(document.hidden) return;
 
         var now = ts || performance.now();
@@ -1378,7 +1393,6 @@ function renderLoop(ts){
         if(dt > 100) dt = 100;
         _rafLast = now;
 
-        /* COUNTING */
         if(status === 'counting' && countingStartedAt > 0){
             var elapsed = (now - countingStartedAt) / 1000;
             var remaining = countingDuration - elapsed;
@@ -1399,7 +1413,6 @@ function renderLoop(ts){
             }
         }
 
-        /* FLYING */
         if(status === 'flying'){
             if(multGrowthRate > 0){
                 var delta = multGrowthRate * dt;
@@ -1422,12 +1435,6 @@ function renderLoop(ts){
                 }
             }
 
-            if(now - _lastLiveMultUpdate > 50){
-                _lastLiveMultUpdate = now;
-                var lm = $('liveMult');
-                if(lm) lm.textContent = dispMult.toFixed(2) + 'x';
-            }
-
             if(now - _lastCoeffUpdate > 150){
                 _lastCoeffUpdate = now;
                 var cb = $('coeffBox');
@@ -1439,7 +1446,6 @@ function renderLoop(ts){
                 if(hasBet && !cashedOut) updateActionButton();
             }
 
-            /* Auto cashout */
             if(hasBet && !autoCashoutDone && autoWithdrawGift && autoWithdrawGift.coeff >= 1.1){
                 var cm = Math.max(dispMult, servMult);
                 if(cm >= autoWithdrawGift.coeff){
@@ -1695,7 +1701,7 @@ async function confirmGiftBet(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   CASHOUT
+   CASHOUT — сначала запрос, потом win sheet
    ══════════════════════════════════════════════════════════════ */
 async function doCashout(){
     if(!hasBet || !userData || !userData.id) return;
@@ -1706,28 +1712,16 @@ async function doCashout(){
     frozenMult = Math.round((frozenMult + 0.02) * 100) / 100;
     var instantWin = Math.floor(betAmt * frozenMult);
 
-    var btn = $('actionBtn');
-    if(btn){
-        btn.classList.remove('state-cashout');
-        btn.classList.add('state-crashed');
-        btn.disabled = true;
-        var cg = getAchievableGift(instantWin);
-        var cgi = cg ? getGiftImage(cg) : (betGiftImg || '/static/img/gift.png');
-        var winEl = btn.querySelector('.cb-win');
-        var lblEl = btn.querySelector('.cb-label');
-        var lG = btn.querySelector('.cb-gift-side:first-child');
-        var rG = btn.querySelector('.cb-gift-side:last-child');
-        if(lblEl) lblEl.textContent = 'Win';
-        if(winEl) winEl.textContent = '+' + formatCrashMoney(instantWin);
-        if(lG){ lG.src = cgi; lG.classList.remove('empty'); lG.dataset.src = cgi; }
-        if(rG){ rG.src = cgi; rG.classList.remove('empty'); rG.dataset.src = cgi; }
-    }
-
-    cashedOut = true;
+    /* Сохраняем что показывать */
+    var savedBetAmt = betAmt;
     cashedOutBetAmt = betAmt;
+    cashedOut = true;
     hasBet = false;
 
-    showWinSheet(frozenMult, instantWin);
+    /* Переключаем кнопку в состояние syncing */
+    _syncingWin = true;
+    _lastBtnKey = '';
+    updateActionButton();
 
     var bodyData = {
         user_id: userData.id,
@@ -1740,6 +1734,7 @@ async function doCashout(){
         bodyData.preferred_gift_value = autoWithdrawGift.value || 0;
     }
 
+    var serverOk = false;
     try{
         var r = await fetch('/api/ultimate-crash/cashout-simple', {
             method: 'POST',
@@ -1748,29 +1743,35 @@ async function doCashout(){
         });
         var d = await r.json();
         if(d.success){
+            serverOk = true;
             userData.balance_stars = d.new_balance;
             updateBalanceUI();
-            var wb = $('winNewBalance');
-            if(wb) wb.textContent = formatCrashMoney(d.new_balance);
             loadBets();
             autoWithdrawGift = null;
             saveAutoWithdrawGift();
             updateAutoWithdrawButton();
         } else {
-            cashedOut = false;
-            hasBet = true;
-            if(btn){
-                btn.classList.remove('state-crashed');
-                btn.classList.add('state-cashout');
-                btn.disabled = false;
-            }
             showToast(d.error || 'Ошибка синхронизации', 'err');
         }
     }catch(e){
         showToast('Синхронизация не удалась', 'err');
     }finally{
         _cashoutLocked = false;
+        _syncingWin = false;
+        _lastBtnKey = '';
     }
+
+    /* Показываем win sheet только после ответа сервера */
+    if(serverOk){
+        showWinSheet(frozenMult, instantWin);
+    } else {
+        /* Откат назад если сервер не подтвердил */
+        cashedOut = false;
+        hasBet = true;
+        betAmt = savedBetAmt;
+    }
+
+    updateActionButton();
 }
 
 function showWinSheet(mult, winAmount){
@@ -2199,8 +2200,6 @@ async function payWithStars(){
 /* ══════════════════════════════════════════════════════════════
    INIT
    ══════════════════════════════════════════════════════════════ */
-var pollTimer = null;
-
 async function init(){
     await initAuth();
     applyRocket();
@@ -2226,11 +2225,10 @@ async function init(){
         if(bi) bi.value = starsToBetInputValue(savedBetAmount);
     }
 
-    if(pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(function(){
-        pollStatus().catch(function(){});
-    }, 400);
+    /* Запуск цепочки поллинга */
+    scheduleNextPoll();
 
+    /* Периодический поллинг ставок */
     setInterval(function(){
         if(status === 'crashed') return;
         loadBets().catch(function(){});
@@ -2239,7 +2237,10 @@ async function init(){
     setInterval(function(){ fetch('/api/ping').catch(function(){}); }, 30000);
 
     document.addEventListener('visibilitychange', function(){
-        if(!document.hidden){ pollStatus().catch(function(){}); loadBets().catch(function(){}); }
+        if(!document.hidden){
+            pollStatus().catch(function(){});
+            loadBets().catch(function(){});
+        }
     });
 
     requestAnimationFrame(renderLoop);
