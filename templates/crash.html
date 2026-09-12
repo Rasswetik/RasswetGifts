@@ -259,7 +259,7 @@ body{
 .inv-grid::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
 .inv-card{background:linear-gradient(160deg,rgba(59,130,246,.06),rgba(59,130,246,.02));border:1.5px solid rgba(59,130,246,.15);border-radius:14px;padding:6px;text-align:center;cursor:pointer;transition:all .15s;position:relative;display:flex;flex-direction:column;overflow:hidden}
 .inv-card.selected{border-color:#3B82F6;background:rgba(59,130,246,.18);box-shadow:0 0 0 2px rgba(59,130,246,.4)}
-.inv-card.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
+.inv-card.selected::after{content:'вњ“';position:absolute;top:6px;right:6px;width:22px;height:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
 .inv-card-img-wrap{width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;position:relative;background:rgba(0,0,0,.2);margin-bottom:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
 .inv-card-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;border-radius:10px}
 .inv-card .inv-name{font-weight:700;font-size:10px;color:rgba(255,255,255,.85);padding:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -497,6 +497,41 @@ body{
 @keyframes fieldCrash{0%{box-shadow:inset 0 0 80px rgba(255,60,90,.0)}25%{box-shadow:inset 0 0 120px rgba(255,60,90,.35),0 0 35px rgba(255,60,90,.2)}100%{box-shadow:inset 0 0 80px rgba(255,60,90,.0)}}
 .coeff-box.flying-pulse{animation:coeffPulse .55s ease-in-out infinite alternate}
 @keyframes coeffPulse{from{transform:scale(1);filter:brightness(1)}to{transform:scale(1.035);filter:brightness(1.15)}}
+
+/* FINAL CRASH COUNTDOWN / WIN POLISH */
+#cdDisplay{
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-weight:950;
+  font-size:clamp(104px,28vw,190px);
+  line-height:.88;
+  letter-spacing:-.075em;
+  color:#fff !important;
+  text-shadow:0 0 22px rgba(255,255,255,.20),0 0 85px rgba(255,255,255,.10);
+  transform-origin:center;
+}
+#cdDisplay.active{animation:crashCountPop .38s cubic-bezier(.18,.9,.2,1) both !important}
+@keyframes crashCountPop{0%{opacity:0;transform:scale(.70);filter:blur(7px)}48%{opacity:1;transform:scale(1.16);filter:blur(0)}72%{transform:scale(.98)}100%{opacity:1;transform:scale(1)}}
+#cdDisplay.go{font-size:clamp(74px,19vw,118px) !important;letter-spacing:.06em !important;color:#fff !important;animation:crashGoPop .46s cubic-bezier(.15,.85,.2,1) both !important}
+@keyframes crashGoPop{0%{opacity:0;transform:scale(.55);filter:blur(8px)}42%{opacity:1;transform:scale(1.12);filter:blur(0)}100%{opacity:1;transform:scale(1)}}
+.game-field.counting{box-shadow:inset 0 0 120px rgba(255,255,255,.07),0 0 45px rgba(255,255,255,.06)}
+.game-field.counting::before{animation:countdownGridPulse .48s ease-in-out infinite alternate}
+@keyframes countdownGridPulse{from{opacity:.25}to{opacity:.9}}
+.simple-win-card{padding-top:4px}
+.simple-win-multiplier{display:none !important}
+.simple-win-title{font-size:13px;letter-spacing:.16em;color:rgba(255,255,255,.62);margin-bottom:12px}
+.simple-win-gift{width:148px;height:148px;border-radius:30px;margin-bottom:12px;box-shadow:0 16px 40px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.05)}
+.simple-win-gift img{padding:9px;animation:giftWinIn .6s cubic-bezier(.16,1,.3,1) both}
+@keyframes giftWinIn{0%{opacity:0;transform:scale(.65) rotate(-5deg)}60%{opacity:1;transform:scale(1.05) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+.simple-win-name{font-size:20px;line-height:1.12}
+.simple-win-value{font-size:13px;color:rgba(255,255,255,.58)}
+.simple-win-stats{grid-template-columns:1fr 1fr;gap:0;margin-top:18px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035)}
+.simple-win-stats>div{padding:14px 12px;border:0;border-radius:0;background:transparent}
+.simple-win-stats>div:first-child{border-right:1px solid rgba(255,255,255,.08)}
+.simple-win-stats span{font-size:10px;color:rgba(255,255,255,.42)}
+.simple-win-stats b{font-size:16px}
+.win-balance-bonus{margin-top:10px;padding:10px 13px;border-radius:12px;background:rgba(36,195,142,.10);border:1px solid rgba(36,195,142,.22);color:#24C38E;font-size:13px;font-weight:900;animation:bonusBalanceIn .45s ease-out both}
+@keyframes bonusBalanceIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
 </style>
 </head>
 <body>
@@ -519,9 +554,9 @@ body{
 
 <div class="bonus-announce" id="bonusAnnounce">
     <div class="bonus-announce-inner">
-        <span class="bonus-announce-emoji">🏆</span>
+        <span class="bonus-announce-emoji">рџЏ†</span>
         <div class="bonus-announce-title">BONUS ROUND</div>
-        <div class="bonus-announce-sub">Двойная выплата!</div>
+        <div class="bonus-announce-sub">Р”РІРѕР№РЅР°СЏ РІС‹РїР»Р°С‚Р°!</div>
     </div>
 </div>
 
@@ -551,7 +586,7 @@ body{
     </div>
 
     <div class="game-field" id="gameField">
-        <div class="bonus-badge" id="bonusBadge">🏆 BONUS ROUND 🏆</div>
+        <div class="bonus-badge" id="bonusBadge">рџЏ† BONUS ROUND рџЏ†</div>
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="rocket-wrap hide" id="rocketWrap">
             <img src="/static/gifs/rockets/crash.gif" alt="" id="rocketImg">
@@ -590,20 +625,20 @@ body{
         <div class="modal-title">Place bet</div>
         <div class="modal-tabs">
             <button class="modal-tab active" id="tabStars" onclick="switchTab('stars')"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'"> GRAM</button>
-            <button class="modal-tab" id="tabInv" onclick="switchTab('inv')"><img src="/static/img/gift.png"> Инвентарь</button>
+            <button class="modal-tab" id="tabInv" onclick="switchTab('inv')"><img src="/static/img/gift.png"> РРЅРІРµРЅС‚Р°СЂСЊ</button>
         </div>
         <div id="starsSec">
             <div class="bet-input-wrap">
-                <input type="number" id="betInput" placeholder="Введите GRAM (мин. 0.10)" min="0.1" step="0.01" inputmode="decimal">
+                <input type="number" id="betInput" placeholder="Р’РІРµРґРёС‚Рµ GRAM (РјРёРЅ. 0.10)" min="0.1" step="0.01" inputmode="decimal">
             </div>
             <div class="auto-cashout-row">
                 <div class="auto-cashout-info">
-                    <div class="auto-cashout-label">Автовывод</div>
-                    <div class="auto-cashout-sub">Авто-забор (от 1.10x)</div>
+                    <div class="auto-cashout-label">РђРІС‚РѕРІС‹РІРѕРґ</div>
+                    <div class="auto-cashout-sub">РђРІС‚Рѕ-Р·Р°Р±РѕСЂ (РѕС‚ 1.10x)</div>
                 </div>
                 <button type="button" class="autowd-open-btn" id="autowdMainBtn" onclick="openAutoWithdraw()">
                     <img src="/static/img/gift.png" alt="">
-                    <span class="autowd-btn-name">Выбрать</span>
+                    <span class="autowd-btn-name">Р’С‹Р±СЂР°С‚СЊ</span>
                 </button>
             </div>
             <button class="confirm-bet-btn" id="confirmBetBtn" onclick="confirmStarsBet()">BET</button>
@@ -611,12 +646,12 @@ body{
         <div id="invSec" style="display:none">
             <div class="selected-summary" id="selectedSummary">
                 <div class="selected-info">
-                    <div class="selected-count">Выбрано: <span id="selectedCount">0</span> / 3</div>
+                    <div class="selected-count">Р’С‹Р±СЂР°РЅРѕ: <span id="selectedCount">0</span> / 3</div>
                     <div class="selected-total"><span id="selectedTotal">0.00</span> <span style="color:#3B82F6;font-size:12px">GRAM</span></div>
                 </div>
                 <button class="clear-selected" onclick="clearSelectedGifts()">Clear</button>
             </div>
-            <div class="inv-grid" id="invGrid"><div class="inv-empty">Загрузка...</div></div>
+            <div class="inv-grid" id="invGrid"><div class="inv-empty">Р—Р°РіСЂСѓР·РєР°...</div></div>
             <button class="confirm-gifts-btn" id="confirmGiftsBtn" onclick="confirmGiftBet()">BET GIFTS</button>
         </div>
     </div>
@@ -625,19 +660,19 @@ body{
 <div class="autowd-overlay" id="autowdOverlay">
     <div class="autowd-modal">
         <div class="autowd-header">
-            <div class="autowd-title"><img src="/static/img/star2.png" alt="">Автовывод</div>
-            <button class="autowd-close" onclick="closeAutoWithdraw()">×</button>
+            <div class="autowd-title"><img src="/static/img/star2.png" alt="">РђРІС‚РѕРІС‹РІРѕРґ</div>
+            <button class="autowd-close" onclick="closeAutoWithdraw()">Г—</button>
         </div>
         <div class="autowd-summary">
-            <div class="autowd-summary-row"><span>Ставка:</span><span class="autowd-summary-val" id="autowdBetVal">0.00 GRAM</span></div>
-            <div class="autowd-summary-row"><span>Минимум вывода:</span><span class="autowd-summary-val gold" id="autowdTargetVal">0.00 GRAM</span></div>
+            <div class="autowd-summary-row"><span>РЎС‚Р°РІРєР°:</span><span class="autowd-summary-val" id="autowdBetVal">0.00 GRAM</span></div>
+            <div class="autowd-summary-row"><span>РњРёРЅРёРјСѓРј РІС‹РІРѕРґР°:</span><span class="autowd-summary-val gold" id="autowdTargetVal">0.00 GRAM</span></div>
         </div>
         <div class="autowd-search-wrap">
-            <input type="text" class="autowd-search" id="autowdSearch" placeholder="Поиск подарков..." oninput="renderAutoWithdrawGifts()">
+            <input type="text" class="autowd-search" id="autowdSearch" placeholder="РџРѕРёСЃРє РїРѕРґР°СЂРєРѕРІ..." oninput="renderAutoWithdrawGifts()">
         </div>
-        <div class="autowd-list" id="autowdList"><div class="autowd-empty">Загрузка...</div></div>
+        <div class="autowd-list" id="autowdList"><div class="autowd-empty">Р—Р°РіСЂСѓР·РєР°...</div></div>
         <button class="autowd-apply-btn" id="autowdApplyBtn" onclick="applyAutoWithdraw()" disabled>
-            <span id="autowdApplyText">Выберите подарок</span>
+            <span id="autowdApplyText">Р’С‹Р±РµСЂРёС‚Рµ РїРѕРґР°СЂРѕРє</span>
         </button>
     </div>
 </div>
@@ -645,11 +680,11 @@ body{
 <div class="deposit-overlay" id="depositOverlay">
     <div class="deposit-modal">
         <div class="deposit-header">
-            <div class="deposit-title">Пополнение</div>
-            <button class="deposit-close" onclick="closeDepositSelector()">×</button>
+            <div class="deposit-title">РџРѕРїРѕР»РЅРµРЅРёРµ</div>
+            <button class="deposit-close" onclick="closeDepositSelector()">Г—</button>
         </div>
         <div class="deposit-methods">
-            <button class="deposit-method-btn" onclick="closeDepositSelector();showToast('Скоро','ok')"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'" alt="GRAM"><span>GRAM</span></button>
+            <button class="deposit-method-btn" onclick="closeDepositSelector();showToast('РЎРєРѕСЂРѕ','ok')"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'" alt="GRAM"><span>GRAM</span></button>
             <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDepositSelector();openStarsDeposit()"><img src="/static/img/star.png" alt="Stars"><span>Stars</span></button>
         </div>
     </div>
@@ -658,17 +693,17 @@ body{
 <div class="stars-deposit-overlay" id="starsDepositOverlay">
     <div class="stars-deposit-modal">
         <div class="stars-deposit-header">
-            <div class="stars-deposit-title">Пополнение Stars</div>
-            <button class="stars-deposit-close" onclick="closeStarsDeposit()">×</button>
+            <div class="stars-deposit-title">РџРѕРїРѕР»РЅРµРЅРёРµ Stars</div>
+            <button class="stars-deposit-close" onclick="closeStarsDeposit()">Г—</button>
         </div>
         <div class="stars-deposit-body">
             <img class="stars-deposit-icon" src="/static/img/star.png" alt="Stars">
-            <div class="stars-deposit-label">Введите количество Stars<br>100 Stars = 1 GRAM</div>
+            <div class="stars-deposit-label">Р’РІРµРґРёС‚Рµ РєРѕР»РёС‡РµСЃС‚РІРѕ Stars<br>100 Stars = 1 GRAM</div>
             <div class="stars-deposit-input-wrap">
                 <input type="number" class="stars-deposit-input" id="starsDepositAmount" placeholder="100" min="1" max="10000" value="100">
             </div>
             <button class="stars-deposit-pay-btn" id="starsPayBtn" onclick="payWithStars()">
-                <img src="/static/img/star.png" alt="">Оплатить <span id="starsPayAmount">100</span> Stars
+                <img src="/static/img/star.png" alt="">РћРїР»Р°С‚РёС‚СЊ <span id="starsPayAmount">100</span> Stars
             </button>
         </div>
     </div>
@@ -683,15 +718,15 @@ body{
         <div class="settings-content">
             <div class="settings-gift-toggle">
                 <div class="toggle-info">
-                    <div class="lbl">Показывать подарки</div>
-                    <div class="desc">Вместо ракеты — подарок при достижимом выигрыше</div>
+                    <div class="lbl">РџРѕРєР°Р·С‹РІР°С‚СЊ РїРѕРґР°СЂРєРё</div>
+                    <div class="desc">Р’РјРµСЃС‚Рѕ СЂР°РєРµС‚С‹ вЂ” РїРѕРґР°СЂРѕРє РїСЂРё РґРѕСЃС‚РёР¶РёРјРѕРј РІС‹РёРіСЂС‹С€Рµ</div>
                 </div>
                 <div class="toggle-switch on" id="showGiftsToggle" onclick="toggleShowGiftsClick()"></div>
             </div>
             <div class="settings-gift-toggle">
                 <div class="toggle-info">
-                    <div class="lbl">Предохранитель автовывода</div>
-                    <div class="desc">Сохранять автовывод после перезагрузки</div>
+                    <div class="lbl">РџСЂРµРґРѕС…СЂР°РЅРёС‚РµР»СЊ Р°РІС‚РѕРІС‹РІРѕРґР°</div>
+                    <div class="desc">РЎРѕС…СЂР°РЅСЏС‚СЊ Р°РІС‚РѕРІС‹РІРѕРґ РїРѕСЃР»Рµ РїРµСЂРµР·Р°РіСЂСѓР·РєРё</div>
                 </div>
                 <div class="toggle-switch on" id="autoWithdrawGuardToggle" onclick="toggleAutoWithdrawGuardClick()"></div>
             </div>
@@ -705,16 +740,16 @@ body{
     <div class="win-sheet" id="winSheet">
         <div class="win-sheet-handle"></div>
         <div id="winContent"></div>
-        <button class="win-collect-btn" onclick="closeWin()">Получить</button>
+        <button class="win-collect-btn" onclick="closeWin()">РџРѕР»СѓС‡РёС‚СЊ</button>
     </div>
 </div>
 
 <script>
 'use strict';
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    STATE
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 var userData = null;
 var authReady = false;
 
@@ -728,16 +763,16 @@ var prevStatus = 'waiting';
 var targetMult = 5.0;
 var isBonusRound = false;
 
-/* ═══ TIME-BASED MATH ═══ */
-var flyingStartedAt = 0;         // performance.now() когда ракета полетела (1.00x)
-var countingStartedAt = 0;       // performance.now() когда начался отсчёт
+/* в•ђв•ђв•ђ TIME-BASED MATH в•ђв•ђв•ђ */
+var flyingStartedAt = 0;         // performance.now() РєРѕРіРґР° СЂР°РєРµС‚Р° РїРѕР»РµС‚РµР»Р° (1.00x)
+var countingStartedAt = 0;       // performance.now() РєРѕРіРґР° РЅР°С‡Р°Р»СЃСЏ РѕС‚СЃС‡С‘С‚
 var countingDuration = 5.0;
-var srvCountdownOverride = 0;      // длительность отсчёта
+var srvCountdownOverride = 0;      // РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ РѕС‚СЃС‡С‘С‚Р°
 var lastCountdownSec = 99;
 
-var dispMult = 1.0;              // отображаемый множитель
-var servMult = 1.0;              // множитель с сервера (последний известный)
-var _lastServerMult = 1.0;       // для синхронизации
+var dispMult = 1.0;              // РѕС‚РѕР±СЂР°Р¶Р°РµРјС‹Р№ РјРЅРѕР¶РёС‚РµР»СЊ
+var servMult = 1.0;              // РјРЅРѕР¶РёС‚РµР»СЊ СЃ СЃРµСЂРІРµСЂР° (РїРѕСЃР»РµРґРЅРёР№ РёР·РІРµСЃС‚РЅС‹Р№)
+var _lastServerMult = 1.0;       // РґР»СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё
 
 var hasBet = false;
 var betAmt = 0;
@@ -788,14 +823,14 @@ var _lastPingMs = 0;
 
 var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
 
-/* ═══ ANTI-FREEZE ═══ */
-var MAX_FLYING_DURATION_MS = 60000;   // 60 сек hard cap
+/* в•ђв•ђв•ђ ANTI-FREEZE в•ђв•ђв•ђ */
+var MAX_FLYING_DURATION_MS = 60000;   // 60 СЃРµРє hard cap
 var flyingHardCapTimer = null;
 var _lastServerContactTs = Date.now();
 var _serverSilentWarned = false;
 var _pollTimer = null;
 var _polling = false;
-var _pollDelay = 400;                  // стартовая задержка
+var _pollDelay = 180;                  // СЃС‚Р°СЂС‚РѕРІР°СЏ Р·Р°РґРµСЂР¶РєР°
 
 function $(id){ return document.getElementById(id); }
 
@@ -840,9 +875,9 @@ function updatePingUI(ms){
     else if(ms > 150) pill.classList.add('medium');
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    FULLSCREEN INIT
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function initFullscreen(){
     if(typeof Telegram === 'undefined' || !Telegram.WebApp) return;
     try{
@@ -856,9 +891,9 @@ function initFullscreen(){
     }catch(e){}
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    LOADING
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 (function initLoading(){
     var bar = $('ldProgressBar');
     var txt = $('ldTxt');
@@ -905,9 +940,9 @@ function initFullscreen(){
     }, 6000);
 })();
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    AUTH
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 async function initAuth(){
     window._ldSet(5);
     try{
@@ -1005,9 +1040,9 @@ async function registerAndLoad(){
     }catch(e){}
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    ROCKET
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function getRocketSrc(){ return '/static/gifs/rockets/' + currentRocket + '.gif'; }
 function applyRocket(){
     var img = $('rocketImg');
@@ -1019,9 +1054,9 @@ function applyRocket(){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    GIFT CATALOG
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 async function ensureGiftCatalog(){
     if(_giftCatalog) return _giftCatalog;
     try{
@@ -1087,9 +1122,9 @@ function getAchievableGift(potentialWin){
     return best;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    TIME-BASED MULTIPLIER CURVE
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function computeLocalMult(elapsedMs){
     var t = elapsedMs / 1000;
     if(t <= 0) return 1.0;
@@ -1115,9 +1150,9 @@ function estimateFlyStartFromMult(serverMult){
     return performance.now() - t * 1000;
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    POLLING
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 async function pollStatus(){
     if(!authReady) return;
     if(_polling) return;
@@ -1145,7 +1180,7 @@ async function pollStatus(){
 
         if(d && d.game) applyServerState(d);
     }catch(e){
-        _pollDelay = Math.min(2500, _pollDelay + 300);
+        _pollDelay = Math.min(900, _pollDelay + 120);
         var silent = Date.now() - _lastServerContactTs;
         if(silent > 5000 && status === 'flying'){
             if(!_serverSilentWarned){
@@ -1167,9 +1202,9 @@ function scheduleNextPoll(){
     _pollTimer = setTimeout(function(){ pollStatus(); }, _pollDelay);
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    BONUS ROUND
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function setBonusMode(active){
     if(isBonusRound === active) return;
     isBonusRound = active;
@@ -1182,7 +1217,7 @@ function setBonusMode(active){
         if(badge) badge.classList.add('show');
         showBonusAnnounce();
         applyRocket();
-        showToast('🏆 BONUS ROUND! Двойная выплата!', 'bonus');
+        showToast('рџЏ† BONUS ROUND! Р”РІРѕР№РЅР°СЏ РІС‹РїР»Р°С‚Р°!', 'bonus');
     } else {
         if(gf) gf.classList.remove('bonus-mode');
         if(badge) badge.classList.remove('show');
@@ -1205,9 +1240,9 @@ function showBonusAnnounce(){
     setTimeout(function(){ ann.classList.remove('show'); }, 2500);
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    APPLY SERVER STATE
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function applyServerState(d){
     var g = d.game;
     var now = performance.now();
@@ -1218,7 +1253,7 @@ function applyServerState(d){
     var srvTarget = parseFloat(g.target_multiplier) || 5.0;
     var srvTimeRem = parseFloat(g.time_remaining) || 0;
     var srvCountdown = parseInt(g.countdown || 0, 10) || 0;
-    srvCountdownOverride = srvCountdown;
+    srvCountdownOverride = 0;
     var srvBonus = !!g.is_bonus;
 
     var isNewRound = (gameId !== 0) && (newGameId !== gameId);
@@ -1237,11 +1272,10 @@ function applyServerState(d){
 
     // COUNTING
     if(newStatus === 'counting' && oldStatus !== 'counting'){
-        if(srvTimeRem > 0 && srvTimeRem <= 5.5){
-            countingStartedAt = now - (5.0 - srvTimeRem) * 1000;
-        } else {
-            countingStartedAt = now;
-        }
+        // Start a deterministic local 5в†’4в†’3в†’2в†’1 sequence as soon as the new round is observed.
+        // This prevents a late HTTP response from making the UI begin at 3 or 2.
+        countingStartedAt = now;
+        srvCountdownOverride = 0;
         lastShownNumber = 99;
         goShownForRound = false;
         lastCountdownAt = 0;
@@ -1268,7 +1302,7 @@ function applyServerState(d){
     // FLYING START
     if(newStatus === 'flying' && oldStatus !== 'flying'){
         srvCountdownOverride = 0;
-        // Последний кадр отсчёта уже был 1, теперь явно показываем ИГРА.
+        // РџРѕСЃР»РµРґРЅРёР№ РєР°РґСЂ РѕС‚СЃС‡С‘С‚Р° СѓР¶Рµ Р±С‹Р» 1, С‚РµРїРµСЂСЊ СЏРІРЅРѕ РїРѕРєР°Р·С‹РІР°РµРј РР“Р Рђ.
         var cdStart = $('cdDisplay');
         if(cdStart){
             cdStart.textContent = 'GO';
@@ -1290,12 +1324,12 @@ function applyServerState(d){
         if(srvCurMult > servMult) servMult = srvCurMult;
 
         var localNow = computeLocalMult(now - flyingStartedAt);
-        // Синхронизация: если сервер сильно отстаёт, подтянуть
+        // РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ: РµСЃР»Рё СЃРµСЂРІРµСЂ СЃРёР»СЊРЅРѕ РѕС‚СЃС‚Р°С‘С‚, РїРѕРґС‚СЏРЅСѓС‚СЊ
         if(srvCurMult - localNow > 0.5){
             flyingStartedAt = estimateFlyStartFromMult(srvCurMult);
             dispMult = srvCurMult;
         } else {
-            // Не даём клиенту отставать от сервера больше, чем на 0.1x
+            // РќРµ РґР°С‘Рј РєР»РёРµРЅС‚Сѓ РѕС‚СЃС‚Р°РІР°С‚СЊ РѕС‚ СЃРµСЂРІРµСЂР° Р±РѕР»СЊС€Рµ, С‡РµРј РЅР° 0.1x
             dispMult = Math.max(localNow, srvCurMult - 0.05);
         }
     } else {
@@ -1345,9 +1379,9 @@ function applyServerState(d){
     updateActionButton();
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    ANTI-FREEZE
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function startFlyingHardCap(){
     cancelFlyingHardCap();
     flyingHardCapTimer = setTimeout(function(){
@@ -1365,9 +1399,9 @@ function cancelFlyingHardCap(){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    RESET ROUND
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function resetRoundState(){
     cancelFlyingHardCap();
     countingStartedAt = 0;
@@ -1415,9 +1449,9 @@ function resetRoundState(){
     loadHistory();
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    CRASH ANIMATION
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function triggerCrashAnimation(finalMult){
     if(crashHandled) return;
     crashHandled = true;
@@ -1451,7 +1485,7 @@ function triggerCrashAnimation(finalMult){
     }
 
     if(hasBet){
-        showToast('CRASH ' + finalMult.toFixed(2) + 'x — ставка проиграна', 'err');
+        showToast('CRASH ' + finalMult.toFixed(2) + 'x вЂ” СЃС‚Р°РІРєР° РїСЂРѕРёРіСЂР°РЅР°', 'err');
     }
 
     hasBet = false;
@@ -1463,9 +1497,9 @@ function triggerCrashAnimation(finalMult){
     updateActionButton();
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    GO ANIMATION
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function showGoAnimation(){
     var cd = $('cdDisplay');
     var gf = $('gameField');
@@ -1480,9 +1514,9 @@ function showGoAnimation(){
     }, 650);
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    GAME FIELD UI
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function updateGameFieldUI(){
     var rw = $('rocketWrap');
     var bm = $('boomWrap');
@@ -1498,7 +1532,7 @@ function updateGameFieldUI(){
         if(gf) gf.classList.remove('flying');
         if(coeff){
             coeff.className = 'coeff-box waiting' + (isBonusRound ? ' bonus' : '');
-            coeff.textContent = isBonusRound ? '🏆 BONUS' : 'Waiting';
+            coeff.textContent = isBonusRound ? 'рџЏ† BONUS' : 'Waiting';
         }
     } else if(status === 'flying'){
         if(rw){ rw.classList.remove('hide','crash-hit'); }
@@ -1515,9 +1549,9 @@ function updateGameFieldUI(){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    ACTION BUTTON
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function updateActionButton(){
     var btn = $('actionBtn');
     if(!btn) return;
@@ -1552,7 +1586,7 @@ function updateActionButton(){
         var giftSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
         var isEmpty = !achievable ? ' empty' : '';
 
-        var label = isBonusRound ? '🏆 CASH OUT x2' : 'Cash OUT';
+        var label = isBonusRound ? 'рџЏ† CASH OUT x2' : 'Cash OUT';
 
         html = '<img class="cb-gift-side' + isEmpty + '" src="' + giftSrc + '" alt="">'
             + '<div class="cb-center"><span class="cb-label">' + label + '</span>'
@@ -1573,7 +1607,7 @@ function updateActionButton(){
         html = '<span class="btn-text">Place bet</span>';
     }
 
-    // Быстрое обновление cashout без перестройки DOM
+    // Р‘С‹СЃС‚СЂРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ cashout Р±РµР· РїРµСЂРµСЃС‚СЂРѕР№РєРё DOM
     if(newState === 'cashout' && btn.classList.contains('state-cashout')){
         var bonusMult2 = isBonusRound ? 2 : 1;
         var curWin2 = Math.floor((betAmt || 0) * dispMult) * bonusMult2;
@@ -1641,9 +1675,9 @@ function onActionBtnClick(){
     openBetModal();
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    RENDER LOOP
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function renderLoop(ts){
     try{
         requestAnimationFrame(renderLoop);
@@ -1656,7 +1690,7 @@ function renderLoop(ts){
             var elapsed = (now - countingStartedAt) / 1000;
             var remaining = countingDuration - elapsed;
             var localSec = Math.max(1, Math.min(5, Math.ceil(remaining)));
-            var sec = srvCountdownOverride > 0 ? Math.min(localSec, srvCountdownOverride) : localSec;
+            var sec = localSec;
             if(lastShownNumber === 99){ lastShownNumber = 6; }
             if(sec > lastShownNumber) sec = lastShownNumber;
 
@@ -1683,7 +1717,7 @@ function renderLoop(ts){
             var elapsedFly = now - flyingStartedAt;
             var computed = computeLocalMult(elapsedFly);
 
-            // Не отставать от сервера
+            // РќРµ РѕС‚СЃС‚Р°РІР°С‚СЊ РѕС‚ СЃРµСЂРІРµСЂР°
             if(computed < servMult - 0.05) computed = servMult - 0.05;
             if(computed < 1.0) computed = 1.0;
 
@@ -1714,7 +1748,7 @@ function renderLoop(ts){
                 if(hasBet && !cashedOut) updateActionButton();
             }
 
-            // ANTI-FREEZE: если dispMult дошёл до targetMult — крашим локально
+            // ANTI-FREEZE: РµСЃР»Рё dispMult РґРѕС€С‘Р» РґРѕ targetMult вЂ” РєСЂР°С€РёРј Р»РѕРєР°Р»СЊРЅРѕ
             if(dispMult >= targetMult && !crashHandled){
                 triggerCrashAnimation(targetMult);
             }
@@ -1730,9 +1764,9 @@ function renderLoop(ts){
     }catch(e){}
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    BET MODAL
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function openBetModal(){
     var m = $('betModal');
     if(!m) return;
@@ -1745,7 +1779,7 @@ function closeBetModal(){ var m = $('betModal'); if(m) m.classList.remove('show'
 function cancelPendingBet(){
     pendingBet = null;
     removePendingBetFromUI();
-    showToast('Отменено', 'ok');
+    showToast('РћС‚РјРµРЅРµРЅРѕ', 'ok');
     updateActionButton();
 }
 function starsToBetInputValue(stars){
@@ -1762,9 +1796,9 @@ function removePendingBetFromUI(){
     for(var i = 0; i < rows.length; i++) rows[i].remove();
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    CONFIRM STARS BET
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 async function confirmStarsBet(){
     if(_betLocked) return;
     if(!userData || !userData.id){ showToast('Auth error', 'err'); return; }
@@ -1772,8 +1806,8 @@ async function confirmStarsBet(){
     var input = $('betInput');
     if(!input) return;
     var amt = parseBetInputToStars(input.value);
-    if(!amt || amt < 10){ showToast('Мин. 0.10 GRAM', 'err'); return; }
-    if(amt > (userData.balance_stars || 0)){ showToast('Недостаточно средств', 'err'); return; }
+    if(!amt || amt < 10){ showToast('РњРёРЅ. 0.10 GRAM', 'err'); return; }
+    if(amt > (userData.balance_stars || 0)){ showToast('РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЃСЂРµРґСЃС‚РІ', 'err'); return; }
 
     _betLocked = true;
     savedBetAmount = amt;
@@ -1782,7 +1816,7 @@ async function confirmStarsBet(){
     if(status === 'flying'){
         pendingBet = { type: 'stars', amount: amt };
         closeBetModal();
-        showToast('Ставка на след. раунд', 'ok');
+        showToast('РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
         updateActionButton();
         _betLocked = false;
         return;
@@ -1794,7 +1828,7 @@ async function confirmStarsBet(){
         if(remaining <= 0.6){
             pendingBet = { type: 'stars', amount: amt };
             closeBetModal();
-            showToast('Поздно! Ставка на след. раунд', 'ok');
+            showToast('РџРѕР·РґРЅРѕ! РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
             updateActionButton();
             _betLocked = false;
             return;
@@ -1809,7 +1843,7 @@ async function confirmStarsBet(){
     updateBalanceUI();
     closeBetModal();
     updateActionButton();
-    showToast('Ставка ' + formatCrashMoney(amt) + ' принята', 'ok');
+    showToast('РЎС‚Р°РІРєР° ' + formatCrashMoney(amt) + ' РїСЂРёРЅСЏС‚Р°', 'ok');
 
     var ac = new AbortController();
     var tId = setTimeout(function(){ ac.abort(); }, 5000);
@@ -1834,11 +1868,11 @@ async function confirmStarsBet(){
             userData.balance_stars = (userData.balance_stars || 0) + amt;
             updateBalanceUI();
             var err = (d.error || '').toLowerCase();
-            if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1 || err.indexOf('2 сек') !== -1 || err.indexOf('след') !== -1){
+            if(err.indexOf('late') !== -1 || err.indexOf('РЅР°С‡Р°Р»') !== -1 || err.indexOf('2 СЃРµРє') !== -1 || err.indexOf('СЃР»РµРґ') !== -1){
                 pendingBet = { type: 'stars', amount: amt };
-                showToast('Ставка на след. раунд', 'ok');
+                showToast('РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
             } else {
-                showToast(d.error || 'Ошибка', 'err');
+                showToast(d.error || 'РћС€РёР±РєР°', 'err');
             }
             updateActionButton();
         }
@@ -1850,9 +1884,9 @@ async function confirmStarsBet(){
         updateBalanceUI();
         if(e && e.name === 'AbortError'){
             pendingBet = { type: 'stars', amount: amt };
-            showToast('Сервер не ответил, ставка на след. раунд', 'ok');
+            showToast('РЎРµСЂРІРµСЂ РЅРµ РѕС‚РІРµС‚РёР», СЃС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
         } else {
-            showToast('Ошибка сети', 'err');
+            showToast('РћС€РёР±РєР° СЃРµС‚Рё', 'err');
         }
         updateActionButton();
     }finally{
@@ -1860,9 +1894,9 @@ async function confirmStarsBet(){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    PENDING BET
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 async function processPendingBet(){
     if(!pendingBet || _betLocked) return;
     var bet = pendingBet;
@@ -1886,7 +1920,7 @@ async function processPendingBet(){
                 betAmt = bet.amount;
                 userData.balance_stars = d.new_balance;
                 updateBalanceUI();
-                showToast('Ставка принята!', 'ok');
+                showToast('РЎС‚Р°РІРєР° РїСЂРёРЅСЏС‚Р°!', 'ok');
                 loadBets();
             } else {
                 setTimeout(function(){ _betLocked = false; processPendingBet(); }, 800);
@@ -1921,7 +1955,7 @@ async function processPendingBet(){
                 hasBet = true;
                 betAmt = d2.bet_amount || bet.amount;
                 betGiftImg = bet.giftImage || null;
-                showToast('Ставка подарками принята!', 'ok');
+                showToast('РЎС‚Р°РІРєР° РїРѕРґР°СЂРєР°РјРё РїСЂРёРЅСЏС‚Р°!', 'ok');
                 loadBets();
             } else {
                 setTimeout(function(){ _betLocked = false; processPendingBet(); }, 800);
@@ -1948,9 +1982,9 @@ function switchTab(tab){
     if(tab === 'inv') loadInventoryForBet();
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    INVENTORY BET
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 async function loadInventoryForBet(){
     if(!userData || !userData.id) return;
     try{
@@ -1963,7 +1997,7 @@ async function loadInventoryForBet(){
             return !i.is_withdrawing && i.gift_value >= 25 && NON_BETTABLE_GIFT_IDS.indexOf(Number(i.gift_id)) === -1;
         });
         if(!inventoryItems.length){
-            grid.innerHTML = '<div class="inv-empty">Нет подарков (мин. 25⭐)</div>';
+            grid.innerHTML = '<div class="inv-empty">РќРµС‚ РїРѕРґР°СЂРєРѕРІ (РјРёРЅ. 25в­ђ)</div>';
             return;
         }
         grid.innerHTML = inventoryItems.map(function(i){
@@ -1994,7 +2028,7 @@ function toggleGiftSelection(id){
     var idx = selectedGifts.findIndex(function(g){ return g.id === id; });
     if(idx >= 0){ selectedGifts.splice(idx, 1); }
     else {
-        if(selectedGifts.length >= MAX_GIFTS){ showToast('Максимум ' + MAX_GIFTS, 'err'); return; }
+        if(selectedGifts.length >= MAX_GIFTS){ showToast('РњР°РєСЃРёРјСѓРј ' + MAX_GIFTS, 'err'); return; }
         selectedGifts.push({ id: item.id, name: item.gift_name, value: item.gift_value, image: item.gift_image });
     }
     var cards = document.querySelectorAll('.inv-card');
@@ -2034,12 +2068,12 @@ function updateSelectedSummary(){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    CONFIRM GIFT BET
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 async function confirmGiftBet(){
     if(_giftLocked) return;
-    if(!selectedGifts.length){ showToast('Выберите подарок', 'err'); return; }
+    if(!selectedGifts.length){ showToast('Р’С‹Р±РµСЂРёС‚Рµ РїРѕРґР°СЂРѕРє', 'err'); return; }
     if(!userData || !userData.id) return;
 
     _giftLocked = true;
@@ -2052,7 +2086,7 @@ async function confirmGiftBet(){
         pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
         closeBetModal();
         clearSelectedGifts();
-        showToast('Подарки на след. раунд', 'ok');
+        showToast('РџРѕРґР°СЂРєРё РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
         updateActionButton();
         _giftLocked = false;
         return;
@@ -2065,7 +2099,7 @@ async function confirmGiftBet(){
             pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
             closeBetModal();
             clearSelectedGifts();
-            showToast('Поздно! Подарки на след. раунд', 'ok');
+            showToast('РџРѕР·РґРЅРѕ! РџРѕРґР°СЂРєРё РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
             updateActionButton();
             _giftLocked = false;
             return;
@@ -2079,7 +2113,7 @@ async function confirmGiftBet(){
     closeBetModal();
     clearSelectedGifts();
     updateActionButton();
-    showToast('Ставка ' + sGifts.length + ' подарков', 'ok');
+    showToast('РЎС‚Р°РІРєР° ' + sGifts.length + ' РїРѕРґР°СЂРєРѕРІ', 'ok');
 
     var ac = new AbortController();
     var tId = setTimeout(function(){ ac.abort(); }, 5000);
@@ -2099,11 +2133,11 @@ async function confirmGiftBet(){
             hasBet = false;
             betAmt = 0;
             var err = (d.error || '').toLowerCase();
-            if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1 || err.indexOf('2 сек') !== -1){
+            if(err.indexOf('late') !== -1 || err.indexOf('РЅР°С‡Р°Р»') !== -1 || err.indexOf('2 СЃРµРє') !== -1){
                 pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
-                showToast('Подарки на след. раунд', 'ok');
+                showToast('РџРѕРґР°СЂРєРё РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
             } else {
-                showToast(d.error || 'Ошибка', 'err');
+                showToast(d.error || 'РћС€РёР±РєР°', 'err');
             }
             updateActionButton();
         }
@@ -2111,16 +2145,16 @@ async function confirmGiftBet(){
         clearTimeout(tId);
         hasBet = false;
         betAmt = 0;
-        showToast('Ошибка сети', 'err');
+        showToast('РћС€РёР±РєР° СЃРµС‚Рё', 'err');
         updateActionButton();
     }finally{
         _giftLocked = false;
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    CASHOUT
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 async function doCashout(){
     if(!hasBet || !userData || !userData.id) return;
     if(_cashoutLocked) return;
@@ -2176,11 +2210,11 @@ async function doCashout(){
             updateAutoWithdrawButton();
             serverGifts = d.awarded_gifts || [];
         } else {
-            showToast(d.error || 'Ошибка синхронизации', 'err');
+            showToast(d.error || 'РћС€РёР±РєР° СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё', 'err');
         }
     }catch(e){
         clearTimeout(tId);
-        showToast('Синхронизация не удалась', 'err');
+        showToast('РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РЅРµ СѓРґР°Р»Р°СЃСЊ', 'err');
     }finally{
         _cashoutLocked = false;
         _syncingWin = false;
@@ -2190,6 +2224,7 @@ async function doCashout(){
     if(serverOk){
         var isGiftBet = savedGiftData && savedGiftData.length > 0;
 
+        window._lastCrashStarRemainder = Number(d.star_remainder || d.star_difference || 0);
         if(isBonusRound){
             showWinSheetBonus(localMult, instantWin, isGiftBet ? savedGiftData[0] : null, serverGifts);
         } else {
@@ -2205,50 +2240,61 @@ async function doCashout(){
     updateActionButton();
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    WIN SHEET
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function showWinSheet(mult, winAmount, serverGifts, giftData){
     var content = $('winContent');
     var sheet = $('winSheet');
     if(!content) return;
     if(sheet) sheet.classList.remove('bonus-win');
 
-    var betTon = starsToTon(cashedOutBetAmt);
+    var betStars = Number(cashedOutBetAmt || betAmt || 0);
+    var betTon = starsToTon(betStars);
     var winTon = starsToTon(winAmount);
+
+    // Always prefer the NEW awarded gift. For gift-bets the staked gift must NOT be shown as the reward.
     var gift = null;
-    if(giftData && giftData.length) gift = giftData[0];
-    if(!gift && serverGifts && serverGifts.length) gift = serverGifts[0];
+    if(serverGifts && serverGifts.length) gift = serverGifts[0];
+    if(!gift && giftData && giftData.length) gift = giftData[0];
     if(!gift){
         var achievable = getAchievableGift(winAmount);
-        if(achievable){
-            gift = {name: achievable.name, image: getGiftImage(achievable), value: achievable.value};
-        }
+        if(achievable) gift = {name: achievable.name, image: getGiftImage(achievable), value: achievable.value};
     }
+
     var image = gift && (gift.image || gift.gift_image) ? (gift.image || gift.gift_image) : '/static/img/gift.png';
-    var name = gift && (gift.name || gift.gift_name) ? (gift.name || gift.gift_name) : 'Выигрыш';
-    var giftValue = gift && gift.value ? formatCrashMoney(gift.value) : formatCrashMoney(winAmount);
+    var name = gift && (gift.name || gift.gift_name) ? (gift.name || gift.gift_name) : 'Р’С‹РёРіСЂС‹С€';
+    var giftValueStars = gift && gift.value ? Number(gift.value) : Number(winAmount || 0);
+    var stakeGift = (giftData && giftData.length) ? giftData[0] : null;
+    var stakeLabel = stakeGift
+        ? ((stakeGift.name || stakeGift.gift_name || 'РџРѕРґР°СЂРѕРє') + ' вЂў ' + formatCrashMoney(stakeGift.value || betStars))
+        : (formatTon(betTon) + ' GRAM');
+
+    var balanceBonusStars = Number(window._lastCrashStarRemainder || 0);
+    var balanceHtml = balanceBonusStars > 0
+        ? '<div class="win-balance-bonus">+ ' + starsToTon(balanceBonusStars).toFixed(2) + ' GRAM РЅР° Р±Р°Р»Р°РЅСЃ</div>'
+        : '';
 
     content.innerHTML = ''
         + '<div class="simple-win-card">'
-        +   '<div class="simple-win-title">ВЫИГРЫШ</div>'
-        +   '<div class="simple-win-multiplier">×' + Number(mult || 1).toFixed(2) + '</div>'
+        +   '<div class="simple-win-title">Р’Р«РР“Р Р«РЁ</div>'
         +   '<div class="simple-win-gift">'
         +     '<img src="' + image + '" alt="" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
         +   '</div>'
-        +   '<div class="simple-win-name">' + name + '</div>'
-        +   '<div class="simple-win-value">Стоимость подарка: <b>' + giftValue + '</b></div>'
+        +   '<div class="simple-win-name">' + escapeHtmlCrash(name) + '</div>'
+        +   '<div class="simple-win-value">' + formatCrashMoney(giftValueStars) + '</div>'
         +   '<div class="simple-win-stats">'
-        +     '<div><span>Ставка</span><b>' + formatTon(betTon) + ' GRAM</b></div>'
-        +     '<div><span>Выигрыш</span><b class="win">+' + formatTon(winTon) + ' GRAM</b></div>'
+        +     '<div><span>РЎСѓРјРјР° СЃС‚Р°РІРєРё</span><b>' + escapeHtmlCrash(stakeLabel) + '</b></div>'
+        +     '<div><span>Р’С‹РёРіСЂС‹С€</span><b class="win">+' + formatTon(winTon) + ' GRAM</b></div>'
         +   '</div>'
+        +   balanceHtml
         + '</div>';
     var wo = $('winOverlay');
     if(wo) wo.classList.add('show');
 }
 
 function showWinSheetBonus(mult, winAmount, originalGift, serverGifts){
-    // Тот же чистый экран, без длинной бонусной карточки.
+    // РўРѕС‚ Р¶Рµ С‡РёСЃС‚С‹Р№ СЌРєСЂР°РЅ, Р±РµР· РґР»РёРЅРЅРѕР№ Р±РѕРЅСѓСЃРЅРѕР№ РєР°СЂС‚РѕС‡РєРё.
     showWinSheet(mult, winAmount, originalGift ? [originalGift] : [], serverGifts || []);
     var sheet = $('winSheet');
     if(sheet) sheet.classList.add('bonus-win');
@@ -2259,9 +2305,9 @@ function closeWin(){
     if(wo) wo.classList.remove('show');
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    BETS LIST
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 var _betsFetching = false;
 async function loadBets(){
     if(_betsFetching) return;
@@ -2318,14 +2364,14 @@ async function loadBets(){
                 stCls = 'won';
                 var coef = b.cashout_multiplier ? parseFloat(b.cashout_multiplier).toFixed(2) : '?';
                 var winAmt = b.win_amount || 0;
-                statusHtml = '<div class="bet-status won">×' + coef + ' +' + formatCrashMoney(winAmt) + '</div>';
+                statusHtml = '<div class="bet-status won">Г—' + coef + ' +' + formatCrashMoney(winAmt) + '</div>';
             } else if(b.status === 'lost'){
                 stCls = 'lost';
                 var cc = servMult ? servMult.toFixed(2) : '?';
-                statusHtml = '<div class="bet-status lost">' + crashSvg + ' ×' + cc + '</div>';
+                statusHtml = '<div class="bet-status lost">' + crashSvg + ' Г—' + cc + '</div>';
             } else {
                 var coefNow = dispMult ? dispMult.toFixed(2) : '1.00';
-                statusHtml = '<div class="bet-status active">' + clockSvg + ' ×' + coefNow + '</div>';
+                statusHtml = '<div class="bet-status active">' + clockSvg + ' Г—' + coefNow + '</div>';
             }
 
             return '<div class="bet-row ' + stCls + '">'
@@ -2340,9 +2386,9 @@ async function loadBets(){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    HISTORY
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 async function loadHistory(){
     try{
         var r = await fetch('/api/ultimate-crash/history?limit=15');
@@ -2368,15 +2414,15 @@ async function loadHistory(){
             else if(m >= 3) c = 'high';
             else if(m >= 1.5) c = 'mid';
             p.className = 'h-pill ' + c;
-            p.textContent = (isB ? '🏆 ' : '') + m.toFixed(2) + 'x';
+            p.textContent = (isB ? 'рџЏ† ' : '') + m.toFixed(2) + 'x';
             bar.appendChild(p);
         });
     }catch(e){}
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    AUTO WITHDRAW
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function loadSavedAutoWithdrawGift(){
     try{
         autoWithdrawGuard = localStorage.getItem('crash_auto_withdraw_guard') !== 'off';
@@ -2426,7 +2472,7 @@ function openAutoWithdraw(){
         var bi = $('betInput');
         if(bi) _autowdBet = parseBetInputToStars(bi.value) || 0;
     }
-    if(!_autowdBet){ showToast('Введите сумму ставки', 'err'); return; }
+    if(!_autowdBet){ showToast('Р’РІРµРґРёС‚Рµ СЃСѓРјРјСѓ СЃС‚Р°РІРєРё', 'err'); return; }
     _autowdTarget = Math.floor(_autowdBet * 1.1);
 
     var b = $('autowdBetVal');
@@ -2448,13 +2494,13 @@ function closeAutoWithdraw(){
 async function loadAutoWithdrawGifts(){
     var list = $('autowdList');
     if(!list) return;
-    list.innerHTML = '<div class="autowd-empty">Загрузка...</div>';
+    list.innerHTML = '<div class="autowd-empty">Р—Р°РіСЂСѓР·РєР°...</div>';
     if(!_giftCatalog || !_giftCatalog.length){
         await ensureGiftCatalog();
     }
     var cat = _giftCatalog || [];
     if(!cat.length){
-        list.innerHTML = '<div class="autowd-empty">Не удалось загрузить</div>';
+        list.innerHTML = '<div class="autowd-empty">РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ</div>';
         return;
     }
     _autowdGifts = cat.filter(function(g){ return (g.value || 0) >= _autowdTarget; })
@@ -2472,7 +2518,7 @@ function renderAutoWithdrawGifts(){
     if(search){
         filtered = _autowdGifts.filter(function(g){ return (g.name || '').toLowerCase().indexOf(search) !== -1; });
     }
-    if(!filtered.length){ list.innerHTML = '<div class="autowd-empty">Ничего не найдено</div>'; return; }
+    if(!filtered.length){ list.innerHTML = '<div class="autowd-empty">РќРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ</div>'; return; }
     var picked = filtered.slice(0, 40);
     list.innerHTML = picked.map(function(g, idx){
         var gid = String(g.id || g.gift_key || g.fragment_slug || ('gift_' + idx));
@@ -2483,7 +2529,7 @@ function renderAutoWithdrawGifts(){
         return '<div class="autowd-row' + (isSel ? ' selected' : '') + '" data-gid="' + gid + '" onclick="selectAutoWithdrawGift(\'' + gid + '\')">'
             + '<div class="autowd-thumb"><img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"></div>'
             + '<div class="autowd-info"><div class="autowd-name">' + escapeHtmlCrash(g.name || 'Gift') + '</div>'
-            + '<div class="autowd-coeff">Коэф: x' + coeff + '</div></div>'
+            + '<div class="autowd-coeff">РљРѕСЌС„: x' + coeff + '</div></div>'
             + '<div class="autowd-price"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + (val / 100).toFixed(2) + '</div>'
             + '</div>';
     }).join('');
@@ -2501,14 +2547,14 @@ function updateAutoWithdrawApply(){
     if(!btn) return;
     if(!_autowdSelected){
         btn.disabled = true;
-        btn.innerHTML = '<span id="autowdApplyText">Выберите подарок</span>';
+        btn.innerHTML = '<span id="autowdApplyText">Р’С‹Р±РµСЂРёС‚Рµ РїРѕРґР°СЂРѕРє</span>';
         return;
     }
     var val = _autowdSelected.value || 0;
     var coeff = _autowdBet > 0 ? (val / _autowdBet).toFixed(2) : '?';
     var img = getGiftImage(_autowdSelected);
     btn.disabled = false;
-    btn.innerHTML = 'Автовывод <img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"> <span style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800">x' + coeff + '</span>';
+    btn.innerHTML = 'РђРІС‚РѕРІС‹РІРѕРґ <img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"> <span style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800">x' + coeff + '</span>';
 }
 function applyAutoWithdraw(){
     if(!_autowdSelected) return;
@@ -2529,17 +2575,17 @@ function applyAutoWithdraw(){
         if(m) m.classList.add('show');
         updateAutoWithdrawButton();
     }, 250);
-    showToast('Автовывод: x' + coeff.toFixed(2), 'ok');
+    showToast('РђРІС‚РѕРІС‹РІРѕРґ: x' + coeff.toFixed(2), 'ok');
 }
 function updateAutoWithdrawButton(){
     var btn = $('autowdMainBtn');
     if(!btn) return;
     if(!autoWithdrawGift){
-        btn.innerHTML = '<img src="/static/img/gift.png" alt=""><span class="autowd-btn-name">Выбрать</span>';
+        btn.innerHTML = '<img src="/static/img/gift.png" alt=""><span class="autowd-btn-name">Р’С‹Р±СЂР°С‚СЊ</span>';
         return;
     }
     var img = autoWithdrawGift.image || '/static/img/gift.png';
-    var nameShort = (autoWithdrawGift.name || 'Подарок').substring(0, 10);
+    var nameShort = (autoWithdrawGift.name || 'РџРѕРґР°СЂРѕРє').substring(0, 10);
     btn.innerHTML = '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">'
         + '<span class="autowd-btn-name">' + nameShort + '</span>'
         + '<span class="autowd-btn-coeff">x' + autoWithdrawGift.coeff.toFixed(2) + '</span>';
@@ -2558,9 +2604,9 @@ function toggleAutoWithdrawGuardClick(){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    SETTINGS
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function syncSettingsToggles(){
     var el = $('showGiftsToggle');
     if(el) el.classList.toggle('on', showGifts);
@@ -2582,7 +2628,7 @@ function toggleShowGiftsClick(){
     localStorage.setItem('crash_show_gifts', showGifts ? 'on' : 'off');
     var el = $('showGiftsToggle');
     if(el) el.classList.toggle('on', showGifts);
-    showToast(showGifts ? 'Подарки включены' : 'Только ракета', 'ok');
+    showToast(showGifts ? 'РџРѕРґР°СЂРєРё РІРєР»СЋС‡РµРЅС‹' : 'РўРѕР»СЊРєРѕ СЂР°РєРµС‚Р°', 'ok');
     applyRocket();
     _lastBtnKey = '';
     updateActionButton();
@@ -2604,17 +2650,17 @@ function selectRocket(rid){
     localStorage.setItem('crash_rocket', rid);
     applyRocket();
     renderSettings();
-    showToast('Ракета изменена', 'ok');
+    showToast('Р Р°РєРµС‚Р° РёР·РјРµРЅРµРЅР°', 'ok');
     setTimeout(closeSettings, 200);
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    DEPOSIT
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 function openDepositSelector(){ var so = $('depositOverlay'); if(so) so.classList.add('show'); }
 function closeDepositSelector(){ var so = $('depositOverlay'); if(so) so.classList.remove('show'); }
 function openStarsDeposit(){
-    if(!isTelegramWebApp()){ showToast('Stars только в Telegram', 'err'); return; }
+    if(!isTelegramWebApp()){ showToast('Stars С‚РѕР»СЊРєРѕ РІ Telegram', 'err'); return; }
     var so = $('starsDepositOverlay');
     if(so) so.classList.add('show');
 }
@@ -2622,7 +2668,7 @@ function closeStarsDeposit(){ var so = $('starsDepositOverlay'); if(so) so.class
 async function payWithStars(){
     var amountEl = $('starsDepositAmount');
     var amount = parseInt(amountEl ? amountEl.value : 0) || 0;
-    if(amount < 1 || amount > 10000){ showToast('Введите 1-10000', 'err'); return; }
+    if(amount < 1 || amount > 10000){ showToast('Р’РІРµРґРёС‚Рµ 1-10000', 'err'); return; }
     var btn = $('starsPayBtn');
     if(btn) btn.disabled = true;
     try{
@@ -2635,7 +2681,7 @@ async function payWithStars(){
         if(d.success && d.invoice_link){
             if(typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.openInvoice){
                 Telegram.WebApp.openInvoice(d.invoice_link, function(status){
-                    if(status === 'paid'){ showToast('Оплата успешна', 'ok'); closeStarsDeposit(); }
+                    if(status === 'paid'){ showToast('РћРїР»Р°С‚Р° СѓСЃРїРµС€РЅР°', 'ok'); closeStarsDeposit(); }
                     if(btn) btn.disabled = false;
                 });
             } else {
@@ -2643,18 +2689,18 @@ async function payWithStars(){
                 if(btn) btn.disabled = false;
             }
         } else {
-            showToast(d.error || 'Ошибка', 'err');
+            showToast(d.error || 'РћС€РёР±РєР°', 'err');
             if(btn) btn.disabled = false;
         }
     }catch(e){
-        showToast('Ошибка сети', 'err');
+        showToast('РћС€РёР±РєР° СЃРµС‚Рё', 'err');
         if(btn) btn.disabled = false;
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
+/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
    INIT
-   ══════════════════════════════════════════════════════════════ */
+   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
 async function init(){
     initFullscreen();
     await initAuth();
@@ -2729,19 +2775,19 @@ document.addEventListener('DOMContentLoaded', function(){
 <nav class="bottom-nav">
     <a class="bottom-nav-item" href="/games">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
-        <span>Игры</span>
+        <span>РРіСЂС‹</span>
     </a>
     <a class="bottom-nav-item" href="/upgrade">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        <span>Апгрейды</span>
+        <span>РђРїРіСЂРµР№РґС‹</span>
     </a>
     <a class="bottom-nav-item" href="/leaderboard">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-        <span>Топ</span>
+        <span>РўРѕРї</span>
     </a>
     <a class="bottom-nav-item" href="/inventory">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>Профиль</span>
+        <span>РџСЂРѕС„РёР»СЊ</span>
     </a>
 </nav>
 
