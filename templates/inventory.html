@@ -570,7 +570,7 @@ body{
 }
 
 /* ══════════════════════════════════════════════════════════════
-   UPGRADE MODAL — редизайн
+   ★ UPGRADE MODAL — компактный
    ══════════════════════════════════════════════════════════════ */
 .upgrade-overlay{
     position:fixed;inset:0;z-index:85000;
@@ -586,7 +586,9 @@ body{
     background:linear-gradient(180deg,#232c3e 0%,#1a2232 100%);
     border-radius:24px 24px 0 0;
     width:100%;max-width:480px;
-    height:90vh;
+    /* ★ Компактная высота */
+    height:auto;
+    max-height:78vh;
     display:flex;flex-direction:column;
     transform:translateY(100%);
     transition:transform .4s cubic-bezier(.32,1,.23,1);
@@ -597,7 +599,7 @@ body{
 
 .upgrade-header{
     display:flex;align-items:center;justify-content:space-between;
-    padding:18px 20px 14px;
+    padding:14px 18px 12px;
     border-bottom:1px solid rgba(59,130,246,.15);
     flex-shrink:0;position:relative;
     background:linear-gradient(180deg,rgba(35,44,62,1) 0%,rgba(35,44,62,.95) 100%);
@@ -609,134 +611,111 @@ body{
     position:absolute;top:8px;left:50%;transform:translateX(-50%);
 }
 .upgrade-title{
-    font-size:16px;font-weight:900;color:#fff;
-    display:flex;align-items:center;gap:8px;
-    padding-top:6px;
+    font-size:14px;font-weight:900;color:#fff;
+    display:flex;align-items:center;gap:6px;
+    padding-top:4px;
     text-transform:uppercase;letter-spacing:.8px;
 }
-.upgrade-title svg{width:20px;height:20px;stroke:#7CAEFF;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.upgrade-title svg{width:16px;height:16px;stroke:#7CAEFF;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .upgrade-close{
-    width:34px;height:34px;border-radius:12px;border:none;
+    width:30px;height:30px;border-radius:10px;border:none;
     background:rgba(255,48,100,.15);color:#FF3064;
-    cursor:pointer;font-size:16px;font-weight:700;
+    cursor:pointer;font-size:14px;font-weight:700;
     display:flex;align-items:center;justify-content:center;
-    margin-top:6px;
+    margin-top:4px;
     transition:transform .15s;
 }
 .upgrade-close:active{transform:scale(.9)}
 
-/* ★ СЦЕНА (центр) */
+/* ★ СЦЕНА — тут только одна картинка или рулетка */
 .upgrade-stage{
-    flex:1;
     display:flex;
     flex-direction:column;
     align-items:center;
-    justify-content:flex-start;
-    padding:20px 16px 8px;
+    justify-content:center;
+    padding:16px 16px 12px;
     position:relative;
-    min-height:0;
-    overflow:hidden;
     background:radial-gradient(circle at center, rgba(59,130,246,.08) 0%, transparent 70%);
 }
 
-/* ★ PREVIEW (фаза 1) — PNG подарка в центре */
+/* ★ PNG превью — квадрат 130x130 */
 .upgrade-preview-wrap{
-    width:180px;
-    height:180px;
-    border-radius:22px;
+    width:130px;height:130px;
+    border-radius:20px;
     overflow:hidden;
     background:rgba(0,0,0,.3);
     border:2px solid rgba(59,130,246,.35);
     box-shadow:0 12px 40px rgba(0,0,0,.6);
     position:relative;
-    margin-bottom:14px;
+    display:flex;align-items:center;justify-content:center;
     flex-shrink:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
 }
 .upgrade-preview-wrap img{
     width:100%;height:100%;
     object-fit:cover;display:block;
-    transition:opacity .18s ease;
+    transition:opacity .35s ease;
+    opacity:1;
 }
+/* ★ Плавное затухание */
 .upgrade-preview-wrap img.fading{
-    opacity:.15;
-    transform:scale(.92);
+    opacity:0;
 }
 
-/* ★ ROULETTE (фаза 2) — заменяет превью */
+/* ★ РУЛЕТКА — заменяет превью */
 .upgrade-roulette-wrap{
     width:100%;
-    height:180px;
-    margin-bottom:14px;
+    height:130px;
     display:none;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
     position:relative;
     flex-shrink:0;
 }
-.upgrade-roulette-wrap.show{display:flex;}
+.upgrade-roulette-wrap.show{display:block;}
 
 .upgrade-roulette{
     width:100%;
-    height:180px;
+    height:130px;
     position:relative;
     overflow:hidden;
-    border-radius:20px;
+    border-radius:18px;
     background:rgba(0,0,0,.35);
     border:1.5px solid rgba(59,130,246,.25);
     box-shadow:inset 0 0 40px rgba(0,0,0,.6), 0 8px 30px rgba(0,0,0,.5);
 }
 .upgrade-roulette-strip{
     display:flex;
-    gap:12px;
+    gap:0;
     height:100%;
-    align-items:center;
-    padding:0 20px;
+    align-items:stretch;
+    padding:0;
     will-change:transform;
 }
+/* ★ Карточка на всю высоту, без надписей, только PNG */
 .roulette-card{
     width:130px;
-    height:150px;
+    height:130px;
     flex-shrink:0;
-    border-radius:14px;
-    background:rgba(0,0,0,.4);
-    border:2px solid rgba(59,130,246,.25);
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:5px;
-    padding:8px;
+    background:rgba(0,0,0,.2);
+    display:block;
+    padding:0;
+    margin:0;
     overflow:hidden;
     position:relative;
-    transition:border-color .3s, box-shadow .3s;
+    /* ★ Никаких границ между картинками — они как бы склеены */
+    border:none;
 }
 .roulette-card img{
-    width:100%;height:100px;
-    object-fit:cover;border-radius:8px;
-    background:rgba(0,0,0,.2);display:block;
-}
-.roulette-card .rc-name{
-    font-size:10px;font-weight:800;
-    color:rgba(255,255,255,.85);
-    text-align:center;line-height:1.15;width:100%;
-    overflow:hidden;text-overflow:ellipsis;
-    display:-webkit-box;-webkit-line-clamp:1;
-    -webkit-box-orient:vertical;
-}
-.roulette-card .rc-price{
-    font-size:10px;font-weight:800;color:#7CAEFF;
-    display:flex;align-items:center;gap:3px;
-}
-.roulette-card .rc-price img{
-    width:11px;height:11px;object-fit:contain;border-radius:0;background:none;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    border-radius:0;
+    background:transparent;
 }
 
+/* Центральный указатель */
 .upgrade-pointer-line{
-    position:absolute;top:0;bottom:0;
+    position:absolute;
+    top:0;bottom:0;
     left:50%;width:2px;
     transform:translateX(-50%);
     background:linear-gradient(180deg,transparent 0%,#24C38E 20%,#24C38E 80%,transparent 100%);
@@ -749,64 +728,47 @@ body{
     content:'';position:absolute;left:50%;
     transform:translateX(-50%);
     width:0;height:0;
-    border-left:7px solid transparent;
-    border-right:7px solid transparent;
+    border-left:6px solid transparent;
+    border-right:6px solid transparent;
 }
 .upgrade-pointer-line::before{
-    top:-2px;border-top:10px solid #24C38E;
+    top:-2px;border-top:9px solid #24C38E;
 }
 .upgrade-pointer-line::after{
-    bottom:-2px;border-bottom:10px solid #24C38E;
+    bottom:-2px;border-bottom:9px solid #24C38E;
 }
 
+/* ★ Легкая виньетка по краям */
 .upgrade-roulette::before,
 .upgrade-roulette::after{
     content:'';position:absolute;top:0;bottom:0;
-    width:50px;z-index:4;pointer-events:none;
+    width:40px;z-index:4;pointer-events:none;
 }
 .upgrade-roulette::before{
     left:0;
-    background:linear-gradient(90deg,rgba(35,44,62,1) 0%,rgba(35,44,62,0) 100%);
+    background:linear-gradient(90deg,rgba(35,44,62,.9) 0%,rgba(35,44,62,0) 100%);
 }
 .upgrade-roulette::after{
     right:0;
-    background:linear-gradient(270deg,rgba(35,44,62,1) 0%,rgba(35,44,62,0) 100%);
+    background:linear-gradient(270deg,rgba(35,44,62,.9) 0%,rgba(35,44,62,0) 100%);
 }
 
-/* ★ Имя текущего подарка */
-.upgrade-current-name{
-    font-size:15px;
-    font-weight:900;
-    color:#fff;
-    text-align:center;
-    max-width:100%;
-    padding:0 10px;
-    margin-bottom:12px;
-    min-height:18px;
-    line-height:1.2;
-    transition:opacity .18s ease;
-}
-.upgrade-current-name.fading{opacity:.15;}
-
-/* ★ Атрибуты / шансы */
+/* ★ Атрибуты внизу */
 .upgrade-attrs-panel{
     width:100%;
-    display:flex;
-    flex-direction:column;
-    gap:1px;
+    display:flex;flex-direction:column;gap:1px;
     background:rgba(0,0,0,.25);
-    border-radius:14px;
-    overflow:hidden;
+    border-radius:14px;overflow:hidden;
     border:1.5px solid rgba(59,130,246,.2);
-    margin-top:4px;
+    margin-top:14px;
 }
 .upgrade-attr-row{
     display:flex;align-items:center;justify-content:space-between;
-    padding:10px 14px;
+    padding:9px 14px;
     border-bottom:1px solid rgba(59,130,246,.08);
     gap:10px;
     background:rgba(59,130,246,.04);
-    min-height:44px;
+    min-height:38px;
 }
 .upgrade-attr-row:last-child{border-bottom:none}
 .upgrade-attr-label{
@@ -818,36 +780,29 @@ body{
     flex-shrink:0;
 }
 .upgrade-attr-right{
-    display:flex;
-    align-items:center;
-    gap:6px;
+    display:flex;align-items:center;gap:6px;
     min-width:0;flex:1;
     justify-content:flex-end;
 }
 .upgrade-attr-value{
-    font-size:13px;
-    color:#fff;
-    font-weight:800;
+    font-size:12px;color:#fff;font-weight:800;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    max-width:120px;
-    text-align:right;
-    transition:opacity .15s ease;
+    max-width:120px;text-align:right;
+    transition:opacity .3s ease;
+    opacity:1;
 }
-.upgrade-attr-value.fading{opacity:.15;}
+.upgrade-attr-value.fading{opacity:0;}
 .upgrade-attr-rarity{
-    font-size:10px;
-    color:#7CAEFF;
-    font-weight:700;
+    font-size:10px;color:#7CAEFF;font-weight:700;
     background:rgba(59,130,246,.12);
-    padding:2px 7px;
-    border-radius:6px;
+    padding:2px 7px;border-radius:6px;
     border:1px solid rgba(59,130,246,.25);
     flex-shrink:0;
-    min-width:44px;
-    text-align:center;
-    transition:opacity .15s ease;
+    min-width:44px;text-align:center;
+    transition:opacity .3s ease;
+    opacity:1;
 }
-.upgrade-attr-rarity.fading{opacity:.15;}
+.upgrade-attr-rarity.fading{opacity:0;}
 .upgrade-attr-rarity.empty{
     background:rgba(255,255,255,.04);
     border-color:rgba(255,255,255,.08);
@@ -856,20 +811,20 @@ body{
 
 /* ═══ UPGRADE BUTTON ═══ */
 .upgrade-action-wrap{
-    padding:12px 20px calc(20px + var(--safe-bottom,0px));
+    padding:12px 20px calc(18px + var(--safe-bottom,0px));
     flex-shrink:0;
     background:linear-gradient(0deg,rgba(26,34,50,1) 0%,rgba(26,34,50,.9) 80%,rgba(26,34,50,0) 100%);
     position:relative;z-index:10;
 }
 .upgrade-action-btn{
     width:100%;
-    padding:17px;
+    padding:15px;
     border-radius:16px;
     border:none;
     background:linear-gradient(135deg,#3B82F6,#2563EB);
     color:#fff;
     font-family:inherit;
-    font-size:15px;
+    font-size:14px;
     font-weight:900;
     cursor:pointer;
     transition:transform .15s,opacity .2s,box-shadow .2s;
@@ -877,7 +832,7 @@ body{
     text-transform:uppercase;
     letter-spacing:.8px;
     display:flex;align-items:center;justify-content:center;gap:8px;
-    min-height:56px;
+    min-height:50px;
 }
 .upgrade-action-btn:active:not(:disabled){transform:scale(.97)}
 .upgrade-action-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
@@ -886,7 +841,7 @@ body{
     cursor:wait;pointer-events:none;
 }
 .upgrade-action-btn svg{
-    width:20px;height:20px;fill:none;stroke:currentColor;
+    width:18px;height:18px;fill:none;stroke:currentColor;
     stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
 }
 
@@ -918,12 +873,12 @@ body{
 }
 .upgrade-result-overlay.show{display:flex;opacity:1;}
 .upgrade-result-overlay-img{
-    width:180px;height:180px;
-    object-fit:cover;border-radius:24px;
+    width:150px;height:150px;
+    object-fit:cover;border-radius:20px;
     background:rgba(0,0,0,.3);
     border:3px solid rgba(36,195,142,.7);
     box-shadow:0 0 60px rgba(36,195,142,.6), inset 0 0 30px rgba(36,195,142,.1);
-    margin-bottom:20px;
+    margin-bottom:18px;
     animation:resultZoom .6s cubic-bezier(.22,1.5,.5,1);
 }
 @keyframes resultZoom{
@@ -932,26 +887,26 @@ body{
     100%{transform:scale(1) rotate(0deg);opacity:1}
 }
 .upgrade-result-overlay-name{
-    font-size:22px;font-weight:900;color:#fff;
+    font-size:20px;font-weight:900;color:#fff;
     text-align:center;margin-bottom:8px;
     max-width:100%;padding:0 10px;
 }
 .upgrade-result-overlay-msg{
     display:flex;align-items:center;gap:6px;
-    font-size:15px;font-weight:800;color:#24C38E;
+    font-size:14px;font-weight:800;color:#24C38E;
     padding:6px 16px;
     background:rgba(36,195,142,.12);
     border:1.5px solid rgba(36,195,142,.35);
-    border-radius:12px;margin-bottom:24px;
+    border-radius:12px;margin-bottom:20px;
 }
 .upgrade-result-overlay-claim{
-    padding:15px 40px;border-radius:14px;border:none;
+    padding:14px 36px;border-radius:14px;border:none;
     background:linear-gradient(135deg,#24C38E,#10b981);
-    color:#fff;font-family:inherit;font-size:15px;
+    color:#fff;font-family:inherit;font-size:14px;
     font-weight:900;cursor:pointer;
     box-shadow:0 8px 25px rgba(36,195,142,.5);
     text-transform:uppercase;letter-spacing:.6px;
-    transition:transform .15s;min-width:200px;
+    transition:transform .15s;min-width:180px;
 }
 .upgrade-result-overlay-claim:active{transform:scale(.97)}
 
@@ -1142,12 +1097,11 @@ body{
     .item-sheet-img{width:100px;height:100px}
     .item-nft-img-wrap{width:170px;height:170px}
     .item-btn{font-size:12px;padding:14px 8px}
-    .upgrade-preview-wrap{width:150px;height:150px}
-    .upgrade-roulette-wrap{height:160px}
-    .upgrade-roulette{height:160px}
-    .roulette-card{width:110px;height:130px}
-    .roulette-card img{height:85px}
-    .upgrade-result-overlay-img{width:150px;height:150px}
+    .upgrade-preview-wrap{width:110px;height:110px}
+    .upgrade-roulette-wrap{height:110px}
+    .upgrade-roulette{height:110px}
+    .roulette-card{width:110px;height:110px}
+    .upgrade-result-overlay-img{width:130px;height:130px}
     .bnav-item{padding:6px 4px}
     .bnav-item span{font-size:9px}
 }
@@ -1334,7 +1288,6 @@ body{
             <button class="upgrade-close" onclick="closeUpgradeModal()">✕</button>
         </div>
 
-        <!-- СЦЕНА -->
         <div class="upgrade-stage">
 
             <!-- PNG превью -->
@@ -1342,10 +1295,7 @@ body{
                 <img id="upgradePreviewImg" src="/static/img/gift.png" alt="">
             </div>
 
-            <!-- Имя текущего -->
-            <div class="upgrade-current-name" id="upgradeCurrentName">Подарок</div>
-
-            <!-- Рулетка (скрыта по умолчанию) -->
+            <!-- Рулетка (скрыта) -->
             <div class="upgrade-roulette-wrap" id="upgradeRouletteWrap">
                 <div class="upgrade-roulette" id="upgradeRoulette">
                     <div class="upgrade-pointer-line active" id="upgradePointerLine"></div>
@@ -1353,7 +1303,7 @@ body{
                 </div>
             </div>
 
-            <!-- Шансы / атрибуты -->
+            <!-- Атрибуты / шансы -->
             <div class="upgrade-attrs-panel" id="upgradeAttrsPanel">
                 <div class="upgrade-attr-row">
                     <span class="upgrade-attr-label">Model</span>
@@ -1496,7 +1446,7 @@ let _upgradeVariants = [];
 let _upgradeCenterIndex = 0;
 let _upgradeCurrentGift = null;
 let _upgradeSpinRunning = false;
-let _previewAnimId = null;
+let _previewAnimTimer = null;
 let _previewAnimRunning = false;
 
 function $(id){ return document.getElementById(id); }
@@ -1973,10 +1923,7 @@ async function claimChallenge(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   UPGRADE MODAL — новый дизайн
-   
-   Фаза 1: PNG в центре + шансы внизу, всё меняется синхронно
-   Фаза 2: PNG заменяется на рулетку, шансы продолжают меняться
+   UPGRADE MODAL
    ══════════════════════════════════════════════════════════════ */
 async function openUpgradeModal(){
     if(!selectedItem) return;
@@ -1997,9 +1944,9 @@ async function openUpgradeModal(){
     // Reset
     _upgradeSpinRunning = false;
     _previewAnimRunning = false;
-    if(_previewAnimId){
-        cancelAnimationFrame(_previewAnimId);
-        _previewAnimId = null;
+    if(_previewAnimTimer){
+        clearTimeout(_previewAnimTimer);
+        _previewAnimTimer = null;
     }
     _upgradeVariants = [];
     _upgradeCenterIndex = 0;
@@ -2028,8 +1975,11 @@ async function openUpgradeModal(){
         pimg.src = getGiftImage(selectedItem);
         pimg.classList.remove('fading');
     }
-    var pname = $('upgradeCurrentName');
-    if(pname) pname.textContent = selectedItem.gift_name || 'Подарок';
+
+    // Сброс атрибутов
+    setPreviewAttr($('upgradeModelVal'), $('upgradeModelRar'), '—', null);
+    setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), '—', null);
+    setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), '—', null);
 
     // Запрос на подготовку
     try{
@@ -2058,10 +2008,10 @@ async function openUpgradeModal(){
             return;
         }
 
-        // Показываем первый вариант из списка (для разнообразия)
+        // Показываем первый вариант из списка
         setPreviewVariant(_upgradeVariants[0]);
 
-        // ★ ФАЗА 1: анимация затухания — PNG + шансы меняются
+        // ★ ФАЗА 1: плавное затухание PNG + смена атрибутов
         startFadePreviewAnimation();
 
     }catch(e){
@@ -2071,58 +2021,55 @@ async function openUpgradeModal(){
     }
 }
 
-/* ★ ФАЗА 1: PREVIEW — плавное затухание + смена PNG и шансов */
+/* ★ ФАЗА 1: PREVIEW — плавное затухание PNG и смена атрибутов */
 function startFadePreviewAnimation(){
     if(!_upgradeVariants.length) return;
     _previewAnimRunning = true;
 
     var total = _upgradeVariants.length;
     var idx = 0;
-    var startTime = performance.now();
-    // Общая длительность анимации превью — 3 секунды
     var totalDuration = 3000;
+    var startTime = performance.now();
 
-    function step(now){
+    // Рекурсивная функция с плавным fade через CSS-переходы
+    function scheduleNext(){
         if(!_previewAnimRunning) return;
 
-        var elapsed = now - startTime;
+        var elapsed = performance.now() - startTime;
         var progress = elapsed / totalDuration;
 
         if(progress >= 1){
-            // Финал превью — показываем случайный вариант (не первый)
+            // Финал: случайный вариант
             var finalIdx = Math.floor(Math.random() * total);
             swapPreviewVariant(_upgradeVariants[finalIdx]);
             _previewAnimRunning = false;
             return;
         }
 
-        // Меняем вариант примерно каждые 300мс, ускоряясь к концу
-        var interval = 320 + Math.pow(progress, 2) * 100;
+        // Интервал: 350ms → 550ms, ускоряется к концу
+        var interval = 380 + Math.pow(progress, 2) * 180;
+        if(interval < 200) interval = 200;
 
-        if(!step._lastSwap || now - step._lastSwap > interval){
-            step._lastSwap = now;
-            var v = _upgradeVariants[idx % total];
-            swapPreviewVariant(v);
-            idx++;
-            vibrateIfOn();
-        }
+        var v = _upgradeVariants[idx % total];
+        swapPreviewVariant(v);
+        idx++;
 
-        _previewAnimId = requestAnimationFrame(step);
+        _previewAnimTimer = setTimeout(scheduleNext, interval);
     }
-    _previewAnimId = requestAnimationFrame(step);
+
+    // Первый свап сразу
+    scheduleNext();
 }
 
-/* Плавная смена: затухание → новый → появление */
+/* ★ Плавная смена: затухание → новый → появление */
 function swapPreviewVariant(variant){
     var pimg = $('upgradePreviewImg');
-    var pname = $('upgradeCurrentName');
     var mVal = $('upgradeModelVal'), mRar = $('upgradeModelRar');
     var sVal = $('upgradeSymbolVal'), sRar = $('upgradeSymbolRar');
     var bVal = $('upgradeBackdropVal'), bRar = $('upgradeBackdropRar');
 
-    // Начинаем затухание
+    // Затухание
     if(pimg) pimg.classList.add('fading');
-    if(pname) pname.classList.add('fading');
     if(mVal) mVal.classList.add('fading');
     if(mRar) mRar.classList.add('fading');
     if(sVal) sVal.classList.add('fading');
@@ -2130,7 +2077,7 @@ function swapPreviewVariant(variant){
     if(bVal) bVal.classList.add('fading');
     if(bRar) bRar.classList.add('fading');
 
-    // Через 180мс — меняем содержимое и убираем затухание
+    // Через 350мс — меняем контент и плавно проявляем
     setTimeout(function(){
         if(pimg){
             pimg.src = variant.image || variant.fallback_image || '/static/img/gift.png';
@@ -2139,23 +2086,21 @@ function swapPreviewVariant(variant){
                 this.src = variant.fallback_image || '/static/img/gift.png';
             };
         }
-        if(pname) pname.textContent = variant.name || 'Gift';
-
-        // Обновляем атрибуты и шансы
         setPreviewAttr(mVal, mRar, variant.model || '—', variant.model_rarity);
         setPreviewAttr(sVal, sRar, variant.symbol || '—', variant.symbol_rarity);
         setPreviewAttr(bVal, bRar, variant.backdrop || '—', variant.backdrop_rarity);
 
-        // Убираем затухание
+        // Убираем fading → плавное появление через CSS transition
         if(pimg) pimg.classList.remove('fading');
-        if(pname) pname.classList.remove('fading');
         if(mVal) mVal.classList.remove('fading');
         if(mRar) mRar.classList.remove('fading');
         if(sVal) sVal.classList.remove('fading');
         if(sRar) sRar.classList.remove('fading');
         if(bVal) bVal.classList.remove('fading');
         if(bRar) bRar.classList.remove('fading');
-    }, 180);
+    }, 350);
+
+    vibrateIfOn();
 }
 
 function setPreviewAttr(valEl, rarEl, value, rarity){
@@ -2173,10 +2118,8 @@ function setPreviewAttr(valEl, rarEl, value, rarity){
     }
 }
 
-// Просто выставляем сразу, без анимации (для финального вызова)
 function setPreviewVariant(variant){
     var pimg = $('upgradePreviewImg');
-    var pname = $('upgradeCurrentName');
     if(pimg){
         pimg.src = variant.image || variant.fallback_image || '/static/img/gift.png';
         pimg.onerror = function(){
@@ -2184,7 +2127,6 @@ function setPreviewVariant(variant){
             this.src = variant.fallback_image || '/static/img/gift.png';
         };
     }
-    if(pname) pname.textContent = variant.name || 'Gift';
     setPreviewAttr($('upgradeModelVal'), $('upgradeModelRar'), variant.model || '—', variant.model_rarity);
     setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), variant.symbol || '—', variant.symbol_rarity);
     setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), variant.backdrop || '—', variant.backdrop_rarity);
@@ -2196,9 +2138,9 @@ function closeUpgradeModal(){
     ov.classList.remove('show');
     _upgradeSpinRunning = false;
     _previewAnimRunning = false;
-    if(_previewAnimId){
-        cancelAnimationFrame(_previewAnimId);
-        _previewAnimId = null;
+    if(_previewAnimTimer){
+        clearTimeout(_previewAnimTimer);
+        _previewAnimTimer = null;
     }
 
     var cc = $('confettiContainer');
@@ -2207,8 +2149,7 @@ function closeUpgradeModal(){
 
 /* ══════════════════════════════════════════════════════════════
    UPGRADE SPIN — клик на "АПГРЕЙД"
-   
-   ★ Заменяем PNG на рулетку, крутим
+   ★ Рулетка сразу грузится, PNG превью скрывается
    ══════════════════════════════════════════════════════════════ */
 async function startUpgradeSpin(){
     if(_upgradeSpinRunning) return;
@@ -2221,9 +2162,9 @@ async function startUpgradeSpin(){
 
     // Останавливаем превью-анимацию
     _previewAnimRunning = false;
-    if(_previewAnimId){
-        cancelAnimationFrame(_previewAnimId);
-        _previewAnimId = null;
+    if(_previewAnimTimer){
+        clearTimeout(_previewAnimTimer);
+        _previewAnimTimer = null;
     }
 
     vibrateIfOn();
@@ -2236,10 +2177,8 @@ async function startUpgradeSpin(){
     // ★ СКРЫВАЕМ PNG, ПОКАЗЫВАЕМ РУЛЕТКУ
     var previewWrap = $('upgradePreviewWrap');
     var rouletteWrap = $('upgradeRouletteWrap');
-    var currentName = $('upgradeCurrentName');
 
     if(previewWrap) previewWrap.style.display = 'none';
-    if(currentName) currentName.style.display = 'none';
     if(rouletteWrap) rouletteWrap.classList.add('show');
 
     // Строим рулетку
@@ -2266,9 +2205,7 @@ async function startUpgradeSpin(){
         var d = await r.json();
         if(!d.success){
             _upgradeSpinRunning = false;
-            // Возвращаем превью
             if(previewWrap) previewWrap.style.display = 'flex';
-            if(currentName) currentName.style.display = 'block';
             if(rouletteWrap) rouletteWrap.classList.remove('show');
             if(btnEl) btnEl.classList.remove('loading');
             if(btxt) btxt.textContent = 'АПГРЕЙД';
@@ -2280,7 +2217,6 @@ async function startUpgradeSpin(){
         console.error('spin error', e);
         _upgradeSpinRunning = false;
         if(previewWrap) previewWrap.style.display = 'flex';
-        if(currentName) currentName.style.display = 'block';
         if(rouletteWrap) rouletteWrap.classList.remove('show');
         if(btnEl) btnEl.classList.remove('loading');
         if(btxt) btxt.textContent = 'АПГРЕЙД';
@@ -2292,7 +2228,7 @@ async function startUpgradeSpin(){
     spinRoulette(chosenIndex, chosenVariant, spinResult);
 }
 
-/* Построить полосу рулетки */
+/* Построить полосу рулетки — БЕЗ надписей, только PNG */
 function buildRoulette(){
     var strip = $('upgradeRouletteStrip');
     if(!strip) return;
@@ -2302,8 +2238,6 @@ function buildRoulette(){
         html += '<div class="roulette-card" data-idx="' + i + '">'
             + '<img src="' + (v.image || v.fallback_image || '/static/img/gift.png') + '" '
             + 'onerror="this.onerror=null;this.src=\'' + (v.fallback_image || '/static/img/gift.png') + '\'" alt="">'
-            + '<div class="rc-name">' + escapeHtml((v.name || '').substring(0, 18)) + '</div>'
-            + '<div class="rc-price"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + formatTon((v.value || 0) / 100) + '</div>'
             + '</div>';
     }
     strip.innerHTML = html;
@@ -2320,9 +2254,9 @@ function spinRoulette(targetIdx, chosenVariant, result){
     if(!cards.length) return;
 
     var cardWidth = cards[0].offsetWidth || 130;
-    var gap = 12;
+    var gap = 0; // Карточки склеены
     var step = cardWidth + gap;
-    var stripPadding = 20;
+    var stripPadding = 0;
 
     var containerW = rouletteEl.offsetWidth || 400;
     var centerX = containerW / 2;
@@ -2330,7 +2264,6 @@ function spinRoulette(targetIdx, chosenVariant, result){
     var targetCenterInStrip = stripPadding + targetIdx * step + cardWidth / 2;
     var finalOffset = centerX - targetCenterInStrip;
 
-    // Проматываем много кругов
     var spins = 6 + Math.floor(Math.random() * 3);
     var spinDistance = step * _upgradeVariants.length * spins;
     var startX = finalOffset + spinDistance;
@@ -2342,7 +2275,7 @@ function spinRoulette(targetIdx, chosenVariant, result){
     var duration = 5500;
     var ease = 'cubic-bezier(.15,.75,.2,1)';
 
-    // ★ Запускаем и параллельно меняем атрибуты внизу
+    // ★ Меняем атрибуты внизу во время кручения
     startAttrShuffleDuringSpin(duration);
 
     requestAnimationFrame(function(){
@@ -2371,11 +2304,10 @@ function spinRoulette(targetIdx, chosenVariant, result){
     }
     requestAnimationFrame(tickLoop);
 
-    // Финал
     setTimeout(function(){
         if(pointer) pointer.classList.remove('active');
         stopAttrShuffle();
-        // Устанавливаем финальные атрибуты от выпавшего подарка
+        // Финальные атрибуты
         setPreviewAttr($('upgradeModelVal'), $('upgradeModelRar'), chosenVariant.model || '—', chosenVariant.model_rarity);
         setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), chosenVariant.symbol || '—', chosenVariant.symbol_rarity);
         setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), chosenVariant.backdrop || '—', chosenVariant.backdrop_rarity);
@@ -2383,7 +2315,7 @@ function spinRoulette(targetIdx, chosenVariant, result){
     }, duration + 100);
 }
 
-/* Меняем атрибуты внизу, пока крутится рулетка */
+/* Меняем атрибуты внизу во время кручения */
 var _attrShuffleInterval = null;
 function startAttrShuffleDuringSpin(duration){
     if(_attrShuffleInterval) clearInterval(_attrShuffleInterval);
@@ -2417,8 +2349,7 @@ function finalizeSpin(idx, variant, result){
     var strip = $('upgradeRouletteStrip');
     var cards = strip ? strip.querySelectorAll('.roulette-card') : [];
     if(cards[idx]){
-        cards[idx].style.borderColor = '#24C38E';
-        cards[idx].style.boxShadow = '0 0 30px rgba(36,195,142,.8)';
+        cards[idx].style.boxShadow = 'inset 0 0 0 3px #24C38E, 0 0 30px rgba(36,195,142,.8)';
     }
 
     try{
