@@ -444,6 +444,44 @@ body{
     .bonus-announce-emoji{font-size:60px}
     .bonus-announce-title{font-size:24px}
 }
+
+/* CRASH POLISH v2 */
+#cdDisplay{font-variant-numeric:tabular-nums;text-shadow:0 0 20px rgba(88,166,255,.45);}
+#cdDisplay.active{animation:countdownPop .72s cubic-bezier(.2,.85,.25,1) both;}
+@keyframes countdownPop{0%{opacity:0;transform:scale(.65) translateY(8px);filter:blur(5px)}55%{opacity:1;transform:scale(1.18) translateY(0);filter:blur(0)}100%{opacity:1;transform:scale(1)}}
+.coeff-box{font-variant-numeric:tabular-nums;text-shadow:0 0 18px rgba(59,130,246,.3);}
+.rocket-wrap.flying{animation:rocketFloat .9s ease-in-out infinite alternate;}
+@keyframes rocketFloat{from{transform:translateY(1px)}to{transform:translateY(-5px)}}
+
+/* CRASH POLISH v3 */
+#gameField::after{
+    content:"";position:absolute;inset:-25%;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(circle at 20% 30%,rgba(59,130,246,.10) 0 1px,transparent 2px),
+      radial-gradient(circle at 70% 20%,rgba(36,195,142,.10) 0 1px,transparent 2px),
+      radial-gradient(circle at 40% 80%,rgba(255,255,255,.08) 0 1px,transparent 2px),
+      radial-gradient(circle at 90% 65%,rgba(59,130,246,.08) 0 1px,transparent 2px);
+    background-size:120px 120px,170px 170px,150px 150px,190px 190px;
+    animation:spaceDrift 14s linear infinite;opacity:.55;
+}
+@keyframes spaceDrift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-90px,70px,0)}}
+.game-field.counting{box-shadow:inset 0 0 100px rgba(59,130,246,.08),0 0 35px rgba(59,130,246,.08)}
+.game-field.counting::before{animation:gridPulse .9s ease-in-out infinite alternate}
+@keyframes gridPulse{from{opacity:.45}to{opacity:.9}}
+#cdDisplay{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:900;letter-spacing:-.06em;z-index:12;will-change:transform,opacity,filter}
+#cdDisplay.go{font-size:min(72px,18vw);letter-spacing:.04em;color:#24C38E;text-shadow:0 0 35px rgba(36,195,142,.65),0 0 90px rgba(36,195,142,.28);animation:goPop .55s cubic-bezier(.16,.8,.22,1) both!important}
+@keyframes goPop{0%{opacity:0;transform:scale(.55);filter:blur(9px)}45%{opacity:1;transform:scale(1.08);filter:blur(0)}100%{opacity:1;transform:scale(1)}}
+#cdDisplay.countdown-hot{color:#fff;text-shadow:0 0 25px rgba(59,130,246,.55),0 0 60px rgba(59,130,246,.25)}
+#cdDisplay.countdown-last{color:#FFD700;text-shadow:0 0 30px rgba(255,215,0,.75),0 0 80px rgba(255,165,0,.25)}
+.game-field.flying{background-image:radial-gradient(ellipse at 50% 65%,rgba(59,130,246,.11),transparent 55%)}
+.rocket-wrap.flying:after{content:"";position:absolute;left:50%;top:72%;width:26px;height:110px;transform:translateX(-50%) rotate(16deg);background:linear-gradient(180deg,rgba(255,215,0,.8),rgba(255,103,0,.35),transparent);filter:blur(7px);opacity:.75;animation:flamePulse .18s ease-in-out infinite alternate;z-index:-1}
+@keyframes flamePulse{from{height:80px;opacity:.55}to{height:125px;opacity:.95}}
+.rocket-wrap.crash-hit img{animation:rocketHit .35s ease-out both}
+@keyframes rocketHit{0%{transform:scale(1) rotate(18deg)}45%{transform:scale(1.18) rotate(28deg)}100%{transform:scale(.65) rotate(-8deg);opacity:0}}
+.game-field.crash-hit{animation:fieldCrash .65s ease-out}
+@keyframes fieldCrash{0%{box-shadow:inset 0 0 80px rgba(255,60,90,.0)}25%{box-shadow:inset 0 0 120px rgba(255,60,90,.35),0 0 35px rgba(255,60,90,.2)}100%{box-shadow:inset 0 0 80px rgba(255,60,90,.0)}}
+.coeff-box.flying-pulse{animation:coeffPulse .55s ease-in-out infinite alternate}
+@keyframes coeffPulse{from{transform:scale(1);filter:brightness(1)}to{transform:scale(1.035);filter:brightness(1.15)}}
 </style>
 </head>
 <body>
@@ -678,7 +716,8 @@ var isBonusRound = false;
 /* ═══ TIME-BASED MATH ═══ */
 var flyingStartedAt = 0;         // performance.now() когда ракета полетела (1.00x)
 var countingStartedAt = 0;       // performance.now() когда начался отсчёт
-var countingDuration = 5.0;      // длительность отсчёта
+var countingDuration = 5.0;
+var srvCountdownOverride = 0;      // длительность отсчёта
 var lastCountdownSec = 99;
 
 var dispMult = 1.0;              // отображаемый множитель
@@ -1163,6 +1202,8 @@ function applyServerState(d){
     var srvCurMult = parseFloat(g.current_multiplier) || 1.0;
     var srvTarget = parseFloat(g.target_multiplier) || 5.0;
     var srvTimeRem = parseFloat(g.time_remaining) || 0;
+    var srvCountdown = parseInt(g.countdown || 0, 10) || 0;
+    srvCountdownOverride = srvCountdown;
     var srvBonus = !!g.is_bonus;
 
     var isNewRound = (gameId !== 0) && (newGameId !== gameId);
@@ -1174,12 +1215,13 @@ function applyServerState(d){
         setBonusMode(srvBonus);
     }
 
-    prevStatus = status;
+    var oldStatus = status;
+    prevStatus = oldStatus;
     status = newStatus;
     targetMult = srvTarget;
 
     // COUNTING
-    if(newStatus === 'counting' && prevStatus !== 'counting'){
+    if(newStatus === 'counting' && oldStatus !== 'counting'){
         if(srvTimeRem > 0 && srvTimeRem <= 5.5){
             countingStartedAt = now - (5.0 - srvTimeRem) * 1000;
         } else {
@@ -1188,6 +1230,16 @@ function applyServerState(d){
         lastShownNumber = 99;
         goShownForRound = false;
         lastCountdownAt = 0;
+        var firstCd = srvCountdown || Math.max(1, Math.min(5, Math.ceil(srvTimeRem || 5)));
+        var firstCdEl = $('cdDisplay');
+        if(firstCdEl){
+            firstCdEl.textContent = String(firstCd);
+            firstCdEl.classList.remove('active');
+            void firstCdEl.offsetWidth;
+            firstCdEl.classList.add('active');
+            lastShownNumber = firstCd;
+            lastCountdownAt = firstCd;
+        }
 
         if(pendingBet && !hasBet){
             setTimeout(function(){
@@ -1199,7 +1251,14 @@ function applyServerState(d){
     }
 
     // FLYING START
-    if(newStatus === 'flying' && prevStatus !== 'flying'){
+    if(newStatus === 'flying' && oldStatus !== 'flying'){
+        srvCountdownOverride = 0;
+        // Последний кадр отсчёта уже был 1, теперь явно показываем ИГРА.
+        var cdStart = $('cdDisplay');
+        if(cdStart){
+            cdStart.textContent = srvBonus ? '🏆 ИГРА' : 'ИГРА';
+            cdStart.classList.add('active');
+        }
         flyingStartedAt = estimateFlyStartFromMult(srvCurMult);
         servMult = srvCurMult;
         dispMult = srvCurMult;
@@ -1230,7 +1289,8 @@ function applyServerState(d){
     }
 
     // CRASHED
-    if(newStatus === 'crashed' && prevStatus !== 'crashed'){
+    if(newStatus === 'crashed' && oldStatus !== 'crashed'){
+        srvCountdownOverride = 0;
         dispMult = srvCurMult;
         servMult = srvCurMult;
         cancelFlyingHardCap();
@@ -1319,7 +1379,7 @@ function resetRoundState(){
     if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','showing-gift','cashed-out','gift-mode'); }
     if(bm){ bm.classList.remove('playing'); }
     if(cd){ cd.classList.remove('active'); cd.textContent = ''; }
-    if(gf) gf.classList.remove('flying');
+    if(gf){ gf.classList.remove('flying','counting','crash-hit'); }
     if(coeff){ coeff.className = 'coeff-box waiting'; coeff.textContent = 'Waiting'; }
 
     var ri = $('rocketImg');
@@ -1359,7 +1419,8 @@ function triggerCrashAnimation(finalMult){
     var coeff = $('coeffBox');
 
     if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
-    if(gf) gf.classList.remove('flying');
+    if(gf){ gf.classList.remove('flying','counting'); gf.classList.add('crash-hit'); setTimeout(function(){ if(gf) gf.classList.remove('crash-hit'); }, 700); }
+    if(rw) rw.classList.add('crash-hit');
     if(coeff){
         coeff.className = 'coeff-box crashed';
         coeff.textContent = finalMult.toFixed(2) + 'x';
@@ -1392,17 +1453,16 @@ function triggerCrashAnimation(finalMult){
    ══════════════════════════════════════════════════════════════ */
 function showGoAnimation(){
     var cd = $('cdDisplay');
+    var gf = $('gameField');
     if(!cd) return;
-    cd.textContent = isBonusRound ? '🏆' : 'GO';
-    cd.classList.remove('active');
+    cd.classList.remove('active','go','countdown-hot','countdown-last');
+    cd.textContent = isBonusRound ? '🏆 ИГРА' : 'ИГРА';
     void cd.offsetWidth;
-    cd.classList.add('active');
+    cd.classList.add('active','go');
+    if(gf) gf.classList.remove('counting');
     setTimeout(function(){
-        if(cd){
-            cd.classList.remove('active');
-            cd.textContent = '';
-        }
-    }, 500);
+        if(cd){ cd.classList.remove('active','go'); cd.textContent = ''; }
+    }, 650);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1416,7 +1476,7 @@ function updateGameFieldUI(){
     var cd = $('cdDisplay');
 
     if(status === 'waiting' || status === 'counting'){
-        if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','gift-mode'); }
+        if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','gift-mode','crash-hit'); }
         var ri = $('rocketImg');
         if(ri) ri.style.transform = '';
         if(bm) bm.classList.remove('playing');
@@ -1426,9 +1486,9 @@ function updateGameFieldUI(){
             coeff.textContent = isBonusRound ? '🏆 BONUS' : 'Waiting';
         }
     } else if(status === 'flying'){
-        if(rw) rw.classList.remove('hide');
+        if(rw){ rw.classList.remove('hide','crash-hit'); }
         if(bm) bm.classList.remove('playing');
-        if(gf) gf.classList.add('flying');
+        if(gf){ gf.classList.add('flying'); gf.classList.remove('counting'); }
     } else if(status === 'crashed'){
         if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
         if(gf) gf.classList.remove('flying');
@@ -1580,19 +1640,25 @@ function renderLoop(ts){
         if(status === 'counting' && countingStartedAt > 0){
             var elapsed = (now - countingStartedAt) / 1000;
             var remaining = countingDuration - elapsed;
-            var sec = Math.max(0, Math.ceil(remaining));
-
+            var localSec = Math.max(1, Math.min(5, Math.ceil(remaining)));
+            var sec = srvCountdownOverride > 0 ? Math.min(localSec, srvCountdownOverride) : localSec;
+            if(lastShownNumber === 99){ lastShownNumber = 6; }
             if(sec > lastShownNumber) sec = lastShownNumber;
-            else lastShownNumber = sec;
 
             if(sec >= 1 && sec <= 5 && lastCountdownAt !== sec){
+                lastShownNumber = sec;
                 lastCountdownAt = sec;
                 var cd = $('cdDisplay');
+                var gf = $('gameField');
                 if(cd && !goShownForRound){
                     cd.textContent = String(sec);
-                    cd.classList.remove('active');
+                    cd.classList.remove('active','go','countdown-last','countdown-hot');
+                    if(sec === 1) cd.classList.add('countdown-last');
+                    else cd.classList.add('countdown-hot');
                     void cd.offsetWidth;
                     cd.classList.add('active');
+                    if(gf){ gf.classList.add('counting'); gf.style.setProperty('--countdown-pulse', String(sec)); }
+                    playTick();
                 }
             }
         }
@@ -1623,7 +1689,7 @@ function renderLoop(ts){
                 _lastCoeffUpdate = now;
                 var cb = $('coeffBox');
                 if(cb){
-                    cb.className = 'coeff-box';
+                    cb.className = 'coeff-box flying-pulse';
                     cb.textContent = dispMult.toFixed(2) + 'x';
                 }
             }
