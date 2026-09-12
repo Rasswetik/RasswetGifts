@@ -336,7 +336,7 @@ body{
     color:#fff;box-shadow:0 4px 14px rgba(59,130,246,.4);
 }
 
-/* BOTTOM NAV — все иконки ровно по центру высоты */
+/* BOTTOM NAV */
 .bottom-nav{
     position:fixed;bottom:0;left:50%;
     transform:translateX(-50%);
@@ -589,7 +589,7 @@ body{
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ★ UPGRADE MODAL — выше, крупнее рулетка, без чёрной полосы
+   ★ UPGRADE MODAL
    ══════════════════════════════════════════════════════════════ */
 .upgrade-overlay{
     position:fixed;inset:0;z-index:85000;
@@ -653,7 +653,48 @@ body{
     justify-content:center;
     padding:18px 16px 14px;
     position:relative;
+    min-height:280px;
     background:radial-gradient(circle at center, rgba(59,130,246,.08) 0%, transparent 70%);
+}
+
+/* ★ ЗАГРУЗКА */
+.upgrade-loading{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:18px;
+    padding:40px 20px;
+    position:absolute;
+    inset:0;
+    background:rgba(26,34,50,.95);
+    z-index:20;
+}
+.upgrade-loading.hidden{display:none}
+.upgrade-loading-spinner{
+    width:56px;height:56px;
+    border:4px solid rgba(59,130,246,.15);
+    border-top-color:#3B82F6;
+    border-radius:50%;
+    animation:upgradeSpin .9s linear infinite;
+}
+@keyframes upgradeSpin{to{transform:rotate(360deg)}}
+.upgrade-loading-text{
+    font-size:13px;font-weight:800;color:rgba(255,255,255,.6);
+    letter-spacing:.5px;
+}
+.upgrade-loading-progress{
+    width:200px;height:4px;
+    background:rgba(255,255,255,.08);
+    border-radius:2px;
+    overflow:hidden;
+}
+.upgrade-loading-bar{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#3B82F6,#7CAEFF);
+    border-radius:2px;
+    transition:width .3s;
 }
 
 /* ★ PNG превью — 160×160 */
@@ -671,14 +712,14 @@ body{
 .upgrade-preview-wrap img{
     width:100%;height:100%;
     object-fit:cover;display:block;
-    transition:opacity .5s ease;
+    transition:opacity .35s ease;
     opacity:1;
 }
 .upgrade-preview-wrap img.fading{
     opacity:0;
 }
 
-/* ★ РУЛЕТКА — 180px высота, без чёрной полосы */
+/* ★ РУЛЕТКА — 180px высота */
 .upgrade-roulette-wrap{
     width:100%;
     height:180px;
@@ -694,7 +735,7 @@ body{
     position:relative;
     overflow:hidden;
     border-radius:20px;
-    background:rgba(0,0,0,.35);
+    background:linear-gradient(180deg,#1e2738 0%,#1a2232 100%);
     border:1.5px solid rgba(59,130,246,.25);
     box-shadow:inset 0 0 60px rgba(0,0,0,.7), 0 10px 40px rgba(0,0,0,.5);
 }
@@ -710,13 +751,19 @@ body{
     width:180px;
     height:180px;
     flex-shrink:0;
-    background:transparent;
+    background:linear-gradient(180deg,#1e2738 0%,#1a2232 100%);
     display:block;
     padding:0;
     margin:0;
     overflow:hidden;
     position:relative;
     border:none;
+    /* ★ Плавное появление карточек */
+    animation:rouletteCardAppear .4s ease-out;
+}
+@keyframes rouletteCardAppear{
+    from{opacity:0}
+    to{opacity:1}
 }
 .roulette-card img{
     width:100%;
@@ -725,9 +772,11 @@ body{
     display:block;
     border-radius:0;
     background:transparent;
+    /* ★ Запрет на "мигание" при загрузке */
+    opacity:1;
 }
 
-/* Центральный указатель — ярче и толще */
+/* Центральный указатель */
 .upgrade-pointer-line{
     position:absolute;
     top:0;bottom:0;
@@ -754,7 +803,7 @@ body{
     bottom:-2px;border-bottom:12px solid #24C38E;
 }
 
-/* Мягкая виньетка по краям */
+/* Виньетка */
 .upgrade-roulette::before,
 .upgrade-roulette::after{
     content:'';position:absolute;top:0;bottom:0;
@@ -762,11 +811,11 @@ body{
 }
 .upgrade-roulette::before{
     left:0;
-    background:linear-gradient(90deg,rgba(26,34,50,.75) 0%,rgba(26,34,50,.4) 50%,rgba(26,34,50,0) 100%);
+    background:linear-gradient(90deg,rgba(26,34,50,.85) 0%,rgba(26,34,50,.4) 50%,rgba(26,34,50,0) 100%);
 }
 .upgrade-roulette::after{
     right:0;
-    background:linear-gradient(270deg,rgba(26,34,50,.75) 0%,rgba(26,34,50,.4) 50%,rgba(26,34,50,0) 100%);
+    background:linear-gradient(270deg,rgba(26,34,50,.85) 0%,rgba(26,34,50,.4) 50%,rgba(26,34,50,0) 100%);
 }
 
 /* ★ Атрибуты */
@@ -804,7 +853,7 @@ body{
     font-size:12px;color:#fff;font-weight:800;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     max-width:120px;text-align:right;
-    transition:opacity .4s ease;
+    transition:opacity .3s ease;
     opacity:1;
 }
 .upgrade-attr-value.fading{opacity:0;}
@@ -815,7 +864,7 @@ body{
     border:1px solid rgba(59,130,246,.25);
     flex-shrink:0;
     min-width:44px;text-align:center;
-    transition:opacity .4s ease;
+    transition:opacity .3s ease;
     opacity:1;
 }
 .upgrade-attr-rarity.fading{opacity:0;}
@@ -1306,6 +1355,15 @@ body{
 
         <div class="upgrade-stage">
 
+            <!-- ★ ЗАГРУЗКА -->
+            <div class="upgrade-loading" id="upgradeLoading">
+                <div class="upgrade-loading-spinner"></div>
+                <div class="upgrade-loading-text" id="upgradeLoadingText">Загрузка подарков...</div>
+                <div class="upgrade-loading-progress">
+                    <div class="upgrade-loading-bar" id="upgradeLoadingBar"></div>
+                </div>
+            </div>
+
             <!-- PNG превью -->
             <div class="upgrade-preview-wrap" id="upgradePreviewWrap">
                 <img id="upgradePreviewImg" src="/static/img/gift.png" alt="">
@@ -1319,7 +1377,7 @@ body{
                 </div>
             </div>
 
-            <!-- Атрибуты / шансы -->
+            <!-- Атрибуты -->
             <div class="upgrade-attrs-panel" id="upgradeAttrsPanel">
                 <div class="upgrade-attr-row">
                     <span class="upgrade-attr-label">Model</span>
@@ -1939,7 +1997,7 @@ async function claimChallenge(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   UPGRADE MODAL
+   ★ UPGRADE MODAL — с загрузкой PNG
    ══════════════════════════════════════════════════════════════ */
 async function openUpgradeModal(){
     if(!selectedItem) return;
@@ -1957,7 +2015,7 @@ async function openUpgradeModal(){
     if(!ov) return;
     ov.classList.add('show');
 
-    // Reset
+    // Reset state
     _upgradeSpinRunning = false;
     _previewAnimRunning = false;
     if(_previewAnimTimer){
@@ -1974,31 +2032,32 @@ async function openUpgradeModal(){
     var btnEl = $('upgradeActionBtn');
     if(btnEl){
         btnEl.classList.remove('loading');
-        btnEl.disabled = false;
+        btnEl.disabled = true;
         var btxt = $('upgradeBtnText');
         if(btxt) btxt.textContent = 'АПГРЕЙД';
     }
 
-    // Показываем превью, скрываем рулетку
+    // ★ Показываем загрузку
+    var loadingEl = $('upgradeLoading');
     var previewWrap = $('upgradePreviewWrap');
     var rouletteWrap = $('upgradeRouletteWrap');
+
+    if(loadingEl) loadingEl.classList.remove('hidden');
     if(previewWrap) previewWrap.style.display = 'flex';
     if(rouletteWrap) rouletteWrap.classList.remove('show');
 
-    // ★ Всегда показываем PNG подарка — даже если он не улучшен
+    var loadBar = $('upgradeLoadingBar');
+    var loadTxt = $('upgradeLoadingText');
+    if(loadBar) loadBar.style.width = '0%';
+    if(loadTxt) loadTxt.textContent = 'Подготовка...';
+
+    // Показываем PNG подарка сразу
     var pimg = $('upgradePreviewImg');
     if(pimg){
-        var previewSrc = getGiftImage(selectedItem);
-        // Если подарок улучшен — используем fragment URL
-        if(selectedItem.is_upgraded && selectedItem.fragment_slug && selectedItem.nft_number){
-            previewSrc = 'https://nft.fragment.com/gift/' +
-                String(selectedItem.fragment_slug).replace(/\s/g, '') +
-                '-' + selectedItem.nft_number + '.medium.jpg';
-        }
-        pimg.src = previewSrc;
+        pimg.src = getGiftImage(selectedItem);
         pimg.onerror = function(){
             this.onerror = null;
-            this.src = getGiftImage(selectedItem);
+            this.src = '/static/img/gift.png';
         };
         pimg.classList.remove('fading');
     }
@@ -2008,8 +2067,11 @@ async function openUpgradeModal(){
     setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), '—', null);
     setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), '—', null);
 
-    // Запрос на подготовку
+    // ★ Запрос на подготовку
     try{
+        if(loadTxt) loadTxt.textContent = 'Загрузка вариантов...';
+        if(loadBar) loadBar.style.width = '20%';
+
         var r = await fetch('/api/inventory/upgrade-prepare', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
@@ -2035,7 +2097,29 @@ async function openUpgradeModal(){
             return;
         }
 
-        // ★ ФАЗА 1: PNG меняется каждые 3 секунды
+        if(loadBar) loadBar.style.width = '40%';
+        if(loadTxt) loadTxt.textContent = 'Загрузка картинок...';
+
+        // ★ Предзагружаем PNG вариантов
+        await preloadVariantImages(_upgradeVariants, function(loaded, total){
+            var pct = 40 + Math.round((loaded / total) * 55);
+            if(loadBar) loadBar.style.width = pct + '%';
+            if(loadTxt) loadTxt.textContent = 'Загрузка картинок... ' + loaded + '/' + total;
+        });
+
+        if(loadBar) loadBar.style.width = '100%';
+        if(loadTxt) loadTxt.textContent = 'Готово!';
+
+        // ★ Небольшая задержка для плавности
+        await new Promise(function(resolve){ setTimeout(resolve, 300); });
+
+        // Скрываем загрузку
+        if(loadingEl) loadingEl.classList.add('hidden');
+
+        // ★ Активируем кнопку
+        if(btnEl) btnEl.disabled = false;
+
+        // ★ ФАЗА 1: PNG меняется каждые 3 секунды (с ПРЕДЗАГРУЖЕННЫМИ картинками)
         startFadePreviewAnimation();
 
     }catch(e){
@@ -2045,15 +2129,55 @@ async function openUpgradeModal(){
     }
 }
 
-/* ★ ФАЗА 1: PNG меняется КАЖДЫЕ 3 СЕКУНДЫ (плавно, с fade 500мс) */
+/* ★ Предзагрузка PNG вариантов */
+function preloadVariantImages(variants, onProgress){
+    return new Promise(function(resolve){
+        var total = variants.length;
+        if(!total){ resolve(); return; }
+        var loaded = 0;
+        var resolved = false;
+
+        function done(){
+            if(resolved) return;
+            loaded++;
+            if(onProgress) onProgress(loaded, total);
+            if(loaded >= total && !resolved){
+                resolved = true;
+                resolve();
+            }
+        }
+
+        variants.forEach(function(v){
+            var src = v.image || v.fallback_image || '/static/img/gift.png';
+            var img = new Image();
+            img.onload = done;
+            img.onerror = function(){
+                // Фоллбек: если fragment.com не загрузился — используем fallback
+                if(v.fallback_image && v.fallback_image !== src){
+                    v.image = v.fallback_image;
+                }
+                done();
+            };
+            img.src = src;
+        });
+
+        // ★ Hard timeout на случай зависания
+        setTimeout(function(){
+            if(!resolved){
+                resolved = true;
+                resolve();
+            }
+        }, 8000);
+    });
+}
+
+/* ★ ФАЗА 1: PNG меняется КАЖДЫЕ 3 СЕКУНДЫ */
 function startFadePreviewAnimation(){
     if(!_upgradeVariants.length) return;
     _previewAnimRunning = true;
 
     var total = _upgradeVariants.length;
     var idx = 0;
-
-    // ★ Интервал 3 секунды
     var SWAP_INTERVAL = 3000;
 
     function scheduleNext(){
@@ -2070,14 +2194,14 @@ function startFadePreviewAnimation(){
     scheduleNext();
 }
 
-/* ★ Плавная смена: fade-out 500мс → новый PNG → fade-in */
+/* ★ Плавная смена PNG (с предзагрузкой — уже кэш, мгновенно) */
 function swapPreviewVariant(variant){
     var pimg = $('upgradePreviewImg');
     var mVal = $('upgradeModelVal'), mRar = $('upgradeModelRar');
     var sVal = $('upgradeSymbolVal'), sRar = $('upgradeSymbolRar');
     var bVal = $('upgradeBackdropVal'), bRar = $('upgradeBackdropRar');
 
-    // Затухание
+    // ★ Затухание
     if(pimg) pimg.classList.add('fading');
     if(mVal) mVal.classList.add('fading');
     if(mRar) mRar.classList.add('fading');
@@ -2086,27 +2210,61 @@ function swapPreviewVariant(variant){
     if(bVal) bVal.classList.add('fading');
     if(bRar) bRar.classList.add('fading');
 
-    // Через 500мс — меняем контент и плавно проявляем
+    var newSrc = variant.image || variant.fallback_image || '/static/img/gift.png';
+
+    // ★ Ждём 350мс (fade-out), потом меняем и fade-in
     setTimeout(function(){
-        if(pimg){
-            pimg.src = variant.image || variant.fallback_image || '/static/img/gift.png';
+        if(!pimg) return;
+
+        // ★ Меняем src, и только после загрузки показываем
+        var tempImg = new Image();
+        var alreadyDone = false;
+
+        function applyNew(){
+            if(alreadyDone) return;
+            alreadyDone = true;
+
+            pimg.src = newSrc;
             pimg.onerror = function(){
                 this.onerror = null;
                 this.src = variant.fallback_image || '/static/img/gift.png';
             };
-        }
-        setPreviewAttr(mVal, mRar, variant.model || '—', variant.model_rarity);
-        setPreviewAttr(sVal, sRar, variant.symbol || '—', variant.symbol_rarity);
-        setPreviewAttr(bVal, bRar, variant.backdrop || '—', variant.backdrop_rarity);
 
-        if(pimg) pimg.classList.remove('fading');
-        if(mVal) mVal.classList.remove('fading');
-        if(mRar) mRar.classList.remove('fading');
-        if(sVal) sVal.classList.remove('fading');
-        if(sRar) sRar.classList.remove('fading');
-        if(bVal) bVal.classList.remove('fading');
-        if(bRar) bRar.classList.remove('fading');
-    }, 500);
+            setPreviewAttr(mVal, mRar, variant.model || '—', variant.model_rarity);
+            setPreviewAttr(sVal, sRar, variant.symbol || '—', variant.symbol_rarity);
+            setPreviewAttr(bVal, bRar, variant.backdrop || '—', variant.backdrop_rarity);
+
+            // ★ Появление через rAF (гарантирует переход)
+            requestAnimationFrame(function(){
+                requestAnimationFrame(function(){
+                    if(pimg) pimg.classList.remove('fading');
+                    if(mVal) mVal.classList.remove('fading');
+                    if(mRar) mRar.classList.remove('fading');
+                    if(sVal) sVal.classList.remove('fading');
+                    if(sRar) sRar.classList.remove('fading');
+                    if(bVal) bVal.classList.remove('fading');
+                    if(bRar) bRar.classList.remove('fading');
+                });
+            });
+        }
+
+        // Если картинка уже в кэше — применим мгновенно
+        tempImg.onload = applyNew;
+        tempImg.onerror = function(){
+            newSrc = variant.fallback_image || '/static/img/gift.png';
+            applyNew();
+        };
+        tempImg.src = newSrc;
+
+        // ★ Hard timeout 1.5 сек — если картинка не загрузилась, применяем fallback
+        setTimeout(function(){
+            if(!alreadyDone){
+                newSrc = variant.fallback_image || '/static/img/gift.png';
+                applyNew();
+            }
+        }, 1500);
+
+    }, 350);
 
     vibrateIfOn();
 }
@@ -2126,20 +2284,6 @@ function setPreviewAttr(valEl, rarEl, value, rarity){
     }
 }
 
-function setPreviewVariant(variant){
-    var pimg = $('upgradePreviewImg');
-    if(pimg){
-        pimg.src = variant.image || variant.fallback_image || '/static/img/gift.png';
-        pimg.onerror = function(){
-            this.onerror = null;
-            this.src = variant.fallback_image || '/static/img/gift.png';
-        };
-    }
-    setPreviewAttr($('upgradeModelVal'), $('upgradeModelRar'), variant.model || '—', variant.model_rarity);
-    setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), variant.symbol || '—', variant.symbol_rarity);
-    setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), variant.backdrop || '—', variant.backdrop_rarity);
-}
-
 function closeUpgradeModal(){
     var ov = $('upgradeOverlay');
     if(!ov) return;
@@ -2153,10 +2297,14 @@ function closeUpgradeModal(){
 
     var cc = $('confettiContainer');
     if(cc) cc.innerHTML = '';
+
+    // Сброс загрузки
+    var loadingEl = $('upgradeLoading');
+    if(loadingEl) loadingEl.classList.add('hidden');
 }
 
 /* ══════════════════════════════════════════════════════════════
-   UPGRADE SPIN
+   ★ UPGRADE SPIN — плавное ускорение и торможение
    ══════════════════════════════════════════════════════════════ */
 async function startUpgradeSpin(){
     if(_upgradeSpinRunning) return;
@@ -2167,7 +2315,6 @@ async function startUpgradeSpin(){
     }
     _upgradeSpinRunning = true;
 
-    // Останавливаем превью-анимацию
     _previewAnimRunning = false;
     if(_previewAnimTimer){
         clearTimeout(_previewAnimTimer);
@@ -2181,27 +2328,24 @@ async function startUpgradeSpin(){
     if(btnEl) btnEl.classList.add('loading');
     if(btxt) btxt.textContent = 'КРУТИМ...';
 
-    // ★ СКРЫВАЕМ PNG, ПОКАЗЫВАЕМ РУЛЕТКУ
     var previewWrap = $('upgradePreviewWrap');
     var rouletteWrap = $('upgradeRouletteWrap');
 
     if(previewWrap) previewWrap.style.display = 'none';
     if(rouletteWrap) rouletteWrap.classList.add('show');
 
-    // Строим рулетку
-    buildRoulette();
+    // ★ Строим рулетку ТОЛЬКО ПОСЛЕ загрузки картинок
+    await buildRoulette();
 
-    // 1. Клиент выбирает случайный индекс
     var total = _upgradeVariants.length;
     var chosenIndex = Math.floor(Math.random() * total);
     var chosenVariant = _upgradeVariants[chosenIndex];
 
-    // 2. Отправляем на сервер
     var spinResult = null;
     try{
         var r = await fetch('/api/inventory/upgrade-spin', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: {'Content-Type':'application/json'},
             body: JSON.stringify({
                 user_id: user.id,
                 inventory_id: selectedItem.id,
@@ -2231,26 +2375,65 @@ async function startUpgradeSpin(){
         return;
     }
 
-    // 3. Крутим рулетку
     spinRoulette(chosenIndex, chosenVariant, spinResult);
 }
 
-/* Построить полосу рулетки — только PNG, размер 180×180 */
+/* ★ Построить рулетку — ждём загрузки ВСЕХ картинок перед показом */
 function buildRoulette(){
-    var strip = $('upgradeRouletteStrip');
-    if(!strip) return;
-    var html = '';
-    for(var i = 0; i < _upgradeVariants.length; i++){
-        var v = _upgradeVariants[i];
-        html += '<div class="roulette-card" data-idx="' + i + '">'
-            + '<img src="' + (v.image || v.fallback_image || '/static/img/gift.png') + '" '
-            + 'onerror="this.onerror=null;this.src=\'' + (v.fallback_image || '/static/img/gift.png') + '\'" alt="">'
-            + '</div>';
-    }
-    strip.innerHTML = html;
-    strip.style.transform = 'translateX(0)';
+    return new Promise(function(resolve){
+        var strip = $('upgradeRouletteStrip');
+        if(!strip){ resolve(); return; }
+
+        var html = '';
+        for(var i = 0; i < _upgradeVariants.length; i++){
+            var v = _upgradeVariants[i];
+            html += '<div class="roulette-card" data-idx="' + i + '">'
+                + '<img src="' + (v.image || v.fallback_image || '/static/img/gift.png') + '" '
+                + 'onerror="this.onerror=null;this.src=\'' + (v.fallback_image || '/static/img/gift.png') + '\'" alt="" '
+                + 'style="opacity:1">'
+                + '</div>';
+        }
+        strip.innerHTML = html;
+        strip.style.transform = 'translateX(0)';
+
+        // ★ Ждём загрузки всех картинок (но не более 3 сек)
+        var imgs = strip.querySelectorAll('.roulette-card img');
+        var total = imgs.length;
+        var loaded = 0;
+        var resolved = false;
+
+        function checkDone(){
+            if(resolved) return;
+            loaded++;
+            if(loaded >= total){
+                resolved = true;
+                resolve();
+            }
+        }
+
+        if(total === 0){ resolve(); return; }
+
+        for(var j = 0; j < imgs.length; j++){
+            var img = imgs[j];
+            if(img.complete && img.naturalWidth > 0){
+                checkDone();
+            } else {
+                img.addEventListener('load', checkDone, { once: true });
+                img.addEventListener('error', checkDone, { once: true });
+            }
+        }
+
+        // Hard timeout
+        setTimeout(function(){
+            if(!resolved){
+                resolved = true;
+                resolve();
+            }
+        }, 3000);
+    });
 }
 
+/* ★ Рулетка: ускорение → движение → плавное торможение */
 function spinRoulette(targetIdx, chosenVariant, result){
     var strip = $('upgradeRouletteStrip');
     var rouletteEl = $('upgradeRoulette');
@@ -2261,69 +2444,79 @@ function spinRoulette(targetIdx, chosenVariant, result){
     if(!cards.length) return;
 
     var cardWidth = cards[0].offsetWidth || 180;
-    var gap = 0;
-    var step = cardWidth + gap;
-    var stripPadding = 0;
+    var step = cardWidth;
 
     var containerW = rouletteEl.offsetWidth || 400;
     var centerX = containerW / 2;
 
-    var targetCenterInStrip = stripPadding + targetIdx * step + cardWidth / 2;
+    var targetCenterInStrip = targetIdx * step + cardWidth / 2;
     var finalOffset = centerX - targetCenterInStrip;
 
-    var spins = 6 + Math.floor(Math.random() * 3);
+    // ★ Сколько прокрутить перед остановкой
+    var spins = 8 + Math.floor(Math.random() * 3);  // 8-10 полных оборотов
     var spinDistance = step * _upgradeVariants.length * spins;
     var startX = finalOffset + spinDistance;
 
+    // Стартовое положение
     strip.style.transition = 'none';
     strip.style.transform = 'translateX(' + startX + 'px)';
     void strip.offsetWidth;
 
-    // ★ Анимация дольше — 6500мс, плавнее торможение
-    var duration = 6500;
-    var ease = 'cubic-bezier(.12,.85,.18,1)';
+    // ★ Анимация: УСКОРЕНИЕ → ПЛАВНОЕ ТОРМОЖЕНИЕ
+    // Используем CSS keyframes через Web Animations API для плавности
+    var duration = 7500; // 7.5 секунд
 
-    // Меняем атрибуты внизу во время кручения
-    startAttrShuffleDuringSpin(duration);
-
-    requestAnimationFrame(function(){
+    // Пробуем использовать Web Animations API для 2-фазной кривой
+    try{
+        // Fallback на CSS transition с очень плавной кривой
+        // cubic-bezier с длинным "хвостом" торможения
+        var ease = 'cubic-bezier(.1, .7, .15, 1)';
         strip.style.transition = 'transform ' + duration + 'ms ' + ease;
         strip.style.transform = 'translateX(' + finalOffset + 'px)';
-    });
+    }catch(e){
+        strip.style.transition = 'transform ' + duration + 'ms cubic-bezier(.1,.7,.15,1)';
+        strip.style.transform = 'translateX(' + finalOffset + 'px)';
+    }
+
+    // Меняем атрибуты во время кручения
+    startAttrShuffleDuringSpin(duration);
 
     if(pointer) pointer.classList.add('active');
 
-    // Тики
-    var tickStart = performance.now() + 300;
-    var tickEnd = tickStart + duration - 100;
+    // Тики для вибрации
+    var tickStart = performance.now() + 500;
+    var tickEnd = tickStart + duration - 800;
     var lastTick = 0;
+
     function tickLoop(){
         var now = performance.now();
-        if(now > tickEnd + 500) return;
+        if(now > tickEnd + 1000) return;
         if(now >= tickStart && now <= tickEnd){
             var progress = (now - tickStart) / duration;
-            var interval = 60 + progress * progress * 400;
+            // ★ В начале — быстрые тики, в конце — редкие
+            var interval = 40 + Math.pow(progress, 3) * 600;
             if(now - lastTick > interval){
                 vibrateIfOn();
                 lastTick = now;
             }
         }
-        if(now < tickEnd + 500) requestAnimationFrame(tickLoop);
+        if(now < tickEnd + 1000) requestAnimationFrame(tickLoop);
     }
     requestAnimationFrame(tickLoop);
 
+    // ★ Финал через duration + 100ms
     setTimeout(function(){
         if(pointer) pointer.classList.remove('active');
         stopAttrShuffle();
-        // Финальные атрибуты
+
         setPreviewAttr($('upgradeModelVal'), $('upgradeModelRar'), chosenVariant.model || '—', chosenVariant.model_rarity);
         setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), chosenVariant.symbol || '—', chosenVariant.symbol_rarity);
         setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), chosenVariant.backdrop || '—', chosenVariant.backdrop_rarity);
+
         finalizeSpin(targetIdx, chosenVariant, result);
     }, duration + 100);
 }
 
-/* Меняем атрибуты внизу во время кручения */
 var _attrShuffleInterval = null;
 function startAttrShuffleDuringSpin(duration){
     if(_attrShuffleInterval) clearInterval(_attrShuffleInterval);
@@ -2333,7 +2526,7 @@ function startAttrShuffleDuringSpin(duration){
 
     _attrShuffleInterval = setInterval(function(){
         var elapsed = performance.now() - startTime;
-        if(elapsed > duration - 200){
+        if(elapsed > duration - 500){
             clearInterval(_attrShuffleInterval);
             _attrShuffleInterval = null;
             return;
@@ -2376,7 +2569,7 @@ function finalizeSpin(idx, variant, result){
 
     setTimeout(function(){
         showUpgradeResultOverlay(variant);
-    }, 700);
+    }, 800);
 }
 
 function showUpgradeResultOverlay(variant){
