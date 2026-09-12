@@ -5,43 +5,42 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Admin — Rasswet Gifts</title>
 <link rel="icon" type="image/png" href="/static/img/logo.png">
-<link rel="stylesheet" href="/static/css/global.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
-body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0F1319;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0F1319;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 700px 400px at 50% -100px,rgba(59,130,246,.10) 0%,transparent 70%);pointer-events:none;z-index:0}
 
-/* ============ LOADER ============ */
+/* LOADER */
 #adminLoader{position:fixed;inset:0;background:#0F1319;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;transition:opacity .4s,visibility .4s}
 #adminLoader.hidden{opacity:0;visibility:hidden;pointer-events:none}
-#adminLoader .spin{width:48px;height:48px;border:4px solid rgba(59,130,246,.15);border-top-color:#3B82F6;border-radius:50%;animation:spin 0.9s linear infinite}
+#adminLoader .spin{width:48px;height:48px;border:4px solid rgba(59,130,246,.15);border-top-color:#3B82F6;border-radius:50%;animation:spin .9s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 #adminLoader .txt{color:rgba(255,255,255,.5);font-size:13px;font-weight:600;letter-spacing:1px}
 
-/* ============ TOP BAR ============ */
+/* TOP BAR */
 .top-bar{position:sticky;top:0;left:0;right:0;z-index:100;background:rgba(15,19,25,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06);padding:calc(env(safe-area-inset-top,20px) + 58px) 16px 12px;display:flex;align-items:center;gap:12px;max-width:520px;margin:0 auto}
 .top-bar .back-btn{width:42px;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:all .15s;flex-shrink:0}
 .top-bar .back-btn:active{transform:scale(.92);background:rgba(255,255,255,.10)}
 .top-bar .back-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
-.top-bar .title{flex:1;min-width:0;font-family:inherit;font-weight:800;font-size:16px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-bar .title{flex:1;min-width:0;font-weight:800;font-size:16px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .top-bar .admin-badge{background:linear-gradient(135deg,#F96999,#E8527A);color:#fff;padding:5px 10px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.5px;flex-shrink:0}
 
-/* ============ CONTAINER ============ */
+/* CONTAINER */
 .container{max-width:520px;margin:0 auto;padding:16px 14px calc(env(safe-area-inset-bottom,0px) + 24px);position:relative;z-index:1}
 
-/* ============ HOME TILES ============ */
+/* HOME TILES */
 .home-section{margin-bottom:22px}
-.home-section-title{font-family:inherit;font-weight:800;font-size:12px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-left:4px}
+.home-section-title{font-weight:800;font-size:12px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-left:4px}
 .tiles-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.tile-btn{position:relative;border:none;border-radius:20px;padding:20px 14px;cursor:pointer;font-family:inherit;text-align:left;color:#fff;display:flex;flex-direction:column;align-items:flex-start;gap:12px;transition:transform .15s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;min-height:130px;overflow:hidden;-webkit-tap-highlight-color:transparent;box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06)}
+.tile-btn{position:relative;border:none;border-radius:20px;padding:20px 14px;cursor:pointer;text-align:left;color:#fff;display:flex;flex-direction:column;align-items:flex-start;gap:12px;transition:transform .15s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;min-height:130px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06)}
 .tile-btn::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,rgba(255,255,255,.15) 0%,transparent 60%);pointer-events:none}
 .tile-btn:active{transform:scale(.96)}
 .tile-btn .tile-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.20);backdrop-filter:blur(4px);font-size:26px;flex-shrink:0;box-shadow:inset 0 1px 1px rgba(255,255,255,.15)}
 .tile-btn .tile-icon svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.tile-btn .tile-text{font-family:inherit;font-weight:800;font-size:15px;line-height:1.2;color:#fff;position:relative;z-index:2}
-.tile-btn .tile-sub{font-family:inherit;font-weight:600;font-size:10px;line-height:1.2;color:rgba(255,255,255,.55);margin-top:2px}
+.tile-btn .tile-text{font-weight:800;font-size:15px;line-height:1.2;color:#fff;position:relative;z-index:2}
+.tile-btn .tile-sub{font-weight:600;font-size:10px;line-height:1.2;color:rgba(255,255,255,.55);margin-top:2px}
 .tile-blue{background:linear-gradient(135deg,#1e40af,#3b82f6)}
 .tile-purple{background:linear-gradient(135deg,#6d28d9,#a855f7)}
 .tile-green{background:linear-gradient(135deg,#047857,#10b981)}
@@ -53,23 +52,23 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .tile-indigo{background:linear-gradient(135deg,#3730a3,#6366f1)}
 .tile-rose{background:linear-gradient(135deg,#9f1239,#f43f5e)}
 
-/* ============ SECTION HEADER ============ */
+/* SECTION HEADER */
 .section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 4px;gap:8px;flex-wrap:wrap}
-.section-header h2{font-family:inherit;font-weight:800;font-size:20px;color:#fff;margin:0}
-.section-header .action-btn{padding:10px 14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;transition:transform .15s;flex-shrink:0}
+.section-header h2{font-weight:800;font-size:20px;color:#fff;margin:0}
+.section-header .action-btn{padding:10px 14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:700;font-size:12px;cursor:pointer;transition:transform .15s;flex-shrink:0}
 .section-header .action-btn:active{transform:scale(.95)}
 
-/* ============ CARDS ============ */
+/* CARDS */
 .card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:14px;margin-bottom:10px}
-.card-title{font-family:inherit;font-weight:700;font-size:13px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-title{font-weight:700;font-size:13px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .card-title svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
 
 .stat-card{background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(59,130,246,.02));border:1px solid rgba(59,130,246,.15);border-radius:16px;padding:16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.stat-card .label{font-family:inherit;font-weight:700;font-size:12px;color:rgba(255,255,255,.5)}
-.stat-card .value{font-family:inherit;font-weight:900;font-size:22px;color:#fff;margin-top:4px}
+.stat-card .label{font-weight:700;font-size:12px;color:rgba(255,255,255,.5)}
+.stat-card .value{font-weight:900;font-size:22px;color:#fff;margin-top:4px}
 .stat-card .icon{width:46px;height:46px;border-radius:12px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;font-size:22px}
 
-/* ============ PORTAL STATUS ============ */
+/* PORTAL */
 .portal-status{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;margin-bottom:12px;transition:all .3s}
 .portal-status.connected{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(16,185,129,.04));border:1px solid rgba(16,185,129,.25)}
 .portal-status.disconnected{background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(239,68,68,.04));border:1px solid rgba(239,68,68,.25)}
@@ -81,29 +80,14 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .portal-status.connected .ps-title{color:#10b981}
 .portal-status.disconnected .ps-title{color:#ef4444}
 
-.portal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.portal-btn{padding:14px 10px;border-radius:14px;border:none;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px;color:#fff}
-.portal-btn:active{transform:scale(.96)}
-.portal-btn:disabled{opacity:.4;pointer-events:none}
-.portal-btn .pb-icon{font-size:22px}
-.portal-btn .pb-text{font-size:11px;font-weight:700;text-align:center;line-height:1.2}
-.portal-btn-connect{background:linear-gradient(135deg,#6d28d9,#a855f7)}
-.portal-btn-sync{background:linear-gradient(135deg,#047857,#10b981)}
-.portal-btn-info{background:linear-gradient(135deg,#1e40af,#3b82f6);grid-column:span 2}
-
-.portal-info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px}
-.portal-info-row:last-child{border-bottom:none}
-.portal-info-row .pi-label{color:rgba(255,255,255,.55);font-weight:600}
-.portal-info-row .pi-val{color:#fff;font-weight:700;text-align:right;max-width:60%;word-break:break-all}
-
-/* ============ SEARCH ============ */
+/* SEARCH */
 .search-wrap{position:relative;margin-bottom:14px}
-.search-input{width:100%;padding:14px 16px 14px 44px;border-radius:14px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-family:inherit;font-size:14px;font-weight:600;outline:none;transition:all .15s}
+.search-input{width:100%;padding:14px 16px 14px 44px;border-radius:14px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-size:14px;font-weight:600;outline:none;transition:all .15s}
 .search-input:focus{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.08)}
 .search-input::placeholder{color:rgba(255,255,255,.3);font-weight:500}
 .search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:2}
 
-/* ============ LIST ITEMS ============ */
+/* LIST ITEMS */
 .list-item{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
 .list-item:active{transform:scale(.98);background:rgba(255,255,255,.06)}
 .list-item .avatar{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#3B82F6,#2563EB);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0;overflow:hidden}
@@ -115,18 +99,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .list-item .value{font-weight:800;font-size:14px;color:#fff;display:flex;align-items:center;gap:4px;justify-content:flex-end}
 .list-item .value img{width:14px;height:14px}
 
-/* ============ GIFT GRID ============ */
-.gift-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:10px;text-align:center;transition:all .15s;position:relative}
-.gift-card:active{transform:scale(.97);background:rgba(255,255,255,.06)}
-.gift-card .gc-img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:10px;background:rgba(0,0,0,.2);padding:6px;box-sizing:border-box;margin-bottom:6px}
-.gift-card .gc-name{font-size:11px;font-weight:700;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff}
-.gift-card .gc-price{font-size:11px;color:#10b981;font-weight:800;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:3px}
-.gift-card .gc-price img{width:11px;height:11px}
-.gift-card .gc-price-old{font-size:9px;color:rgba(255,255,255,.35);text-decoration:line-through;margin-top:1px}
-.gift-card .gc-badge{position:absolute;top:6px;right:6px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-size:8px;font-weight:800;padding:2px 6px;border-radius:6px;letter-spacing:.3px}
-
-/* ============ BUTTONS ============ */
-.btn{width:100%;padding:15px 18px;border-radius:14px;border:none;font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;transition:transform .15s;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent}
+/* BUTTONS */
+.btn{width:100%;padding:15px 18px;border-radius:14px;border:none;font-weight:800;font-size:14px;cursor:pointer;transition:transform .15s;display:flex;align-items:center;justify-content:center;gap:8px}
 .btn:active:not(:disabled){transform:scale(.97)}
 .btn:disabled{opacity:.4;pointer-events:none}
 .btn-primary{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;box-shadow:0 6px 18px rgba(59,130,246,.3)}
@@ -138,44 +112,62 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .btn-row{display:flex;gap:8px;margin-top:10px}
 .btn-row .btn{flex:1}
 
-/* ============ FORMS ============ */
+/* FORMS */
 .form-group{margin-bottom:14px}
 .form-label{display:block;font-weight:700;font-size:12px;color:rgba(255,255,255,.55);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
-.form-input{width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-family:inherit;font-size:14px;font-weight:600;outline:none;transition:all .15s}
+.form-input{width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-size:14px;font-weight:600;outline:none;transition:all .15s;font-family:inherit}
 .form-input:focus{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.08)}
 .form-input::placeholder{color:rgba(255,255,255,.3)}
 select.form-input{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.5)' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
 select.form-input option{background:#0F1319;color:#fff}
 textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 
-/* ============ TABS ============ */
+/* TABS */
 .tabs{display:flex;gap:6px;margin-bottom:14px;background:rgba(255,255,255,.03);border-radius:14px;padding:4px;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tab-btn{flex:1;min-width:70px;padding:10px 12px;border:none;background:transparent;color:rgba(255,255,255,.5);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;border-radius:10px;transition:all .15s;white-space:nowrap}
+.tab-btn{flex:1;min-width:70px;padding:10px 12px;border:none;background:transparent;color:rgba(255,255,255,.5);font-weight:700;font-size:12px;cursor:pointer;border-radius:10px;transition:all .15s;white-space:nowrap}
 .tab-btn.active{background:rgba(59,130,246,.15);color:#3B82F6}
 
-/* ============ MODAL ============ */
+/* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(6px);transition:opacity .25s,visibility .25s}
 .modal-overlay.show{opacity:1;visibility:visible}
 .modal-sheet{background:linear-gradient(180deg,#1a2030,#0f1420);border-radius:24px 24px 0 0;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);border-top:1px solid rgba(59,130,246,.15)}
 .modal-overlay.show .modal-sheet{transform:translateY(0)}
 .modal-handle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 16px}
-.modal-title{font-family:inherit;font-weight:800;font-size:18px;color:#fff;text-align:center;margin-bottom:18px}
+.modal-title{font-weight:800;font-size:18px;color:#fff;text-align:center;margin-bottom:18px}
 
-/* ============ TOAST ============ */
-.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);left:50%;transform:translateX(-50%);background:rgba(20,20,30,.95);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);padding:12px 20px;border-radius:14px;font-family:inherit;font-weight:700;font-size:13px;color:#fff;z-index:6000;animation:toastIn .25s ease;max-width:90%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+/* TOAST */
+.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);left:50%;transform:translateX(-50%);background:rgba(20,20,30,.95);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);padding:12px 20px;border-radius:14px;font-weight:700;font-size:13px;color:#fff;z-index:6000;animation:toastIn .25s ease;max-width:90%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.6)}
 .toast.ok{border-color:rgba(16,185,129,.4);color:#10b981}
 .toast.err{border-color:rgba(239,68,68,.4);color:#ef4444}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
-/* ============ LOADING / EMPTY ============ */
+/* LOADING / EMPTY */
 .loading{display:flex;align-items:center;justify-content:center;padding:32px;color:rgba(255,255,255,.4);font-size:13px;font-weight:600}
 .loading::after{content:'';width:18px;height:18px;border:2px solid rgba(255,255,255,.1);border-top-color:#3B82F6;border-radius:50%;animation:spin .8s linear infinite;margin-left:8px}
 .empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px;font-weight:600}
 
-/* ============ PROGRESS BAR ============ */
-.progress-bar{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin-top:10px}
-.progress-bar .pb-fill{height:100%;background:linear-gradient(90deg,#3B82F6,#10b981);border-radius:3px;width:0%;transition:width .3s ease}
+/* LEADERBOARD FORM */
+.lb-place-row{display:grid;grid-template-columns:60px 1fr 90px;gap:8px;align-items:center;margin-bottom:8px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px}
+.lb-place-num{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#FFD700;background:rgba(255,215,0,.1);border-radius:10px;height:42px}
+.lb-reward-type{display:flex;gap:6px;align-items:center}
+.lb-reward-type select{padding:10px 12px;font-size:12px;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-weight:700;font-family:inherit;outline:none;width:100%}
+.lb-reward-type select option{background:#0F1319}
+.lb-reward-input{padding:10px 12px;font-size:13px;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-weight:700;font-family:inherit;outline:none;width:100%}
+.lb-reward-input:focus{border-color:rgba(59,130,246,.5)}
+.lb-gift-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:280px;overflow-y:auto;padding:8px;background:rgba(0,0,0,.2);border-radius:12px;margin-top:8px}
+.lb-gift-item{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:10px;padding:6px;text-align:center;cursor:pointer;transition:all .15s}
+.lb-gift-item.selected{border-color:#3B82F6;background:rgba(59,130,246,.15)}
+.lb-gift-item img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:8px;background:rgba(0,0,0,.2);padding:4px;box-sizing:border-box;margin-bottom:4px}
+.lb-gift-item .lbg-name{font-size:9px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,.85)}
+.lb-gift-item .lbg-price{font-size:9px;font-weight:800;color:#10b981;margin-top:1px}
+
+/* INV ADD ROW */
+.inv-add-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:10px}
+.inv-add-row .form-input{padding:12px 14px}
+.inv-qty{display:flex;align-items:center;gap:6px}
+.inv-qty button{width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-weight:800;font-size:16px;cursor:pointer}
+.inv-qty input{width:56px;padding:8px;text-align:center;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-weight:800;font-size:14px;font-family:inherit;outline:none}
 
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
@@ -207,7 +199,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 
 <div class="container" id="mainContainer">
 
-    <!-- ============ HOME ============ -->
+    <!-- HOME -->
     <div class="section-page" id="page-home">
         <div class="home-section">
             <div class="home-section-title">Главное</div>
@@ -218,15 +210,15 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 </button>
                 <button class="tile-btn tile-purple" onclick="showSection('crash')">
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/></svg></div>
-                    <div><div class="tile-text">Управление Краш</div><div class="tile-sub">RTP, множитель, диапазон</div></div>
+                    <div><div class="tile-text">Управление Краш</div><div class="tile-sub">RTP, множитель</div></div>
                 </button>
                 <button class="tile-btn tile-cyan" onclick="showSection('users')">
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
-                    <div><div class="tile-text">Пользователи</div><div class="tile-sub">Поиск, баланс, бан</div></div>
+                    <div><div class="tile-text">Пользователи</div><div class="tile-sub">Баланс, бан, RTP</div></div>
                 </button>
                 <button class="tile-btn tile-green" onclick="showSection('gifts')">
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></div>
-                    <div><div class="tile-text">Подарки</div><div class="tile-sub">Каталог и цены</div></div>
+                    <div><div class="tile-text">Подарки</div><div class="tile-sub">Каталог и Portal</div></div>
                 </button>
                 <button class="tile-btn tile-orange" onclick="showSection('cases')">
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></div>
@@ -278,7 +270,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 </button>
                 <button class="tile-btn tile-cyan" onclick="showSection('inventory')">
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-                    <div><div class="tile-text">Инвентарь</div><div class="tile-sub">Управление</div></div>
+                    <div><div class="tile-text">Инвентарь</div><div class="tile-sub">Добавить/удалить</div></div>
                 </button>
             </div>
         </div>
@@ -306,7 +298,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
     </div>
 
-    <!-- ============ DASHBOARD ============ -->
+    <!-- DASHBOARD -->
     <div class="section-page" id="page-dashboard" style="display:none">
         <div class="section-header">
             <h2>📊 Дашборд</h2>
@@ -319,7 +311,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
     </div>
 
-    <!-- ============ CRASH ============ -->
+    <!-- CRASH -->
     <div class="section-page" id="page-crash" style="display:none">
         <div class="section-header">
             <h2>🎮 Управление Краш</h2>
@@ -358,7 +350,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
     </div>
 
-    <!-- ============ USERS ============ -->
+    <!-- USERS -->
     <div class="section-page" id="page-users" style="display:none">
         <div class="section-header">
             <h2>👥 Пользователи</h2>
@@ -371,14 +363,12 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="userList"><div class="loading">Загрузка</div></div>
     </div>
 
-    <!-- ============ GIFTS (ОБНОВЛЕНО) ============ -->
+    <!-- GIFTS -->
     <div class="section-page" id="page-gifts" style="display:none">
         <div class="section-header">
             <h2>🎁 Подарки</h2>
             <button class="action-btn" onclick="loadGifts()">Обновить</button>
         </div>
-
-        <!-- PORTAL STATUS + ACTIONS -->
         <div class="portal-status loading" id="portalStatus">
             <div class="ps-icon">🔌</div>
             <div class="ps-info">
@@ -386,31 +376,15 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 <div class="ps-desc" id="portalStatusDesc">Проверка подключения...</div>
             </div>
         </div>
-
-        <div class="portal-actions">
-            <button class="portal-btn portal-btn-connect" id="portalConnectBtn" onclick="openPortalAuth()">
-                <span class="pb-icon">🔑</span>
-                <span class="pb-text">Авторизоваться</span>
-            </button>
-            <button class="portal-btn portal-btn-sync" id="portalSyncBtn" onclick="syncPortalPrices()">
-                <span class="pb-icon">🔄</span>
-                <span class="pb-text">Обновить цены</span>
-            </button>
-            <button class="portal-btn portal-btn-info" onclick="loadPortalInfo()">
-                <span class="pb-icon">ℹ️</span>
-                <span class="pb-text">Показать детали Portal</span>
-            </button>
+        <div class="card">
+            <div class="card-title">Управление Portal</div>
+            <button class="btn btn-primary" onclick="syncPortalPrices()">🔄 Обновить цены из Portal</button>
+            <div style="height:8px"></div>
+            <button class="btn btn-secondary" onclick="loadPortalInfo()">ℹ️ Детали Portal</button>
         </div>
-
-        <div id="portalSyncProgress" style="display:none">
-            <div class="progress-bar"><div class="pb-fill" id="portalSyncFill"></div></div>
+        <div id="portalInfoCard" style="display:none">
+            <div class="card"><div class="card-title">Информация Portal</div><div id="portalInfoContent"></div></div>
         </div>
-
-        <div class="card" id="portalInfoCard" style="display:none">
-            <div class="card-title">ℹ️ Информация Portal</div>
-            <div id="portalInfoContent"></div>
-        </div>
-
         <div class="search-wrap">
             <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             <input type="text" class="search-input" id="giftSearch" placeholder="Поиск подарков..." oninput="filterGifts()">
@@ -418,7 +392,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="giftGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
     </div>
 
-    <!-- ============ CASES ============ -->
+    <!-- CASES -->
     <div class="section-page" id="page-cases" style="display:none">
         <div class="section-header">
             <h2>📦 Кейсы</h2>
@@ -427,7 +401,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="casesList"><div class="loading">Загрузка</div></div>
     </div>
 
-    <!-- ============ PROMO ============ -->
+    <!-- PROMO -->
     <div class="section-page" id="page-promo" style="display:none">
         <div class="section-header">
             <h2>🎟️ Промокоды</h2>
@@ -451,19 +425,15 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                     <label class="form-label">TON</label>
                     <input type="number" class="form-input" id="promoRewardTon" value="1" min="0.1" step="0.1">
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Макс. использований</label>
-                    <input type="number" class="form-input" id="promoMaxUses" value="100" min="1">
-                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Макс. использований</label>
+                <input type="number" class="form-input" id="promoMaxUses" value="100" min="1">
             </div>
             <div id="promoCaseFields" style="display:none">
                 <div class="form-group">
                     <label class="form-label">ID кейса</label>
                     <input type="number" class="form-input" id="promoCaseId" value="2" min="1">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Макс. использований</label>
-                    <input type="number" class="form-input" id="promoCaseMaxUses" value="100" min="1">
                 </div>
             </div>
             <button class="btn btn-success" onclick="createPromoCode()">Создать промокод</button>
@@ -474,7 +444,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
     </div>
 
-    <!-- ============ QUESTS ============ -->
+    <!-- QUESTS -->
     <div class="section-page" id="page-quests" style="display:none">
         <div class="section-header">
             <h2>🎯 Задания краша</h2>
@@ -504,7 +474,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
     </div>
 
-    <!-- ============ CRATES ============ -->
+    <!-- CRATES -->
     <div class="section-page" id="page-crates" style="display:none">
         <div class="section-header">
             <h2>📦 Ящики (Crates)</h2>
@@ -513,7 +483,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="cratesList"><div class="loading">Загрузка</div></div>
     </div>
 
-    <!-- ============ SHOP ============ -->
+    <!-- SHOP -->
     <div class="section-page" id="page-shop" style="display:none">
         <div class="section-header">
             <h2>🛍️ Акции</h2>
@@ -522,16 +492,43 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="shopDealsList"><div class="loading">Загрузка</div></div>
     </div>
 
-    <!-- ============ LEADERBOARD ============ -->
+    <!-- LEADERBOARD — полностью переделан -->
     <div class="section-page" id="page-leaderboard" style="display:none">
         <div class="section-header">
             <h2>🏆 Лидерборд</h2>
             <button class="action-btn" onclick="loadLeaderboards()">Обновить</button>
         </div>
-        <div id="lbList"><div class="loading">Загрузка</div></div>
+
+        <div class="card">
+            <div class="card-title">➕ Создать лидерборд</div>
+            <div class="form-group">
+                <label class="form-label">Название</label>
+                <input type="text" class="form-input" id="lbTitle" placeholder="Сезон 1" value="Лидерборд">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Дата начала</label>
+                <input type="datetime-local" class="form-input" id="lbStart">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Дата окончания</label>
+                <input type="datetime-local" class="form-input" id="lbEnd">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Награды (места 1–10)</label>
+                <div id="lbPlacesContainer"></div>
+            </div>
+
+            <button class="btn btn-success" onclick="createLeaderboard()">Создать лидерборд</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Активные лидерборды</div>
+            <div id="lbList"><div class="loading">Загрузка</div></div>
+        </div>
     </div>
 
-    <!-- ============ WITHDRAWALS ============ -->
+    <!-- WITHDRAWALS -->
     <div class="section-page" id="page-withdrawals" style="display:none">
         <div class="section-header">
             <h2>💸 Выводы</h2>
@@ -546,7 +543,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="withdrawalsList"><div class="loading">Загрузка</div></div>
     </div>
 
-    <!-- ============ SBP ============ -->
+    <!-- SBP -->
     <div class="section-page" id="page-sbp" style="display:none">
         <div class="section-header">
             <h2>💳 СБП Платежи</h2>
@@ -560,7 +557,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="sbpList"><div class="loading">Загрузка</div></div>
     </div>
 
-    <!-- ============ LEVELS ============ -->
+    <!-- LEVELS -->
     <div class="section-page" id="page-levels" style="display:none">
         <div class="section-header">
             <h2>📈 Уровни</h2>
@@ -569,7 +566,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="levelsList"><div class="loading">Загрузка</div></div>
     </div>
 
-    <!-- ============ INVENTORY ============ -->
+    <!-- INVENTORY — улучшен -->
     <div class="section-page" id="page-inventory" style="display:none">
         <div class="section-header"><h2>🎒 Инвентарь</h2></div>
         <div class="search-wrap">
@@ -580,7 +577,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="invUserInfo" style="display:none"></div>
     </div>
 
-    <!-- ============ NEWS ============ -->
+    <!-- NEWS -->
     <div class="section-page" id="page-news" style="display:none">
         <div class="section-header">
             <h2>📰 Новости</h2>
@@ -600,7 +597,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
     </div>
 
-    <!-- ============ NOTIFICATIONS ============ -->
+    <!-- NOTIFICATIONS -->
     <div class="section-page" id="page-notifications" style="display:none">
         <div class="section-header">
             <h2>🔔 Уведомления</h2>
@@ -620,7 +617,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
     </div>
 
-    <!-- ============ MESSAGES ============ -->
+    <!-- MESSAGES -->
     <div class="section-page" id="page-messages" style="display:none">
         <div class="section-header"><h2>✉️ Сообщения</h2></div>
         <div class="card">
@@ -636,7 +633,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
     </div>
 
-    <!-- ============ HISTORY ============ -->
+    <!-- HISTORY -->
     <div class="section-page" id="page-history" style="display:none">
         <div class="section-header">
             <h2>📜 История</h2>
@@ -657,7 +654,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 
 <script>
 /* ============================================================
-   ADMIN AUTH + STATE
+   STATE
    ============================================================ */
 var ADMIN_ID = 5257227756;
 var tg = window.Telegram && window.Telegram.WebApp;
@@ -668,26 +665,10 @@ var allGifts = [];
 var allCasesAdmin = [];
 var currentUser = null;
 var portalPollTimer = null;
+var _currentUserInvItems = [];
+var _giftCatalogForLB = [];
 
 function $(id){ return document.getElementById(id); }
-
-/* ============================================================
-   УНИВЕРСАЛЬНЫЙ ЛОГГЕР ЗАПРОСОВ
-   ============================================================ */
-(function(){
-    var origFetch = window.fetch;
-    window.fetch = function(url, opts){
-        return origFetch.apply(this, arguments).then(function(resp){
-            if(!resp.ok){
-                console.warn('[ADMIN FETCH FAIL]', url, '→', resp.status);
-            }
-            return resp;
-        }).catch(function(e){
-            console.error('[ADMIN FETCH ERR]', url, e);
-            throw e;
-        });
-    };
-})();
 
 function showToast(msg, type){
     document.querySelectorAll('.toast').forEach(function(t){ t.remove(); });
@@ -710,18 +691,20 @@ function escapeHtml(t){
 
 function formatTon(stars){ return (Number(stars || 0) / 100).toFixed(2); }
 
+/* ============================================================
+   AUTH
+   ============================================================ */
 async function verifyAdminAccess(){
     if(tg){
         try{
             tg.ready(); tg.expand();
             try{ tg.setHeaderColor('#0F1319'); tg.setBackgroundColor('#0F1319'); }catch(e){}
-            try{ if(tg.requestFullscreen) tg.requestFullscreen(); }catch(e){}
         }catch(e){}
         var initData = tg.initDataUnsafe;
         if(initData && initData.user){
             currentTgUser = initData.user;
             if(Number(currentTgUser.id) !== ADMIN_ID){
-                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;padding:24px;text-align:center;font-family:Inter,sans-serif;background:#0F1319;color:#fff"><h2 style="color:#ef4444;font-size:22px;font-weight:800">Доступ запрещён</h2><p style="color:rgba(255,255,255,.5);margin-top:12px;font-size:14px">Эта страница доступна только администратору</p><p style="color:rgba(255,255,255,.3);margin-top:8px;font-size:11px">Ваш ID: ' + currentTgUser.id + '<br>Нужен: ' + ADMIN_ID + '</p><button onclick="goBack()" style="margin-top:24px;padding:14px 28px;border:none;border-radius:14px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:700;cursor:pointer;font-size:14px">Назад</button></div>';
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;padding:24px;text-align:center;font-family:Inter,sans-serif;background:#0F1319;color:#fff"><h2 style="color:#ef4444;font-size:22px;font-weight:800">Доступ запрещён</h2><p style="color:rgba(255,255,255,.5);margin-top:12px;font-size:14px">Эта страница доступна только администратору</p></div>';
                 return false;
             }
             adminVerified = true;
@@ -741,26 +724,13 @@ function goBack(){
    ROUTING
    ============================================================ */
 var currentSection = 'home';
-
 var SECTION_TITLES = {
-    home: 'Главное меню',
-    dashboard: '📊 Дашборд',
-    crash: '🎮 Управление Краш',
-    users: '👥 Пользователи',
-    gifts: '🎁 Подарки',
-    cases: '📦 Кейсы',
-    promo: '🎟️ Промокоды',
-    quests: '🎯 Задания',
-    crates: '📦 Ящики',
-    shop: '🛍️ Акции',
-    leaderboard: '🏆 Лидерборд',
-    withdrawals: '💸 Выводы',
-    sbp: '💳 СБП',
-    levels: '📈 Уровни',
-    inventory: '🎒 Инвентарь',
-    news: '📰 Новости',
-    notifications: '🔔 Уведомления',
-    messages: '✉️ Сообщения',
+    home: 'Главное меню', dashboard: '📊 Дашборд', crash: '🎮 Управление Краш',
+    users: '👥 Пользователи', gifts: '🎁 Подарки', cases: '📦 Кейсы',
+    promo: '🎟️ Промокоды', quests: '🎯 Задания', crates: '📦 Ящики',
+    shop: '🛍️ Акции', leaderboard: '🏆 Лидерборд', withdrawals: '💸 Выводы',
+    sbp: '💳 СБП', levels: '📈 Уровни', inventory: '🎒 Инвентарь',
+    news: '📰 Новости', notifications: '🔔 Уведомления', messages: '✉️ Сообщения',
     history: '📜 История'
 };
 
@@ -787,7 +757,7 @@ function showSection(name){
         if(name === 'quests') loadQuests();
         if(name === 'crates') loadCrates();
         if(name === 'shop') loadShopDeals();
-        if(name === 'leaderboard') loadLeaderboards();
+        if(name === 'leaderboard'){ loadLeaderboards(); renderLbPlacesEditor(); }
         if(name === 'withdrawals') loadWithdrawals();
         if(name === 'sbp') loadSbpPayments();
         if(name === 'levels') loadLevels();
@@ -796,7 +766,6 @@ function showSection(name){
         if(name === 'history') switchHistory('wins', null);
     }catch(e){ console.warn('section load error', e); }
 
-    // Start polling portal status only while on gifts page
     if(name === 'gifts'){
         if(portalPollTimer) clearInterval(portalPollTimer);
         portalPollTimer = setInterval(loadPortalStatus, 15000);
@@ -836,8 +805,8 @@ async function loadStats(){
             var s = d.stats || {};
             var html =
                 '<div class="stat-card"><div><div class="label">Пользователи</div><div class="value">' + (s.total_users || 0) + '</div></div><div class="icon">👥</div></div>' +
-                '<div class="stat-card"><div><div class="label">Оборот (TON)</div><div class="value">' + formatTon(s.total_volume || 0) + '</div></div><div class="icon">💎</div></div>' +
-                '<div class="stat-card"><div><div class="label">Подарков выдано</div><div class="value">' + (s.total_gifts_given || 0) + '</div></div><div class="icon">🎁</div></div>' +
+                '<div class="stat-card"><div><div class="label">Звёзды (всего)</div><div class="value">' + formatTon(s.total_stars || 0) + '</div></div><div class="icon">💎</div></div>' +
+                '<div class="stat-card"><div><div class="label">Подарков в инвентарях</div><div class="value">' + (s.total_inventory || 0) + '</div></div><div class="icon">🎁</div></div>' +
                 '<div class="stat-card"><div><div class="label">Открытий кейсов</div><div class="value">' + (s.total_cases_opened || 0) + '</div></div><div class="icon">📦</div></div>';
             var el = $('dashStats');
             if(el) el.innerHTML = html;
@@ -904,7 +873,6 @@ async function setRtp(){
         if(d.success){ showToast(d.message || 'OK', 'ok'); loadCrashStatus(); } else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
-
 async function forceCrash(){
     if(!confirm('Форсировать краш сейчас?')) return;
     try{
@@ -913,7 +881,6 @@ async function forceCrash(){
         if(d.success){ showToast('⚡ ' + (d.message || 'OK'), 'ok'); } else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
-
 async function setNextMultiplier(){
     var val = parseFloat($('nextMultInput').value);
     if(!val || val < 1.01){ showToast('Мин 1.01x', 'err'); return; }
@@ -923,7 +890,6 @@ async function setNextMultiplier(){
         if(d.success){ showToast(d.message || 'OK', 'ok'); $('nextMultInput').value = ''; } else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
-
 async function setRange(){
     var min = parseFloat($('rangeMin').value);
     var max = parseFloat($('rangeMax').value);
@@ -934,7 +900,6 @@ async function setRange(){
         if(d.success){ showToast(d.message || 'OK', 'ok'); } else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
-
 async function toggleManualMode(){
     try{
         var r = await fetch('/api/admin/crash/toggle-manual', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID}) });
@@ -942,7 +907,6 @@ async function toggleManualMode(){
         if(d.success){ showToast(d.message || 'OK', 'ok'); loadCrashStatus(); } else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
-
 async function loadBotsList(){
     var el = $('botsList');
     if(!el) return;
@@ -954,9 +918,9 @@ async function loadBotsList(){
             var bots = d.bots || [];
             if(!bots.length){ el.innerHTML = '<div class="empty">Ботов нет</div>'; return; }
             el.innerHTML = bots.slice(0, 30).map(function(b){
-                return '<div class="list-item"><div class="avatar">🤖</div><div class="info"><div class="name">' + escapeHtml(b.bot_name) + '</div><div class="meta">ставка ' + b.min_bet + '–' + b.max_bet + ' · cashout x' + b.auto_cashout_min + '–x' + b.auto_cashout_max + '</div></div></div>';
+                return '<div class="list-item"><div class="avatar">🤖</div><div class="info"><div class="name">' + escapeHtml(b.bot_name) + '</div><div class="meta">ставка ' + b.min_bet + '–' + b.max_bet + '</div></div></div>';
             }).join('');
-        } else el.innerHTML = '<div class="empty">Ошибка: ' + escapeHtml(d.error || '—') + '</div>';
+        }
     }catch(e){ el.innerHTML = '<div class="empty">Ошибка сети</div>'; }
 }
 
@@ -988,7 +952,7 @@ function renderUsers(users){
             '<div class="avatar">' + av + '</div>' +
             '<div class="info"><div class="name">' + escapeHtml(u.first_name || ('User ' + u.id)) + '</div>' +
             '<div class="meta"><span>ID: ' + u.id + '</span><span>@' + escapeHtml(u.username || '—') + '</span><span>Lvl ' + (u.level || 1) + '</span></div></div>' +
-            '<div class="right"><div class="value"><img src="/static/img/tons/ton_1.svg">' + formatTon(u.balance_stars) + '</div></div>' +
+            '<div class="right"><div class="value">💎 ' + formatTon(u.balance_stars) + '</div></div>' +
             '</div>';
     }).join('');
 }
@@ -1009,24 +973,37 @@ async function openUserModal(userId){
     if(!currentUser) return;
     var html =
         '<div class="modal-title">👤 ' + escapeHtml(currentUser.first_name || ('User ' + userId)) + '</div>' +
-        '<div class="card"><div class="card-title">Баланс</div>' +
+        '<div class="card"><div class="card-title">💰 Баланс и уровень</div>' +
         '<div class="form-group"><label class="form-label">Звёзды</label><input type="number" class="form-input" id="userBalanceInput" value="' + (currentUser.balance_stars || 0) + '"></div>' +
         '<div class="form-group"><label class="form-label">Уровень</label><input type="number" class="form-input" id="userLevelInput" min="1" max="25" value="' + (currentUser.level || 1) + '"></div>' +
-        '<button class="btn btn-success" onclick="saveUserData()">Сохранить</button></div>' +
-        '<div class="card"><div class="card-title">RTP буст</div>' +
+        '<button class="btn btn-success" onclick="saveUserData()">💾 Сохранить</button></div>' +
+
+        '<div class="card"><div class="card-title">🎁 Инвентарь</div>' +
+        '<div class="form-group"><label class="form-label">Найти подарок</label>' +
+        '<input type="text" class="form-input" id="invSearchGift" placeholder="Название подарка..." oninput="filterInvGiftSearch()"></div>' +
+        '<div id="invSearchResults" style="max-height:200px;overflow-y:auto;display:none"></div>' +
+        '<div class="btn-row"><button class="btn btn-primary" onclick="addInventoryItem()">➕ Добавить выбранный</button></div>' +
+        '<div style="height:8px"></div>' +
+        '<button class="btn btn-secondary" onclick="showUserInventory(' + userId + ')">📦 Показать инвентарь</button>' +
+        '<div id="userInvList" style="margin-top:10px"></div>' +
+        '</div>' +
+
+        '<div class="card"><div class="card-title">🎲 RTP буст</div>' +
         '<div class="form-group"><label class="form-label" id="rtpLabel">40%</label>' +
         '<input type="range" id="userRtpSlider" min="0" max="100" value="40" style="width:100%;accent-color:#10b981" oninput="document.getElementById(\'rtpLabel\').textContent=this.value+\'%\'"></div>' +
-        '<button class="btn btn-primary" onclick="saveUserRtp()">Сохранить RTP</button></div>' +
-        '<div class="card"><div class="card-title">Бан</div>' +
+        '<button class="btn btn-primary" onclick="saveUserRtp()">💾 Сохранить RTP</button></div>' +
+
+        '<div class="card"><div class="card-title">🚫 Бан</div>' +
         '<div class="form-group"><label class="form-label">Причина</label><input type="text" class="form-input" id="banReasonInput" placeholder="Нарушение правил"></div>' +
         '<div class="form-group"><label class="form-label">Срок</label><select class="form-input" id="banDurationSelect"><option value="permanent">Навсегда</option><option value="day">1 день</option><option value="week">1 неделя</option><option value="month">1 месяц</option></select></div>' +
         '<div class="btn-row">' +
-        '<button class="btn btn-danger" onclick="banUser()">Забанить</button>' +
-        '<button class="btn btn-success" onclick="unbanUser()">Разбанить</button>' +
+        '<button class="btn btn-danger" onclick="banUser()">🚫 Забанить</button>' +
+        '<button class="btn btn-success" onclick="unbanUser()">✓ Разбанить</button>' +
         '</div></div>' +
         '<button class="btn btn-secondary" onclick="closeModal()">Закрыть</button>';
     openModal(html);
     loadUserRtp(userId);
+    _currentUserInvItems = [];
 }
 
 async function saveUserData(){
@@ -1038,8 +1015,6 @@ async function saveUserData(){
         var d = await r.json();
         if(d.success){
             showToast('Сохранено', 'ok');
-            currentUser.balance_stars = bal;
-            currentUser.level = lvl;
             closeModal();
             loadUsers();
         } else showToast(d.error || 'Ошибка', 'err');
@@ -1088,6 +1063,87 @@ async function unbanUser(){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
+/* === INVENTORY MANAGEMENT === */
+async function filterInvGiftSearch(){
+    var q = ($('invSearchGift').value || '').toLowerCase().trim();
+    var box = $('invSearchResults');
+    if(!box) return;
+    if(q.length < 2){ box.style.display = 'none'; return; }
+    if(!_giftCatalogForLB.length){
+        try{
+            var r = await fetch('/api/admin/get-gifts-list');
+            var d = await r.json();
+            if(d.success) _giftCatalogForLB = d.gifts || [];
+        }catch(e){}
+    }
+    var matches = _giftCatalogForLB.filter(function(g){
+        return (g.name || '').toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 20);
+    if(!matches.length){ box.innerHTML = '<div class="empty" style="padding:16px">Не найдено</div>'; box.style.display = 'block'; return; }
+    box.innerHTML = matches.map(function(g){
+        return '<div class="list-item" onclick="pickGiftForInv(' + g.id + ')" style="margin:0 0 4px 0">' +
+            '<div class="avatar" style="border-radius:8px"><img src="' + escapeHtml(g.image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
+            '<div class="info"><div class="name">' + escapeHtml(g.name) + '</div>' +
+            '<div class="meta">ID: ' + g.id + ' · ' + formatTon(g.value) + ' TON</div></div></div>';
+    }).join('');
+    box.style.display = 'block';
+}
+
+var _pickedInvGift = null;
+function pickGiftForInv(giftId){
+    var g = _giftCatalogForLB.find(function(x){ return x.id === giftId; });
+    if(!g) return;
+    _pickedInvGift = g;
+    if($('invSearchGift')) $('invSearchGift').value = g.name;
+    if($('invSearchResults')) $('invSearchResults').style.display = 'none';
+    showToast('Выбран: ' + g.name, 'ok');
+}
+
+async function addInventoryItem(){
+    if(!_pickedInvGift || !currentUser){ showToast('Выберите подарок', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/add-inventory-item', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, user_id: currentUser.id, gift_id: _pickedInvGift.id, quantity: 1})
+        });
+        var d = await r.json();
+        if(d.success){ showToast('Добавлено', 'ok'); _pickedInvGift = null; if($('invSearchGift')) $('invSearchGift').value = ''; showUserInventory(currentUser.id); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function showUserInventory(userId){
+    var box = $('userInvList');
+    if(!box) return;
+    box.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/user-inventory?user_id=' + userId);
+        var d = await r.json();
+        if(d.success && d.inventory){
+            var list = d.inventory;
+            if(!list.length){ box.innerHTML = '<div class="empty" style="padding:20px">Инвентарь пуст</div>'; return; }
+            box.innerHTML = list.map(function(i){
+                return '<div class="list-item" style="padding:8px">' +
+                    '<div class="avatar" style="width:36px;height:36px;border-radius:8px"><img src="' + escapeHtml(i.gift_image_url || i.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
+                    '<div class="info"><div class="name" style="font-size:12px">' + escapeHtml(i.gift_name || '—') + '</div>' +
+                    '<div class="meta">' + formatTon(i.value) + ' TON</div></div>' +
+                    '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeInvItem(' + i.id + ',' + userId + ')" style="padding:6px 10px;font-size:11px">Удалить</button>' +
+                    '</div>';
+            }).join('');
+        } else box.innerHTML = '<div class="empty" style="padding:20px">Ошибка</div>';
+    }catch(e){ box.innerHTML = '<div class="empty" style="padding:20px">Ошибка сети</div>'; }
+}
+
+async function removeInvItem(invId, userId){
+    if(!confirm('Удалить предмет?')) return;
+    try{
+        var r = await fetch('/api/admin/remove-inventory-item', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, inventory_id: invId}) });
+        var d = await r.json();
+        if(d.success){ showToast('Удалено', 'ok'); showUserInventory(userId); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
 /* ============================================================
    GIFTS + PORTAL
    ============================================================ */
@@ -1099,6 +1155,7 @@ async function loadGifts(){
         var d = await r.json();
         if(d.success){
             allGifts = d.gifts || [];
+            _giftCatalogForLB = allGifts;
             renderGifts(allGifts);
         } else if(el) el.innerHTML = '<div class="empty" style="grid-column:1/-1">Ошибка</div>';
     }catch(e){ if(el) el.innerHTML = '<div class="empty" style="grid-column:1/-1">Ошибка сети</div>'; }
@@ -1114,7 +1171,7 @@ function renderGifts(gifts){
         return '<div class="gift-card">' +
             '<img class="gc-img" src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'">' +
             '<div class="gc-name">' + escapeHtml(g.name) + '</div>' +
-            '<div class="gc-price"><img src="/static/img/ton.png">' + ton + ' TON</div>' +
+            '<div class="gc-price">💎 ' + ton + ' TON</div>' +
             '</div>';
     }).join('');
 }
@@ -1125,105 +1182,37 @@ function filterGifts(){
     renderGifts(allGifts.filter(function(g){ return (g.name || '').toLowerCase().indexOf(q) !== -1; }));
 }
 
-/* ============================================================
-   PORTAL — статус, подключение, синхронизация
-   ============================================================ */
-
 async function loadPortalStatus(){
     var statusEl = $('portalStatus');
     var descEl = $('portalStatusDesc');
     if(!statusEl || !descEl) return;
-
     try{
         var r = await fetch('/api/portal/status');
         var d = await r.json();
-
         if(d.success && d.connected){
             statusEl.className = 'portal-status connected';
             var info = d.info || {};
-            var lastSync = info.last_sync_ago || 'никогда';
-            var total = info.total_collections || 0;
-            descEl.innerHTML = '✅ Подключено · Коллекций: <b>' + total + '</b><br>Последняя синхронизация: <b>' + escapeHtml(lastSync) + '</b>';
+            descEl.innerHTML = '✅ Подключено · Коллекций: <b>' + (info.total_collections || 0) + '</b><br>Синхр.: <b>' + escapeHtml(info.last_sync_ago || 'никогда') + '</b>';
         } else {
             statusEl.className = 'portal-status disconnected';
-            descEl.textContent = '❌ Не подключено. Нажмите "Подключить к Portal".';
+            descEl.textContent = '❌ Не подключено';
         }
     }catch(e){
         statusEl.className = 'portal-status disconnected';
-        descEl.textContent = '⚠️ Не удалось получить статус Portal';
-    }
-}
-
-async function connectPortal(){
-    var btn = $('portalConnectBtn');
-    if(btn) btn.disabled = true;
-    var statusEl = $('portalStatus');
-    var descEl = $('portalStatusDesc');
-    if(statusEl) statusEl.className = 'portal-status loading';
-    if(descEl) descEl.textContent = 'Подключение к Portal...';
-
-    try{
-        var r = await fetch('/api/portal/connect', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_id: ADMIN_ID})
-        });
-        var d = await r.json();
-        if(d.success){
-            showToast('✅ Portal подключён!', 'ok');
-            await loadPortalStatus();
-            await loadPortalInfo();
-        } else {
-            showToast('❌ ' + (d.error || 'Ошибка подключения'), 'err');
-            if(statusEl) statusEl.className = 'portal-status disconnected';
-            if(descEl) descEl.textContent = '❌ ' + (d.error || 'Ошибка подключения');
-        }
-    }catch(e){
-        showToast('Ошибка сети', 'err');
-        if(statusEl) statusEl.className = 'portal-status disconnected';
-        if(descEl) descEl.textContent = '⚠️ Ошибка сети';
-    } finally {
-        if(btn) btn.disabled = false;
+        descEl.textContent = '⚠️ Не удалось получить статус';
     }
 }
 
 async function syncPortalPrices(){
-    var btn = $('portalSyncBtn');
+    var btn = event.target;
     if(btn) btn.disabled = true;
-    var progress = $('portalSyncProgress');
-    var fill = $('portalSyncFill');
-    if(progress) progress.style.display = 'block';
-    if(fill) fill.style.width = '15%';
-
-    var t1 = setTimeout(function(){ if(fill) fill.style.width = '40%'; }, 800);
-    var t2 = setTimeout(function(){ if(fill) fill.style.width = '70%'; }, 2000);
-
     try{
-        var r = await fetch('/api/portal/sync-prices', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_id: ADMIN_ID, full: true})
-        });
-        clearTimeout(t1); clearTimeout(t2);
-        if(fill) fill.style.width = '100%';
+        var r = await fetch('/api/portal/sync-prices', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, full: true}) });
         var d = await r.json();
-        if(d.success){
-            showToast('✅ Обновлено: ' + (d.updated || 0) + ' / ' + (d.total || 0), 'ok');
-            await loadGifts();
-            await loadPortalStatus();
-        } else {
-            showToast('❌ ' + (d.error || 'Ошибка синхронизации'), 'err');
-        }
-    }catch(e){
-        clearTimeout(t1); clearTimeout(t2);
-        showToast('Ошибка сети', 'err');
-    } finally {
-        setTimeout(function(){
-            if(progress) progress.style.display = 'none';
-            if(fill) fill.style.width = '0%';
-            if(btn) btn.disabled = false;
-        }, 1200);
-    }
+        if(d.success){ showToast('✅ Обновлено: ' + (d.updated || 0) + '/' + (d.total || 0), 'ok'); await loadGifts(); await loadPortalStatus(); }
+        else showToast('❌ ' + (d.error || 'Ошибка'), 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+    finally { if(btn) btn.disabled = false; }
 }
 
 async function loadPortalInfo(){
@@ -1232,7 +1221,6 @@ async function loadPortalInfo(){
     if(!card || !content) return;
     card.style.display = 'block';
     content.innerHTML = '<div class="loading">Загрузка</div>';
-
     try{
         var r = await fetch('/api/portal/info');
         var d = await r.json();
@@ -1240,26 +1228,21 @@ async function loadPortalInfo(){
             var i = d.info;
             var rows = [
                 ['Статус', i.connected ? '✅ Подключено' : '❌ Отключено'],
-                ['Авто-синхронизация', i.sync_enabled ? '✅ Включена' : '❌ Выключена'],
+                ['Авто-синхр.', i.sync_enabled ? '✅ Вкл' : '❌ Выкл'],
                 ['Интервал', (i.interval_minutes || 10) + ' мин'],
-                ['Всего коллекций', i.total_collections || 0],
-                ['Последняя синхронизация', i.last_sync_ago || 'никогда'],
-                ['Обновлено цен', i.last_updated || 0],
-                ['Auth', i.auth_type || '—'],
+                ['Коллекций', i.total_collections || 0],
+                ['Синхр.', i.last_sync_ago || 'никогда'],
+                ['Обновлено', i.last_updated || 0]
             ];
             content.innerHTML = rows.map(function(row){
-                return '<div class="portal-info-row"><span class="pi-label">' + escapeHtml(row[0]) + '</span><span class="pi-val">' + escapeHtml(String(row[1])) + '</span></div>';
+                return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px"><span style="color:rgba(255,255,255,.5)">' + escapeHtml(row[0]) + '</span><span style="color:#fff;font-weight:700">' + escapeHtml(String(row[1])) + '</span></div>';
             }).join('');
-        } else {
-            content.innerHTML = '<div class="empty">Информация недоступна</div>';
-        }
-    }catch(e){
-        content.innerHTML = '<div class="empty">Ошибка загрузки</div>';
-    }
+        } else content.innerHTML = '<div class="empty">Нет данных</div>';
+    }catch(e){ content.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
 /* ============================================================
-   CASES
+   CASES / PROMO / QUESTS / CRATES / SHOP
    ============================================================ */
 async function loadCasesList(){
     var el = $('casesList');
@@ -1268,30 +1251,19 @@ async function loadCasesList(){
         var r = await fetch('/api/admin/cases?admin_id=' + ADMIN_ID);
         var d = await r.json();
         if(d.success){
-            allCasesAdmin = d.cases || [];
-            renderCasesList(allCasesAdmin);
+            var list = d.cases || [];
+            if(!list.length){ if(el) el.innerHTML = '<div class="empty">Кейсов нет</div>'; return; }
+            el.innerHTML = list.map(function(c){
+                var img = c.image || '/static/img/gift.png';
+                return '<div class="list-item"><div class="avatar" style="border-radius:10px"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
+                    '<div class="info"><div class="name">' + escapeHtml(c.name) + '</div>' +
+                    '<div class="meta">ID: ' + c.id + ' · Дропов: ' + ((c.gifts || []).length) + '</div></div>' +
+                    '<div class="right"><div class="value">💎 ' + formatTon(c.cost || 0) + '</div></div></div>';
+            }).join('');
         } else if(el) el.innerHTML = '<div class="empty">Ошибка</div>';
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка сети</div>'; }
 }
 
-function renderCasesList(cases){
-    var el = $('casesList');
-    if(!el) return;
-    if(!cases.length){ el.innerHTML = '<div class="empty">Кейсов нет</div>'; return; }
-    el.innerHTML = cases.map(function(c){
-        var img = c.image || '/static/img/gift.png';
-        return '<div class="list-item">' +
-            '<div class="avatar" style="border-radius:10px"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
-            '<div class="info"><div class="name">' + escapeHtml(c.name) + '</div>' +
-            '<div class="meta">ID: ' + c.id + ' · Дропов: ' + ((c.gifts || []).length) + '</div></div>' +
-            '<div class="right"><div class="value"><img src="/static/img/tons/ton_1.svg">' + formatTon(c.cost || 0) + '</div></div>' +
-            '</div>';
-    }).join('');
-}
-
-/* ============================================================
-   PROMO CODES
-   ============================================================ */
 async function loadPromoCodes(){
     var el = $('promoCodesList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -1302,16 +1274,13 @@ async function loadPromoCodes(){
             var list = d.promo_codes || [];
             if(!list.length){ el.innerHTML = '<div class="empty">Нет промокодов</div>'; return; }
             el.innerHTML = list.map(function(p){
-                var active = p.is_active ? '✅' : '❌';
-                return '<div class="list-item">' +
-                    '<div class="avatar" style="background:linear-gradient(135deg,#be185d,#ec4899)">🎟️</div>' +
+                return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#be185d,#ec4899)">🎟️</div>' +
                     '<div class="info"><div class="name">' + escapeHtml(p.code) + '</div>' +
-                    '<div class="meta">' + (p.reward_stars || 0) + '⭐ · ' + p.used_count + '/' + (p.max_uses || '∞') + ' исп. · ' + active + '</div></div>' +
-                    '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePromoCode(' + p.id + ')">✕</button>' +
-                    '</div>';
+                    '<div class="meta">' + (p.reward_stars || 0) + '⭐ · ' + p.used_count + '/' + (p.max_uses || '∞') + ' · ' + (p.is_active ? '✅' : '❌') + '</div></div>' +
+                    '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePromoCode(' + p.id + ')">✕</button></div>';
             }).join('');
-        } else if(el) el.innerHTML = '<div class="empty">Ошибка: ' + escapeHtml(d.error || '—') + '</div>';
-    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка сети</div>'; }
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
 function togglePromoFields(){
@@ -1328,20 +1297,17 @@ async function createPromoCode(){
         payload.reward_type = 'case_open';
         payload.reward_stars = 0;
         payload.reward_data = { case_id: parseInt($('promoCaseId').value) || 2 };
-        payload.max_uses = parseInt($('promoCaseMaxUses').value) || 100;
+        payload.max_uses = parseInt($('promoMaxUses').value) || 100;
     } else {
         payload.reward_type = 'ton';
-        payload.reward_stars = parseFloat($('promoRewardTon').value) || 1;
+        payload.reward_stars = Math.round((parseFloat($('promoRewardTon').value) || 1) * 100);
         payload.max_uses = parseInt($('promoMaxUses').value) || 100;
     }
     try{
         var r = await fetch('/api/admin/promo-codes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         var d = await r.json();
-        if(d.success){
-            showToast('Промокод создан: ' + (d.promo_code && d.promo_code.code ? d.promo_code.code : code), 'ok');
-            $('promoCodeInput').value = '';
-            loadPromoCodes();
-        } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Промокод создан', 'ok'); $('promoCodeInput').value = ''; loadPromoCodes(); }
+        else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
@@ -1350,13 +1316,10 @@ async function deletePromoCode(id){
     try{
         var r = await fetch('/api/admin/promo-codes', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, id: id}) });
         var d = await r.json();
-        if(d.success){ showToast('Удалён', 'ok'); loadPromoCodes(); } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Удалён', 'ok'); loadPromoCodes(); }
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
-/* ============================================================
-   QUESTS
-   ============================================================ */
 async function loadQuests(){
     var el = $('questsList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -1367,12 +1330,10 @@ async function loadQuests(){
             var list = d.quests || [];
             if(!list.length){ el.innerHTML = '<div class="empty">Нет заданий</div>'; return; }
             el.innerHTML = list.map(function(q){
-                return '<div class="list-item">' +
-                    '<div class="avatar" style="background:linear-gradient(135deg,#0e7490,#06b6d4)">🎯</div>' +
+                return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#0e7490,#06b6d4)">🎯</div>' +
                     '<div class="info"><div class="name">' + escapeHtml(q.title) + '</div>' +
                     '<div class="meta">' + escapeHtml(q.quest_type) + ' → ' + q.target_value + ' · 🎁 ' + q.reward_amount + '</div></div>' +
-                    '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteQuest(' + q.id + ')">✕</button>' +
-                    '</div>';
+                    '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteQuest(' + q.id + ')">✕</button></div>';
             }).join('');
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
@@ -1380,26 +1341,24 @@ async function loadQuests(){
 
 async function createQuest(){
     var title = ($('questTitle').value || '').trim();
-    var type = $('questType').value;
-    var target = parseInt($('questTarget').value) || 10;
-    var reward = parseInt($('questReward').value) || 0;
     if(!title){ showToast('Введите название', 'err'); return; }
     var fd = new FormData();
     fd.append('admin_id', ADMIN_ID);
     fd.append('title', title);
-    fd.append('quest_type', type);
-    fd.append('target_value', target);
+    fd.append('quest_type', $('questType').value);
+    fd.append('target_value', parseInt($('questTarget').value) || 10);
     fd.append('reward_type', 'stars');
-    fd.append('reward_amount', reward);
+    fd.append('reward_amount', parseInt($('questReward').value) || 0);
     try{
         var r = await fetch('/api/admin/crash-quests', { method:'POST', body: fd });
         var d = await r.json();
-        if(d.success){ showToast('Задание создано', 'ok'); $('questTitle').value = ''; loadQuests(); } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Создано', 'ok'); $('questTitle').value = ''; loadQuests(); }
+        else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
 async function deleteQuest(id){
-    if(!confirm('Удалить задание?')) return;
+    if(!confirm('Удалить?')) return;
     try{
         var r = await fetch('/api/admin/crash-quests/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, quest_id: id}) });
         var d = await r.json();
@@ -1407,9 +1366,6 @@ async function deleteQuest(id){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
-/* ============================================================
-   CRATES
-   ============================================================ */
 async function loadCrates(){
     var el = $('cratesList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -1421,19 +1377,14 @@ async function loadCrates(){
             if(!list.length){ el.innerHTML = '<div class="empty">Ящиков нет</div>'; return; }
             el.innerHTML = list.map(function(c){
                 var img = c.image || '/static/img/gift.png';
-                return '<div class="list-item">' +
-                    '<div class="avatar" style="border-radius:10px"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
+                return '<div class="list-item"><div class="avatar" style="border-radius:10px"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
                     '<div class="info"><div class="name">' + escapeHtml(c.name) + '</div>' +
-                    '<div class="meta">ID: ' + c.id + ' · ' + (c.is_active ? '✅ активен' : '❌ неактивен') + ' · items: ' + ((c.items || []).length) + '</div></div>' +
-                    '</div>';
+                    '<div class="meta">ID: ' + c.id + ' · ' + (c.is_active ? '✅' : '❌') + ' · items: ' + ((c.items || []).length) + '</div></div></div>';
             }).join('');
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
-/* ============================================================
-   SHOP DEALS
-   ============================================================ */
 async function loadShopDeals(){
     var el = $('shopDealsList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -1444,19 +1395,187 @@ async function loadShopDeals(){
             var list = d.deals || [];
             if(!list.length){ el.innerHTML = '<div class="empty">Акций нет</div>'; return; }
             el.innerHTML = list.map(function(x){
-                return '<div class="list-item">' +
-                    '<div class="avatar" style="background:linear-gradient(135deg,#b45309,#f59e0b)">🛍️</div>' +
+                return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#b45309,#f59e0b)">🛍️</div>' +
                     '<div class="info"><div class="name">' + escapeHtml(x.title || 'Акция') + '</div>' +
-                    '<div class="meta">' + x.price + '⭐ · ' + (x.is_active ? '✅' : '❌') + '</div></div>' +
-                    '</div>';
+                    '<div class="meta">' + x.price + '⭐ · ' + (x.is_active ? '✅' : '❌') + '</div></div></div>';
             }).join('');
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
 /* ============================================================
-   LEADERBOARD
+   LEADERBOARD — переделан полностью
    ============================================================ */
+
+/* Инициализация формы с 10 местами */
+function renderLbPlacesEditor(){
+    var container = $('lbPlacesContainer');
+    if(!container) return;
+    var savedState = {};
+    // Сохраняем текущие значения если есть
+    container.querySelectorAll('.lb-place-row').forEach(function(row){
+        var place = row.dataset.place;
+        var type = row.querySelector('select').value;
+        var input = row.querySelector('.lb-reward-input');
+        savedState[place] = { type: type, value: input ? input.value : '' };
+    });
+
+    var html = '';
+    for(var place = 1; place <= 10; place++){
+        var sv = savedState[place] || { type: 'stars', value: '' };
+        html += '<div class="lb-place-row" data-place="' + place + '">' +
+            '<div class="lb-place-num">' + place + '</div>' +
+            '<div class="lb-reward-type">' +
+            '<select onchange="onLbRewardTypeChange(' + place + ', this.value)">' +
+            '<option value="stars"' + (sv.type === 'stars' ? ' selected' : '') + '>⭐ Stars</option>' +
+            '<option value="gift"' + (sv.type === 'gift' ? ' selected' : '') + '>🎁 Подарок</option>' +
+            '</select>' +
+            '</div>' +
+            '<div class="lb-reward-input-wrap">' +
+            '<input type="text" class="lb-reward-input" data-place="' + place + '" placeholder="' + (sv.type === 'stars' ? '100' : 'ID подарка') + '" value="' + escapeHtml(sv.value) + '" ' +
+            (sv.type === 'gift' ? 'readonly onclick="openLbGiftPicker(' + place + ')" style="cursor:pointer"' : '') + '>' +
+            '</div>' +
+            '</div>';
+    }
+    container.innerHTML = html;
+}
+
+function onLbRewardTypeChange(place, newType){
+    var row = document.querySelector('.lb-place-row[data-place="' + place + '"]');
+    if(!row) return;
+    var input = row.querySelector('.lb-reward-input');
+    if(newType === 'gift'){
+        input.value = '';
+        input.placeholder = 'ID подарка';
+        input.readOnly = true;
+        input.style.cursor = 'pointer';
+        input.onclick = function(){ openLbGiftPicker(place); };
+    } else {
+        input.value = '';
+        input.placeholder = '100';
+        input.readOnly = false;
+        input.style.cursor = '';
+        input.onclick = null;
+    }
+}
+
+async function openLbGiftPicker(place){
+    // Загружаем подарки если не загружены
+    if(!_giftCatalogForLB.length){
+        try{
+            var r = await fetch('/api/admin/get-gifts-list');
+            var d = await r.json();
+            if(d.success) _giftCatalogForLB = d.gifts || [];
+        }catch(e){}
+    }
+    if(!_giftCatalogForLB.length){
+        showToast('Не удалось загрузить подарки', 'err');
+        return;
+    }
+    var html = '<div class="modal-title">🎁 Выберите подарок для места ' + place + '</div>' +
+        '<div class="search-wrap"><svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>' +
+        '<input type="text" class="search-input" id="lbGiftSearch" placeholder="Поиск..." oninput="filterLbGifts(' + place + ')"></div>' +
+        '<div class="lb-gift-picker" id="lbGiftPicker"></div>';
+    openModal(html);
+    renderLbGifts(place, _giftCatalogForLB.slice(0, 60));
+}
+
+function renderLbGifts(place, gifts){
+    var el = $('lbGiftPicker');
+    if(!el) return;
+    if(!gifts.length){ el.innerHTML = '<div class="empty" style="grid-column:1/-1">Не найдено</div>'; return; }
+    el.innerHTML = gifts.map(function(g){
+        return '<div class="lb-gift-item" onclick="pickLbGift(' + place + ',' + g.id + ')">' +
+            '<img src="' + escapeHtml(g.image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'">' +
+            '<div class="lbg-name">' + escapeHtml(g.name) + '</div>' +
+            '<div class="lbg-price">' + formatTon(g.value) + 'T</div>' +
+            '</div>';
+    }).join('');
+}
+
+function filterLbGifts(place){
+    var q = ($('lbGiftSearch').value || '').toLowerCase().trim();
+    var filtered = _giftCatalogForLB.filter(function(g){
+        return !q || (g.name || '').toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 60);
+    renderLbGifts(place, filtered);
+}
+
+function pickLbGift(place, giftId){
+    var g = _giftCatalogForLB.find(function(x){ return x.id === giftId; });
+    if(!g) return;
+    var row = document.querySelector('.lb-place-row[data-place="' + place + '"]');
+    if(!row) return;
+    var input = row.querySelector('.lb-reward-input');
+    input.value = String(g.id);
+    input.dataset.giftName = g.name;
+    input.dataset.giftImage = g.image || '';
+    closeModal();
+    showToast('Подарок: ' + g.name, 'ok');
+}
+
+async function createLeaderboard(){
+    var title = ($('lbTitle').value || 'Лидерборд').trim();
+    var start = $('lbStart').value;
+    var end = $('lbEnd').value;
+    if(!start || !end){ showToast('Укажите даты', 'err'); return; }
+    if(new Date(start) >= new Date(end)){ showToast('Дата окончания должна быть позже', 'err'); return; }
+
+    var rewards = {};
+    var rows = document.querySelectorAll('.lb-place-row');
+    rows.forEach(function(row){
+        var place = row.dataset.place;
+        var type = row.querySelector('select').value;
+        var input = row.querySelector('.lb-reward-input');
+        var value = (input.value || '').trim();
+        if(!value) return;
+        if(type === 'stars'){
+            var stars = parseInt(value);
+            if(stars > 0){
+                rewards[place] = { type: 'stars', amount: stars };
+            }
+        } else {
+            // Подарок
+            rewards[place] = {
+                type: 'gift',
+                amount: value,          // ID подарка
+                gift_name: input.dataset.giftName || '',
+                gift_image: input.dataset.giftImage || ''
+            };
+        }
+    });
+
+    if(!Object.keys(rewards).length){ showToast('Добавьте хотя бы 1 награду', 'err'); return; }
+
+    var payload = {
+        admin_id: ADMIN_ID,
+        title: title,
+        period_start: start.replace('T', ' ') + ':00',
+        period_end: end.replace('T', ' ') + ':00',
+        rewards: rewards
+    };
+
+    try{
+        var r = await fetch('/api/admin/leaderboard', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('🏆 Лидерборд создан!', 'ok');
+            loadLeaderboards();
+            // Очищаем форму
+            $('lbTitle').value = 'Лидерборд';
+            $('lbStart').value = '';
+            $('lbEnd').value = '';
+            renderLbPlacesEditor();
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+        }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
 async function loadLeaderboards(){
     var el = $('lbList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -1465,15 +1584,24 @@ async function loadLeaderboards(){
         var d = await r.json();
         if(d.success && d.configs && d.configs.length){
             el.innerHTML = d.configs.map(function(c){
+                var rewards = c.rewards || {};
+                var rewardsCount = Object.keys(rewards).length;
+                var rewardsPreview = Object.keys(rewards).slice(0, 3).map(function(place){
+                    var rw = rewards[place];
+                    if(rw.type === 'stars') return '#' + place + ' ⭐' + rw.amount;
+                    return '#' + place + ' 🎁';
+                }).join(' · ');
+                if(Object.keys(rewards).length > 3) rewardsPreview += ' …';
                 return '<div class="card">' +
                     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
                     '<div style="font-weight:800;font-size:14px">' + escapeHtml(c.title || 'Лидерборд') + '</div>' +
                     '<div style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:8px;background:' + (c.is_active ? 'rgba(16,185,129,.15)' : 'rgba(255,255,255,.08)') + ';color:' + (c.is_active ? '#10b981' : 'rgba(255,255,255,.5)') + '">' + (c.is_active ? 'АКТИВЕН' : 'НЕАКТИВЕН') + '</div>' +
                     '</div>' +
-                    '<div style="font-size:11px;color:rgba(255,255,255,.5)">' + (c.period_start || '') + ' — ' + (c.period_end || '') + '</div>' +
-                    '<div style="display:flex;gap:6px;margin-top:12px">' +
-                    (c.is_active ? '<button class="btn btn-success btn-sm" onclick="distributeLB(' + c.id + ')" style="flex:1">Раздать</button>' : '') +
-                    '<button class="btn btn-danger btn-sm" onclick="deleteLB(' + c.id + ')">✕</button>' +
+                    '<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:6px">' + (c.period_start || '') + ' → ' + (c.period_end || '') + '</div>' +
+                    '<div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:10px">Награды (' + rewardsCount + '): ' + escapeHtml(rewardsPreview || '—') + '</div>' +
+                    '<div style="display:flex;gap:6px">' +
+                    (c.is_active ? '<button class="btn btn-success btn-sm" style="flex:1" onclick="distributeLB(' + c.id + ')">💰 Раздать награды</button>' : '') +
+                    '<button class="btn btn-danger btn-sm" onclick="deleteLB(' + c.id + ')" style="padding:10px 12px">✕</button>' +
                     '</div>' +
                     '</div>';
             }).join('');
@@ -1482,11 +1610,12 @@ async function loadLeaderboards(){
 }
 
 async function distributeLB(id){
-    if(!confirm('Раздать награды?')) return;
+    if(!confirm('Раздать награды этого лидерборда? Все получат уведомления.')) return;
     try{
         var r = await fetch('/api/admin/leaderboard/distribute', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, id: id}) });
         var d = await r.json();
-        if(d.success){ showToast('Награды розданы', 'ok'); loadLeaderboards(); } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Награды розданы: ' + (d.distributed || 0), 'ok'); loadLeaderboards(); }
+        else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
@@ -1517,7 +1646,7 @@ async function loadWithdrawals(status){
             el.innerHTML = list.map(function(w){
                 var statusText = {pending:'Ожидает',approved:'Одобрено',rejected:'Отклонено',processing:'Обработка',error:'Ошибка'}[w.status] || w.status;
                 var actions = w.status === 'pending'
-                    ? '<div class="btn-row" style="margin-top:8px"><button class="btn btn-success btn-sm" style="flex:1" onclick="approveWithdrawal(' + w.id + ')">✓ Одобрить</button><button class="btn btn-danger btn-sm" style="flex:1" onclick="rejectWithdrawal(' + w.id + ')">✗ Отклонить</button></div>'
+                    ? '<div class="btn-row" style="margin-top:8px"><button class="btn btn-success btn-sm" style="flex:1" onclick="approveWithdrawal(' + w.id + ')">✓ Одобрить</button><button class="btn btn-danger btn-sm" style="flex:1" onclick="rejectWithdrawal(' + w.id + ')">✗</button></div>'
                     : '';
                 return '<div class="card" style="margin-bottom:8px">' +
                     '<div style="display:flex;align-items:center;gap:10px">' +
@@ -1546,16 +1675,15 @@ async function approveWithdrawal(id){
     try{
         var r = await fetch('/api/admin/update-withdrawal-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, withdrawal_id: id, status: 'approved'}) });
         var d = await r.json();
-        if(d.success){ showToast('Одобрено', 'ok'); loadWithdrawals(); } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Одобрено', 'ok'); loadWithdrawals(); }
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
-
 async function rejectWithdrawal(id){
-    if(!confirm('Отклонить вывод?')) return;
+    if(!confirm('Отклонить?')) return;
     try{
         var r = await fetch('/api/admin/update-withdrawal-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, withdrawal_id: id, status: 'rejected'}) });
         var d = await r.json();
-        if(d.success){ showToast('Отклонено', 'ok'); loadWithdrawals(); } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Отклонено', 'ok'); loadWithdrawals(); }
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
@@ -1588,28 +1716,25 @@ async function loadSbpPayments(status){
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
-
 function filterSbp(status, btn){
     document.querySelectorAll('#page-sbp .tab-btn').forEach(function(b){ b.classList.remove('active'); });
     if(btn) btn.classList.add('active');
     loadSbpPayments(status);
 }
-
 async function confirmSbp(id){
     if(!confirm('Подтвердить платёж?')) return;
     try{
         var r = await fetch('/api/admin/sbp-confirm', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, payment_id: id}) });
         var d = await r.json();
-        if(d.success){ showToast('Подтверждён', 'ok'); loadSbpPayments(); } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Подтверждён', 'ok'); loadSbpPayments(); }
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
-
 async function rejectSbp(id){
-    if(!confirm('Отклонить платёж?')) return;
+    if(!confirm('Отклонить?')) return;
     try{
         var r = await fetch('/api/admin/sbp-reject', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, payment_id: id}) });
         var d = await r.json();
-        if(d.success){ showToast('Отклонён', 'ok'); loadSbpPayments(); } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Отклонён', 'ok'); loadSbpPayments(); }
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
@@ -1628,14 +1753,14 @@ async function loadLevels(){
             el.innerHTML = list.map(function(l){
                 return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#3730a3,#6366f1)">L' + l.level + '</div>' +
                     '<div class="info"><div class="name">Уровень ' + l.level + '</div>' +
-                    '<div class="meta">EXP: ' + l.exp_required + ' · ⭐ ' + l.reward_stars + ' · 🎫 ' + l.reward_tickets + '</div></div></div>';
+                    '<div class="meta">EXP: ' + l.exp_required + ' · ⭐ ' + l.reward_stars + '</div></div></div>';
             }).join('');
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
 /* ============================================================
-   INVENTORY
+   INVENTORY PAGE (search users)
    ============================================================ */
 async function searchInvUser(){
     var q = ($('invUserSearch').value || '').trim();
@@ -1648,7 +1773,7 @@ async function searchInvUser(){
         var d = await r.json();
         if(d.success && d.users && d.users.length){
             el.innerHTML = d.users.slice(0, 10).map(function(u){
-                return '<div class="list-item" onclick="showUserInventory(' + u.id + ')">' +
+                return '<div class="list-item" onclick="showUserInvFromPage(' + u.id + ')">' +
                     '<div class="avatar">' + escapeHtml((u.name || 'U')[0].toUpperCase()) + '</div>' +
                     '<div class="info"><div class="name">' + escapeHtml(u.name || 'User') + '</div>' +
                     '<div class="meta">ID: ' + u.id + (u.username ? ' · @' + escapeHtml(u.username) : '') + '</div></div></div>';
@@ -1657,36 +1782,21 @@ async function searchInvUser(){
     }catch(e){ el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
-async function showUserInventory(userId){
-    var box = $('invUserInfo');
-    if(!box) return;
-    box.style.display = 'block';
-    box.innerHTML = '<div class="loading">Загрузка инвентаря</div>';
-    try{
-        var r = await fetch('/api/admin/user-inventory?user_id=' + userId);
-        var d = await r.json();
-        if(d.success){
-            var list = d.inventory || [];
-            box.innerHTML = '<div class="card"><div class="card-title">Инвентарь пользователя ' + userId + ' (' + list.length + ')</div>' +
-                (list.length ? list.map(function(i){
-                    return '<div class="list-item"><div class="avatar" style="border-radius:8px"><img src="' + escapeHtml(i.gift_image_url || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
-                        '<div class="info"><div class="name">' + escapeHtml(i.gift_name || '—') + '</div>' +
-                        '<div class="meta">ID: ' + i.id + '</div></div>' +
-                        '<div class="right"><div class="value"><img src="/static/img/tons/ton_1.svg">' + formatTon(i.value) + '</div>' +
-                        '<button class="btn btn-danger btn-sm" style="margin-top:6px" onclick="removeInvItem(' + i.id + ',' + userId + ')">Удалить</button></div></div>';
-                }).join('') : '<div class="empty">Пусто</div>') +
-                '</div>';
+function showUserInvFromPage(userId){
+    currentUser = { id: userId };
+    // Открываем модалку пользователя
+    fetch('/api/user/' + userId).then(function(r){ return r.json(); }).then(function(d){
+        if(d.success && d.user){
+            // Приводим к формату admin (level вместо current_level)
+            var u = d.user;
+            u.level = u.current_level || u.level || 1;
+            u.balance_stars = u.balance_stars || 0;
+            currentUser = u;
+            openUserModal(userId);
+        } else {
+            showToast('Пользователь не найден', 'err');
         }
-    }catch(e){ box.innerHTML = '<div class="empty">Ошибка</div>'; }
-}
-
-async function removeInvItem(invId, userId){
-    if(!confirm('Удалить предмет?')) return;
-    try{
-        var r = await fetch('/api/admin/remove-inventory-item', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, inventory_id: invId}) });
-        var d = await r.json();
-        if(d.success){ showToast('Удалено', 'ok'); showUserInventory(userId); }
-    }catch(e){ showToast('Ошибка сети', 'err'); }
+    }).catch(function(){ showToast('Ошибка', 'err'); });
 }
 
 /* ============================================================
@@ -1702,10 +1812,9 @@ async function loadNewsList(){
             var list = d.news || [];
             if(!list.length){ el.innerHTML = '<div class="empty">Новостей нет</div>'; return; }
             el.innerHTML = list.map(function(n){
-                var active = n.is_active ? '✅' : '❌';
                 return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#6d28d9,#a855f7)">📰</div>' +
                     '<div class="info"><div class="name">' + escapeHtml(n.title) + '</div>' +
-                    '<div class="meta">ID ' + n.id + ' · ' + active + ' · ⭐' + (n.reward_amount || 0) + '</div></div>' +
+                    '<div class="meta">ID ' + n.id + ' · ' + (n.is_active ? '✅' : '❌') + ' · ⭐' + (n.reward_amount || 0) + '</div></div>' +
                     '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteNews(' + n.id + ')">✕</button></div>';
             }).join('');
         }
@@ -1715,25 +1824,17 @@ async function loadNewsList(){
 async function submitNews(){
     var title = ($('newsTitleInput').value || '').trim();
     var content = ($('newsContentInput').value || '').trim();
-    var image = ($('newsImageInput').value || '').trim();
-    var reward = parseInt($('newsRewardInput').value) || 0;
-    if(!title || !content){ showToast('Заполните заголовок и текст', 'err'); return; }
+    if(!title || !content){ showToast('Заполните поля', 'err'); return; }
     try{
-        var r = await fetch('/api/admin/news', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, title: title, content: content, image_url: image, reward_amount: reward}) });
+        var r = await fetch('/api/admin/news', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, title: title, content: content, image_url: $('newsImageInput').value, reward_amount: parseInt($('newsRewardInput').value) || 0}) });
         var d = await r.json();
-        if(d.success){
-            showToast('Новость создана', 'ok');
-            $('newsTitleInput').value = '';
-            $('newsContentInput').value = '';
-            $('newsImageInput').value = '';
-            $('newsRewardInput').value = '0';
-            loadNewsList();
-        } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Создано', 'ok'); $('newsTitleInput').value = ''; $('newsContentInput').value = ''; loadNewsList(); }
+        else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
 async function deleteNews(id){
-    if(!confirm('Удалить новость?')) return;
+    if(!confirm('Удалить?')) return;
     try{
         var r = await fetch('/api/admin/news-json/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, news_id: id}) });
         var d = await r.json();
@@ -1756,7 +1857,7 @@ async function loadAdminNotifs(){
             el.innerHTML = list.map(function(n){
                 return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#be185d,#ec4899)">🔔</div>' +
                     '<div class="info"><div class="name">' + escapeHtml(n.title) + '</div>' +
-                    '<div class="meta">' + escapeHtml(n.target_label || 'All users') + ' · ' + (n.is_active ? '✅' : '❌') + '</div></div>' +
+                    '<div class="meta">' + escapeHtml(n.target_label || 'All users') + '</div></div>' +
                     '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteAdminNotif(' + n.id + ')">✕</button></div>';
             }).join('');
         }
@@ -1765,21 +1866,17 @@ async function loadAdminNotifs(){
 
 async function createAdminNotif(){
     var title = ($('notifTitle').value || '').trim();
-    var message = ($('notifMessage').value || '').trim();
-    var image = ($('notifImage').value || '').trim();
-    var target = parseInt($('notifTarget').value) || null;
     if(!title){ showToast('Введите заголовок', 'err'); return; }
     try{
-        var r = await fetch('/api/admin/admin-notifications', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, title: title, message: message, image_url: image, target_user_id: target, notif_type: 'general'}) });
+        var r = await fetch('/api/admin/admin-notifications', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+            admin_id: ADMIN_ID, title: title,
+            message: $('notifMessage').value, image_url: $('notifImage').value,
+            target_user_id: parseInt($('notifTarget').value) || null,
+            notif_type: 'general'
+        }) });
         var d = await r.json();
-        if(d.success){
-            showToast('Создано', 'ok');
-            $('notifTitle').value = '';
-            $('notifMessage').value = '';
-            $('notifImage').value = '';
-            $('notifTarget').value = '';
-            loadAdminNotifs();
-        } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Создано', 'ok'); $('notifTitle').value = ''; $('notifMessage').value = ''; loadAdminNotifs(); }
+        else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
@@ -1802,18 +1899,19 @@ async function sendAdminMessage(){
     try{
         var r = await fetch('/api/admin/send-message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, user_id: userId, text: text}) });
         var d = await r.json();
-        if(d.success){ showToast('Отправлено', 'ok'); $('msgText').value = ''; } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Отправлено', 'ok'); $('msgText').value = ''; }
+        else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
 async function sendBroadcast(){
     var text = ($('broadcastText').value || '').trim();
     if(!text){ showToast('Введите текст', 'err'); return; }
-    if(!confirm('Отправить ВСЕМ пользователям?')) return;
+    if(!confirm('Отправить ВСЕМ?')) return;
     try{
         var r = await fetch('/api/admin/users?admin_id=' + ADMIN_ID);
         var d = await r.json();
-        if(!d.success || !d.users){ showToast('Не удалось загрузить пользователей', 'err'); return; }
+        if(!d.success || !d.users){ showToast('Не удалось загрузить', 'err'); return; }
         var users = d.users;
         var sent = 0, failed = 0;
         showToast('Отправка... 0/' + users.length, 'ok');
@@ -1825,7 +1923,7 @@ async function sendBroadcast(){
             }catch(e){ failed++; }
             if(i % 10 === 0){ showToast('Отправлено: ' + sent + ' / ' + (i+1), 'ok'); }
         }
-        showToast('Готово! ' + sent + ' отправлено, ' + failed + ' ошибок', 'ok');
+        showToast('Готово! ' + sent + ' ok / ' + failed + ' err', 'ok');
         $('broadcastText').value = '';
     }catch(e){ showToast('Ошибка', 'err'); }
 }
@@ -1851,7 +1949,7 @@ async function switchHistory(type, btn){
                     return '<div class="list-item"><div class="avatar" style="border-radius:8px"><img src="' + escapeHtml(w.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
                         '<div class="info"><div class="name">' + escapeHtml(w.gift_name || '—') + '</div>' +
                         '<div class="meta">' + escapeHtml(w.user_name || 'User') + ' · ' + escapeHtml(w.case_name || '—') + '</div></div>' +
-                        '<div class="right"><div class="value"><img src="/static/img/tons/ton_1.svg">' + formatTon(w.gift_value) + '</div></div></div>';
+                        '<div class="right"><div class="value">💎 ' + formatTon(w.gift_value) + '</div></div></div>';
                 }).join('');
             } else el.innerHTML = '<div class="empty">Побед нет</div>';
         } else {
@@ -1864,13 +1962,12 @@ async function switchHistory(type, btn){
                     return '<div class="list-item"><div class="avatar" style="border-radius:8px"><img src="' + escapeHtml(o.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
                         '<div class="info"><div class="name">' + escapeHtml(o.gift_name || '—') + '</div>' +
                         '<div class="meta">' + escapeHtml(o.case_name || '—') + ' · User ' + o.user_id + '</div></div>' +
-                        '<div class="right"><div class="value"><img src="/static/img/tons/ton_1.svg">' + formatTon(o.gift_value) + '</div></div></div>';
+                        '<div class="right"><div class="value">💎 ' + formatTon(o.gift_value) + '</div></div></div>';
                 }).join('');
             } else el.innerHTML = '<div class="empty">Открытий нет</div>';
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
-
 async function loadWinHistory(){ switchHistory('wins', null); }
 
 /* ============================================================
@@ -1881,6 +1978,17 @@ document.addEventListener('DOMContentLoaded', function(){
     verifyAdminAccess().then(function(ok){
         if(ok){
             if(loader) loader.classList.add('hidden');
+            // Устанавливаем даты по умолчанию
+            var now = new Date();
+            var weekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            function toLocalIso(d){
+                var pad = function(n){ return n < 10 ? '0' + n : n; };
+                return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+            }
+            var lbStart = $('lbStart');
+            var lbEnd = $('lbEnd');
+            if(lbStart) lbStart.value = toLocalIso(now);
+            if(lbEnd) lbEnd.value = toLocalIso(weekLater);
             showSection('home');
         }
     }).catch(function(e){
@@ -1899,115 +2007,6 @@ if(tg){
         tg.BackButton.show();
     }catch(e){}
 }
-
-/* ============================================================
-   PORTAL AUTH (added by setup_portal.py)
-   ============================================================ */
-
-
-
-
-
-
-
-
-
-
-
-/* ─── PORTAL MARKET AUTH ─── */
-function openPortalAuth(){
-    var ov = $('portalAuthOverlay');
-    if(ov) ov.classList.add('show');
-    paLoadStatus();
-}
-function closePortalAuth(){
-    var ov = $('portalAuthOverlay');
-    if(ov) ov.classList.remove('show');
-}
-function paStatus(msg, isErr){
-    var el = $('paStatus');
-    if(!el) return;
-    el.style.color = isErr ? '#ef4444' : 'rgba(255,255,255,.6)';
-    el.textContent = msg || '';
-}
-async function paLoadStatus(){
-    try{
-        var r = await fetch('/api/portal/auth-status');
-        var d = await r.json();
-        if(d.authorized && d.user){
-            paStatus('✅ Авторизован: ' + (d.user.first_name || d.user.username || 'OK'));
-        } else if(d.has_token){
-            paStatus('⚠️ Токен есть, но не работает. ' + (d.error || ''));
-        } else {
-            paStatus('❌ Не авторизован');
-        }
-    }catch(e){ paStatus('Ошибка проверки', true); }
-}
-async function paSaveToken(){
-    var token = ($('paTokenInput').value || '').trim();
-    if(!token){ paStatus('Введите токен', true); return; }
-    paStatus('Проверка токена на portal-market.com...');
-    try{
-        var r = await fetch('/api/portal/save-token', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_id: ADMIN_ID, token: token})
-        });
-        var d = await r.json();
-        if(d.success){
-            var name = (d.user && (d.user.first_name || d.user.username)) || 'OK';
-            paStatus('✅ Токен сохранён. Профиль: ' + name);
-            showToast('Portal Market: авторизован', 'ok');
-            loadPortalStatus();
-            setTimeout(closePortalAuth, 1200);
-        } else {
-            paStatus('❌ ' + (d.error || 'Ошибка'), true);
-        }
-    }catch(e){ paStatus('Ошибка сети', true); }
-}
-async function paLogout(){
-    if(!confirm('Удалить токен Portal Market?')) return;
-    try{
-        var r = await fetch('/api/portal/logout', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({admin_id: ADMIN_ID})
-        });
-        var d = await r.json();
-        if(d.success){
-            paStatus('Токен удалён');
-            showToast('Portal Market: сброшено', 'ok');
-            loadPortalStatus();
-        }
-    }catch(e){ paStatus('Ошибка сети', true); }
-}
 </script>
-
-
-
-<!-- PORTAL MARKET AUTH MODAL -->
-<div class="modal-overlay" id="portalAuthOverlay" onclick="if(event.target===this)closePortalAuth()">
-    <div class="modal-sheet">
-        <div class="modal-handle"></div>
-        <div class="modal-title">🔑 Авторизация Portal Market</div>
-        <div style="font-size:12px;color:rgba(255,255,255,.55);line-height:1.5;margin-bottom:14px;text-align:center">
-            Вставь <b>initData</b> из Telegram WebApp.<br>
-            Начинается с <code style="color:#3B82F6">tma user=...</code>
-        </div>
-        <div class="form-group">
-            <label class="form-label">InitData (tma ...)</label>
-            <textarea class="form-input" id="paTokenInput" rows="7"
-                placeholder="tma user=%7B%22id%22%3A...&hash=..."></textarea>
-        </div>
-        <button class="btn btn-primary" onclick="paSaveToken()">Сохранить и проверить</button>
-        <div id="paStatus" style="margin-top:14px;font-size:12px;color:rgba(255,255,255,.6);text-align:center"></div>
-        <div style="margin-top:16px">
-            <button class="btn btn-secondary" onclick="closePortalAuth()">Закрыть</button>
-            <div style="height:8px"></div>
-            <button class="btn btn-danger" onclick="paLogout()">Сбросить токен</button>
-        </div>
-    </div>
-</div>
-
 </body>
 </html>
