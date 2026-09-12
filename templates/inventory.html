@@ -336,31 +336,50 @@ body{
     color:#fff;box-shadow:0 4px 14px rgba(59,130,246,.4);
 }
 
-/* BOTTOM NAV */
+/* BOTTOM NAV — все иконки ровно по центру высоты */
 .bottom-nav{
     position:fixed;bottom:0;left:50%;
     transform:translateX(-50%);
-    z-index:4000;width:100%;max-width:480px;height:76px;
-    padding:0 8px calc(var(--safe-bottom,0px) + 6px);
+    z-index:4000;width:100%;max-width:480px;
+    height:calc(76px + var(--safe-bottom,0px));
+    padding:0 8px var(--safe-bottom,0px);
     background:rgba(28,34,51,.95);
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
     border-top:1px solid rgba(59,130,246,.08);
-    display:flex;align-items:center;justify-content:space-around;
+    display:flex;
+    align-items:center;
+    justify-content:space-around;
+    box-sizing:border-box;
 }
 .bnav-item{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:3px;padding:6px 8px;border-radius:12px;
-    color:rgba(255,255,255,.4);font-weight:700;
-    cursor:pointer;transition:all .2s;text-decoration:none;
-    min-height:56px;height:56px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    padding:6px 8px;
+    border-radius:12px;
+    color:rgba(255,255,255,.4);
+    font-weight:700;
+    cursor:pointer;
+    transition:all .2s;text-decoration:none;
+    height:60px;
+    min-height:60px;
+    flex:1;
+    max-width:110px;
     background:transparent;border:none;font-family:inherit;
-    flex:1;max-width:110px;
+    box-sizing:border-box;
+    align-self:center;
 }
 .bnav-item svg{
     width:22px;height:22px;stroke:currentColor;fill:none;
     stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+    flex-shrink:0;
 }
-.bnav-item span{font-size:10px;font-weight:700;line-height:1}
+.bnav-item span{
+    font-size:10px;font-weight:700;line-height:1;
+    display:block;
+}
 .bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
 .bnav-item:active{transform:scale(.9)}
 
@@ -570,7 +589,7 @@ body{
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ★ UPGRADE MODAL — компактный
+   ★ UPGRADE MODAL — выше, крупнее рулетка, без чёрной полосы
    ══════════════════════════════════════════════════════════════ */
 .upgrade-overlay{
     position:fixed;inset:0;z-index:85000;
@@ -586,9 +605,8 @@ body{
     background:linear-gradient(180deg,#232c3e 0%,#1a2232 100%);
     border-radius:24px 24px 0 0;
     width:100%;max-width:480px;
-    /* ★ Компактная высота */
     height:auto;
-    max-height:78vh;
+    max-height:88vh;
     display:flex;flex-direction:column;
     transform:translateY(100%);
     transition:transform .4s cubic-bezier(.32,1,.23,1);
@@ -627,21 +645,21 @@ body{
 }
 .upgrade-close:active{transform:scale(.9)}
 
-/* ★ СЦЕНА — тут только одна картинка или рулетка */
+/* ★ СЦЕНА */
 .upgrade-stage{
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    padding:16px 16px 12px;
+    padding:18px 16px 14px;
     position:relative;
     background:radial-gradient(circle at center, rgba(59,130,246,.08) 0%, transparent 70%);
 }
 
-/* ★ PNG превью — квадрат 130x130 */
+/* ★ PNG превью — 160×160 */
 .upgrade-preview-wrap{
-    width:130px;height:130px;
-    border-radius:20px;
+    width:160px;height:160px;
+    border-radius:22px;
     overflow:hidden;
     background:rgba(0,0,0,.3);
     border:2px solid rgba(59,130,246,.35);
@@ -653,18 +671,17 @@ body{
 .upgrade-preview-wrap img{
     width:100%;height:100%;
     object-fit:cover;display:block;
-    transition:opacity .35s ease;
+    transition:opacity .5s ease;
     opacity:1;
 }
-/* ★ Плавное затухание */
 .upgrade-preview-wrap img.fading{
     opacity:0;
 }
 
-/* ★ РУЛЕТКА — заменяет превью */
+/* ★ РУЛЕТКА — 180px высота, без чёрной полосы */
 .upgrade-roulette-wrap{
     width:100%;
-    height:130px;
+    height:180px;
     display:none;
     position:relative;
     flex-shrink:0;
@@ -673,13 +690,13 @@ body{
 
 .upgrade-roulette{
     width:100%;
-    height:130px;
+    height:180px;
     position:relative;
     overflow:hidden;
-    border-radius:18px;
+    border-radius:20px;
     background:rgba(0,0,0,.35);
     border:1.5px solid rgba(59,130,246,.25);
-    box-shadow:inset 0 0 40px rgba(0,0,0,.6), 0 8px 30px rgba(0,0,0,.5);
+    box-shadow:inset 0 0 60px rgba(0,0,0,.7), 0 10px 40px rgba(0,0,0,.5);
 }
 .upgrade-roulette-strip{
     display:flex;
@@ -689,18 +706,16 @@ body{
     padding:0;
     will-change:transform;
 }
-/* ★ Карточка на всю высоту, без надписей, только PNG */
 .roulette-card{
-    width:130px;
-    height:130px;
+    width:180px;
+    height:180px;
     flex-shrink:0;
-    background:rgba(0,0,0,.2);
+    background:transparent;
     display:block;
     padding:0;
     margin:0;
     overflow:hidden;
     position:relative;
-    /* ★ Никаких границ между картинками — они как бы склеены */
     border:none;
 }
 .roulette-card img{
@@ -712,15 +727,16 @@ body{
     background:transparent;
 }
 
-/* Центральный указатель */
+/* Центральный указатель — ярче и толще */
 .upgrade-pointer-line{
     position:absolute;
     top:0;bottom:0;
-    left:50%;width:2px;
+    left:50%;width:3px;
     transform:translateX(-50%);
-    background:linear-gradient(180deg,transparent 0%,#24C38E 20%,#24C38E 80%,transparent 100%);
+    background:linear-gradient(180deg,transparent 0%,#24C38E 15%,#24C38E 85%,transparent 100%);
     z-index:5;pointer-events:none;
     opacity:0;transition:opacity .3s;
+    box-shadow:0 0 20px rgba(36,195,142,.9), 0 0 40px rgba(36,195,142,.5);
 }
 .upgrade-pointer-line.active{opacity:1}
 .upgrade-pointer-line::before,
@@ -728,47 +744,47 @@ body{
     content:'';position:absolute;left:50%;
     transform:translateX(-50%);
     width:0;height:0;
-    border-left:6px solid transparent;
-    border-right:6px solid transparent;
+    border-left:8px solid transparent;
+    border-right:8px solid transparent;
 }
 .upgrade-pointer-line::before{
-    top:-2px;border-top:9px solid #24C38E;
+    top:-2px;border-top:12px solid #24C38E;
 }
 .upgrade-pointer-line::after{
-    bottom:-2px;border-bottom:9px solid #24C38E;
+    bottom:-2px;border-bottom:12px solid #24C38E;
 }
 
-/* ★ Легкая виньетка по краям */
+/* Мягкая виньетка по краям */
 .upgrade-roulette::before,
 .upgrade-roulette::after{
     content:'';position:absolute;top:0;bottom:0;
-    width:40px;z-index:4;pointer-events:none;
+    width:60px;z-index:4;pointer-events:none;
 }
 .upgrade-roulette::before{
     left:0;
-    background:linear-gradient(90deg,rgba(35,44,62,.9) 0%,rgba(35,44,62,0) 100%);
+    background:linear-gradient(90deg,rgba(26,34,50,.75) 0%,rgba(26,34,50,.4) 50%,rgba(26,34,50,0) 100%);
 }
 .upgrade-roulette::after{
     right:0;
-    background:linear-gradient(270deg,rgba(35,44,62,.9) 0%,rgba(35,44,62,0) 100%);
+    background:linear-gradient(270deg,rgba(26,34,50,.75) 0%,rgba(26,34,50,.4) 50%,rgba(26,34,50,0) 100%);
 }
 
-/* ★ Атрибуты внизу */
+/* ★ Атрибуты */
 .upgrade-attrs-panel{
     width:100%;
     display:flex;flex-direction:column;gap:1px;
     background:rgba(0,0,0,.25);
     border-radius:14px;overflow:hidden;
     border:1.5px solid rgba(59,130,246,.2);
-    margin-top:14px;
+    margin-top:16px;
 }
 .upgrade-attr-row{
     display:flex;align-items:center;justify-content:space-between;
-    padding:9px 14px;
+    padding:10px 14px;
     border-bottom:1px solid rgba(59,130,246,.08);
     gap:10px;
     background:rgba(59,130,246,.04);
-    min-height:38px;
+    min-height:40px;
 }
 .upgrade-attr-row:last-child{border-bottom:none}
 .upgrade-attr-label{
@@ -788,7 +804,7 @@ body{
     font-size:12px;color:#fff;font-weight:800;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     max-width:120px;text-align:right;
-    transition:opacity .3s ease;
+    transition:opacity .4s ease;
     opacity:1;
 }
 .upgrade-attr-value.fading{opacity:0;}
@@ -799,7 +815,7 @@ body{
     border:1px solid rgba(59,130,246,.25);
     flex-shrink:0;
     min-width:44px;text-align:center;
-    transition:opacity .3s ease;
+    transition:opacity .4s ease;
     opacity:1;
 }
 .upgrade-attr-rarity.fading{opacity:0;}
@@ -1097,10 +1113,10 @@ body{
     .item-sheet-img{width:100px;height:100px}
     .item-nft-img-wrap{width:170px;height:170px}
     .item-btn{font-size:12px;padding:14px 8px}
-    .upgrade-preview-wrap{width:110px;height:110px}
-    .upgrade-roulette-wrap{height:110px}
-    .upgrade-roulette{height:110px}
-    .roulette-card{width:110px;height:110px}
+    .upgrade-preview-wrap{width:130px;height:130px}
+    .upgrade-roulette-wrap{height:150px}
+    .upgrade-roulette{height:150px}
+    .roulette-card{width:150px;height:150px}
     .upgrade-result-overlay-img{width:130px;height:130px}
     .bnav-item{padding:6px 4px}
     .bnav-item span{font-size:9px}
@@ -1969,10 +1985,21 @@ async function openUpgradeModal(){
     if(previewWrap) previewWrap.style.display = 'flex';
     if(rouletteWrap) rouletteWrap.classList.remove('show');
 
-    // Показываем исходный подарок
+    // ★ Всегда показываем PNG подарка — даже если он не улучшен
     var pimg = $('upgradePreviewImg');
     if(pimg){
-        pimg.src = getGiftImage(selectedItem);
+        var previewSrc = getGiftImage(selectedItem);
+        // Если подарок улучшен — используем fragment URL
+        if(selectedItem.is_upgraded && selectedItem.fragment_slug && selectedItem.nft_number){
+            previewSrc = 'https://nft.fragment.com/gift/' +
+                String(selectedItem.fragment_slug).replace(/\s/g, '') +
+                '-' + selectedItem.nft_number + '.medium.jpg';
+        }
+        pimg.src = previewSrc;
+        pimg.onerror = function(){
+            this.onerror = null;
+            this.src = getGiftImage(selectedItem);
+        };
         pimg.classList.remove('fading');
     }
 
@@ -2008,10 +2035,7 @@ async function openUpgradeModal(){
             return;
         }
 
-        // Показываем первый вариант из списка
-        setPreviewVariant(_upgradeVariants[0]);
-
-        // ★ ФАЗА 1: плавное затухание PNG + смена атрибутов
+        // ★ ФАЗА 1: PNG меняется каждые 3 секунды
         startFadePreviewAnimation();
 
     }catch(e){
@@ -2021,47 +2045,32 @@ async function openUpgradeModal(){
     }
 }
 
-/* ★ ФАЗА 1: PREVIEW — плавное затухание PNG и смена атрибутов */
+/* ★ ФАЗА 1: PNG меняется КАЖДЫЕ 3 СЕКУНДЫ (плавно, с fade 500мс) */
 function startFadePreviewAnimation(){
     if(!_upgradeVariants.length) return;
     _previewAnimRunning = true;
 
     var total = _upgradeVariants.length;
     var idx = 0;
-    var totalDuration = 3000;
-    var startTime = performance.now();
 
-    // Рекурсивная функция с плавным fade через CSS-переходы
+    // ★ Интервал 3 секунды
+    var SWAP_INTERVAL = 3000;
+
     function scheduleNext(){
         if(!_previewAnimRunning) return;
-
-        var elapsed = performance.now() - startTime;
-        var progress = elapsed / totalDuration;
-
-        if(progress >= 1){
-            // Финал: случайный вариант
-            var finalIdx = Math.floor(Math.random() * total);
-            swapPreviewVariant(_upgradeVariants[finalIdx]);
-            _previewAnimRunning = false;
-            return;
-        }
-
-        // Интервал: 350ms → 550ms, ускоряется к концу
-        var interval = 380 + Math.pow(progress, 2) * 180;
-        if(interval < 200) interval = 200;
 
         var v = _upgradeVariants[idx % total];
         swapPreviewVariant(v);
         idx++;
 
-        _previewAnimTimer = setTimeout(scheduleNext, interval);
+        _previewAnimTimer = setTimeout(scheduleNext, SWAP_INTERVAL);
     }
 
     // Первый свап сразу
     scheduleNext();
 }
 
-/* ★ Плавная смена: затухание → новый → появление */
+/* ★ Плавная смена: fade-out 500мс → новый PNG → fade-in */
 function swapPreviewVariant(variant){
     var pimg = $('upgradePreviewImg');
     var mVal = $('upgradeModelVal'), mRar = $('upgradeModelRar');
@@ -2077,7 +2086,7 @@ function swapPreviewVariant(variant){
     if(bVal) bVal.classList.add('fading');
     if(bRar) bRar.classList.add('fading');
 
-    // Через 350мс — меняем контент и плавно проявляем
+    // Через 500мс — меняем контент и плавно проявляем
     setTimeout(function(){
         if(pimg){
             pimg.src = variant.image || variant.fallback_image || '/static/img/gift.png';
@@ -2090,7 +2099,6 @@ function swapPreviewVariant(variant){
         setPreviewAttr(sVal, sRar, variant.symbol || '—', variant.symbol_rarity);
         setPreviewAttr(bVal, bRar, variant.backdrop || '—', variant.backdrop_rarity);
 
-        // Убираем fading → плавное появление через CSS transition
         if(pimg) pimg.classList.remove('fading');
         if(mVal) mVal.classList.remove('fading');
         if(mRar) mRar.classList.remove('fading');
@@ -2098,7 +2106,7 @@ function swapPreviewVariant(variant){
         if(sRar) sRar.classList.remove('fading');
         if(bVal) bVal.classList.remove('fading');
         if(bRar) bRar.classList.remove('fading');
-    }, 350);
+    }, 500);
 
     vibrateIfOn();
 }
@@ -2148,8 +2156,7 @@ function closeUpgradeModal(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   UPGRADE SPIN — клик на "АПГРЕЙД"
-   ★ Рулетка сразу грузится, PNG превью скрывается
+   UPGRADE SPIN
    ══════════════════════════════════════════════════════════════ */
 async function startUpgradeSpin(){
     if(_upgradeSpinRunning) return;
@@ -2228,7 +2235,7 @@ async function startUpgradeSpin(){
     spinRoulette(chosenIndex, chosenVariant, spinResult);
 }
 
-/* Построить полосу рулетки — БЕЗ надписей, только PNG */
+/* Построить полосу рулетки — только PNG, размер 180×180 */
 function buildRoulette(){
     var strip = $('upgradeRouletteStrip');
     if(!strip) return;
@@ -2253,8 +2260,8 @@ function spinRoulette(targetIdx, chosenVariant, result){
     var cards = strip.querySelectorAll('.roulette-card');
     if(!cards.length) return;
 
-    var cardWidth = cards[0].offsetWidth || 130;
-    var gap = 0; // Карточки склеены
+    var cardWidth = cards[0].offsetWidth || 180;
+    var gap = 0;
     var step = cardWidth + gap;
     var stripPadding = 0;
 
@@ -2272,10 +2279,11 @@ function spinRoulette(targetIdx, chosenVariant, result){
     strip.style.transform = 'translateX(' + startX + 'px)';
     void strip.offsetWidth;
 
-    var duration = 5500;
-    var ease = 'cubic-bezier(.15,.75,.2,1)';
+    // ★ Анимация дольше — 6500мс, плавнее торможение
+    var duration = 6500;
+    var ease = 'cubic-bezier(.12,.85,.18,1)';
 
-    // ★ Меняем атрибуты внизу во время кручения
+    // Меняем атрибуты внизу во время кручения
     startAttrShuffleDuringSpin(duration);
 
     requestAnimationFrame(function(){
