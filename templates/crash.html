@@ -98,8 +98,23 @@ body{
 .bal-plus-crash{width:28px;height:28px;border-radius:50%;border:none;background:rgba(120,135,160,.3);color:#A0B0C4;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;border:1px solid rgba(120,135,160,.45)}
 .bal-plus-crash:active{transform:scale(.9)}
 .top-right-btns{display:flex;gap:8px;align-items:center}
-.game-field{margin:0 12px;border-radius:20px;background:#0B1120;border:1px solid rgba(59,130,246,.12);position:relative;overflow:hidden;min-height:280px;aspect-ratio:10/9;display:flex;align-items:center;justify-content:center;z-index:1;transition:background .5s,box-shadow .5s}
-.game-field::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(99,160,255,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(99,160,255,.28) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:1;transition:background-image .5s}
+.game-field{margin:0 12px;border-radius:20px;background:#0B1120;border:1px solid rgba(59,130,246,.12);position:relative;overflow:hidden;min-height:280px;aspect-ratio:10/9;display:flex;align-items:center;justify-content:center;z-index:1;transition:background .45s,box-shadow .45s,border-color .45s}
+.game-field::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(99,160,255,.22) 1px,transparent 1px),linear-gradient(90deg,rgba(99,160,255,.22) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:1;opacity:.55;transition:opacity .35s,background-image .35s}
+.game-field::after{content:'';position:absolute;inset:-20%;pointer-events:none;z-index:0;opacity:.55;transition:opacity .35s;animation:sceneDrift 18s linear infinite}
+@keyframes sceneDrift{0%{transform:translate3d(0,0,0) scale(1.02)}50%{transform:translate3d(-2%,1%,0) scale(1.06)}100%{transform:translate3d(0,0,0) scale(1.02)}}
+.game-field.scene-graph{background:#101010 url('/static/img/crash_graph_bg.png') center center/cover no-repeat;}
+.game-field.scene-graph::after{background:linear-gradient(180deg,rgba(8,10,16,.08),rgba(8,10,16,.18)),linear-gradient(90deg,transparent 0%,rgba(50,150,255,.06) 50%,transparent 100%);filter:drop-shadow(0 0 18px rgba(48,132,255,.16));animation:graphSceneDrift 10s ease-in-out infinite alternate;mix-blend-mode:screen}
+@keyframes graphSceneDrift{0%{transform:scale(1.01) translate3d(0,0,0)}100%{transform:scale(1.055) translate3d(-.8%,.5%,0)}}
+.game-field.scene-space{background:#02030a url('/static/img/crash_space_bg.png') center center/cover no-repeat;}
+.game-field.scene-space::before{background-image:radial-gradient(circle,rgba(255,255,255,.5) 0 1px,transparent 1.5px),radial-gradient(circle,rgba(120,170,255,.35) 0 1px,transparent 1.5px);background-size:96px 96px,154px 154px;opacity:.34;animation:starDrift 22s linear infinite}
+.game-field.scene-space::after{background:radial-gradient(circle at 70% 62%,rgba(95,135,255,.09),transparent 28%),radial-gradient(circle at 24% 68%,rgba(161,93,255,.07),transparent 24%);filter:blur(7px);animation:spaceScenePulse 8s ease-in-out infinite alternate;}
+@keyframes spaceScenePulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.08);opacity:.9}}
+@keyframes starDrift{from{background-position:0 0,0 0}to{background-position:86px 86px,-137px -137px}}
+.game-field.scene-flying{filter:saturate(1.08)}
+.game-field.scene-crash{animation:sceneCrashFlash .58s ease-out both}
+@keyframes sceneCrashFlash{0%{filter:brightness(1)}12%{filter:brightness(1.9) saturate(1.35)}32%{filter:brightness(.72) saturate(.9)}100%{filter:brightness(1)}}
+.game-field.scene-flying .rocket-wrap img{filter:drop-shadow(0 0 24px rgba(91,171,255,.55))}
+.game-field.scene-space.scene-flying .rocket-wrap img{filter:drop-shadow(0 0 28px rgba(94,181,255,.65)) drop-shadow(0 0 60px rgba(109,82,255,.28))}
 .game-field.flying{box-shadow:inset 0 0 80px rgba(59,130,246,.06),0 0 30px rgba(59,130,246,.08)}
 .game-field.bonus-mode{
     background:radial-gradient(ellipse at center, #2a1f08 0%, #0B1120 100%);
@@ -203,6 +218,41 @@ body{
 .bets-title{font-weight:800;font-size:13px;color:#fff}
 .bets-count{font-size:11px;color:rgba(140,160,190,.8);font-weight:700;background:rgba(107,122,141,.15);padding:2px 9px;border-radius:10px}
 .bets-list{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;scrollbar-width:thin}
+.bet-row{position:relative;transition:background .28s ease,box-shadow .28s ease,transform .28s ease,opacity .28s ease}
+.bet-row::after{content:"";position:absolute;inset:0;border-radius:12px;pointer-events:none;opacity:0;transition:opacity .28s ease}
+.bet-row.won{box-shadow:inset 0 0 0 1px rgba(30,228,76,.2),0 0 18px rgba(30,228,76,.08);}
+.bet-row.won::after{opacity:1;background:linear-gradient(90deg,rgba(30,228,76,.08),transparent 60%)}
+.bet-row.lost::after{opacity:1;background:linear-gradient(90deg,rgba(249,105,153,.07),transparent 60%)}
+.bet-right-stack{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.bet-payout{width:74px;display:flex;align-items:center;justify-content:flex-end;gap:4px;color:#fff;font-size:11px;font-weight:900;white-space:nowrap}
+.bet-payout img{width:20px;height:20px;object-fit:contain;border-radius:5px;transition:opacity .2s ease,transform .2s ease}
+.bet-payout img.fade-swap{opacity:.2;transform:scale(.86)}
+.bet-fixed{animation:betFix .45s ease both}
+@keyframes betFix{0%{transform:scale(.96);opacity:.65}70%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
+.loading-rocket-swap{animation:loadingSwap .5s cubic-bezier(.2,.85,.2,1) both}
+@keyframes loadingSwap{0%{opacity:0;transform:scale(.7) rotate(-12deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+body.bg-graph{background-color:#111827;background-image:radial-gradient(circle at 50% 0%,rgba(70,112,255,.24),transparent 42%),linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:auto,28px 28px,28px 28px}
+body.bg-space{background-color:#020611;background-image:radial-gradient(circle at 20% 15%,rgba(120,180,255,.23),transparent 18%),radial-gradient(circle at 75% 30%,rgba(155,110,255,.18),transparent 20%),radial-gradient(circle at 45% 80%,rgba(80,190,255,.12),transparent 25%),radial-gradient(circle at 50% 20%,rgba(255,255,255,.12) 0 1px,transparent 2px),radial-gradient(circle at 15% 70%,rgba(255,255,255,.1) 0 1px,transparent 2px);background-size:auto,auto,auto,140px 140px,190px 190px;background-attachment:fixed}
+.bg-choice-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.bg-choice{padding:0;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:#111827;cursor:pointer;transition:transform .18s,border-color .25s,box-shadow .25s,background .25s;text-align:left;font-family:inherit;color:#dce7ff;display:flex;align-items:flex-end;gap:0;min-height:92px;position:relative;overflow:hidden;isolation:isolate}
+.bg-choice::before{content:'';position:absolute;inset:0;background-size:cover;background-position:center;opacity:.72;transition:transform .5s ease,opacity .3s;z-index:-2}
+.bg-choice.graph-preview::before{background-image:url('/static/img/crash_graph_bg.png')}
+.bg-choice.space-preview::before{background-image:url('/static/img/crash_space_bg.png')}
+.bg-choice::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,6,14,.05) 25%,rgba(3,6,14,.85) 100%);z-index:-1;transform:none;transition:background .25s}
+.bg-choice:hover::before{transform:scale(1.06)}
+.bg-choice::after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.08) 50%,transparent 80%);transform:translateX(-120%);transition:transform .5s}
+.bg-choice:hover::after{transform:translateX(120%)}
+.bg-choice:active{transform:scale(.97)}
+.bg-choice.active{border-color:rgba(79,156,255,.8);background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.07));box-shadow:0 0 24px rgba(59,130,246,.18),inset 0 0 0 1px rgba(255,255,255,.04)}
+.bg-choice b{display:block;font-size:12px;letter-spacing:.1px}.bg-choice small{display:block;font-size:9px;color:rgba(255,255,255,.55);margin-top:3px;font-weight:700}
+.bg-choice span:not(.bg-choice-icon){padding:0 11px 11px;position:relative;z-index:2}
+.bg-choice-icon{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;flex-shrink:0;background:rgba(5,8,16,.58);border:1px solid rgba(255,255,255,.14);margin:0 0 10px 10px;position:relative;z-index:2}
+.bg-choice.active{box-shadow:0 0 0 1px rgba(99,181,255,.45),0 10px 30px rgba(0,0,0,.28)}
+.graph-icon{color:#67B7FF;text-shadow:0 0 12px rgba(103,183,255,.7)}.space-icon{color:#D5C7FF;text-shadow:0 0 14px rgba(169,126,255,.8)}
+.optim-row{padding:14px;border-radius:14px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);margin-bottom:16px}
+.optim-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.optim-title{font-weight:800;font-size:14px}.optim-value{font-size:11px;color:#7caeff;font-weight:800}
+.optim-range{width:100%;accent-color:#3B82F6}
+
 .bets-list::-webkit-scrollbar{width:3px}
 .bets-list::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
 .bet-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:12px;background:rgba(28,34,51,.85);gap:8px}
@@ -259,7 +309,7 @@ body{
 .inv-grid::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
 .inv-card{background:linear-gradient(160deg,rgba(59,130,246,.06),rgba(59,130,246,.02));border:1.5px solid rgba(59,130,246,.15);border-radius:14px;padding:6px;text-align:center;cursor:pointer;transition:all .15s;position:relative;display:flex;flex-direction:column;overflow:hidden}
 .inv-card.selected{border-color:#3B82F6;background:rgba(59,130,246,.18);box-shadow:0 0 0 2px rgba(59,130,246,.4)}
-.inv-card.selected::after{content:'вњ“';position:absolute;top:6px;right:6px;width:22px;height:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
+.inv-card.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
 .inv-card-img-wrap{width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;position:relative;background:rgba(0,0,0,.2);margin-bottom:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
 .inv-card-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;border-radius:10px}
 .inv-card .inv-name{font-weight:700;font-size:10px;color:rgba(255,255,255,.85);padding:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -538,15 +588,15 @@ body{
 
 <div class="ld-screen" id="ldScreen">
     <div class="ld-panels">
-        <div class="ld-panel"><img src="" alt=""></div>
-        <div class="ld-panel"><img src="" alt=""></div>
-        <div class="ld-panel"><img src="" alt=""></div>
-        <div class="ld-panel"><img src="" alt=""></div>
-        <div class="ld-panel"><img src="" alt=""></div>
-        <div class="ld-panel"><img src="" alt=""></div>
-        <div class="ld-panel"><img src="" alt=""></div>
-        <div class="ld-panel"><img src="" alt=""></div>
-        <div class="ld-panel"><img src="" alt=""></div>
+        <div class="ld-panel"><img src="" alt="" loading="eager"></div>
+        <div class="ld-panel"><img src="" alt="" loading="eager"></div>
+        <div class="ld-panel"><img src="" alt="" loading="eager"></div>
+        <div class="ld-panel"><img src="" alt="" loading="eager"></div>
+        <div class="ld-panel"><img src="" alt="" loading="eager"></div>
+        <div class="ld-panel"><img src="" alt="" loading="eager"></div>
+        <div class="ld-panel"><img src="" alt="" loading="eager"></div>
+        <div class="ld-panel"><img src="" alt="" loading="eager"></div>
+        <div class="ld-panel"><img src="" alt="" loading="eager"></div>
     </div>
     <div class="ld-txt" id="ldTxt">LOADING 0%</div>
     <div class="ld-progress"><div class="ld-progress-bar" id="ldProgressBar"></div></div>
@@ -554,9 +604,9 @@ body{
 
 <div class="bonus-announce" id="bonusAnnounce">
     <div class="bonus-announce-inner">
-        <span class="bonus-announce-emoji">рџЏ†</span>
+        <span class="bonus-announce-emoji">🏆</span>
         <div class="bonus-announce-title">BONUS ROUND</div>
-        <div class="bonus-announce-sub">Р”РІРѕР№РЅР°СЏ РІС‹РїР»Р°С‚Р°!</div>
+        <div class="bonus-announce-sub">Двойная выплата!</div>
     </div>
 </div>
 
@@ -586,7 +636,7 @@ body{
     </div>
 
     <div class="game-field" id="gameField">
-        <div class="bonus-badge" id="bonusBadge">рџЏ† BONUS ROUND рџЏ†</div>
+        <div class="bonus-badge" id="bonusBadge">🏆 BONUS ROUND 🏆</div>
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="rocket-wrap hide" id="rocketWrap">
             <img src="/static/gifs/rockets/crash.gif" alt="" id="rocketImg">
@@ -625,20 +675,20 @@ body{
         <div class="modal-title">Place bet</div>
         <div class="modal-tabs">
             <button class="modal-tab active" id="tabStars" onclick="switchTab('stars')"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'"> GRAM</button>
-            <button class="modal-tab" id="tabInv" onclick="switchTab('inv')"><img src="/static/img/gift.png"> РРЅРІРµРЅС‚Р°СЂСЊ</button>
+            <button class="modal-tab" id="tabInv" onclick="switchTab('inv')"><img src="/static/img/gift.png"> Инвентарь</button>
         </div>
         <div id="starsSec">
             <div class="bet-input-wrap">
-                <input type="number" id="betInput" placeholder="Р’РІРµРґРёС‚Рµ GRAM (РјРёРЅ. 0.10)" min="0.1" step="0.01" inputmode="decimal">
+                <input type="number" id="betInput" placeholder="Введите GRAM (мин. 0.10)" min="0.1" step="0.01" inputmode="decimal">
             </div>
             <div class="auto-cashout-row">
                 <div class="auto-cashout-info">
-                    <div class="auto-cashout-label">РђРІС‚РѕРІС‹РІРѕРґ</div>
-                    <div class="auto-cashout-sub">РђРІС‚Рѕ-Р·Р°Р±РѕСЂ (РѕС‚ 1.10x)</div>
+                    <div class="auto-cashout-label">Автовывод</div>
+                    <div class="auto-cashout-sub">Авто-забор (от 1.10x)</div>
                 </div>
                 <button type="button" class="autowd-open-btn" id="autowdMainBtn" onclick="openAutoWithdraw()">
                     <img src="/static/img/gift.png" alt="">
-                    <span class="autowd-btn-name">Р’С‹Р±СЂР°С‚СЊ</span>
+                    <span class="autowd-btn-name">Выбрать</span>
                 </button>
             </div>
             <button class="confirm-bet-btn" id="confirmBetBtn" onclick="confirmStarsBet()">BET</button>
@@ -646,12 +696,12 @@ body{
         <div id="invSec" style="display:none">
             <div class="selected-summary" id="selectedSummary">
                 <div class="selected-info">
-                    <div class="selected-count">Р’С‹Р±СЂР°РЅРѕ: <span id="selectedCount">0</span> / 3</div>
+                    <div class="selected-count">Выбрано: <span id="selectedCount">0</span> / 3</div>
                     <div class="selected-total"><span id="selectedTotal">0.00</span> <span style="color:#3B82F6;font-size:12px">GRAM</span></div>
                 </div>
                 <button class="clear-selected" onclick="clearSelectedGifts()">Clear</button>
             </div>
-            <div class="inv-grid" id="invGrid"><div class="inv-empty">Р—Р°РіСЂСѓР·РєР°...</div></div>
+            <div class="inv-grid" id="invGrid"><div class="inv-empty">Загрузка...</div></div>
             <button class="confirm-gifts-btn" id="confirmGiftsBtn" onclick="confirmGiftBet()">BET GIFTS</button>
         </div>
     </div>
@@ -660,19 +710,19 @@ body{
 <div class="autowd-overlay" id="autowdOverlay">
     <div class="autowd-modal">
         <div class="autowd-header">
-            <div class="autowd-title"><img src="/static/img/star2.png" alt="">РђРІС‚РѕРІС‹РІРѕРґ</div>
-            <button class="autowd-close" onclick="closeAutoWithdraw()">Г—</button>
+            <div class="autowd-title"><img src="/static/img/star2.png" alt="">Автовывод</div>
+            <button class="autowd-close" onclick="closeAutoWithdraw()">×</button>
         </div>
         <div class="autowd-summary">
-            <div class="autowd-summary-row"><span>РЎС‚Р°РІРєР°:</span><span class="autowd-summary-val" id="autowdBetVal">0.00 GRAM</span></div>
-            <div class="autowd-summary-row"><span>РњРёРЅРёРјСѓРј РІС‹РІРѕРґР°:</span><span class="autowd-summary-val gold" id="autowdTargetVal">0.00 GRAM</span></div>
+            <div class="autowd-summary-row"><span>Ставка:</span><span class="autowd-summary-val" id="autowdBetVal">0.00 GRAM</span></div>
+            <div class="autowd-summary-row"><span>Минимум вывода:</span><span class="autowd-summary-val gold" id="autowdTargetVal">0.00 GRAM</span></div>
         </div>
         <div class="autowd-search-wrap">
-            <input type="text" class="autowd-search" id="autowdSearch" placeholder="РџРѕРёСЃРє РїРѕРґР°СЂРєРѕРІ..." oninput="renderAutoWithdrawGifts()">
+            <input type="text" class="autowd-search" id="autowdSearch" placeholder="Поиск подарков..." oninput="renderAutoWithdrawGifts()">
         </div>
-        <div class="autowd-list" id="autowdList"><div class="autowd-empty">Р—Р°РіСЂСѓР·РєР°...</div></div>
+        <div class="autowd-list" id="autowdList"><div class="autowd-empty">Загрузка...</div></div>
         <button class="autowd-apply-btn" id="autowdApplyBtn" onclick="applyAutoWithdraw()" disabled>
-            <span id="autowdApplyText">Р’С‹Р±РµСЂРёС‚Рµ РїРѕРґР°СЂРѕРє</span>
+            <span id="autowdApplyText">Выберите подарок</span>
         </button>
     </div>
 </div>
@@ -680,11 +730,11 @@ body{
 <div class="deposit-overlay" id="depositOverlay">
     <div class="deposit-modal">
         <div class="deposit-header">
-            <div class="deposit-title">РџРѕРїРѕР»РЅРµРЅРёРµ</div>
-            <button class="deposit-close" onclick="closeDepositSelector()">Г—</button>
+            <div class="deposit-title">Пополнение</div>
+            <button class="deposit-close" onclick="closeDepositSelector()">×</button>
         </div>
         <div class="deposit-methods">
-            <button class="deposit-method-btn" onclick="closeDepositSelector();showToast('РЎРєРѕСЂРѕ','ok')"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'" alt="GRAM"><span>GRAM</span></button>
+            <button class="deposit-method-btn" onclick="closeDepositSelector();showToast('Скоро','ok')"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'" alt="GRAM"><span>GRAM</span></button>
             <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDepositSelector();openStarsDeposit()"><img src="/static/img/star.png" alt="Stars"><span>Stars</span></button>
         </div>
     </div>
@@ -693,17 +743,17 @@ body{
 <div class="stars-deposit-overlay" id="starsDepositOverlay">
     <div class="stars-deposit-modal">
         <div class="stars-deposit-header">
-            <div class="stars-deposit-title">РџРѕРїРѕР»РЅРµРЅРёРµ Stars</div>
-            <button class="stars-deposit-close" onclick="closeStarsDeposit()">Г—</button>
+            <div class="stars-deposit-title">Пополнение Stars</div>
+            <button class="stars-deposit-close" onclick="closeStarsDeposit()">×</button>
         </div>
         <div class="stars-deposit-body">
             <img class="stars-deposit-icon" src="/static/img/star.png" alt="Stars">
-            <div class="stars-deposit-label">Р’РІРµРґРёС‚Рµ РєРѕР»РёС‡РµСЃС‚РІРѕ Stars<br>100 Stars = 1 GRAM</div>
+            <div class="stars-deposit-label">Введите количество Stars<br>100 Stars = 1 GRAM</div>
             <div class="stars-deposit-input-wrap">
                 <input type="number" class="stars-deposit-input" id="starsDepositAmount" placeholder="100" min="1" max="10000" value="100">
             </div>
             <button class="stars-deposit-pay-btn" id="starsPayBtn" onclick="payWithStars()">
-                <img src="/static/img/star.png" alt="">РћРїР»Р°С‚РёС‚СЊ <span id="starsPayAmount">100</span> Stars
+                <img src="/static/img/star.png" alt="">Оплатить <span id="starsPayAmount">100</span> Stars
             </button>
         </div>
     </div>
@@ -716,17 +766,30 @@ body{
             <div style="font-weight:800;font-size:16px;color:#fff">Customization</div>
         </div>
         <div class="settings-content">
+<div class="bg-choice-row">
+  <button class="bg-choice graph-preview" id="bgGraphBtn" onclick="selectCrashBackground('graph')">
+    <span class="bg-choice-icon graph-icon">╱</span><span><b>График</b><small>Неон + сетка</small></span>
+  </button>
+  <button class="bg-choice space-preview" id="bgSpaceBtn" onclick="selectCrashBackground('space')">
+    <span class="bg-choice-icon space-icon">✦</span><span><b>Космос</b><small>Звёзды + туманность</small></span>
+  </button>
+</div>
+<div class="optim-row">
+  <div class="optim-head"><div class="optim-title">Оптимизация</div><div class="optim-value" id="optimValue">Баланс</div></div>
+  <input class="optim-range" id="optimRange" type="range" min="0" max="2" step="1" value="1" oninput="setCrashOptimization(this.value)">
+</div>
+
             <div class="settings-gift-toggle">
                 <div class="toggle-info">
-                    <div class="lbl">РџРѕРєР°Р·С‹РІР°С‚СЊ РїРѕРґР°СЂРєРё</div>
-                    <div class="desc">Р’РјРµСЃС‚Рѕ СЂР°РєРµС‚С‹ вЂ” РїРѕРґР°СЂРѕРє РїСЂРё РґРѕСЃС‚РёР¶РёРјРѕРј РІС‹РёРіСЂС‹С€Рµ</div>
+                    <div class="lbl">Показывать подарки</div>
+                    <div class="desc">Вместо ракеты — подарок при достижимом выигрыше</div>
                 </div>
                 <div class="toggle-switch on" id="showGiftsToggle" onclick="toggleShowGiftsClick()"></div>
             </div>
             <div class="settings-gift-toggle">
                 <div class="toggle-info">
-                    <div class="lbl">РџСЂРµРґРѕС…СЂР°РЅРёС‚РµР»СЊ Р°РІС‚РѕРІС‹РІРѕРґР°</div>
-                    <div class="desc">РЎРѕС…СЂР°РЅСЏС‚СЊ Р°РІС‚РѕРІС‹РІРѕРґ РїРѕСЃР»Рµ РїРµСЂРµР·Р°РіСЂСѓР·РєРё</div>
+                    <div class="lbl">Предохранитель автовывода</div>
+                    <div class="desc">Сохранять автовывод после перезагрузки</div>
                 </div>
                 <div class="toggle-switch on" id="autoWithdrawGuardToggle" onclick="toggleAutoWithdrawGuardClick()"></div>
             </div>
@@ -740,16 +803,16 @@ body{
     <div class="win-sheet" id="winSheet">
         <div class="win-sheet-handle"></div>
         <div id="winContent"></div>
-        <button class="win-collect-btn" onclick="closeWin()">РџРѕР»СѓС‡РёС‚СЊ</button>
+        <button class="win-collect-btn" onclick="closeWin()">Получить</button>
     </div>
 </div>
 
 <script>
 'use strict';
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    STATE
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 var userData = null;
 var authReady = false;
 
@@ -763,16 +826,16 @@ var prevStatus = 'waiting';
 var targetMult = 5.0;
 var isBonusRound = false;
 
-/* в•ђв•ђв•ђ TIME-BASED MATH в•ђв•ђв•ђ */
-var flyingStartedAt = 0;         // performance.now() РєРѕРіРґР° СЂР°РєРµС‚Р° РїРѕР»РµС‚РµР»Р° (1.00x)
-var countingStartedAt = 0;       // performance.now() РєРѕРіРґР° РЅР°С‡Р°Р»СЃСЏ РѕС‚СЃС‡С‘С‚
+/* ═══ TIME-BASED MATH ═══ */
+var flyingStartedAt = 0;         // performance.now() когда ракета полетела (1.00x)
+var countingStartedAt = 0;       // performance.now() когда начался отсчёт
 var countingDuration = 5.0;
-var srvCountdownOverride = 0;      // РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ РѕС‚СЃС‡С‘С‚Р°
+var srvCountdownOverride = 0;      // длительность отсчёта
 var lastCountdownSec = 99;
 
-var dispMult = 1.0;              // РѕС‚РѕР±СЂР°Р¶Р°РµРјС‹Р№ РјРЅРѕР¶РёС‚РµР»СЊ
-var servMult = 1.0;              // РјРЅРѕР¶РёС‚РµР»СЊ СЃ СЃРµСЂРІРµСЂР° (РїРѕСЃР»РµРґРЅРёР№ РёР·РІРµСЃС‚РЅС‹Р№)
-var _lastServerMult = 1.0;       // РґР»СЏ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё
+var dispMult = 1.0;              // отображаемый множитель
+var servMult = 1.0;              // множитель с сервера (последний известный)
+var _lastServerMult = 1.0;       // для синхронизации
 
 var hasBet = false;
 var betAmt = 0;
@@ -806,6 +869,8 @@ var NON_BETTABLE_GIFT_IDS = [110, 111];
 var currentRocket = localStorage.getItem('crash_rocket') || 'crash';
 var showGifts = localStorage.getItem('crash_show_gifts') !== 'off';
 var autoWithdrawGuard = true;
+var crashBackground = localStorage.getItem('crash_background') || 'graph';
+var crashOptimization = Number(localStorage.getItem('crash_optimization') || 1);
 var autoWithdrawGift = null;
 var savedBetAmount = localStorage.getItem('crash_bet_amount') || '';
 
@@ -823,14 +888,15 @@ var _lastPingMs = 0;
 
 var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
 
-/* в•ђв•ђв•ђ ANTI-FREEZE в•ђв•ђв•ђ */
-var MAX_FLYING_DURATION_MS = 60000;   // 60 СЃРµРє hard cap
+document.documentElement.style.setProperty('--crash-optimization', String(crashOptimization));
+/* ═══ ANTI-FREEZE ═══ */
+var MAX_FLYING_DURATION_MS = 60000;   // 60 сек hard cap
 var flyingHardCapTimer = null;
 var _lastServerContactTs = Date.now();
 var _serverSilentWarned = false;
 var _pollTimer = null;
 var _polling = false;
-var _pollDelay = 180;                  // СЃС‚Р°СЂС‚РѕРІР°СЏ Р·Р°РґРµСЂР¶РєР°
+var _pollDelay = crashOptimization === 0 ? 260 : (crashOptimization === 2 ? 120 : 180);                  // стартовая задержка
 
 function $(id){ return document.getElementById(id); }
 
@@ -875,9 +941,9 @@ function updatePingUI(ms){
     else if(ms > 150) pill.classList.add('medium');
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    FULLSCREEN INIT
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function initFullscreen(){
     if(typeof Telegram === 'undefined' || !Telegram.WebApp) return;
     try{
@@ -887,62 +953,56 @@ function initFullscreen(){
         if(tg.requestFullscreen){ try{ tg.requestFullscreen(); }catch(e){} }
         if(tg.disableVerticalSwipes){ try{ tg.disableVerticalSwipes(); }catch(e){} }
         try{ tg.setHeaderColor('#1C2233'); }catch(e){}
-        try{ tg.setBackgroundColor('#1C2233'); }catch(e){}
+        try{ tg.setBackgroundColor('#050816'); }catch(e){}
     }catch(e){}
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    LOADING
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 (function initLoading(){
     var bar = $('ldProgressBar');
     var txt = $('ldTxt');
     var imgs = document.querySelectorAll('.ld-panel img');
+    var rockets = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','telegram','TonTheMoon'];
     var p = 0;
-    for(var i = 0; i < imgs.length; i++){
-        (function(idx){
-            setTimeout(function(){
-                imgs[idx].src = '/static/img/star.png';
-                imgs[idx].classList.add('show');
-            }, idx * 60);
-        })(i);
-    }
+    var giftPool = [];
+    fetch('/api/gifts-list?models=0',{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+        giftPool = (d.gifts || []).filter(function(g){return g && g.image;});
+        for(var i=0;i<imgs.length;i++){
+            var g = giftPool.length ? giftPool[Math.floor(Math.random()*giftPool.length)] : null;
+            imgs[i].src = g ? (g.image || '/static/img/gift.png') : '/static/img/gift.png';
+            imgs[i].classList.add('show');
+        }
+    }).catch(function(){ for(var i=0;i<imgs.length;i++){imgs[i].src='/static/img/gift.png';imgs[i].classList.add('show');} });
+    var swapTimer = setInterval(function(){
+        for(var i=0;i<imgs.length;i++){
+            if(!imgs[i].classList.contains('rocket-swapped') && p >= (12 + i*8)){
+                imgs[i].classList.add('rocket-swapped','loading-rocket-swap');
+                imgs[i].src = '/static/gifs/rockets/' + rockets[Math.floor(Math.random()*rockets.length)] + '.gif';
+            }
+        }
+        if(p>=96){ clearInterval(swapTimer); }
+    },120);
     var simId = setInterval(function(){
         if(p >= 40){ clearInterval(simId); return; }
-        p += 2.5;
-        if(p > 40) p = 40;
-        if(bar) bar.style.width = p + '%';
-        if(txt) txt.textContent = 'LOADING ' + Math.round(p) + '%';
-    }, 40);
+        p += 2.5; if(p>40)p=40;
+        if(bar)bar.style.width=p+'%'; if(txt)txt.textContent='LOADING '+Math.round(p)+'%';
+    },40);
     window._ldSet = function(pct){
-        if(pct <= p) return;
-        p = pct;
-        if(bar) bar.style.width = pct + '%';
-        if(txt) txt.textContent = 'LOADING ' + Math.round(pct) + '%';
+        if(pct <= p) return; p=pct; if(bar)bar.style.width=pct+'%'; if(txt)txt.textContent='LOADING '+Math.round(pct)+'%';
     };
     window._ldDone = function(){
-        if(bar) bar.style.width = '100%';
-        if(txt) txt.textContent = 'READY!';
-        setTimeout(function(){
-            var ls = $('ldScreen');
-            if(ls){
-                ls.classList.add('hidden');
-                setTimeout(function(){ ls.style.display = 'none'; }, 400);
-            }
-        }, 100);
+        p=100; if(bar)bar.style.width='100%'; if(txt)txt.textContent='READY!';
+        setTimeout(function(){var ls=$('ldScreen');if(ls){ls.classList.add('hidden');setTimeout(function(){ls.style.display='none';},400);}},120);
     };
-    setTimeout(function(){
-        var ls = $('ldScreen');
-        if(ls && !ls.classList.contains('hidden')){
-            ls.classList.add('hidden');
-            setTimeout(function(){ ls.style.display = 'none'; }, 400);
-        }
-    }, 6000);
+    setTimeout(function(){var ls=$('ldScreen');if(ls&&!ls.classList.contains('hidden')){ls.classList.add('hidden');setTimeout(function(){ls.style.display='none';},400);}},7000);
+    setTimeout(function(){clearInterval(swapTimer);},7000);
 })();
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    AUTH
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 async function initAuth(){
     window._ldSet(5);
     try{
@@ -1040,9 +1100,9 @@ async function registerAndLoad(){
     }catch(e){}
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    ROCKET
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function getRocketSrc(){ return '/static/gifs/rockets/' + currentRocket + '.gif'; }
 function applyRocket(){
     var img = $('rocketImg');
@@ -1054,9 +1114,9 @@ function applyRocket(){
     }
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    GIFT CATALOG
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 async function ensureGiftCatalog(){
     if(_giftCatalog) return _giftCatalog;
     try{
@@ -1122,9 +1182,9 @@ function getAchievableGift(potentialWin){
     return best;
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    TIME-BASED MULTIPLIER CURVE
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function computeLocalMult(elapsedMs){
     var t = elapsedMs / 1000;
     if(t <= 0) return 1.0;
@@ -1150,9 +1210,9 @@ function estimateFlyStartFromMult(serverMult){
     return performance.now() - t * 1000;
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    POLLING
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 async function pollStatus(){
     if(!authReady) return;
     if(_polling) return;
@@ -1202,9 +1262,9 @@ function scheduleNextPoll(){
     _pollTimer = setTimeout(function(){ pollStatus(); }, _pollDelay);
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    BONUS ROUND
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function setBonusMode(active){
     if(isBonusRound === active) return;
     isBonusRound = active;
@@ -1217,7 +1277,7 @@ function setBonusMode(active){
         if(badge) badge.classList.add('show');
         showBonusAnnounce();
         applyRocket();
-        showToast('рџЏ† BONUS ROUND! Р”РІРѕР№РЅР°СЏ РІС‹РїР»Р°С‚Р°!', 'bonus');
+        showToast('🏆 BONUS ROUND! Двойная выплата!', 'bonus');
     } else {
         if(gf) gf.classList.remove('bonus-mode');
         if(badge) badge.classList.remove('show');
@@ -1240,9 +1300,9 @@ function showBonusAnnounce(){
     setTimeout(function(){ ann.classList.remove('show'); }, 2500);
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    APPLY SERVER STATE
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function applyServerState(d){
     var g = d.game;
     var now = performance.now();
@@ -1272,7 +1332,8 @@ function applyServerState(d){
 
     // COUNTING
     if(newStatus === 'counting' && oldStatus !== 'counting'){
-        // Start a deterministic local 5в†’4в†’3в†’2в†’1 sequence as soon as the new round is observed.
+        setCrashScenePhase('counting');
+        // Start a deterministic local 5→4→3→2→1 sequence as soon as the new round is observed.
         // This prevents a late HTTP response from making the UI begin at 3 or 2.
         countingStartedAt = now;
         srvCountdownOverride = 0;
@@ -1301,8 +1362,9 @@ function applyServerState(d){
 
     // FLYING START
     if(newStatus === 'flying' && oldStatus !== 'flying'){
+        setCrashScenePhase('flying');
         srvCountdownOverride = 0;
-        // РџРѕСЃР»РµРґРЅРёР№ РєР°РґСЂ РѕС‚СЃС‡С‘С‚Р° СѓР¶Рµ Р±С‹Р» 1, С‚РµРїРµСЂСЊ СЏРІРЅРѕ РїРѕРєР°Р·С‹РІР°РµРј РР“Р Рђ.
+        // Последний кадр отсчёта уже был 1, теперь явно показываем ИГРА.
         var cdStart = $('cdDisplay');
         if(cdStart){
             cdStart.textContent = 'GO';
@@ -1324,12 +1386,12 @@ function applyServerState(d){
         if(srvCurMult > servMult) servMult = srvCurMult;
 
         var localNow = computeLocalMult(now - flyingStartedAt);
-        // РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ: РµСЃР»Рё СЃРµСЂРІРµСЂ СЃРёР»СЊРЅРѕ РѕС‚СЃС‚Р°С‘С‚, РїРѕРґС‚СЏРЅСѓС‚СЊ
+        // Синхронизация: если сервер сильно отстаёт, подтянуть
         if(srvCurMult - localNow > 0.5){
             flyingStartedAt = estimateFlyStartFromMult(srvCurMult);
             dispMult = srvCurMult;
         } else {
-            // РќРµ РґР°С‘Рј РєР»РёРµРЅС‚Сѓ РѕС‚СЃС‚Р°РІР°С‚СЊ РѕС‚ СЃРµСЂРІРµСЂР° Р±РѕР»СЊС€Рµ, С‡РµРј РЅР° 0.1x
+            // Не даём клиенту отставать от сервера больше, чем на 0.1x
             dispMult = Math.max(localNow, srvCurMult - 0.05);
         }
     } else {
@@ -1339,6 +1401,7 @@ function applyServerState(d){
 
     // CRASHED
     if(newStatus === 'crashed' && oldStatus !== 'crashed'){
+        setCrashScenePhase('crash');
         srvCountdownOverride = 0;
         dispMult = srvCurMult;
         servMult = srvCurMult;
@@ -1379,9 +1442,9 @@ function applyServerState(d){
     updateActionButton();
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    ANTI-FREEZE
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function startFlyingHardCap(){
     cancelFlyingHardCap();
     flyingHardCapTimer = setTimeout(function(){
@@ -1399,9 +1462,9 @@ function cancelFlyingHardCap(){
     }
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    RESET ROUND
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function resetRoundState(){
     cancelFlyingHardCap();
     countingStartedAt = 0;
@@ -1428,7 +1491,7 @@ function resetRoundState(){
     if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','showing-gift','cashed-out','gift-mode'); }
     if(bm){ bm.classList.remove('playing'); }
     if(cd){ cd.classList.remove('active'); cd.textContent = ''; }
-    if(gf){ gf.classList.remove('flying','counting','crash-hit'); }
+    if(gf){ gf.classList.remove('flying','counting','crash-hit','scene-flying','scene-crash','scene-counting'); applyCrashBackground(); }
     if(coeff){ coeff.className = 'coeff-box waiting'; coeff.textContent = 'Waiting'; }
 
     var ri = $('rocketImg');
@@ -1449,9 +1512,9 @@ function resetRoundState(){
     loadHistory();
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    CRASH ANIMATION
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function triggerCrashAnimation(finalMult){
     if(crashHandled) return;
     crashHandled = true;
@@ -1485,7 +1548,7 @@ function triggerCrashAnimation(finalMult){
     }
 
     if(hasBet){
-        showToast('CRASH ' + finalMult.toFixed(2) + 'x вЂ” СЃС‚Р°РІРєР° РїСЂРѕРёРіСЂР°РЅР°', 'err');
+        showToast('CRASH ' + finalMult.toFixed(2) + 'x — ставка проиграна', 'err');
     }
 
     hasBet = false;
@@ -1497,9 +1560,9 @@ function triggerCrashAnimation(finalMult){
     updateActionButton();
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    GO ANIMATION
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function showGoAnimation(){
     var cd = $('cdDisplay');
     var gf = $('gameField');
@@ -1514,9 +1577,9 @@ function showGoAnimation(){
     }, 650);
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    GAME FIELD UI
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function updateGameFieldUI(){
     var rw = $('rocketWrap');
     var bm = $('boomWrap');
@@ -1532,7 +1595,7 @@ function updateGameFieldUI(){
         if(gf) gf.classList.remove('flying');
         if(coeff){
             coeff.className = 'coeff-box waiting' + (isBonusRound ? ' bonus' : '');
-            coeff.textContent = isBonusRound ? 'рџЏ† BONUS' : 'Waiting';
+            coeff.textContent = isBonusRound ? '🏆 BONUS' : 'Waiting';
         }
     } else if(status === 'flying'){
         if(rw){ rw.classList.remove('hide','crash-hit'); }
@@ -1549,9 +1612,9 @@ function updateGameFieldUI(){
     }
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    ACTION BUTTON
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function updateActionButton(){
     var btn = $('actionBtn');
     if(!btn) return;
@@ -1586,7 +1649,7 @@ function updateActionButton(){
         var giftSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
         var isEmpty = !achievable ? ' empty' : '';
 
-        var label = isBonusRound ? 'рџЏ† CASH OUT x2' : 'Cash OUT';
+        var label = isBonusRound ? '🏆 CASH OUT x2' : 'Cash OUT';
 
         html = '<img class="cb-gift-side' + isEmpty + '" src="' + giftSrc + '" alt="">'
             + '<div class="cb-center"><span class="cb-label">' + label + '</span>'
@@ -1607,7 +1670,7 @@ function updateActionButton(){
         html = '<span class="btn-text">Place bet</span>';
     }
 
-    // Р‘С‹СЃС‚СЂРѕРµ РѕР±РЅРѕРІР»РµРЅРёРµ cashout Р±РµР· РїРµСЂРµСЃС‚СЂРѕР№РєРё DOM
+    // Быстрое обновление cashout без перестройки DOM
     if(newState === 'cashout' && btn.classList.contains('state-cashout')){
         var bonusMult2 = isBonusRound ? 2 : 1;
         var curWin2 = Math.floor((betAmt || 0) * dispMult) * bonusMult2;
@@ -1675,9 +1738,9 @@ function onActionBtnClick(){
     openBetModal();
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    RENDER LOOP
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function renderLoop(ts){
     try{
         requestAnimationFrame(renderLoop);
@@ -1717,7 +1780,7 @@ function renderLoop(ts){
             var elapsedFly = now - flyingStartedAt;
             var computed = computeLocalMult(elapsedFly);
 
-            // РќРµ РѕС‚СЃС‚Р°РІР°С‚СЊ РѕС‚ СЃРµСЂРІРµСЂР°
+            // Не отставать от сервера
             if(computed < servMult - 0.05) computed = servMult - 0.05;
             if(computed < 1.0) computed = 1.0;
 
@@ -1748,7 +1811,7 @@ function renderLoop(ts){
                 if(hasBet && !cashedOut) updateActionButton();
             }
 
-            // ANTI-FREEZE: РµСЃР»Рё dispMult РґРѕС€С‘Р» РґРѕ targetMult вЂ” РєСЂР°С€РёРј Р»РѕРєР°Р»СЊРЅРѕ
+            // ANTI-FREEZE: если dispMult дошёл до targetMult — крашим локально
             if(dispMult >= targetMult && !crashHandled){
                 triggerCrashAnimation(targetMult);
             }
@@ -1764,9 +1827,9 @@ function renderLoop(ts){
     }catch(e){}
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    BET MODAL
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function openBetModal(){
     var m = $('betModal');
     if(!m) return;
@@ -1779,7 +1842,7 @@ function closeBetModal(){ var m = $('betModal'); if(m) m.classList.remove('show'
 function cancelPendingBet(){
     pendingBet = null;
     removePendingBetFromUI();
-    showToast('РћС‚РјРµРЅРµРЅРѕ', 'ok');
+    showToast('Отменено', 'ok');
     updateActionButton();
 }
 function starsToBetInputValue(stars){
@@ -1796,9 +1859,9 @@ function removePendingBetFromUI(){
     for(var i = 0; i < rows.length; i++) rows[i].remove();
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    CONFIRM STARS BET
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 async function confirmStarsBet(){
     if(_betLocked) return;
     if(!userData || !userData.id){ showToast('Auth error', 'err'); return; }
@@ -1806,8 +1869,8 @@ async function confirmStarsBet(){
     var input = $('betInput');
     if(!input) return;
     var amt = parseBetInputToStars(input.value);
-    if(!amt || amt < 10){ showToast('РњРёРЅ. 0.10 GRAM', 'err'); return; }
-    if(amt > (userData.balance_stars || 0)){ showToast('РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЃСЂРµРґСЃС‚РІ', 'err'); return; }
+    if(!amt || amt < 10){ showToast('Мин. 0.10 GRAM', 'err'); return; }
+    if(amt > (userData.balance_stars || 0)){ showToast('Недостаточно средств', 'err'); return; }
 
     _betLocked = true;
     savedBetAmount = amt;
@@ -1816,7 +1879,7 @@ async function confirmStarsBet(){
     if(status === 'flying'){
         pendingBet = { type: 'stars', amount: amt };
         closeBetModal();
-        showToast('РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
+        showToast('Ставка на след. раунд', 'ok');
         updateActionButton();
         _betLocked = false;
         return;
@@ -1828,7 +1891,7 @@ async function confirmStarsBet(){
         if(remaining <= 0.6){
             pendingBet = { type: 'stars', amount: amt };
             closeBetModal();
-            showToast('РџРѕР·РґРЅРѕ! РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
+            showToast('Поздно! Ставка на след. раунд', 'ok');
             updateActionButton();
             _betLocked = false;
             return;
@@ -1843,7 +1906,7 @@ async function confirmStarsBet(){
     updateBalanceUI();
     closeBetModal();
     updateActionButton();
-    showToast('РЎС‚Р°РІРєР° ' + formatCrashMoney(amt) + ' РїСЂРёРЅСЏС‚Р°', 'ok');
+    showToast('Ставка ' + formatCrashMoney(amt) + ' принята', 'ok');
 
     var ac = new AbortController();
     var tId = setTimeout(function(){ ac.abort(); }, 5000);
@@ -1868,11 +1931,11 @@ async function confirmStarsBet(){
             userData.balance_stars = (userData.balance_stars || 0) + amt;
             updateBalanceUI();
             var err = (d.error || '').toLowerCase();
-            if(err.indexOf('late') !== -1 || err.indexOf('РЅР°С‡Р°Р»') !== -1 || err.indexOf('2 СЃРµРє') !== -1 || err.indexOf('СЃР»РµРґ') !== -1){
+            if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1 || err.indexOf('2 сек') !== -1 || err.indexOf('след') !== -1){
                 pendingBet = { type: 'stars', amount: amt };
-                showToast('РЎС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
+                showToast('Ставка на след. раунд', 'ok');
             } else {
-                showToast(d.error || 'РћС€РёР±РєР°', 'err');
+                showToast(d.error || 'Ошибка', 'err');
             }
             updateActionButton();
         }
@@ -1884,9 +1947,9 @@ async function confirmStarsBet(){
         updateBalanceUI();
         if(e && e.name === 'AbortError'){
             pendingBet = { type: 'stars', amount: amt };
-            showToast('РЎРµСЂРІРµСЂ РЅРµ РѕС‚РІРµС‚РёР», СЃС‚Р°РІРєР° РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
+            showToast('Сервер не ответил, ставка на след. раунд', 'ok');
         } else {
-            showToast('РћС€РёР±РєР° СЃРµС‚Рё', 'err');
+            showToast('Ошибка сети', 'err');
         }
         updateActionButton();
     }finally{
@@ -1894,9 +1957,9 @@ async function confirmStarsBet(){
     }
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    PENDING BET
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 async function processPendingBet(){
     if(!pendingBet || _betLocked) return;
     var bet = pendingBet;
@@ -1920,7 +1983,7 @@ async function processPendingBet(){
                 betAmt = bet.amount;
                 userData.balance_stars = d.new_balance;
                 updateBalanceUI();
-                showToast('РЎС‚Р°РІРєР° РїСЂРёРЅСЏС‚Р°!', 'ok');
+                showToast('Ставка принята!', 'ok');
                 loadBets();
             } else {
                 setTimeout(function(){ _betLocked = false; processPendingBet(); }, 800);
@@ -1955,7 +2018,7 @@ async function processPendingBet(){
                 hasBet = true;
                 betAmt = d2.bet_amount || bet.amount;
                 betGiftImg = bet.giftImage || null;
-                showToast('РЎС‚Р°РІРєР° РїРѕРґР°СЂРєР°РјРё РїСЂРёРЅСЏС‚Р°!', 'ok');
+                showToast('Ставка подарками принята!', 'ok');
                 loadBets();
             } else {
                 setTimeout(function(){ _betLocked = false; processPendingBet(); }, 800);
@@ -1982,9 +2045,9 @@ function switchTab(tab){
     if(tab === 'inv') loadInventoryForBet();
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    INVENTORY BET
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 async function loadInventoryForBet(){
     if(!userData || !userData.id) return;
     try{
@@ -1997,7 +2060,7 @@ async function loadInventoryForBet(){
             return !i.is_withdrawing && i.gift_value >= 25 && NON_BETTABLE_GIFT_IDS.indexOf(Number(i.gift_id)) === -1;
         });
         if(!inventoryItems.length){
-            grid.innerHTML = '<div class="inv-empty">РќРµС‚ РїРѕРґР°СЂРєРѕРІ (РјРёРЅ. 25в­ђ)</div>';
+            grid.innerHTML = '<div class="inv-empty">Нет подарков (мин. 25⭐)</div>';
             return;
         }
         grid.innerHTML = inventoryItems.map(function(i){
@@ -2028,7 +2091,7 @@ function toggleGiftSelection(id){
     var idx = selectedGifts.findIndex(function(g){ return g.id === id; });
     if(idx >= 0){ selectedGifts.splice(idx, 1); }
     else {
-        if(selectedGifts.length >= MAX_GIFTS){ showToast('РњР°РєСЃРёРјСѓРј ' + MAX_GIFTS, 'err'); return; }
+        if(selectedGifts.length >= MAX_GIFTS){ showToast('Максимум ' + MAX_GIFTS, 'err'); return; }
         selectedGifts.push({ id: item.id, name: item.gift_name, value: item.gift_value, image: item.gift_image });
     }
     var cards = document.querySelectorAll('.inv-card');
@@ -2068,12 +2131,12 @@ function updateSelectedSummary(){
     }
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    CONFIRM GIFT BET
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 async function confirmGiftBet(){
     if(_giftLocked) return;
-    if(!selectedGifts.length){ showToast('Р’С‹Р±РµСЂРёС‚Рµ РїРѕРґР°СЂРѕРє', 'err'); return; }
+    if(!selectedGifts.length){ showToast('Выберите подарок', 'err'); return; }
     if(!userData || !userData.id) return;
 
     _giftLocked = true;
@@ -2086,7 +2149,7 @@ async function confirmGiftBet(){
         pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
         closeBetModal();
         clearSelectedGifts();
-        showToast('РџРѕРґР°СЂРєРё РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
+        showToast('Подарки на след. раунд', 'ok');
         updateActionButton();
         _giftLocked = false;
         return;
@@ -2099,7 +2162,7 @@ async function confirmGiftBet(){
             pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
             closeBetModal();
             clearSelectedGifts();
-            showToast('РџРѕР·РґРЅРѕ! РџРѕРґР°СЂРєРё РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
+            showToast('Поздно! Подарки на след. раунд', 'ok');
             updateActionButton();
             _giftLocked = false;
             return;
@@ -2113,7 +2176,7 @@ async function confirmGiftBet(){
     closeBetModal();
     clearSelectedGifts();
     updateActionButton();
-    showToast('РЎС‚Р°РІРєР° ' + sGifts.length + ' РїРѕРґР°СЂРєРѕРІ', 'ok');
+    showToast('Ставка ' + sGifts.length + ' подарков', 'ok');
 
     var ac = new AbortController();
     var tId = setTimeout(function(){ ac.abort(); }, 5000);
@@ -2133,11 +2196,11 @@ async function confirmGiftBet(){
             hasBet = false;
             betAmt = 0;
             var err = (d.error || '').toLowerCase();
-            if(err.indexOf('late') !== -1 || err.indexOf('РЅР°С‡Р°Р»') !== -1 || err.indexOf('2 СЃРµРє') !== -1){
+            if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1 || err.indexOf('2 сек') !== -1){
                 pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
-                showToast('РџРѕРґР°СЂРєРё РЅР° СЃР»РµРґ. СЂР°СѓРЅРґ', 'ok');
+                showToast('Подарки на след. раунд', 'ok');
             } else {
-                showToast(d.error || 'РћС€РёР±РєР°', 'err');
+                showToast(d.error || 'Ошибка', 'err');
             }
             updateActionButton();
         }
@@ -2145,16 +2208,16 @@ async function confirmGiftBet(){
         clearTimeout(tId);
         hasBet = false;
         betAmt = 0;
-        showToast('РћС€РёР±РєР° СЃРµС‚Рё', 'err');
+        showToast('Ошибка сети', 'err');
         updateActionButton();
     }finally{
         _giftLocked = false;
     }
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    CASHOUT
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 async function doCashout(){
     if(!hasBet || !userData || !userData.id) return;
     if(_cashoutLocked) return;
@@ -2210,11 +2273,11 @@ async function doCashout(){
             updateAutoWithdrawButton();
             serverGifts = d.awarded_gifts || [];
         } else {
-            showToast(d.error || 'РћС€РёР±РєР° СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёРё', 'err');
+            showToast(d.error || 'Ошибка синхронизации', 'err');
         }
     }catch(e){
         clearTimeout(tId);
-        showToast('РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ РЅРµ СѓРґР°Р»Р°СЃСЊ', 'err');
+        showToast('Синхронизация не удалась', 'err');
     }finally{
         _cashoutLocked = false;
         _syncingWin = false;
@@ -2240,9 +2303,9 @@ async function doCashout(){
     updateActionButton();
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    WIN SHEET
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function showWinSheet(mult, winAmount, serverGifts, giftData){
     var content = $('winContent');
     var sheet = $('winSheet');
@@ -2263,29 +2326,29 @@ function showWinSheet(mult, winAmount, serverGifts, giftData){
     }
 
     var image = gift && (gift.image || gift.gift_image) ? (gift.image || gift.gift_image) : '/static/img/gift.png';
-    var name = gift && (gift.name || gift.gift_name) ? (gift.name || gift.gift_name) : 'Р’С‹РёРіСЂС‹С€';
+    var name = gift && (gift.name || gift.gift_name) ? (gift.name || gift.gift_name) : 'Выигрыш';
     var giftValueStars = gift && gift.value ? Number(gift.value) : Number(winAmount || 0);
     var stakeGift = (giftData && giftData.length) ? giftData[0] : null;
     var stakeLabel = stakeGift
-        ? ((stakeGift.name || stakeGift.gift_name || 'РџРѕРґР°СЂРѕРє') + ' вЂў ' + formatCrashMoney(stakeGift.value || betStars))
+        ? ((stakeGift.name || stakeGift.gift_name || 'Подарок') + ' • ' + formatCrashMoney(stakeGift.value || betStars))
         : (formatTon(betTon) + ' GRAM');
 
     var balanceBonusStars = Number(window._lastCrashStarRemainder || 0);
     var balanceHtml = balanceBonusStars > 0
-        ? '<div class="win-balance-bonus">+ ' + starsToTon(balanceBonusStars).toFixed(2) + ' GRAM РЅР° Р±Р°Р»Р°РЅСЃ</div>'
+        ? '<div class="win-balance-bonus">+ ' + starsToTon(balanceBonusStars).toFixed(2) + ' GRAM на баланс</div>'
         : '';
 
     content.innerHTML = ''
         + '<div class="simple-win-card">'
-        +   '<div class="simple-win-title">Р’Р«РР“Р Р«РЁ</div>'
+        +   '<div class="simple-win-title">ВЫИГРЫШ</div>'
         +   '<div class="simple-win-gift">'
         +     '<img src="' + image + '" alt="" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
         +   '</div>'
         +   '<div class="simple-win-name">' + escapeHtmlCrash(name) + '</div>'
         +   '<div class="simple-win-value">' + formatCrashMoney(giftValueStars) + '</div>'
         +   '<div class="simple-win-stats">'
-        +     '<div><span>РЎСѓРјРјР° СЃС‚Р°РІРєРё</span><b>' + escapeHtmlCrash(stakeLabel) + '</b></div>'
-        +     '<div><span>Р’С‹РёРіСЂС‹С€</span><b class="win">+' + formatTon(winTon) + ' GRAM</b></div>'
+        +     '<div><span>Сумма ставки</span><b>' + escapeHtmlCrash(stakeLabel) + '</b></div>'
+        +     '<div><span>Выигрыш</span><b class="win">+' + formatTon(winTon) + ' GRAM</b></div>'
         +   '</div>'
         +   balanceHtml
         + '</div>';
@@ -2294,7 +2357,7 @@ function showWinSheet(mult, winAmount, serverGifts, giftData){
 }
 
 function showWinSheetBonus(mult, winAmount, originalGift, serverGifts){
-    // РўРѕС‚ Р¶Рµ С‡РёСЃС‚С‹Р№ СЌРєСЂР°РЅ, Р±РµР· РґР»РёРЅРЅРѕР№ Р±РѕРЅСѓСЃРЅРѕР№ РєР°СЂС‚РѕС‡РєРё.
+    // Тот же чистый экран, без длинной бонусной карточки.
     showWinSheet(mult, winAmount, originalGift ? [originalGift] : [], serverGifts || []);
     var sheet = $('winSheet');
     if(sheet) sheet.classList.add('bonus-win');
@@ -2305,90 +2368,49 @@ function closeWin(){
     if(wo) wo.classList.remove('show');
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    BETS LIST
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 var _betsFetching = false;
 async function loadBets(){
     if(_betsFetching) return;
-    if(status === 'crashed') return;
     _betsFetching = true;
     try{
         var gen = betsGeneration;
-        var r = await fetch('/api/ultimate-crash/recent-bets?limit=30');
+        var r = await fetch('/api/ultimate-crash/recent-bets?limit=30',{cache:'no-store'});
         if(!r.ok) return;
         var d = await r.json();
-        if(!d.success) return;
-        if(gen !== betsGeneration) return;
-
-        var bets = (d.bets || []).sort(function(a, b){ return (b.bet_amount || 0) - (a.bet_amount || 0); });
-        var bc = $('betsCount');
-        if(bc) bc.textContent = bets.length;
-
-        var hash = JSON.stringify(bets.map(function(b){ return b.id + ':' + b.status + ':' + b.bet_amount; }));
-        if(hash === lastBetsHash) return;
-        lastBetsHash = hash;
-
-        var list = $('betsList');
-        if(!list) return;
-
-        if(!bets.length){
-            list.innerHTML = '<div class="no-bets">Waiting for bets...</div>';
-            return;
-        }
-
-        var clockSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-        var crashSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>';
-
-        list.innerHTML = bets.map(function(b){
-            var name = b.first_name || ('User ' + b.user_id);
-            var ini = (b.first_name || 'U')[0].toUpperCase();
-            var hasPhoto = b.photo_url && b.photo_url !== '/static/img/default_avatar.png';
-            var avatar = hasPhoto ? '<img src="' + b.photo_url + '" alt="">' : ini;
-            var stCls = 'active';
-
-            var previewSrc = null;
-            var isGiftBet = b.bet_type === 'gift';
-            if(isGiftBet){
-                if(b.gift_images && b.gift_images.length) previewSrc = b.gift_images[0];
-                else if(b.gift_image) previewSrc = b.gift_image;
-            }
-            var previewHtml = isGiftBet
-                ? (previewSrc
-                    ? '<img class="bet-gift-preview" src="' + previewSrc + '" onerror="this.style.display=\'none\'">'
-                    : '<img class="bet-gift-preview empty" src="/static/img/gift.png" alt="">')
-                : '';
-
-            var statusHtml = '';
-            if(b.status === 'cashed_out'){
-                stCls = 'won';
-                var coef = b.cashout_multiplier ? parseFloat(b.cashout_multiplier).toFixed(2) : '?';
-                var winAmt = b.win_amount || 0;
-                statusHtml = '<div class="bet-status won">Г—' + coef + ' +' + formatCrashMoney(winAmt) + '</div>';
-            } else if(b.status === 'lost'){
-                stCls = 'lost';
-                var cc = servMult ? servMult.toFixed(2) : '?';
-                statusHtml = '<div class="bet-status lost">' + crashSvg + ' Г—' + cc + '</div>';
-            } else {
-                var coefNow = dispMult ? dispMult.toFixed(2) : '1.00';
-                statusHtml = '<div class="bet-status active">' + clockSvg + ' Г—' + coefNow + '</div>';
-            }
-
-            return '<div class="bet-row ' + stCls + '">'
-                + '<div class="bet-left"><div class="bet-avatar">' + avatar + '</div>'
-                + '<div class="bet-info"><div class="bet-name">' + name + '</div>'
-                + '<div class="bet-amt">' + previewHtml + '<span class="bet-amount-text">' + formatCrashMoney(b.bet_amount) + '</span></div></div></div>'
-                + statusHtml + '</div>';
+        if(!d.success || gen !== betsGeneration) return;
+        var bets = (d.bets || []).sort(function(a,b){return (b.id||0)-(a.id||0);});
+        var bc=$('betsCount'); if(bc)bc.textContent=bets.length;
+        var list=$('betsList'); if(!list)return;
+        if(!bets.length){list.innerHTML='<div class="no-bets">Waiting for bets...</div>';return;}
+        var clockSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+        var crashSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>';
+        list.innerHTML=bets.map(function(b){
+          var name=b.first_name||('User '+b.user_id), ini=(b.first_name||'U')[0].toUpperCase();
+          var avatar=b.photo_url&&b.photo_url!='/static/img/default_avatar.png'?'<img src="'+b.photo_url+'" alt="">':ini;
+          var giftBet=b.bet_type==='gift';
+          var betImg=giftBet?((b.gift_images&&b.gift_images[0])||b.gift_image||'/static/img/gift.png'):'/static/img/gram.png';
+          var betAmt=formatCrashMoney(b.bet_amount);
+          var coeffHtml, cls='active';
+          if(b.status==='cashed_out'){ cls='won'; coeffHtml='<div class="bet-status won">×'+(b.cashout_multiplier?Number(b.cashout_multiplier).toFixed(2):'?')+'</div>'; }
+          else if(b.status==='lost'){ cls='lost'; coeffHtml='<div class="bet-status lost">'+crashSvg+' ×'+(b.cashout_multiplier?Number(b.cashout_multiplier).toFixed(2):(servMult||1).toFixed(2))+'</div>'; }
+          else coeffHtml='<div class="bet-status active">'+clockSvg+' ×'+(dispMult||1).toFixed(2)+'</div>';
+          var payoutImg=b.win_gift_image||b.gift_image||'/static/img/gram.png';
+          if(b.status==='cashed_out' && b.win_gifts && b.win_gifts[0]) payoutImg=b.win_gifts[0].image||payoutImg;
+          var payoutText=b.status==='cashed_out'?formatCrashMoney(b.win_amount||0):formatCrashMoney(b.win_value||b.potential_win||0);
+          var fixed=b.status==='cashed_out'?' bet-fixed':'';
+          return '<div class="bet-row '+cls+fixed+'">'+
+            '<div class="bet-left"><div class="bet-avatar">'+avatar+'</div><div class="bet-info">'+
+              '<div class="bet-name">'+name+'</div><div class="bet-amt"><img class="bet-gift-preview" src="'+betImg+'" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'"><span class="bet-amount-text">'+betAmt+'</span></div>'+
+            '</div></div><div class="bet-right-stack">'+coeffHtml+'<div class="bet-payout"><img src="'+payoutImg+'" onerror="this.onerror=null;this.src=\'/static/img/gram.png\'" alt=""><span>'+payoutText+'</span></div></div></div>';
         }).join('');
-    }catch(e){
-    }finally{
-        _betsFetching = false;
-    }
+    }catch(e){}finally{_betsFetching=false;}
 }
-
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    HISTORY
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 async function loadHistory(){
     try{
         var r = await fetch('/api/ultimate-crash/history?limit=15');
@@ -2414,15 +2436,15 @@ async function loadHistory(){
             else if(m >= 3) c = 'high';
             else if(m >= 1.5) c = 'mid';
             p.className = 'h-pill ' + c;
-            p.textContent = (isB ? 'рџЏ† ' : '') + m.toFixed(2) + 'x';
+            p.textContent = (isB ? '🏆 ' : '') + m.toFixed(2) + 'x';
             bar.appendChild(p);
         });
     }catch(e){}
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    AUTO WITHDRAW
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function loadSavedAutoWithdrawGift(){
     try{
         autoWithdrawGuard = localStorage.getItem('crash_auto_withdraw_guard') !== 'off';
@@ -2472,7 +2494,7 @@ function openAutoWithdraw(){
         var bi = $('betInput');
         if(bi) _autowdBet = parseBetInputToStars(bi.value) || 0;
     }
-    if(!_autowdBet){ showToast('Р’РІРµРґРёС‚Рµ СЃСѓРјРјСѓ СЃС‚Р°РІРєРё', 'err'); return; }
+    if(!_autowdBet){ showToast('Введите сумму ставки', 'err'); return; }
     _autowdTarget = Math.floor(_autowdBet * 1.1);
 
     var b = $('autowdBetVal');
@@ -2494,13 +2516,13 @@ function closeAutoWithdraw(){
 async function loadAutoWithdrawGifts(){
     var list = $('autowdList');
     if(!list) return;
-    list.innerHTML = '<div class="autowd-empty">Р—Р°РіСЂСѓР·РєР°...</div>';
+    list.innerHTML = '<div class="autowd-empty">Загрузка...</div>';
     if(!_giftCatalog || !_giftCatalog.length){
         await ensureGiftCatalog();
     }
     var cat = _giftCatalog || [];
     if(!cat.length){
-        list.innerHTML = '<div class="autowd-empty">РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ</div>';
+        list.innerHTML = '<div class="autowd-empty">Не удалось загрузить</div>';
         return;
     }
     _autowdGifts = cat.filter(function(g){ return (g.value || 0) >= _autowdTarget; })
@@ -2518,7 +2540,7 @@ function renderAutoWithdrawGifts(){
     if(search){
         filtered = _autowdGifts.filter(function(g){ return (g.name || '').toLowerCase().indexOf(search) !== -1; });
     }
-    if(!filtered.length){ list.innerHTML = '<div class="autowd-empty">РќРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ</div>'; return; }
+    if(!filtered.length){ list.innerHTML = '<div class="autowd-empty">Ничего не найдено</div>'; return; }
     var picked = filtered.slice(0, 40);
     list.innerHTML = picked.map(function(g, idx){
         var gid = String(g.id || g.gift_key || g.fragment_slug || ('gift_' + idx));
@@ -2529,7 +2551,7 @@ function renderAutoWithdrawGifts(){
         return '<div class="autowd-row' + (isSel ? ' selected' : '') + '" data-gid="' + gid + '" onclick="selectAutoWithdrawGift(\'' + gid + '\')">'
             + '<div class="autowd-thumb"><img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"></div>'
             + '<div class="autowd-info"><div class="autowd-name">' + escapeHtmlCrash(g.name || 'Gift') + '</div>'
-            + '<div class="autowd-coeff">РљРѕСЌС„: x' + coeff + '</div></div>'
+            + '<div class="autowd-coeff">Коэф: x' + coeff + '</div></div>'
             + '<div class="autowd-price"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + (val / 100).toFixed(2) + '</div>'
             + '</div>';
     }).join('');
@@ -2547,14 +2569,14 @@ function updateAutoWithdrawApply(){
     if(!btn) return;
     if(!_autowdSelected){
         btn.disabled = true;
-        btn.innerHTML = '<span id="autowdApplyText">Р’С‹Р±РµСЂРёС‚Рµ РїРѕРґР°СЂРѕРє</span>';
+        btn.innerHTML = '<span id="autowdApplyText">Выберите подарок</span>';
         return;
     }
     var val = _autowdSelected.value || 0;
     var coeff = _autowdBet > 0 ? (val / _autowdBet).toFixed(2) : '?';
     var img = getGiftImage(_autowdSelected);
     btn.disabled = false;
-    btn.innerHTML = 'РђРІС‚РѕРІС‹РІРѕРґ <img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"> <span style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800">x' + coeff + '</span>';
+    btn.innerHTML = 'Автовывод <img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"> <span style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800">x' + coeff + '</span>';
 }
 function applyAutoWithdraw(){
     if(!_autowdSelected) return;
@@ -2575,17 +2597,17 @@ function applyAutoWithdraw(){
         if(m) m.classList.add('show');
         updateAutoWithdrawButton();
     }, 250);
-    showToast('РђРІС‚РѕРІС‹РІРѕРґ: x' + coeff.toFixed(2), 'ok');
+    showToast('Автовывод: x' + coeff.toFixed(2), 'ok');
 }
 function updateAutoWithdrawButton(){
     var btn = $('autowdMainBtn');
     if(!btn) return;
     if(!autoWithdrawGift){
-        btn.innerHTML = '<img src="/static/img/gift.png" alt=""><span class="autowd-btn-name">Р’С‹Р±СЂР°С‚СЊ</span>';
+        btn.innerHTML = '<img src="/static/img/gift.png" alt=""><span class="autowd-btn-name">Выбрать</span>';
         return;
     }
     var img = autoWithdrawGift.image || '/static/img/gift.png';
-    var nameShort = (autoWithdrawGift.name || 'РџРѕРґР°СЂРѕРє').substring(0, 10);
+    var nameShort = (autoWithdrawGift.name || 'Подарок').substring(0, 10);
     btn.innerHTML = '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">'
         + '<span class="autowd-btn-name">' + nameShort + '</span>'
         + '<span class="autowd-btn-coeff">x' + autoWithdrawGift.coeff.toFixed(2) + '</span>';
@@ -2604,16 +2626,35 @@ function toggleAutoWithdrawGuardClick(){
     }
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    SETTINGS
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function syncSettingsToggles(){
     var el = $('showGiftsToggle');
     if(el) el.classList.toggle('on', showGifts);
     var ge = $('autoWithdrawGuardToggle');
     if(ge) ge.classList.toggle('on', autoWithdrawGuard);
 }
+function applyCrashBackground(){
+  var gf=$('gameField');
+  if(gf){
+    gf.classList.remove('scene-graph','scene-space');
+    gf.classList.add(crashBackground === 'space' ? 'scene-space' : 'scene-graph');
+  }
+  var g=$('bgGraphBtn'), sp=$('bgSpaceBtn'); if(g)g.classList.toggle('active',crashBackground==='graph'); if(sp)sp.classList.toggle('active',crashBackground==='space');
+}
+function setCrashScenePhase(phase){
+  var gf=$('gameField'); if(!gf) return;
+  gf.classList.remove('scene-flying','scene-crash','scene-counting');
+  if(phase==='flying') gf.classList.add('scene-flying');
+  else if(phase==='counting') gf.classList.add('scene-counting');
+  else if(phase==='crash') gf.classList.add('scene-crash');
+}
+function selectCrashBackground(kind){crashBackground=kind==='space'?'space':'graph';localStorage.setItem('crash_background',crashBackground);applyCrashBackground();}
+function setCrashOptimization(v){crashOptimization=Number(v);localStorage.setItem('crash_optimization',String(crashOptimization));var labels=['Производительность','Баланс','Качество'];var el=$('optimValue');if(el)el.textContent=labels[crashOptimization]||labels[1];}
+function syncCrashVisualSettings(){applyCrashBackground();var r=$('optimRange');if(r)r.value=String(crashOptimization);setCrashOptimization(crashOptimization);}
 function openSettings(){
+    syncCrashVisualSettings();
     var so = $('settingsOverlay');
     if(so) so.classList.add('show');
     syncSettingsToggles();
@@ -2628,7 +2669,7 @@ function toggleShowGiftsClick(){
     localStorage.setItem('crash_show_gifts', showGifts ? 'on' : 'off');
     var el = $('showGiftsToggle');
     if(el) el.classList.toggle('on', showGifts);
-    showToast(showGifts ? 'РџРѕРґР°СЂРєРё РІРєР»СЋС‡РµРЅС‹' : 'РўРѕР»СЊРєРѕ СЂР°РєРµС‚Р°', 'ok');
+    showToast(showGifts ? 'Подарки включены' : 'Только ракета', 'ok');
     applyRocket();
     _lastBtnKey = '';
     updateActionButton();
@@ -2650,17 +2691,17 @@ function selectRocket(rid){
     localStorage.setItem('crash_rocket', rid);
     applyRocket();
     renderSettings();
-    showToast('Р Р°РєРµС‚Р° РёР·РјРµРЅРµРЅР°', 'ok');
+    showToast('Ракета изменена', 'ok');
     setTimeout(closeSettings, 200);
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    DEPOSIT
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 function openDepositSelector(){ var so = $('depositOverlay'); if(so) so.classList.add('show'); }
 function closeDepositSelector(){ var so = $('depositOverlay'); if(so) so.classList.remove('show'); }
 function openStarsDeposit(){
-    if(!isTelegramWebApp()){ showToast('Stars С‚РѕР»СЊРєРѕ РІ Telegram', 'err'); return; }
+    if(!isTelegramWebApp()){ showToast('Stars только в Telegram', 'err'); return; }
     var so = $('starsDepositOverlay');
     if(so) so.classList.add('show');
 }
@@ -2668,7 +2709,7 @@ function closeStarsDeposit(){ var so = $('starsDepositOverlay'); if(so) so.class
 async function payWithStars(){
     var amountEl = $('starsDepositAmount');
     var amount = parseInt(amountEl ? amountEl.value : 0) || 0;
-    if(amount < 1 || amount > 10000){ showToast('Р’РІРµРґРёС‚Рµ 1-10000', 'err'); return; }
+    if(amount < 1 || amount > 10000){ showToast('Введите 1-10000', 'err'); return; }
     var btn = $('starsPayBtn');
     if(btn) btn.disabled = true;
     try{
@@ -2681,7 +2722,7 @@ async function payWithStars(){
         if(d.success && d.invoice_link){
             if(typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.openInvoice){
                 Telegram.WebApp.openInvoice(d.invoice_link, function(status){
-                    if(status === 'paid'){ showToast('РћРїР»Р°С‚Р° СѓСЃРїРµС€РЅР°', 'ok'); closeStarsDeposit(); }
+                    if(status === 'paid'){ showToast('Оплата успешна', 'ok'); closeStarsDeposit(); }
                     if(btn) btn.disabled = false;
                 });
             } else {
@@ -2689,20 +2730,21 @@ async function payWithStars(){
                 if(btn) btn.disabled = false;
             }
         } else {
-            showToast(d.error || 'РћС€РёР±РєР°', 'err');
+            showToast(d.error || 'Ошибка', 'err');
             if(btn) btn.disabled = false;
         }
     }catch(e){
-        showToast('РћС€РёР±РєР° СЃРµС‚Рё', 'err');
+        showToast('Ошибка сети', 'err');
         if(btn) btn.disabled = false;
     }
 }
 
-/* в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ
+/* ══════════════════════════════════════════════════════════════
    INIT
-   в•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђв•ђ */
+   ══════════════════════════════════════════════════════════════ */
 async function init(){
-    initFullscreen();
+    syncCrashVisualSettings();
+initFullscreen();
     await initAuth();
     applyRocket();
 
@@ -2775,19 +2817,19 @@ document.addEventListener('DOMContentLoaded', function(){
 <nav class="bottom-nav">
     <a class="bottom-nav-item" href="/games">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
-        <span>РРіСЂС‹</span>
+        <span>Игры</span>
     </a>
     <a class="bottom-nav-item" href="/upgrade">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        <span>РђРїРіСЂРµР№РґС‹</span>
+        <span>Апгрейды</span>
     </a>
     <a class="bottom-nav-item" href="/leaderboard">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-        <span>РўРѕРї</span>
+        <span>Топ</span>
     </a>
     <a class="bottom-nav-item" href="/inventory">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>РџСЂРѕС„РёР»СЊ</span>
+        <span>Профиль</span>
     </a>
 </nav>
 
