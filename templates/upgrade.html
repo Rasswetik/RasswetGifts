@@ -59,7 +59,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .bal-pill-crash{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(120,135,160,.1);border:1px solid rgba(120,135,160,.25);font-weight:700;font-size:13px;color:#fff;backdrop-filter:blur(5px)}
 .bal-pill-crash img{width:16px;height:16px}
 
-/* Настройки */
 .settings-btn{
     width:34px;height:34px;border-radius:50%;
     border:1.5px solid rgba(59,130,246,.35);
@@ -154,7 +153,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .wheel-center-pct.visible{opacity:1}
 .wheel-center.hidden-pct .wheel-center-pct{opacity:0}
 
-/* Зелёная арка свечение для 1% */
 .wheel-center.winning{
     box-shadow:inset 0 0 60px rgba(36,195,142,.9),
                0 0 0 5px rgba(11,17,32,.95),
@@ -202,12 +200,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 @keyframes wheelShake{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-6px)}20%,40%,60%,80%{transform:translateX(6px)}}
 .wheel-wrap.shake{animation:wheelShake .5s ease-in-out}
 
-/* CONFETTI CANVAS */
-.confetti-canvas{
-    position:fixed;inset:0;
-    pointer-events:none;z-index:99999;
-    display:none;
-}
+/* CONFETTI */
+.confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:99999;display:none}
 .confetti-canvas.show{display:block}
 
 /* ACTIONS */
@@ -245,14 +239,55 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* MODAL */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:9000;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
 .modal-overlay.show{opacity:1;visibility:visible}
-.modal-sheet{background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:88vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1);border-top:1px solid rgba(99,160,255,.25);overflow:hidden}
+.modal-sheet{
+    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
+    border-radius:24px 24px 0 0;
+    width:100%;max-width:480px;
+    max-height:90vh;
+    display:flex;flex-direction:column;
+    transform:translateY(100%);
+    transition:transform .35s cubic-bezier(.32,1,.23,1);
+    border-top:1px solid rgba(99,160,255,.25);
+    overflow:hidden;
+}
 .modal-overlay.show .modal-sheet{transform:translateY(0)}
 .modal-handle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:12px auto 14px;flex-shrink:0}
 .modal-title{font-size:17px;font-weight:800;text-align:center;margin-bottom:14px;color:#fff;flex-shrink:0}
-.modal-close{width:34px;height:34px;border-radius:12px;background:rgba(249,105,153,.15);color:#F96999;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer}
-.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.modal-title-inline{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
-.modal-title-inline img{width:20px;height:20px;object-fit:contain}
+.modal-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px 12px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+    flex-shrink:0;
+    gap:8px;
+}
+.modal-title-inline{
+    font-size:16px;font-weight:800;
+    display:flex;align-items:center;gap:8px;
+    flex:1;min-width:0;
+    overflow:hidden;
+}
+.modal-title-inline img{width:20px;height:20px;object-fit:contain;flex-shrink:0}
+.modal-title-inline span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.modal-header-btns{display:flex;gap:6px;flex-shrink:0}
+.modal-close{
+    width:34px;height:34px;border-radius:12px;
+    background:rgba(249,105,153,.15);color:#F96999;
+    font-size:16px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    border:none;cursor:pointer;
+    transition:transform .15s;
+}
+.modal-close:active{transform:scale(.9)}
+.modal-edit-btn{
+    width:34px;height:34px;border-radius:12px;
+    background:rgba(59,130,246,.15);color:#7CAEFF;
+    font-size:14px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    border:none;cursor:pointer;
+    transition:transform .15s;
+}
+.modal-edit-btn:active{transform:scale(.9)}
+.modal-edit-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* BET MODAL tabs */
 .bet-tabs{display:flex;gap:4px;margin:0 16px 16px;background:rgba(255,255,255,.04);border-radius:12px;padding:4px;flex-shrink:0}
@@ -270,7 +305,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .bet-tab img{width:14px;height:14px;object-fit:contain}
 
 /* TON section */
-.bet-ton-section{padding:0 16px 20px;display:flex;flex-direction:column;gap:12px}
+.bet-ton-section{padding:0 16px 20px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
 .bet-balance-card{padding:16px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(59,130,246,.04));border:1.5px solid rgba(59,130,246,.3);display:flex;align-items:center;justify-content:space-between;gap:12px}
 .bet-balance-left{display:flex;flex-direction:column;gap:4px}
 .bet-balance-label{font-size:11px;color:rgba(255,255,255,.55);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
@@ -301,17 +336,19 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .modal-search:focus{border-color:rgba(59,130,246,.6);background:rgba(59,130,246,.14)}
 .modal-search::placeholder{color:rgba(255,255,255,.35)}
 .modal-search-icon{position:absolute;left:28px;top:34px;width:16px;height:16px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:2;pointer-events:none}
+
+/* ═══ MODAL BODY ═══ */
 .modal-body{flex:1;overflow-y:auto;padding:0 16px 16px;overscroll-behavior:contain}
 .modal-body::-webkit-scrollbar{width:4px}
 .modal-body::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
 
-/* ═══ MODAL GRID — СИНИЕ ЯЧЕЙКИ ═══ */
+/* ═══ MODAL GRID — СИНИЕ ЯЧЕЙКИ, PNG + ИМЯ + ЦЕНА (без "ап") ═══ */
 .modal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .modal-item{
     background:linear-gradient(180deg,rgba(59,130,246,.12) 0%,rgba(59,130,246,.05) 100%);
     border:1.5px solid rgba(59,130,246,.25);
-    border-radius:16px;padding:10px 6px 8px;
-    display:flex;flex-direction:column;align-items:center;
+    border-radius:16px;padding:8px 6px 8px;
+    display:flex;flex-direction:column;align-items:center;gap:5px;
     cursor:pointer;transition:all .2s;
     position:relative;overflow:hidden;
     animation:itemIn .3s cubic-bezier(.4,0,.2,1) both;
@@ -327,40 +364,105 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     content:'';position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:50%;
     background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>") center center no-repeat, #3B82F6;
     background-size:12px 12px;
+    z-index:3;
 }
 .modal-item-img-wrap{
-    width:64px;height:64px;border-radius:14px;overflow:hidden;margin-bottom:5px;
+    width:64px;height:64px;border-radius:14px;overflow:hidden;
     background:linear-gradient(180deg,rgba(59,130,246,.15),rgba(59,130,246,.05));
     border:1px solid rgba(59,130,246,.25);
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 3px 8px rgba(0,0,0,.35);
     position:relative;
+    flex-shrink:0;
 }
 .modal-item-img-wrap img{width:100%;height:100%;object-fit:contain;padding:6px;box-sizing:border-box;display:block;position:relative;z-index:2}
 .modal-item-img-wrap.upgraded img{object-fit:cover;padding:0}
 .modal-item-img-wrap.placeholder::before{
-    content:'🎁';
-    position:absolute;inset:0;
+    content:'🎁';position:absolute;inset:0;
     display:flex;align-items:center;justify-content:center;
-    font-size:28px;opacity:.4;
-    z-index:1;
+    font-size:28px;opacity:.4;z-index:1;
 }
-.modal-item-name{font-size:10px;font-weight:700;color:rgba(255,255,255,.95);text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.modal-item-price{font-size:10px;font-weight:800;color:#7CAEFF;background:rgba(59,130,246,.18);padding:3px 8px;border-radius:7px;margin-top:4px;display:inline-flex;align-items:center;gap:3px;border:1px solid rgba(59,130,246,.3)}
+.modal-item-name{font-size:10px;font-weight:700;color:rgba(255,255,255,.95);text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;padding:0 2px}
+.modal-item-price{
+    font-size:10px;font-weight:800;color:#7CAEFF;
+    background:rgba(59,130,246,.18);
+    padding:3px 8px;border-radius:7px;
+    display:inline-flex;align-items:center;gap:3px;
+    border:1px solid rgba(59,130,246,.3);
+    line-height:1;
+}
 .modal-item-price img{width:9px;height:9px}
-.modal-item-chance{font-size:10px;font-weight:900;color:#3B82F6;background:rgba(59,130,246,.2);padding:3px 8px;border-radius:7px;margin-top:4px;border:1px solid rgba(59,130,246,.35)}
+.modal-item-chance{
+    font-size:10px;font-weight:900;color:#3B82F6;
+    background:rgba(59,130,246,.2);
+    padding:3px 8px;border-radius:7px;
+    border:1px solid rgba(59,130,246,.35);
+    line-height:1;
+}
 .modal-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:rgba(255,255,255,.35);font-size:13px;font-weight:600}
 .modal-empty-icon{width:64px;height:64px;margin:0 auto 16px;opacity:.4}
 .modal-empty-icon img{width:100%;height:100%;object-fit:contain}
 
-/* SETTINGS MODAL */
-.settings-modal{
-    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
-    border-radius:24px;width:90%;max-width:380px;
-    padding:24px 22px;border:1px solid rgba(59,130,246,.25);
-    transform:scale(.9);transition:transform .3s;
-    box-shadow:0 20px 60px rgba(0,0,0,.6);
+/* ═══ CHANCE PANEL — внизу модалки ═══ */
+.chance-panel{
+    padding:14px 16px calc(var(--safe-bottom) + 14px);
+    border-top:1px solid rgba(255,255,255,.08);
+    background:rgba(0,0,0,.25);
+    flex-shrink:0;
 }
+.chance-panel-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:10px;gap:10px;
+}
+.chance-panel-title{
+    font-size:12px;font-weight:800;
+    color:rgba(255,255,255,.75);
+    text-transform:uppercase;letter-spacing:.5px;
+}
+.chance-panel-value{
+    font-size:18px;font-weight:900;
+    color:#7CAEFF;
+    letter-spacing:-.3px;
+}
+
+.chance-slider-wrap{position:relative;margin-bottom:10px}
+.chance-slider{
+    width:100%;-webkit-appearance:none;appearance:none;
+    height:6px;border-radius:3px;
+    background:linear-gradient(90deg,#3B82F6,#7CAEFF);
+    outline:none;cursor:pointer;
+}
+.chance-slider::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;
+    width:24px;height:24px;border-radius:50%;
+    background:#fff;cursor:pointer;
+    box-shadow:0 3px 8px rgba(0,0,0,.4),0 0 0 3px rgba(59,130,246,.4);
+    transition:transform .15s;
+}
+.chance-slider::-webkit-slider-thumb:active{transform:scale(1.15)}
+.chance-slider::-moz-range-thumb{
+    width:24px;height:24px;border-radius:50%;background:#fff;cursor:pointer;
+    box-shadow:0 3px 8px rgba(0,0,0,.4),0 0 0 3px rgba(59,130,246,.4);border:none;
+}
+.chance-quick{display:flex;gap:5px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.chance-quick::-webkit-scrollbar{display:none}
+.chance-quick-btn{
+    flex:0 0 auto;min-width:52px;padding:8px 10px;border-radius:10px;
+    border:1.5px solid rgba(59,130,246,.25);
+    background:rgba(59,130,246,.08);
+    color:#7CAEFF;font-size:12px;font-weight:800;
+    cursor:pointer;transition:all .15s;
+    font-family:inherit;
+    white-space:nowrap;
+}
+.chance-quick-btn:active{transform:scale(.94)}
+.chance-quick-btn.active{
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;border-color:#3B82F6;
+    box-shadow:0 4px 12px rgba(59,130,246,.4);
+}
+
+/* SETTINGS MODAL */
 .settings-overlay{
     position:fixed;inset:0;z-index:9500;
     background:rgba(0,0,0,.8);
@@ -370,12 +472,18 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     padding:20px;
 }
 .settings-overlay.show{opacity:1;visibility:visible}
+.settings-modal{
+    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
+    border-radius:24px;width:100%;max-width:380px;
+    padding:24px 22px;border:1px solid rgba(59,130,246,.25);
+    transform:scale(.9);transition:transform .3s;
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+}
 .settings-overlay.show .settings-modal{transform:scale(1)}
 .settings-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
 .settings-title{font-size:18px;font-weight:800;color:#fff}
 .settings-close{width:34px;height:34px;border-radius:12px;border:none;background:rgba(249,105,153,.15);color:#F96999;cursor:pointer;font-size:16px;font-weight:700}
 
-/* ═══ ПОЛЗУНОК ЗВУКА (iOS-style) ═══ */
 .sound-row{
     display:flex;align-items:center;justify-content:space-between;
     padding:16px;border-radius:16px;
@@ -392,21 +500,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .sound-row-desc{font-size:11px;color:rgba(255,255,255,.5);font-weight:600}
 .sound-row-desc span{color:#7CAEFF;font-weight:800}
 
-/* iOS-style switch */
 .ios-switch{
-    position:relative;
-    width:52px;height:32px;min-width:52px;
+    position:relative;width:52px;height:32px;min-width:52px;
     background:rgba(120,120,128,.32);
-    border-radius:16px;
-    cursor:pointer;
+    border-radius:16px;cursor:pointer;
     transition:background .3s ease;
     flex-shrink:0;
 }
 .ios-switch::after{
     content:'';position:absolute;
     top:2px;left:2px;
-    width:28px;height:28px;
-    border-radius:50%;
+    width:28px;height:28px;border-radius:50%;
     background:#fff;
     box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16);
     transition:transform .3s cubic-bezier(.4,.4,.25,1.3);
@@ -414,71 +518,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .ios-switch.on{background:#24C38E}
 .ios-switch.on::after{transform:translateX(20px)}
 .ios-switch:active::after{width:32px}
-
-/* ═══ ВЫБОР ШАНСА ═══ */
-.chance-section{
-    margin-top:18px;
-    padding:16px;border-radius:16px;
-    background:rgba(59,130,246,.06);
-    border:1.5px solid rgba(59,130,246,.18);
-}
-.chance-label{
-    font-size:13px;font-weight:800;color:#fff;
-    margin-bottom:12px;
-    display:flex;align-items:center;justify-content:space-between;
-}
-.chance-label-value{color:#7CAEFF;font-size:16px;font-weight:900}
-
-.chance-slider-wrap{
-    position:relative;
-    margin-bottom:14px;
-}
-.chance-slider{
-    width:100%;
-    -webkit-appearance:none;
-    appearance:none;
-    height:6px;
-    border-radius:3px;
-    background:linear-gradient(90deg,#3B82F6,#7CAEFF);
-    outline:none;
-    cursor:pointer;
-    transition:all .15s;
-}
-.chance-slider::-webkit-slider-thumb{
-    -webkit-appearance:none;
-    appearance:none;
-    width:24px;height:24px;
-    border-radius:50%;
-    background:#fff;
-    cursor:pointer;
-    box-shadow:0 3px 8px rgba(0,0,0,.4),0 0 0 3px rgba(59,130,246,.4);
-    transition:transform .15s;
-}
-.chance-slider::-webkit-slider-thumb:active{
-    transform:scale(1.15);
-    box-shadow:0 3px 12px rgba(0,0,0,.5),0 0 0 4px rgba(59,130,246,.6);
-}
-.chance-slider::-moz-range-thumb{
-    width:24px;height:24px;border-radius:50%;background:#fff;cursor:pointer;
-    box-shadow:0 3px 8px rgba(0,0,0,.4),0 0 0 3px rgba(59,130,246,.4);
-    border:none;
-}
-
-.chance-quick{display:flex;gap:6px;flex-wrap:wrap}
-.chance-quick-btn{
-    flex:1;min-width:0;padding:8px 6px;border-radius:10px;
-    border:1.5px solid rgba(59,130,246,.25);
-    background:rgba(59,130,246,.08);
-    color:#7CAEFF;font-size:12px;font-weight:800;
-    cursor:pointer;transition:all .15s;
-    font-family:inherit;
-}
-.chance-quick-btn:active{transform:scale(.94);background:rgba(59,130,246,.2)}
-.chance-quick-btn.active{
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;border-color:#3B82F6;
-    box-shadow:0 4px 12px rgba(59,130,246,.4);
-}
 
 /* DEPOSIT */
 .deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9600;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s;padding:20px}
@@ -518,12 +557,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     .wheel-pointer{width:38px;height:38px;top:-6px}
     .select-card{min-height:150px;padding:12px 10px}
     .select-img-wrap{width:64px;height:64px}
+    .modal-item-img-wrap{width:56px;height:56px}
 }
 </style>
 </head>
 <body>
 
-<!-- CONFETTI CANVAS -->
 <canvas class="confetti-canvas" id="confettiCanvas"></canvas>
 
 <!-- LOADING -->
@@ -623,13 +662,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
                         <stop offset="0%" stop-color="#24C38E"/>
                         <stop offset="100%" stop-color="#10b981"/>
                     </linearGradient>
-                    <filter id="greenGlow">
-                        <feGaussianBlur stdDeviation="4" result="blur"/>
-                        <feMerge>
-                            <feMergeNode in="blur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
                 </defs>
                 <path id="greenPath" d="" fill="none" stroke="url(#greenGrad)" stroke-width="20" stroke-linecap="butt"/>
             </svg>
@@ -656,25 +688,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         </div>
     </div>
 
-    <!-- CHANCE SELECTOR -->
-    <div class="chance-section" id="chanceSection" style="display:none">
-        <div class="chance-label">
-            <span>Шанс апгрейда</span>
-            <span class="chance-label-value" id="chanceSliderValue">10%</span>
-        </div>
-        <div class="chance-slider-wrap">
-            <input type="range" class="chance-slider" id="chanceSlider" min="1" max="75" value="10" step="1">
-        </div>
-        <div class="chance-quick">
-            <button class="chance-quick-btn" onclick="setChancePreset(1)">1%</button>
-            <button class="chance-quick-btn" onclick="setChancePreset(5)">5%</button>
-            <button class="chance-quick-btn" onclick="setChancePreset(10)">10%</button>
-            <button class="chance-quick-btn" onclick="setChancePreset(25)">25%</button>
-            <button class="chance-quick-btn" onclick="setChancePreset(50)">50%</button>
-            <button class="chance-quick-btn" onclick="setChancePreset(75)">75%</button>
-        </div>
-    </div>
-
     <!-- ACTIONS -->
     <div class="actions-row">
         <button class="btn-main" id="upgradeBtn" disabled onclick="doUpgrade()">
@@ -695,7 +708,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
             <button class="settings-close" onclick="closeSettings()">✕</button>
         </div>
 
-        <!-- Звук -->
         <div class="sound-row">
             <div class="sound-row-info">
                 <div class="sound-row-label">
@@ -724,7 +736,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
             </button>
         </div>
 
-        <!-- TON -->
         <div class="bet-ton-section" id="betTonSection">
             <div class="bet-balance-card">
                 <div class="bet-balance-left">
@@ -756,7 +767,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
             <button class="bet-place-btn" id="tonConfirmBtn" onclick="confirmTonBet()" disabled>Поставить</button>
         </div>
 
-        <!-- INVENTORY -->
         <div class="bet-inv-section" id="betInvSection" style="display:none">
             <div class="modal-search-wrap">
                 <input type="text" class="modal-search" id="inventorySearch" placeholder="Поиск подарков..." oninput="filterInventory()">
@@ -767,19 +777,50 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     </div>
 </div>
 
-<!-- TARGETS MODAL -->
+<!-- TARGETS MODAL — с поиском + сеткой + панелью шансов внизу -->
 <div class="modal-overlay" id="targetsModal" onclick="if(event.target===this)closeTargetsModal()">
     <div class="modal-sheet">
         <div class="modal-handle"></div>
         <div class="modal-header">
-            <div class="modal-title-inline"><img src="/static/img/star2.png" alt=""> Желаемый подарок</div>
-            <button class="modal-close" onclick="closeTargetsModal()">✕</button>
+            <div class="modal-title-inline">
+                <img src="/static/img/star2.png" alt="">
+                <span id="targetsTitle">Желаемый подарок</span>
+            </div>
+            <div class="modal-header-btns">
+                <button class="modal-edit-btn" id="editTargetBtn" onclick="toggleEditMode()" title="Редактировать">
+                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="modal-close" onclick="closeTargetsModal()">✕</button>
+            </div>
         </div>
+
+        <!-- Поиск -->
         <div class="modal-search-wrap" style="margin-top:12px">
             <input type="text" class="modal-search" id="targetsSearch" placeholder="Поиск подарков..." oninput="filterTargets()">
             <svg class="modal-search-icon" style="top:44px" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         </div>
+
+        <!-- Сетка подарков -->
         <div class="modal-body"><div class="modal-grid" id="targetsGrid"></div></div>
+
+        <!-- Панель выбора шанса (внизу) -->
+        <div class="chance-panel" id="chancePanel">
+            <div class="chance-panel-header">
+                <span class="chance-panel-title">Шанс апгрейда</span>
+                <span class="chance-panel-value" id="chanceSliderValue">10%</span>
+            </div>
+            <div class="chance-slider-wrap">
+                <input type="range" class="chance-slider" id="chanceSlider" min="1" max="75" value="10" step="1">
+            </div>
+            <div class="chance-quick">
+                <button class="chance-quick-btn" onclick="setChancePreset(1)">1%</button>
+                <button class="chance-quick-btn" onclick="setChancePreset(5)">5%</button>
+                <button class="chance-quick-btn" onclick="setChancePreset(10)">10%</button>
+                <button class="chance-quick-btn" onclick="setChancePreset(25)">25%</button>
+                <button class="chance-quick-btn" onclick="setChancePreset(50)">50%</button>
+                <button class="chance-quick-btn" onclick="setChancePreset(75)">75%</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -831,11 +872,12 @@ var selectedGift = null;
 var targetGift = null;
 var possibleTargets = [];
 var isSpinning = false;
-var currentChance = 10; /* по умолчанию 10% */
-var userChanceOverride = null; /* выбранный вручную шанс */
+var currentChance = 10;
+var userChanceOverride = null;
 var _inventorySearchQ = '';
 var _targetsSearchQ = '';
 var _inventoryCacheTime = 0;
+var _imgCache = {};
 
 var turboMode = localStorage.getItem('upgrade_turbo') === 'on';
 var soundEnabled = localStorage.getItem('upgrade_sound') !== 'off';
@@ -846,6 +888,10 @@ var GOLD_WIN_CHANCE = 0.05;
 var _goldAngle = -1;
 var _goldWidth = 25;
 var _greenAnimRaf = null;
+
+/* Порог для "важной победы" (специальная анимация) */
+var BIG_BET_THRESHOLD = 100 * 100; /* 100 TON в звёздах */
+var BIG_WIN_MULTIPLIER = 3.0;
 
 function $(id){ return document.getElementById(id); }
 
@@ -867,6 +913,15 @@ function isUpgradedGift(gift){
 
 function formatTon(stars){
     return (Number(stars || 0) / 100).toFixed(2);
+}
+
+function getGiftImage(g){
+    if(!g) return '/static/img/gift.png';
+    var key = 'g_' + (g.id || g.gift_key || g.fragment_slug || g.image || 'x');
+    if(_imgCache[key]) return _imgCache[key];
+    var img = g.image || '/static/img/gift.png';
+    _imgCache[key] = img;
+    return img;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1035,7 +1090,7 @@ var _simInterval = setInterval(function(){
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   ЗЕЛЁНАЯ ДУГА — анимация "раскрытия"
+   ЗЕЛЁНАЯ ДУГА — анимация раскрытия
    ══════════════════════════════════════════════════════════════ */
 var CIRCLE_LEN = 2 * Math.PI * 104;
 
@@ -1100,7 +1155,7 @@ function drawGreenArc(chance, animate){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   CHANCE SELECTOR
+   CHANCE
    ══════════════════════════════════════════════════════════════ */
 function updateChanceUI(){
     var val = $('chanceSliderValue');
@@ -1110,19 +1165,21 @@ function updateChanceUI(){
     document.querySelectorAll('.chance-quick-btn').forEach(function(b){
         b.classList.toggle('active', parseInt(b.textContent) === currentChance);
     });
+    var rc = $('rightChance');
+    if(rc && targetGift){
+        rc.textContent = currentChance.toFixed(1) + '%';
+    }
+    var pc = $('chancePct');
+    if(pc && targetGift){
+        pc.textContent = currentChance.toFixed(2) + '%';
+    }
 }
 
 function setChancePreset(pct){
     currentChance = pct;
     userChanceOverride = pct;
     updateChanceUI();
-    /* Пересчитать целевую цену исходя из шанса (target_value = bet_value / (chance/100)) */
-    if(selectedGift && targetGift){
-        recalcTargetFromChance();
-    } else if(selectedGift){
-        /* Найти ближайший подарок под новый шанс */
-        suggestTargetByChance();
-    }
+    if(selectedGift) suggestTargetByChance();
 }
 
 function onSliderChange(){
@@ -1132,23 +1189,6 @@ function onSliderChange(){
     userChanceOverride = currentChance;
     updateChanceUI();
     if(selectedGift) suggestTargetByChance();
-}
-
-function recalcTargetFromChance(){
-    if(!selectedGift || !targetGift) return;
-    var betValue = selectedGift.value;
-    var neededTargetValue = Math.round(betValue / (currentChance / 100));
-    /* Найти ближайший подарок в каталоге */
-    if(!possibleTargets || !possibleTargets.length) return;
-    var best = null;
-    var bestDiff = Infinity;
-    possibleTargets.forEach(function(g){
-        var diff = Math.abs(g.value - neededTargetValue);
-        if(diff < bestDiff){ bestDiff = diff; best = g; }
-    });
-    if(best && bestDiff < neededTargetValue * 0.3){
-        _selectTarget(best, true);
-    }
 }
 
 function suggestTargetByChance(){
@@ -1357,7 +1397,7 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 /* ══════════════════════════════════════════════════════════════
-   INVENTORY
+   INVENTORY (для ставки)
    ══════════════════════════════════════════════════════════════ */
 async function loadInventory(force){
     if(!userId) return;
@@ -1403,6 +1443,7 @@ function renderInventoryModal(){
         var upgraded = isUpgradedGift({ name: it.gift_name, is_upgraded: it.is_upgraded });
         var wrapClass = 'modal-item-img-wrap' + (upgraded ? ' upgraded' : '');
         var imgSrc = it.gift_image || '/static/img/gift.png';
+        /* Только PNG + ИМЯ + ЦЕНА. Никакого "ап" */
         div.innerHTML =
             '<div class="' + wrapClass + '">' +
             '<img src="' + imgSrc + '" alt="" ' +
@@ -1466,7 +1507,7 @@ async function loadPossibleTargets(){
             if(d.success && d.gifts){
                 possibleTargets = [];
                 var minVal = selectedGift.value * 1.2;
-                var maxVal = selectedGift.value * 100; /* от 1% до 75% — до x100 */
+                var maxVal = selectedGift.value * 100;
                 d.gifts.forEach(function(g){
                     var gv = g.value || 0;
                     if(gv > minVal && gv <= maxVal){
@@ -1498,6 +1539,7 @@ async function loadPossibleTargets(){
         possibleTargets.sort(function(a, b){ return a.value - b.value; });
     }catch(e){}
 }
+
 function openTargetsModal(){
     if(isSpinning) return;
     if(!selectedGift){ showToast('Сначала выбери свою ставку', 'err'); return; }
@@ -1515,13 +1557,20 @@ function openTargetsModal(){
     if(m) m.classList.add('show');
     $('targetsSearch').value = '';
     _targetsSearchQ = '';
+    /* Обновить заголовок */
+    var tt = $('targetsTitle');
+    if(tt) tt.textContent = 'Желаемый подарок';
     renderTargetsModal();
+    updateChanceUI();
 }
+
 function closeTargetsModal(){ var m = $('targetsModal'); if(m) m.classList.remove('show'); }
+
 function filterTargets(){
     _targetsSearchQ = ($('targetsSearch').value || '').toLowerCase().trim();
     renderTargetsModal();
 }
+
 function renderTargetsModal(){
     var grid = $('targetsGrid');
     if(!grid) return;
@@ -1541,6 +1590,7 @@ function renderTargetsModal(){
         var upgraded = isUpgradedGift(g);
         var wrapClass = 'modal-item-img-wrap' + (upgraded ? ' upgraded' : '');
         var imgSrc = g.image || '/static/img/gift.png';
+        /* Только PNG + ИМЯ + ЦЕНА. Никакого "ап" */
         div.innerHTML =
             '<div class="' + wrapClass + '">' +
             '<img src="' + imgSrc + '" alt="" ' +
@@ -1548,12 +1598,12 @@ function renderTargetsModal(){
             'onload="this.style.opacity=1;this.parentNode.classList.remove(\'placeholder\')">' +
             '</div>' +
             '<div class="modal-item-name">' + (g.name || 'Gift') + '</div>' +
-            '<div class="modal-item-price"><img src="/static/img/ton.png">' + formatTon(g.value) + '</div>' +
-            '<div class="modal-item-chance">' + g.upgrade_chance + '%</div>';
+            '<div class="modal-item-price"><img src="/static/img/ton.png">' + formatTon(g.value) + '</div>';
         div.onclick = function(){ _selectTarget(g, false); };
         grid.appendChild(div);
     });
 }
+
 function _selectTarget(g, keepChance){
     targetGift = g;
     if(!keepChance || userChanceOverride === null){
@@ -1575,17 +1625,33 @@ function _selectTarget(g, keepChance){
     hideCenterResult();
     drawGreenArc(currentChance, true);
     updateWheel();
-
-    /* Показать секцию выбора шанса */
-    var cs = $('chanceSection');
-    if(cs) cs.style.display = 'block';
     updateChanceUI();
 
-    if(!keepChance) closeTargetsModal();
+    /* Обновить заголовок модалки */
+    var tt = $('targetsTitle');
+    if(tt) tt.textContent = 'Желаемый подарок';
+
+    /* Если выбираем без редактирования — закрываем */
+    if(!keepChance){
+        /* Оставляем открытым — пусть юзер сам закрывает */
+        /* Но подсветим выбранный */
+    }
+}
+
+function toggleEditMode(){
+    /* Просто фокус на слайдер + прокрутка к панели */
+    var panel = $('chancePanel');
+    if(panel){
+        panel.scrollIntoView({behavior:'smooth', block:'end'});
+        panel.style.animation = 'none';
+        panel.offsetHeight;
+        panel.style.animation = 'editPulse 0.6s ease';
+    }
+    showToast('Настройте шанс апгрейда', 'ok');
 }
 
 /* ══════════════════════════════════════════════════════════════
-   WHEEL STATE
+   WHEEL
    ══════════════════════════════════════════════════════════════ */
 function updateWheel(){
     var btn = $('upgradeBtn');
@@ -1687,16 +1753,23 @@ async function doUpgrade(){
     var goldRoll = Math.random() < GOLD_WIN_CHANCE;
     var goldWin = willShowGold && goldRoll && serverWin;
 
-    /* Если шанс <= 5% — специальная замедленная анимация в конце */
+    /* Определяем "важную победу":
+       - шанс <= 5%  ИЛИ
+       - ставка >= 100 TON И коэффициент >= 3x */
     var isLowChance = currentChance <= 5;
+    var betStars = selectedGift.value || 0;
+    var isBigBet = betStars >= BIG_BET_THRESHOLD && serverWin && currentChance <= (100 / BIG_WIN_MULTIPLIER);
+    /* Второй критерий: ставка >= 100 TON и множитель выигрыша >= 3x
+       (т.е. шанс <= 100/3 ≈ 33.3%) */
+    var isSpecialWin = isLowChance || isBigBet;
 
-    spinWheel(result.chance || currentChance, serverWin, willShowGold, goldWin, isLowChance);
+    spinWheel(result.chance || currentChance, serverWin, willShowGold, goldWin, isSpecialWin);
 }
 
 /* ══════════════════════════════════════════════════════════════
    SPIN WHEEL
    ══════════════════════════════════════════════════════════════ */
-function spinWheel(chance, isWin, willShowGold, goldWin, isLowChance){
+function spinWheel(chance, isWin, willShowGold, goldWin, isSpecialWin){
     var rotator = $('wheelRotator');
     var greenArc = $('greenArc');
     var goldArc = $('goldArc');
@@ -1721,7 +1794,6 @@ function spinWheel(chance, isWin, willShowGold, goldWin, isLowChance){
         }, 350);
     }
 
-    /* Определяем целевой угол */
     var greenStart = 0;
     var greenEnd = (chance / 100) * 360;
     var landAngle;
@@ -1770,19 +1842,16 @@ function spinWheel(chance, isWin, willShowGold, goldWin, isLowChance){
     var totalSpin = baseSpin + targetRotation;
 
     var spinDuration = turboMode ? 3200 : 7500;
-    /* Для низкого шанса — более замедленная кривая в конце */
-    var ease;
+    var ease = 'cubic-bezier(.15,.7,.15,1)';
+
     if(turboMode){
         ease = 'cubic-bezier(.45,0,.35,1)';
-    } else if(isLowChance && isWin){
-        /* Очень плавное замедление в конце */
+    } else if(isSpecialWin && isWin){
+        /* ОЧЕНЬ плавное замедление + дольше */
         ease = 'cubic-bezier(.05,.9,.1,1)';
         spinDuration = 8500;
-    } else {
-        ease = 'cubic-bezier(.15,.7,.15,1)';
     }
 
-    /* Тики */
     var tickStartTime = performance.now() + 500;
     var tickEndTime = tickStartTime + spinDuration - 100;
     var lastTickAt = 0;
@@ -1794,8 +1863,7 @@ function spinWheel(chance, isWin, willShowGold, goldWin, isLowChance){
         if(now >= tickStartTime && now <= tickEndTime){
             var progress = (now - tickStartTime) / spinDuration;
             var currentInterval = tickInterval + progress * progress * 400;
-            /* Для низкого шанса — больше тиков в конце */
-            if(isLowChance && progress > 0.7){
+            if(isSpecialWin && progress > 0.7){
                 currentInterval = tickInterval + Math.pow(progress, 3) * 600;
             }
             if(now - lastTickAt > currentInterval){
@@ -1817,7 +1885,7 @@ function spinWheel(chance, isWin, willShowGold, goldWin, isLowChance){
         if(goldArc) goldArc.style.transform = 'rotate(' + totalSpin + 'deg)';
 
         setTimeout(function(){
-            showSpinResult(isWin, goldWin, isLowChance);
+            showSpinResult(isWin, goldWin, isSpecialWin);
         }, spinDuration + 60);
     }, 500);
 }
@@ -1825,7 +1893,7 @@ function spinWheel(chance, isWin, willShowGold, goldWin, isLowChance){
 /* ══════════════════════════════════════════════════════════════
    SHOW RESULT
    ══════════════════════════════════════════════════════════════ */
-function showSpinResult(isWin, isGold, isLowChance){
+function showSpinResult(isWin, isGold, isSpecialWin){
     var flash = $('wheelFlash');
     var centerResult = $('centerResult');
     var wheelCenter = $('wheelCenter');
@@ -1847,18 +1915,18 @@ function showSpinResult(isWin, isGold, isLowChance){
         setTimeout(function(){ wheelWrap.classList.remove('shake'); }, 600);
     }
 
-    /* Победа на низком шансе — сильное свечение */
-    if(isWin && isLowChance && wheelCenter){
+    /* Сильное свечение для special win */
+    if(isWin && isSpecialWin && wheelCenter){
         wheelCenter.classList.add('winning');
-        setTimeout(function(){ wheelCenter.classList.remove('winning'); }, 4000);
+        setTimeout(function(){ wheelCenter.classList.remove('winning'); }, 4500);
     }
 
     if(isGold) playGoldSound();
     else if(isWin) playWinSound();
     else playFailSound();
 
-    /* КОНФЕТТИ при победе на низком шансе */
-    if(isWin && isLowChance){
+    /* КОНФЕТТИ */
+    if(isWin && isSpecialWin){
         startConfetti();
     }
 
@@ -1896,7 +1964,7 @@ function showSpinResult(isWin, isGold, isLowChance){
     }catch(e){}
 
     var resetDelay = isGold ? 4200 : (isWin ? 3000 : 2200);
-    if(isWin && isLowChance) resetDelay = 5000; /* дольше показываем */
+    if(isWin && isSpecialWin) resetDelay = 5000;
     setTimeout(function(){
         hideCenterResult();
         resetAfterSpin();
@@ -1938,10 +2006,6 @@ function resetAfterSpin(){
     var bolt = $('boltBtn');
     if(bolt){ bolt.disabled = true; bolt.classList.remove('enabled','active'); }
 
-    /* Скрыть секцию шансов */
-    var cs = $('chanceSection');
-    if(cs) cs.style.display = 'none';
-
     var rotator = $('wheelRotator');
     var greenArc = $('greenArc');
     var goldArc = $('goldArc');
@@ -1981,7 +2045,6 @@ function startConfetti(){
     var ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
 
-    /* Создаём частицы */
     _confettiParticles = [];
     var colors = ['#FFD700', '#FFA500', '#24C38E', '#3B82F6', '#F96999', '#FF3064', '#FFFFFF', '#7CAEFF'];
     var W = window.innerWidth;
@@ -2004,7 +2067,6 @@ function startConfetti(){
     if(_confettiRaf) cancelAnimationFrame(_confettiRaf);
 
     function loop(now){
-        var elapsed = now - (now - (performance.now() - (now - _confettiEndTime + 3500)));
         var remaining = _confettiEndTime - now;
         ctx.clearRect(0, 0, W, H);
 
@@ -2013,7 +2075,7 @@ function startConfetti(){
             var p = _confettiParticles[i];
             if(p.life <= 0) continue;
             alive++;
-            p.vy += 0.55; /* гравитация */
+            p.vy += 0.55;
             p.vx *= 0.995;
             p.x += p.vx;
             p.y += p.vy;
