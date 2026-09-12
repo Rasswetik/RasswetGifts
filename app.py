@@ -244,6 +244,8 @@ _crash_game_cache = {
     'timestamp': 0
 }
 _crash_cache_lock = threading.Lock()
+_crash_loop_start_lock = threading.Lock()
+_crash_loop_thread = None
 
 # Lock to prevent bets during phase transitions (counting → flying)
 _crash_phase_lock = threading.Lock()
@@ -4231,9 +4233,18 @@ def start_ultimate_crash_loop():
                     logger.debug(f"Loop error: {err_msg}")
                 time.sleep(1)
 
-    thread = threading.Thread(target=game_loop, daemon=True)
-    thread.start()
-    logger.info("✅ Ultimate Crash loop started")
+    global _crash_loop_thread
+    with _crash_loop_start_lock:
+        if _crash_loop_thread is not None and _crash_loop_thread.is_alive():
+            logger.info("ℹ️ Ultimate Crash loop is already running")
+            return
+        _crash_loop_thread = threading.Thread(
+            target=game_loop,
+            name='ultimate-crash-loop',
+            daemon=True
+        )
+        _crash_loop_thread.start()
+        logger.info("✅ Ultimate Crash loop started")
 
 
 def cleanup_old_auth_codes():
