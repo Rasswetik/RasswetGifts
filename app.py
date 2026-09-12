@@ -46,6 +46,18 @@ def _log_startup_config():
 
 # ─── Global state: _user_balance_cache ───
 _user_balance_cache = {}
+_user_cache = {}
+_user_cache_duration = 30
+_USER_BETS_CACHE_TTL = 0.5
+
+def _get_cached_balance(user_id):
+    entry = _user_balance_cache.get(user_id)
+    if entry and time.time() - entry.get('ts', 0) < 0.5:
+        return entry.get('balance')
+    return None
+
+def _set_cached_balance(user_id, balance):
+    _user_balance_cache[user_id] = {'balance': balance, 'ts': time.time()}
 
 
 # Создаем приложение Flask
@@ -74,6 +86,13 @@ FRAGMENT_CACHE_DURATION = int(os.getenv('FRAGMENT_CACHE_DURATION', '900'))
 FRAGMENT_ONLY_CATALOG = os.getenv('FRAGMENT_ONLY_CATALOG', '1') != '0'
 FRAGMENT_ALLOW_LOCAL_ON_FAILURE = os.getenv('FRAGMENT_ALLOW_LOCAL_ON_FAILURE', '1') != '0'
 FRAGMENT_FETCH_BASE = str(os.getenv('FRAGMENT_FETCH_BASE', '') or '').strip().rstrip('/')
+PORTAL_AUTH_TOKEN = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
+PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
+PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
+PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
+PORTAL_SESSION_NAME = os.getenv('PORTAL_SESSION_NAME', 'portal_account')
+PORTAL_WITHDRAW_FEE_STARS = 40
+TON_RATE = 100
 FRAGMENT_DISK_CACHE_FILE = os.path.join(BASE_PATH, 'data', 'fragment_catalog_cache.json')
 fragment_cache = None
 fragment_cache_time = None
@@ -94,6 +113,39 @@ except ImportError as _ie:
     logger.warning(f"⚠️ aportalsmp НЕ установлен: {_ie}. Установи: pip install aportalsmp")
 
 import asyncio as _portal_asyncio
+
+_crash_bots_cache = {
+    'enabled': False,
+    'bots': [],
+    'settings': {'min_active_bots': 2, 'max_active_bots': 5, 'min_real_players_threshold': 3},
+    'loaded': False,
+}
+_crash_bots_active = {}
+
+_site_balance_lock = threading.Lock()
+_site_balance_cache = {'value': 0, 'ts': 0}
+_SITE_BALANCE_TTL = 30
+_last_crash_multipliers = []
+_last_crash_lock = threading.Lock()
+
+def _track_crash_multiplier(mult):
+    with _last_crash_lock:
+        _last_crash_multipliers.append(float(mult))
+        del _last_crash_multipliers[:-5]
+
+def _get_recent_max():
+    with _last_crash_lock:
+        return max(_last_crash_multipliers[-3:], default=0.0)
+
+_BOT_NAMES_RU = ['Алексей', 'Анна', 'Дмитрий', 'Елена', 'Иван', 'Мария', 'Михаил', 'Ольга', 'Сергей', 'Юлия']
+_BOT_NAMES_EN = ['Alex', 'Anna', 'Daniel', 'Emma', 'Jack', 'Liam', 'Olivia', 'Sophia', 'Max', 'Chloe']
+_BOT_LASTNAMES_RU = ['Иванов', 'Петрова', 'Смирнов', 'Кузнецова', 'Попов', 'Соколова']
+_BOT_LASTNAMES_EN = ['Smith', 'Johnson', 'Brown', 'Taylor', 'Wilson', 'Walker']
+_BOT_AVATARS = [
+    'https://i.pravatar.cc/100?img=12',
+    'https://i.pravatar.cc/100?img=13',
+    'https://api.dicebear.com/9.x/adventurer/svg?seed=crash',
+]
 
 # Пути для токена
 PORTAL_TOKEN_FILE = os.path.join(BASE_PATH, 'data', 'portal_token.txt')
@@ -254,6 +306,17 @@ def _portal_extract_items(colls):
         return list(colls)
     except Exception:
         return []
+
+
+# Compatibility aliases used by older Portal routes.
+_extract_items = _portal_extract_items
+_get_portal_auth = _portal_get_token
+
+def _portal_clean_name(name):
+    return re.sub(r'\s+', ' ', str(name or '').strip())
+
+def _portal_fragment_url(short_name, number):
+    return _portal_nft_image_url(short_name, number)
 
 
 def _portal_extract_coll_fields(coll):
@@ -810,16 +873,19 @@ def get_crash_cache():
         return _crash_game_cache.copy()
 
 
-def update_crash_cache(game_id, status, current_mult, target_mult, time_remaining):
-    """Обновление кэша игры (без is_bonus)."""
+def update_crash_cache(game_id, status, current_mult, target_mult, time_remaining, is_bonus=None):
+    """Обновляет кэш игры, сохраняя флаг бонуса для текущего game_id."""
     global _crash_game_cache
     with _crash_cache_lock:
+        previous_bonus = bool(_crash_game_cache.get('is_bonus', False)) if _crash_game_cache.get('id') == game_id else False
+        bonus_flag = bool(is_bonus) if is_bonus is not None else previous_bonus
         _crash_game_cache = {
             'id': game_id,
             'status': status,
             'current_multiplier': round(float(current_mult), 2),
             'target_multiplier': float(target_mult),
             'time_remaining': round(float(time_remaining), 1),
+            'is_bonus': bonus_flag,
             'timestamp': time.time()
         }
 
@@ -867,7 +933,7 @@ def _get_cached_crash_rtp():
 def reset_crash_cache():
     """Сброс кэша краша."""
     try:
-        update_crash_cache(0, 'waiting', 1.0, 5.0, 5.0)
+        update_crash_cache(0, 'waiting', 1.0, 5.0, 5.0, is_bonus=False)
         logger.info("🔄 Crash cache сброшен")
     except Exception as e:
         logger.warning(f"reset_crash_cache: {e}")
@@ -4438,6 +4504,8 @@ def start_ultimate_crash_loop():
                         """, (target_multiplier,))
 
                     new_game_id = cursor.lastrowid
+                    if not new_game_id:
+                        raise RuntimeError('Crash game was inserted but its id was not returned')
                     conn.commit()
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 New game, target={target_multiplier}x, bonus={is_bonus}")
@@ -9693,10 +9761,10 @@ def _validate_portal_initdata_improved(token):
     return True, None
 
 
-
+# Backward-compatible name used by the older Portal routes.
+_validate_portal_initdata = _validate_portal_initdata_improved
 @app.route('/api/portal/token', methods=['GET', 'POST', 'DELETE'])
 def portal_token():
-    """Управление токеном Portal из админки."""
     global _portal_auth_data
     token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
     token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
