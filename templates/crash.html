@@ -393,6 +393,18 @@ body{
 .toggle-switch::after{content:'';position:absolute;width:24px;height:24px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .3s}
 .toggle-switch.on{background:linear-gradient(135deg,#3B82F6,#2563EB)}
 .toggle-switch.on::after{transform:translateX(22px)}
+
+.simple-win-card{display:flex;flex-direction:column;align-items:center;padding:6px 4px 2px;text-align:center}
+.simple-win-title{font-size:12px;font-weight:900;letter-spacing:.18em;color:rgba(255,255,255,.55);margin-bottom:6px}
+.simple-win-multiplier{font-size:34px;font-weight:950;color:#fff;line-height:1;margin-bottom:14px;text-shadow:0 0 24px rgba(255,255,255,.16)}
+.simple-win-gift{width:132px;height:132px;border-radius:28px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 32px rgba(0,0,0,.35);margin-bottom:12px;overflow:hidden}
+.simple-win-gift img{width:100%;height:100%;object-fit:contain;padding:12px;display:block}
+.simple-win-name{font-size:18px;font-weight:900;color:#fff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.simple-win-value{font-size:12px;font-weight:700;color:rgba(255,255,255,.48);margin-top:6px}
+.simple-win-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-top:18px}
+.simple-win-stats>div{padding:12px;border-radius:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:5px}
+.simple-win-stats span{font-size:10px;color:rgba(255,255,255,.4);font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.simple-win-stats b{font-size:15px;color:#fff;font-weight:900}.simple-win-stats b.win{color:#24C38E}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(20,20,20,.95);backdrop-filter:blur(4px);padding:10px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.06);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:7000;color:#fff;font-weight:700;font-size:13px;max-width:90%;text-align:center;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
 .toast.show{opacity:1;visibility:visible}
 .toast.ok{border-color:rgba(30,228,76,.2)}
@@ -473,6 +485,9 @@ body{
 @keyframes goPop{0%{opacity:0;transform:scale(.55);filter:blur(9px)}45%{opacity:1;transform:scale(1.08);filter:blur(0)}100%{opacity:1;transform:scale(1)}}
 #cdDisplay.countdown-hot{color:#fff;text-shadow:0 0 25px rgba(59,130,246,.55),0 0 60px rgba(59,130,246,.25)}
 #cdDisplay.countdown-last{color:#FFD700;text-shadow:0 0 30px rgba(255,215,0,.75),0 0 80px rgba(255,165,0,.25)}
+/* FINAL COUNTDOWN: always clean white 5 4 3 2 1 GO */
+#cdDisplay.countdown-hot,#cdDisplay.countdown-last,#cdDisplay.go{color:#fff!important;text-shadow:0 0 26px rgba(255,255,255,.22),0 0 70px rgba(255,255,255,.10)!important;}
+#cdDisplay.go{font-size:min(78px,19vw);letter-spacing:.08em;}
 .game-field.flying{background-image:radial-gradient(ellipse at 50% 65%,rgba(59,130,246,.11),transparent 55%)}
 .rocket-wrap.flying:after{content:"";position:absolute;left:50%;top:72%;width:26px;height:110px;transform:translateX(-50%) rotate(16deg);background:linear-gradient(180deg,rgba(255,215,0,.8),rgba(255,103,0,.35),transparent);filter:blur(7px);opacity:.75;animation:flamePulse .18s ease-in-out infinite alternate;z-index:-1}
 @keyframes flamePulse{from{height:80px;opacity:.55}to{height:125px;opacity:.95}}
@@ -1256,7 +1271,7 @@ function applyServerState(d){
         // Последний кадр отсчёта уже был 1, теперь явно показываем ИГРА.
         var cdStart = $('cdDisplay');
         if(cdStart){
-            cdStart.textContent = srvBonus ? '🏆 ИГРА' : 'ИГРА';
+            cdStart.textContent = 'GO';
             cdStart.classList.add('active');
         }
         flyingStartedAt = estimateFlyStartFromMult(srvCurMult);
@@ -1456,7 +1471,7 @@ function showGoAnimation(){
     var gf = $('gameField');
     if(!cd) return;
     cd.classList.remove('active','go','countdown-hot','countdown-last');
-    cd.textContent = isBonusRound ? '🏆 ИГРА' : 'ИГРА';
+    cd.textContent = 'GO';
     void cd.offsetWidth;
     cd.classList.add('active','go');
     if(gf) gf.classList.remove('counting');
@@ -2197,175 +2212,46 @@ function showWinSheet(mult, winAmount, serverGifts, giftData){
     var content = $('winContent');
     var sheet = $('winSheet');
     if(!content) return;
-
     if(sheet) sheet.classList.remove('bonus-win');
 
-    var winTon = starsToTon(winAmount);
     var betTon = starsToTon(cashedOutBetAmt);
-
-    var html = '';
-    html += '<div style="text-align:center;margin-bottom:14px">';
-    html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.1));border:1.5px solid rgba(59,130,246,.4)">';
-    html += '<span style="font-weight:900;font-size:28px;color:#3B82F6">' + mult.toFixed(2) + 'x</span>';
-    html += '</div></div>';
-
-    var giftsToShow = [];
-
-    if(giftData && giftData.length > 0){
-        var originalGift = giftData[0];
-        var canReturnDouble = winAmount >= originalGift.value * 2;
-
-        if(canReturnDouble){
-            giftsToShow.push({
-                name: originalGift.name,
-                image: originalGift.image,
-                value: originalGift.value,
-                label: 'Оригинал'
-            });
-            giftsToShow.push({
-                name: originalGift.name + ' (бонус)',
-                image: originalGift.image,
-                value: originalGift.value,
-                label: 'Бонус за выигрыш x2',
-                isBonus: true
-            });
-        } else {
-            giftsToShow.push({
-                name: originalGift.name,
-                image: originalGift.image,
-                value: originalGift.value,
-                label: 'Возврат ставки'
-            });
-        }
-    }
-
-    if(serverGifts && serverGifts.length > 0){
-        serverGifts.forEach(function(g){
-            giftsToShow.push({
-                name: g.name || 'Подарок',
-                image: g.image || '/static/img/gift.png',
-                value: g.value || 0,
-                label: 'Получен подарок'
-            });
-        });
-    }
-
-    if(giftsToShow.length === 0){
+    var winTon = starsToTon(winAmount);
+    var gift = null;
+    if(giftData && giftData.length) gift = giftData[0];
+    if(!gift && serverGifts && serverGifts.length) gift = serverGifts[0];
+    if(!gift){
         var achievable = getAchievableGift(winAmount);
         if(achievable){
-            giftsToShow.push({
-                name: achievable.name || 'Подарок',
-                image: getGiftImage(achievable),
-                value: achievable.value || 0,
-                label: 'Получен подарок'
-            });
+            gift = {name: achievable.name, image: getGiftImage(achievable), value: achievable.value};
         }
     }
+    var image = gift && (gift.image || gift.gift_image) ? (gift.image || gift.gift_image) : '/static/img/gift.png';
+    var name = gift && (gift.name || gift.gift_name) ? (gift.name || gift.gift_name) : 'Выигрыш';
+    var giftValue = gift && gift.value ? formatCrashMoney(gift.value) : formatCrashMoney(winAmount);
 
-    if(giftsToShow.length > 0){
-        html += '<div class="win-gifts-list" id="winGiftsList">';
-        giftsToShow.forEach(function(g, idx){
-            var delay = idx * 0.25;
-            html += '<div class="win-gift-row' + (g.isBonus ? ' bonus-gift' : '') + '" style="animation-delay:' + delay + 's;position:relative">'
-                + '<img class="win-gift-img" src="' + g.image + '" onerror="this.src=\'/static/img/gift.png\'">'
-                + '<div class="win-gift-info">'
-                +   '<div class="win-gift-name">' + g.name + '</div>'
-                +   '<div class="win-gift-label">' + g.label + '</div>'
-                + '</div>'
-                + '<div class="win-gift-value">+' + formatCrashMoney(g.value) + '</div>'
-                + (g.isBonus ? '<div class="win-gift-badge">x2</div>' : '')
-                + '</div>';
-        });
-        html += '</div>';
-    }
-
-    html += '<div style="text-align:center;margin-bottom:12px;margin-top:16px">';
-    html += '<div style="font-weight:800;font-size:22px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
-    html += '<span>+' + formatTon(winTon) + '</span>';
-    html += '<img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'" style="width:20px;height:20px">';
-    html += '</div>';
-    html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Ставка: ' + formatTon(betTon) + ' GRAM</div>';
-    html += '</div>';
-
-    content.innerHTML = html;
+    content.innerHTML = ''
+        + '<div class="simple-win-card">'
+        +   '<div class="simple-win-title">ВЫИГРЫШ</div>'
+        +   '<div class="simple-win-multiplier">×' + Number(mult || 1).toFixed(2) + '</div>'
+        +   '<div class="simple-win-gift">'
+        +     '<img src="' + image + '" alt="" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
+        +   '</div>'
+        +   '<div class="simple-win-name">' + name + '</div>'
+        +   '<div class="simple-win-value">Стоимость подарка: <b>' + giftValue + '</b></div>'
+        +   '<div class="simple-win-stats">'
+        +     '<div><span>Ставка</span><b>' + formatTon(betTon) + ' GRAM</b></div>'
+        +     '<div><span>Выигрыш</span><b class="win">+' + formatTon(winTon) + ' GRAM</b></div>'
+        +   '</div>'
+        + '</div>';
     var wo = $('winOverlay');
     if(wo) wo.classList.add('show');
 }
 
 function showWinSheetBonus(mult, winAmount, originalGift, serverGifts){
-    var content = $('winContent');
+    // Тот же чистый экран, без длинной бонусной карточки.
+    showWinSheet(mult, winAmount, originalGift ? [originalGift] : [], serverGifts || []);
     var sheet = $('winSheet');
-    if(!content) return;
-
     if(sheet) sheet.classList.add('bonus-win');
-
-    var winTon = starsToTon(winAmount);
-    var betTon = starsToTon(cashedOutBetAmt);
-
-    var html = '';
-    html += '<div style="text-align:center;margin-bottom:14px">';
-    html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(255,215,0,.3),rgba(255,165,0,.2));border:2px solid rgba(255,215,0,.6)">';
-    html += '<span style="font-weight:900;font-size:28px;color:#FFD700">🏆 ' + mult.toFixed(2) + 'x × 2</span>';
-    html += '</div></div>';
-
-    var giftsToShow = [];
-
-    if(originalGift){
-        giftsToShow.push({
-            name: originalGift.name,
-            image: originalGift.image,
-            value: originalGift.value,
-            label: 'Возврат вашего подарка'
-        });
-    }
-
-    if(serverGifts && serverGifts.length > 0){
-        serverGifts.forEach(function(g){
-            giftsToShow.push({
-                name: g.name || 'Подарок',
-                image: g.image || '/static/img/gift.png',
-                value: g.value || 0,
-                label: 'Получен подарок'
-            });
-        });
-    }
-
-    giftsToShow.push({
-        name: 'Gold Plane',
-        image: '/static/gifs/rockets/goldenplane.gif',
-        value: Math.floor(winAmount * 0.5),
-        label: '🏆 BONUS награда',
-        isBonus: true
-    });
-
-    if(giftsToShow.length > 0){
-        html += '<div class="win-gifts-list" id="winGiftsList">';
-        giftsToShow.forEach(function(g, idx){
-            var delay = idx * 0.25;
-            html += '<div class="win-gift-row' + (g.isBonus ? ' bonus-gift' : '') + '" style="animation-delay:' + delay + 's;position:relative">'
-                + '<img class="win-gift-img" src="' + g.image + '" onerror="this.src=\'/static/img/gift.png\'">'
-                + '<div class="win-gift-info">'
-                +   '<div class="win-gift-name">' + g.name + '</div>'
-                +   '<div class="win-gift-label">' + g.label + '</div>'
-                + '</div>'
-                + '<div class="win-gift-value">+' + formatCrashMoney(g.value) + '</div>'
-                + (g.isBonus ? '<div class="win-gift-badge">x2</div>' : '')
-                + '</div>';
-        });
-        html += '</div>';
-    }
-
-    html += '<div style="text-align:center;margin-bottom:12px;margin-top:16px">';
-    html += '<div style="font-weight:900;font-size:26px;color:#FFD700;display:flex;align-items:center;justify-content:center;gap:6px;text-shadow:0 0 20px rgba(255,215,0,.6)">';
-    html += '<span>+' + formatTon(winTon) + '</span>';
-    html += '<img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'" style="width:22px;height:22px">';
-    html += '</div>';
-    html += '<div style="font-size:12px;color:rgba(255,215,0,.7);margin-top:4px;font-weight:700">🏆 ДВОЙНАЯ ВЫПЛАТА! Ставка: ' + formatTon(betTon) + ' GRAM</div>';
-    html += '</div>';
-
-    content.innerHTML = html;
-    var wo = $('winOverlay');
-    if(wo) wo.classList.add('show');
 }
 
 function closeWin(){
@@ -2468,7 +2354,11 @@ async function loadHistory(){
         if(!bar || !coeff) return;
         bar.innerHTML = '';
         bar.appendChild(coeff);
+        var seenRoundIds = new Set();
         d.history.forEach(function(h){
+            var roundKey = h.game_id != null ? String(h.game_id) : String(h.id);
+            if(seenRoundIds.has(roundKey)) return;
+            seenRoundIds.add(roundKey);
             var m = parseFloat(h.final_multiplier);
             var isB = h.is_bonus || false;
             var p = document.createElement('div');
