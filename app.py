@@ -765,6 +765,138 @@ def _sync_levels_from_db():
     except Exception as e:
         logger.error(f"❌ Ошибка загрузки уровней из БД: {e}")
 
+
+
+# ══════════════════════════════════════════════════════════════
+# ★ ВОССТАНОВЛЕННЫЕ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И ФУНКЦИИ КРАША
+# ══════════════════════════════════════════════════════════════
+
+# In-memory кэш игры краша
+_crash_game_cache = {
+    'id': 0,
+    'status': 'waiting',
+    'current_multiplier': 1.0,
+    'target_multiplier': 5.0,
+    'time_remaining': 5.0,
+    'timestamp': 0
+}
+_crash_cache_lock = threading.Lock()
+_crash_loop_start_lock = threading.Lock()
+_crash_loop_thread = None
+
+# Lock для переходов фаз (counting → flying)
+_crash_phase_lock = threading.Lock()
+_crash_phase_transitioning = False
+
+# Admin control
+_admin_crash_control = {
+    'manual_mode': False,
+    'force_crash': False,
+    'next_multiplier': None,
+    'multiplier_min': 1.0,
+    'multiplier_max': 50.0,
+    'use_custom_range': False
+}
+_admin_control_lock = threading.Lock()
+
+# RTP
+TARGET_RTP = 0.80
+_crash_rtp_cache = {'value': TARGET_RTP * 100, 'ts': 0}
+
+
+def get_crash_cache():
+    """Потокобезопасное чтение кэша игры."""
+    with _crash_cache_lock:
+        return _crash_game_cache.copy()
+
+
+def update_crash_cache(game_id, status, current_mult, target_mult, time_remaining):
+    """Обновление кэша игры (без is_bonus)."""
+    global _crash_game_cache
+    with _crash_cache_lock:
+        _crash_game_cache = {
+            'id': game_id,
+            'status': status,
+            'current_multiplier': round(float(current_mult), 2),
+            'target_multiplier': float(target_mult),
+            'time_remaining': round(float(time_remaining), 1),
+            'timestamp': time.time()
+        }
+
+
+def get_admin_crash_control():
+    with _admin_control_lock:
+        return _admin_crash_control.copy()
+
+
+def set_admin_crash_control(key, value):
+    global _admin_crash_control
+    with _admin_control_lock:
+        _admin_crash_control[key] = value
+
+
+def refresh_crash_bet_cache(game_id, target_multiplier=5.0):
+    """Обновляет кэш после ставки."""
+    try:
+        update_crash_cache(game_id, 'counting', 1.0, float(target_multiplier), 5.0)
+    except Exception:
+        pass
+
+
+def _get_cached_crash_rtp():
+    """Кэшированный RTP (обновляется раз в 30 сек)."""
+    now = time.time()
+    if now - _crash_rtp_cache['ts'] < 30:
+        return _crash_rtp_cache['value']
+    try:
+        conn = _quick_db_conn(3)
+        cur = conn.cursor()
+        cur.execute('SELECT COALESCE(SUM(bet_amount),0) FROM ultimate_crash_bets')
+        total_bets = cur.fetchone()[0]
+        cur.execute("SELECT COALESCE(SUM(win_amount),0) FROM ultimate_crash_bets WHERE status='cashed_out'")
+        total_wins = cur.fetchone()[0]
+        conn.close()
+        rtp = round((total_wins / total_bets * 100) if total_bets > 0 else TARGET_RTP * 100, 1)
+        _crash_rtp_cache['value'] = rtp
+        _crash_rtp_cache['ts'] = now
+        return rtp
+    except Exception:
+        return _crash_rtp_cache['value']
+
+
+def reset_crash_cache():
+    """Сброс кэша краша."""
+    try:
+        update_crash_cache(0, 'waiting', 1.0, 5.0, 5.0)
+        logger.info("🔄 Crash cache сброшен")
+    except Exception as e:
+        logger.warning(f"reset_crash_cache: {e}")
+
+
+# ══════════════════════════════════════════════════════════════
+# ★ ВОССТАНОВЛЕННЫЕ PORTAL ПЕРЕМЕННЫЕ
+# ══════════════════════════════════════════════════════════════
+
+PORTAL_SYNC_ENABLED = os.getenv('PORTAL_SYNC_ENABLED', '1') != '0'
+PORTAL_SYNC_INTERVAL_MINUTES = int(os.getenv('PORTAL_SYNC_INTERVAL_MINUTES', '10'))
+
+# Fragment HTTP session
+_fragment_http_session = None
+_fragment_http_session_lock = threading.Lock()
+fragment_last_error = None
+
+
+def start_portal_price_sync_loop():
+    """Заглушка — автосинк Portal отключён (включается вручную)."""
+    logger.info("Portal price sync loop: отключён (ручной режим)")
+    return
+
+
+# ══════════════════════════════════════════════════════════════
+# ★ КОНЕЦ ВОССТАНОВЛЕННОГО БЛОКА
+# ══════════════════════════════════════════════════════════════
+
+
 # ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
 
 def allowed_file(filename):
