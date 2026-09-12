@@ -21,6 +21,9 @@ body{
     overflow-x:hidden;
     overscroll-behavior-y:contain;
 }
+body.bonus-active{
+    background-image:radial-gradient(ellipse 100% 60% at 50% 0%, #3a2a08 0%, #1C2233 60%);
+}
 .container{
     max-width:480px;margin:0 auto;
     min-height:100vh;display:flex;flex-direction:column;
@@ -106,9 +109,48 @@ body{
 .top-right-btns{display:flex;gap:8px;align-items:center}
 
 /* ═══ GAME FIELD ═══ */
-.game-field{margin:0 12px;border-radius:20px;background:#0B1120;border:1px solid rgba(59,130,246,.12);position:relative;overflow:hidden;min-height:280px;aspect-ratio:10/9;display:flex;align-items:center;justify-content:center;z-index:1}
-.game-field::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(99,160,255,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(99,160,255,.28) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:1}
+.game-field{margin:0 12px;border-radius:20px;background:#0B1120;border:1px solid rgba(59,130,246,.12);position:relative;overflow:hidden;min-height:280px;aspect-ratio:10/9;display:flex;align-items:center;justify-content:center;z-index:1;transition:background .5s,box-shadow .5s}
+.game-field::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(99,160,255,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(99,160,255,.28) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:1;transition:background-image .5s}
 .game-field.flying{box-shadow:inset 0 0 80px rgba(59,130,246,.06),0 0 30px rgba(59,130,246,.08)}
+.game-field.bonus-mode{
+    background:radial-gradient(ellipse at center, #2a1f08 0%, #0B1120 100%);
+    border-color:rgba(255,215,0,.5);
+    box-shadow:inset 0 0 120px rgba(255,215,0,.15),0 0 60px rgba(255,215,0,.3);
+    animation:bonusGlow 2s ease-in-out infinite;
+}
+.game-field.bonus-mode::before{
+    background:linear-gradient(rgba(255,215,0,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(255,215,0,.15) 1px,transparent 1px);
+    background-size:48px 48px;
+    animation:bonusGridPulse 3s ease-in-out infinite;
+}
+@keyframes bonusGlow{
+    0%,100%{box-shadow:inset 0 0 120px rgba(255,215,0,.15),0 0 60px rgba(255,215,0,.3)}
+    50%{box-shadow:inset 0 0 160px rgba(255,215,0,.25),0 0 90px rgba(255,215,0,.5)}
+}
+@keyframes bonusGridPulse{
+    0%,100%{opacity:.6}
+    50%{opacity:1}
+}
+
+/* BONUS BADGE */
+.bonus-badge{
+    position:absolute;top:12px;left:50%;transform:translateX(-50%);
+    z-index:20;
+    background:linear-gradient(135deg,#FFD700,#FFA500);
+    color:#000;font-weight:900;font-size:11px;
+    padding:5px 14px;border-radius:20px;
+    letter-spacing:1.5px;
+    box-shadow:0 4px 20px rgba(255,215,0,.6);
+    opacity:0;transform:translateX(-50%) scale(0.5);
+    transition:opacity .4s,transform .4s;
+    pointer-events:none;
+    text-transform:uppercase;
+}
+.bonus-badge.show{opacity:1;transform:translateX(-50%) scale(1);animation:badgePulse 1.2s ease-in-out infinite}
+@keyframes badgePulse{
+    0%,100%{box-shadow:0 4px 20px rgba(255,215,0,.6)}
+    50%{box-shadow:0 4px 30px rgba(255,215,0,1),0 0 40px rgba(255,215,0,.6)}
+}
 
 /* COUNTDOWN */
 .countdown-display{font-weight:900;font-size:min(180px,38vw);color:rgba(255,255,255,.9);position:absolute;z-index:4;user-select:none;line-height:1;text-shadow:0 0 60px rgba(255,255,255,.15);opacity:0;pointer-events:none}
@@ -117,9 +159,19 @@ body{
 
 /* ROCKET */
 .rocket-wrap{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);z-index:2;transition:opacity .3s;opacity:1;will-change:transform,opacity}
-.rocket-wrap img{width:170px;height:170px;object-fit:contain;border:none;background:transparent;transition:transform .3s ease-out;will-change:transform;transform:translateZ(0)}
+.rocket-wrap img{width:170px;height:170px;object-fit:contain;border:none;background:transparent;transition:transform .3s ease-out,opacity .3s;will-change:transform;transform:translateZ(0)}
 .rocket-wrap.hide{opacity:0;pointer-events:none}
 .rocket-wrap.flying img{transform:rotate(18deg) translateZ(0)}
+.rocket-wrap.gift-mode img{
+    width:130px;height:130px;
+    border-radius:20px;
+    box-shadow:0 0 30px rgba(59,130,246,.4);
+    animation:giftPulse 1.5s ease-in-out infinite;
+}
+@keyframes giftPulse{
+    0%,100%{transform:scale(1) rotate(0deg);box-shadow:0 0 30px rgba(59,130,246,.4)}
+    50%{transform:scale(1.05) rotate(-3deg);box-shadow:0 0 50px rgba(59,130,246,.7)}
+}
 
 /* BOOM */
 .boom-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;display:none;align-items:center;justify-content:center;will-change:transform,opacity}
@@ -132,13 +184,25 @@ body{
 /* ═══ BET AREA ═══ */
 .bet-area{padding:8px 12px 4px;position:relative;z-index:100}
 
-.action-btn{width:100%;padding:15px;border-radius:16px;border:2px solid rgba(6,182,212,.3);font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(135deg,#06B6D4,#3B82F6);color:#fff;box-shadow:0 8px 25px rgba(6,182,212,.25);letter-spacing:.5px;text-transform:uppercase;transition:transform .12s, background .2s, box-shadow .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-height:54px;display:flex;align-items:center;justify-content:center;gap:10px}
+.action-btn{width:100%;padding:15px;border-radius:16px;border:2px solid rgba(6,182,212,.3);font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(135deg,#06B6D4,#3B82F6);color:#fff;box-shadow:0 8px 25px rgba(6,182,212,.25);letter-spacing:.5px;text-transform:uppercase;transition:transform .12s, background .3s, box-shadow .3s, border-color .3s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-height:54px;display:flex;align-items:center;justify-content:center;gap:10px;position:relative;overflow:hidden}
 .action-btn:disabled{opacity:.4;cursor:default;transform:none !important}
 .action-btn:not(:disabled):active{transform:scale(.98)}
 .action-btn .btn-text{display:inline-block;pointer-events:none}
 .action-btn.state-cancel{background:linear-gradient(135deg,#E8527A,#C42247);box-shadow:0 8px 25px rgba(232,82,122,.25);border-color:rgba(232,82,122,.3)}
 .action-btn.state-placed{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);box-shadow:none;border-color:rgba(255,255,255,.08);cursor:default}
 .action-btn.state-cashout{background:linear-gradient(135deg,#1EE44C,#18b83e);color:#061510;box-shadow:0 12px 35px rgba(30,228,76,.35);border-color:rgba(30,228,76,.5);padding:12px 14px;justify-content:space-between}
+/* BONUS CASHOUT - золотой градиент */
+.action-btn.state-cashout.bonus-cashout{
+    background:linear-gradient(135deg,#FFD700 0%,#FFA500 50%,#FF8C00 100%);
+    color:#000;
+    box-shadow:0 12px 45px rgba(255,215,0,.7),0 0 60px rgba(255,215,0,.4);
+    border-color:rgba(255,215,0,.8);
+    animation:bonusCashoutPulse 1.5s ease-in-out infinite;
+}
+@keyframes bonusCashoutPulse{
+    0%,100%{box-shadow:0 12px 45px rgba(255,215,0,.7),0 0 60px rgba(255,215,0,.4)}
+    50%{box-shadow:0 12px 60px rgba(255,215,0,1),0 0 100px rgba(255,215,0,.7)}
+}
 .action-btn.state-crashed{background:linear-gradient(135deg,#E8527A,#C42247);color:#fff;box-shadow:0 12px 35px rgba(232,82,122,.35);border-color:rgba(232,82,122,.5);cursor:default;pointer-events:none;padding:12px 14px;justify-content:space-between}
 .action-btn.state-syncing{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;cursor:wait;pointer-events:none;padding:12px 14px;justify-content:space-between}
 
@@ -151,9 +215,19 @@ body{
     background:rgba(0,0,0,.25);
     padding:0;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 3px 10px rgba(0,0,0,.35);
-    transition:opacity .25s,transform .2s;
+    transition:opacity .35s,transform .35s,filter .35s;
     display:none;
     overflow:hidden;
+    animation:giftSideAppear .4s cubic-bezier(.22,.9,.2,1);
+}
+@keyframes giftSideAppear{
+    0%{opacity:0;transform:scale(.3) rotate(-15deg)}
+    60%{opacity:1;transform:scale(1.1) rotate(5deg)}
+    100%{opacity:1;transform:scale(1) rotate(0deg)}
+}
+.action-btn .cb-gift-side.fade-out{
+    opacity:0;
+    transform:scale(.3) rotate(15deg);
 }
 .action-btn.state-cashout .cb-gift-side{display:block}
 .action-btn.state-crashed .cb-gift-side{display:block;opacity:.5;filter:grayscale(.5)}
@@ -177,9 +251,12 @@ body{
 .h-pill.mid{background:rgba(30,228,76,.12);color:#1EE44C;border:1px solid rgba(30,228,76,.2)}
 .h-pill.high{background:rgba(255,200,0,.12);color:#FFC800;border:1px solid rgba(255,200,0,.2)}
 .h-pill.mega{background:rgba(255,200,0,.18);color:#FFD700;border:1px solid rgba(255,200,0,.3);font-weight:800}
+.h-pill.bonus{background:linear-gradient(135deg,rgba(255,215,0,.3),rgba(255,165,0,.2));color:#FFD700;border:1px solid rgba(255,215,0,.5);font-weight:900;animation:hPillBonus 2s ease-in-out infinite}
+@keyframes hPillBonus{0%,100%{box-shadow:0 0 8px rgba(255,215,0,.4)}50%{box-shadow:0 0 16px rgba(255,215,0,.8)}}
 .coeff-box{display:inline-flex;align-items:center;gap:6px;background:rgba(30,228,76,.15);border:1px solid rgba(30,228,76,.3);border-radius:20px;padding:4px 11px;font-weight:800;font-size:12px;color:#1EE44C;margin-right:4px;flex-shrink:0}
 .coeff-box.crashed{background:rgba(220,60,80,.2);color:#F96999;border-color:rgba(249,105,153,.3)}
 .coeff-box.waiting{background:rgba(30,228,76,.15);color:#1EE44C}
+.coeff-box.bonus{background:linear-gradient(135deg,rgba(255,215,0,.25),rgba(255,165,0,.15));color:#FFD700;border-color:rgba(255,215,0,.5);animation:hPillBonus 1.5s ease-in-out infinite}
 
 /* ═══ BETS ═══ */
 .bets-section{padding:4px 12px 24px}
@@ -199,7 +276,6 @@ body{
 .bet-name{font-weight:700;font-size:12px;color:#fff;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bet-amt{font-size:11px;color:rgba(140,160,190,.7);font-weight:600;display:flex;align-items:center;gap:5px}
 
-/* Gift preview in bet row — PNG style */
 .bet-amt .bet-gift-preview{
     width:22px;height:22px;
     object-fit:cover;
@@ -255,30 +331,10 @@ body{
 .inv-card{background:linear-gradient(160deg,rgba(59,130,246,.06),rgba(59,130,246,.02));border:1.5px solid rgba(59,130,246,.15);border-radius:14px;padding:6px;text-align:center;cursor:pointer;transition:all .15s;position:relative;display:flex;flex-direction:column;overflow:hidden}
 .inv-card.selected{border-color:#3B82F6;background:rgba(59,130,246,.18);box-shadow:0 0 0 2px rgba(59,130,246,.4)}
 .inv-card.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
-
-/* Улучшенный (NFT) — картинка с закруглением */
-.inv-card.upgraded{
-    border-color:rgba(139,92,246,.4);
-    background:linear-gradient(160deg,rgba(139,92,246,.1),rgba(99,102,241,.03));
-}
-.inv-card-img-wrap{
-    width:100%;aspect-ratio:1/1;
-    border-radius:10px;
-    overflow:hidden;
-    position:relative;
-    background:rgba(0,0,0,.2);
-    margin-bottom:4px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
-}
-.inv-card-img-wrap img{
-    width:100%;height:100%;
-    object-fit:cover;
-    display:block;
-    border-radius:10px;
-    transition:transform .2s;
-}
+.inv-card.upgraded{border-color:rgba(139,92,246,.4);background:linear-gradient(160deg,rgba(139,92,246,.1),rgba(99,102,241,.03))}
+.inv-card-img-wrap{width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;position:relative;background:rgba(0,0,0,.2);margin-bottom:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+.inv-card-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;border-radius:10px;transition:transform .2s}
 .inv-card:active .inv-card-img-wrap img{transform:scale(1.05)}
-
 .inv-card .inv-name{font-weight:700;font-size:10px;color:rgba(255,255,255,.85);padding:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inv-card .inv-val{font-weight:800;font-size:11px;color:#8CA0BE;padding:3px 4px;display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(59,130,246,.08);border-radius:6px;margin-top:2px}
 .inv-card .inv-val img{width:12px;height:12px;aspect-ratio:auto;border-radius:0;background:none;padding:0;margin:0}
@@ -296,9 +352,63 @@ body{
 /* ═══ WIN SHEET ═══ */
 .win-overlay{position:fixed;bottom:0;left:0;right:0;z-index:6000;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s,transform .4s cubic-bezier(.16,1,.3,1);transform:translateY(100%);pointer-events:none}
 .win-overlay.show{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
-.win-sheet{background:linear-gradient(180deg,#1e2433 0%,#151920 100%);border-radius:20px 20px 0 0;padding:12px 20px calc(24px + env(safe-area-inset-bottom,0));border-top:2px solid rgba(59,130,246,.25);max-width:480px;margin:0 auto}
+.win-sheet{background:linear-gradient(180deg,#1e2433 0%,#151920 100%);border-radius:20px 20px 0 0;padding:12px 20px calc(24px + env(safe-area-inset-bottom,0));border-top:2px solid rgba(59,130,246,.25);max-width:480px;margin:0 auto;max-height:85vh;overflow-y:auto}
+.win-sheet.bonus-win{border-top-color:#FFD700;background:linear-gradient(180deg,#2a2210 0%,#151208 100%)}
 .win-sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:0 auto 14px}
-.win-collect-btn{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:800;font-size:15px;cursor:pointer;margin-top:4px}
+.win-collect-btn{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:800;font-size:15px;cursor:pointer;margin-top:14px}
+
+/* WIN GIFTS LIST — последовательное появление PNG */
+.win-gifts-list{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.win-gift-row{
+    display:flex;align-items:center;gap:12px;
+    padding:12px;
+    background:rgba(255,255,255,.04);
+    border:1.5px solid rgba(59,130,246,.15);
+    border-radius:14px;
+    opacity:0;
+    transform:translateX(-30px) scale(0.9);
+    animation:giftRowAppear .5s cubic-bezier(.22,.9,.2,1) forwards;
+}
+.win-gift-row.bonus-gift{
+    border-color:rgba(255,215,0,.4);
+    background:rgba(255,215,0,.06);
+    box-shadow:0 0 20px rgba(255,215,0,.15);
+}
+@keyframes giftRowAppear{
+    0%{opacity:0;transform:translateX(-30px) scale(.9)}
+    60%{opacity:1;transform:translateX(5px) scale(1.02)}
+    100%{opacity:1;transform:translateX(0) scale(1)}
+}
+.win-gift-img{
+    width:60px;height:60px;flex-shrink:0;
+    border-radius:12px;
+    object-fit:cover;
+    background:rgba(0,0,0,.25);
+    border:1.5px solid rgba(255,255,255,.1);
+    box-shadow:0 4px 14px rgba(0,0,0,.4);
+}
+.win-gift-row.bonus-gift .win-gift-img{
+    border-color:rgba(255,215,0,.5);
+    box-shadow:0 4px 20px rgba(255,215,0,.4);
+}
+.win-gift-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.win-gift-name{font-weight:800;font-size:14px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.win-gift-label{font-size:11px;color:rgba(255,255,255,.5);font-weight:600}
+.win-gift-row.bonus-gift .win-gift-label{color:#FFD700}
+.win-gift-value{
+    font-weight:800;font-size:13px;color:#7CAEFF;
+    display:flex;align-items:center;gap:4px;
+    flex-shrink:0;
+}
+.win-gift-value img{width:14px;height:14px}
+.win-gift-badge{
+    position:absolute;top:-6px;right:-6px;
+    background:linear-gradient(135deg,#FFD700,#FFA500);
+    color:#000;font-weight:900;font-size:9px;
+    padding:3px 8px;border-radius:10px;
+    letter-spacing:.5px;
+    box-shadow:0 2px 8px rgba(255,215,0,.5);
+}
 
 /* ═══ AUTO WITHDRAW MODAL ═══ */
 .autowd-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:6500;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
@@ -383,10 +493,60 @@ body{
 .toast.show{opacity:1;visibility:visible}
 .toast.ok{border-color:rgba(30,228,76,.2)}
 .toast.err{border-color:rgba(249,105,153,.2)}
+.toast.bonus{background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;border-color:#FFD700;animation:toastBonus 1.5s ease-in-out infinite}
+@keyframes toastBonus{0%,100%{box-shadow:0 8px 30px rgba(255,215,0,.5)}50%{box-shadow:0 8px 45px rgba(255,215,0,1)}}
+
+/* BONUS OVERLAY ANNOUNCEMENT */
+.bonus-announce{
+    position:fixed;inset:0;z-index:8000;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.75);
+    opacity:0;visibility:hidden;
+    transition:opacity .4s,visibility .4s;
+    pointer-events:none;
+}
+.bonus-announce.show{opacity:1;visibility:visible}
+.bonus-announce-inner{
+    text-align:center;
+    transform:scale(.5);
+    transition:transform .5s cubic-bezier(.22,1.5,.5,1);
+}
+.bonus-announce.show .bonus-announce-inner{transform:scale(1)}
+.bonus-announce-emoji{
+    font-size:80px;
+    display:block;
+    margin-bottom:16px;
+    animation:bonusEmojiBounce 1s ease-in-out infinite;
+}
+@keyframes bonusEmojiBounce{
+    0%,100%{transform:translateY(0) scale(1)}
+    50%{transform:translateY(-15px) scale(1.1)}
+}
+.bonus-announce-title{
+    font-size:32px;font-weight:900;
+    background:linear-gradient(135deg,#FFD700,#FFA500,#FFD700);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    filter:drop-shadow(0 4px 20px rgba(255,215,0,.6));
+    animation:bonusTitleShine 2s ease-in-out infinite;
+}
+@keyframes bonusTitleShine{
+    0%,100%{filter:drop-shadow(0 4px 20px rgba(255,215,0,.6))}
+    50%{filter:drop-shadow(0 4px 40px rgba(255,215,0,1))}
+}
+.bonus-announce-sub{
+    font-size:14px;color:#FFD700;font-weight:700;
+    margin-top:10px;letter-spacing:3px;
+    text-transform:uppercase;
+}
 
 @media(max-width:400px){
     .countdown-display{font-size:min(150px,34vw)}
     .rocket-wrap img{width:150px;height:150px}
+    .rocket-wrap.gift-mode img{width:110px;height:110px}
     .boom-wrap img{width:170px;height:170px}
     .bet-row{padding:6px 8px}
     .bet-avatar{width:30px;height:30px;font-size:11px}
@@ -395,6 +555,8 @@ body{
     .bets-list{max-height:220px}
     .cb-center .cb-win{font-size:17px}
     .action-btn .cb-gift-side{width:40px;height:40px}
+    .bonus-announce-emoji{font-size:60px}
+    .bonus-announce-title{font-size:24px}
 }
 </style>
 </head>
@@ -414,6 +576,15 @@ body{
     </div>
     <div class="ld-txt" id="ldTxt">LOADING 0%</div>
     <div class="ld-progress"><div class="ld-progress-bar" id="ldProgressBar"></div></div>
+</div>
+
+<!-- BONUS ANNOUNCE -->
+<div class="bonus-announce" id="bonusAnnounce">
+    <div class="bonus-announce-inner">
+        <span class="bonus-announce-emoji">🏆</span>
+        <div class="bonus-announce-title">BONUS ROUND</div>
+        <div class="bonus-announce-sub">Двойная выплата!</div>
+    </div>
 </div>
 
 <div class="container">
@@ -442,6 +613,7 @@ body{
     </div>
 
     <div class="game-field" id="gameField">
+        <div class="bonus-badge" id="bonusBadge">🏆 BONUS ROUND 🏆</div>
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="rocket-wrap hide" id="rocketWrap">
             <img src="/static/gifs/rockets/crash.gif" alt="" id="rocketImg">
@@ -598,7 +770,7 @@ body{
 
 <!-- WIN SHEET -->
 <div class="win-overlay" id="winOverlay">
-    <div class="win-sheet">
+    <div class="win-sheet" id="winSheet">
         <div class="win-sheet-handle"></div>
         <div id="winContent"></div>
         <button class="win-collect-btn" onclick="closeWin()">Получить</button>
@@ -622,6 +794,7 @@ var gameId = 0;
 var status = 'waiting';
 var prevStatus = 'waiting';
 var targetMult = 5.0;
+var isBonusRound = false;
 
 /* ═══ TIME-BASED MATH ═══ */
 var flyingStartedAt = 0;
@@ -636,6 +809,7 @@ var _serverFloor = 1.0;
 var hasBet = false;
 var betAmt = 0;
 var betGiftImg = null;
+var betGiftData = null;
 var cashedOut = false;
 var cashedOutBetAmt = 0;
 var pendingBet = null;
@@ -654,6 +828,8 @@ var _rafLast = 0;
 var _lastCoeffUpdate = 0;
 var _lastBtnUpdate = 0;
 var _lastRocketUpdate = 0;
+var _lastGiftImgUpdate = 0;
+var _currentGiftImgSrc = null;
 
 var lastBetsHash = '';
 var betsGeneration = 0;
@@ -684,6 +860,8 @@ var _lastPingMs = 0;
 var _pingSamples = [];
 
 var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
+
+var BONUS_GIFT = { name: 'Gold Plane', image: '/static/gifs/rockets/goldenplane.gif' };
 
 function $(id){ return document.getElementById(id); }
 
@@ -726,6 +904,26 @@ function updatePingUI(ms){
     pill.classList.remove('medium','high');
     if(ms > 400) pill.classList.add('high');
     else if(ms > 150) pill.classList.add('medium');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FULLSCREEN INIT (Telegram Mini App)
+   ══════════════════════════════════════════════════════════════ */
+function initFullscreen(){
+    if(typeof Telegram === 'undefined' || !Telegram.WebApp) return;
+    try{
+        var tg = Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        if(tg.requestFullscreen){
+            try{ tg.requestFullscreen(); }catch(e){}
+        }
+        if(tg.disableVerticalSwipes){
+            try{ tg.disableVerticalSwipes(); }catch(e){}
+        }
+        try{ tg.setHeaderColor('#1C2233'); }catch(e){}
+        try{ tg.setBackgroundColor('#1C2233'); }catch(e){}
+    }catch(e){}
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -796,8 +994,6 @@ async function initAuth(){
                 var tg = Telegram.WebApp;
                 tg.ready();
                 tg.expand();
-                try{ tg.setHeaderColor('#1C2233'); }catch(e){}
-                try{ tg.setBackgroundColor('#1C2233'); }catch(e){}
                 var u = tg.initDataUnsafe.user;
                 if(u){
                     userData = {
@@ -886,7 +1082,11 @@ function getRocketSrc(){ return '/static/gifs/rockets/' + currentRocket + '.gif'
 function applyRocket(){
     var img = $('rocketImg');
     if(!img) return;
-    img.src = getRocketSrc();
+    if(isBonusRound){
+        img.src = '/static/gifs/rockets/goldenplane.gif';
+    } else {
+        img.src = getRocketSrc();
+    }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -961,15 +1161,7 @@ function getAchievableGift(potentialWin){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ★★★ NEW: TIME-BASED MULTIPLIER CURVE ★★★
-   
-   Точные требования:
-   - 1.00x → 1.10x : 3 секунды  (быстро, но заметно)
-   - 1.10x → 1.50x : 4 секунды  (умеренно)
-   - 1.50x → 2.00x : 4 секунды  (умеренно)
-   - 2.00x → 4.00x : ~8 секунд  (стандарт)
-   - 4.00x → 10.0x : ~6 секунд  (ускорение)
-   - 10.0x+        : 1 unit/sec (быстро)
+   TIME-BASED MULTIPLIER CURVE
    ══════════════════════════════════════════════════════════════ */
 function computeLocalMult(elapsedMs){
     var t = elapsedMs / 1000;
@@ -977,22 +1169,16 @@ function computeLocalMult(elapsedMs){
 
     var m;
     if(t < 3){
-        // 1.00 → 1.10 за 3 сек
         m = 1.0 + (t / 3) * 0.10;
     } else if(t < 7){
-        // 1.10 → 1.50 за 4 сек (с 3с до 7с)
         m = 1.10 + ((t - 3) / 4) * 0.40;
     } else if(t < 11){
-        // 1.50 → 2.00 за 4 сек (с 7с до 11с)
         m = 1.50 + ((t - 7) / 4) * 0.50;
     } else if(t < 19){
-        // 2.00 → 4.00 за 8 сек (с 11с до 19с)
         m = 2.00 + ((t - 11) / 8) * 2.00;
     } else if(t < 25){
-        // 4.00 → 10.0 за 6 сек (с 19с до 25с)
         m = 4.00 + ((t - 19) / 6) * 6.00;
     } else {
-        // 10.0+ → +1 в секунду
         m = 10.0 + (t - 25) * 1.0;
     }
 
@@ -1001,7 +1187,6 @@ function computeLocalMult(elapsedMs){
     return m;
 }
 
-/* Обратная функция: по множителю получить elapsed_ms */
 function estimateFlyStartFromMult(serverMult){
     var t;
     if(serverMult <= 1.0) t = 0;
@@ -1043,7 +1228,7 @@ async function pollStatus(){
         var d = await r.json();
 
         updatePingUI(pingMs);
-        _pollDelay = 500;
+        _pollDelay = 400;
 
         if(d && d.game) applyServerState(d);
     }catch(e){
@@ -1060,6 +1245,49 @@ function scheduleNextPoll(){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   BONUS ROUND LOGIC
+   ══════════════════════════════════════════════════════════════ */
+function setBonusMode(active){
+    if(isBonusRound === active) return;
+    isBonusRound = active;
+    
+    var gf = $('gameField');
+    var badge = $('bonusBadge');
+    var body = document.body;
+    
+    if(active){
+        if(gf) gf.classList.add('bonus-mode');
+        if(badge) badge.classList.add('show');
+        if(body) body.classList.add('bonus-active');
+        showBonusAnnounce();
+        applyRocket();
+        showToast('🏆 BONUS ROUND! Двойная выплата!', 'bonus');
+    } else {
+        if(gf) gf.classList.remove('bonus-mode');
+        if(badge) badge.classList.remove('show');
+        if(body) body.classList.remove('bonus-active');
+        applyRocket();
+    }
+    
+    _lastBtnKey = '';
+    updateActionButton();
+}
+
+function showBonusAnnounce(){
+    var ann = $('bonusAnnounce');
+    if(!ann) return;
+    ann.classList.add('show');
+    try{
+        if(typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
+            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        }
+    }catch(e){}
+    setTimeout(function(){
+        ann.classList.remove('show');
+    }, 2500);
+}
+
+/* ══════════════════════════════════════════════════════════════
    APPLY SERVER STATE
    ══════════════════════════════════════════════════════════════ */
 function applyServerState(d){
@@ -1071,11 +1299,15 @@ function applyServerState(d){
     var srvCurMult = parseFloat(g.current_multiplier) || 1.0;
     var srvTarget = parseFloat(g.target_multiplier) || 5.0;
     var srvTimeRem = parseFloat(g.time_remaining) || 0;
+    var srvBonus = !!g.is_bonus;
 
     var isNewRound = (gameId !== 0) && (newGameId !== gameId);
 
     if(isNewRound){
         resetRoundState();
+        setBonusMode(srvBonus);
+    } else if(status === 'waiting' && newStatus === 'counting'){
+        setBonusMode(srvBonus);
     }
 
     prevStatus = status;
@@ -1136,6 +1368,7 @@ function applyServerState(d){
         servMult = srvCurMult;
         _serverFloor = srvCurMult;
         triggerCrashAnimation(srvCurMult);
+        setTimeout(function(){ setBonusMode(false); }, 2000);
     }
 
     // BALANCE
@@ -1182,6 +1415,7 @@ function resetRoundState(){
     _syncingWin = false;
     crashHandled = false;
     _lastBtnKey = '';
+    _currentGiftImgSrc = null;
 
     var rw = $('rocketWrap');
     var bm = $('boomWrap');
@@ -1189,7 +1423,7 @@ function resetRoundState(){
     var gf = $('gameField');
     var coeff = $('coeffBox');
 
-    if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','showing-gift','cashed-out'); }
+    if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','showing-gift','cashed-out','gift-mode'); }
     if(bm){ bm.classList.remove('playing'); }
     if(cd){ cd.classList.remove('active'); cd.textContent = ''; }
     if(gf) gf.classList.remove('flying');
@@ -1249,6 +1483,7 @@ function triggerCrashAnimation(finalMult){
     hasBet = false;
     betAmt = 0;
     betGiftImg = null;
+    betGiftData = null;
 
     updateActionButton();
 }
@@ -1259,7 +1494,7 @@ function triggerCrashAnimation(finalMult){
 function showGoAnimation(){
     var cd = $('cdDisplay');
     if(!cd) return;
-    cd.textContent = 'GO';
+    cd.textContent = isBonusRound ? '🏆' : 'GO';
     cd.classList.remove('active');
     void cd.offsetWidth;
     cd.classList.add('active');
@@ -1268,7 +1503,7 @@ function showGoAnimation(){
             cd.classList.remove('active');
             cd.textContent = '';
         }
-    }, 450);
+    }, 500);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1282,14 +1517,14 @@ function updateGameFieldUI(){
     var cd = $('cdDisplay');
 
     if(status === 'waiting' || status === 'counting'){
-        if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
+        if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','gift-mode'); }
         var ri = $('rocketImg');
         if(ri) ri.style.transform = '';
         if(bm) bm.classList.remove('playing');
         if(gf) gf.classList.remove('flying');
         if(coeff){
-            coeff.className = 'coeff-box waiting';
-            coeff.textContent = 'Waiting';
+            coeff.className = 'coeff-box waiting' + (isBonusRound ? ' bonus' : '');
+            coeff.textContent = isBonusRound ? '🏆 BONUS' : 'Waiting';
         }
     } else if(status === 'flying'){
         if(rw) rw.classList.remove('hide');
@@ -1319,7 +1554,7 @@ function updateActionButton(){
 
     if(_syncingWin){
         newState = 'syncing';
-        var cgS = getAchievableGift(cashedOutBetAmt * servMult);
+        var cgS = getAchievableGift(cashedOutBetAmt * servMult * (isBonusRound ? 2 : 1));
         var cgiS = cgS ? getGiftImage(cgS) : '/static/img/gift.png';
         html = '<img class="cb-gift-side empty" src="' + cgiS + '" alt="">'
             + '<div class="cb-center"><span class="cb-label">Syncing</span>'
@@ -1337,13 +1572,23 @@ function updateActionButton(){
         disabled = true;
     } else if(hasBet && !cashedOut && status === 'flying'){
         newState = 'cashout';
+        var bonusMult = isBonusRound ? 2 : 1;
         var curWin = Math.floor((betAmt || 0) * dispMult);
-        var achievable = getAchievableGift(curWin);
+        var totalWin = curWin * bonusMult;
+        var achievable = getAchievableGift(totalWin);
         var giftSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
         var isEmpty = !achievable ? ' empty' : '';
+        
+        var label = isBonusRound ? '🏆 CASH OUT x2' : 'Cash OUT';
+        
+        // Анимация появления/исчезновения подарка
+        if(_currentGiftImgSrc !== giftSrc){
+            _currentGiftImgSrc = giftSrc;
+        }
+        
         html = '<img class="cb-gift-side' + isEmpty + '" src="' + giftSrc + '" alt="">'
-            + '<div class="cb-center"><span class="cb-label">Cash OUT</span>'
-            + '<span class="cb-win">' + formatCrashMoney(curWin) + '</span></div>'
+            + '<div class="cb-center"><span class="cb-label">' + label + '</span>'
+            + '<span class="cb-win">' + formatCrashMoney(totalWin) + '</span></div>'
             + '<img class="cb-gift-side' + isEmpty + '" src="' + giftSrc + '" alt="">';
     } else if(hasBet){
         newState = 'placed';
@@ -1362,7 +1607,8 @@ function updateActionButton(){
 
     // Точечное обновление cashout
     if(newState === 'cashout' && btn.classList.contains('state-cashout')){
-        var curWin2 = Math.floor((betAmt || 0) * dispMult);
+        var bonusMult2 = isBonusRound ? 2 : 1;
+        var curWin2 = Math.floor((betAmt || 0) * dispMult) * bonusMult2;
         var winEl = btn.querySelector('.cb-win');
         if(winEl){
             var winText = formatCrashMoney(curWin2);
@@ -1373,27 +1619,46 @@ function updateActionButton(){
         var isEmpty2 = !achievable2;
         var lG = btn.querySelector('.cb-gift-side:first-child');
         var rG = btn.querySelector('.cb-gift-side:last-child');
+        
         if(lG && lG.dataset.src !== giftSrc2){
-            lG.dataset.src = giftSrc2;
-            lG.src = giftSrc2;
-            lG.classList.toggle('empty', isEmpty2);
+            lG.classList.add('fade-out');
+            setTimeout(function(){
+                lG.dataset.src = giftSrc2;
+                lG.src = giftSrc2;
+                lG.classList.toggle('empty', isEmpty2);
+                lG.classList.remove('fade-out');
+            }, 200);
         }
         if(rG && rG.dataset.src !== giftSrc2){
-            rG.dataset.src = giftSrc2;
-            rG.src = giftSrc2;
-            rG.classList.toggle('empty', isEmpty2);
+            rG.classList.add('fade-out');
+            setTimeout(function(){
+                rG.dataset.src = giftSrc2;
+                rG.src = giftSrc2;
+                rG.classList.toggle('empty', isEmpty2);
+                rG.classList.remove('fade-out');
+            }, 200);
+        }
+        
+        // Обновляем класс bonus-cashout
+        if(isBonusRound){
+            btn.classList.add('bonus-cashout');
+        } else {
+            btn.classList.remove('bonus-cashout');
         }
         return;
     }
 
-    var key = newState + '|' + (disabled ? '1' : '0');
+    var key = newState + '|' + (disabled ? '1' : '0') + '|' + (isBonusRound ? 'b' : '');
     if(_lastBtnKey === key) return;
     _lastBtnKey = key;
 
     btn.className = 'action-btn';
     if(newState === 'cancel') btn.classList.add('state-cancel');
     else if(newState === 'placed') btn.classList.add('state-placed');
-    else if(newState === 'cashout') btn.classList.add('state-cashout');
+    else if(newState === 'cashout'){
+        btn.classList.add('state-cashout');
+        if(isBonusRound) btn.classList.add('bonus-cashout');
+    }
     else if(newState === 'crashed') btn.classList.add('state-crashed');
     else if(newState === 'syncing') btn.classList.add('state-syncing');
 
@@ -1567,6 +1832,7 @@ async function confirmStarsBet(){
     hasBet = true;
     betAmt = amt;
     betGiftImg = null;
+    betGiftData = null;
     userData.balance_stars = (userData.balance_stars || 0) - amt;
     updateBalanceUI();
     closeBetModal();
@@ -1660,7 +1926,6 @@ async function processPendingBet(){
             return;
         }
     } else if(bet.type === 'multi' || bet.type === 'gift'){
-        // GIFT bet for next round
         var giftIds = bet.inventoryIds || [];
         if(!giftIds.length){
             pendingBet = null;
@@ -1798,7 +2063,7 @@ function updateSelectedSummary(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ★★★ CONFIRM GIFT BET — теперь работает "на след. раунд" ★★★
+   CONFIRM GIFT BET
    ══════════════════════════════════════════════════════════════ */
 async function confirmGiftBet(){
     if(_giftLocked) return;
@@ -1811,7 +2076,6 @@ async function confirmGiftBet(){
     var giftIds = sGifts.map(function(g){ return g.id; });
     var firstImg = sGifts[0] ? sGifts[0].image : null;
 
-    // ★ FLYING — ставка на след. раунд (gift version)
     if(status === 'flying'){
         pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
         closeBetModal();
@@ -1822,7 +2086,6 @@ async function confirmGiftBet(){
         return;
     }
 
-    // COUNTING — если мало времени — на след. раунд
     if(status === 'counting' && countingStartedAt > 0){
         var elapsed = (performance.now() - countingStartedAt) / 1000;
         var remaining = countingDuration - elapsed;
@@ -1840,6 +2103,7 @@ async function confirmGiftBet(){
     hasBet = true;
     betAmt = totalValue;
     betGiftImg = firstImg;
+    betGiftData = sGifts;
     closeBetModal();
     clearSelectedGifts();
     updateActionButton();
@@ -1890,10 +2154,12 @@ async function doCashout(){
     if(_cashoutLocked) return;
     _cashoutLocked = true;
 
+    var bonusMult = isBonusRound ? 2 : 1;
     var localMult = dispMult;
-    var instantWin = Math.floor(betAmt * localMult);
+    var instantWin = Math.floor(betAmt * localMult) * bonusMult;
 
     var savedBetAmt = betAmt;
+    var savedGiftData = betGiftData;
     cashedOutBetAmt = betAmt;
     cashedOut = true;
     hasBet = false;
@@ -1904,7 +2170,8 @@ async function doCashout(){
 
     var bodyData = {
         user_id: userData.id,
-        client_mult: localMult
+        client_mult: localMult,
+        is_bonus: isBonusRound
     };
     if(autoWithdrawGift && autoWithdrawGift.id != null){
         bodyData.preferred_gift_id = autoWithdrawGift.id;
@@ -1914,6 +2181,7 @@ async function doCashout(){
     }
 
     var serverOk = false;
+    var serverGifts = [];
     var ac = new AbortController();
     var tId = setTimeout(function(){ ac.abort(); }, 6000);
 
@@ -1934,6 +2202,7 @@ async function doCashout(){
             autoWithdrawGift = null;
             saveAutoWithdrawGift();
             updateAutoWithdrawButton();
+            serverGifts = d.awarded_gifts || [];
         } else {
             showToast(d.error || 'Ошибка синхронизации', 'err');
         }
@@ -1947,24 +2216,40 @@ async function doCashout(){
     }
 
     if(serverOk){
-        showWinSheet(localMult, instantWin);
+        // Проверяем: был ли это подарок, и есть ли двойная выплата
+        var isGiftBet = savedGiftData && savedGiftData.length > 0;
+        var originalGift = isGiftBet ? savedGiftData[0] : null;
+        
+        if(isBonusRound && isGiftBet && originalGift){
+            // Бонус раунд + ставка подарком: возвращаем оригинал + бонусный подарок
+            showWinSheetBonus(localMult, instantWin, originalGift, serverGifts);
+        } else if(isBonusRound){
+            showWinSheetBonus(localMult, instantWin, null, serverGifts);
+        } else {
+            showWinSheet(localMult, instantWin, serverGifts, isGiftBet ? savedGiftData : null);
+        }
     } else {
         cashedOut = false;
         hasBet = true;
         betAmt = savedBetAmt;
+        betGiftData = savedGiftData;
     }
 
     updateActionButton();
 }
 
-function showWinSheet(mult, winAmount){
+/* ══════════════════════════════════════════════════════════════
+   WIN SHEET (обычный)
+   ══════════════════════════════════════════════════════════════ */
+function showWinSheet(mult, winAmount, serverGifts, giftData){
     var content = $('winContent');
+    var sheet = $('winSheet');
     if(!content) return;
+    
+    if(sheet) sheet.classList.remove('bonus-win');
+    
     var winTon = starsToTon(winAmount);
     var betTon = starsToTon(cashedOutBetAmt);
-    var cashGift = getAchievableGift(winAmount);
-    var giftImg = cashGift ? getGiftImage(cashGift) : null;
-    var giftName = cashGift ? (cashGift.name || '') : '';
 
     var html = '';
     html += '<div style="text-align:center;margin-bottom:14px">';
@@ -1972,26 +2257,176 @@ function showWinSheet(mult, winAmount){
     html += '<span style="font-weight:900;font-size:28px;color:#3B82F6">' + mult.toFixed(2) + 'x</span>';
     html += '</div></div>';
 
-    if(giftImg){
-        html += '<div style="display:flex;justify-content:center;margin-bottom:16px">';
-        html += '<div style="width:170px;height:170px;border-radius:24px;background:radial-gradient(circle,rgba(59,130,246,.15),transparent 70%);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;overflow:hidden">';
-        html += '<img src="' + giftImg + '" onerror="this.src=\'/static/img/gift.png\'" style="width:100%;height:100%;object-fit:cover;border-radius:20px;filter:drop-shadow(0 8px 24px rgba(0,0,0,.5))">';
-        html += '</div></div>';
+    // Собираем список подарков для отображения
+    var giftsToShow = [];
+    
+    // Если была ставка подарком, и сумма выигрыша >= стоимости подарка — показываем 2 подарка
+    if(giftData && giftData.length > 0){
+        var originalGift = giftData[0];
+        var canReturnDouble = winAmount >= originalGift.value * 2;
+        
+        if(canReturnDouble){
+            giftsToShow.push({
+                name: originalGift.name,
+                image: originalGift.image,
+                value: originalGift.value,
+                label: 'Оригинал'
+            });
+            giftsToShow.push({
+                name: originalGift.name + ' (бонус)',
+                image: originalGift.image,
+                value: originalGift.value,
+                label: 'Бонус за выигрыш x2',
+                isBonus: true
+            });
+        } else {
+            giftsToShow.push({
+                name: originalGift.name,
+                image: originalGift.image,
+                value: originalGift.value,
+                label: 'Возврат ставки'
+            });
+        }
+    }
+    
+    // Добавляем серверные подарки
+    if(serverGifts && serverGifts.length > 0){
+        serverGifts.forEach(function(g){
+            giftsToShow.push({
+                name: g.name || 'Подарок',
+                image: g.image || '/static/img/gift.png',
+                value: g.value || 0,
+                label: 'Получен подарок'
+            });
+        });
+    }
+    
+    // Если нет подарков, но есть выигрыш — показываем звёзды
+    if(giftsToShow.length === 0){
+        var achievable = getAchievableGift(winAmount);
+        if(achievable){
+            giftsToShow.push({
+                name: achievable.name || 'Подарок',
+                image: getGiftImage(achievable),
+                value: achievable.value || 0,
+                label: 'Получен подарок'
+            });
+        }
     }
 
-    html += '<div style="text-align:center;margin-bottom:12px">';
+    // Показываем подарки с задержкой для анимации
+    if(giftsToShow.length > 0){
+        html += '<div class="win-gifts-list" id="winGiftsList">';
+        giftsToShow.forEach(function(g, idx){
+            var delay = idx * 0.25;
+            html += '<div class="win-gift-row' + (g.isBonus ? ' bonus-gift' : '') + '" style="animation-delay:' + delay + 's;position:relative">'
+                + '<img class="win-gift-img" src="' + g.image + '" onerror="this.src=\'/static/img/gift.png\'">'
+                + '<div class="win-gift-info">'
+                +   '<div class="win-gift-name">' + g.name + '</div>'
+                +   '<div class="win-gift-label">' + g.label + '</div>'
+                + '</div>'
+                + '<div class="win-gift-value">+' + formatCrashMoney(g.value) + '</div>'
+                + (g.isBonus ? '<div class="win-gift-badge">x2</div>' : '')
+                + '</div>';
+        });
+        html += '</div>';
+    }
+
+    html += '<div style="text-align:center;margin-bottom:12px;margin-top:16px">';
     html += '<div style="font-weight:800;font-size:22px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
     html += '<span>+' + formatTon(winTon) + '</span>';
     html += '<img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'" style="width:20px;height:20px">';
     html += '</div>';
-    html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Ставка: ' + formatTon(betTon) + ' GRAM';
-    if(giftName) html += ' · ' + giftName;
-    html += '</div></div>';
+    html += '<div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:4px">Ставка: ' + formatTon(betTon) + ' GRAM</div>';
+    html += '</div>';
 
     content.innerHTML = html;
     var wo = $('winOverlay');
     if(wo) wo.classList.add('show');
 }
+
+/* ══════════════════════════════════════════════════════════════
+   BONUS WIN SHEET (двойная выплата)
+   ══════════════════════════════════════════════════════════════ */
+function showWinSheetBonus(mult, winAmount, originalGift, serverGifts){
+    var content = $('winContent');
+    var sheet = $('winSheet');
+    if(!content) return;
+    
+    if(sheet) sheet.classList.add('bonus-win');
+    
+    var winTon = starsToTon(winAmount);
+    var betTon = starsToTon(cashedOutBetAmt);
+
+    var html = '';
+    html += '<div style="text-align:center;margin-bottom:14px">';
+    html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(255,215,0,.3),rgba(255,165,0,.2));border:2px solid rgba(255,215,0,.6);animation:bonusCashoutPulse 1.5s ease-in-out infinite">';
+    html += '<span style="font-weight:900;font-size:28px;color:#FFD700">🏆 ' + mult.toFixed(2) + 'x × 2</span>';
+    html += '</div></div>';
+
+    var giftsToShow = [];
+    
+    // Оригинальный подарок
+    if(originalGift){
+        giftsToShow.push({
+            name: originalGift.name,
+            image: originalGift.image,
+            value: originalGift.value,
+            label: 'Возврат вашего подарка'
+        });
+    }
+    
+    // Серверные подарки
+    if(serverGifts && serverGifts.length > 0){
+        serverGifts.forEach(function(g){
+            giftsToShow.push({
+                name: g.name || 'Подарок',
+                image: g.image || '/static/img/gift.png',
+                value: g.value || 0,
+                label: 'Получен подарок'
+            });
+        });
+    }
+    
+    // Бонусный подарок (золотой самолёт)
+    giftsToShow.push({
+        name: 'Gold Plane',
+        image: '/static/gifs/rockets/goldenplane.gif',
+        value: Math.floor(winAmount * 0.5),
+        label: '🏆 BONUS награда',
+        isBonus: true
+    });
+
+    if(giftsToShow.length > 0){
+        html += '<div class="win-gifts-list" id="winGiftsList">';
+        giftsToShow.forEach(function(g, idx){
+            var delay = idx * 0.25;
+            html += '<div class="win-gift-row' + (g.isBonus ? ' bonus-gift' : '') + '" style="animation-delay:' + delay + 's;position:relative">'
+                + '<img class="win-gift-img" src="' + g.image + '" onerror="this.src=\'/static/img/gift.png\'">'
+                + '<div class="win-gift-info">'
+                +   '<div class="win-gift-name">' + g.name + '</div>'
+                +   '<div class="win-gift-label">' + g.label + '</div>'
+                + '</div>'
+                + '<div class="win-gift-value">+' + formatCrashMoney(g.value) + '</div>'
+                + (g.isBonus ? '<div class="win-gift-badge">x2</div>' : '')
+                + '</div>';
+        });
+        html += '</div>';
+    }
+
+    html += '<div style="text-align:center;margin-bottom:12px;margin-top:16px">';
+    html += '<div style="font-weight:900;font-size:26px;color:#FFD700;display:flex;align-items:center;justify-content:center;gap:6px;text-shadow:0 0 20px rgba(255,215,0,.6)">';
+    html += '<span>+' + formatTon(winTon) + '</span>';
+    html += '<img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'" style="width:22px;height:22px">';
+    html += '</div>';
+    html += '<div style="font-size:12px;color:rgba(255,215,0,.7);margin-top:4px;font-weight:700">🏆 ДВОЙНАЯ ВЫПЛАТА! Ставка: ' + formatTon(betTon) + ' GRAM</div>';
+    html += '</div>';
+
+    content.innerHTML = html;
+    var wo = $('winOverlay');
+    if(wo) wo.classList.add('show');
+}
+
 function closeWin(){
     var wo = $('winOverlay');
     if(wo) wo.classList.remove('show');
@@ -2039,7 +2474,6 @@ async function loadBets(){
             var avatar = hasPhoto ? '<img src="' + b.photo_url + '" alt="">' : ini;
             var stCls = 'active';
 
-            // Определяем preview картинку подарка — с поддержкой NFT
             var previewSrc = null;
             var isGiftBet = b.bet_type === 'gift';
             if(isGiftBet){
@@ -2095,13 +2529,15 @@ async function loadHistory(){
         bar.appendChild(coeff);
         d.history.forEach(function(h){
             var m = parseFloat(h.final_multiplier);
+            var isB = h.is_bonus || false;
             var p = document.createElement('div');
             var c = 'low';
-            if(m >= 5) c = 'mega';
+            if(isB) c = 'bonus';
+            else if(m >= 5) c = 'mega';
             else if(m >= 3) c = 'high';
             else if(m >= 1.5) c = 'mid';
             p.className = 'h-pill ' + c;
-            p.textContent = m.toFixed(2) + 'x';
+            p.textContent = (isB ? '🏆 ' : '') + m.toFixed(2) + 'x';
             bar.appendChild(p);
         });
     }catch(e){}
@@ -2316,6 +2752,10 @@ function toggleShowGiftsClick(){
     var el = $('showGiftsToggle');
     if(el) el.classList.toggle('on', showGifts);
     showToast(showGifts ? 'Подарки включены' : 'Только ракета', 'ok');
+    // Применяем сразу
+    applyRocket();
+    _lastBtnKey = '';
+    updateActionButton();
 }
 function renderSettings(){
     var rg = $('rocketGrid');
@@ -2386,6 +2826,7 @@ async function payWithStars(){
    INIT
    ══════════════════════════════════════════════════════════════ */
 async function init(){
+    initFullscreen();
     await initAuth();
     applyRocket();
 
