@@ -11,60 +11,14 @@
 <script src="/static/js/telegram-auth.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
-body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1C2233;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
+html{height:100%}
+body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1C2233;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;overscroll-behavior-y:contain}
+.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:90px;padding-top:calc(env(safe-area-inset-top,20px) + 40px)}
 
-/* Всё приподнято на 40px вверх от прошлого */
-.container{
-    max-width:480px;
-    margin:0 auto;
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    position:relative;
-    padding-bottom:90px;
-    padding-top:calc(env(safe-area-inset-top,20px) + 40px);
-}
-
-/* ══════════════ BOTTOM NAV — центрирование по вертикали ══════════════ */
-.bottom-nav{
-    position:fixed;
-    bottom:0;left:50%;
-    transform:translateX(-50%);
-    z-index:4000;
-    width:100%;max-width:480px;
-    height:76px;
-    padding:0 8px calc(env(safe-area-inset-bottom,0) + 6px);
-    background:rgba(28,34,51,.92);
-    backdrop-filter:blur(6px);
-    -webkit-backdrop-filter:blur(6px);
-    border-top:1px solid rgba(59,130,246,.08);
-    display:flex;
-    align-items:center;
-    justify-content:space-around;
-}
-.bottom-nav-item{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;      /* центрируем по вертикали */
-    gap:3px;
-    padding:6px 14px;
-    border-radius:12px;
-    background:transparent;
-    border:none;
-    color:rgba(255,255,255,.4);
-    font-family:inherit;
-    font-weight:600;
-    cursor:pointer;
-    transition:all .3s;
-    text-decoration:none;
-    position:relative;
-    min-height:56px;             /* чтобы иконка+текст центрировались */
-    height:56px;
-    margin:auto 0;               /* центрируем относительно строки */
-}
-.bottom-nav-item svg{width:22px;height:22px;flex-shrink:0;stroke:currentColor;fill:none}
+/* ══════════════ BOTTOM NAV ══════════════ */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:4000;width:100%;max-width:480px;height:76px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 6px);background:rgba(28,34,51,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-top:1px solid rgba(59,130,246,.08);display:flex;align-items:center;justify-content:space-around}
+.bottom-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 14px;border-radius:12px;background:transparent;border:none;color:rgba(255,255,255,.4);font-family:inherit;font-weight:600;cursor:pointer;transition:all .3s;text-decoration:none;position:relative;min-height:56px;height:56px;margin:auto 0}
+.bottom-nav-item svg{width:22px;height:22px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2}
 .bottom-nav-item span{font-size:10px;font-weight:600;line-height:1}
 .bottom-nav-item.active{background:rgba(255,255,255,.08);color:#fff}
 .bottom-nav-item:active{transform:scale(.9)}
@@ -128,109 +82,31 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 @keyframes boomPlay{0%{transform:translate(-50%,-50%) scale(.1);opacity:0}8%{transform:translate(-50%,-50%) scale(1.25);opacity:1}15%{transform:translate(-50%,-50%) scale(1);opacity:1}75%{transform:translate(-50%,-50%) scale(1);opacity:1}100%{transform:translate(-50%,-50%) scale(1.4);opacity:0}}
 @keyframes boomImgPlay{0%{transform:scale(0) rotate(-30deg);opacity:0}8%{transform:scale(1.3) rotate(10deg);opacity:1}15%{transform:scale(1) rotate(0deg);opacity:1}75%{transform:scale(1) rotate(0deg);opacity:1}100%{transform:scale(1.2) rotate(0deg);opacity:0}}
 
-/* BET AREA — ЕДИНАЯ КНОПКА */
+/* BET AREA */
 .bet-area{padding:8px 12px 4px;position:relative;z-index:100}
 
-.action-btn{
-    width:100%;
-    padding:15px;
-    border-radius:16px;
-    border:2px solid rgba(6,182,212,.3);
-    font-family:inherit;
-    font-weight:800;
-    font-size:15px;
-    cursor:pointer;
-    background:linear-gradient(135deg,#06B6D4,#3B82F6);
-    color:#fff;
-    box-shadow:0 8px 25px rgba(6,182,212,.25);
-    letter-spacing:.5px;
-    text-transform:uppercase;
-    transition:transform .12s, background .2s, box-shadow .2s;
-    -webkit-tap-highlight-color:transparent;
-    touch-action:manipulation;
-    min-height:54px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:10px;
-}
+.action-btn{width:100%;padding:15px;border-radius:16px;border:2px solid rgba(6,182,212,.3);font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(135deg,#06B6D4,#3B82F6);color:#fff;box-shadow:0 8px 25px rgba(6,182,212,.25);letter-spacing:.5px;text-transform:uppercase;transition:transform .12s, background .2s, box-shadow .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;min-height:54px;display:flex;align-items:center;justify-content:center;gap:10px}
 .action-btn:disabled{opacity:.4;cursor:default;transform:none !important}
 .action-btn:not(:disabled):active{transform:scale(.98)}
 .action-btn .btn-text{display:inline-block;pointer-events:none}
+.action-btn.state-cancel{background:linear-gradient(135deg,#E8527A,#C42247);box-shadow:0 8px 25px rgba(232,82,122,.25);border-color:rgba(232,82,122,.3)}
+.action-btn.state-placed{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);box-shadow:none;border-color:rgba(255,255,255,.08);cursor:default}
+.action-btn.state-cashout{background:linear-gradient(135deg,#1EE44C,#18b83e);color:#061510;box-shadow:0 12px 35px rgba(30,228,76,.35);border-color:rgba(30,228,76,.5);padding:12px 14px;justify-content:space-between}
+.action-btn.state-crashed{background:linear-gradient(135deg,#E8527A,#C42247);color:#fff;box-shadow:0 12px 35px rgba(232,82,122,.35);border-color:rgba(232,82,122,.5);cursor:default;pointer-events:none;padding:12px 14px;justify-content:space-between}
+.action-btn.state-syncing{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;cursor:wait;pointer-events:none;padding:12px 14px;justify-content:space-between}
 
-.action-btn.state-cancel{
-    background:linear-gradient(135deg,#E8527A,#C42247);
-    box-shadow:0 8px 25px rgba(232,82,122,.25);
-    border-color:rgba(232,82,122,.3);
-}
-.action-btn.state-placed{
-    background:rgba(255,255,255,.05);
-    color:rgba(255,255,255,.35);
-    box-shadow:none;
-    border-color:rgba(255,255,255,.08);
-    cursor:default;
-}
-.action-btn.state-cashout{
-    background:linear-gradient(135deg,#1EE44C,#18b83e);
-    color:#061510;
-    box-shadow:0 12px 35px rgba(30,228,76,.35);
-    border-color:rgba(30,228,76,.5);
-    padding:12px 14px;
-    justify-content:space-between;
-}
-.action-btn.state-crashed{
-    background:linear-gradient(135deg,#E8527A,#C42247);
-    color:#fff;
-    box-shadow:0 12px 35px rgba(232,82,122,.35);
-    border-color:rgba(232,82,122,.5);
-    cursor:default;
-    pointer-events:none;
-    padding:12px 14px;
-    justify-content:space-between;
-}
-.action-btn.state-syncing{
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;
-    cursor:wait;
-    pointer-events:none;
-    padding:12px 14px;
-    justify-content:space-between;
-}
-
-.action-btn .cb-gift-side{
-    width:42px;height:42px;flex-shrink:0;object-fit:contain;
-    border:none;background:transparent;padding:0;
-    filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));
-    transition:opacity .25s;
-    display:none;
-}
+.action-btn .cb-gift-side{width:42px;height:42px;flex-shrink:0;object-fit:contain;border:none;background:transparent;padding:0;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));transition:opacity .25s;display:none}
 .action-btn.state-cashout .cb-gift-side{display:block}
 .action-btn.state-crashed .cb-gift-side{display:block;opacity:.5;filter:grayscale(.5)}
 .action-btn.state-syncing .cb-gift-side{display:block;opacity:.7}
 .action-btn .cb-gift-side.empty{opacity:.3}
-
-.action-btn .cb-center{
-    flex:1;
-    display:none;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    line-height:1.05;
-    min-width:0;
-}
+.action-btn .cb-center{flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;min-width:0}
 .action-btn.state-cashout .cb-center,
 .action-btn.state-crashed .cb-center,
 .action-btn.state-syncing .cb-center{display:flex}
 .action-btn .cb-label{font-size:12px;font-weight:800;letter-spacing:1px;opacity:.85;text-transform:uppercase}
 .action-btn .cb-win{font-size:20px;font-weight:900;letter-spacing:.3px;white-space:nowrap}
-
-.action-btn .cb-spinner{
-    width:22px;height:22px;
-    border:2.5px solid rgba(255,255,255,.25);
-    border-top-color:#fff;
-    border-radius:50%;
-    animation:btnSpin .8s linear infinite;
-}
+.action-btn .cb-spinner{width:22px;height:22px;border:2.5px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:btnSpin .8s linear infinite}
 @keyframes btnSpin{to{transform:rotate(360deg)}}
 
 /* HISTORY */
@@ -257,6 +133,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .bet-row{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:12px;background:rgba(28,34,51,.85);gap:8px}
 .bet-row.won{background:rgba(30,228,76,.06)}
 .bet-row.lost{background:rgba(249,105,153,.04)}
+.bet-row.pending-bet{background:rgba(59,130,246,.06);border:1.5px dashed rgba(59,130,246,.5)}
 .bet-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
 .bet-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2a3040,#3a4558);display:flex;align-items:center;justify-content:center;font-family:inherit;font-weight:800;font-size:13px;color:rgba(255,255,255,.6);overflow:hidden;flex-shrink:0}
 .bet-avatar img{width:100%;height:100%;object-fit:cover}
@@ -271,6 +148,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .bet-status.active{background:rgba(107,122,141,.12);color:rgba(160,180,200,.8)}
 .bet-status.won{background:rgba(30,228,76,.12);color:#1EE44C}
 .bet-status.lost{background:rgba(249,105,153,.1);color:#F96999}
+.bet-status.pending{background:rgba(59,130,246,.15);color:#3B82F6}
 .no-bets{text-align:center;padding:30px 20px;color:rgba(255,255,255,.2);font-size:13px}
 
 /* BET MODAL */
@@ -982,7 +860,7 @@ function getAchievableGift(potentialWin){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   POLLING — setTimeout-цепочка, не накапливается
+   POLLING — setTimeout-цепочка
    ══════════════════════════════════════════════════════════════ */
 var _pollTimer = null;
 var _polling = false;
@@ -1006,7 +884,6 @@ async function pollStatus(){
         _pollDelay = 400;
         if(d && d.game) applyServerState(d);
     }catch(e){
-        /* растём при ошибках, но не блокируем */
         _pollDelay = Math.min(2000, _pollDelay + 200);
     }finally{
         _polling = false;
@@ -1043,6 +920,15 @@ function applyServerState(d){
         lastShownNumber = 99;
         goShownForRound = false;
         lastCountdownAt = 0;
+
+        /* Пробуем отправить pending если есть */
+        if(pendingBet && !hasBet){
+            setTimeout(function(){
+                if(pendingBet && !hasBet && status === 'counting'){
+                    processPendingBet();
+                }
+            }, 250);
+        }
     }
 
     if(newStatus === 'flying' && prevStatus !== 'flying'){
@@ -1101,6 +987,9 @@ function applyServerState(d){
         }
     } else if(d.user_bet && d.user_bet.status === 'cashed_out'){
         hasBet = false;
+    } else if(!d.user_bet && hasBet && status !== 'flying'){
+        hasBet = false;
+        betAmt = 0;
     }
 
     gameId = newGameId;
@@ -1263,7 +1152,7 @@ function updateGameFieldUI(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ACTION BUTTON — единая, без дублирования
+   ACTION BUTTON
    ══════════════════════════════════════════════════════════════ */
 function updateActionButton(){
     var btn = $('actionBtn');
@@ -1317,7 +1206,7 @@ function updateActionButton(){
         html = '<span class="btn-text">Place bet</span>';
     }
 
-    /* Точечное обновление win в state-cashout */
+    /* Точечное обновление win в cashout */
     if(newState === 'cashout' && btn.classList.contains('state-cashout')){
         var currentMult2 = Math.max(dispMult, servMult);
         var curWin2 = Math.floor((betAmt || 0) * currentMult2);
@@ -1474,6 +1363,7 @@ function closeBetModal(){
 }
 function cancelPendingBet(){
     pendingBet = null;
+    removePendingBetFromUI();
     showToast('Отменено', 'ok');
     updateActionButton();
 }
@@ -1486,10 +1376,18 @@ function parseBetInputToStars(raw){
     if(!tons || tons <= 0) return 0;
     return Math.round(tons * 100);
 }
+function removePendingBetFromUI(){
+    var rows = document.querySelectorAll('.bet-row.pending-bet');
+    for(var i = 0; i < rows.length; i++) rows[i].remove();
+}
 
+/* ══════════════════════════════════════════════════════════════
+   CONFIRM STARS BET — с защитой от зависаний
+   ══════════════════════════════════════════════════════════════ */
 async function confirmStarsBet(){
     if(_betLocked) return;
     if(!userData || !userData.id){ showToast('Auth error', 'err'); return; }
+
     var input = $('betInput');
     if(!input) return;
     var amt = parseBetInputToStars(input.value);
@@ -1500,6 +1398,7 @@ async function confirmStarsBet(){
     savedBetAmount = amt;
     try{ localStorage.setItem('crash_bet_amount', amt); }catch(e){}
 
+    /* Идёт полёт — в pending */
     if(status === 'flying'){
         pendingBet = { type: 'stars', amount: amt };
         closeBetModal();
@@ -1509,6 +1408,21 @@ async function confirmStarsBet(){
         return;
     }
 
+    /* Проверяем тайминг counting */
+    if(status === 'counting' && countingStartedAt > 0){
+        var elapsed = (performance.now() - countingStartedAt) / 1000;
+        var remaining = countingDuration - elapsed;
+        if(remaining <= 0.6){
+            pendingBet = { type: 'stars', amount: amt };
+            closeBetModal();
+            showToast('Поздно! Ставка на след. раунд', 'ok');
+            updateActionButton();
+            _betLocked = false;
+            return;
+        }
+    }
+
+    /* Оптимистично ставим */
     hasBet = true;
     betAmt = amt;
     betGiftImg = null;
@@ -1518,12 +1432,18 @@ async function confirmStarsBet(){
     updateActionButton();
     showToast('Ставка ' + formatCrashMoney(amt) + ' принята', 'ok');
 
+    var ac = new AbortController();
+    var tId = setTimeout(function(){ ac.abort(); }, 5000);
+
     try{
         var r = await fetch('/api/ultimate-crash/place-bet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userData.id, bet_amount: amt })
+            body: JSON.stringify({ user_id: userData.id, bet_amount: amt }),
+            signal: ac.signal
         });
+        clearTimeout(tId);
+
         var d = await r.json();
         if(d.success){
             userData.balance_stars = d.new_balance;
@@ -1535,8 +1455,9 @@ async function confirmStarsBet(){
             betAmt = 0;
             userData.balance_stars = (userData.balance_stars || 0) + amt;
             updateBalanceUI();
+
             var err = (d.error || '').toLowerCase();
-            if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1 || err.indexOf('2 сек') !== -1){
+            if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1 || err.indexOf('2 сек') !== -1 || err.indexOf('след') !== -1){
                 pendingBet = { type: 'stars', amount: amt };
                 showToast('Ставка на след. раунд', 'ok');
             } else {
@@ -1545,15 +1466,94 @@ async function confirmStarsBet(){
             updateActionButton();
         }
     }catch(e){
+        clearTimeout(tId);
         hasBet = false;
         betAmt = 0;
         userData.balance_stars = (userData.balance_stars || 0) + amt;
         updateBalanceUI();
+
+        if(e && e.name === 'AbortError'){
+            pendingBet = { type: 'stars', amount: amt };
+            showToast('Сервер не ответил, ставка на след. раунд', 'ok');
+        } else {
+            showToast('Ошибка сети', 'err');
+        }
         updateActionButton();
-        showToast('Ошибка сети', 'err');
     }finally{
         _betLocked = false;
     }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PENDING BET
+   ══════════════════════════════════════════════════════════════ */
+async function processPendingBet(){
+    if(!pendingBet || _betLocked) return;
+    var bet = pendingBet;
+    _betLocked = true;
+
+    if(bet.type === 'stars'){
+        var ac = new AbortController();
+        var tId = setTimeout(function(){ ac.abort(); }, 5000);
+        try{
+            var r = await fetch('/api/ultimate-crash/place-bet', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userData.id, bet_amount: bet.amount }),
+                signal: ac.signal
+            });
+            clearTimeout(tId);
+            var d = await r.json();
+            if(d.success){
+                pendingBet = null;
+                hasBet = true;
+                betAmt = bet.amount;
+                userData.balance_stars = d.new_balance;
+                updateBalanceUI();
+                showToast('Ставка принята!', 'ok');
+                loadBets();
+            } else {
+                /* Оставляем pending, попробуем позже */
+                setTimeout(function(){ _betLocked = false; processPendingBet(); }, 800);
+                return;
+            }
+        }catch(e){
+            clearTimeout(tId);
+            setTimeout(function(){ _betLocked = false; processPendingBet(); }, 1000);
+            return;
+        }
+    } else if(bet.type === 'multi' && bet.inventoryIds && bet.inventoryIds.length){
+        var ac2 = new AbortController();
+        var tId2 = setTimeout(function(){ ac2.abort(); }, 5000);
+        try{
+            var rg = await fetch('/api/ultimate-crash/place-bet-multi-gift', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userData.id, inventory_ids: bet.inventoryIds }),
+                signal: ac2.signal
+            });
+            clearTimeout(tId2);
+            var dg = await rg.json();
+            if(dg.success){
+                pendingBet = null;
+                hasBet = true;
+                betAmt = dg.bet_amount || bet.amount;
+                betGiftImg = bet.giftImage || null;
+                showToast('Ставка подарками принята!', 'ok');
+                loadBets();
+            } else {
+                setTimeout(function(){ _betLocked = false; processPendingBet(); }, 800);
+                return;
+            }
+        }catch(e){
+            clearTimeout(tId2);
+            setTimeout(function(){ _betLocked = false; processPendingBet(); }, 1000);
+            return;
+        }
+    }
+
+    _betLocked = false;
+    updateActionButton();
 }
 
 function switchTab(tab){
@@ -1674,12 +1674,16 @@ async function confirmGiftBet(){
     updateActionButton();
     showToast('Ставка ' + sGifts.length + ' подарков', 'ok');
 
+    var ac = new AbortController();
+    var tId = setTimeout(function(){ ac.abort(); }, 5000);
+
     try{
         var url = sGifts.length === 1 ? '/api/ultimate-crash/place-bet-gift' : '/api/ultimate-crash/place-bet-multi-gift';
         var body = sGifts.length === 1
             ? { user_id: userData.id, inventory_id: sGifts[0].id }
             : { user_id: userData.id, inventory_ids: giftIds };
-        var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ac.signal });
+        clearTimeout(tId);
         var d = await r.json();
         if(d.success){
             betAmt = d.bet_amount || totalValue;
@@ -1687,10 +1691,17 @@ async function confirmGiftBet(){
         } else {
             hasBet = false;
             betAmt = 0;
-            showToast(d.error || 'Ошибка', 'err');
+            var err = (d.error || '').toLowerCase();
+            if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1 || err.indexOf('2 сек') !== -1){
+                pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
+                showToast('Ставка на след. раунд', 'ok');
+            } else {
+                showToast(d.error || 'Ошибка', 'err');
+            }
             updateActionButton();
         }
     }catch(e){
+        clearTimeout(tId);
         hasBet = false;
         betAmt = 0;
         showToast('Ошибка сети', 'err');
@@ -1701,7 +1712,7 @@ async function confirmGiftBet(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   CASHOUT — сначала запрос, потом win sheet
+   CASHOUT — сначала сервер, потом win sheet
    ══════════════════════════════════════════════════════════════ */
 async function doCashout(){
     if(!hasBet || !userData || !userData.id) return;
@@ -1712,13 +1723,11 @@ async function doCashout(){
     frozenMult = Math.round((frozenMult + 0.02) * 100) / 100;
     var instantWin = Math.floor(betAmt * frozenMult);
 
-    /* Сохраняем что показывать */
     var savedBetAmt = betAmt;
     cashedOutBetAmt = betAmt;
     cashedOut = true;
     hasBet = false;
 
-    /* Переключаем кнопку в состояние syncing */
     _syncingWin = true;
     _lastBtnKey = '';
     updateActionButton();
@@ -1735,12 +1744,17 @@ async function doCashout(){
     }
 
     var serverOk = false;
+    var ac = new AbortController();
+    var tId = setTimeout(function(){ ac.abort(); }, 6000);
+
     try{
         var r = await fetch('/api/ultimate-crash/cashout-simple', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(bodyData)
+            body: JSON.stringify(bodyData),
+            signal: ac.signal
         });
+        clearTimeout(tId);
         var d = await r.json();
         if(d.success){
             serverOk = true;
@@ -1754,6 +1768,7 @@ async function doCashout(){
             showToast(d.error || 'Ошибка синхронизации', 'err');
         }
     }catch(e){
+        clearTimeout(tId);
         showToast('Синхронизация не удалась', 'err');
     }finally{
         _cashoutLocked = false;
@@ -1761,11 +1776,9 @@ async function doCashout(){
         _lastBtnKey = '';
     }
 
-    /* Показываем win sheet только после ответа сервера */
     if(serverOk){
         showWinSheet(frozenMult, instantWin);
     } else {
-        /* Откат назад если сервер не подтвердил */
         cashedOut = false;
         hasBet = true;
         betAmt = savedBetAmt;
@@ -2225,7 +2238,7 @@ async function init(){
         if(bi) bi.value = starsToBetInputValue(savedBetAmount);
     }
 
-    /* Запуск цепочки поллинга */
+    /* Polling цепочка */
     scheduleNextPoll();
 
     /* Периодический поллинг ставок */
@@ -2289,9 +2302,9 @@ document.addEventListener('DOMContentLoaded', function(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
         <span>Игры</span>
     </a>
-    <a class="bottom-nav-item" href="/news">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2"/></svg>
-        <span>Новости</span>
+    <a class="bottom-nav-item" href="/upgrade">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        <span>Апгрейды</span>
     </a>
     <a class="bottom-nav-item" href="/leaderboard">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
