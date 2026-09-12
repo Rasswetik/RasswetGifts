@@ -34,18 +34,25 @@ body{
     -webkit-font-smoothing:antialiased;
 }
 
-/* ══════════════ PAGE ══════════════ */
+/* ═══════════ Z-INDEX ИЕРАРХИЯ ═══════════
+   4000  — bottom-nav
+   4999  — select-action-bar
+   5000  — promo/deposit модалки
+   60000 — item-sheet (информация о подарке)
+   70000 — sell-confirm, batch-sell
+   80000 — PORTAL PICKER (ВЫШЕ item-sheet!)
+   90000 — success/gift-reveal
+   99999 — notif
+═══════════════════════════════════════════ */
+
 .page{
     width:100%;max-width:480px;margin:0 auto;
     padding:calc(var(--safe-top) + 58px) 14px calc(var(--safe-bottom) + 130px);
     position:relative;
 }
 
-/* ══════════════ TOP BAR ══════════════ */
-.top-bar{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:8px 0 14px;gap:8px;
-}
+/* TOP BAR */
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 0 14px;gap:8px}
 .top-left{display:flex;gap:6px;align-items:center}
 .top-icon-btn{
     width:36px;height:36px;border-radius:12px;
@@ -77,15 +84,14 @@ body{
 }
 .bal-plus:active{transform:scale(.9)}
 
-/* ══════════════ PROFILE ══════════════ */
+/* PROFILE */
 .profile-section{
     display:flex;flex-direction:column;align-items:center;
     margin-bottom:16px;padding:22px 14px 18px;
     background:linear-gradient(180deg,rgba(59,130,246,.08) 0%,rgba(59,130,246,.01) 100%);
     border-radius:22px;
     border:1.5px solid rgba(59,130,246,.18);
-    position:relative;
-    overflow:hidden;
+    position:relative;overflow:hidden;
 }
 .profile-section::before{
     content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);
@@ -97,18 +103,13 @@ body{
     width:88px;height:88px;min-width:88px;min-height:88px;
     border-radius:50%;
     border:3px solid rgba(59,130,246,.5);
-    overflow:hidden;
-    margin-bottom:14px;
+    overflow:hidden;margin-bottom:14px;
     background:linear-gradient(135deg,#2a3544,#1f2a38);
     box-shadow:0 0 30px rgba(59,130,246,.3);
     position:relative;z-index:1;
     display:flex;align-items:center;justify-content:center;
 }
-.avatar-wrap img{
-    width:100%;height:100%;
-    object-fit:cover;object-position:center;
-    display:block;border-radius:50%;
-}
+.avatar-wrap img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;border-radius:50%}
 .avatar-fallback{
     width:100%;height:100%;
     display:flex;align-items:center;justify-content:center;
@@ -117,25 +118,15 @@ body{
     border-radius:50%;
 }
 .profile-name{
-    font-size:18px;font-weight:800;
-    margin-bottom:4px;text-align:center;
+    font-size:18px;font-weight:800;margin-bottom:4px;text-align:center;
     letter-spacing:-.2px;position:relative;z-index:1;
     max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     padding:0 10px;
 }
-.profile-uid{
-    font-size:11px;color:var(--text-3);
-    margin-bottom:14px;font-weight:600;
-    position:relative;z-index:1;
-}
+.profile-uid{font-size:11px;color:var(--text-3);margin-bottom:14px;font-weight:600;position:relative;z-index:1}
 .level-bar-wrap{width:100%;max-width:280px;margin-bottom:16px;position:relative;z-index:1}
 .level-bar-bg{width:100%;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
-.level-bar-fill{
-    height:100%;
-    background:linear-gradient(90deg,#3B82F6,#7CAEFF);
-    border-radius:3px;
-    transition:width .6s cubic-bezier(.4,0,.2,1);
-}
+.level-bar-fill{height:100%;background:linear-gradient(90deg,#3B82F6,#7CAEFF);border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
 .level-bar-text{font-size:10px;color:var(--text-3);text-align:center;margin-top:5px;font-weight:700}
 .profile-stats{display:flex;gap:8px;width:100%;position:relative;z-index:1}
 .profile-stat{
@@ -143,22 +134,18 @@ body{
     padding:12px 4px;
     background:rgba(255,255,255,.04);
     border:1px solid rgba(255,255,255,.06);
-    border-radius:14px;
-    min-width:0;
+    border-radius:14px;min-width:0;
 }
 .profile-stat-val{
     font-size:14px;font-weight:800;color:#fff;
-    display:flex;align-items:center;gap:4px;
-    line-height:1;max-width:100%;overflow:hidden;
+    display:flex;align-items:center;gap:4px;line-height:1;
+    max-width:100%;overflow:hidden;
 }
 .profile-stat-val img{width:14px;height:14px;flex-shrink:0}
 .profile-stat-val span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.profile-stat-label{
-    font-size:9px;color:var(--text-3);font-weight:700;
-    margin-top:4px;text-transform:uppercase;letter-spacing:.5px;
-}
+.profile-stat-label{font-size:9px;color:var(--text-3);font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
 
-/* ══════════════ ACTION BUTTONS ══════════════ */
+/* ACTION BUTTONS */
 .action-row{display:flex;gap:10px;width:100%;margin-bottom:12px}
 .btn-action{
     flex:1;padding:15px;border-radius:14px;border:none;
@@ -167,18 +154,10 @@ body{
     display:flex;align-items:center;justify-content:center;gap:6px;
 }
 .btn-action:active{transform:scale(.97)}
-.btn-primary{
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;
-    box-shadow:0 6px 20px rgba(59,130,246,.35);
-}
-.btn-outline{
-    background:rgba(59,130,246,.12);
-    color:#7CAEFF;
-    border:1.5px solid rgba(59,130,246,.35);
-}
+.btn-primary{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;box-shadow:0 6px 20px rgba(59,130,246,.35)}
+.btn-outline{background:rgba(59,130,246,.12);color:#7CAEFF;border:1.5px solid rgba(59,130,246,.35)}
 
-/* ══════════════ ADMIN ══════════════ */
+/* ADMIN */
 .admin-btn{
     width:100%;padding:15px;border-radius:14px;
     background:linear-gradient(135deg,#FFD700,#FFA500);
@@ -192,22 +171,15 @@ body{
 .admin-btn:active{transform:scale(.97)}
 .admin-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
-/* ══════════════ REFERRAL ══════════════ */
+/* REFERRAL */
 .ref-card{
     background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
     border:1px solid rgba(255,255,255,.08);
     border-radius:18px;padding:16px;margin-bottom:20px;
     position:relative;overflow:hidden;
 }
-.ref-card-title{
-    font-size:15px;font-weight:800;
-    text-transform:uppercase;margin-bottom:6px;
-    letter-spacing:.5px;color:#fff;
-}
-.ref-card-desc{
-    font-size:12px;color:var(--text-2);
-    line-height:1.5;margin-bottom:12px;max-width:75%;
-}
+.ref-card-title{font-size:15px;font-weight:800;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px;color:#fff}
+.ref-card-desc{font-size:12px;color:var(--text-2);line-height:1.5;margin-bottom:12px;max-width:75%}
 .ref-stats{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
 .ref-stat{
     display:flex;align-items:center;gap:4px;
@@ -225,25 +197,17 @@ body{
 }
 .ref-link:active{opacity:.6}
 
-/* ══════════════ SECTION HEADER ══════════════ */
-.section-header{
-    display:flex;align-items:center;justify-content:space-between;
-    margin-bottom:12px;gap:8px;
-}
+/* SECTION HEADER */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
 .section-title{font-size:16px;font-weight:800;color:#fff}
 .btn-options{
     padding:9px 14px;border-radius:10px;
     border:1.5px solid rgba(59,130,246,.25);
     background:rgba(59,130,246,.08);
     color:#7CAEFF;font-size:12px;font-weight:800;
-    cursor:pointer;transition:all .15s;
-    flex-shrink:0;
+    cursor:pointer;transition:all .15s;flex-shrink:0;
 }
-.btn-options.active{
-    background:rgba(59,130,246,.25);
-    border-color:rgba(59,130,246,.5);
-    color:#fff;
-}
+.btn-options.active{background:rgba(59,130,246,.25);border-color:rgba(59,130,246,.5);color:#fff}
 .btn-options:active{transform:scale(.95)}
 .inv-search{
     width:100%;padding:12px 16px;border-radius:12px;
@@ -256,7 +220,7 @@ body{
 .inv-search::placeholder{color:rgba(255,255,255,.3)}
 .inv-search:focus{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.06)}
 
-/* ══════════════ INVENTORY GRID ══════════════ */
+/* INVENTORY GRID */
 .inv-grid{
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr));
@@ -267,7 +231,7 @@ body{
     border:none;
     border-radius:14px;
     text-align:center;cursor:pointer;
-    transition:transform .15s,border-color .15s,box-shadow .15s;
+    transition:transform .15s,box-shadow .15s;
     position:relative;overflow:hidden;
     min-width:0;
     display:flex;flex-direction:column;
@@ -294,20 +258,15 @@ body{
     width:100%;aspect-ratio:1/1;
     display:flex;align-items:center;justify-content:center;
     flex-shrink:0;overflow:hidden;
-    border-radius:12px;
-    position:relative;
+    border-radius:12px;position:relative;
     background:rgba(0,0,0,.18);
 }
-.inv-card-img-wrap img{
-    width:100%;height:100%;
-    object-fit:contain;padding:8px;display:block;
-}
+.inv-card-img-wrap img{width:100%;height:100%;object-fit:contain;padding:8px;display:block}
 .inv-card-name{
     font-size:9px;font-weight:700;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     padding:4px 4px 2px;line-height:1.1;
-    color:rgba(255,255,255,.85);
-    flex-shrink:0;
+    color:rgba(255,255,255,.85);flex-shrink:0;
 }
 .inv-card-price{
     display:flex;align-items:center;justify-content:center;gap:3px;
@@ -317,16 +276,14 @@ body{
 }
 .inv-card-price img{width:10px;height:10px;display:block}
 
-/* ═══ УЛУЧШЕННЫЙ (NFT) ПОДАРОК — СЕРАЯ ОБВОДКА ═══ */
+/* УЛУЧШЕННЫЙ (NFT) — СЕРАЯ ОБВОДКА */
 .inv-card.inv-card-upgraded{
     aspect-ratio:1/1;
     border:1.5px solid rgba(140,150,170,.4);
     background:linear-gradient(180deg,rgba(140,150,170,.06),rgba(140,150,170,.02));
     border-radius:14px;
-    padding:0;
-    overflow:hidden;
+    padding:0;overflow:hidden;
 }
-.inv-card.inv-card-upgraded:active{transform:scale(.96)}
 .inv-card.inv-card-upgraded.selected{
     box-shadow:0 0 0 2.5px #3B82F6;
     border-color:#3B82F6;
@@ -346,8 +303,7 @@ body{
     background:rgba(0,0,0,.75);
     border-radius:6px;
     display:flex;align-items:center;justify-content:center;
-    z-index:3;
-    border:1px solid rgba(255,255,255,.2);
+    z-index:3;border:1px solid rgba(255,255,255,.2);
     backdrop-filter:blur(4px);
 }
 .inv-card-challenge svg{width:12px;height:12px;color:#fff;stroke:currentColor;fill:none;stroke-width:2.5}
@@ -362,7 +318,7 @@ body{
 }
 .inv-empty img{width:56px;height:56px;opacity:.4;object-fit:contain}
 
-/* ══════════════ SELECT ACTION BAR ══════════════ */
+/* SELECT ACTION BAR */
 .select-action-bar{
     position:fixed;
     bottom:calc(var(--safe-bottom,0px) + 90px);
@@ -375,23 +331,16 @@ body{
     border-radius:16px;
     padding:12px 16px;
     border:1.5px solid rgba(59,130,246,.3);
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    display:flex;align-items:center;justify-content:space-between;
     gap:12px;
     box-shadow:0 8px 30px rgba(0,0,0,.6);
     transition:transform .3s cubic-bezier(.32,1,.23,1);
-    pointer-events:none;
-    visibility:hidden;
-    opacity:0;
+    pointer-events:none;visibility:hidden;opacity:0;
 }
 .select-action-bar.show{
     transform:translateX(-50%) translateY(0);
-    pointer-events:auto;
-    visibility:visible;
-    opacity:1;
+    pointer-events:auto;visibility:visible;opacity:1;
 }
 .select-info{font-size:13px;font-weight:700;color:rgba(255,255,255,.75)}
 .select-info span{color:#3B82F6;font-weight:900}
@@ -405,48 +354,37 @@ body{
 .select-btn-sell{background:rgba(255,255,255,.1);color:#fff}
 .select-btn-withdraw{
     background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;
-    box-shadow:0 4px 14px rgba(59,130,246,.4);
+    color:#fff;box-shadow:0 4px 14px rgba(59,130,246,.4);
 }
 
-/* ══════════════ BOTTOM NAV ══════════════ */
+/* BOTTOM NAV */
 .bottom-nav{
-    position:fixed;
-    bottom:0;
-    left:50%;
+    position:fixed;bottom:0;left:50%;
     transform:translateX(-50%);
-    z-index:4000;
-    width:100%;
-    max-width:480px;
-    height:76px;
+    z-index:4000;width:100%;max-width:480px;height:76px;
     padding:0 8px calc(var(--safe-bottom,0px) + 6px);
     background:rgba(28,34,51,.95);
-    backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
     border-top:1px solid rgba(59,130,246,.08);
-    display:flex;
-    align-items:center;
-    justify-content:space-around;
+    display:flex;align-items:center;justify-content:space-around;
 }
 .bnav-item{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     gap:3px;padding:6px 14px;border-radius:12px;
-    color:rgba(255,255,255,.4);
-    font-weight:700;cursor:pointer;
-    transition:all .2s;text-decoration:none;
+    color:rgba(255,255,255,.4);font-weight:700;
+    cursor:pointer;transition:all .2s;text-decoration:none;
     min-height:56px;height:56px;
     background:transparent;border:none;font-family:inherit;
 }
 .bnav-item svg{
-    width:22px;height:22px;
-    stroke:currentColor;fill:none;
+    width:22px;height:22px;stroke:currentColor;fill:none;
     stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
 }
 .bnav-item span{font-size:10px;font-weight:700;line-height:1}
 .bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
 .bnav-item:active{transform:scale(.9)}
 
-/* ══════════════ MODALS (обычные) ══════════════ */
+/* MODALS */
 .overlay{
     position:fixed;inset:0;z-index:5000;
     display:none;align-items:center;justify-content:center;
@@ -455,9 +393,8 @@ body{
     padding:20px;
 }
 .overlay.show{display:flex}
-.overlay.bottom{align-items:flex-end;padding:0}
 
-/* ═══ PROMO ═══ */
+/* PROMO */
 .promo-modal{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border-radius:24px;width:100%;max-width:380px;
@@ -472,23 +409,17 @@ body{
     cursor:pointer;font-size:16px;font-weight:700;
     display:flex;align-items:center;justify-content:center;
 }
-.promo-close:active{transform:scale(.9)}
 .promo-hint{font-size:12px;color:var(--text-2);margin-bottom:14px;line-height:1.5;font-weight:600}
 .promo-input{
     width:100%;padding:18px 20px;
     border:2px solid rgba(59,130,246,.3);
-    border-radius:16px;
-    background:rgba(59,130,246,.08);
+    border-radius:16px;background:rgba(59,130,246,.08);
     color:#fff;font-size:22px;font-weight:800;
     font-family:'Courier New',monospace;
     letter-spacing:4px;text-align:center;text-transform:uppercase;
     outline:none;transition:all .15s;margin-bottom:16px;
 }
-.promo-input:focus{
-    border-color:rgba(59,130,246,.7);
-    background:rgba(59,130,246,.14);
-    box-shadow:0 0 0 4px rgba(59,130,246,.15);
-}
+.promo-input:focus{border-color:rgba(59,130,246,.7);background:rgba(59,130,246,.14)}
 .promo-input::placeholder{color:rgba(255,255,255,.2);font-weight:600;letter-spacing:2px;font-size:16px}
 .promo-submit{
     width:100%;padding:16px;border-radius:14px;border:none;
@@ -509,7 +440,7 @@ body{
 }
 .promo-error.show{display:block}
 
-/* ═══ DEPOSIT ═══ */
+/* DEPOSIT */
 .deposit-modal{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border-radius:24px;width:100%;max-width:380px;
@@ -529,8 +460,7 @@ body{
     flex:1;padding:20px 14px;border-radius:18px;
     border:1.5px solid rgba(59,130,246,.2);
     background:rgba(59,130,246,.08);
-    cursor:pointer;
-    display:flex;flex-direction:column;align-items:center;gap:10px;
+    cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;
     transition:transform .15s;font-family:inherit;
 }
 .deposit-method-btn:active{transform:scale(.96)}
@@ -538,7 +468,7 @@ body{
 .deposit-method-btn span{font-weight:800;font-size:13px;color:#fff}
 .deposit-method-btn.disabled{opacity:.35;pointer-events:none;filter:grayscale(1)}
 
-/* ═══ STARS DEPOSIT ═══ */
+/* STARS DEPOSIT */
 .stars-deposit-modal{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border-radius:24px;width:100%;max-width:400px;
@@ -560,15 +490,8 @@ body{
     display:flex;flex-direction:column;align-items:center;gap:16px;
 }
 .stars-deposit-icon{width:64px;height:64px}
-.stars-deposit-label{
-    text-align:center;color:rgba(255,255,255,.6);
-    font-size:13px;line-height:1.5;font-weight:600;
-}
-.stars-deposit-input-wrap{
-    width:100%;background:rgba(255,255,255,.06);
-    border:1.5px solid rgba(255,255,255,.1);
-    border-radius:14px;padding:4px;
-}
+.stars-deposit-label{text-align:center;color:rgba(255,255,255,.6);font-size:13px;line-height:1.5;font-weight:600}
+.stars-deposit-input-wrap{width:100%;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:14px;padding:4px}
 .stars-deposit-input{
     width:100%;padding:14px;border:none;border-radius:12px;
     background:transparent;color:#fff;font-size:20px;font-weight:800;
@@ -583,28 +506,24 @@ body{
 }
 .stars-deposit-pay-btn img{width:20px;height:20px}
 
-/* ══════════════ ITEM SHEET — ПОДАРОК (z-index 100000 — ВЫШЕ ВСЕГО) ══════════════ */
+/* ══════════════════════════════════════════════════════════════
+   ITEM SHEET — z-index 60000 (информация о подарке)
+   ══════════════════════════════════════════════════════════════ */
 .item-sheet-overlay{
-    position:fixed;
-    inset:0;
-    z-index:100000;  /* САМЫЙ ВЫСОКИЙ */
-    background:rgba(0,0,0,.82);
-    backdrop-filter:blur(8px);
-    -webkit-backdrop-filter:blur(8px);
-    opacity:0;
-    visibility:hidden;
+    position:fixed;inset:0;
+    z-index:60000;
+    background:rgba(0,0,0,.85);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    opacity:0;visibility:hidden;
     transition:opacity .28s,visibility .28s;
-    display:flex;
-    align-items:flex-end;
-    justify-content:center;
+    display:flex;align-items:flex-end;justify-content:center;
 }
 .item-sheet-overlay.show{opacity:1;visibility:visible}
 
 .item-sheet{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border-radius:24px 24px 0 0;
-    width:100%;
-    max-width:480px;
+    width:100%;max-width:480px;
     padding:16px 20px calc(30px + var(--safe-bottom,0px));
     transform:translateY(100%);
     transition:transform .35s cubic-bezier(.32,1,.23,1);
@@ -621,6 +540,7 @@ body{
     margin:0 auto 18px;
 }
 
+/* Обычный подарок — header */
 .item-sheet-header{
     display:flex;flex-direction:column;align-items:center;
     gap:10px;margin-bottom:20px;text-align:center;
@@ -647,61 +567,96 @@ body{
 }
 .item-sheet-price img{width:16px;height:16px}
 
-/* ═══ NFT DETAILS ═══ */
-.item-nft-details{
-    width:100%;margin-bottom:16px;
-    display:none;flex-direction:column;align-items:center;gap:10px;
+/* ═══ УЛУЧШЕННЫЙ (NFT) — блок с Fragment данными ═══ */
+.item-nft-block{
+    width:100%;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    margin-bottom:20px;
 }
-.item-nft-details.show{display:flex}
-.item-nft-img{
-    width:180px;height:180px;
-    border-radius:20px;object-fit:cover;
+.item-nft-block.show{display:flex}
+
+.item-nft-img-wrap{
+    width:200px;height:200px;
+    border-radius:22px;
+    overflow:hidden;
+    position:relative;
+    background:rgba(0,0,0,.3);
     border:2px solid rgba(140,150,170,.4);
-    box-shadow:0 8px 28px rgba(0,0,0,.5);
+    box-shadow:0 10px 32px rgba(0,0,0,.6);
 }
-.item-nft-name{font-size:16px;font-weight:800;color:#fff;text-align:center;line-height:1.2}
+.item-nft-img-wrap img{
+    width:100%;height:100%;
+    object-fit:cover;display:block;
+}
+.item-nft-img-wrap .nft-loader{
+    position:absolute;inset:0;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.6);
+    color:rgba(255,255,255,.7);
+    font-size:12px;
+    font-weight:700;
+}
+.item-nft-img-wrap .nft-loader.hidden{display:none}
+
+.item-nft-name{
+    font-size:18px;font-weight:800;color:#fff;
+    text-align:center;line-height:1.2;
+    max-width:100%;padding:0 8px;
+}
 .item-nft-number{
-    font-size:13px;color:rgba(255,255,255,.6);font-weight:700;
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:13px;font-weight:800;
+    color:rgba(255,255,255,.7);
     background:rgba(140,150,170,.15);
-    padding:4px 12px;border-radius:10px;
-    border:1px solid rgba(140,150,170,.25);
-    margin-bottom:4px;
+    border:1px solid rgba(140,150,170,.3);
+    padding:5px 14px;border-radius:10px;
 }
+
+/* ═══ Таблица Model / Symbol / Backdrop ═══ */
 .item-nft-attrs{
     width:100%;
     display:flex;flex-direction:column;gap:1px;
-    background:rgba(0,0,0,.2);
-    border-radius:14px;overflow:hidden;
-    border:1px solid rgba(255,255,255,.05);
+    background:rgba(0,0,0,.25);
+    border-radius:16px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.06);
+    margin-top:6px;
 }
-.item-nft-attr-row{
+.item-nft-attr{
     display:flex;align-items:center;justify-content:space-between;
-    padding:12px 16px;
+    padding:14px 18px;
     border-bottom:1px solid rgba(255,255,255,.05);
-    gap:10px;
+    gap:12px;
+    background:rgba(255,255,255,.01);
 }
-.item-nft-attr-row:last-child{border-bottom:none}
+.item-nft-attr:last-child{border-bottom:none}
 .item-nft-attr-label{
-    font-size:12px;color:rgba(255,255,255,.5);font-weight:600;
+    font-size:12px;color:rgba(255,255,255,.5);font-weight:700;
+    text-transform:uppercase;letter-spacing:.5px;
     flex-shrink:0;
 }
-.item-nft-attr-val{
-    font-size:13px;color:#fff;font-weight:800;
-    text-align:right;
+.item-nft-attr-right{
+    display:flex;flex-direction:column;align-items:flex-end;gap:3px;
+    min-width:0;flex:1;
+}
+.item-nft-attr-value{
+    font-size:14px;color:#fff;font-weight:800;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    max-width:60%;
+    max-width:100%;
+    text-align:right;
 }
-.item-nft-attr-val .rarity{
-    font-size:10px;
-    color:rgba(255,215,0,.85);
-    font-weight:700;
-    margin-left:6px;
-}
-.item-nft-attr-price{
+.item-nft-attr-rarity{
     font-size:11px;
-    color:#7CAEFF;
+    color:#FFD700;
     font-weight:700;
-    margin-left:6px;
+}
+.item-nft-attr-rarity.empty{color:rgba(255,255,255,.35)}
+
+.item-nft-attr.loading .item-nft-attr-value{
+    color:rgba(255,255,255,.4);
+    font-weight:600;
 }
 
 .item-challenge{
@@ -725,9 +680,7 @@ body{
     background:linear-gradient(90deg,#3B82F6,#7CAEFF);
     border-radius:4px;transition:width .4s;
 }
-.item-challenge-text{
-    font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-align:center;
-}
+.item-challenge-text{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-align:center}
 
 .item-sheet-actions{
     width:100%;
@@ -763,30 +716,25 @@ body{
 }
 .item-btn-withdraw{
     background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;
-    box-shadow:0 6px 18px rgba(59,130,246,.4);
+    color:#fff;box-shadow:0 6px 18px rgba(59,130,246,.4);
 }
 .item-btn-claim{
     grid-column:1/-1;
     background:linear-gradient(135deg,#24C38E,#10b981);
-    color:#fff;
-    box-shadow:0 6px 18px rgba(36,195,142,.4);
+    color:#fff;box-shadow:0 6px 18px rgba(36,195,142,.4);
 }
 
-/* ══════════════ SELL CONFIRM ══════════════ */
+/* ══════════════════════════════════════════════════════════════
+   SELL CONFIRM — z-index 70000
+   ══════════════════════════════════════════════════════════════ */
 .sell-confirm-overlay{
-    position:fixed;
-    inset:0;
-    z-index:100001;
-    background:rgba(0,0,0,.88);
-    backdrop-filter:blur(10px);
-    -webkit-backdrop-filter:blur(10px);
-    opacity:0;
-    visibility:hidden;
+    position:fixed;inset:0;
+    z-index:70000;
+    background:rgba(0,0,0,.9);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    opacity:0;visibility:hidden;
     transition:opacity .25s,visibility .25s;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    display:flex;align-items:center;justify-content:center;
     padding:24px;
 }
 .sell-confirm-overlay.show{opacity:1;visibility:visible}
@@ -806,8 +754,7 @@ body{
 .sell-confirm-overlay.show .sell-confirm-modal{transform:scale(1)}
 
 .sell-confirm-icon{
-    width:80px;height:80px;
-    border-radius:50%;
+    width:80px;height:80px;border-radius:50%;
     background:rgba(249,105,153,.12);
     border:2px solid rgba(249,105,153,.35);
     display:flex;align-items:center;justify-content:center;
@@ -818,14 +765,9 @@ body{
     stroke:#F96999;fill:none;
     stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;
 }
-
-.sell-confirm-title{
-    font-size:18px;font-weight:800;color:#fff;
-    margin-bottom:8px;line-height:1.3;
-}
+.sell-confirm-title{font-size:18px;font-weight:800;color:#fff;margin-bottom:8px;line-height:1.3}
 .sell-confirm-gift-name{
-    font-size:13px;font-weight:700;
-    color:rgba(255,255,255,.7);
+    font-size:13px;font-weight:700;color:rgba(255,255,255,.7);
     margin-bottom:6px;
     max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     padding:0 8px;
@@ -839,39 +781,21 @@ body{
     margin-top:8px;margin-bottom:20px;
 }
 .sell-confirm-price img{width:20px;height:20px}
-
-.sell-confirm-question{
-    font-size:13px;color:rgba(255,255,255,.55);
-    font-weight:600;margin-bottom:20px;line-height:1.5;
-}
-
-.sell-confirm-actions{
-    width:100%;
-    display:flex;flex-direction:column;gap:10px;
-}
+.sell-confirm-question{font-size:13px;color:rgba(255,255,255,.55);font-weight:600;margin-bottom:20px;line-height:1.5}
+.sell-confirm-actions{width:100%;display:flex;flex-direction:column;gap:10px}
 .sell-confirm-btn{
-    width:100%;padding:16px;
-    border-radius:14px;border:none;
+    width:100%;padding:16px;border-radius:14px;border:none;
     font-family:inherit;font-size:15px;font-weight:800;
     cursor:pointer;transition:all .25s;
     text-transform:uppercase;letter-spacing:.5px;
     min-height:54px;
     display:flex;align-items:center;justify-content:center;gap:6px;
 }
-.sell-confirm-btn.waiting{
-    background:rgba(255,255,255,.06);
-    color:rgba(255,255,255,.35);
-    cursor:not-allowed;
-}
-.sell-confirm-btn.ready{
-    background:linear-gradient(135deg,#E8527A,#C42247);
-    color:#fff;
-    box-shadow:0 8px 24px rgba(232,82,122,.4);
-}
+.sell-confirm-btn.waiting{background:rgba(255,255,255,.06);color:rgba(255,255,255,.35);cursor:not-allowed}
+.sell-confirm-btn.ready{background:linear-gradient(135deg,#E8527A,#C42247);color:#fff;box-shadow:0 8px 24px rgba(232,82,122,.4)}
 .sell-confirm-btn.ready:active{transform:scale(.97)}
 .sell-confirm-cancel{
-    width:100%;padding:14px;
-    border-radius:14px;border:none;
+    width:100%;padding:14px;border-radius:14px;border:none;
     background:rgba(255,255,255,.06);
     color:rgba(255,255,255,.7);
     font-family:inherit;font-size:14px;font-weight:700;
@@ -880,7 +804,7 @@ body{
 }
 .sell-confirm-cancel:active{transform:scale(.97)}
 
-/* ══════════════ BATCH SELL MODAL ══════════════ */
+/* BATCH SELL MODAL */
 .batch-modal{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border:1px solid rgba(59,130,246,.2);
@@ -901,40 +825,18 @@ body{
     font-size:16px;font-weight:700;
 }
 .batch-modal-list{flex:1;overflow-y:auto;padding:12px 16px;max-height:320px}
-.batch-item{
-    display:flex;align-items:center;gap:12px;
-    padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);
-}
+.batch-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .batch-item:last-child{border-bottom:none}
 .batch-item-num{font-size:12px;font-weight:800;color:rgba(255,255,255,.4);min-width:24px}
-.batch-item-img{
-    width:42px;height:42px;border-radius:12px;
-    object-fit:contain;background:rgba(0,0,0,.25);padding:4px;
-}
+.batch-item-img{width:42px;height:42px;border-radius:12px;object-fit:contain;background:rgba(0,0,0,.25);padding:4px}
 .batch-item-info{flex:1;min-width:0}
-.batch-item-name{
-    font-size:13px;font-weight:700;color:#fff;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.batch-item-price{
-    font-size:12px;font-weight:800;color:#7CAEFF;
-    display:flex;align-items:center;gap:4px;
-}
+.batch-item-name{font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.batch-item-price{font-size:12px;font-weight:800;color:#7CAEFF;display:flex;align-items:center;gap:4px}
 .batch-item-price img{width:12px;height:12px}
-.batch-modal-footer{
-    padding:16px 20px;
-    border-top:1px solid rgba(255,255,255,.06);
-    background:rgba(0,0,0,.2);
-}
-.batch-total{
-    display:flex;align-items:center;justify-content:space-between;
-    margin-bottom:14px;
-}
+.batch-modal-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.2)}
+.batch-total{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .batch-total-label{font-size:14px;color:rgba(255,255,255,.65);font-weight:700}
-.batch-total-value{
-    font-size:20px;font-weight:900;color:#fff;
-    display:flex;align-items:center;gap:6px;
-}
+.batch-total-value{font-size:20px;font-weight:900;color:#fff;display:flex;align-items:center;gap:6px}
 .batch-total-value img{width:18px;height:18px}
 .batch-confirm-btn{
     width:100%;padding:16px;border-radius:14px;border:none;
@@ -944,18 +846,16 @@ body{
     color:rgba(255,255,255,.4);
     font-family:inherit;
 }
-.batch-confirm-btn.ready{
-    background:linear-gradient(135deg,#E8527A,#C42247);
-    color:#fff;
-    box-shadow:0 6px 18px rgba(232,82,122,.4);
-}
+.batch-confirm-btn.ready{background:linear-gradient(135deg,#E8527A,#C42247);color:#fff;box-shadow:0 6px 18px rgba(232,82,122,.4)}
 .batch-confirm-btn:disabled{cursor:not-allowed}
 
-/* ══════════════ PORTAL PICKER ══════════════ */
+/* ══════════════════════════════════════════════════════════════
+   PORTAL PICKER — z-index 80000 (ВЫШЕ item-sheet!)
+   ══════════════════════════════════════════════════════════════ */
 .mrkt-backdrop{
     position:fixed;inset:0;
-    background:rgba(0,0,0,.75);
-    z-index:99998;
+    z-index:79999;
+    background:rgba(0,0,0,.8);
     opacity:0;pointer-events:none;
     transition:opacity .3s;
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
@@ -964,7 +864,7 @@ body{
 
 .mrkt-overlay{
     position:fixed;left:0;right:0;bottom:0;
-    z-index:99999;
+    z-index:80000;
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     display:flex;flex-direction:column;max-height:88vh;
     border-radius:24px 24px 0 0;
@@ -1033,22 +933,10 @@ body{
     display:flex;align-items:center;justify-content:center;
     overflow:hidden;
 }
-.mrkt-frame-inner img{
-    width:100%;height:100%;
-    object-fit:cover;border-radius:8px;display:block;
-}
-.mrkt-card-name{
-    font-size:11px;font-weight:700;
-    color:rgba(255,255,255,.8);
-    text-align:center;line-height:1.3;width:100%;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
+.mrkt-frame-inner img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block}
+.mrkt-card-name{font-size:11px;font-weight:700;color:rgba(255,255,255,.8);text-align:center;line-height:1.3;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mrkt-card-num{font-size:11px;font-weight:800;text-align:center;color:rgba(255,215,0,.8)}
-.mrkt-card-price{
-    font-size:12px;font-weight:800;color:#7CAEFF;
-    text-align:center;display:flex;align-items:center;
-    gap:3px;justify-content:center;
-}
+.mrkt-card-price{font-size:12px;font-weight:800;color:#7CAEFF;text-align:center;display:flex;align-items:center;gap:3px;justify-content:center}
 .mrkt-card-price img{width:12px;height:12px}
 .mrkt-footer{
     padding:14px 16px calc(var(--safe-bottom) + 14px);
@@ -1065,20 +953,12 @@ body{
 }
 .mrkt-confirm-btn:active:not(:disabled){transform:scale(.97)}
 .mrkt-confirm-btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
-.mrkt-loading{
-    text-align:center;color:rgba(255,255,255,.3);
-    padding:48px 20px;font-size:14px;font-weight:600;
-    grid-column:1/-1;
-}
-.mrkt-empty{
-    text-align:center;color:rgba(255,255,255,.3);
-    padding:48px 20px;font-size:13px;font-weight:600;
-    line-height:1.6;grid-column:1/-1;
-}
+.mrkt-loading{text-align:center;color:rgba(255,255,255,.3);padding:48px 20px;font-size:14px;font-weight:600;grid-column:1/-1}
+.mrkt-empty{text-align:center;color:rgba(255,255,255,.3);padding:48px 20px;font-size:13px;font-weight:600;line-height:1.6;grid-column:1/-1}
 
-/* ══════════════ SUCCESS ══════════════ */
+/* SUCCESS / GIFT REVEAL — z-index 90000 */
 .success-overlay{
-    position:fixed;inset:0;z-index:100002;
+    position:fixed;inset:0;z-index:90000;
     background:rgba(10,12,20,.97);
     display:none;flex-direction:column;align-items:center;justify-content:center;
     padding:40px 24px;
@@ -1086,12 +966,7 @@ body{
 .success-overlay.show{display:flex}
 .success-gif{width:130px;height:130px;object-fit:contain;margin-bottom:20px}
 .success-title{font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:6px}
-.success-price{
-    font-size:14px;font-weight:700;
-    color:rgba(255,255,255,.55);
-    display:flex;align-items:center;gap:5px;
-    margin-bottom:28px;
-}
+.success-price{font-size:14px;font-weight:700;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:5px;margin-bottom:28px}
 .success-price img{width:14px;height:14px}
 .success-ok{
     width:100%;max-width:320px;padding:16px;border-radius:14px;border:none;
@@ -1100,49 +975,32 @@ body{
     cursor:pointer;font-family:inherit;
     box-shadow:0 6px 20px rgba(59,130,246,.4);
 }
-.success-ok:active{transform:scale(.97)}
 
-/* ══════════════ GIFT REVEAL ══════════════ */
 .gift-reveal-overlay{
-    position:fixed;inset:0;z-index:100002;
+    position:fixed;inset:0;z-index:90000;
     background:rgba(10,12,20,.97);
     display:none;flex-direction:column;align-items:center;justify-content:center;
     padding:40px 24px;
 }
 .gift-reveal-overlay.show{display:flex}
-.gift-reveal-img{
-    width:160px;height:160px;object-fit:contain;
-    filter:drop-shadow(0 0 40px rgba(59,130,246,.6));
-    border-radius:24px;
-}
-.gift-reveal-name{
-    font-size:22px;font-weight:800;color:#fff;
-    text-align:center;margin-top:20px;margin-bottom:20px;
-}
-.gift-reveal-btn{
-    padding:14px 32px;border-radius:14px;border:none;
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;font-weight:800;font-size:15px;
-    cursor:pointer;box-shadow:0 6px 20px rgba(59,130,246,.4);
-}
+.gift-reveal-img{width:160px;height:160px;object-fit:contain;filter:drop-shadow(0 0 40px rgba(59,130,246,.6));border-radius:24px}
+.gift-reveal-name{font-size:22px;font-weight:800;color:#fff;text-align:center;margin-top:20px;margin-bottom:20px}
+.gift-reveal-btn{padding:14px 32px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 6px 20px rgba(59,130,246,.4)}
 
-/* ══════════════ NOTIF ══════════════ */
+/* NOTIF — z-index 99999 */
 .notif{
     position:fixed;top:calc(var(--safe-top) + 70px);
     left:50%;transform:translateX(-50%) translateY(-120%);
     background:linear-gradient(135deg,#3B82F6,#2563EB);
     color:#fff;padding:12px 24px;border-radius:14px;
-    font-weight:700;font-size:14px;z-index:100003;
+    font-weight:700;font-size:14px;z-index:99999;
     transition:transform .3s,opacity .3s;
     max-width:90%;text-align:center;
     box-shadow:0 8px 25px rgba(59,130,246,.4);
     opacity:0;pointer-events:none;
 }
 .notif.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
-.notif.error{
-    background:linear-gradient(135deg,#E53935,#D32F2F);
-    box-shadow:0 8px 25px rgba(229,57,53,.4);
-}
+.notif.error{background:linear-gradient(135deg,#E53935,#D32F2F);box-shadow:0 8px 25px rgba(229,57,53,.4)}
 
 @media(max-width:380px){
     .inv-grid{gap:6px}
@@ -1150,7 +1008,7 @@ body{
     .inv-card-price{font-size:9px}
     .profile-stat-val{font-size:13px}
     .item-sheet-img{width:100px;height:100px}
-    .item-nft-img{width:150px;height:150px}
+    .item-nft-img-wrap{width:170px;height:170px}
     .item-btn{font-size:13px;padding:14px 10px}
 }
 </style>
@@ -1240,7 +1098,7 @@ body{
 
 </div>
 
-<!-- SELECT ACTION BAR — появляется только при выборе -->
+<!-- SELECT ACTION BAR -->
 <div class="select-action-bar" id="selectActionBar">
     <div class="select-info">Выбрано: <span id="selectedCount">0</span></div>
     <div class="select-btns">
@@ -1249,11 +1107,12 @@ body{
     </div>
 </div>
 
-<!-- ══════════════ ITEM SHEET (z-index 100000) ══════════════ -->
+<!-- ═══ ITEM SHEET — z-index 60000 ═══ -->
 <div class="item-sheet-overlay" id="itemSheetOverlay" onclick="if(event.target===this)closeItemSheet()">
     <div class="item-sheet" onclick="event.stopPropagation()">
         <div class="item-sheet-handle"></div>
 
+        <!-- Обычный подарок header -->
         <div class="item-sheet-header" id="itemSheetHeader">
             <img class="item-sheet-img" id="itemSheetImg" src="/static/img/gift.png" alt="">
             <div class="item-sheet-title" id="itemSheetTitle">Подарок</div>
@@ -1262,26 +1121,41 @@ body{
             </div>
         </div>
 
-        <div class="item-nft-details" id="itemNftDetails">
-            <img class="item-nft-img" id="itemNftImg" src="" alt="">
+        <!-- NFT блок с Fragment данными -->
+        <div class="item-nft-block" id="itemNftBlock">
+            <div class="item-nft-img-wrap">
+                <img id="itemNftImg" src="" alt="">
+                <div class="nft-loader" id="nftLoader">Загрузка...</div>
+            </div>
             <div class="item-nft-name" id="itemNftName">—</div>
             <div class="item-nft-number" id="itemNftNumber">#?</div>
+
             <div class="item-nft-attrs">
-                <div class="item-nft-attr-row">
+                <div class="item-nft-attr" id="attrModelRow">
                     <span class="item-nft-attr-label">Model</span>
-                    <span class="item-nft-attr-val" id="itemAttrModel">—</span>
+                    <div class="item-nft-attr-right">
+                        <span class="item-nft-attr-value" id="attrModelVal">—</span>
+                        <span class="item-nft-attr-rarity empty" id="attrModelRarity"></span>
+                    </div>
                 </div>
-                <div class="item-nft-attr-row">
+                <div class="item-nft-attr" id="attrBackdropRow">
                     <span class="item-nft-attr-label">Backdrop</span>
-                    <span class="item-nft-attr-val" id="itemAttrBackdrop">—</span>
+                    <div class="item-nft-attr-right">
+                        <span class="item-nft-attr-value" id="attrBackdropVal">—</span>
+                        <span class="item-nft-attr-rarity empty" id="attrBackdropRarity"></span>
+                    </div>
                 </div>
-                <div class="item-nft-attr-row">
+                <div class="item-nft-attr" id="attrSymbolRow">
                     <span class="item-nft-attr-label">Symbol</span>
-                    <span class="item-nft-attr-val" id="itemAttrSymbol">—</span>
+                    <div class="item-nft-attr-right">
+                        <span class="item-nft-attr-value" id="attrSymbolVal">—</span>
+                        <span class="item-nft-attr-rarity empty" id="attrSymbolRarity"></span>
+                    </div>
                 </div>
             </div>
         </div>
 
+        <!-- Challenge (отыгрыш) -->
         <div class="item-challenge" id="itemChallenge" style="display:none">
             <div class="item-challenge-label">
                 <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -1291,6 +1165,7 @@ body{
             <div class="item-challenge-text" id="itemChallengeText">0 / 0 TON</div>
         </div>
 
+        <!-- Действия -->
         <div class="item-sheet-actions" id="itemSheetActions">
             <button class="item-btn item-btn-sell" id="itemBtnSell" onclick="askSellConfirm()">
                 <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -1307,7 +1182,7 @@ body{
     </div>
 </div>
 
-<!-- ══════════════ SELL CONFIRM ══════════════ -->
+<!-- ═══ SELL CONFIRM — z-index 70000 ═══ -->
 <div class="sell-confirm-overlay" id="sellConfirmOverlay">
     <div class="sell-confirm-modal">
         <div class="sell-confirm-icon">
@@ -1329,7 +1204,7 @@ body{
 </div>
 
 <!-- BATCH SELL MODAL -->
-<div class="overlay" id="batchSellModal" onclick="if(event.target===this)closeBatchSellModal()">
+<div class="overlay" id="batchSellModal" style="z-index:70000" onclick="if(event.target===this)closeBatchSellModal()">
     <div class="batch-modal">
         <div class="batch-modal-header">
             <div class="batch-modal-title">Подтвердите продажу</div>
@@ -1346,7 +1221,7 @@ body{
     </div>
 </div>
 
-<!-- PORTAL PICKER -->
+<!-- ═══ PORTAL PICKER — z-index 80000 (ВЫШЕ item-sheet!) ═══ -->
 <div class="mrkt-backdrop" id="mrktBackdrop" onclick="closePortalPicker()"></div>
 <div class="mrkt-overlay" id="mrktOverlay">
     <div class="mrkt-header">
@@ -1464,10 +1339,10 @@ let selectMode = false;
 let selectedItems = new Set();
 const ADMIN_ID = 5257227756;
 const _imgCache = {};
+const _nftDetailsCache = {};
 
 let _sellCountdownTimer = null;
 let _batchCountdownTimer = null;
-
 let _portalSelGiftId = null;
 let _portalGifts = [];
 
@@ -1481,9 +1356,7 @@ function formatTon(t){
     return v.toFixed(2);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   VIBRATION
-   ══════════════════════════════════════════════════════════════ */
+/* VIBRATION */
 let vibrationOn = localStorage.getItem('vibration') !== 'off';
 function initVibration(){
     var b = $('vibBtn');
@@ -1506,9 +1379,7 @@ function vibrateIfOn(){
     if(navigator.vibrate) navigator.vibrate(30);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   LANG
-   ══════════════════════════════════════════════════════════════ */
+/* LANG */
 let currentLang = localStorage.getItem('app_lang') || 'ru';
 function initLang(){
     var f = $('langFlag');
@@ -1523,9 +1394,7 @@ function toggleLang(){
     vibrateIfOn();
 }
 
-/* ══════════════════════════════════════════════════════════════
-   INIT
-   ══════════════════════════════════════════════════════════════ */
+/* INIT */
 document.addEventListener('DOMContentLoaded', function(){
     initLang();
     initVibration();
@@ -1574,9 +1443,7 @@ async function initUser(){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   UPDATE PROFILE
-   ══════════════════════════════════════════════════════════════ */
+/* UPDATE PROFILE */
 function updateProfile(){
     if(!user) return;
     var name = user.first_name || 'User';
@@ -1628,9 +1495,7 @@ function updateProfile(){
     var rc = $('refCount'); if(rc) rc.textContent = user.referral_count || 0;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   INVENTORY
-   ══════════════════════════════════════════════════════════════ */
+/* INVENTORY */
 async function loadInventory(){
     if(!user) return;
     try{
@@ -1706,7 +1571,6 @@ function renderInventory(){
         var click = selectMode ? 'toggleSelectItem(' + item.id + ')' : 'openItemSheet(' + item.id + ')';
 
         if(upgraded){
-            /* Улучшенный подарок: только картинка во всю карточку + серая обводка */
             html += '<div class="' + cardClass + '" onclick="' + click + '">'
                 + '<div class="inv-card-img-wrap">'
                 + '<img src="' + imgSrc + '" alt="" loading="lazy" onerror="' + onerr + '">'
@@ -1714,7 +1578,6 @@ function renderInventory(){
                 + chBadge
                 + '</div>';
         } else {
-            /* Обычный подарок: PNG без обводки + название + цена */
             html += '<div class="' + cardClass + '" onclick="' + click + '">'
                 + '<div class="inv-card-img-wrap">'
                 + '<img src="' + imgSrc + '" alt="" loading="lazy" onerror="' + onerr + '">'
@@ -1729,9 +1592,7 @@ function renderInventory(){
     c.innerHTML = html;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   SELECT MODE
-   ══════════════════════════════════════════════════════════════ */
+/* SELECT MODE */
 function toggleSelectMode(){
     selectMode = !selectMode;
     selectedItems.clear();
@@ -1770,14 +1631,14 @@ function openItemSheet(itemId){
     var upgraded = isUpgraded(item);
 
     var header = $('itemSheetHeader');
-    var nftDetails = $('itemNftDetails');
+    var nftBlock = $('itemNftBlock');
     var challenge = $('itemChallenge');
     var actions = $('itemSheetActions');
     var sellBtn = $('itemBtnSell');
     var withdrawBtn = $('itemBtnWithdraw');
     var claimBtn = $('itemBtnClaim');
 
-    if(nftDetails) nftDetails.classList.remove('show');
+    if(nftBlock) nftBlock.classList.remove('show');
     if(challenge) challenge.style.display = 'none';
     if(actions) actions.style.display = 'grid';
     if(sellBtn) sellBtn.style.display = 'flex';
@@ -1785,64 +1646,52 @@ function openItemSheet(itemId){
     if(claimBtn) claimBtn.style.display = 'none';
 
     if(upgraded){
-        /* Улучшенный: скрываем обычный header, показываем NFT-детали */
+        // Улучшенный — показываем NFT-блок, скрываем обычный header
         if(header) header.style.display = 'none';
-        if(nftDetails){
-            nftDetails.classList.add('show');
-            var nftImg = $('itemNftImg');
-            if(nftImg){
-                nftImg.src = item.gift_image || '/static/img/gift.png';
-                nftImg.onerror = function(){ this.onerror = null; this.src = '/static/img/gift.png'; };
-            }
-            var nftName = $('itemNftName');
-            if(nftName){
-                var bn = (item.gift_name || '').replace(/#\d+$/, '').trim();
-                nftName.textContent = bn || 'Gift';
-            }
-            var nftNum = $('itemNftNumber');
-            if(nftNum) nftNum.textContent = '#' + (item.nft_number || '?');
+        if(nftBlock) nftBlock.classList.add('show');
 
-            /* Model */
-            var am = $('itemAttrModel');
-            if(am){
-                var modelTxt = item.nft_model || '—';
-                if(item.nft_model_rarity){
-                    modelTxt += '<span class="rarity">' + parseFloat(item.nft_model_rarity).toFixed(1) + '%</span>';
-                }
-                if(item.nft_model_price){
-                    modelTxt += '<span class="item-nft-attr-price">' + parseFloat(item.nft_model_price).toFixed(2) + ' TON</span>';
-                }
-                am.innerHTML = modelTxt;
-            }
-            /* Backdrop */
-            var ab = $('itemAttrBackdrop');
-            if(ab){
-                var backTxt = item.nft_backdrop || '—';
-                if(item.nft_backdrop_rarity){
-                    backTxt += '<span class="rarity">' + parseFloat(item.nft_backdrop_rarity).toFixed(1) + '%</span>';
-                }
-                if(item.nft_backdrop_price){
-                    backTxt += '<span class="item-nft-attr-price">' + parseFloat(item.nft_backdrop_price).toFixed(2) + ' TON</span>';
-                }
-                ab.innerHTML = backTxt;
-            }
-            /* Symbol */
-            var as = $('itemAttrSymbol');
-            if(as){
-                var symTxt = item.nft_symbol || '—';
-                if(item.nft_symbol_rarity){
-                    symTxt += '<span class="rarity">' + parseFloat(item.nft_symbol_rarity).toFixed(1) + '%</span>';
-                }
-                if(item.nft_symbol_price){
-                    symTxt += '<span class="item-nft-attr-price">' + parseFloat(item.nft_symbol_price).toFixed(2) + ' TON</span>';
-                }
-                as.innerHTML = symTxt;
-            }
+        // Название и номер
+        var bn = (item.gift_name || '').replace(/#\d+$/, '').trim();
+        var nnm = $('itemNftName'); if(nnm) nnm.textContent = bn || 'Gift';
+        var nnum = $('itemNftNumber'); if(nnum) nnum.textContent = '#' + (item.nft_number || '?');
+
+        // Картинка сразу из инвентаря
+        var nimg = $('itemNftImg');
+        if(nimg){
+            nimg.src = item.gift_image || '/static/img/gift.png';
+            nimg.onerror = function(){ this.onerror = null; this.src = '/static/img/gift.png'; };
         }
+
+        // Показываем загрузчик и сбрасываем данные
+        var loader = $('nftLoader'); if(loader) loader.classList.remove('hidden');
+        setAttrLoading('attrModelRow', 'attrModelVal', 'attrModelRarity');
+        setAttrLoading('attrBackdropRow', 'attrBackdropVal', 'attrBackdropRarity');
+        setAttrLoading('attrSymbolRow', 'attrSymbolVal', 'attrSymbolRarity');
+
+        // Извлекаем slug и number
+        var slug = item.fragment_slug || '';
+        var num = item.nft_number || 0;
+
+        if(!slug){
+            // Пробуем вытащить из картинки
+            var m = String(item.gift_image || '').match(/\/gifts\/([a-z0-9_-]+)-(\d+)/i);
+            if(m){ slug = m[1]; if(!num) num = parseInt(m[2]); }
+        }
+
+        if(slug && num){
+            fetchFragmentDetails(slug, num);
+        } else {
+            // Нет данных — показываем что есть
+            if(loader) loader.classList.add('hidden');
+            setAttrFinal('attrModelVal', item.nft_model || '—', item.nft_model_rarity, 'attrModelRarity');
+            setAttrFinal('attrBackdropVal', item.nft_backdrop || '—', item.nft_backdrop_rarity, 'attrBackdropRarity');
+            setAttrFinal('attrSymbolVal', item.nft_symbol || '—', item.nft_symbol_rarity, 'attrSymbolRarity');
+        }
+
         if(sellBtn) sellBtn.disabled = !!item.is_withdrawing;
         if(withdrawBtn) withdrawBtn.disabled = !!item.is_withdrawing;
     } else {
-        /* Обычный подарок */
+        // Обычный подарок
         if(header) header.style.display = 'flex';
         var img = $('itemSheetImg'); if(img) img.src = getGiftImage(item);
         var title = $('itemSheetTitle'); if(title) title.textContent = item.gift_name || 'Подарок';
@@ -1880,6 +1729,82 @@ function openItemSheet(itemId){
     if(ov) ov.classList.add('show');
 }
 
+function setAttrLoading(rowId, valId, rarId){
+    var row = $(rowId); if(row) row.classList.add('loading');
+    var val = $(valId); if(val) val.textContent = 'Загрузка...';
+    var rar = $(rarId); if(rar){ rar.textContent = ''; rar.classList.add('empty'); }
+}
+
+function setAttrFinal(valId, value, rarity, rarId){
+    var row = $(valId); if(row){
+        var parent = row.closest('.item-nft-attr');
+        if(parent) parent.classList.remove('loading');
+    }
+    var val = $(valId); if(val) val.textContent = value || '—';
+    var rar = $(rarId);
+    if(rar){
+        if(rarity){
+            rar.textContent = parseFloat(rarity).toFixed(1) + '%';
+            rar.classList.remove('empty');
+        } else {
+            rar.textContent = '';
+            rar.classList.add('empty');
+        }
+    }
+}
+
+async function fetchFragmentDetails(slug, number){
+    var cacheKey = slug + '_' + number;
+
+    // Кэш в памяти
+    if(_nftDetailsCache[cacheKey]){
+        applyFragmentDetails(_nftDetailsCache[cacheKey]);
+        return;
+    }
+
+    try{
+        var r = await fetch('/api/fragment-gift-details?slug=' + encodeURIComponent(slug) + '&number=' + number);
+        var d = await r.json();
+
+        if(d.success && d.attrs){
+            _nftDetailsCache[cacheKey] = d;
+            applyFragmentDetails(d);
+        } else {
+            // Fragment недоступен — показываем что есть в инвентаре
+            var loader = $('nftLoader'); if(loader) loader.classList.add('hidden');
+            var item = selectedItem || {};
+            setAttrFinal('attrModelVal', item.nft_model || '—', item.nft_model_rarity, 'attrModelRarity');
+            setAttrFinal('attrBackdropVal', item.nft_backdrop || '—', item.nft_backdrop_rarity, 'attrBackdropRarity');
+            setAttrFinal('attrSymbolVal', item.nft_symbol || '—', item.nft_symbol_rarity, 'attrSymbolRarity');
+        }
+    } catch(e){
+        var loader2 = $('nftLoader'); if(loader2) loader2.classList.add('hidden');
+        var item2 = selectedItem || {};
+        setAttrFinal('attrModelVal', item2.nft_model || '—', item2.nft_model_rarity, 'attrModelRarity');
+        setAttrFinal('attrBackdropVal', item2.nft_backdrop || '—', item2.nft_backdrop_rarity, 'attrBackdropRarity');
+        setAttrFinal('attrSymbolVal', item2.nft_symbol || '—', item2.nft_symbol_rarity, 'attrSymbolRarity');
+    }
+}
+
+function applyFragmentDetails(d){
+    var loader = $('nftLoader'); if(loader) loader.classList.add('hidden');
+
+    var attrs = d.attrs || {};
+    var model = attrs.model || {};
+    var symbol = attrs.symbol || {};
+    var backdrop = attrs.backdrop || {};
+
+    setAttrFinal('attrModelVal', model.value || '—', model.rarity, 'attrModelRarity');
+    setAttrFinal('attrBackdropVal', backdrop.value || '—', backdrop.rarity, 'attrBackdropRarity');
+    setAttrFinal('attrSymbolVal', symbol.value || '—', symbol.rarity, 'attrSymbolRarity');
+
+    // Если Fragment дал картинку — обновим
+    if(d.image){
+        var nimg = $('itemNftImg');
+        if(nimg) nimg.src = d.image;
+    }
+}
+
 function closeItemSheet(){
     var ov = $('itemSheetOverlay');
     if(ov) ov.classList.remove('show');
@@ -1895,9 +1820,7 @@ async function claimChallenge(){
     await loadInventory();
 }
 
-/* ══════════════════════════════════════════════════════════════
-   SELL CONFIRM
-   ══════════════════════════════════════════════════════════════ */
+/* SELL CONFIRM */
 function askSellConfirm(){
     if(!selectedItem) return;
     var name = $('sellConfirmName');
@@ -1973,9 +1896,7 @@ async function doConfirmedSell(){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   BATCH SELL
-   ══════════════════════════════════════════════════════════════ */
+/* BATCH SELL */
 function openBatchSellModal(){
     if(selectedItems.size === 0) return;
     var list = $('batchItemsList');
@@ -2066,9 +1987,7 @@ async function batchWithdraw(){
     showNotif('Вывод нескольких скоро');
 }
 
-/* ══════════════════════════════════════════════════════════════
-   PORTAL PICKER
-   ══════════════════════════════════════════════════════════════ */
+/* PORTAL PICKER */
 async function openPortalPicker(){
     if(!selectedItem) return;
     var ol = $('mrktOverlay');
@@ -2086,7 +2005,6 @@ async function openPortalPicker(){
     if(sub) sub.textContent = 'Поиск...';
 
     var gn = selectedItem.gift_name || selectedItem.name || '';
-    /* Убираем #number из имени для поиска */
     gn = String(gn).replace(/#\d+$/, '').trim();
     try{
         var r = await fetch('/api/portal/gifts?name=' + encodeURIComponent(gn));
@@ -2168,9 +2086,7 @@ async function confirmPortalWithdraw(){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   REFERRAL
-   ══════════════════════════════════════════════════════════════ */
+/* REFERRAL */
 function inviteFriends(){
     if(window.Telegram && window.Telegram.WebApp){
         var link = 'https://t.me/rasswetgifts_bot?start=ref_' + (user.referral_code || user.id);
@@ -2199,9 +2115,7 @@ async function withdrawRefBalance(){
     }catch(e){ showNotif('Ошибка', true); }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   DEPOSIT
-   ══════════════════════════════════════════════════════════════ */
+/* DEPOSIT */
 function openDeposit(){
     vibrateIfOn();
     var sb = $('starsDepositBtn');
@@ -2279,9 +2193,7 @@ function resetStarsBtn(amount){
     }
 }
 
-/* ══════════════════════════════════════════════════════════════
-   PROMO
-   ══════════════════════════════════════════════════════════════ */
+/* PROMO */
 function openPromoModal(){
     vibrateIfOn();
     var po = $('promoOverlay'); if(po) po.classList.add('show');
@@ -2344,9 +2256,7 @@ function showGiftReveal(img, name){
 }
 function closeGiftReveal(){ var gro = $('giftRevealOverlay'); if(gro) gro.classList.remove('show'); }
 
-/* ══════════════════════════════════════════════════════════════
-   REFRESH USER DATA
-   ══════════════════════════════════════════════════════════════ */
+/* REFRESH */
 async function refreshUserData(){
     if(!user) return;
     try{
@@ -2356,9 +2266,7 @@ async function refreshUserData(){
     }catch(e){}
 }
 
-/* ══════════════════════════════════════════════════════════════
-   SUCCESS OVERLAY
-   ══════════════════════════════════════════════════════════════ */
+/* SUCCESS */
 function showSuccessOverlay(title, price){
     var st = $('successTitle'); if(st) st.textContent = title;
     var sp = $('successPrice');
@@ -2370,9 +2278,7 @@ function closeSuccessOverlay(){
     var so = $('successOverlay'); if(so) so.classList.remove('show');
 }
 
-/* ══════════════════════════════════════════════════════════════
-   NOTIF
-   ══════════════════════════════════════════════════════════════ */
+/* NOTIF */
 function showNotif(msg, isError){
     var el = $('notif');
     if(!el) return;
