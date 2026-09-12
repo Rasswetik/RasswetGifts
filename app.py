@@ -4201,23 +4201,26 @@ def start_ultimate_crash_loop():
                     try:
                         cursor.execute("""
                             INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus)
-                            VALUES ('waiting', ?, CURRENT_TIMESTAMP, ?)
+                            VALUES ('counting', ?, CURRENT_TIMESTAMP, ?)
                         """, (target_multiplier, bool(is_bonus)))
                     except Exception:
                         cursor.execute("""
                             INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                            VALUES ('waiting', ?, CURRENT_TIMESTAMP)
+                            VALUES ('counting', ?, CURRENT_TIMESTAMP)
                         """, (target_multiplier,))
 
+                    new_game_id = cursor.lastrowid
                     conn.commit()
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 New game, target={target_multiplier}x, bonus={is_bonus}")
 
-                    live_game_id = 0
-                    live_status = 'waiting'
+                    live_game_id = new_game_id
+                    live_status = 'counting'
                     live_mult = 1.0
                     live_target = target_multiplier
                     live_is_bonus = is_bonus
+                    live_flying_started_at = 0.0
+                    update_crash_cache(new_game_id, 'counting', 1.0, target_multiplier, 5.0, is_bonus=is_bonus)
 
                 time.sleep(0.05)
 
