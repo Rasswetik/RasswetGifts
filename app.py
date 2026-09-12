@@ -295,16 +295,18 @@ def get_crash_cache():
     with _crash_cache_lock:
         return _crash_game_cache.copy()
 
-def update_crash_cache(game_id, status, current_mult, target_mult, time_remaining):
+def update_crash_cache(game_id, status, current_mult, target_mult, time_remaining, is_bonus=None):
     """Update crash game cache (called from game loop)"""
     global _crash_game_cache
     with _crash_cache_lock:
+        prev_bonus = _crash_game_cache.get('is_bonus', False) if _crash_game_cache.get('id') == game_id else False
         _crash_game_cache = {
             'id': game_id,
             'status': status,
             'current_multiplier': round(current_mult, 2),
             'target_multiplier': target_mult,
             'time_remaining': round(time_remaining, 1),
+            'is_bonus': bool(is_bonus) if is_bonus is not None else prev_bonus,
             'timestamp': time.time()
         }
 
@@ -1842,6 +1844,7 @@ def _create_all_tables(conn):
             target_multiplier DECIMAL(10,2) DEFAULT 5.00,
             start_time TIMESTAMP,
             end_time TIMESTAMP,
+            is_bonus BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''',
         'ultimate_crash_bets': '''CREATE TABLE IF NOT EXISTS ultimate_crash_bets (
@@ -3522,19 +3525,19 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
             # === Large bet protection — crash earlier for big bets ===
             if bet_amount >= LARGE_BET_THRESHOLD:
                 if bet_amount >= WHALE_BET_THRESHOLD:  # 5+ TON
-                    # Start considering crash above 2x for whales
-                    if current_mult > 2.0:
-                        crash_prob = 0.08 + (current_mult - 2.0) * 0.06
-                        crash_prob = min(crash_prob, 0.40)
+                    # Start considering crash above 3.5x for whales (softer)
+                    if current_mult > 3.5:
+                        crash_prob = 0.05 + (current_mult - 3.5) * 0.04
+                        crash_prob = min(crash_prob, 0.25)
                         if random.random() < crash_prob:
                             if close_conn: conn.close()
                             logger.info(f"🐋 Whale crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
                             return True
                 else:  # 1-5 TON range
-                    # Start considering crash above 3x for large bets
-                    if current_mult > 3.0:
-                        crash_prob = 0.05 + (current_mult - 3.0) * 0.05
-                        crash_prob = min(crash_prob, 0.30)
+                    # Start considering crash above 5x for large bets (softer)
+                    if current_mult > 5.0:
+                        crash_prob = 0.03 + (current_mult - 5.0) * 0.03
+                        crash_prob = min(crash_prob, 0.20)
                         if random.random() < crash_prob:
                             if close_conn: conn.close()
                             logger.info(f"💰 Large bet crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
@@ -3543,9 +3546,9 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
             # === Profitability check — only for very profitable players ===
             if stats['total_wagered'] >= 500:  # Needs significant history
                 mode, _ = get_player_rtp_mode(user_id, conn)
-                if mode == 'nerf' and current_mult > 4.0:
+                if mode == 'nerf' and current_mult > 6.0:
                     excess_rtp = stats['player_rtp'] - RTP_NERF_THRESHOLD
-                    crash_prob = min(0.20, 0.05 + excess_rtp * 0.2)
+                    crash_prob = min(0.12, 0.03 + excess_rtp * 0.15)
                     
                     if potential_win > 1000:
                         crash_prob += 0.05
@@ -3573,83 +3576,85 @@ def ai_should_force_crash(game_id, current_mult, conn=None):
 
 
 def generate_extreme_crash_multiplier():
-    """Генерация множителя для Ultimate Crash с учётом баланса сайта.
+    """Генерация множителя для Ultimate Crash — щедрая и сбалансированная.
     
-    Base multiplier generation — will be adjusted by ai_adjust_target_multiplier
-    once bets are placed. Tightened distribution for better house edge.
+    Исправления:
+    - Убран слишком агрессивный анти-стрик (после 4x давал только 1.3-2.5x)
+    - Более широкая дистрибуция для лучшего геймплея
+    - AI-корректировка происходит ПОСЛЕ генерации (по ставкам)
     """
-    # ★ FIX: анти-стрик — после 4x+ даём не больше 2.5x
+    # ★ Мягкий анти-стрик — не даём 5x+ дважды подряд
     _recent_max = _get_recent_max()
-    if _recent_max >= 4.0:
-        # Последние игры были жирными — ограничиваем текущую
-        return round(random.uniform(1.3, 2.5), 2)
-    if _recent_max >= 3.0:
-        return round(random.uniform(1.5, 3.5), 2)
+    if _recent_max >= 8.0:
+        # Одна жирная игра — следующая средняя
+        return round(random.uniform(1.5, 4.0), 2)
+    if _recent_max >= 5.0:
+        return round(random.uniform(1.8, 6.0), 2)
 
     site_balance = _get_site_profit_balance()
     r = random.random()
     
-    # Standard distribution based on site balance
-    if site_balance < -5000:
-        # Site is losing big — very tight distribution
-        if r < 0.50:
-            return round(1.0 + random.random() * 1.0, 2)  # 1.0-2.0
-        elif r < 0.72:
-            return round(2.0 + random.random() * 1.5, 2)  # 2.0-3.5
-        elif r < 0.86:
-            return round(3.5 + random.random() * 2.0, 2)  # 3.5-5.5
-        elif r < 0.94:
-            return round(5.5 + random.random() * 3.0, 2)  # 5.5-8.5
-        elif r < 0.98:
-            return round(8.5 + random.random() * 5.0, 2)  # 8.5-13.5
-        else:
-            return round(13.5 + random.random() * 6.5, 2)  # 13.5-20.0
-    elif site_balance < -1000:
-        # Site is losing moderately — tighter multipliers
-        if r < 0.45:
-            return round(1.0 + random.random() * 1.2, 2)  # 1.0-2.2
-        elif r < 0.68:
-            return round(2.2 + random.random() * 2.0, 2)  # 2.2-4.2
-        elif r < 0.82:
-            return round(4.2 + random.random() * 2.5, 2)  # 4.2-6.7
-        elif r < 0.92:
-            return round(6.7 + random.random() * 4.0, 2)  # 6.7-10.7
+    # ── Базовая дистрибуция (щедрая) ──
+    # Основная масса: 1.0-3.0x
+    # Средние: 3-10x
+    # Редкие: 10-50x
+    # Легендарные: 50x+
+    if site_balance < -10000:
+        # Критический минус — очень осторожно
+        if r < 0.55:
+            return round(1.0 + random.random() * 1.0, 2)   # 1.0-2.0
+        elif r < 0.78:
+            return round(2.0 + random.random() * 1.5, 2)   # 2.0-3.5
+        elif r < 0.91:
+            return round(3.5 + random.random() * 2.0, 2)   # 3.5-5.5
         elif r < 0.97:
-            return round(10.7 + random.random() * 7.0, 2)  # 10.7-17.7
+            return round(5.5 + random.random() * 4.5, 2)   # 5.5-10.0
         else:
-            return round(17.7 + random.random() * 12.0, 2) # 17.7-29.7
-    elif site_balance > 5000:
-        # Site is profiting well — slightly looser but still house edge
-        if r < 0.30:
-            return round(1.0 + random.random() * 1.5, 2)  # 1.0-2.5
-        elif r < 0.52:
-            return round(2.5 + random.random() * 2.5, 2)  # 2.5-5.0
+            return round(10.0 + random.random() * 10.0, 2) # 10-20
+    elif site_balance < -3000:
+        # Умеренный минус
+        if r < 0.45:
+            return round(1.0 + random.random() * 1.3, 2)   # 1.0-2.3
         elif r < 0.70:
-            return round(5.0 + random.random() * 3.0, 2)  # 5.0-8.0
-        elif r < 0.83:
-            return round(8.0 + random.random() * 7.0, 2)  # 8.0-15.0
-        elif r < 0.93:
-            return round(15.0 + random.random() * 15.0, 2) # 15.0-30.0
-        elif r < 0.98:
-            return round(30.0 + random.random() * 20.0, 2) # 30.0-50.0
+            return round(2.3 + random.random() * 2.0, 2)   # 2.3-4.3
+        elif r < 0.86:
+            return round(4.3 + random.random() * 3.5, 2)   # 4.3-7.8
+        elif r < 0.95:
+            return round(7.8 + random.random() * 7.0, 2)   # 7.8-14.8
         else:
-            return round(50.0 + random.random() * 30.0, 2) # 50.0-80.0
+            return round(14.8 + random.random() * 15.0, 2) # 14.8-29.8
+    elif site_balance > 5000:
+        # Профицит — щедро
+        if r < 0.22:
+            return round(1.0 + random.random() * 1.5, 2)   # 1.0-2.5
+        elif r < 0.44:
+            return round(2.5 + random.random() * 2.5, 2)   # 2.5-5.0
+        elif r < 0.63:
+            return round(5.0 + random.random() * 4.0, 2)   # 5.0-9.0
+        elif r < 0.79:
+            return round(9.0 + random.random() * 8.0, 2)   # 9.0-17.0
+        elif r < 0.91:
+            return round(17.0 + random.random() * 15.0, 2) # 17.0-32.0
+        elif r < 0.97:
+            return round(32.0 + random.random() * 30.0, 2) # 32.0-62.0
+        else:
+            return round(62.0 + random.random() * 50.0, 2) # 62.0-112.0
     else:
-        # Normal/balanced — house-favoring distribution
-        if r < 0.38:
-            return round(1.0 + random.random() * 1.3, 2)  # 1.0-2.3
-        elif r < 0.60:
-            return round(2.3 + random.random() * 2.0, 2)  # 2.3-4.3
-        elif r < 0.76:
-            return round(4.3 + random.random() * 2.5, 2)  # 4.3-6.8
-        elif r < 0.87:
-            return round(6.8 + random.random() * 5.0, 2)  # 6.8-11.8
-        elif r < 0.94:
-            return round(11.8 + random.random() * 8.0, 2)  # 11.8-19.8
+        # Норма — сбалансированная щедрость
+        if r < 0.28:
+            return round(1.0 + random.random() * 1.5, 2)   # 1.0-2.5
+        elif r < 0.52:
+            return round(2.5 + random.random() * 2.5, 2)   # 2.5-5.0
+        elif r < 0.70:
+            return round(5.0 + random.random() * 3.5, 2)   # 5.0-8.5
+        elif r < 0.84:
+            return round(8.5 + random.random() * 6.5, 2)   # 8.5-15.0
+        elif r < 0.93:
+            return round(15.0 + random.random() * 10.0, 2) # 15.0-25.0
         elif r < 0.98:
-            return round(19.8 + random.random() * 15.0, 2) # 19.8-34.8
+            return round(25.0 + random.random() * 25.0, 2) # 25.0-50.0
         else:
-            return round(34.8 + random.random() * 25.0, 2) # 34.8-59.8
+            return round(50.0 + random.random() * 50.0, 2) # 50.0-100.0
 
 
 def _get_site_profit_balance():
@@ -3738,9 +3743,23 @@ def start_ultimate_crash_loop():
             """Common crash logic — updates DB, history, bets, cache"""
             nonlocal live_status
             live_status = 'crashed'
+            # Определяем бонусный ли раунд
+            bonus_flag = False
+            try:
+                cursor.execute('SELECT is_bonus FROM ultimate_crash_games WHERE id = ?', (gid,))
+                _brow = cursor.fetchone()
+                if _brow and _brow[0]:
+                    bonus_flag = True
+            except Exception:
+                pass
+
             cursor.execute("UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ? WHERE id = ?",
                          (crash_mult, gid))
-            cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (gid, crash_mult))
+            try:
+                cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at, is_bonus) VALUES (?, ?, CURRENT_TIMESTAMP, ?)', (gid, crash_mult, bool(bonus_flag)))
+            except Exception:
+                # Fallback для старых БД без is_bonus
+                cursor.execute('INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)', (gid, crash_mult))
             cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (gid,))
             cursor.execute('''
                 UPDATE users SET total_loss = total_loss + (
@@ -3774,8 +3793,9 @@ def start_ultimate_crash_loop():
                         continue
 
                     if live_mult < live_target:
-                        # AI RTP check (every 8th tick, only above 3x)
-                        if live_mult > 3.0 and tick_counter % 8 == 0:
+                        # AI RTP check — только для очень крупных ставок и только после 4x
+                        # (мягкий режим: срабатывает редко, не ломает геймплей)
+                        if live_mult > 4.0 and tick_counter % 20 == 0:
                             try:
                                 if ai_should_force_crash(live_game_id, live_mult, conn):
                                     do_crash(conn, cursor, live_game_id, live_mult, live_target)
@@ -3794,31 +3814,31 @@ def start_ultimate_crash_loop():
                         # 10.0+        → +1 в секунду (инкремент 0.05 за тик)
                         #
                         # Тик = 0.05 сек (time.sleep(0.05) в цикле)
-                        if live_mult < 1.10:
-                            # 1.00 → 1.10 : 3 сек (60 тиков) → 0.10/60 = 0.001667
-                            increment = 0.0017
-                        elif live_mult < 1.50:
-                            # 1.10 → 1.50 : 4 сек (80 тиков) → 0.40/80 = 0.005
-                            increment = 0.005
-                        elif live_mult < 2.00:
-                            # 1.50 → 2.00 : 4 сек (80 тиков) → 0.50/80 = 0.00625
-                            increment = 0.00625
-                        elif live_mult < 4.00:
-                            # 2.00 → 4.00 : 8 сек (160 тиков) → 2.00/160 = 0.0125
-                            increment = 0.0125
-                        elif live_mult < 10.0:
-                            # 4.00 → 10.0 : 6 сек (120 тиков) → 6.00/120 = 0.05
-                            increment = 0.05
+                        # ★ Плавная кривая (исправляет зависание после 3x)
+                        # Тик = 0.05 сек (20 тиков/сек)
+                        if live_mult < 1.20:
+                            increment = 0.0018   # 1.00→1.20 за ~5.5 сек
+                        elif live_mult < 1.80:
+                            increment = 0.0040   # 1.20→1.80 за ~7.5 сек
+                        elif live_mult < 3.00:
+                            increment = 0.0080   # 1.80→3.00 за ~7.5 сек
+                        elif live_mult < 6.00:
+                            increment = 0.0180   # 3.00→6.00 за ~8.3 сек
+                        elif live_mult < 12.0:
+                            increment = 0.0450   # 6.00→12.0 за ~6.7 сек
+                        elif live_mult < 30.0:
+                            increment = 0.1200   # 12.0→30.0 за ~7.5 сек
                         else:
-                            # 10.0+ : +1 в секунду → 0.05 за тик
-                            increment = 0.05
+                            increment = 0.3500   # 30.0+ очень быстро
 
                         increment = round(increment, 5)
-                        # Кэп на случай сбоев
-                        increment = min(increment, 0.5)
 
-                        # Keep random crash soft so the round feels lively but stable
-                        crash_chance = 0.0012 * (live_mult / 10)
+                        # Случайный краш (мягкий, с защитой от преждевременного)
+                        # Не даём крашу случиться раньше 1.5x
+                        if live_mult < 1.5:
+                            crash_chance = 0
+                        else:
+                            crash_chance = 0.0008 * (live_mult / 10)
                         if random.random() < crash_chance:
                             do_crash(conn, cursor, live_game_id, live_mult, live_target)
                             logger.info(f"💥 Случайный краш на {live_mult:.2f}x")
@@ -3842,11 +3862,11 @@ def start_ultimate_crash_loop():
                         do_crash(conn, cursor, live_game_id, live_mult, live_target)
                         logger.info(f"💥 Игра #{live_game_id} завершена на {live_mult:.2f}x")
 
-                    time.sleep(0.05)
+                    time.sleep(0.04)
                     continue
 
                 cursor.execute('''
-                    SELECT id, status, start_time, current_multiplier, target_multiplier
+                    SELECT id, status, start_time, current_multiplier, target_multiplier, is_bonus
                     FROM ultimate_crash_games
                     WHERE status IN ('waiting', 'counting', 'flying')
                     ORDER BY id DESC LIMIT 1
@@ -3855,7 +3875,8 @@ def start_ultimate_crash_loop():
                 game = cursor.fetchone()
 
                 if game:
-                    game_id, status, start_time, current_mult, target_mult = game
+                    game_id, status, start_time, current_mult, target_mult = game[0], game[1], game[2], game[3], game[4]
+                    current_game_is_bonus = bool(game[5]) if len(game) > 5 else False
 
                     # Parse start_time (handles both str from SQLite and datetime from PostgreSQL)
                     if hasattr(start_time, 'timetuple'):
@@ -3878,7 +3899,7 @@ def start_ultimate_crash_loop():
 
                     if status == 'waiting':
                         cursor.execute("UPDATE ultimate_crash_games SET status = 'counting', start_time = CURRENT_TIMESTAMP WHERE id = ?", (game_id,))
-                        update_crash_cache(game_id, 'counting', 1.0, target_mult_float, 5.0)
+                        update_crash_cache(game_id, 'counting', 1.0, target_mult_float, 5.0, is_bonus=current_game_is_bonus)
                         live_game_id = game_id
                         live_status = 'counting'
                         live_target = target_mult_float
@@ -3899,7 +3920,7 @@ def start_ultimate_crash_loop():
 
                             with _crash_phase_lock:
                                 _crash_phase_transitioning = True
-                            update_crash_cache(game_id, 'flying', 1.0, target_mult_float, 15.0)
+                            update_crash_cache(game_id, 'flying', 1.0, target_mult_float, 15.0, is_bonus=current_game_is_bonus)
                             cursor.execute("UPDATE ultimate_crash_games SET status = 'flying' WHERE id = ?", (game_id,))
                             conn.commit()
                             with _crash_phase_lock:
@@ -3941,13 +3962,21 @@ def start_ultimate_crash_loop():
                         target_multiplier = round(random.uniform(min_m, max_m), 2)
                         logger.info(f"🎮 ADMIN RANGE multiplier: {target_multiplier}x ({min_m}-{max_m})")
 
+                    # ★ Бонус-раунд: 0.5% шанс
+                    is_bonus = random.random() < 0.005
+                    if is_bonus:
+                        # В бонус-раунде даём в среднем больший target
+                        target_multiplier = round(target_multiplier * random.uniform(1.5, 3.0), 2)
+                        target_multiplier = min(target_multiplier, 200.0)
+                        logger.info(f"🏆 BONUS ROUND! target: {target_multiplier}x")
+
                     cursor.execute('''
-                        INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                        VALUES ('waiting', ?, CURRENT_TIMESTAMP)
-                    ''', (target_multiplier,))
+                        INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus)
+                        VALUES ('waiting', ?, CURRENT_TIMESTAMP, ?)
+                    ''', (target_multiplier, bool(is_bonus)))
                     conn.commit()
                     _cleanup_user_bets_cache()
-                    logger.info(f"🆕 Новая Crash игра, target: {target_multiplier}x")
+                    logger.info(f"🆕 Новая Crash игра, target: {target_multiplier}x, bonus={is_bonus}")
 
                 time.sleep(0.05)
 
@@ -4738,7 +4767,8 @@ def ultimate_crash_simple_status():
             'status': cached['status'],
             'current_multiplier': cached['current_multiplier'],
             'target_multiplier': cached['target_multiplier'],
-            'time_remaining': cached['time_remaining']
+            'time_remaining': cached['time_remaining'],
+            'is_bonus': bool(cached.get('is_bonus', False))
         }
         
         # Кэшированные ставки и баланс пользователя — один DB-запрос если нет в кэше
@@ -4781,17 +4811,19 @@ def ultimate_crash_simple_status():
     try:
         with _quick_db_conn(5) as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT id, status, current_multiplier, target_multiplier FROM ultimate_crash_games WHERE status IN ('waiting', 'counting', 'flying', 'crashed') ORDER BY id DESC LIMIT 1")
+            cursor.execute("SELECT id, status, current_multiplier, target_multiplier, is_bonus FROM ultimate_crash_games WHERE status IN ('waiting', 'counting', 'flying', 'crashed') ORDER BY id DESC LIMIT 1")
             game = cursor.fetchone()
             
             if game:
-                game_id, status, current_mult, target_mult = game
+                game_id, status, current_mult, target_mult = game[0], game[1], game[2], game[3]
+                is_bonus_flag = bool(game[4]) if len(game) > 4 else False
                 game_data = {
                     'id': game_id,
                     'status': status,
                     'current_multiplier': float(current_mult) if current_mult else 1.0,
                     'target_multiplier': float(target_mult) if target_mult else 5.0,
-                    'time_remaining': 5.0
+                    'time_remaining': 5.0,
+                    'is_bonus': is_bonus_flag
                 }
                 
                 user_bet = None
@@ -5313,13 +5345,36 @@ def ultimate_crash_cashout_simple():
                 return jsonify({'success': False, 'error': 'Активная ставка не найдена'})
 
             bet_id, bet_amount, bet_type, gift_data_raw, bet_gift_name, bet_gift_image = bet
-            win_amount = int(bet_amount * current_mult)
+
+            # ★ Проверяем бонус-раунд (для x2 выплаты)
+            is_bonus_round_db = False
+            try:
+                cursor.execute('SELECT is_bonus FROM ultimate_crash_games WHERE id = ?', (game_id,))
+                _brow = cursor.fetchone()
+                if _brow and _brow[0]:
+                    is_bonus_round_db = True
+            except Exception:
+                pass
+
+            # Бонус-раунд применяется, если сервер ИЛИ клиент подтвердил
+            client_bonus = bool(data.get('is_bonus', False))
+            is_bonus_round = is_bonus_round_db or client_bonus
+
+            bonus_mult = 2 if is_bonus_round else 1
+            win_amount = int(bet_amount * current_mult) * bonus_mult
+            original_win_amount = int(bet_amount * current_mult)  # без бонуса
 
             # Mark bet as cashed out
-            cursor.execute('''
-                UPDATE ultimate_crash_bets SET status = 'cashed_out', cashout_multiplier = ?, win_amount = ?
-                WHERE id = ? AND status = 'active'
-            ''', (current_mult, win_amount, bet_id))
+            try:
+                cursor.execute('''
+                    UPDATE ultimate_crash_bets SET status = 'cashed_out', cashout_multiplier = ?, win_amount = ?, is_bonus_round = ?
+                    WHERE id = ? AND status = 'active'
+                ''', (current_mult, win_amount, bool(is_bonus_round), bet_id))
+            except Exception:
+                cursor.execute('''
+                    UPDATE ultimate_crash_bets SET status = 'cashed_out', cashout_multiplier = ?, win_amount = ?
+                    WHERE id = ? AND status = 'active'
+                ''', (current_mult, win_amount, bet_id))
             if cursor.rowcount == 0:
                 conn.rollback(); conn.close()
                 return jsonify({'success': False, 'error': 'Ставка уже забрана'})
@@ -5347,39 +5402,66 @@ def ultimate_crash_cashout_simple():
                     gift_list = [gd]
 
                 original_total = 0
+                # ★ Количество копий: 1 (обычный) или 2 (бонус-раунд)
+                copies = 2 if is_bonus_round else 1
+
                 for single_gd in gift_list:
                     if not single_gd.get('gift_name'):
                         continue
-                    # Restore original gift to inventory with all NFT attributes
-                    ins_cols = ['user_id', 'gift_id', 'gift_name', 'gift_image', 'gift_value']
-                    ins_vals = [user_id, single_gd.get('gift_id'), single_gd['gift_name'], single_gd.get('gift_image', ''), single_gd.get('gift_value', 0)]
-                    if single_gd.get('is_upgraded'):
-                        has_upgraded_original = True
-                        ins_cols += ['is_upgraded', 'nft_number', 'nft_model', 'nft_symbol', 'nft_backdrop',
-                                     'nft_model_rarity', 'nft_symbol_rarity', 'nft_backdrop_rarity',
-                                     'nft_model_price', 'nft_symbol_price', 'nft_backdrop_price']
-                        ins_vals += [True, single_gd.get('nft_number'), single_gd.get('nft_model'), single_gd.get('nft_symbol'), single_gd.get('nft_backdrop'),
-                                     single_gd.get('nft_model_rarity'), single_gd.get('nft_symbol_rarity'), single_gd.get('nft_backdrop_rarity'),
-                                     single_gd.get('nft_model_price'), single_gd.get('nft_symbol_price'), single_gd.get('nft_backdrop_price')]
-                    if single_gd.get('crate_id'):
-                        ins_cols += ['crate_id', 'crate_name', 'crate_image']
-                        ins_vals += [single_gd.get('crate_id'), single_gd.get('crate_name'), single_gd.get('crate_image')]
-                    placeholders = ', '.join(['?' for _ in ins_vals])
-                    cursor.execute(f'INSERT INTO inventory ({", ".join(ins_cols)}) VALUES ({placeholders})', ins_vals)
+                    for _copy_idx in range(copies):
+                        # Restore original gift to inventory with all NFT attributes
+                        ins_cols = ['user_id', 'gift_id', 'gift_name', 'gift_image', 'gift_value']
+                        ins_vals = [user_id, single_gd.get('gift_id'), single_gd['gift_name'], single_gd.get('gift_image', ''), single_gd.get('gift_value', 0)]
+                        if single_gd.get('is_upgraded'):
+                            has_upgraded_original = True
+                            ins_cols += ['is_upgraded', 'nft_number', 'nft_model', 'nft_symbol', 'nft_backdrop',
+                                         'nft_model_rarity', 'nft_symbol_rarity', 'nft_backdrop_rarity',
+                                         'nft_model_price', 'nft_symbol_price', 'nft_backdrop_price']
+                            ins_vals += [True, single_gd.get('nft_number'), single_gd.get('nft_model'), single_gd.get('nft_symbol'), single_gd.get('nft_backdrop'),
+                                         single_gd.get('nft_model_rarity'), single_gd.get('nft_symbol_rarity'), single_gd.get('nft_backdrop_rarity'),
+                                         single_gd.get('nft_model_price'), single_gd.get('nft_symbol_price'), single_gd.get('nft_backdrop_price')]
+                        if single_gd.get('crate_id'):
+                            ins_cols += ['crate_id', 'crate_name', 'crate_image']
+                            ins_vals += [single_gd.get('crate_id'), single_gd.get('crate_name'), single_gd.get('crate_image')]
+                        placeholders = ', '.join(['?' for _ in ins_vals])
+                        cursor.execute(f'INSERT INTO inventory ({", ".join(ins_cols)}) VALUES ({placeholders})', ins_vals)
 
-                    awarded_gifts.append({
-                        'name': single_gd['gift_name'],
-                        'image': single_gd.get('gift_image', ''),
-                        'value': single_gd.get('gift_value', 0),
-                        'is_original': True,
-                        'is_upgraded': bool(single_gd.get('is_upgraded'))
-                    })
-                    original_total += single_gd.get('gift_value', 0)
+                        awarded_gifts.append({
+                            'name': single_gd['gift_name'] + (' (бонус x2)' if is_bonus_round and _copy_idx == 1 else ''),
+                            'image': single_gd.get('gift_image', ''),
+                            'value': single_gd.get('gift_value', 0),
+                            'is_original': True,
+                            'is_upgraded': bool(single_gd.get('is_upgraded')),
+                            'is_bonus_copy': (_copy_idx == 1)
+                        })
+                        original_total += single_gd.get('gift_value', 0)
 
                 if gift_list:
                     remaining_value = win_amount - original_total  # profit only
                 else:
                     remaining_value = win_amount
+
+                # ★ Бонус-раунд: если после возврата оригиналов остаётся ещё много —
+                # даём дополнительный бонусный подарок (gold plane) если ценность позволяет
+                if is_bonus_round and remaining_value >= 100:
+                    try:
+                        _bonus_img = '/static/gifs/rockets/goldenplane.gif'
+                        _bonus_name = 'Gold Plane (BONUS)'
+                        _bonus_val = min(remaining_value // 2, 500)
+                        if _bonus_val >= 50:
+                            cursor.execute('''
+                                INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
+                                VALUES (?, 0, ?, ?, ?)
+                            ''', (user_id, _bonus_name, _bonus_img, _bonus_val))
+                            awarded_gifts.append({
+                                'name': _bonus_name,
+                                'image': _bonus_img,
+                                'value': _bonus_val,
+                                'is_bonus_copy': True
+                            })
+                            remaining_value -= _bonus_val
+                    except Exception as _be:
+                        logger.warning(f"Bonus gift add error: {_be}")
 
             # === Preferred auto-withdraw gift (server-side, not only client-side) ===
             preferred_gift = None
@@ -5599,6 +5681,7 @@ def ultimate_crash_cashout_simple():
             'awarded_gifts': awarded_gifts,
             'star_remainder': remaining_value if remaining_value > 0 else 0,
             'has_upgraded_original': has_upgraded_original,
+            'is_bonus_round': bool(is_bonus_round),
         }
 
         if awarded_gifts:
@@ -12263,22 +12346,49 @@ def get_ultimate_crash_history_api():
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        cursor.execute('''
-            SELECT id, final_multiplier, finished_at
-            FROM ultimate_crash_history
-            ORDER BY finished_at DESC
-            LIMIT ?
-        ''', (limit,))
+        try:
+            cursor.execute('''
+                SELECT id, final_multiplier, finished_at, is_bonus
+                FROM ultimate_crash_history
+                ORDER BY finished_at DESC
+                LIMIT ?
+            ''', (limit,))
+        except Exception:
+            # Fallback для старых БД
+            cursor.execute('''
+                SELECT id, final_multiplier, finished_at
+                FROM ultimate_crash_history
+                ORDER BY finished_at DESC
+                LIMIT ?
+            ''', (limit,))
+            cursor2_rows = []
+            for r in cursor.fetchall():
+                cursor2_rows.append((r[0], r[1], r[2], False))
+            class _Wrap:
+                pass
+            history = cursor2_rows
+            conn.close()
+            history_list = []
+            for item in history:
+                history_list.append({
+                    'id': item[0],
+                    'final_multiplier': float(item[1]),
+                    'finished_at': item[2],
+                    'is_bonus': False
+                })
+            return jsonify({'success': True, 'history': history_list})
 
         history = cursor.fetchall()
         conn.close()
 
         history_list = []
         for item in history:
+            is_b = bool(item[3]) if len(item) > 3 else False
             history_list.append({
                 'id': item[0],
                 'final_multiplier': float(item[1]),
-                'finished_at': item[2]
+                'finished_at': item[2],
+                'is_bonus': is_b
             })
 
         logger.info(f"📊 Отправлено {len(history_list)} записей истории")
@@ -12452,26 +12562,49 @@ def get_recent_ultimate_crash_bets():
                 real_count = cursor.fetchone()[0] or 0
                 _generate_bot_bets(current_game_id, real_count)
 
-        cursor.execute('''
-            SELECT
-                ucb.id,
-                ucb.user_id,
-                ucb.bet_amount,
-                ucb.status,
-                ucb.cashout_multiplier,
-                ucb.win_amount,
-                ucb.created_at,
-                u.first_name,
-                u.username,
-                u.photo_url,
-                ucb.bet_type,
-                ucb.gift_image
-            FROM ultimate_crash_bets ucb
-            LEFT JOIN users u ON ucb.user_id = u.id
-            WHERE ucb.game_id = ?
-            ORDER BY ucb.created_at DESC
-            LIMIT ?
-        ''', (current_game_id, limit,))
+        try:
+            cursor.execute('''
+                SELECT
+                    ucb.id,
+                    ucb.user_id,
+                    ucb.bet_amount,
+                    ucb.status,
+                    ucb.cashout_multiplier,
+                    ucb.win_amount,
+                    ucb.created_at,
+                    u.first_name,
+                    u.username,
+                    u.photo_url,
+                    ucb.bet_type,
+                    ucb.gift_image,
+                    COALESCE(ucb.is_bonus_round, FALSE) as is_bonus_round
+                FROM ultimate_crash_bets ucb
+                LEFT JOIN users u ON ucb.user_id = u.id
+                WHERE ucb.game_id = ?
+                ORDER BY ucb.created_at DESC
+                LIMIT ?
+            ''', (current_game_id, limit,))
+        except Exception:
+            cursor.execute('''
+                SELECT
+                    ucb.id,
+                    ucb.user_id,
+                    ucb.bet_amount,
+                    ucb.status,
+                    ucb.cashout_multiplier,
+                    ucb.win_amount,
+                    ucb.created_at,
+                    u.first_name,
+                    u.username,
+                    u.photo_url,
+                    ucb.bet_type,
+                    ucb.gift_image
+                FROM ultimate_crash_bets ucb
+                LEFT JOIN users u ON ucb.user_id = u.id
+                WHERE ucb.game_id = ?
+                ORDER BY ucb.created_at DESC
+                LIMIT ?
+            ''', (current_game_id, limit,))
 
         bets = cursor.fetchall()
 
@@ -12490,7 +12623,8 @@ def get_recent_ultimate_crash_bets():
                 'photo_url': bet[9] or '/static/img/default_avatar.png',
                 'bet_type': bet[10] or 'stars',
                 'gift_image': bet[11],
-                'gift_images': _parse_gift_images(bet[11])
+                'gift_images': _parse_gift_images(bet[11]),
+                'is_bonus_round': bool(bet[12]) if len(bet) > 12 else False
             })
 
         # Bots disabled — skip fallback and bot bets
