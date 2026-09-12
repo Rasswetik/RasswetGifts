@@ -10465,6 +10465,8 @@ def get_user_upgrade_stats(user_id):
 
 
 
+
+
 @app.route('/api/upgrade-with-ton', methods=['POST'])
 def upgrade_with_ton():
     """Апгрейд с TON-ставки: списываем звёзды и выдаём подарок при успехе.
@@ -10522,31 +10524,24 @@ def upgrade_with_ton():
             conn.close()
             return jsonify({'success': False, 'error': 'Недостаточно средств. Баланс: ' + str(current_balance)})
 
-        # ═══ РАСЧЁТ ШАНСА (МЯГКИЙ) ═══
         base_chance = (bet_amount / target_value) * 100
         base_chance = max(10, min(base_chance, 75))
         displayed_chance = round(base_chance, 1)
 
-        # ⚠️ НОВАЯ ЛОГИКА: мягкий real_chance
-        # Раньше: target>10000 -> *0.3 убивало всё
-        # Теперь: минимальный коэффициент 0.6, максимально жёсткий 0.75
         real_chance = base_chance
-
-        if target_value > 50000:      # очень дорогие (500+ TON)
+        if target_value > 50000:
             real_chance = base_chance * 0.65
-        elif target_value > 20000:    # дорогие (200-500 TON)
+        elif target_value > 20000:
             real_chance = base_chance * 0.72
-        elif target_value > 10000:    # средне-дорогие (100-200 TON)
+        elif target_value > 10000:
             real_chance = base_chance * 0.78
-        elif target_value > 5000:     # (50-100 TON) — раньше было жёстко, теперь мягко
+        elif target_value > 5000:
             real_chance = base_chance * 0.85
-        elif target_value > 2000:     # (20-50 TON)
+        elif target_value > 2000:
             real_chance = base_chance * 0.92
-        # до 2000 звёзд (20 TON) — коэффициент 1.0 (шанс как показан)
 
         real_chance = max(5, real_chance)
 
-        # RTP-буст от админа
         try:
             user_rtp_boost = get_user_rtp_boost(user_id)
             if user_rtp_boost > 40:
@@ -10555,19 +10550,17 @@ def upgrade_with_ton():
         except Exception:
             pass
 
-        # ⚠️ Агрессивный режим — но мягче чем раньше
         try:
             site_balance = _get_site_profit_balance()
             if site_balance < -10000:
-                real_chance = min(real_chance, displayed_chance * 0.5)  # было 0.25
+                real_chance = min(real_chance, displayed_chance * 0.5)
             elif site_balance < -3000:
-                real_chance = min(real_chance, displayed_chance * 0.7)  # было 0.5
+                real_chance = min(real_chance, displayed_chance * 0.7)
         except Exception:
             pass
 
         real_chance = max(5, real_chance)
 
-        # Списание
         cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
                        (bet_amount, user_id))
 
@@ -14246,6 +14239,534 @@ def admin_toggle_notification():
     except Exception as e:
         logger.error(f"❌ Ошибка переключения оповещения: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+
+
+# ══════════════════════════════════════════════════════════════
+# ADMIN ENDPOINTS (расширенная админка)
+# ══════════════════════════════════════════════════════════════
+
+@app.route('/api/portal/parse-gift-url', methods=['POST'])
+def portal_parse_gift_url():
+    """Распарсить ссылку на Fragment-подарок.
+    Возвращает slug, number, название, картинку, цену."""
+    try:
+        data = request.get_json() or {}
+        url = str(data.get('url') or '').strip()
+
+        if not url:
+            return jsonify({'success': False, 'error': 'URL пустой'})
+
+        # Паттерны:
+        # https://fragment.com/gift/plushpepe-1234
+        # https://nft.fragment.com/gift/plushpepe-1234.webp
+        # plushpepe-1234
+        slug = ''
+        number = 0
+
+        m = re.search(r'/(?:gift|gifts)/([a-z0-9_]+)-(\d+)', url, re.IGNORECASE)
+        if m:
+            slug = m.group(1).strip().lower()
+            number = int(m.group(2))
+        else:
+            m2 = re.search(r'([a-z0-9_]+)-(\d+)', url, re.IGNORECASE)
+            if m2:
+                slug = m2.group(1).strip().lower()
+                number = int(m2.group(2))
+
+        if not slug or not number:
+            return jsonify({'success': False, 'error': 'Не удалось распарсить URL. Формат: fragment.com/gift/slug-1234'})
+
+        # Картинка
+        image = 'https://nft.fragment.com/gift/' + slug + '-' + str(number) + '.webp'
+
+        # Пробуем получить реальные атрибуты с Fragment
+        attrs = {}
+        name = ''
+        try:
+            frag_url = 'https://fragment.com/gift/' + slug + '-' + str(number)
+            resp = _fragment_get(frag_url, timeout=6)
+            if resp.status_code == 200:
+                html = resp.text
+
+                # Название
+                title_m = re.search(r'<title>([^<]+)</title>', html)
+                if title_m:
+                    name = title_m.group(1).replace(' for Sale', '').strip()
+
+                # Атрибуты
+                attr_pattern = re.compile(
+                    r'<div[^>]*class="[^"]*table-cell[^"]*"[^>]*>\s*(Model|Backdrop|Symbol)\s*</div>'
+                    r'.*?<div[^>]*class="[^"]*table-cell-value[^"]*"[^>]*>(.*?)</div>',
+                    flags=re.IGNORECASE | re.DOTALL
+                )
+                for attr_name, value_html in attr_pattern.findall(html):
+                    key = attr_name.strip().lower()
+                    val_m = re.search(r'<a[^>]*>([^<]+)</a>', value_html)
+                    if not val_m:
+                        val_m = re.search(r'>([^<]+)<', value_html)
+                    val_text = val_m.group(1).strip() if val_m else '—'
+                    pct_m = re.search(r'([\d.]+)\s*%', value_html)
+                    rarity = float(pct_m.group(1)) if pct_m else None
+                    attrs[key] = {'value': val_text, 'rarity': rarity}
+        except Exception as fe:
+            logger.warning('Fragment parse failed: ' + str(fe))
+
+        # Название по умолчанию, если Fragment не дал
+        if not name:
+            # Ищем подарок в gifts.json по slug
+            try:
+                with open(os.path.join(BASE_PATH, 'data', 'gifts.json'), 'r', encoding='utf-8') as f:
+                    raw = json.load(f)
+                for g in (raw.get('gifts') or []):
+                    gslug = (g.get('fragment_slug') or _slugify_fragment_name(g.get('name', ''))).lower()
+                    if gslug == slug:
+                        name = g.get('name', '').replace(' (Random)', '')
+                        break
+            except Exception:
+                pass
+
+        if not name:
+            name = slug.title()
+
+        return jsonify({
+            'success': True,
+            'slug': slug,
+            'number': number,
+            'name': name + ' #' + str(number),
+            'base_name': name,
+            'image': image,
+            'attrs': {
+                'model': attrs.get('model', {'value': '—', 'rarity': None}),
+                'symbol': attrs.get('symbol', {'value': '—', 'rarity': None}),
+                'backdrop': attrs.get('backdrop', {'value': '—', 'rarity': None}),
+            }
+        })
+
+    except Exception as e:
+        logger.error('parse_gift_url error: ' + str(e))
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/admin/gifts-update', methods=['POST'])
+def admin_gifts_update():
+    """Обновить подарок в gifts.json (название/цену/картинку)"""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        gift_id = data.get('id')
+        if gift_id is None:
+            return jsonify({'success': False, 'error': 'id обязателен'})
+
+        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        with open(gifts_path, 'r', encoding='utf-8') as f:
+            raw = json.load(f)
+        gifts = raw.get('gifts', []) if isinstance(raw, dict) else raw
+
+        target = None
+        for g in gifts:
+            if str(g.get('id')) == str(gift_id):
+                target = g
+                break
+
+        if not target:
+            return jsonify({'success': False, 'error': 'Подарок не найден'})
+
+        changed = False
+        if 'name' in data and data['name'] != target.get('name'):
+            target['name'] = str(data['name']).strip()
+            changed = True
+        if 'value' in data:
+            new_val = int(data['value'])
+            if new_val != int(target.get('value', 0)):
+                target['value'] = new_val
+                changed = True
+        if 'image' in data and data['image'] != target.get('image'):
+            target['image'] = str(data['image']).strip()
+            changed = True
+        if 'fragment_slug' in data:
+            target['fragment_slug'] = str(data['fragment_slug']).strip().lower()
+            changed = True
+
+        if not changed:
+            return jsonify({'success': True, 'message': 'Ничего не изменилось'})
+
+        with open(gifts_path, 'w', encoding='utf-8') as f:
+            json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
+
+        # Сброс кэша
+        global gifts_cache, gifts_cache_time
+        gifts_cache = None
+        gifts_cache_time = None
+
+        return jsonify({'success': True, 'message': 'Подарок обновлён', 'gift': target})
+
+    except Exception as e:
+        logger.error('admin_gifts_update error: ' + str(e))
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/admin/gifts-add', methods=['POST'])
+def admin_gifts_add():
+    """Добавить новый подарок в gifts.json"""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        name = str(data.get('name') or '').strip()
+        value = int(data.get('value', 0))
+        image = str(data.get('image') or '').strip()
+        fragment_slug = str(data.get('fragment_slug') or '').strip().lower()
+
+        if not name or value <= 0:
+            return jsonify({'success': False, 'error': 'Нужны name и value'})
+
+        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        with open(gifts_path, 'r', encoding='utf-8') as f:
+            raw = json.load(f)
+        gifts = raw.get('gifts', []) if isinstance(raw, dict) else raw
+
+        # Генерируем новый id
+        max_id = 0
+        for g in gifts:
+            try:
+                gid = int(g.get('id', 0))
+                if gid > max_id:
+                    max_id = gid
+            except Exception:
+                pass
+        new_id = max_id + 1
+
+        new_gift = {
+            'id': new_id,
+            'name': name,
+            'type': 'item',
+            'image': image or '/static/img/gift.png',
+            'value': value
+        }
+        if fragment_slug:
+            new_gift['fragment_slug'] = fragment_slug
+
+        gifts.append(new_gift)
+
+        with open(gifts_path, 'w', encoding='utf-8') as f:
+            json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
+
+        global gifts_cache, gifts_cache_time
+        gifts_cache = None
+        gifts_cache_time = None
+
+        return jsonify({'success': True, 'message': 'Подарок добавлен', 'gift': new_gift})
+
+    except Exception as e:
+        logger.error('admin_gifts_add error: ' + str(e))
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/admin/gifts-delete', methods=['POST'])
+def admin_gifts_delete():
+    """Удалить подарок из gifts.json"""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        gift_id = data.get('id')
+        if gift_id is None:
+            return jsonify({'success': False, 'error': 'id обязателен'})
+
+        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        with open(gifts_path, 'r', encoding='utf-8') as f:
+            raw = json.load(f)
+        gifts = raw.get('gifts', []) if isinstance(raw, dict) else raw
+
+        before = len(gifts)
+        gifts = [g for g in gifts if str(g.get('id')) != str(gift_id)]
+        after = len(gifts)
+
+        if before == after:
+            return jsonify({'success': False, 'error': 'Подарок не найден'})
+
+        with open(gifts_path, 'w', encoding='utf-8') as f:
+            json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
+
+        global gifts_cache, gifts_cache_time
+        gifts_cache = None
+        gifts_cache_time = None
+
+        return jsonify({'success': True, 'message': 'Подарок удалён'})
+
+    except Exception as e:
+        logger.error('admin_gifts_delete error: ' + str(e))
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/admin/leaderboard/add-nft-reward', methods=['POST'])
+def admin_leaderboard_add_nft_reward():
+    """Добавить NFT-подарок в награду лидерборда по ссылке Fragment"""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        lb_id = data.get('leaderboard_id')
+        position = data.get('position')
+        url = str(data.get('url') or '').strip()
+        price_ton = float(data.get('price_ton', 0))
+
+        if not lb_id or not position or not url:
+            return jsonify({'success': False, 'error': 'Нужны leaderboard_id, position, url'})
+
+        # Парсим URL
+        slug = ''
+        number = 0
+        m = re.search(r'/(?:gift|gifts)/([a-z0-9_]+)-(\d+)', url, re.IGNORECASE)
+        if m:
+            slug = m.group(1).strip().lower()
+            number = int(m.group(2))
+        else:
+            m2 = re.search(r'([a-z0-9_]+)-(\d+)', url, re.IGNORECASE)
+            if m2:
+                slug = m2.group(1).strip().lower()
+                number = int(m2.group(2))
+
+        if not slug or not number:
+            return jsonify({'success': False, 'error': 'Неверный формат URL'})
+
+        # Картинка и название
+        image = 'https://nft.fragment.com/gift/' + slug + '-' + str(number) + '.webp'
+        name = slug.title() + ' #' + str(number)
+
+        # Пробуем взять реальное название из Fragment
+        try:
+            resp = _fragment_get('https://fragment.com/gift/' + slug + '-' + str(number), timeout=5)
+            if resp.status_code == 200:
+                tm = re.search(r'<title>([^<]+)</title>', resp.text)
+                if tm:
+                    real_name = tm.group(1).replace(' for Sale', '').strip()
+                    if real_name:
+                        name = real_name
+        except Exception:
+            pass
+
+        # Загружаем лидерборд
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT rewards_json FROM leaderboard_config WHERE id = ?', (lb_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Лидерборд не найден'})
+
+        rewards = {}
+        if row[0]:
+            try:
+                rewards = json.loads(row[0])
+            except Exception:
+                rewards = {}
+
+        rewards[str(position)] = {
+            'type': 'nft_gift',
+            'slug': slug,
+            'number': number,
+            'name': name,
+            'image': image,
+            'price_ton': price_ton
+        }
+
+        cursor.execute('UPDATE leaderboard_config SET rewards_json = ? WHERE id = ?',
+                       (json.dumps(rewards, ensure_ascii=False), lb_id))
+        conn.commit()
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'message': 'NFT-награда добавлена',
+            'reward': rewards[str(position)]
+        })
+
+    except Exception as e:
+        logger.error('admin_leaderboard_add_nft_reward error: ' + str(e))
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/admin/user-inventory-full', methods=['GET'])
+def admin_user_inventory_full():
+    """Полная информация об инвентаре пользователя для админки"""
+    try:
+        admin_id = request.args.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        user_id = request.args.get('user_id', type=int)
+        if not user_id:
+            return jsonify({'success': False, 'error': 'user_id обязателен'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Инфа о юзере
+        cursor.execute('SELECT id, first_name, username, balance_stars FROM users WHERE id = ?', (user_id,))
+        urow = cursor.fetchone()
+        if not urow:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+
+        user_info = {
+            'id': urow[0],
+            'first_name': urow[1],
+            'username': urow[2],
+            'balance_stars': urow[3]
+        }
+
+        # Инвентарь
+        cursor.execute('SELECT * FROM inventory WHERE user_id = ? ORDER BY id DESC', (user_id,))
+        cols = [desc[0] for desc in cursor.description]
+        items = []
+        for row in cursor.fetchall():
+            item = dict(zip(cols, row))
+            items.append(item)
+
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'user': user_info,
+            'inventory': items,
+            'total': len(items)
+        })
+
+    except Exception as e:
+        logger.error('admin_user_inventory_full error: ' + str(e))
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/admin/user-inventory-edit', methods=['POST'])
+def admin_user_inventory_edit():
+    """Редактировать предмет в инвентаре пользователя"""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        item_id = data.get('item_id')
+        if not item_id:
+            return jsonify({'success': False, 'error': 'item_id обязателен'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        updates = []
+        params = []
+        if 'gift_name' in data:
+            updates.append('gift_name = ?')
+            params.append(str(data['gift_name']))
+        if 'gift_image' in data:
+            updates.append('gift_image = ?')
+            params.append(str(data['gift_image']))
+        if 'gift_value' in data:
+            updates.append('gift_value = ?')
+            params.append(int(data['gift_value']))
+
+        if not updates:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Нет изменений'})
+
+        params.append(item_id)
+        cursor.execute('UPDATE inventory SET ' + ', '.join(updates) + ' WHERE id = ?', params)
+        conn.commit()
+
+        if cursor.rowcount == 0:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Предмет не найден'})
+
+        conn.close()
+        return jsonify({'success': True, 'message': 'Предмет обновлён'})
+
+    except Exception as e:
+        logger.error('admin_user_inventory_edit error: ' + str(e))
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/admin/user-inventory-add', methods=['POST'])
+def admin_user_inventory_add():
+    """Добавить предмет в инвентарь пользователя"""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        user_id = int(data.get('user_id', 0))
+        gift_name = str(data.get('gift_name') or '').strip()
+        gift_image = str(data.get('gift_image') or '').strip()
+        gift_value = int(data.get('gift_value', 0))
+        gift_id = int(data.get('gift_id', 0))
+
+        if not user_id or not gift_name:
+            return jsonify({'success': False, 'error': 'Нужны user_id и gift_name'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Проверяем юзера
+        cursor.execute('SELECT id FROM users WHERE id = ?', (user_id,))
+        if not cursor.fetchone():
+            conn.close()
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+
+        cursor.execute(
+            'INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value) VALUES (?, ?, ?, ?, ?)',
+            (user_id, gift_id, gift_name, gift_image or '/static/img/gift.png', gift_value)
+        )
+        new_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'message': 'Предмет добавлен', 'id': new_id})
+
+    except Exception as e:
+        logger.error('admin_user_inventory_add error: ' + str(e))
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/admin/user-inventory-delete', methods=['POST'])
+def admin_user_inventory_delete():
+    """Удалить предмет из инвентаря"""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        item_id = data.get('item_id')
+        if not item_id:
+            return jsonify({'success': False, 'error': 'item_id обязателен'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM inventory WHERE id = ?', (item_id,))
+        conn.commit()
+        deleted = cursor.rowcount
+        conn.close()
+
+        if deleted == 0:
+            return jsonify({'success': False, 'error': 'Предмет не найден'})
+
+        return jsonify({'success': True, 'message': 'Предмет удалён'})
+
+    except Exception as e:
+        logger.error('admin_user_inventory_delete error: ' + str(e))
+        return jsonify({'success': False, 'error': str(e)})
+
 
 @app.route('/api/admin/gifts-management', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_gifts_management():
