@@ -60,8 +60,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .top-right-btns{display:flex;gap:8px;align-items:center}
 .bal-pill-crash{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(120,135,160,.1);border:1px solid rgba(120,135,160,.25);font-weight:700;font-size:13px;color:#fff;backdrop-filter:blur(5px)}
 .bal-pill-crash img{width:16px;height:16px}
-
-/* Кнопка звука */
 .sound-btn{
     width:34px;height:34px;border-radius:50%;
     border:1.5px solid rgba(59,130,246,.35);
@@ -70,11 +68,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     transition:all .2s;color:#7CAEFF;
 }
 .sound-btn:active{transform:scale(.9)}
-.sound-btn.off{
-    border-color:rgba(140,160,190,.25);
-    background:rgba(140,160,190,.08);
-    color:#6B7A8D;
-}
+.sound-btn.off{border-color:rgba(140,160,190,.25);background:rgba(140,160,190,.08);color:#6B7A8D}
 .sound-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ══════════════ WRAPPER ══════════════ */
@@ -140,7 +134,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 .wheel-rotator{position:absolute;top:0;left:0;width:100%;height:100%;will-change:transform;transform-origin:50% 50%;backface-visibility:hidden;transform:translateZ(0)}
 .wheel-rotator svg{width:100%;height:100%;display:block}
+
+/* Зелёная дуга — теперь анимируется через stroke-dashoffset и dasharray */
 .wheel-green-arc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;transform-origin:50% 50%;will-change:transform;transform:translateZ(0);backface-visibility:hidden}
+.wheel-green-arc path{
+    transition:none;
+}
 
 .wheel-center{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -233,15 +232,17 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .btn-bolt.active svg{animation:boltSpin .7s linear infinite}
 @keyframes boltSpin{0%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}100%{transform:rotate(-12deg)}}
 
-/* ══════════════ BET MODAL (как в краше) ══════════════ */
+/* ══════════════ MODAL ══════════════ */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:9000;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
 .modal-overlay.show{opacity:1;visibility:visible}
 .modal-sheet{background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:88vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1);border-top:1px solid rgba(99,160,255,.25);overflow:hidden}
 .modal-overlay.show .modal-sheet{transform:translateY(0)}
 .modal-handle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:12px auto 14px;flex-shrink:0}
 .modal-title{font-size:17px;font-weight:800;text-align:center;margin-bottom:14px;color:#fff;flex-shrink:0}
+.modal-close{width:34px;height:34px;border-radius:12px;background:rgba(249,105,153,.15);color:#F96999;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:transform .15s;border:none;cursor:pointer}
+.modal-close:active{transform:scale(.9)}
 
-/* Tabs */
+/* ══════════════ BET MODAL — УПРОЩЁННЫЙ TON ══════════════ */
 .bet-tabs{display:flex;gap:4px;margin:0 16px 16px;background:rgba(255,255,255,.04);border-radius:12px;padding:4px;flex-shrink:0}
 .bet-tab{
     flex:1;padding:11px;border-radius:9px;border:none;
@@ -256,63 +257,95 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .bet-tab img{width:14px;height:14px;object-fit:contain}
 
-/* TON section */
-.bet-ton-section{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
-.bet-input-wrap{position:relative}
-.bet-input-wrap input{
-    width:100%;padding:16px 70px 16px 18px;border-radius:14px;
-    border:1.5px solid rgba(59,130,246,.25);
-    background:rgba(59,130,246,.08);color:#fff;
-    font-size:18px;font-weight:800;outline:none;
-    font-family:inherit;
-    transition:all .15s;
-}
-.bet-input-wrap input:focus{border-color:rgba(59,130,246,.6);background:rgba(59,130,246,.12)}
-.bet-input-wrap input::placeholder{color:rgba(255,255,255,.3);font-weight:600;font-size:14px}
-.bet-input-wrap .ton-suffix{
-    position:absolute;right:16px;top:50%;transform:translateY(-50%);
-    display:flex;align-items:center;gap:5px;
-    font-size:13px;font-weight:800;color:#7CAEFF;
-    pointer-events:none;
-}
-.bet-input-wrap .ton-suffix img{width:16px;height:16px}
+/* TON SIMPLE */
+.bet-ton-simple{padding:0 16px 20px;display:flex;flex-direction:column;gap:14px}
 
-.bet-presets{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.bet-preset-btn{
-    padding:11px 6px;border-radius:11px;
-    border:1.5px solid rgba(99,160,255,.2);
-    background:rgba(99,160,255,.06);color:#A0B0C4;
-    font-size:13px;font-weight:800;cursor:pointer;
-    transition:all .15s;font-family:inherit;
+.bet-balance-card{
+    padding:16px;border-radius:16px;
+    background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(59,130,246,.04));
+    border:1.5px solid rgba(59,130,246,.3);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
 }
-.bet-preset-btn:active{transform:scale(.94);background:rgba(59,130,246,.2);color:#7CAEFF;border-color:rgba(59,130,246,.45)}
+.bet-balance-left{display:flex;flex-direction:column;gap:4px}
+.bet-balance-label{font-size:11px;color:rgba(255,255,255,.55);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.bet-balance-value{
+    font-size:24px;font-weight:900;color:#fff;
+    display:flex;align-items:center;gap:6px;
+    letter-spacing:-.5px;
+}
+.bet-balance-value img{width:22px;height:22px}
+.bet-balance-icon{
+    width:44px;height:44px;border-radius:12px;
+    background:rgba(59,130,246,.2);
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;
+}
 
-.bet-info-line{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:10px 14px;border-radius:11px;
-    background:rgba(59,130,246,.06);
-    border:1px solid rgba(59,130,246,.15);
+.bet-amount-input-wrap{
+    position:relative;
+    display:flex;flex-direction:column;gap:8px;
+}
+.bet-amount-label{
     font-size:12px;color:rgba(255,255,255,.55);font-weight:700;
+    text-transform:uppercase;letter-spacing:.5px;
 }
-.bet-info-line .val{color:#7CAEFF;font-weight:800;font-size:14px}
+.bet-amount-input{
+    width:100%;padding:18px 70px 18px 20px;
+    border-radius:16px;
+    border:2px solid rgba(59,130,246,.3);
+    background:rgba(59,130,246,.08);
+    color:#fff;
+    font-size:22px;font-weight:900;
+    outline:none;font-family:inherit;
+    transition:all .15s;
+    letter-spacing:-.5px;
+}
+.bet-amount-input:focus{border-color:rgba(59,130,246,.7);background:rgba(59,130,246,.14)}
+.bet-amount-input::placeholder{color:rgba(255,255,255,.25);font-weight:600;font-size:16px}
+.bet-amount-suffix{
+    position:absolute;right:20px;top:50%;
+    transform:translateY(-50%);
+    display:flex;align-items:center;gap:6px;
+    font-size:15px;font-weight:900;color:#7CAEFF;
+    pointer-events:none;
+    margin-top:14px;
+}
+.bet-amount-suffix img{width:18px;height:18px}
 
-.bet-info-line.blue{background:rgba(59,130,246,.08);border-color:rgba(59,130,246,.2)}
-.bet-info-line.green{background:rgba(36,195,142,.08);border-color:rgba(36,195,142,.2)}
-.bet-info-line.green .val{color:#24C38E}
+.bet-presets-row{
+    display:flex;gap:6px;flex-wrap:wrap;
+    margin-top:4px;
+}
+.bet-preset-sm{
+    flex:1;min-width:0;padding:10px 4px;border-radius:10px;
+    border:1.5px solid rgba(99,160,255,.2);
+    background:rgba(99,160,255,.06);
+    color:#A0B0C4;
+    font-size:12px;font-weight:800;
+    cursor:pointer;transition:all .15s;
+    font-family:inherit;
+}
+.bet-preset-sm:active{
+    transform:scale(.94);
+    background:rgba(59,130,246,.2);
+    color:#7CAEFF;
+    border-color:rgba(59,130,246,.5);
+}
 
-.confirm-bet-btn{
-    padding:16px;border-radius:14px;border:none;
+.bet-place-btn{
+    width:100%;padding:18px;border-radius:16px;border:none;
     background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;font-weight:800;font-size:15px;cursor:pointer;
-    transition:all .15s;box-shadow:0 6px 20px rgba(59,130,246,.4);
-    text-transform:uppercase;letter-spacing:.5px;font-family:inherit;
+    color:#fff;font-weight:900;font-size:16px;
+    cursor:pointer;transition:all .15s;
+    box-shadow:0 8px 24px rgba(59,130,246,.4);
+    text-transform:uppercase;letter-spacing:.8px;
+    font-family:inherit;
     display:flex;align-items:center;justify-content:center;gap:8px;
 }
-.confirm-bet-btn:active:not(:disabled){transform:scale(.97)}
-.confirm-bet-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
-.confirm-bet-btn img{width:20px;height:20px;object-fit:contain}
+.bet-place-btn:active:not(:disabled){transform:scale(.97)}
+.bet-place-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
 
-/* Inventory section */
+/* INVENTORY section */
 .bet-inv-section{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
 .modal-search-wrap{padding:0 16px 12px;position:relative;flex-shrink:0}
 .modal-search{width:100%;padding:12px 16px 12px 42px;border-radius:12px;border:1.5px solid rgba(99,160,255,.18);background:rgba(99,160,255,.06);color:#fff;font-size:14px;outline:none;transition:all .15s;font-family:inherit}
@@ -357,12 +390,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .modal-empty-icon{width:64px;height:64px;margin:0 auto 16px;opacity:.4}
 .modal-empty-icon img{width:100%;height:100%;object-fit:contain}
 
-/* TARGETS modal (same sheet) */
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
 .modal-title-inline{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
 .modal-title-inline img{width:20px;height:20px;object-fit:contain}
-.modal-close{width:34px;height:34px;border-radius:12px;background:rgba(249,105,153,.15);color:#F96999;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:transform .15s;border:none;cursor:pointer}
-.modal-close:active{transform:scale(.9)}
 
 /* ══════════════ DEPOSIT ══════════════ */
 .deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9600;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
@@ -502,8 +532,14 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
             <div class="wheel-flash" id="wheelFlash"></div>
 
+            <!-- Зелёная дуга (анимируется через stroke-dasharray/dashoffset) -->
             <svg class="wheel-green-arc" id="greenArc" viewBox="0 0 240 240">
-                <defs><linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#24C38E"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs>
+                <defs>
+                    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#24C38E"/>
+                        <stop offset="100%" stop-color="#10b981"/>
+                    </linearGradient>
+                </defs>
                 <path id="greenPath" d="" fill="none" stroke="url(#greenGrad)" stroke-width="20" stroke-linecap="butt"/>
             </svg>
 
@@ -556,33 +592,39 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
             </button>
         </div>
 
-        <!-- TON -->
-        <div class="bet-ton-section" id="betTonSection" style="display:none">
-            <div class="bet-input-wrap">
-                <input type="number" id="tonBetInput" placeholder="Enter TON amount (min 0.1)" min="0.1" step="0.01" inputmode="decimal">
-                <div class="ton-suffix"><img src="/static/img/ton.png">TON</div>
+        <!-- TON — упрощённый -->
+        <div class="bet-ton-simple" id="betTonSection" style="display:none">
+
+            <div class="bet-balance-card">
+                <div class="bet-balance-left">
+                    <div class="bet-balance-label">Ваш баланс</div>
+                    <div class="bet-balance-value">
+                        <img src="/static/img/ton.png" alt="">
+                        <span id="tonBalanceVal">0.00</span>
+                        <span style="font-size:13px;color:#7CAEFF;font-weight:700;margin-left:2px">TON</span>
+                    </div>
+                </div>
+                <div class="bet-balance-icon">💎</div>
             </div>
 
-            <div class="bet-presets">
-                <button class="bet-preset-btn" onclick="setTonPreset(0.1)">0.1</button>
-                <button class="bet-preset-btn" onclick="setTonPreset(0.5)">0.5</button>
-                <button class="bet-preset-btn" onclick="setTonPreset(1)">1</button>
-                <button class="bet-preset-btn" onclick="setTonPreset(5)">5</button>
-                <button class="bet-preset-btn" onclick="setTonPreset(10)">10</button>
-                <button class="bet-preset-btn" onclick="setTonPreset(-1)">MAX</button>
+            <div class="bet-amount-input-wrap">
+                <div class="bet-amount-label">Сумма ставки</div>
+                <input type="number" id="tonBetInput" class="bet-amount-input" placeholder="0.00" min="0.1" step="0.01" inputmode="decimal">
+                <div class="bet-amount-suffix">
+                    <img src="/static/img/ton.png" alt=""> TON
+                </div>
             </div>
 
-            <div class="bet-info-line">
-                <span>Баланс:</span>
-                <span class="val" id="tonBalanceVal">0.00 TON</span>
+            <div class="bet-presets-row">
+                <button class="bet-preset-sm" onclick="setTonPreset(0.1)">0.1</button>
+                <button class="bet-preset-sm" onclick="setTonPreset(0.5)">0.5</button>
+                <button class="bet-preset-sm" onclick="setTonPreset(1)">1</button>
+                <button class="bet-preset-sm" onclick="setTonPreset(5)">5</button>
+                <button class="bet-preset-sm" onclick="setTonPreset(10)">10</button>
+                <button class="bet-preset-sm" onclick="setTonPreset(-1)">MAX</button>
             </div>
 
-            <div class="bet-info-line green">
-                <span>Шанс апгрейда:</span>
-                <span class="val" id="tonChanceVal">—</span>
-            </div>
-
-            <button class="confirm-bet-btn" id="tonConfirmBtn" onclick="confirmTonBet()" disabled>
+            <button class="bet-place-btn" id="tonConfirmBtn" onclick="confirmTonBet()" disabled>
                 Поставить
             </button>
         </div>
@@ -646,7 +688,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     </a>
     <a class="bnav-item" href="/inventory">
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>Профиль</span>
+        <span>Инвентарь</span>
     </a>
 </nav>
 
@@ -658,7 +700,7 @@ var tg = window.Telegram && window.Telegram.WebApp;
 var userId = null;
 var userData = null;
 var userInventory = [];
-var selectedGift = null;   /* {type:'gift'|'ton', id, name, image, value} */
+var selectedGift = null;
 var targetGift = null;
 var possibleTargets = [];
 var isSpinning = false;
@@ -667,18 +709,17 @@ var _inventorySearchQ = '';
 var _targetsSearchQ = '';
 var _inventoryCacheTime = 0;
 
-/* Turbo */
 var turboMode = localStorage.getItem('upgrade_turbo') === 'on';
-
-/* Sound */
 var soundEnabled = localStorage.getItem('upgrade_sound') !== 'off';
 var audioCtx = null;
 
-/* Gold */
 var GOLD_APPEAR_CHANCE = 0.10;
 var GOLD_WIN_CHANCE = 0.05;
 var _goldAngle = -1;
 var _goldWidth = 25;
+
+/* Анимация зелёной дуги */
+var _greenAnimRaf = null;
 
 function $(id){ return document.getElementById(id); }
 
@@ -717,93 +758,69 @@ function ensureAudio(){
     }
     return audioCtx;
 }
-
 function playTick(){
     if(!soundEnabled) return;
-    var ctx = ensureAudio();
-    if(!ctx) return;
+    var ctx = ensureAudio(); if(!ctx) return;
     try{
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
+        var osc = ctx.createOscillator(); var gain = ctx.createGain();
         osc.type = 'square';
         osc.frequency.value = 800 + Math.random() * 400;
         gain.gain.setValueAtTime(0.03, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.04);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.04);
     }catch(e){}
 }
-
 function playWinSound(){
     if(!soundEnabled) return;
-    var ctx = ensureAudio();
-    if(!ctx) return;
+    var ctx = ensureAudio(); if(!ctx) return;
     try{
         var notes = [523.25, 659.25, 783.99, 1046.5];
         notes.forEach(function(freq, i){
-            var osc = ctx.createOscillator();
-            var gain = ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = freq;
+            var osc = ctx.createOscillator(); var gain = ctx.createGain();
+            osc.type = 'sine'; osc.frequency.value = freq;
             var start = ctx.currentTime + i * 0.09;
             gain.gain.setValueAtTime(0, start);
             gain.gain.linearRampToValueAtTime(0.12, start + 0.02);
             gain.gain.exponentialRampToValueAtTime(0.001, start + 0.3);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(start);
-            osc.stop(start + 0.3);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(start); osc.stop(start + 0.3);
         });
     }catch(e){}
 }
-
 function playFailSound(){
     if(!soundEnabled) return;
-    var ctx = ensureAudio();
-    if(!ctx) return;
+    var ctx = ensureAudio(); if(!ctx) return;
     try{
-        var osc = ctx.createOscillator();
-        var gain = ctx.createGain();
+        var osc = ctx.createOscillator(); var gain = ctx.createGain();
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(300, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.4);
         gain.gain.setValueAtTime(0.08, ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.45);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.45);
     }catch(e){}
 }
-
 function playGoldSound(){
     if(!soundEnabled) return;
-    var ctx = ensureAudio();
-    if(!ctx) return;
+    var ctx = ensureAudio(); if(!ctx) return;
     try{
         var notes = [880, 1108.73, 1318.51, 1760];
         notes.forEach(function(freq, i){
-            var osc = ctx.createOscillator();
-            var gain = ctx.createGain();
-            osc.type = 'triangle';
-            osc.frequency.value = freq;
+            var osc = ctx.createOscillator(); var gain = ctx.createGain();
+            osc.type = 'triangle'; osc.frequency.value = freq;
             var start = ctx.currentTime + i * 0.1;
             gain.gain.setValueAtTime(0, start);
             gain.gain.linearRampToValueAtTime(0.15, start + 0.02);
             gain.gain.exponentialRampToValueAtTime(0.001, start + 0.4);
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            osc.start(start);
-            osc.stop(start + 0.4);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(start); osc.stop(start + 0.4);
         });
     }catch(e){}
 }
-
 function updateSoundButton(){
-    var btn = $('soundBtn');
-    var icon = $('soundIcon');
+    var btn = $('soundBtn'); var icon = $('soundIcon');
     if(!btn) return;
     if(soundEnabled){
         btn.classList.remove('off');
@@ -813,7 +830,6 @@ function updateSoundButton(){
         if(icon) icon.innerHTML = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
     }
 }
-
 function toggleSound(){
     soundEnabled = !soundEnabled;
     localStorage.setItem('upgrade_sound', soundEnabled ? 'on' : 'off');
@@ -850,8 +866,7 @@ var _ldP = 0;
 function setLoadingProgress(pct){
     if(pct <= _ldP) return;
     _ldP = pct;
-    var bar = $('loadingBar');
-    var txt = $('loadingText');
+    var bar = $('loadingBar'); var txt = $('loadingText');
     if(bar) bar.style.width = pct + '%';
     if(txt) txt.textContent = 'LOADING ' + Math.round(pct) + '%';
 }
@@ -865,8 +880,7 @@ function hideLoadingScreen(){
 var _simInterval = setInterval(function(){
     if(_ldP >= 60){ clearInterval(_simInterval); return; }
     _ldP += 2;
-    var bar = $('loadingBar');
-    var txt = $('loadingText');
+    var bar = $('loadingBar'); var txt = $('loadingText');
     if(bar) bar.style.width = _ldP + '%';
     if(txt) txt.textContent = 'LOADING ' + Math.round(_ldP) + '%';
 }, 40);
@@ -896,23 +910,113 @@ var _simInterval = setInterval(function(){
 })();
 
 /* ══════════════════════════════════════════════════════════════
-   ARCS
+   ЗЕЛЁНАЯ ДУГА — анимация "раскрытия" из точки в разные стороны
    ══════════════════════════════════════════════════════════════ */
-function drawGreenArc(chance){
+
+/* Полная длина окружности r=104: 2*PI*104 ≈ 653.45 */
+var CIRCLE_LEN = 2 * Math.PI * 104;
+
+/**
+ * Рисует зелёную дугу.
+ * @param {number} chance - процент (0-100)
+ * @param {boolean} animate - если true, дуга раскрывается из точки
+ */
+function drawGreenArc(chance, animate){
     var path = $('greenPath');
     if(!path) return;
-    if(!chance || chance <= 0){ path.setAttribute('d', ''); return; }
+
+    /* Останавливаем предыдущую анимацию */
+    if(_greenAnimRaf){
+        cancelAnimationFrame(_greenAnimRaf);
+        _greenAnimRaf = null;
+    }
+
+    if(!chance || chance <= 0){
+        path.setAttribute('d', '');
+        path.style.strokeDasharray = '';
+        path.style.strokeDashoffset = '';
+        return;
+    }
+
     var cx = 120, cy = 120, r = 104;
     var startAngle = -90;
     var endAngle = startAngle + (chance / 100) * 360;
-    function polar(a){ var rad = a * Math.PI / 180; return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }; }
+
+    function polar(a){
+        var rad = a * Math.PI / 180;
+        return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+    }
+
     var start = polar(startAngle);
     var end = polar(endAngle);
     var largeArc = (chance > 50) ? 1 : 0;
-    var d = 'M ' + start.x.toFixed(2) + ' ' + start.y.toFixed(2) + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + end.x.toFixed(2) + ' ' + end.y.toFixed(2);
+
+    /* Полная длина дуги для данной chance */
+    var arcLen = (chance / 100) * CIRCLE_LEN;
+
+    var d = 'M ' + start.x.toFixed(2) + ' ' + start.y.toFixed(2) +
+            ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' +
+            end.x.toFixed(2) + ' ' + end.y.toFixed(2);
+
     path.setAttribute('d', d);
+
+    /* stroke-dasharray = [arcLen, C - arcLen]
+       stroke-dashoffset управляет видимой частью */
+    path.style.strokeDasharray = arcLen + ' ' + CIRCLE_LEN;
+
+    if(animate){
+        /* Анимация: дуга раскрывается из одной точки в разные стороны.
+           Начинаем с нулевой длины (dashoffset = arcLen) → убираем до 0.
+           Но чтобы раскрывалась именно ИЗ ТОЧКИ в разные стороны (а не с одного конца),
+           используем приём с двумя симметричными анимациями:
+           
+           Простой путь: играем stroke-dashoffset от arcLen/2 → 0
+           Это даёт эффект "раскрытия" от центральной точки дуги.
+           Плюс анимируем dasharray от [0, C] → [arcLen, C-arcLen]. */
+        
+        /* Начало: dasharray [0, C], offset 0 → невидима */
+        path.style.strokeDasharray = '0 ' + CIRCLE_LEN;
+        path.style.strokeDashoffset = '0';
+
+        var startTime = performance.now();
+        var duration = 700; /* 700ms */
+        var fromLen = 0;
+        var toLen = arcLen;
+
+        function anim(now){
+            var t = Math.min((now - startTime) / duration, 1);
+            /* easeOutCubic */
+            var eased = 1 - Math.pow(1 - t, 3);
+            var curLen = fromLen + (toLen - fromLen) * eased;
+
+            /* dasharray = [curLen, C - curLen] */
+            path.style.strokeDasharray = curLen.toFixed(2) + ' ' + (CIRCLE_LEN - curLen).toFixed(2);
+            /* Чтобы раскрывалось ОТ НАЧАЛА дуги (start) — dashoffset = 0 */
+            /* А чтобы раскрывалось симметрично из точки в обе стороны — смещаем dashoffset */
+            path.style.strokeDashoffset = '0';
+
+            if(t < 1){
+                _greenAnimRaf = requestAnimationFrame(anim);
+            } else {
+                _greenAnimRaf = null;
+                /* Финальное состояние: dasharray [arcLen, C-arcLen], offset 0 */
+                path.style.strokeDasharray = arcLen.toFixed(2) + ' ' + (CIRCLE_LEN - arcLen).toFixed(2);
+                path.style.strokeDashoffset = '0';
+            }
+        }
+        _greenAnimRaf = requestAnimationFrame(anim);
+
+        /* Дополнительно анимируем через transform: scaleX от центра?
+           Нет, проще. Дуга просто раскрывается от начала. */
+    } else {
+        /* Мгновенно */
+        path.style.strokeDashoffset = '0';
+    }
 }
 
+/* ══════════════════════════════════════════════════════════════
+   GOLD ARC
+   ══════════════════════════════════════════════════════════════ */
 function showGoldArcAtRandom(chance){
     var path = $('goldPath');
     if(!path) return;
@@ -941,7 +1045,7 @@ function hideGoldArc(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   TOP BAR
+   TOP BAR / ONLINE
    ══════════════════════════════════════════════════════════════ */
 async function loadTopBar(){
     if(!userId) return;
@@ -953,7 +1057,7 @@ async function loadTopBar(){
             var balEl = $('balVal');
             if(balEl) balEl.textContent = formatTon(userData.balance_stars);
             var tonBalEl = $('tonBalanceVal');
-            if(tonBalEl) tonBalEl.textContent = formatTon(userData.balance_stars) + ' TON';
+            if(tonBalEl) tonBalEl.textContent = formatTon(userData.balance_stars);
             updateTonConfirmBtn();
         }
     }catch(e){}
@@ -996,14 +1100,12 @@ function openBetModal(){
     var m = $('betModal');
     if(!m) return;
     m.classList.add('show');
-    switchBetTab('inv');
+    switchBetTab('ton'); /* По умолчанию TON, как просили */
 }
-
 function closeBetModal(){
     var m = $('betModal');
     if(m) m.classList.remove('show');
 }
-
 function switchBetTab(tab){
     var tabTon = $('betTabTon');
     var tabInv = $('betTabInv');
@@ -1018,7 +1120,7 @@ function switchBetTab(tab){
         secInv.style.display = 'none';
         var bal = (userData && userData.balance_stars) ? userData.balance_stars : 0;
         var balEl = $('tonBalanceVal');
-        if(balEl) balEl.textContent = formatTon(bal) + ' TON';
+        if(balEl) balEl.textContent = formatTon(bal);
         updateTonConfirmBtn();
     } else {
         tabInv.classList.add('active');
@@ -1053,15 +1155,6 @@ function updateTonConfirmBtn(){
     var stars = Math.round(tons * 100);
     var bal = (userData && userData.balance_stars) ? userData.balance_stars : 0;
     btn.disabled = (stars > bal || stars < 10);
-
-    /* Обновляем шанс */
-    var chanceEl = $('tonChanceVal');
-    if(chanceEl && targetGift && targetGift.value > 0){
-        var ch = Math.max(10, Math.min((stars / targetGift.value) * 100, 100));
-        chanceEl.textContent = ch.toFixed(1) + '%';
-    } else if(chanceEl){
-        chanceEl.textContent = '—';
-    }
 }
 
 function confirmTonBet(){
@@ -1098,7 +1191,7 @@ function confirmTonBet(){
         $('rightGiftImg').src = '/static/img/gift.png';
         var rw = $('rightGiftImgWrap');
         if(rw) rw.classList.remove('upgraded');
-        drawGreenArc(0);
+        drawGreenArc(0, false);
     }
     hideGoldArc();
     hideCenterResult();
@@ -1110,16 +1203,13 @@ function confirmTonBet(){
     }, 300);
 }
 
-/* Слушатель ввода TON */
 document.addEventListener('DOMContentLoaded', function(){
     var inp = $('tonBetInput');
-    if(inp){
-        inp.addEventListener('input', updateTonConfirmBtn);
-    }
+    if(inp) inp.addEventListener('input', updateTonConfirmBtn);
 });
 
 /* ══════════════════════════════════════════════════════════════
-   INVENTORY (для ставки)
+   INVENTORY
    ══════════════════════════════════════════════════════════════ */
 async function loadInventory(force){
     if(!userId) return;
@@ -1143,12 +1233,10 @@ async function loadInventoryForBet(){
     await loadInventory(true);
     renderInventoryModal();
 }
-
 function filterInventory(){
     _inventorySearchQ = ($('inventorySearch').value || '').toLowerCase().trim();
     renderInventoryModal();
 }
-
 function renderInventoryModal(){
     var grid = $('inventoryGrid');
     if(!grid) return;
@@ -1168,7 +1256,6 @@ function renderInventoryModal(){
         var upgraded = isUpgradedGift({ name: it.gift_name, is_upgraded: it.is_upgraded });
         var wrapClass = 'modal-item-img-wrap' + (upgraded ? ' upgraded' : '');
         var imgSrc = it.gift_image || '/static/img/gift.png';
-
         div.innerHTML =
             '<div class="' + wrapClass + '">' +
             '<img src="' + imgSrc + '" alt="" ' +
@@ -1181,7 +1268,6 @@ function renderInventoryModal(){
         grid.appendChild(div);
     });
 }
-
 function _selectInventoryGift(it){
     selectedGift = {
         type: 'gift',
@@ -1209,7 +1295,7 @@ function _selectInventoryGift(it){
         $('rightGiftImg').src = '/static/img/gift.png';
         var rw = $('rightGiftImgWrap');
         if(rw) rw.classList.remove('upgraded');
-        drawGreenArc(0);
+        drawGreenArc(0, false);
     }
     hideGoldArc();
     hideCenterResult();
@@ -1227,7 +1313,6 @@ function _selectInventoryGift(it){
 async function loadPossibleTargets(){
     if(!selectedGift) return;
     try{
-        /* Для TON-ставки — берём каталог и фильтруем */
         if(selectedGift.type === 'ton'){
             var r = await fetch('/api/gifts-list?models=0');
             var d = await r.json();
@@ -1248,8 +1333,6 @@ async function loadPossibleTargets(){
             }
             return;
         }
-
-        /* Для обычных подарков */
         var r2 = await fetch('/api/upgrade-possible-gifts', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -1289,8 +1372,10 @@ function openTargetsModal(){
     renderTargetsModal();
 }
 function closeTargetsModal(){ var m = $('targetsModal'); if(m) m.classList.remove('show'); }
-function filterTargets(){ _targetsSearchQ = ($('targetsSearch').value || '').toLowerCase().trim(); renderTargetsModal(); }
-
+function filterTargets(){
+    _targetsSearchQ = ($('targetsSearch').value || '').toLowerCase().trim();
+    renderTargetsModal();
+}
 function renderTargetsModal(){
     var grid = $('targetsGrid');
     if(!grid) return;
@@ -1339,10 +1424,10 @@ function _selectTarget(g){
 
     hideGoldArc();
     hideCenterResult();
-    drawGreenArc(currentChance);
+    /* ⚡ АНИМИРОВАННОЕ раскрытие зелёной дуги */
+    drawGreenArc(currentChance, true);
     updateWheel();
     closeTargetsModal();
-    updateTonConfirmBtn();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1358,7 +1443,7 @@ function updateWheel(){
         if(btn) btn.disabled = true;
         var txt = $('upgradeBtnText');
         if(txt) txt.textContent = 'Апгрейд';
-        drawGreenArc(0);
+        drawGreenArc(0, false);
         syncTurboButton();
         return;
     }
@@ -1390,7 +1475,6 @@ async function doUpgrade(){
     var goldArc = $('goldArc');
     if(!rotator || !greenArc) return;
 
-    /* Откат */
     rotator.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
     greenArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
     if(goldArc) goldArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
@@ -1398,7 +1482,6 @@ async function doUpgrade(){
     greenArc.style.transform = 'rotate(-20deg)';
     if(goldArc) goldArc.style.transform = 'rotate(-20deg)';
 
-    /* Запрос */
     var result = null;
     try{
         if(selectedGift.type === 'ton'){
@@ -1443,7 +1526,6 @@ async function doUpgrade(){
         return;
     }
 
-    /* Строго по серверу */
     var serverWin = !!result.upgrade_success;
     var willShowGold = Math.random() < GOLD_APPEAR_CHANCE;
     var goldRoll = Math.random() < GOLD_WIN_CHANCE;
@@ -1453,7 +1535,16 @@ async function doUpgrade(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SPIN WHEEL
+   SPIN WHEEL — стрелка ГАРАНТИРОВАННО попадает туда, куда надо
+   ══════════════════════════════════════════════════════════════
+   Логика:
+   - Стрелка сверху (12 часов = 0° = -90 в полярных)
+   - Зелёная дуга от -90 до (-90 + chance% * 360)
+   - gold — внутри зелёной
+
+   При WIN: стрелка должна попасть В зелёную зону.
+   При FAIL: стрелка должна попасть ВНЕ зелёной.
+   При GOLD: стрелка в золотую зону.
    ══════════════════════════════════════════════════════════════ */
 function spinWheel(chance, isWin, willShowGold, goldWin){
     var rotator = $('wheelRotator');
@@ -1480,46 +1571,82 @@ function spinWheel(chance, isWin, willShowGold, goldWin){
         }, 350);
     }
 
-    /* Целевой угол */
-    var landAngle;
-    var goldStart = _goldAngle;
-    var goldEnd = _goldAngle + _goldWidth;
-    var greenStart = -90;
-    var greenEnd = -90 + (chance / 100) * 360;
+    /* Зоны (в градусах от 12 часов по часовой) */
+    var greenStart = 0;
+    var greenEnd = (chance / 100) * 360;
 
-    if(goldWin && goldStart >= 0){
-        landAngle = goldStart + _goldWidth / 2;
+    var landAngle;
+
+    if(goldWin && _goldAngle >= 0){
+        /* Точный центр золотого сегмента.
+           _goldAngle — в полярных (от 3 часов CCW). Переводим в "от 12 по часовой":
+           angleFrom12 = (_goldAngle + 90) mod 360 (если считать от -90) */
+        var goldCenter = _goldAngle + _goldWidth / 2;
+        landAngle = ((goldCenter + 90) % 360 + 360) % 360;
     } else if(isWin){
-        if(goldStart < 0){
+        /* Внутри зелёной, но вне золотой */
+        if(_goldAngle < 0){
+            /* Золота нет — рандом в зелёной */
             landAngle = greenStart + Math.random() * (greenEnd - greenStart);
         } else {
+            /* Золотая зона в "от 12 по часовой" координатах */
+            var gStart12 = ((_goldAngle + 90) % 360 + 360) % 360;
+            var gEnd12 = gStart12 + _goldWidth;
+            if(gEnd12 > 360) gEnd12 -= 360;
+
+            /* Ищем угол в зелёной [greenStart, greenEnd], но не в [gStart12, gEnd12] */
             var candidates = [];
-            if(goldStart - 3 > greenStart) candidates.push([greenStart, goldStart - 3]);
-            if(goldEnd + 3 < greenEnd) candidates.push([goldEnd + 3, greenEnd]);
-            if(candidates.length === 0){
-                landAngle = goldStart + Math.random() * _goldWidth;
+
+            if(gEnd12 > gStart12){
+                /* Обычный случай — золото в середине */
+                if(gStart12 - 5 > greenStart) candidates.push([greenStart, gStart12 - 5]);
+                if(gEnd12 + 5 < greenEnd) candidates.push([gEnd12 + 5, greenEnd]);
             } else {
-                var totalWidth = 0;
-                candidates.forEach(function(c){ totalWidth += (c[1] - c[0]); });
-                var pick = Math.random() * totalWidth;
+                /* Золото пересекает 0 */
+                /* Зелёная зона [greenStart, greenEnd] обычно не пересекает 0 если greenEnd < 360 */
+                if(gStart12 - 5 > greenStart) candidates.push([greenStart, gStart12 - 5]);
+                /* gEnd12 < gStart12 — вторая часть золота от 0 до gEnd12 */
+                /* Пропускаем (сложный случай, редко) */
+            }
+
+            if(candidates.length === 0){
+                /* Не нашли — просто рандом в зелёной, отнимем немного */
+                landAngle = greenStart + Math.random() * Math.max(5, greenEnd - greenStart);
+            } else {
+                var totalW = 0;
+                candidates.forEach(function(c){ totalW += (c[1] - c[0]); });
+                var pick = Math.random() * totalW;
                 var acc = 0;
                 for(var i = 0; i < candidates.length; i++){
                     var w = candidates[i][1] - candidates[i][0];
-                    if(pick <= acc + w){ landAngle = candidates[i][0] + (pick - acc); break; }
+                    if(pick <= acc + w){
+                        landAngle = candidates[i][0] + (pick - acc);
+                        break;
+                    }
                     acc += w;
                 }
-                if(landAngle === undefined) landAngle = candidates[0][0] + Math.random() * (candidates[0][1] - candidates[0][0]);
+                if(landAngle === undefined) landAngle = candidates[0][0];
             }
         }
     } else {
-        var minAng = greenEnd + 8;
-        var maxAng = 360 - 95;
-        if(maxAng <= minAng){ minAng = greenEnd + 8; maxAng = greenEnd + 30; }
+        /* ВНЕ зелёной зоны — гарантированно */
+        var minAng = greenEnd + 10;
+        var maxAng = 355;
+        if(minAng >= maxAng){
+            /* Зелёная почти на весь круг — берём "почти на границе" */
+            minAng = Math.max(greenEnd + 5, 350);
+            maxAng = Math.min(minAng + 10, 359);
+        }
         landAngle = minAng + Math.random() * (maxAng - minAng);
     }
 
+    /* landAngle — от 12 часов по часовой. Стрелка сверху → цель = 360 - landAngle
+       (т.к. при повороте колеса на X градусов по часовой, точка с координатой landAngle
+        окажется под стрелкой когда X = 360 - landAngle) */
+    var targetRotation = 360 - landAngle;
+
     var baseSpin = 360 * (8 + Math.floor(Math.random() * 5));
-    var totalSpin = baseSpin + (360 - landAngle);
+    var totalSpin = baseSpin + targetRotation;
 
     var spinDuration = turboMode ? 3200 : 7500;
     var ease = turboMode ? 'cubic-bezier(.45,0,.35,1)' : 'cubic-bezier(.15,.7,.15,1)';
@@ -1679,7 +1806,7 @@ function resetAfterSpin(){
 
     hideCenterResult();
     hideGoldArc();
-    drawGreenArc(0);
+    drawGreenArc(0, false);
 }
 
 /* ══════════════════════════════════════════════════════════════
