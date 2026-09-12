@@ -3785,23 +3785,37 @@ def start_ultimate_crash_loop():
                             except Exception as ai_e:
                                 logger.error(f"AI mid-round error: {ai_e}")
 
-                        # Requested curve with a fast rocket feel:
-                        # 1 → 2x in ~5s
-                        # 2 → 4x in ~8s
-                        # 4 → 10x in ~5s
-                        # then faster beyond 10x
-                        if live_mult < 2.0:
-                            base_increment = 0.018
-                        elif live_mult < 4.0:
-                            base_increment = 0.025
+                        # ★ НОВАЯ КРИВАЯ (медленные начальные иксы):
+                        # 1.00 → 1.10 за ~3 сек (инкремент 0.0017 за тик 0.05с)
+                        # 1.10 → 1.50 за ~4 сек (инкремент 0.005  за тик 0.05с)
+                        # 1.50 → 2.00 за ~4 сек (инкремент 0.006  за тик 0.05с)
+                        # 2.00 → 4.00 за ~8 сек (инкремент 0.0125 за тик 0.05с)
+                        # 4.00 → 10.0 за ~6 сек (инкремент 0.05   за тик 0.05с)
+                        # 10.0+        → +1 в секунду (инкремент 0.05 за тик)
+                        #
+                        # Тик = 0.05 сек (time.sleep(0.05) в цикле)
+                        if live_mult < 1.10:
+                            # 1.00 → 1.10 : 3 сек (60 тиков) → 0.10/60 = 0.001667
+                            increment = 0.0017
+                        elif live_mult < 1.50:
+                            # 1.10 → 1.50 : 4 сек (80 тиков) → 0.40/80 = 0.005
+                            increment = 0.005
+                        elif live_mult < 2.00:
+                            # 1.50 → 2.00 : 4 сек (80 тиков) → 0.50/80 = 0.00625
+                            increment = 0.00625
+                        elif live_mult < 4.00:
+                            # 2.00 → 4.00 : 8 сек (160 тиков) → 2.00/160 = 0.0125
+                            increment = 0.0125
                         elif live_mult < 10.0:
-                            base_increment = 0.08
+                            # 4.00 → 10.0 : 6 сек (120 тиков) → 6.00/120 = 0.05
+                            increment = 0.05
                         else:
-                            base_increment = 0.15
+                            # 10.0+ : +1 в секунду → 0.05 за тик
+                            increment = 0.05
 
-                        speed_boost = live_mult * 0.008
-                        increment = round(max(base_increment, speed_boost), 3)
-                        increment = min(increment, 0.12)
+                        increment = round(increment, 5)
+                        # Кэп на случай сбоев
+                        increment = min(increment, 0.5)
 
                         # Keep random crash soft so the round feels lively but stable
                         crash_chance = 0.0012 * (live_mult / 10)
