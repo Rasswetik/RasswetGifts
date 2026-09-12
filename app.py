@@ -3285,6 +3285,111 @@ def get_user_rtp_boost(user_id, conn=None):
             except: pass
         return 40
 
+def calculate_upgrade_chance(current_value, target_value, user_id=None, site_balance_override=None):
+    """Единая честная функция расчёта шанса апгрейда.
+    
+    Args:
+        current_value: стоимость текущего подарка (в звёздах)
+        target_value: стоимость целевого подарка (в звёздах)
+        user_id: ID пользователя (для RTP boost)
+        site_balance_override: если нужно передать баланс сайта вручную
+    
+    Returns:
+        dict с 'displayed' (%), 'real' (%), 'house_edge', 'player_boost'
+    
+    Логика:
+        1. База = (current / target) * 100
+        2. House edge — мягкий множитель по диапазону цены:
+           - target < 1000 ⭐ (10 TON): без изменений
+           - target 1000-5000 ⭐ (10-50 TON): ×0.97
+           - target 5000-20000 ⭐ (50-200 TON): ×0.94
+           - target 20000-50000 ⭐ (200-500 TON): ×0.90
+           - target > 50000 ⭐ (>500 TON): ×0.85
+        3. RTP boost игрока: если rtp_boost > 40, шанс увеличивается
+           на (boost - 40)% от базового
+        4. Site balance — мягкая коррекция ТОЛЬКО для очень крупных:
+           - site < -20000: ×0.85 для target > 5000 ⭐
+           - site < -10000: ×0.92 для target > 5000 ⭐
+           - site > +10000: ×1.05 для target > 1000 ⭐
+        5. Финальный шанс обрезается: min 5%, max 90%
+    """
+    try:
+        current_value = max(1, int(current_value or 0))
+        target_value = max(1, int(target_value or 0))
+    except (ValueError, TypeError):
+        return {'displayed': 0, 'real': 0, 'house_edge': 1.0, 'player_boost': 1.0}
+    
+    if target_value <= current_value:
+        return {'displayed': 0, 'real': 0, 'house_edge': 1.0, 'player_boost': 1.0}
+    
+    # ── База ──
+    base_chance = (current_value / target_value) * 100.0
+    
+    # ── House edge по диапазону (мягкий!) ──
+    if target_value < 1000:          # < 10 TON
+        house_edge = 1.00
+    elif target_value < 5000:        # 10-50 TON
+        house_edge = 0.97
+    elif target_value < 20000:       # 50-200 TON
+        house_edge = 0.94
+    elif target_value < 50000:       # 200-500 TON
+        house_edge = 0.90
+    else:                            # > 500 TON
+        house_edge = 0.85
+    
+    real_chance = base_chance * house_edge
+    
+    # ── RTP boost игрока ──
+    player_boost = 1.0
+    if user_id:
+        try:
+            _ub = get_user_rtp_boost(user_id)
+            if _ub and _ub > 40:
+                # +1% к шансу за каждые 2 пункта boost выше 40
+                player_boost = 1.0 + (_ub - 40) / 200.0  # max +0.3 при boost=100
+                real_chance *= player_boost
+        except Exception:
+            pass
+    
+    # ── Site balance (только для крупных) ──
+    if site_balance_override is not None:
+        site_bal = site_balance_override
+    else:
+        try:
+            site_bal = _get_site_profit_balance()
+        except Exception:
+            site_bal = 0
+    
+    site_mult = 1.0
+    if target_value > 5000:  # 50 TON+
+        if site_bal < -20000:
+            site_mult = 0.85
+        elif site_bal < -10000:
+            site_mult = 0.92
+        elif site_bal > 10000:
+            site_mult = 1.05
+    elif target_value > 1000:  # 10-50 TON
+        if site_bal < -20000:
+            site_mult = 0.92
+        elif site_bal > 10000:
+            site_mult = 1.03
+    
+    real_chance *= site_mult
+    
+    # ── Границы ──
+    displayed_chance = max(2.0, min(90.0, base_chance))
+    real_chance = max(3.0, min(90.0, real_chance))
+    
+    return {
+        'displayed': round(displayed_chance, 2),
+        'real': round(real_chance, 2),
+        'house_edge': round(house_edge, 4),
+        'player_boost': round(player_boost, 4),
+        'site_mult': round(site_mult, 4),
+        'base': round(base_chance, 2)
+    }
+
+
 def get_player_rtp_mode(user_id, conn=None):
     """Determine if a player should be boosted or nerfed based on their RTP.
     Uses per-user RTP boost from admin if set.
@@ -7094,12 +7199,12 @@ def open_case():
         # 🏦 Override to nerf if house bank is negative (aggressive mode for cases)
         try:
             site_balance = _get_site_profit_balance()
-            if site_balance < -5000:
-                # Aggressive mode: always nerf (cheaper drops)
+            if site_balance < -15000:
+                # Aggressive mode: nerf only when site is REALLY negative
                 rtp_mode = 'nerf'
                 logger.info(f"🏦 Агрессивный режим кейсов: игрок {user_id} получает дешёвые дропы (баланс: {site_balance})")
-            elif site_balance < -1000:
-                # Tight mode: nerf if not already boosted
+            elif site_balance < -7000:
+                # Tight mode: nerf only if not already boosted
                 if rtp_mode != 'boost':
                     rtp_mode = 'nerf'
                     logger.info(f"🏦 Ужесточённый режим кейсов: игрок {user_id} получает дешёвые дропы (баланс: {site_balance})")
@@ -10621,42 +10726,17 @@ def upgrade_with_ton():
             conn.close()
             return jsonify({'success': False, 'error': 'Недостаточно средств. Баланс: ' + str(current_balance)})
 
-        base_chance = (bet_amount / target_value) * 100
-        base_chance = max(10, min(base_chance, 75))
-        displayed_chance = round(base_chance, 1)
-
-        real_chance = base_chance
-        if target_value > 50000:
-            real_chance = base_chance * 0.65
-        elif target_value > 20000:
-            real_chance = base_chance * 0.72
-        elif target_value > 10000:
-            real_chance = base_chance * 0.78
-        elif target_value > 5000:
-            real_chance = base_chance * 0.85
-        elif target_value > 2000:
-            real_chance = base_chance * 0.92
-
-        real_chance = max(5, real_chance)
-
-        try:
-            user_rtp_boost = get_user_rtp_boost(user_id)
-            if user_rtp_boost > 40:
-                boost_mult = 1.0 + (user_rtp_boost - 40) / 100.0
-                real_chance = min(real_chance * boost_mult, 95)
-        except Exception:
-            pass
-
-        try:
-            site_balance = _get_site_profit_balance()
-            if site_balance < -10000:
-                real_chance = min(real_chance, displayed_chance * 0.5)
-            elif site_balance < -3000:
-                real_chance = min(real_chance, displayed_chance * 0.7)
-        except Exception:
-            pass
-
-        real_chance = max(5, real_chance)
+        # ★ Используем единую честную функцию расчёта шанса
+        _chance_info = calculate_upgrade_chance(bet_amount, target_value, user_id=user_id)
+        displayed_chance = _chance_info['displayed']
+        real_chance = _chance_info['real']
+        
+        logger.info(
+            f"🎯 Upgrade TON chance: base={_chance_info['base']}%, "
+            f"displayed={displayed_chance}%, real={real_chance}%, "
+            f"edge={_chance_info['house_edge']}, boost={_chance_info['player_boost']}, "
+            f"site_mult={_chance_info.get('site_mult', 1.0)}"
+        )
 
         cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
                        (bet_amount, user_id))
@@ -10737,7 +10817,8 @@ def upgrade_with_ton():
             'success': True,
             'upgrade_success': success,
             'chance': displayed_chance,
-            'real_chance': round(real_chance, 1),
+            'real_chance': round(real_chance, 2),
+            'house_edge': _chance_info.get('house_edge', 1.0),
             'bet_amount': bet_amount,
             'new_balance': new_balance,
             'new_gift': new_gift,
@@ -10805,8 +10886,9 @@ def upgrade_gift_fast():
             conn.close()
             return jsonify({'success': False, 'error': 'Нельзя апгрейдить на подарок такой же или меньшей стоимости'})
 
-        chance = (current_value / target_value) * 100
-        chance = max(10, min(chance, 80))
+        # ★ Единая честная функция расчёта шанса
+        _chance_info = calculate_upgrade_chance(current_value, target_value, user_id=user_id)
+        chance = _chance_info['real']
 
         cursor.execute('''
             SELECT COUNT(*) FROM user_history
@@ -10932,47 +11014,18 @@ def upgrade_gift_chance():
                 conn.close()
                 return jsonify({'success': False, 'error': 'Нельзя апгрейдить на более дешевый подарок'})
 
-            base_chance = max(10, min((current_value / target_value) * 100, 75))
-            displayed_chance = round(base_chance, 1)
+            # ★ Единая честная функция расчёта шанса
+            _chance_info = calculate_upgrade_chance(current_value, target_value, user_id=user_id)
+            displayed_chance = _chance_info['displayed']
+            real_chance = _chance_info['real']
 
-            price_ratio = target_value / current_value
-            real_chance = base_chance
-
-            # МЯГКИЙ расчёт: дорогие апгрейды тоже заходят
-            if target_value > 50000:
-                real_chance = base_chance * 0.65
-            elif target_value > 20000:
-                real_chance = base_chance * 0.72
-            elif target_value > 10000:
-                real_chance = base_chance * 0.78
-            elif target_value > 5000:
-                real_chance = base_chance * 0.85
-            elif target_value > 2000:
-                real_chance = base_chance * 0.92
-
-            real_chance = max(5, real_chance)
-
-            # Per-user RTP boost from admin
-            user_rtp_boost = get_user_rtp_boost(user_id)
-            if user_rtp_boost > 40:
-                boost_mult = 1.0 + (user_rtp_boost - 40) / 100.0
-                real_chance = min(real_chance * boost_mult, 95)
-
-            # 🏦 Aggressive mode: reduce chances when site bank is negative
-            try:
-                site_balance = _get_site_profit_balance()
-                if site_balance < -5000:
-                    # Aggressive mode: reduce to 25% of displayed
-                    real_chance = min(real_chance, displayed_chance * 0.25)
-                    logger.info(f"🏦 Агрессивный режим апгрейда: шанс снижен до {real_chance:.1f}%")
-                elif site_balance < -1000:
-                    # Tight mode: reduce to 50% of displayed
-                    real_chance = min(real_chance, displayed_chance * 0.5)
-                    logger.info(f"🏦 Ужесточённый режим апгрейда: шанс снижен до {real_chance:.1f}%")
-            except Exception as e:
-                logger.warning(f"⚠️ Не удалось проверить баланс сайта: {e}")
-
-            logger.info(f"🎯 Шансы: отображаемый {displayed_chance}%, реальный {real_chance:.1f}%, цена: {current_value} -> {target_value}")
+            logger.info(
+                f"🎯 Upgrade chance: base={_chance_info['base']}%, "
+                f"displayed={displayed_chance}%, real={real_chance}%, "
+                f"edge={_chance_info['house_edge']}, boost={_chance_info['player_boost']}, "
+                f"site_mult={_chance_info.get('site_mult', 1.0)}, "
+                f"price: {current_value} -> {target_value}"
+            )
 
             success = random.random() * 100 <= real_chance
 
@@ -11014,7 +11067,8 @@ def upgrade_gift_chance():
                 'success': True,
                 'upgrade_success': success,
                 'chance': displayed_chance,
-                'real_chance': round(real_chance, 1),
+                'real_chance': round(real_chance, 2),
+                'house_edge': _chance_info.get('house_edge', 1.0),
                 'new_gift': target_gift if success else None,
                 'message': 'Успешный апгрейд!' if success else 'Апгрейд не удался'
             })
@@ -11146,36 +11200,20 @@ def upgrade_multi_gifts():
                 conn.close()
                 return jsonify({'success': False, 'error': 'Сумма ставки должна быть меньше цены цели'})
 
-            base_chance = max(10, min((total_value / target_value) * 100, 75))
-            displayed_chance = round(base_chance, 1)
-
-            real_chance = base_chance
-            # МЯГКИЙ расчёт: дорогие апгрейды тоже заходят
-            if target_value > 50000:
-                real_chance = base_chance * 0.65
-            elif target_value > 20000:
-                real_chance = base_chance * 0.72
-            elif target_value > 10000:
-                real_chance = base_chance * 0.78
-            elif target_value > 5000:
-                real_chance = base_chance * 0.85
-            elif target_value > 2000:
-                real_chance = base_chance * 0.92
-            real_chance = max(5, real_chance)
-
-            # Per-user RTP boost from admin
-            user_rtp_boost = get_user_rtp_boost(user_id)
-            if user_rtp_boost > 40:
-                boost_mult = 1.0 + (user_rtp_boost - 40) / 100.0
-                real_chance = min(real_chance * boost_mult, 95)
+            # ★ Единая честная функция расчёта шанса
+            _chance_info = calculate_upgrade_chance(total_value, target_value, user_id=user_id)
+            displayed_chance = _chance_info['displayed']
+            real_chance = _chance_info['real']
 
             cursor.execute('SELECT COALESCE(first_name, username, ?) FROM users WHERE id = ?', ('Игрок', user_id))
             user_row = cursor.fetchone()
             user_name = (user_row[0] if user_row and user_row[0] else 'Игрок')
 
-            logger.info(f"🎯 Multi-upgrade: user={user_id}, {len(inventory_ids)} gifts, "
-                        f"total={total_value} -> target={target_value}, "
-                        f"displayed={displayed_chance}%, real={real_chance:.1f}%")
+            logger.info(
+                f"🎯 Multi-upgrade: user={user_id}, {len(inventory_ids)} gifts, "
+                f"total={total_value} -> target={target_value}, "
+                f"displayed={displayed_chance}%, real={real_chance}%"
+            )
 
             success = random.random() * 100 <= real_chance
 
