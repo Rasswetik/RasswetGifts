@@ -78,9 +78,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .rocket-wrap.flying.showing-gift img{transform:scale(1.05) translateZ(0)}
 .rocket-wrap.cashed-out img{filter:grayscale(100%) brightness(.7)}
 
-/* ══════════════════════════════════════════════════════════════
-   BOOM — чёткая одноразовая анимация
-   ══════════════════════════════════════════════════════════════ */
+/* BOOM — чёткая одноразовая анимация */
 .boom-wrap{
     position:absolute;
     left:50%;top:50%;
@@ -122,25 +120,99 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     100%{transform:scale(1.2) rotate(0deg);opacity:0}
 }
 
-/* BET AREA — одна кнопка, переключается через JS */
-.bet-area{padding:6px 12px 4px;position:relative;z-index:100}
-.place-bet-btn{width:100%;padding:15px;border-radius:16px;border:none;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(135deg,#06B6D4,#3B82F6);color:#fff;box-shadow:0 8px 25px rgba(6,182,212,.25);letter-spacing:.5px;text-transform:uppercase;border:2px solid rgba(6,182,212,.3);transition:transform .15s,background .2s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-.place-bet-btn:disabled{opacity:.35;cursor:default;transform:none !important}
-.place-bet-btn:not(:disabled):active{transform:scale(.98)}
-.place-bet-btn.cancel-mode{background:linear-gradient(135deg,#E8527A,#C42247);box-shadow:0 8px 25px rgba(232,82,122,.25);border-color:rgba(232,82,122,.3)}
-.place-bet-btn.bet-placed-mode{background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);box-shadow:none;border-color:rgba(255,255,255,.08)}
-.place-bet-btn .btn-text{display:inline-block;pointer-events:none}
+/* BET AREA — ЕДИНАЯ КНОПКА */
+.bet-area{padding:8px 12px 4px;position:relative;z-index:100}
 
-/* CASHOUT — показывается ТОЛЬКО когда есть ставка и летим */
-.cashout-btn{width:100%;padding:12px 14px;border-radius:20px;border:none;font-family:inherit;font-weight:800;font-size:16px;cursor:pointer;background:linear-gradient(135deg,rgba(30,228,76,.95),rgba(24,184,62,.95));color:#061510;box-shadow:0 12px 35px rgba(30,228,76,.25);display:none;letter-spacing:.4px;text-transform:uppercase;border:2px solid rgba(255,255,255,.1);transition:transform .15s;flex-direction:row;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
-.cashout-btn.visible{display:flex}
-.cashout-btn:not(:disabled):active{transform:scale(.98)}
-.cashout-btn.crash-state{background:linear-gradient(135deg,#E8527A,#C42247) !important;color:#fff !important;cursor:default;pointer-events:none}
-.cb-gift-side{width:42px;height:42px;flex-shrink:0;object-fit:contain;border:none;background:transparent;padding:0;filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));transition:opacity .25s}
-.cb-gift-side.empty{opacity:.3}
-.cb-center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;min-width:0}
-.cb-center .cb-label{font-size:12px;font-weight:800;letter-spacing:1px;opacity:.85;text-transform:uppercase}
-.cb-center .cb-win{font-size:20px;font-weight:900;letter-spacing:.3px;white-space:nowrap;transition:color .3s}
+.action-btn{
+    width:100%;
+    padding:15px;
+    border-radius:16px;
+    border:2px solid rgba(6,182,212,.3);
+    font-family:inherit;
+    font-weight:800;
+    font-size:15px;
+    cursor:pointer;
+    background:linear-gradient(135deg,#06B6D4,#3B82F6);
+    color:#fff;
+    box-shadow:0 8px 25px rgba(6,182,212,.25);
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    transition:transform .12s, background .2s, box-shadow .2s;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+    min-height:54px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+}
+.action-btn:disabled{opacity:.4;cursor:default;transform:none !important}
+.action-btn:not(:disabled):active{transform:scale(.98)}
+.action-btn .btn-text{display:inline-block;pointer-events:none}
+
+/* State: cancel — красная */
+.action-btn.state-cancel{
+    background:linear-gradient(135deg,#E8527A,#C42247);
+    box-shadow:0 8px 25px rgba(232,82,122,.25);
+    border-color:rgba(232,82,122,.3);
+}
+
+/* State: placed — серая неактивная */
+.action-btn.state-placed{
+    background:rgba(255,255,255,.05);
+    color:rgba(255,255,255,.35);
+    box-shadow:none;
+    border-color:rgba(255,255,255,.08);
+    cursor:default;
+}
+
+/* State: cashout — зелёная, с подарками */
+.action-btn.state-cashout{
+    background:linear-gradient(135deg,#1EE44C,#18b83e);
+    color:#061510;
+    box-shadow:0 12px 35px rgba(30,228,76,.35);
+    border-color:rgba(30,228,76,.5);
+    padding:12px 14px;
+    justify-content:space-between;
+}
+
+/* State: crashed — красная заблокированная */
+.action-btn.state-crashed{
+    background:linear-gradient(135deg,#E8527A,#C42247);
+    color:#fff;
+    box-shadow:0 12px 35px rgba(232,82,122,.35);
+    border-color:rgba(232,82,122,.5);
+    cursor:default;
+    pointer-events:none;
+    padding:12px 14px;
+    justify-content:space-between;
+}
+
+/* Составляющие кэшаута */
+.action-btn .cb-gift-side{
+    width:42px;height:42px;flex-shrink:0;object-fit:contain;
+    border:none;background:transparent;padding:0;
+    filter:drop-shadow(0 3px 8px rgba(0,0,0,.35));
+    transition:opacity .25s;
+    display:none;
+}
+.action-btn.state-cashout .cb-gift-side{display:block}
+.action-btn.state-crashed .cb-gift-side{display:block;opacity:.5;filter:grayscale(.5)}
+.action-btn .cb-gift-side.empty{opacity:.3}
+
+.action-btn .cb-center{
+    flex:1;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    line-height:1.05;
+    min-width:0;
+}
+.action-btn.state-cashout .cb-center,
+.action-btn.state-crashed .cb-center{display:flex}
+.action-btn .cb-label{font-size:12px;font-weight:800;letter-spacing:1px;opacity:.85;text-transform:uppercase}
+.action-btn .cb-win{font-size:20px;font-weight:900;letter-spacing:.3px;white-space:nowrap}
 
 /* HISTORY */
 .history-section{padding:4px 12px 2px}
@@ -334,7 +406,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     .bet-status{font-size:10px;padding:3px 7px}
     .bets-list{max-height:220px}
     .cb-center .cb-win{font-size:17px}
-    .cb-gift-side{width:36px;height:36px}
+    .action-btn .cb-gift-side{width:36px;height:36px}
 }
 </style>
 </head>
@@ -394,16 +466,8 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     </div>
 
     <div class="bet-area">
-        <button class="place-bet-btn" id="placeBetBtn" onclick="onBetBtnClick()">
+        <button class="action-btn" id="actionBtn" onclick="onActionBtnClick()">
             <span class="btn-text">Place bet</span>
-        </button>
-        <button class="cashout-btn" id="cashoutBtn" onclick="doCashout()">
-            <img class="cb-gift-side empty" id="cbGiftLeft" src="/static/img/gift.png" alt="">
-            <div class="cb-center">
-                <span class="cb-label">Cash OUT</span>
-                <span class="cb-win" id="cbWin">0.00</span>
-            </div>
-            <img class="cb-gift-side empty" id="cbGiftRight" src="/static/img/gift.png" alt="">
         </button>
     </div>
 
@@ -563,7 +627,6 @@ function isTelegramWebApp(){
 }
 
 var gameId = 0;
-var prevGameId = 0;
 var status = 'waiting';
 var prevStatus = 'waiting';
 var dispMult = 1.0;
@@ -588,14 +651,16 @@ var lastShownNumber = 99;
 var goShownForRound = false;
 var lastCountdownAt = 0;
 
-/* Multiplier growth */
+/* Multiplier */
 var multGrowthRate = 0;
 var lastPollAt = 0;
 var lastPollServerMult = 1.0;
+
+/* RAF */
 var _rafLast = 0;
 var _lastLiveMultUpdate = 0;
 var _lastCoeffUpdate = 0;
-var _lastCashBtnUpdate = 0;
+var _lastBtnUpdate = 0;
 var _lastRocketUpdate = 0;
 
 /* Bets/history */
@@ -620,11 +685,14 @@ var _giftImgCache = {};
 var _lastAchievableWin = -1;
 var _lastAchievableGift = null;
 
-/* Auto withdraw modal */
+/* Auto withdraw */
 var _autowdSelected = null;
 var _autowdBet = 0;
 var _autowdTarget = 0;
 var _autowdGifts = [];
+
+/* Action button */
+var _lastBtnKey = '';
 
 var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
 
@@ -703,7 +771,6 @@ function showToast(msg, type){
             }
         }, 100);
     };
-    /* Хардкод таймаут */
     setTimeout(function(){
         var ls = $('ldScreen');
         if(ls && !ls.classList.contains('hidden')){
@@ -901,7 +968,6 @@ function getAchievableGift(potentialWin){
    ══════════════════════════════════════════════════════════════ */
 var _polling = false;
 var _pollErrors = 0;
-var pollInterval = 400;
 
 async function pollStatus(){
     if(!authReady) return;
@@ -920,15 +986,12 @@ async function pollStatus(){
 
         var d = await r.json();
         _pollErrors = 0;
-        pollInterval = 400;
 
         if(!d || !d.game) return;
         applyServerState(d);
 
     }catch(e){
         _pollErrors++;
-        if(_pollErrors > 3) pollInterval = 1500;
-        else if(_pollErrors > 1) pollInterval = 800;
     }finally{
         _polling = false;
     }
@@ -946,18 +1009,16 @@ function applyServerState(d){
     var newServMult = parseFloat(g.current_multiplier) || 1.0;
     var newTarget = parseFloat(g.target_multiplier) || 5.0;
 
-    /* ── Новый раунд ── */
     var isNewRound = (gameId !== 0) && (newGameId !== gameId);
 
     if(isNewRound){
         resetRoundState();
     }
 
-    /* ── Смена статуса ── */
     prevStatus = status;
     status = newStatus;
 
-    /* ── Вход в counting ── */
+    /* counting start */
     if(newStatus === 'counting' && (prevStatus !== 'counting' || countingStartedAt === 0)){
         countingStartedAt = now;
         countingDuration = 5.0;
@@ -966,13 +1027,12 @@ function applyServerState(d){
         lastCountdownAt = 0;
     }
 
-    /* ── Вход в flying ── */
+    /* flying start */
     if(newStatus === 'flying' && prevStatus !== 'flying'){
         if(!goShownForRound){
             goShownForRound = true;
             showGoAnimation();
         }
-        /* ВАЖНО: в начале полёта множитель ВСЕГДА 1.00x */
         if(newServMult < 1.05){
             dispMult = 1.0;
             servMult = 1.0;
@@ -987,7 +1047,7 @@ function applyServerState(d){
         }
     }
 
-    /* ── Полёт: считаем скорость ── */
+    /* flying growth */
     if(newStatus === 'flying'){
         if(newServMult > lastPollServerMult && lastPollAt > 0){
             var elapsed = now - lastPollAt;
@@ -1001,7 +1061,6 @@ function applyServerState(d){
         servMult = newServMult;
         targetMult = newTarget;
 
-        /* Корректировка dispMult, если сильно отстаёт */
         if(servMult - dispMult > 0.5) dispMult = servMult - 0.5;
         if(dispMult - servMult > 0.5) dispMult = servMult + 0.5;
         if(dispMult < 1.0) dispMult = 1.0;
@@ -1010,18 +1069,18 @@ function applyServerState(d){
         targetMult = newTarget;
     }
 
-    /* ── Краш ── */
+    /* crash */
     if(newStatus === 'crashed' && prevStatus !== 'crashed'){
         triggerCrashAnimation(newServMult);
     }
 
-    /* ── Баланс ── */
+    /* balance */
     if(d.user_balance !== undefined && d.user_balance !== null && userData){
         userData.balance_stars = d.user_balance;
         updateBalanceUI();
     }
 
-    /* ── Ставка юзера ── */
+    /* user bet */
     if(d.user_bet && d.user_bet.status === 'active'){
         if(!hasBet){
             hasBet = true;
@@ -1034,6 +1093,7 @@ function applyServerState(d){
     gameId = newGameId;
 
     updateGameFieldUI();
+    updateActionButton();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1103,10 +1163,7 @@ function triggerCrashAnimation(finalMult){
     servMult = finalMult;
     dispMult = finalMult;
 
-    if(rw){
-        rw.classList.add('hide');
-        rw.classList.remove('flying');
-    }
+    if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
     if(gf) gf.classList.remove('flying');
     if(lm) lm.classList.remove('visible');
     if(coeff){
@@ -1114,23 +1171,12 @@ function triggerCrashAnimation(finalMult){
         coeff.textContent = finalMult.toFixed(2) + 'x';
     }
 
-    /* ── BOOM анимация ── */
     if(bm && bimg){
-        /* Принудительно сбросить */
         bm.classList.remove('playing');
         void bm.offsetWidth;
-
-        /* Пересоздать src, чтобы GIF проиграл с начала */
-        var newSrc = '/static/gifs/boom.gif?t=' + Date.now();
-        bimg.src = newSrc;
-
-        /* Форс reflow */
+        bimg.src = '/static/gifs/boom.gif?t=' + Date.now();
         void bimg.offsetWidth;
-
-        /* Запуск */
         bm.classList.add('playing');
-
-        /* Остановить через 1.8 сек */
         setTimeout(function(){
             bm.classList.remove('playing');
         }, 1900);
@@ -1144,8 +1190,7 @@ function triggerCrashAnimation(finalMult){
     betAmt = 0;
     betGiftImg = null;
 
-    updateBetButtonUI();
-    updateCashoutButtonUI();
+    updateActionButton();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1167,7 +1212,7 @@ function showGoAnimation(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   UI UPDATERS — ЕДИНАЯ ЛОГИКА КНОПОК
+   GAME FIELD UI
    ══════════════════════════════════════════════════════════════ */
 function updateGameFieldUI(){
     var rw = $('rocketWrap');
@@ -1207,91 +1252,117 @@ function updateGameFieldUI(){
         }
         if(cd){ cd.classList.remove('active'); cd.textContent = ''; }
     }
-
-    updateBetButtonUI();
-    updateCashoutButtonUI();
 }
 
-/* ── ЕДИНАЯ КНОПКА: place / cancel / bet placed ── */
-function updateBetButtonUI(){
-    var pb = $('placeBetBtn');
-    if(!pb) return;
+/* ══════════════════════════════════════════════════════════════
+   ACTION BUTTON — ЕДИНАЯ, БЕЗ ДУБЛИРОВАНИЯ
+   ══════════════════════════════════════════════════════════════ */
+function updateActionButton(){
+    var btn = $('actionBtn');
+    if(!btn) return;
 
-    pb.classList.remove('cancel-mode', 'bet-placed-mode');
+    var newState = 'place';
+    var html = '';
+    var disabled = false;
 
-    if(hasBet){
-        /* Ставка уже сделана */
-        pb.innerHTML = '<span class="btn-text">BET PLACED</span>';
-        pb.disabled = true;
-        pb.classList.add('bet-placed-mode');
-        return;
-    }
-
-    if(pendingBet){
-        /* Ставка на след. раунд */
-        pb.innerHTML = '<span class="btn-text">CANCEL (' + formatCrashMoney(pendingBet.amount) + ')</span>';
-        pb.disabled = false;
-        pb.classList.add('cancel-mode');
-        return;
-    }
-
-    /* Обычное состояние */
-    pb.disabled = false;
-    if(status === 'flying'){
-        pb.innerHTML = '<span class="btn-text">BET ON NEXT</span>';
+    if(status === 'crashed'){
+        newState = 'crashed';
+        var crashGift = cashedOutBetAmt > 0 ? getAchievableGift(cashedOutBetAmt * servMult) : null;
+        var crashImg = crashGift ? getGiftImage(crashGift) : '/static/img/gift.png';
+        html = '<img class="cb-gift-side empty" src="' + crashImg + '" alt="">'
+            + '<div class="cb-center"><span class="cb-label">CRASH</span>'
+            + '<span class="cb-win">' + (servMult || 1).toFixed(2) + 'x</span></div>'
+            + '<img class="cb-gift-side empty" src="' + crashImg + '" alt="">';
+        disabled = true;
+    } else if(hasBet && !cashedOut && status === 'flying'){
+        newState = 'cashout';
+        var currentMult = Math.max(dispMult, servMult);
+        var curWin = Math.floor((betAmt || 0) * currentMult);
+        var achievable = getAchievableGift(curWin);
+        var giftSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
+        var isEmpty = !achievable ? ' empty' : '';
+        html = '<img class="cb-gift-side' + isEmpty + '" src="' + giftSrc + '" alt="">'
+            + '<div class="cb-center"><span class="cb-label">Cash OUT</span>'
+            + '<span class="cb-win">' + formatCrashMoney(curWin) + '</span></div>'
+            + '<img class="cb-gift-side' + isEmpty + '" src="' + giftSrc + '" alt="">';
+    } else if(hasBet){
+        newState = 'placed';
+        html = '<span class="btn-text">BET PLACED</span>';
+        disabled = true;
+    } else if(pendingBet){
+        newState = 'cancel';
+        html = '<span class="btn-text">CANCEL (' + formatCrashMoney(pendingBet.amount) + ')</span>';
+    } else if(status === 'flying'){
+        newState = 'next';
+        html = '<span class="btn-text">BET ON NEXT</span>';
     } else {
-        pb.innerHTML = '<span class="btn-text">Place bet</span>';
+        newState = 'place';
+        html = '<span class="btn-text">Place bet</span>';
     }
-}
 
-/* ── КЭШАУТ: показывается ТОЛЬКО когда есть ставка и летим ── */
-function updateCashoutButtonUI(){
-    var cb = $('cashoutBtn');
-    var left = $('cbGiftLeft');
-    var right = $('cbGiftRight');
-    var win = $('cbWin');
-    if(!cb || !left || !right || !win) return;
-
-    /* Крашнутые состояния — показываем заблокированную кнопку */
-    if(status === 'crashed' && cashedOut){
-        cb.classList.add('visible');
-        cb.disabled = true;
-        cb.classList.add('crash-state');
-        win.textContent = 'CRASH ' + (servMult || 1).toFixed(2) + 'x';
+    /* Для cashout — если только win обновился, точечно меняем текст */
+    if(newState === 'cashout' && btn.classList.contains('state-cashout')){
+        var currentMult2 = Math.max(dispMult, servMult);
+        var curWin2 = Math.floor((betAmt || 0) * currentMult2);
+        var winEl = btn.querySelector('.cb-win');
+        if(winEl){
+            var winText = formatCrashMoney(curWin2);
+            if(winEl.textContent !== winText) winEl.textContent = winText;
+        }
+        var achievable2 = getAchievableGift(curWin2);
+        var giftSrc2 = achievable2 ? getGiftImage(achievable2) : '/static/img/gift.png';
+        var isEmpty2 = !achievable2;
+        var lG = btn.querySelector('.cb-gift-side:first-child');
+        var rG = btn.querySelector('.cb-gift-side:last-child');
+        if(lG && lG.dataset.src !== giftSrc2){
+            lG.dataset.src = giftSrc2;
+            lG.src = giftSrc2;
+            lG.classList.toggle('empty', isEmpty2);
+        }
+        if(rG && rG.dataset.src !== giftSrc2){
+            rG.dataset.src = giftSrc2;
+            rG.src = giftSrc2;
+            rG.classList.toggle('empty', isEmpty2);
+        }
         return;
     }
 
-    /* Скрываем, если нет активной ставки или не летим */
-    if(!hasBet || cashedOut || status !== 'flying'){
-        cb.classList.remove('visible', 'crash-state');
+    /* Проверяем, нужно ли перестроить */
+    var key = newState + '|' + (disabled ? '1' : '0');
+    if(_lastBtnKey === key) return;
+    _lastBtnKey = key;
+
+    btn.className = 'action-btn';
+    if(newState === 'cancel') btn.classList.add('state-cancel');
+    else if(newState === 'placed') btn.classList.add('state-placed');
+    else if(newState === 'cashout') btn.classList.add('state-cashout');
+    else if(newState === 'crashed') btn.classList.add('state-crashed');
+
+    btn.innerHTML = html;
+    btn.disabled = disabled;
+}
+
+function onActionBtnClick(){
+    var btn = $('actionBtn');
+    if(!btn || btn.disabled) return;
+
+    if(status === 'flying' && hasBet && !cashedOut){
+        doCashout();
         return;
     }
-
-    /* Показываем */
-    cb.classList.add('visible');
-    cb.classList.remove('crash-state');
-    cb.disabled = false;
-
-    var currentMult = Math.max(dispMult, servMult);
-    var curWin = Math.floor((betAmt || 0) * currentMult);
-    var newWinText = formatCrashMoney(curWin);
-    if(win.textContent !== newWinText) win.textContent = newWinText;
-
-    var achievable = getAchievableGift(curWin);
-    var giftSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
-    var isEmpty = !achievable;
-
-    if(left.dataset.src !== giftSrc){
-        left.dataset.src = giftSrc;
-        left.src = giftSrc;
-        left.classList.toggle('empty', isEmpty);
+    if(pendingBet){
+        cancelPendingBet();
+        return;
     }
-    if(right.dataset.src !== giftSrc){
-        right.dataset.src = giftSrc;
-        right.src = giftSrc;
-        right.classList.toggle('empty', isEmpty);
+    if(hasBet){
+        return;
     }
+    openBetModal();
 }
+
+/* Старые обёртки чтобы не падало */
+function updateBetButtonUI(){ updateActionButton(); }
+function updateCashoutButtonUI(){ updateActionButton(); }
 
 /* ══════════════════════════════════════════════════════════════
    RENDER LOOP
@@ -1340,7 +1411,6 @@ function renderLoop(ts){
             if(dispMult > servMult + 0.5) dispMult = servMult + 0.5;
             if(dispMult < 1.0) dispMult = 1.0;
 
-            /* Ракета наклон */
             if(now - _lastRocketUpdate > 200){
                 _lastRocketUpdate = now;
                 var ri = $('rocketImg');
@@ -1352,24 +1422,21 @@ function renderLoop(ts){
                 }
             }
 
-            /* Live mult */
             if(now - _lastLiveMultUpdate > 50){
                 _lastLiveMultUpdate = now;
                 var lm = $('liveMult');
                 if(lm) lm.textContent = dispMult.toFixed(2) + 'x';
             }
 
-            /* Coeff box */
             if(now - _lastCoeffUpdate > 150){
                 _lastCoeffUpdate = now;
                 var cb = $('coeffBox');
                 if(cb) cb.textContent = dispMult.toFixed(2) + 'x';
             }
 
-            /* Cashout button */
-            if(now - _lastCashBtnUpdate > 100){
-                _lastCashBtnUpdate = now;
-                if(hasBet && !cashedOut) updateCashoutButtonUI();
+            if(now - _lastBtnUpdate > 100){
+                _lastBtnUpdate = now;
+                if(hasBet && !cashedOut) updateActionButton();
             }
 
             /* Auto cashout */
@@ -1381,26 +1448,12 @@ function renderLoop(ts){
                 }
             }
         }
-    }catch(e){
-        /* никогда не даём RAF упасть */
-    }
+    }catch(e){}
 }
 
 /* ══════════════════════════════════════════════════════════════
-   BET
+   BET MODAL
    ══════════════════════════════════════════════════════════════ */
-function onBetBtnClick(){
-    if(pendingBet){
-        cancelPendingBet();
-        return;
-    }
-    if(hasBet){
-        showToast('Ставка уже сделана', 'err');
-        return;
-    }
-    openBetModal();
-}
-
 function openBetModal(){
     var m = $('betModal');
     if(!m) return;
@@ -1413,13 +1466,11 @@ function closeBetModal(){
     var m = $('betModal');
     if(m) m.classList.remove('show');
 }
-
 function cancelPendingBet(){
     pendingBet = null;
     showToast('Отменено', 'ok');
-    updateBetButtonUI();
+    updateActionButton();
 }
-
 function starsToBetInputValue(stars){
     var tons = Number(stars || 0) / 100;
     return (Math.round(tons * 100) / 100).toString().replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
@@ -1447,20 +1498,18 @@ async function confirmStarsBet(){
         pendingBet = { type: 'stars', amount: amt };
         closeBetModal();
         showToast('Ставка на след. раунд', 'ok');
-        updateBetButtonUI();
+        updateActionButton();
         _betLocked = false;
         return;
     }
 
-    /* Оптимистично */
     hasBet = true;
     betAmt = amt;
     betGiftImg = null;
     userData.balance_stars = (userData.balance_stars || 0) - amt;
     updateBalanceUI();
     closeBetModal();
-    updateBetButtonUI();
-    updateCashoutButtonUI();
+    updateActionButton();
     showToast('Ставка ' + formatCrashMoney(amt) + ' принята', 'ok');
 
     try{
@@ -1487,14 +1536,14 @@ async function confirmStarsBet(){
             } else {
                 showToast(d.error || 'Ошибка', 'err');
             }
-            updateBetButtonUI();
+            updateActionButton();
         }
     }catch(e){
         hasBet = false;
         betAmt = 0;
         userData.balance_stars = (userData.balance_stars || 0) + amt;
         updateBalanceUI();
-        updateBetButtonUI();
+        updateActionButton();
         showToast('Ошибка сети', 'err');
     }finally{
         _betLocked = false;
@@ -1606,7 +1655,7 @@ async function confirmGiftBet(){
         closeBetModal();
         clearSelectedGifts();
         showToast('Подарки на след. раунд', 'ok');
-        updateBetButtonUI();
+        updateActionButton();
         _giftLocked = false;
         return;
     }
@@ -1616,8 +1665,7 @@ async function confirmGiftBet(){
     betGiftImg = firstImg;
     closeBetModal();
     clearSelectedGifts();
-    updateBetButtonUI();
-    updateCashoutButtonUI();
+    updateActionButton();
     showToast('Ставка ' + sGifts.length + ' подарков', 'ok');
 
     try{
@@ -1634,13 +1682,13 @@ async function confirmGiftBet(){
             hasBet = false;
             betAmt = 0;
             showToast(d.error || 'Ошибка', 'err');
-            updateBetButtonUI();
+            updateActionButton();
         }
     }catch(e){
         hasBet = false;
         betAmt = 0;
         showToast('Ошибка сети', 'err');
-        updateBetButtonUI();
+        updateActionButton();
     }finally{
         _giftLocked = false;
     }
@@ -1658,24 +1706,21 @@ async function doCashout(){
     frozenMult = Math.round((frozenMult + 0.02) * 100) / 100;
     var instantWin = Math.floor(betAmt * frozenMult);
 
-    /* Оптимистичный UI */
-    var pb = $('placeBetBtn');
-    var cb = $('cashoutBtn');
-    if(pb){
-        pb.disabled = true;
-        pb.innerHTML = '<span class="btn-text">+' + formatCrashMoney(instantWin) + '</span>';
-    }
-    if(cb){
-        cb.classList.add('visible', 'crash-state');
-        cb.disabled = true;
+    var btn = $('actionBtn');
+    if(btn){
+        btn.classList.remove('state-cashout');
+        btn.classList.add('state-crashed');
+        btn.disabled = true;
         var cg = getAchievableGift(instantWin);
         var cgi = cg ? getGiftImage(cg) : (betGiftImg || '/static/img/gift.png');
-        var cbw = $('cbWin');
-        var cbl = $('cbGiftLeft');
-        var cbr = $('cbGiftRight');
-        if(cbw) cbw.textContent = '+' + formatCrashMoney(instantWin);
-        if(cbl){ cbl.src = cgi; cbl.classList.remove('empty'); cbl.dataset.src = cgi; }
-        if(cbr){ cbr.src = cgi; cbr.classList.remove('empty'); cbr.dataset.src = cgi; }
+        var winEl = btn.querySelector('.cb-win');
+        var lblEl = btn.querySelector('.cb-label');
+        var lG = btn.querySelector('.cb-gift-side:first-child');
+        var rG = btn.querySelector('.cb-gift-side:last-child');
+        if(lblEl) lblEl.textContent = 'Win';
+        if(winEl) winEl.textContent = '+' + formatCrashMoney(instantWin);
+        if(lG){ lG.src = cgi; lG.classList.remove('empty'); lG.dataset.src = cgi; }
+        if(rG){ rG.src = cgi; rG.classList.remove('empty'); rG.dataset.src = cgi; }
     }
 
     cashedOut = true;
@@ -1714,8 +1759,11 @@ async function doCashout(){
         } else {
             cashedOut = false;
             hasBet = true;
-            if(cb){ cb.classList.remove('crash-state'); cb.disabled = false; }
-            if(pb) pb.style.display = 'none';
+            if(btn){
+                btn.classList.remove('state-crashed');
+                btn.classList.add('state-cashout');
+                btn.disabled = false;
+            }
             showToast(d.error || 'Ошибка синхронизации', 'err');
         }
     }catch(e){
