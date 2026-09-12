@@ -34,16 +34,17 @@ body{
     -webkit-font-smoothing:antialiased;
 }
 
-/* ═══════════ Z-INDEX ИЕРАРХИЯ ═══════════
+/* Z-INDEX:
    4000  — bottom-nav
    4999  — select-action-bar
    5000  — promo/deposit модалки
-   60000 — item-sheet (информация о подарке)
+   60000 — item-sheet
    70000 — sell-confirm, batch-sell
-   80000 — PORTAL PICKER (ВЫШЕ item-sheet!)
+   80000 — PORTAL PICKER
+   85000 — UPGRADE MODAL (новое)
    90000 — success/gift-reveal
    99999 — notif
-═══════════════════════════════════════════ */
+*/
 
 .page{
     width:100%;max-width:480px;margin:0 auto;
@@ -276,7 +277,6 @@ body{
 }
 .inv-card-price img{width:10px;height:10px;display:block}
 
-/* УЛУЧШЕННЫЙ (NFT) — СЕРАЯ ОБВОДКА */
 .inv-card.inv-card-upgraded{
     aspect-ratio:1/1;
     border:1.5px solid rgba(140,150,170,.4);
@@ -507,7 +507,7 @@ body{
 .stars-deposit-pay-btn img{width:20px;height:20px}
 
 /* ══════════════════════════════════════════════════════════════
-   ITEM SHEET — z-index 60000 (информация о подарке)
+   ITEM SHEET — z-index 60000
    ══════════════════════════════════════════════════════════════ */
 .item-sheet-overlay{
     position:fixed;inset:0;
@@ -540,7 +540,6 @@ body{
     margin:0 auto 18px;
 }
 
-/* Обычный подарок — header */
 .item-sheet-header{
     display:flex;flex-direction:column;align-items:center;
     gap:10px;margin-bottom:20px;text-align:center;
@@ -567,7 +566,6 @@ body{
 }
 .item-sheet-price img{width:16px;height:16px}
 
-/* ═══ УЛУЧШЕННЫЙ (NFT) — блок с Fragment данными ═══ */
 .item-nft-block{
     width:100%;
     display:none;
@@ -615,7 +613,6 @@ body{
     padding:5px 14px;border-radius:10px;
 }
 
-/* ═══ Таблица Model / Symbol / Backdrop ═══ */
 .item-nft-attrs{
     width:100%;
     display:flex;flex-direction:column;gap:1px;
@@ -654,11 +651,6 @@ body{
 }
 .item-nft-attr-rarity.empty{color:rgba(255,255,255,.35)}
 
-.item-nft-attr.loading .item-nft-attr-value{
-    color:rgba(255,255,255,.4);
-    font-weight:600;
-}
-
 .item-challenge{
     width:100%;margin-bottom:16px;padding:14px;
     background:rgba(59,130,246,.08);
@@ -682,6 +674,7 @@ body{
 }
 .item-challenge-text{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-align:center}
 
+/* ACTIONS — теперь 2 или 3 кнопки в зависимости от типа подарка */
 .item-sheet-actions{
     width:100%;
     display:grid;
@@ -689,17 +682,23 @@ body{
     gap:10px;
     margin-top:6px;
 }
+.item-sheet-actions.triple{
+    grid-template-columns:1fr 1fr 1fr;
+}
+.item-sheet-actions.single{
+    grid-template-columns:1fr;
+}
 .item-btn{
     padding:16px 12px;
     border-radius:16px;
     border:none;
     font-family:inherit;
-    font-size:14px;
+    font-size:13px;
     font-weight:800;
     cursor:pointer;
     transition:transform .15s,opacity .15s;
     display:flex;align-items:center;justify-content:center;gap:6px;
-    text-transform:uppercase;letter-spacing:.5px;
+    text-transform:uppercase;letter-spacing:.4px;
     min-height:54px;
 }
 .item-btn:active:not(:disabled){transform:scale(.97)}
@@ -714,6 +713,11 @@ body{
     color:rgba(255,255,255,.9);
     border:1.5px solid rgba(255,255,255,.12);
 }
+.item-btn-upgrade{
+    background:linear-gradient(135deg,#8B5CF6,#6366F1);
+    color:#fff;
+    box-shadow:0 6px 18px rgba(139,92,246,.4);
+}
 .item-btn-withdraw{
     background:linear-gradient(135deg,#3B82F6,#2563EB);
     color:#fff;box-shadow:0 6px 18px rgba(59,130,246,.4);
@@ -722,6 +726,456 @@ body{
     grid-column:1/-1;
     background:linear-gradient(135deg,#24C38E,#10b981);
     color:#fff;box-shadow:0 6px 18px rgba(36,195,142,.4);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UPGRADE MODAL — z-index 85000
+   ══════════════════════════════════════════════════════════════ */
+.upgrade-overlay{
+    position:fixed;inset:0;
+    z-index:85000;
+    background:rgba(0,0,0,.92);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    opacity:0;visibility:hidden;
+    transition:opacity .3s,visibility .3s;
+    display:flex;align-items:flex-end;justify-content:center;
+}
+.upgrade-overlay.show{opacity:1;visibility:visible}
+
+.upgrade-sheet{
+    background:linear-gradient(180deg,#1a2030 0%,#0f1420 100%);
+    border-radius:24px 24px 0 0;
+    width:100%;max-width:480px;
+    height:92vh;
+    display:flex;flex-direction:column;
+    transform:translateY(100%);
+    transition:transform .4s cubic-bezier(.32,1,.23,1);
+    border-top:1px solid rgba(139,92,246,.4);
+    overflow:hidden;
+    position:relative;
+}
+.upgrade-overlay.show .upgrade-sheet{transform:translateY(0)}
+
+.upgrade-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px 12px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+    flex-shrink:0;
+    z-index:10;
+    background:linear-gradient(180deg,rgba(26,32,48,1) 0%,rgba(26,32,48,.95) 100%);
+}
+.upgrade-handle{
+    width:40px;height:4px;
+    background:rgba(255,255,255,.15);
+    border-radius:2px;
+    position:absolute;top:8px;left:50%;transform:translateX(-50%);
+}
+.upgrade-title{
+    font-size:16px;font-weight:900;color:#fff;
+    display:flex;align-items:center;gap:8px;
+    padding-top:6px;
+}
+.upgrade-title svg{width:20px;height:20px;stroke:#8B5CF6;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.upgrade-close{
+    width:34px;height:34px;border-radius:12px;border:none;
+    background:rgba(249,105,153,.15);color:#F96999;
+    cursor:pointer;font-size:16px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+    margin-top:6px;
+    transition:transform .15s;
+}
+.upgrade-close:active{transform:scale(.9)}
+
+.upgrade-target-info{
+    padding:10px 18px 6px;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    flex-shrink:0;
+}
+.upgrade-target-img{
+    width:56px;height:56px;
+    border-radius:12px;
+    object-fit:cover;
+    background:rgba(0,0,0,.3);
+    border:1.5px solid rgba(139,92,246,.4);
+    box-shadow:0 4px 14px rgba(139,92,246,.3);
+}
+.upgrade-target-meta{
+    display:flex;flex-direction:column;gap:3px;
+}
+.upgrade-target-name{
+    font-size:13px;font-weight:800;color:#fff;
+    max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.upgrade-target-price{
+    font-size:12px;font-weight:700;color:#A78BFA;
+    display:flex;align-items:center;gap:4px;
+}
+.upgrade-target-price img{width:12px;height:12px}
+
+/* ═══ ROULETTE ═══ */
+.upgrade-roulette{
+    flex:1;
+    position:relative;
+    overflow:hidden;
+    padding:18px 0;
+    min-height:0;
+}
+.upgrade-roulette-strip{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    height:100%;
+    will-change:transform;
+    padding:0 24px;
+}
+.roulette-card{
+    width:130px;
+    height:170px;
+    flex-shrink:0;
+    border-radius:16px;
+    background:rgba(0,0,0,.35);
+    border:2px solid rgba(139,92,246,.25);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:8px;
+    overflow:hidden;
+    position:relative;
+    transition:border-color .3s,box-shadow .3s;
+}
+.roulette-card img{
+    width:100%;
+    height:110px;
+    object-fit:cover;
+    border-radius:10px;
+    background:rgba(0,0,0,.2);
+}
+.roulette-card .rc-name{
+    font-size:10px;
+    font-weight:800;
+    color:rgba(255,255,255,.85);
+    text-align:center;
+    line-height:1.15;
+    width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    word-break:break-word;
+}
+.roulette-card .rc-price{
+    font-size:10px;
+    font-weight:800;
+    color:#A78BFA;
+    display:flex;align-items:center;gap:3px;
+}
+.roulette-card .rc-price img{width:11px;height:11px}
+
+.roulette-card.winning{
+    border-color:rgba(255,215,0,.8);
+    box-shadow:0 0 30px rgba(255,215,0,.7),inset 0 0 20px rgba(255,215,0,.15);
+    animation:winningPulse 1.5s ease-in-out infinite;
+}
+.roulette-card.winning::before{
+    content:'';
+    position:absolute;inset:-2px;
+    border-radius:18px;
+    background:linear-gradient(135deg,rgba(255,215,0,.5),rgba(255,165,0,.3),rgba(255,215,0,.5));
+    z-index:-1;
+    animation:winningGlow 1.5s ease-in-out infinite;
+}
+@keyframes winningPulse{
+    0%,100%{box-shadow:0 0 30px rgba(255,215,0,.7),inset 0 0 20px rgba(255,215,0,.15)}
+    50%{box-shadow:0 0 50px rgba(255,215,0,1),inset 0 0 30px rgba(255,215,0,.3)}
+}
+@keyframes winningGlow{
+    0%,100%{opacity:.5}
+    50%{opacity:1}
+}
+
+/* Центральный указатель */
+.upgrade-pointer{
+    position:absolute;
+    top:0;bottom:0;
+    left:50%;
+    width:3px;
+    transform:translateX(-50%);
+    background:linear-gradient(180deg,transparent 0%,#8B5CF6 25%,#8B5CF6 75%,transparent 100%);
+    z-index:5;
+    pointer-events:none;
+    box-shadow:0 0 20px rgba(139,92,246,.8);
+    opacity:0;
+    transition:opacity .3s;
+}
+.upgrade-pointer.active{opacity:1}
+.upgrade-pointer::before,
+.upgrade-pointer::after{
+    content:'';
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    width:0;height:0;
+    border-left:8px solid transparent;
+    border-right:8px solid transparent;
+}
+.upgrade-pointer::before{
+    top:-2px;
+    border-top:12px solid #8B5CF6;
+    filter:drop-shadow(0 0 8px rgba(139,92,246,.9));
+}
+.upgrade-pointer::after{
+    bottom:-2px;
+    border-bottom:12px solid #8B5CF6;
+    filter:drop-shadow(0 0 8px rgba(139,92,246,.9));
+}
+
+/* Градиентные маски по краям рулетки */
+.upgrade-roulette::before,
+.upgrade-roulette::after{
+    content:'';
+    position:absolute;
+    top:0;bottom:0;
+    width:60px;
+    z-index:4;
+    pointer-events:none;
+}
+.upgrade-roulette::before{
+    left:0;
+    background:linear-gradient(90deg,rgba(15,20,32,1) 0%,rgba(15,20,32,0) 100%);
+}
+.upgrade-roulette::after{
+    right:0;
+    background:linear-gradient(270deg,rgba(15,20,32,1) 0%,rgba(15,20,32,0) 100%);
+}
+
+/* ═══ CHANCE INFO (внизу под рулеткой) ═══ */
+.upgrade-chance-info{
+    padding:14px 20px 6px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    flex-shrink:0;
+    border-top:1px solid rgba(255,255,255,.06);
+}
+.upgrade-chance-left{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    min-width:0;
+    flex:1;
+}
+.upgrade-chance-label{
+    font-size:11px;
+    font-weight:800;
+    color:rgba(255,255,255,.5);
+    text-transform:uppercase;
+    letter-spacing:.5px;
+}
+.upgrade-chance-name{
+    font-size:14px;
+    font-weight:800;
+    color:#fff;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    max-width:100%;
+}
+.upgrade-chance-right{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:2px;
+    flex-shrink:0;
+}
+.upgrade-chance-percent{
+    font-size:24px;
+    font-weight:900;
+    color:#A78BFA;
+    line-height:1;
+    transition:color .3s,transform .3s;
+}
+.upgrade-chance-percent.high{color:#1EE44C}
+.upgrade-chance-percent.mid{color:#FFC800}
+.upgrade-chance-percent.low{color:#F96999}
+.upgrade-chance-sub{
+    font-size:10px;
+    font-weight:700;
+    color:rgba(255,255,255,.35);
+    text-transform:uppercase;
+    letter-spacing:.5px;
+}
+
+/* ═══ UPGRADE BUTTON ═══ */
+.upgrade-action-wrap{
+    padding:12px 20px calc(20px + var(--safe-bottom,0px));
+    flex-shrink:0;
+    background:linear-gradient(0deg,rgba(15,20,32,1) 0%,rgba(15,20,32,.9) 80%,rgba(15,20,32,0) 100%);
+}
+.upgrade-action-btn{
+    width:100%;
+    padding:17px;
+    border-radius:16px;
+    border:none;
+    background:linear-gradient(135deg,#8B5CF6,#6366F1);
+    color:#fff;
+    font-family:inherit;
+    font-size:15px;
+    font-weight:900;
+    cursor:pointer;
+    transition:transform .15s,opacity .2s,box-shadow .2s;
+    box-shadow:0 8px 25px rgba(139,92,246,.5);
+    text-transform:uppercase;
+    letter-spacing:.8px;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    min-height:56px;
+}
+.upgrade-action-btn:active:not(:disabled){transform:scale(.97)}
+.upgrade-action-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.upgrade-action-btn.loading{
+    background:linear-gradient(135deg,#4c3575,#3b2877);
+    cursor:wait;
+    pointer-events:none;
+}
+.upgrade-action-btn .btn-spinner{
+    width:20px;height:20px;
+    border:2.5px solid rgba(255,255,255,.3);
+    border-top-color:#fff;
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══ CONFETTI ═══ */
+.confetti-container{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:50;
+    overflow:hidden;
+}
+.confetti-piece{
+    position:absolute;
+    width:8px;
+    height:14px;
+    opacity:.9;
+    animation:confettiFall linear forwards;
+}
+@keyframes confettiFall{
+    0%{
+        transform:translateY(-20px) rotate(0deg);
+        opacity:1;
+    }
+    100%{
+        transform:translateY(110vh) rotate(720deg);
+        opacity:0;
+    }
+}
+
+/* ═══ RESULT OVERLAY ═══ */
+.upgrade-result{
+    position:absolute;
+    inset:0;
+    z-index:60;
+    background:rgba(10,15,25,.92);
+    backdrop-filter:blur(8px);
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:30px 24px;
+    opacity:0;
+    transition:opacity .4s;
+}
+.upgrade-result.show{
+    display:flex;
+    opacity:1;
+}
+.upgrade-result-img{
+    width:180px;
+    height:180px;
+    object-fit:cover;
+    border-radius:24px;
+    background:rgba(0,0,0,.3);
+    border:3px solid rgba(255,215,0,.6);
+    box-shadow:0 0 60px rgba(255,215,0,.6),inset 0 0 30px rgba(255,215,0,.1);
+    margin-bottom:20px;
+    animation:resultZoom .6s cubic-bezier(.22,1.5,.5,1);
+}
+@keyframes resultZoom{
+    0%{transform:scale(0) rotate(-180deg);opacity:0}
+    70%{transform:scale(1.15) rotate(10deg);opacity:1}
+    100%{transform:scale(1) rotate(0deg);opacity:1}
+}
+.upgrade-result-name{
+    font-size:22px;
+    font-weight:900;
+    color:#fff;
+    text-align:center;
+    margin-bottom:8px;
+    max-width:100%;
+    padding:0 10px;
+}
+.upgrade-result-chance{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:15px;
+    font-weight:800;
+    color:#1EE44C;
+    padding:6px 16px;
+    background:rgba(30,228,76,.12);
+    border:1.5px solid rgba(30,228,76,.35);
+    border-radius:12px;
+    margin-bottom:20px;
+}
+.upgrade-result-message{
+    font-size:13px;
+    color:rgba(255,255,255,.6);
+    text-align:center;
+    margin-bottom:24px;
+    font-weight:600;
+    line-height:1.5;
+    max-width:300px;
+}
+.upgrade-result-claim{
+    padding:15px 40px;
+    border-radius:14px;
+    border:none;
+    background:linear-gradient(135deg,#8B5CF6,#6366F1);
+    color:#fff;
+    font-family:inherit;
+    font-size:15px;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:0 8px 25px rgba(139,92,246,.5);
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    transition:transform .15s;
+    min-width:200px;
+}
+.upgrade-result-claim:active{transform:scale(.97)}
+
+.upgrade-result.fail .upgrade-result-img{
+    border-color:rgba(249,105,153,.5);
+    box-shadow:0 0 60px rgba(249,105,153,.5);
+    filter:grayscale(.4);
+    animation:resultFail .5s ease-out;
+}
+@keyframes resultFail{
+    0%{transform:translateX(0)}
+    25%{transform:translateX(-15px)}
+    50%{transform:translateX(15px)}
+    75%{transform:translateX(-8px)}
+    100%{transform:translateX(0)}
+}
+.upgrade-result.fail .upgrade-result-chance{
+    color:#F96999;
+    background:rgba(249,105,153,.12);
+    border-color:rgba(249,105,153,.35);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -850,7 +1304,7 @@ body{
 .batch-confirm-btn:disabled{cursor:not-allowed}
 
 /* ══════════════════════════════════════════════════════════════
-   PORTAL PICKER — z-index 80000 (ВЫШЕ item-sheet!)
+   PORTAL PICKER — z-index 80000
    ══════════════════════════════════════════════════════════════ */
 .mrkt-backdrop{
     position:fixed;inset:0;
@@ -1009,7 +1463,11 @@ body{
     .profile-stat-val{font-size:13px}
     .item-sheet-img{width:100px;height:100px}
     .item-nft-img-wrap{width:170px;height:170px}
-    .item-btn{font-size:13px;padding:14px 10px}
+    .item-btn{font-size:12px;padding:14px 8px}
+    .roulette-card{width:110px;height:150px}
+    .roulette-card img{height:90px}
+    .upgrade-result-img{width:150px;height:150px}
+    .upgrade-target-img{width:48px;height:48px}
 }
 </style>
 </head>
@@ -1171,6 +1629,10 @@ body{
                 <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 Продать
             </button>
+            <button class="item-btn item-btn-upgrade" id="itemBtnUpgrade" onclick="openUpgradeModal()" style="display:none">
+                <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                Улучшить
+            </button>
             <button class="item-btn item-btn-withdraw" id="itemBtnWithdraw" onclick="openPortalPicker()">
                 <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 Вывод
@@ -1178,6 +1640,72 @@ body{
             <button class="item-btn item-btn-claim" id="itemBtnClaim" onclick="claimChallenge()" style="display:none">
                 Получить
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ UPGRADE MODAL — z-index 85000 ═══ -->
+<div class="upgrade-overlay" id="upgradeOverlay">
+    <div class="upgrade-sheet" id="upgradeSheet">
+        <div class="upgrade-handle"></div>
+
+        <!-- HEADER -->
+        <div class="upgrade-header">
+            <div class="upgrade-title">
+                <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                Улучши подарок
+            </div>
+            <button class="upgrade-close" onclick="closeUpgradeModal()">✕</button>
+        </div>
+
+        <!-- ЦЕЛЬ (компактно) -->
+        <div class="upgrade-target-info">
+            <img class="upgrade-target-img" id="upgradeTargetImg" src="/static/img/gift.png" alt="">
+            <div class="upgrade-target-meta">
+                <div class="upgrade-target-name" id="upgradeTargetName">Загрузка...</div>
+                <div class="upgrade-target-price">
+                    <img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'">
+                    <span id="upgradeTargetPrice">0.00</span> GRAM
+                </div>
+            </div>
+        </div>
+
+        <!-- РУЛЕТКА -->
+        <div class="upgrade-roulette" id="upgradeRoulette">
+            <div class="upgrade-pointer" id="upgradePointer"></div>
+            <div class="upgrade-roulette-strip" id="upgradeStrip"></div>
+        </div>
+
+        <!-- ШАНСЫ -->
+        <div class="upgrade-chance-info">
+            <div class="upgrade-chance-left">
+                <div class="upgrade-chance-label">Целевой подарок</div>
+                <div class="upgrade-chance-name" id="upgradeChanceName">—</div>
+            </div>
+            <div class="upgrade-chance-right">
+                <div class="upgrade-chance-percent" id="upgradeChancePercent">—%</div>
+                <div class="upgrade-chance-sub">шанс успеха</div>
+            </div>
+        </div>
+
+        <!-- КНОПКА -->
+        <div class="upgrade-action-wrap">
+            <button class="upgrade-action-btn" id="upgradeActionBtn" onclick="startUpgradeSpin()">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                <span id="upgradeBtnText">УЛУЧШИТЬ</span>
+            </button>
+        </div>
+
+        <!-- CONFETTI -->
+        <div class="confetti-container" id="confettiContainer"></div>
+
+        <!-- RESULT OVERLAY -->
+        <div class="upgrade-result" id="upgradeResult">
+            <img class="upgrade-result-img" id="upgradeResultImg" src="/static/img/gift.png" alt="">
+            <div class="upgrade-result-name" id="upgradeResultName">—</div>
+            <div class="upgrade-result-chance" id="upgradeResultChance">—%</div>
+            <div class="upgrade-result-message" id="upgradeResultMessage"></div>
+            <button class="upgrade-result-claim" onclick="closeUpgradeResult()">ПОЛУЧИТЬ</button>
         </div>
     </div>
 </div>
@@ -1221,7 +1749,7 @@ body{
     </div>
 </div>
 
-<!-- ═══ PORTAL PICKER — z-index 80000 (ВЫШЕ item-sheet!) ═══ -->
+<!-- ═══ PORTAL PICKER — z-index 80000 ═══ -->
 <div class="mrkt-backdrop" id="mrktBackdrop" onclick="closePortalPicker()"></div>
 <div class="mrkt-overlay" id="mrktOverlay">
     <div class="mrkt-header">
@@ -1346,6 +1874,16 @@ let _batchCountdownTimer = null;
 let _portalSelGiftId = null;
 let _portalGifts = [];
 
+/* UPGRADE STATE */
+let _upgradeCatalog = null;         // весь каталог
+let _upgradeVariants = [];          // 30 вариантов для рулетки
+let _upgradeTargetIdx = 0;          // индекс целевого
+let _upgradeSpinRunning = false;
+let _upgradeCurrentChanceInfo = null;
+
+const RARE_BACKDROPS = ['black', 'onyx'];  // запрещены для целевого
+const RARE_MODELS = ['rare', 'legendary', 'mythic'];
+
 function $(id){ return document.getElementById(id); }
 function starsToTon(s){ return Number(s || 0) / 100; }
 function formatTon(t){
@@ -1436,6 +1974,8 @@ async function initUser(){
                 var ab = $('adminBtn');
                 if(ab) ab.style.display = 'flex';
             }
+            // Предзагрузка каталога для апгрейда
+            loadUpgradeCatalog().catch(function(){});
         }
     }catch(e){
         console.error('initUser:', e);
@@ -1635,13 +2175,18 @@ function openItemSheet(itemId){
     var challenge = $('itemChallenge');
     var actions = $('itemSheetActions');
     var sellBtn = $('itemBtnSell');
+    var upgradeBtn = $('itemBtnUpgrade');
     var withdrawBtn = $('itemBtnWithdraw');
     var claimBtn = $('itemBtnClaim');
 
     if(nftBlock) nftBlock.classList.remove('show');
     if(challenge) challenge.style.display = 'none';
-    if(actions) actions.style.display = 'grid';
+    if(actions){
+        actions.style.display = 'grid';
+        actions.classList.remove('triple','single');
+    }
     if(sellBtn) sellBtn.style.display = 'flex';
+    if(upgradeBtn) upgradeBtn.style.display = 'none';
     if(withdrawBtn) withdrawBtn.style.display = 'flex';
     if(claimBtn) claimBtn.style.display = 'none';
 
@@ -1673,7 +2218,6 @@ function openItemSheet(itemId){
         var num = item.nft_number || 0;
 
         if(!slug){
-            // Пробуем вытащить из картинки
             var m = String(item.gift_image || '').match(/\/gifts\/([a-z0-9_-]+)-(\d+)/i);
             if(m){ slug = m[1]; if(!num) num = parseInt(m[2]); }
         }
@@ -1681,7 +2225,6 @@ function openItemSheet(itemId){
         if(slug && num){
             fetchFragmentDetails(slug, num);
         } else {
-            // Нет данных — показываем что есть
             if(loader) loader.classList.add('hidden');
             setAttrFinal('attrModelVal', item.nft_model || '—', item.nft_model_rarity, 'attrModelRarity');
             setAttrFinal('attrBackdropVal', item.nft_backdrop || '—', item.nft_backdrop_rarity, 'attrBackdropRarity');
@@ -1691,13 +2234,15 @@ function openItemSheet(itemId){
         if(sellBtn) sellBtn.disabled = !!item.is_withdrawing;
         if(withdrawBtn) withdrawBtn.disabled = !!item.is_withdrawing;
     } else {
-        // Обычный подарок
+        // ★ ОБЫЧНЫЙ ПОДАРОК
+        // Показываем header, скрываем NFT-блок
         if(header) header.style.display = 'flex';
         var img = $('itemSheetImg'); if(img) img.src = getGiftImage(item);
         var title = $('itemSheetTitle'); if(title) title.textContent = item.gift_name || 'Подарок';
         var priceVal = $('itemSheetPriceVal');
         if(priceVal) priceVal.textContent = formatTon(starsToTon(item.gift_value));
 
+        // Challenge — блокируем всё
         if(item.challenge && !item.challenge.is_completed){
             if(challenge) challenge.style.display = 'block';
             var pct = item.challenge.target_wager > 0
@@ -1712,15 +2257,29 @@ function openItemSheet(itemId){
             }
             if(actions) actions.style.display = 'none';
             if(item.challenge.current_wager >= item.challenge.target_wager){
-                if(actions) actions.style.display = 'grid';
+                if(actions){
+                    actions.style.display = 'grid';
+                    actions.classList.add('single');
+                }
                 if(sellBtn) sellBtn.style.display = 'none';
+                if(upgradeBtn) upgradeBtn.style.display = 'none';
                 if(withdrawBtn) withdrawBtn.style.display = 'none';
                 if(claimBtn) claimBtn.style.display = 'flex';
             }
         } else if(item.crate_id){
+            // Ящик — только открыть
             if(actions) actions.style.display = 'none';
         } else {
+            // ★ ОБЫЧНЫЙ подарок без challenge — показываем УЛУЧШИТЬ + ПРОДАТЬ
+            if(actions){
+                actions.style.display = 'grid';
+                actions.classList.add('triple');
+            }
+            if(sellBtn) sellBtn.style.display = 'flex';
+            if(upgradeBtn) upgradeBtn.style.display = 'flex';
+            if(withdrawBtn) withdrawBtn.style.display = 'flex';
             if(sellBtn) sellBtn.disabled = !!item.is_withdrawing;
+            if(upgradeBtn) upgradeBtn.disabled = !!item.is_withdrawing;
             if(withdrawBtn) withdrawBtn.disabled = !!item.is_withdrawing;
         }
     }
@@ -1755,22 +2314,17 @@ function setAttrFinal(valId, value, rarity, rarId){
 
 async function fetchFragmentDetails(slug, number){
     var cacheKey = slug + '_' + number;
-
-    // Кэш в памяти
     if(_nftDetailsCache[cacheKey]){
         applyFragmentDetails(_nftDetailsCache[cacheKey]);
         return;
     }
-
     try{
         var r = await fetch('/api/fragment-gift-details?slug=' + encodeURIComponent(slug) + '&number=' + number);
         var d = await r.json();
-
         if(d.success && d.attrs){
             _nftDetailsCache[cacheKey] = d;
             applyFragmentDetails(d);
         } else {
-            // Fragment недоступен — показываем что есть в инвентаре
             var loader = $('nftLoader'); if(loader) loader.classList.add('hidden');
             var item = selectedItem || {};
             setAttrFinal('attrModelVal', item.nft_model || '—', item.nft_model_rarity, 'attrModelRarity');
@@ -1788,17 +2342,13 @@ async function fetchFragmentDetails(slug, number){
 
 function applyFragmentDetails(d){
     var loader = $('nftLoader'); if(loader) loader.classList.add('hidden');
-
     var attrs = d.attrs || {};
     var model = attrs.model || {};
     var symbol = attrs.symbol || {};
     var backdrop = attrs.backdrop || {};
-
     setAttrFinal('attrModelVal', model.value || '—', model.rarity, 'attrModelRarity');
     setAttrFinal('attrBackdropVal', backdrop.value || '—', backdrop.rarity, 'attrBackdropRarity');
     setAttrFinal('attrSymbolVal', symbol.value || '—', symbol.rarity, 'attrSymbolRarity');
-
-    // Если Fragment дал картинку — обновим
     if(d.image){
         var nimg = $('itemNftImg');
         if(nimg) nimg.src = d.image;
@@ -1820,30 +2370,394 @@ async function claimChallenge(){
     await loadInventory();
 }
 
-/* SELL CONFIRM */
+/* ══════════════════════════════════════════════════════════════
+   UPGRADE MODAL
+   ══════════════════════════════════════════════════════════════ */
+async function loadUpgradeCatalog(){
+    if(_upgradeCatalog) return _upgradeCatalog;
+    try{
+        var r = await fetch('/api/gifts-list?models=0');
+        var d = await r.json();
+        if(d.success && d.gifts){
+            _upgradeCatalog = d.gifts.filter(function(g){
+                return g.value > 0 && g.type !== 'stars_balance' && !g.is_bonus_only;
+            });
+        }
+    }catch(e){}
+    return _upgradeCatalog || [];
+}
+
+async function openUpgradeModal(){
+    if(!selectedItem) return;
+    if(isUpgraded(selectedItem)){
+        showNotif('Этот подарок уже улучшен', true);
+        return;
+    }
+    if(selectedItem.crate_id){
+        showNotif('Ящик нельзя улучшить', true);
+        return;
+    }
+    vibrateIfOn();
+
+    // Открываем сразу с заглушками
+    var ov = $('upgradeOverlay');
+    if(!ov) return;
+    ov.classList.add('show');
+
+    // Сброс
+    _upgradeSpinRunning = false;
+    _upgradeVariants = [];
+    _upgradeTargetIdx = 0;
+    var resultEl = $('upgradeResult');
+    if(resultEl) resultEl.classList.remove('show','fail');
+    var stripEl = $('upgradeStrip');
+    if(stripEl) stripEl.innerHTML = '';
+    var pointerEl = $('upgradePointer');
+    if(pointerEl) pointerEl.classList.remove('active');
+    var btnEl = $('upgradeActionBtn');
+    if(btnEl){
+        btnEl.classList.remove('loading');
+        btnEl.disabled = false;
+        var btxt = $('upgradeBtnText');
+        if(btxt) btxt.textContent = 'УЛУЧШИТЬ';
+    }
+
+    var tinfo = $('upgradeTargetName'); if(tinfo) tinfo.textContent = 'Загрузка...';
+    var tprice = $('upgradeTargetPrice'); if(tprice) tprice.textContent = '0.00';
+    var cname = $('upgradeChanceName'); if(cname) cname.textContent = '—';
+    var cpercent = $('upgradeChancePercent'); if(cpercent){
+        cpercent.textContent = '—%';
+        cpercent.className = 'upgrade-chance-percent';
+    }
+
+    // Запрос на подготовку
+    try{
+        var r = await fetch('/api/upgrade/prepare', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+                user_id: user.id,
+                inventory_id: selectedItem.id
+            })
+        });
+        var d = await r.json();
+        if(!d.success){
+            showNotif(d.error || 'Ошибка подготовки', true);
+            closeUpgradeModal();
+            return;
+        }
+
+        _upgradeVariants = d.variants || [];
+        _upgradeTargetIdx = d.target_index || 0;
+        _upgradeCurrentChanceInfo = d.chance_info || {};
+
+        // Целевой подарок
+        var target = _upgradeVariants[_upgradeTargetIdx];
+        if(target){
+            var timg = $('upgradeTargetImg');
+            if(timg) timg.src = target.image || '/static/img/gift.png';
+            if(tinfo) tinfo.textContent = target.name || '—';
+            if(tprice) tprice.textContent = ((target.value || 0) / 100).toFixed(2);
+            if(cname) cname.textContent = target.name || '—';
+        }
+
+        // Шанс
+        if(cpercent){
+            var chance = _upgradeCurrentChanceInfo.displayed || 0;
+            cpercent.textContent = chance.toFixed(1) + '%';
+            cpercent.classList.remove('high','mid','low');
+            if(chance >= 50) cpercent.classList.add('high');
+            else if(chance >= 25) cpercent.classList.add('mid');
+            else cpercent.classList.add('low');
+        }
+
+        // Отрисовываем рулетку
+        renderUpgradeRoulette();
+
+    }catch(e){
+        console.error('upgrade prepare error', e);
+        showNotif('Ошибка сети', true);
+        closeUpgradeModal();
+    }
+}
+
+function closeUpgradeModal(){
+    var ov = $('upgradeOverlay');
+    if(!ov) return;
+    ov.classList.remove('show');
+    _upgradeSpinRunning = false;
+    // Останавливаем анимацию
+    var stripEl = $('upgradeStrip');
+    if(stripEl){
+        stripEl.style.transition = 'none';
+        stripEl.style.transform = 'translateX(0)';
+    }
+    // Убираем confetti
+    var cc = $('confettiContainer');
+    if(cc) cc.innerHTML = '';
+}
+
+/* Отрисовка рулетки — 30 вариантов + 1 целевой в центре */
+function renderUpgradeRoulette(){
+    var strip = $('upgradeStrip');
+    if(!strip) return;
+
+    var html = '';
+    var total = _upgradeVariants.length;
+    for(var i = 0; i < total; i++){
+        var v = _upgradeVariants[i];
+        var isTarget = (i === _upgradeTargetIdx);
+        html += '<div class="roulette-card' + (isTarget ? ' winning-target' : '') + '" data-idx="' + i + '">'
+            + '<img src="' + (v.image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'" alt="">'
+            + '<div class="rc-name">' + escapeHtml(v.name || 'Gift') + '</div>'
+            + '<div class="rc-price"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + ((v.value || 0) / 100).toFixed(2) + '</div>'
+            + '</div>';
+    }
+    strip.innerHTML = html;
+    strip.style.transform = 'translateX(0)';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UPGRADE SPIN — анимация рулетки
+   ══════════════════════════════════════════════════════════════ */
+async function startUpgradeSpin(){
+    if(_upgradeSpinRunning) return;
+    if(!selectedItem || !user) return;
+    if(!_upgradeVariants.length){
+        showNotif('Нет данных для рулетки', true);
+        return;
+    }
+    _upgradeSpinRunning = true;
+    vibrateIfOn();
+
+    var btnEl = $('upgradeActionBtn');
+    var btxt = $('upgradeBtnText');
+    if(btnEl) btnEl.classList.add('loading');
+    if(btxt) btxt.textContent = 'КРУТИМ...';
+
+    var strip = $('upgradeStrip');
+    var pointerEl = $('upgradePointer');
+    if(!strip) return;
+
+    // Получаем карточки
+    var cards = strip.querySelectorAll('.roulette-card');
+    if(!cards.length) return;
+
+    // Порядок в DOM сейчас: 0,1,2,...,N-1
+    // Нам надо: домотать до целевого так, чтобы он встал в центр.
+    // Т.к. у нас фиксированные размеры карточек (130px) + gap 14px = 144px
+    // Ширина контейнера рулетки = ширина viewport, но максимум 480px
+    // Центр экрана = 50% ширины рулетки
+    
+    var cardW = 130;
+    var gap = 14;
+    var cardStep = cardW + gap;
+    
+    var rouletteEl = $('upgradeRoulette');
+    var rouletteW = rouletteEl.offsetWidth || 400;
+    var centerX = rouletteW / 2;
+    
+    // Целевой индекс в DOM
+    var targetIdx = _upgradeTargetIdx;
+    
+    // Позиция целевого центра: padding-left (24) + targetIdx * cardStep + cardW/2
+    var stripPaddingLeft = 24;
+    var targetCenterX = stripPaddingLeft + (targetIdx * cardStep) + (cardW / 2);
+    
+    // Финальный сдвиг (чтобы целевой центр оказался в центре экрана):
+    var finalOffset = centerX - targetCenterX;
+    
+    // Добавляем несколько полных оборотов назад для эффекта кручения
+    var fullSpins = 6;
+    var spinDistance = cardStep * _upgradeVariants.length * fullSpins;
+    var startX = finalOffset + spinDistance; // начинаем "далеко справа"
+    
+    // Ставим стартовую позицию без transition
+    strip.style.transition = 'none';
+    strip.style.transform = 'translateX(' + startX + 'px)';
+    
+    // Принудительный reflow
+    void strip.offsetWidth;
+    
+    // Включаем анимацию
+    var duration = 5200; // ms — «потихому останавливается»
+    var easing = 'cubic-bezier(0.15, 0.85, 0.25, 1)';
+    strip.style.transition = 'transform ' + duration + 'ms ' + easing;
+    
+    // Запускаем анимацию
+    requestAnimationFrame(function(){
+        strip.style.transform = 'translateX(' + finalOffset + 'px)';
+    });
+
+    // Показываем указатель
+    if(pointerEl) pointerEl.classList.add('active');
+
+    // Запускаем серверную логику
+    var spinResult = null;
+    try{
+        var r = await fetch('/api/upgrade/spin', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: user.id,
+                inventory_id: selectedItem.id,
+                target_gift_id: _upgradeVariants[_upgradeTargetIdx].id
+            })
+        });
+        var d = await r.json();
+        if(!d.success){
+            // Останавливаем анимацию
+            strip.style.transition = 'none';
+            strip.style.transform = 'translateX(0)';
+            _upgradeSpinRunning = false;
+            if(btnEl) btnEl.classList.remove('loading');
+            if(btxt) btxt.textContent = 'УЛУЧШИТЬ';
+            if(pointerEl) pointerEl.classList.remove('active');
+            showNotif(d.error || 'Ошибка', true);
+            return;
+        }
+        spinResult = d;
+    }catch(e){
+        console.error('spin error', e);
+        _upgradeSpinRunning = false;
+        if(btnEl) btnEl.classList.remove('loading');
+        if(btxt) btxt.textContent = 'УЛУЧШИТЬ';
+        if(pointerEl) pointerEl.classList.remove('active');
+        showNotif('Ошибка сети', true);
+        return;
+    }
+
+    // Ждём окончания анимации
+    setTimeout(function(){
+        if(pointerEl) pointerEl.classList.remove('active');
+        _upgradeSpinRunning = false;
+        
+        // Подсветка целевой карточки
+        var targetCard = cards[targetIdx];
+        if(targetCard) targetCard.classList.add('winning');
+        
+        // Confetti если успех
+        if(spinResult && spinResult.upgrade_success){
+            launchConfetti();
+            vibrateIfOn();
+            if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
+                try{ Telegram.WebApp.HapticFeedback.notificationOccurred('success'); }catch(e){}
+            }
+        } else {
+            vibrateIfOn();
+        }
+        
+        // Показываем результат через небольшую задержку
+        setTimeout(function(){
+            showUpgradeResult(spinResult);
+        }, 700);
+        
+    }, duration + 100);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CONFETTI
+   ══════════════════════════════════════════════════════════════ */
+function launchConfetti(){
+    var container = $('confettiContainer');
+    if(!container) return;
+    container.innerHTML = '';
+    
+    var colors = ['#FFD700','#FFA500','#FF6B6B','#4ECDC4','#95E1D3','#F38181','#AA96DA','#FCBAD3','#A8E6CF','#FFD3B6'];
+    var count = 80;
+    
+    for(var i = 0; i < count; i++){
+        (function(idx){
+            var piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            var color = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.background = color;
+            piece.style.left = Math.random() * 100 + '%';
+            piece.style.top = '-20px';
+            piece.style.width = (6 + Math.random() * 6) + 'px';
+            piece.style.height = (10 + Math.random() * 8) + 'px';
+            piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+            piece.style.animationDelay = (Math.random() * 0.5) + 's';
+            if(Math.random() > 0.6) piece.style.borderRadius = '50%';
+            container.appendChild(piece);
+            
+            setTimeout(function(){ 
+                if(piece.parentNode) piece.parentNode.removeChild(piece);
+            }, 5000);
+        })(i);
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   UPGRADE RESULT
+   ══════════════════════════════════════════════════════════════ */
+function showUpgradeResult(result){
+    var overlay = $('upgradeResult');
+    if(!overlay) return;
+    
+    var success = result && result.upgrade_success;
+    var gift = success ? result.new_gift : null;
+    var chance = result && result.chance != null ? result.chance : 0;
+    
+    overlay.classList.remove('show','fail');
+    if(!success) overlay.classList.add('fail');
+    
+    var img = $('upgradeResultImg');
+    var name = $('upgradeResultName');
+    var chanceEl = $('upgradeResultChance');
+    var msg = $('upgradeResultMessage');
+    
+    if(success && gift){
+        if(img) img.src = gift.image || '/static/img/gift.png';
+        if(name) name.textContent = gift.name || 'Новый подарок';
+        if(chanceEl) chanceEl.textContent = '✓ ' + chance.toFixed(1) + '% — успех!';
+        if(msg) msg.textContent = 'Поздравляем! Вы получили ' + (gift.name || 'подарок');
+    } else {
+        // Проигрыш — показываем тот же подарок серым
+        if(img){
+            img.src = (selectedItem && selectedItem.gift_image) || '/static/img/gift.png';
+            img.style.filter = 'grayscale(.6)';
+        }
+        if(name) name.textContent = 'Не повезло';
+        if(chanceEl) chanceEl.textContent = '✗ ' + chance.toFixed(1) + '% — провал';
+        if(msg) msg.textContent = 'Ваш подарок потерян. Попробуйте ещё раз с другим.';
+    }
+    
+    overlay.classList.add('show');
+}
+
+function closeUpgradeResult(){
+    var overlay = $('upgradeResult');
+    if(overlay) overlay.classList.remove('show','fail');
+    
+    // Обновляем инвентарь и профиль
+    refreshUserData();
+    loadInventory();
+    
+    // Закрываем upgrade modal
+    closeUpgradeModal();
+    closeItemSheet();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SELL
+   ══════════════════════════════════════════════════════════════ */
 function askSellConfirm(){
     if(!selectedItem) return;
     var name = $('sellConfirmName');
     var price = $('sellConfirmPrice');
     if(name) name.textContent = selectedItem.gift_name || '—';
     if(price) price.textContent = formatTon(starsToTon(selectedItem.gift_value));
-
     var ov = $('sellConfirmOverlay');
     if(ov) ov.classList.add('show');
-
     startSellCountdown();
     vibrateIfOn();
 }
-
 function closeSellConfirm(){
     var ov = $('sellConfirmOverlay');
     if(ov) ov.classList.remove('show');
-    if(_sellCountdownTimer){
-        clearInterval(_sellCountdownTimer);
-        _sellCountdownTimer = null;
-    }
+    if(_sellCountdownTimer){ clearInterval(_sellCountdownTimer); _sellCountdownTimer = null; }
 }
-
 function startSellCountdown(){
     var btn = $('sellConfirmBtn');
     if(!btn) return;
@@ -1854,9 +2768,8 @@ function startSellCountdown(){
     if(_sellCountdownTimer) clearInterval(_sellCountdownTimer);
     _sellCountdownTimer = setInterval(function(){
         s--;
-        if(s > 0){
-            btn.textContent = 'Подождите ' + s + '...';
-        } else {
+        if(s > 0){ btn.textContent = 'Подождите ' + s + '...'; }
+        else {
             clearInterval(_sellCountdownTimer);
             _sellCountdownTimer = null;
             btn.disabled = false;
@@ -1865,14 +2778,12 @@ function startSellCountdown(){
         }
     }, 1000);
 }
-
 async function doConfirmedSell(){
     if(!selectedItem) return;
     var itemId = selectedItem.id;
     var tonVal = formatTon(starsToTon(selectedItem.gift_value));
     var btn = $('sellConfirmBtn');
     if(btn){ btn.disabled = true; btn.textContent = 'Продаём...'; }
-
     try{
         var r = await fetch('/api/sell-gift', {
             method:'POST',
@@ -1987,7 +2898,9 @@ async function batchWithdraw(){
     showNotif('Вывод нескольких скоро');
 }
 
-/* PORTAL PICKER */
+/* ══════════════════════════════════════════════════════════════
+   PORTAL PICKER
+   ══════════════════════════════════════════════════════════════ */
 async function openPortalPicker(){
     if(!selectedItem) return;
     var ol = $('mrktOverlay');
@@ -1995,7 +2908,6 @@ async function openPortalPicker(){
     var sub = $('mrktSubtitle');
     var cb = $('mrktConfirmBtn');
     if(!ol || !grid) return;
-
     _portalSelGiftId = null;
     _portalGifts = [];
     if(cb){ cb.disabled = true; cb.textContent = 'Выбрать подарок'; }
@@ -2003,7 +2915,6 @@ async function openPortalPicker(){
     var bd = $('mrktBackdrop'); if(bd) bd.classList.add('show');
     grid.innerHTML = '<div class="mrkt-loading">Загрузка...</div>';
     if(sub) sub.textContent = 'Поиск...';
-
     var gn = selectedItem.gift_name || selectedItem.name || '';
     gn = String(gn).replace(/#\d+$/, '').trim();
     try{
@@ -2288,6 +3199,13 @@ function showNotif(msg, isError){
     el.classList.add('show');
     clearTimeout(el._hideTimer);
     el._hideTimer = setTimeout(function(){ el.classList.remove('show'); }, 3000);
+}
+
+/* UTILS */
+function escapeHtml(str){
+    var div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
 }
 </script>
 </body>
