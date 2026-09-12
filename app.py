@@ -2227,6 +2227,9 @@ def _create_all_tables(conn):
         'CREATE INDEX IF NOT EXISTS idx_promo_codes_active ON promo_codes(is_active)',
         'CREATE INDEX IF NOT EXISTS idx_withdrawals_user ON withdrawals(user_id, status)',
         'CREATE INDEX IF NOT EXISTS idx_crash_games_simple_status ON crash_games(status)',
+        'CREATE INDEX IF NOT EXISTS idx_ucb_game_created ON ultimate_crash_bets(game_id, created_at DESC)',
+        'CREATE INDEX IF NOT EXISTS idx_ucb_game_status ON ultimate_crash_bets(game_id, status)',
+        'CREATE INDEX IF NOT EXISTS idx_ucb_user_created ON ultimate_crash_bets(user_id, created_at DESC)',
         'CREATE INDEX IF NOT EXISTS idx_case_open_user ON case_open_history(user_id)',
         'CREATE INDEX IF NOT EXISTS idx_win_history_user ON win_history(user_id)',
         'CREATE INDEX IF NOT EXISTS idx_quests_active ON crash_quests(is_active)',
@@ -3770,7 +3773,7 @@ def start_ultimate_crash_loop():
                         set_admin_crash_control('force_crash', False)
                         do_crash(conn, cursor, live_game_id, live_mult, live_target)
                         logger.info(f"💥 ADMIN FORCE CRASH на {live_mult:.2f}x")
-                        time.sleep(0.05)
+                        time.sleep(0.03)
                         continue
 
                     if live_mult < live_target:
@@ -3780,7 +3783,7 @@ def start_ultimate_crash_loop():
                                 if ai_should_force_crash(live_game_id, live_mult, conn):
                                     do_crash(conn, cursor, live_game_id, live_mult, live_target)
                                     logger.info(f"💥 AI RTP CRASH на {live_mult:.2f}x")
-                                    time.sleep(0.05)
+                                    time.sleep(0.03)
                                     continue
                             except Exception as ai_e:
                                 logger.error(f"AI mid-round error: {ai_e}")
@@ -3828,7 +3831,7 @@ def start_ultimate_crash_loop():
                         do_crash(conn, cursor, live_game_id, live_mult, live_target)
                         logger.info(f"💥 Игра #{live_game_id} завершена на {live_mult:.2f}x")
 
-                    time.sleep(0.05)
+                    time.sleep(0.03)
                     continue
 
                 cursor.execute('''
@@ -3935,7 +3938,7 @@ def start_ultimate_crash_loop():
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 Новая Crash игра, target: {target_multiplier}x")
 
-                time.sleep(0.05)
+                time.sleep(0.03)
 
             except Exception as e:
                 err_msg = str(e)
@@ -4065,8 +4068,8 @@ def check_auth_code():
 
 @app.route('/')
 def root_page():
-    """Главная страница — редирект на Краш"""
-    return redirect('/crash')
+    """Главная страница — редирект на Игры"""
+    return redirect('/games')
 
 
 @app.route('/api/ping')
@@ -4708,68 +4711,99 @@ def _get_cached_crash_rtp():
     except:
         return _crash_rtp_cache['value']
 
+@app.route('/api/ultimate-crash/ping', methods=['GET'])
+def ultimate_crash_ping():
+    """⚡ RAM-only ping."""
+    try:
+        cached = get_crash_cache()
+        return jsonify({
+            'ok': True,
+            'ts': int(time.time() * 1000),
+            'game': {
+                'id': cached.get('id', 0),
+                'status': cached.get('status', 'waiting'),
+                'current_multiplier': cached.get('current_multiplier', 1.0),
+                'target_multiplier': cached.get('target_multiplier', 5.0),
+                'time_remaining': cached.get('time_remaining', 5.0)
+            }
+        })
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 200
+
+
 @app.route('/api/ultimate-crash/simple-status', methods=['GET'])
 def ultimate_crash_simple_status():
     """Быстрый статус игры - использует кэш"""
     user_id = request.args.get('user_id')
-    
-    # Всегда используем кэш игры
-    cached = get_crash_cache()
-    cache_age = time.time() - cached.get('timestamp', 0)
-    
-    # Если кэш свежий (< 0.25 сек) - не трогаем БД
-    if cache_age < 0.25 and cached.get('id', 0) > 0:
-        game_data = {
-            'id': cached['id'],
-            'status': cached['status'],
-            'current_multiplier': cached['current_multiplier'],
-            'target_multiplier': cached['target_multiplier'],
-            'time_remaining': cached['time_remaining']
-        }
-        
-        # Кэшированные ставки и баланс пользователя — один DB-запрос если нет в кэше
-        user_bet = None
-        user_balance = None
-        if user_id:
-            uid_int = int(user_id)
-            cache_key = (cached['id'], user_id)
-            bet_cache = _user_bets_cache.get(cache_key)
-            bet_cached = bet_cache and time.time() - bet_cache.get('ts', 0) < _USER_BETS_CACHE_TTL
-            bal_cached = _get_cached_balance(uid_int) is not None
 
-            if bet_cached:
-                user_bet = bet_cache.get('bet')
-            if bal_cached:
-                user_balance = _get_cached_balance(uid_int)
+    try:
+        cached = get_crash_cache()
+        cache_age_ms = (time.time() - cached.get('timestamp', 0)) * 1000
 
-            if not bet_cached or not bal_cached:
-                # Single connection for both queries
+        if cache_age_ms < 500 and cached.get('id', 0) > 0:
+            game_data = {
+                'id': cached.get('id', 0),
+                'status': cached.get('status', 'waiting'),
+                'current_multiplier': cached.get('current_multiplier', 1.0),
+                'target_multiplier': cached.get('target_multiplier', 5.0),
+                'time_remaining': cached.get('time_remaining', 5.0)
+            }
+
+            user_bet = None
+            user_balance = None
+            if user_id:
                 try:
-                    with _quick_db_conn(5) as conn:
-                        cursor = conn.cursor()
-                        if not bet_cached:
-                            cursor.execute("SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1", (cached['id'], uid_int))
-                            bet = cursor.fetchone()
-                            user_bet = {'id': bet[0], 'bet_amount': bet[1], 'status': bet[2]} if bet else None
-                            _user_bets_cache[cache_key] = {'bet': user_bet, 'ts': time.time()}
-                        if not bal_cached:
-                            cursor.execute("SELECT balance_stars FROM users WHERE id = ?", (uid_int,))
-                            brow = cursor.fetchone()
-                            if brow:
-                                user_balance = brow[0]
-                                _set_cached_balance(uid_int, user_balance)
+                    uid_int = int(user_id)
+                    cache_key = (cached.get('id', 0), str(user_id))
+                    bet_cache = _user_bets_cache.get(cache_key)
+                    bet_cached = bet_cache and time.time() - bet_cache.get('ts', 0) < _USER_BETS_CACHE_TTL
+                    bal_cached = _get_cached_balance(uid_int)
+
+                    if bet_cached:
+                        user_bet = bet_cache.get('bet')
+                    if bal_cached is not None:
+                        user_balance = bal_cached
+
+                    if not bet_cached or bal_cached is None:
+                        with _quick_db_conn(5) as conn:
+                            cursor = conn.cursor()
+                            if not bet_cached:
+                                cursor.execute(
+                                    "SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1",
+                                    (cached.get('id', 0), uid_int)
+                                )
+                                bet = cursor.fetchone()
+                                user_bet = {'id': bet[0], 'bet_amount': bet[1], 'status': bet[2]} if bet else None
+                                _user_bets_cache[cache_key] = {'bet': user_bet, 'ts': time.time()}
+                            if bal_cached is None:
+                                cursor.execute("SELECT balance_stars FROM users WHERE id = ?", (uid_int,))
+                                brow = cursor.fetchone()
+                                if brow:
+                                    user_balance = brow[0]
+                                    _set_cached_balance(uid_int, user_balance)
                 except Exception:
                     pass
-        
-        return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance, 'rtp': _get_cached_crash_rtp()})
-    
+
+            return jsonify({
+                'success': True,
+                'game': game_data,
+                'user_bet': user_bet,
+                'user_balance': user_balance,
+                'rtp': _get_cached_crash_rtp(),
+                'fast': True
+            })
+    except Exception:
+        pass
+
     # Fallback - если кэш устарел
     try:
         with _quick_db_conn(5) as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT id, status, current_multiplier, target_multiplier FROM ultimate_crash_games WHERE status IN ('waiting', 'counting', 'flying', 'crashed') ORDER BY id DESC LIMIT 1")
+            cursor.execute(
+                "SELECT id, status, current_multiplier, target_multiplier FROM ultimate_crash_games WHERE status IN ('waiting', 'counting', 'flying', 'crashed') ORDER BY id DESC LIMIT 1"
+            )
             game = cursor.fetchone()
-            
+
             if game:
                 game_id, status, current_mult, target_mult = game
                 game_data = {
@@ -4779,11 +4813,14 @@ def ultimate_crash_simple_status():
                     'target_multiplier': float(target_mult) if target_mult else 5.0,
                     'time_remaining': 5.0
                 }
-                
+
                 user_bet = None
                 user_balance = None
                 if user_id:
-                    cursor.execute("SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1", (game_id, user_id))
+                    cursor.execute(
+                        "SELECT id, bet_amount, status FROM ultimate_crash_bets WHERE game_id = ? AND user_id = ? AND status = 'active' LIMIT 1",
+                        (game_id, user_id)
+                    )
                     bet = cursor.fetchone()
                     if bet:
                         user_bet = {'id': bet[0], 'bet_amount': bet[1], 'status': bet[2]}
@@ -4791,12 +4828,23 @@ def ultimate_crash_simple_status():
                     brow = cursor.fetchone()
                     if brow:
                         user_balance = brow[0]
-                
-                return jsonify({'success': True, 'game': game_data, 'user_bet': user_bet, 'user_balance': user_balance, 'rtp': _get_cached_crash_rtp()})
-    except:
+
+                return jsonify({
+                    'success': True,
+                    'game': game_data,
+                    'user_bet': user_bet,
+                    'user_balance': user_balance,
+                    'rtp': _get_cached_crash_rtp()
+                })
+    except Exception:
         pass
-    
-    return jsonify({'success': True, 'game': {'id': 0, 'status': 'waiting', 'current_multiplier': 1.0, 'target_multiplier': 5.0, 'time_remaining': 5.0}, 'user_bet': None, 'rtp': _get_cached_crash_rtp()})
+
+    return jsonify({
+        'success': True,
+        'game': {'id': 0, 'status': 'waiting', 'current_multiplier': 1.0, 'target_multiplier': 5.0, 'time_remaining': 5.0},
+        'user_bet': None,
+        'rtp': _get_cached_crash_rtp()
+    })
 
 @app.route('/api/ultimate-crash/place-bet', methods=['POST'])
 def ultimate_crash_place_bet():
@@ -10166,6 +10214,139 @@ def get_upgrade_possible_gifts():
 
     except Exception as e:
         logger.error(f"❌ Ошибка получения подарков: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/upgrade-with-ton', methods=['POST'])
+def upgrade_with_ton():
+    """Апгрейд со ставкой TON. TON списывается с balance_stars."""
+    conn = None
+    try:
+        data = request.get_json() or {}
+        user_id = int(data.get('user_id', 0) or 0)
+        bet_stars = int(data.get('bet_amount', 0) or 0)
+        target_gift_id = data.get('target_gift_id')
+
+        if not user_id or bet_stars <= 0 or not target_gift_id:
+            return jsonify({'success': False, 'error': 'Неверные параметры'})
+
+        if bet_stars < 10:
+            return jsonify({'success': False, 'error': 'Мин. 0.1 TON'})
+
+        # Загружаем целевой подарок
+        gifts = build_fragment_first_gifts_catalog() or load_gifts_cached() or []
+        tid = str(target_gift_id).strip().lower()
+        target_gift = None
+        for g in gifts:
+            gid = str(g.get('id', ''))
+            gkey = str(g.get('gift_key', ''))
+            gslug = str(g.get('fragment_slug', ''))
+            if gid == tid or gkey == tid or gslug == tid:
+                target_gift = g
+                break
+
+        if not target_gift:
+            return jsonify({'success': False, 'error': 'Целевой подарок не найден'})
+
+        target_value = int(target_gift.get('value', 0) or 0)
+        if target_value <= bet_stars:
+            return jsonify({'success': False, 'error': 'Цель должна быть дороже ставки'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+
+        balance = int(row[0] or 0)
+        if balance < bet_stars:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Недостаточно средств'})
+
+        # Шанс как в обычном апгрейде
+        base_chance = max(10.0, min((bet_stars / target_value) * 100.0, 75.0))
+        real_chance = base_chance
+        if target_value > 10000:
+            real_chance = base_chance * 0.3
+        elif target_value > 5000:
+            real_chance = base_chance * 0.4
+        elif target_value > 2000:
+            real_chance = base_chance * 0.6
+        elif target_value > 1000:
+            real_chance = base_chance * 0.8
+        real_chance = max(5.0, real_chance)
+
+        try:
+            user_boost = get_user_rtp_boost(user_id)
+            if user_boost > 40:
+                boost_mult = 1.0 + (user_boost - 40) / 100.0
+                real_chance = min(real_chance * boost_mult, 95.0)
+        except Exception:
+            pass
+
+        cursor.execute(
+            'UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
+            (bet_stars, user_id)
+        )
+
+        import random as _rnd
+        success = _rnd.random() * 100.0 <= real_chance
+
+        if success:
+            cursor.execute("""
+                INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
+                VALUES (?, ?, ?, ?, ?)
+            """, (
+                user_id,
+                target_gift.get('id') if isinstance(target_gift.get('id'), int) else None,
+                target_gift.get('name', 'Gift'),
+                target_gift.get('image', ''),
+                target_value
+            ))
+            try:
+                cursor.execute("""
+                    INSERT INTO user_history (user_id, operation_type, amount, description)
+                    VALUES (?, 'upgrade_ton_win', 0, ?)
+                """, (user_id, 'Апгрейд TON: ' + str(bet_stars) + '→' + str(target_gift.get('name', ''))))
+            except Exception:
+                pass
+            logger.info('✅ Upgrade TON WIN: user=' + str(user_id) + ' bet=' + str(bet_stars))
+        else:
+            try:
+                cursor.execute("""
+                    INSERT INTO user_history (user_id, operation_type, amount, description)
+                    VALUES (?, 'upgrade_ton_fail', 0, ?)
+                """, (user_id, 'Апгрейд TON проигрыш: ' + str(bet_stars)))
+            except Exception:
+                pass
+            logger.info('❌ Upgrade TON FAIL: user=' + str(user_id) + ' bet=' + str(bet_stars))
+
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        row2 = cursor.fetchone()
+        new_bal = int(row2[0] or 0) if row2 else 0
+
+        conn.commit()
+        conn.close()
+        conn = None
+
+        return jsonify({
+            'success': True,
+            'upgrade_success': success,
+            'chance': round(base_chance, 2),
+            'new_gift': target_gift if success else None,
+            'new_balance': new_bal,
+            'message': 'Успешный апгрейд!' if success else 'Апгрейд не удался'
+        })
+
+    except Exception as e:
+        logger.error('upgrade_with_ton error: ' + str(e))
+        if conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
         return jsonify({'success': False, 'error': str(e)})
 
 
@@ -20634,7 +20815,7 @@ def api_admin_leaderboard():
             
             period_start = data.get('period_start')
             period_end = data.get('period_end')
-            rewards_json = json.dumps(data.get('rewards', {}))
+            rewards_json = json.dumps(data.get('rewards', {}), ensure_ascii=False)  # lb_rewards_json_patched_v2
             title = data.get('title', 'Лидерборд')
             
             conn = get_db_connection()
@@ -20722,6 +20903,7 @@ def api_admin_leaderboard_distribute():
         users = cursor.fetchall()
         
         distributed = 0
+        # lb_distribute_v3
         for i, user in enumerate(users, 1):
             reward = rewards.get(str(i))
             if reward:
@@ -20729,21 +20911,57 @@ def api_admin_leaderboard_distribute():
                 turnover = user[2]
                 reward_type = reward.get('type', 'stars')
                 reward_amount = reward.get('amount', 0)
-                
-                # Save to history
-                conn.execute('''INSERT INTO leaderboard_history 
-                    (period_id, user_id, position, turnover, reward_type, reward_data)
-                    VALUES (?, ?, ?, ?, ?, ?)''',
-                    (lb_id, user_id, i, turnover, reward_type, str(reward_amount)))
-                
-                # Give reward via notification
-                conn.execute('''INSERT INTO admin_notifications 
-                    (title, message, notif_type, target_user_id, reward_type, reward_data, is_active)
-                    VALUES (?, ?, 'leaderboard', ?, ?, ?, ?)''',
-                    (f'{title} - Место #{i}', 
-                     f'Поздравляем! Вы заняли {i} место в лидерборде с оборотом {turnover}',
-                     user_id, reward_type, str(reward_amount), True))
-                
+                gift_name = reward.get('gift_name', '')
+                gift_image = reward.get('gift_image', '')
+
+                try:
+                    conn.execute('''INSERT INTO leaderboard_history 
+                        (period_id, user_id, position, turnover, reward_type, reward_data)
+                        VALUES (?, ?, ?, ?, ?, ?)''',
+                        (lb_id, user_id, i, turnover, reward_type,
+                         json.dumps(reward, ensure_ascii=False)))
+                except Exception as he:
+                    logger.warning('lb_history insert: ' + str(he))
+
+                if reward_type == 'gift':
+                    try:
+                        gifts_cat = load_gifts_cached() or []
+                        gift = None
+                        for g in gifts_cat:
+                            if str(g.get('id')) == str(reward_amount):
+                                gift = g
+                                break
+                        if gift:
+                            cursor2 = conn.cursor()
+                            cursor2.execute('''INSERT INTO inventory 
+                                (user_id, gift_id, gift_name, gift_image, gift_value)
+                                VALUES (?, ?, ?, ?, ?)''',
+                                (user_id, gift.get('id'), gift.get('name'),
+                                 gift.get('image', ''), gift.get('value', 0)))
+                            reward_data_json = json.dumps({
+                                'gift_id': gift.get('id'),
+                                'gift_name': gift.get('name'),
+                                'gift_image': gift.get('image', ''),
+                                'gift_value': gift.get('value', 0)
+                            }, ensure_ascii=False)
+                            conn.execute('''INSERT INTO admin_notifications 
+                                (title, message, notif_type, target_user_id, reward_type, reward_data, is_active)
+                                VALUES (?, ?, 'leaderboard', ?, 'gift', ?, ?)''',
+                                ('🏆 ' + str(title) + ' — Место #' + str(i),
+                                 'Поздравляем! Вы заняли ' + str(i) + ' место! Награда: ' + str(gift.get('name', 'Подарок')),
+                                 user_id, reward_data_json, True))
+                        else:
+                            logger.warning('Leaderboard gift not found: id=' + str(reward_amount))
+                    except Exception as ge:
+                        logger.error('Leaderboard gift insert error: ' + str(ge))
+                else:
+                    conn.execute('''INSERT INTO admin_notifications 
+                        (title, message, notif_type, target_user_id, reward_type, reward_data, is_active)
+                        VALUES (?, ?, 'leaderboard', ?, ?, ?, ?)''',
+                        ('🏆 ' + str(title) + ' — Место #' + str(i),
+                         'Поздравляем! Вы заняли ' + str(i) + ' место с оборотом ' + str(turnover),
+                         user_id, reward_type, str(reward_amount), True))
+
                 distributed += 1
         
         # Deactivate leaderboard
