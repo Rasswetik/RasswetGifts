@@ -670,3 +670,1367 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 </div>
 
 <div class="toast" id="toast"></div>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   STATE
+   ══════════════════════════════════════════════════════════════ */
+var ADMIN_ID = 5257227756;
+var tg = window.Telegram && window.Telegram.WebApp;
+var currentTgUser = null;
+var adminVerified = false;
+var allUsers = [];
+var allGifts = [];
+var allCasesAdmin = [];
+var currentUser = null;
+var portalPollTimer = null;
+var currentLBId = null;
+var currentLBConfig = null;
+var currentInvUserId = null;
+var parsedNftData = null;
+
+function $(id){ return document.getElementById(id); }
+
+function showToast(msg, type){
+    document.querySelectorAll('.toast').forEach(function(t){ t.remove(); });
+    var t = document.createElement('div');
+    t.className = 'toast show ' + (type || '');
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function(){
+        t.style.opacity = '0';
+        setTimeout(function(){ t.remove(); }, 300);
+    }, 2800);
+}
+
+function escapeHtml(t){
+    return (t == null ? '' : String(t)).replace(/[&<>"']/g, function(c){
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+}
+
+function formatTon(stars){ return (Number(stars || 0) / 100).toFixed(2); }
+
+/* ══════════════════════════════════════════════════════════════
+   AUTH
+   ══════════════════════════════════════════════════════════════ */
+async function verifyAdminAccess(){
+    if(tg){
+        try{
+            tg.ready(); tg.expand();
+            try{ tg.setHeaderColor('#1C2233'); tg.setBackgroundColor('#1C2233'); }catch(e){}
+        }catch(e){}
+        var initData = tg.initDataUnsafe;
+        if(initData && initData.user){
+            currentTgUser = initData.user;
+            if(Number(currentTgUser.id) !== ADMIN_ID){
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;padding:24px;text-align:center;font-family:Inter,sans-serif;background:#1C2233;color:#fff"><h2 style="color:#FF3064;font-size:22px;font-weight:800">Доступ запрещён</h2><p style="color:rgba(255,255,255,.5);margin-top:12px;font-size:14px">Только для администратора</p></div>';
+                return false;
+            }
+            adminVerified = true;
+            return true;
+        }
+    }
+    adminVerified = true;
+    return true;
+}
+
+function goBack(){
+    if(tg && tg.close) tg.close();
+    else window.location.href = '/games';
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ROUTING
+   ══════════════════════════════════════════════════════════════ */
+var currentSection = 'home';
+
+var SECTION_TITLES = {
+    home: 'Главное меню', dashboard: '📊 Дашборд', crash: '🎮 Управление Краш',
+    users: '👥 Пользователи', gifts: '🎁 Подарки', cases: '📦 Кейсы',
+    promo: '🎟️ Промокоды', quests: '🎯 Задания',
+    leaderboard: '🏆 Лидерборд', withdrawals: '💸 Выводы',
+    sbp: '💳 СБП', levels: '📈 Уровни', inventory: '🎒 Инвентарь',
+    news: '📰 Новости', notifications: '🔔 Уведомления', messages: '✉️ Сообщения',
+    history: '📜 История'
+};
+
+function showSection(name){
+    document.querySelectorAll('.section-page').forEach(function(p){ p.style.display = 'none'; });
+    var page = $('page-' + name);
+    if(page) page.style.display = 'block';
+    currentSection = name;
+
+    var backBtn = $('backBtn');
+    if(backBtn) backBtn.style.display = (name === 'home') ? 'none' : 'flex';
+    var title = $('topTitle');
+    if(title) title.textContent = SECTION_TITLES[name] || name;
+
+    try{ window.scrollTo({top: 0, behavior: 'instant'}); }catch(e){ window.scrollTo(0,0); }
+
+    try{
+        if(name === 'dashboard') loadStats();
+        if(name === 'crash') loadCrashStatus();
+        if(name === 'users') loadUsers();
+        if(name === 'gifts'){ loadGifts(); loadPortalStatus(); }
+        if(name === 'cases') loadCasesList();
+        if(name === 'promo') loadPromoCodes();
+        if(name === 'quests') loadQuests();
+        if(name === 'leaderboard') loadLeaderboard();
+        if(name === 'withdrawals') loadWithdrawals();
+        if(name === 'sbp') loadSbpPayments();
+        if(name === 'levels') loadLevels();
+        if(name === 'news') loadNewsList();
+        if(name === 'notifications') loadAdminNotifs();
+        if(name === 'history') switchHistory('wins', null);
+    }catch(e){ console.warn('section load error', e); }
+
+    if(name === 'gifts'){
+        if(portalPollTimer) clearInterval(portalPollTimer);
+        portalPollTimer = setInterval(loadPortalStatus, 20000);
+    } else {
+        if(portalPollTimer){ clearInterval(portalPollTimer); portalPollTimer = null; }
+    }
+}
+
+function goBackOrMenu(){
+    if(currentSection === 'home'){ goBack(); }
+    else { showSection('home'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   MODAL
+   ══════════════════════════════════════════════════════════════ */
+function openModal(html){
+    var overlay = $('modalOverlay');
+    var content = $('modalContent');
+    if(!overlay || !content) return;
+    content.innerHTML = '<div class="modal-handle"></div>' + html;
+    overlay.classList.add('show');
+}
+function closeModal(){
+    var overlay = $('modalOverlay');
+    if(overlay) overlay.classList.remove('show');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DASHBOARD
+   ══════════════════════════════════════════════════════════════ */
+async function loadStats(){
+    try{
+        var r = await fetch('/api/admin/stats');
+        var d = await r.json();
+        if(d.success){
+            var s = d.stats || {};
+            var html =
+                '<div class="card"><div class="card-title">Общее</div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Пользователи</span><span style="font-weight:800">' + (s.total_users || 0) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Звёзд</span><span style="font-weight:800">' + formatTon(s.total_stars || 0) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px"><span style="color:rgba(255,255,255,.6)">Подарков</span><span style="font-weight:800">' + (s.total_inventory || 0) + '</span></div>' +
+                '</div>';
+            var el = $('dashStats');
+            if(el) el.innerHTML = html;
+        }
+    }catch(e){ console.error(e); }
+    loadHouseBank();
+}
+
+async function loadHouseBank(){
+    try{
+        var r = await fetch('/api/admin/house-bank?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success && d.bank){
+            var b = d.bank;
+            var balCls = b.balance < 0 ? 'color:#FF3064' : (b.balance > 0 ? 'color:#24C38E' : '');
+            var html =
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Баланс</span><span style="font-weight:800;' + balCls + '">' + formatTon(b.balance) + ' TON</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Режим</span><span style="font-weight:800">' + (b.mode_label || '—') + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px"><span style="color:rgba(255,255,255,.6)">Поступления</span><span style="font-weight:800">' + formatTon(b.money_in || 0) + '</span></div>';
+            var el = $('bankInfo');
+            if(el) el.innerHTML = html;
+        }
+    }catch(e){ console.error(e); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CRASH
+   ══════════════════════════════════════════════════════════════ */
+async function loadCrashStatus(){
+    try{
+        var r = await fetch('/api/admin/crash/status?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success){
+            var g = d.game || {};
+            var ctrl = d.admin_control || {};
+            var el = $('crashLiveState');
+            if(el){
+                el.innerHTML =
+                    '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Статус</span><span style="font-weight:800">' + (g.status || '—') + '</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Текущий x</span><span style="font-weight:800">' + (g.current_multiplier || '1.00') + 'x</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px"><span style="color:rgba(255,255,255,.6)">RTP</span><span style="font-weight:800">' + ((d.rtp != null) ? Number(d.rtp).toFixed(1) + '%' : '—') + '</span></div>';
+            }
+            var manualBtn = $('manualModeBtn');
+            if(manualBtn) manualBtn.textContent = ctrl.manual_mode ? '🟢 Ручной режим: ВКЛ' : '⚪ Ручной режим: ВЫКЛ';
+            if(d.rtp != null && $('rtpInput')) $('rtpInput').value = Math.round(d.rtp);
+        }
+    }catch(e){ console.error(e); }
+}
+
+async function setRtp(){
+    var val = parseFloat($('rtpInput').value);
+    if(!val || val < 1 || val > 100){ showToast('RTP: 1–100', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/crash/set-rtp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, rtp: val}) });
+        var d = await r.json();
+        if(d.success){ showToast(d.message || 'OK', 'ok'); loadCrashStatus(); } else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+async function forceCrash(){
+    if(!confirm('Форсировать краш?')) return;
+    try{
+        var r = await fetch('/api/admin/crash/force-crash', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID}) });
+        var d = await r.json();
+        if(d.success){ showToast('⚡ ' + (d.message || 'OK'), 'ok'); } else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+async function setNextMultiplier(){
+    var val = parseFloat($('nextMultInput').value);
+    if(!val || val < 1.01){ showToast('Мин 1.01x', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/crash/set-next', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, multiplier: val}) });
+        var d = await r.json();
+        if(d.success){ showToast(d.message || 'OK', 'ok'); $('nextMultInput').value = ''; } else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+async function toggleManualMode(){
+    try{
+        var r = await fetch('/api/admin/crash/toggle-manual', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID}) });
+        var d = await r.json();
+        if(d.success){ showToast(d.message || 'OK', 'ok'); loadCrashStatus(); } else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   USERS
+   ══════════════════════════════════════════════════════════════ */
+async function loadUsers(){
+    var el = $('userList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/users');
+        var d = await r.json();
+        if(d.success){
+            allUsers = d.users || [];
+            renderUsers(allUsers);
+        } else if(el) el.innerHTML = '<div class="empty">Ошибка</div>';
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка сети</div>'; }
+}
+
+function renderUsers(users){
+    var el = $('userList');
+    if(!el) return;
+    if(!users.length){ el.innerHTML = '<div class="empty">Пользователей не найдено</div>'; return; }
+    el.innerHTML = users.map(function(u){
+        var av = u.photo_url
+            ? '<img src="' + escapeHtml(u.photo_url) + '" onerror="this.parentElement.textContent=\'' + escapeHtml((u.first_name || 'U')[0].toUpperCase()) + '\'">'
+            : escapeHtml((u.first_name || 'U')[0].toUpperCase());
+        return '<div class="list-item" onclick="openUserModal(' + u.id + ')">' +
+            '<div class="avatar">' + av + '</div>' +
+            '<div class="info"><div class="name">' + escapeHtml(u.first_name || ('User ' + u.id)) + '</div>' +
+            '<div class="meta"><span>ID: ' + u.id + '</span><span>@' + escapeHtml(u.username || '—') + '</span></div></div>' +
+            '<div class="right"><div class="value">💎 ' + formatTon(u.balance_stars) + '</div></div>' +
+            '</div>';
+    }).join('');
+}
+
+function filterUsers(){
+    var q = ($('userSearch').value || '').toLowerCase().trim();
+    if(!q){ renderUsers(allUsers); return; }
+    var filtered = allUsers.filter(function(u){
+        return (u.first_name || '').toLowerCase().indexOf(q) !== -1
+            || (u.username || '').toLowerCase().indexOf(q) !== -1
+            || String(u.id).indexOf(q) !== -1;
+    });
+    renderUsers(filtered);
+}
+
+async function openUserModal(userId){
+    currentUser = allUsers.find(function(u){ return u.id === userId; });
+    if(!currentUser) return;
+    var html =
+        '<div class="modal-title">👤 ' + escapeHtml(currentUser.first_name || ('User ' + userId)) + '</div>' +
+        '<div class="card"><div class="card-title">Баланс и уровень</div>' +
+        '<div class="form-group"><label class="form-label">Звёзды</label><input type="number" class="form-input" id="userBalanceInput" value="' + (currentUser.balance_stars || 0) + '"></div>' +
+        '<div class="form-group"><label class="form-label">Уровень</label><input type="number" class="form-input" id="userLevelInput" min="1" max="25" value="' + (currentUser.level || 1) + '"></div>' +
+        '<button class="btn btn-success" onclick="saveUserData()">💾 Сохранить</button></div>' +
+        '<div class="card"><div class="card-title">Бан</div>' +
+        '<div class="form-group"><label class="form-label">Причина</label><input type="text" class="form-input" id="banReasonInput" placeholder="Нарушение правил"></div>' +
+        '<div class="btn-row">' +
+        '<button class="btn btn-danger" onclick="banUser()">🚫 Забанить</button>' +
+        '<button class="btn btn-success" onclick="unbanUser()">✓ Разбанить</button>' +
+        '</div></div>' +
+        '<button class="btn btn-secondary" onclick="closeModal()">Закрыть</button>';
+    openModal(html);
+}
+
+async function saveUserData(){
+    if(!currentUser) return;
+    var bal = parseFloat($('userBalanceInput').value) || 0;
+    var lvl = parseInt($('userLevelInput').value) || 1;
+    try{
+        var r = await fetch('/api/admin/update-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: currentUser.id, balance_stars: Math.round(bal), level: lvl}) });
+        var d = await r.json();
+        if(d.success){ showToast('Сохранено', 'ok'); closeModal(); loadUsers(); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function banUser(){
+    if(!currentUser) return;
+    var reason = ($('banReasonInput').value || '').trim() || 'Нарушение правил';
+    try{
+        var r = await fetch('/api/admin/ban-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, user_id: currentUser.id, reason: reason, duration: 'permanent'}) });
+        var d = await r.json();
+        if(d.success){ showToast('Забанен', 'ok'); closeModal(); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function unbanUser(){
+    if(!currentUser) return;
+    try{
+        var r = await fetch('/api/admin/unban-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, user_id: currentUser.id}) });
+        var d = await r.json();
+        if(d.success){ showToast('Разбанен', 'ok'); closeModal(); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GIFTS (полное редактирование)
+   ══════════════════════════════════════════════════════════════ */
+async function loadGifts(){
+    var el = $('giftGrid');
+    if(el) el.innerHTML = '<div class="loading" style="grid-column:1/-1">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/get-gifts-list');
+        var d = await r.json();
+        if(d.success){
+            allGifts = d.gifts || [];
+            renderGifts(allGifts);
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty" style="grid-column:1/-1">Ошибка</div>'; }
+}
+
+function renderGifts(gifts){
+    var el = $('giftGrid');
+    if(!el) return;
+    if(!gifts.length){ el.innerHTML = '<div class="empty" style="grid-column:1/-1">Подарков нет</div>'; return; }
+    el.innerHTML = gifts.map(function(g){
+        var img = g.image || '/static/img/gift.png';
+        var ton = (Number(g.value || 0) / 100).toFixed(2);
+        return '<div class="gift-card">' +
+            '<img class="gc-img" src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'">' +
+            '<div class="gc-name">' + escapeHtml(g.name) + '</div>' +
+            '<div class="gc-price">💎 ' + ton + ' TON</div>' +
+            '<div class="gc-actions">' +
+            '<button class="gc-btn gc-btn-edit" onclick="editGift(' + g.id + ')">✎ Изменить</button>' +
+            '<button class="gc-btn gc-btn-del" onclick="deleteGift(' + g.id + ')">🗑 Удалить</button>' +
+            '</div>' +
+            '</div>';
+    }).join('');
+}
+
+function filterGifts(){
+    var q = ($('giftSearch').value || '').toLowerCase().trim();
+    if(!q){ renderGifts(allGifts); return; }
+    renderGifts(allGifts.filter(function(g){ return (g.name || '').toLowerCase().indexOf(q) !== -1; }));
+}
+
+function editGift(giftId){
+    var g = allGifts.find(function(x){ return String(x.id) === String(giftId); });
+    if(!g){ showToast('Подарок не найден', 'err'); return; }
+    var html =
+        '<div class="modal-title">✎ Редактировать подарок</div>' +
+        '<div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="editGiftName" value="' + escapeHtml(g.name) + '"></div>' +
+        '<div class="form-group"><label class="form-label">Цена (в звёздах)</label><input type="number" class="form-input" id="editGiftValue" value="' + (g.value || 0) + '" min="1"></div>' +
+        '<div class="form-group"><label class="form-label">URL картинки</label><input type="text" class="form-input" id="editGiftImage" value="' + escapeHtml(g.image || '') + '"></div>' +
+        '<div style="text-align:center;margin-bottom:12px"><img src="' + escapeHtml(g.image || '/static/img/gift.png') + '" style="width:100px;height:100px;object-fit:contain;border-radius:14px;background:rgba(0,0,0,.3);padding:8px" onerror="this.src=\'/static/img/gift.png\'"></div>' +
+        '<div class="btn-row">' +
+        '<button class="btn btn-success" onclick="saveGiftEdit(' + g.id + ')">💾 Сохранить</button>' +
+        '<button class="btn btn-secondary" onclick="closeModal()">Отмена</button>' +
+        '</div>';
+    openModal(html);
+}
+
+async function saveGiftEdit(giftId){
+    var name = $('editGiftName').value.trim();
+    var value = parseInt($('editGiftValue').value) || 0;
+    var image = $('editGiftImage').value.trim();
+    if(!name || value <= 0){ showToast('Заполни название и цену', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/gifts-update', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, id: giftId, name: name, value: value, image: image})
+        });
+        var d = await r.json();
+        if(d.success){ showToast('Сохранено', 'ok'); closeModal(); loadGifts(); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function deleteGift(giftId){
+    if(!confirm('Удалить подарок?')) return;
+    try{
+        var r = await fetch('/api/admin/gifts-delete', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, id: giftId})
+        });
+        var d = await r.json();
+        if(d.success){ showToast('Удалён', 'ok'); loadGifts(); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function addNewGift(){
+    var name = ($('newGiftName').value || '').trim();
+    var value = parseInt($('newGiftValue').value) || 0;
+    var image = ($('newGiftImage').value || '').trim();
+    var slug = ($('newGiftSlug').value || '').trim();
+    if(!name || value <= 0){ showToast('Введи название и цену', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/gifts-add', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, name: name, value: value, image: image, fragment_slug: slug})
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Добавлен', 'ok');
+            $('newGiftName').value = '';
+            $('newGiftValue').value = '';
+            $('newGiftImage').value = '';
+            $('newGiftSlug').value = '';
+            loadGifts();
+        } else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PORTAL
+   ══════════════════════════════════════════════════════════════ */
+async function loadPortalStatus(){
+    var statusEl = $('portalStatus');
+    var descEl = $('portalStatusDesc');
+    if(!statusEl || !descEl) return;
+
+    try{
+        var r = await fetch('/api/portal/status');
+        var d = await r.json();
+
+        if(d.success && d.connected){
+            statusEl.className = 'portal-status connected';
+            var info = d.info || {};
+            var lastSync = info.last_sync_ago || 'никогда';
+            var total = info.total_collections || 0;
+            descEl.innerHTML = '✅ Подключено · Коллекций: <b>' + total + '</b><br>Синхр.: <b>' + escapeHtml(lastSync) + '</b>';
+        } else {
+            statusEl.className = 'portal-status disconnected';
+            descEl.textContent = '❌ Не подключено. Вставь initData ниже и нажми "Авторизоваться".';
+        }
+    }catch(e){
+        statusEl.className = 'portal-status disconnected';
+        descEl.textContent = '⚠️ Не удалось получить статус Portal';
+    }
+}
+
+async function savePortalToken(){
+    var inp = $('portalTokenInput');
+    var errEl = $('portalError');
+    var okEl = $('portalSuccess');
+    var btn = $('portalAuthBtn');
+    if(!inp) return;
+
+    var token = (inp.value || '').trim();
+    if(!token){
+        if(errEl){ errEl.textContent = 'Вставь initData в поле выше'; errEl.classList.add('show'); }
+        if(okEl) okEl.classList.remove('show');
+        return;
+    }
+
+    if(btn){ btn.disabled = true; }
+    if(errEl) errEl.classList.remove('show');
+    if(okEl) okEl.classList.remove('show');
+
+    try{
+        var r = await fetch('/api/portal/save-token', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, token: token})
+        });
+        var d = await r.json();
+
+        if(d.success){
+            if(okEl){
+                okEl.innerHTML = '✅ ' + (d.message || 'Токен сохранён');
+                okEl.classList.add('show');
+            }
+            showToast('✅ Portal подключён!', 'ok');
+            if(inp) inp.value = '';
+            setTimeout(function(){ loadPortalStatus(); loadGifts(); }, 500);
+        } else {
+            if(errEl){
+                var msg = d.error || 'Ошибка';
+                if(d.hint) msg += '<br><br>💡 ' + d.hint;
+                errEl.innerHTML = '❌ ' + msg;
+                errEl.classList.add('show');
+            }
+            showToast('Ошибка авторизации', 'err');
+        }
+    }catch(e){
+        if(errEl){ errEl.textContent = '❌ Ошибка сети'; errEl.classList.add('show'); }
+        showToast('Ошибка сети', 'err');
+    } finally {
+        if(btn){ btn.disabled = false; }
+    }
+}
+
+async function syncAllGiftsFromPortal(){
+    var btn = $('portalSyncAllBtn');
+    var okEl = $('portalSuccess');
+    var errEl = $('portalError');
+    if(btn){ btn.disabled = true; }
+    if(okEl) okEl.classList.remove('show');
+    if(errEl) errEl.classList.remove('show');
+
+    try{
+        var r = await fetch('/api/portal/sync-all-gifts', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID})
+        });
+        var d = await r.json();
+
+        if(d.success){
+            showToast('✅ Загружено ' + (d.portal_collections || 0) + ' коллекций', 'ok');
+            if(okEl){
+                okEl.innerHTML = '✅ <b>Синхронизация завершена!</b><br>' +
+                    'Новых: <b>' + (d.added || 0) + '</b><br>' +
+                    'Обновлено: <b>' + (d.updated || 0) + '</b><br>' +
+                    'Всего: <b>' + (d.total || 0) + '</b>';
+                okEl.classList.add('show');
+            }
+            await loadGifts();
+            await loadPortalStatus();
+        } else {
+            if(errEl){
+                errEl.textContent = '❌ ' + (d.error || 'Ошибка синхронизации');
+                errEl.classList.add('show');
+            }
+            showToast('Ошибка синхронизации', 'err');
+        }
+    }catch(e){
+        if(errEl){ errEl.textContent = '❌ Ошибка сети'; errEl.classList.add('show'); }
+        showToast('Ошибка сети', 'err');
+    } finally {
+        if(btn){ btn.disabled = false; }
+    }
+}
+
+async function portalLogout(){
+    if(!confirm('Отключить Portal Marketplace?')) return;
+    try{
+        var r = await fetch('/api/portal/logout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID})
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Portal отключён', 'ok');
+            var inp = $('portalTokenInput');
+            if(inp) inp.value = '';
+            await loadPortalStatus();
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+        }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function loadPortalInfo(){
+    var card = $('portalInfoCard');
+    var content = $('portalInfoContent');
+    if(!card || !content) return;
+    card.style.display = 'block';
+    content.innerHTML = '<div class="loading">Загрузка</div>';
+
+    try{
+        var r = await fetch('/api/portal/info');
+        var d = await r.json();
+        if(d.success && d.info){
+            var i = d.info;
+            var rows = [
+                ['Статус', i.connected ? '✅ Подключено' : '❌ Отключено'],
+                ['Авто-синхр.', i.sync_enabled ? '✅ Вкл' : '❌ Выкл'],
+                ['Интервал', (i.interval_minutes || 10) + ' мин'],
+                ['Коллекций', i.total_collections || 0],
+                ['Синхр.', i.last_sync_ago || 'никогда'],
+                ['Обновлено', i.last_updated || 0]
+            ];
+            content.innerHTML = rows.map(function(row){
+                return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px"><span style="color:rgba(255,255,255,.5)">' + escapeHtml(row[0]) + '</span><span style="color:#fff;font-weight:700">' + escapeHtml(String(row[1])) + '</span></div>';
+            }).join('');
+        } else {
+            content.innerHTML = '<div class="empty">Нет данных</div>';
+        }
+    }catch(e){ content.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CASES / PROMO / QUESTS
+   ══════════════════════════════════════════════════════════════ */
+async function loadCasesList(){
+    var el = $('casesList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/cases?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success){
+            var list = d.cases || [];
+            if(!list.length){ el.innerHTML = '<div class="empty">Кейсов нет</div>'; return; }
+            el.innerHTML = list.map(function(c){
+                var img = c.image || '/static/img/gift.png';
+                return '<div class="list-item"><div class="avatar" style="border-radius:10px"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
+                    '<div class="info"><div class="name">' + escapeHtml(c.name) + '</div>' +
+                    '<div class="meta">ID: ' + c.id + ' · Дропов: ' + ((c.gifts || []).length) + '</div></div>' +
+                    '<div class="right"><div class="value">💎 ' + formatTon(c.cost || 0) + '</div></div></div>';
+            }).join('');
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+async function loadPromoCodes(){
+    var el = $('promoCodesList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/promo-codes?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success){
+            var list = d.promo_codes || [];
+            if(!list.length){ el.innerHTML = '<div class="empty">Нет промокодов</div>'; return; }
+            el.innerHTML = list.map(function(p){
+                return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#be185d,#ec4899)">🎟️</div>' +
+                    '<div class="info"><div class="name">' + escapeHtml(p.code) + '</div>' +
+                    '<div class="meta">' + (p.reward_stars || 0) + '⭐ · ' + p.used_count + '/' + (p.max_uses || '∞') + '</div></div>' +
+                    '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePromoCode(' + p.id + ')">✕</button></div>';
+            }).join('');
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+async function createPromoCode(){
+    var code = ($('promoCodeInput').value || '').trim().toUpperCase();
+    var ton = parseFloat($('promoRewardTon').value) || 1;
+    var maxUses = parseInt($('promoMaxUses').value) || 100;
+    try{
+        var r = await fetch('/api/admin/promo-codes', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, code: code, reward_type: 'ton', reward_stars: Math.round(ton * 100), max_uses: maxUses, expires_days: 365})
+        });
+        var d = await r.json();
+        if(d.success){ showToast('Промокод создан', 'ok'); $('promoCodeInput').value = ''; loadPromoCodes(); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function deletePromoCode(id){
+    if(!confirm('Удалить?')) return;
+    try{
+        var r = await fetch('/api/admin/promo-codes', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, id: id}) });
+        var d = await r.json();
+        if(d.success){ showToast('Удалён', 'ok'); loadPromoCodes(); }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function loadQuests(){
+    var el = $('questsList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/crash-quests?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success){
+            var list = d.quests || [];
+            if(!list.length){ el.innerHTML = '<div class="empty">Нет заданий</div>'; return; }
+            el.innerHTML = list.map(function(q){
+                return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#0e7490,#06b6d4)">🎯</div>' +
+                    '<div class="info"><div class="name">' + escapeHtml(q.title) + '</div>' +
+                    '<div class="meta">' + escapeHtml(q.quest_type) + ' → ' + q.target_value + ' · 🎁 ' + q.reward_amount + '</div></div></div>';
+            }).join('');
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+async function createQuest(){
+    var title = ($('questTitle').value || '').trim();
+    if(!title){ showToast('Введите название', 'err'); return; }
+    var fd = new FormData();
+    fd.append('admin_id', ADMIN_ID);
+    fd.append('title', title);
+    fd.append('quest_type', 'crash_bets');
+    fd.append('target_value', parseInt($('questTarget').value) || 10);
+    fd.append('reward_type', 'stars');
+    fd.append('reward_amount', parseInt($('questReward').value) || 0);
+    try{
+        var r = await fetch('/api/admin/crash-quests', { method:'POST', body: fd });
+        var d = await r.json();
+        if(d.success){ showToast('Создано', 'ok'); $('questTitle').value = ''; loadQuests(); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LEADERBOARD — с поддержкой NFT-подарков
+   ══════════════════════════════════════════════════════════════ */
+async function loadLeaderboard(){
+    var el = $('lbList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/leaderboard');
+        var d = await r.json();
+        if(d.success){
+            var list = d.configs || [];
+            if(!list.length){ el.innerHTML = '<div class="empty">Лидербордов нет</div>'; return; }
+            el.innerHTML = list.map(function(c){
+                var isActive = c.is_active;
+                var period = (c.period_start || '?') + ' — ' + (c.period_end || '?');
+                return '<div class="list-item" onclick="openLbEditor(' + c.id + ')">' +
+                    '<div class="avatar" style="background:linear-gradient(135deg,#047857,#10b981)">🏆</div>' +
+                    '<div class="info"><div class="name">' + escapeHtml(c.title || 'Лидерборд') + '</div>' +
+                    '<div class="meta">' + escapeHtml(period) + ' · ' + (isActive ? '🟢 Активен' : '⚪ Выкл') + '</div></div>' +
+                    '<div class="right"><div class="value">' + (Object.keys(c.rewards || {}).length) + ' 🎁</div></div>' +
+                    '</div>';
+            }).join('');
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+async function createLeaderboard(){
+    var title = ($('lbTitle').value || '').trim() || 'Лидерборд';
+    var start = ($('lbStart').value || '').trim();
+    var end = ($('lbEnd').value || '').trim();
+    if(!start || !end){ showToast('Заполни даты', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/leaderboard', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, title: title, period_start: start, period_end: end, rewards: {}})
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('Создано', 'ok');
+            $('lbTitle').value = '';
+            loadLeaderboard();
+            setTimeout(function(){ openLbEditor(d.id); }, 500);
+        } else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function openLbEditor(lbId){
+    currentLBId = lbId;
+    try{
+        var r = await fetch('/api/admin/leaderboard');
+        var d = await r.json();
+        if(!d.success) return;
+        var cfg = (d.configs || []).find(function(c){ return c.id === lbId; });
+        if(!cfg){ showToast('Лидерборд не найден', 'err'); return; }
+        currentLBConfig = cfg;
+
+        var card = $('lbRewardCard');
+        if(card) card.style.display = 'block';
+        renderLbRewards(cfg.rewards || {});
+        // Прокрутим к карточке
+        setTimeout(function(){ card.scrollIntoView({behavior:'smooth'}); }, 200);
+    }catch(e){ showToast('Ошибка', 'err'); }
+}
+
+function renderLbRewards(rewards){
+    var el = $('lbRewardContent');
+    if(!el) return;
+    var keys = Object.keys(rewards || {}).sort(function(a,b){ return Number(a) - Number(b); });
+    if(!keys.length){
+        el.innerHTML = '<div class="empty" style="padding:16px">Наград нет. Добавь ниже.</div>';
+        return;
+    }
+    el.innerHTML = keys.map(function(pos){
+        var r = rewards[pos];
+        var isNft = (r.type === 'nft_gift');
+        var img = isNft ? (r.image || '/static/img/gift.png') : '/static/img/ton.png';
+        var name = isNft ? (r.name || 'NFT Подарок') : ((r.amount || 0) + ' звёзд');
+        var sub = isNft ? ('#' + (r.number || '?') + ' · ' + (r.price_ton || 0) + ' TON') : ('+' + formatTon(r.amount || 0) + ' TON');
+        return '<div class="lb-reward-row">' +
+            '<div class="lb-reward-pos">' + pos + '</div>' +
+            '<img class="lb-reward-img" src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'">' +
+            '<div class="lb-reward-info">' +
+            '<div class="lb-reward-name">' + escapeHtml(name) + '</div>' +
+            '<div class="lb-reward-sub">' + escapeHtml(sub) + '</div>' +
+            '</div>' +
+            '<button class="lb-reward-del" onclick="removeLbReward(' + pos + ')">✕</button>' +
+            '</div>';
+    }).join('');
+}
+
+function onRewardTypeChange(){
+    var type = $('lbRewardType').value;
+    var starsBlock = $('lbStarsBlock');
+    var nftBlock = $('lbNftBlock');
+    if(type === 'nft_gift'){
+        if(starsBlock) starsBlock.style.display = 'none';
+        if(nftBlock) nftBlock.style.display = 'block';
+    } else {
+        if(starsBlock) starsBlock.style.display = 'block';
+        if(nftBlock) nftBlock.style.display = 'none';
+    }
+}
+
+var _nftParseTimer = null;
+function onNftUrlInput(){
+    var url = ($('lbNftUrl').value || '').trim();
+    var preview = $('lbNftPreview');
+    var addBtn = $('lbNftAddBtn');
+    parsedNftData = null;
+    if(addBtn) addBtn.disabled = true;
+
+    if(!url || url.length < 15){
+        if(preview) preview.innerHTML = '';
+        return;
+    }
+
+    if(_nftParseTimer) clearTimeout(_nftParseTimer);
+    _nftParseTimer = setTimeout(async function(){
+        if(preview) preview.innerHTML = '<div style="padding:12px;text-align:center;color:rgba(255,255,255,.5);font-size:12px">🔍 Парсим...</div>';
+        try{
+            var r = await fetch('/api/portal/parse-gift-url', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({url: url})
+            });
+            var d = await r.json();
+            if(d.success){
+                parsedNftData = d;
+                var attrsHtml = '';
+                if(d.attrs){
+                    var chips = [];
+                    ['model','backdrop','symbol'].forEach(function(k){
+                        var a = d.attrs[k];
+                        if(a && a.value && a.value !== '—'){
+                            var chip = a.value;
+                            if(a.rarity) chip += ' ' + parseFloat(a.rarity).toFixed(1) + '%';
+                            chips.push('<span class="nft-attr-chip">' + escapeHtml(k.charAt(0).toUpperCase() + k.slice(1)) + ': ' + escapeHtml(chip) + '</span>');
+                        }
+                    });
+                    if(chips.length) attrsHtml = '<div class="nft-attrs">' + chips.join('') + '</div>';
+                }
+                if(preview){
+                    preview.innerHTML = '<div class="nft-preview">' +
+                        '<img src="' + escapeHtml(d.image) + '" onerror="this.src=\'/static/img/gift.png\'">' +
+                        '<div class="nft-info">' +
+                        '<div class="nft-name">' + escapeHtml(d.name) + '</div>' +
+                        '<div class="nft-meta">Slug: ' + escapeHtml(d.slug) + ' #' + d.number + '</div>' +
+                        attrsHtml +
+                        '</div>' +
+                        '</div>';
+                }
+                if(addBtn) addBtn.disabled = false;
+            } else {
+                if(preview) preview.innerHTML = '<div style="padding:12px;background:rgba(255,48,100,.1);border:1px solid rgba(255,48,100,.3);border-radius:12px;color:#FF3064;font-size:12px;font-weight:700">❌ ' + escapeHtml(d.error || 'Ошибка парсинга') + '</div>';
+            }
+        }catch(e){
+            if(preview) preview.innerHTML = '<div style="padding:12px;background:rgba(255,48,100,.1);border-radius:12px;color:#FF3064;font-size:12px">❌ Ошибка сети</div>';
+        }
+    }, 600);
+}
+
+async function addStarsReward(){
+    if(!currentLBId){ showToast('Сначала выбери лидерборд', 'err'); return; }
+    var pos = parseInt($('lbPosInput').value) || 0;
+    var amount = parseInt($('lbStarsAmount').value) || 0;
+    if(pos <= 0 || amount <= 0){ showToast('Заполни позицию и сумму', 'err'); return; }
+    try{
+        var rewards = Object.assign({}, currentLBConfig.rewards || {});
+        rewards[pos] = { type: 'stars', amount: amount };
+        var r = await fetch('/api/admin/leaderboard', {
+            method:'PUT', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, id: currentLBId, title: currentLBConfig.title, rewards: rewards, is_active: currentLBConfig.is_active})
+        });
+        var d = await r.json();
+        if(d.success){
+            currentLBConfig.rewards = rewards;
+            renderLbRewards(rewards);
+            showToast('✅ Награда добавлена', 'ok');
+        } else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function addNftReward(){
+    if(!currentLBId){ showToast('Сначала выбери лидерборд', 'err'); return; }
+    if(!parsedNftData){ showToast('Сначала вставь корректную ссылку', 'err'); return; }
+    var pos = parseInt($('lbPosInput').value) || 0;
+    var price = parseFloat($('lbNftPrice').value) || 0;
+    if(pos <= 0){ showToast('Укажи позицию', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/leaderboard/add-nft-reward', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+                admin_id: ADMIN_ID,
+                leaderboard_id: currentLBId,
+                position: pos,
+                url: $('lbNftUrl').value,
+                price_ton: price
+            })
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('✅ NFT-награда добавлена', 'ok');
+            $('lbNftUrl').value = '';
+            $('lbNftPrice').value = '';
+            $('lbNftPreview').innerHTML = '';
+            parsedNftData = null;
+            $('lbNftAddBtn').disabled = true;
+            // Перезагружаем конфиг
+            openLbEditor(currentLBId);
+        } else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function removeLbReward(pos){
+    if(!currentLBId || !currentLBConfig) return;
+    if(!confirm('Удалить награду за ' + pos + ' место?')) return;
+    try{
+        var rewards = Object.assign({}, currentLBConfig.rewards || {});
+        delete rewards[pos];
+        var r = await fetch('/api/admin/leaderboard', {
+            method:'PUT', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, id: currentLBId, title: currentLBConfig.title, rewards: rewards, is_active: currentLBConfig.is_active})
+        });
+        var d = await r.json();
+        if(d.success){
+            currentLBConfig.rewards = rewards;
+            renderLbRewards(rewards);
+            showToast('Удалено', 'ok');
+        } else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INVENTORY
+   ══════════════════════════════════════════════════════════════ */
+async function searchInvUser(){
+    var q = ($('invSearch').value || '').trim();
+    var el = $('invUserResults');
+    if(!el) return;
+    if(!q || q.length < 2){ el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="loading">Поиск</div>';
+    try{
+        var r = await fetch('/api/admin/search-users?q=' + encodeURIComponent(q));
+        var d = await r.json();
+        if(d.success && d.users && d.users.length){
+            el.innerHTML = d.users.slice(0, 15).map(function(u){
+                return '<div class="list-item" onclick="openInvUser(' + u.id + ')">' +
+                    '<div class="avatar">' + escapeHtml((u.name || 'U')[0].toUpperCase()) + '</div>' +
+                    '<div class="info"><div class="name">' + escapeHtml(u.name || 'User') + '</div>' +
+                    '<div class="meta">ID: ' + u.id + '</div></div></div>';
+            }).join('');
+        } else el.innerHTML = '<div class="empty">Не найдено</div>';
+    }catch(e){ el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+async function openInvUser(userId){
+    currentInvUserId = userId;
+    var panel = $('invUserPanel');
+    if(!panel) return;
+    panel.style.display = 'block';
+    panel.innerHTML = '<div class="loading">Загрузка инвентаря</div>';
+    try{
+        var r = await fetch('/api/admin/user-inventory-full?admin_id=' + ADMIN_ID + '&user_id=' + userId);
+        var d = await r.json();
+        if(!d.success){ panel.innerHTML = '<div class="empty">' + escapeHtml(d.error || 'Ошибка') + '</div>'; return; }
+
+        var u = d.user || {};
+        var items = d.inventory || [];
+
+        var html = '<div class="card">' +
+            '<div class="card-title">👤 ' + escapeHtml(u.first_name || 'User') + ' (ID: ' + u.id + ')</div>' +
+            '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:12px">Баланс: ' + formatTon(u.balance_stars || 0) + ' TON · Подарков: ' + items.length + '</div>' +
+            '<button class="btn btn-success" onclick="showAddInvItemForm()">+ Добавить подарок в инвентарь</button>' +
+            '</div>';
+
+        html += '<div class="card"><div class="card-title">Подарки в инвентаре</div>';
+        if(!items.length){
+            html += '<div class="empty" style="padding:20px">Инвентарь пуст</div>';
+        } else {
+            items.forEach(function(it){
+                html += '<div class="list-item" style="cursor:default">' +
+                    '<div class="avatar" style="border-radius:10px;background:rgba(0,0,0,.3)"><img src="' + escapeHtml(it.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
+                    '<div class="info">' +
+                    '<div class="name">' + escapeHtml(it.gift_name || '—') + '</div>' +
+                    '<div class="meta">ID предмета: ' + it.id + ' · ' + formatTon(it.gift_value || 0) + ' TON</div>' +
+                    '</div>' +
+                    '<div class="right" style="display:flex;gap:6px">' +
+                    '<button class="btn btn-primary btn-sm" onclick="editInvItem(' + it.id + ')">✎</button>' +
+                    '<button class="btn btn-danger btn-sm" onclick="deleteInvItem(' + it.id + ')">🗑</button>' +
+                    '</div>' +
+                    '</div>';
+            });
+        }
+        html += '</div>';
+
+        panel.innerHTML = html;
+    }catch(e){
+        panel.innerHTML = '<div class="empty">Ошибка сети</div>';
+    }
+}
+
+function showAddInvItemForm(){
+    if(!currentInvUserId) return;
+    var html =
+        '<div class="modal-title">+ Добавить подарок</div>' +
+        '<div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="invNewName" placeholder="Plush Pepe"></div>' +
+        '<div class="form-group"><label class="form-label">URL картинки</label><input type="text" class="form-input" id="invNewImage" placeholder="/static/img/gift.png"></div>' +
+        '<div class="form-group"><label class="form-label">Цена (в звёздах)</label><input type="number" class="form-input" id="invNewValue" placeholder="1000"></div>' +
+        '<div class="btn-row">' +
+        '<button class="btn btn-success" onclick="submitAddInvItem()">Добавить</button>' +
+        '<button class="btn btn-secondary" onclick="closeModal()">Отмена</button>' +
+        '</div>';
+    openModal(html);
+}
+
+async function submitAddInvItem(){
+    var name = ($('invNewName').value || '').trim();
+    var image = ($('invNewImage').value || '').trim();
+    var value = parseInt($('invNewValue').value) || 0;
+    if(!name){ showToast('Введи название', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/user-inventory-add', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, user_id: currentInvUserId, gift_name: name, gift_image: image, gift_value: value})
+        });
+        var d = await r.json();
+        if(d.success){ showToast('Добавлено', 'ok'); closeModal(); openInvUser(currentInvUserId); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+function editInvItem(itemId){
+    var html =
+        '<div class="modal-title">✎ Редактировать предмет</div>' +
+        '<div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="invEditName"></div>' +
+        '<div class="form-group"><label class="form-label">URL картинки</label><input type="text" class="form-input" id="invEditImage"></div>' +
+        '<div class="form-group"><label class="form-label">Цена (в звёздах)</label><input type="number" class="form-input" id="invEditValue"></div>' +
+        '<div class="btn-row">' +
+        '<button class="btn btn-success" onclick="submitEditInvItem(' + itemId + ')">Сохранить</button>' +
+        '<button class="btn btn-secondary" onclick="closeModal()">Отмена</button>' +
+        '</div>';
+    openModal(html);
+    // Загружаем данные предмета
+    fetch('/api/admin/user-inventory-full?admin_id=' + ADMIN_ID + '&user_id=' + currentInvUserId)
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if(d.success){
+                var it = (d.inventory || []).find(function(x){ return x.id === itemId; });
+                if(it){
+                    $('invEditName').value = it.gift_name || '';
+                    $('invEditImage').value = it.gift_image || '';
+                    $('invEditValue').value = it.gift_value || 0;
+                }
+            }
+        });
+}
+
+async function submitEditInvItem(itemId){
+    var name = ($('invEditName').value || '').trim();
+    var image = ($('invEditImage').value || '').trim();
+    var value = parseInt($('invEditValue').value) || 0;
+    try{
+        var r = await fetch('/api/admin/user-inventory-edit', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, item_id: itemId, gift_name: name, gift_image: image, gift_value: value})
+        });
+        var d = await r.json();
+        if(d.success){ showToast('Сохранено', 'ok'); closeModal(); openInvUser(currentInvUserId); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function deleteInvItem(itemId){
+    if(!confirm('Удалить предмет?')) return;
+    try{
+        var r = await fetch('/api/admin/user-inventory-delete', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, item_id: itemId})
+        });
+        var d = await r.json();
+        if(d.success){ showToast('Удалён', 'ok'); openInvUser(currentInvUserId); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   WITHDRAWALS / SBP / LEVELS
+   ══════════════════════════════════════════════════════════════ */
+var currentWFilter = 'all';
+async function loadWithdrawals(status){
+    status = status || currentWFilter;
+    currentWFilter = status;
+    var el = $('withdrawalsList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/withdrawals?admin_id=' + ADMIN_ID + '&status=' + status);
+        var d = await r.json();
+        if(d.success){
+            var list = d.withdrawals || [];
+            if(!list.length){ el.innerHTML = '<div class="empty">Заявок нет</div>'; return; }
+            el.innerHTML = list.map(function(w){
+                var statusText = {pending:'Ожидает',approved:'Одобрено',rejected:'Отклонено'}[w.status] || w.status;
+                var actions = w.status === 'pending'
+                    ? '<div class="btn-row" style="margin-top:8px"><button class="btn btn-success btn-sm" style="flex:1" onclick="approveWithdrawal(' + w.id + ')">✓</button><button class="btn btn-danger btn-sm" style="flex:1" onclick="rejectWithdrawal(' + w.id + ')">✗</button></div>'
+                    : '';
+                return '<div class="card"><div style="display:flex;align-items:center;gap:10px"><div style="width:42px;height:42px;border-radius:12px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">🎁</div>' +
+                    '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">' + escapeHtml(w.gift_name || '—') + '</div>' +
+                    '<div style="font-size:11px;color:rgba(255,255,255,.5)">@' + escapeHtml(w.telegram_username || '—') + '</div></div>' +
+                    '<div style="text-align:right"><div style="font-weight:800;font-size:14px">' + formatTon(w.gift_value) + '</div>' +
+                    '<div style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:7px;background:rgba(59,130,246,.15);color:#7CAEFF;margin-top:3px">' + statusText + '</div></div></div>' + actions + '</div>';
+            }).join('');
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+function filterWithdrawals(status, btn){
+    document.querySelectorAll('#page-withdrawals .tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    if(btn) btn.classList.add('active');
+    loadWithdrawals(status);
+}
+
+async function approveWithdrawal(id){
+    if(!confirm('Одобрить?')) return;
+    try{
+        var r = await fetch('/api/admin/update-withdrawal-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, withdrawal_id: id, status: 'approved'}) });
+        var d = await r.json();
+        if(d.success){ showToast('Одобрено', 'ok'); loadWithdrawals(); }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+async function rejectWithdrawal(id){
+    if(!confirm('Отклонить?')) return;
+    try{
+        var r = await fetch('/api/admin/update-withdrawal-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, withdrawal_id: id, status: 'rejected'}) });
+        var d = await r.json();
+        if(d.success){ showToast('Отклонено', 'ok'); loadWithdrawals(); }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+var currentSbpFilter = 'pending';
+async function loadSbpPayments(status){
+    status = status || currentSbpFilter;
+    currentSbpFilter = status;
+    var el = $('sbpList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/sbp-payments?admin_id=' + ADMIN_ID + '&status=' + status);
+        var d = await r.json();
+        if(d.success){
+            var list = d.payments || [];
+            if(!list.length){ el.innerHTML = '<div class="empty">Платежей нет</div>'; return; }
+            el.innerHTML = list.map(function(p){
+                var actions = p.status === 'pending'
+                    ? '<div class="btn-row" style="margin-top:8px"><button class="btn btn-success btn-sm" style="flex:1" onclick="confirmSbp(' + p.id + ')">✓ Подтвердить</button><button class="btn btn-danger btn-sm" style="flex:1" onclick="rejectSbp(' + p.id + ')">✗</button></div>'
+                    : '';
+                return '<div class="card"><div style="display:flex;justify-content:space-between"><div style="font-weight:700">' + (p.stars || 0) + ' ⭐</div><div style="font-size:11px;color:rgba(255,255,255,.5)">' + (p.amount_rub || 0) + ' ₽</div></div>' + actions + '</div>';
+            }).join('');
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+function filterSbp(status, btn){
+    document.querySelectorAll('#page-sbp .tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    if(btn) btn.classList.add('active');
+    loadSbpPayments(status);
+}
+
+async function confirmSbp(id){
+    if(!confirm('Подтвердить?')) return;
+    try{
+        var r = await fetch('/api/admin/sbp-confirm', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, payment_id: id}) });
+        var d = await r.json();
+        if(d.success){ showToast('Подтверждено', 'ok'); loadSbpPayments(); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+async function rejectSbp(id){
+    if(!confirm('Отклонить?')) return;
+    try{
+        var r = await fetch('/api/admin/sbp-reject', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, payment_id: id}) });
+        var d = await r.json();
+        if(d.success){ showToast('Отклонено', 'ok'); loadSbpPayments(); }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function loadLevels(){
+    var el = $('levelsList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/levels');
+        var d = await r.json();
+        if(d.success){
+            var list = d.levels || [];
+            if(!list.length){ el.innerHTML = '<div class="empty">Уровней нет</div>'; return; }
+            el.innerHTML = list.map(function(l){
+                return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#3730a3,#6366f1)">L' + l.level + '</div>' +
+                    '<div class="info"><div class="name">Уровень ' + l.level + '</div>' +
+                    '<div class="meta">EXP: ' + l.exp_required + ' · ⭐ ' + l.reward_stars + '</div></div></div>';
+            }).join('');
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NEWS / NOTIFICATIONS / MESSAGES / HISTORY
+   ══════════════════════════════════════════════════════════════ */
+async function loadNewsList(){
+    var el = $('newsList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/news-json?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success){
+            var list = d.news || [];
+            if(!list.length){ el.innerHTML = '<div class="empty">Новостей нет</div>'; return; }
+            el.innerHTML = list.map(function(n){
+                return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#6d28d9,#a855f7)">📰</div>' +
+                    '<div class="info"><div class="name">' + escapeHtml(n.title) + '</div>' +
+                    '<div class="meta">ID ' + n.id + ' · ' + (n.is_active ? '✅' : '❌') + '</div></div></div>';
+            }).join('');
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+async function submitNews(){
+    var title = ($('newsTitleInput').value || '').trim();
+    var content = ($('newsContentInput').value || '').trim();
+    if(!title || !content){ showToast('Заполните поля', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/news', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, title: title, content: content, image_url: $('newsImageInput').value, reward_amount: parseInt($('newsRewardInput').value) || 0}) });
+        var d = await r.json();
+        if(d.success){ showToast('Создано', 'ok'); $('newsTitleInput').value = ''; $('newsContentInput').value = ''; loadNewsList(); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function loadAdminNotifs(){
+    var el = $('notifsList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        var r = await fetch('/api/admin/admin-notifications');
+        var d = await r.json();
+        if(d.success){
+            var list = d.notifications || [];
+            if(!list.length){ el.innerHTML = '<div class="empty">Нет уведомлений</div>'; return; }
+            el.innerHTML = list.map(function(n){
+                return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#be185d,#ec4899)">🔔</div>' +
+                    '<div class="info"><div class="name">' + escapeHtml(n.title) + '</div></div></div>';
+            }).join('');
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+async function createAdminNotif(){
+    var title = ($('notifTitle').value || '').trim();
+    if(!title){ showToast('Введите заголовок', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/admin-notifications', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+            admin_id: ADMIN_ID, title: title, message: $('notifMessage').value,
+            target_user_id: parseInt($('notifTarget').value) || null, notif_type: 'general'
+        }) });
+        var d = await r.json();
+        if(d.success){ showToast('Создано', 'ok'); $('notifTitle').value = ''; loadAdminNotifs(); }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+async function sendAdminMessage(){
+    var userId = parseInt($('msgUserId').value);
+    var text = ($('msgText').value || '').trim();
+    if(!userId || !text){ showToast('Заполните поля', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/send-message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, user_id: userId, text: text}) });
+        var d = await r.json();
+        if(d.success){ showToast('Отправлено', 'ok'); $('msgText').value = ''; }
+        else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+var currentHistory = 'wins';
+async function switchHistory(type, btn){
+    currentHistory = type;
+    document.querySelectorAll('#page-history .tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    if(btn) btn.classList.add('active');
+    var el = $('historyList');
+    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    try{
+        if(type === 'wins'){
+            var r = await fetch('/api/admin/win-history?admin_id=' + ADMIN_ID + '&limit=50');
+            var d = await r.json();
+            if(d.success && d.win_history){
+                var list = d.win_history;
+                if(!list.length){ el.innerHTML = '<div class="empty">Нет побед</div>'; return; }
+                el.innerHTML = list.map(function(w){
+                    return '<div class="list-item"><div class="avatar" style="border-radius:8px"><img src="' + escapeHtml(w.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
+                        '<div class="info"><div class="name">' + escapeHtml(w.gift_name || '—') + '</div>' +
+                        '<div class="meta">' + escapeHtml(w.user_name || '') + ' · ' + escapeHtml(w.case_name || '—') + '</div></div>' +
+                        '<div class="right"><div class="value">💎 ' + formatTon(w.gift_value) + '</div></div></div>';
+                }).join('');
+            } else el.innerHTML = '<div class="empty">Нет побед</div>';
+        } else {
+            var r2 = await fetch('/api/admin/case-open-history?admin_id=' + ADMIN_ID + '&limit=50');
+            var d2 = await r2.json();
+            if(d2.success && d2.open_history){
+                var list2 = d2.open_history;
+                if(!list2.length){ el.innerHTML = '<div class="empty">Нет открытий</div>'; return; }
+                el.innerHTML = list2.map(function(o){
+                    return '<div class="list-item"><div class="avatar" style="border-radius:8px"><img src="' + escapeHtml(o.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
+                        '<div class="info"><div class="name">' + escapeHtml(o.gift_name || '—') + '</div>' +
+                        '<div class="meta">' + escapeHtml(o.case_name || '—') + '</div></div>' +
+                        '<div class="right"><div class="value">💎 ' + formatTon(o.gift_value) + '</div></div></div>';
+                }).join('');
+            } else el.innerHTML = '<div class="empty">Нет открытий</div>';
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+}
+
+async function loadWinHistory(){ switchHistory('wins', null); }
+
+/* ══════════════════════════════════════════════════════════════
+   INIT
+   ══════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function(){
+    var loader = $('adminLoader');
+    verifyAdminAccess().then(function(ok){
+        if(ok){
+            if(loader) loader.classList.add('hidden');
+            showSection('home');
+        }
+    }).catch(function(e){
+        console.error('verify fail', e);
+        if(loader) loader.classList.add('hidden');
+        showSection('home');
+    });
+});
+
+if(tg){
+    try{
+        tg.BackButton.onClick(function(){
+            if(currentSection !== 'home'){ showSection('home'); }
+            else { goBack(); }
+        });
+        tg.BackButton.show();
+    }catch(e){}
+}
+</script>
+
+</body>
+</html>
