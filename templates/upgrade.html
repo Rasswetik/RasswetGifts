@@ -128,65 +128,44 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 /* WHEEL */
 .wheel-section{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 0 4px;position:relative}
-.wheel-wrap{position:relative;width:290px;height:290px;margin:0 auto;display:flex;align-items:center;justify-content:center;transition:filter .8s ease,transform .8s ease}
-.wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);z-index:10;width:42px;height:42px;pointer-events:none;filter:drop-shadow(0 4px 12px rgba(0,0,0,.9));transition:filter .6s}
+.wheel-wrap{position:relative;width:290px;height:290px;margin:0 auto;display:flex;align-items:center;justify-content:center;transition:filter .5s ease}
+.wheel-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);z-index:10;width:42px;height:42px;pointer-events:none;filter:drop-shadow(0 4px 12px rgba(0,0,0,.9));transition:filter .5s}
 .wheel-pointer svg{width:100%;height:100%;display:block}
 
-/* ★ EPIC MODE: соседи темнеют, колесо светится */
+/* ═══════════════════════════════════════════════════════
+   ★ EPIC MODE — только затемнение фона, БЕЗ тяжёлых фильтров
+   ═══════════════════════════════════════════════════════ */
+body.epic-mode{
+    background-image:
+        radial-gradient(ellipse at center,
+            rgba(36,195,142,.15) 0%,
+            rgba(10,15,25,.7) 50%,
+            rgba(10,15,25,.9) 100%),
+        radial-gradient(ellipse 100% 60% at 50% 0%, #1a2238 0%, #1C2233 60%);
+}
 body.epic-mode .wheel-wrap{
-    filter:brightness(1.35) contrast(1.1) drop-shadow(0 0 40px rgba(36,195,142,.9)) drop-shadow(0 0 80px rgba(36,195,142,.5));
-    transform:scale(1.05);
-}
-body.epic-mode::before{
-    content:'';
-    position:fixed;inset:0;
-    background:radial-gradient(ellipse at center,
-        rgba(36,195,142,.10) 0%,
-        rgba(0,0,0,.55) 40%,
-        rgba(0,0,0,.85) 100%);
-    z-index:1;
-    pointer-events:none;
-    animation:epicBg 1.5s ease-in-out infinite;
-}
-@keyframes epicBg{
-    0%,100%{opacity:.7}
-    50%{opacity:1}
+    filter:drop-shadow(0 0 30px rgba(36,195,142,.6));
 }
 body.epic-mode .top-bar,
 body.epic-mode .select-panel,
 body.epic-mode .actions-row{
-    position:relative;
-    z-index:2;
-    filter:brightness(.5);
-    transition:filter .8s ease;
-}
-body.epic-mode .wheel-section{
-    position:relative;
-    z-index:3;
+    filter:brightness(.6);
+    transition:filter .5s ease;
 }
 body.epic-mode .wheel-pointer{
-    filter:drop-shadow(0 0 20px rgba(36,195,142,1)) drop-shadow(0 0 40px rgba(36,195,142,.8)) drop-shadow(0 4px 12px rgba(0,0,0,.9));
+    filter:drop-shadow(0 0 15px rgba(36,195,142,.9)) drop-shadow(0 4px 12px rgba(0,0,0,.9));
+}
+body.epic-mode .wheel-green-arc{
+    filter:drop-shadow(0 0 15px rgba(36,195,142,.8));
 }
 
 .wheel-gold-arc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2;transform-origin:50% 50%;opacity:0;transition:opacity .35s ease}
 .wheel-gold-arc.visible{opacity:1}
-.wheel-gold-arc.pulsing{animation:goldArcPulse 1s ease-in-out infinite}
-@keyframes goldArcPulse{0%,100%{filter:drop-shadow(0 0 6px rgba(255,215,0,.7))}50%{filter:drop-shadow(0 0 22px rgba(255,215,0,1))}}
 
 .wheel-rotator{position:absolute;top:0;left:0;width:100%;height:100%;will-change:transform;transform-origin:50% 50%}
 .wheel-rotator svg{width:100%;height:100%;display:block}
 
-.wheel-green-arc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;transform-origin:50% 50%;transition:filter .6s}
-
-/* ★ Зелёная полоса светится в epic-mode */
-body.epic-mode .wheel-green-arc{
-    filter:drop-shadow(0 0 20px rgba(36,195,142,1)) drop-shadow(0 0 50px rgba(36,195,142,.8)) drop-shadow(0 0 90px rgba(36,195,142,.5));
-    animation:greenArcEpic 1.2s ease-in-out infinite;
-}
-@keyframes greenArcEpic{
-    0%,100%{filter:drop-shadow(0 0 20px rgba(36,195,142,1)) drop-shadow(0 0 50px rgba(36,195,142,.8)) drop-shadow(0 0 90px rgba(36,195,142,.5))}
-    50%{filter:drop-shadow(0 0 35px rgba(36,195,142,1)) drop-shadow(0 0 80px rgba(36,195,142,1)) drop-shadow(0 0 140px rgba(36,195,142,.7))}
-}
+.wheel-green-arc{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;transform-origin:50% 50%;transition:filter .5s}
 
 .wheel-center{
     position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
@@ -210,8 +189,7 @@ body.epic-mode .wheel-green-arc{
 .wheel-center.winning{
     box-shadow:inset 0 0 60px rgba(36,195,142,.9),
                0 0 0 5px rgba(11,17,32,.95),
-               0 0 80px rgba(36,195,142,1),
-               0 0 120px rgba(36,195,142,.7);
+               0 0 80px rgba(36,195,142,1);
     border-color:rgba(36,195,142,1);
 }
 
@@ -227,9 +205,9 @@ body.epic-mode .wheel-green-arc{
 .center-result.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 .center-result img{width:100%;height:100%;object-fit:contain;padding:8px;box-sizing:border-box;display:block}
 .center-result.upgraded img{object-fit:cover;padding:0;border-radius:50%}
-.center-result.win img{filter:drop-shadow(0 0 18px rgba(36,195,142,.85)) drop-shadow(0 0 40px rgba(36,195,142,.4));animation:winPulse 1.2s ease-in-out infinite}
+.center-result.win img{filter:drop-shadow(0 0 18px rgba(36,195,142,.85));animation:winPulse 1.2s ease-in-out infinite}
 @keyframes winPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
-.center-result.gold img{filter:drop-shadow(0 0 20px rgba(255,215,0,.9)) drop-shadow(0 0 55px rgba(255,215,0,.5));animation:goldPulseRes 1s ease-in-out infinite}
+.center-result.gold img{filter:drop-shadow(0 0 20px rgba(255,215,0,.9));animation:goldPulseRes 1s ease-in-out infinite}
 @keyframes goldPulseRes{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
 .center-result.fail{
     width:96px;height:96px;font-size:60px;line-height:1;
@@ -367,7 +345,6 @@ body.epic-mode .wheel-green-arc{
 .bet-amount-suffix{position:absolute;right:20px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:6px;font-size:15px;font-weight:900;color:#7CAEFF;pointer-events:none;margin-top:14px;letter-spacing:-.02em}
 .bet-amount-suffix img{width:18px;height:18px}
 
-/* ★ Обновлённые пресеты: MIN / ÷2 / ×2 / MAX */
 .bet-presets-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .bet-preset-sm{
     flex:1;min-width:0;
@@ -393,7 +370,6 @@ body.epic-mode .wheel-green-arc{
 /* INVENTORY section */
 .bet-inv-section{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
 
-/* SEARCH */
 .modal-search-wrap{padding:0 16px 12px;position:relative;flex-shrink:0}
 .modal-search{width:100%;padding:12px 16px 12px 44px;border-radius:12px;border:1.5px solid rgba(99,160,255,.25);background:rgba(59,130,246,.08);color:#fff;font-size:14px;outline:none;transition:all .15s;font-family:inherit;box-sizing:border-box}
 .modal-search:focus{border-color:rgba(59,130,246,.6);background:rgba(59,130,246,.14)}
@@ -410,7 +386,6 @@ body.epic-mode .wheel-green-arc{
     pointer-events:none;
 }
 
-/* MODAL BODY / GRID */
 .modal-body{flex:1;overflow-y:auto;padding:0 16px 16px;overscroll-behavior:contain}
 .modal-body::-webkit-scrollbar{width:4px}
 .modal-body::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
@@ -540,11 +515,64 @@ body.epic-mode .wheel-green-arc{
 .deposit-method img{width:36px;height:36px}
 .deposit-method span{font-weight:700;font-size:13px;color:#fff}
 
-/* BOTTOM NAV */
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:4000;width:100%;max-width:480px;height:76px;padding:0 8px calc(var(--safe-bottom) + 6px);background:rgba(28,34,51,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-top:1px solid rgba(59,130,246,.08);display:flex;align-items:center;justify-content:space-around}
-.bnav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 14px;border-radius:12px;background:transparent;border:none;color:rgba(255,255,255,.4);font-family:inherit;font-weight:600;cursor:pointer;transition:all .3s;text-decoration:none;position:relative;min-height:56px;height:56px;margin:auto 0}
-.bnav-item svg{width:22px;height:22px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2}
-.bnav-item span{font-size:10px;font-weight:600;line-height:1}
+/* ═══════════════════════════════════════════════════════
+   BOTTOM NAV — 4 ровные кнопки: Игры, Краш, Топ, Профиль
+   ═══════════════════════════════════════════════════════ */
+.bottom-nav{
+    position:fixed;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:4000;
+    width:100%;
+    max-width:480px;
+    height:76px;
+    padding:0 8px calc(var(--safe-bottom) + 6px);
+    background:rgba(28,34,51,.95);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border-top:1px solid rgba(59,130,246,.08);
+    display:flex;
+    align-items:center;
+    justify-content:space-around;
+    gap:0;
+}
+.bnav-item{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    padding:6px 4px;
+    border-radius:12px;
+    background:transparent;
+    border:none;
+    color:rgba(255,255,255,.4);
+    font-family:inherit;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .2s;
+    text-decoration:none;
+    min-height:56px;
+    height:56px;
+    max-width:96px;
+}
+.bnav-item svg{
+    width:22px;height:22px;
+    flex-shrink:0;
+    stroke:currentColor;
+    fill:none;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}
+.bnav-item span{
+    font-size:10px;
+    font-weight:600;
+    line-height:1;
+    white-space:nowrap;
+}
 .bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
 .bnav-item:active{transform:scale(.9)}
 
@@ -566,6 +594,7 @@ body.epic-mode .wheel-green-arc{
     .select-img-wrap{width:64px;height:64px}
     .modal-item-img-wrap{width:56px;height:56px}
     .bet-amount-input{font-size:20px;padding-right:80px}
+    .bnav-item span{font-size:9px}
 }
 </style>
 </head>
@@ -763,20 +792,11 @@ body.epic-mode .wheel-green-arc{
                 <div class="bet-amount-suffix"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'" alt=""> GRAM</div>
             </div>
 
-            <!-- ★ Обновлённые пресеты -->
             <div class="bet-presets-row">
-                <button class="bet-preset-sm preset-min" onclick="setGramPreset('min')" title="Минимум (0.1 GRAM)">
-                    MIN
-                </button>
-                <button class="bet-preset-sm" onclick="setGramPreset('div2')" title="Разделить на 2">
-                    ÷2
-                </button>
-                <button class="bet-preset-sm" onclick="setGramPreset('mul2')" title="Умножить на 2">
-                    ×2
-                </button>
-                <button class="bet-preset-sm preset-max" onclick="setGramPreset('max')" title="Весь баланс">
-                    MAX
-                </button>
+                <button class="bet-preset-sm preset-min" onclick="setGramPreset('min')" title="Минимум (0.1 GRAM)">MIN</button>
+                <button class="bet-preset-sm" onclick="setGramPreset('div2')" title="Разделить на 2">÷2</button>
+                <button class="bet-preset-sm" onclick="setGramPreset('mul2')" title="Умножить на 2">×2</button>
+                <button class="bet-preset-sm preset-max" onclick="setGramPreset('max')" title="Весь баланс">MAX</button>
             </div>
 
             <button class="bet-place-btn" id="gramConfirmBtn" onclick="confirmGramBet()" disabled>Поставить</button>
@@ -831,7 +851,9 @@ body.epic-mode .wheel-green-arc{
 
 <div class="toast" id="toast"></div>
 
-<!-- BOTTOM NAV -->
+<!-- ═══════════════════════════════════════════════════════
+     BOTTOM NAV — 4 ровные кнопки: Игры, Краш, Топ, Профиль
+     ═══════════════════════════════════════════════════════ -->
 <nav class="bottom-nav">
     <a class="bnav-item" href="/games">
         <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg>
@@ -841,16 +863,12 @@ body.epic-mode .wheel-green-arc{
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
         <span>Краш</span>
     </a>
-    <a class="bnav-item active" href="/upgrade">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        <span>Апгрейды</span>
-    </a>
     <a class="bnav-item" href="/leaderboard">
-        <svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
         <span>Топ</span>
     </a>
     <a class="bnav-item" href="/inventory">
-        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span>Профиль</span>
     </a>
 </nav>
@@ -873,9 +891,8 @@ var _targetsSearchQ = '';
 var _inventoryCacheTime = 0;
 var _imgCache = {};
 
-/* ★ Сохраняем настройки для восстановления после проигрыша */
-var _lastBetValue = 0;       // в звёздах (для восстановления суммы)
-var _lastBetGiftRef = null;  // ссылка на подарок (для восстановления после проигрыша)
+var _lastBetValue = 0;
+var _lastBetGiftRef = null;
 var _lastTargetGift = null;
 
 var turboMode = localStorage.getItem('upgrade_turbo') === 'on';
@@ -888,10 +905,14 @@ var _goldAngle = -1;
 var _goldWidth = 25;
 var _greenAnimRaf = null;
 
-/* ★ EPIC MODE параметры */
-var EPIC_BET_TON = 50;         // ставка >= 50 GRAM
-var EPIC_TARGET_TON = 200;     // цель >= 200 GRAM
-var EPIC_LOW_CHANCE = 5;       // шанс <= 5%
+/* ★ EPIC MODE — ОСОБАЯ АНИМАЦИЯ ТОЛЬКО ПРИ:
+   - Ставка >= 50 GRAM И цель >= 150 GRAM
+   - ИЛИ шанс <= 5%
+   ВАЖНО: анимация заканчивается чётко, без зацикливания! */
+var EPIC_BET_GRAM = 50;
+var EPIC_TARGET_GRAM = 150;
+var EPIC_LOW_CHANCE = 5;
+var _epicModeTimer = null;
 
 function $(id){ return document.getElementById(id); }
 
@@ -924,9 +945,6 @@ function getGiftImage(g){
     return img;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   CHANCE
-   ══════════════════════════════════════════════════════════════ */
 function calcChance(betValue, targetValue){
     if(!betValue || !targetValue || targetValue <= 0) return 0;
     var ch = (betValue / targetValue) * 100;
@@ -1189,7 +1207,7 @@ function showGoldArcAtRandom(chance){
 }
 function hideGoldArc(){
     var arc = $('goldArc');
-    if(arc){ arc.classList.remove('visible','pulsing'); arc.style.filter = ''; }
+    if(arc){ arc.classList.remove('visible'); arc.style.filter = ''; }
     _goldAngle = -1;
 }
 
@@ -1280,7 +1298,6 @@ function switchBetTab(tab){
     }
 }
 
-/* ★ Обновлённые пресеты: MIN / ÷2 / ×2 / MAX */
 function setGramPreset(mode){
     var inp = $('gramBetInput');
     if(!inp) return;
@@ -1289,9 +1306,7 @@ function setGramPreset(mode){
     var balGram = balStars / 100;
 
     if(mode === 'min'){
-        // Минимум = 0.1 GRAM (можно трактовать как MIN(0.1) × 2 = 0.2)
-        // По ТЗ: "MIN (0.1 грам) *2" — значит MIN удваивается
-        var minValue = 0.2; // 0.1 × 2
+        var minValue = 0.2;
         inp.value = formatPresetValue(minValue);
     } else if(mode === 'div2'){
         var cur = parseFloat(String(inp.value || '').replace(',', '.'));
@@ -1633,23 +1648,43 @@ function updateWheel(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ★ EPIC MODE
+   ★ EPIC MODE — ОСОБАЯ АНИМАЦИЯ ТОЛЬКО ПРИ ВЫИГРЫШЕ
+   
+   Условия активации:
+   - Ставка >= 50 GRAM И цель >= 150 GRAM
+   - ИЛИ шанс <= 5%
+   
+   Анимация:
+   - Фон затемняется
+   - Колесо светится зелёным
+   - ДЛИТЕЛЬНОСТЬ: строго ограничена, не зацикливается!
    ══════════════════════════════════════════════════════════════ */
 function isEpicCondition(){
     if(!selectedGift || !targetGift) return false;
     var betGram = (selectedGift.value || 0) / 100;
     var targetGram = (targetGift.value || 0) / 100;
-    // Условие 1: ставка > 50 GRAM И выигрыш > 200 GRAM
-    if(betGram >= EPIC_BET_TON && targetGram >= EPIC_TARGET_TON) return true;
-    // Условие 2: шанс <= 5%
+    // Условие 1: крупная ставка и крупная цель
+    if(betGram >= EPIC_BET_GRAM && targetGram >= EPIC_TARGET_GRAM) return true;
+    // Условие 2: низкий шанс
     if(currentChance <= EPIC_LOW_CHANCE) return true;
     return false;
 }
 
 function enableEpicMode(){
+    // Отменяем предыдущий таймер, если был
+    if(_epicModeTimer){
+        clearTimeout(_epicModeTimer);
+        _epicModeTimer = null;
+    }
     document.body.classList.add('epic-mode');
 }
+
 function disableEpicMode(){
+    // Отменяем таймер
+    if(_epicModeTimer){
+        clearTimeout(_epicModeTimer);
+        _epicModeTimer = null;
+    }
     document.body.classList.remove('epic-mode');
 }
 
@@ -1729,10 +1764,9 @@ async function doUpgrade(){
     var goldRoll = Math.random() < GOLD_WIN_CHANCE;
     var goldWin = willShowGold && goldRoll && serverWin;
 
-    /* ★ Проверяем epic-условие: ставка ≥50 + цель ≥200, ИЛИ шанс ≤5% */
-    var isEpic = isEpicCondition();
+    /* ★ Включаем epic-режим ТОЛЬКО ЕСЛИ будет выигрыш + крупная ставка/цель */
+    var isEpic = serverWin && isEpicCondition();
 
-    /* ★ Включаем epic-mode (всё темнеет, колесо светится) */
     if(isEpic) enableEpicMode();
 
     spinWheel(currentChance, serverWin, willShowGold, goldWin, isEpic);
@@ -1819,9 +1853,9 @@ function spinWheel(chance, isWin, willShowGold, goldWin, isEpic){
     if(turboMode){
         ease = 'cubic-bezier(.45,0,.35,1)';
     } else if(isEpic){
-        // ★ Epic: очень медленное затухание — почти останавливается у зелёной полосы
+        /* ★ Epic — замедленная остановка, НО с ограниченной длительностью (10000мс) */
         ease = 'cubic-bezier(.02,.96,.06,1)';
-        spinDuration = 12500;
+        spinDuration = 10000;
     }
 
     var tickStartTime = performance.now() + 500;
@@ -1830,13 +1864,13 @@ function spinWheel(chance, isWin, willShowGold, goldWin, isEpic){
     var tickInterval = 60;
 
     function tickLoop(){
-        if(!isSpinning && performance.now() > tickEndTime + 500) return;
         var now = performance.now();
+        if(now > tickEndTime + 500) return;
         if(now >= tickStartTime && now <= tickEndTime){
             var progress = (now - tickStartTime) / spinDuration;
             var currentInterval = tickInterval + progress * progress * 400;
             if(isEpic && progress > 0.6){
-                currentInterval = tickInterval + Math.pow(progress, 4) * 900;
+                currentInterval = tickInterval + Math.pow(progress, 4) * 700;
             }
             if(now - lastTickAt > currentInterval){
                 playTick();
@@ -1893,14 +1927,17 @@ function showSpinResult(isWin, isGold, isEpic){
 
     if(isWin && wheelCenter){
         wheelCenter.classList.add('winning');
-        setTimeout(function(){ wheelCenter.classList.remove('winning'); }, isEpic ? 6000 : 4500);
+        // ★ Снимаем класс winning СТРОГО через определённое время
+        setTimeout(function(){
+            if(wheelCenter) wheelCenter.classList.remove('winning');
+        }, isEpic ? 5000 : 3500);
     }
 
     if(isGold) playGoldSound();
     else if(isWin) playWinSound();
     else playFailSound();
 
-    /* ★ Epic → МНОГО конфетти */
+    /* ★ Confetti — разные интенсивности */
     if(isWin && isEpic){
         startConfetti('epic');
     } else if(isWin && isGold){
@@ -1947,7 +1984,8 @@ function showSpinResult(isWin, isGold, isEpic){
         }
     }catch(e){}
 
-    var resetDelay = isEpic ? 6500 : (isGold ? 4200 : (isWin ? 3000 : 2200));
+    /* ★ ВАЖНО: ограниченная длительность сброса */
+    var resetDelay = isEpic ? 5500 : (isGold ? 4000 : (isWin ? 2800 : 2000));
     setTimeout(function(){
         hideCenterResult();
         disableEpicMode();
@@ -1970,19 +2008,15 @@ function hideCenterResult(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ★ RESET ПОСЛЕ СПИНА — сохраняем ставку и цель
+   RESET ПОСЛЕ СПИНА
    ══════════════════════════════════════════════════════════════ */
 function resetAfterSpin(){
     isSpinning = false;
-
-    // ★ ВАЖНО: НЕ сбрасываем selectedGift/targetGift, если пользователь проиграл —
-    // чтобы сумма ставки и подарок оставались на месте
 
     var bolt = $('boltBtn');
     var ub = $('upgradeBtn');
     var ubt = $('upgradeBtnText');
 
-    // Сбрасываем визуал колеса (позицию), но НЕ данные ставки
     var rotator = $('wheelRotator');
     var greenArc = $('greenArc');
     var goldArc = $('goldArc');
@@ -1993,9 +2027,7 @@ function resetAfterSpin(){
     hideCenterResult();
     hideGoldArc();
 
-    // Если ставка и цель ещё в памяти — обновляем состояние
     if(selectedGift && targetGift){
-        // Пересчитываем шанс (на случай, если ставка/цель изменились)
         currentChance = calcChance(selectedGift.value, targetGift.value);
         drawGreenArc(currentChance, false);
         updateWheel();
@@ -2007,18 +2039,29 @@ function resetAfterSpin(){
             bolt.classList.add(turboMode ? 'active' : 'enabled');
         }
     } else {
-        // Если ставка или цель потеряны — сбрасываем полностью
         if(ub) ub.disabled = true;
         if(ubt) ubt.textContent = 'Апгрейд';
         if(bolt){ bolt.disabled = true; bolt.classList.remove('enabled','active'); }
         drawGreenArc(0, false);
     }
 
-    syncTurboButton();
+    syncTurboButtons();
+}
+
+function syncTurboButtons(){
+    var btn = $('boltBtn');
+    if(!btn) return;
+    btn.classList.remove('enabled','active');
+    if(selectedGift && targetGift){
+        btn.disabled = false;
+        btn.classList.add(turboMode ? 'active' : 'enabled');
+    } else {
+        btn.disabled = true;
+    }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   CONFETTI
+   CONFETTI — оптимизированная версия
    ══════════════════════════════════════════════════════════════ */
 var _confettiParticles = [];
 var _confettiRaf = null;
@@ -2028,7 +2071,7 @@ function startConfetti(intensity){
     var canvas = $('confettiCanvas');
     if(!canvas) return;
     canvas.classList.add('show');
-    var dpr = window.devicePixelRatio || 1;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);  // ограничиваем 2
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
     canvas.style.width = window.innerWidth + 'px';
@@ -2038,26 +2081,27 @@ function startConfetti(intensity){
     ctx.scale(dpr, dpr);
 
     _confettiParticles = [];
-    var colors = ['#FFD700', '#FFA500', '#24C38E', '#3B82F6', '#F96999', '#FF3064', '#FFFFFF', '#7CAEFF', '#FF6B9D', '#C084FC', '#00FF88'];
+    var colors = ['#FFD700', '#FFA500', '#24C38E', '#3B82F6', '#7CAEFF', '#FFFFFF'];
     var W = window.innerWidth;
     var H = window.innerHeight;
 
-    var count = 180;
-    var duration = 3500;
-    if(intensity === 'big'){ count = 300; duration = 4500; }
-    else if(intensity === 'huge'){ count = 450; duration = 5500; }
-    else if(intensity === 'epic'){ count = 700; duration = 8000; }  // ★ EPIC — МНОГО
+    /* ★ Снижено количество частиц для производительности */
+    var count = 120;
+    var duration = 3000;
+    if(intensity === 'big'){ count = 200; duration = 4000; }
+    else if(intensity === 'huge'){ count = 300; duration = 5000; }
+    else if(intensity === 'epic'){ count = 400; duration = 6000; }
 
     for(var i = 0; i < count; i++){
         _confettiParticles.push({
             x: W/2 + (Math.random() - 0.5) * 200,
             y: H/2,
-            vx: (Math.random() - 0.5) * 26,
-            vy: -Math.random() * 26 - 6,
-            size: 6 + Math.random() * 10,
+            vx: (Math.random() - 0.5) * 22,
+            vy: -Math.random() * 22 - 5,
+            size: 5 + Math.random() * 8,
             color: colors[Math.floor(Math.random() * colors.length)],
             rotation: Math.random() * Math.PI * 2,
-            rotationSpeed: (Math.random() - 0.5) * 0.5,
+            rotationSpeed: (Math.random() - 0.5) * 0.4,
             life: 1.0,
             shape: Math.random() < 0.5 ? 'rect' : 'circle'
         });
@@ -2074,12 +2118,12 @@ function startConfetti(intensity){
             var p = _confettiParticles[i];
             if(p.life <= 0) continue;
             alive++;
-            p.vy += 0.5;
+            p.vy += 0.45;
             p.vx *= 0.995;
             p.x += p.vx;
             p.y += p.vy;
             p.rotation += p.rotationSpeed;
-            p.life -= 0.004;
+            p.life -= 0.005;
 
             if(p.y > H + 50) p.life = 0;
 
