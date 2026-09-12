@@ -3789,6 +3789,56 @@ def _get_site_profit_balance():
         with _site_balance_lock:
             return _site_balance_cache.get('value', 0)
 
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# ФИКС КРАША: принудительный сброс зависших игр при старте
+# (добавлено fix_crash_reset.py)
+# ═══════════════════════════════════════════════════════════════════════
+
+def reset_stuck_crash_games():
+    """
+    Принудительно закрывает все 'активные' игры краша в БД.
+    Вызывается при старте сервера, чтобы не зависало.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            # Помечаем все незавершённые игры как crashed
+            cursor.execute("""
+                UPDATE ultimate_crash_games
+                SET status = 'crashed'
+                WHERE status IN ('waiting', 'counting', 'flying')
+            """)
+            stuck = cursor.rowcount
+            # Помечаем активные ставки как lost
+            cursor.execute("""
+                UPDATE ultimate_crash_bets
+                SET status = 'lost'
+                WHERE status = 'active'
+            """)
+            lost_bets = cursor.rowcount
+            conn.commit()
+            if stuck or lost_bets:
+                logger.info(f"🧹 Сброс зависших игр краша: {stuck} игр → crashed, {lost_bets} ставок → lost")
+            else:
+                logger.info("✅ Активных игр краша нет, старт чистый")
+        finally:
+            conn.close()
+    except Exception as e:
+        logger.error(f"❌ reset_stuck_crash_games: {e}")
+
+
+def reset_crash_cache():
+    """Сбрасывает in-memory кэш игры краша."""
+    try:
+        update_crash_cache(0, 'waiting', 1.0, 5.0, 5.0, is_bonus=False)
+        logger.info("🔄 Crash cache сброшен")
+    except Exception as e:
+        logger.warning(f"reset_crash_cache: {e}")
+
+
 def start_ultimate_crash_loop():
     """Запускает игровой цикл Crash.
     
@@ -19738,6 +19788,12 @@ def _lazy_init():
             logger.error(f"❌ Ошибка инициализации БД: {e}")
         # Запуск игровых циклов
         try:
+            # ФИКС: сброс зависших игр при старте приложения
+            try:
+                reset_stuck_crash_games()
+                reset_crash_cache()
+            except Exception as _re:
+                logger.warning(f'Reset in lazy_init failed: {_re}')
             start_ultimate_crash_loop()
         except Exception as e:
             logger.error(f"❌ Не удалось запустить Ultimate Crash loop: {e}")
