@@ -4,30 +4,66 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <link rel="icon" type="image/png" href="/static/img/logo.png">
-<link rel="stylesheet" href="/static/css/global.css">
-<link rel="stylesheet" href="/static/css/crash-backgrounds.css">
 <title>CRASH</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="/static/js/telegram-auth.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html{height:100%}
-body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#1C2233;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;overscroll-behavior-y:contain}
-.container{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:90px;padding-top:calc(env(safe-area-inset-top,20px) + 40px)}
+body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#1C2233;
+    background-image:radial-gradient(ellipse 100% 60% at 50% 0%, #1a2238 0%, #1C2233 60%);
+    color:#fff;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    overflow-x:hidden;
+    overscroll-behavior-y:contain;
+}
+.container{
+    max-width:480px;margin:0 auto;
+    min-height:100vh;display:flex;flex-direction:column;
+    position:relative;padding-bottom:90px;
+    padding-top:calc(env(safe-area-inset-top,20px) + 40px);
+}
 
 /* BOTTOM NAV */
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:4000;width:100%;max-width:480px;height:76px;padding:0 8px calc(env(safe-area-inset-bottom,0) + 6px);background:rgba(28,34,51,.92);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-top:1px solid rgba(59,130,246,.08);display:flex;align-items:center;justify-content:space-around}
-.bottom-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 14px;border-radius:12px;background:transparent;border:none;color:rgba(255,255,255,.4);font-family:inherit;font-weight:600;cursor:pointer;transition:all .3s;text-decoration:none;position:relative;min-height:56px;height:56px;margin:auto 0}
+.bottom-nav{
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    z-index:4000;width:100%;max-width:480px;height:76px;
+    padding:0 8px calc(env(safe-area-inset-bottom,0) + 6px);
+    background:rgba(28,34,51,.92);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    border-top:1px solid rgba(59,130,246,.08);
+    display:flex;align-items:center;justify-content:space-around;
+}
+.bottom-nav-item{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;padding:6px 14px;border-radius:12px;
+    background:transparent;border:none;
+    color:rgba(255,255,255,.4);
+    font-family:inherit;font-weight:600;cursor:pointer;
+    transition:all .3s;text-decoration:none;
+    position:relative;min-height:56px;height:56px;margin:auto 0;
+}
 .bottom-nav-item svg{width:22px;height:22px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2}
 .bottom-nav-item span{font-size:10px;font-weight:600;line-height:1}
 .bottom-nav-item.active{background:rgba(255,255,255,.08);color:#fff}
 .bottom-nav-item:active{transform:scale(.9)}
 
 /* LOADING */
-.ld-screen{position:fixed;inset:0;background:#1C2233;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .4s,visibility .4s}
+.ld-screen{
+    position:fixed;inset:0;background:#1C2233;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    z-index:9999;transition:opacity .4s,visibility .4s;
+}
 .ld-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
 .ld-panels{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:260px;margin-bottom:32px}
-.ld-panel{width:76px;height:76px;border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;animation:ldPanelPulse 2s ease-in-out infinite alternate}
+.ld-panel{
+    width:76px;height:76px;border-radius:16px;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    animation:ldPanelPulse 2s ease-in-out infinite alternate;
+}
 .ld-panel:nth-child(1){background:#FF3333}
 .ld-panel:nth-child(2){background:#6E44E1;animation-delay:.12s}
 .ld-panel:nth-child(3){background:#33CC55;animation-delay:.24s}
@@ -40,17 +76,29 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 @keyframes ldPanelPulse{0%{transform:scale(1)}100%{transform:scale(1.04)}}
 .ld-panel img{width:54px;height:54px;object-fit:contain;opacity:0;transform:scale(.7)}
 .ld-panel img.show{opacity:1;transform:scale(1);transition:opacity .4s,transform .4s}
-.ld-txt{font-family:inherit;font-weight:700;font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:12px}
+.ld-txt{font-weight:700;font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:12px}
 .ld-progress{width:240px;height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
 .ld-progress-bar{height:100%;background:linear-gradient(90deg,#fff,rgba(255,255,255,.7));width:0%;transition:width .3s}
 
 /* TOP BAR */
 .top-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;position:relative;z-index:10}
 .top-left{display:flex;align-items:center;gap:8px}
-.online-pill{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;border:1.5px solid rgba(30,228,76,.45);background:rgba(30,228,76,.12);font-family:inherit;font-weight:700;font-size:13px;color:#1EE44C}
+.ping-pill{
+    display:flex;align-items:center;gap:5px;
+    padding:5px 10px;border-radius:20px;
+    border:1.5px solid rgba(30,228,76,.45);
+    background:rgba(30,228,76,.12);
+    font-weight:700;font-size:13px;
+    color:#1EE44C;
+    backdrop-filter:blur(5px);
+    transition:border-color .3s,color .3s,background .3s;
+}
+.ping-pill.medium{border-color:rgba(255,200,0,.45);background:rgba(255,200,0,.12);color:#FFC800}
+.ping-pill.high{border-color:rgba(249,105,153,.45);background:rgba(249,105,153,.12);color:#F96999}
+.ping-pill svg{width:12px;height:12px}
 .settings-btn-sm{width:34px;height:34px;border-radius:50%;border:none;background:rgba(255,255,255,.08);cursor:pointer;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.12)}
 .settings-btn-sm:active{transform:scale(.9)}
-.bal-pill-crash{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(120,135,160,.1);border:1px solid rgba(120,135,160,.25);font-family:inherit;font-weight:700;font-size:13px}
+.bal-pill-crash{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:rgba(120,135,160,.1);border:1px solid rgba(120,135,160,.25);font-weight:700;font-size:13px}
 .bal-pill-crash img{width:16px;height:16px}
 .bal-plus-crash{width:28px;height:28px;border-radius:50%;border:none;background:rgba(120,135,160,.3);color:#A0B0C4;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;border:1px solid rgba(120,135,160,.45)}
 .bal-plus-crash:active{transform:scale(.9)}
@@ -62,18 +110,15 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .game-field.flying{box-shadow:inset 0 0 80px rgba(59,130,246,.06),0 0 30px rgba(59,130,246,.08)}
 
 /* COUNTDOWN */
-.countdown-display{font-family:inherit;font-weight:900;font-size:min(180px,38vw);color:rgba(255,255,255,.9);position:absolute;z-index:4;user-select:none;line-height:1;text-shadow:0 0 60px rgba(255,255,255,.15);opacity:0;pointer-events:none}
+.countdown-display{font-weight:900;font-size:min(180px,38vw);color:rgba(255,255,255,.9);position:absolute;z-index:4;user-select:none;line-height:1;text-shadow:0 0 60px rgba(255,255,255,.15);opacity:0;pointer-events:none}
 .countdown-display.active{opacity:1;animation:cdPop .35s cubic-bezier(.22,.9,.2,1)}
 @keyframes cdPop{0%{transform:scale(2.2);opacity:0}60%{transform:scale(.95);opacity:1}100%{transform:scale(1);opacity:1}}
 
 /* ROCKET */
 .rocket-wrap{position:absolute;top:52%;left:50%;transform:translate(-50%,-50%);z-index:2;transition:opacity .3s;opacity:1;will-change:transform,opacity}
 .rocket-wrap img{width:170px;height:170px;object-fit:contain;border:none;background:transparent;transition:transform .3s ease-out;will-change:transform;transform:translateZ(0)}
-.rocket-wrap.showing-gift img{filter:drop-shadow(0 10px 26px rgba(0,0,0,.55)) drop-shadow(0 0 22px rgba(59,130,246,.28))}
 .rocket-wrap.hide{opacity:0;pointer-events:none}
 .rocket-wrap.flying img{transform:rotate(18deg) translateZ(0)}
-.rocket-wrap.flying.showing-gift img{transform:scale(1.05) translateZ(0)}
-.rocket-wrap.cashed-out img{filter:grayscale(100%) brightness(.7)}
 
 /* BOOM */
 .boom-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;pointer-events:none;display:none;align-items:center;justify-content:center;will-change:transform,opacity}
@@ -114,19 +159,19 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .history-section{padding:4px 12px 2px}
 .history-scroll{display:flex;gap:5px;overflow-x:auto;padding-bottom:0;scrollbar-width:none;-ms-overflow-style:none}
 .history-scroll::-webkit-scrollbar{display:none}
-.h-pill{padding:4px 11px;border-radius:20px;font-family:inherit;font-weight:700;font-size:12px;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;justify-content:center;line-height:1.2}
+.h-pill{padding:4px 11px;border-radius:20px;font-weight:700;font-size:12px;white-space:nowrap;flex-shrink:0;display:flex;align-items:center;justify-content:center;line-height:1.2}
 .h-pill.low{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.08)}
 .h-pill.mid{background:rgba(30,228,76,.12);color:#1EE44C;border:1px solid rgba(30,228,76,.2)}
 .h-pill.high{background:rgba(255,200,0,.12);color:#FFC800;border:1px solid rgba(255,200,0,.2)}
 .h-pill.mega{background:rgba(255,200,0,.18);color:#FFD700;border:1px solid rgba(255,200,0,.3);font-weight:800}
-.coeff-box{display:inline-flex;align-items:center;gap:6px;background:rgba(30,228,76,.15);border:1px solid rgba(30,228,76,.3);border-radius:20px;padding:4px 11px;font-family:inherit;font-weight:800;font-size:12px;color:#1EE44C;margin-right:4px;flex-shrink:0}
+.coeff-box{display:inline-flex;align-items:center;gap:6px;background:rgba(30,228,76,.15);border:1px solid rgba(30,228,76,.3);border-radius:20px;padding:4px 11px;font-weight:800;font-size:12px;color:#1EE44C;margin-right:4px;flex-shrink:0}
 .coeff-box.crashed{background:rgba(220,60,80,.2);color:#F96999;border-color:rgba(249,105,153,.3)}
 .coeff-box.waiting{background:rgba(30,228,76,.15);color:#1EE44C}
 
 /* BETS */
 .bets-section{padding:4px 12px 24px}
 .bets-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.bets-title{font-family:inherit;font-weight:800;font-size:13px;color:#fff}
+.bets-title{font-weight:800;font-size:13px;color:#fff}
 .bets-count{font-size:11px;color:rgba(140,160,190,.8);font-weight:700;background:rgba(107,122,141,.15);padding:2px 9px;border-radius:10px}
 .bets-list{display:flex;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto;scrollbar-width:thin}
 .bets-list::-webkit-scrollbar{width:3px}
@@ -135,7 +180,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .bet-row.won{background:rgba(30,228,76,.06)}
 .bet-row.lost{background:rgba(249,105,153,.04)}
 .bet-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
-.bet-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2a3040,#3a4558);display:flex;align-items:center;justify-content:center;font-family:inherit;font-weight:800;font-size:13px;color:rgba(255,255,255,.6);overflow:hidden;flex-shrink:0}
+.bet-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2a3040,#3a4558);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:rgba(255,255,255,.6);overflow:hidden;flex-shrink:0}
 .bet-avatar img{width:100%;height:100%;object-fit:cover}
 .bet-info{display:flex;flex-direction:column;gap:1px;min-width:0}
 .bet-name{font-weight:700;font-size:12px;color:#fff;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -143,7 +188,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .bet-amt .bet-gift-preview{width:20px;height:20px;object-fit:contain;flex-shrink:0;border:none;background:transparent;padding:0;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
 .bet-amt .bet-gift-preview.empty{opacity:.35}
 .bet-amt .bet-amount-text{font-weight:800;color:#fff;font-size:12px}
-.bet-status{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:4px 9px;border-radius:10px;font-family:inherit;font-weight:700;font-size:11px}
+.bet-status{display:flex;align-items:center;gap:5px;flex-shrink:0;padding:4px 9px;border-radius:10px;font-weight:700;font-size:11px}
 .bet-status svg{width:13px;height:13px;flex-shrink:0}
 .bet-status.active{background:rgba(107,122,141,.12);color:rgba(160,180,200,.8)}
 .bet-status.won{background:rgba(30,228,76,.12);color:#1EE44C}
@@ -156,25 +201,25 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .modal-sheet{background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px 16px 30px;transform:translateY(100%);border-top:1px solid rgba(59,130,246,.2);transition:transform .3s cubic-bezier(.34,.69,.7,1)}
 .modal-overlay.show .modal-sheet{transform:translateY(0)}
 .modal-handle{width:36px;height:4px;background:rgba(120,135,160,.2);border-radius:2px;margin:0 auto 16px}
-.modal-title{font-family:inherit;font-weight:900;font-size:17px;margin-bottom:18px;text-align:center;color:#fff}
+.modal-title{font-weight:900;font-size:17px;margin-bottom:18px;text-align:center;color:#fff}
 .modal-tabs{display:flex;gap:3px;margin-bottom:16px;background:rgba(255,255,255,.02);border-radius:12px;padding:4px}
-.modal-tab{flex:1;padding:10px;border-radius:9px;border:none;background:transparent;color:rgba(255,255,255,.35);font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px}
+.modal-tab{flex:1;padding:10px;border-radius:9px;border:none;background:transparent;color:rgba(255,255,255,.35);font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px}
 .modal-tab.active{background:rgba(59,130,246,.12);color:#3B82F6;border:1px solid rgba(59,130,246,.3)}
 .modal-tab img{width:14px;height:14px}
 .bet-input-wrap{display:flex;gap:8px;margin-bottom:14px}
-.bet-input-wrap input{flex:1;padding:14px 18px;border-radius:14px;border:1px solid rgba(59,130,246,.15);background:rgba(59,130,246,.05);color:#fff;font-size:17px;font-family:inherit;font-weight:700;outline:none;text-align:center}
+.bet-input-wrap input{flex:1;padding:14px 18px;border-radius:14px;border:1px solid rgba(59,130,246,.15);background:rgba(59,130,246,.05);color:#fff;font-size:17px;font-weight:700;outline:none;text-align:center}
 .bet-input-wrap input:focus{border-color:rgba(59,130,246,.4);background:rgba(59,130,246,.08)}
 .bet-input-wrap input::placeholder{color:rgba(255,255,255,.25);font-weight:600}
-.confirm-bet-btn{width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;transition:all .1s;box-shadow:0 4px 16px rgba(59,130,246,.3)}
+.confirm-bet-btn{width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:800;font-size:15px;cursor:pointer;transition:all .1s;box-shadow:0 4px 16px rgba(59,130,246,.3)}
 .confirm-bet-btn:active:not(:disabled){transform:scale(.96)}
 .confirm-bet-btn:disabled{opacity:.45;cursor:not-allowed}
 
-/* AUTO WITHDRAW ROW */
+/* AUTO WITHDRAW */
 .auto-cashout-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;padding:10px;border-radius:12px;background:rgba(30,228,76,.08);border:1px solid rgba(30,228,76,.15);min-height:58px;height:58px}
 .auto-cashout-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:0 0 48%;max-width:48%}
-.auto-cashout-label{font-family:inherit;font-weight:800;font-size:12px;color:#1EE44C;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.auto-cashout-label{font-weight:800;font-size:12px;color:#1EE44C;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .auto-cashout-sub{font-size:9px;color:rgba(255,255,255,.5);line-height:1.1}
-.autowd-open-btn{flex:0 0 46%;width:46%;padding:0 10px;height:38px;border-radius:12px;border:none;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-family:inherit;font-weight:800;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:flex-start;gap:5px;overflow:hidden}
+.autowd-open-btn{flex:0 0 46%;width:46%;padding:0 10px;height:38px;border-radius:12px;border:none;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-weight:800;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:flex-start;gap:5px;overflow:hidden}
 .autowd-open-btn img{width:18px;height:18px;flex:0 0 18px;object-fit:contain}
 .autowd-open-btn .autowd-btn-name{flex:1;min-width:0;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px;font-weight:700}
 .autowd-open-btn .autowd-btn-coeff{background:rgba(0,0,0,.22);padding:1px 5px;border-radius:8px;font-size:9px;font-weight:800}
@@ -187,18 +232,18 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .inv-card.selected{border-color:#3B82F6;background:rgba(59,130,246,.18);box-shadow:0 0 0 2px rgba(59,130,246,.4)}
 .inv-card.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
 .inv-card img{width:100%;height:auto;aspect-ratio:1/1;object-fit:contain;margin-bottom:4px;border-radius:8px;background:rgba(0,0,0,.2);padding:4px}
-.inv-card .inv-name{font-family:inherit;font-weight:700;font-size:10px;color:rgba(255,255,255,.85);padding:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.inv-card .inv-val{font-family:inherit;font-weight:800;font-size:11px;color:#8CA0BE;padding:3px 4px;display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(59,130,246,.08);border-radius:6px;margin-top:2px}
+.inv-card .inv-name{font-weight:700;font-size:10px;color:rgba(255,255,255,.85);padding:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inv-card .inv-val{font-weight:800;font-size:11px;color:#8CA0BE;padding:3px 4px;display:flex;align-items:center;justify-content:center;gap:3px;background:rgba(59,130,246,.08);border-radius:6px;margin-top:2px}
 .inv-card .inv-val img{width:12px;height:12px;aspect-ratio:auto;border-radius:0;background:none;padding:0;margin:0}
 .inv-empty{grid-column:1/-1;text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px}
 .selected-summary{display:none;background:rgba(59,130,246,.08);border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1px solid rgba(59,130,246,.15)}
 .selected-summary.show{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .selected-info{display:flex;flex-direction:column;gap:3px}
-.selected-count{font-family:inherit;font-weight:700;font-size:12px;color:rgba(255,255,255,.6)}
-.selected-total{font-family:inherit;font-weight:800;font-size:15px;color:#3B82F6;display:flex;align-items:center;gap:4px}
+.selected-count{font-weight:700;font-size:12px;color:rgba(255,255,255,.6)}
+.selected-total{font-weight:800;font-size:15px;color:#3B82F6;display:flex;align-items:center;gap:4px}
 .selected-total img{width:15px;height:15px}
-.clear-selected{padding:8px 12px;border-radius:9px;border:none;background:rgba(249,105,153,.15);color:#E8527A;font-family:inherit;font-weight:700;font-size:11px;cursor:pointer}
-.confirm-gifts-btn{width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;margin-top:12px;display:none}
+.clear-selected{padding:8px 12px;border-radius:9px;border:none;background:rgba(249,105,153,.15);color:#E8527A;font-weight:700;font-size:11px;cursor:pointer}
+.confirm-gifts-btn{width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:800;font-size:15px;cursor:pointer;margin-top:12px;display:none}
 .confirm-gifts-btn.show{display:block}
 
 /* WIN SHEET */
@@ -206,7 +251,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .win-overlay.show{opacity:1;visibility:visible;transform:translateY(0);pointer-events:auto}
 .win-sheet{background:linear-gradient(180deg,#1e2433 0%,#151920 100%);border-radius:20px 20px 0 0;padding:12px 20px calc(24px + env(safe-area-inset-bottom,0));border-top:2px solid rgba(59,130,246,.25);max-width:480px;margin:0 auto}
 .win-sheet-handle{width:36px;height:4px;background:rgba(255,255,255,.12);border-radius:2px;margin:0 auto 14px}
-.win-collect-btn{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;margin-top:4px}
+.win-collect-btn{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:800;font-size:15px;cursor:pointer;margin-top:4px}
 
 /* AUTO WITHDRAW MODAL */
 .autowd-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:6500;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
@@ -214,27 +259,27 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .autowd-modal{background:linear-gradient(180deg,#1a2030,#0f1420);border-radius:24px;width:95%;max-width:440px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;transform:scale(.9);transition:transform .3s;border:1px solid rgba(59,130,246,.2)}
 .autowd-overlay.show .autowd-modal{transform:scale(1)}
 .autowd-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
-.autowd-title{font-family:inherit;font-weight:800;font-size:16px;color:#fff;display:flex;align-items:center;gap:8px}
+.autowd-title{font-weight:800;font-size:16px;color:#fff;display:flex;align-items:center;gap:8px}
 .autowd-title img{width:20px;height:20px}
 .autowd-close{width:30px;height:30px;border-radius:10px;border:none;background:rgba(249,105,153,.15);color:#F96999;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .autowd-summary{padding:12px 18px;background:rgba(59,130,246,.06);display:flex;flex-direction:column;gap:5px}
-.autowd-summary-row{display:flex;justify-content:space-between;align-items:center;font-family:inherit;font-size:12px;color:rgba(255,255,255,.6)}
+.autowd-summary-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(255,255,255,.6)}
 .autowd-summary-val{font-weight:800;color:#fff;font-size:13px}
 .autowd-summary-val.gold{color:#FFD700;font-size:14px}
 .autowd-search-wrap{padding:10px 18px 6px}
-.autowd-search{width:100%;padding:10px 14px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-family:inherit;font-size:13px;outline:none}
+.autowd-search{width:100%;padding:10px 14px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-size:13px;outline:none}
 .autowd-list{flex:1;overflow-y:auto;padding:6px 14px;display:flex;flex-direction:column;gap:6px;min-height:200px;max-height:400px}
 .autowd-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,.03);border:1.5px solid rgba(255,255,255,.06);border-radius:12px;cursor:pointer;position:relative}
 .autowd-row.selected{background:rgba(59,130,246,.15);border-color:#3B82F6}
 .autowd-thumb{width:40px;height:40px;flex-shrink:0;border-radius:10px;background:rgba(0,0,0,.25);padding:4px;display:flex;align-items:center;justify-content:center}
 .autowd-thumb img{width:100%;height:100%;object-fit:contain}
 .autowd-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.autowd-name{font-family:inherit;font-weight:700;font-size:11px;color:rgba(255,255,255,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.autowd-coeff{font-family:inherit;font-weight:800;font-size:10px;color:#8CA0BE}
-.autowd-price{display:flex;align-items:center;gap:3px;font-family:inherit;font-weight:800;font-size:12px;color:#FFD700}
+.autowd-name{font-weight:700;font-size:11px;color:rgba(255,255,255,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.autowd-coeff{font-weight:800;font-size:10px;color:#8CA0BE}
+.autowd-price{display:flex;align-items:center;gap:3px;font-weight:800;font-size:12px;color:#FFD700}
 .autowd-price img{width:11px;height:11px}
 .autowd-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:12px}
-.autowd-apply-btn{margin:10px 14px 14px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-family:inherit;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;height:52px}
+.autowd-apply-btn{margin:10px 14px 14px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;height:52px}
 .autowd-apply-btn:disabled{opacity:.4;cursor:not-allowed;background:rgba(255,255,255,.06)}
 .autowd-apply-btn img{width:22px;height:22px;object-fit:contain}
 
@@ -244,12 +289,12 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .deposit-modal{background:linear-gradient(180deg,#1E2538,#151B2D);border-radius:24px;width:90%;max-width:360px;padding:24px 20px;transform:scale(.9);transition:transform .3s;border:1px solid rgba(255,255,255,.1)}
 .deposit-overlay.show .deposit-modal{transform:scale(1)}
 .deposit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.deposit-title{font-family:inherit;font-weight:800;font-size:18px;color:#fff}
+.deposit-title{font-weight:800;font-size:18px;color:#fff}
 .deposit-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.15);cursor:pointer;color:#F96999;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .deposit-methods{display:flex;gap:12px}
 .deposit-method-btn{position:relative;flex:1;padding:20px 14px;border-radius:16px;border:none;background:rgba(255,255,255,.04);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;border:2px solid rgba(255,255,255,.06)}
 .deposit-method-btn img{width:48px;height:48px}
-.deposit-method-btn span{font-family:inherit;font-weight:700;font-size:13px;color:#fff}
+.deposit-method-btn span{font-weight:700;font-size:13px;color:#fff}
 
 /* STARS DEPOSIT */
 .stars-deposit-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:5750;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
@@ -257,14 +302,14 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .stars-deposit-modal{background:linear-gradient(180deg,#1E2538,#151B2D);border-radius:24px;width:92%;max-width:380px;overflow:hidden;transform:scale(.9);transition:transform .3s}
 .stars-deposit-overlay.show .stars-deposit-modal{transform:scale(1)}
 .stars-deposit-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06)}
-.stars-deposit-title{font-family:inherit;font-weight:800;font-size:16px;color:#fff}
+.stars-deposit-title{font-weight:800;font-size:16px;color:#fff}
 .stars-deposit-close{width:32px;height:32px;border-radius:50%;border:none;background:rgba(249,105,153,.15);cursor:pointer;color:#F96999;font-size:18px;font-weight:700}
 .stars-deposit-body{padding:24px 20px;display:flex;flex-direction:column;align-items:center;gap:18px}
 .stars-deposit-icon{width:64px;height:64px}
-.stars-deposit-label{font-family:inherit;font-size:13px;color:rgba(255,255,255,.5);text-align:center}
+.stars-deposit-label{font-size:13px;color:rgba(255,255,255,.5);text-align:center}
 .stars-deposit-input-wrap{width:100%;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:14px;padding:12px 16px;border:2px solid rgba(255,255,255,.08)}
-.stars-deposit-input{flex:1;background:none;border:none;outline:none;color:#fff;font-family:inherit;font-size:20px;font-weight:700;text-align:center}
-.stars-deposit-pay-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#FFC107,#FF9800);color:#000;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.stars-deposit-input{flex:1;background:none;border:none;outline:none;color:#fff;font-size:20px;font-weight:700;text-align:center}
+.stars-deposit-pay-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#FFC107,#FF9800);color:#000;font-weight:800;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
 .stars-deposit-pay-btn img{width:18px;height:18px}
 
 /* SETTINGS */
@@ -279,7 +324,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .settings-item img{width:60px;height:60px;object-fit:contain;border-radius:12px}
 .settings-gift-toggle{margin-bottom:16px;padding:14px;border-radius:14px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);display:flex;align-items:center;justify-content:space-between;gap:12px}
 .settings-gift-toggle .toggle-info{flex:1}
-.settings-gift-toggle .lbl{font-family:inherit;font-weight:700;font-size:14px;color:#fff}
+.settings-gift-toggle .lbl{font-weight:700;font-size:14px;color:#fff}
 .settings-gift-toggle .desc{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
 .toggle-switch{position:relative;width:52px;height:30px;min-width:52px;background:rgba(60,60,80,.7);border-radius:15px;cursor:pointer;transition:background .3s;flex-shrink:0}
 .toggle-switch::after{content:'';position:absolute;width:24px;height:24px;border-radius:50%;background:#fff;top:2px;left:2px;transition:transform .3s}
@@ -287,7 +332,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 .toggle-switch.on::after{transform:translateX(22px)}
 
 /* TOAST */
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(20,20,20,.95);backdrop-filter:blur(4px);padding:10px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.06);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:7000;color:#fff;font-family:inherit;font-weight:700;font-size:13px;max-width:90%;text-align:center;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(20,20,20,.95);backdrop-filter:blur(4px);padding:10px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.06);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:7000;color:#fff;font-weight:700;font-size:13px;max-width:90%;text-align:center;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
 .toast.show{opacity:1;visibility:visible}
 .toast.ok{border-color:rgba(30,228,76,.2)}
 .toast.err{border-color:rgba(249,105,153,.2)}
@@ -327,9 +372,14 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
 <div class="container">
     <div class="top-bar">
         <div class="top-left">
-            <div class="online-pill">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                <span id="onlineCount">0</span>
+            <div class="ping-pill" id="pingPill">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h.01"/>
+                    <path d="M8.5 16.5a5 5 0 0 1 7 0"/>
+                    <path d="M5 13a10 10 0 0 1 14 0"/>
+                    <path d="M2 9.5a15 15 0 0 1 20 0"/>
+                </svg>
+                <span id="pingVal">-- ms</span>
             </div>
             <button class="settings-btn-sm" onclick="openSettings()">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8BA3CC" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -476,7 +526,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
     <div class="settings-modal">
         <div style="width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:12px auto 0"></div>
         <div style="padding:12px 18px 8px">
-            <div style="font-family:inherit;font-weight:800;font-size:16px;color:#fff">Customization</div>
+            <div style="font-weight:800;font-size:16px;color:#fff">Customization</div>
         </div>
         <div class="settings-content">
             <div class="settings-gift-toggle">
@@ -495,7 +545,7 @@ body{font-family:'Inter Variable','Inter',-apple-system,BlinkMacSystemFont,'Sego
             </div>
             <div class="settings-grid" id="rocketGrid"></div>
         </div>
-        <button onclick="closeSettings()" style="margin:0 18px 18px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#1e3a6e,#6B7A8D);color:#fff;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">close</button>
+        <button onclick="closeSettings()" style="margin:0 18px 18px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#1e3a6e,#6B7A8D);color:#fff;font-size:15px;font-weight:700;cursor:pointer">close</button>
     </div>
 </div>
 
@@ -526,16 +576,16 @@ var status = 'waiting';
 var prevStatus = 'waiting';
 var targetMult = 5.0;
 
-/* ═══ ЛОКАЛЬНАЯ МАТЕМАТИКА — сервер только синхронизирует ═══ */
-var roundStartedAt = 0;        /* performance.now() когда мы узнали про этот раунд */
-var countingStartedAt = 0;     /* начало counting (для отсчёта) */
-var flyingStartedAt = 0;       /* начало flying (для множителя) */
-var serverMultAtFlyStart = 1.0;
-var estimatedFlyDuration = 15000; /* оценка длительности полёта для кривой */
+/* ═══ TIME-BASED MATH — точная синхронизация с сервером ═══ */
+var flyingStartedAt = 0;      /* performance.now() когда начали лететь */
+var estimatedFlyDuration = 15000; /* серверная оценка длительности */
+var countingStartedAt = 0;
+var countingDuration = 5.0;
 
-var dispMult = 1.0;            /* локально вычисленный множитель */
-var servMult = 1.0;            /* последний подтверждённый сервером */
-var _serverFloor = 1.0;        /* минимум, ниже которого нельзя опускаться */
+/* ═══ Множитель ═══ */
+var dispMult = 1.0;           /* локально вычисленный (для UI) */
+var servMult = 1.0;           /* последний подтверждённый сервером */
+var _serverFloor = 1.0;       /* минимальный пол множителя */
 
 var hasBet = false;
 var betAmt = 0;
@@ -551,7 +601,6 @@ var autoCashoutDone = false;
 var crashHandled = false;
 
 /* Counting */
-var countingDuration = 5.0;
 var lastShownNumber = 99;
 var goShownForRound = false;
 var lastCountdownAt = 0;
@@ -593,6 +642,10 @@ var _autowdGifts = [];
 /* Action button */
 var _lastBtnKey = '';
 
+/* Ping */
+var _lastPingMs = 0;
+var _pingSamples = [];
+
 var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
 
 function $(id){ return document.getElementById(id); }
@@ -628,6 +681,20 @@ function showToast(msg, type){
         t.classList.remove('show');
         setTimeout(function(){ t.remove(); }, 300);
     }, 2400);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PING
+   ══════════════════════════════════════════════════════════════ */
+function updatePingUI(ms){
+    var el = $('pingVal');
+    var pill = $('pingPill');
+    if(!el || !pill) return;
+    _lastPingMs = ms;
+    el.textContent = ms + ' ms';
+    pill.classList.remove('medium','high');
+    if(ms > 400) pill.classList.add('high');
+    else if(ms > 150) pill.classList.add('medium');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -679,7 +746,8 @@ function showToast(msg, type){
     }, 6000);
 })();
 
-/* ══════════════════════════════════════════════════════════════   AUTH
+/* ══════════════════════════════════════════════════════════════
+   AUTH
    ══════════════════════════════════════════════════════════════ */
 async function initAuth(){
     window._ldSet(5);
@@ -862,62 +930,81 @@ function getAchievableGift(potentialWin){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   LOCAL MULTIPLIER MATH — сервер только для валидации
-   ══════════════════════════════════════════════════════════════
-   Множитель = чистая функция от elapsed времени с момента flying.
-   Кривая роста: multiplier(t) = 1 + k1*t + k2*t^1.5 (плавная)
-   Сервер возвращает target_multiplier, к которому мы должны прийти.
-   ============================================================ */
+   TIME-BASED MULTIPLIER — совпадает с серверной кривой
 
+   Сервер использует инкременты:
+     1.0 → 2.0  за ~5s
+     2.0 → 4.0  за ~8s
+     4.0 → 10.0 за ~5s
+     10.0+      быстрее
+
+   Формула (совпадает с _computeLocalMult старого кода, но теперь
+   это ЕДИНСТВЕННЫЙ источник истины для клиента; сервер только
+   подтверждает target_multiplier).
+   ══════════════════════════════════════════════════════════════ */
 function computeLocalMult(elapsedMs){
-    var t = elapsedMs / 1000; /* секунды */
+    var t = elapsedMs / 1000;
     if(t <= 0) return 1.0;
 
-    /* Кривая роста: похожа на то что делает сервер (проверено эмпирически) */
-    /* 0-5s: 1.0 -> ~2.0 | 5-13s: ~2.0 -> ~4.0 | далее: -> target */
     var m;
     if(t < 5){
-        m = 1.0 + t * 0.20; /* 1.0 -> 2.0 */
+        m = 1.0 + t * 0.20;       /* 1.0 → 2.0 */
     } else if(t < 13){
-        m = 2.0 + (t - 5) * 0.25; /* 2.0 -> 4.0 */
+        m = 2.0 + (t - 5) * 0.25; /* 2.0 → 4.0 */
     } else if(t < 25){
-        m = 4.0 + (t - 13) * 0.5; /* 4.0 -> 10.0 */
+        m = 4.0 + (t - 13) * 0.5; /* 4.0 → 10.0 */
     } else {
-        m = 10.0 + (t - 25) * 1.0; /* растёт быстрее */
+        m = 10.0 + (t - 25) * 1.0;
     }
 
-    /* Не превышаем цель */
     if(m > targetMult) m = targetMult;
-
     return m;
 }
 
+function estimateFlyStartFromMult(serverMult){
+    var t;
+    if(serverMult <= 1.0) t = 0;
+    else if(serverMult <= 2.0) t = (serverMult - 1.0) / 0.20;
+    else if(serverMult <= 4.0) t = 5 + (serverMult - 2.0) / 0.25;
+    else if(serverMult <= 10.0) t = 13 + (serverMult - 4.0) / 0.5;
+    else t = 25 + (serverMult - 10.0) / 1.0;
+    return performance.now() - t * 1000;
+}
+
 /* ══════════════════════════════════════════════════════════════
-   POLLING — 3 секунды, только для синхронизации фазы
+   FAST POLLING — 500мс
    ══════════════════════════════════════════════════════════════ */
 var _pollTimer = null;
 var _polling = false;
-var _pollDelay = 3000;
+var _pollDelay = 500;
+var _pollInFlight = null;
 
 async function pollStatus(){
     if(!authReady) return;
     if(_polling) return;
     _polling = true;
+
+    var url = '/api/ultimate-crash/simple-status';
+    if(userData && userData.id) url += '?user_id=' + userData.id;
+
+    var t0 = performance.now();
     try{
-        var url = '/api/ultimate-crash/simple-status';
-        if(userData && userData.id) url += '?user_id=' + userData.id;
-
         var ac = new AbortController();
-        var tId = setTimeout(function(){ ac.abort(); }, 5000);
+        var tId = setTimeout(function(){ ac.abort(); }, 4000);
 
-        var r = await fetch(url, { signal: ac.signal });
+        var r = await fetch(url, { signal: ac.signal, cache: 'no-store' });
         clearTimeout(tId);
+        var pingMs = Math.round(performance.now() - t0);
+
         if(!r.ok) throw new Error('bad');
         var d = await r.json();
-        _pollDelay = 3000;
+
+        updatePingUI(pingMs);
+        _pollDelay = 500;
+
         if(d && d.game) applyServerState(d);
     }catch(e){
-        _pollDelay = Math.min(6000, _pollDelay + 500);
+        _pollDelay = Math.min(2000, _pollDelay + 200);
     }finally{
         _polling = false;
         scheduleNextPoll();
@@ -930,7 +1017,7 @@ function scheduleNextPoll(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   APPLY SERVER STATE — только для синхронизации фазы
+   APPLY SERVER STATE — синхронизация фазы
    ══════════════════════════════════════════════════════════════ */
 function applyServerState(d){
     var g = d.game;
@@ -946,19 +1033,19 @@ function applyServerState(d){
 
     if(isNewRound){
         resetRoundState();
-        /* Новый раунд начинается с waiting/counting */
-        roundStartedAt = now;
     }
 
     prevStatus = status;
     status = newStatus;
+    targetMult = srvTarget;
 
     /* ═══ COUNTING ═══ */
     if(newStatus === 'counting' && prevStatus !== 'counting'){
-        countingStartedAt = now;
-        /* Синхронизируемся от srvTimeRem: если он говорит "осталось 3.5с" — сдвигаем старт */
+        /* Синхронизация с серверным time_remaining */
         if(srvTimeRem > 0 && srvTimeRem <= 5.5){
             countingStartedAt = now - (5.0 - srvTimeRem) * 1000;
+        } else {
+            countingStartedAt = now;
         }
         lastShownNumber = 99;
         goShownForRound = false;
@@ -969,28 +1056,17 @@ function applyServerState(d){
                 if(pendingBet && !hasBet && status === 'counting'){
                     processPendingBet();
                 }
-            }, 250);
+            }, 200);
         }
     }
 
-    /* ═══ FLYING ═══ */
+    /* ═══ FLYING — ключевая синхронизация ═══ */
     if(newStatus === 'flying' && prevStatus !== 'flying'){
-        flyingStartedAt = now;
-        serverMultAtFlyStart = srvCurMult;
+        /* Ставим старт так, чтобы computeLocalMult дала ровно srvCurMult */
+        flyingStartedAt = estimateFlyStartFromMult(srvCurMult);
+        servMult = srvCurMult;
         _serverFloor = srvCurMult;
-
-        /* Оценка длительности полёта для кривой */
-        if(srvTarget > 1){
-            estimatedFlyDuration = 15000;
-        }
-
-        /* Синхронизация dispMult от сервера */
-        var localEst = computeLocalMult(now - flyingStartedAt);
-        /* Сдвигаем точку старта так, чтобы computeLocalMult дала srvCurMult */
-        var estimated = estimateFlyStartFromServer(srvCurMult);
-        if(estimated !== null && estimated < now){
-            flyingStartedAt = estimated;
-        }
+        dispMult = srvCurMult;
 
         if(!goShownForRound){
             goShownForRound = true;
@@ -998,20 +1074,28 @@ function applyServerState(d){
         }
     }
 
-    /* ═══ FLYING update target ═══ */
+    /* ═══ FLYING — обновляем пол ═══ */
     if(newStatus === 'flying'){
-        targetMult = srvTarget;
-        servMult = Math.max(servMult, srvCurMult);
+        if(srvCurMult > servMult) servMult = srvCurMult;
         if(servMult > _serverFloor) _serverFloor = servMult;
+
+        /* Если мы сильно отстаём — пересчитываем старт */
+        var localNow = computeLocalMult(now - flyingStartedAt);
+        if(srvCurMult - localNow > 0.5){
+            flyingStartedAt = estimateFlyStartFromMult(srvCurMult);
+            dispMult = srvCurMult;
+        }
     } else {
-        targetMult = srvTarget;
         servMult = srvCurMult;
         _serverFloor = srvCurMult;
+        dispMult = srvCurMult;
     }
 
-    /* ═══ CRASHED ═══ */
+    /* ═══ CRASHED — мгновенная остановка ═══ */
     if(newStatus === 'crashed' && prevStatus !== 'crashed'){
-        if(srvCurMult > dispMult) dispMult = srvCurMult;
+        dispMult = srvCurMult;
+        servMult = srvCurMult;
+        _serverFloor = srvCurMult;
         triggerCrashAnimation(srvCurMult);
     }
 
@@ -1038,20 +1122,6 @@ function applyServerState(d){
 
     updateGameFieldUI();
     updateActionButton();
-}
-
-/* Оценка момента старта flying по серверному множителю */
-function estimateFlyStartFromServer(serverMult){
-    /* Обратная функция от computeLocalMult */
-    /* t: 0-5s -> 1.0 + t*0.20 | 5-13s -> 2.0 + (t-5)*0.25 | 13-25s -> 4.0 + (t-13)*0.5 */
-    var t = 0;
-    if(serverMult <= 1.0) t = 0;
-    else if(serverMult <= 2.0) t = (serverMult - 1.0) / 0.20;
-    else if(serverMult <= 4.0) t = 5 + (serverMult - 2.0) / 0.25;
-    else if(serverMult <= 10.0) t = 13 + (serverMult - 4.0) / 0.5;
-    else t = 25 + (serverMult - 10.0) / 1.0;
-
-    return performance.now() - t * 1000;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1089,7 +1159,6 @@ function resetRoundState(){
     var ri = $('rocketImg');
     if(ri){
         ri.style.transform = '';
-        ri.style.animation = '';
         var src = getRocketSrc();
         if(ri.src.indexOf(currentRocket) === -1) ri.src = src;
     }
@@ -1118,10 +1187,6 @@ function triggerCrashAnimation(finalMult){
     var gf = $('gameField');
     var coeff = $('coeffBox');
 
-    servMult = finalMult;
-    dispMult = finalMult;
-    _serverFloor = finalMult;
-
     if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
     if(gf) gf.classList.remove('flying');
     if(coeff){
@@ -1135,9 +1200,7 @@ function triggerCrashAnimation(finalMult){
         bimg.src = '/static/gifs/boom.gif?t=' + Date.now();
         void bimg.offsetWidth;
         bm.classList.add('playing');
-        setTimeout(function(){
-            bm.classList.remove('playing');
-        }, 1900);
+        setTimeout(function(){ bm.classList.remove('playing'); }, 1900);
     }
 
     if(hasBet){
@@ -1182,7 +1245,7 @@ function updateGameFieldUI(){
     if(status === 'waiting' || status === 'counting'){
         if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
         var ri = $('rocketImg');
-        if(ri){ ri.style.transform = ''; ri.style.animation = ''; }
+        if(ri) ri.style.transform = '';
         if(bm) bm.classList.remove('playing');
         if(gf) gf.classList.remove('flying');
         if(coeff){
@@ -1311,14 +1374,12 @@ function onActionBtnClick(){
         cancelPendingBet();
         return;
     }
-    if(hasBet){
-        return;
-    }
+    if(hasBet) return;
     openBetModal();
 }
 
 /* ══════════════════════════════════════════════════════════════
-   RENDER LOOP — локальная математика
+   RENDER LOOP — 60fps
    ══════════════════════════════════════════════════════════════ */
 function renderLoop(ts){
     try{
@@ -1326,9 +1387,6 @@ function renderLoop(ts){
         if(document.hidden) return;
 
         var now = ts || performance.now();
-        var dt = _rafLast > 0 ? (now - _rafLast) : 16;
-        if(dt > 100) dt = 100;
-        _rafLast = now;
 
         /* ═══ COUNTING ═══ */
         if(status === 'counting' && countingStartedAt > 0){
@@ -1353,22 +1411,14 @@ function renderLoop(ts){
 
         /* ═══ FLYING ═══ */
         if(status === 'flying' && flyingStartedAt > 0){
-            /* Локальный расчёт множителя */
             var elapsedFly = now - flyingStartedAt;
             var computed = computeLocalMult(elapsedFly);
 
-            /* Не опускаемся ниже серверного пола */
             if(computed < _serverFloor) computed = _serverFloor;
 
             dispMult = computed;
 
-            /* Если очень сильно отстаём/обгоняем — подтянем к серверу */
-            if(servMult > dispMult && servMult - dispMult > 1.5){
-                dispMult = servMult;
-                flyingStartedAt = now - estimateFlyTimeForMult(servMult) * 1000;
-            }
-
-            /* Ракета */
+            /* Ракета — обновление раз в 100мс */
             if(now - _lastRocketUpdate > 100){
                 _lastRocketUpdate = now;
                 var ri = $('rocketImg');
@@ -1380,7 +1430,7 @@ function renderLoop(ts){
                 }
             }
 
-            /* Coeff в истории */
+            /* Coeff — раз в 100мс */
             if(now - _lastCoeffUpdate > 100){
                 _lastCoeffUpdate = now;
                 var cb = $('coeffBox');
@@ -1390,7 +1440,7 @@ function renderLoop(ts){
                 }
             }
 
-            /* Cashout button */
+            /* Cashout button — раз в 80мс */
             if(now - _lastBtnUpdate > 80){
                 _lastBtnUpdate = now;
                 if(hasBet && !cashedOut) updateActionButton();
@@ -1407,14 +1457,6 @@ function renderLoop(ts){
     }catch(e){}
 }
 
-function estimateFlyTimeForMult(m){
-    if(m <= 1.0) return 0;
-    if(m <= 2.0) return (m - 1.0) / 0.20;
-    if(m <= 4.0) return 5 + (m - 2.0) / 0.25;
-    if(m <= 10.0) return 13 + (m - 4.0) / 0.5;
-    return 25 + (m - 10.0) / 1.0;
-}
-
 /* ══════════════════════════════════════════════════════════════
    BET MODAL
    ══════════════════════════════════════════════════════════════ */
@@ -1426,10 +1468,7 @@ function openBetModal(){
     updateAutoWithdrawButton();
     m.classList.add('show');
 }
-function closeBetModal(){
-    var m = $('betModal');
-    if(m) m.classList.remove('show');
-}
+function closeBetModal(){ var m = $('betModal'); if(m) m.classList.remove('show'); }
 function cancelPendingBet(){
     pendingBet = null;
     removePendingBetFromUI();
@@ -1831,7 +1870,7 @@ function showWinSheet(mult, winAmount){
     var html = '';
     html += '<div style="text-align:center;margin-bottom:14px">';
     html += '<div style="display:inline-block;padding:8px 20px;border-radius:16px;background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.1));border:1.5px solid rgba(59,130,246,.4)">';
-    html += '<span style="font-family:inherit;font-weight:900;font-size:28px;color:#3B82F6">' + mult.toFixed(2) + 'x</span>';
+    html += '<span style="font-weight:900;font-size:28px;color:#3B82F6">' + mult.toFixed(2) + 'x</span>';
     html += '</div></div>';
 
     if(giftImg){
@@ -1842,7 +1881,7 @@ function showWinSheet(mult, winAmount){
     }
 
     html += '<div style="text-align:center;margin-bottom:12px">';
-    html += '<div style="font-family:inherit;font-weight:800;font-size:22px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
+    html += '<div style="font-weight:800;font-size:22px;color:#1EE44C;display:flex;align-items:center;justify-content:center;gap:6px">';
     html += '<span>+' + formatTon(winTon) + '</span>';
     html += '<img src="/static/img/ton.png" style="width:20px;height:20px">';
     html += '</div>';
@@ -2123,19 +2162,17 @@ function applyAutoWithdraw(){
     showToast('Автовывод: x' + coeff.toFixed(2), 'ok');
 }
 function updateAutoWithdrawButton(){
-    var btns = [$('autowdMainBtn')];
-    btns.forEach(function(btn){
-        if(!btn) return;
-        if(!autoWithdrawGift){
-            btn.innerHTML = '<img src="/static/img/gift.png" alt=""><span class="autowd-btn-name">Выбрать</span>';
-            return;
-        }
-        var img = autoWithdrawGift.image || '/static/img/gift.png';
-        var nameShort = (autoWithdrawGift.name || 'Подарок').substring(0, 10);
-        btn.innerHTML = '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">'
-            + '<span class="autowd-btn-name">' + nameShort + '</span>'
-            + '<span class="autowd-btn-coeff">x' + autoWithdrawGift.coeff.toFixed(2) + '</span>';
-    });
+    var btn = $('autowdMainBtn');
+    if(!btn) return;
+    if(!autoWithdrawGift){
+        btn.innerHTML = '<img src="/static/img/gift.png" alt=""><span class="autowd-btn-name">Выбрать</span>';
+        return;
+    }
+    var img = autoWithdrawGift.image || '/static/img/gift.png';
+    var nameShort = (autoWithdrawGift.name || 'Подарок').substring(0, 10);
+    btn.innerHTML = '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">'
+        + '<span class="autowd-btn-name">' + nameShort + '</span>'
+        + '<span class="autowd-btn-coeff">x' + autoWithdrawGift.coeff.toFixed(2) + '</span>';
 }
 function toggleAutoWithdrawGuardClick(){
     autoWithdrawGuard = !autoWithdrawGuard;
@@ -2250,13 +2287,10 @@ async function init(){
     applyRocket();
 
     ensureGiftCatalog().catch(function(){});
-    fetch('/api/online-count').then(function(r){ return r.json(); }).then(function(d){
-        var el = $('onlineCount');
-        if(el && d.count !== undefined) el.textContent = d.count;
-    }).catch(function(){});
 
     window._ldSet(80);
 
+    /* Первый poll + пинг */
     try{ await pollStatus(); }catch(e){}
     loadBets().catch(function(){});
     loadHistory().catch(function(){});
@@ -2270,19 +2304,22 @@ async function init(){
         if(bi) bi.value = starsToBetInputValue(savedBetAmount);
     }
 
-    /* Первый рендер СРАЗУ — не ждём */
+    /* RAF */
     requestAnimationFrame(renderLoop);
 
-    /* Polling каждые 3с — только синхронизация */
+    /* Polling (500мс) */
     scheduleNextPoll();
 
+    /* Bets — раз в 2с */
     setInterval(function(){
         if(status === 'crashed') return;
         loadBets().catch(function(){});
-    }, 3000);
+    }, 2000);
 
+    /* Keepalive */
     setInterval(function(){ fetch('/api/ping').catch(function(){}); }, 30000);
 
+    /* Visibility */
     document.addEventListener('visibilitychange', function(){
         if(!document.hidden){
             pollStatus().catch(function(){});
@@ -2292,13 +2329,6 @@ async function init(){
 
     window._ldSet(100);
     window._ldDone();
-
-    setInterval(function(){
-        fetch('/api/online-count').then(function(r){ return r.json(); }).then(function(d){
-            var el = $('onlineCount');
-            if(el && d.count !== undefined) el.textContent = d.count;
-        }).catch(function(){});
-    }, 30000);
 }
 
 document.addEventListener('DOMContentLoaded', function(){
