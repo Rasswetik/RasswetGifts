@@ -80,334 +80,430 @@ fragment_cache_time = None
 fragment_models_cache = {}
 fragment_models_cache_time = {}
 
-# ── Portals Marketplace Configuration ────────────────────────────────────────
-# Auth: first try PORTAL_AUTH_TOKEN (ready-made TMA initData), fallback to session-based
-PORTAL_AUTH_TOKEN = ''
-PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
-PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
-PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
-PORTAL_SESSION_NAME = os.getenv('PORTAL_SESSION_NAME', 'portal_account')
-# Auto-sync configuration
-PORTAL_SYNC_ENABLED = os.getenv('PORTAL_SYNC_ENABLED', '1') != '0'
-PORTAL_SYNC_INTERVAL_MINUTES = int(os.getenv('PORTAL_SYNC_INTERVAL_MINUTES', '10'))
-_portal_auth_data = PORTAL_AUTH_TOKEN or None  # cached authData string
+# ─── Portals Marketplace Integration (v2, через aportalsmp) ─────────────
+try:
+    import aportalsmp
+    from aportalsmp.gifts import collections as _portal_collections_fn
+    from aportalsmp.gifts import search as _portal_search_fn
+    from aportalsmp.gifts import buy as _portal_buy_fn
+    from aportalsmp.gifts import transferGifts as _portal_transfer_fn
+    _APORTALSMP_AVAILABLE = True
+    logger.info("✅ aportalsmp загружен")
+except ImportError as _ie:
+    _APORTALSMP_AVAILABLE = False
+    logger.warning(f"⚠️ aportalsmp НЕ установлен: {_ie}. Установи: pip install aportalsmp")
+
+import asyncio as _portal_asyncio
+
+# Пути для токена
+PORTAL_TOKEN_FILE = os.path.join(BASE_PATH, 'data', 'portal_token.txt')
+_portal_token_cache = {'token': '', 'loaded_at': 0}
+_portal_token_lock = threading.Lock()
 _portal_auth_lock = threading.Lock()
-PORTAL_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
-
-# Site balance cache to reduce frequent DB reads (hot path)
-_site_balance_cache = {'value': 0, 'ts': 0}
-_site_balance_lock = threading.Lock()
-_SITE_BALANCE_TTL = float(os.getenv('SITE_BALANCE_TTL', '10.0'))
-
-# ── Manual gift prices in TON (override Fragment/local prices) ──────────────
-MANUAL_GIFT_PRICES_TON = {
-    'ufc strike': 15.3,
-    'valentine box': 11.7,
-    'victory medal': 4.98,
-    'vintage cigar': 33.9,
-    'voodoo doll': 30.9,
-    'westside sign': 111.9,
-    'whip cupcake': 4.4,
-    'winter wreath': 4.49,
-    'witch hat': 6.29,
-    'xmas stocking': 4.33,
-    'swag bag': 5.19,
-    'swiss watch': 55.8,
-    'tama gadget': 4.65,
-    'top hat': 12.8,
-    'toy bear': 44.9,
-    'trapped heart': 14.5,
-    'moon': 5.64,
-    'mousse cake': 4.96,
-    'nail bracelet': 145.9,
-    'neko helmet': 41.1,
-    'party sparkler': 4.3,
-    'perfume bottle': 97.9,
-    'pet snake': 4.55,
-    'precious peach': 438,
-    'pretty posy': 4.7,
-    'rare bird': 29.9,
-    'record': 5.61,
-    'restless jar': 11.3,
-    'sakura flower': 48.9,
-    'santa hat': 12.5,
-    'scared cat': 4.5,
-    'sharp tongue': 5.08,
-    'signet ring': 5.48,
-    'skull flower': 7.2,
-    'sky stilettos': 5.49,
-    'sleigh bell': 5.83,
-    'snake box': 6.17,
-    'loot bag': 162.9,
-    'love candle': 12.3,
-    'love potion': 17,
-    'low rider': 52,
-    'lunar snake': 4.3,
-    'lush bouquet': 6.55,
-    'mad pumpkin': 13.8,
-    'magic potion': 80.9,
-    'mighty arm': 171.9,
-    'mini oscar': 103.7,
-    'money pot': 4.66,
-    'ion gem': 98.5,
-    'ionic dryer': 18.7,
-    'jack-in-the-box': 4.94,
-    'jelly bunny': 8.03,
-    'jester hat': 4.83,
-    'jolly chimp': 7.3,
-    'joyful bundle': 7.11,
-    "khabib's papakha": 25.9,
-    'kissed frog': 67.8,
-    'light sword': 6.3,
-    'lol pop': 4.5,
-    'hanging star': 9.93,
-    'happy brownie': 4.65,
-    'heroic helmet': 255.7,
-    'hex pot': 4.99,
-    'holiday drink': 4.4,
-    'homemade cake': 5.06,
-    'hypno lollipop': 4.84,
-    'ice cream': 4.44,
-    'input key': 6.19,
-    'instant ramen': 4.38,
-    'desk calendar': 6.78,
-    "durov's cap": 708,
-    'jingle bells': 9.53,
-    'plush pepe': 7999,
-    'heart locket': 2199,
-    'artisan brick': 97.7,
-    'astral shard': 199.9,
-    'b-day candle': 4.3,
-    'berry box': 8.81,
-    'big year': 4.72,
-    'bling binky': 35.3,
-    'bonded ring': 58.2,
-    'bow tie': 6.3,
-    'bunny muffin': 8.28,
-    'candy cane': 4.31,
-    'clover pin': 4.7,
-    'cookie heart': 4.95,
-    'crystal ball': 12,
-    'cupid charm': 22.5,
-    'diamond ring': 29.4,
-    'easter egg': 5.63,
-    'electric skull': 33.9,
-    'eternal candle': 6.58,
-    'eternal rose': 29.4,
-    'evil eye': 7.94,
-    'faith amulet': 4.7,
-    'flying broom': 14,
-    'fresh socks': 4.43,
-    'gem signet': 72.3,
-    'genie lamp': 50,
-    'ginger cookie': 4.9,
-}
-# Build a slug-keyed version for matching by fragment_slug
-_MANUAL_PRICES_BY_SLUG = {re.sub(r'[^a-z0-9]+', '', k): v for k, v in MANUAL_GIFT_PRICES_TON.items()}
-_fragment_http_session = None
-fragment_last_error = None
-
-# Кэш пользователей (user_id -> {data, timestamp})
-_user_cache = {}
-_user_cache_duration = 30  # 30 секунд
-
-# Crash bots in-memory state
-_crash_bots_cache = {
-    'enabled': False,
-    'bots': [],
-    'settings': {'min_active_bots': 2, 'max_active_bots': 5, 'min_real_players_threshold': 3},
-    'loaded': False,
-}
-_crash_bots_active = {}   # game_id -> [{bot_id, name, avatar, bet_amount, cashout_mult, status}]
-
-# In-memory user balance cache — avoids hitting DB on every 120ms status poll
-_user_balance_cache: dict = {}  # user_id -> {'balance': int, 'ts': float}
-_USER_BALANCE_CACHE_TTL = 0.5   # seconds
-_USER_BETS_CACHE_TTL = 0.5      # seconds
-
-def _get_cached_balance(user_id) -> int | None:
-    entry = _user_balance_cache.get(user_id)
-    if entry and (time.time() - entry['ts']) < _USER_BALANCE_CACHE_TTL:
-        return entry['balance']
-    return None
-
-def _set_cached_balance(user_id, balance: int):
-    _user_balance_cache[user_id] = {'balance': balance, 'ts': time.time()}
-
-# In-memory cache for crash game (updated by game loop)
-_crash_game_cache = {
-    'id': 0,
-    'status': 'waiting',
-    'current_multiplier': 1.0,
-    'target_multiplier': 5.0,
-    'time_remaining': 5.0,
-    'timestamp': 0
-}
-_crash_cache_lock = threading.Lock()
-_crash_loop_start_lock = threading.Lock()
-_crash_loop_thread = None
-
-# Lock to prevent bets during phase transitions (counting → flying)
-_crash_phase_lock = threading.Lock()
-_crash_phase_transitioning = False
-
-# Admin control for crash game
-_admin_crash_control = {
-    'manual_mode': False,           # Manual control enabled
-    'force_crash': False,           # Force crash on next tick
-    'next_multiplier': None,        # Set specific multiplier for next game
-    'multiplier_min': 1.0,          # Min range for random multiplier
-    'multiplier_max': 50.0,         # Max range for random multiplier
-    'use_custom_range': False       # Use custom range instead of default
-}
-_admin_control_lock = threading.Lock()
-
-# ─── Трекер последних крашей (анти-стрик) ───
-_last_crash_multipliers = []
-_last_crash_lock = threading.Lock()
-
-def _track_crash_multiplier(mult):
-    """Запоминает последний множитель, чтобы не давать сразу 4x+ подряд."""
-    with _last_crash_lock:
-        _last_crash_multipliers.append(float(mult))
-        if len(_last_crash_multipliers) > 5:
-            _last_crash_multipliers.pop(0)
-
-def _get_recent_max():
-    """Возвращает макс множитель из последних 3 игр."""
-    with _last_crash_lock:
-        recent = _last_crash_multipliers[-3:]
-        return max(recent) if recent else 0.0
 
 
+def _portal_get_token():
+    """Возвращает сохранённый initData токен Portal (кэш 30 сек)."""
+    with _portal_token_lock:
+        now = time.time()
+        if _portal_token_cache['token'] and (now - _portal_token_cache['loaded_at']) < 30:
+            return _portal_token_cache['token']
 
-def get_admin_crash_control():
-    """Get admin crash control state"""
-    with _admin_control_lock:
-        return _admin_crash_control.copy()
+        token = ''
+        # 1. env
+        token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
+        # 2. файл
+        if not token:
+            try:
+                if os.path.exists(PORTAL_TOKEN_FILE):
+                    with open(PORTAL_TOKEN_FILE, 'r', encoding='utf-8') as f:
+                        token = f.read().strip()
+            except Exception as e:
+                logger.warning(f'Portal token file read failed: {e}')
 
-def set_admin_crash_control(key, value):
-    """Set admin crash control value"""
-    global _admin_crash_control
-    with _admin_control_lock:
-        _admin_crash_control[key] = value
+        # Нормализуем (убираем префикс tma)
+        if token.startswith('tma '):
+            token = token[4:].strip()
 
-def get_crash_cache():
-    """Get cached crash game state (thread-safe)"""
-    with _crash_cache_lock:
-        return _crash_game_cache.copy()
-
-def update_crash_cache(game_id, status, current_mult, target_mult, time_remaining, is_bonus=None):
-    """Update crash game cache. is_bonus сохраняется между вызовами."""
-    global _crash_game_cache
-    with _crash_cache_lock:
-        prev = _crash_game_cache
-        prev_bonus = False
-        try:
-            if prev.get('id') == game_id:
-                prev_bonus = bool(prev.get('is_bonus', False))
-        except Exception:
-            prev_bonus = False
-
-        bonus_flag = bool(is_bonus) if is_bonus is not None else prev_bonus
-
-        _crash_game_cache = {
-            'id': game_id,
-            'status': status,
-            'current_multiplier': round(float(current_mult), 2),
-            'target_multiplier': float(target_mult),
-            'time_remaining': round(float(time_remaining), 1),
-            'is_bonus': bonus_flag,
-            'timestamp': time.time()
-        }
+        _portal_token_cache['token'] = token
+        _portal_token_cache['loaded_at'] = now
+        return token
 
 
-def refresh_crash_bet_cache(game_id, target_multiplier=5.0):
-    """Immediately refresh the crash cache after a successful bet so the client sees the round state right away."""
+def _portal_save_token(token):
+    """Сохраняет токен в файл + env."""
+    token = str(token or '').strip()
+    if token.startswith('tma '):
+        token = token[4:].strip()
+
+    os.makedirs(os.path.dirname(PORTAL_TOKEN_FILE), exist_ok=True)
+    with open(PORTAL_TOKEN_FILE, 'w', encoding='utf-8') as f:
+        f.write(token)
+    os.environ['PORTAL_AUTH_TOKEN'] = token
+
+    with _portal_token_lock:
+        _portal_token_cache['token'] = token
+        _portal_token_cache['loaded_at'] = time.time()
+
+
+def _portal_delete_token():
+    """Удаляет токен."""
     try:
-        update_crash_cache(game_id, 'counting', 1.0, float(target_multiplier), 5.0)
+        if os.path.exists(PORTAL_TOKEN_FILE):
+            os.remove(PORTAL_TOKEN_FILE)
+    except Exception as e:
+        logger.warning(f'Portal token delete failed: {e}')
+    os.environ.pop('PORTAL_AUTH_TOKEN', None)
+    with _portal_token_lock:
+        _portal_token_cache['token'] = ''
+        _portal_token_cache['loaded_at'] = 0
+
+
+def _portal_validate_token(token):
+    """Проверяет формат initData."""
+    if not token:
+        return False, 'Токен пустой'
+    token = str(token).strip()
+    if token.startswith('tma '):
+        token = token[4:].strip()
+    if len(token) < 30:
+        return False, 'Токен слишком короткий. Нужна ВСЯ строка initData из Telegram WebApp.'
+    if 'user=' not in token:
+        return False, 'Не найдено "user=". Открой portal-market.com в Telegram WebApp → Console → Telegram.WebApp.initData → скопируй ВСЮ строку.'
+    if 'hash=' not in token:
+        return False, 'Не найдено "hash=". Скопируй ВСЮ строку initData включая hash= в конце.'
+    m = re.search(r'user=([^&]+)', token)
+    if not m:
+        return False, 'Не удалось распарсить поле "user="'
+    try:
+        import urllib.parse
+        decoded = urllib.parse.unquote(m.group(1))
+        if not re.search(r'"id"\s*:\s*\d+', decoded):
+            return False, 'В поле "user" нет числового "id". Токен повреждён.'
     except Exception:
-        pass
+        return False, 'Не удалось распарсить поле "user"'
+    return True, None
 
 
-# ─── CRASH BOTS HELPERS ───
-_BOT_AVATARS = [
-    'https://i.pravatar.cc/100?img=1', 'https://i.pravatar.cc/100?img=2',
-    'https://i.pravatar.cc/100?img=3', 'https://i.pravatar.cc/100?img=4',
-    'https://i.pravatar.cc/100?img=5', 'https://i.pravatar.cc/100?img=6',
-    'https://i.pravatar.cc/100?img=7', 'https://i.pravatar.cc/100?img=8',
-    'https://i.pravatar.cc/100?img=9', 'https://i.pravatar.cc/100?img=10',
-    'https://i.pravatar.cc/100?img=11', 'https://i.pravatar.cc/100?img=12',
-    'https://i.pravatar.cc/100?img=13', 'https://i.pravatar.cc/100?img=14',
-    'https://i.pravatar.cc/100?img=15', 'https://i.pravatar.cc/100?img=16',
-    'https://i.pravatar.cc/100?img=17', 'https://i.pravatar.cc/100?img=18',
-    'https://i.pravatar.cc/100?img=19', 'https://i.pravatar.cc/100?img=20',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Nova',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Pixel',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Orbit',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Comet',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Raptor',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Vega',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Turbo',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Hunter',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Sonic',
-    'https://api.dicebear.com/7.x/bottts/svg?seed=Storm',
-    'https://api.dicebear.com/7.x/lorelei/svg?seed=Akira',
-    'https://api.dicebear.com/7.x/lorelei/svg?seed=Yuki',
-    'https://api.dicebear.com/7.x/lorelei/svg?seed=Ren',
-    'https://api.dicebear.com/7.x/lorelei/svg?seed=Sakura',
-    'https://api.dicebear.com/7.x/adventurer/svg?seed=Kenji',
-    'https://api.dicebear.com/7.x/adventurer/svg?seed=Miko',
-    'https://robohash.org/WolfPack.png?set=set4',
-    'https://robohash.org/TigerPaw.png?set=set4',
-    'https://robohash.org/FoxTail.png?set=set4',
-    'https://robohash.org/PandaStar.png?set=set4',
-    'https://robohash.org/DragonPet.png?set=set4',
-    'https://robohash.org/BeastOrbit.png?set=set2',
-    'https://robohash.org/MechaPet.png?set=set2',
-    'https://robohash.org/MonsterRush.png?set=set2',
-]
+def _portal_collection_image_url(short_name):
+    """Превью коллекции: https://portal-market.com/collection_previews/{slug}.webp"""
+    if not short_name:
+        return ''
+    slug = str(short_name).strip().lower().replace(' ', '').replace("'", '').replace('.', '')
+    if not slug:
+        return ''
+    return f'https://portal-market.com/collection_previews/{slug}.webp'
 
-_BOT_NAMES_RU = [
-    'Алексей', 'Дмитрий', 'Максим', 'Артём', 'Иван',
-    'Михаил', 'Даниил', 'Кирилл', 'Андрей', 'Егор',
-    'Никита', 'Матвей', 'Тимофей', 'Роман', 'Владимир',
-    'Ярослав', 'Фёдор', 'Денис', 'Константин', 'Глеб',
-    'Анна', 'Мария', 'Софья', 'Дарья', 'Алиса',
-    'Полина', 'Виктория', 'Екатерина', 'Вероника', 'Арина',
-    'ТеньЛиса', 'КиберВолк', 'ЛунныйКот', 'ЗвёздныйТигр', 'НеоПанда',
-    'Дракончик', 'КосмоЗаяц', 'БуряКоготь', 'РобоЛис', 'ПиксельЕнот',
-    'СапфирФеникс', 'НочнойЯгуар', 'ГромКит', 'ВихрьСова', 'КометаРысь',
-]
 
-_BOT_NAMES_EN = [
-    'Alex', 'Daniel', 'James', 'Lucas', 'Oliver',
-    'William', 'Noah', 'Ethan', 'Mason', 'Logan',
-    'Emma', 'Sophia', 'Mia', 'Isabella', 'Charlotte',
-    'Amelia', 'Harper', 'Ella', 'Lily', 'Victoria',
-    'CryptoKing', 'LuckyShot', 'StarHunter', 'RocketMan', 'DiamondH',
-    'NightOwl', 'SkyRider', 'FireBolt', 'Ace_777', 'BigWin',
-    'NeonFox', 'BlazeRunner', 'AeroMint', 'VoltEdge', 'SilverJet',
-    'MoonByte', 'ZenPilot', 'NovaClutch', 'HyperDash', 'ZeroLag',
-    'RapidWin', 'DriftCore', 'GigaLuck', 'CloudRider', 'EchoStrike',
-    'CyberNeko', 'ShadowWolf', 'PixelPanda', 'NeonTiger', 'AquaOtter',
-    'StormFalcon', 'CometLynx', 'GhostRaven', 'CrystalFox', 'MechaKoala',
-    'AnimeBlade', 'KitsuneX', 'DragonPaw', 'FrostLeopard', 'TurboShark',
-]
+def _portal_nft_image_url(short_name, number):
+    """Картинка NFT: https://nft.fragment.com/gift/{slug}-{number}.large.jpg"""
+    if not short_name or not number:
+        return ''
+    slug = str(short_name).strip().lower().replace(' ', '').replace("'", '').replace('.', '')
+    if not slug:
+        return ''
+    try:
+        num = int(number)
+    except (ValueError, TypeError):
+        return ''
+    return f'https://nft.fragment.com/gift/{slug}-{num}.large.jpg'
 
-_BOT_LASTNAMES_RU = [
-    'Иванов', 'Петров', 'Смирнов', 'Кузнецов', 'Попов', 'Соколов', 'Лебедев',
-    'Козлов', 'Новиков', 'Морозов', 'Волков', 'Соловьёв', 'Васильев', 'Зайцев',
-    'Павлов', 'Семенов', 'Голубев', 'Виноградов', 'Богданов', 'Воробьёв'
-]
 
-_BOT_LASTNAMES_EN = [
-    'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis',
-    'Wilson', 'Taylor', 'Anderson', 'Thomas', 'Jackson', 'White', 'Harris',
-    'Martin', 'Thompson', 'Garcia', 'Clark', 'Lewis', 'Walker'
-]
+def _portal_run_async(coro, timeout=30):
+    """Запускает async-функцию из sync-контекста."""
+    try:
+        loop = _portal_asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(_portal_asyncio.wait_for(coro, timeout=timeout))
+        finally:
+            loop.close()
+    except _portal_asyncio.TimeoutError:
+        return None, f'Таймаут {timeout} сек'
+    except Exception as e:
+        return None, str(e)
 
-TON_RATE = 100.0
+
+def _portal_extract_items(colls):
+    """Извлекает список коллекций из ответа aportalsmp."""
+    if colls is None:
+        return []
+    # Может быть список
+    if isinstance(colls, list):
+        return colls
+    # Может быть dict
+    if isinstance(colls, dict):
+        for key in ('collections', 'items', 'result', 'data'):
+            if key in colls and isinstance(colls[key], list):
+                return colls[key]
+        return []
+    # Может быть объект с атрибутами
+    if hasattr(colls, 'collections'):
+        v = getattr(colls, 'collections')
+        if isinstance(v, list):
+            return v
+    if hasattr(colls, 'toDict'):
+        try:
+            d = colls.toDict()
+            for key in ('collections', 'items', 'result', 'data'):
+                if key in d and isinstance(d[key], list):
+                    return d[key]
+        except Exception:
+            pass
+    # Пробуем как iterable
+    try:
+        return list(colls)
+    except Exception:
+        return []
+
+
+def _portal_extract_coll_fields(coll):
+    """(short_name, floor_price_ton, name, photo_url) из объекта коллекции."""
+    short_name = ''
+    floor_price = 0.0
+    name = ''
+    photo_url = ''
+
+    if isinstance(coll, dict):
+        short_name = str(coll.get('short_name') or coll.get('slug') or '').strip().lower()
+        name = str(coll.get('name') or '').strip()
+        photo_url = str(coll.get('photo_url') or coll.get('image') or '').strip()
+        for key in ('floor_price', 'floorPrice', 'floor', 'price', 'min_price'):
+            if key in coll and coll[key] is not None:
+                try:
+                    floor_price = float(coll[key])
+                    break
+                except (ValueError, TypeError):
+                    continue
+    else:
+        short_name = str(getattr(coll, 'short_name', None) or getattr(coll, 'slug', '') or '').strip().lower()
+        name = str(getattr(coll, 'name', '') or '').strip()
+        photo_url = str(getattr(coll, 'photo_url', None) or getattr(coll, 'image', '') or '').strip()
+        for attr in ('floor_price', 'floorPrice', 'floor', 'price', 'min_price'):
+            v = getattr(coll, attr, None)
+            if v is not None:
+                try:
+                    floor_price = float(v)
+                    break
+                except (ValueError, TypeError):
+                    continue
+
+    # Fallback: если short_name пустое, строим из name
+    if not short_name and name:
+        short_name = re.sub(r'[^a-z0-9]+', '', name.lower())
+
+    return short_name, floor_price, name, photo_url
+
+
+def _portal_extract_gift_fields(gift):
+    """(id, number, price_ton, model, backdrop, symbol) из NFT."""
+    if isinstance(gift, dict):
+        gid = gift.get('id') or ''
+        number = gift.get('number') or gift.get('tg_id') or gift.get('nft_number') or 0
+        price = 0.0
+        for key in ('price', 'floor_price', 'price_ton'):
+            if key in gift and gift[key] is not None:
+                try:
+                    price = float(gift[key])
+                    break
+                except (ValueError, TypeError):
+                    continue
+        model = str(gift.get('model') or '')
+        backdrop = str(gift.get('backdrop') or '')
+        symbol = str(gift.get('symbol') or '')
+    else:
+        gid = getattr(gift, 'id', '') or ''
+        number = getattr(gift, 'number', 0) or getattr(gift, 'tg_id', 0) or 0
+        price = 0.0
+        for attr in ('price', 'floor_price', 'price_ton'):
+            v = getattr(gift, attr, None)
+            if v is not None:
+                try:
+                    price = float(v)
+                    break
+                except (ValueError, TypeError):
+                    continue
+        model = str(getattr(gift, 'model', '') or '')
+        backdrop = str(getattr(gift, 'backdrop', '') or '')
+        symbol = str(getattr(gift, 'symbol', '') or '')
+
+    try:
+        number = int(number)
+    except (ValueError, TypeError):
+        number = 0
+
+    return gid, number, price, model, backdrop, symbol
+
+
+# ─── PORTAL ROUTES ───
+
+
+
+
+
+
+def _portal_do_sync(token):
+    """Реальная синхронизация. Возвращает dict."""
+    try:
+        logger.info('Portal sync: start')
+        # 1. Загружаем коллекции
+        loop = _portal_asyncio.new_event_loop()
+        try:
+            colls_result = loop.run_until_complete(
+                _portal_asyncio.wait_for(
+                    _portal_collections_fn(authData=token, limit=500),
+                    timeout=60
+                )
+            )
+        finally:
+            loop.close()
+
+        raw_items = _portal_extract_items(colls_result)
+        logger.info(f'Portal sync: получено {len(raw_items)} коллекций')
+
+        if not raw_items:
+            return {
+                'success': False,
+                'error': 'Portal вернул 0 коллекций. Проверь токен или повтори позже.',
+                'raw_count': 0,
+            }
+
+        # 2. Нормализуем коллекции
+        portal_catalog = []
+        seen_slugs = set()
+        for coll in raw_items:
+            try:
+                short_name, floor_price, name, photo_url = _portal_extract_coll_fields(coll)
+                if not short_name or short_name in seen_slugs:
+                    continue
+                seen_slugs.add(short_name)
+
+                # Превью коллекции — всегда строим сами
+                preview = photo_url or _portal_collection_image_url(short_name)
+
+                item = {
+                    'name': name or short_name,
+                    'fragment_slug': short_name,
+                    'fragment_url': f'https://fragment.com/gifts/{short_name}',
+                    'image': preview,
+                    'source': 'portal',
+                }
+                if floor_price > 0:
+                    item['fragment_price_ton'] = round(floor_price, 4)
+                    item['value'] = int(round(floor_price * 100))
+
+                portal_catalog.append(item)
+            except Exception as e:
+                logger.debug(f'Portal coll parse error: {e}')
+                continue
+
+        logger.info(f'Portal sync: подготовлено {len(portal_catalog)} записей')
+
+        # 3. Сохраняем в fragment cache
+        try:
+            _save_fragment_catalog_disk_cache(portal_catalog)
+            global fragment_cache, fragment_cache_time
+            fragment_cache = portal_catalog
+            fragment_cache_time = time.time()
+        except Exception as e:
+            logger.warning(f'Portal cache write failed: {e}')
+
+        # 4. Обновляем gifts.json
+        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        if not os.path.exists(gifts_path):
+            return {'success': False, 'error': 'gifts.json не найден'}
+
+        with open(gifts_path, 'r', encoding='utf-8') as f:
+            raw = json.load(f)
+        gifts = raw.get('gifts', []) if isinstance(raw, dict) else raw
+        wrap_dict = isinstance(raw, dict)
+
+        by_slug = {}
+        for g in gifts:
+            slug = (g.get('fragment_slug') or _slugify_fragment_name(g.get('name', ''))).lower()
+            if slug:
+                by_slug[slug] = g
+
+        updated = 0
+        for item in portal_catalog:
+            slug = item['fragment_slug']
+            target = by_slug.get(slug)
+            if target is None:
+                gifts.append({**item, 'id': None})
+                updated += 1
+                continue
+
+            old_value = int(target.get('value', 0) or 0)
+            new_value = int(item.get('value', old_value) or old_value)
+            target['fragment_slug'] = slug
+            target['fragment_url'] = item['fragment_url']
+            if item.get('image'):
+                target['image'] = item['image']
+            if item.get('fragment_price_ton'):
+                target['fragment_price_ton'] = item['fragment_price_ton']
+                target['value'] = new_value
+            if old_value != new_value:
+                updated += 1
+
+        with open(gifts_path, 'w', encoding='utf-8') as f:
+            if wrap_dict:
+                json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
+            else:
+                json.dump(gifts, f, ensure_ascii=False, indent=2)
+
+        # Сброс кэшей
+        global gifts_cache, gifts_cache_time
+        gifts_cache = None
+        gifts_cache_time = None
+
+        # Время последнего синка
+        try:
+            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            with open(sync_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'timestamp': time.time(),
+                    'updated': updated,
+                    'total': len(gifts),
+                    'collections': len(portal_catalog),
+                }, f)
+        except Exception:
+            pass
+
+        logger.info(f'Portal sync OK: обновлено {updated}/{len(gifts)} подарков, коллекций {len(portal_catalog)}')
+        return {
+            'success': True,
+            'updated': updated,
+            'total': len(gifts),
+            'collections': len(portal_catalog),
+        }
+    except Exception as e:
+        logger.error(f'_portal_do_sync error: {e}')
+        return {'success': False, 'error': str(e)}
+
+
+
+
+
+@app.route('/api/portal/image-urls', methods=['GET'])
+def portal_image_urls_debug():
+    """Отладка URL картинок."""
+    try:
+        slug = request.args.get('slug', '').strip().lower()
+        number = request.args.get('number', 0, type=int)
+        if not slug:
+            return jsonify({'success': False, 'error': 'slug required'})
+        return jsonify({
+            'success': True,
+            'collection_preview': _portal_collection_image_url(slug),
+            'nft_large': _portal_nft_image_url(slug, number) if number else None,
+            'fragment_thumb': f'https://fragment.com/file/gifts/{slug}/thumb.webp',
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+
+
+
+
 
 
 def _load_crash_bots():
@@ -9380,187 +9476,9 @@ def _portal_sync_floors():
 
 # ─── PORTAL API ROUTES ───
 
-@app.route('/api/portal/status', methods=['GET'])
-def portal_status():
-    """Статус подключения к Portal."""
-    try:
-        token = _portal_get_token()
-        connected = False
-        user_info = None
-        error_msg = None
-        total_collections = 0
-
-        if token:
-            is_valid, err = _portal_validate_token(token)
-            if not is_valid:
-                error_msg = err
-            else:
-                ok, data, status = _portal_request('GET', '/profile', timeout=10)
-                if ok:
-                    connected = True
-                    user_info = data if isinstance(data, dict) else {'info': str(data)[:200]}
-                else:
-                    # Попробуем /collections — если тоже 401, значит токен плохой
-                    ok2, data2, _ = _portal_request('GET', '/collections', params={'limit': 1}, timeout=10)
-                    if ok2:
-                        connected = True
-                    else:
-                        error_msg = data if isinstance(data, str) else str(data)
-        else:
-            error_msg = 'Токен не задан. Вставь initData в админке.'
-
-        # Считаем коллекции в кэше
-        try:
-            if os.path.exists(FRAGMENT_DISK_CACHE_FILE):
-                with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
-                    cache = json.load(f)
-                total_collections = len(cache.get('gifts', []))
-        except Exception:
-            pass
-
-        # Последний синк
-        last_sync_ago = 'никогда'
-        last_updated = 0
-        try:
-            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
-            if os.path.exists(sync_file):
-                with open(sync_file, 'r', encoding='utf-8') as f:
-                    sd = json.load(f)
-                ts = sd.get('timestamp', 0)
-                if ts:
-                    diff = int(time.time() - ts)
-                    if diff < 60: last_sync_ago = f'{diff} сек назад'
-                    elif diff < 3600: last_sync_ago = f'{diff // 60} мин назад'
-                    else: last_sync_ago = f'{diff // 3600} ч назад'
-                    last_updated = sd.get('updated', 0)
-        except Exception:
-            pass
-
-        return jsonify({
-            'success': True,
-            'connected': connected,
-            'info': {
-                'user': user_info,
-                'error': error_msg,
-                'total_collections': total_collections,
-                'last_sync_ago': last_sync_ago,
-                'last_updated': last_updated,
-                'token_preview': (token[:20] + '...') if token and len(token) > 20 else token,
-            }
-        })
-    except Exception as e:
-        logger.error(f'portal_status error: {e}')
-        return jsonify({'success': False, 'error': str(e), 'connected': False,
-                        'info': {'error': str(e), 'total_collections': 0, 'last_sync_ago': 'никогда'}})
 
 
-@app.route('/api/portal/save-token', methods=['POST'])
-def portal_save_token():
-    """Сохранить initData токен."""
-    try:
-        data = request.get_json() or {}
-        admin_id = data.get('admin_id')
-        if str(admin_id) != str(ADMIN_ID):
-            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
 
-        token = str(data.get('token', '')).strip()
-        if not token:
-            return jsonify({'success': False, 'error': 'Пустой токен'})
-
-        is_valid, err = _portal_validate_token(token)
-        if not is_valid:
-            return jsonify({
-                'success': False,
-                'error': err,
-                'hint': 'Скопируй ВСЮ строку initData. Начинается с "user=" или "tma user=".'
-            })
-
-        _portal_save_token(token)
-        logger.info('Portal token saved')
-
-        # Проверяем работу
-        ok, data_test, status = _portal_request('GET', '/profile', timeout=10)
-        if not ok:
-            ok, data_test, _ = _portal_request('GET', '/collections', params={'limit': 1}, timeout=10)
-
-        if ok:
-            return jsonify({
-                'success': True,
-                'verified': True,
-                'message': 'Токен сохранён и проверен',
-                'token_preview': (token[:20] + '...') if len(token) > 20 else token,
-            })
-        else:
-            return jsonify({
-                'success': True,
-                'verified': False,
-                'message': 'Токен сохранён, но проверка не удалась',
-                'warning': data_test if isinstance(data_test, str) else str(data_test),
-                'token_preview': (token[:20] + '...') if len(token) > 20 else token,
-            })
-    except Exception as e:
-        logger.error(f'portal_save_token error: {e}')
-        return jsonify({'success': False, 'error': str(e)})
-
-
-@app.route('/api/portal/token', methods=['GET', 'POST', 'DELETE'])
-def portal_token():
-    """Управление токеном Portal."""
-    if request.method == 'GET':
-        token = _portal_get_token()
-        try:
-            import importlib.util
-            aportalsmp_available = importlib.util.find_spec('aportalsmp') is not None
-        except Exception:
-            aportalsmp_available = False
-        return jsonify({
-            'has_token': bool(token),
-            'token_preview': (token[:20] + '...') if token and len(token) > 20 else token,
-            'aportalsmp_available': aportalsmp_available,
-        })
-
-    if request.method == 'DELETE':
-        data = request.get_json() or {}
-        if str(data.get('admin_id')) != str(ADMIN_ID):
-            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-        _portal_delete_token()
-        return jsonify({'success': True, 'message': 'Токен удалён'})
-
-    return jsonify({'success': False, 'error': 'Method not allowed'}), 405
-
-
-@app.route('/api/portal/connect', methods=['POST'])
-def portal_connect():
-    """Принудительное подключение."""
-    try:
-        data = request.get_json() or {}
-        if str(data.get('admin_id')) != str(ADMIN_ID):
-            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-        token = _portal_get_token()
-        if not token:
-            return jsonify({'success': False, 'error': 'Токен не задан'})
-        ok, data_test, status = _portal_request('GET', '/profile', timeout=10)
-        if not ok:
-            ok, data_test, _ = _portal_request('GET', '/collections', params={'limit': 1}, timeout=10)
-        if ok:
-            return jsonify({'success': True, 'message': 'Portal подключён'})
-        return jsonify({'success': False, 'error': str(data_test)})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-
-@app.route('/api/portal/sync-prices', methods=['POST'])
-def portal_sync_prices():
-    """Синхронизация цен с Portal."""
-    try:
-        data = request.get_json() or {}
-        if str(data.get('admin_id')) != str(ADMIN_ID):
-            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-        result = _portal_sync_floors()
-        return jsonify(result)
-    except Exception as e:
-        logger.error(f'portal_sync_prices error: {e}')
-        return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/portal/collections', methods=['GET'])
@@ -9598,104 +9516,9 @@ def portal_search_route():
         return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/api/portal/gifts', methods=['GET'])
-def portal_gifts_search():
-    """Алиас для /api/portal/search."""
-    return portal_search_route()
 
 
-@app.route('/api/portal/parse-gift-url', methods=['POST'])
-def portal_parse_gift_url():
-    """Парсит ссылку fragment.com/gift/slug-NUMBER."""
-    try:
-        data = request.get_json() or {}
-        url = str(data.get('url') or '').strip()
-        if not url:
-            return jsonify({'success': False, 'error': 'URL пустой'})
 
-        slug = ''
-        number = 0
-        m = re.search(r'/(?:gift|gifts)/([a-z0-9_]+)-(\d+)', url, re.IGNORECASE)
-        if m:
-            slug = m.group(1).strip().lower()
-            number = int(m.group(2))
-        else:
-            m2 = re.search(r'([a-z0-9_]+)-(\d+)', url, re.IGNORECASE)
-            if m2:
-                slug = m2.group(1).strip().lower()
-                number = int(m2.group(2))
-
-        if not slug or not number:
-            return jsonify({'success': False, 'error': 'Формат: fragment.com/gift/slug-1234'})
-
-        image = f'https://nft.fragment.com/gift/{slug}-{number}.large.jpg'
-
-        # Ищем имя в gifts.json
-        name = ''
-        try:
-            with open(os.path.join(BASE_PATH, 'data', 'gifts.json'), 'r', encoding='utf-8') as f:
-                raw = json.load(f)
-            for g in (raw.get('gifts') or []):
-                gslug = (g.get('fragment_slug') or _slugify_fragment_name(g.get('name', ''))).lower()
-                if gslug == slug:
-                    name = (g.get('name') or '').replace(' (Random)', '').strip()
-                    break
-        except Exception:
-            pass
-
-        if not name:
-            name = slug.title()
-
-        return jsonify({
-            'success': True,
-            'slug': slug,
-            'number': number,
-            'name': f'{name} #{number}',
-            'base_name': name,
-            'image': image,
-            'attrs': {
-                'model': {'value': '—', 'rarity': None},
-                'symbol': {'value': '—', 'rarity': None},
-                'backdrop': {'value': '—', 'rarity': None},
-            }
-        })
-    except Exception as e:
-        logger.error(f'portal_parse_gift_url error: {e}')
-        return jsonify({'success': False, 'error': str(e)})
-
-
-@app.route('/api/portal/info', methods=['GET'])
-def portal_info():
-    """Информация о Portal."""
-    return portal_status()
-
-
-@app.route('/api/portal/auth-status', methods=['GET'])
-def portal_auth_status():
-    """Статус авторизации."""
-    return portal_status()
-
-
-@app.route('/api/portal/logout', methods=['POST'])
-def portal_logout():
-    """Сброс токена."""
-    data = request.get_json() or {}
-    if str(data.get('admin_id')) != str(ADMIN_ID):
-        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-    _portal_delete_token()
-    return jsonify({'success': True, 'message': 'Токен удалён'})
-
-
-# ─── КОНЕЦ PORTAL БЛОКА ───
-
-
-# ─── Portal fallback ───
-try:
-    import aportalsmp
-    _APORTALSMP_AVAILABLE = True
-except ImportError:
-    _APORTALSMP_AVAILABLE = False
-    logger.warning('Модуль aportalsmp НЕ установлен. Portal будет недоступен. Установи: pip install aportalsmp')
 
 
 def _check_aportalsmp():
@@ -9737,48 +9560,6 @@ def _validate_portal_initdata_improved(token):
 
     return True, None
 
-
-@app.route('/api/portal/status-fixed', methods=['GET'])
-def portal_status_fixed():
-    """Статус Portal с проверкой зависимости и понятными ошибками"""
-    available, err = _check_aportalsmp()
-    if not available:
-        return jsonify({'success': True, 'connected': False, 'info': {'error': err, 'total_collections': 0, 'last_sync_ago': 'никогда'}})
-
-    token = ''
-    try:
-        token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
-        if os.path.exists(token_file):
-            with open(token_file, 'r', encoding='utf-8') as f:
-                token = f.read().strip()
-    except Exception:
-        pass
-
-    if not token:
-        token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
-
-    if not token:
-        return jsonify({'success': True, 'connected': False, 'info': {'error': 'Токен не задан. Вставь initData в админке.', 'total_collections': 0, 'last_sync_ago': 'никогда'}})
-
-    is_valid, v_err = _validate_portal_initdata_improved(token)
-    if not is_valid:
-        return jsonify({'success': True, 'connected': False, 'info': {'error': v_err, 'total_collections': 0, 'last_sync_ago': 'никогда'}})
-
-    try:
-        import asyncio
-        from aportalsmp.gifts import collections as portal_collections
-        loop = asyncio.new_event_loop()
-        try:
-            colls = loop.run_until_complete(portal_collections(authData=token, limit=1))
-        finally:
-            loop.close()
-        items = _extract_items(colls)
-        return jsonify({'success': True, 'connected': True, 'info': {'user': {'first_name': 'Portal', 'username': 'user'}, 'total_collections': len(items) if items else 0, 'last_sync_ago': 'только что', 'error': None}})
-    except Exception as e:
-        err_msg = str(e)
-        if 'auth' in err_msg.lower() or 'unauthorized' in err_msg.lower():
-            err_msg = 'Токен недействителен или истёк. Получи новый initData.'
-        return jsonify({'success': True, 'connected': False, 'info': {'error': 'Ошибка Portal: ' + err_msg, 'total_collections': 0, 'last_sync_ago': 'никогда'}})
 
 
 @app.route('/api/portal/token', methods=['GET', 'POST', 'DELETE'])
