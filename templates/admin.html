@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1C2233">
-<title>Admin — Rasswet Gifts</title>
+<meta name="app-version" content="admin-2026-09-12-v2">
+<title>Admin — Rasswet Gifts • Management</title>
 <link rel="icon" type="image/png" href="/static/img/logo.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
@@ -583,14 +584,14 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 <textarea class="form-input" id="portalTokenInput" rows="4" placeholder='user=%7B%22id%22%3A123...&hash=...' style="font-family:'Courier New',monospace;font-size:11px"></textarea>
             </div>
             <div class="btn-row">
-                <button class="btn btn-success" onclick="savePortalToken()">💾 Сохранить</button>
+                <button class="btn btn-success" onclick="savePortalToken(event)">💾 Сохранить</button>
                 <button class="btn btn-danger" onclick="deletePortalToken()">🗑 Удалить</button>
             </div>
         </div>
 
         <div class="card">
             <div class="card-title">Синхронизация</div>
-            <button class="btn btn-primary" onclick="syncPortalPrices()">🔄 Синхронизировать цены с Portal</button>
+            <button class="btn btn-primary" onclick="syncPortalPrices(event)">🔄 Синхронизировать цены с Portal</button>
             <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.5">
                 Загружает floor-цены всех коллекций с Portal и обновляет gifts.json.
                 Это может занять несколько минут.
@@ -1594,9 +1595,10 @@ async function deletePromoCode(id, code){
 
 async function showPromoUses(id, code){
     try{
-        var r = await fetch('/api/admin/promo-codes/' + id + '/uses?admin_id=' + ADMIN_ID);
+        var r = await fetch('/api/admin/used-promos?admin_id=' + ADMIN_ID);
         var d = await r.json();
-        var list = (d.success && d.uses) ? d.uses : [];
+        var rows = (d.success && d.promos) ? d.promos : [];
+        var list = rows.filter(function(u){ return String(u.promo_code || '').toUpperCase() === String(code || '').toUpperCase(); });
         var html = '<div class="modal-title">👥 ' + escapeHtml(code) + '</div>';
         if(!list.length){
             html += '<div class="empty">Никто ещё не использовал</div>';
@@ -1701,7 +1703,7 @@ async function createPromoCode(){
     } else if(type === 'stars+tickets'){
         reward_stars = parseInt($('promoStars').value) || 0;
         reward_tickets = parseInt($('promoTickets').value) || 0;
-        reward_type = 'stars';
+        reward_type = 'stars+tickets';
     } else if(type === 'crash_vip'){
         reward_type = 'crash_vip';
         reward_data = { days: parseInt($('promoVipDays').value) || 7 };
@@ -1797,12 +1799,12 @@ async function loadPortalStatus(){
     }catch(e){ console.error(e); }
 }
 
-async function savePortalToken(){
+async function savePortalToken(evt){
     var token = ($('portalTokenInput').value || '').trim();
     if(!token){ showToast('Вставь токен', 'err'); return; }
     if(token.length < 30){ showToast('Токен слишком короткий', 'err'); return; }
     
-    var btn = event && event.target;
+    var btn = evt && evt.target;
     if(btn){ btn.disabled = true; btn.textContent = 'Сохранение...'; }
     
     try{
@@ -1838,9 +1840,9 @@ async function deletePortalToken(){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
-async function syncPortalPrices(){
+async function syncPortalPrices(evt){
     if(!confirm('Синхронизировать цены с Portal? Это может занять несколько минут.')) return;
-    var btn = event && event.target;
+    var btn = evt && evt.target;
     if(btn){ btn.disabled = true; btn.textContent = '⏳ Синхронизация...'; }
     try{
         var r = await fetch('/api/portal/sync-prices', {
