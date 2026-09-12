@@ -82,7 +82,25 @@ fragment_models_cache_time = {}
 
 # ── Portals Marketplace Configuration ────────────────────────────────────────
 # Auth: first try PORTAL_AUTH_TOKEN (ready-made TMA initData), fallback to session-based
-PORTAL_AUTH_TOKEN = ''
+# ── Portal auth token: env или data/portal_token.txt ──
+def _load_portal_token():
+    """Загружает токен из env или файла."""
+    token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
+    if token:
+        return token
+    try:
+        token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
+        if os.path.exists(token_file):
+            with open(token_file, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if content:
+                    logger.info(f'Portal token loaded from file ({len(content)} chars)')
+                    return content
+    except Exception as e:
+        logger.warning(f'Portal token file read error: {e}')
+    return ''
+
+PORTAL_AUTH_TOKEN = _load_portal_token()
 PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
 PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
 PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
@@ -1553,89 +1571,6 @@ def get_db_connection():
     # Последняя попытка
     return sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
 
-@app.route('/api/user-profile/<int:user_id>', methods=['GET'])
-def api_user_profile_card_fixed(user_id):
-    """Public profile card data for popup — FIXED VERSION."""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('''SELECT id, first_name, username, photo_url,
-                COALESCE(total_cases_opened,0), COALESCE(total_crash_bets,0),
-                COALESCE(total_bet_volume,0), COALESCE(current_level,1),
-                COALESCE(experience,0)
-            FROM users WHERE id = ?''', (user_id,))
-        row = cursor.fetchone()
-        if not row:
-            conn.close()
-            return jsonify({'success': False, 'error': 'User not found'})
-
-        # Leaderboard position
-        cursor.execute('''SELECT COUNT(*) FROM users
-            WHERE COALESCE(total_bet_volume,0) > ? AND id > 0''', (row[6] or 0,))
-        rank = (cursor.fetchone()[0] or 0) + 1
-
-        # Monthly turnover
-        cursor.execute('''SELECT COALESCE(SUM(bet_amount),0) FROM ultimate_crash_bets
-            WHERE user_id = ? AND created_at >= date('now','start of month')''', (user_id,))
-        monthly = cursor.fetchone()[0] or 0
-
-        # Inventory
-        cursor.execute('''SELECT gift_id, gift_name, gift_image, gift_value,
-                COALESCE(is_upgraded, 0)
-            FROM inventory WHERE user_id = ?
-            ORDER BY received_at DESC LIMIT 30''', (user_id,))
-        inv_rows = cursor.fetchall()
-
-        inventory = []
-        for ir in inv_rows:
-            img = ir[2] or '/static/img/gift.png'
-            if not img.startswith('http') and not img.startswith('/'):
-                img = '/static/gifs/gifts/' + img
-            inventory.append({
-                'gift_id': ir[0],
-                'name': ir[1] or 'Gift',
-                'image': img,
-                'value': ir[3] or 0,
-                'is_upgraded': bool(ir[4])
-            })
-
-        # Level info
-        cur_lvl = row[7] or 1
-        exp = row[8] or 0
-        cur_lvl_info = next((l for l in LEVEL_SYSTEM if l["level"] == cur_lvl), None)
-        nxt_lvl_info = next((l for l in LEVEL_SYSTEM if l["level"] == cur_lvl + 1), None)
-        if cur_lvl_info and nxt_lvl_info:
-            lvl_progress = ((exp - cur_lvl_info["exp_required"]) /
-                           max(nxt_lvl_info["exp_required"] - cur_lvl_info["exp_required"], 1)) * 100
-            nxt_exp = nxt_lvl_info["exp_required"]
-        else:
-            lvl_progress = 100
-            nxt_exp = exp
-
-        conn.close()
-        return jsonify({
-            'success': True,
-            'profile': {
-                'id': row[0],
-                'first_name': row[1] or 'User',
-                'username': row[2] or '',
-                'photo_url': row[3] or '/static/img/default_avatar.png',
-                'cases_opened': row[4],
-                'crash_bets': row[5],
-                'total_volume': row[6],
-                'level': cur_lvl,
-                'experience': exp,
-                'rank': rank,
-                'monthly_turnover': monthly,
-                'inventory': inventory,
-                'level_progress': min(max(lvl_progress, 0), 100),
-                'next_level_exp': nxt_exp,
-                'current_level_exp': cur_lvl_info["exp_required"] if cur_lvl_info else 0
-            }
-        })
-    except Exception as e:
-        logger.error(f"user_profile_card error: {e}")
-        return jsonify({'success': False, 'error': str(e)})
 
 @app.teardown_request
 def _close_request_db(exc=None):
@@ -8748,15 +8683,88 @@ def _portal_clean_name(name):
     return re.sub(r'\s*\(Random\)\s*$', '', name).strip()
 
 
+def _validate_portal_initdata(token):
+    """Проверяет формат initData перед использованием.
+    
+    Returns:
+        (is_valid: bool, error_msg: str or None)
+    """
+    if not token:
+        return False, 'Пустой токен'
+    
+    token = str(token).strip()
+    
+    # Должно начинаться с 'user=' или 'tma user='
+    if not (token.startswith('user=') or token.startswith('tma user=')):
+        # Может быть префикс 'tma ' — убираем
+        if token.startswith('tma '):
+            token = token[4:]
+        else:
+            if len(token) < 30:
+                return False, 'Токен обрезан. Нужна вся строка initData, начинается с "user=" (или "tma user=")'
+            if 'user=' not in token:
+                return False, 'Не найдено поле "user=". Скопируй ВСЮ строку initData целиком (не только hash)'
+    
+    # Обязательно 'user=' и 'hash='
+    if 'user=' not in token:
+        return False, 'Не найдено поле "user=". Нужна вся строка initData'
+    if 'hash=' not in token:
+        return False, 'Не найдено поле "hash=". Скопируй всю строку initData'
+    
+    # 'user=' должен содержать JSON
+    user_match = re.search(r'user=([^&]+)', token)
+    if not user_match:
+        return False, 'Некорректное поле "user="'
+    
+    user_val = user_match.group(1)
+    # URL-decode
+    import urllib.parse
+    try:
+        decoded = urllib.parse.unquote(user_val)
+        # Должен содержать "id": число
+        if not re.search(r'"id"\s*:\s*\d+', decoded):
+            return False, 'В поле "user" нет "id". Возможно, токен не является initData'
+    except Exception:
+        return False, 'Не удалось распарсить поле "user"'
+    
+    return True, None
+
+
 def _get_portal_auth():
-    """Get cached Portal auth data, refresh if needed."""
+    """Get cached Portal auth data. # v3-final"""
     global _portal_auth_data
+
+    # 1. Кэш
     if _portal_auth_data:
         return _portal_auth_data
-    # Try session-based auth as fallback
+
+    # 2. Токен из env / файла
+    token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
+    if not token:
+        try:
+            token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
+            if os.path.exists(token_file):
+                with open(token_file, 'r', encoding='utf-8') as f:
+                    token = f.read().strip()
+        except Exception:
+            token = ''
+
+    if token:
+        is_valid, err = _validate_portal_initdata(token)
+        if not is_valid:
+            logger.error(f'Portal token invalid: {err}')
+            return None
+        if token.startswith('tma '):
+            token = token[4:]
+        _portal_auth_data = token
+        logger.info(f'✅ Portal: token loaded ({len(token)} chars)')
+        return _portal_auth_data
+
+    # 3. Session-based (api_id/api_hash)
     if not PORTAL_API_ID or not PORTAL_API_HASH:
-        logger.warning("Portal auth not configured (set PORTAL_AUTH_TOKEN or PORTAL_API_ID+PORTAL_API_HASH)")
+        logger.warning("Portal auth not configured")
         return None
+
     try:
         import asyncio
         from aportalsmp.auth import update_auth
@@ -8766,7 +8774,7 @@ def _get_portal_auth():
                         session_path=PORTAL_SESSION_PATH, session_name=PORTAL_SESSION_NAME)
         )
         loop.close()
-        logger.info("✅ Portal auth data obtained via session")
+        logger.info("✅ Portal auth via session")
         return _portal_auth_data
     except Exception as e:
         logger.error(f"❌ Portal auth failed: {e}")
@@ -8939,6 +8947,186 @@ def _portal_sync_floors():
     except Exception as e:
         logger.error(f"❌ Portal floors sync error: {e}\n{traceback.format_exc()}")
         return {'success': False, 'error': str(e)}
+
+# ═══════════════════════════════════════════════════════════
+# PORTAL AUTH ENDPOINTS (v3-final)
+# ═══════════════════════════════════════════════════════════
+
+@app.route('/api/portal/auth-status', methods=['GET'])
+def portal_auth_status():
+    """Проверка статуса авторизации Portal."""
+    try:
+        global _portal_auth_data
+
+        token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
+        token_source = 'env'
+        if not token:
+            try:
+                tf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
+                if os.path.exists(tf):
+                    with open(tf, 'r', encoding='utf-8') as f:
+                        token = f.read().strip()
+                        if token:
+                            token_source = 'file'
+            except Exception:
+                pass
+
+        if not token:
+            return jsonify({'authorized': False, 'has_token': False, 'error': 'Токен не задан'})
+
+        is_valid, err = _validate_portal_initdata(token)
+        if not is_valid:
+            hint = 'Вставь ВСЮ строку initData (не только hash). Начинается с "user=" или "tma user=".'
+            return jsonify({'authorized': False, 'has_token': True, 'error': err, 'hint': hint})
+
+        if token.startswith('tma '):
+            token = token[4:]
+
+        _portal_auth_data = token
+
+        try:
+            import asyncio
+            from aportalsmp.profile import me as portal_me
+            loop = asyncio.new_event_loop()
+            profile = loop.run_until_complete(portal_me(authData=token))
+            loop.close()
+
+            user_data = {}
+            if hasattr(profile, 'toDict'):
+                user_data = profile.toDict()
+            elif isinstance(profile, dict):
+                user_data = profile
+            else:
+                user_data = {
+                    'first_name': getattr(profile, 'first_name', 'Portal'),
+                    'username': getattr(profile, 'username', 'user'),
+                    'id': getattr(profile, 'id', 0)
+                }
+            return jsonify({
+                'authorized': True,
+                'has_token': True,
+                'user': user_data,
+                'token_source': token_source
+            })
+        except Exception as pe:
+            err_str = str(pe)
+            logger.warning(f'Portal auth-status failed: {err_str}')
+            if 'invalid literal for int' in err_str:
+                friendly = 'Токен повреждён: вставлен только hash. Нужна ВСЯ строка initData.'
+            elif 'unauthorized' in err_str.lower():
+                friendly = 'Токен устарел или недействителен.'
+            elif 'expired' in err_str.lower():
+                friendly = 'Токен истёк (живёт ~24ч). Получи свежий initData.'
+            else:
+                friendly = f'Ошибка: {err_str}'
+            return jsonify({
+                'authorized': False,
+                'has_token': True,
+                'error': friendly,
+                'raw_error': err_str
+            })
+    except Exception as e:
+        logger.error(f'portal_auth_status error: {e}')
+        return jsonify({'authorized': False, 'has_token': False, 'error': str(e)})
+
+
+@app.route('/api/portal/save-token', methods=['POST'])
+def portal_save_token():
+    """Сохраняет initData токен."""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        token = str(data.get('token', '')).strip()
+        if not token:
+            return jsonify({'success': False, 'error': 'Пустой токен'})
+
+        is_valid, err = _validate_portal_initdata(token)
+        if not is_valid:
+            logger.warning(f'Portal save-token: invalid — {err}')
+            return jsonify({
+                'success': False,
+                'error': err,
+                'hint': 'Скопируй ВСЮ строку initData целиком. Начинается с "user=" или "tma user=".'
+            })
+
+        if token.startswith('tma '):
+            token = token[4:]
+
+        token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
+        os.makedirs(os.path.dirname(token_file), exist_ok=True)
+        with open(token_file, 'w', encoding='utf-8') as f:
+            f.write(token)
+
+        os.environ['PORTAL_AUTH_TOKEN'] = token
+
+        global _portal_auth_data
+        _portal_auth_data = token
+
+        # Проверка
+        try:
+            import asyncio
+            from aportalsmp.profile import me as portal_me
+            loop = asyncio.new_event_loop()
+            profile = loop.run_until_complete(portal_me(authData=token))
+            loop.close()
+
+            user_data = {}
+            if hasattr(profile, 'toDict'):
+                user_data = profile.toDict()
+            elif isinstance(profile, dict):
+                user_data = profile
+            else:
+                user_data = {
+                    'first_name': getattr(profile, 'first_name', 'Portal'),
+                    'username': getattr(profile, 'username', 'user')
+                }
+            return jsonify({
+                'success': True,
+                'user': user_data,
+                'message': 'Токен сохранён и проверен'
+            })
+        except Exception as pe:
+            logger.warning(f'Portal verify failed: {pe}')
+            return jsonify({
+                'success': True,
+                'user': {'first_name': 'Portal', 'username': 'user'},
+                'message': 'Токен сохранён (проверка отложена)',
+                'warning': str(pe)
+            })
+    except Exception as e:
+        logger.error(f'portal_save_token error: {e}')
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/portal/logout', methods=['POST'])
+def portal_logout():
+    """Сброс токена."""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
+        if os.path.exists(token_file):
+            try:
+                os.remove(token_file)
+            except Exception:
+                pass
+
+        os.environ.pop('PORTAL_AUTH_TOKEN', None)
+
+        global _portal_auth_data
+        _portal_auth_data = None
+
+        return jsonify({'success': True, 'message': 'Токен удалён'})
+    except Exception as e:
+        logger.error(f'portal_logout error: {e}')
+        return jsonify({'success': False, 'error': str(e)})
+
 
 @app.route('/api/portal/status', methods=['GET'])
 def portal_status():
@@ -21083,7 +21271,7 @@ if __name__ == '__main__':
         print("⚠️ " + "=" * 54 + " ⚠️")
         print("⚠️  ВНИМАНИЕ: Используется SQLite!")
         print("⚠️  Данные будут ПОТЕРЯНЫ при редеплое!")
-        print("⚠️  Установите DATABASE_URL дл PostgreSQL!")
+        print("⚠️  Установите DATABASE_URL для PostgreSQL!")
         print("⚠️ " + "=" * 54 + " ⚠️")
     
     print(f"\n🚀 Flask сервер:  http://{host}:{port}")
