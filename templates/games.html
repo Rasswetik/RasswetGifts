@@ -11,8 +11,6 @@
 :root{
     --bg:#1C2233;
     --panel:#0B1120;
-    --panel-2:#0d1424;
-    --border:rgba(99,160,255,.12);
     --text:#fff;
     --text-2:#8CA0BE;
     --text-3:rgba(140,160,190,.6);
@@ -52,7 +50,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     padding:5px 10px;border-radius:20px;
     border:1.5px solid rgba(30,228,76,.45);
     background:rgba(30,228,76,.12);
-    font-family:inherit;font-weight:700;font-size:13px;color:#1EE44C;
+    font-weight:700;font-size:13px;color:#1EE44C;
     backdrop-filter:blur(5px);
 }
 .online-pill svg{width:12px;height:12px}
@@ -109,6 +107,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     opacity:.85;filter:blur(18px);
     transition:opacity .3s;
 }
+.game-card-inventory::before{background:linear-gradient(135deg,#fbbf24,#b45309)}
 .game-card-crash::before{background:linear-gradient(135deg,#ff8a3d,#c2410c)}
 .game-card-cases::before{background:linear-gradient(135deg,#60a5fa,#1e40af)}
 .game-card-market::before{background:linear-gradient(135deg,#34d399,#047857)}
@@ -172,6 +171,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 
 /* ══════════════ ТЕМЫ КАРТОЧЕК ══════════════ */
+.game-card-inventory{
+    background:
+        radial-gradient(90% 70% at 85% 20%, rgba(251,191,36,.45) 0%, transparent 65%),
+        radial-gradient(120% 100% at 20% 100%, rgba(180,83,9,.7) 0%, transparent 75%),
+        linear-gradient(135deg, #3d2505 0%, #291a0a 50%, #1a1005 100%);
+    box-shadow:
+        0 10px 36px rgba(251,191,36,.35),
+        inset 0 1px 0 rgba(255,255,255,.12);
+    border:1.5px solid rgba(251,191,36,.35);
+}
 .game-card-crash{
     background:
         radial-gradient(90% 70% at 85% 20%, rgba(255,138,61,.45) 0%, transparent 65%),
@@ -253,6 +262,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     background:linear-gradient(135deg,#fb7185,#be123c);
     box-shadow:0 4px 14px rgba(244,63,94,.6);
 }
+.tag-gold{
+    background:linear-gradient(135deg,#FFD700,#FFA500);
+    color:#000;
+    box-shadow:0 4px 14px rgba(255,215,0,.6);
+}
 
 /* ══════════════ EMPTY ══════════════ */
 .empty-msg{
@@ -331,59 +345,25 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 <div class="games-container">
 
-    <!-- CRASH -->
-    <button class="game-card game-card-crash" onclick="goTo('/crash')">
+    <!-- 1. INVENTORY (первая, со сдвигом 15% вправо и пониже) -->
+    <button class="game-card game-card-inventory" id="invCard" onclick="goTo('/inventory')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
-            <span id="crashPlayers">0 играют</span>
+            <span>Твой профиль</span>
         </div>
         <div class="game-card-content">
             <div class="game-card-info">
-                <span class="game-card-text">Краш</span>
+                <span class="game-card-text">Инвентарь</span>
             </div>
-            <img src="/static/gifs/rockets/crash.gif" alt="Crash" class="game-card-gif" id="crashGif" loading="lazy">
+            <img src="/static/gifs/inv.gif" alt="Inventory" class="game-card-gif" loading="lazy"
+                 onerror="this.onerror=null;this.src='/static/img/gift.png'">
         </div>
-        <div class="game-card-tag tag-live">LIVE</div>
+        <div class="game-card-tag tag-gold">★ МОЙ</div>
     </button>
 
-    <!-- CASES -->
-    <button class="game-card game-card-cases" onclick="goTo('/cases')">
-        <div class="game-card-players">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span id="casesPlayers">0 играют</span>
-        </div>
-        <div class="game-card-content">
-            <div class="game-card-info">
-                <span class="game-card-text">Кейсы</span>
-            </div>
-            <img src="/static/gifs/cases.gif" alt="Cases" class="game-card-gif" loading="lazy"
-                 onerror="this.onerror=null;this.src='/static/gifs/Hlop.gif'">
-        </div>
-        <div class="game-card-tag tag-hot">HOT</div>
-    </button>
-
-    <!-- MARKET — случайный PNG, закруглённый -->
-    <button class="game-card game-card-market" onclick="goTo('/market')">
-        <div class="game-card-players">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span id="marketPlayers">0 играют</span>
-        </div>
-        <div class="game-card-content">
-            <div class="game-card-info">
-                <span class="game-card-text">Маркет</span>
-            </div>
-            <img src="/static/img/gift.png" alt="Market" class="game-card-gif rounded" id="marketGif" loading="lazy">
-        </div>
-        <div class="game-card-tag tag-new">NEW</div>
-    </button>
-
-    <!-- UPGRADE — реальное колесо -->
+    <!-- 2. UPGRADE -->
     <button class="game-card game-card-upgrade" onclick="goTo('/upgrade')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -397,7 +377,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
             </div>
         </div>
 
-        <!-- WHEEL SVG -->
         <svg class="upgrade-wheel-svg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <linearGradient id="upgradeGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -421,6 +400,58 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
             <circle cx="120" cy="62" r="5" fill="#fff"/>
         </svg>
 
+        <div class="game-card-tag tag-new">NEW</div>
+    </button>
+
+    <!-- 3. CRASH -->
+    <button class="game-card game-card-crash" onclick="goTo('/crash')">
+        <div class="game-card-players">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="crashPlayers">0 играют</span>
+        </div>
+        <div class="game-card-content">
+            <div class="game-card-info">
+                <span class="game-card-text">Краш</span>
+            </div>
+            <img src="/static/gifs/rockets/crash.gif" alt="Crash" class="game-card-gif" id="crashGif" loading="lazy">
+        </div>
+        <div class="game-card-tag tag-live">LIVE</div>
+    </button>
+
+    <!-- 4. CASES -->
+    <button class="game-card game-card-cases" onclick="goTo('/cases')">
+        <div class="game-card-players">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="casesPlayers">0 играют</span>
+        </div>
+        <div class="game-card-content">
+            <div class="game-card-info">
+                <span class="game-card-text">Кейсы</span>
+            </div>
+            <img src="/static/gifs/cases.gif" alt="Cases" class="game-card-gif" loading="lazy"
+                 onerror="this.onerror=null;this.src='/static/gifs/Hlop.gif'">
+        </div>
+        <div class="game-card-tag tag-hot">HOT</div>
+    </button>
+
+    <!-- 5. MARKET -->
+    <button class="game-card game-card-market" onclick="goTo('/market')">
+        <div class="game-card-players">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span id="marketPlayers">0 играют</span>
+        </div>
+        <div class="game-card-content">
+            <div class="game-card-info">
+                <span class="game-card-text">Маркет</span>
+            </div>
+            <img src="/static/img/gift.png" alt="Market" class="game-card-gif rounded" id="marketGif" loading="lazy">
+        </div>
         <div class="game-card-tag tag-new">NEW</div>
     </button>
 
@@ -453,6 +484,18 @@ var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn
 var lastCrashGif = 'crash';
 
 function $(id){ return document.getElementById(id); }
+
+/* ══════════════════════════════════════════════════════════════
+   INVENTORY CARD — сдвиг 15% вправо + ниже
+   ══════════════════════════════════════════════════════════════ */
+function applyInventoryCardOffset(){
+    var card = $('invCard');
+    if(!card) return;
+    // Сдвиг 15% вправо + опускаем на 20px
+    card.style.transform = 'translateX(15%)';
+    card.style.marginTop = '20px';
+}
+applyInventoryCardOffset();
 
 /* ══════════════════════════════════════════════════════════════
    RANDOM CRASH GIF
@@ -636,6 +679,7 @@ async function initGames(){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
+    applyInventoryCardOffset();
     initGames();
 });
 </script>
