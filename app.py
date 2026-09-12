@@ -21319,6 +21319,397 @@ def api_upgrade_spin():
 
 
 
+
+
+# ══════════════════════════════════════════════════════════════
+# INVENTORY UPGRADE SYSTEM (added by fix_inventory_upgrade.py)
+# ══════════════════════════════════════════════════════════════
+
+# Запрещённые атрибуты для целевого номера
+_INV_UPGRADE_FORBIDDEN_BACKDROPS = {'black', 'onyx', 'black diamond', 'onyx black', 'black onyx'}
+_INV_UPGRADE_FORBIDDEN_MODELS = {'rare', 'legendary', 'mythic', 'epic'}
+
+
+def _inv_upgrade_is_forbidden(backdrop, model):
+    """True если атрибуты запрещены."""
+    bd = str(backdrop or '').strip().lower()
+    md = str(model or '').strip().lower()
+    if bd in _INV_UPGRADE_FORBIDDEN_BACKDROPS:
+        return True
+    if md in _INV_UPGRADE_FORBIDDEN_MODELS:
+        return True
+    return False
+
+
+@app.route('/api/inventory/upgrade-prepare', methods=['POST'])
+def api_inv_upgrade_prepare():
+    """Подготовка улучшения: 30 копий ТОГО ЖЕ подарка с разными #номерами.
+    
+    Возвращает:
+      - current: текущий подарок (для отображения в центре)
+      - variants: 30 карточек — копии этого же подарка с разными #номерами
+      - attributes: {model, symbol, backdrop} для каждого варианта
+    """
+    try:
+        data = request.get_json() or {}
+        user_id = data.get('user_id')
+        inventory_id = data.get('inventory_id')
+
+        if not user_id or not inventory_id:
+            return jsonify({'success': False, 'error': 'Missing user_id or inventory_id'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Подарок не найден'})
+        cols = [d[0] for d in cursor.description]
+        item = dict(zip(cols, row))
+
+        if item.get('is_upgraded'):
+            conn.close()
+            return jsonify({'success': False, 'error': 'Подарок уже улучшен'})
+        if item.get('crate_id'):
+            conn.close()
+            return jsonify({'success': False, 'error': 'Ящик нельзя улучшить'})
+
+        try:
+            cursor.execute(
+                'SELECT id FROM promo_gift_challenges WHERE inventory_id = ? AND is_completed = FALSE',
+                (inventory_id,)
+            )
+            if cursor.fetchone():
+                conn.close()
+                return jsonify({'success': False, 'error': 'Подарок заблокирован отыгрышем'})
+        except Exception:
+            pass
+
+        conn.close()
+
+        # Базовая инфа о подарке
+        gift_name = item.get('gift_name') or 'Gift'
+        gift_image = item.get('gift_image') or '/static/img/gift.png'
+        gift_value = int(item.get('gift_value') or 0)
+
+        # Ищем slug в каталоге
+        slug = ''
+        catalog = []
+        try:
+            catalog = build_full_catalog_with_models()
+        except Exception:
+            catalog = []
+        if not catalog:
+            try:
+                catalog = load_gifts_cached() or []
+            except Exception:
+                catalog = []
+
+        # Извлекаем slug
+        for g in catalog:
+            gname = (g.get('name') or '').replace('(Random)', '').strip().lower()
+            gname_clean = gname.replace('#', '').strip()
+            target_clean = gift_name.replace('(Random)', '').replace('#', '').strip().lower()
+            # Матч по имени или по slug в картинке
+            if gname_clean == target_clean or (g.get('fragment_slug') and g.get('fragment_slug') in gift_image):
+                slug = g.get('fragment_slug') or ''
+                break
+
+        if not slug:
+            # Fallback: пробуем из картинки
+            import re as _re
+            m = _re.search(r'/gifts/([a-z0-9_]+)[/\.\-]', gift_image)
+            if m:
+                slug = m.group(1)
+            else:
+                slug = _slugify_fragment_name(gift_name.replace('(Random)', '').strip())
+
+        # ─── Генерируем 30 вариантов ───
+        # Каждый вариант — копия подарка с уникальным #номером и своими атрибутами
+        import random as _rnd
+
+        # Пробуем загрузить реальные модели для этого slug из кэша
+        models_pool = []
+        backdrops_pool = []
+        symbols_pool = []
+        try:
+            with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
+                _cache = json.load(f)
+            slug_models = _cache.get('models', {}).get(slug, [])
+            for m in slug_models:
+                mname = m.get('model_name', '')
+                if mname:
+                    models_pool.append(mname)
+        except Exception:
+            pass
+
+        # Базовые fallback-пулы
+        if not models_pool:
+            models_pool = ['Classic', 'Gummy', 'Delicious', 'Bold', 'Cute', 'Wild', 'Fancy']
+        if not symbols_pool:
+            symbols_pool = ['Snowflake', 'Star', 'Diamond', 'Heart', 'Crescent', 'Clover', 'Lightning', 'Crown', 'Moon', 'Lotus']
+        if not backdrops_pool:
+            backdrops_pool = ['Ivory', 'Crimson', 'Emerald', 'Amethyst', 'Turquoise', 'Midnight Blue', 'Pearl White', 'Rose Gold', 'Charcoal', 'Sky Blue']
+
+        # Ограничения: не даём запрещённые (rare/legendary/black/onyx)
+        models_pool = [m for m in models_pool if m.lower() not in _INV_UPGRADE_FORBIDDEN_MODELS]
+        backdrops_pool = [b for b in backdrops_pool if b.lower() not in _INV_UPGRADE_FORBIDDEN_BACKDROPS]
+        if not models_pool:
+            models_pool = ['Classic']
+        if not backdrops_pool:
+            backdrops_pool = ['Ivory']
+
+        # Base name без #xxx
+        base_name = gift_name.replace('(Random)', '').strip()
+        import re as _re2
+        base_name = _re2.sub(r'\s*#\d+$', '', base_name).strip()
+
+        # Генерируем 30 уникальных номеров
+        used_numbers = set()
+        variants = []
+
+        for i in range(30):
+            # Уникальный номер
+            num = 0
+            tries = 0
+            while num == 0 or num in used_numbers:
+                num = _rnd.randint(1, 5000)
+                tries += 1
+                if tries > 100:
+                    num = int(_rnd.random() * 100000) % 9999 + 1
+                    break
+            used_numbers.add(num)
+
+            # Модель / символ / фон
+            model = _rnd.choice(models_pool) if models_pool else 'Classic'
+            symbol = _rnd.choice(symbols_pool) if symbols_pool else 'Star'
+            backdrop = _rnd.choice(backdrops_pool) if backdrops_pool else 'Ivory'
+
+            # Rarity (случайные, но правдоподобные)
+            model_rarity = round(_rnd.uniform(0.5, 8.0), 1)
+            symbol_rarity = round(_rnd.uniform(0.5, 5.0), 1)
+            backdrop_rarity = round(_rnd.uniform(0.5, 5.0), 1)
+
+            # Картинка с fragment.com
+            clean_slug = slug.replace(' ', '').replace("'", '').replace('.', '')
+            img = "https://nft.fragment.com/gift/%s-%s.medium.jpg" % (clean_slug, num)
+            # Fallback — оригинальная картинка
+            fallback_img = gift_image
+
+            variants.append({
+                'index': i,
+                'nft_number': num,
+                'name': "%s #%s" % (base_name, num),
+                'image': img,
+                'fallback_image': fallback_img,
+                'value': gift_value,
+                'model': model,
+                'symbol': symbol,
+                'backdrop': backdrop,
+                'model_rarity': model_rarity,
+                'symbol_rarity': symbol_rarity,
+                'backdrop_rarity': backdrop_rarity,
+            })
+
+        # Центральный индекс — тот, что показываем как "текущий"
+        # (не важно, т.к. на клиенте центр — это превью)
+        center_index = _rnd.randint(0, 29)
+
+        logger.info(
+            "🎰 Inventory upgrade prepare: user=%s, inv=%s, gift='%s', slug='%s', variants=30" % (
+                user_id, inventory_id, base_name, slug
+            )
+        )
+
+        return jsonify({
+            'success': True,
+            'current': {
+                'id': item.get('id'),
+                'name': gift_name,
+                'image': gift_image,
+                'value': gift_value,
+                'slug': slug,
+            },
+            'variants': variants,
+            'center_index': center_index,
+        })
+
+    except Exception as e:
+        logger.error("Inventory upgrade prepare error: %s" % e)
+        try:
+            logger.error(traceback.format_exc())
+        except Exception:
+            pass
+        return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/inventory/upgrade-spin', methods=['POST'])
+def api_inv_upgrade_spin():
+    """Выполнение улучшения.
+    
+    Сервер выбирает случайный индекс 0-29 и превращает подарок в этот вариант.
+    """
+    conn = None
+    try:
+        data = request.get_json() or {}
+        user_id = data.get('user_id')
+        inventory_id = data.get('inventory_id')
+        chosen_index = data.get('chosen_index')  # опционально — какой мы "хотим"
+        variants = data.get('variants')  # список вариантов с клиента
+
+        if not user_id or not inventory_id:
+            return jsonify({'success': False, 'error': 'Missing fields'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Подарок не найден'})
+        cols = [d[0] for d in cursor.description]
+        item = dict(zip(cols, row))
+
+        if item.get('is_upgraded'):
+            conn.close()
+            return jsonify({'success': False, 'error': 'Подарок уже улучшен'})
+        if item.get('crate_id'):
+            conn.close()
+            return jsonify({'success': False, 'error': 'Ящик нельзя улучшить'})
+
+        # Определяем, какой вариант выпал
+        # Если клиент передал chosen_index — используем его (для синхронизации с UI)
+        # Иначе — рандом 0..29
+        import random as _rnd
+        if isinstance(chosen_index, int) and 0 <= chosen_index < 30:
+            idx = chosen_index
+        else:
+            idx = _rnd.randint(0, 29)
+
+        # Берём вариант из списка клиента (там картинки/атрибуты)
+        variant = None
+        if isinstance(variants, list) and len(variants) > idx:
+            variant = variants[idx]
+
+        if not variant:
+            # Если клиент не передал — генерируем заново
+            base_name = (item.get('gift_name') or 'Gift').replace('(Random)', '').strip()
+            import re as _re
+            base_name = _re.sub(r'\s*#\d+$', '', base_name).strip()
+            num = _rnd.randint(1, 5000)
+            slug = _slugify_fragment_name(base_name)
+            clean_slug = slug.replace(' ', '').replace("'", '').replace('.', '')
+            variant = {
+                'nft_number': num,
+                'name': "%s #%s" % (base_name, num),
+                'image': "https://nft.fragment.com/gift/%s-%s.medium.jpg" % (clean_slug, num),
+                'fallback_image': item.get('gift_image') or '/static/img/gift.png',
+                'value': int(item.get('gift_value') or 0),
+                'model': 'Classic',
+                'symbol': _rnd.choice(['Star', 'Diamond', 'Heart', 'Moon']),
+                'backdrop': _rnd.choice(['Ivory', 'Crimson', 'Emerald', 'Turquoise']),
+                'model_rarity': round(_rnd.uniform(0.5, 8.0), 1),
+                'symbol_rarity': round(_rnd.uniform(0.5, 5.0), 1),
+                'backdrop_rarity': round(_rnd.uniform(0.5, 5.0), 1),
+            }
+
+        # Обновляем запись в БД
+        new_name = variant.get('name') or item.get('gift_name')
+        new_image = variant.get('image') or item.get('gift_image')
+        new_value = int(variant.get('value') or item.get('gift_value') or 0)
+        nft_num = int(variant.get('nft_number') or 0)
+
+        cursor.execute("""
+            UPDATE inventory SET
+                gift_name = ?,
+                gift_image = ?,
+                gift_value = ?,
+                is_upgraded = 1,
+                nft_number = ?,
+                nft_model = ?,
+                nft_symbol = ?,
+                nft_backdrop = ?,
+                nft_model_rarity = ?,
+                nft_symbol_rarity = ?,
+                nft_backdrop_rarity = ?
+            WHERE id = ?
+        """, (
+            new_name, new_image, new_value, nft_num,
+            variant.get('model'), variant.get('symbol'), variant.get('backdrop'),
+            variant.get('model_rarity'), variant.get('symbol_rarity'), variant.get('backdrop_rarity'),
+            inventory_id
+        ))
+
+        try:
+            cursor.execute("""
+                INSERT INTO user_history (user_id, operation_type, amount, description)
+                VALUES (?, 'upgrade_success', 0, ?)
+            """, (user_id, "Инвентарь улучшен: %s -> %s" % (item.get('gift_name'), new_name)))
+        except Exception:
+            pass
+
+        try:
+            cursor.execute('SELECT first_name FROM users WHERE id = ?', (user_id,))
+            urow = cursor.fetchone()
+            uname = urow[0] if urow and urow[0] else "User_%s" % user_id
+            cursor.execute("""
+                INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
+                VALUES (?, ?, ?, ?, ?, 'Upgrade')
+            """, (user_id, uname, new_name, new_image, new_value))
+        except Exception:
+            pass
+
+        conn.commit()
+        conn.close()
+        conn = None
+
+        try:
+            _user_balance_cache.pop(user_id, None)
+        except Exception:
+            pass
+
+        logger.info(
+            "🎰 Inventory upgrade spin: user=%s, inv=%s, chosen_idx=%s, new='%s'" % (
+                user_id, inventory_id, idx, new_name
+            )
+        )
+
+        return jsonify({
+            'success': True,
+            'chosen_index': idx,
+            'new_gift': {
+                'id': inventory_id,
+                'name': new_name,
+                'image': new_image,
+                'value': new_value,
+                'nft_number': nft_num,
+                'model': variant.get('model'),
+                'symbol': variant.get('symbol'),
+                'backdrop': variant.get('backdrop'),
+                'model_rarity': variant.get('model_rarity'),
+                'symbol_rarity': variant.get('symbol_rarity'),
+                'backdrop_rarity': variant.get('backdrop_rarity'),
+            }
+        })
+
+    except Exception as e:
+        logger.error("Inventory upgrade spin error: %s" % e)
+        try:
+            logger.error(traceback.format_exc())
+        except Exception:
+            pass
+        if conn:
+            try: conn.rollback()
+            except: pass
+            try: conn.close()
+            except: pass
+        return jsonify({'success': False, 'error': str(e)})
+
+
+
 # ===== SBP DEPOSIT =====
 SBP_RATE = float(os.environ.get('SBP_RATE', '1.3'))  # 1 star = 1.3 RUB
 
