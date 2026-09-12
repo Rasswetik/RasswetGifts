@@ -3840,22 +3840,20 @@ def reset_crash_cache():
 
 
 def start_ultimate_crash_loop():
-    """Запускает игровой цикл Crash.
+    """Запускает игровой цикл Crash (v3.0 — стабильная версия).
     
-    ПОЛНОСТЬЮ ПЕРЕПИСАНО для надёжности:
-    - In-memory multiplier как source of truth
-    - Плавная кривая без зависаний
-    - AI-crash только после 3.5x
-    - Бонус-раунды 0.5%
-    - Синхронизация с БД каждые 5 тиков (~200ms)
+    Ключевые фиксы:
+    - Гарантированный краш при достижении target (проверка после каждого инкремента)
+    - Flying timeout 90 секунд
+    - Не сбрасывает live state при ошибке БД
+    - Всегда пишет status='crashed' в БД перед новым раундом
     """
     def game_loop():
         global _crash_phase_transitioning
         while not _db_ready:
             time.sleep(1)
-        logger.info("🚀 Запущен игровой цикл Ultimate Crash (v2.0)")
+        logger.info("🚀 Запущен игровой цикл Ultimate Crash (v3.0)")
 
-        # Persistent connection
         loop_conn = None
         loop_conn_failures = 0
 
@@ -3865,7 +3863,10 @@ def start_ultimate_crash_loop():
         live_status = 'waiting'
         live_target = 5.0
         live_is_bonus = False
+        live_flying_started_at = 0.0
         tick_counter = 0
+
+        FLYING_TIMEOUT_SEC = 90
 
         def get_loop_conn():
             nonlocal loop_conn, loop_conn_failures
@@ -3887,49 +3888,62 @@ def start_ultimate_crash_loop():
             loop_conn = None
 
         def do_crash(conn, cursor, gid, crash_mult, tgt_mult, is_bonus):
-            """Общая логика краша."""
-            nonlocal live_status
-            live_status = 'crashed'
+            """Гарантированный краш + запись в БД. ВСЕГДА завершает раунд."""
+            nonlocal live_status, live_mult, live_flying_started_at
             crash_mult = round(float(crash_mult), 2)
 
-            cursor.execute(
-                "UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ? WHERE id = ?",
-                (crash_mult, gid)
-            )
             try:
                 cursor.execute(
-                    'INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at, is_bonus) VALUES (?, ?, CURRENT_TIMESTAMP, ?)',
-                    (gid, crash_mult, bool(is_bonus))
+                    "UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ? WHERE id = ?",
+                    (crash_mult, gid)
                 )
-            except Exception:
                 try:
                     cursor.execute(
-                        'INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
-                        (gid, crash_mult)
+                        'INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at, is_bonus) VALUES (?, ?, CURRENT_TIMESTAMP, ?)',
+                        (gid, crash_mult, bool(is_bonus))
                     )
+                except Exception:
+                    try:
+                        cursor.execute(
+                            'INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
+                            (gid, crash_mult)
+                        )
+                    except Exception:
+                        pass
+
+                cursor.execute(
+                    "UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'",
+                    (gid,)
+                )
+
+                try:
+                    cursor.execute("""
+                        UPDATE users SET total_loss = total_loss + (
+                            SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
+                            WHERE game_id = ? AND status = 'lost' AND user_id = users.id
+                        ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
+                    """, (gid, gid))
                 except Exception:
                     pass
 
-            cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE game_id = ? AND status = 'active'", (gid,))
+                try:
+                    _crash_bots_on_crash(gid)
+                except Exception:
+                    pass
 
-            try:
-                cursor.execute("""
-                    UPDATE users SET total_loss = total_loss + (
-                        SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets 
-                        WHERE game_id = ? AND status = 'lost' AND user_id = users.id
-                    ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
-                """, (gid, gid))
-            except Exception:
-                pass
+                conn.commit()
+            except Exception as e:
+                logger.error(f"❌ do_crash DB error: {e}")
+                try: conn.rollback()
+                except: pass
 
-            try:
-                _crash_bots_on_crash(gid)
-            except Exception:
-                pass
+            # ★ ВСЕГДА обновляем in-memory state и кэш
+            live_status = 'crashed'
+            live_mult = crash_mult
+            live_flying_started_at = 0.0
 
             update_crash_cache(gid, 'crashed', crash_mult, tgt_mult, 0, is_bonus=is_bonus)
             _track_crash_multiplier(crash_mult)
-            conn.commit()
 
             emoji = '🏆' if is_bonus else '💥'
             logger.info(f"{emoji} CRASH game #{gid} on {crash_mult:.2f}x (bonus={is_bonus})")
@@ -3949,92 +3963,85 @@ def start_ultimate_crash_loop():
                 cursor = conn.cursor()
                 tick_counter += 1
 
-                # ═══════════════════════════════════════════════════════
-                # FLYING — in-memory mode (быстро, без БД)
-                # ═══════════════════════════════════════════════════════
+                # ═══════════════════════════════════════════════════
+                # FLYING — in-memory mode
+                # ═══════════════════════════════════════════════════
                 if live_status == 'flying' and live_game_id > 0:
-                    # 1. Проверка admin-force-crash
+                    now = time.time()
+
+                    # ЗАЩИТА: flying > 90 сек
+                    if live_flying_started_at > 0 and (now - live_flying_started_at) > FLYING_TIMEOUT_SEC:
+                        logger.warning(f"⏰ Flying timeout {FLYING_TIMEOUT_SEC}s, forcing crash at {live_mult:.2f}x")
+                        do_crash(conn, cursor, live_game_id, live_mult, live_target, live_is_bonus)
+                        time.sleep(0.5)
+                        continue
+
+                    # Admin-force-crash
                     admin_ctrl = get_admin_crash_control()
                     if admin_ctrl.get('force_crash'):
                         set_admin_crash_control('force_crash', False)
                         do_crash(conn, cursor, live_game_id, live_mult, live_target, live_is_bonus)
-                        time.sleep(0.05)
+                        time.sleep(0.5)
                         continue
 
-                    # 2. Достигли ли цели?
+                    # ★ ГЛАВНАЯ ПРОВЕРКА: достигли цели?
                     if live_mult >= live_target:
                         do_crash(conn, cursor, live_game_id, live_target, live_target, live_is_bonus)
-                        time.sleep(0.1)
+                        time.sleep(0.5)
                         continue
 
-                    # 3. AI-force-crash (редко, только после 4x)
+                    # AI-force-crash (редко)
                     if live_mult > 4.0 and tick_counter % 20 == 0:
                         try:
                             if ai_should_force_crash(live_game_id, live_mult, conn):
                                 do_crash(conn, cursor, live_game_id, live_mult, live_target, live_is_bonus)
-                                time.sleep(0.05)
+                                time.sleep(0.3)
                                 continue
                         except Exception as ai_e:
                             logger.debug(f"AI check skipped: {ai_e}")
 
-                    # 4. Инкремент множителя
-                    # Тик = 0.05 сек (20 тиков/сек)
-                    # Плавная кривая:
-                    #   1.00 → 1.20 : 5 сек (100 тиков) → 0.20 / 100 = 0.0020
-                    #   1.20 → 1.50 : 5 сек (100 тиков) → 0.30 / 100 = 0.0030
-                    #   1.50 → 2.00 : 5 сек (100 тиков) → 0.50 / 100 = 0.0050
-                    #   2.00 → 3.00 : 5 сек (100 тиков) → 1.00 / 100 = 0.0100
-                    #   3.00 → 5.00 : 6 сек (120 тиков) → 2.00 / 120 = 0.0167
-                    #   5.00 → 10.0 : 7 сек (140 тиков) → 5.00 / 140 = 0.0357
-                    #   10.0 → 20.0 : 7 сек → 10.0 / 140 = 0.0714
-                    #   20.0 → 50.0 : 8 сек → 30.0 / 160 = 0.1875
-                    #   50.0+ : очень быстро
+                    # Инкремент
                     m = live_mult
-                    if m < 1.20:
-                        increment = 0.0020
-                    elif m < 1.50:
-                        increment = 0.0030
-                    elif m < 2.00:
-                        increment = 0.0050
-                    elif m < 3.00:
-                        increment = 0.0100
-                    elif m < 5.00:
-                        increment = 0.0167
-                    elif m < 10.0:
-                        increment = 0.0357
-                    elif m < 20.0:
-                        increment = 0.0714
-                    elif m < 50.0:
-                        increment = 0.1875
-                    else:
-                        increment = 0.5000
+                    if m < 1.20:       increment = 0.0020
+                    elif m < 1.50:     increment = 0.0030
+                    elif m < 2.00:     increment = 0.0050
+                    elif m < 3.00:     increment = 0.0100
+                    elif m < 5.00:     increment = 0.0167
+                    elif m < 10.0:     increment = 0.0357
+                    elif m < 20.0:     increment = 0.0714
+                    elif m < 50.0:     increment = 0.1875
+                    else:              increment = 0.5000
 
-                    # Мягкий random crash (защита от преждевременного)
+                    # Случайный краш (страховка)
                     crash_chance = 0
                     if live_mult >= 1.5:
-                        # Шанс растёт с множителем, но очень плавно
-                        crash_chance = 0.0006 * (live_mult / 10.0)
+                        crash_chance = 0.0004 * (live_mult / 10.0)
                         if live_is_bonus:
-                            crash_chance *= 0.5  # Бонус-раунды живут дольше
+                            crash_chance *= 0.5
 
                     if random.random() < crash_chance:
                         do_crash(conn, cursor, live_game_id, live_mult, live_target, live_is_bonus)
-                        time.sleep(0.05)
+                        time.sleep(0.3)
                         continue
 
-                    # Инкремент
                     new_mult = round(live_mult + increment, 2)
                     if new_mult > live_target:
                         new_mult = live_target
 
                     live_mult = new_mult
 
+                    # ★ ПРОВЕРКА СРАЗУ ПОСЛЕ ИНКРЕМЕНТА
+                    if live_mult >= live_target:
+                        do_crash(conn, cursor, live_game_id, live_target, live_target, live_is_bonus)
+                        time.sleep(0.5)
+                        continue
+
                     # Обновляем кэш
                     progress = live_mult / live_target if live_target > 0 else 0
                     time_remaining = max(0.5, 15.0 * (1 - progress))
                     update_crash_cache(live_game_id, 'flying', live_mult, live_target, time_remaining, is_bonus=live_is_bonus)
 
-                    # Синхронизация с БД каждые 5 тиков (~250ms)
+                    # Sync в БД каждые 5 тиков
                     if tick_counter % 5 == 0:
                         try:
                             cursor.execute(
@@ -4048,9 +4055,9 @@ def start_ultimate_crash_loop():
                     time.sleep(0.05)
                     continue
 
-                # ═══════════════════════════════════════════════════════
+                # ═══════════════════════════════════════════════════
                 # НЕ FLYING — читаем состояние из БД
-                # ═══════════════════════════════════════════════════════
+                # ═══════════════════════════════════════════════════
                 try:
                     cursor.execute("""
                         SELECT id, status, start_time, current_multiplier, target_multiplier, 
@@ -4061,7 +4068,6 @@ def start_ultimate_crash_loop():
                     """)
                     game = cursor.fetchone()
                 except Exception:
-                    # Fallback без is_bonus
                     cursor.execute("""
                         SELECT id, status, start_time, current_multiplier, target_multiplier
                         FROM ultimate_crash_games
@@ -4095,7 +4101,7 @@ def start_ultimate_crash_loop():
                     elapsed = time.time() - start_timestamp
                     target_mult_float = float(target_mult) if target_mult else 5.0
 
-                    # ─── WAITING → COUNTING ───
+                    # WAITING → COUNTING
                     if status == 'waiting':
                         cursor.execute(
                             "UPDATE ultimate_crash_games SET status = 'counting', start_time = CURRENT_TIMESTAMP WHERE id = ?",
@@ -4108,15 +4114,15 @@ def start_ultimate_crash_loop():
                         live_target = target_mult_float
                         live_mult = 1.0
                         live_is_bonus = is_bonus
+                        live_flying_started_at = 0.0
                         logger.info(f"⏱️ Game #{game_id} → counting (target={target_mult_float}x, bonus={is_bonus})")
 
-                    # ─── COUNTING → FLYING ───
+                    # COUNTING → FLYING
                     elif status == 'counting':
                         time_remaining = max(0, 5.0 - elapsed)
                         update_crash_cache(game_id, 'counting', 1.0, target_mult_float, time_remaining, is_bonus=is_bonus)
 
                         if elapsed >= 5:
-                            # AI-correction (мягкая)
                             try:
                                 adjusted = ai_adjust_target_multiplier(target_mult_float, game_id, conn)
                                 if adjusted != target_mult_float:
@@ -4146,58 +4152,50 @@ def start_ultimate_crash_loop():
                             live_target = target_mult_float
                             live_mult = 1.0
                             live_is_bonus = is_bonus
+                            live_flying_started_at = time.time()
                             logger.info(f"🚀 Game #{game_id} → flying (target={target_mult_float}x, bonus={is_bonus})")
 
-                    # ─── FLYING (но loop только что перезапустился, читаем состояние) ───
+                    # FLYING (после реконнекта)
                     elif status == 'flying':
                         live_game_id = game_id
                         live_status = 'flying'
                         live_target = target_mult_float
                         live_mult = max(float(current_mult) if current_mult else 1.0, 1.0)
                         live_is_bonus = is_bonus
+                        live_flying_started_at = time.time() - min(elapsed, 30)
                         logger.info(f"🔄 Resumed flying #{game_id} at {live_mult}x")
 
                     conn.commit()
 
                 else:
-                    # ═══════════════════════════════════════════════════════
+                    # ═══════════════════════════════════════════════════
                     # НЕТ АКТИВНОЙ ИГРЫ — СОЗДАЁМ НОВУЮ
-                    # ═══════════════════════════════════════════════════════
+                    # ═══════════════════════════════════════════════════
                     live_status = 'none'
+                    live_flying_started_at = 0.0
 
-                    # Проверяем, когда была последняя игра — пауза 3 сек после краха
-                    try:
-                        cursor.execute("SELECT id, status FROM ultimate_crash_games ORDER BY id DESC LIMIT 1")
-                        last = cursor.fetchone()
-                        if last and last[1] == 'crashed':
-                            # Пауза после краха — проверяем сколько прошло
-                            time.sleep(2.5)
-                    except Exception:
-                        pass
+                    # ★ Пауза 2 сек — фронт успеет отрисовать краш
+                    time.sleep(2.0)
 
-                    # Генерируем новый target
                     target_multiplier = generate_extreme_crash_multiplier()
 
-                    # Admin override
                     admin_ctrl = get_admin_crash_control()
                     if admin_ctrl.get('next_multiplier'):
                         target_multiplier = float(admin_ctrl['next_multiplier'])
                         set_admin_crash_control('next_multiplier', None)
                         logger.info(f"🎮 ADMIN multiplier: {target_multiplier}x")
                     elif admin_ctrl.get('use_custom_range'):
-                        min_m = admin_ctrl.get('multiplier_min', 1.0)
-                        max_m = admin_ctrl.get('multiplier_max', 50.0)
+                        min_m = admin_ctrl.get('min_multiplier', 1.0)
+                        max_m = admin_ctrl.get('max_multiplier', 50.0)
                         target_multiplier = round(random.uniform(min_m, max_m), 2)
                         logger.info(f"🎮 ADMIN range: {target_multiplier}x")
 
-                    # Бонус-раунд (0.5%)
                     is_bonus = random.random() < 0.005
                     if is_bonus:
                         target_multiplier = round(target_multiplier * random.uniform(1.5, 3.0), 2)
                         target_multiplier = min(target_multiplier, 200.0)
                         logger.info(f"🏆 BONUS ROUND! target: {target_multiplier}x")
 
-                    # Создаём игру
                     try:
                         cursor.execute("""
                             INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus)
@@ -4213,7 +4211,6 @@ def start_ultimate_crash_loop():
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 New game, target={target_multiplier}x, bonus={is_bonus}")
 
-                    # Сбрасываем in-memory
                     live_game_id = 0
                     live_status = 'waiting'
                     live_mult = 1.0
@@ -4226,9 +4223,9 @@ def start_ultimate_crash_loop():
                 err_msg = str(e)
                 reset_loop_conn()
                 loop_conn_failures += 1
-                # При ошибке сбрасываем flying — перечитаем из БД
+
+                # ★ НЕ сбрасываем live_status — перечитаем из БД
                 if loop_conn_failures > 5:
-                    live_status = 'none'
                     logger.error(f"❌ Loop error #{loop_conn_failures}: {err_msg}")
                 else:
                     logger.debug(f"Loop error: {err_msg}")
@@ -4237,6 +4234,7 @@ def start_ultimate_crash_loop():
     thread = threading.Thread(target=game_loop, daemon=True)
     thread.start()
     logger.info("✅ Ultimate Crash loop started")
+
 
 def cleanup_old_auth_codes():
     """Очистка устаревших кодов (старше 10 минут)"""
