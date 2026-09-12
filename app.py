@@ -84,10 +84,34 @@ fragment_models_cache_time = {}
 # Auth: first try PORTAL_AUTH_TOKEN (ready-made TMA initData), fallback to session-based
 # ── Portal auth token: env или data/portal_token.txt ──
 def _load_portal_token():
-    """Загружает токен из env или файла."""
+    """Загружает токен: env -> БД -> файл."""
     token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
     if token:
         return token
+
+    # БД
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT value FROM app_settings WHERE key = 'portal_auth_token'")
+            row = cursor.fetchone()
+            if row and row[0]:
+                val = str(row[0]).strip()
+                conn.close()
+                if val:
+                    logger.info(f'Portal token loaded from DB ({len(val)} chars)')
+                    return val
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+    except Exception as e:
+        logger.warning(f'Portal token DB read error: {e}')
+
+    # Файл
     try:
         token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
         if os.path.exists(token_file):
@@ -98,150 +122,11 @@ def _load_portal_token():
                     return content
     except Exception as e:
         logger.warning(f'Portal token file read error: {e}')
+
     return ''
 
-PORTAL_AUTH_TOKEN = _load_portal_token()
-PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
-PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
-PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
-PORTAL_SESSION_NAME = os.getenv('PORTAL_SESSION_NAME', 'portal_account')
-# Auto-sync configuration
-PORTAL_SYNC_ENABLED = os.getenv('PORTAL_SYNC_ENABLED', '1') != '0'
-PORTAL_SYNC_INTERVAL_MINUTES = int(os.getenv('PORTAL_SYNC_INTERVAL_MINUTES', '10'))
-_portal_auth_data = PORTAL_AUTH_TOKEN or None  # cached authData string
-_portal_auth_lock = threading.Lock()
-PORTAL_WITHDRAW_FEE_STARS = 40  # 0.4 TON = 40 stars
 
-# Site balance cache to reduce frequent DB reads (hot path)
-_site_balance_cache = {'value': 0, 'ts': 0}
-_site_balance_lock = threading.Lock()
-_SITE_BALANCE_TTL = float(os.getenv('SITE_BALANCE_TTL', '10.0'))
 
-# ── Manual gift prices in TON (override Fragment/local prices) ──────────────
-MANUAL_GIFT_PRICES_TON = {
-    'ufc strike': 15.3,
-    'valentine box': 11.7,
-    'victory medal': 4.98,
-    'vintage cigar': 33.9,
-    'voodoo doll': 30.9,
-    'westside sign': 111.9,
-    'whip cupcake': 4.4,
-    'winter wreath': 4.49,
-    'witch hat': 6.29,
-    'xmas stocking': 4.33,
-    'swag bag': 5.19,
-    'swiss watch': 55.8,
-    'tama gadget': 4.65,
-    'top hat': 12.8,
-    'toy bear': 44.9,
-    'trapped heart': 14.5,
-    'moon': 5.64,
-    'mousse cake': 4.96,
-    'nail bracelet': 145.9,
-    'neko helmet': 41.1,
-    'party sparkler': 4.3,
-    'perfume bottle': 97.9,
-    'pet snake': 4.55,
-    'precious peach': 438,
-    'pretty posy': 4.7,
-    'rare bird': 29.9,
-    'record': 5.61,
-    'restless jar': 11.3,
-    'sakura flower': 48.9,
-    'santa hat': 12.5,
-    'scared cat': 4.5,
-    'sharp tongue': 5.08,
-    'signet ring': 5.48,
-    'skull flower': 7.2,
-    'sky stilettos': 5.49,
-    'sleigh bell': 5.83,
-    'snake box': 6.17,
-    'loot bag': 162.9,
-    'love candle': 12.3,
-    'love potion': 17,
-    'low rider': 52,
-    'lunar snake': 4.3,
-    'lush bouquet': 6.55,
-    'mad pumpkin': 13.8,
-    'magic potion': 80.9,
-    'mighty arm': 171.9,
-    'mini oscar': 103.7,
-    'money pot': 4.66,
-    'ion gem': 98.5,
-    'ionic dryer': 18.7,
-    'jack-in-the-box': 4.94,
-    'jelly bunny': 8.03,
-    'jester hat': 4.83,
-    'jolly chimp': 7.3,
-    'joyful bundle': 7.11,
-    "khabib's papakha": 25.9,
-    'kissed frog': 67.8,
-    'light sword': 6.3,
-    'lol pop': 4.5,
-    'hanging star': 9.93,
-    'happy brownie': 4.65,
-    'heroic helmet': 255.7,
-    'hex pot': 4.99,
-    'holiday drink': 4.4,
-    'homemade cake': 5.06,
-    'hypno lollipop': 4.84,
-    'ice cream': 4.44,
-    'input key': 6.19,
-    'instant ramen': 4.38,
-    'desk calendar': 6.78,
-    "durov's cap": 708,
-    'jingle bells': 9.53,
-    'plush pepe': 7999,
-    'heart locket': 2199,
-    'artisan brick': 97.7,
-    'astral shard': 199.9,
-    'b-day candle': 4.3,
-    'berry box': 8.81,
-    'big year': 4.72,
-    'bling binky': 35.3,
-    'bonded ring': 58.2,
-    'bow tie': 6.3,
-    'bunny muffin': 8.28,
-    'candy cane': 4.31,
-    'clover pin': 4.7,
-    'cookie heart': 4.95,
-    'crystal ball': 12,
-    'cupid charm': 22.5,
-    'diamond ring': 29.4,
-    'easter egg': 5.63,
-    'electric skull': 33.9,
-    'eternal candle': 6.58,
-    'eternal rose': 29.4,
-    'evil eye': 7.94,
-    'faith amulet': 4.7,
-    'flying broom': 14,
-    'fresh socks': 4.43,
-    'gem signet': 72.3,
-    'genie lamp': 50,
-    'ginger cookie': 4.9,
-}
-# Build a slug-keyed version for matching by fragment_slug
-_MANUAL_PRICES_BY_SLUG = {re.sub(r'[^a-z0-9]+', '', k): v for k, v in MANUAL_GIFT_PRICES_TON.items()}
-_fragment_http_session = None
-fragment_last_error = None
-
-# Кэш пользователей (user_id -> {data, timestamp})
-_user_cache = {}
-_user_cache_duration = 30  # 30 секунд
-
-# Crash bots in-memory state
-_crash_bots_cache = {
-    'enabled': False,
-    'bots': [],
-    'settings': {'min_active_bots': 2, 'max_active_bots': 5, 'min_real_players_threshold': 3},
-    'loaded': False,
-}
-_crash_bots_active = {}   # game_id -> [{bot_id, name, avatar, bet_amount, cashout_mult, status}]
-
-# In-memory user balance cache — avoids hitting DB on every 120ms status poll
-_user_balance_cache: dict = {}  # user_id -> {'balance': int, 'ts': float}
-_USER_BALANCE_CACHE_TTL = 0.5   # seconds
-_USER_BETS_CACHE_TTL = 0.5      # seconds
 
 def _get_cached_balance(user_id) -> int | None:
     entry = _user_balance_cache.get(user_id)
@@ -1964,7 +1849,12 @@ def _create_all_tables(conn):
             is_active BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''',
-        'news_reads': '''CREATE TABLE IF NOT EXISTS news_reads (
+                'app_settings': '''CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''',
+'news_reads': '''CREATE TABLE IF NOT EXISTS news_reads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             news_id INTEGER NOT NULL,
@@ -8781,118 +8671,164 @@ def _get_portal_auth():
         return None
 
 
+def _extract_items(colls):
+    """Извлекает список коллекций из ответа Portal API."""
+    if colls is None:
+        return []
+    if isinstance(colls, list):
+        return colls
+    if isinstance(colls, dict):
+        for key in ('collections', 'items', 'result', 'data'):
+            if key in colls and isinstance(colls[key], list):
+                return colls[key]
+        return []
+    if hasattr(colls, 'toDict'):
+        d = colls.toDict()
+        for key in ('collections', 'items', 'result', 'data'):
+            if key in d and isinstance(d[key], list):
+                return d[key]
+    if hasattr(colls, 'collections'):
+        v = getattr(colls, 'collections')
+        if isinstance(v, list):
+            return v
+    try:
+        return list(colls)
+    except Exception:
+        return []
+
+
+def _extract_coll_fields(coll):
+    """Извлекает (slug, floor, name) из объекта коллекции."""
+    slug = ''
+    floor = None
+    name = ''
+    if isinstance(coll, dict):
+        slug = str(coll.get('slug') or coll.get('name') or '').strip().lower()
+        name = str(coll.get('name') or '').strip()
+        for key in ('floor_price', 'floorPrice', 'floor', 'price', 'min_price'):
+            if key in coll and coll[key] is not None:
+                try:
+                    floor = float(coll[key])
+                    break
+                except (ValueError, TypeError):
+                    continue
+    else:
+        slug = str(getattr(coll, 'slug', None) or getattr(coll, 'name', '') or '').strip().lower()
+        name = str(getattr(coll, 'name', '') or '').strip()
+        for attr in ('floor_price', 'floorPrice', 'floor', 'price', 'min_price'):
+            v = getattr(coll, attr, None)
+            if v is not None:
+                try:
+                    floor = float(v)
+                    break
+                except (ValueError, TypeError):
+                    continue
+    slug_key = re.sub(r'[^a-z0-9]+', '', slug) if slug else ''
+    return slug_key, floor, name
+
+
 def _portal_sync_floors():
-    """Fetch floor prices from Portal API for ALL collections and update gifts.json values."""
+    """Загружает floor-цены из Portal для ВСЕХ коллекций и обновляет gifts.json."""
     auth = _get_portal_auth()
     if not auth:
-        return {'success': False, 'error': 'Portal auth not configured'}
+        return {'success': False, 'error': 'Portal auth not configured. Сохрани initData в админке.'}
+
     try:
         import asyncio
         from aportalsmp.gifts import collections as portal_collections
         from aportalsmp.gifts import search as portal_search
+        from aportalsmp.profile import me as portal_me
 
         loop = asyncio.new_event_loop()
+
+        # Проверка авторизации
         try:
-            # ── 1) Получаем ВСЕ коллекции с пагинацией ──
-            all_colls = []
+            profile = loop.run_until_complete(portal_me(authData=auth))
+            pdata = {}
+            if hasattr(profile, 'toDict'):
+                pdata = profile.toDict()
+            elif isinstance(profile, dict):
+                pdata = profile
+            logger.info(f"Portal auth OK: {pdata.get('first_name', '?')} @{pdata.get('username', '?')}")
+        except Exception as pe:
+            loop.close()
+            logger.error(f"Portal auth check failed: {pe}")
+            return {'success': False, 'error': f'Portal auth invalid: {pe}'}
+
+        # Загружаем коллекции (пробуем с offset/limit, затем без)
+        all_colls = []
+        try:
             offset = 0
-            limit = 50
-            while True:
+            limit = 100
+            while offset < 2000:
                 try:
                     colls = loop.run_until_complete(
                         portal_collections(authData=auth, offset=offset, limit=limit)
                     )
-                    colls_dict = colls.toDict() if hasattr(colls, 'toDict') else {}
-                    items = colls_dict.get('collections') or colls_dict.get('items') or []
-                    if not items:
-                        # Пробуем как список
-                        try:
-                            items = list(colls)  # если это итерируемый объект
-                        except Exception:
-                            items = []
-                    if not items:
-                        break
-                    all_colls.extend(items)
-                    if len(items) < limit:
-                        break
-                    offset += limit
-                    if offset > 2000:  # защита от бесконечного цикла
-                        break
                 except TypeError:
-                    # API не поддерживает offset/limit — берём всё, что есть
                     colls = loop.run_until_complete(portal_collections(authData=auth))
-                    colls_dict = colls.toDict() if hasattr(colls, 'toDict') else {}
-                    items = colls_dict.get('collections') or colls_dict.get('items') or []
-                    if not items:
-                        try:
-                            items = list(colls)
-                        except Exception:
-                            items = []
-                    all_colls.extend(items)
+                    all_colls.extend(_extract_items(colls))
                     break
-
-            logger.info(f"🌐 Portal: получено {len(all_colls)} коллекций")
-
-            # ── 2) Строим map: slug/name → floor_price_ton ──
-            floors_by_slug = {}
-            floors_by_name = {}
-            for coll in all_colls:
-                if isinstance(coll, dict):
-                    slug = (coll.get('slug') or coll.get('name') or '').strip().lower()
-                    floor = coll.get('floor_price') or coll.get('floorPrice') or coll.get('floor')
-                    name = (coll.get('name') or '').strip().lower()
-                else:
-                    slug = (getattr(coll, 'slug', None) or getattr(coll, 'name', '') or '').strip().lower()
-                    floor = (getattr(coll, 'floor_price', None)
-                             or getattr(coll, 'floorPrice', None)
-                             or getattr(coll, 'floor', None))
-                    name = (getattr(coll, 'name', '') or '').strip().lower()
-                if not slug or floor is None:
-                    continue
-                try:
-                    floor_val = float(floor)
-                except (ValueError, TypeError):
-                    continue
-                if floor_val <= 0:
-                    continue
-                floors_by_slug[slug] = floor_val
-                if name:
-                    floors_by_name[name] = floor_val
-
-            # ── 3) Дополнительно: для каждой коллекции берём floor через search (самый дешёвый подарок) ──
-            # Это нужно, если в collections() floor_price пустой
-            for coll in all_colls:
-                try:
-                    if isinstance(coll, dict):
-                        cname = coll.get('name') or coll.get('slug') or ''
-                    else:
-                        cname = getattr(coll, 'name', '') or getattr(coll, 'slug', '')
-                    if not cname:
-                        continue
-                    cname_clean = re.sub(r'\s*\(Random\)\s*$', '', str(cname)).strip()
-                    if not cname_clean:
-                        continue
-                    slug_key = re.sub(r'[^a-z0-9]+', '', cname_clean.lower())
-                    if slug_key in floors_by_slug:
-                        continue  # уже есть цена
-                    try:
-                        found = loop.run_until_complete(
-                            portal_search(sort='price_asc', gift_name=cname_clean, limit=1, authData=auth)
-                        )
-                        if found and len(found) > 0:
-                            price = float(found[0].price) if found[0].price else 0
-                            if price > 0:
-                                floors_by_slug[slug_key] = price
-                                floors_by_name[cname_clean.lower()] = price
-                    except Exception:
-                        pass
-                except Exception:
-                    continue
-
-        finally:
+                items = _extract_items(colls)
+                if not items:
+                    break
+                all_colls.extend(items)
+                if len(items) < limit:
+                    break
+                offset += limit
+        except Exception as ce:
+            logger.error(f"Portal collections error: {ce}")
             loop.close()
+            return {'success': False, 'error': f'collections: {ce}'}
 
-        # ── 4) Обновляем gifts.json ──
+        logger.info(f"Portal: получено {len(all_colls)} коллекций")
+
+        # Map slug/name -> floor
+        floors_by_slug = {}
+        floors_by_name = {}
+        for coll in all_colls:
+            try:
+                slug, floor, name = _extract_coll_fields(coll)
+                if not slug and not name:
+                    continue
+                if floor is None or floor <= 0:
+                    continue
+                if slug:
+                    floors_by_slug[slug] = floor
+                if name:
+                    floors_by_name[name.lower()] = floor
+            except Exception:
+                continue
+
+        # Fallback через search для коллекций без floor
+        for coll in all_colls:
+            try:
+                slug, floor, name = _extract_coll_fields(coll)
+                if not name:
+                    continue
+                name_clean = re.sub(r'\s*\(Random\)\s*$', '', str(name)).strip()
+                if not name_clean:
+                    continue
+                slug_key = re.sub(r'[^a-z0-9]+', '', name_clean.lower())
+                if slug_key in floors_by_slug and floors_by_slug[slug_key] > 0:
+                    continue
+                try:
+                    found = loop.run_until_complete(
+                        portal_search(sort='price_asc', gift_name=name_clean, limit=1, authData=auth)
+                    )
+                    if found and len(found) > 0:
+                        price = float(found[0].price) if found[0].price else 0
+                        if price > 0:
+                            floors_by_slug[slug_key] = price
+                            floors_by_name[name_clean.lower()] = price
+                except Exception:
+                    pass
+            except Exception:
+                continue
+
+        loop.close()
+
+        # Обновляем gifts.json
         gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
         if not os.path.exists(gifts_path):
             return {'success': False, 'error': 'gifts.json not found'}
@@ -8924,7 +8860,7 @@ def _portal_sync_floors():
                 floor = floors_by_name[name_key]
 
             if floor and floor > 0:
-                new_value = int(round(floor * 100))  # TON → stars (100 stars = 1 TON)
+                new_value = int(round(floor * 100))
                 if new_value > 0 and new_value != gift.get('value'):
                     gift['value'] = new_value
                     gift['fragment_price_ton'] = round(floor, 4)
@@ -8936,23 +8872,136 @@ def _portal_sync_floors():
             else:
                 json.dump(gifts, f, ensure_ascii=False, indent=2)
 
-        # Сбрасываем кэш подарков
+        # Сброс кэша
         global gifts_cache, gifts_cache_time
         gifts_cache = None
         gifts_cache_time = None
 
-        logger.info(f"✅ Portal floors sync: обновлено {updated}/{len(gifts)} подарков, коллекций: {len(all_colls)}")
+        try:
+            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            with open(sync_file, 'w', encoding='utf-8') as f:
+                json.dump({'timestamp': time.time(), 'updated': updated, 'total': len(gifts)}, f)
+        except Exception:
+            pass
+
+        logger.info(f"Portal floors sync: обновлено {updated}/{len(gifts)} подарков, коллекций: {len(all_colls)}")
         return {'success': True, 'updated': updated, 'total': len(gifts), 'collections': len(all_colls)}
 
     except Exception as e:
-        logger.error(f"❌ Portal floors sync error: {e}\n{traceback.format_exc()}")
+        logger.error(f"Portal floors sync error: {e}")
         return {'success': False, 'error': str(e)}
 
-# ═══════════════════════════════════════════════════════════
-# PORTAL AUTH ENDPOINTS (v3-final)
-# ═══════════════════════════════════════════════════════════
+
+
 
 @app.route('/api/portal/auth-status', methods=['GET'])
+def portal_auth_status():
+    """Проверка статуса авторизации Portal."""
+    try:
+        global _portal_auth_data
+
+        token = ''
+        token_source = 'none'
+
+        # БД
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM app_settings WHERE key = 'portal_auth_token'")
+            row = cursor.fetchone()
+            conn.close()
+            if row and row[0]:
+                token = str(row[0]).strip()
+                token_source = 'db'
+        except Exception:
+            pass
+
+        # ENV
+        if not token:
+            token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
+            if token:
+                token_source = 'env'
+
+        # Файл
+        if not token:
+            try:
+                tf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
+                if os.path.exists(tf):
+                    with open(tf, 'r', encoding='utf-8') as f:
+                        token = f.read().strip()
+                        if token:
+                            token_source = 'file'
+            except Exception:
+                pass
+
+        if not token:
+            return jsonify({
+                'authorized': False,
+                'has_token': False,
+                'error': 'Токен не задан'
+            })
+
+        is_valid, err = _validate_portal_initdata(token)
+        if not is_valid:
+            return jsonify({
+                'authorized': False,
+                'has_token': True,
+                'error': err,
+                'hint': 'Вставь ВСЮ строку initData. Начинается с "user=" или "tma user=".'
+            })
+
+        if token.startswith('tma '):
+            token = token[4:]
+
+        _portal_auth_data = token
+
+        try:
+            import asyncio
+            from aportalsmp.profile import me as portal_me
+            loop = asyncio.new_event_loop()
+            profile = loop.run_until_complete(portal_me(authData=token))
+            loop.close()
+
+            user_data = {}
+            if hasattr(profile, 'toDict'):
+                user_data = profile.toDict()
+            elif isinstance(profile, dict):
+                user_data = profile
+            else:
+                user_data = {
+                    'first_name': getattr(profile, 'first_name', 'Portal'),
+                    'username': getattr(profile, 'username', 'user'),
+                    'id': getattr(profile, 'id', 0)
+                }
+            return jsonify({
+                'authorized': True,
+                'has_token': True,
+                'user': user_data,
+                'token_source': token_source
+            })
+        except Exception as pe:
+            err_str = str(pe)
+            logger.warning(f'Portal auth-status failed: {err_str}')
+            if 'invalid literal for int' in err_str:
+                friendly = 'Токен повреждён. Нужна ВСЯ строка initData.'
+            elif 'unauthorized' in err_str.lower():
+                friendly = 'Токен устарел или недействителен.'
+            elif 'expired' in err_str.lower():
+                friendly = 'Токен истёк (~24ч). Получи свежий initData.'
+            else:
+                friendly = f'Ошибка: {err_str}'
+            return jsonify({
+                'authorized': False,
+                'has_token': True,
+                'error': friendly,
+                'raw_error': err_str
+            })
+    except Exception as e:
+        logger.error(f'portal_auth_status error: {e}')
+        return jsonify({'authorized': False, 'has_token': False, 'error': str(e)})
+
+
+
 def portal_auth_status():
     """Проверка статуса авторизации Portal."""
     try:
@@ -9032,6 +9081,112 @@ def portal_auth_status():
 
 @app.route('/api/portal/save-token', methods=['POST'])
 def portal_save_token():
+    """Сохраняет initData токен в БД + файл."""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        token = str(data.get('token', '')).strip()
+        if not token:
+            return jsonify({'success': False, 'error': 'Пустой токен'})
+
+        is_valid, err = _validate_portal_initdata(token)
+        if not is_valid:
+            logger.warning(f'Portal save-token: invalid - {err}')
+            return jsonify({
+                'success': False,
+                'error': err,
+                'hint': 'Скопируй ВСЮ строку initData. Начинается с "user=" или "tma user=".'
+            })
+
+        if token.startswith('tma '):
+            token = token[4:]
+
+        # БД
+        db_saved = False
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("""CREATE TABLE IF NOT EXISTS app_settings (
+                key TEXT PRIMARY KEY, value TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""")
+            cursor.execute("DELETE FROM app_settings WHERE key = 'portal_auth_token'")
+            cursor.execute(
+                "INSERT INTO app_settings (key, value) VALUES ('portal_auth_token', ?)",
+                (token,)
+            )
+            conn.commit()
+            conn.close()
+            db_saved = True
+            logger.info('Portal token saved to DB')
+        except Exception as dbe:
+            logger.error(f'Portal token DB save error: {dbe}')
+
+        # Файл
+        file_saved = False
+        try:
+            token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
+            os.makedirs(os.path.dirname(token_file), exist_ok=True)
+            with open(token_file, 'w', encoding='utf-8') as f:
+                f.write(token)
+            file_saved = True
+        except Exception as fe:
+            logger.warning(f'Portal token file save error: {fe}')
+
+        if not db_saved and not file_saved:
+            return jsonify({'success': False, 'error': 'Не удалось сохранить токен'})
+
+        os.environ['PORTAL_AUTH_TOKEN'] = token
+
+        global _portal_auth_data
+        _portal_auth_data = token
+
+        # Проверка
+        try:
+            import asyncio
+            from aportalsmp.profile import me as portal_me
+            loop = asyncio.new_event_loop()
+            profile = loop.run_until_complete(portal_me(authData=token))
+            loop.close()
+
+            user_data = {}
+            if hasattr(profile, 'toDict'):
+                user_data = profile.toDict()
+            elif isinstance(profile, dict):
+                user_data = profile
+            else:
+                user_data = {
+                    'first_name': getattr(profile, 'first_name', 'Portal'),
+                    'username': getattr(profile, 'username', 'user'),
+                    'id': getattr(profile, 'id', 0)
+                }
+            return jsonify({
+                'success': True,
+                'user': user_data,
+                'saved_to_db': db_saved,
+                'saved_to_file': file_saved,
+                'message': 'Токен сохранён и проверен'
+            })
+        except Exception as pe:
+            logger.warning(f'Portal verify failed: {pe}')
+            return jsonify({
+                'success': True,
+                'user': {'first_name': 'Portal', 'username': 'user'},
+                'saved_to_db': db_saved,
+                'saved_to_file': file_saved,
+                'message': 'Токен сохранён (проверка отложена)',
+                'warning': str(pe)
+            })
+    except Exception as e:
+        logger.error(f'portal_save_token error: {e}')
+        return jsonify({'success': False, 'error': str(e)})
+
+
+
+def portal_save_token():
     """Сохраняет initData токен."""
     try:
         data = request.get_json() or {}
@@ -9103,6 +9258,47 @@ def portal_save_token():
 
 @app.route('/api/portal/logout', methods=['POST'])
 def portal_logout():
+    """Сброс токена из БД и файла."""
+    try:
+        data = request.get_json() or {}
+        admin_id = data.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+
+        try:
+            conn = get_db_connection()
+            try:
+                conn.execute("DELETE FROM app_settings WHERE key = 'portal_auth_token'")
+                conn.commit()
+            except Exception:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            conn.close()
+        except Exception:
+            pass
+
+        token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
+        if os.path.exists(token_file):
+            try:
+                os.remove(token_file)
+            except Exception:
+                pass
+
+        os.environ.pop('PORTAL_AUTH_TOKEN', None)
+
+        global _portal_auth_data
+        _portal_auth_data = None
+
+        return jsonify({'success': True, 'message': 'Токен удалён'})
+    except Exception as e:
+        logger.error(f'portal_logout error: {e}')
+        return jsonify({'success': False, 'error': str(e)})
+
+
+
+def portal_logout():
     """Сброс токена."""
     try:
         data = request.get_json() or {}
@@ -9129,6 +9325,108 @@ def portal_logout():
 
 
 @app.route('/api/portal/status', methods=['GET'])
+def portal_status():
+    """Статус подключения к Portal."""
+    try:
+        token = ''
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM app_settings WHERE key = 'portal_auth_token'")
+            row = cursor.fetchone()
+            conn.close()
+            if row and row[0]:
+                token = str(row[0]).strip()
+        except Exception:
+            pass
+
+        if not token:
+            token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
+        if not token:
+            try:
+                tf = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
+                if os.path.exists(tf):
+                    with open(tf, 'r', encoding='utf-8') as f:
+                        token = f.read().strip()
+            except Exception:
+                pass
+
+        connected = False
+        user_info = None
+        error_msg = None
+
+        if token:
+            is_valid, err = _validate_portal_initdata(token)
+            if is_valid:
+                if token.startswith('tma '):
+                    token = token[4:]
+                try:
+                    import asyncio
+                    from aportalsmp.profile import me as portal_me
+                    loop = asyncio.new_event_loop()
+                    profile = loop.run_until_complete(portal_me(authData=token))
+                    loop.close()
+                    connected = True
+                    if hasattr(profile, 'toDict'):
+                        user_info = profile.toDict()
+                    elif isinstance(profile, dict):
+                        user_info = profile
+                    else:
+                        user_info = {
+                            'first_name': getattr(profile, 'first_name', 'Portal'),
+                            'username': getattr(profile, 'username', 'user')
+                        }
+                except Exception as pe:
+                    error_msg = str(pe)
+            else:
+                error_msg = err
+
+        total_collections = 0
+        try:
+            if os.path.exists(FRAGMENT_DISK_CACHE_FILE):
+                with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                total_collections = len(cache.get('gifts', []))
+        except Exception:
+            pass
+
+        last_sync_ago = 'никогда'
+        last_updated = 0
+        try:
+            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            if os.path.exists(sync_file):
+                with open(sync_file, 'r', encoding='utf-8') as f:
+                    sd = json.load(f)
+                ts = sd.get('timestamp', 0)
+                if ts:
+                    diff = int(time.time() - ts)
+                    if diff < 60:
+                        last_sync_ago = f'{diff} сек назад'
+                    elif diff < 3600:
+                        last_sync_ago = f'{diff // 60} мин назад'
+                    else:
+                        last_sync_ago = f'{diff // 3600} ч назад'
+                    last_updated = sd.get('updated', 0)
+        except Exception:
+            pass
+
+        return jsonify({
+            'success': True,
+            'connected': connected,
+            'info': {
+                'user': user_info,
+                'error': error_msg,
+                'total_collections': total_collections,
+                'last_sync_ago': last_sync_ago,
+                'last_updated': last_updated,
+            }
+        })
+    except Exception as e:
+        logger.error(f'portal_status error: {e}')
+        return jsonify({'success': False, 'error': str(e), 'connected': False})
+
+
+
 def portal_status():
     """Статус подключения к Portal"""
     try:
