@@ -13,11 +13,13 @@
 :root{
     --bg:#1C2233;
     --surface:rgba(255,255,255,.04);
+    --surface-2:rgba(255,255,255,.06);
     --border:rgba(255,255,255,.08);
     --text:#fff;
     --text-2:rgba(255,255,255,.55);
     --text-3:rgba(255,255,255,.35);
     --blue:#3B82F6;
+    --blue-2:#2563EB;
     --green:#24C38E;
     --gold:#FFD700;
     --red:#FF3064;
@@ -94,7 +96,7 @@ body{
     pointer-events:none;
 }
 
-/* ═══ АВАТАР — чёткий, не искажается ═══ */
+/* ═══ АВАТАР ═══ */
 .avatar-wrap{
     width:88px;height:88px;min-width:88px;min-height:88px;
     border-radius:50%;
@@ -232,7 +234,7 @@ body{
 }
 .ref-link:active{opacity:.6}
 
-/* ══════════════ SECTION ══════════════ */
+/* ══════════════ SECTION HEADER ══════════════ */
 .section-header{
     display:flex;align-items:center;justify-content:space-between;
     margin-bottom:12px;gap:8px;
@@ -272,7 +274,7 @@ body{
     width:100%;
 }
 
-/* Обычная карточка */
+/* Обычная карточка — фиксированная высота с flex-структурой */
 .inv-card{
     background:rgba(255,255,255,.04);
     border:1.5px solid rgba(255,255,255,.06);
@@ -282,7 +284,7 @@ body{
     position:relative;overflow:hidden;
     min-width:0;
     display:flex;flex-direction:column;
-    aspect-ratio:1/1.25;
+    aspect-ratio:1/1.3;
     width:100%;
     -webkit-tap-highlight-color:transparent;
 }
@@ -302,72 +304,77 @@ body{
     box-shadow:0 2px 8px rgba(59,130,246,.5);
 }
 
-/* Обёртка картинки внутри карточки */
+/* Обёртка картинки */
 .inv-card-img-wrap{
     width:100%;aspect-ratio:1/1;
-    background:rgba(0,0,0,.15);
+    background:rgba(0,0,0,.18);
     display:flex;align-items:center;justify-content:center;
     flex-shrink:0;overflow:hidden;
-    border-radius:12px 12px 0 0;
+    border-radius:12.5px 12.5px 0 0;
+    position:relative;
 }
 .inv-card-img-wrap img{
     width:100%;height:100%;
     object-fit:contain;
-    padding:6px;
+    padding:8px;
     display:block;
 }
 
+/* Название */
 .inv-card-name{
     font-size:9px;font-weight:700;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    padding:4px 4px 1px;line-height:1.1;
+    padding:4px 4px 2px;line-height:1.1;
     color:rgba(255,255,255,.85);
-    flex:1;display:flex;align-items:center;justify-content:center;
-    min-height:0;
+    flex-shrink:0;
 }
+
+/* Цена */
 .inv-card-price{
     display:flex;align-items:center;justify-content:center;gap:3px;
     font-size:10px;font-weight:800;color:#7CAEFF;
-    padding:3px 4px 6px;line-height:1;flex-shrink:0;
+    padding:0 4px 6px;line-height:1;flex-shrink:0;
+    margin-top:auto;
 }
 .inv-card-price img{width:10px;height:10px;display:block}
 
-/* ═══ UPGRADED — только картинка, квадрат, скруглённые края ═══ */
+/* ═══ UPGRADED — только квадратная картинка ═══ */
 .inv-card.inv-card-upgraded{
-    padding:0;
     aspect-ratio:1/1;
-    border-radius:14px;
-    border:1.5px solid rgba(255,215,0,.4);
+    border:1.5px solid rgba(255,215,0,.45);
     background:linear-gradient(180deg,rgba(255,215,0,.08),rgba(255,140,0,.03));
-    box-shadow:0 0 14px rgba(255,215,0,.15);
+    box-shadow:0 0 14px rgba(255,215,0,.18);
 }
 .inv-card.inv-card-upgraded .inv-card-img-wrap{
     width:100%;height:100%;
     aspect-ratio:1/1;
     background:transparent;
-    border-radius:12px;
+    border-radius:12.5px;
     padding:0;
 }
 .inv-card.inv-card-upgraded .inv-card-img-wrap img{
     width:100%;height:100%;
     object-fit:cover;
     padding:0;
-    border-radius:12px;
+    border-radius:12.5px;
 }
 
+/* Бейдж-замок */
 .inv-card-challenge{
     position:absolute;top:5px;left:5px;
     width:20px;height:20px;
-    background:rgba(0,0,0,.7);
+    background:rgba(0,0,0,.75);
     border-radius:6px;
     display:flex;align-items:center;justify-content:center;
     z-index:3;
     border:1px solid rgba(255,255,255,.2);
+    backdrop-filter:blur(4px);
 }
 .inv-card-challenge svg{width:11px;height:11px;color:#fff;stroke:currentColor;fill:none;stroke-width:2.5}
 
 .inv-card-locked{border-color:rgba(99,102,241,.4)}
 
+/* ══════════════ EMPTY STATE ══════════════ */
 .inv-empty{
     text-align:center;padding:50px 20px;color:var(--text-2);
     background:var(--surface);
@@ -375,8 +382,9 @@ body{
     border:1px dashed rgba(255,255,255,.1);
     min-height:180px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    font-size:13px;font-weight:700;
+    font-size:13px;font-weight:700;gap:12px;
 }
+.inv-empty img{width:56px;height:56px;opacity:.4;object-fit:contain}
 
 /* ══════════════ SELECT ACTION BAR ══════════════ */
 .select-action-bar{
@@ -449,7 +457,7 @@ body{
 .overlay.show{display:flex}
 .overlay.bottom{align-items:flex-end;padding:0}
 
-/* ═══ PROMO MODAL — аккуратный ═══ */
+/* ═══ PROMO ═══ */
 .promo-modal{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border-radius:24px;
@@ -477,7 +485,6 @@ body{
     margin-bottom:14px;line-height:1.5;font-weight:600;
 }
 
-/* ═══ ВВОД ПРОМОКОДА — крупный, по центру ═══ */
 .promo-input{
     width:100%;
     padding:18px 20px;
@@ -621,13 +628,13 @@ body{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border-radius:24px 24px 0 0;
     width:100%;max-width:480px;
-    min-height:30vh;
+    min-height:30vh;max-height:92vh;
     text-align:center;
     box-shadow:0 -4px 40px rgba(0,0,0,.6);
     animation:sheetUp .3s cubic-bezier(.32,1,.23,1);
     display:flex;flex-direction:column;align-items:center;
-    padding:0 20px calc(90px + var(--safe-bottom));
-    position:relative;overflow:hidden;
+    padding:0 20px calc(24px + var(--safe-bottom));
+    position:relative;overflow-y:auto;
     border-top:1px solid rgba(59,130,246,.2);
 }
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -1118,7 +1125,10 @@ body{
 </div>
 <input class="inv-search" id="invSearch" type="text" placeholder="Поиск подарков..." oninput="renderInventory()">
 <div id="inventoryContainer">
-    <div class="inv-empty">Инвентарь пуст</div>
+    <div class="inv-empty">
+        <img src="/static/img/gift.png" alt="">
+        <span>Загрузка...</span>
+    </div>
 </div>
 
 </div>
@@ -1305,6 +1315,12 @@ let selectedItems = new Set();
 const ADMIN_ID = 5257227756;
 const _imgCache = {};
 
+let _sellCountdownTimer = null;
+let _batchCountdownTimer = null;
+
+let _portalSelGiftId = null;
+let _portalGifts = [];
+
 function $(id){ return document.getElementById(id); }
 function starsToTon(s){ return Number(s || 0) / 100; }
 function formatTon(t){
@@ -1315,7 +1331,9 @@ function formatTon(t){
     return v.toFixed(2);
 }
 
-/* Vibration */
+/* ══════════════════════════════════════════════════════════════
+   VIBRATION
+   ══════════════════════════════════════════════════════════════ */
 let vibrationOn = localStorage.getItem('vibration') !== 'off';
 function initVibration(){
     var b = $('vibBtn');
@@ -1338,7 +1356,9 @@ function vibrateIfOn(){
     if(navigator.vibrate) navigator.vibrate(30);
 }
 
-/* Lang */
+/* ══════════════════════════════════════════════════════════════
+   LANG
+   ══════════════════════════════════════════════════════════════ */
 let currentLang = localStorage.getItem('app_lang') || 'ru';
 function initLang(){
     var f = $('langFlag');
@@ -1367,12 +1387,16 @@ document.addEventListener('DOMContentLoaded', function(){
             Telegram.WebApp.setBackgroundColor('#1C2233');
         }catch(e){}
     }
+    initUser();
 });
 
 async function initUser(){
     var authData = null;
     try{ authData = await telegramAuth(); }catch(e){ console.error('auth fail', e); }
-    if(!authData){ setTimeout(initUser, 1500); return; }
+    if(!authData || !authData.id){
+        setTimeout(initUser, 1500);
+        return;
+    }
     try{
         var br = await fetch('/api/check-ban?user_id=' + authData.id);
         var bd = await br.json();
@@ -1388,17 +1412,20 @@ async function initUser(){
         if(d.success){
             user = d.user;
             updateProfile();
-            loadInventory();
+            await loadInventory();
             if(String(user.id) === String(ADMIN_ID)){
                 var ab = $('adminBtn');
                 if(ab) ab.style.display = 'flex';
             }
         }
-    }catch(e){ console.error('initUser:', e); showNotif('Ошибка загрузки', true); }
+    }catch(e){
+        console.error('initUser:', e);
+        showNotif('Ошибка загрузки', true);
+    }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   UPDATE PROFILE — с чётким аватаром
+   UPDATE PROFILE
    ══════════════════════════════════════════════════════════════ */
 function updateProfile(){
     if(!user) return;
@@ -1408,27 +1435,23 @@ function updateProfile(){
     var nm = $('userName'); if(nm) nm.textContent = name;
     var uid = $('userUid'); if(uid) uid.textContent = 'Уровень ' + level;
 
-    /* ═══ АВАТАР — с fallback на букву ═══ */
+    /* АВАТАР */
     var avatarWrap = $('avatarWrap');
     if(avatarWrap){
         var photoUrl = user.photo_url;
         var validPhoto = photoUrl && photoUrl !== '' && String(photoUrl).indexOf('default_avatar') === -1;
         if(validPhoto){
-            // Загружаем img
             var img = document.createElement('img');
             img.alt = 'Avatar';
             img.onerror = function(){
-                // Не загрузилась — показываем букву
                 avatarWrap.innerHTML = '<div class="avatar-fallback">' + (name[0] || 'U').toUpperCase() + '</div>';
             };
             img.onload = function(){
-                // Убираем fallback
                 avatarWrap.innerHTML = '';
                 avatarWrap.appendChild(img);
             };
             img.src = photoUrl;
         } else {
-            // Сразу fallback
             avatarWrap.innerHTML = '<div class="avatar-fallback">' + (name[0] || 'U').toUpperCase() + '</div>';
         }
     }
@@ -1439,6 +1462,7 @@ function updateProfile(){
     var sg = $('statGifts'); if(sg) sg.textContent = inventory.length || 0;
     var sl = $('statLevel'); if(sl) sl.textContent = level;
 
+    /* Level bar */
     var li = user.level_info;
     if(li){
         var pct = li.progress_percentage || 0;
@@ -1457,7 +1481,7 @@ function updateProfile(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   INVENTORY
+   INVENTORY LOAD
    ══════════════════════════════════════════════════════════════ */
 async function loadInventory(){
     if(!user) return;
@@ -1468,8 +1492,15 @@ async function loadInventory(){
             inventory = d.inventory || [];
             renderInventory();
             var sg = $('statGifts'); if(sg) sg.textContent = inventory.length;
+        } else {
+            var c = $('inventoryContainer');
+            if(c) c.innerHTML = '<div class="inv-empty"><img src="/static/img/gift.png"><span>Ошибка загрузки</span></div>';
         }
-    }catch(e){ console.error('loadInventory:', e); }
+    }catch(e){
+        console.error('loadInventory:', e);
+        var c2 = $('inventoryContainer');
+        if(c2) c2.innerHTML = '<div class="inv-empty"><img src="/static/img/gift.png"><span>Ошибка сети</span></div>';
+    }
 }
 
 function isUpgraded(item){
@@ -1503,7 +1534,9 @@ function renderInventory(){
         });
     }
     if(!filtered.length){
-        c.innerHTML = '<div class="inv-empty">' + (searchVal ? 'Ничего не найдено' : 'Инвентарь пуст') + '</div>';
+        c.innerHTML = '<div class="inv-empty"><img src="/static/img/gift.png"><span>'
+            + (searchVal ? 'Ничего не найдено' : 'Инвентарь пуст')
+            + '</span></div>';
         return;
     }
 
@@ -1526,7 +1559,6 @@ function renderInventory(){
         var click = selectMode ? 'toggleSelectItem(' + item.id + ')' : 'openItemModal(' + item.id + ')';
 
         if(upgraded){
-            /* Upgraded: только картинка в квадрате */
             html += '<div class="' + cardClass + '" onclick="' + click + '">'
                 + '<div class="inv-card-img-wrap">'
                 + '<img src="' + imgSrc + '" alt="" loading="lazy" onerror="' + onerr + '">'
@@ -1534,7 +1566,6 @@ function renderInventory(){
                 + chBadge
                 + '</div>';
         } else {
-            /* Обычный подарок */
             html += '<div class="' + cardClass + '" onclick="' + click + '">'
                 + '<div class="inv-card-img-wrap">'
                 + '<img src="' + imgSrc + '" alt="" loading="lazy" onerror="' + onerr + '">'
@@ -1608,7 +1639,7 @@ function openBatchSellModal(){
 }
 function closeBatchSellModal(){
     var bsm = $('batchSellModal'); if(bsm) bsm.classList.remove('show');
-    if(window.batchCountdownTimer){ clearInterval(window.batchCountdownTimer); window.batchCountdownTimer = null; }
+    if(_batchCountdownTimer){ clearInterval(_batchCountdownTimer); _batchCountdownTimer = null; }
 }
 function startBatchCountdown(){
     var btn = $('batchConfirmBtn');
@@ -1617,13 +1648,13 @@ function startBatchCountdown(){
     btn.classList.remove('ready');
     var s = 3;
     btn.textContent = 'Подождите ' + s + '...';
-    if(window.batchCountdownTimer) clearInterval(window.batchCountdownTimer);
-    window.batchCountdownTimer = setInterval(function(){
+    if(_batchCountdownTimer) clearInterval(_batchCountdownTimer);
+    _batchCountdownTimer = setInterval(function(){
         s--;
         if(s > 0){ btn.textContent = 'Подождите ' + s + '...'; }
         else {
-            clearInterval(window.batchCountdownTimer);
-            window.batchCountdownTimer = null;
+            clearInterval(_batchCountdownTimer);
+            _batchCountdownTimer = null;
             btn.disabled = false;
             btn.classList.add('ready');
             btn.textContent = 'Подтвердить';
@@ -1692,6 +1723,7 @@ function openItemModal(itemId){
     var withBtn = $('itemModalWithdrawBtn');
     var claimBtn = $('itemModalClaimBtn');
 
+    /* Reset */
     if(sellBtn) sellBtn.style.display = 'none';
     if(withBtn) withBtn.style.display = 'none';
     if(claimBtn) claimBtn.style.display = 'none';
@@ -1759,7 +1791,7 @@ function hideItemModal(){
     var nd = $('nftDetailSection'); if(nd) nd.classList.remove('show');
     var sc = $('sellConfirmScreen'); if(sc) sc.classList.remove('show');
     var ia = $('itemModalActions'); if(ia) ia.style.display = '';
-    if(window._sellCountdownTimer){ clearInterval(window._sellCountdownTimer); window._sellCountdownTimer = null; }
+    if(_sellCountdownTimer){ clearInterval(_sellCountdownTimer); _sellCountdownTimer = null; }
     selectedItem = null;
 }
 
@@ -1775,7 +1807,6 @@ async function claimChallenge(){
 /* ══════════════════════════════════════════════════════════════
    SELL
    ══════════════════════════════════════════════════════════════ */
-var _sellCountdownTimer = null;
 function showSellConfirm(){
     if(!selectedItem) return;
     vibrateIfOn();
@@ -1863,9 +1894,6 @@ function closeSuccessOverlay(){
 /* ══════════════════════════════════════════════════════════════
    PORTAL PICKER
    ══════════════════════════════════════════════════════════════ */
-var _portalSelGiftId = null;
-var _portalGifts = [];
-
 async function openPortalPicker(){
     if(!selectedItem) return;
     var ol = $('mrktOverlay');
@@ -2003,8 +2031,8 @@ function openDeposit(){
     vibrateIfOn();
     var sb = $('starsDepositBtn');
     if(sb){
-        if(!window.Telegram){ sb.classList.add('disabled'); sb.onclick = null; }
-        else { sb.classList.remove('disabled'); sb.onclick = function(){ closeDeposit(); openStarsDeposit(); }; }
+        if(!window.Telegram){ sb.classList.add('disabled'); }
+        else { sb.classList.remove('disabled'); }
     }
     var do_ = $('depositOverlay'); if(do_) do_.classList.add('show');
 }
@@ -2143,7 +2171,7 @@ function showGiftReveal(img, name){
 function closeGiftReveal(){ var gro = $('giftRevealOverlay'); if(gro) gro.classList.remove('show'); }
 
 /* ══════════════════════════════════════════════════════════════
-   REFRESH
+   REFRESH USER DATA
    ══════════════════════════════════════════════════════════════ */
 async function refreshUserData(){
     if(!user) return;
@@ -2169,9 +2197,16 @@ function showNotif(msg, isError){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   START
+   CLOSE MODALS ON OVERLAY CLICK
    ══════════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', initUser);
+document.addEventListener('DOMContentLoaded', function(){
+    var po = $('promoOverlay');
+    if(po) po.addEventListener('click', function(e){ if(e.target === po) closePromoModal(); });
+    var do_ = $('depositOverlay');
+    if(do_) do_.addEventListener('click', function(e){ if(e.target === do_) closeDeposit(); });
+    var sdo = $('starsDepositOverlay');
+    if(sdo) sdo.addEventListener('click', function(e){ if(e.target === sdo) closeStarsDeposit(); });
+});
 </script>
 </body>
 </html>
