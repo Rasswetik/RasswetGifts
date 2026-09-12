@@ -21083,7 +21083,7 @@ if __name__ == '__main__':
         print("⚠️ " + "=" * 54 + " ⚠️")
         print("⚠️  ВНИМАНИЕ: Используется SQLite!")
         print("⚠️  Данные будут ПОТЕРЯНЫ при редеплое!")
-        print("⚠️  Установите DATABASE_URL для PostgreSQL!")
+        print("⚠️  Установите DATABASE_URL дл PostgreSQL!")
         print("⚠️ " + "=" * 54 + " ⚠️")
     
     print(f"\n🚀 Flask сервер:  http://{host}:{port}")
