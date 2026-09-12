@@ -4180,6 +4180,8 @@ def start_ultimate_crash_loop():
             crash_mult = round(float(crash_mult), 2)
 
             try:
+                if USE_POSTGRES:
+                    cursor.execute('SET LOCAL statement_timeout = 3000')
                 cursor.execute(
                     "UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ? WHERE id = ?",
                     (crash_mult, gid)
@@ -4330,6 +4332,10 @@ def start_ultimate_crash_loop():
                             )
                             conn.commit()
                         except Exception as db_e:
+                            try:
+                                conn.rollback()
+                            except Exception:
+                                pass
                             logger.debug(f"DB sync skipped: {db_e}")
 
                     time.sleep(0.05)
@@ -4348,6 +4354,10 @@ def start_ultimate_crash_loop():
                     """)
                     game = cursor.fetchone()
                 except Exception:
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
                     cursor.execute("""
                         SELECT id, status, start_time, current_multiplier, target_multiplier
                         FROM ultimate_crash_games
