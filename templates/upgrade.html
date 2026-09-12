@@ -767,6 +767,13 @@ body{background:radial-gradient(circle at 50% -10%,rgba(88,166,255,.16),transpar
             </div>
             <div class="ios-switch on" id="soundSwitch" onclick="toggleSound()"></div>
         </div>
+        <div class="sound-row" style="margin-top:10px">
+            <div class="sound-row-info">
+                <div class="sound-row-label">⚡ Оптимизация</div>
+                <div class="sound-row-desc">Эффекты: <span id="optimizationStatusText">Высоко</span></div>
+            </div>
+            <input id="optimizationSlider" type="range" min="0" max="2" step="1" value="2" style="width:120px;accent-color:#3B82F6" oninput="setOptimization(this.value)">
+        </div>
     </div>
 </div>
 
@@ -909,6 +916,7 @@ var _lastTargetGift = null;
 
 var turboMode = localStorage.getItem('upgrade_turbo') === 'on';
 var soundEnabled = localStorage.getItem('upgrade_sound') !== 'off';
+var optimizationLevel = Number(localStorage.getItem('upgrade_optimization') || 2);
 var audioCtx = null;
 
 var GOLD_APPEAR_CHANCE = 0.10;
@@ -1014,20 +1022,20 @@ function playRouletteStop(){
 function playWinSound(){
     if(!soundEnabled) return;
     var ctx = ensureAudio(); if(!ctx) return;
-    var notes = [392,523.25,659.25,783.99,1046.5];
-    notes.forEach(function(freq,i){ playTone(freq,0.28,'sine',0.08,ctx.currentTime+i*0.075,freq*1.02); });
+    var notes = [392,523.25,659.25,783.99];
+    notes.forEach(function(freq,i){ playTone(freq,0.16,'sine',0.07,ctx.currentTime+i*0.045,freq*1.02); });
 }
 function playFailSound(){
     if(!soundEnabled) return;
     var ctx = ensureAudio(); if(!ctx) return;
-    playTone(260,0.55,'sawtooth',0.065,ctx.currentTime,70);
-    playTone(180,0.45,'triangle',0.025,ctx.currentTime+0.12,60);
+    playTone(260,0.28,'sawtooth',0.06,ctx.currentTime,70);
+    playTone(180,0.24,'triangle',0.02,ctx.currentTime+0.08,60);
 }
 function playGoldSound(){
     if(!soundEnabled) return;
     var ctx = ensureAudio(); if(!ctx) return;
-    var notes = [659.25,783.99,987.77,1318.51,1760];
-    notes.forEach(function(freq,i){ playTone(freq,0.38,'triangle',0.09,ctx.currentTime+i*0.08,freq*1.03); });
+    var notes = [659.25,783.99,987.77,1318.51];
+    notes.forEach(function(freq,i){ playTone(freq,0.20,'triangle',0.08,ctx.currentTime+i*0.05,freq*1.03); });
 }
 function updateSoundSwitch(){
     var sw = $('soundSwitch');
@@ -1035,6 +1043,19 @@ function updateSoundSwitch(){
     if(sw) sw.classList.toggle('on', soundEnabled);
     if(st) st.textContent = soundEnabled ? 'ВКЛ' : 'ВЫКЛ';
 }
+function setOptimization(v){
+    optimizationLevel = Number(v);
+    localStorage.setItem('upgrade_optimization', String(optimizationLevel));
+    var labels = ['Максимум', 'Сбалансировано', 'Высоко'];
+    var el = $('optimizationStatusText');
+    if(el) el.textContent = labels[optimizationLevel] || 'Высоко';
+    updateOptimizationUI();
+}
+function updateOptimizationUI(){
+    var sl = $('optimizationSlider');
+    if(sl) sl.value = optimizationLevel;
+}
+
 function toggleSound(){
     soundEnabled = !soundEnabled;
     localStorage.setItem('upgrade_sound', soundEnabled ? 'on' : 'off');
@@ -1046,6 +1067,8 @@ function openSettings(){
     var so = $('settingsOverlay');
     if(so) so.classList.add('show');
     updateSoundSwitch();
+    updateOptimizationUI();
+    var el = $('optimizationStatusText'); if(el){ el.textContent = ['Максимум','Сбалансировано','Высоко'][optimizationLevel] || 'Высоко'; }
 }
 function closeSettings(){
     var so = $('settingsOverlay');
@@ -1859,7 +1882,7 @@ function spinWheel(chance, isWin, willShowGold, goldWin, isEpic){
     var baseSpin = 360 * (8 + Math.floor(Math.random() * 5));
     var totalSpin = baseSpin + targetRotation;
 
-    var spinDuration = turboMode ? 3200 : 7500;
+    var spinDuration = turboMode ? 2600 : (optimizationLevel === 0 ? 4200 : (optimizationLevel === 1 ? 5600 : 7200));
     var ease = 'cubic-bezier(.15,.7,.15,1)';
 
     if(turboMode){
@@ -1998,7 +2021,7 @@ function showSpinResult(isWin, isGold, isEpic){
     }catch(e){}
 
     /* ★ ВАЖНО: ограниченная длительность сброса */
-    var resetDelay = isEpic ? 5500 : (isGold ? 4000 : (isWin ? 2800 : 2000));
+    var resetDelay = isEpic ? 3200 : (isGold ? 2500 : (isWin ? 1900 : 1400));
     setTimeout(function(){
         hideCenterResult();
         disableEpicMode();
@@ -2025,6 +2048,26 @@ function hideCenterResult(){
    ══════════════════════════════════════════════════════════════ */
 function resetAfterSpin(){
     isSpinning = false;
+
+    // Для ставки подарком после завершения раунда обязательно сбрасываем ставку и цель.
+    // Для GRAM сохраняем выбор, чтобы следующий апгрейд можно было повторить быстрее.
+    if(selectedGift && selectedGift.type === 'gift'){
+        selectedGift = null;
+        targetGift = null;
+        _lastBetValue = 0;
+        _lastBetGiftRef = null;
+        _lastTargetGift = null;
+        possibleTargets = [];
+        var lc = $('leftCard'); if(lc) lc.classList.remove('has-item');
+        var rc = $('rightCard'); if(rc) rc.classList.remove('has-item');
+        var li = $('leftGiftImg'); if(li) li.src = '/static/img/gram.png';
+        var ln = $('leftGiftName'); if(ln) ln.textContent = 'GRAM';
+        var lv = $('leftGiftValue'); if(lv) lv.textContent = '0.00';
+        var ri = $('rightGiftImg'); if(ri) ri.src = '/static/img/gift.png';
+        var rn = $('rightGiftName'); if(rn) rn.textContent = '';
+        var rv = $('rightGiftValue'); if(rv) rv.textContent = '0.00';
+        var ch = $('rightChance'); if(ch){ ch.style.display='none'; ch.textContent='0%'; }
+    }
 
     var bolt = $('boltBtn');
     var ub = $('upgradeBtn');
@@ -2099,11 +2142,11 @@ function startConfetti(intensity){
     var H = window.innerHeight;
 
     /* ★ Снижено количество частиц для производительности */
-    var count = 120;
-    var duration = 3000;
-    if(intensity === 'big'){ count = 200; duration = 4000; }
-    else if(intensity === 'huge'){ count = 300; duration = 5000; }
-    else if(intensity === 'epic'){ count = 400; duration = 6000; }
+    var count = optimizationLevel === 0 ? 55 : (optimizationLevel === 1 ? 85 : 120);
+    var duration = optimizationLevel === 0 ? 1400 : (optimizationLevel === 1 ? 1900 : 2400);
+    if(intensity === 'big'){ count += 35; duration += 300; }
+    else if(intensity === 'huge'){ count += 70; duration += 450; }
+    else if(intensity === 'epic'){ count += 100; duration += 650; }
 
     for(var i = 0; i < count; i++){
         _confettiParticles.push({
