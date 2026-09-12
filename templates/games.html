@@ -108,6 +108,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     transition:opacity .3s;
 }
 .game-card-inventory::before{background:linear-gradient(135deg,#fbbf24,#b45309)}
+.game-card-leaderboard::before{background:linear-gradient(135deg,#facc15,#ca8a04)}
 .game-card-crash::before{background:linear-gradient(135deg,#ff8a3d,#c2410c)}
 .game-card-cases::before{background:linear-gradient(135deg,#60a5fa,#1e40af)}
 .game-card-market::before{background:linear-gradient(135deg,#34d399,#047857)}
@@ -142,7 +143,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .game-card-players svg{width:11px;height:11px;opacity:.9}
 
-/* ════ GIF / PNG — с закруглением и overflow ════ */
+/* ════ GIF / PNG ════ */
 .game-card-gif{
     position:absolute;right:8px;bottom:-6px;
     width:135px;height:135px;
@@ -154,7 +155,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     border-radius:22px;
     overflow:hidden;
 }
-/* Для маркета (PNG в квадрате) — обрезаем по кругу/скруглению */
 .game-card-gif.rounded{
     border-radius:24px;
     overflow:hidden;
@@ -180,6 +180,16 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         0 10px 36px rgba(251,191,36,.35),
         inset 0 1px 0 rgba(255,255,255,.12);
     border:1.5px solid rgba(251,191,36,.35);
+}
+.game-card-leaderboard{
+    background:
+        radial-gradient(90% 70% at 85% 20%, rgba(250,204,21,.4) 0%, transparent 65%),
+        radial-gradient(120% 100% at 20% 100%, rgba(202,138,4,.7) 0%, transparent 75%),
+        linear-gradient(135deg, #3d3105 0%, #29200a 50%, #1a1405 100%);
+    box-shadow:
+        0 10px 36px rgba(250,204,21,.35),
+        inset 0 1px 0 rgba(255,255,255,.12);
+    border:1.5px solid rgba(250,204,21,.35);
 }
 .game-card-crash{
     background:
@@ -235,6 +245,15 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .upgrade-wheel-svg .wheel-pointer{fill:#fff;filter:drop-shadow(0 2px 8px rgba(0,0,0,.9))}
 .upgrade-wheel-svg .wheel-green{fill:none;stroke:url(#upgradeGreenGrad);stroke-width:22}
 
+/* ══════════════ LEADERBOARD CUP SVG ══════════════ */
+.leaderboard-cup-svg{
+    position:absolute;right:-10px;bottom:-20px;
+    width:160px;height:160px;
+    z-index:4;pointer-events:none;
+    filter:drop-shadow(0 8px 24px rgba(250,204,21,.55));
+    animation:floatGif 4.5s ease-in-out infinite;
+}
+
 /* ══════════════ TAGS ══════════════ */
 .game-card-tag{
     position:absolute;top:14px;right:14px;
@@ -266,13 +285,6 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     background:linear-gradient(135deg,#FFD700,#FFA500);
     color:#000;
     box-shadow:0 4px 14px rgba(255,215,0,.6);
-}
-
-/* ══════════════ EMPTY ══════════════ */
-.empty-msg{
-    text-align:center;padding:60px 20px;
-    color:rgba(255,255,255,.3);
-    font-size:14px;font-weight:600;
 }
 
 /* ══════════════ DEPOSIT MODAL ══════════════ */
@@ -320,6 +332,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     .game-card-gif{width:118px;height:118px}
     .game-card-gif.rounded{border-radius:20px}
     .upgrade-wheel-svg{width:135px;height:135px}
+    .leaderboard-cup-svg{width:135px;height:135px}
     .game-card-tag{padding:5px 10px;border-radius:8px}
 }
 </style>
@@ -345,8 +358,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 <div class="games-container">
 
-    <!-- 1. INVENTORY (первая, со сдвигом 15% вправо и пониже) -->
-    <button class="game-card game-card-inventory" id="invCard" onclick="goTo('/inventory')">
+    <!-- 1. INVENTORY (первая) -->
+    <button class="game-card game-card-inventory" onclick="goTo('/inventory')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -363,7 +376,55 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         <div class="game-card-tag tag-gold">★ МОЙ</div>
     </button>
 
-    <!-- 2. UPGRADE -->
+    <!-- 2. LEADERBOARD -->
+    <button class="game-card game-card-leaderboard" onclick="goTo('/leaderboard')">
+        <div class="game-card-players">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>Топ игроков</span>
+        </div>
+        <div class="game-card-content">
+            <div class="game-card-info">
+                <span class="game-card-text">Топ</span>
+            </div>
+
+            <!-- Кубок -->
+            <svg class="leaderboard-cup-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="cupGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FFD700"/>
+                        <stop offset="50%" stop-color="#FFA500"/>
+                        <stop offset="100%" stop-color="#FF8C00"/>
+                    </linearGradient>
+                    <linearGradient id="cupGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#FFED4E"/>
+                        <stop offset="100%" stop-color="#E8A317"/>
+                    </linearGradient>
+                </defs>
+                <!-- Left ear -->
+                <path d="M 45 55 Q 30 55 30 75 Q 30 105 55 110 L 55 95 Q 42 90 42 75 Q 42 68 50 68 Z" fill="url(#cupGrad)" stroke="rgba(0,0,0,.3)" stroke-width="1.5"/>
+                <!-- Right ear -->
+                <path d="M 155 55 Q 170 55 170 75 Q 170 105 145 110 L 145 95 Q 158 90 158 75 Q 158 68 150 68 Z" fill="url(#cupGrad)" stroke="rgba(0,0,0,.3)" stroke-width="1.5"/>
+                <!-- Cup body -->
+                <path d="M 55 55 L 60 105 Q 62 125 80 130 L 120 130 Q 138 125 140 105 L 145 55 Z" fill="url(#cupGrad2)" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>
+                <!-- Highlight -->
+                <path d="M 70 65 Q 72 90 78 108" stroke="rgba(255,255,255,.5)" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <!-- Handle base -->
+                <rect x="80" y="130" width="40" height="12" rx="3" fill="url(#cupGrad)" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>
+                <!-- Stem -->
+                <rect x="90" y="142" width="20" height="20" fill="url(#cupGrad)" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>
+                <!-- Base plate -->
+                <rect x="70" y="162" width="60" height="12" rx="3" fill="url(#cupGrad2)" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>
+                <!-- Star on cup -->
+                <path d="M 100 75 L 105 90 L 120 90 L 108 98 L 112 112 L 100 104 L 88 112 L 92 98 L 80 90 L 95 90 Z" fill="#FFF" opacity="0.9"/>
+            </svg>
+
+        </div>
+        <div class="game-card-tag tag-live">LIVE</div>
+    </button>
+
+    <!-- 3. UPGRADE -->
     <button class="game-card game-card-upgrade" onclick="goTo('/upgrade')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -403,7 +464,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         <div class="game-card-tag tag-new">NEW</div>
     </button>
 
-    <!-- 3. CRASH -->
+    <!-- 4. CRASH -->
     <button class="game-card game-card-crash" onclick="goTo('/crash')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -420,7 +481,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         <div class="game-card-tag tag-live">LIVE</div>
     </button>
 
-    <!-- 4. CASES -->
+    <!-- 5. CASES -->
     <button class="game-card game-card-cases" onclick="goTo('/cases')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -438,7 +499,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
         <div class="game-card-tag tag-hot">HOT</div>
     </button>
 
-    <!-- 5. MARKET -->
+    <!-- 6. MARKET -->
     <button class="game-card game-card-market" onclick="goTo('/market')">
         <div class="game-card-players">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -484,18 +545,6 @@ var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn
 var lastCrashGif = 'crash';
 
 function $(id){ return document.getElementById(id); }
-
-/* ══════════════════════════════════════════════════════════════
-   INVENTORY CARD — сдвиг 15% вправо + ниже
-   ══════════════════════════════════════════════════════════════ */
-function applyInventoryCardOffset(){
-    var card = $('invCard');
-    if(!card) return;
-    // Сдвиг 15% вправо + опускаем на 20px
-    card.style.transform = 'translateX(15%)';
-    card.style.marginTop = '20px';
-}
-applyInventoryCardOffset();
 
 /* ══════════════════════════════════════════════════════════════
    RANDOM CRASH GIF
@@ -679,7 +728,6 @@ async function initGames(){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
-    applyInventoryCardOffset();
     initGames();
 });
 </script>
