@@ -3,44 +3,127 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1C2233">
 <title>Admin — Rasswet Gifts</title>
 <link rel="icon" type="image/png" href="/static/img/logo.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow-x:hidden;overscroll-behavior:none}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0F1319;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 700px 400px at 50% -100px,rgba(59,130,246,.10) 0%,transparent 70%);pointer-events:none;z-index:0}
+body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#1C2233;
+    background-image:radial-gradient(ellipse 100% 60% at 50% 0%, #1a2238 0%, #1C2233 60%);
+    color:#fff;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+}
+:root{
+    --bg:#1C2233;
+    --surface:rgba(255,255,255,.04);
+    --surface-2:rgba(255,255,255,.06);
+    --border:rgba(255,255,255,.08);
+    --text:#fff;
+    --text-2:rgba(255,255,255,.55);
+    --text-3:rgba(255,255,255,.35);
+    --blue:#3B82F6;
+    --blue-2:#2563EB;
+    --green:#24C38E;
+    --gold:#FFD700;
+    --red:#FF3064;
+    --safe-top:env(safe-area-inset-top,20px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 
-/* LOADER */
-#adminLoader{position:fixed;inset:0;background:#0F1319;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;transition:opacity .4s,visibility .4s}
+/* ══════════════ LOADER ══════════════ */
+#adminLoader{
+    position:fixed;inset:0;background:#1C2233;z-index:9999;
+    display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;
+    transition:opacity .4s,visibility .4s;
+}
 #adminLoader.hidden{opacity:0;visibility:hidden;pointer-events:none}
-#adminLoader .spin{width:48px;height:48px;border:4px solid rgba(59,130,246,.15);border-top-color:#3B82F6;border-radius:50%;animation:spin .9s linear infinite}
+#adminLoader .spin{
+    width:48px;height:48px;
+    border:4px solid rgba(59,130,246,.15);
+    border-top-color:#3B82F6;
+    border-radius:50%;
+    animation:spin .9s linear infinite;
+}
 @keyframes spin{to{transform:rotate(360deg)}}
-#adminLoader .txt{color:rgba(255,255,255,.5);font-size:13px;font-weight:600;letter-spacing:1px}
+#adminLoader .txt{color:rgba(255,255,255,.5);font-size:13px;font-weight:700;letter-spacing:1px}
 
-/* TOP BAR */
-.top-bar{position:sticky;top:0;left:0;right:0;z-index:100;background:rgba(15,19,25,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.06);padding:calc(env(safe-area-inset-top,20px) + 58px) 16px 12px;display:flex;align-items:center;gap:12px;max-width:520px;margin:0 auto}
-.top-bar .back-btn{width:42px;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:all .15s;flex-shrink:0}
-.top-bar .back-btn:active{transform:scale(.92);background:rgba(255,255,255,.10)}
-.top-bar .back-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
-.top-bar .title{flex:1;min-width:0;font-weight:800;font-size:16px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.top-bar .admin-badge{background:linear-gradient(135deg,#F96999,#E8527A);color:#fff;padding:5px 10px;border-radius:10px;font-size:10px;font-weight:800;letter-spacing:.5px;flex-shrink:0}
+/* ══════════════ TOP BAR ══════════════ */
+.top-bar{
+    position:sticky;top:0;left:0;right:0;z-index:100;
+    background:rgba(28,34,51,.92);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid rgba(59,130,246,.08);
+    padding:calc(var(--safe-top) + 58px) 16px 12px;
+    display:flex;align-items:center;gap:12px;
+    max-width:520px;margin:0 auto;
+}
+.back-btn{
+    width:42px;height:42px;border-radius:12px;
+    border:1.5px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.04);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;transition:all .15s;flex-shrink:0;
+}
+.back-btn:active{transform:scale(.92);background:rgba(255,255,255,.1)}
+.back-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.top-bar .title{
+    flex:1;min-width:0;font-weight:800;font-size:16px;color:#fff;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.admin-badge{
+    background:linear-gradient(135deg,#F96999,#E8527A);
+    color:#fff;padding:6px 12px;border-radius:10px;
+    font-size:10px;font-weight:800;letter-spacing:.5px;flex-shrink:0;
+}
 
-/* CONTAINER */
-.container{max-width:520px;margin:0 auto;padding:16px 14px calc(env(safe-area-inset-bottom,0px) + 24px);position:relative;z-index:1}
+/* ══════════════ CONTAINER ══════════════ */
+.container{
+    max-width:520px;margin:0 auto;
+    padding:16px 14px calc(var(--safe-bottom) + 24px);
+    position:relative;z-index:1;
+}
 
-/* HOME TILES */
+/* ══════════════ HOME TILES ══════════════ */
 .home-section{margin-bottom:22px}
-.home-section-title{font-weight:800;font-size:12px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-left:4px}
+.home-section-title{
+    font-weight:800;font-size:12px;color:rgba(255,255,255,.4);
+    text-transform:uppercase;letter-spacing:1.5px;
+    margin-bottom:10px;padding-left:4px;
+}
 .tiles-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.tile-btn{position:relative;border:none;border-radius:20px;padding:20px 14px;cursor:pointer;text-align:left;color:#fff;display:flex;flex-direction:column;align-items:flex-start;gap:12px;transition:transform .15s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;min-height:130px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06)}
-.tile-btn::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 100% 0%,rgba(255,255,255,.15) 0%,transparent 60%);pointer-events:none}
+.tile-btn{
+    position:relative;border-radius:20px;
+    padding:20px 14px;cursor:pointer;
+    text-align:left;color:#fff;
+    display:flex;flex-direction:column;align-items:flex-start;
+    gap:12px;transition:transform .15s cubic-bezier(.34,1.56,.64,1);
+    min-height:130px;overflow:hidden;
+    box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.06);
+}
+.tile-btn::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(circle at 100% 0%,rgba(255,255,255,.15) 0%,transparent 60%);
+    pointer-events:none;
+}
 .tile-btn:active{transform:scale(.96)}
-.tile-btn .tile-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.20);backdrop-filter:blur(4px);font-size:26px;flex-shrink:0;box-shadow:inset 0 1px 1px rgba(255,255,255,.15)}
-.tile-btn .tile-icon svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.tile-btn .tile-text{font-weight:800;font-size:15px;line-height:1.2;color:#fff;position:relative;z-index:2}
-.tile-btn .tile-sub{font-weight:600;font-size:10px;line-height:1.2;color:rgba(255,255,255,.55);margin-top:2px}
+.tile-icon{
+    width:52px;height:52px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.2);backdrop-filter:blur(4px);
+    font-size:26px;flex-shrink:0;
+    box-shadow:inset 0 1px 1px rgba(255,255,255,.15);
+}
+.tile-icon svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tile-text{font-weight:800;font-size:15px;line-height:1.2;color:#fff;position:relative;z-index:2}
+.tile-sub{font-weight:600;font-size:10px;line-height:1.2;color:rgba(255,255,255,.55);margin-top:2px}
 .tile-blue{background:linear-gradient(135deg,#1e40af,#3b82f6)}
 .tile-purple{background:linear-gradient(135deg,#6d28d9,#a855f7)}
 .tile-green{background:linear-gradient(135deg,#047857,#10b981)}
@@ -52,123 +135,365 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .tile-indigo{background:linear-gradient(135deg,#3730a3,#6366f1)}
 .tile-rose{background:linear-gradient(135deg,#9f1239,#f43f5e)}
 
-/* SECTION HEADER */
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 4px;gap:8px;flex-wrap:wrap}
+/* ══════════════ SECTION HEADER ══════════════ */
+.section-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:14px;padding:0 4px;gap:8px;flex-wrap:wrap;
+}
 .section-header h2{font-weight:800;font-size:20px;color:#fff;margin:0}
-.section-header .action-btn{padding:10px 14px;border-radius:12px;border:none;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-weight:700;font-size:12px;cursor:pointer;transition:transform .15s;flex-shrink:0}
-.section-header .action-btn:active{transform:scale(.95)}
+.action-btn{
+    padding:10px 14px;border-radius:12px;
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;font-weight:800;font-size:12px;
+    cursor:pointer;transition:transform .15s;flex-shrink:0;
+    box-shadow:0 4px 14px rgba(59,130,246,.35);
+}
+.action-btn:active{transform:scale(.95)}
 
-/* CARDS */
-.card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:14px;margin-bottom:10px}
-.card-title{font-weight:700;font-size:13px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+/* ══════════════ CARDS ══════════════ */
+.card{
+    background:rgba(255,255,255,.04);
+    border:1.5px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:16px;margin-bottom:10px;
+}
+.card-title{
+    font-weight:800;font-size:12px;color:rgba(255,255,255,.55);
+    text-transform:uppercase;letter-spacing:.8px;
+    margin-bottom:12px;display:flex;align-items:center;gap:8px;
+}
 .card-title svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
 
-.stat-card{background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(59,130,246,.02));border:1px solid rgba(59,130,246,.15);border-radius:16px;padding:16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.stat-card .label{font-weight:700;font-size:12px;color:rgba(255,255,255,.5)}
-.stat-card .value{font-weight:900;font-size:22px;color:#fff;margin-top:4px}
-.stat-card .icon{width:46px;height:46px;border-radius:12px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;font-size:22px}
-
-/* PORTAL */
-.portal-status{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;margin-bottom:12px;transition:all .3s}
-.portal-status.connected{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(16,185,129,.04));border:1px solid rgba(16,185,129,.25)}
-.portal-status.disconnected{background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(239,68,68,.04));border:1px solid rgba(239,68,68,.25)}
-.portal-status.loading{background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(59,130,246,.04));border:1px solid rgba(59,130,246,.25)}
-.portal-status .ps-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:rgba(0,0,0,.2)}
+/* ══════════════ PORTAL STATUS ══════════════ */
+.portal-status{
+    display:flex;align-items:center;gap:12px;
+    padding:16px;border-radius:16px;margin-bottom:14px;
+    transition:all .3s;
+    border:1.5px solid;
+}
+.portal-status.connected{
+    background:linear-gradient(135deg,rgba(36,195,142,.12),rgba(36,195,142,.04));
+    border-color:rgba(36,195,142,.3);
+}
+.portal-status.disconnected{
+    background:linear-gradient(135deg,rgba(255,48,100,.12),rgba(255,48,100,.04));
+    border-color:rgba(255,48,100,.3);
+}
+.portal-status.loading{
+    background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(59,130,246,.04));
+    border-color:rgba(59,130,246,.3);
+}
+.portal-status .ps-icon{
+    width:48px;height:48px;border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;flex-shrink:0;
+    background:rgba(0,0,0,.25);
+}
 .portal-status .ps-info{flex:1;min-width:0}
-.portal-status .ps-title{font-weight:800;font-size:14px;color:#fff;margin-bottom:2px}
-.portal-status .ps-desc{font-size:11px;color:rgba(255,255,255,.55);line-height:1.3}
-.portal-status.connected .ps-title{color:#10b981}
-.portal-status.disconnected .ps-title{color:#ef4444}
+.portal-status .ps-title{
+    font-weight:800;font-size:14px;color:#fff;margin-bottom:3px;
+}
+.portal-status .ps-desc{
+    font-size:11px;color:rgba(255,255,255,.6);
+    line-height:1.35;font-weight:600;
+}
+.portal-status.connected .ps-title{color:#24C38E}
+.portal-status.disconnected .ps-title{color:#FF3064}
 
-/* SEARCH */
+/* ══════════════ PORTAL INPUT ══════════════ */
+.portal-input-wrap{
+    margin-bottom:14px;
+    padding:16px;border-radius:16px;
+    background:rgba(59,130,246,.06);
+    border:1.5px solid rgba(59,130,246,.2);
+}
+.portal-input-label{
+    font-size:12px;font-weight:800;
+    color:rgba(255,255,255,.75);
+    text-transform:uppercase;letter-spacing:.5px;
+    margin-bottom:8px;display:flex;align-items:center;gap:8px;
+}
+.portal-input-label svg{width:14px;height:14px;stroke:#7CAEFF;fill:none;stroke-width:2}
+.portal-textarea{
+    width:100%;min-height:90px;
+    padding:12px 14px;border-radius:12px;
+    border:1.5px solid rgba(59,130,246,.25);
+    background:rgba(0,0,0,.25);
+    color:#fff;font-size:12px;font-weight:600;
+    font-family:'SF Mono','Courier New',monospace;
+    outline:none;resize:vertical;
+    transition:all .15s;
+    line-height:1.5;
+    word-break:break-all;
+}
+.portal-textarea:focus{
+    border-color:rgba(59,130,246,.7);
+    background:rgba(0,0,0,.35);
+    box-shadow:0 0 0 4px rgba(59,130,246,.15);
+}
+.portal-textarea::placeholder{color:rgba(255,255,255,.25);font-weight:500}
+
+.portal-hint{
+    font-size:11px;color:rgba(255,255,255,.5);
+    line-height:1.5;margin-top:8px;font-weight:600;
+}
+.portal-hint code{
+    background:rgba(59,130,246,.15);
+    padding:2px 6px;border-radius:5px;
+    color:#7CAEFF;font-family:'SF Mono','Courier New',monospace;
+    font-size:10px;font-weight:700;
+}
+.portal-hint b{color:#fff}
+
+.portal-error{
+    background:rgba(255,48,100,.12);
+    border:1.5px solid rgba(255,48,100,.3);
+    border-radius:12px;padding:10px 14px;
+    font-size:12px;color:#FF3064;font-weight:700;
+    margin-top:10px;display:none;
+    line-height:1.4;
+}
+.portal-error.show{display:block}
+
+.portal-success{
+    background:rgba(36,195,142,.12);
+    border:1.5px solid rgba(36,195,142,.3);
+    border-radius:12px;padding:10px 14px;
+    font-size:12px;color:#24C38E;font-weight:700;
+    margin-top:10px;display:none;
+    line-height:1.4;
+}
+.portal-success.show{display:block}
+
+/* ══════════════ PORTAL BUTTONS ══════════════ */
+.portal-btns{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;
+    margin-top:12px;
+}
+.portal-btn{
+    padding:14px 12px;border-radius:14px;
+    border:none;font-weight:800;font-size:12px;
+    cursor:pointer;transition:all .15s;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    color:#fff;
+    font-family:inherit;
+    text-align:center;
+    min-height:48px;
+}
+.portal-btn:active{transform:scale(.96)}
+.portal-btn:disabled{opacity:.4;pointer-events:none}
+.portal-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+.portal-btn-primary{
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    box-shadow:0 6px 18px rgba(59,130,246,.4);
+}
+.portal-btn-success{
+    background:linear-gradient(135deg,#24C38E,#10b981);
+    box-shadow:0 6px 18px rgba(36,195,142,.4);
+}
+.portal-btn-danger{
+    background:linear-gradient(135deg,#FF3064,#dc2626);
+    box-shadow:0 6px 18px rgba(255,48,100,.4);
+}
+.portal-btn-secondary{
+    background:rgba(255,255,255,.08);
+    border:1.5px solid rgba(255,255,255,.12);
+    color:rgba(255,255,255,.85);
+}
+
+/* ══════════════ SEARCH ══════════════ */
 .search-wrap{position:relative;margin-bottom:14px}
-.search-input{width:100%;padding:14px 16px 14px 44px;border-radius:14px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-size:14px;font-weight:600;outline:none;transition:all .15s}
-.search-input:focus{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.08)}
+.search-input{
+    width:100%;padding:14px 16px 14px 44px;
+    border-radius:14px;
+    border:1.5px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.04);
+    color:#fff;font-size:14px;font-weight:600;
+    outline:none;transition:all .15s;
+    font-family:inherit;
+}
+.search-input:focus{
+    border-color:rgba(59,130,246,.5);
+    background:rgba(59,130,246,.08);
+}
 .search-input::placeholder{color:rgba(255,255,255,.3);font-weight:500}
-.search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);width:18px;height:18px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:2}
+.search-icon{
+    position:absolute;left:16px;top:50%;transform:translateY(-50%);
+    width:18px;height:18px;stroke:rgba(255,255,255,.4);fill:none;stroke-width:2;
+    pointer-events:none;
+}
 
-/* LIST ITEMS */
-.list-item{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+/* ══════════════ LIST ITEMS ══════════════ */
+.list-item{
+    background:rgba(255,255,255,.04);
+    border:1.5px solid rgba(255,255,255,.06);
+    border-radius:14px;padding:12px 14px;
+    display:flex;align-items:center;gap:12px;
+    margin-bottom:8px;cursor:pointer;transition:all .15s;
+}
 .list-item:active{transform:scale(.98);background:rgba(255,255,255,.06)}
-.list-item .avatar{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#3B82F6,#2563EB);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;flex-shrink:0;overflow:hidden}
+.list-item .avatar{
+    width:42px;height:42px;border-radius:12px;
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:15px;color:#fff;
+    flex-shrink:0;overflow:hidden;
+}
 .list-item .avatar img{width:100%;height:100%;object-fit:cover}
 .list-item .info{flex:1;min-width:0}
 .list-item .name{font-weight:700;font-size:14px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.list-item .meta{font-size:11px;color:rgba(255,255,255,.5);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.list-item .meta{font-size:11px;color:rgba(255,255,255,.5);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;font-weight:600}
 .list-item .right{text-align:right;flex-shrink:0}
 .list-item .value{font-weight:800;font-size:14px;color:#fff;display:flex;align-items:center;gap:4px;justify-content:flex-end}
 .list-item .value img{width:14px;height:14px}
 
-/* BUTTONS */
-.btn{width:100%;padding:15px 18px;border-radius:14px;border:none;font-weight:800;font-size:14px;cursor:pointer;transition:transform .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+/* ══════════════ GIFT GRID ══════════════ */
+.gift-card{
+    background:linear-gradient(180deg,rgba(59,130,246,.08) 0%,rgba(59,130,246,.02) 100%);
+    border:1.5px solid rgba(59,130,246,.2);
+    border-radius:14px;padding:10px;text-align:center;
+    transition:all .15s;position:relative;
+}
+.gift-card:active{transform:scale(.97)}
+.gift-card .gc-img{
+    width:100%;aspect-ratio:1;object-fit:contain;
+    border-radius:10px;
+    background:rgba(0,0,0,.2);
+    padding:6px;box-sizing:border-box;margin-bottom:6px;
+}
+.gift-card .gc-name{
+    font-size:11px;font-weight:700;margin-top:6px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff;
+}
+.gift-card .gc-price{
+    font-size:11px;color:#7CAEFF;font-weight:800;margin-top:3px;
+    display:flex;align-items:center;justify-content:center;gap:3px;
+}
+.gift-card .gc-price img{width:11px;height:11px}
+
+/* ══════════════ FORMS ══════════════ */
+.form-group{margin-bottom:14px}
+.form-label{
+    display:block;font-weight:800;font-size:11px;
+    color:rgba(255,255,255,.55);margin-bottom:6px;
+    text-transform:uppercase;letter-spacing:.5px;
+}
+.form-input{
+    width:100%;padding:13px 16px;border-radius:12px;
+    border:1.5px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.04);
+    color:#fff;font-size:14px;font-weight:600;
+    outline:none;transition:all .15s;font-family:inherit;
+}
+.form-input:focus{
+    border-color:rgba(59,130,246,.5);
+    background:rgba(59,130,246,.08);
+}
+.form-input::placeholder{color:rgba(255,255,255,.3)}
+select.form-input{
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.5)' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat;background-position:right 14px center;
+    padding-right:38px;
+}
+select.form-input option{background:#1C2233;color:#fff}
+textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
+
+/* ══════════════ BUTTONS ══════════════ */
+.btn{
+    width:100%;padding:15px 18px;border-radius:14px;
+    font-weight:800;font-size:14px;cursor:pointer;
+    transition:transform .15s;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:inherit;
+}
 .btn:active:not(:disabled){transform:scale(.97)}
 .btn:disabled{opacity:.4;pointer-events:none}
 .btn-primary{background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;box-shadow:0 6px 18px rgba(59,130,246,.3)}
-.btn-success{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 6px 18px rgba(16,185,129,.3)}
-.btn-danger{background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;box-shadow:0 6px 18px rgba(239,68,68,.3)}
+.btn-success{background:linear-gradient(135deg,#24C38E,#10b981);color:#fff;box-shadow:0 6px 18px rgba(36,195,142,.3)}
+.btn-danger{background:linear-gradient(135deg,#FF3064,#dc2626);color:#fff;box-shadow:0 6px 18px rgba(255,48,100,.3)}
 .btn-warn{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;box-shadow:0 6px 18px rgba(245,158,11,.3)}
-.btn-secondary{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.1)}
+.btn-secondary{background:rgba(255,255,255,.08);color:#fff;border:1.5px solid rgba(255,255,255,.1)}
 .btn-sm{padding:10px 14px;font-size:12px;width:auto;border-radius:10px}
 .btn-row{display:flex;gap:8px;margin-top:10px}
 .btn-row .btn{flex:1}
 
-/* FORMS */
-.form-group{margin-bottom:14px}
-.form-label{display:block;font-weight:700;font-size:12px;color:rgba(255,255,255,.55);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
-.form-input{width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-size:14px;font-weight:600;outline:none;transition:all .15s;font-family:inherit}
-.form-input:focus{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.08)}
-.form-input::placeholder{color:rgba(255,255,255,.3)}
-select.form-input{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.5)' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
-select.form-input option{background:#0F1319;color:#fff}
-textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
-
-/* TABS */
-.tabs{display:flex;gap:6px;margin-bottom:14px;background:rgba(255,255,255,.03);border-radius:14px;padding:4px;overflow-x:auto;scrollbar-width:none}
+/* ══════════════ TABS ══════════════ */
+.tabs{
+    display:flex;gap:6px;margin-bottom:14px;
+    background:rgba(255,255,255,.03);border-radius:14px;padding:4px;
+    overflow-x:auto;scrollbar-width:none;
+}
 .tabs::-webkit-scrollbar{display:none}
-.tab-btn{flex:1;min-width:70px;padding:10px 12px;border:none;background:transparent;color:rgba(255,255,255,.5);font-weight:700;font-size:12px;cursor:pointer;border-radius:10px;transition:all .15s;white-space:nowrap}
-.tab-btn.active{background:rgba(59,130,246,.15);color:#3B82F6}
+.tab-btn{
+    flex:1;min-width:70px;padding:10px 12px;border:none;
+    background:transparent;color:rgba(255,255,255,.5);
+    font-weight:800;font-size:12px;cursor:pointer;
+    border-radius:10px;transition:all .15s;white-space:nowrap;
+    font-family:inherit;
+}
+.tab-btn.active{background:rgba(59,130,246,.15);color:#7CAEFF}
 
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(6px);transition:opacity .25s,visibility .25s}
+/* ══════════════ MODAL ══════════════ */
+.modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.75);
+    z-index:200;display:flex;align-items:flex-end;justify-content:center;
+    opacity:0;visibility:hidden;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    transition:opacity .25s,visibility .25s;
+}
 .modal-overlay.show{opacity:1;visibility:visible}
-.modal-sheet{background:linear-gradient(180deg,#1a2030,#0f1420);border-radius:24px 24px 0 0;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);border-top:1px solid rgba(59,130,246,.15)}
+.modal-sheet{
+    background:linear-gradient(180deg,#2a3544,#1f2a38);
+    border-radius:24px 24px 0 0;
+    width:100%;max-width:520px;max-height:92vh;
+    overflow-y:auto;
+    padding:18px 16px calc(var(--safe-bottom) + 22px);
+    transform:translateY(100%);
+    transition:transform .3s cubic-bezier(.32,.72,0,1);
+    border-top:1px solid rgba(59,130,246,.2);
+}
 .modal-overlay.show .modal-sheet{transform:translateY(0)}
 .modal-handle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 16px}
 .modal-title{font-weight:800;font-size:18px;color:#fff;text-align:center;margin-bottom:18px}
 
-/* TOAST */
-.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);left:50%;transform:translateX(-50%);background:rgba(20,20,30,.95);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(10px);padding:12px 20px;border-radius:14px;font-weight:700;font-size:13px;color:#fff;z-index:6000;animation:toastIn .25s ease;max-width:90%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.6)}
-.toast.ok{border-color:rgba(16,185,129,.4);color:#10b981}
-.toast.err{border-color:rgba(239,68,68,.4);color:#ef4444}
-@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+/* ══════════════ TOAST ══════════════ */
+.toast{
+    position:fixed;bottom:calc(var(--safe-bottom) + 20px);
+    left:50%;transform:translateX(-50%) translateY(20px);
+    background:rgba(11,17,32,.96);
+    border:1.5px solid rgba(59,130,246,.3);
+    backdrop-filter:blur(10px);
+    padding:12px 22px;border-radius:14px;
+    font-weight:700;font-size:13px;color:#fff;
+    z-index:6000;opacity:0;visibility:hidden;
+    transition:all .3s;max-width:90%;text-align:center;
+    box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+.toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(36,195,142,.5);color:#24C38E}
+.toast.err{border-color:rgba(255,48,100,.5);color:#FF3064}
 
-/* LOADING / EMPTY */
-.loading{display:flex;align-items:center;justify-content:center;padding:32px;color:rgba(255,255,255,.4);font-size:13px;font-weight:600}
-.loading::after{content:'';width:18px;height:18px;border:2px solid rgba(255,255,255,.1);border-top-color:#3B82F6;border-radius:50%;animation:spin .8s linear infinite;margin-left:8px}
-.empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px;font-weight:600}
+/* ══════════════ LOADING / EMPTY ══════════════ */
+.loading{
+    display:flex;align-items:center;justify-content:center;
+    padding:32px;color:rgba(255,255,255,.4);
+    font-size:13px;font-weight:600;
+}
+.loading::after{
+    content:'';width:18px;height:18px;
+    border:2px solid rgba(255,255,255,.1);
+    border-top-color:#3B82F6;
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+    margin-left:8px;
+}
+.empty{
+    text-align:center;padding:40px 20px;
+    color:rgba(255,255,255,.3);font-size:13px;font-weight:600;
+}
 
-/* LEADERBOARD FORM */
-.lb-place-row{display:grid;grid-template-columns:60px 1fr 90px;gap:8px;align-items:center;margin-bottom:8px;padding:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px}
-.lb-place-num{display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#FFD700;background:rgba(255,215,0,.1);border-radius:10px;height:42px}
-.lb-reward-type{display:flex;gap:6px;align-items:center}
-.lb-reward-type select{padding:10px 12px;font-size:12px;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-weight:700;font-family:inherit;outline:none;width:100%}
-.lb-reward-type select option{background:#0F1319}
-.lb-reward-input{padding:10px 12px;font-size:13px;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-weight:700;font-family:inherit;outline:none;width:100%}
-.lb-reward-input:focus{border-color:rgba(59,130,246,.5)}
-.lb-gift-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:280px;overflow-y:auto;padding:8px;background:rgba(0,0,0,.2);border-radius:12px;margin-top:8px}
-.lb-gift-item{background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);border-radius:10px;padding:6px;text-align:center;cursor:pointer;transition:all .15s}
-.lb-gift-item.selected{border-color:#3B82F6;background:rgba(59,130,246,.15)}
-.lb-gift-item img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:8px;background:rgba(0,0,0,.2);padding:4px;box-sizing:border-box;margin-bottom:4px}
-.lb-gift-item .lbg-name{font-size:9px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,.85)}
-.lb-gift-item .lbg-price{font-size:9px;font-weight:800;color:#10b981;margin-top:1px}
-
-/* INV ADD ROW */
-.inv-add-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin-bottom:10px}
-.inv-add-row .form-input{padding:12px 14px}
-.inv-qty{display:flex;align-items:center;gap:6px}
-.inv-qty button{width:36px;height:36px;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-weight:800;font-size:16px;cursor:pointer}
-.inv-qty input{width:56px;padding:8px;text-align:center;border-radius:10px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-weight:800;font-size:14px;font-family:inherit;outline:none}
-
+/* ══════════════ SCROLLBAR ══════════════ */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -324,15 +649,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <button class="btn btn-primary" onclick="setNextMultiplier()">Установить</button>
         </div>
         <div class="card">
-            <div class="card-title">Диапазон множителей</div>
-            <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
-                <input type="number" class="form-input" id="rangeMin" placeholder="1.01" min="1.01" step="0.01" style="flex:1">
-                <span style="color:rgba(255,255,255,.4);font-weight:700">—</span>
-                <input type="number" class="form-input" id="rangeMax" placeholder="50" min="1.01" step="0.1" style="flex:1">
-            </div>
-            <button class="btn btn-primary" onclick="setRange()">Применить диапазон</button>
-        </div>
-        <div class="card">
             <div class="card-title">RTP (%)</div>
             <div class="form-group"><input type="number" class="form-input" id="rtpInput" placeholder="85" min="1" max="100" step="1" value="85"></div>
             <button class="btn btn-primary" onclick="setRtp()">Установить RTP</button>
@@ -342,11 +658,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <button class="btn btn-warn" onclick="toggleManualMode()" id="manualModeBtn">⚪ Ручной режим: ВЫКЛ</button>
             <div style="height:8px"></div>
             <button class="btn btn-danger" onclick="forceCrash()">⚡ Форсировать краш</button>
-        </div>
-        <div class="card">
-            <div class="card-title">Боты (визуал)</div>
-            <button class="btn btn-secondary" onclick="loadBotsList()">Показать список ботов</button>
-            <div id="botsList" style="margin-top:12px"></div>
         </div>
     </div>
 
@@ -363,12 +674,14 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="userList"><div class="loading">Загрузка</div></div>
     </div>
 
-    <!-- GIFTS -->
+    <!-- GIFTS + PORTAL — ОБНОВЛЕНО -->
     <div class="section-page" id="page-gifts" style="display:none">
         <div class="section-header">
             <h2>🎁 Подарки</h2>
             <button class="action-btn" onclick="loadGifts()">Обновить</button>
         </div>
+
+        <!-- Статус Portal -->
         <div class="portal-status loading" id="portalStatus">
             <div class="ps-icon">🔌</div>
             <div class="ps-info">
@@ -376,15 +689,58 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 <div class="ps-desc" id="portalStatusDesc">Проверка подключения...</div>
             </div>
         </div>
-        <div class="card">
-            <div class="card-title">Управление Portal</div>
-            <button class="btn btn-primary" onclick="syncPortalPrices()">🔄 Обновить цены из Portal</button>
-            <div style="height:8px"></div>
-            <button class="btn btn-secondary" onclick="loadPortalInfo()">ℹ️ Детали Portal</button>
+
+        <!-- Поле ввода initData -->
+        <div class="portal-input-wrap" id="portalInputWrap">
+            <div class="portal-input-label">
+                <svg viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                InitData (токен авторизации)
+            </div>
+            <textarea
+                class="portal-textarea"
+                id="portalTokenInput"
+                placeholder="Вставь сюда ВСЮ строку initData.&#10;&#10;Начинается с: user=%7B%22id%22%3A123...&#10;Или с: tma user=%7B%22id%22%3A...&#10;&#10;Заканчивается: ...&hash=xxxxxxxxxx"
+                spellcheck="false"
+                autocorrect="off"
+                autocapitalize="off"
+            ></textarea>
+
+            <div class="portal-hint">
+                <b>Как получить:</b><br>
+                1. Открой Telegram Web на ПК<br>
+                2. Открой своего бота → Admin WebApp<br>
+                3. F12 → Console: <code>copy(Telegram.WebApp.initData)</code><br>
+                4. Вставь в поле выше и нажми "Авторизоваться"
+            </div>
+
+            <div class="portal-error" id="portalError"></div>
+            <div class="portal-success" id="portalSuccess"></div>
+
+            <div class="portal-btns">
+                <button class="portal-btn portal-btn-primary" id="portalAuthBtn" onclick="savePortalToken()">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Авторизоваться
+                </button>
+                <button class="portal-btn portal-btn-success" id="portalSyncBtn" onclick="syncPortalPrices()">
+                    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    Обновить цены
+                </button>
+                <button class="portal-btn portal-btn-secondary" onclick="loadPortalInfo()">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    Детали
+                </button>
+                <button class="portal-btn portal-btn-danger" onclick="portalLogout()">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><line x1="23" y1="12" x2="9" y2="12"/><polyline points="16 17 21 12 16 7"/></svg>
+                    Отключить
+                </button>
+            </div>
         </div>
+
         <div id="portalInfoCard" style="display:none">
             <div class="card"><div class="card-title">Информация Portal</div><div id="portalInfoContent"></div></div>
         </div>
+
+        <!-- Список подарков -->
         <div class="search-wrap">
             <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             <input type="text" class="search-input" id="giftSearch" placeholder="Поиск подарков..." oninput="filterGifts()">
@@ -414,27 +770,12 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 <input type="text" class="form-input" id="promoCodeInput" placeholder="PROMO2025">
             </div>
             <div class="form-group">
-                <label class="form-label">Тип награды</label>
-                <select class="form-input" id="promoTypeSelect" onchange="togglePromoFields()">
-                    <option value="ton">TON награда</option>
-                    <option value="case_open">Бесплатный кейс</option>
-                </select>
-            </div>
-            <div id="promoTonFields">
-                <div class="form-group">
-                    <label class="form-label">TON</label>
-                    <input type="number" class="form-input" id="promoRewardTon" value="1" min="0.1" step="0.1">
-                </div>
+                <label class="form-label">Награда TON</label>
+                <input type="number" class="form-input" id="promoRewardTon" value="1" min="0.1" step="0.1">
             </div>
             <div class="form-group">
                 <label class="form-label">Макс. использований</label>
                 <input type="number" class="form-input" id="promoMaxUses" value="100" min="1">
-            </div>
-            <div id="promoCaseFields" style="display:none">
-                <div class="form-group">
-                    <label class="form-label">ID кейса</label>
-                    <input type="number" class="form-input" id="promoCaseId" value="2" min="1">
-                </div>
             </div>
             <button class="btn btn-success" onclick="createPromoCode()">Создать промокод</button>
         </div>
@@ -453,17 +794,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="card">
             <div class="card-title">Создать задание</div>
             <div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="questTitle" placeholder="Сделай 10 ставок"></div>
-            <div class="form-group">
-                <label class="form-label">Тип задания</label>
-                <select class="form-input" id="questType">
-                    <option value="crash_bets">Кол-во ставок</option>
-                    <option value="turnover">Оборот</option>
-                    <option value="win_amount">Сумма выигрышей</option>
-                    <option value="max_multiplier">Макс. множитель</option>
-                    <option value="open_cases">Открыть кейсов</option>
-                    <option value="skins_collected">Скины</option>
-                </select>
-            </div>
             <div class="form-group"><label class="form-label">Цель</label><input type="number" class="form-input" id="questTarget" value="10" min="1"></div>
             <div class="form-group"><label class="form-label">Награда (звёзды)</label><input type="number" class="form-input" id="questReward" value="50" min="0"></div>
             <button class="btn btn-success" onclick="createQuest()">Создать</button>
@@ -471,60 +801,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="card">
             <div class="card-title">Активные задания</div>
             <div id="questsList"><div class="loading">Загрузка</div></div>
-        </div>
-    </div>
-
-    <!-- CRATES -->
-    <div class="section-page" id="page-crates" style="display:none">
-        <div class="section-header">
-            <h2>📦 Ящики (Crates)</h2>
-            <button class="action-btn" onclick="loadCrates()">Обновить</button>
-        </div>
-        <div id="cratesList"><div class="loading">Загрузка</div></div>
-    </div>
-
-    <!-- SHOP -->
-    <div class="section-page" id="page-shop" style="display:none">
-        <div class="section-header">
-            <h2>🛍️ Акции</h2>
-            <button class="action-btn" onclick="loadShopDeals()">Обновить</button>
-        </div>
-        <div id="shopDealsList"><div class="loading">Загрузка</div></div>
-    </div>
-
-    <!-- LEADERBOARD — полностью переделан -->
-    <div class="section-page" id="page-leaderboard" style="display:none">
-        <div class="section-header">
-            <h2>🏆 Лидерборд</h2>
-            <button class="action-btn" onclick="loadLeaderboards()">Обновить</button>
-        </div>
-
-        <div class="card">
-            <div class="card-title">➕ Создать лидерборд</div>
-            <div class="form-group">
-                <label class="form-label">Название</label>
-                <input type="text" class="form-input" id="lbTitle" placeholder="Сезон 1" value="Лидерборд">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Дата начала</label>
-                <input type="datetime-local" class="form-input" id="lbStart">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Дата окончания</label>
-                <input type="datetime-local" class="form-input" id="lbEnd">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Награды (места 1–10)</label>
-                <div id="lbPlacesContainer"></div>
-            </div>
-
-            <button class="btn btn-success" onclick="createLeaderboard()">Создать лидерборд</button>
-        </div>
-
-        <div class="card">
-            <div class="card-title">Активные лидерборды</div>
-            <div id="lbList"><div class="loading">Загрузка</div></div>
         </div>
     </div>
 
@@ -566,7 +842,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div id="levelsList"><div class="loading">Загрузка</div></div>
     </div>
 
-    <!-- INVENTORY — улучшен -->
+    <!-- INVENTORY -->
     <div class="section-page" id="page-inventory" style="display:none">
         <div class="section-header"><h2>🎒 Инвентарь</h2></div>
         <div class="search-wrap">
@@ -607,7 +883,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <div class="card-title">Создать уведомление</div>
             <div class="form-group"><label class="form-label">Заголовок</label><input type="text" class="form-input" id="notifTitle" placeholder="Заголовок"></div>
             <div class="form-group"><label class="form-label">Сообщение</label><textarea class="form-input" id="notifMessage" rows="3" placeholder="Текст"></textarea></div>
-            <div class="form-group"><label class="form-label">URL картинки (опц.)</label><input type="text" class="form-input" id="notifImage" placeholder="/static/uploads/..."></div>
             <div class="form-group"><label class="form-label">Кому (пусто = всем)</label><input type="number" class="form-input" id="notifTarget" placeholder="User ID"></div>
             <button class="btn btn-success" onclick="createAdminNotif()">Создать</button>
         </div>
@@ -625,11 +900,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <div class="form-group"><label class="form-label">User ID</label><input type="number" class="form-input" id="msgUserId" placeholder="123456789"></div>
             <div class="form-group"><label class="form-label">Текст (HTML)</label><textarea class="form-input" id="msgText" rows="4" placeholder="<b>Привет</b>"></textarea></div>
             <button class="btn btn-primary" onclick="sendAdminMessage()">Отправить</button>
-        </div>
-        <div class="card">
-            <div class="card-title">Массовая рассылка</div>
-            <div class="form-group"><label class="form-label">Текст</label><textarea class="form-input" id="broadcastText" rows="4" placeholder="Всем пользователям..."></textarea></div>
-            <button class="btn btn-danger" onclick="sendBroadcast()">Отправить всем</button>
         </div>
     </div>
 
@@ -652,10 +922,12 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
     <div class="modal-sheet" id="modalContent"></div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    STATE
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 var ADMIN_ID = 5257227756;
 var tg = window.Telegram && window.Telegram.WebApp;
 var currentTgUser = null;
@@ -665,22 +937,19 @@ var allGifts = [];
 var allCasesAdmin = [];
 var currentUser = null;
 var portalPollTimer = null;
-var _currentUserInvItems = [];
-var _giftCatalogForLB = [];
 
 function $(id){ return document.getElementById(id); }
 
 function showToast(msg, type){
     document.querySelectorAll('.toast').forEach(function(t){ t.remove(); });
     var t = document.createElement('div');
-    t.className = 'toast ' + (type || '');
+    t.className = 'toast show ' + (type || '');
     t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(function(){
         t.style.opacity = '0';
-        t.style.transition = 'opacity .3s';
         setTimeout(function(){ t.remove(); }, 300);
-    }, 2600);
+    }, 2800);
 }
 
 function escapeHtml(t){
@@ -691,20 +960,20 @@ function escapeHtml(t){
 
 function formatTon(stars){ return (Number(stars || 0) / 100).toFixed(2); }
 
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    AUTH
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 async function verifyAdminAccess(){
     if(tg){
         try{
             tg.ready(); tg.expand();
-            try{ tg.setHeaderColor('#0F1319'); tg.setBackgroundColor('#0F1319'); }catch(e){}
+            try{ tg.setHeaderColor('#1C2233'); tg.setBackgroundColor('#1C2233'); }catch(e){}
         }catch(e){}
         var initData = tg.initDataUnsafe;
         if(initData && initData.user){
             currentTgUser = initData.user;
             if(Number(currentTgUser.id) !== ADMIN_ID){
-                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;padding:24px;text-align:center;font-family:Inter,sans-serif;background:#0F1319;color:#fff"><h2 style="color:#ef4444;font-size:22px;font-weight:800">Доступ запрещён</h2><p style="color:rgba(255,255,255,.5);margin-top:12px;font-size:14px">Эта страница доступна только администратору</p></div>';
+                document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;padding:24px;text-align:center;font-family:Inter,sans-serif;background:#1C2233;color:#fff"><h2 style="color:#FF3064;font-size:22px;font-weight:800">Доступ запрещён</h2><p style="color:rgba(255,255,255,.5);margin-top:12px;font-size:14px">Только для администратора</p></div>';
                 return false;
             }
             adminVerified = true;
@@ -717,13 +986,14 @@ async function verifyAdminAccess(){
 
 function goBack(){
     if(tg && tg.close) tg.close();
-    else window.location.href = '/crash';
+    else window.location.href = '/games';
 }
 
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    ROUTING
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 var currentSection = 'home';
+
 var SECTION_TITLES = {
     home: 'Главное меню', dashboard: '📊 Дашборд', crash: '🎮 Управление Краш',
     users: '👥 Пользователи', gifts: '🎁 Подарки', cases: '📦 Кейсы',
@@ -755,9 +1025,6 @@ function showSection(name){
         if(name === 'cases') loadCasesList();
         if(name === 'promo') loadPromoCodes();
         if(name === 'quests') loadQuests();
-        if(name === 'crates') loadCrates();
-        if(name === 'shop') loadShopDeals();
-        if(name === 'leaderboard'){ loadLeaderboards(); renderLbPlacesEditor(); }
         if(name === 'withdrawals') loadWithdrawals();
         if(name === 'sbp') loadSbpPayments();
         if(name === 'levels') loadLevels();
@@ -768,7 +1035,7 @@ function showSection(name){
 
     if(name === 'gifts'){
         if(portalPollTimer) clearInterval(portalPollTimer);
-        portalPollTimer = setInterval(loadPortalStatus, 15000);
+        portalPollTimer = setInterval(loadPortalStatus, 20000);
     } else {
         if(portalPollTimer){ clearInterval(portalPollTimer); portalPollTimer = null; }
     }
@@ -779,9 +1046,9 @@ function goBackOrMenu(){
     else { showSection('home'); }
 }
 
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    MODAL
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 function openModal(html){
     var overlay = $('modalOverlay');
     var content = $('modalContent');
@@ -794,9 +1061,9 @@ function closeModal(){
     if(overlay) overlay.classList.remove('show');
 }
 
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    DASHBOARD
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 async function loadStats(){
     try{
         var r = await fetch('/api/admin/stats');
@@ -804,10 +1071,11 @@ async function loadStats(){
         if(d.success){
             var s = d.stats || {};
             var html =
-                '<div class="stat-card"><div><div class="label">Пользователи</div><div class="value">' + (s.total_users || 0) + '</div></div><div class="icon">👥</div></div>' +
-                '<div class="stat-card"><div><div class="label">Звёзды (всего)</div><div class="value">' + formatTon(s.total_stars || 0) + '</div></div><div class="icon">💎</div></div>' +
-                '<div class="stat-card"><div><div class="label">Подарков в инвентарях</div><div class="value">' + (s.total_inventory || 0) + '</div></div><div class="icon">🎁</div></div>' +
-                '<div class="stat-card"><div><div class="label">Открытий кейсов</div><div class="value">' + (s.total_cases_opened || 0) + '</div></div><div class="icon">📦</div></div>';
+                '<div class="card"><div class="card-title">Общее</div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Пользователи</span><span style="font-weight:800">' + (s.total_users || 0) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Звёзд</span><span style="font-weight:800">' + formatTon(s.total_stars || 0) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px"><span style="color:rgba(255,255,255,.6)">Подарков</span><span style="font-weight:800">' + (s.total_inventory || 0) + '</span></div>' +
+                '</div>';
             var el = $('dashStats');
             if(el) el.innerHTML = html;
         }
@@ -821,23 +1089,21 @@ async function loadHouseBank(){
         var d = await r.json();
         if(d.success && d.bank){
             var b = d.bank;
-            var balCls = b.balance < 0 ? 'color:#F96999' : (b.balance > 0 ? 'color:#1EE44C' : '');
+            var balCls = b.balance < 0 ? 'color:#FF3064' : (b.balance > 0 ? 'color:#24C38E' : '');
             var html =
-                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="color:rgba(255,255,255,.6);font-size:13px">Баланс</span><span style="font-weight:800;font-size:14px;' + balCls + '">' + formatTon(b.balance) + ' TON</span></div>' +
-                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="color:rgba(255,255,255,.6);font-size:13px">Режим</span><span style="font-weight:800;font-size:13px">' + (b.mode_label || '—') + '</span></div>' +
-                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="color:rgba(255,255,255,.6);font-size:13px">Поступления</span><span style="font-weight:800;font-size:13px">' + formatTon(b.money_in || 0) + '</span></div>' +
-                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="color:rgba(255,255,255,.6);font-size:13px">Выводы</span><span style="font-weight:800;font-size:13px">' + formatTon(b.money_out || 0) + '</span></div>' +
-                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="color:rgba(255,255,255,.6);font-size:13px">Профит Crash</span><span style="font-weight:800;font-size:13px">' + formatTon(b.crash_profit || 0) + '</span></div>' +
-                '<div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:rgba(255,255,255,.6);font-size:13px">Профит Кейсы</span><span style="font-weight:800;font-size:13px">' + formatTon(b.case_profit || 0) + '</span></div>';
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Баланс</span><span style="font-weight:800;' + balCls + '">' + formatTon(b.balance) + ' TON</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Режим</span><span style="font-weight:800">' + (b.mode_label || '—') + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Поступления</span><span style="font-weight:800">' + formatTon(b.money_in || 0) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px"><span style="color:rgba(255,255,255,.6)">Выводы</span><span style="font-weight:800">' + formatTon(b.money_out || 0) + '</span></div>';
             var el = $('bankInfo');
             if(el) el.innerHTML = html;
         }
     }catch(e){ console.error(e); }
 }
 
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    CRASH
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 async function loadCrashStatus(){
     try{
         var r = await fetch('/api/admin/crash/status?admin_id=' + ADMIN_ID);
@@ -848,17 +1114,12 @@ async function loadCrashStatus(){
             var el = $('crashLiveState');
             if(el){
                 el.innerHTML =
-                    '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="color:rgba(255,255,255,.6);font-size:13px">Статус</span><span style="font-weight:800;font-size:13px">' + (g.status || '—') + '</span></div>' +
-                    '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="color:rgba(255,255,255,.6);font-size:13px">Текущий x</span><span style="font-weight:800;font-size:13px">' + (g.current_multiplier || '1.00') + 'x</span></div>' +
-                    '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span style="color:rgba(255,255,255,.6);font-size:13px">Целевой x</span><span style="font-weight:800;font-size:13px">' + (g.target_multiplier || '—') + 'x</span></div>' +
-                    '<div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:rgba(255,255,255,.6);font-size:13px">RTP</span><span style="font-weight:800;font-size:13px">' + ((d.rtp != null) ? Number(d.rtp).toFixed(1) + '%' : '—') + '</span></div>';
+                    '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Статус</span><span style="font-weight:800">' + (g.status || '—') + '</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Текущий x</span><span style="font-weight:800">' + (g.current_multiplier || '1.00') + 'x</span></div>' +
+                    '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px"><span style="color:rgba(255,255,255,.6)">RTP</span><span style="font-weight:800">' + ((d.rtp != null) ? Number(d.rtp).toFixed(1) + '%' : '—') + '</span></div>';
             }
             var manualBtn = $('manualModeBtn');
             if(manualBtn) manualBtn.textContent = ctrl.manual_mode ? '🟢 Ручной режим: ВКЛ' : '⚪ Ручной режим: ВЫКЛ';
-            if(ctrl.use_custom_range){
-                if($('rangeMin')) $('rangeMin').value = ctrl.multiplier_min || 1.01;
-                if($('rangeMax')) $('rangeMax').value = ctrl.multiplier_max || 50;
-            }
             if(d.rtp != null && $('rtpInput')) $('rtpInput').value = Math.round(d.rtp);
         }
     }catch(e){ console.error(e); }
@@ -874,7 +1135,7 @@ async function setRtp(){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 async function forceCrash(){
-    if(!confirm('Форсировать краш сейчас?')) return;
+    if(!confirm('Форсировать краш?')) return;
     try{
         var r = await fetch('/api/admin/crash/force-crash', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID}) });
         var d = await r.json();
@@ -890,16 +1151,6 @@ async function setNextMultiplier(){
         if(d.success){ showToast(d.message || 'OK', 'ok'); $('nextMultInput').value = ''; } else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
-async function setRange(){
-    var min = parseFloat($('rangeMin').value);
-    var max = parseFloat($('rangeMax').value);
-    if(!min || !max || min < 1.01){ showToast('Мин 1.01x', 'err'); return; }
-    try{
-        var r = await fetch('/api/admin/crash/set-range', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, min: min, max: max, enabled: true}) });
-        var d = await r.json();
-        if(d.success){ showToast(d.message || 'OK', 'ok'); } else showToast(d.error || 'Ошибка', 'err');
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
 async function toggleManualMode(){
     try{
         var r = await fetch('/api/admin/crash/toggle-manual', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID}) });
@@ -907,26 +1158,10 @@ async function toggleManualMode(){
         if(d.success){ showToast(d.message || 'OK', 'ok'); loadCrashStatus(); } else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
-async function loadBotsList(){
-    var el = $('botsList');
-    if(!el) return;
-    el.innerHTML = '<div class="loading">Загрузка</div>';
-    try{
-        var r = await fetch('/api/admin/crash-bots/list?admin_id=' + ADMIN_ID);
-        var d = await r.json();
-        if(d.success){
-            var bots = d.bots || [];
-            if(!bots.length){ el.innerHTML = '<div class="empty">Ботов нет</div>'; return; }
-            el.innerHTML = bots.slice(0, 30).map(function(b){
-                return '<div class="list-item"><div class="avatar">🤖</div><div class="info"><div class="name">' + escapeHtml(b.bot_name) + '</div><div class="meta">ставка ' + b.min_bet + '–' + b.max_bet + '</div></div></div>';
-            }).join('');
-        }
-    }catch(e){ el.innerHTML = '<div class="empty">Ошибка сети</div>'; }
-}
 
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    USERS
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 async function loadUsers(){
     var el = $('userList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -936,7 +1171,7 @@ async function loadUsers(){
         if(d.success){
             allUsers = d.users || [];
             renderUsers(allUsers);
-        } else if(el) el.innerHTML = '<div class="empty">Ошибка: ' + escapeHtml(d.error || '—') + '</div>';
+        } else if(el) el.innerHTML = '<div class="empty">Ошибка</div>';
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка сети</div>'; }
 }
 
@@ -951,7 +1186,7 @@ function renderUsers(users){
         return '<div class="list-item" onclick="openUserModal(' + u.id + ')">' +
             '<div class="avatar">' + av + '</div>' +
             '<div class="info"><div class="name">' + escapeHtml(u.first_name || ('User ' + u.id)) + '</div>' +
-            '<div class="meta"><span>ID: ' + u.id + '</span><span>@' + escapeHtml(u.username || '—') + '</span><span>Lvl ' + (u.level || 1) + '</span></div></div>' +
+            '<div class="meta"><span>ID: ' + u.id + '</span><span>@' + escapeHtml(u.username || '—') + '</span></div></div>' +
             '<div class="right"><div class="value">💎 ' + formatTon(u.balance_stars) + '</div></div>' +
             '</div>';
     }).join('');
@@ -973,37 +1208,18 @@ async function openUserModal(userId){
     if(!currentUser) return;
     var html =
         '<div class="modal-title">👤 ' + escapeHtml(currentUser.first_name || ('User ' + userId)) + '</div>' +
-        '<div class="card"><div class="card-title">💰 Баланс и уровень</div>' +
+        '<div class="card"><div class="card-title">Баланс и уровень</div>' +
         '<div class="form-group"><label class="form-label">Звёзды</label><input type="number" class="form-input" id="userBalanceInput" value="' + (currentUser.balance_stars || 0) + '"></div>' +
         '<div class="form-group"><label class="form-label">Уровень</label><input type="number" class="form-input" id="userLevelInput" min="1" max="25" value="' + (currentUser.level || 1) + '"></div>' +
         '<button class="btn btn-success" onclick="saveUserData()">💾 Сохранить</button></div>' +
-
-        '<div class="card"><div class="card-title">🎁 Инвентарь</div>' +
-        '<div class="form-group"><label class="form-label">Найти подарок</label>' +
-        '<input type="text" class="form-input" id="invSearchGift" placeholder="Название подарка..." oninput="filterInvGiftSearch()"></div>' +
-        '<div id="invSearchResults" style="max-height:200px;overflow-y:auto;display:none"></div>' +
-        '<div class="btn-row"><button class="btn btn-primary" onclick="addInventoryItem()">➕ Добавить выбранный</button></div>' +
-        '<div style="height:8px"></div>' +
-        '<button class="btn btn-secondary" onclick="showUserInventory(' + userId + ')">📦 Показать инвентарь</button>' +
-        '<div id="userInvList" style="margin-top:10px"></div>' +
-        '</div>' +
-
-        '<div class="card"><div class="card-title">🎲 RTP буст</div>' +
-        '<div class="form-group"><label class="form-label" id="rtpLabel">40%</label>' +
-        '<input type="range" id="userRtpSlider" min="0" max="100" value="40" style="width:100%;accent-color:#10b981" oninput="document.getElementById(\'rtpLabel\').textContent=this.value+\'%\'"></div>' +
-        '<button class="btn btn-primary" onclick="saveUserRtp()">💾 Сохранить RTP</button></div>' +
-
-        '<div class="card"><div class="card-title">🚫 Бан</div>' +
+        '<div class="card"><div class="card-title">Бан</div>' +
         '<div class="form-group"><label class="form-label">Причина</label><input type="text" class="form-input" id="banReasonInput" placeholder="Нарушение правил"></div>' +
-        '<div class="form-group"><label class="form-label">Срок</label><select class="form-input" id="banDurationSelect"><option value="permanent">Навсегда</option><option value="day">1 день</option><option value="week">1 неделя</option><option value="month">1 месяц</option></select></div>' +
         '<div class="btn-row">' +
         '<button class="btn btn-danger" onclick="banUser()">🚫 Забанить</button>' +
         '<button class="btn btn-success" onclick="unbanUser()">✓ Разбанить</button>' +
         '</div></div>' +
         '<button class="btn btn-secondary" onclick="closeModal()">Закрыть</button>';
     openModal(html);
-    loadUserRtp(userId);
-    _currentUserInvItems = [];
 }
 
 async function saveUserData(){
@@ -1013,44 +1229,19 @@ async function saveUserData(){
     try{
         var r = await fetch('/api/admin/update-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: currentUser.id, balance_stars: Math.round(bal), level: lvl}) });
         var d = await r.json();
-        if(d.success){
-            showToast('Сохранено', 'ok');
-            closeModal();
-            loadUsers();
-        } else showToast(d.error || 'Ошибка', 'err');
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
-
-async function loadUserRtp(userId){
-    try{
-        var r = await fetch('/api/admin/get-user-rtp?user_id=' + userId);
-        var d = await r.json();
-        if(d.success){
-            var v = d.rtp_boost || 40;
-            if($('userRtpSlider')) $('userRtpSlider').value = v;
-            if($('rtpLabel')) $('rtpLabel').textContent = v + '%';
-        }
-    }catch(e){}
-}
-
-async function saveUserRtp(){
-    if(!currentUser) return;
-    var v = parseInt($('userRtpSlider').value) || 40;
-    try{
-        var r = await fetch('/api/admin/set-user-rtp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, user_id: currentUser.id, rtp_boost: v}) });
-        var d = await r.json();
-        if(d.success){ showToast('RTP сохранён: ' + v + '%', 'ok'); } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Сохранено', 'ok'); closeModal(); loadUsers(); }
+        else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
 async function banUser(){
     if(!currentUser) return;
     var reason = ($('banReasonInput').value || '').trim() || 'Нарушение правил';
-    var duration = $('banDurationSelect').value;
     try{
-        var r = await fetch('/api/admin/ban-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, user_id: currentUser.id, reason: reason, duration: duration}) });
+        var r = await fetch('/api/admin/ban-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, user_id: currentUser.id, reason: reason, duration: 'permanent'}) });
         var d = await r.json();
-        if(d.success){ showToast('Забанен', 'ok'); closeModal(); } else showToast(d.error || 'Ошибка', 'err');
+        if(d.success){ showToast('Забанен', 'ok'); closeModal(); }
+        else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
@@ -1059,94 +1250,14 @@ async function unbanUser(){
     try{
         var r = await fetch('/api/admin/unban-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, user_id: currentUser.id}) });
         var d = await r.json();
-        if(d.success){ showToast('Разбанен', 'ok'); closeModal(); } else showToast(d.error || 'Ошибка', 'err');
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
-
-/* === INVENTORY MANAGEMENT === */
-async function filterInvGiftSearch(){
-    var q = ($('invSearchGift').value || '').toLowerCase().trim();
-    var box = $('invSearchResults');
-    if(!box) return;
-    if(q.length < 2){ box.style.display = 'none'; return; }
-    if(!_giftCatalogForLB.length){
-        try{
-            var r = await fetch('/api/admin/get-gifts-list');
-            var d = await r.json();
-            if(d.success) _giftCatalogForLB = d.gifts || [];
-        }catch(e){}
-    }
-    var matches = _giftCatalogForLB.filter(function(g){
-        return (g.name || '').toLowerCase().indexOf(q) !== -1;
-    }).slice(0, 20);
-    if(!matches.length){ box.innerHTML = '<div class="empty" style="padding:16px">Не найдено</div>'; box.style.display = 'block'; return; }
-    box.innerHTML = matches.map(function(g){
-        return '<div class="list-item" onclick="pickGiftForInv(' + g.id + ')" style="margin:0 0 4px 0">' +
-            '<div class="avatar" style="border-radius:8px"><img src="' + escapeHtml(g.image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
-            '<div class="info"><div class="name">' + escapeHtml(g.name) + '</div>' +
-            '<div class="meta">ID: ' + g.id + ' · ' + formatTon(g.value) + ' TON</div></div></div>';
-    }).join('');
-    box.style.display = 'block';
-}
-
-var _pickedInvGift = null;
-function pickGiftForInv(giftId){
-    var g = _giftCatalogForLB.find(function(x){ return x.id === giftId; });
-    if(!g) return;
-    _pickedInvGift = g;
-    if($('invSearchGift')) $('invSearchGift').value = g.name;
-    if($('invSearchResults')) $('invSearchResults').style.display = 'none';
-    showToast('Выбран: ' + g.name, 'ok');
-}
-
-async function addInventoryItem(){
-    if(!_pickedInvGift || !currentUser){ showToast('Выберите подарок', 'err'); return; }
-    try{
-        var r = await fetch('/api/admin/add-inventory-item', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({admin_id: ADMIN_ID, user_id: currentUser.id, gift_id: _pickedInvGift.id, quantity: 1})
-        });
-        var d = await r.json();
-        if(d.success){ showToast('Добавлено', 'ok'); _pickedInvGift = null; if($('invSearchGift')) $('invSearchGift').value = ''; showUserInventory(currentUser.id); }
+        if(d.success){ showToast('Разбанен', 'ok'); closeModal(); }
         else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
-async function showUserInventory(userId){
-    var box = $('userInvList');
-    if(!box) return;
-    box.innerHTML = '<div class="loading">Загрузка</div>';
-    try{
-        var r = await fetch('/api/admin/user-inventory?user_id=' + userId);
-        var d = await r.json();
-        if(d.success && d.inventory){
-            var list = d.inventory;
-            if(!list.length){ box.innerHTML = '<div class="empty" style="padding:20px">Инвентарь пуст</div>'; return; }
-            box.innerHTML = list.map(function(i){
-                return '<div class="list-item" style="padding:8px">' +
-                    '<div class="avatar" style="width:36px;height:36px;border-radius:8px"><img src="' + escapeHtml(i.gift_image_url || i.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
-                    '<div class="info"><div class="name" style="font-size:12px">' + escapeHtml(i.gift_name || '—') + '</div>' +
-                    '<div class="meta">' + formatTon(i.value) + ' TON</div></div>' +
-                    '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeInvItem(' + i.id + ',' + userId + ')" style="padding:6px 10px;font-size:11px">Удалить</button>' +
-                    '</div>';
-            }).join('');
-        } else box.innerHTML = '<div class="empty" style="padding:20px">Ошибка</div>';
-    }catch(e){ box.innerHTML = '<div class="empty" style="padding:20px">Ошибка сети</div>'; }
-}
-
-async function removeInvItem(invId, userId){
-    if(!confirm('Удалить предмет?')) return;
-    try{
-        var r = await fetch('/api/admin/remove-inventory-item', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, inventory_id: invId}) });
-        var d = await r.json();
-        if(d.success){ showToast('Удалено', 'ok'); showUserInventory(userId); }
-        else showToast(d.error || 'Ошибка', 'err');
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
-
-/* ============================================================
-   GIFTS + PORTAL
-   ============================================================ */
+/* ══════════════════════════════════════════════════════════════
+   GIFTS
+   ══════════════════════════════════════════════════════════════ */
 async function loadGifts(){
     var el = $('giftGrid');
     if(el) el.innerHTML = '<div class="loading" style="grid-column:1/-1">Загрузка</div>';
@@ -1155,10 +1266,9 @@ async function loadGifts(){
         var d = await r.json();
         if(d.success){
             allGifts = d.gifts || [];
-            _giftCatalogForLB = allGifts;
             renderGifts(allGifts);
-        } else if(el) el.innerHTML = '<div class="empty" style="grid-column:1/-1">Ошибка</div>';
-    }catch(e){ if(el) el.innerHTML = '<div class="empty" style="grid-column:1/-1">Ошибка сети</div>'; }
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty" style="grid-column:1/-1">Ошибка</div>'; }
 }
 
 function renderGifts(gifts){
@@ -1182,37 +1292,159 @@ function filterGifts(){
     renderGifts(allGifts.filter(function(g){ return (g.name || '').toLowerCase().indexOf(q) !== -1; }));
 }
 
+/* ══════════════════════════════════════════════════════════════
+   PORTAL — СТАТУС, АВТОРИЗАЦИЯ, СИНХРОНИЗАЦИЯ
+   ══════════════════════════════════════════════════════════════ */
 async function loadPortalStatus(){
     var statusEl = $('portalStatus');
     var descEl = $('portalStatusDesc');
     if(!statusEl || !descEl) return;
+
     try{
         var r = await fetch('/api/portal/status');
         var d = await r.json();
+
         if(d.success && d.connected){
             statusEl.className = 'portal-status connected';
             var info = d.info || {};
-            descEl.innerHTML = '✅ Подключено · Коллекций: <b>' + (info.total_collections || 0) + '</b><br>Синхр.: <b>' + escapeHtml(info.last_sync_ago || 'никогда') + '</b>';
+            var lastSync = info.last_sync_ago || 'никогда';
+            var total = info.total_collections || 0;
+            var userTxt = '';
+            if(info.user && (info.user.first_name || info.user.username)){
+                userTxt = '<br>👤 ' + escapeHtml(info.user.first_name || '') + ' ' + escapeHtml(info.user.username ? '@' + info.user.username : '');
+            }
+            descEl.innerHTML = '✅ Подключено · Коллекций: <b>' + total + '</b><br>Синхр.: <b>' + escapeHtml(lastSync) + '</b>' + userTxt;
+            /* Скрываем поле ввода если всё ок */
+            var iw = $('portalInputWrap');
+            if(iw) iw.style.display = 'block';
         } else {
             statusEl.className = 'portal-status disconnected';
-            descEl.textContent = '❌ Не подключено';
+            descEl.textContent = '❌ Не подключено. Вставь initData ниже и нажми "Авторизоваться".';
         }
     }catch(e){
         statusEl.className = 'portal-status disconnected';
-        descEl.textContent = '⚠️ Не удалось получить статус';
+        descEl.textContent = '⚠️ Не удалось получить статус Portal';
+    }
+}
+
+async function savePortalToken(){
+    var inp = $('portalTokenInput');
+    var errEl = $('portalError');
+    var okEl = $('portalSuccess');
+    var btn = $('portalAuthBtn');
+    if(!inp) return;
+
+    var token = (inp.value || '').trim();
+    if(!token){
+        if(errEl){ errEl.textContent = 'Вставь initData в поле выше'; errEl.classList.add('show'); }
+        if(okEl) okEl.classList.remove('show');
+        return;
+    }
+
+    if(btn){ btn.disabled = true; }
+    if(errEl) errEl.classList.remove('show');
+    if(okEl) okEl.classList.remove('show');
+
+    try{
+        var r = await fetch('/api/portal/save-token', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, token: token})
+        });
+        var d = await r.json();
+
+        if(d.success){
+            if(okEl){
+                var userTxt = d.user ? ('👤 ' + (d.user.first_name || '') + ' ' + (d.user.username ? '@' + d.user.username : '')) : '';
+                okEl.innerHTML = '✅ ' + (d.message || 'Токен сохранён') + (userTxt ? '<br>' + userTxt : '');
+                okEl.classList.add('show');
+            }
+            showToast('✅ Portal подключён!', 'ok');
+            /* Очищаем поле и перезагружаем статус */
+            if(inp) inp.value = '';
+            setTimeout(function(){
+                loadPortalStatus();
+                loadGifts();
+            }, 500);
+        } else {
+            if(errEl){
+                var msg = d.error || 'Ошибка';
+                if(d.hint) msg += '<br><br>💡 ' + d.hint;
+                errEl.innerHTML = '❌ ' + msg;
+                errEl.classList.add('show');
+            }
+            showToast('Ошибка авторизации', 'err');
+        }
+    }catch(e){
+        if(errEl){ errEl.textContent = '❌ Ошибка сети'; errEl.classList.add('show'); }
+        showToast('Ошибка сети', 'err');
+    } finally {
+        if(btn){ btn.disabled = false; }
     }
 }
 
 async function syncPortalPrices(){
+    var btn = $('portalSyncBtn');
+    var okEl = $('portalSuccess');
+    var errEl = $('portalError');
+    if(btn){ btn.disabled = true; }
+    if(okEl) okEl.classList.remove('show');
+    if(errEl) errEl.classList.remove('show');
+
+    try{
+        var r = await fetch('/api/portal/sync-prices', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, full: true})
+        });
+        var d = await r.json();
+        if(d.success){
+            showToast('✅ Обновлено: ' + (d.updated || 0) + ' / ' + (d.total || 0), 'ok');
+            if(okEl){
+                okEl.innerHTML = '✅ Обновлено: <b>' + (d.updated || 0) + '</b> из <b>' + (d.total || 0) + '</b> подарков';
+                okEl.classList.add('show');
+            }
+            await loadGifts();
+            await loadPortalStatus();
+        } else {
+            if(errEl){
+                errEl.textContent = '❌ ' + (d.error || 'Ошибка синхронизации');
+                errEl.classList.add('show');
+            }
+            showToast('Ошибка синхронизации', 'err');
+        }
+    }catch(e){
+        if(errEl){ errEl.textContent = '❌ Ошибка сети'; errEl.classList.add('show'); }
+        showToast('Ошибка сети', 'err');
+    } finally {
+        if(btn){ btn.disabled = false; }
+    }
+}
+
+async function portalLogout(){
+    if(!confirm('Отключить Portal Marketplace?')) return;
     var btn = event.target;
     if(btn) btn.disabled = true;
     try{
-        var r = await fetch('/api/portal/sync-prices', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, full: true}) });
+        var r = await fetch('/api/portal/logout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID})
+        });
         var d = await r.json();
-        if(d.success){ showToast('✅ Обновлено: ' + (d.updated || 0) + '/' + (d.total || 0), 'ok'); await loadGifts(); await loadPortalStatus(); }
-        else showToast('❌ ' + (d.error || 'Ошибка'), 'err');
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-    finally { if(btn) btn.disabled = false; }
+        if(d.success){
+            showToast('Portal отключён', 'ok');
+            var inp = $('portalTokenInput');
+            if(inp) inp.value = '';
+            await loadPortalStatus();
+        } else {
+            showToast(d.error || 'Ошибка', 'err');
+        }
+    }catch(e){
+        showToast('Ошибка сети', 'err');
+    } finally {
+        if(btn) btn.disabled = false;
+    }
 }
 
 async function loadPortalInfo(){
@@ -1221,6 +1453,7 @@ async function loadPortalInfo(){
     if(!card || !content) return;
     card.style.display = 'block';
     content.innerHTML = '<div class="loading">Загрузка</div>';
+
     try{
         var r = await fetch('/api/portal/info');
         var d = await r.json();
@@ -1235,15 +1468,17 @@ async function loadPortalInfo(){
                 ['Обновлено', i.last_updated || 0]
             ];
             content.innerHTML = rows.map(function(row){
-                return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px"><span style="color:rgba(255,255,255,.5)">' + escapeHtml(row[0]) + '</span><span style="color:#fff;font-weight:700">' + escapeHtml(String(row[1])) + '</span></div>';
+                return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px"><span style="color:rgba(255,255,255,.5)">' + escapeHtml(row[0]) + '</span><span style="color:#fff;font-weight:700">' + escapeHtml(String(row[1])) + '</span></div>';
             }).join('');
-        } else content.innerHTML = '<div class="empty">Нет данных</div>';
+        } else {
+            content.innerHTML = '<div class="empty">Нет данных</div>';
+        }
     }catch(e){ content.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
-/* ============================================================
-   CASES / PROMO / QUESTS / CRATES / SHOP
-   ============================================================ */
+/* ══════════════════════════════════════════════════════════════
+   CASES / PROMO / QUESTS
+   ══════════════════════════════════════════════════════════════ */
 async function loadCasesList(){
     var el = $('casesList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -1252,7 +1487,7 @@ async function loadCasesList(){
         var d = await r.json();
         if(d.success){
             var list = d.cases || [];
-            if(!list.length){ if(el) el.innerHTML = '<div class="empty">Кейсов нет</div>'; return; }
+            if(!list.length){ el.innerHTML = '<div class="empty">Кейсов нет</div>'; return; }
             el.innerHTML = list.map(function(c){
                 var img = c.image || '/static/img/gift.png';
                 return '<div class="list-item"><div class="avatar" style="border-radius:10px"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
@@ -1260,8 +1495,8 @@ async function loadCasesList(){
                     '<div class="meta">ID: ' + c.id + ' · Дропов: ' + ((c.gifts || []).length) + '</div></div>' +
                     '<div class="right"><div class="value">💎 ' + formatTon(c.cost || 0) + '</div></div></div>';
             }).join('');
-        } else if(el) el.innerHTML = '<div class="empty">Ошибка</div>';
-    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка сети</div>'; }
+        }
+    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
 async function loadPromoCodes(){
@@ -1276,35 +1511,22 @@ async function loadPromoCodes(){
             el.innerHTML = list.map(function(p){
                 return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#be185d,#ec4899)">🎟️</div>' +
                     '<div class="info"><div class="name">' + escapeHtml(p.code) + '</div>' +
-                    '<div class="meta">' + (p.reward_stars || 0) + '⭐ · ' + p.used_count + '/' + (p.max_uses || '∞') + ' · ' + (p.is_active ? '✅' : '❌') + '</div></div>' +
+                    '<div class="meta">' + (p.reward_stars || 0) + '⭐ · ' + p.used_count + '/' + (p.max_uses || '∞') + '</div></div>' +
                     '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deletePromoCode(' + p.id + ')">✕</button></div>';
             }).join('');
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
-function togglePromoFields(){
-    var t = $('promoTypeSelect').value;
-    $('promoTonFields').style.display = t === 'ton' ? 'block' : 'none';
-    $('promoCaseFields').style.display = t === 'case_open' ? 'block' : 'none';
-}
-
 async function createPromoCode(){
     var code = ($('promoCodeInput').value || '').trim().toUpperCase();
-    var type = $('promoTypeSelect').value;
-    var payload = { admin_id: ADMIN_ID, code: code, expires_days: 365 };
-    if(type === 'case_open'){
-        payload.reward_type = 'case_open';
-        payload.reward_stars = 0;
-        payload.reward_data = { case_id: parseInt($('promoCaseId').value) || 2 };
-        payload.max_uses = parseInt($('promoMaxUses').value) || 100;
-    } else {
-        payload.reward_type = 'ton';
-        payload.reward_stars = Math.round((parseFloat($('promoRewardTon').value) || 1) * 100);
-        payload.max_uses = parseInt($('promoMaxUses').value) || 100;
-    }
+    var ton = parseFloat($('promoRewardTon').value) || 1;
+    var maxUses = parseInt($('promoMaxUses').value) || 100;
     try{
-        var r = await fetch('/api/admin/promo-codes', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        var r = await fetch('/api/admin/promo-codes', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({admin_id: ADMIN_ID, code: code, reward_type: 'ton', reward_stars: Math.round(ton * 100), max_uses: maxUses, expires_days: 365})
+        });
         var d = await r.json();
         if(d.success){ showToast('Промокод создан', 'ok'); $('promoCodeInput').value = ''; loadPromoCodes(); }
         else showToast(d.error || 'Ошибка', 'err');
@@ -1312,7 +1534,7 @@ async function createPromoCode(){
 }
 
 async function deletePromoCode(id){
-    if(!confirm('Удалить промокод?')) return;
+    if(!confirm('Удалить?')) return;
     try{
         var r = await fetch('/api/admin/promo-codes', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, id: id}) });
         var d = await r.json();
@@ -1332,8 +1554,7 @@ async function loadQuests(){
             el.innerHTML = list.map(function(q){
                 return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#0e7490,#06b6d4)">🎯</div>' +
                     '<div class="info"><div class="name">' + escapeHtml(q.title) + '</div>' +
-                    '<div class="meta">' + escapeHtml(q.quest_type) + ' → ' + q.target_value + ' · 🎁 ' + q.reward_amount + '</div></div>' +
-                    '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteQuest(' + q.id + ')">✕</button></div>';
+                    '<div class="meta">' + escapeHtml(q.quest_type) + ' → ' + q.target_value + ' · 🎁 ' + q.reward_amount + '</div></div></div>';
             }).join('');
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
@@ -1345,7 +1566,7 @@ async function createQuest(){
     var fd = new FormData();
     fd.append('admin_id', ADMIN_ID);
     fd.append('title', title);
-    fd.append('quest_type', $('questType').value);
+    fd.append('quest_type', 'crash_bets');
     fd.append('target_value', parseInt($('questTarget').value) || 10);
     fd.append('reward_type', 'stars');
     fd.append('reward_amount', parseInt($('questReward').value) || 0);
@@ -1357,280 +1578,9 @@ async function createQuest(){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
-async function deleteQuest(id){
-    if(!confirm('Удалить?')) return;
-    try{
-        var r = await fetch('/api/admin/crash-quests/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, quest_id: id}) });
-        var d = await r.json();
-        if(d.success){ showToast('Удалено', 'ok'); loadQuests(); }
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
-
-async function loadCrates(){
-    var el = $('cratesList');
-    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
-    try{
-        var r = await fetch('/api/admin/crates?admin_id=' + ADMIN_ID);
-        var d = await r.json();
-        if(d.success){
-            var list = d.crates || [];
-            if(!list.length){ el.innerHTML = '<div class="empty">Ящиков нет</div>'; return; }
-            el.innerHTML = list.map(function(c){
-                var img = c.image || '/static/img/gift.png';
-                return '<div class="list-item"><div class="avatar" style="border-radius:10px"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
-                    '<div class="info"><div class="name">' + escapeHtml(c.name) + '</div>' +
-                    '<div class="meta">ID: ' + c.id + ' · ' + (c.is_active ? '✅' : '❌') + ' · items: ' + ((c.items || []).length) + '</div></div></div>';
-            }).join('');
-        }
-    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
-}
-
-async function loadShopDeals(){
-    var el = $('shopDealsList');
-    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
-    try{
-        var r = await fetch('/api/admin/shop-deals?admin_id=' + ADMIN_ID);
-        var d = await r.json();
-        if(d.success){
-            var list = d.deals || [];
-            if(!list.length){ el.innerHTML = '<div class="empty">Акций нет</div>'; return; }
-            el.innerHTML = list.map(function(x){
-                return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#b45309,#f59e0b)">🛍️</div>' +
-                    '<div class="info"><div class="name">' + escapeHtml(x.title || 'Акция') + '</div>' +
-                    '<div class="meta">' + x.price + '⭐ · ' + (x.is_active ? '✅' : '❌') + '</div></div></div>';
-            }).join('');
-        }
-    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
-}
-
-/* ============================================================
-   LEADERBOARD — переделан полностью
-   ============================================================ */
-
-/* Инициализация формы с 10 местами */
-function renderLbPlacesEditor(){
-    var container = $('lbPlacesContainer');
-    if(!container) return;
-    var savedState = {};
-    // Сохраняем текущие значения если есть
-    container.querySelectorAll('.lb-place-row').forEach(function(row){
-        var place = row.dataset.place;
-        var type = row.querySelector('select').value;
-        var input = row.querySelector('.lb-reward-input');
-        savedState[place] = { type: type, value: input ? input.value : '' };
-    });
-
-    var html = '';
-    for(var place = 1; place <= 10; place++){
-        var sv = savedState[place] || { type: 'stars', value: '' };
-        html += '<div class="lb-place-row" data-place="' + place + '">' +
-            '<div class="lb-place-num">' + place + '</div>' +
-            '<div class="lb-reward-type">' +
-            '<select onchange="onLbRewardTypeChange(' + place + ', this.value)">' +
-            '<option value="stars"' + (sv.type === 'stars' ? ' selected' : '') + '>⭐ Stars</option>' +
-            '<option value="gift"' + (sv.type === 'gift' ? ' selected' : '') + '>🎁 Подарок</option>' +
-            '</select>' +
-            '</div>' +
-            '<div class="lb-reward-input-wrap">' +
-            '<input type="text" class="lb-reward-input" data-place="' + place + '" placeholder="' + (sv.type === 'stars' ? '100' : 'ID подарка') + '" value="' + escapeHtml(sv.value) + '" ' +
-            (sv.type === 'gift' ? 'readonly onclick="openLbGiftPicker(' + place + ')" style="cursor:pointer"' : '') + '>' +
-            '</div>' +
-            '</div>';
-    }
-    container.innerHTML = html;
-}
-
-function onLbRewardTypeChange(place, newType){
-    var row = document.querySelector('.lb-place-row[data-place="' + place + '"]');
-    if(!row) return;
-    var input = row.querySelector('.lb-reward-input');
-    if(newType === 'gift'){
-        input.value = '';
-        input.placeholder = 'ID подарка';
-        input.readOnly = true;
-        input.style.cursor = 'pointer';
-        input.onclick = function(){ openLbGiftPicker(place); };
-    } else {
-        input.value = '';
-        input.placeholder = '100';
-        input.readOnly = false;
-        input.style.cursor = '';
-        input.onclick = null;
-    }
-}
-
-async function openLbGiftPicker(place){
-    // Загружаем подарки если не загружены
-    if(!_giftCatalogForLB.length){
-        try{
-            var r = await fetch('/api/admin/get-gifts-list');
-            var d = await r.json();
-            if(d.success) _giftCatalogForLB = d.gifts || [];
-        }catch(e){}
-    }
-    if(!_giftCatalogForLB.length){
-        showToast('Не удалось загрузить подарки', 'err');
-        return;
-    }
-    var html = '<div class="modal-title">🎁 Выберите подарок для места ' + place + '</div>' +
-        '<div class="search-wrap"><svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>' +
-        '<input type="text" class="search-input" id="lbGiftSearch" placeholder="Поиск..." oninput="filterLbGifts(' + place + ')"></div>' +
-        '<div class="lb-gift-picker" id="lbGiftPicker"></div>';
-    openModal(html);
-    renderLbGifts(place, _giftCatalogForLB.slice(0, 60));
-}
-
-function renderLbGifts(place, gifts){
-    var el = $('lbGiftPicker');
-    if(!el) return;
-    if(!gifts.length){ el.innerHTML = '<div class="empty" style="grid-column:1/-1">Не найдено</div>'; return; }
-    el.innerHTML = gifts.map(function(g){
-        return '<div class="lb-gift-item" onclick="pickLbGift(' + place + ',' + g.id + ')">' +
-            '<img src="' + escapeHtml(g.image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'">' +
-            '<div class="lbg-name">' + escapeHtml(g.name) + '</div>' +
-            '<div class="lbg-price">' + formatTon(g.value) + 'T</div>' +
-            '</div>';
-    }).join('');
-}
-
-function filterLbGifts(place){
-    var q = ($('lbGiftSearch').value || '').toLowerCase().trim();
-    var filtered = _giftCatalogForLB.filter(function(g){
-        return !q || (g.name || '').toLowerCase().indexOf(q) !== -1;
-    }).slice(0, 60);
-    renderLbGifts(place, filtered);
-}
-
-function pickLbGift(place, giftId){
-    var g = _giftCatalogForLB.find(function(x){ return x.id === giftId; });
-    if(!g) return;
-    var row = document.querySelector('.lb-place-row[data-place="' + place + '"]');
-    if(!row) return;
-    var input = row.querySelector('.lb-reward-input');
-    input.value = String(g.id);
-    input.dataset.giftName = g.name;
-    input.dataset.giftImage = g.image || '';
-    closeModal();
-    showToast('Подарок: ' + g.name, 'ok');
-}
-
-async function createLeaderboard(){
-    var title = ($('lbTitle').value || 'Лидерборд').trim();
-    var start = $('lbStart').value;
-    var end = $('lbEnd').value;
-    if(!start || !end){ showToast('Укажите даты', 'err'); return; }
-    if(new Date(start) >= new Date(end)){ showToast('Дата окончания должна быть позже', 'err'); return; }
-
-    var rewards = {};
-    var rows = document.querySelectorAll('.lb-place-row');
-    rows.forEach(function(row){
-        var place = row.dataset.place;
-        var type = row.querySelector('select').value;
-        var input = row.querySelector('.lb-reward-input');
-        var value = (input.value || '').trim();
-        if(!value) return;
-        if(type === 'stars'){
-            var stars = parseInt(value);
-            if(stars > 0){
-                rewards[place] = { type: 'stars', amount: stars };
-            }
-        } else {
-            // Подарок
-            rewards[place] = {
-                type: 'gift',
-                amount: value,          // ID подарка
-                gift_name: input.dataset.giftName || '',
-                gift_image: input.dataset.giftImage || ''
-            };
-        }
-    });
-
-    if(!Object.keys(rewards).length){ showToast('Добавьте хотя бы 1 награду', 'err'); return; }
-
-    var payload = {
-        admin_id: ADMIN_ID,
-        title: title,
-        period_start: start.replace('T', ' ') + ':00',
-        period_end: end.replace('T', ' ') + ':00',
-        rewards: rewards
-    };
-
-    try{
-        var r = await fetch('/api/admin/leaderboard', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        });
-        var d = await r.json();
-        if(d.success){
-            showToast('🏆 Лидерборд создан!', 'ok');
-            loadLeaderboards();
-            // Очищаем форму
-            $('lbTitle').value = 'Лидерборд';
-            $('lbStart').value = '';
-            $('lbEnd').value = '';
-            renderLbPlacesEditor();
-        } else {
-            showToast(d.error || 'Ошибка', 'err');
-        }
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
-
-async function loadLeaderboards(){
-    var el = $('lbList');
-    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
-    try{
-        var r = await fetch('/api/admin/leaderboard?admin_id=' + ADMIN_ID);
-        var d = await r.json();
-        if(d.success && d.configs && d.configs.length){
-            el.innerHTML = d.configs.map(function(c){
-                var rewards = c.rewards || {};
-                var rewardsCount = Object.keys(rewards).length;
-                var rewardsPreview = Object.keys(rewards).slice(0, 3).map(function(place){
-                    var rw = rewards[place];
-                    if(rw.type === 'stars') return '#' + place + ' ⭐' + rw.amount;
-                    return '#' + place + ' 🎁';
-                }).join(' · ');
-                if(Object.keys(rewards).length > 3) rewardsPreview += ' …';
-                return '<div class="card">' +
-                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-                    '<div style="font-weight:800;font-size:14px">' + escapeHtml(c.title || 'Лидерборд') + '</div>' +
-                    '<div style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:8px;background:' + (c.is_active ? 'rgba(16,185,129,.15)' : 'rgba(255,255,255,.08)') + ';color:' + (c.is_active ? '#10b981' : 'rgba(255,255,255,.5)') + '">' + (c.is_active ? 'АКТИВЕН' : 'НЕАКТИВЕН') + '</div>' +
-                    '</div>' +
-                    '<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:6px">' + (c.period_start || '') + ' → ' + (c.period_end || '') + '</div>' +
-                    '<div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:10px">Награды (' + rewardsCount + '): ' + escapeHtml(rewardsPreview || '—') + '</div>' +
-                    '<div style="display:flex;gap:6px">' +
-                    (c.is_active ? '<button class="btn btn-success btn-sm" style="flex:1" onclick="distributeLB(' + c.id + ')">💰 Раздать награды</button>' : '') +
-                    '<button class="btn btn-danger btn-sm" onclick="deleteLB(' + c.id + ')" style="padding:10px 12px">✕</button>' +
-                    '</div>' +
-                    '</div>';
-            }).join('');
-        } else el.innerHTML = '<div class="empty">Лидербордов нет</div>';
-    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
-}
-
-async function distributeLB(id){
-    if(!confirm('Раздать награды этого лидерборда? Все получат уведомления.')) return;
-    try{
-        var r = await fetch('/api/admin/leaderboard/distribute', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, id: id}) });
-        var d = await r.json();
-        if(d.success){ showToast('Награды розданы: ' + (d.distributed || 0), 'ok'); loadLeaderboards(); }
-        else showToast(d.error || 'Ошибка', 'err');
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
-
-async function deleteLB(id){
-    if(!confirm('Удалить лидерборд?')) return;
-    try{
-        var r = await fetch('/api/admin/leaderboard', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, id: id}) });
-        var d = await r.json();
-        if(d.success){ showToast('Удалён', 'ok'); loadLeaderboards(); }
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
-
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    WITHDRAWALS
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 var currentWFilter = 'all';
 async function loadWithdrawals(status){
     status = status || currentWFilter;
@@ -1644,21 +1594,15 @@ async function loadWithdrawals(status){
             var list = d.withdrawals || [];
             if(!list.length){ el.innerHTML = '<div class="empty">Заявок нет</div>'; return; }
             el.innerHTML = list.map(function(w){
-                var statusText = {pending:'Ожидает',approved:'Одобрено',rejected:'Отклонено',processing:'Обработка',error:'Ошибка'}[w.status] || w.status;
+                var statusText = {pending:'Ожидает',approved:'Одобрено',rejected:'Отклонено'}[w.status] || w.status;
                 var actions = w.status === 'pending'
-                    ? '<div class="btn-row" style="margin-top:8px"><button class="btn btn-success btn-sm" style="flex:1" onclick="approveWithdrawal(' + w.id + ')">✓ Одобрить</button><button class="btn btn-danger btn-sm" style="flex:1" onclick="rejectWithdrawal(' + w.id + ')">✗</button></div>'
+                    ? '<div class="btn-row" style="margin-top:8px"><button class="btn btn-success btn-sm" style="flex:1" onclick="approveWithdrawal(' + w.id + ')">✓</button><button class="btn btn-danger btn-sm" style="flex:1" onclick="rejectWithdrawal(' + w.id + ')">✗</button></div>'
                     : '';
-                return '<div class="card" style="margin-bottom:8px">' +
-                    '<div style="display:flex;align-items:center;gap:10px">' +
-                    '<div style="width:42px;height:42px;border-radius:12px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">🎁</div>' +
-                    '<div style="flex:1;min-width:0">' +
-                    '<div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(w.gift_name || '—') + '</div>' +
-                    '<div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px">@' + escapeHtml(w.telegram_username || '—') + ' · ID ' + w.user_id + '</div>' +
-                    '</div>' +
-                    '<div style="text-align:right;flex-shrink:0">' +
-                    '<div style="font-weight:800;font-size:14px">' + formatTon(w.gift_value) + ' TON</div>' +
-                    '<div style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:7px;display:inline-block;margin-top:3px;background:rgba(59,130,246,.15);color:#3B82F6">' + statusText + '</div>' +
-                    '</div></div>' + actions + '</div>';
+                return '<div class="card"><div style="display:flex;align-items:center;gap:10px"><div style="width:42px;height:42px;border-radius:12px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">🎁</div>' +
+                    '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">' + escapeHtml(w.gift_name || '—') + '</div>' +
+                    '<div style="font-size:11px;color:rgba(255,255,255,.5)">@' + escapeHtml(w.telegram_username || '—') + '</div></div>' +
+                    '<div style="text-align:right"><div style="font-weight:800;font-size:14px">' + formatTon(w.gift_value) + '</div>' +
+                    '<div style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:7px;background:rgba(59,130,246,.15);color:#7CAEFF;margin-top:3px">' + statusText + '</div></div></div>' + actions + '</div>';
             }).join('');
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
@@ -1671,7 +1615,7 @@ function filterWithdrawals(status, btn){
 }
 
 async function approveWithdrawal(id){
-    if(!confirm('Одобрить вывод?')) return;
+    if(!confirm('Одобрить?')) return;
     try{
         var r = await fetch('/api/admin/update-withdrawal-status', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, withdrawal_id: id, status: 'approved'}) });
         var d = await r.json();
@@ -1687,9 +1631,9 @@ async function rejectWithdrawal(id){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    SBP
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 var currentSbpFilter = 'pending';
 async function loadSbpPayments(status){
     status = status || currentSbpFilter;
@@ -1703,44 +1647,21 @@ async function loadSbpPayments(status){
             var list = d.payments || [];
             if(!list.length){ el.innerHTML = '<div class="empty">Платежей нет</div>'; return; }
             el.innerHTML = list.map(function(p){
-                var statusText = {pending:'Ожидает', completed:'Завершён', rejected:'Отклонён'}[p.status] || p.status;
-                var actions = p.status === 'pending'
-                    ? '<div class="btn-row" style="margin-top:8px"><button class="btn btn-success btn-sm" style="flex:1" onclick="confirmSbp(' + p.id + ')">✓ Подтвердить</button><button class="btn btn-danger btn-sm" style="flex:1" onclick="rejectSbp(' + p.id + ')">✗</button></div>'
-                    : '';
-                return '<div class="card" style="margin-bottom:8px">' +
-                    '<div style="display:flex;justify-content:space-between">' +
-                    '<div><div style="font-weight:700;font-size:14px">' + (p.stars || 0) + ' ⭐</div><div style="font-size:11px;color:rgba(255,255,255,.5)">' + (p.amount_rub || 0) + ' ₽ · user ' + p.user_id + '</div></div>' +
-                    '<div style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:8px;background:rgba(59,130,246,.15);color:#3B82F6;align-self:flex-start">' + statusText + '</div>' +
-                    '</div>' + actions + '</div>';
+                return '<div class="card"><div style="display:flex;justify-content:space-between"><div style="font-weight:700">' + (p.stars || 0) + ' ⭐</div><div style="font-size:11px;color:rgba(255,255,255,.5)">' + (p.amount_rub || 0) + ' ₽</div></div></div>';
             }).join('');
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
+
 function filterSbp(status, btn){
     document.querySelectorAll('#page-sbp .tab-btn').forEach(function(b){ b.classList.remove('active'); });
     if(btn) btn.classList.add('active');
     loadSbpPayments(status);
 }
-async function confirmSbp(id){
-    if(!confirm('Подтвердить платёж?')) return;
-    try{
-        var r = await fetch('/api/admin/sbp-confirm', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, payment_id: id}) });
-        var d = await r.json();
-        if(d.success){ showToast('Подтверждён', 'ok'); loadSbpPayments(); }
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
-async function rejectSbp(id){
-    if(!confirm('Отклонить?')) return;
-    try{
-        var r = await fetch('/api/admin/sbp-reject', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, payment_id: id}) });
-        var d = await r.json();
-        if(d.success){ showToast('Отклонён', 'ok'); loadSbpPayments(); }
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
 
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    LEVELS
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 async function loadLevels(){
     var el = $('levelsList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -1759,9 +1680,9 @@ async function loadLevels(){
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
-/* ============================================================
-   INVENTORY PAGE (search users)
-   ============================================================ */
+/* ══════════════════════════════════════════════════════════════
+   INVENTORY
+   ══════════════════════════════════════════════════════════════ */
 async function searchInvUser(){
     var q = ($('invUserSearch').value || '').trim();
     var el = $('invUserResults');
@@ -1773,35 +1694,49 @@ async function searchInvUser(){
         var d = await r.json();
         if(d.success && d.users && d.users.length){
             el.innerHTML = d.users.slice(0, 10).map(function(u){
-                return '<div class="list-item" onclick="showUserInvFromPage(' + u.id + ')">' +
+                return '<div class="list-item" onclick="showUserInventory(' + u.id + ')">' +
                     '<div class="avatar">' + escapeHtml((u.name || 'U')[0].toUpperCase()) + '</div>' +
                     '<div class="info"><div class="name">' + escapeHtml(u.name || 'User') + '</div>' +
-                    '<div class="meta">ID: ' + u.id + (u.username ? ' · @' + escapeHtml(u.username) : '') + '</div></div></div>';
+                    '<div class="meta">ID: ' + u.id + '</div></div></div>';
             }).join('');
         } else el.innerHTML = '<div class="empty">Не найдено</div>';
     }catch(e){ el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
-function showUserInvFromPage(userId){
-    currentUser = { id: userId };
-    // Открываем модалку пользователя
-    fetch('/api/user/' + userId).then(function(r){ return r.json(); }).then(function(d){
-        if(d.success && d.user){
-            // Приводим к формату admin (level вместо current_level)
-            var u = d.user;
-            u.level = u.current_level || u.level || 1;
-            u.balance_stars = u.balance_stars || 0;
-            currentUser = u;
-            openUserModal(userId);
-        } else {
-            showToast('Пользователь не найден', 'err');
+async function showUserInventory(userId){
+    var box = $('invUserInfo');
+    if(!box) return;
+    box.style.display = 'block';
+    box.innerHTML = '<div class="loading">Загрузка инвентаря</div>';
+    try{
+        var r = await fetch('/api/admin/user-inventory?user_id=' + userId);
+        var d = await r.json();
+        if(d.success){
+            var list = d.inventory || [];
+            box.innerHTML = '<div class="card"><div class="card-title">Инвентарь #' + userId + ' (' + list.length + ')</div>' +
+                (list.length ? list.map(function(i){
+                    return '<div class="list-item"><div class="avatar" style="border-radius:8px"><img src="' + escapeHtml(i.gift_image_url || i.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
+                        '<div class="info"><div class="name">' + escapeHtml(i.gift_name || '—') + '</div>' +
+                        '<div class="meta">' + formatTon(i.value) + ' TON</div></div>' +
+                        '<button class="btn btn-danger btn-sm" onclick="removeInvItem(' + i.id + ',' + userId + ')">✕</button></div>';
+                }).join('') : '<div class="empty">Пусто</div>') +
+                '</div>';
         }
-    }).catch(function(){ showToast('Ошибка', 'err'); });
+    }catch(e){ box.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
 
-/* ============================================================
-   NEWS
-   ============================================================ */
+async function removeInvItem(invId, userId){
+    if(!confirm('Удалить?')) return;
+    try{
+        var r = await fetch('/api/admin/remove-inventory-item', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, inventory_id: invId}) });
+        var d = await r.json();
+        if(d.success){ showToast('Удалено', 'ok'); showUserInventory(userId); }
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NEWS / NOTIFICATIONS / MESSAGES / HISTORY
+   ══════════════════════════════════════════════════════════════ */
 async function loadNewsList(){
     var el = $('newsList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -1814,8 +1749,7 @@ async function loadNewsList(){
             el.innerHTML = list.map(function(n){
                 return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#6d28d9,#a855f7)">📰</div>' +
                     '<div class="info"><div class="name">' + escapeHtml(n.title) + '</div>' +
-                    '<div class="meta">ID ' + n.id + ' · ' + (n.is_active ? '✅' : '❌') + ' · ⭐' + (n.reward_amount || 0) + '</div></div>' +
-                    '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteNews(' + n.id + ')">✕</button></div>';
+                    '<div class="meta">ID ' + n.id + ' · ' + (n.is_active ? '✅' : '❌') + '</div></div></div>';
             }).join('');
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
@@ -1833,18 +1767,6 @@ async function submitNews(){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
-async function deleteNews(id){
-    if(!confirm('Удалить?')) return;
-    try{
-        var r = await fetch('/api/admin/news-json/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, news_id: id}) });
-        var d = await r.json();
-        if(d.success){ showToast('Удалено', 'ok'); loadNewsList(); }
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
-
-/* ============================================================
-   ADMIN NOTIFICATIONS
-   ============================================================ */
 async function loadAdminNotifs(){
     var el = $('notifsList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -1856,9 +1778,7 @@ async function loadAdminNotifs(){
             if(!list.length){ el.innerHTML = '<div class="empty">Нет уведомлений</div>'; return; }
             el.innerHTML = list.map(function(n){
                 return '<div class="list-item"><div class="avatar" style="background:linear-gradient(135deg,#be185d,#ec4899)">🔔</div>' +
-                    '<div class="info"><div class="name">' + escapeHtml(n.title) + '</div>' +
-                    '<div class="meta">' + escapeHtml(n.target_label || 'All users') + '</div></div>' +
-                    '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteAdminNotif(' + n.id + ')">✕</button></div>';
+                    '<div class="info"><div class="name">' + escapeHtml(n.title) + '</div></div></div>';
             }).join('');
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
@@ -1869,33 +1789,19 @@ async function createAdminNotif(){
     if(!title){ showToast('Введите заголовок', 'err'); return; }
     try{
         var r = await fetch('/api/admin/admin-notifications', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
-            admin_id: ADMIN_ID, title: title,
-            message: $('notifMessage').value, image_url: $('notifImage').value,
-            target_user_id: parseInt($('notifTarget').value) || null,
-            notif_type: 'general'
+            admin_id: ADMIN_ID, title: title, message: $('notifMessage').value,
+            target_user_id: parseInt($('notifTarget').value) || null, notif_type: 'general'
         }) });
         var d = await r.json();
-        if(d.success){ showToast('Создано', 'ok'); $('notifTitle').value = ''; $('notifMessage').value = ''; loadAdminNotifs(); }
+        if(d.success){ showToast('Создано', 'ok'); $('notifTitle').value = ''; loadAdminNotifs(); }
         else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
-async function deleteAdminNotif(id){
-    if(!confirm('Удалить?')) return;
-    try{
-        var r = await fetch('/api/admin/admin-notifications', { method:'DELETE', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, id: id}) });
-        var d = await r.json();
-        if(d.success){ showToast('Удалено', 'ok'); loadAdminNotifs(); }
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-}
-
-/* ============================================================
-   MESSAGES
-   ============================================================ */
 async function sendAdminMessage(){
     var userId = parseInt($('msgUserId').value);
     var text = ($('msgText').value || '').trim();
-    if(!userId || !text){ showToast('Заполните ID и текст', 'err'); return; }
+    if(!userId || !text){ showToast('Заполните поля', 'err'); return; }
     try{
         var r = await fetch('/api/admin/send-message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, user_id: userId, text: text}) });
         var d = await r.json();
@@ -1904,33 +1810,6 @@ async function sendAdminMessage(){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
-async function sendBroadcast(){
-    var text = ($('broadcastText').value || '').trim();
-    if(!text){ showToast('Введите текст', 'err'); return; }
-    if(!confirm('Отправить ВСЕМ?')) return;
-    try{
-        var r = await fetch('/api/admin/users?admin_id=' + ADMIN_ID);
-        var d = await r.json();
-        if(!d.success || !d.users){ showToast('Не удалось загрузить', 'err'); return; }
-        var users = d.users;
-        var sent = 0, failed = 0;
-        showToast('Отправка... 0/' + users.length, 'ok');
-        for(var i = 0; i < users.length; i++){
-            try{
-                var mr = await fetch('/api/admin/send-message', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, user_id: users[i].id, text: text}) });
-                var md = await mr.json();
-                if(md.success) sent++; else failed++;
-            }catch(e){ failed++; }
-            if(i % 10 === 0){ showToast('Отправлено: ' + sent + ' / ' + (i+1), 'ok'); }
-        }
-        showToast('Готово! ' + sent + ' ok / ' + failed + ' err', 'ok');
-        $('broadcastText').value = '';
-    }catch(e){ showToast('Ошибка', 'err'); }
-}
-
-/* ============================================================
-   HISTORY
-   ============================================================ */
 var currentHistory = 'wins';
 async function switchHistory(type, btn){
     currentHistory = type;
@@ -1944,51 +1823,41 @@ async function switchHistory(type, btn){
             var d = await r.json();
             if(d.success && d.win_history){
                 var list = d.win_history;
-                if(!list.length){ el.innerHTML = '<div class="empty">Побед нет</div>'; return; }
+                if(!list.length){ el.innerHTML = '<div class="empty">Нет побед</div>'; return; }
                 el.innerHTML = list.map(function(w){
                     return '<div class="list-item"><div class="avatar" style="border-radius:8px"><img src="' + escapeHtml(w.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
                         '<div class="info"><div class="name">' + escapeHtml(w.gift_name || '—') + '</div>' +
-                        '<div class="meta">' + escapeHtml(w.user_name || 'User') + ' · ' + escapeHtml(w.case_name || '—') + '</div></div>' +
+                        '<div class="meta">' + escapeHtml(w.user_name || '') + ' · ' + escapeHtml(w.case_name || '—') + '</div></div>' +
                         '<div class="right"><div class="value">💎 ' + formatTon(w.gift_value) + '</div></div></div>';
                 }).join('');
-            } else el.innerHTML = '<div class="empty">Побед нет</div>';
+            } else el.innerHTML = '<div class="empty">Нет побед</div>';
         } else {
             var r2 = await fetch('/api/admin/case-open-history?admin_id=' + ADMIN_ID + '&limit=50');
             var d2 = await r2.json();
             if(d2.success && d2.open_history){
                 var list2 = d2.open_history;
-                if(!list2.length){ el.innerHTML = '<div class="empty">Открытий нет</div>'; return; }
+                if(!list2.length){ el.innerHTML = '<div class="empty">Нет открытий</div>'; return; }
                 el.innerHTML = list2.map(function(o){
                     return '<div class="list-item"><div class="avatar" style="border-radius:8px"><img src="' + escapeHtml(o.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
                         '<div class="info"><div class="name">' + escapeHtml(o.gift_name || '—') + '</div>' +
-                        '<div class="meta">' + escapeHtml(o.case_name || '—') + ' · User ' + o.user_id + '</div></div>' +
+                        '<div class="meta">' + escapeHtml(o.case_name || '—') + '</div></div>' +
                         '<div class="right"><div class="value">💎 ' + formatTon(o.gift_value) + '</div></div></div>';
                 }).join('');
-            } else el.innerHTML = '<div class="empty">Открытий нет</div>';
+            } else el.innerHTML = '<div class="empty">Нет открытий</div>';
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
+
 async function loadWinHistory(){ switchHistory('wins', null); }
 
-/* ============================================================
+/* ══════════════════════════════════════════════════════════════
    INIT
-   ============================================================ */
+   ══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function(){
     var loader = $('adminLoader');
     verifyAdminAccess().then(function(ok){
         if(ok){
             if(loader) loader.classList.add('hidden');
-            // Устанавливаем даты по умолчанию
-            var now = new Date();
-            var weekLater = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-            function toLocalIso(d){
-                var pad = function(n){ return n < 10 ? '0' + n : n; };
-                return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-            }
-            var lbStart = $('lbStart');
-            var lbEnd = $('lbEnd');
-            if(lbStart) lbStart.value = toLocalIso(now);
-            if(lbEnd) lbEnd.value = toLocalIso(weekLater);
             showSection('home');
         }
     }).catch(function(e){
@@ -2008,5 +1877,6 @@ if(tg){
     }catch(e){}
 }
 </script>
+
 </body>
 </html>
