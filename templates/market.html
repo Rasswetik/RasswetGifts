@@ -131,10 +131,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .gift-card{
     position:relative;
-    background:linear-gradient(160deg,rgba(59,130,246,.06),rgba(59,130,246,.02));
-    border:1.5px solid rgba(59,130,246,.15);
-    border-radius:16px;
-    padding:10px;
+    background:rgba(255,255,255,.03);
+    border:1.5px solid rgba(255,255,255,.06);
+    border-radius:18px;
+    padding:8px;
     cursor:pointer;
     transition:all .25s cubic-bezier(.4,0,.2,1);
     display:flex;
@@ -145,51 +145,49 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .gift-card:active{transform:scale(.97)}
 .gift-card:hover{
     border-color:rgba(59,130,246,.4);
-    background:linear-gradient(160deg,rgba(59,130,246,.12),rgba(59,130,246,.04));
+    background:rgba(59,130,246,.06);
 }
 
-/* ═══ Скругленный квадрат с картинкой ═══ */
+/* ═══ Обрезанный по контуру PNG ═══ */
 .gift-img-wrap{
     width:100%;
     aspect-ratio:1/1;
     border-radius:14px;
-    background:linear-gradient(180deg,rgba(15,20,32,.7),rgba(10,15,25,.9));
-    border:1px solid rgba(255,255,255,.06);
     overflow:hidden;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    margin-bottom:10px;
     position:relative;
-    box-shadow:inset 0 1px 2px rgba(255,255,255,.04);
+    background:linear-gradient(180deg,#0d1220,#0a0f1a);
+    border:1px solid rgba(255,255,255,.04);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+    margin-bottom:8px;
+    transition:transform .2s;
+    isolation:isolate;
 }
-.gift-img-wrap::after{
-    content:'';
+.gift-card:active .gift-img-wrap{transform:scale(.98)}
+.gift-img-wrap img{
     position:absolute;
     inset:0;
-    background:radial-gradient(circle at 50% 30%,rgba(59,130,246,.08),transparent 70%);
-    pointer-events:none;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center;
+    display:block;
+    transition:transform .3s ease;
+    will-change:transform;
 }
-.gift-img-wrap img{
-    width:86%;
-    height:86%;
-    object-fit:contain;
-    filter:drop-shadow(0 4px 12px rgba(0,0,0,.4));
-    position:relative;
-    z-index:1;
-}
+.gift-card:hover .gift-img-wrap img{transform:scale(1.06)}
 
 .gift-name{
     font-size:12px;
     font-weight:700;
-    color:rgba(255,255,255,.9);
+    color:rgba(255,255,255,.92);
     text-align:center;
     width:100%;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
     line-height:1.2;
-    margin-bottom:6px;
+    margin-bottom:5px;
+    padding:0 2px;
 }
 
 .gift-price{
@@ -275,42 +273,33 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     margin:0 auto 18px;
 }
 
-/* ═══ Тот же скруглённый квадрат с картинкой в модалке ═══ */
+/* ═══ Тот же обрезанный PNG в модалке ═══ */
 .buy-img-wrap{
     width:200px;
     height:200px;
-    border-radius:24px;
-    background:linear-gradient(180deg,rgba(15,20,32,.75),rgba(10,15,25,.95));
-    border:1px solid rgba(255,255,255,.08);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    margin:0 auto 16px;
-    position:relative;
+    border-radius:26px;
     overflow:hidden;
-    box-shadow:inset 0 2px 6px rgba(255,255,255,.04), 0 12px 32px rgba(0,0,0,.5);
-}
-.buy-img-wrap::after{
-    content:'';
-    position:absolute;
-    inset:0;
-    background:radial-gradient(circle at 50% 30%,rgba(59,130,246,.12),transparent 70%);
-    pointer-events:none;
+    position:relative;
+    background:linear-gradient(180deg,#0d1220,#0a0f1a);
+    border:1px solid rgba(255,255,255,.06);
+    box-shadow:0 14px 36px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.03);
+    margin:0 auto 16px;
 }
 .buy-img-wrap img{
-    width:82%;
-    height:82%;
-    object-fit:contain;
-    filter:drop-shadow(0 8px 24px rgba(0,0,0,.55));
-    position:relative;
-    z-index:1;
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center;
+    display:block;
 }
 
 .buy-name{
     font-size:18px;
     font-weight:800;
     color:#fff;
-    margin-bottom:4px;
+    margin-bottom:6px;
     line-height:1.25;
 }
 
@@ -323,7 +312,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     border:1px solid rgba(120,135,160,.2);
     padding:3px 10px;
     border-radius:10px;
-    margin-bottom:12px;
+    margin-bottom:14px;
 }
 
 .buy-price-display{
@@ -439,28 +428,29 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     font-size:20px;
     font-weight:800;
     color:#fff;
-    margin-bottom:8px;
+    margin-bottom:14px;
 }
 
-/* Скругленный квадрат с картинкой в success */
+/* Обрезанный PNG в success */
 .success-gift-img{
-    width:120px;
-    height:120px;
-    border-radius:20px;
-    background:linear-gradient(180deg,rgba(15,20,32,.75),rgba(10,15,25,.95));
-    border:1px solid rgba(255,255,255,.08);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    margin:0 auto 14px;
+    width:130px;
+    height:130px;
+    border-radius:22px;
     overflow:hidden;
     position:relative;
+    background:linear-gradient(180deg,#0d1220,#0a0f1a);
+    border:1px solid rgba(255,255,255,.06);
+    box-shadow:0 10px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.03);
+    margin:0 auto 14px;
 }
 .success-gift-img img{
-    width:82%;
-    height:82%;
-    object-fit:contain;
-    filter:drop-shadow(0 6px 18px rgba(0,0,0,.55));
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center;
+    display:block;
 }
 
 .success-gift{
@@ -802,10 +792,9 @@ function goTo(url){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   GIFT IMAGE BUILDER — скругленный квадрат с картинкой
+   GIFT IMAGE BUILDER
    ══════════════════════════════════════════════════════════════ */
 function buildGiftImage(gift){
-    /* Если есть slug — берём случайный номер для красоты в каталоге */
     if(gift.slug){
         var rnd = Math.floor(Math.random() * 4999) + 1;
         var cleanSlug = String(gift.slug).replace(/\s/g, '');
@@ -838,7 +827,6 @@ async function loadGifts(){
     grid.innerHTML = '<div class="loading">Загрузка</div>';
 
     try{
-        // Пробуем сначала market API
         var r = await fetch('/api/market/gifts');
         var d = await r.json();
 
@@ -848,7 +836,6 @@ async function loadGifts(){
             return;
         }
 
-        // Fallback: gifts-list
         var r2 = await fetch('/api/gifts-list?models=0');
         var d2 = await r2.json();
         if(d2.success && d2.gifts && d2.gifts.length){
@@ -938,12 +925,10 @@ function openBuy(giftId){
 
     selectedGift = gift;
 
-    /* Случайный номер для отображения */
     var nftNumber = Math.floor(Math.random() * 4999) + 1;
     selectedGift._displayNumber = nftNumber;
 
     var imgSrc = buildGiftImage(gift);
-    /* Если есть slug — сохраним номер для последующей картинки */
     if(gift.slug){
         var cleanSlug = String(gift.slug).replace(/\s/g, '');
         imgSrc = 'https://nft.fragment.com/gift/' + cleanSlug + '-' + nftNumber + '.medium.jpg';
@@ -955,7 +940,6 @@ function openBuy(giftId){
 
     $('buyName').textContent = gift.name;
 
-    /* Номер */
     if(gift.slug){
         $('buyNumber').textContent = '#' + nftNumber;
         $('buyNumber').style.display = 'inline-block';
@@ -1013,7 +997,6 @@ async function doBuy(){
                 $('topBalance').textContent = formatTon(d.new_balance);
             }
 
-            /* Сохраняем данные для success-модалки */
             var successImgSrc = d.gift_image || buildGiftImage(selectedGift);
             var successName = d.gift_name || selectedGift.name;
 
