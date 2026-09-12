@@ -4176,8 +4176,8 @@ def start_ultimate_crash_loop():
                     live_status = 'none'
                     live_flying_started_at = 0.0
 
-                    # ★ Пауза 2 сек — фронт успеет отрисовать краш
-                    time.sleep(2.0)
+                    # Держим crashed достаточно долго, чтобы фронт показал итоговый x.
+                    time.sleep(4.0)
 
                     target_multiplier = generate_extreme_crash_multiplier()
 
