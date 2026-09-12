@@ -37,7 +37,7 @@ body{
 /* ══════════════ PAGE ══════════════ */
 .page{
     width:100%;max-width:480px;margin:0 auto;
-    padding:calc(var(--safe-top) + 58px) 14px calc(var(--safe-bottom) + 100px);
+    padding:calc(var(--safe-top) + 58px) 14px calc(var(--safe-bottom) + 130px);
     position:relative;
 }
 
@@ -353,20 +353,35 @@ body{
 .inv-empty img{width:56px;height:56px;opacity:.4;object-fit:contain}
 
 /* ══════════════ SELECT ACTION BAR ══════════════ */
+/* Появляется только когда реально выбраны подарки */
 .select-action-bar{
-    position:fixed;bottom:calc(var(--safe-bottom) + 86px);
-    left:50%;transform:translateX(-50%) translateY(120%);
-    z-index:500;
-    width:calc(100% - 28px);max-width:452px;
+    position:fixed;
+    bottom:calc(var(--safe-bottom,0px) + 90px);
+    left:50%;
+    transform:translateX(-50%) translateY(120%);
+    z-index:4500;  /* Выше bottom-nav (4000), но ниже item-sheet (9998) */
+    width:calc(100% - 28px);
+    max-width:452px;
     background:rgba(28,34,51,.98);
-    border-radius:16px;padding:12px 16px;
+    border-radius:16px;
+    padding:12px 16px;
     border:1.5px solid rgba(59,130,246,.3);
-    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
     box-shadow:0 8px 30px rgba(0,0,0,.6);
     transition:transform .3s cubic-bezier(.32,1,.23,1);
+    pointer-events:none;
+    visibility:hidden;
 }
-.select-action-bar.show{transform:translateX(-50%) translateY(0)}
+.select-action-bar.show{
+    transform:translateX(-50%) translateY(0);
+    pointer-events:auto;
+    visibility:visible;
+}
 .select-info{font-size:13px;font-weight:700;color:rgba(255,255,255,.75)}
 .select-info span{color:#3B82F6;font-weight:900}
 .select-btns{display:flex;gap:8px}
@@ -385,13 +400,22 @@ body{
 
 /* ══════════════ BOTTOM NAV ══════════════ */
 .bottom-nav{
-    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
-    z-index:4000;width:100%;max-width:480px;height:76px;
-    padding:0 8px calc(var(--safe-bottom) + 6px);
+    position:fixed;
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:4000;
+    width:100%;
+    max-width:480px;
+    height:76px;
+    padding:0 8px calc(var(--safe-bottom,0px) + 6px);
     background:rgba(28,34,51,.95);
-    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
     border-top:1px solid rgba(59,130,246,.08);
-    display:flex;align-items:center;justify-content:space-around;
+    display:flex;
+    align-items:center;
+    justify-content:space-around;
 }
 .bnav-item{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -411,9 +435,9 @@ body{
 .bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
 .bnav-item:active{transform:scale(.9)}
 
-/* ══════════════ MODALS ══════════════ */
+/* ══════════════ MODALS (обычные) ══════════════ */
 .overlay{
-    position:fixed;inset:0;z-index:1000;
+    position:fixed;inset:0;z-index:5000;
     display:none;align-items:center;justify-content:center;
     background:rgba(0,0,0,.75);
     backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
@@ -429,17 +453,13 @@ body{
     padding:24px 22px;border:1px solid rgba(59,130,246,.2);
     box-shadow:0 20px 60px rgba(0,0,0,.6);
 }
-.promo-header{
-    display:flex;align-items:center;justify-content:space-between;
-    margin-bottom:20px;
-}
+.promo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .promo-title{font-weight:800;font-size:18px;color:#fff}
 .promo-close{
     width:36px;height:36px;border-radius:12px;border:none;
     background:rgba(249,105,153,.15);color:#F96999;
     cursor:pointer;font-size:16px;font-weight:700;
     display:flex;align-items:center;justify-content:center;
-    transition:transform .15s;
 }
 .promo-close:active{transform:scale(.9)}
 .promo-hint{font-size:12px;color:var(--text-2);margin-bottom:14px;line-height:1.5;font-weight:600}
@@ -493,7 +513,6 @@ body{
     cursor:pointer;font-size:16px;font-weight:700;
     display:flex;align-items:center;justify-content:center;
 }
-.deposit-close:active{transform:scale(.9)}
 .deposit-methods{display:flex;gap:12px}
 .deposit-method-btn{
     flex:1;padding:20px 14px;border-radius:18px;
@@ -550,27 +569,32 @@ body{
     color:#000;font-size:15px;font-weight:800;cursor:pointer;
     display:flex;align-items:center;justify-content:center;gap:8px;
     box-shadow:0 6px 18px rgba(255,215,0,.3);
-    transition:transform .15s;
 }
-.stars-deposit-pay-btn:active{transform:scale(.97)}
 .stars-deposit-pay-btn img{width:20px;height:20px}
 
-/* ══════════════ ITEM MODAL (bottom sheet) ══════════════ */
+/* ══════════════ ITEM SHEET — ПОДАРОК (высокий z-index) ══════════════ */
 .item-sheet-overlay{
-    position:fixed;inset:0;z-index:3000;
-    background:rgba(0,0,0,.7);
-    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-    opacity:0;visibility:hidden;
+    position:fixed;
+    inset:0;
+    z-index:9998;  /* ВЫШЕ bottom-nav (4000) */
+    background:rgba(0,0,0,.75);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    opacity:0;
+    visibility:hidden;
     transition:opacity .3s,visibility .3s;
-    display:flex;align-items:flex-end;justify-content:center;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
 }
 .item-sheet-overlay.show{opacity:1;visibility:visible}
 
 .item-sheet{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border-radius:24px 24px 0 0;
-    width:100%;max-width:480px;
-    padding:16px 20px calc(30px + var(--safe-bottom,0));
+    width:100%;
+    max-width:480px;
+    padding:16px 20px calc(30px + var(--safe-bottom,0px));
     transform:translateY(100%);
     transition:transform .35s cubic-bezier(.32,1,.23,1);
     border-top:1px solid rgba(59,130,246,.25);
@@ -586,12 +610,9 @@ body{
     margin:0 auto 18px;
 }
 
-/* Шапка с картинкой и инфой */
 .item-sheet-header{
     display:flex;flex-direction:column;align-items:center;
-    gap:10px;
-    margin-bottom:20px;
-    text-align:center;
+    gap:10px;margin-bottom:20px;text-align:center;
 }
 .item-sheet-img{
     width:120px;height:120px;
@@ -615,18 +636,14 @@ body{
 }
 .item-sheet-price img{width:16px;height:16px}
 
-/* NFT инфо (для апгрейженных) */
 .item-nft-details{
-    width:100%;
-    margin-bottom:16px;
-    display:none;
-    flex-direction:column;align-items:center;gap:10px;
+    width:100%;margin-bottom:16px;
+    display:none;flex-direction:column;align-items:center;gap:10px;
 }
 .item-nft-details.show{display:flex}
 .item-nft-img{
     width:160px;height:160px;
-    border-radius:20px;
-    object-fit:cover;
+    border-radius:20px;object-fit:cover;
     border:2px solid rgba(255,215,0,.4);
     box-shadow:0 6px 24px rgba(255,215,0,.2);
 }
@@ -636,8 +653,7 @@ body{
     width:100%;
     display:flex;flex-direction:column;gap:1px;
     background:rgba(0,0,0,.2);
-    border-radius:14px;
-    overflow:hidden;
+    border-radius:14px;overflow:hidden;
 }
 .item-nft-attr-row{
     display:flex;align-items:center;justify-content:space-between;
@@ -648,11 +664,8 @@ body{
 .item-nft-attr-label{font-size:12px;color:rgba(255,255,255,.5);font-weight:600}
 .item-nft-attr-val{font-size:13px;color:#fff;font-weight:800}
 
-/* Челендж (challenge) */
 .item-challenge{
-    width:100%;
-    margin-bottom:16px;
-    padding:14px;
+    width:100%;margin-bottom:16px;padding:14px;
     background:rgba(59,130,246,.08);
     border:1px solid rgba(59,130,246,.25);
     border-radius:14px;
@@ -676,7 +689,6 @@ body{
     font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-align:center;
 }
 
-/* Кнопки действий */
 .item-sheet-actions{
     width:100%;
     display:grid;
@@ -699,7 +711,11 @@ body{
 }
 .item-btn:active:not(:disabled){transform:scale(.97)}
 .item-btn:disabled{opacity:.35;cursor:not-allowed}
-.item-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.item-btn svg{
+    width:18px;height:18px;stroke:currentColor;fill:none;
+    stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;
+    flex-shrink:0;
+}
 .item-btn-sell{
     background:rgba(255,255,255,.08);
     color:rgba(255,255,255,.9);
@@ -710,9 +726,6 @@ body{
     color:#fff;
     box-shadow:0 6px 18px rgba(59,130,246,.4);
 }
-.item-btn-single{
-    grid-column:1/-1;
-}
 .item-btn-claim{
     grid-column:1/-1;
     background:linear-gradient(135deg,#24C38E,#10b981);
@@ -720,14 +733,20 @@ body{
     box-shadow:0 6px 18px rgba(36,195,142,.4);
 }
 
-/* ══════════════ SELL CONFIRM MODAL ══════════════ */
+/* ══════════════ SELL CONFIRM — вопрос о продаже ══════════════ */
 .sell-confirm-overlay{
-    position:fixed;inset:0;z-index:4000;
+    position:fixed;
+    inset:0;
+    z-index:9999;  /* Ещё выше item-sheet */
     background:rgba(0,0,0,.85);
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    opacity:0;visibility:hidden;
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    opacity:0;
+    visibility:hidden;
     transition:opacity .25s,visibility .25s;
-    display:flex;align-items:center;justify-content:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     padding:24px;
 }
 .sell-confirm-overlay.show{opacity:1;visibility:visible}
@@ -762,8 +781,7 @@ body{
 
 .sell-confirm-title{
     font-size:18px;font-weight:800;color:#fff;
-    margin-bottom:8px;
-    line-height:1.3;
+    margin-bottom:8px;line-height:1.3;
 }
 .sell-confirm-gift-name{
     font-size:13px;font-weight:700;
@@ -893,12 +911,11 @@ body{
 }
 .batch-confirm-btn:disabled{cursor:not-allowed}
 
-/* ══════════════ PORTAL PICKER (второе окно) ══════════════ */
-/* ВАЖНО: z-index ВЫШЕ чем у bottom-nav (4000) */
+/* ══════════════ PORTAL PICKER ══════════════ */
 .mrkt-backdrop{
     position:fixed;inset:0;
     background:rgba(0,0,0,.75);
-    z-index:4998;
+    z-index:9998;
     opacity:0;pointer-events:none;
     transition:opacity .3s;
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
@@ -907,10 +924,9 @@ body{
 
 .mrkt-overlay{
     position:fixed;left:0;right:0;bottom:0;
-    z-index:4999; /* Выше чем bottom-nav (4000) и выше item-sheet (3000) */
+    z-index:9999;  /* САМЫЙ ВЫСОКИЙ — перекрывает ВСЁ */
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
-    display:flex;flex-direction:column;
-    max-height:88vh;
+    display:flex;flex-direction:column;max-height:88vh;
     border-radius:24px 24px 0 0;
     transform:translateY(100%);
     transition:transform .35s cubic-bezier(.4,0,.2,1);
@@ -1022,7 +1038,7 @@ body{
 
 /* ══════════════ SUCCESS ══════════════ */
 .success-overlay{
-    position:fixed;inset:0;z-index:5000;
+    position:fixed;inset:0;z-index:10000;
     background:rgba(10,12,20,.97);
     display:none;flex-direction:column;align-items:center;justify-content:center;
     padding:40px 24px;
@@ -1048,7 +1064,7 @@ body{
 
 /* ══════════════ GIFT REVEAL ══════════════ */
 .gift-reveal-overlay{
-    position:fixed;inset:0;z-index:5000;
+    position:fixed;inset:0;z-index:10000;
     background:rgba(10,12,20,.97);
     display:none;flex-direction:column;align-items:center;justify-content:center;
     padding:40px 24px;
@@ -1076,7 +1092,7 @@ body{
     left:50%;transform:translateX(-50%) translateY(-120%);
     background:linear-gradient(135deg,#3B82F6,#2563EB);
     color:#fff;padding:12px 24px;border-radius:14px;
-    font-weight:700;font-size:14px;z-index:10000;
+    font-weight:700;font-size:14px;z-index:10001;
     transition:transform .3s,opacity .3s;
     max-width:90%;text-align:center;
     box-shadow:0 8px 25px rgba(59,130,246,.4);
@@ -1183,7 +1199,7 @@ body{
 
 </div>
 
-<!-- SELECT ACTION BAR -->
+<!-- SELECT ACTION BAR — показывается только при выборе -->
 <div class="select-action-bar" id="selectActionBar">
     <div class="select-info">Выбрано: <span id="selectedCount">0</span></div>
     <div class="select-btns">
@@ -1192,7 +1208,7 @@ body{
     </div>
 </div>
 
-<!-- ══════════════ ITEM BOTTOM SHEET ══════════════ -->
+<!-- ══════════════ ITEM SHEET (z-index 9998 — выше bottom-nav) ══════════════ -->
 <div class="item-sheet-overlay" id="itemSheetOverlay" onclick="if(event.target===this)closeItemSheet()">
     <div class="item-sheet" onclick="event.stopPropagation()">
         <div class="item-sheet-handle"></div>
@@ -1250,23 +1266,20 @@ body{
     </div>
 </div>
 
-<!-- ══════════════ SELL CONFIRM MODAL ══════════════ -->
+<!-- ══════════════ SELL CONFIRM (z-index 9999) ══════════════ -->
 <div class="sell-confirm-overlay" id="sellConfirmOverlay">
     <div class="sell-confirm-modal">
         <div class="sell-confirm-icon">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
-
         <div class="sell-confirm-title">Продать подарок?</div>
         <div class="sell-confirm-gift-name" id="sellConfirmName">—</div>
         <div class="sell-confirm-price">
             <img src="/static/img/ton.png" alt=""><span id="sellConfirmPrice">0.00</span>
         </div>
-
         <div class="sell-confirm-question">
             Действие нельзя отменить. Подарок будет удалён из инвентаря, а звёзды зачислены на баланс.
         </div>
-
         <div class="sell-confirm-actions">
             <button class="sell-confirm-btn waiting" id="sellConfirmBtn" onclick="doConfirmedSell()">Подождите 3...</button>
             <button class="sell-confirm-cancel" onclick="closeSellConfirm()">Отмена</button>
@@ -1292,7 +1305,7 @@ body{
     </div>
 </div>
 
-<!-- PORTAL PICKER (второе окно, поверх всего) -->
+<!-- PORTAL PICKER (z-index 9999 — самый высокий) -->
 <div class="mrkt-backdrop" id="mrktBackdrop" onclick="closePortalPicker()"></div>
 <div class="mrkt-overlay" id="mrktOverlay">
     <div class="mrkt-header">
@@ -1704,7 +1717,7 @@ function updateSelectActionBar(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ITEM BOTTOM SHEET — при клике на подарок
+   ITEM SHEET — открывается поверх bottom-nav
    ══════════════════════════════════════════════════════════════ */
 function openItemSheet(itemId){
     var item = inventory.find(function(i){ return i.id === itemId; });
@@ -1714,7 +1727,6 @@ function openItemSheet(itemId){
 
     var upgraded = isUpgraded(item);
 
-    // Сброс отображения
     var header = $('itemSheetHeader');
     var nftDetails = $('itemNftDetails');
     var challenge = $('itemChallenge');
@@ -1731,7 +1743,6 @@ function openItemSheet(itemId){
     if(claimBtn) claimBtn.style.display = 'none';
 
     if(upgraded){
-        // Показываем NFT детали вместо шапки
         if(header) header.style.display = 'none';
         if(nftDetails){
             nftDetails.classList.add('show');
@@ -1747,22 +1758,15 @@ function openItemSheet(itemId){
             var as = $('itemAttrSymbol'); if(as) as.textContent = item.nft_symbol || '—';
             var ab = $('itemAttrBackdrop'); if(ab) ab.textContent = item.nft_backdrop || '—';
         }
-
-        if(sellBtn){
-            sellBtn.disabled = !!item.is_withdrawing;
-        }
-        if(withdrawBtn){
-            withdrawBtn.disabled = !!item.is_withdrawing;
-        }
+        if(sellBtn) sellBtn.disabled = !!item.is_withdrawing;
+        if(withdrawBtn) withdrawBtn.disabled = !!item.is_withdrawing;
     } else {
-        // Обычный подарок
         if(header) header.style.display = 'flex';
         var img = $('itemSheetImg'); if(img) img.src = getGiftImage(item);
         var title = $('itemSheetTitle'); if(title) title.textContent = item.gift_name || 'Подарок';
         var priceVal = $('itemSheetPriceVal');
         if(priceVal) priceVal.textContent = formatTon(starsToTon(item.gift_value));
 
-        // Проверка на челлендж
         if(item.challenge && !item.challenge.is_completed){
             if(challenge) challenge.style.display = 'block';
             var pct = item.challenge.target_wager > 0
@@ -1810,7 +1814,7 @@ async function claimChallenge(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SELL CONFIRM — вопрос о продаже
+   SELL CONFIRM
    ══════════════════════════════════════════════════════════════ */
 function askSellConfirm(){
     if(!selectedItem) return;
@@ -1981,7 +1985,7 @@ async function batchWithdraw(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PORTAL PICKER — второе окно (поверх всего)
+   PORTAL PICKER — z-index 9999 (поверх всего)
    ══════════════════════════════════════════════════════════════ */
 async function openPortalPicker(){
     if(!selectedItem) return;
