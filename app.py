@@ -5890,6 +5890,94 @@ def set_user_currency_mode():
         logger.error(f"set_user_currency_mode error: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
+
+
+@app.route('/api/fragment-gift-details', methods=['GET'])
+def fragment_gift_details():
+    """Тянет реальные данные NFT-подарка с Fragment: Model, Symbol, Backdrop + рарность"""
+    try:
+        slug = (request.args.get('slug') or '').strip().lower()
+        number = request.args.get('number', type=int)
+
+        if not slug or not number:
+            return jsonify({'success': False, 'error': 'slug и number обязательны'})
+
+        # Кэш на 24 часа
+        cache_dir = os.path.join(BASE_PATH, 'data', 'fragment_gift_cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_file = os.path.join(cache_dir, str(slug) + '_' + str(number) + '.json')
+
+        if os.path.exists(cache_file):
+            try:
+                age = time.time() - os.path.getmtime(cache_file)
+                if age < 86400:
+                    with open(cache_file, 'r', encoding='utf-8') as f:
+                        cached = json.load(f)
+                    if cached.get('attrs'):
+                        return jsonify({'success': True, 'cached': True, 'slug': slug, 'number': number, 'name': cached.get('name', ''), 'image': cached.get('image', ''), 'attrs': cached.get('attrs')})
+            except Exception:
+                pass
+
+        # Скрапим Fragment
+        url = 'https://fragment.com/gift/' + str(slug) + '-' + str(number)
+        resp = _fragment_get(url, timeout=6)
+
+        if resp.status_code != 200:
+            return jsonify({'success': False, 'error': 'Fragment вернул ' + str(resp.status_code)})
+
+        html = resp.text
+
+        # Парсим таблицу Model / Symbol / Backdrop
+        attrs = {}
+        attr_pattern = re.compile(
+            r'<div[^>]*class="[^"]*table-cell[^"]*"[^>]*>\s*(Model|Backdrop|Symbol)\s*</div>'
+            r'.*?<div[^>]*class="[^"]*table-cell-value[^"]*"[^>]*>(.*?)</div>',
+            flags=re.IGNORECASE | re.DOTALL
+        )
+        for attr_name, value_html in attr_pattern.findall(html):
+            key = attr_name.strip().lower()
+            val_match = re.search(r'<a[^>]*>([^<]+)</a>', value_html)
+            if not val_match:
+                val_match = re.search(r'>([^<]+)<', value_html)
+            value_text = val_match.group(1).strip() if val_match else '—'
+            pct_match = re.search(r'([\d.]+)\s*%', value_html)
+            rarity = float(pct_match.group(1)) if pct_match else None
+            attrs[key] = {'value': value_text, 'rarity': rarity}
+
+        # Название
+        title = ''
+        title_match = re.search(r'<title>([^<]+)</title>', html)
+        if title_match:
+            title = title_match.group(1).replace(' for Sale', '').strip()
+
+        image = 'https://nft.fragment.com/gift/' + str(slug) + '-' + str(number) + '.webp'
+
+        result = {
+            'slug': slug,
+            'number': number,
+            'name': title,
+            'image': image,
+            'attrs': {
+                'model': attrs.get('model', {'value': '—', 'rarity': None}),
+                'symbol': attrs.get('symbol', {'value': '—', 'rarity': None}),
+                'backdrop': attrs.get('backdrop', {'value': '—', 'rarity': None}),
+            }
+        }
+
+        # Кэш
+        try:
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump(result, f, ensure_ascii=False)
+        except Exception:
+            pass
+
+        return jsonify({'success': True, 'cached': False, **result})
+
+    except Exception as e:
+        logger.error('fragment_gift_details error: ' + str(e))
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/api/inventory/<int:user_id>', methods=['GET'])
 def get_user_inventory(user_id):
     """Получение инвентаря пользователя"""
@@ -8931,6 +9019,100 @@ def _portal_sync_floors():
 
 
 
+
+
+# ─── Portal fallback ───
+try:
+    import aportalsmp
+    _APORTALSMP_AVAILABLE = True
+except ImportError:
+    _APORTALSMP_AVAILABLE = False
+    logger.warning('Модуль aportalsmp НЕ установлен. Portal будет недоступен. Установи: pip install aportalsmp')
+
+
+def _check_aportalsmp():
+    if _APORTALSMP_AVAILABLE:
+        return True, None
+    return False, 'Модуль aportalsmp не установлен. Установи: pip install aportalsmp'
+
+
+def _validate_portal_initdata_improved(token):
+    """Улучшенная проверка initData с понятными ошибками"""
+    if not token:
+        return False, 'Токен пустой'
+
+    token = str(token).strip()
+
+    if token.startswith('tma '):
+        token = token[4:].strip()
+
+    if len(token) < 30:
+        return False, 'Токен слишком короткий. Нужна ВСЯ строка initData. Открой Telegram Web -> F12 -> Console -> введи Telegram.WebApp.initData -> скопируй целиком.'
+
+    if 'user=' not in token:
+        return False, 'Не найдено "user=". Копируй именно initData, не hash отдельно. Строка должна начинаться с user=%7B%22id%22...'
+
+    if 'hash=' not in token:
+        return False, 'Не найдено "hash=". Скопируй ВСЮ строку initData включая hash= в конце.'
+
+    user_match = re.search(r'user=([^&]+)', token)
+    if not user_match:
+        return False, 'Некорректный формат поля "user="'
+
+    try:
+        import urllib.parse
+        decoded = urllib.parse.unquote(user_match.group(1))
+        if not re.search(r'"id"\s*:\s*\d+', decoded):
+            return False, 'В поле "user" нет числового "id". Токен повреждён.'
+    except Exception:
+        return False, 'Не удалось распарсить поле "user"'
+
+    return True, None
+
+
+@app.route('/api/portal/status-fixed', methods=['GET'])
+def portal_status_fixed():
+    """Статус Portal с проверкой зависимости и понятными ошибками"""
+    available, err = _check_aportalsmp()
+    if not available:
+        return jsonify({'success': True, 'connected': False, 'info': {'error': err, 'total_collections': 0, 'last_sync_ago': 'никогда'}})
+
+    token = ''
+    try:
+        token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
+        if os.path.exists(token_file):
+            with open(token_file, 'r', encoding='utf-8') as f:
+                token = f.read().strip()
+    except Exception:
+        pass
+
+    if not token:
+        token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
+
+    if not token:
+        return jsonify({'success': True, 'connected': False, 'info': {'error': 'Токен не задан. Вставь initData в админке.', 'total_collections': 0, 'last_sync_ago': 'никогда'}})
+
+    is_valid, v_err = _validate_portal_initdata_improved(token)
+    if not is_valid:
+        return jsonify({'success': True, 'connected': False, 'info': {'error': v_err, 'total_collections': 0, 'last_sync_ago': 'никогда'}})
+
+    try:
+        import asyncio
+        from aportalsmp.gifts import collections as portal_collections
+        loop = asyncio.new_event_loop()
+        try:
+            colls = loop.run_until_complete(portal_collections(authData=token, limit=1))
+        finally:
+            loop.close()
+        items = _extract_items(colls)
+        return jsonify({'success': True, 'connected': True, 'info': {'user': {'first_name': 'Portal', 'username': 'user'}, 'total_collections': len(items) if items else 0, 'last_sync_ago': 'только что', 'error': None}})
+    except Exception as e:
+        err_msg = str(e)
+        if 'auth' in err_msg.lower() or 'unauthorized' in err_msg.lower():
+            err_msg = 'Токен недействителен или истёк. Получи новый initData.'
+        return jsonify({'success': True, 'connected': False, 'info': {'error': 'Ошибка Portal: ' + err_msg, 'total_collections': 0, 'last_sync_ago': 'никогда'}})
+
+
 @app.route('/api/portal/token', methods=['GET', 'POST', 'DELETE'])
 def portal_token():
     """Управление токеном Portal из админки."""
@@ -10281,6 +10463,209 @@ def get_user_upgrade_stats(user_id):
         logger.error(f"❌ Ошибка получения статистики апгрейдов: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
+
+
+@app.route('/api/upgrade-with-ton', methods=['POST'])
+def upgrade_with_ton():
+    """Апгрейд с TON-ставки: списываем звёзды и выдаём подарок при успехе.
+    Мягкий расчёт реального шанса — дорогие апгрейды (50+ TON) тоже заходят."""
+    conn = None
+    try:
+        data = request.get_json()
+        user_id = int(data.get('user_id', 0))
+        bet_amount = int(data.get('bet_amount', 0))
+        target_gift_id = data.get('target_gift_id')
+
+        if not user_id or not bet_amount or not target_gift_id:
+            return jsonify({'success': False, 'error': 'Неверные параметры'})
+
+        if bet_amount < 10:
+            return jsonify({'success': False, 'error': 'Минимум 0.10 TON'})
+
+        gifts = build_fragment_first_gifts_catalog()
+        if not gifts:
+            return jsonify({'success': False, 'error': 'Каталог подарков недоступен'})
+
+        target_gift = None
+        tid = str(target_gift_id).strip().lower()
+        for g in gifts:
+            gid_str = str(g.get('id', '')).strip().lower()
+            gkey_str = str(g.get('gift_key', '')).strip().lower()
+            gslug_str = str(g.get('fragment_slug', '')).strip().lower()
+            if tid in (gid_str, gkey_str, gslug_str):
+                target_gift = g
+                break
+
+        if not target_gift:
+            return jsonify({'success': False, 'error': 'Целевой подарок не найден'})
+
+        target_value = int(target_gift.get('value', 0) or 0)
+        if target_value <= 0:
+            return jsonify({'success': False, 'error': 'Некорректная цена цели'})
+
+        if bet_amount >= target_value:
+            return jsonify({'success': False, 'error': 'Ставка должна быть меньше цены цели'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT balance_stars, first_name FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Пользователь не найден'})
+
+        current_balance = int(row[0] or 0)
+        user_name = row[1] or ('User_' + str(user_id))
+
+        if current_balance < bet_amount:
+            conn.close()
+            return jsonify({'success': False, 'error': 'Недостаточно средств. Баланс: ' + str(current_balance)})
+
+        # ═══ РАСЧЁТ ШАНСА (МЯГКИЙ) ═══
+        base_chance = (bet_amount / target_value) * 100
+        base_chance = max(10, min(base_chance, 75))
+        displayed_chance = round(base_chance, 1)
+
+        # ⚠️ НОВАЯ ЛОГИКА: мягкий real_chance
+        # Раньше: target>10000 -> *0.3 убивало всё
+        # Теперь: минимальный коэффициент 0.6, максимально жёсткий 0.75
+        real_chance = base_chance
+
+        if target_value > 50000:      # очень дорогие (500+ TON)
+            real_chance = base_chance * 0.65
+        elif target_value > 20000:    # дорогие (200-500 TON)
+            real_chance = base_chance * 0.72
+        elif target_value > 10000:    # средне-дорогие (100-200 TON)
+            real_chance = base_chance * 0.78
+        elif target_value > 5000:     # (50-100 TON) — раньше было жёстко, теперь мягко
+            real_chance = base_chance * 0.85
+        elif target_value > 2000:     # (20-50 TON)
+            real_chance = base_chance * 0.92
+        # до 2000 звёзд (20 TON) — коэффициент 1.0 (шанс как показан)
+
+        real_chance = max(5, real_chance)
+
+        # RTP-буст от админа
+        try:
+            user_rtp_boost = get_user_rtp_boost(user_id)
+            if user_rtp_boost > 40:
+                boost_mult = 1.0 + (user_rtp_boost - 40) / 100.0
+                real_chance = min(real_chance * boost_mult, 95)
+        except Exception:
+            pass
+
+        # ⚠️ Агрессивный режим — но мягче чем раньше
+        try:
+            site_balance = _get_site_profit_balance()
+            if site_balance < -10000:
+                real_chance = min(real_chance, displayed_chance * 0.5)  # было 0.25
+            elif site_balance < -3000:
+                real_chance = min(real_chance, displayed_chance * 0.7)  # было 0.5
+        except Exception:
+            pass
+
+        real_chance = max(5, real_chance)
+
+        # Списание
+        cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?',
+                       (bet_amount, user_id))
+
+        import random as _rnd
+        roll = _rnd.random() * 100
+        success = roll <= real_chance
+
+        logger.info('[upgrade_ton] user=' + str(user_id) + ' bet=' + str(bet_amount)
+                    + ' target=' + str(target_value) + ' chance_disp=' + str(displayed_chance)
+                    + ' chance_real=' + str(round(real_chance, 1))
+                    + ' roll=' + str(round(roll, 1)) + ' success=' + str(success))
+
+        new_balance = current_balance - bet_amount
+        new_gift = None
+
+        if success:
+            inv_gift_id = target_gift.get('id') if isinstance(target_gift.get('id'), int) else None
+            cursor.execute(
+                'INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value) VALUES (?, ?, ?, ?, ?)',
+                (user_id, inv_gift_id, target_gift.get('name', 'Gift'),
+                 target_gift.get('image', '/static/img/gift.png'), target_value)
+            )
+
+            try:
+                cursor.execute(
+                    "INSERT INTO user_history (user_id, operation_type, amount, description, created_at) VALUES (?, 'upgrade_ton_success', ?, ?, datetime('now'))",
+                    (user_id, -bet_amount, 'Апгрейд TON: ' + str(bet_amount) + ' stars -> ' + str(target_gift.get('name', '')))
+                )
+            except Exception:
+                pass
+
+            try:
+                cursor.execute(
+                    "INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name) VALUES (?, ?, ?, ?, ?, 'Upgrade TON')",
+                    (user_id, user_name, target_gift.get('name', 'Gift'),
+                     target_gift.get('image', ''), target_value)
+                )
+            except Exception:
+                pass
+
+            try:
+                exp = max(5, bet_amount // 10)
+                cursor.execute('UPDATE users SET experience = experience + ? WHERE id = ?',
+                               (exp, user_id))
+            except Exception:
+                pass
+
+            new_gift = {
+                'id': target_gift.get('id'),
+                'name': target_gift.get('name'),
+                'image': target_gift.get('image'),
+                'value': target_value
+            }
+        else:
+            try:
+                cursor.execute(
+                    "INSERT INTO user_history (user_id, operation_type, amount, description, created_at) VALUES (?, 'upgrade_ton_fail', ?, ?, datetime('now'))",
+                    (user_id, -bet_amount, 'Апгрейд TON провал: ставка ' + str(bet_amount) + ' stars')
+                )
+            except Exception:
+                pass
+
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        new_balance_row = cursor.fetchone()
+        new_balance = int(new_balance_row[0]) if new_balance_row else new_balance
+
+        conn.commit()
+        conn.close()
+        conn = None
+
+        try:
+            _user_balance_cache.pop(user_id, None)
+        except Exception:
+            pass
+
+        return jsonify({
+            'success': True,
+            'upgrade_success': success,
+            'chance': displayed_chance,
+            'real_chance': round(real_chance, 1),
+            'bet_amount': bet_amount,
+            'new_balance': new_balance,
+            'new_gift': new_gift,
+            'message': 'Успешный апгрейд!' if success else 'Апгрейд не удался'
+        })
+
+    except Exception as e:
+        logger.error('upgrade_with_ton error: ' + str(e))
+        import traceback
+        logger.error(traceback.format_exc())
+        if conn:
+            try: conn.rollback()
+            except: pass
+            try: conn.close()
+            except: pass
+        return jsonify({'success': False, 'error': str(e)})
+
+
 @app.route('/api/upgrade-gift-fast', methods=['POST'])
 def upgrade_gift_fast():
     """БЫСТРЫЙ апгрейд подарка"""
@@ -10463,14 +10848,17 @@ def upgrade_gift_chance():
             price_ratio = target_value / current_value
             real_chance = base_chance
 
-            if target_value > 10000:
-                real_chance = base_chance * 0.3
+            # МЯГКИЙ расчёт: дорогие апгрейды тоже заходят
+            if target_value > 50000:
+                real_chance = base_chance * 0.65
+            elif target_value > 20000:
+                real_chance = base_chance * 0.72
+            elif target_value > 10000:
+                real_chance = base_chance * 0.78
             elif target_value > 5000:
-                real_chance = base_chance * 0.4
+                real_chance = base_chance * 0.85
             elif target_value > 2000:
-                real_chance = base_chance * 0.6
-            elif target_value > 1000:
-                real_chance = base_chance * 0.8
+                real_chance = base_chance * 0.92
 
             real_chance = max(5, real_chance)
 
@@ -10672,14 +11060,17 @@ def upgrade_multi_gifts():
             displayed_chance = round(base_chance, 1)
 
             real_chance = base_chance
-            if target_value > 10000:
-                real_chance = base_chance * 0.3
+            # МЯГКИЙ расчёт: дорогие апгрейды тоже заходят
+            if target_value > 50000:
+                real_chance = base_chance * 0.65
+            elif target_value > 20000:
+                real_chance = base_chance * 0.72
+            elif target_value > 10000:
+                real_chance = base_chance * 0.78
             elif target_value > 5000:
-                real_chance = base_chance * 0.4
+                real_chance = base_chance * 0.85
             elif target_value > 2000:
-                real_chance = base_chance * 0.6
-            elif target_value > 1000:
-                real_chance = base_chance * 0.8
+                real_chance = base_chance * 0.92
             real_chance = max(5, real_chance)
 
             # Per-user RTP boost from admin
