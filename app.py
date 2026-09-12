@@ -4126,7 +4126,7 @@ def start_ultimate_crash_loop():
         live_flying_started_at = 0.0
         tick_counter = 0
 
-        FLYING_TIMEOUT_SEC = 90
+        FLYING_TIMEOUT_SEC = 45
 
         def get_loop_conn():
             nonlocal loop_conn, loop_conn_failures
@@ -4378,17 +4378,8 @@ def start_ultimate_crash_loop():
                         update_crash_cache(game_id, 'counting', 1.0, target_mult_float, time_remaining, is_bonus=is_bonus)
 
                         if elapsed >= 5:
-                            try:
-                                adjusted = ai_adjust_target_multiplier(target_mult_float, game_id, conn)
-                                if adjusted != target_mult_float:
-                                    target_mult_float = adjusted
-                                    cursor.execute(
-                                        'UPDATE ultimate_crash_games SET target_multiplier = ? WHERE id = ?',
-                                        (adjusted, game_id)
-                                    )
-                            except Exception as ai_e:
-                                logger.debug(f"AI adjust skipped: {ai_e}")
-
+                            # Никаких тяжёлых/внешних вызовов здесь: переход 5→1→ИГРА
+                            # должен быть детерминированным и занимать ровно 5 секунд.
                             with _crash_phase_lock:
                                 _crash_phase_transitioning = True
                             try:
@@ -4429,10 +4420,10 @@ def start_ultimate_crash_loop():
                     live_status = 'none'
                     live_flying_started_at = 0.0
 
-                    # Держим crashed достаточно долго, чтобы фронт показал итоговый x.
-                    time.sleep(4.0)
+                    # Короткая пауза для анимации CRASH, затем сразу новый отсчёт 5→1.
+                    time.sleep(1.6)
 
-                    target_multiplier = generate_extreme_crash_multiplier()
+                    target_multiplier = min(float(generate_extreme_crash_multiplier()), 30.0)
 
                     admin_ctrl = get_admin_crash_control()
                     if admin_ctrl.get('next_multiplier'):
@@ -5315,6 +5306,7 @@ def ultimate_crash_simple_status():
             'current_multiplier': cached['current_multiplier'],
             'target_multiplier': cached['target_multiplier'],
             'time_remaining': cached['time_remaining'],
+            'countdown': max(0, min(5, int(math.ceil(float(cached.get('time_remaining', 0) or 0))))) if cached.get('status') == 'counting' else 0,
             'is_bonus': bool(cached.get('is_bonus', False))
         }
         
@@ -5370,6 +5362,7 @@ def ultimate_crash_simple_status():
                     'current_multiplier': float(current_mult) if current_mult else 1.0,
                     'target_multiplier': float(target_mult) if target_mult else 5.0,
                     'time_remaining': 5.0,
+                    'countdown': 5 if status in ('waiting','counting') else 0,
                     'is_bonus': is_bonus_flag
                 }
                 
@@ -5389,7 +5382,7 @@ def ultimate_crash_simple_status():
     except:
         pass
     
-    return jsonify({'success': True, 'game': {'id': 0, 'status': 'waiting', 'current_multiplier': 1.0, 'target_multiplier': 5.0, 'time_remaining': 5.0}, 'user_bet': None, 'rtp': _get_cached_crash_rtp()})
+    return jsonify({'success': True, 'game': {'id': 0, 'status': 'waiting', 'current_multiplier': 1.0, 'target_multiplier': 5.0, 'time_remaining': 5.0, 'countdown': 5}, 'user_bet': None, 'rtp': _get_cached_crash_rtp()})
 
 @app.route('/api/ultimate-crash/place-bet', methods=['POST'])
 def ultimate_crash_place_bet():
@@ -11521,6 +11514,9 @@ def get_upgrade_possible_gifts():
 
 @app.route('/api/upgrade-multi', methods=['POST'])
 def upgrade_multi_gifts():
+
+    # Inventory/gift staking is intentionally disabled: upgrades may be funded only in GRAM.
+    return jsonify({'success': False, 'error': 'Ставка подарком отключена. Используй GRAM.'})
     """Апгрейд: ставка до 6 подарков, шанс = сумма стоимости / цена цели"""
     try:
         data = request.get_json()
@@ -16284,7 +16280,7 @@ def add_gift_to_case():
         return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/api/admin/promo-codes', methods=['GET', 'POST', 'DELETE'])
+@app.route('/api/admin/promo-codes', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_promo_codes_management():
     """Управление промокодами"""
     try:
@@ -16296,7 +16292,7 @@ def admin_promo_codes_management():
             conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute('''
-                SELECT id, code, reward_stars, reward_tickets, reward_type, max_uses, used_count,
+                SELECT id, code, reward_stars, reward_tickets, reward_type, reward_data, max_uses, used_count,
                        created_at, expires_at, is_active
                 FROM promo_codes
                 ORDER BY created_at DESC
@@ -16306,17 +16302,24 @@ def admin_promo_codes_management():
 
             promos_list = []
             for promo in promos:
+                reward_data = {}
+                try:
+                    if promo[5]:
+                        reward_data = json.loads(promo[5]) if isinstance(promo[5], str) else (promo[5] or {})
+                except Exception:
+                    reward_data = {}
                 promos_list.append({
                     'id': promo[0],
                     'code': promo[1],
                     'reward_stars': promo[2],
                     'reward_tickets': promo[3],
                     'reward_type': promo[4] or 'stars',
-                    'max_uses': promo[5],
-                    'used_count': promo[6],
-                    'created_at': promo[7],
-                    'expires_at': promo[8],
-                    'is_active': bool(promo[9])
+                    'reward_data': reward_data,
+                    'max_uses': promo[6],
+                    'used_count': promo[7],
+                    'created_at': promo[8],
+                    'expires_at': promo[9],
+                    'is_active': bool(promo[10])
                 })
             return jsonify({'success': True, 'promo_codes': promos_list})
 
@@ -16392,6 +16395,22 @@ def admin_promo_codes_management():
                     'expires_at': expires_at
                 }
             })
+
+        elif request.method == 'PUT':
+            data = request.get_json(silent=True) or {}
+            promo_id = data.get('id')
+            if not promo_id:
+                return jsonify({'success': False, 'error': 'Не указан ID промокода'})
+            is_active = bool(data.get('is_active', True))
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('UPDATE promo_codes SET is_active = ? WHERE id = ?', (is_active, promo_id))
+            changed = cursor.rowcount
+            conn.commit()
+            conn.close()
+            if not changed:
+                return jsonify({'success': False, 'error': 'Промокод не найден'})
+            return jsonify({'success': True, 'is_active': is_active})
 
         elif request.method == 'DELETE':
             promo_id = request.json['id']
