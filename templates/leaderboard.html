@@ -80,7 +80,6 @@ body{
 }
 
 /* ══════════════ PODIUM ══════════════ */
-/* 3 flex-колонки равной ширины, топ-1 в центре */
 .podium{
     display:flex;
     align-items:flex-end;
@@ -93,7 +92,7 @@ body{
 }
 
 .podium-slot{
-    flex:1 1 0;             /* равная ширина всех слотов */
+    flex:1 1 0;
     min-width:0;
     max-width:140px;
     display:flex;flex-direction:column;align-items:center;
@@ -103,7 +102,6 @@ body{
 }
 .podium-slot:active{transform:scale(.97)}
 
-/* ── Name ── */
 .podium-name{
     margin-bottom:6px;
     font-size:11px;font-weight:800;color:#fff;
@@ -113,7 +111,6 @@ body{
 }
 .podium-slot.p1 .podium-name{font-size:13px;color:#FFD700}
 
-/* ── Avatar ── */
 .podium-avatar{
     border-radius:50%;overflow:hidden;
     background:rgba(255,255,255,.04);
@@ -136,7 +133,6 @@ body{
 }
 .podium-avatar img{width:100%;height:100%;object-fit:cover;display:block}
 
-/* ── Medal GIF ── */
 .podium-medal{
     margin-top:-16px;margin-bottom:-8px;
     position:relative;z-index:3;pointer-events:none;
@@ -155,7 +151,6 @@ body{
     50%{transform:translateY(-3px) scale(1.03)}
 }
 
-/* ── Pedestal — РАЗНАЯ ВЫСОТА, ОДИНАКОВАЯ ШИРИНА ── */
 .podium-pedestal{
     width:100%;
     border-radius:14px 14px 0 0;
@@ -170,7 +165,6 @@ body{
     background:linear-gradient(90deg,transparent 10%,rgba(255,255,255,.4) 50%,transparent 90%);
     z-index:2;
 }
-/* 1 МЕСТО — высокий */
 .podium-slot.p1 .podium-pedestal{
     height:140px;
     background:linear-gradient(180deg,rgba(255,215,0,.28) 0%,rgba(255,180,0,.15) 40%,rgba(255,160,0,.06) 100%);
@@ -178,7 +172,6 @@ body{
     border-bottom:none;
     box-shadow:inset 0 4px 20px rgba(255,215,0,.15),0 -6px 30px rgba(255,215,0,.15);
 }
-/* 2 МЕСТО — средний */
 .podium-slot.p2 .podium-pedestal{
     height:100px;
     background:linear-gradient(180deg,rgba(192,192,192,.22) 0%,rgba(160,160,160,.1) 40%,rgba(140,140,140,.03) 100%);
@@ -186,7 +179,6 @@ body{
     border-bottom:none;
     box-shadow:inset 0 3px 15px rgba(192,192,192,.1),0 -4px 20px rgba(192,192,192,.1);
 }
-/* 3 МЕСТО — низкий */
 .podium-slot.p3 .podium-pedestal{
     height:75px;
     background:linear-gradient(180deg,rgba(205,127,50,.22) 0%,rgba(180,110,45,.1) 40%,rgba(160,90,30,.03) 100%);
@@ -195,7 +187,6 @@ body{
     box-shadow:inset 0 3px 12px rgba(205,127,50,.1),0 -4px 18px rgba(205,127,50,.1);
 }
 
-/* Prize inside pedestal */
 .podium-prize{
     margin-bottom:2px;position:relative;z-index:1;
     display:flex;align-items:center;justify-content:center;
@@ -209,7 +200,6 @@ body{
     filter:drop-shadow(0 4px 14px rgba(255,215,0,.5));
 }
 
-/* Turnover */
 .podium-turnover{
     font-size:10px;font-weight:800;color:rgba(255,255,255,.75);
     display:flex;align-items:center;gap:3px;
@@ -218,7 +208,6 @@ body{
 .podium-slot.p1 .podium-turnover{font-size:11px;color:rgba(255,255,255,.9)}
 .podium-turnover img{width:10px;height:10px}
 
-/* Golden glow for #1 */
 .podium-slot.p1::before{
     content:'';position:absolute;
     top:-20px;left:50%;transform:translateX(-50%);
@@ -232,9 +221,24 @@ body{
     50%{opacity:1;transform:translateX(-50%) scale(1.1)}
 }
 
-/* Empty slot */
 .podium-empty{opacity:.15;pointer-events:none}
 .podium-empty .podium-pedestal{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.06)}
+
+/* ══════════════ NFT REWARD BADGE ══════════════ */
+.nft-badge{
+    position:absolute;
+    top:6px;right:6px;
+    background:linear-gradient(135deg,#8B5CF6,#6366F1);
+    border-radius:6px;
+    padding:2px 6px;
+    font-size:8px;
+    font-weight:900;
+    letter-spacing:.5px;
+    color:#fff;
+    box-shadow:0 2px 8px rgba(139,92,246,.4);
+    z-index:5;
+    text-transform:uppercase;
+}
 
 /* ══════════════ LIST (#4+) ══════════════ */
 .leaders-list{display:flex;flex-direction:column;gap:8px}
@@ -247,6 +251,7 @@ body{
     border-radius:14px;
     transition:all .15s;
     cursor:pointer;
+    position:relative;
 }
 .leader-item:active{transform:scale(.98);background:var(--surface-2)}
 
@@ -273,21 +278,36 @@ body{
 }
 .leader-turnover img{width:12px;height:12px}
 .leader-prize{
-    width:40px;height:40px;flex-shrink:0;
+    width:48px;height:48px;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
-    cursor:pointer;
+    cursor:pointer;position:relative;
 }
 .leader-prize img{
-    width:34px;height:34px;object-fit:contain;
+    width:42px;height:42px;object-fit:contain;
     filter:drop-shadow(0 2px 6px rgba(0,0,0,.3));
+    border-radius:8px;
 }
 .leader-prize:active{transform:scale(.9)}
+.leader-prize.has-nft::after{
+    content:'NFT';
+    position:absolute;
+    bottom:-2px;left:50%;
+    transform:translateX(-50%);
+    background:linear-gradient(135deg,#8B5CF6,#6366F1);
+    color:#fff;
+    font-size:7px;
+    font-weight:900;
+    padding:1px 5px;
+    border-radius:4px;
+    letter-spacing:.5px;
+    box-shadow:0 2px 6px rgba(139,92,246,.5);
+}
 
 .empty{text-align:center;padding:60px 20px;color:var(--text-2)}
 .empty svg{width:48px;height:48px;margin-bottom:16px;opacity:.3}
 .empty p{font-size:13px;font-weight:600}
 
-/* ══════════════ BOTTOM NAV (как в краше) ══════════════ */
+/* ══════════════ BOTTOM NAV ══════════════ */
 .bottom-nav{
     position:fixed;bottom:0;left:50%;transform:translateX(-50%);
     z-index:4000;width:100%;max-width:480px;height:76px;
@@ -357,7 +377,7 @@ body{
 .profile-close-btn{width:100%;padding:12px;border:none;border-radius:12px;background:rgba(59,130,246,.15);color:#7CAEFF;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;flex-shrink:0;border:1px solid rgba(59,130,246,.3)}
 .profile-close-btn:active{background:rgba(59,130,246,.25)}
 
-/* ══════════════ PRIZE MODAL ══════════════ */
+/* ══════════════ PRIZE MODAL (Regular + NFT) ══════════════ */
 .prize-overlay{
     position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:7500;
     display:flex;align-items:center;justify-content:center;
@@ -375,6 +395,8 @@ body{
     transform:scale(.9);
     transition:transform .3s cubic-bezier(.32,1,.23,1);
     border:1px solid rgba(59,130,246,.25);
+    max-height:90vh;
+    overflow-y:auto;
 }
 .prize-overlay.show .prize-card{transform:scale(1)}
 .prize-medal{width:100px;height:100px;margin-bottom:12px;filter:drop-shadow(0 6px 20px rgba(255,215,0,.4));animation:medalBounce 2.5s ease-in-out infinite}
@@ -389,16 +411,95 @@ body{
 .prize-block.gold{background:linear-gradient(180deg,rgba(255,215,0,.1),rgba(255,180,0,.04));border-color:rgba(255,215,0,.35)}
 .prize-block.silver{background:linear-gradient(180deg,rgba(192,192,192,.08),rgba(160,160,160,.03));border-color:rgba(192,192,192,.3)}
 .prize-block.bronze{background:linear-gradient(180deg,rgba(205,127,50,.1),rgba(180,110,45,.04));border-color:rgba(205,127,50,.3)}
+.prize-block.nft{background:linear-gradient(180deg,rgba(139,92,246,.12),rgba(99,102,241,.04));border-color:rgba(139,92,246,.4)}
 .prize-block-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-3)}
 .prize-img-wrap{width:96px;height:96px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.2);border-radius:20px;padding:10px;box-sizing:border-box}
 .prize-img-wrap img{max-width:100%;max-height:100%;object-fit:contain}
 .prize-img-wrap.gift{background:linear-gradient(180deg,rgba(59,130,246,.1),rgba(59,130,246,.02))}
+.prize-img-wrap.nft{width:180px;height:180px;padding:0;border-radius:20px;overflow:hidden;background:rgba(0,0,0,.3);border:1px solid rgba(139,92,246,.3)}
+.prize-img-wrap.nft img{width:100%;height:100%;object-fit:cover;border-radius:20px}
 .prize-name{font-size:14px;font-weight:800;text-align:center;color:#fff;line-height:1.2}
 .prize-value{font-size:13px;font-weight:700;color:#FFD700;display:flex;align-items:center;gap:5px}
 .prize-value img{width:14px;height:14px}
 .prize-empty{font-size:13px;color:var(--text-3);font-weight:700;padding:8px 0}
 .prize-close-btn{width:100%;padding:14px;border:none;border-radius:14px;background:linear-gradient(135deg,#3B82F6,#2563EB);color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(59,130,246,.35)}
 .prize-close-btn:active{transform:scale(.97)}
+
+/* NFT attributes in prize modal */
+.nft-number-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    background:rgba(139,92,246,.15);
+    border:1px solid rgba(139,92,246,.35);
+    color:#A78BFA;
+    padding:4px 12px;border-radius:10px;
+    font-size:12px;font-weight:800;
+    letter-spacing:.5px;
+    margin-bottom:6px;
+}
+.nft-price-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    background:rgba(255,215,0,.12);
+    border:1px solid rgba(255,215,0,.35);
+    color:#FFD700;
+    padding:5px 14px;border-radius:10px;
+    font-size:14px;font-weight:900;
+}
+.nft-price-badge img{width:14px;height:14px}
+
+.nft-attrs-table{
+    width:100%;
+    margin-top:14px;
+    background:rgba(0,0,0,.25);
+    border-radius:14px;
+    overflow:hidden;
+    border:1px solid rgba(255,255,255,.06);
+    display:flex;flex-direction:column;
+    gap:1px;
+}
+.nft-attr-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;
+    background:rgba(255,255,255,.02);
+    gap:12px;
+}
+.nft-attr-label{
+    font-size:11px;color:rgba(255,255,255,.5);font-weight:700;
+    text-transform:uppercase;letter-spacing:.5px;
+    flex-shrink:0;
+}
+.nft-attr-right{
+    display:flex;flex-direction:column;align-items:flex-end;gap:2px;
+    min-width:0;flex:1;
+}
+.nft-attr-value{
+    font-size:13px;color:#fff;font-weight:800;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    max-width:100%;text-align:right;
+}
+.nft-attr-rarity{
+    font-size:10px;
+    color:#FFD700;
+    font-weight:700;
+}
+.nft-attr-rarity.empty{color:rgba(255,255,255,.35)}
+.nft-attr-row.loading .nft-attr-value{color:rgba(255,255,255,.4);font-weight:600}
+
+.nft-loader{
+    display:flex;align-items:center;justify-content:center;
+    padding:12px;
+    color:rgba(255,255,255,.5);
+    font-size:12px;
+    font-weight:600;
+    gap:8px;
+}
+.nft-loader::after{
+    content:'';width:14px;height:14px;
+    border:2px solid rgba(255,255,255,.15);
+    border-top-color:#8B5CF6;
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* ══════════════ LEAD INFO MODAL ══════════════ */
 .lead-info-overlay{
@@ -438,6 +539,7 @@ body{
     .podium-slot.p3 .podium-avatar{width:64px;height:64px}
     .podium-medal img{width:48px;height:48px}
     .podium-slot.p1 .podium-medal img{width:60px;height:60px}
+    .prize-img-wrap.nft{width:150px;height:150px}
 }
 </style>
 </head>
@@ -516,6 +618,7 @@ body{
 
 let endTime = null;
 let _currentLeaderboardData = null;
+const _nftAttrsCache = {};
 
 function $(id){ return document.getElementById(id); }
 
@@ -535,6 +638,121 @@ function escapeHtml(str) {
 
 function formatTon(stars) {
     return (Number(stars || 0) / 100).toFixed(2);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   REWARD RENDER HELPERS
+   ══════════════════════════════════════════════════════════════ */
+
+/**
+ * Нормализует reward объект: определяет тип и возвращает картинку + данные.
+ * Поддерживает форматы:
+ *  - number (звёзды в копейках)
+ *  - {type: 'stars', amount: N}
+ *  - {type: 'ton', amount: N}
+ *  - {type: 'gift', gift_id/gift_key/gift_image, gift_name}
+ *  - {type: 'nft_gift', slug, number, name, image, price_ton}
+ *  - {type: 'rocket', item_id}
+ *  - {type: 'background', item_id}
+ *  - {type: 'vip'}
+ */
+function normalizeReward(raw) {
+    if (raw == null) return null;
+
+    // Legacy: число = звёзды в копейках
+    if (typeof raw === 'number') {
+        return {
+            kind: 'stars',
+            amount_stars: raw,
+            image: getTonSvg(raw / 100),
+            label: formatTon(raw) + ' TON'
+        };
+    }
+
+    if (typeof raw !== 'object') return null;
+
+    var type = (raw.type || 'stars').toLowerCase();
+
+    // NFT gift (Fragment)
+    if (type === 'nft_gift' || (raw.slug && raw.number)) {
+        var slug = raw.slug || '';
+        var num = raw.number || 0;
+        var image = raw.image
+            || (slug && num ? 'https://nft.fragment.com/gift/' + slug + '-' + num + '.webp' : '')
+            || '/static/img/gift.png';
+        return {
+            kind: 'nft_gift',
+            slug: slug,
+            number: num,
+            name: raw.name || (slug ? slug + ' #' + num : 'NFT Подарок'),
+            base_name: (raw.name || '').replace(/\s*#\d+$/, ''),
+            image: image,
+            price_ton: Number(raw.price_ton || 0),
+            label: raw.name || ('NFT #' + num),
+            attrs: raw.attrs || null
+        };
+    }
+
+    // Обычный gift (id-based)
+    if (type === 'gift') {
+        var gImage = raw.gift_image || raw.image || '/static/img/gift.png';
+        return {
+            kind: 'gift',
+            gift_id: raw.gift_id || raw.amount || raw.gift_key || '',
+            name: raw.gift_name || raw.name || 'Подарок',
+            image: gImage,
+            value_stars: raw.gift_value || raw.value || 0,
+            label: raw.gift_name || raw.name || 'Подарок'
+        };
+    }
+
+    if (type === 'ton' || type === 'stars') {
+        var amtStars = Number(raw.amount || 0);
+        if (type === 'ton') amtStars = amtStars * 100;
+        return {
+            kind: 'stars',
+            amount_stars: amtStars,
+            image: getTonSvg(amtStars / 100),
+            label: formatTon(amtStars) + ' TON'
+        };
+    }
+
+    if (type === 'rocket') {
+        return {
+            kind: 'rocket',
+            item_id: raw.item_id || raw.amount || '',
+            name: raw.name || raw.item_id || 'Ракета',
+            image: '/static/gifs/rockets/' + (raw.item_id || raw.amount || 'crash') + '.gif',
+            label: raw.name || 'Ракета'
+        };
+    }
+
+    if (type === 'background') {
+        return {
+            kind: 'background',
+            item_id: raw.item_id || raw.amount || '',
+            name: raw.name || raw.item_id || 'Фон',
+            image: '/static/img/' + (raw.item_id || raw.amount || 'phone') + '.png',
+            label: raw.name || 'Фон'
+        };
+    }
+
+    if (type === 'vip') {
+        return {
+            kind: 'vip',
+            name: 'Crash VIP',
+            image: '/static/img/crown.png',
+            label: 'VIP'
+        };
+    }
+
+    // Fallback
+    return {
+        kind: 'unknown',
+        name: raw.name || 'Награда',
+        image: raw.image || '/static/img/gift.png',
+        label: raw.name || 'Награда'
+    };
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -584,20 +802,22 @@ async function loadLeaderboard() {
         const podiumEl = $('podium');
 
         function renderSlot(u, rank, pClass) {
-            const prize = u.reward || rewards[String(rank)];
+            const rawPrize = u.reward || rewards[String(rank)];
+            const prize = normalizeReward(rawPrize);
             const turnover = formatTon(u.turnover);
             const displayName = u.first_name || u.username || 'Игрок';
             const avatar = u.photo_url || '/static/img/avatar-default.png';
             const placeGif = '/static/gifs/place/' + rank + '.gif';
+
             let prizeHtml = '';
             if (prize) {
-                if (prize.type === 'gift' && prize.gift_image) {
-                    prizeHtml = '<div class="podium-prize"><img src="' + prize.gift_image + '" alt=""></div>';
-                } else {
-                    const tonAmt = typeof prize === 'number' ? prize : ((prize.amount || 0) / 100);
-                    prizeHtml = '<div class="podium-prize"><img src="' + getTonSvg(tonAmt) + '" alt=""></div>';
-                }
+                var isNft = prize.kind === 'nft_gift';
+                prizeHtml = '<div class="podium-prize">'
+                    + '<img src="' + escapeHtml(prize.image) + '" alt="" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
+                    + (isNft ? '<div class="nft-badge">NFT</div>' : '')
+                    + '</div>';
             }
+
             return '<div class="podium-slot ' + pClass + '">' +
                 '<div class="podium-name" onclick="event.stopPropagation();openProfileCard(' + (u.user_id || 0) + ')">' + escapeHtml(displayName) + '</div>' +
                 '<div class="podium-avatar" onclick="event.stopPropagation();openProfileCard(' + (u.user_id || 0) + ')">' +
@@ -638,19 +858,18 @@ async function loadLeaderboard() {
         } else {
             $('leadersList').innerHTML = rest.map((u, i) => {
                 const rank = u.position || (listStart + i + 1);
-                const prize = u.reward || rewards[String(rank)];
+                const rawPrize = u.reward || rewards[String(rank)];
+                const prize = normalizeReward(rawPrize);
                 const turnover = formatTon(u.turnover);
                 const displayName = u.first_name || u.username || 'Игрок';
                 const avatar = u.photo_url || '/static/img/avatar-default.png';
 
                 let prizeImg = '';
                 if (prize) {
-                    if (prize.type === 'gift' && prize.gift_image) {
-                        prizeImg = '<img src="' + prize.gift_image + '" alt="">';
-                    } else {
-                        const tonAmount = typeof prize === 'number' ? prize : ((prize.amount || 0) / 100);
-                        prizeImg = '<img src="' + getTonSvg(tonAmount) + '" alt="">';
-                    }
+                    var isNft = prize.kind === 'nft_gift';
+                    prizeImg = '<div class="leader-prize' + (isNft ? ' has-nft' : '') + '" onclick="event.stopPropagation();openPrizeCard(' + rank + ')">'
+                        + '<img src="' + escapeHtml(prize.image) + '" alt="" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
+                        + '</div>';
                 }
 
                 return '<div class="leader-item">' +
@@ -662,7 +881,7 @@ async function loadLeaderboard() {
                         '<div class="leader-name">' + escapeHtml(displayName) + '</div>' +
                         '<div class="leader-turnover">' + turnover + ' TON</div>' +
                     '</div>' +
-                    (prizeImg ? '<div class="leader-prize" onclick="event.stopPropagation();openPrizeCard(' + rank + ')">' + prizeImg + '</div>' : '') +
+                    prizeImg +
                 '</div>';
             }).join('');
         }
@@ -692,7 +911,7 @@ function updateCountdown() {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PRIZE CARD
+   PRIZE CARD (Regular + NFT)
    ══════════════════════════════════════════════════════════════ */
 (function(){
     var overlay = document.createElement('div');
@@ -706,7 +925,8 @@ function updateCountdown() {
 function openPrizeCard(rank){
     if(!_currentLeaderboardData || !_currentLeaderboardData.config) return;
     var rewards = _currentLeaderboardData.config.rewards || {};
-    var prize = rewards[String(rank)];
+    var rawPrize = rewards[String(rank)];
+    var prize = normalizeReward(rawPrize);
     var card = $('prizeCard');
     if(!card) return;
 
@@ -719,28 +939,159 @@ function openPrizeCard(rank){
     html += '<div class="prize-place ' + placeClass + '">' + placeLabel + '</div>';
     html += '<div class="prize-subtitle">Награда за это место</div>';
 
-    if(prize){
-        if(prize.type === 'gift' && prize.gift_image){
-            html += '<div class="prize-block ' + placeClass + '">' +
-                '<div class="prize-block-label">ПОДАРОК</div>' +
-                '<div class="prize-img-wrap gift"><img src="' + prize.gift_image + '" onerror="this.src=\'/static/img/gift.png\'" alt=""></div>' +
-                '<div class="prize-name">' + escapeHtml(prize.gift_name || 'Подарок') + '</div>' +
-            '</div>';
-        } else {
-            var tonAmt = typeof prize === 'number' ? (prize / 100) : ((prize.amount || 0) / 100);
-            html += '<div class="prize-block ' + placeClass + '">' +
-                '<div class="prize-block-label">НАГРАДА В TON</div>' +
-                '<div class="prize-img-wrap"><img src="' + getTonSvg(tonAmt) + '" alt=""></div>' +
-                '<div class="prize-value"><img src="/static/img/ton.png" alt="">' + tonAmt.toFixed(2) + ' TON</div>' +
-            '</div>';
-        }
-    } else {
+    if(!prize){
         html += '<div class="prize-block ' + placeClass + '"><div class="prize-empty">Награда не назначена</div></div>';
+        html += '<button class="prize-close-btn" onclick="closePrizeCard()">Понятно</button>';
+        card.innerHTML = html;
+        $('prizeOverlay').classList.add('show');
+        return;
+    }
+
+    if(prize.kind === 'nft_gift'){
+        // ─── NFT GIFT ───
+        var slug = prize.slug;
+        var num = prize.number;
+        var name = prize.name || (slug + ' #' + num);
+        var image = prize.image;
+
+        html += '<div class="prize-block nft">'
+            + '<div class="prize-block-label">NFT ПОДАРОК</div>'
+            + '<div class="prize-img-wrap nft">'
+            +   '<img id="nftPrizeImg" src="' + escapeHtml(image) + '" alt="" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
+            + '</div>'
+            + '<div class="nft-number-badge">#' + escapeHtml(String(num)) + '</div>'
+            + '<div class="prize-name">' + escapeHtml(name) + '</div>'
+            + (prize.price_ton > 0
+                ? '<div class="nft-price-badge"><img src="/static/img/ton.png">' + escapeHtml(Number(prize.price_ton).toFixed(2)) + ' TON</div>'
+                : '')
+            + '</div>';
+
+        // Attrs block (загружается асинхронно)
+        html += '<div class="nft-attrs-table" id="nftAttrsTable">'
+            + '<div class="nft-attr-row loading" data-attr="model">'
+            +   '<span class="nft-attr-label">Model</span>'
+            +   '<div class="nft-attr-right"><span class="nft-attr-value" id="nftAttrModelVal">—</span>'
+            +   '<span class="nft-attr-rarity empty" id="nftAttrModelRar"></span></div>'
+            + '</div>'
+            + '<div class="nft-attr-row loading" data-attr="backdrop">'
+            +   '<span class="nft-attr-label">Backdrop</span>'
+            +   '<div class="nft-attr-right"><span class="nft-attr-value" id="nftAttrBackdropVal">—</span>'
+            +   '<span class="nft-attr-rarity empty" id="nftAttrBackdropRar"></span></div>'
+            + '</div>'
+            + '<div class="nft-attr-row loading" data-attr="symbol">'
+            +   '<span class="nft-attr-label">Symbol</span>'
+            +   '<div class="nft-attr-right"><span class="nft-attr-value" id="nftAttrSymbolVal">—</span>'
+            +   '<span class="nft-attr-rarity empty" id="nftAttrSymbolRar"></span></div>'
+            + '</div>'
+            + '</div>';
+
+    } else if(prize.kind === 'gift'){
+        html += '<div class="prize-block ' + placeClass + '">'
+            + '<div class="prize-block-label">ПОДАРОК</div>'
+            + '<div class="prize-img-wrap gift"><img src="' + escapeHtml(prize.image) + '" onerror="this.src=\'/static/img/gift.png\'" alt=""></div>'
+            + '<div class="prize-name">' + escapeHtml(prize.name) + '</div>'
+            + (prize.value_stars > 0
+                ? '<div class="prize-value"><img src="/static/img/ton.png" alt="">' + formatTon(prize.value_stars) + ' TON</div>'
+                : '')
+            + '</div>';
+
+    } else if(prize.kind === 'stars'){
+        html += '<div class="prize-block ' + placeClass + '">'
+            + '<div class="prize-block-label">НАГРАДА В TON</div>'
+            + '<div class="prize-img-wrap"><img src="' + escapeHtml(prize.image) + '" alt=""></div>'
+            + '<div class="prize-value"><img src="/static/img/ton.png" alt="">' + formatTon(prize.amount_stars) + ' TON</div>'
+            + '</div>';
+
+    } else if(prize.kind === 'rocket' || prize.kind === 'background'){
+        html += '<div class="prize-block ' + placeClass + '">'
+            + '<div class="prize-block-label">' + (prize.kind === 'rocket' ? 'РАКЕТА' : 'ФОН') + '</div>'
+            + '<div class="prize-img-wrap"><img src="' + escapeHtml(prize.image) + '" onerror="this.src=\'/static/img/gift.png\'" alt=""></div>'
+            + '<div class="prize-name">' + escapeHtml(prize.name) + '</div>'
+            + '</div>';
+
+    } else if(prize.kind === 'vip'){
+        html += '<div class="prize-block ' + placeClass + '">'
+            + '<div class="prize-block-label">VIP СТАТУС</div>'
+            + '<div class="prize-img-wrap"><img src="/static/img/crown.png" onerror="this.src=\'/static/img/gift.png\'" alt=""></div>'
+            + '<div class="prize-name">Crash VIP</div>'
+            + '</div>';
+
+    } else {
+        html += '<div class="prize-block ' + placeClass + '">'
+            + '<div class="prize-block-label">НАГРАДА</div>'
+            + '<div class="prize-img-wrap"><img src="' + escapeHtml(prize.image) + '" alt=""></div>'
+            + '<div class="prize-name">' + escapeHtml(prize.name) + '</div>'
+            + '</div>';
     }
 
     html += '<button class="prize-close-btn" onclick="closePrizeCard()">Понятно</button>';
     card.innerHTML = html;
     $('prizeOverlay').classList.add('show');
+
+    // Для NFT — загружаем атрибуты
+    if(prize.kind === 'nft_gift' && prize.slug && prize.number){
+        loadNftAttrs(prize.slug, prize.number);
+    }
+}
+
+async function loadNftAttrs(slug, number){
+    var cacheKey = slug + '_' + number;
+    if(_nftAttrsCache[cacheKey]){
+        applyNftAttrs(_nftAttrsCache[cacheKey]);
+        return;
+    }
+    try{
+        var r = await fetch('/api/fragment-gift-details?slug=' + encodeURIComponent(slug) + '&number=' + number);
+        var d = await r.json();
+        if(d.success && d.attrs){
+            _nftAttrsCache[cacheKey] = d.attrs;
+            applyNftAttrs(d.attrs);
+        } else {
+            setNftAttrsFailed();
+        }
+    }catch(e){
+        setNftAttrsFailed();
+    }
+}
+
+function applyNftAttrs(attrs){
+    setNftAttr('model', attrs.model);
+    setNftAttr('backdrop', attrs.backdrop);
+    setNftAttr('symbol', attrs.symbol);
+}
+
+function setNftAttr(key, data){
+    var rowMap = { model: 'Model', backdrop: 'Backdrop', symbol: 'Symbol' };
+    var capKey = rowMap[key];
+    var valEl = $('nftAttr' + capKey + 'Val');
+    var rarEl = $('nftAttr' + capKey + 'Rar');
+    var rowEl = document.querySelector('.nft-attr-row[data-attr="' + key + '"]');
+    if(rowEl) rowEl.classList.remove('loading');
+    if(!data || !data.value){
+        if(valEl) valEl.textContent = '—';
+        if(rarEl){ rarEl.textContent = ''; rarEl.classList.add('empty'); }
+        return;
+    }
+    if(valEl) valEl.textContent = data.value || '—';
+    if(rarEl){
+        if(data.rarity != null){
+            rarEl.textContent = parseFloat(data.rarity).toFixed(1) + '%';
+            rarEl.classList.remove('empty');
+        } else {
+            rarEl.textContent = '';
+            rarEl.classList.add('empty');
+        }
+    }
+}
+
+function setNftAttrsFailed(){
+    ['model','backdrop','symbol'].forEach(function(k){
+        var capKey = k.charAt(0).toUpperCase() + k.slice(1);
+        var rowEl = document.querySelector('.nft-attr-row[data-attr="' + k + '"]');
+        if(rowEl) rowEl.classList.remove('loading');
+        var valEl = $('nftAttr' + capKey + 'Val');
+        if(valEl) valEl.textContent = '—';
+    });
 }
 
 function closePrizeCard(){
@@ -749,7 +1100,7 @@ function closePrizeCard(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PROFILE CARD — с fallback если API не ответил
+   PROFILE CARD
    ══════════════════════════════════════════════════════════════ */
 (function(){
     var overlay = document.createElement('div');
@@ -794,27 +1145,16 @@ function openProfileCard(userId){
     $('pcLevelPct').textContent = '';
     o.classList.add('show');
 
-    /* Fallback: если /api/user-profile не работает, берём из /api/user/<id> */
     fetch('/api/user-profile/' + userId)
         .then(function(r){ return r.json(); })
         .then(function(d){
+            _pcLoading = false;
             if(d.success && d.profile){
-                _pcLoading = false;
                 renderProfileFromApi(d.profile);
-                return;
+            } else {
+                $('pcName').textContent = 'Пользователь не найден';
+                $('pcStatRows').innerHTML = '';
             }
-            /* Fallback */
-            return fetch('/api/user/' + userId)
-                .then(function(r){ return r.json(); })
-                .then(function(d2){
-                    _pcLoading = false;
-                    if(d2.success && d2.user){
-                        renderProfileFromUserApi(d2.user);
-                    } else {
-                        $('pcName').textContent = 'Пользователь не найден';
-                        $('pcStatRows').innerHTML = '';
-                    }
-                });
         })
         .catch(function(e){
             _pcLoading = false;
@@ -876,64 +1216,6 @@ function renderProfileFromApi(p){
                 h += '<div class="profile-inv-price">' + price + ' TON</div>';
             }
             h += '</div>';
-        }
-        $('pcInvGrid').innerHTML = h;
-    }
-}
-
-function renderProfileFromUserApi(u){
-    $('pcName').textContent = u.first_name || 'User';
-    var pct = 0;
-    var lvlInfo = u.level_info || {};
-    pct = Math.min(Math.max(lvlInfo.progress_percentage || 0, 0), 100);
-    var lvl = u.current_level || 1;
-    var exp = u.experience || 0;
-
-    $('pcLevelNum').textContent = 'Ур. ' + lvl;
-    $('pcLevelPct').textContent = Math.round(pct) + '%';
-    $('pcLevelFill').style.width = pct + '%';
-
-    var curLvlExp = (lvlInfo.current_level_info && lvlInfo.current_level_info.exp_required) || 0;
-    var nxtLvlExp = (lvlInfo.next_level_info && lvlInfo.next_level_info.exp_required) || curLvlExp;
-    var tierSize = nxtLvlExp - curLvlExp;
-    var withinLevel = exp - curLvlExp;
-    var expCur = (Math.max(0, withinLevel) / 100).toFixed(1);
-    var expNext = tierSize > 0 ? (tierSize / 100).toFixed(1) : 'MAX';
-    $('pcLevelText').textContent = expCur + ' / ' + expNext + ' TON';
-
-    var tonTotal = formatTon(u.total_bet_volume);
-    var tonMonth = formatTon(u.monthly_turnover || u.total_bet_volume);
-
-    $('pcStatRows').innerHTML =
-        '<div class="pc-stat-row">' +
-            '<img src="/static/img/ton.png" alt="">' +
-            '<span class="pc-stat-row-label">Общий оборот</span>' +
-            '<span class="pc-stat-row-val">' + tonTotal + ' TON</span>' +
-        '</div>' +
-        '<div class="pc-stat-row">' +
-            '<img src="/static/img/ton.png" alt="">' +
-            '<span class="pc-stat-row-label">Оборот за месяц</span>' +
-            '<span class="pc-stat-row-val">' + tonMonth + ' TON</span>' +
-        '</div>' +
-        '<div class="pc-stat-row">' +
-            '<img src="/static/img/cup.png" alt="" style="width:22px;height:22px;object-fit:contain">' +
-            '<span class="pc-stat-row-label">Место в рейтинге</span>' +
-            '<span class="pc-stat-row-val">#' + (u.rank || '—') + '</span>' +
-        '</div>';
-
-    var inv = u.inventory || [];
-    if(inv.length){
-        $('pcInvTitle').style.display = '';
-        var h = '';
-        for(var i = 0; i < inv.length; i++){
-            var it = inv[i];
-            var price = ((it.gift_value || 0) / 100).toFixed(2);
-            var imgSrc = it.gift_image || '/static/img/gift.png';
-            h += '<div class="profile-inv-item">' +
-                '<img class="profile-inv-img" src="' + imgSrc + '" onerror="this.src=\'/static/img/gift.png\'" alt="">' +
-                '<div class="profile-inv-name">' + escapeHtml(it.gift_name || '') + '</div>' +
-                '<div class="profile-inv-price">' + price + ' TON</div>' +
-            '</div>';
         }
         $('pcInvGrid').innerHTML = h;
     }
