@@ -4277,15 +4277,8 @@ def start_ultimate_crash_loop():
                         time.sleep(0.5)
                         continue
 
-                    # AI-force-crash (редко)
-                    if live_mult > 4.0 and tick_counter % 20 == 0:
-                        try:
-                            if ai_should_force_crash(live_game_id, live_mult, conn):
-                                do_crash(conn, cursor, live_game_id, live_mult, live_target, live_is_bonus)
-                                time.sleep(0.3)
-                                continue
-                        except Exception as ai_e:
-                            logger.debug(f"AI check skipped: {ai_e}")
+                    # AI не вызываем во время полёта: аналитические запросы могут
+                    # заблокировать игровой тик и оставить раунд навсегда в flying.
 
                     # Инкремент
                     m = live_mult
@@ -4513,14 +4506,17 @@ def start_ultimate_crash_loop():
 
             except Exception as e:
                 err_msg = str(e)
+                if loop_conn:
+                    try:
+                        loop_conn.rollback()
+                    except Exception:
+                        pass
                 reset_loop_conn()
                 loop_conn_failures += 1
 
-                # ★ НЕ сбрасываем live_status — перечитаем из БД
-                if loop_conn_failures > 5:
-                    logger.error(f"❌ Loop error #{loop_conn_failures}: {err_msg}")
-                else:
-                    logger.debug(f"Loop error: {err_msg}")
+                # Не скрываем ошибки: после rollback следующий тик получает
+                # новое соединение и продолжает текущий раунд.
+                logger.error(f"❌ Crash loop error #{loop_conn_failures}: {err_msg}", exc_info=True)
                 time.sleep(1)
 
     global _crash_loop_thread
