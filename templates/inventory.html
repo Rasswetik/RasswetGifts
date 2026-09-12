@@ -263,8 +263,8 @@ body{
     gap:8px;margin-bottom:20px;width:100%;
 }
 .inv-card{
-    background:rgba(255,255,255,.04);
-    border:1.5px solid rgba(255,255,255,.06);
+    background:transparent;
+    border:none;
     border-radius:14px;
     text-align:center;cursor:pointer;
     transition:transform .15s,border-color .15s,box-shadow .15s;
@@ -274,12 +274,12 @@ body{
     aspect-ratio:1/1.3;
     width:100%;
     -webkit-tap-highlight-color:transparent;
+    padding:0;
 }
 .inv-card:active{transform:scale(.96)}
 .inv-card.selected{
-    border-color:#3B82F6;
+    box-shadow:0 0 0 2.5px #3B82F6;
     background:rgba(59,130,246,.15);
-    box-shadow:0 0 0 2px rgba(59,130,246,.4);
 }
 .inv-card.selected::after{
     content:'✓';position:absolute;top:5px;right:5px;
@@ -292,11 +292,11 @@ body{
 }
 .inv-card-img-wrap{
     width:100%;aspect-ratio:1/1;
-    background:rgba(0,0,0,.18);
     display:flex;align-items:center;justify-content:center;
     flex-shrink:0;overflow:hidden;
-    border-radius:12.5px 12.5px 0 0;
+    border-radius:12px;
     position:relative;
+    background:rgba(0,0,0,.18);
 }
 .inv-card-img-wrap img{
     width:100%;height:100%;
@@ -316,22 +316,33 @@ body{
     margin-top:auto;
 }
 .inv-card-price img{width:10px;height:10px;display:block}
+
+/* ═══ УЛУЧШЕННЫЙ (NFT) ПОДАРОК — СЕРАЯ ОБВОДКА ═══ */
 .inv-card.inv-card-upgraded{
     aspect-ratio:1/1;
-    border:1.5px solid rgba(255,215,0,.45);
-    background:linear-gradient(180deg,rgba(255,215,0,.08),rgba(255,140,0,.03));
-    box-shadow:0 0 14px rgba(255,215,0,.18);
+    border:1.5px solid rgba(140,150,170,.4);
+    background:linear-gradient(180deg,rgba(140,150,170,.06),rgba(140,150,170,.02));
+    border-radius:14px;
+    padding:0;
+    overflow:hidden;
+}
+.inv-card.inv-card-upgraded:active{transform:scale(.96)}
+.inv-card.inv-card-upgraded.selected{
+    box-shadow:0 0 0 2.5px #3B82F6;
+    border-color:#3B82F6;
 }
 .inv-card.inv-card-upgraded .inv-card-img-wrap{
     width:100%;height:100%;aspect-ratio:1/1;
     background:transparent;border-radius:12.5px;padding:0;
+    overflow:hidden;
 }
 .inv-card.inv-card-upgraded .inv-card-img-wrap img{
     width:100%;height:100%;object-fit:cover;padding:0;border-radius:12.5px;
 }
+
 .inv-card-challenge{
     position:absolute;top:5px;left:5px;
-    width:20px;height:20px;
+    width:22px;height:22px;
     background:rgba(0,0,0,.75);
     border-radius:6px;
     display:flex;align-items:center;justify-content:center;
@@ -339,8 +350,7 @@ body{
     border:1px solid rgba(255,255,255,.2);
     backdrop-filter:blur(4px);
 }
-.inv-card-challenge svg{width:11px;height:11px;color:#fff;stroke:currentColor;fill:none;stroke-width:2.5}
-.inv-card-locked{border-color:rgba(99,102,241,.4)}
+.inv-card-challenge svg{width:12px;height:12px;color:#fff;stroke:currentColor;fill:none;stroke-width:2.5}
 
 .inv-empty{
     text-align:center;padding:50px 20px;color:var(--text-2);
@@ -353,13 +363,12 @@ body{
 .inv-empty img{width:56px;height:56px;opacity:.4;object-fit:contain}
 
 /* ══════════════ SELECT ACTION BAR ══════════════ */
-/* Появляется только когда реально выбраны подарки */
 .select-action-bar{
     position:fixed;
     bottom:calc(var(--safe-bottom,0px) + 90px);
     left:50%;
-    transform:translateX(-50%) translateY(120%);
-    z-index:4500;  /* Выше bottom-nav (4000), но ниже item-sheet (9998) */
+    transform:translateX(-50%) translateY(140%);
+    z-index:4999;
     width:calc(100% - 28px);
     max-width:452px;
     background:rgba(28,34,51,.98);
@@ -376,11 +385,13 @@ body{
     transition:transform .3s cubic-bezier(.32,1,.23,1);
     pointer-events:none;
     visibility:hidden;
+    opacity:0;
 }
 .select-action-bar.show{
     transform:translateX(-50%) translateY(0);
     pointer-events:auto;
     visibility:visible;
+    opacity:1;
 }
 .select-info{font-size:13px;font-weight:700;color:rgba(255,255,255,.75)}
 .select-info span{color:#3B82F6;font-weight:900}
@@ -572,17 +583,17 @@ body{
 }
 .stars-deposit-pay-btn img{width:20px;height:20px}
 
-/* ══════════════ ITEM SHEET — ПОДАРОК (высокий z-index) ══════════════ */
+/* ══════════════ ITEM SHEET — ПОДАРОК (z-index 100000 — ВЫШЕ ВСЕГО) ══════════════ */
 .item-sheet-overlay{
     position:fixed;
     inset:0;
-    z-index:9998;  /* ВЫШЕ bottom-nav (4000) */
-    background:rgba(0,0,0,.75);
-    backdrop-filter:blur(6px);
-    -webkit-backdrop-filter:blur(6px);
+    z-index:100000;  /* САМЫЙ ВЫСОКИЙ */
+    background:rgba(0,0,0,.82);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
     opacity:0;
     visibility:hidden;
-    transition:opacity .3s,visibility .3s;
+    transition:opacity .28s,visibility .28s;
     display:flex;
     align-items:flex-end;
     justify-content:center;
@@ -598,7 +609,7 @@ body{
     transform:translateY(100%);
     transition:transform .35s cubic-bezier(.32,1,.23,1);
     border-top:1px solid rgba(59,130,246,.25);
-    max-height:90vh;
+    max-height:92vh;
     overflow-y:auto;
 }
 .item-sheet-overlay.show .item-sheet{transform:translateY(0)}
@@ -636,33 +647,62 @@ body{
 }
 .item-sheet-price img{width:16px;height:16px}
 
+/* ═══ NFT DETAILS ═══ */
 .item-nft-details{
     width:100%;margin-bottom:16px;
     display:none;flex-direction:column;align-items:center;gap:10px;
 }
 .item-nft-details.show{display:flex}
 .item-nft-img{
-    width:160px;height:160px;
+    width:180px;height:180px;
     border-radius:20px;object-fit:cover;
-    border:2px solid rgba(255,215,0,.4);
-    box-shadow:0 6px 24px rgba(255,215,0,.2);
+    border:2px solid rgba(140,150,170,.4);
+    box-shadow:0 8px 28px rgba(0,0,0,.5);
 }
-.item-nft-name{font-size:15px;font-weight:800;color:#fff;text-align:center}
-.item-nft-number{font-size:12px;color:rgba(255,255,255,.4);font-weight:700;margin-bottom:8px}
+.item-nft-name{font-size:16px;font-weight:800;color:#fff;text-align:center;line-height:1.2}
+.item-nft-number{
+    font-size:13px;color:rgba(255,255,255,.6);font-weight:700;
+    background:rgba(140,150,170,.15);
+    padding:4px 12px;border-radius:10px;
+    border:1px solid rgba(140,150,170,.25);
+    margin-bottom:4px;
+}
 .item-nft-attrs{
     width:100%;
     display:flex;flex-direction:column;gap:1px;
     background:rgba(0,0,0,.2);
     border-radius:14px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.05);
 }
 .item-nft-attr-row{
     display:flex;align-items:center;justify-content:space-between;
-    padding:10px 14px;
+    padding:12px 16px;
     border-bottom:1px solid rgba(255,255,255,.05);
+    gap:10px;
 }
 .item-nft-attr-row:last-child{border-bottom:none}
-.item-nft-attr-label{font-size:12px;color:rgba(255,255,255,.5);font-weight:600}
-.item-nft-attr-val{font-size:13px;color:#fff;font-weight:800}
+.item-nft-attr-label{
+    font-size:12px;color:rgba(255,255,255,.5);font-weight:600;
+    flex-shrink:0;
+}
+.item-nft-attr-val{
+    font-size:13px;color:#fff;font-weight:800;
+    text-align:right;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    max-width:60%;
+}
+.item-nft-attr-val .rarity{
+    font-size:10px;
+    color:rgba(255,215,0,.85);
+    font-weight:700;
+    margin-left:6px;
+}
+.item-nft-attr-price{
+    font-size:11px;
+    color:#7CAEFF;
+    font-weight:700;
+    margin-left:6px;
+}
 
 .item-challenge{
     width:100%;margin-bottom:16px;padding:14px;
@@ -733,12 +773,12 @@ body{
     box-shadow:0 6px 18px rgba(36,195,142,.4);
 }
 
-/* ══════════════ SELL CONFIRM — вопрос о продаже ══════════════ */
+/* ══════════════ SELL CONFIRM ══════════════ */
 .sell-confirm-overlay{
     position:fixed;
     inset:0;
-    z-index:9999;  /* Ещё выше item-sheet */
-    background:rgba(0,0,0,.85);
+    z-index:100001;
+    background:rgba(0,0,0,.88);
     backdrop-filter:blur(10px);
     -webkit-backdrop-filter:blur(10px);
     opacity:0;
@@ -915,7 +955,7 @@ body{
 .mrkt-backdrop{
     position:fixed;inset:0;
     background:rgba(0,0,0,.75);
-    z-index:9998;
+    z-index:99998;
     opacity:0;pointer-events:none;
     transition:opacity .3s;
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
@@ -924,7 +964,7 @@ body{
 
 .mrkt-overlay{
     position:fixed;left:0;right:0;bottom:0;
-    z-index:9999;  /* САМЫЙ ВЫСОКИЙ — перекрывает ВСЁ */
+    z-index:99999;
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     display:flex;flex-direction:column;max-height:88vh;
     border-radius:24px 24px 0 0;
@@ -1038,7 +1078,7 @@ body{
 
 /* ══════════════ SUCCESS ══════════════ */
 .success-overlay{
-    position:fixed;inset:0;z-index:10000;
+    position:fixed;inset:0;z-index:100002;
     background:rgba(10,12,20,.97);
     display:none;flex-direction:column;align-items:center;justify-content:center;
     padding:40px 24px;
@@ -1064,7 +1104,7 @@ body{
 
 /* ══════════════ GIFT REVEAL ══════════════ */
 .gift-reveal-overlay{
-    position:fixed;inset:0;z-index:10000;
+    position:fixed;inset:0;z-index:100002;
     background:rgba(10,12,20,.97);
     display:none;flex-direction:column;align-items:center;justify-content:center;
     padding:40px 24px;
@@ -1092,7 +1132,7 @@ body{
     left:50%;transform:translateX(-50%) translateY(-120%);
     background:linear-gradient(135deg,#3B82F6,#2563EB);
     color:#fff;padding:12px 24px;border-radius:14px;
-    font-weight:700;font-size:14px;z-index:10001;
+    font-weight:700;font-size:14px;z-index:100003;
     transition:transform .3s,opacity .3s;
     max-width:90%;text-align:center;
     box-shadow:0 8px 25px rgba(59,130,246,.4);
@@ -1110,6 +1150,7 @@ body{
     .inv-card-price{font-size:9px}
     .profile-stat-val{font-size:13px}
     .item-sheet-img{width:100px;height:100px}
+    .item-nft-img{width:150px;height:150px}
     .item-btn{font-size:13px;padding:14px 10px}
 }
 </style>
@@ -1199,7 +1240,7 @@ body{
 
 </div>
 
-<!-- SELECT ACTION BAR — показывается только при выборе -->
+<!-- SELECT ACTION BAR — появляется только при выборе -->
 <div class="select-action-bar" id="selectActionBar">
     <div class="select-info">Выбрано: <span id="selectedCount">0</span></div>
     <div class="select-btns">
@@ -1208,7 +1249,7 @@ body{
     </div>
 </div>
 
-<!-- ══════════════ ITEM SHEET (z-index 9998 — выше bottom-nav) ══════════════ -->
+<!-- ══════════════ ITEM SHEET (z-index 100000) ══════════════ -->
 <div class="item-sheet-overlay" id="itemSheetOverlay" onclick="if(event.target===this)closeItemSheet()">
     <div class="item-sheet" onclick="event.stopPropagation()">
         <div class="item-sheet-handle"></div>
@@ -1227,16 +1268,16 @@ body{
             <div class="item-nft-number" id="itemNftNumber">#?</div>
             <div class="item-nft-attrs">
                 <div class="item-nft-attr-row">
-                    <span class="item-nft-attr-label">Модель</span>
+                    <span class="item-nft-attr-label">Model</span>
                     <span class="item-nft-attr-val" id="itemAttrModel">—</span>
                 </div>
                 <div class="item-nft-attr-row">
-                    <span class="item-nft-attr-label">Символ</span>
-                    <span class="item-nft-attr-val" id="itemAttrSymbol">—</span>
+                    <span class="item-nft-attr-label">Backdrop</span>
+                    <span class="item-nft-attr-val" id="itemAttrBackdrop">—</span>
                 </div>
                 <div class="item-nft-attr-row">
-                    <span class="item-nft-attr-label">Фон</span>
-                    <span class="item-nft-attr-val" id="itemAttrBackdrop">—</span>
+                    <span class="item-nft-attr-label">Symbol</span>
+                    <span class="item-nft-attr-val" id="itemAttrSymbol">—</span>
                 </div>
             </div>
         </div>
@@ -1266,7 +1307,7 @@ body{
     </div>
 </div>
 
-<!-- ══════════════ SELL CONFIRM (z-index 9999) ══════════════ -->
+<!-- ══════════════ SELL CONFIRM ══════════════ -->
 <div class="sell-confirm-overlay" id="sellConfirmOverlay">
     <div class="sell-confirm-modal">
         <div class="sell-confirm-icon">
@@ -1305,7 +1346,7 @@ body{
     </div>
 </div>
 
-<!-- PORTAL PICKER (z-index 9999 — самый высокий) -->
+<!-- PORTAL PICKER -->
 <div class="mrkt-backdrop" id="mrktBackdrop" onclick="closePortalPicker()"></div>
 <div class="mrkt-overlay" id="mrktOverlay">
     <div class="mrkt-header">
@@ -1659,13 +1700,13 @@ function renderInventory(){
             : '';
 
         var cardClass = 'inv-card';
-        if(item.challenge && !item.challenge.is_completed) cardClass += ' inv-card-locked';
         if(upgraded) cardClass += ' inv-card-upgraded';
         if(selectedItems.has(item.id)) cardClass += ' selected';
 
         var click = selectMode ? 'toggleSelectItem(' + item.id + ')' : 'openItemSheet(' + item.id + ')';
 
         if(upgraded){
+            /* Улучшенный подарок: только картинка во всю карточку + серая обводка */
             html += '<div class="' + cardClass + '" onclick="' + click + '">'
                 + '<div class="inv-card-img-wrap">'
                 + '<img src="' + imgSrc + '" alt="" loading="lazy" onerror="' + onerr + '">'
@@ -1673,6 +1714,7 @@ function renderInventory(){
                 + chBadge
                 + '</div>';
         } else {
+            /* Обычный подарок: PNG без обводки + название + цена */
             html += '<div class="' + cardClass + '" onclick="' + click + '">'
                 + '<div class="inv-card-img-wrap">'
                 + '<img src="' + imgSrc + '" alt="" loading="lazy" onerror="' + onerr + '">'
@@ -1717,7 +1759,7 @@ function updateSelectActionBar(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ITEM SHEET — открывается поверх bottom-nav
+   ITEM SHEET
    ══════════════════════════════════════════════════════════════ */
 function openItemSheet(itemId){
     var item = inventory.find(function(i){ return i.id === itemId; });
@@ -1743,24 +1785,64 @@ function openItemSheet(itemId){
     if(claimBtn) claimBtn.style.display = 'none';
 
     if(upgraded){
+        /* Улучшенный: скрываем обычный header, показываем NFT-детали */
         if(header) header.style.display = 'none';
         if(nftDetails){
             nftDetails.classList.add('show');
-            var nftImg = $('itemNftImg'); if(nftImg) nftImg.src = item.gift_image || '/static/img/gift.png';
+            var nftImg = $('itemNftImg');
+            if(nftImg){
+                nftImg.src = item.gift_image || '/static/img/gift.png';
+                nftImg.onerror = function(){ this.onerror = null; this.src = '/static/img/gift.png'; };
+            }
             var nftName = $('itemNftName');
             if(nftName){
                 var bn = (item.gift_name || '').replace(/#\d+$/, '').trim();
-                nftName.textContent = bn;
+                nftName.textContent = bn || 'Gift';
             }
             var nftNum = $('itemNftNumber');
             if(nftNum) nftNum.textContent = '#' + (item.nft_number || '?');
-            var am = $('itemAttrModel'); if(am) am.textContent = item.nft_model || '—';
-            var as = $('itemAttrSymbol'); if(as) as.textContent = item.nft_symbol || '—';
-            var ab = $('itemAttrBackdrop'); if(ab) ab.textContent = item.nft_backdrop || '—';
+
+            /* Model */
+            var am = $('itemAttrModel');
+            if(am){
+                var modelTxt = item.nft_model || '—';
+                if(item.nft_model_rarity){
+                    modelTxt += '<span class="rarity">' + parseFloat(item.nft_model_rarity).toFixed(1) + '%</span>';
+                }
+                if(item.nft_model_price){
+                    modelTxt += '<span class="item-nft-attr-price">' + parseFloat(item.nft_model_price).toFixed(2) + ' TON</span>';
+                }
+                am.innerHTML = modelTxt;
+            }
+            /* Backdrop */
+            var ab = $('itemAttrBackdrop');
+            if(ab){
+                var backTxt = item.nft_backdrop || '—';
+                if(item.nft_backdrop_rarity){
+                    backTxt += '<span class="rarity">' + parseFloat(item.nft_backdrop_rarity).toFixed(1) + '%</span>';
+                }
+                if(item.nft_backdrop_price){
+                    backTxt += '<span class="item-nft-attr-price">' + parseFloat(item.nft_backdrop_price).toFixed(2) + ' TON</span>';
+                }
+                ab.innerHTML = backTxt;
+            }
+            /* Symbol */
+            var as = $('itemAttrSymbol');
+            if(as){
+                var symTxt = item.nft_symbol || '—';
+                if(item.nft_symbol_rarity){
+                    symTxt += '<span class="rarity">' + parseFloat(item.nft_symbol_rarity).toFixed(1) + '%</span>';
+                }
+                if(item.nft_symbol_price){
+                    symTxt += '<span class="item-nft-attr-price">' + parseFloat(item.nft_symbol_price).toFixed(2) + ' TON</span>';
+                }
+                as.innerHTML = symTxt;
+            }
         }
         if(sellBtn) sellBtn.disabled = !!item.is_withdrawing;
         if(withdrawBtn) withdrawBtn.disabled = !!item.is_withdrawing;
     } else {
+        /* Обычный подарок */
         if(header) header.style.display = 'flex';
         var img = $('itemSheetImg'); if(img) img.src = getGiftImage(item);
         var title = $('itemSheetTitle'); if(title) title.textContent = item.gift_name || 'Подарок';
@@ -1985,7 +2067,7 @@ async function batchWithdraw(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PORTAL PICKER — z-index 9999 (поверх всего)
+   PORTAL PICKER
    ══════════════════════════════════════════════════════════════ */
 async function openPortalPicker(){
     if(!selectedItem) return;
@@ -2004,6 +2086,8 @@ async function openPortalPicker(){
     if(sub) sub.textContent = 'Поиск...';
 
     var gn = selectedItem.gift_name || selectedItem.name || '';
+    /* Убираем #number из имени для поиска */
+    gn = String(gn).replace(/#\d+$/, '').trim();
     try{
         var r = await fetch('/api/portal/gifts?name=' + encodeURIComponent(gn));
         if(!r.ok){
