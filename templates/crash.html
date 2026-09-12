@@ -758,8 +758,6 @@ var lastCountdownAt = 0;
 var _lastCoeffUpdate = 0;
 var _lastBtnUpdate = 0;
 var _lastRocketUpdate = 0;
-var _lastGiftImgUpdate = 0;
-var _currentGiftImgSrc = null;
 
 var lastBetsHash = '';
 var betsGeneration = 0;
@@ -790,11 +788,11 @@ var _lastPingMs = 0;
 
 var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
 
-/* ═══ ANTI-FREEZE: maximum time a flying round may last on the client ═══ */
-var MAX_FLYING_DURATION_MS = 90000;   // 90 sec hard cap
-var flyingHardCapTimer = null;
+/* ★ ANTI-FREEZE: сервер молчит > 5 сек = считаем что связь потеряна */
 var _lastServerContactTs = Date.now();
-var _serverSilentWarned = false;
+
+/* ★ CRASH DISPLAY: сколько мс показываем краш перед сбросом */
+var CRASH_DISPLAY_MS = 3500;
 
 function $(id){ return document.getElementById(id); }
 
@@ -895,7 +893,6 @@ function initFullscreen(){
             }
         }, 100);
     };
-    // Hard timeout — never stay on loading screen longer than 7s
     setTimeout(function(){
         var ls = $('ldScreen');
         if(ls && !ls.classList.contains('hidden')){
@@ -1121,11 +1118,11 @@ function estimateFlyStartFromMult(serverMult){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   POLLING — OPTIMIZED with anti-freeze
+   POLLING — OPTIMIZED
    ══════════════════════════════════════════════════════════════ */
 var _pollTimer = null;
 var _polling = false;
-var _pollDelay = 500;
+var _pollDelay = 400;
 
 async function pollStatus(){
     if(!authReady) return;
@@ -1149,23 +1146,17 @@ async function pollStatus(){
 
         updatePingUI(pingMs);
         _lastServerContactTs = Date.now();
-        _serverSilentWarned = false;
-        _pollDelay = 500;
+        _pollDelay = 400;
 
         if(d && d.game) applyServerState(d);
     }catch(e){
         _pollDelay = Math.min(2500, _pollDelay + 300);
-        // ANTI-FREEZE: if server is silent for > 5 sec, assume crash
+
+        // ★ ANTI-FREEZE: если сервер молчит > 5 сек во время полёта — крашим локально
         var silent = Date.now() - _lastServerContactTs;
-        if(silent > 5000 && status === 'flying'){
-            if(!_serverSilentWarned){
-                _serverSilentWarned = true;
-                console.warn('[CRASH] Server silent > 5s, forcing local crash');
-            }
-            // Force crash at current local multiplier
-            if(!crashHandled){
-                triggerCrashAnimation(Math.min(dispMult, targetMult));
-            }
+        if(silent > 5000 && status === 'flying' && !crashHandled){
+            console.warn('[CRASH] Server silent > 5s, forcing local crash');
+            triggerCrashAnimation(Math.min(dispMult, targetMult));
         }
     }finally{
         _polling = false;
@@ -1217,7 +1208,7 @@ function showBonusAnnounce(){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   APPLY SERVER STATE — critical for anti-freeze
+   ★ ГЛАВНАЯ ФУНКЦИЯ — APPLY SERVER STATE
    ══════════════════════════════════════════════════════════════ */
 function applyServerState(d){
     var g = d.game;
@@ -1232,7 +1223,36 @@ function applyServerState(d){
 
     var isNewRound = (gameId !== 0) && (newGameId !== gameId);
 
+    /* ★ ФИКС: при смене game_id — если предыдущий раунд был в полёте,
+       сначала показываем краш, потом сбрасываем */
     if(isNewRound){
+        // Если краш ещё не показан и мы были в полёте — показываем его
+        if(!crashHandled && (status === 'flying' || status === 'crashed')){
+            console.log('[CRASH] New round detected, showing crash first');
+            triggerCrashAnimation(Math.min(dispMult, targetMult));
+
+            // Обновляем gameId сразу, чтобы не зациклиться
+            gameId = newGameId;
+
+            // Сброс через CRASH_DISPLAY_MS
+            setTimeout(function(){
+                resetRoundState();
+                setBonusMode(srvBonus);
+                // Применяем новый статус
+                status = newStatus;
+                prevStatus = 'waiting';
+                // Если новая игра уже counting/flying — обработаем
+                if(newStatus === 'counting'){
+                    countingStartedAt = performance.now();
+                } else if(newStatus === 'flying'){
+                    flyingStartedAt = estimateFlyStartFromMult(srvCurMult);
+                }
+                updateGameFieldUI();
+                updateActionButton();
+            }, CRASH_DISPLAY_MS);
+            return;
+        }
+
         resetRoundState();
         setBonusMode(srvBonus);
     } else if(status === 'waiting' && newStatus === 'counting'){
@@ -1269,7 +1289,6 @@ function applyServerState(d){
         servMult = srvCurMult;
         _serverFloor = srvCurMult;
         dispMult = srvCurMult;
-        startFlyingHardCap();  // ⬅ ANTI-FREEZE
 
         if(!goShownForRound){
             goShownForRound = true;
@@ -1297,17 +1316,11 @@ function applyServerState(d){
         dispMult = srvCurMult;
         servMult = srvCurMult;
         _serverFloor = srvCurMult;
-        cancelFlyingHardCap();
         triggerCrashAnimation(srvCurMult);
         var crashedGameId = newGameId;
         setTimeout(function(){
             if(gameId === crashedGameId && status === 'crashed') setBonusMode(false);
         }, 2000);
-    }
-
-    // If server says waiting / counting — cancel any flying cap
-    if(newStatus === 'waiting' || newStatus === 'counting'){
-        cancelFlyingHardCap();
     }
 
     // BALANCE
@@ -1336,30 +1349,9 @@ function applyServerState(d){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ANTI-FREEZE: Flying hard cap
-   ══════════════════════════════════════════════════════════════ */
-function startFlyingHardCap(){
-    cancelFlyingHardCap();
-    flyingHardCapTimer = setTimeout(function(){
-        if(status === 'flying' && !crashHandled){
-            console.warn('[CRASH] Hard cap reached, forcing crash');
-            triggerCrashAnimation(Math.min(dispMult, targetMult));
-        }
-    }, MAX_FLYING_DURATION_MS);
-}
-
-function cancelFlyingHardCap(){
-    if(flyingHardCapTimer){
-        clearTimeout(flyingHardCapTimer);
-        flyingHardCapTimer = null;
-    }
-}
-
-/* ══════════════════════════════════════════════════════════════
    RESET ROUND
    ══════════════════════════════════════════════════════════════ */
 function resetRoundState(){
-    cancelFlyingHardCap();
     countingStartedAt = 0;
     flyingStartedAt = 0;
     lastShownNumber = 99;
@@ -1375,7 +1367,6 @@ function resetRoundState(){
     _syncingWin = false;
     crashHandled = false;
     _lastBtnKey = '';
-    _currentGiftImgSrc = null;
 
     var rw = $('rocketWrap');
     var bm = $('boomWrap');
@@ -1383,8 +1374,11 @@ function resetRoundState(){
     var gf = $('gameField');
     var coeff = $('coeffBox');
 
+    // ★ ФИКС: НЕ убиваем boom-анимацию, если она ещё играет
+    var boomPlaying = bm && bm.classList.contains('playing');
+
     if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','showing-gift','cashed-out','gift-mode'); }
-    if(bm){ bm.classList.remove('playing'); }
+    if(bm && !boomPlaying){ bm.classList.remove('playing'); }
     if(cd){ cd.classList.remove('active'); cd.textContent = ''; }
     if(gf) gf.classList.remove('flying');
     if(coeff){ coeff.className = 'coeff-box waiting'; coeff.textContent = 'Waiting'; }
@@ -1413,9 +1407,8 @@ function resetRoundState(){
 function triggerCrashAnimation(finalMult){
     if(crashHandled) return;
     crashHandled = true;
-    cancelFlyingHardCap();
 
-    // Локально переключаем status, чтобы UI не ждал сервер
+    // Локально переключаем status
     status = 'crashed';
     dispMult = finalMult;
     servMult = finalMult;
@@ -1451,7 +1444,6 @@ function triggerCrashAnimation(finalMult){
     betGiftImg = null;
     betGiftData = null;
 
-    // Обновляем историю сразу, пока новый раунд ещё не начался.
     setTimeout(function(){ loadHistory().catch(function(){}); }, 100);
     updateActionButton();
 }
@@ -1701,9 +1693,14 @@ function renderLoop(ts){
                 if(hasBet && !cashedOut) updateActionButton();
             }
 
-            // ANTI-FREEZE: если dispMult дошёл до targetMult — крашим локально
+            // ★ ФИКС: НЕ крашим локально сразу — ждём сервер.
+            // Локальный краш только если сервер молчит > 5 сек.
             if(dispMult >= targetMult && !crashHandled){
-                triggerCrashAnimation(targetMult);
+                var silentFor = Date.now() - _lastServerContactTs;
+                if(silentFor > 5000){
+                    console.warn('[CRASH] Server silent, forcing local crash');
+                    triggerCrashAnimation(targetMult);
+                }
             }
 
             // Auto cashout
