@@ -99,7 +99,6 @@ body{
     position:relative;
     min-height:260px;
 }
-
 .podium-slot{
     flex:1 1 0;
     min-width:0;
@@ -166,7 +165,7 @@ body{
     padding:10px 4px 12px;
     display:flex;flex-direction:column;align-items:center;
     justify-content:flex-start;
-    gap:3px;position:relative;overflow:hidden;
+    gap:4px;position:relative;overflow:hidden;
 }
 .podium-pedestal::before{
     content:'';position:absolute;top:0;left:0;right:0;height:2px;
@@ -195,30 +194,38 @@ body{
     box-shadow:inset 0 3px 10px rgba(205,127,50,.1),0 -3px 14px rgba(205,127,50,.1);
 }
 
+/* ═══ PODIUM PRIZE — фиксированный квадрат ═══ */
 .podium-prize{
     margin-bottom:2px;position:relative;z-index:1;
-    display:flex;align-items:center;justify-content:center;
-    /* PNG-стиль: закругление + контур + свечение */
+    width:40px;height:40px;
     border-radius:10px;
     background:rgba(255,255,255,.03);
     border:1px solid rgba(255,255,255,.08);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 8px rgba(0,0,0,.35);
     overflow:hidden;
-    padding:2px;
-}
-.podium-prize img{
-    width:34px;height:34px;object-fit:cover;
-    border-radius:8px;
-    display:block;
-}
-.podium-slot.p1 .podium-prize img{
-    width:44px;height:44px;
-    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
 }
 .podium-slot.p1 .podium-prize{
+    width:52px;height:52px;
     border-radius:12px;
     border-color:rgba(255,215,0,.25);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 3px 10px rgba(255,215,0,.25);
+}
+.podium-prize img{
+    width:100%;height:100%;
+    object-fit:cover;
+    display:block;
+    border-radius:inherit;
+}
+.podium-prize.loading::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(99,102,241,.1));
+    animation:pulseLoad 1.2s ease-in-out infinite;
+}
+@keyframes pulseLoad{
+    0%,100%{opacity:.5}
+    50%{opacity:1}
 }
 
 .podium-turnover{
@@ -280,7 +287,7 @@ body{
     font-size:11px;color:var(--text-2);font-weight:600;
 }
 
-/* Prize thumbnail in list — PNG style */
+/* ═══ PRIZE THUMBNAIL — фиксированный квадрат ═══ */
 .leader-prize{
     width:44px;height:44px;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
@@ -291,13 +298,19 @@ body{
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 2px 6px rgba(0,0,0,.3);
     overflow:hidden;
     transition:transform .15s;
-}
-.leader-prize img{
-    width:100%;height:100%;object-fit:cover;
-    display:block;
-    border-radius:10px;
+    position:relative;
 }
 .leader-prize:active{transform:scale(.92)}
+.leader-prize img{
+    width:100%;height:100%;
+    object-fit:cover;display:block;
+    border-radius:inherit;
+}
+.leader-prize.loading::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(99,102,241,.1));
+    animation:pulseLoad 1.2s ease-in-out infinite;
+}
 
 .empty{text-align:center;padding:60px 20px;color:var(--text-2)}
 .empty svg{width:48px;height:48px;margin-bottom:16px;opacity:.3}
@@ -383,10 +396,11 @@ body{
     display:flex;align-items:center;justify-content:center;
     cursor:pointer;font-size:16px;font-weight:700;
     transition:all .15s;
+    z-index:10;
 }
 .modal-close-x:active{transform:scale(.9);background:rgba(255,255,255,.12)}
 
-/* ══════════════ PRIZE MODAL (compact) ══════════════ */
+/* ══════════════ PRIZE MODAL ══════════════ */
 .prize-header{
     display:flex;align-items:center;gap:10px;
     margin-bottom:14px;
@@ -415,7 +429,7 @@ body{
     gap:10px;
 }
 
-/* Card for NFT */
+/* NFT card */
 .prize-card-nft{
     width:100%;
     display:flex;flex-direction:column;align-items:center;
@@ -424,9 +438,10 @@ body{
     background:linear-gradient(180deg,rgba(139,92,246,.1),rgba(99,102,241,.04));
     border:1px solid rgba(139,92,246,.3);
     gap:10px;
+    position:relative;
 }
 .prize-nft-img{
-    width:140px;height:140px;
+    width:160px;height:160px;
     border-radius:18px;
     overflow:hidden;
     background:rgba(0,0,0,.3);
@@ -440,6 +455,28 @@ body{
     object-fit:cover;display:block;
     border-radius:18px;
 }
+/* Skeleton while loading fragment image */
+.prize-nft-img.loading::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,rgba(139,92,246,.08),rgba(139,92,246,.2),rgba(139,92,246,.08));
+    background-size:200% 100%;
+    animation:shimmer 1.6s ease-in-out infinite;
+}
+@keyframes shimmer{
+    0%{background-position:200% 0}
+    100%{background-position:-200% 0}
+}
+.prize-nft-img.loading::after{
+    content:'';position:absolute;top:50%;left:50%;
+    width:32px;height:32px;
+    margin:-16px 0 0 -16px;
+    border:3px solid rgba(139,92,246,.2);
+    border-top-color:#8B5CF6;
+    border-radius:50%;
+    animation:spin .9s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 .prize-nft-number{
     display:inline-flex;align-items:center;gap:3px;
     background:rgba(139,92,246,.18);
@@ -450,7 +487,7 @@ body{
     letter-spacing:.3px;
 }
 .prize-nft-name{
-    font-size:14px;font-weight:800;
+    font-size:15px;font-weight:800;
     text-align:center;color:#fff;
     line-height:1.25;
     padding:0 4px;
@@ -465,7 +502,7 @@ body{
 }
 .prize-nft-price img{width:13px;height:13px}
 
-/* NFT attributes — compact chips style */
+/* NFT attrs chips */
 .nft-attrs-chips{
     width:100%;
     display:flex;flex-direction:column;gap:5px;
@@ -479,17 +516,26 @@ body{
     border:1px solid rgba(255,255,255,.05);
     gap:8px;
     transition:background .15s;
+    position:relative;
+    overflow:hidden;
 }
-.nft-attr-chip-row.loading{opacity:.6}
+.nft-attr-chip-row.loading::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(139,92,246,.08),transparent);
+    background-size:200% 100%;
+    animation:shimmer 1.6s ease-in-out infinite;
+}
 .nft-attr-chip-label{
     font-size:10px;font-weight:800;
     color:rgba(255,255,255,.45);
     text-transform:uppercase;letter-spacing:.5px;
     flex-shrink:0;
+    position:relative;z-index:1;
 }
 .nft-attr-chip-right{
     display:flex;align-items:center;gap:6px;
     min-width:0;flex:1;justify-content:flex-end;
+    position:relative;z-index:1;
 }
 .nft-attr-chip-value{
     font-size:12px;color:#fff;font-weight:700;
@@ -509,6 +555,7 @@ body{
     background:rgba(255,255,255,.04);
     border-color:rgba(255,255,255,.08);
     color:rgba(255,255,255,.3);
+    display:none;
 }
 
 /* Regular gift card */
@@ -522,17 +569,25 @@ body{
     gap:8px;
 }
 .prize-gift-img{
-    width:120px;height:120px;
+    width:130px;height:130px;
     border-radius:16px;
     background:rgba(0,0,0,.3);
     padding:8px;
     border:1px solid rgba(255,255,255,.06);
     overflow:hidden;
     display:flex;align-items:center;justify-content:center;
+    position:relative;
+}
+.prize-gift-img.loading::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(59,130,246,.15),transparent);
+    background-size:200% 100%;
+    animation:shimmer 1.6s ease-in-out infinite;
 }
 .prize-gift-img img{
     max-width:100%;max-height:100%;
     object-fit:contain;display:block;
+    position:relative;z-index:1;
 }
 .prize-gift-name{
     font-size:14px;font-weight:800;
@@ -586,7 +641,6 @@ body{
     border-radius:14px;
 }
 
-/* Close button */
 .prize-close{
     width:100%;margin-top:14px;
     padding:13px;
@@ -599,7 +653,6 @@ body{
 }
 .prize-close:active{transform:scale(.97)}
 
-/* NFT Loader */
 .nft-loading-inline{
     display:flex;align-items:center;justify-content:center;
     gap:6px;
@@ -614,7 +667,6 @@ body{
     border-radius:50%;
     animation:spin .8s linear infinite;
 }
-@keyframes spin{to{transform:rotate(360deg)}}
 
 /* ══════════════ PROFILE MODAL ══════════════ */
 .profile-body{
@@ -716,7 +768,7 @@ body{
     box-shadow:0 0 8px rgba(255,215,0,.15);
 }
 
-/* ══════════════ LEAD INFO MODAL ══════════════ */
+/* ══════════════ INFO MODAL ══════════════ */
 .info-body{
     display:flex;flex-direction:column;align-items:center;
     gap:14px;
@@ -748,7 +800,7 @@ body{
 }
 .info-btn:active{transform:scale(.97)}
 
-/* ══════════════ MOBILE OPTIMIZATIONS ══════════════ */
+/* ══════════════ MOBILE ══════════════ */
 @media(max-width:380px){
     .podium{min-height:240px;gap:5px}
     .podium-slot.p1 .podium-avatar{width:72px;height:72px}
@@ -759,17 +811,19 @@ body{
     .podium-slot.p1 .podium-pedestal{height:104px}
     .podium-slot.p2 .podium-pedestal{height:78px}
     .podium-slot.p3 .podium-pedestal{height:60px}
-    .prize-nft-img{width:120px;height:120px}
-    .prize-gift-img{width:105px;height:105px}
+    .prize-nft-img{width:140px;height:140px}
+    .prize-gift-img{width:115px;height:115px}
     .prize-ton-img{width:88px;height:88px}
     .page-title{font-size:18px}
+    .podium-prize{width:36px;height:36px}
+    .podium-slot.p1 .podium-prize{width:46px;height:46px}
 }
 @media(max-width:340px){
     .podium{gap:4px}
     .podium-slot.p1 .podium-avatar{width:64px;height:64px}
     .podium-slot.p2 .podium-avatar,
     .podium-slot.p3 .podium-avatar{width:50px;height:50px}
-    .prize-nft-img{width:110px;height:110px}
+    .prize-nft-img{width:120px;height:120px}
 }
 </style>
 </head>
@@ -789,7 +843,7 @@ body{
     </div>
 
     <div class="page-title">🏆 Лидерборд</div>
-    <div class="page-desc">Топ-15 по сумме ставок получают призы в TON и подарки</div>
+    <div class="page-desc">Топ-15 по сумме ставок получают призы в GRAM и подарки</div>
 
     <div class="podium" id="podium"></div>
     <div class="leaders-list" id="leadersList">
@@ -850,7 +904,7 @@ body{
                 <div class="info-medal"><img src="/static/gifs/place/3.gif" alt="3"></div>
             </div>
             <div class="info-title">Как попасть в лидеры?</div>
-            <div class="info-desc">Играйте в Краш, открывайте Кейсы и делайте Апгрейды. Чем больше сумма ставок за период — тем выше вы в рейтинге. Топ-15 игроков получают призы в TON и подарки!</div>
+            <div class="info-desc">Играйте в Краш, открывайте Кейсы и делайте Апгрейды. Чем больше сумма ставок за период — тем выше вы в рейтинге. Топ-15 игроков получают призы в GRAM и подарки!</div>
             <button class="info-btn" onclick="closeInfoModal();location.href='/crash'">Начать</button>
         </div>
     </div>
@@ -858,7 +912,7 @@ body{
 
 <script>
 /* ══════════════════════════════════════════════════════════════
-   TELEGRAM WEBAPP INIT — FULLSCREEN
+   TELEGRAM WEBAPP INIT
    ══════════════════════════════════════════════════════════════ */
 (function initTg(){
     var tg = window.Telegram && window.Telegram.WebApp;
@@ -866,15 +920,12 @@ body{
     try{
         tg.ready();
         tg.expand();
-        // Полноэкранный режим (Bot API 8.0+)
         if(tg.requestFullscreen){
             try{ tg.requestFullscreen(); }catch(e){}
         }
-        // Disable vertical swipe gesture closing
         try{ tg.disableVerticalSwipes(); }catch(e){}
         try{ tg.setHeaderColor('#1C2233'); }catch(e){}
         try{ tg.setBackgroundColor('#1C2233'); }catch(e){}
-        try{ tg.enableClosingConfirmation(); }catch(e){}
     }catch(e){ console.warn('tg init', e); }
 })();
 
@@ -907,10 +958,10 @@ function escapeHtml(str){
     div.textContent = str == null ? '' : str;
     return div.innerHTML;
 }
-function formatTon(stars){
+function formatGram(stars){
     return (Number(stars || 0) / 100).toFixed(2);
 }
-function getTonSvg(amount) {
+function getGramSvg(amount) {
     if (amount <= 25) return '/static/img/tons/ton_1.svg';
     if (amount <= 50) return '/static/img/tons/ton_2.svg';
     if (amount <= 100) return '/static/img/tons/ton_3.svg';
@@ -927,7 +978,7 @@ function normalizeReward(raw){
         return {
             kind: 'stars',
             amount_stars: raw,
-            image: getTonSvg(raw / 100)
+            image: getGramSvg(raw / 100)
         };
     }
     if(typeof raw !== 'object') return null;
@@ -937,15 +988,23 @@ function normalizeReward(raw){
     if(type === 'nft_gift' || (raw.slug && raw.number)){
         var slug = raw.slug || '';
         var num = raw.number || 0;
-        var image = raw.image
-            || (slug && num ? 'https://nft.fragment.com/gift/' + slug + '-' + num + '.webp' : '')
-            || '/static/img/gift.png';
+        // ★ Убираем "Fragment" из имени, оставляем "Plush Pepe #1234"
+        var baseName = (raw.name || '').replace(/\s*Fragment\s*/gi, '').trim();
+        if(!baseName && slug){
+            baseName = slug.replace(/_/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+        }
+        // Если имя уже содержит #number — не добавляем второй
+        var fullName = baseName;
+        if(num > 0 && !/#\d+/.test(fullName)){
+            fullName = baseName + ' #' + num;
+        }
         return {
             kind: 'nft_gift',
             slug: slug,
             number: num,
-            name: raw.name || (slug ? slug + ' #' + num : 'NFT Подарок'),
-            image: image,
+            name: fullName,
+            base_name: baseName,
+            image: raw.image || (slug && num ? 'https://nft.fragment.com/gift/' + slug + '-' + num + '.webp' : '/static/img/gift.png'),
             price_ton: Number(raw.price_ton || 0),
             attrs: raw.attrs || null
         };
@@ -964,7 +1023,7 @@ function normalizeReward(raw){
         return {
             kind: 'stars',
             amount_stars: amtStars,
-            image: getTonSvg(amtStars / 100)
+            image: getGramSvg(amtStars / 100)
         };
     }
     if(type === 'vip'){
@@ -978,13 +1037,62 @@ function normalizeReward(raw){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   ★ УЛУЧШЕННАЯ КАРТИНКА ПОДАРКА ★
+   - Если NFT (upgraded) — грузим с Fragment через spin, показываем спиннер
+   - Все картинки одного размера, object-fit: cover, закругление
+   - При ошибке — fallback
+   ══════════════════════════════════════════════════════════════ */
+function getPrizeImage(reward){
+    if(!reward) return '/static/img/gift.png';
+    var img = reward.image || '/static/img/gift.png';
+    // Если не указано иное и это NFT — пробуем fragment
+    if(reward.kind === 'nft_gift' && reward.slug && reward.number && !reward.image){
+        img = 'https://nft.fragment.com/gift/' + reward.slug + '-' + reward.number + '.webp';
+    }
+    return img;
+}
+
+/**
+ * Рендер картинки подарка в квадратном контейнере
+ * @param reward - нормализованный reward
+ * @param size - 'sm' | 'md' | 'lg'
+ */
+function renderPrizeThumb(reward, size){
+    if(!reward) return '';
+    var imgSrc = getPrizeImage(reward);
+    var isNft = reward.kind === 'nft_gift';
+    var cls = isNft ? ' loading' : '';
+    var id = 'pi_' + Math.random().toString(36).slice(2, 9);
+    var html = '<div class="podium-prize' + cls + '" id="' + id + '">'
+        + '<img src="' + escapeHtml(imgSrc) + '" alt="" loading="lazy" '
+        + 'onload="this.parentElement.classList.remove(\'loading\')" '
+        + 'onerror="this.onerror=null;this.src=\'/static/img/gift.png\';this.parentElement.classList.remove(\'loading\')">'
+        + '</div>';
+    return html;
+}
+
+function renderLeaderPrizeThumb(reward){
+    if(!reward) return '';
+    var imgSrc = getPrizeImage(reward);
+    var isNft = reward.kind === 'nft_gift';
+    var cls = isNft ? ' loading' : '';
+    var html = '<div class="leader-prize' + cls + '" '
+        + 'onclick="event.stopPropagation();openPrizeModalForReward(' + encodeURIComponent(JSON.stringify(reward)) + ')">'
+        + '<img src="' + escapeHtml(imgSrc) + '" alt="" loading="lazy" '
+        + 'onload="this.parentElement.classList.remove(\'loading\')" '
+        + 'onerror="this.onerror=null;this.src=\'/static/img/gift.png\';this.parentElement.classList.remove(\'loading\')">'
+        + '</div>';
+    return html;
+}
+
+/* ══════════════════════════════════════════════════════════════
    PODIUM RENDER
    ══════════════════════════════════════════════════════════════ */
 function renderPodiumSlot(u, rank, pClass){
     var rewards = (_lbData.config && _lbData.config.rewards) || {};
     var rawPrize = u.reward || rewards[String(rank)];
     var prize = normalizeReward(rawPrize);
-    var turnover = formatTon(u.turnover);
+    var turnover = formatGram(u.turnover);
     var displayName = u.first_name || u.username || 'Игрок';
     var avatar = u.photo_url || '/static/img/avatar-default.png';
     var placeGif = '/static/gifs/place/' + rank + '.gif';
@@ -992,20 +1100,23 @@ function renderPodiumSlot(u, rank, pClass){
 
     var prizeHtml = '';
     if(prize){
-        prizeHtml = '<div class="podium-prize">'
-            + '<img src="' + escapeHtml(prize.image) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
+        prizeHtml = '<div class="podium-prize' + (prize.kind === 'nft_gift' ? ' loading' : '') + '" '
+            + 'onclick="event.stopPropagation();openPrizeModalByRank(' + rank + ')">'
+            + '<img src="' + escapeHtml(getPrizeImage(prize)) + '" alt="" loading="lazy" '
+            + 'onload="this.parentElement.classList.remove(\'loading\')" '
+            + 'onerror="this.onerror=null;this.src=\'/static/img/gift.png\';this.parentElement.classList.remove(\'loading\')">'
             + '</div>';
     }
 
-    return '<div class="podium-slot ' + pClass + '" onclick="openPrizeModal(' + rank + ')">'
+    return '<div class="podium-slot ' + pClass + '">'
         + '<div class="podium-name" onclick="event.stopPropagation();openProfileModal(' + uid + ')">' + escapeHtml(displayName) + '</div>'
         + '<div class="podium-avatar" onclick="event.stopPropagation();openProfileModal(' + uid + ')">'
         +   '<img src="' + escapeHtml(avatar) + '" alt="" loading="lazy" onerror="this.src=\'/static/img/avatar-default.png\'">'
         + '</div>'
         + '<div class="podium-medal"><img src="' + placeGif + '" alt="' + rank + '" loading="lazy"></div>'
-        + '<div class="podium-pedestal">'
+        + '<div class="podium-pedestal" onclick="event.stopPropagation();openPrizeModalByRank(' + rank + ')">'
         +   prizeHtml
-        +   '<div class="podium-turnover">' + turnover + ' TON</div>'
+        +   '<div class="podium-turnover">' + turnover + ' GRAM</div>'
         + '</div>'
         + '</div>';
 }
@@ -1032,6 +1143,8 @@ function renderPodium(top3){
 
 /* ══════════════════════════════════════════════════════════════
    LIST RENDER (#4+)
+   Справа от аватарки/ника — квадрат с призом.
+   NFT — при клике открывается info.
    ══════════════════════════════════════════════════════════════ */
 function renderList(items, startRank){
     var el = $('leadersList');
@@ -1043,26 +1156,31 @@ function renderList(items, startRank){
         var rank = u.position || (startRank + i);
         var rawPrize = u.reward || rewards[String(rank)];
         var prize = normalizeReward(rawPrize);
-        var turnover = formatTon(u.turnover);
+        var turnover = formatGram(u.turnover);
         var displayName = u.first_name || u.username || 'Игрок';
         var avatar = u.photo_url || '/static/img/avatar-default.png';
         var uid = u.user_id || 0;
 
         var prizeHtml = '';
         if(prize){
-            prizeHtml = '<div class="leader-prize" onclick="event.stopPropagation();openPrizeModal(' + rank + ')">'
-                + '<img src="' + escapeHtml(prize.image) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
+            var isNft = prize.kind === 'nft_gift';
+            var cls = isNft ? ' loading' : '';
+            prizeHtml = '<div class="leader-prize' + cls + '" '
+                + 'onclick="event.stopPropagation();openPrizeModalByRank(' + rank + ')">'
+                + '<img src="' + escapeHtml(getPrizeImage(prize)) + '" alt="" loading="lazy" '
+                + 'onload="this.parentElement.classList.remove(\'loading\')" '
+                + 'onerror="this.onerror=null;this.src=\'/static/img/gift.png\';this.parentElement.classList.remove(\'loading\')">'
                 + '</div>';
         }
 
-        return '<div class="leader-item">'
+        return '<div class="leader-item" onclick="openProfileModal(' + uid + ')">'
             + '<div class="leader-rank">' + rank + '</div>'
-            + '<div class="leader-avatar" onclick="openProfileModal(' + uid + ')">'
+            + '<div class="leader-avatar">'
             +   '<img src="' + escapeHtml(avatar) + '" alt="" loading="lazy" onerror="this.src=\'/static/img/avatar-default.png\'">'
             + '</div>'
-            + '<div class="leader-info" onclick="openProfileModal(' + uid + ')">'
+            + '<div class="leader-info">'
             +   '<div class="leader-name">' + escapeHtml(displayName) + '</div>'
-            +   '<div class="leader-turnover">' + turnover + ' TON</div>'
+            +   '<div class="leader-turnover">' + turnover + ' GRAM</div>'
             + '</div>'
             + prizeHtml
             + '</div>';
@@ -1136,41 +1254,58 @@ function updateCountdown(){
 /* ══════════════════════════════════════════════════════════════
    PRIZE MODAL
    ══════════════════════════════════════════════════════════════ */
-function openPrizeModal(rank){
+function openPrizeModalByRank(rank){
     if(!_lbData || !_lbData.config) return;
     var rewards = _lbData.config.rewards || {};
     var rawPrize = rewards[String(rank)];
+    openPrizeModal(rawPrize, rank);
+}
+
+function openPrizeModal(rawPrize, rank){
     var prize = normalizeReward(rawPrize);
     var cont = $('prizeContent');
     if(!cont) return;
 
-    var placeClass = rank === 1 ? 'gold' : (rank === 2 ? 'silver' : (rank === 3 ? 'bronze' : 'other'));
-    var placeLabel = rank === 1 ? '🥇 1 МЕСТО' : (rank === 2 ? '🥈 2 МЕСТО' : (rank === 3 ? '🥉 3 МЕСТО' : '#' + rank + ' МЕСТО'));
-    var medalGif = rank <= 3 ? '/static/gifs/place/' + rank + '.gif' : null;
+    var html = '';
+    if(rank){
+        var placeClass = rank === 1 ? 'gold' : (rank === 2 ? 'silver' : (rank === 3 ? 'bronze' : 'other'));
+        var placeLabel = rank === 1 ? '🥇 1 МЕСТО' : (rank === 2 ? '🥈 2 МЕСТО' : (rank === 3 ? '🥉 3 МЕСТО' : '#' + rank + ' МЕСТО'));
+        var medalGif = rank <= 3 ? '/static/gifs/place/' + rank + '.gif' : null;
 
-    var html = '<div class="prize-header">';
-    if(medalGif){
-        html += '<div class="prize-medal-sm"><img src="' + medalGif + '" alt=""></div>';
+        html += '<div class="prize-header">';
+        if(medalGif){
+            html += '<div class="prize-medal-sm"><img src="' + medalGif + '" alt=""></div>';
+        }
+        html += '<div class="prize-title-block">'
+            + '<div class="prize-place-sm ' + placeClass + '">' + placeLabel + '</div>'
+            + '<div class="prize-sub-sm">Награда за место</div>'
+            + '</div>'
+            + '</div>';
+    } else {
+        html += '<div class="prize-header" style="justify-content:center">'
+            + '<div class="prize-title-block" style="text-align:center">'
+            + '<div class="prize-place-sm other">🎁 НАГРАДА</div>'
+            + '</div>'
+            + '</div>';
     }
-    html += '<div class="prize-title-block">'
-        + '<div class="prize-place-sm ' + placeClass + '">' + placeLabel + '</div>'
-        + '<div class="prize-sub-sm">Награда за место</div>'
-        + '</div>'
-        + '</div>';
 
     html += '<div class="prize-body">';
 
     if(!prize){
         html += '<div class="prize-empty">Награда не назначена</div>';
     } else if(prize.kind === 'nft_gift'){
+        // ─── NFT GIFT ───
+        var nftId = 'nftImg_' + Math.random().toString(36).slice(2, 9);
         html += '<div class="prize-card-nft">'
-            + '<div class="prize-nft-img">'
-            +   '<img id="prizeNftImg" src="' + escapeHtml(prize.image) + '" alt="" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
+            + '<div class="prize-nft-img loading" id="' + nftId + '">'
+            +   '<img src="' + escapeHtml(getPrizeImage(prize)) + '" alt="" '
+            +     'onload="this.parentElement.classList.remove(\'loading\')" '
+            +     'onerror="this.onerror=null;this.src=\'/static/img/gift.png\';this.parentElement.classList.remove(\'loading\')">'
             + '</div>'
-            + '<div class="prize-nft-number">#' + escapeHtml(String(prize.number)) + '</div>'
+            + (prize.number > 0 ? '<div class="prize-nft-number">#' + escapeHtml(String(prize.number)) + '</div>' : '')
             + '<div class="prize-nft-name">' + escapeHtml(prize.name) + '</div>'
             + (prize.price_ton > 0
-                ? '<div class="prize-nft-price"><img src="/static/img/ton.png">' + Number(prize.price_ton).toFixed(2) + ' TON</div>'
+                ? '<div class="prize-nft-price"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + Number(prize.price_ton).toFixed(2) + ' GRAM</div>'
                 : '')
             + '</div>';
 
@@ -1200,16 +1335,16 @@ function openPrizeModal(rank){
             + '</div>';
     } else if(prize.kind === 'gift'){
         html += '<div class="prize-card-gift">'
-            + '<div class="prize-gift-img"><img src="' + escapeHtml(prize.image) + '" onerror="this.src=\'/static/img/gift.png\'" alt=""></div>'
+            + '<div class="prize-gift-img"><img src="' + escapeHtml(prize.image) + '" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'" alt=""></div>'
             + '<div class="prize-gift-name">' + escapeHtml(prize.name) + '</div>'
             + (prize.value_stars > 0
-                ? '<div class="prize-gift-price"><img src="/static/img/ton.png">' + formatTon(prize.value_stars) + ' TON</div>'
+                ? '<div class="prize-gift-price"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + formatGram(prize.value_stars) + ' GRAM</div>'
                 : '')
             + '</div>';
     } else if(prize.kind === 'stars'){
         html += '<div class="prize-card-ton">'
             + '<div class="prize-ton-img"><img src="' + escapeHtml(prize.image) + '" alt=""></div>'
-            + '<div class="prize-ton-value"><img src="/static/img/ton.png">' + formatTon(prize.amount_stars) + '</div>'
+            + '<div class="prize-ton-value"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + formatGram(prize.amount_stars) + '</div>'
             + '</div>';
     } else {
         html += '<div class="prize-card-gift">'
@@ -1224,7 +1359,7 @@ function openPrizeModal(rank){
     cont.innerHTML = html;
     $('prizeOverlay').classList.add('show');
 
-    // Load NFT attrs if needed
+    // Загрузка NFT атрибутов
     if(prize && prize.kind === 'nft_gift' && prize.slug && prize.number){
         loadNftAttrs(prize.slug, prize.number);
     }
@@ -1276,7 +1411,6 @@ function setChip(key, data){
         if(rarEl){
             rarEl.textContent = '';
             rarEl.classList.add('empty');
-            rarEl.style.display = 'none';
         }
         return;
     }
@@ -1284,14 +1418,12 @@ function setChip(key, data){
     if(rarEl){
         if(data.rarity != null){
             var r = parseFloat(data.rarity);
-            if(r > 60.0) r = r / 10;   // защита от ×10 бага
+            if(r > 60.0) r = r / 10;   // защита от ×10
             rarEl.textContent = r.toFixed(1) + '%';
             rarEl.classList.remove('empty');
-            rarEl.style.display = '';
         } else {
             rarEl.textContent = '';
             rarEl.classList.add('empty');
-            rarEl.style.display = 'none';
         }
     }
 }
@@ -1363,17 +1495,17 @@ function renderProfile(p){
         +   '<div class="profile-level-bar"><div class="profile-level-fill" style="width:' + pct + '%"></div></div>'
         +   '<div class="profile-level-text">'
         +     '<span>Ур. ' + (p.level || 1) + ' · ' + Math.round(pct) + '%</span>'
-        +     '<span>' + expCur + ' / ' + expNext + ' TON</span>'
+        +     '<span>' + expCur + ' / ' + expNext + ' GRAM</span>'
         +   '</div>'
         + '</div>'
         + '<div class="profile-stats-grid">'
         +   '<div class="profile-stat-mini">'
         +     '<div class="profile-stat-mini-label">Оборот</div>'
-        +     '<div class="profile-stat-mini-value"><img src="/static/img/ton.png"><span>' + formatTon(p.total_volume) + '</span></div>'
+        +     '<div class="profile-stat-mini-value"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'"><span>' + formatGram(p.total_volume) + '</span></div>'
         +   '</div>'
         +   '<div class="profile-stat-mini">'
         +     '<div class="profile-stat-mini-label">Месяц</div>'
-        +     '<div class="profile-stat-mini-value"><img src="/static/img/ton.png"><span>' + formatTon(p.monthly_turnover) + '</span></div>'
+        +     '<div class="profile-stat-mini-value"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'"><span>' + formatGram(p.monthly_turnover) + '</span></div>'
         +   '</div>'
         +   '<div class="profile-stat-mini">'
         +     '<div class="profile-stat-mini-label">Кейсы</div>'
