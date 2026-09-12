@@ -13,12 +13,14 @@
 :root{
     --bg:#1C2233;
     --surface:rgba(255,255,255,.04);
+    --surface-2:rgba(255,255,255,.06);
     --border:rgba(255,255,255,.08);
     --text:#fff;
     --text-2:rgba(255,255,255,.55);
     --text-3:rgba(255,255,255,.35);
     --blue:#3B82F6;
     --blue-2:#2563EB;
+    --blue-light:#7CAEFF;
     --green:#24C38E;
     --gold:#FFD700;
     --red:#FF3064;
@@ -359,12 +361,12 @@ body{
 }
 .bnav-item{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:3px;padding:6px 14px;border-radius:12px;
+    gap:3px;padding:6px 8px;border-radius:12px;
     color:rgba(255,255,255,.4);font-weight:700;
     cursor:pointer;transition:all .2s;text-decoration:none;
     min-height:56px;height:56px;
     background:transparent;border:none;font-family:inherit;
-    flex:1;max-width:90px;
+    flex:1;max-width:110px;
 }
 .bnav-item svg{
     width:22px;height:22px;stroke:currentColor;fill:none;
@@ -552,15 +554,13 @@ body{
 }
 .item-challenge-text{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-align:center}
 
+/* ACTIONS */
 .item-sheet-actions{
     width:100%;
     display:grid;
-    grid-template-columns:1fr 1fr 1fr;
+    grid-template-columns:1fr 1fr;
     gap:10px;
     margin-top:6px;
-}
-.item-sheet-actions.triple{
-    grid-template-columns:1fr 1fr 1fr;
 }
 .item-sheet-actions.single{
     grid-template-columns:1fr;
@@ -620,14 +620,14 @@ body{
 .upgrade-overlay.show{opacity:1;visibility:visible}
 
 .upgrade-sheet{
-    background:linear-gradient(180deg,#1C2233 0%,#151b28 100%);
+    background:linear-gradient(180deg,#232c3e 0%,#1a2232 100%);
     border-radius:24px 24px 0 0;
     width:100%;max-width:480px;
-    height:94vh;
+    height:90vh;
     display:flex;flex-direction:column;
     transform:translateY(100%);
     transition:transform .4s cubic-bezier(.32,1,.23,1);
-    border-top:1px solid rgba(59,130,246,.35);
+    border-top:1.5px solid rgba(59,130,246,.4);
     overflow:hidden;
     position:relative;
 }
@@ -635,11 +635,11 @@ body{
 
 .upgrade-header{
     display:flex;align-items:center;justify-content:space-between;
-    padding:14px 18px 12px;
+    padding:18px 20px 14px;
     border-bottom:1px solid rgba(59,130,246,.15);
     flex-shrink:0;
-    z-index:10;
-    background:linear-gradient(180deg,rgba(28,34,51,1) 0%,rgba(28,34,51,.95) 100%);
+    position:relative;
+    background:linear-gradient(180deg,rgba(35,44,62,1) 0%,rgba(35,44,62,.95) 100%);
 }
 .upgrade-handle{
     width:40px;height:4px;
@@ -654,7 +654,7 @@ body{
     text-transform:uppercase;
     letter-spacing:.8px;
 }
-.upgrade-title svg{width:20px;height:20px;stroke:#3B82F6;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.upgrade-title svg{width:20px;height:20px;stroke:#7CAEFF;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .upgrade-close{
     width:34px;height:34px;border-radius:12px;border:none;
     background:rgba(255,48,100,.15);color:#FF3064;
@@ -665,156 +665,269 @@ body{
 }
 .upgrade-close:active{transform:scale(.9)}
 
-/* ═══ CENTRAL RESULT — PNG подарка ═══ */
-.upgrade-result-stage{
+/* ═══ ЦЕНТРАЛЬНАЯ СЦЕНА ═══ */
+.upgrade-stage{
     flex:1;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
-    padding:20px 24px;
+    padding:16px 16px 8px;
     position:relative;
     min-height:0;
-    background:radial-gradient(circle at center, rgba(59,130,246,.06) 0%, transparent 70%);
+    overflow:hidden;
+    background:radial-gradient(circle at center, rgba(59,130,246,.08) 0%, transparent 70%);
 }
-.upgrade-result-img{
+
+/* ★ PREVIEW (фаза 1) — смена подарков */
+.upgrade-preview-wrap{
     width:180px;
     height:180px;
-    object-fit:cover;
-    border-radius:24px;
+    border-radius:22px;
+    overflow:hidden;
     background:rgba(0,0,0,.3);
-    border:2px solid rgba(59,130,246,.3);
-    box-shadow:0 12px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05) inset;
-    margin-bottom:18px;
-    transition:transform .3s, border-color .3s, box-shadow .3s;
+    border:2px solid rgba(59,130,246,.35);
+    box-shadow:0 12px 40px rgba(0,0,0,.6);
+    position:relative;
+    margin-bottom:16px;
+    flex-shrink:0;
+}
+.upgrade-preview-wrap img{
+    width:100%;height:100%;
+    object-fit:cover;
     display:block;
+    transition:opacity .15s ease;
 }
-.upgrade-result-img.winning{
-    border-color:rgba(36,195,142,.8);
-    box-shadow:0 12px 40px rgba(0,0,0,.6), 0 0 60px rgba(36,195,142,.6), 0 0 0 1px rgba(36,195,142,.3) inset;
-    animation:winPulse 1.2s ease-in-out infinite;
+.upgrade-preview-wrap img.swap{
+    animation:previewSwap .25s ease;
 }
-@keyframes winPulse{
-    0%,100%{transform:scale(1)}
-    50%{transform:scale(1.04)}
+@keyframes previewSwap{
+    0%{opacity:1; transform:scale(1)}
+    40%{opacity:0; transform:scale(.85) rotate(-4deg)}
+    60%{opacity:0; transform:scale(.85) rotate(4deg)}
+    100%{opacity:1; transform:scale(1) rotate(0)}
 }
-.upgrade-result-name{
-    font-size:20px;
+
+.upgrade-preview-name{
+    font-size:16px;
     font-weight:900;
     color:#fff;
     text-align:center;
     max-width:100%;
     padding:0 10px;
-    margin-bottom:14px;
-    letter-spacing:-.3px;
-    min-height:24px;
+    margin-bottom:12px;
+    min-height:20px;
+    line-height:1.2;
 }
 
-/* ═══ ATTRIBUTES PANEL ═══ */
-.upgrade-attrs-panel{
-    width:100%;
-    display:flex;flex-direction:column;gap:1px;
-    background:rgba(0,0,0,.25);
-    border-radius:16px;overflow:hidden;
-    border:1px solid rgba(59,130,246,.15);
-    margin-top:4px;
-}
-.upgrade-attr-row{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:12px 16px;
-    border-bottom:1px solid rgba(255,255,255,.04);
-    gap:12px;
-    background:rgba(59,130,246,.03);
-    min-height:48px;
-}
-.upgrade-attr-row:last-child{border-bottom:none}
-.upgrade-attr-label{
-    font-size:11px;color:rgba(255,255,255,.45);font-weight:800;
-    text-transform:uppercase;letter-spacing:.6px;
-    flex-shrink:0;
-}
-.upgrade-attr-right{
-    display:flex;flex-direction:column;align-items:flex-end;gap:2px;
-    min-width:0;flex:1;
-}
-.upgrade-attr-value{
-    font-size:14px;color:#fff;font-weight:800;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    max-width:100%;
-    text-align:right;
-    transition:color .3s;
-}
-.upgrade-attr-rarity{
-    font-size:11px;
-    color:#7CAEFF;
-    font-weight:700;
-    transition:opacity .3s;
-}
-.upgrade-attr-rarity.empty{color:rgba(255,255,255,.25)}
-
-/* ═══ CHANCE INFO ═══ */
-.upgrade-chance-info{
-    padding:12px 20px 6px;
-    display:flex;
+/* ★ ROULETTE (фаза 2) */
+.upgrade-roulette-wrap{
+    position:absolute;
+    inset:0;
+    display:none;
+    flex-direction:column;
     align-items:center;
-    justify-content:space-between;
-    gap:14px;
-    flex-shrink:0;
-    border-top:1px solid rgba(255,255,255,.06);
+    justify-content:center;
+    padding:16px;
+    z-index:20;
+    background:rgba(35,44,62,.98);
 }
-.upgrade-chance-left{
+.upgrade-roulette-wrap.show{display:flex}
+
+.upgrade-roulette{
+    width:100%;
+    height:180px;
+    position:relative;
+    overflow:hidden;
+    border-radius:20px;
+    background:rgba(0,0,0,.35);
+    border:1.5px solid rgba(59,130,246,.25);
+    box-shadow:inset 0 0 40px rgba(0,0,0,.6), 0 8px 30px rgba(0,0,0,.5);
+    margin-bottom:18px;
+}
+.upgrade-roulette-strip{
+    display:flex;
+    gap:12px;
+    height:100%;
+    align-items:center;
+    padding:0 20px;
+    will-change:transform;
+}
+.roulette-card{
+    width:130px;
+    height:150px;
+    flex-shrink:0;
+    border-radius:14px;
+    background:rgba(0,0,0,.4);
+    border:2px solid rgba(59,130,246,.25);
     display:flex;
     flex-direction:column;
-    gap:4px;
-    min-width:0;
-    flex:1;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:8px;
+    overflow:hidden;
+    position:relative;
+    transition:border-color .3s, box-shadow .3s;
 }
-.upgrade-chance-label{
+.roulette-card img{
+    width:100%;
+    height:100px;
+    object-fit:cover;
+    border-radius:8px;
+    background:rgba(0,0,0,.2);
+    display:block;
+}
+.roulette-card .rc-name{
+    font-size:10px;
+    font-weight:800;
+    color:rgba(255,255,255,.85);
+    text-align:center;
+    line-height:1.15;
+    width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    display:-webkit-box;
+    -webkit-line-clamp:1;
+    -webkit-box-orient:vertical;
+}
+.roulette-card .rc-price{
+    font-size:10px;
+    font-weight:800;
+    color:#7CAEFF;
+    display:flex;align-items:center;gap:3px;
+}
+.roulette-card .rc-price img{width:11px;height:11px;height:11px;object-fit:contain;border-radius:0;background:none}
+
+/* Центральный указатель */
+.upgrade-pointer-line{
+    position:absolute;
+    top:0;bottom:0;
+    left:50%;
+    width:2px;
+    transform:translateX(-50%);
+    background:linear-gradient(180deg,transparent 0%,#24C38E 20%,#24C38E 80%,transparent 100%);
+    z-index:5;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .3s;
+}
+.upgrade-pointer-line.active{opacity:1}
+.upgrade-pointer-line::before,
+.upgrade-pointer-line::after{
+    content:'';
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    width:0;height:0;
+    border-left:7px solid transparent;
+    border-right:7px solid transparent;
+}
+.upgrade-pointer-line::before{
+    top:-2px;
+    border-top:10px solid #24C38E;
+}
+.upgrade-pointer-line::after{
+    bottom:-2px;
+    border-bottom:10px solid #24C38E;
+}
+
+/* Градиентные маски по краям */
+.upgrade-roulette::before,
+.upgrade-roulette::after{
+    content:'';
+    position:absolute;
+    top:0;bottom:0;
+    width:50px;
+    z-index:4;
+    pointer-events:none;
+}
+.upgrade-roulette::before{
+    left:0;
+    background:linear-gradient(90deg,rgba(35,44,62,1) 0%,rgba(35,44,62,0) 100%);
+}
+.upgrade-roulette::after{
+    right:0;
+    background:linear-gradient(270deg,rgba(35,44,62,1) 0%,rgba(35,44,62,0) 100%);
+}
+
+.upgrade-roulette-info{
+    text-align:center;
+    padding:0 16px;
+    max-width:100%;
+    color:#fff;
+}
+.upgrade-roulette-info .ur-label{
     font-size:11px;
-    font-weight:800;
     color:rgba(255,255,255,.5);
-    text-transform:uppercase;
-    letter-spacing:.5px;
-}
-.upgrade-chance-name{
-    font-size:14px;
     font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin-bottom:6px;
+}
+.upgrade-roulette-info .ur-name{
+    font-size:16px;
+    font-weight:900;
     color:#fff;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
     max-width:100%;
 }
-.upgrade-chance-right{
-    display:flex;
-    flex-direction:column;
-    align-items:flex-end;
-    gap:2px;
+
+/* Атрибуты текущего превью — под сценой */
+.upgrade-attrs-panel{
+    width:100%;
+    display:flex;flex-direction:column;gap:1px;
+    background:rgba(0,0,0,.25);
+    border-radius:14px;overflow:hidden;
+    border:1.5px solid rgba(59,130,246,.2);
+    margin-top:8px;
+}
+.upgrade-attr-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;
+    border-bottom:1px solid rgba(59,130,246,.08);
+    gap:10px;
+    background:rgba(59,130,246,.04);
+    min-height:42px;
+}
+.upgrade-attr-row:last-child{border-bottom:none}
+.upgrade-attr-label{
+    font-size:10px;color:rgba(124,174,255,.8);font-weight:800;
+    text-transform:uppercase;letter-spacing:.6px;
     flex-shrink:0;
 }
-.upgrade-chance-percent{
-    font-size:24px;
-    font-weight:900;
-    color:#7CAEFF;
-    line-height:1;
-    transition:color .3s,transform .3s;
+.upgrade-attr-right{
+    display:flex;align-items:center;gap:6px;
+    min-width:0;flex:1;
+    justify-content:flex-end;
 }
-.upgrade-chance-percent.high{color:#24C38E}
-.upgrade-chance-percent.mid{color:#FFC800}
-.upgrade-chance-percent.low{color:#FF3064}
-.upgrade-chance-sub{
+.upgrade-attr-value{
+    font-size:13px;color:#fff;font-weight:800;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    max-width:100%;
+    text-align:right;
+}
+.upgrade-attr-rarity{
     font-size:10px;
+    color:#7CAEFF;
     font-weight:700;
-    color:rgba(255,255,255,.35);
-    text-transform:uppercase;
-    letter-spacing:.5px;
+    background:rgba(59,130,246,.12);
+    padding:2px 6px;
+    border-radius:6px;
+    border:1px solid rgba(59,130,246,.25);
+    flex-shrink:0;
 }
+.upgrade-attr-rarity.empty{display:none}
 
 /* ═══ UPGRADE BUTTON ═══ */
 .upgrade-action-wrap{
     padding:12px 20px calc(20px + var(--safe-bottom,0px));
     flex-shrink:0;
-    background:linear-gradient(0deg,rgba(21,27,40,1) 0%,rgba(21,27,40,.9) 80%,rgba(21,27,40,0) 100%);
+    background:linear-gradient(0deg,rgba(26,34,50,1) 0%,rgba(26,34,50,.9) 80%,rgba(26,34,50,0) 100%);
+    position:relative;
+    z-index:10;
 }
 .upgrade-action-btn{
     width:100%;
@@ -841,14 +954,7 @@ body{
     cursor:wait;
     pointer-events:none;
 }
-.upgrade-action-btn .btn-spinner{
-    width:20px;height:20px;
-    border:2.5px solid rgba(255,255,255,.3);
-    border-top-color:#fff;
-    border-radius:50%;
-    animation:spin .8s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
+.upgrade-action-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 
 /* ═══ CONFETTI ═══ */
 .confetti-container{
@@ -866,54 +972,17 @@ body{
     animation:confettiFall linear forwards;
 }
 @keyframes confettiFall{
-    0%{
-        transform:translateY(-20px) rotate(0deg);
-        opacity:1;
-    }
-    100%{
-        transform:translateY(110vh) rotate(720deg);
-        opacity:0;
-    }
+    0%{transform:translateY(-20px) rotate(0deg); opacity:1}
+    100%{transform:translateY(110vh) rotate(720deg); opacity:0}
 }
 
-/* ═══ SPIN ANIMATION ═══ */
-@keyframes imgSpin{
-    0%{transform:scale(1) rotate(0deg); opacity:1}
-    25%{transform:scale(0.6) rotate(-15deg); opacity:0.3}
-    50%{transform:scale(0.4) rotate(0deg); opacity:0}
-    75%{transform:scale(0.6) rotate(15deg); opacity:0.3}
-    100%{transform:scale(1) rotate(0deg); opacity:1}
-}
-.upgrade-result-img.spinning{
-    animation:imgSpin 0.6s ease-in-out infinite;
-    border-color:rgba(59,130,246,.5);
-}
-
-/* ═══ WIN FLASH ═══ */
-.win-flash{
-    position:absolute;
-    inset:0;
-    z-index:55;
-    pointer-events:none;
-    opacity:0;
-    background:radial-gradient(circle at center, rgba(36,195,142,.6) 0%, transparent 70%);
-}
-.win-flash.show{
-    animation:flashAnim .8s ease-out;
-}
-@keyframes flashAnim{
-    0%{opacity:0}
-    30%{opacity:1}
-    100%{opacity:0}
-}
-
-/* ═══ RESULT OVERLAY ═══ */
+/* ═══ RESULT OVERLAY — особая анимация при выигрыше ═══ */
 .upgrade-result-overlay{
     position:absolute;
     inset:0;
     z-index:60;
-    background:rgba(10,15,25,.94);
-    backdrop-filter:blur(8px);
+    background:rgba(10,15,25,.96);
+    backdrop-filter:blur(10px);
     display:none;
     flex-direction:column;
     align-items:center;
@@ -951,7 +1020,7 @@ body{
     max-width:100%;
     padding:0 10px;
 }
-.upgrade-result-overlay-chance{
+.upgrade-result-overlay-msg{
     display:flex;
     align-items:center;
     gap:6px;
@@ -962,7 +1031,7 @@ body{
     background:rgba(36,195,142,.12);
     border:1.5px solid rgba(36,195,142,.35);
     border-radius:12px;
-    margin-bottom:20px;
+    margin-bottom:24px;
 }
 .upgrade-result-overlay-claim{
     padding:15px 40px;
@@ -982,7 +1051,7 @@ body{
 }
 .upgrade-result-overlay-claim:active{transform:scale(.97)}
 
-/* SELL CONFIRM */
+/* SELL CONFIRM — z-index 70000 */
 .sell-confirm-overlay{
     position:fixed;inset:0;
     z-index:70000;
@@ -1060,42 +1129,7 @@ body{
 }
 .sell-confirm-cancel:active{transform:scale(.97)}
 
-/* NOTIF */
-.notif{
-    position:fixed;top:calc(var(--safe-top) + 70px);
-    left:50%;transform:translateX(-50%) translateY(-120%);
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;padding:12px 24px;border-radius:14px;
-    font-weight:700;font-size:14px;z-index:99999;
-    transition:transform .3s,opacity .3s;
-    max-width:90%;text-align:center;
-    box-shadow:0 8px 25px rgba(59,130,246,.4);
-    opacity:0;pointer-events:none;
-}
-.notif.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
-.notif.error{background:linear-gradient(135deg,#E53935,#D32F2F);box-shadow:0 8px 25px rgba(229,57,53,.4)}
-
-/* SUCCESS OVERLAY */
-.success-overlay{
-    position:fixed;inset:0;z-index:90000;
-    background:rgba(10,12,20,.97);
-    display:none;flex-direction:column;align-items:center;justify-content:center;
-    padding:40px 24px;
-}
-.success-overlay.show{display:flex}
-.success-gif{width:130px;height:130px;object-fit:contain;margin-bottom:20px}
-.success-title{font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:6px}
-.success-price{font-size:14px;font-weight:700;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:5px;margin-bottom:28px}
-.success-price img{width:14px;height:14px}
-.success-ok{
-    width:100%;max-width:320px;padding:16px;border-radius:14px;border:none;
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;font-size:15px;font-weight:800;
-    cursor:pointer;font-family:inherit;
-    box-shadow:0 6px 20px rgba(59,130,246,.4);
-}
-
-/* DEPOSIT / PROMO */
+/* PROMO / DEPOSIT */
 .promo-modal{
     background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
     border-radius:24px;width:100%;max-width:380px;
@@ -1166,7 +1200,41 @@ body{
 .deposit-method-btn:active{transform:scale(.96)}
 .deposit-method-btn img{width:48px;height:48px;object-fit:contain}
 .deposit-method-btn span{font-weight:800;font-size:13px;color:#fff}
-.deposit-method-btn.disabled{opacity:.35;pointer-events:none;filter:grayscale(1)}
+
+/* SUCCESS OVERLAY */
+.success-overlay{
+    position:fixed;inset:0;z-index:90000;
+    background:rgba(10,12,20,.97);
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    padding:40px 24px;
+}
+.success-overlay.show{display:flex}
+.success-gif{width:130px;height:130px;object-fit:contain;margin-bottom:20px}
+.success-title{font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:6px}
+.success-price{font-size:14px;font-weight:700;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:5px;margin-bottom:28px}
+.success-price img{width:14px;height:14px}
+.success-ok{
+    width:100%;max-width:320px;padding:16px;border-radius:14px;border:none;
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;font-size:15px;font-weight:800;
+    cursor:pointer;font-family:inherit;
+    box-shadow:0 6px 20px rgba(59,130,246,.4);
+}
+
+/* NOTIF */
+.notif{
+    position:fixed;top:calc(var(--safe-top) + 70px);
+    left:50%;transform:translateX(-50%) translateY(-120%);
+    background:linear-gradient(135deg,#3B82F6,#2563EB);
+    color:#fff;padding:12px 24px;border-radius:14px;
+    font-weight:700;font-size:14px;z-index:99999;
+    transition:transform .3s,opacity .3s;
+    max-width:90%;text-align:center;
+    box-shadow:0 8px 25px rgba(59,130,246,.4);
+    opacity:0;pointer-events:none;
+}
+.notif.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+.notif.error{background:linear-gradient(135deg,#E53935,#D32F2F);box-shadow:0 8px 25px rgba(229,57,53,.4)}
 
 @media(max-width:380px){
     .inv-grid{gap:6px}
@@ -1176,9 +1244,13 @@ body{
     .item-sheet-img{width:100px;height:100px}
     .item-nft-img-wrap{width:170px;height:170px}
     .item-btn{font-size:12px;padding:14px 8px}
+    .upgrade-preview-wrap{width:150px;height:150px}
     .upgrade-result-overlay-img{width:150px;height:150px}
-    .upgrade-result-img{width:150px;height:150px}
-    .bnav-item{padding:6px 8px}
+    .roulette-card{width:110px;height:130px}
+    .roulette-card img{height:85px}
+    .upgrade-roulette{height:160px}
+    .bnav-item{padding:6px 4px}
+    .bnav-item span{font-size:9px}
 }
 </style>
 </head>
@@ -1275,7 +1347,7 @@ body{
     </div>
 </div>
 
-<!-- ═══ ITEM SHEET — z-index 60000 ═══ -->
+<!-- ═══ ITEM SHEET ═══ -->
 <div class="item-sheet-overlay" id="itemSheetOverlay" onclick="if(event.target===this)closeItemSheet()">
     <div class="item-sheet" onclick="event.stopPropagation()">
         <div class="item-sheet-handle"></div>
@@ -1333,7 +1405,7 @@ body{
             <div class="item-challenge-text" id="itemChallengeText">0 / 0 TON</div>
         </div>
 
-        <!-- Действия -->
+        <!-- Действия (2 кнопки: продать + улучшить / вывод) -->
         <div class="item-sheet-actions" id="itemSheetActions">
             <button class="item-btn item-btn-sell" id="itemBtnSell" onclick="askSellConfirm()">
                 <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -1343,7 +1415,7 @@ body{
                 <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                 Улучшить
             </button>
-            <button class="item-btn item-btn-withdraw" id="itemBtnWithdraw" onclick="openPortalPicker()">
+            <button class="item-btn item-btn-withdraw" id="itemBtnWithdraw" onclick="openPortalPicker()" style="display:none">
                 <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 Вывод
             </button>
@@ -1354,7 +1426,7 @@ body{
     </div>
 </div>
 
-<!-- ═══ UPGRADE MODAL — z-index 85000 ═══ -->
+<!-- ═══ UPGRADE MODAL ═══ -->
 <div class="upgrade-overlay" id="upgradeOverlay">
     <div class="upgrade-sheet" id="upgradeSheet">
         <div class="upgrade-handle"></div>
@@ -1368,74 +1440,73 @@ body{
             <button class="upgrade-close" onclick="closeUpgradeModal()">✕</button>
         </div>
 
-        <!-- CENTRAL RESULT STAGE -->
-        <div class="upgrade-result-stage" id="upgradeResultStage">
-            <img class="upgrade-result-img" id="upgradeResultImg" src="/static/img/gift.png" alt="">
-            <div class="upgrade-result-name" id="upgradeResultName">Подарок</div>
+        <!-- СЦЕНА -->
+        <div class="upgrade-stage">
+            <!-- Фаза 1: превью -->
+            <div class="upgrade-preview-wrap" id="upgradePreviewWrap">
+                <img id="upgradePreviewImg" src="/static/img/gift.png" alt="">
+            </div>
+            <div class="upgrade-preview-name" id="upgradePreviewName">Подарок</div>
 
-            <!-- Атрибуты -->
+            <!-- Атрибуты превью -->
             <div class="upgrade-attrs-panel" id="upgradeAttrsPanel">
                 <div class="upgrade-attr-row">
                     <span class="upgrade-attr-label">Model</span>
                     <div class="upgrade-attr-right">
                         <span class="upgrade-attr-value" id="upgradeModelVal">—</span>
-                        <span class="upgrade-attr-rarity" id="upgradeModelRar">—</span>
+                        <span class="upgrade-attr-rarity empty" id="upgradeModelRar"></span>
                     </div>
                 </div>
                 <div class="upgrade-attr-row">
                     <span class="upgrade-attr-label">Symbol</span>
                     <div class="upgrade-attr-right">
                         <span class="upgrade-attr-value" id="upgradeSymbolVal">—</span>
-                        <span class="upgrade-attr-rarity" id="upgradeSymbolRar">—</span>
+                        <span class="upgrade-attr-rarity empty" id="upgradeSymbolRar"></span>
                     </div>
                 </div>
                 <div class="upgrade-attr-row">
                     <span class="upgrade-attr-label">Backdrop</span>
                     <div class="upgrade-attr-right">
                         <span class="upgrade-attr-value" id="upgradeBackdropVal">—</span>
-                        <span class="upgrade-attr-rarity" id="upgradeBackdropRar">—</span>
+                        <span class="upgrade-attr-rarity empty" id="upgradeBackdropRar"></span>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- ШАНСЫ -->
-        <div class="upgrade-chance-info">
-            <div class="upgrade-chance-left">
-                <div class="upgrade-chance-label">Целевой подарок</div>
-                <div class="upgrade-chance-name" id="upgradeChanceName">—</div>
-            </div>
-            <div class="upgrade-chance-right">
-                <div class="upgrade-chance-percent" id="upgradeChancePercent">—%</div>
-                <div class="upgrade-chance-sub">шанс успеха</div>
+            <!-- Фаза 2: рулетка (скрыта по умолчанию) -->
+            <div class="upgrade-roulette-wrap" id="upgradeRouletteWrap">
+                <div class="upgrade-roulette" id="upgradeRoulette">
+                    <div class="upgrade-pointer-line active" id="upgradePointerLine"></div>
+                    <div class="upgrade-roulette-strip" id="upgradeRouletteStrip"></div>
+                </div>
+                <div class="upgrade-roulette-info">
+                    <div class="ur-label">Ваш подарок</div>
+                    <div class="ur-name" id="upgradeRouletteName">—</div>
+                </div>
             </div>
         </div>
 
         <!-- КНОПКА -->
         <div class="upgrade-action-wrap">
             <button class="upgrade-action-btn" id="upgradeActionBtn" onclick="startUpgradeSpin()">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
                 <span id="upgradeBtnText">УЛУЧШИТЬ</span>
             </button>
         </div>
 
-        <!-- CONFETTI -->
         <div class="confetti-container" id="confettiContainer"></div>
 
-        <!-- WIN FLASH -->
-        <div class="win-flash" id="winFlash"></div>
-
-        <!-- RESULT OVERLAY (показывается ПОСЛЕ анимации при выигрыше) -->
+        <!-- RESULT OVERLAY -->
         <div class="upgrade-result-overlay" id="upgradeResultOverlay">
             <img class="upgrade-result-overlay-img" id="upgradeResultOverlayImg" src="/static/img/gift.png" alt="">
             <div class="upgrade-result-overlay-name" id="upgradeResultOverlayName">—</div>
-            <div class="upgrade-result-overlay-chance" id="upgradeResultOverlayChance">—</div>
+            <div class="upgrade-result-overlay-msg" id="upgradeResultOverlayMsg">✓ Подарок улучшен!</div>
             <button class="upgrade-result-overlay-claim" onclick="closeUpgradeResultOverlay()">ПОЛУЧИТЬ</button>
         </div>
     </div>
 </div>
 
-<!-- ═══ SELL CONFIRM — z-index 70000 ═══ -->
+<!-- ═══ SELL CONFIRM ═══ -->
 <div class="sell-confirm-overlay" id="sellConfirmOverlay">
     <div class="sell-confirm-modal">
         <div class="sell-confirm-icon">
@@ -1478,7 +1549,7 @@ body{
             <button class="deposit-close" onclick="closeDeposit()">✕</button>
         </div>
         <div class="deposit-methods">
-            <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDeposit();openStarsDeposit()">
+            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
                 <img src="/static/img/star.png" alt="Stars"><span>Stars</span>
             </button>
             <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
@@ -1505,15 +1576,15 @@ body{
         <span>Игры</span>
     </a>
     <a class="bnav-item" href="/crash">
-        <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
         <span>Краш</span>
     </a>
     <a class="bnav-item" href="/leaderboard">
-        <svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
         <span>Топ</span>
     </a>
     <a class="bnav-item active" href="/inventory">
-        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <span>Профиль</span>
     </a>
 </nav>
@@ -1812,6 +1883,10 @@ function updateSelectActionBar(){
 
 /* ══════════════════════════════════════════════════════════════
    ITEM SHEET
+   
+   Логика:
+   - Обычный подарок: показываем 2 кнопки [Продать] [Улучшить]
+   - Улучшенный подарок: показываем 2 кнопки [Продать] [Вывод]
    ══════════════════════════════════════════════════════════════ */
 function openItemSheet(itemId){
     var item = inventory.find(function(i){ return i.id === itemId; });
@@ -1830,19 +1905,20 @@ function openItemSheet(itemId){
     var withdrawBtn = $('itemBtnWithdraw');
     var claimBtn = $('itemBtnClaim');
 
+    // Сброс
     if(nftBlock) nftBlock.classList.remove('show');
     if(challenge) challenge.style.display = 'none';
     if(actions){
         actions.style.display = 'grid';
-        actions.classList.remove('triple','single');
+        actions.classList.remove('single');
     }
     if(sellBtn) sellBtn.style.display = 'flex';
     if(upgradeBtn) upgradeBtn.style.display = 'none';
-    if(withdrawBtn) withdrawBtn.style.display = 'flex';
+    if(withdrawBtn) withdrawBtn.style.display = 'none';
     if(claimBtn) claimBtn.style.display = 'none';
 
     if(upgraded){
-        // Улучшенный — показываем NFT-блок, скрываем обычный header
+        // ─── УЛУЧШЕННЫЙ: Продать + Вывод ───
         if(header) header.style.display = 'none';
         if(nftBlock) nftBlock.classList.add('show');
 
@@ -1878,18 +1954,21 @@ function openItemSheet(itemId){
             setAttrFinal('attrSymbolVal', item.nft_symbol || '—', item.nft_symbol_rarity, 'attrSymbolRarity');
         }
 
+        // Показываем: Продать + Вывод
+        if(sellBtn) sellBtn.style.display = 'flex';
+        if(withdrawBtn) withdrawBtn.style.display = 'flex';
+        if(upgradeBtn) upgradeBtn.style.display = 'none';
         if(sellBtn) sellBtn.disabled = !!item.is_withdrawing;
         if(withdrawBtn) withdrawBtn.disabled = !!item.is_withdrawing;
     } else {
-        // ★ ОБЫЧНЫЙ ПОДАРОК — показываем header, скрываем NFT-блок
-        // ПОКАЗЫВАЕМ ВСЕ 3 КНОПКИ: Продать, Улучшить, Вывод
+        // ─── ОБЫЧНЫЙ: Продать + Улучшить ───
         if(header) header.style.display = 'flex';
         var img = $('itemSheetImg'); if(img) img.src = getGiftImage(item);
         var title = $('itemSheetTitle'); if(title) title.textContent = item.gift_name || 'Подарок';
         var priceVal = $('itemSheetPriceVal');
         if(priceVal) priceVal.textContent = formatTon(starsToTon(item.gift_value));
 
-        // Challenge — блокируем всё
+        // Challenge блокирует всё
         if(item.challenge && !item.challenge.is_completed){
             if(challenge) challenge.style.display = 'block';
             var pct = item.challenge.target_wager > 0
@@ -1914,20 +1993,18 @@ function openItemSheet(itemId){
                 if(claimBtn) claimBtn.style.display = 'flex';
             }
         } else if(item.crate_id){
-            // Ящик — только открыть
             if(actions) actions.style.display = 'none';
         } else {
-            // ★ ОБЫЧНЫЙ подарок — показываем УЛУЧШИТЬ + ПРОДАТЬ + ВЫВОД
+            // ★ ОБЫЧНЫЙ подарок: 2 кнопки — Продать + Улучшить
             if(actions){
                 actions.style.display = 'grid';
-                actions.classList.add('triple');
+                actions.classList.remove('single');
             }
             if(sellBtn) sellBtn.style.display = 'flex';
             if(upgradeBtn) upgradeBtn.style.display = 'flex';
-            if(withdrawBtn) withdrawBtn.style.display = 'flex';
+            if(withdrawBtn) withdrawBtn.style.display = 'none';
             if(sellBtn) sellBtn.disabled = !!item.is_withdrawing;
             if(upgradeBtn) upgradeBtn.disabled = !!item.is_withdrawing;
-            if(withdrawBtn) withdrawBtn.disabled = !!item.is_withdrawing;
         }
     }
 
@@ -1936,7 +2013,6 @@ function openItemSheet(itemId){
 }
 
 function setAttrLoading(rowId, valId, rarId){
-    var row = $(rowId); if(row) row.classList.add('loading');
     var val = $(valId); if(val) val.textContent = 'Загрузка...';
     var rar = $(rarId); if(rar){ rar.textContent = ''; rar.classList.add('empty'); }
 }
@@ -2017,6 +2093,9 @@ async function claimChallenge(){
 
 /* ══════════════════════════════════════════════════════════════
    UPGRADE MODAL
+   
+   Фаза 1: preview — плавная смена вариантов (как смена подарков)
+   Фаза 2: roulette — все PNG выставляются в рулетку и крутятся
    ══════════════════════════════════════════════════════════════ */
 async function openUpgradeModal(){
     if(!selectedItem) return;
@@ -2051,26 +2130,25 @@ async function openUpgradeModal(){
         if(btxt) btxt.textContent = 'УЛУЧШИТЬ';
     }
 
+    // Показываем превью, скрываем рулетку
+    var previewWrap = $('upgradePreviewWrap');
+    var rouletteWrap = $('upgradeRouletteWrap');
+    if(previewWrap) previewWrap.style.display = 'block';
+    if(rouletteWrap) rouletteWrap.classList.remove('show');
+
     // Показываем исходный подарок
-    var rimg = $('upgradeResultImg');
-    if(rimg){
-        rimg.src = getGiftImage(selectedItem);
-        rimg.classList.remove('winning','spinning');
+    var pimg = $('upgradePreviewImg');
+    if(pimg){
+        pimg.src = getGiftImage(selectedItem);
+        pimg.classList.remove('swap');
     }
-    var rname = $('upgradeResultName');
-    if(rname) rname.textContent = selectedItem.gift_name || 'Подарок';
+    var pname = $('upgradePreviewName');
+    if(pname) pname.textContent = selectedItem.gift_name || 'Подарок';
 
     // Сброс атрибутов
     setUpgradeAttr('upgradeModelVal', 'upgradeModelRar', '—', null);
     setUpgradeAttr('upgradeSymbolVal', 'upgradeSymbolRar', '—', null);
     setUpgradeAttr('upgradeBackdropVal', 'upgradeBackdropRar', '—', null);
-
-    var cname = $('upgradeChanceName'); if(cname) cname.textContent = 'Загрузка...';
-    var cpercent = $('upgradeChancePercent');
-    if(cpercent){
-        cpercent.textContent = '—%';
-        cpercent.className = 'upgrade-chance-percent';
-    }
 
     // Запрос на подготовку
     try{
@@ -2093,29 +2171,123 @@ async function openUpgradeModal(){
         _upgradeCenterIndex = d.center_index || 0;
         _upgradeCurrentGift = d.current || null;
 
-        // Обновляем имя целевого подарка
-        if(cname){
-            var targetVariant = _upgradeVariants[_upgradeCenterIndex];
-            if(targetVariant){
-                cname.textContent = targetVariant.name || '—';
-            }
-        }
-
-        // Шанс — у нас нет прямого шанса, показываем фиксированный
-        if(cpercent){
-            cpercent.textContent = '100%';
-            cpercent.classList.add('high');
-        }
-
-        // Показываем первый вариант (центральный) с его атрибутами
-        if(_upgradeVariants.length > 0){
-            applyUpgradeVariant(_upgradeVariants[0]);
-        }
+        // ★ ФАЗА 1: Запускаем preview-анимацию (быстрая смена вариантов)
+        startPreviewAnimation();
 
     }catch(e){
         console.error('upgrade prepare error', e);
         showNotif('Ошибка сети', true);
         closeUpgradeModal();
+    }
+}
+
+/* ★ ФАЗА 1: PREVIEW — быстрая смена вариантов с анимацией */
+function startPreviewAnimation(){
+    if(!_upgradeVariants.length) return;
+
+    var pimg = $('upgradePreviewImg');
+    var pname = $('upgradePreviewName');
+    if(!pimg) return;
+
+    var total = _upgradeVariants.length;
+    var idx = 0;
+    var totalDuration = 2200; // 2.2 сек
+    var startTime = performance.now();
+    var lastSwap = 0;
+
+    function step(now){
+        var elapsed = now - startTime;
+        var progress = elapsed / totalDuration;
+
+        if(progress >= 1){
+            // Финальный вариант — исходный подарок (показываем его до рулетки)
+            var finalV = _upgradeVariants[0];
+            setPreviewVariant(finalV);
+            // Небольшая пауза перед рулеткой
+            setTimeout(function(){
+                showRoulette();
+            }, 250);
+            return;
+        }
+
+        // Ускорение смены к концу
+        var interval = 80 + Math.pow(progress, 2) * 120;
+
+        if(now - lastSwap > interval){
+            lastSwap = now;
+            var v = _upgradeVariants[idx % total];
+            setPreviewVariant(v);
+            idx++;
+            try{
+                if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
+                    Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                }
+            }catch(e){}
+        }
+
+        requestAnimationFrame(step);
+    }
+
+    requestAnimationFrame(step);
+}
+
+function setPreviewVariant(variant){
+    if(!variant) return;
+    var pimg = $('upgradePreviewImg');
+    var pname = $('upgradePreviewName');
+
+    if(pimg){
+        pimg.classList.remove('swap');
+        void pimg.offsetWidth;
+        pimg.src = variant.image || variant.fallback_image || '/static/img/gift.png';
+        pimg.onerror = function(){
+            this.onerror = null;
+            this.src = variant.fallback_image || '/static/img/gift.png';
+        };
+        pimg.classList.add('swap');
+    }
+    if(pname) pname.textContent = variant.name || 'Gift';
+
+    setUpgradeAttr('upgradeModelVal', 'upgradeModelRar', variant.model || '—', variant.model_rarity);
+    setUpgradeAttr('upgradeSymbolVal', 'upgradeSymbolRar', variant.symbol || '—', variant.symbol_rarity);
+    setUpgradeAttr('upgradeBackdropVal', 'upgradeBackdropRar', variant.backdrop || '—', variant.backdrop_rarity);
+}
+
+/* ★ ФАЗА 2: ROULETTE — все PNG выставляются в рулетку */
+function showRoulette(){
+    var previewWrap = $('upgradePreviewWrap');
+    var rouletteWrap = $('upgradeRouletteWrap');
+    var previewName = $('upgradePreviewName');
+
+    // Скрываем превью
+    if(previewWrap) previewWrap.style.display = 'none';
+    if(previewName) previewName.style.display = 'none';
+
+    // Показываем рулетку
+    if(rouletteWrap) rouletteWrap.classList.add('show');
+
+    // Строим полосу с 30 вариантами
+    var strip = $('upgradeRouletteStrip');
+    if(!strip) return;
+
+    var html = '';
+    for(var i = 0; i < _upgradeVariants.length; i++){
+        var v = _upgradeVariants[i];
+        html += '<div class="roulette-card" data-idx="' + i + '">'
+            + '<img src="' + (v.image || v.fallback_image || '/static/img/gift.png') + '" '
+            + 'onerror="this.onerror=null;this.src=\'' + (v.fallback_image || '/static/img/gift.png') + '\'" alt="">'
+            + '<div class="rc-name">' + escapeHtml((v.name || '').substring(0, 18)) + '</div>'
+            + '<div class="rc-price"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + formatTon((v.value || 0) / 100) + '</div>'
+            + '</div>';
+    }
+    strip.innerHTML = html;
+    strip.style.transform = 'translateX(0)';
+
+    // Показываем имя исходного подарка
+    var rname = $('upgradeRouletteName');
+    if(rname){
+        var curGift = _upgradeVariants[0];
+        rname.textContent = (curGift && curGift.name) ? curGift.name : (selectedItem.gift_name || '—');
     }
 }
 
@@ -2129,28 +2301,10 @@ function setUpgradeAttr(valId, rarId, value, rarity){
             rar.textContent = r.toFixed(1) + '%';
             rar.classList.remove('empty');
         } else {
-            rar.textContent = '—';
+            rar.textContent = '';
             rar.classList.add('empty');
         }
     }
-}
-
-function applyUpgradeVariant(variant){
-    if(!variant) return;
-    var rimg = $('upgradeResultImg');
-    if(rimg){
-        rimg.src = variant.image || '/static/img/gift.png';
-        rimg.onerror = function(){
-            this.onerror = null;
-            this.src = variant.fallback_image || '/static/img/gift.png';
-        };
-    }
-    var rname = $('upgradeResultName');
-    if(rname) rname.textContent = variant.name || 'Gift';
-
-    setUpgradeAttr('upgradeModelVal', 'upgradeModelRar', variant.model || '—', variant.model_rarity);
-    setUpgradeAttr('upgradeSymbolVal', 'upgradeSymbolRar', variant.symbol || '—', variant.symbol_rarity);
-    setUpgradeAttr('upgradeBackdropVal', 'upgradeBackdropRar', variant.backdrop || '—', variant.backdrop_rarity);
 }
 
 function closeUpgradeModal(){
@@ -2161,13 +2315,10 @@ function closeUpgradeModal(){
 
     var cc = $('confettiContainer');
     if(cc) cc.innerHTML = '';
-
-    var rimg = $('upgradeResultImg');
-    if(rimg){ rimg.classList.remove('spinning','winning'); }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   UPGRADE SPIN — анимация перебора вариантов
+   UPGRADE SPIN — крутим рулетку
    ══════════════════════════════════════════════════════════════ */
 async function startUpgradeSpin(){
     if(_upgradeSpinRunning) return;
@@ -2184,11 +2335,9 @@ async function startUpgradeSpin(){
     if(btnEl) btnEl.classList.add('loading');
     if(btxt) btxt.textContent = 'КРУТИМ...';
 
-    var rimg = $('upgradeResultImg');
-    if(rimg) rimg.classList.add('spinning');
-
-    // 1. Клиент выбирает случайный вариант
-    var chosenIndex = Math.floor(Math.random() * _upgradeVariants.length);
+    // 1. Клиент выбирает случайный индекс
+    var total = _upgradeVariants.length;
+    var chosenIndex = Math.floor(Math.random() * total);
     var chosenVariant = _upgradeVariants[chosenIndex];
 
     // 2. Отправляем на сервер
@@ -2206,7 +2355,6 @@ async function startUpgradeSpin(){
         });
         var d = await r.json();
         if(!d.success){
-            if(rimg) rimg.classList.remove('spinning');
             _upgradeSpinRunning = false;
             if(btnEl) btnEl.classList.remove('loading');
             if(btxt) btxt.textContent = 'УЛУЧШИТЬ';
@@ -2216,7 +2364,6 @@ async function startUpgradeSpin(){
         spinResult = d;
     }catch(e){
         console.error('spin error', e);
-        if(rimg) rimg.classList.remove('spinning');
         _upgradeSpinRunning = false;
         if(btnEl) btnEl.classList.remove('loading');
         if(btxt) btxt.textContent = 'УЛУЧШИТЬ';
@@ -2224,60 +2371,97 @@ async function startUpgradeSpin(){
         return;
     }
 
-    // 3. Анимация перебора: быстро меняем картинку и атрибуты
-    var totalDuration = 2600 + Math.random() * 800;
-    var startTime = performance.now();
-    var intervalId = null;
-    var lastChange = 0;
-
-    function changeVariant(){
-        var now = performance.now();
-        var elapsed = now - startTime;
-        var progress = elapsed / totalDuration;
-
-        // Замедление в конце
-        var changeDelay = 60 + Math.pow(progress, 3) * 300;
-
-        if(now - lastChange > changeDelay){
-            lastChange = now;
-            var idx = Math.floor(Math.random() * _upgradeVariants.length);
-            applyUpgradeVariant(_upgradeVariants[idx]);
-            try{
-                if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
-                    Telegram.WebApp.HapticFeedback.impactOccurred('light');
-                }
-            }catch(e){}
-        }
-
-        if(progress < 1){
-            intervalId = requestAnimationFrame(changeVariant);
-        } else {
-            // Финал — показываем ВЫБРАННЫЙ вариант
-            if(rimg) rimg.classList.remove('spinning');
-            finalizeSpin(chosenVariant, spinResult);
-        }
-    }
-    requestAnimationFrame(changeVariant);
+    // 3. Крутим рулетку
+    spinRoulette(chosenIndex, chosenVariant, spinResult);
 }
 
-function finalizeSpin(variant, result){
+function spinRoulette(targetIdx, chosenVariant, result){
+    var strip = $('upgradeRouletteStrip');
+    var rouletteEl = $('upgradeRoulette');
+    var pointer = $('upgradePointerLine');
+    if(!strip || !rouletteEl) return;
+
+    // Получаем карточки
+    var cards = strip.querySelectorAll('.roulette-card');
+    if(!cards.length) return;
+
+    // Параметры карточек
+    var cardWidth = cards[0].offsetWidth || 130;
+    var gap = 12;
+    var step = cardWidth + gap;
+    var stripPadding = 20;
+
+    var containerW = rouletteEl.offsetWidth || 400;
+    var centerX = containerW / 2;
+
+    // Позиция центра целевой карточки
+    var targetCenterInStrip = stripPadding + targetIdx * step + cardWidth / 2;
+    var finalOffset = centerX - targetCenterInStrip;
+
+    // Проматываем много кругов
+    var spins = 6 + Math.floor(Math.random() * 3);
+    var spinDistance = step * _upgradeVariants.length * spins;
+    var startX = finalOffset + spinDistance;
+
+    // Ставим стартовую позицию
+    strip.style.transition = 'none';
+    strip.style.transform = 'translateX(' + startX + 'px)';
+    void strip.offsetWidth;
+
+    // Длительность
+    var duration = 5500;
+    var ease = 'cubic-bezier(.15,.75,.2,1)';
+
+    // Запускаем
+    requestAnimationFrame(function(){
+        strip.style.transition = 'transform ' + duration + 'ms ' + ease;
+        strip.style.transform = 'translateX(' + finalOffset + 'px)';
+    });
+
+    if(pointer) pointer.classList.add('active');
+
+    // Тики (звук)
+    var tickStart = performance.now() + 300;
+    var tickEnd = tickStart + duration - 100;
+    var lastTick = 0;
+    function tickLoop(){
+        var now = performance.now();
+        if(now > tickEnd + 500) return;
+        if(now >= tickStart && now <= tickEnd){
+            var progress = (now - tickStart) / duration;
+            var interval = 60 + progress * progress * 400;
+            if(now - lastTick > interval){
+                try{
+                    if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
+                        Telegram.WebApp.HapticFeedback.impactOccurred('light');
+                    }
+                }catch(e){}
+                lastTick = now;
+            }
+        }
+        if(now < tickEnd + 500) requestAnimationFrame(tickLoop);
+    }
+    requestAnimationFrame(tickLoop);
+
+    // Ждём окончания
+    setTimeout(function(){
+        if(pointer) pointer.classList.remove('active');
+        finalizeSpin(targetIdx, chosenVariant, result);
+    }, duration + 100);
+}
+
+function finalizeSpin(idx, variant, result){
     _upgradeSpinRunning = false;
 
-    var rimg = $('upgradeResultImg');
-    var rname = $('upgradeResultName');
-
-    // Применяем выбранный вариант
-    applyUpgradeVariant(variant);
-
-    // ★ WIN — особая анимация
-    if(rimg){
-        rimg.classList.add('winning');
+    // Подсвечиваем карточку
+    var strip = $('upgradeRouletteStrip');
+    var cards = strip ? strip.querySelectorAll('.roulette-card') : [];
+    if(cards[idx]){
+        cards[idx].style.borderColor = '#24C38E';
+        cards[idx].style.boxShadow = '0 0 30px rgba(36,195,142,.8)';
     }
 
-    // Confetti
-    launchConfetti();
-
-    // Haptic
+    // Haptic / звук
     try{
         if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
             Telegram.WebApp.HapticFeedback.notificationOccurred('success');
@@ -2285,37 +2469,35 @@ function finalizeSpin(variant, result){
     }catch(e){}
     if(navigator.vibrate) navigator.vibrate([50,30,50]);
 
+    // Confetti
+    launchConfetti();
+
     // Кнопка
     var btnEl = $('upgradeActionBtn');
     var btxt = $('upgradeBtnText');
     if(btnEl) btnEl.classList.remove('loading');
     if(btxt) btxt.textContent = 'ГОТОВО';
 
-    // Показываем overlay через 600ms
+    // Показываем overlay через 700ms
     setTimeout(function(){
-        showUpgradeResultOverlay(variant, result);
+        showUpgradeResultOverlay(variant);
     }, 700);
 }
 
-function showUpgradeResultOverlay(variant, result){
+function showUpgradeResultOverlay(variant){
     var overlay = $('upgradeResultOverlay');
     if(!overlay) return;
     var oimg = $('upgradeResultOverlayImg');
     var oname = $('upgradeResultOverlayName');
-    var ochance = $('upgradeResultOverlayChance');
 
     if(oimg){
-        oimg.src = variant.image || '/static/img/gift.png';
+        oimg.src = variant.image || variant.fallback_image || '/static/img/gift.png';
         oimg.onerror = function(){
             this.onerror = null;
             this.src = variant.fallback_image || '/static/img/gift.png';
         };
     }
     if(oname) oname.textContent = variant.name || 'Gift';
-    if(ochance){
-        var newGift = result && result.new_gift;
-        ochance.textContent = '✓ Подарок улучшен!';
-    }
     overlay.classList.add('show');
 }
 
@@ -2323,11 +2505,9 @@ function closeUpgradeResultOverlay(){
     var overlay = $('upgradeResultOverlay');
     if(overlay) overlay.classList.remove('show');
 
-    // Обновляем инвентарь и профиль
     refreshUserData();
     loadInventory();
 
-    // Закрываем всё
     closeUpgradeModal();
     closeItemSheet();
 }
@@ -2349,7 +2529,7 @@ function launchConfetti(){
     if(!container) return;
     container.innerHTML = '';
 
-    var colors = ['#FFD700','#FFA500','#3B82F6','#2563EB','#24C38E','#7CAEFF','#FFFFFF','#60A5FA'];
+    var colors = ['#FFD700','#FFA500','#3B82F6','#2563EB','#24C38E','#7CAEFF','#FFFFFF'];
     var count = 90;
 
     for(var i = 0; i < count; i++){
@@ -2510,11 +2690,6 @@ async function activatePromo(){
 /* DEPOSIT */
 function openDeposit(){
     vibrateIfOn();
-    var sb = $('starsDepositBtn');
-    if(sb){
-        if(!window.Telegram){ sb.classList.add('disabled'); }
-        else { sb.classList.remove('disabled'); }
-    }
     var do_ = $('depositOverlay'); if(do_) do_.classList.add('show');
 }
 function closeDeposit(){ var do_ = $('depositOverlay'); if(do_) do_.classList.remove('show'); }
