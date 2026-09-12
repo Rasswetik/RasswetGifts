@@ -11,7 +11,7 @@ import string
 import hashlib
 import re
 import html as html_lib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import math
 import shutil
 import time
@@ -4282,33 +4282,25 @@ def start_ultimate_crash_loop():
                     # AI не вызываем во время полёта: аналитические запросы могут
                     # заблокировать игровой тик и оставить раунд навсегда в flying.
 
-                    # Инкремент
-                    m = live_mult
-                    if m < 1.20:       increment = 0.0020
-                    elif m < 1.50:     increment = 0.0030
-                    elif m < 2.00:     increment = 0.0050
-                    elif m < 3.00:     increment = 0.0100
-                    elif m < 5.00:     increment = 0.0167
-                    elif m < 10.0:     increment = 0.0357
-                    elif m < 20.0:     increment = 0.0714
-                    elif m < 50.0:     increment = 0.1875
-                    else:              increment = 0.5000
+                    # Time-based curve must match the browser curve. Tick-based
+                    # increments drifted behind the client and left the server
+                    # in flying after the browser had already shown a crash.
+                    elapsed_flying = max(0.0, now - live_flying_started_at)
+                    t = elapsed_flying
+                    if t < 3.0:
+                        new_mult = 1.0 + (t / 3.0) * 0.10
+                    elif t < 7.0:
+                        new_mult = 1.10 + ((t - 3.0) / 4.0) * 0.40
+                    elif t < 11.0:
+                        new_mult = 1.50 + ((t - 7.0) / 4.0) * 0.50
+                    elif t < 19.0:
+                        new_mult = 2.00 + ((t - 11.0) / 8.0) * 2.00
+                    elif t < 25.0:
+                        new_mult = 4.00 + ((t - 19.0) / 6.0) * 6.00
+                    else:
+                        new_mult = 10.0 + (t - 25.0)
 
-                    # Случайный краш (страховка)
-                    crash_chance = 0
-                    if live_mult >= 1.5:
-                        crash_chance = 0.0004 * (live_mult / 10.0)
-                        if live_is_bonus:
-                            crash_chance *= 0.5
-
-                    if random.random() < crash_chance:
-                        do_crash(conn, cursor, live_game_id, live_mult, live_target, live_is_bonus)
-                        time.sleep(0.3)
-                        continue
-
-                    new_mult = round(live_mult + increment, 2)
-                    if new_mult > live_target:
-                        new_mult = live_target
+                    new_mult = round(min(new_mult, live_target), 2)
 
                     live_mult = new_mult
 
@@ -4376,13 +4368,22 @@ def start_ultimate_crash_loop():
                     is_bonus = bool(game[5]) if len(game) > 5 else False
 
                     # Парсим start_time
-                    if hasattr(start_time, 'timetuple'):
-                        start_timestamp = time.mktime(start_time.timetuple())
+                    if hasattr(start_time, 'timestamp'):
+                        try:
+                            start_timestamp = float(start_time.timestamp())
+                        except Exception:
+                            start_timestamp = time.time() - 30
                     elif isinstance(start_time, str):
                         try:
-                            st = start_time.split('.')[0] if '.' in start_time else start_time
+                            st = start_time.strip()
                             start_dt = datetime.fromisoformat(st.replace('Z', '+00:00'))
-                            start_timestamp = time.mktime(start_dt.timetuple())
+                            # SQLite CURRENT_TIMESTAMP is UTC. Treat a naive DB timestamp as UTC,
+                            # not local server time (mktime), otherwise the 5-second countdown can
+                            # be shifted by the server timezone and phase transitions become wrong.
+                            if start_dt.tzinfo is None:
+                                start_timestamp = start_dt.replace(tzinfo=timezone.utc).timestamp()
+                            else:
+                                start_timestamp = start_dt.timestamp()
                         except Exception:
                             start_timestamp = time.time() - 30
                     else:
@@ -4413,16 +4414,9 @@ def start_ultimate_crash_loop():
                         update_crash_cache(game_id, 'counting', 1.0, target_mult_float, time_remaining, is_bonus=is_bonus)
 
                         if elapsed >= 5:
-                            try:
-                                adjusted = ai_adjust_target_multiplier(target_mult_float, game_id, conn)
-                                if adjusted != target_mult_float:
-                                    target_mult_float = adjusted
-                                    cursor.execute(
-                                        'UPDATE ultimate_crash_games SET target_multiplier = ? WHERE id = ?',
-                                        (adjusted, game_id)
-                                    )
-                            except Exception as ai_e:
-                                logger.debug(f"AI adjust skipped: {ai_e}")
+                            # IMPORTANT: never run AI/analytics in the critical phase transition.
+                            # A slow DB/AI query here used to leave the round stuck at 1.00x/counting.
+                            # The target is already fixed when the round is created.
 
                             with _crash_phase_lock:
                                 _crash_phase_transitioning = True
