@@ -5444,28 +5444,10 @@ def ultimate_crash_place_bet():
                 game = cursor.fetchone()
 
                 if not game:
-                    # Создаем новую игру сразу в counting
-                    base_multiplier = round(random.uniform(3.0, 10.0), 2)
-
-                    if total_loss >= 5000 and bet_amount <= total_loss * 0.2:
-                        boost_chance = min(0.5, total_loss / 50000)
-                        if random.random() < boost_chance:
-                            base_multiplier = round(random.uniform(4.0, 15.0), 2)
-                    elif total_loss >= 2000 and bet_amount <= total_loss * 0.3:
-                        boost_chance = min(0.3, total_loss / 30000)
-                        if random.random() < boost_chance:
-                            base_multiplier = round(random.uniform(3.5, 10.0), 2)
-                    elif total_loss >= 500 and bet_amount <= total_loss * 0.4:
-                        if random.random() < 0.15:
-                            base_multiplier = round(random.uniform(3.0, 8.0), 2)
-
-                    target_multiplier = base_multiplier
-                    cursor.execute('''
-                        INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                        VALUES ('counting', ?, CURRENT_TIMESTAMP)
-                    ''', (target_multiplier,))
-                    game_id = cursor.lastrowid
-                    game_status = 'counting'
+                    # Новый раунд создаётся только игровым циклом. Endpoint ставки
+                    # никогда не создаёт второй раунд параллельно.
+                    conn.rollback()
+                    return jsonify({'success': False, 'error': 'Новый раунд запускается, подождите 1–2 секунды'})
                 else:
                     game_id, game_status = game
 
@@ -11514,10 +11496,7 @@ def get_upgrade_possible_gifts():
 
 @app.route('/api/upgrade-multi', methods=['POST'])
 def upgrade_multi_gifts():
-
-    # Inventory/gift staking is intentionally disabled: upgrades may be funded only in GRAM.
-    return jsonify({'success': False, 'error': 'Ставка подарком отключена. Используй GRAM.'})
-    """Апгрейд: ставка до 6 подарков, шанс = сумма стоимости / цена цели"""
+    """Апгрейд: ставка одним или несколькими подарками из инвентаря, шанс = сумма стоимости / цена цели."""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -12749,72 +12728,65 @@ def cashout_final():
 
 @app.route('/api/ultimate-crash/history', methods=['GET'])
 def get_ultimate_crash_history_api():
-    """Получение истории множителей"""
+    """История Crash без дублей одного и того же раунда."""
     try:
-        limit = request.args.get('limit', 10, type=int)
-
+        limit = max(1, min(request.args.get('limit', 10, type=int), 50))
         conn = get_db_connection()
         cursor = conn.cursor()
-
+        rows = []
         try:
             cursor.execute('''
-                SELECT id, final_multiplier, finished_at, is_bonus
+                SELECT id, game_id, final_multiplier, finished_at, COALESCE(is_bonus, FALSE)
                 FROM ultimate_crash_history
-                ORDER BY finished_at DESC
+                ORDER BY id DESC
                 LIMIT ?
-            ''', (limit,))
+            ''', (max(limit * 4, 30),))
+            rows = cursor.fetchall()
+            has_game_id = True
         except Exception:
-            # Fallback для старых БД
+            try:
+                conn.rollback()
+            except Exception:
+                pass
             cursor.execute('''
                 SELECT id, final_multiplier, finished_at
                 FROM ultimate_crash_history
-                ORDER BY finished_at DESC
+                ORDER BY id DESC
                 LIMIT ?
-            ''', (limit,))
-            cursor2_rows = []
-            for r in cursor.fetchall():
-                cursor2_rows.append((r[0], r[1], r[2], False))
-            class _Wrap:
-                pass
-            history = cursor2_rows
+            ''', (max(limit * 4, 30),))
+            rows = cursor.fetchall()
+            has_game_id = False
+        finally:
             conn.close()
-            history_list = []
-            for item in history:
-                history_list.append({
-                    'id': item[0],
-                    'final_multiplier': float(item[1]),
-                    'finished_at': item[2],
-                    'is_bonus': False
-                })
-            return jsonify({'success': True, 'history': history_list})
-
-        history = cursor.fetchall()
-        conn.close()
 
         history_list = []
-        for item in history:
-            is_b = bool(item[3]) if len(item) > 3 else False
+        seen_games = set()
+        for row in rows:
+            if has_game_id:
+                rid, game_id, mult, finished_at, is_bonus = row
+                key = str(game_id) if game_id is not None else f'id:{rid}'
+            else:
+                rid, mult, finished_at = row
+                game_id = None
+                is_bonus = False
+                key = f'id:{rid}'
+            if key in seen_games:
+                continue
+            seen_games.add(key)
             history_list.append({
-                'id': item[0],
-                'final_multiplier': float(item[1]),
-                'finished_at': item[2],
-                'is_bonus': is_b
+                'id': rid,
+                'game_id': game_id,
+                'final_multiplier': float(mult),
+                'finished_at': finished_at,
+                'is_bonus': bool(is_bonus)
             })
+            if len(history_list) >= limit:
+                break
 
-        logger.info(f"📊 Отправлено {len(history_list)} записей истории")
-        return jsonify({
-            'success': True,
-            'history': history_list
-        })
-
+        return jsonify({'success': True, 'history': history_list})
     except Exception as e:
-        logger.error(f"❌ Ошибка получения истории: {e}")
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'history': []
-        })
-
+        logger.error(f"❌ Ошибка получения истории Crash: {e}")
+        return jsonify({'success': False, 'error': str(e), 'history': []})
 
 @app.route('/api/ultimate-crash/quick-status', methods=['GET'])
 def ultimate_crash_quick_status():
