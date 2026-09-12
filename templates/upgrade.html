@@ -596,6 +596,18 @@ body.epic-mode .wheel-green-arc{
     .bet-amount-input{font-size:20px;padding-right:80px}
     .bnav-item span{font-size:9px}
 }
+
+/* RASSWET VISUAL POLISH v2 */
+:root{--accent:#58a6ff;--accent2:#7c4dff;--win:#24c38e;--danger:#ff477e}
+body{background:radial-gradient(circle at 50% -10%,rgba(88,166,255,.16),transparent 38%),radial-gradient(circle at 100% 55%,rgba(124,77,255,.10),transparent 30%),#101827;}
+.select-card,.modal-item,.bet-balance-card,.settings-modal{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+.select-card{box-shadow:inset 0 1px rgba(255,255,255,.04),0 14px 35px rgba(0,0,0,.18);}
+.wheel-wrap{animation:wheelFloat 4.8s ease-in-out infinite;}
+@keyframes wheelFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.wheel-center-pct{text-shadow:0 0 22px rgba(88,166,255,.35);}
+.btn-main:not(:disabled){animation:upgradePulse 2s ease-in-out infinite;}
+@keyframes upgradePulse{0%,100%{box-shadow:0 8px 25px rgba(59,130,246,.25)}50%{box-shadow:0 12px 35px rgba(88,166,255,.48)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
@@ -768,9 +780,6 @@ body.epic-mode .wheel-green-arc{
             <button class="bet-tab active" id="betTabGram" onclick="switchBetTab('gram')">
                 <img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'"> GRAM
             </button>
-            <button class="bet-tab" id="betTabInv" onclick="switchBetTab('inv')">
-                <img src="/static/img/gift.png"> Inventory
-            </button>
         </div>
 
         <div class="bet-gram-section" id="betGramSection">
@@ -802,7 +811,7 @@ body.epic-mode .wheel-green-arc{
             <button class="bet-place-btn" id="gramConfirmBtn" onclick="confirmGramBet()" disabled>Поставить</button>
         </div>
 
-        <div class="bet-inv-section" id="betInvSection" style="display:none">
+        <div class="bet-inv-section" id="betInvSection" style="display:none !important">
             <div class="modal-search-wrap">
                 <input type="text" class="modal-search" id="inventorySearch" placeholder="Поиск подарков..." oninput="filterInventory()">
                 <svg class="modal-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -1274,6 +1283,7 @@ function closeBetModal(){
     if(m) m.classList.remove('show');
 }
 function switchBetTab(tab){
+    tab = 'gram';
     var tabGram = $('betTabGram');
     var tabInv = $('betTabInv');
     var secGram = $('betGramSection');
@@ -1457,6 +1467,8 @@ function renderInventoryModal(){
     });
 }
 function _selectInventoryGift(it){
+    showToast('Ставка подарком отключена — используй GRAM', 'err');
+    return;
     selectedGift = {
         type: 'gift',
         id: it.id,
@@ -1692,7 +1704,7 @@ function disableEpicMode(){
    DO UPGRADE
    ══════════════════════════════════════════════════════════════ */
 async function doUpgrade(){
-    if(isSpinning || !targetGift || !selectedGift) return;
+    if(isSpinning || !targetGift || !selectedGift || selectedGift.type !== 'gram') return;
     isSpinning = true;
     ensureAudio();
 
@@ -1717,29 +1729,16 @@ async function doUpgrade(){
 
     var result = null;
     try{
-        if(selectedGift.type === 'gram'){
-            var r = await fetch('/api/upgrade-with-ton', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_id: userId,
-                    bet_amount: selectedGift.value,
-                    target_gift_id: targetGift.fragment_slug || targetGift.id
-                })
-            });
-            result = await r.json();
-        } else {
-            var r2 = await fetch('/api/upgrade-multi', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_id: userId,
-                    inventory_ids: [selectedGift.id],
-                    target_gift_id: targetGift.fragment_slug || targetGift.id
-                })
-            });
-            result = await r2.json();
-        }
+        var r = await fetch('/api/upgrade-with-ton', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: userId,
+                bet_amount: selectedGift.value,
+                target_gift_id: targetGift.fragment_slug || targetGift.id
+            })
+        });
+        result = await r.json();
     }catch(e){
         result = {success: false, error: 'Ошибка сети'};
     }
