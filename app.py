@@ -930,15 +930,6 @@ def _get_cached_crash_rtp():
         return _crash_rtp_cache['value']
 
 
-def reset_crash_cache():
-    """Сброс кэша краша."""
-    try:
-        update_crash_cache(0, 'waiting', 1.0, 5.0, 5.0, is_bonus=False)
-        logger.info("🔄 Crash cache сброшен")
-    except Exception as e:
-        logger.warning(f"reset_crash_cache: {e}")
-
-
 # ══════════════════════════════════════════════════════════════
 # ★ ВОССТАНОВЛЕННЫЕ PORTAL ПЕРЕМЕННЫЕ
 # ══════════════════════════════════════════════════════════════
@@ -9985,7 +9976,7 @@ def portal_logout():
 
 
 @app.route('/api/portal/status', methods=['GET'])
-def portal_status():
+def portal_status_legacy():
     """Статус подключения к Portal."""
     try:
         token = ''
