@@ -74,217 +74,288 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .bal-plus-crash:active{transform:scale(.9)}
 
-/* ══════════════ CONTAINER ══════════════ */
-.games-container{
-    max-width:480px;margin:0 auto;
-    padding:8px 12px calc(var(--safe-bottom) + 32px);
-    position:relative;z-index:1;
+/* ══════════════ GAMES HOME — REFERENCE LAYOUT ══════════════ */
+body{
+    width:100%;
+    max-width:480px;
+    margin:0 auto;
+    background:#171717;
+    background-image:linear-gradient(180deg,#171717 0%,#151515 100%);
+}
+.top-bar{
+    height:79px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    padding:8px 7px 8px 14px;
+    max-width:480px;
+    margin:0 auto;
+    position:relative;
+    z-index:20;
+    background:#242424;
+    border-bottom:1px solid #414141;
+}
+.top-right-btns{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+}
+.user-avatar{
+    width:52px;height:52px;border-radius:50%;overflow:hidden;flex:none;
+    background:linear-gradient(135deg,#4b16d1,#17113c);
+    border:2px solid #7c42ff;
+    box-shadow:0 0 0 1px rgba(255,255,255,.12),0 5px 15px rgba(0,0,0,.35);
+    display:flex;align-items:center;justify-content:center;
+}
+.user-avatar img{width:100%;height:100%;display:block;object-fit:cover}
+.user-avatar svg{width:27px;height:27px;fill:rgba(255,255,255,.9)}
+.bal-pill-crash{
+    margin-right:auto;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:center;
+    gap:3px;
+    min-width:110px;
+    padding:0 2px;
+    border:0;
+    background:none;
+    backdrop-filter:none;
+    font-weight:800;
+    font-size:17px;
+    color:#fff;
+    line-height:1;
+}
+.bal-pill-crash::before{
+    content:'Your balance';
+    color:#9b9b9b;
+    font-size:11px;
+    font-weight:500;
+    line-height:1;
+    margin-bottom:2px;
+}
+.bal-pill-crash img{
+    width:22px;height:22px;object-fit:contain;
+    vertical-align:middle;
+}
+.bal-pill-crash span{
+    display:flex;
+    align-items:center;
+    gap:5px;
+}
+.deposit-top-btn{
+    height:36px;
+    min-width:105px;
+    padding:0 14px;
+    border-radius:13px;
+    background:#8060dd;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    font-size:12px;
+    font-weight:800;
+    box-shadow:none;
+}
+.deposit-top-btn svg{
+    width:16px;height:16px;
+    fill:none;stroke:currentColor;
+    stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;
 }
 
-/* ══════════════ GAME CARD ══════════════ */
-.game-card{
+/* small category strip */
+.games-container{
+    max-width:480px;
+    margin:0 auto;
+    padding:0 0 calc(var(--safe-bottom) + 24px);
     position:relative;
-    border:none;
-    border-radius:28px;
-    cursor:pointer;
-    transition:transform .3s cubic-bezier(.175,.885,.32,1.275);
-    overflow:hidden;
+    z-index:1;
+}
+.games-divider{
+    height:1px;
     width:100%;
-    height:160px;
-    margin-bottom:14px;
-    display:block;
+    margin:0;
+    background:#3a3a3a;
+}
+.games-grid{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    padding:20px 23px 0;
+}
+.games-grid::before{
+    content:'Live';
+    display:flex;
+    align-items:center;
+    position:absolute;
+    top:91px;
+    left:35px;
+    height:32px;
+    color:#eee;
+    font-size:15px;
+    font-weight:800;
+    writing-mode:vertical-rl;
+    transform:rotate(180deg);
+    letter-spacing:.2px;
+}
+.games-grid::after{
+    content:'';
+    position:absolute;
+    top:99px;
+    left:37px;
+    width:9px;height:9px;border-radius:50%;
+    background:#38d46a;
+    box-shadow:0 0 8px rgba(56,212,106,.25);
+}
+.game-tile{
+    position:relative;
+    width:100%;
+    height:100px;
+    min-height:100px;
+    border:0;
+    border-radius:21px;
+    overflow:hidden;
+    cursor:pointer;
     text-align:left;
     padding:0;
-    background:none;
     isolation:isolate;
-    -webkit-tap-highlight-color:transparent;
+    transition:transform .18s ease,filter .18s ease;
+    box-shadow:0 4px 12px rgba(0,0,0,.24);
 }
-.game-card:active{transform:scale(.97)}
+.game-tile:active{transform:scale(.98);filter:brightness(.95)}
 
-.game-card::before{
-    content:'';position:absolute;inset:-2px;
-    border-radius:30px;z-index:-1;
-    opacity:.85;filter:blur(18px);
-    transition:opacity .3s;
-}
-.game-card-inventory::before{background:linear-gradient(135deg,#fbbf24,#b45309)}
-.game-card-leaderboard::before{background:linear-gradient(135deg,#facc15,#ca8a04)}
-.game-card-crash::before{background:linear-gradient(135deg,#ff8a3d,#c2410c)}
-.game-card-cases::before{background:linear-gradient(135deg,#60a5fa,#1e40af)}
-.game-card-market::before{background:linear-gradient(135deg,#34d399,#047857)}
-.game-card-upgrade::before{background:linear-gradient(135deg,#a78bfa,#6d28d9)}
-.game-card:active::before{opacity:.5}
-
-.game-card-content{
-    display:flex;justify-content:space-between;align-items:flex-end;
-    padding:18px 22px;height:100%;width:100%;
-    position:relative;z-index:3;
-}
-
-.game-card-info{display:flex;flex-direction:column;gap:8px;align-self:center}
-
-.game-card-text{
-    font-size:26px;font-weight:800;color:#fff;
-    line-height:1.1;letter-spacing:-.5px;
-    text-shadow:0 2px 12px rgba(0,0,0,.5);
+/* decorative category chips above cards */
+.games-grid .game-tile:first-child{margin-top:65px}
+.games-grid .game-tile:first-child::before{
+    content:'';
+    position:absolute;
+    top:-65px;left:32px;
+    width:400px;height:48px;
+    background:
+      radial-gradient(circle at 8% 55%,#f6b51c 0 24px,transparent 25px),
+      radial-gradient(circle at 20% 55%,#ff5b88 0 24px,transparent 25px),
+      radial-gradient(circle at 32% 55%,#ffc72b 0 24px,transparent 25px),
+      radial-gradient(circle at 44% 55%,#6bd9ff 0 24px,transparent 25px),
+      radial-gradient(circle at 56% 55%,#b36aff 0 24px,transparent 25px),
+      radial-gradient(circle at 68% 55%,#11b7ad 0 24px,transparent 25px),
+      radial-gradient(circle at 80% 55%,#ff83aa 0 24px,transparent 25px);
+    pointer-events:none;
+    z-index:20;
 }
 
-.game-card-players{
-    position:absolute;top:14px;left:18px;
-    display:flex;align-items:center;gap:5px;
-    font-size:11px;font-weight:600;
-    color:rgba(255,255,255,.85);
-    z-index:5;
-    background:rgba(0,0,0,.4);
-    padding:5px 12px;border-radius:20px;
-    backdrop-filter:blur(10px);
-    -webkit-backdrop-filter:blur(10px);
-    border:1px solid rgba(255,255,255,.15);
+/* rocket */
+.game-tile-rocket{
+    background:
+      linear-gradient(110deg,#72b4ed 0%,#579ee0 48%,#77b6ec 100%);
 }
-.game-card-players svg{width:11px;height:11px;opacity:.9}
+.game-tile-rocket::after{
+    content:'';
+    position:absolute;inset:0;
+    z-index:1;
+    background:
+      linear-gradient(112deg,transparent 0 19%,rgba(255,255,255,.12) 19.2% 21%,transparent 21.2% 37%,rgba(255,255,255,.08) 37.2% 39%,transparent 39.2% 100%),
+      linear-gradient(170deg,transparent 0 54%,rgba(255,255,255,.07) 54.2% 55.5%,transparent 55.7%);
+}
+.game-tile-rocket .game-tile-title{
+    position:absolute;left:20px;bottom:18px;z-index:6;
+    font-size:23px;
+}
+.game-tile-rocket .game-tile-title{display:flex;align-items:center;gap:6px}.game-tile-rocket .game-tile-title svg{width:22px;height:22px;flex:none}
+.game-tile-rocket .game-tile-subtitle{display:none}
+.game-tile-rocket::marker{display:none}
 
-/* ════ GIF / PNG ════ */
-.game-card-gif{
-    position:absolute;right:8px;bottom:-6px;
-    width:135px;height:135px;
+/* hot label */
+.game-tile-rocket > .hot-label,
+.game-tile-market > .hot-label,
+.game-tile-playhub > .hot-label{
+    position:absolute;
+    left:16px;top:15px;z-index:8;
+    padding:6px 9px;
+    background:#fff;color:#555;
+    border-radius:7px;
+    font-size:10px;font-weight:800;
+    display:flex;align-items:center;gap:4px;
+}
+.game-tile > .hot-label svg{width:13px;height:13px;flex:none}
+
+/* generic image */
+.game-tile-gif{
+    position:absolute;z-index:5;
+    right:15px;top:-5px;
+    width:106px;height:106px;
     object-fit:contain;
-    filter:drop-shadow(0 8px 24px rgba(0,0,0,.6));
-    z-index:4;pointer-events:none;
+    filter:drop-shadow(0 8px 14px rgba(0,0,0,.4));
+    pointer-events:none;
     will-change:transform;
-    animation:floatGif 4.5s ease-in-out infinite;
-    border-radius:22px;
-    overflow:hidden;
 }
-.game-card-gif.rounded{
-    border-radius:24px;
-    overflow:hidden;
-    mask-image:radial-gradient(circle at center, #000 68%, transparent 100%);
-    -webkit-mask-image:radial-gradient(circle at center, #000 68%, transparent 100%);
-    background:transparent;
+.game-tile-rocket .game-tile-gif{transform:rotate(-8deg)}
+.game-tile-market{
+    background:
+      linear-gradient(120deg,#ffb80f 0%,#ffad08 50%,#ffc42c 100%);
+}
+.game-tile-market .game-tile-title{
+    position:absolute;left:20px;bottom:18px;z-index:6;
+    font-size:23px;
+}
+.game-tile-market .game-tile-title{display:flex;align-items:center;gap:6px}.game-tile-market .game-tile-title svg{width:21px;height:21px;flex:none}
+.game-tile-market .game-tile-subtitle{display:none}
+.game-tile-market .game-tile-gif{
+    right:8px;top:1px;width:225px;height:98px;
+    object-fit:contain;
+    object-position:left center;
+    border-radius:0;
+    mask-image:none;-webkit-mask-image:none;
+}
+
+/* play hub */
+.game-tile-playhub{
+    height:100px;
+    min-height:100px;
     padding:0;
+    background:#4313a7 url('/static/img/playhub.png') center/cover no-repeat;
+    border:0;
 }
-@keyframes floatGif{
-    0%,100%{transform:translateY(0) rotate(0)}
-    25%{transform:translateY(-6px) rotate(-1deg)}
-    50%{transform:translateY(0) rotate(0)}
-    75%{transform:translateY(-3px) rotate(1deg)}
+.game-tile-playhub::after{
+    content:'';position:absolute;inset:0;z-index:1;
+    background:linear-gradient(90deg,rgba(48,0,110,.28),rgba(48,0,110,0) 70%);
 }
+.game-tile-playhub .upg-card{
+    position:absolute;z-index:5;
+    left:0;top:0;width:100px;height:130px;
+    transform-origin:0 0;
+    transform:matrix3d(.775344,.1866,0,-.000698,-.304346,.821269,0,-.000548,0,0,1,0,32.5457,-.479443,0,1);
+    object-fit:cover;
+    border-radius:10px;
+    filter:drop-shadow(0 10px 16px rgba(0,0,0,.5));
+    pointer-events:none;
+}
+.playhub-copy{
+    position:absolute;z-index:7;
+    left:16px;bottom:17px;margin:0;padding:0;
+}
+.playhub-copy .game-tile-title{
+    font-size:20px;
+    gap:5px;
+}
+.playhub-copy .game-tile-title svg{
+    width:20px;height:20px;
+    order:-1;
+}
+.playhub-copy .game-tile-subtitle{display:none}
+.playhub-arrow-orbit{position:absolute;z-index:10;left:105px;top:24px;width:66px;height:58px;transform-origin:50% 50%;animation:playhubArrowOrbit 5s linear infinite;pointer-events:none}
+.playhub-arrow{position:absolute;left:42px;top:15px;width:24px;height:27px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55));transform:rotate(12deg)}
+@keyframes playhubArrowOrbit{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 
-/* ══════════════ ТЕМЫ КАРТОЧЕК ══════════════ */
-.game-card-inventory{
-    background:
-        radial-gradient(90% 70% at 85% 20%, rgba(251,191,36,.45) 0%, transparent 65%),
-        radial-gradient(120% 100% at 20% 100%, rgba(180,83,9,.7) 0%, transparent 75%),
-        linear-gradient(135deg, #3d2505 0%, #291a0a 50%, #1a1005 100%);
-    box-shadow:
-        0 10px 36px rgba(251,191,36,.35),
-        inset 0 1px 0 rgba(255,255,255,.12);
-    border:1.5px solid rgba(251,191,36,.35);
-}
-.game-card-leaderboard{
-    background:
-        radial-gradient(90% 70% at 85% 20%, rgba(250,204,21,.4) 0%, transparent 65%),
-        radial-gradient(120% 100% at 20% 100%, rgba(202,138,4,.7) 0%, transparent 75%),
-        linear-gradient(135deg, #3d3105 0%, #29200a 50%, #1a1405 100%);
-    box-shadow:
-        0 10px 36px rgba(250,204,21,.35),
-        inset 0 1px 0 rgba(255,255,255,.12);
-    border:1.5px solid rgba(250,204,21,.35);
-}
-.game-card-crash{
-    background:
-        radial-gradient(90% 70% at 85% 20%, rgba(255,138,61,.45) 0%, transparent 65%),
-        radial-gradient(120% 100% at 20% 100%, rgba(194,65,12,.7) 0%, transparent 75%),
-        linear-gradient(135deg, #3d1505 0%, #29100a 50%, #1a0a05 100%);
-    box-shadow:
-        0 10px 36px rgba(255,138,61,.35),
-        inset 0 1px 0 rgba(255,255,255,.12);
-    border:1.5px solid rgba(255,138,61,.35);
-}
-.game-card-cases{
-    background:
-        radial-gradient(90% 70% at 85% 20%, rgba(96,165,250,.45) 0%, transparent 65%),
-        radial-gradient(120% 100% at 20% 100%, rgba(30,64,175,.7) 0%, transparent 75%),
-        linear-gradient(135deg, #0a1a45 0%, #081230 50%, #050a1e 100%);
-    box-shadow:
-        0 10px 36px rgba(96,165,250,.35),
-        inset 0 1px 0 rgba(255,255,255,.12);
-    border:1.5px solid rgba(96,165,250,.35);
-}
-.game-card-market{
-    background:
-        radial-gradient(90% 70% at 85% 20%, rgba(52,211,153,.45) 0%, transparent 65%),
-        radial-gradient(120% 100% at 20% 100%, rgba(4,120,87,.7) 0%, transparent 75%),
-        linear-gradient(135deg, #00291c 0%, #001a13 50%, #000d09 100%);
-    box-shadow:
-        0 10px 36px rgba(52,211,153,.35),
-        inset 0 1px 0 rgba(255,255,255,.12);
-    border:1.5px solid rgba(52,211,153,.35);
-}
-.game-card-upgrade{
-    background:
-        radial-gradient(90% 70% at 85% 20%, rgba(167,139,250,.45) 0%, transparent 65%),
-        radial-gradient(120% 100% at 20% 100%, rgba(109,40,217,.7) 0%, transparent 75%),
-        linear-gradient(135deg, #231045 0%, #180a30 50%, #0d0518 100%);
-    box-shadow:
-        0 10px 36px rgba(167,139,250,.35),
-        inset 0 1px 0 rgba(255,255,255,.12);
-    border:1.5px solid rgba(167,139,250,.35);
-}
-
-/* ══════════════ UPGRADE WHEEL ══════════════ */
-.upgrade-wheel-svg{
-    position:absolute;right:-10px;bottom:-20px;
-    width:160px;height:160px;
-    z-index:4;pointer-events:none;
-    filter:drop-shadow(0 8px 24px rgba(167,139,250,.55));
-}
-.upgrade-wheel-svg .wheel-ring{fill:none;stroke:#1a1a2e;stroke-width:22}
-.upgrade-wheel-svg .wheel-tick{stroke:#fff;stroke-width:2;stroke-linecap:round}
-.upgrade-wheel-svg .wheel-inner{fill:none;stroke:rgba(255,255,255,.08);stroke-width:1}
-.upgrade-wheel-svg .wheel-pointer{fill:#fff;filter:drop-shadow(0 2px 8px rgba(0,0,0,.9))}
-.upgrade-wheel-svg .wheel-green{fill:none;stroke:url(#upgradeGreenGrad);stroke-width:22}
-
-/* ══════════════ LEADERBOARD CUP SVG ══════════════ */
-.leaderboard-cup-svg{
-    position:absolute;right:-10px;bottom:-20px;
-    width:160px;height:160px;
-    z-index:4;pointer-events:none;
-    filter:drop-shadow(0 8px 24px rgba(250,204,21,.55));
-    animation:floatGif 4.5s ease-in-out infinite;
-}
-
-/* ══════════════ TAGS ══════════════ */
-.game-card-tag{
-    position:absolute;top:14px;right:14px;
-    border-radius:10px;padding:6px 12px;
-    font-size:10px;font-weight:800;color:#fff;
-    letter-spacing:.8px;z-index:5;
-    box-shadow:0 4px 14px rgba(0,0,0,.45);
-    text-transform:uppercase;
-    border:1px solid rgba(255,255,255,.15);
-}
-.tag-live{
-    background:linear-gradient(135deg,#ff8a3d,#e74c3c);
-    box-shadow:0 4px 14px rgba(255,138,61,.6);
-    animation:livePulse 2s ease-in-out infinite;
-}
-@keyframes livePulse{
-    0%,100%{box-shadow:0 4px 14px rgba(255,138,61,.6)}
-    50%{box-shadow:0 4px 22px rgba(255,138,61,1)}
-}
-.tag-new{
-    background:linear-gradient(135deg,#4ade80,#16a34a);
-    box-shadow:0 4px 14px rgba(74,222,128,.6);
-}
-.tag-hot{
-    background:linear-gradient(135deg,#fb7185,#be123c);
-    box-shadow:0 4px 14px rgba(244,63,94,.6);
-}
-.tag-gold{
-    background:linear-gradient(135deg,#FFD700,#FFA500);
-    color:#000;
-    box-shadow:0 4px 14px rgba(255,215,0,.6);
+@media(max-width:380px){
+    .games-grid{padding-left:21px;padding-right:21px}
+    .games-grid::before{left:31px}
+    .games-grid::after{left:33px}
+    .game-tile{height:98px;min-height:98px;border-radius:20px}
+    .game-tile-playhub{height:98px;min-height:98px}
+    .game-tile-gif{right:8px;width:100px;height:100px}
 }
 
 /* ══════════════ DEPOSIT MODAL ══════════════ */
@@ -312,6 +383,8 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     border:none;background:rgba(249,105,153,.15);
     cursor:pointer;color:#F96999;font-size:18px;font-weight:700;
     display:flex;align-items:center;justify-content:center;
+}
+.deposit-close svg{width:17px;height:17px
 }
 .deposit-methods{display:flex;gap:12px}
 .deposit-method-btn{
@@ -341,181 +414,47 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 
 <!-- TOP BAR -->
 <div class="top-bar">
-    <div class="top-left">
-        <div class="online-pill">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-            <span id="onlineCount">0</span>
-        </div>
-    </div>
     <div class="top-right-btns">
-        <div class="bal-pill-crash">
-            <img src="/static/img/ton.png" alt="TON">
-            <span id="balVal">0.00</span>
+        <div class="user-avatar" id="userAvatar" aria-label="Профиль">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7.5" r="3.4"/><path d="M4.5 20.5c.4-4.1 3-6.3 7.5-6.3s7.1 2.2 7.5 6.3"/></svg>
         </div>
-        <button class="bal-plus-crash" onclick="openDeposit()">+</button>
+        <div class="bal-pill-crash">
+            <span><img src="/static/img/ton.png" alt="TON"><b id="balVal">0.00</b></span>
+        </div>
+        <button class="deposit-top-btn" onclick="openDeposit()" aria-label="Deposit">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/></svg>
+            <span>Deposit</span>
+        </button>
     </div>
 </div>
 
 <div class="games-container">
+    <div class="games-divider"></div>
+    <div class="games-grid">
+        <!-- 1. ROCKET / CRASH -->
+        <button class="game-tile game-tile-rocket" onclick="goTo('/crash')" aria-label="Rocket">
+            <div class="hot-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3.5 1.2 6.2 4.2 6.9 7.9L20.5 19l-4.2-1.7L14.6 21l-2.1-3.7L8.2 19l1.7-4.2C6.2 14.1 3.2 11.4 2 7.9L7.2 8.8A7.9 7.9 0 0 1 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="13.8" cy="8.4" r="1.6" fill="currentColor"/></svg><span>HOT!</span></div>
+            <div class="game-tile-title"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" fill="currentColor"/><path d="M5.26 17.242a.75.75 0 1 0-.897-1.203 5.243 5.243 0 0 0-2.05 5.022.75.75 0 0 0 .625.627 5.243 5.243 0 0 0 5.022-2.051.75.75 0 1 0-1.202-.897 3.744 3.744 0 0 1-3.008 1.51c0-1.23.592-2.323 1.51-3.008Z" fill="currentColor"/></svg><span>ROCKET</span></div>
+            <img src="/static/gifs/rockets/crash.gif" alt="Rocket" class="game-tile-gif" id="crashGif" loading="eager">
+        </button>
 
-    <!-- 1. INVENTORY (первая) -->
-    <button class="game-card game-card-inventory" onclick="goTo('/inventory')">
-        <div class="game-card-players">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span>Твой профиль</span>
-        </div>
-        <div class="game-card-content">
-            <div class="game-card-info">
-                <span class="game-card-text">Инвентарь</span>
+        <!-- 2. MARKET -->
+        <button class="game-tile game-tile-market" onclick="goTo('/market')" aria-label="Market">
+            <div class="hot-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8.5 12 3l7 5.5v9.75A1.75 1.75 0 0 1 17.25 20h-10A1.75 1.75 0 0 1 5.5 18.25V8.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 10h8v7H8z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 10V8h4v2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>HOT</span></div>
+            <div class="game-tile-title"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.375 3a1.875 1.875 0 0 0 0 3.75h1.875v4.5H3.375A1.875 1.875 0 0 1 1.5 9.375v-.75c0-1.036.84-1.875 1.875-1.875h3.193A3.375 3.375 0 0 1 12 2.753a3.375 3.375 0 0 1 5.432 3.997h3.943c1.035 0 1.875.84 1.875 1.875v.75c0 1.036-.84 1.875-1.875 1.875H12.75v-4.5h1.875a1.875 1.875 0 1 0-1.875-1.875V6.75h-1.5V4.875C11.25 3.839 10.41 3 9.375 3ZM11.25 12.75H3v6.75a2.25 2.25 0 0 0 2.25 2.25h6v-9ZM12.75 12.75v9h6.75a2.25 2.25 0 0 0 2.25-2.25v-6.75h-9Z" fill="currentColor"/></svg><span>Market</span></div>
+            <img src="/static/gifs/gifts/gift.gif" alt="Market" class="game-tile-gif" id="marketGif" loading="eager">
+        </button>
+
+        <!-- 3. PLAY HUB -->
+        <button class="game-tile game-tile-playhub" onclick="goTo('/upgrade')" aria-label="Play Hub">
+            <div class="hot-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c1.1 2.4 4.1 3.4 4.7 6.2.5 2.3-1.1 4.8-3.8 5.3 1.1-1.5.6-3.7-.9-4.5-.1 2.8-2.8 4.3-4.5 3.4-2.3-1.2-2.6-4.4-.4-6.2.1 1.5 1.2 2.4 2.2 2.6C8.9 7.5 10.5 5.3 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>HOT</span></div>
+            <img src="/static/img/cards/upg.png" alt="Upgrade card" class="upg-card">
+            <div class="playhub-arrow-orbit"><svg class="playhub-arrow" viewBox="0 0 27.6 30.498" fill="none" aria-hidden="true"><path d="M5.08 28.58L25.27 16.4C26.6 15.6 26.55 13.65 25.18 12.92L4.37 1.84C2.8 1 1 2.48 1.51 4.18L4.68 14.68C4.78 15.02 4.79 15.39 4.71 15.73L2.11 26.39C1.68 28.12 3.56 29.5 5.08 28.58Z" fill="#FF9A20" stroke="#FFCFA5"/></svg></div>
+            <div class="playhub-copy">
+                <div class="game-tile-title"><span>PLAY HUB</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" fill="currentColor"/></svg></div>
             </div>
-            <img src="/static/gifs/inv.gif" alt="Inventory" class="game-card-gif" loading="lazy"
-                 onerror="this.onerror=null;this.src='/static/img/gift.png'">
-        </div>
-        <div class="game-card-tag tag-gold">★ МОЙ</div>
-    </button>
-
-    <!-- 2. LEADERBOARD -->
-    <button class="game-card game-card-leaderboard" onclick="goTo('/leaderboard')">
-        <div class="game-card-players">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span>Топ игроков</span>
-        </div>
-        <div class="game-card-content">
-            <div class="game-card-info">
-                <span class="game-card-text">Топ</span>
-            </div>
-
-            <!-- Кубок -->
-            <svg class="leaderboard-cup-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <linearGradient id="cupGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#FFD700"/>
-                        <stop offset="50%" stop-color="#FFA500"/>
-                        <stop offset="100%" stop-color="#FF8C00"/>
-                    </linearGradient>
-                    <linearGradient id="cupGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#FFED4E"/>
-                        <stop offset="100%" stop-color="#E8A317"/>
-                    </linearGradient>
-                </defs>
-                <!-- Left ear -->
-                <path d="M 45 55 Q 30 55 30 75 Q 30 105 55 110 L 55 95 Q 42 90 42 75 Q 42 68 50 68 Z" fill="url(#cupGrad)" stroke="rgba(0,0,0,.3)" stroke-width="1.5"/>
-                <!-- Right ear -->
-                <path d="M 155 55 Q 170 55 170 75 Q 170 105 145 110 L 145 95 Q 158 90 158 75 Q 158 68 150 68 Z" fill="url(#cupGrad)" stroke="rgba(0,0,0,.3)" stroke-width="1.5"/>
-                <!-- Cup body -->
-                <path d="M 55 55 L 60 105 Q 62 125 80 130 L 120 130 Q 138 125 140 105 L 145 55 Z" fill="url(#cupGrad2)" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>
-                <!-- Highlight -->
-                <path d="M 70 65 Q 72 90 78 108" stroke="rgba(255,255,255,.5)" stroke-width="3" fill="none" stroke-linecap="round"/>
-                <!-- Handle base -->
-                <rect x="80" y="130" width="40" height="12" rx="3" fill="url(#cupGrad)" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>
-                <!-- Stem -->
-                <rect x="90" y="142" width="20" height="20" fill="url(#cupGrad)" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>
-                <!-- Base plate -->
-                <rect x="70" y="162" width="60" height="12" rx="3" fill="url(#cupGrad2)" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/>
-                <!-- Star on cup -->
-                <path d="M 100 75 L 105 90 L 120 90 L 108 98 L 112 112 L 100 104 L 88 112 L 92 98 L 80 90 L 95 90 Z" fill="#FFF" opacity="0.9"/>
-            </svg>
-
-        </div>
-        <div class="game-card-tag tag-live">LIVE</div>
-    </button>
-
-    <!-- 3. UPGRADE -->
-    <button class="game-card game-card-upgrade" onclick="goTo('/upgrade')">
-        <div class="game-card-players">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span id="upgradePlayers">0 играют</span>
-        </div>
-        <div class="game-card-content">
-            <div class="game-card-info">
-                <span class="game-card-text">Апгрейды</span>
-            </div>
-        </div>
-
-        <svg class="upgrade-wheel-svg" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <linearGradient id="upgradeGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#24C38E"/>
-                    <stop offset="100%" stop-color="#10b981"/>
-                </linearGradient>
-            </defs>
-
-            <g id="upgradeWheelRotator" style="transform-origin:120px 120px">
-                <circle class="wheel-ring" cx="120" cy="120" r="100"/>
-                <circle class="wheel-green" cx="120" cy="120" r="100"
-                        stroke-dasharray="190 628"
-                        transform="rotate(-90 120 120)"/>
-                <g id="upgradeWheelRisks" opacity="0.6"></g>
-                <circle class="wheel-inner" cx="120" cy="120" r="86"/>
-            </g>
-
-            <path class="wheel-pointer"
-                  d="M120 34 L104 62 C110 58 130 58 136 62 Z"
-                  stroke="rgba(0,0,0,.4)" stroke-width="1" stroke-linejoin="round"/>
-            <circle cx="120" cy="62" r="5" fill="#fff"/>
-        </svg>
-
-        <div class="game-card-tag tag-new">NEW</div>
-    </button>
-
-    <!-- 4. CRASH -->
-    <button class="game-card game-card-crash" onclick="goTo('/crash')">
-        <div class="game-card-players">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span id="crashPlayers">0 играют</span>
-        </div>
-        <div class="game-card-content">
-            <div class="game-card-info">
-                <span class="game-card-text">Краш</span>
-            </div>
-            <img src="/static/gifs/rockets/crash.gif" alt="Crash" class="game-card-gif" id="crashGif" loading="lazy">
-        </div>
-        <div class="game-card-tag tag-live">LIVE</div>
-    </button>
-
-    <!-- 5. CASES -->
-    <button class="game-card game-card-cases" onclick="goTo('/cases')">
-        <div class="game-card-players">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span id="casesPlayers">0 играют</span>
-        </div>
-        <div class="game-card-content">
-            <div class="game-card-info">
-                <span class="game-card-text">Кейсы</span>
-            </div>
-            <img src="/static/gifs/cases.gif" alt="Cases" class="game-card-gif" loading="lazy"
-                 onerror="this.onerror=null;this.src='/static/gifs/Hlop.gif'">
-        </div>
-        <div class="game-card-tag tag-hot">HOT</div>
-    </button>
-
-    <!-- 6. MARKET -->
-    <button class="game-card game-card-market" onclick="goTo('/market')">
-        <div class="game-card-players">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            <span id="marketPlayers">0 играют</span>
-        </div>
-        <div class="game-card-content">
-            <div class="game-card-info">
-                <span class="game-card-text">Маркет</span>
-            </div>
-            <img src="/static/img/gift.png" alt="Market" class="game-card-gif rounded" id="marketGif" loading="lazy">
-        </div>
-        <div class="game-card-tag tag-new">NEW</div>
-    </button>
-
+        </button>
+    </div>
 </div>
 
 <!-- DEPOSIT MODAL -->
@@ -523,7 +462,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
     <div class="deposit-modal">
         <div class="deposit-header">
             <div class="deposit-title">Пополнение</div>
-            <button class="deposit-close" onclick="closeDeposit()">✕</button>
+            <button class="deposit-close" onclick="closeDeposit()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
         </div>
         <div class="deposit-methods">
             <button class="deposit-method-btn" onclick="closeDeposit();goTo('/crash')">
@@ -546,9 +485,7 @@ var lastCrashGif = 'crash';
 
 function $(id){ return document.getElementById(id); }
 
-/* ══════════════════════════════════════════════════════════════
-   RANDOM CRASH GIF
-   ══════════════════════════════════════════════════════════════ */
+/* RANDOM ROCKET */
 function randomizeCrashGif(){
     var img = $('crashGif');
     if(!img) return;
@@ -556,93 +493,52 @@ function randomizeCrashGif(){
     var random = pool[Math.floor(Math.random() * pool.length)];
     lastCrashGif = random;
     img.style.opacity = '0';
-    img.style.transition = 'opacity .3s';
+    img.style.transition = 'opacity .25s ease';
     setTimeout(function(){
         img.src = '/static/gifs/rockets/' + random + '.gif';
-        img.onerror = function(){
-            this.onerror = null;
-            this.src = '/static/gifs/rockets/crash.gif';
-        };
+        img.onerror = function(){ this.onerror=null; this.src='/static/gifs/rockets/crash.gif'; };
         img.style.opacity = '1';
-    }, 150);
+    },120);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   RANDOM MARKET PNG
-   ══════════════════════════════════════════════════════════════ */
+/* RANDOM LOCAL GIFT */
 async function randomizeMarketGif(){
     var img = $('marketGif');
     if(!img) return;
     try{
-        var r = await fetch('/api/market/gifts');
+        var r = await fetch('/api/market/gifts', {cache:'no-store'});
         var d = await r.json();
         if(d.success && d.gifts && d.gifts.length){
-            var pool = d.gifts.slice(0, Math.min(30, d.gifts.length));
+            var pool = d.gifts.slice(0, Math.min(50, d.gifts.length));
             var gift = pool[Math.floor(Math.random() * pool.length)];
-            var src = buildMarketGiftImage(gift);
-            img.src = src;
-            img.onerror = function(){
-                this.onerror = null;
-                var alt = pool[Math.floor(Math.random() * pool.length)];
-                this.src = buildMarketGiftImage(alt);
-            };
+            var src = gift.image || '';
+            if(src && !/^https?:\/\//i.test(src)){
+                var fileName = String(src).split('/').pop();
+                src = '/static/gifs/gifts/' + fileName;
+            }
+            img.style.opacity='0';
+            setTimeout(function(){
+                img.src = src || '/static/img/gift.png';
+                img.onerror=function(){this.onerror=null;this.src='/static/img/gift.png';};
+                img.style.opacity='1';
+            },120);
         }
-    }catch(e){}
+    }catch(e){
+        img.src='/static/img/gift.png';
+    }
 }
 
-function buildMarketGiftImage(gift){
-    if(!gift) return '/static/img/gift.png';
-    if(gift.slug){
-        var cleanSlug = String(gift.slug).replace(/\s/g, '');
-        var nftNum = Math.floor(Math.random() * 4999) + 1;
-        return 'https://nft.fragment.com/gift/' + cleanSlug + '-' + nftNum + '.medium.jpg';
+function setAvatar(auth){
+    var wrap=$('userAvatar');
+    if(!wrap || !auth) return;
+    var photo=auth.photo_url || auth.photoUrl || '';
+    if(photo){
+        wrap.innerHTML='<img src="'+String(photo).replace(/"/g,'&quot;')+'" alt="">';
+        return;
     }
-    return gift.image || '/static/img/gift.png';
+    var initials=((auth.first_name||auth.username||'U').trim().charAt(0)||'U').toUpperCase();
+    wrap.innerHTML='<span style="font-size:13px;font-weight:850;color:#fff">'+initials.replace(/[<>]/g,'')+'</span>';
 }
-
-/* ══════════════════════════════════════════════════════════════
-   UPGRADE WHEEL ANIMATION
-   ══════════════════════════════════════════════════════════════ */
-(function initUpgradeWheel(){
-    var risksGroup = $('upgradeWheelRisks');
-    if(!risksGroup) return;
-
-    var cx = 120, cy = 120, rOuter = 100;
-    var html = '';
-    for(var i = 0; i < 60; i++){
-        var angle = (i / 60) * 360;
-        var isMajor = (i % 5 === 0);
-        var len = isMajor ? 8 : 5;
-        var width = isMajor ? 1.8 : 1;
-        var opacity = isMajor ? 0.75 : 0.4;
-        var rad = (angle - 90) * Math.PI / 180;
-        var x1 = cx + Math.cos(rad) * (rOuter - 2);
-        var y1 = cy + Math.sin(rad) * (rOuter - 2);
-        var x2 = cx + Math.cos(rad) * (rOuter - 2 - len);
-        var y2 = cy + Math.sin(rad) * (rOuter - 2 - len);
-        html += '<line class="wheel-tick" x1="' + x1.toFixed(1) + '" y1="' + y1.toFixed(1)
-              + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1)
-              + '" stroke="rgba(255,255,255,' + opacity + ')"'
-              + ' stroke-width="' + width + '"/>';
-    }
-    risksGroup.innerHTML = html;
-
-    var rotator = $('upgradeWheelRotator');
-    if(!rotator) return;
-
-    var angles = [0, 45, -30, 15, -60, 30, 0];
-    var i = 0;
-    function nextAngle(){
-        var target = angles[i % angles.length];
-        rotator.style.transition = 'transform 1.8s cubic-bezier(.34,1.56,.64,1)';
-        rotator.style.transform = 'rotate(' + target + 'deg)';
-        i++;
-    }
-    setTimeout(function(){
-        nextAngle();
-        setInterval(nextAngle, 2400);
-    }, 500);
-})();
 
 /* ══════════════════════════════════════════════════════════════
    NAV
@@ -682,18 +578,6 @@ async function loadOnline(){
         var r = await fetch('/api/online-count');
         var d = await r.json();
         var count = d.count || 0;
-        var el = $('onlineCount');
-        if(el) el.textContent = count;
-
-        var crashN = Math.max(3, Math.floor(count * 0.6 + Math.random() * 5));
-        var casesN = Math.max(2, Math.floor(count * 0.4 + Math.random() * 4));
-        var marketN = Math.max(1, Math.floor(count * 0.3 + Math.random() * 3));
-        var upgN = Math.max(1, Math.floor(count * 0.35 + Math.random() * 3));
-
-        if($('crashPlayers')) $('crashPlayers').textContent = crashN + ' играют';
-        if($('casesPlayers')) $('casesPlayers').textContent = casesN + ' играют';
-        if($('marketPlayers')) $('marketPlayers').textContent = marketN + ' играют';
-        if($('upgradePlayers')) $('upgradePlayers').textContent = upgN + ' играют';
     }catch(e){}
 }
 
@@ -704,6 +588,7 @@ async function initGames(){
     var auth = await telegramAuth();
     if(auth && auth.id){
         userId = auth.id;
+        setAvatar(auth);
         try{
             var br = await fetch('/api/check-ban?user_id=' + auth.id);
             var bd = await br.json();
@@ -719,10 +604,8 @@ async function initGames(){
         }catch(e){}
     }
     loadTopBar();
-    loadOnline();
     randomizeCrashGif();
     randomizeMarketGif();
-    setInterval(loadOnline, 15000);
     setInterval(randomizeCrashGif, 3000);
     setInterval(randomizeMarketGif, 5000);
 }
