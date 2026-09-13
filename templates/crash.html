@@ -24,98 +24,31 @@ body{
 .container{
     max-width:480px;margin:0 auto;
     min-height:100vh;display:flex;flex-direction:column;
-    position:relative;padding-bottom:104px;
+    position:relative;padding-bottom:90px;
     padding-top:calc(env(safe-area-inset-top,20px) + 40px);
 }
 .bottom-nav{
-    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);
-    transform:translateX(-50%);
-    z-index:4000;width:calc(100% - 24px);max-width:456px;height:70px;
-    padding:7px 8px;
-    background:rgba(24,29,40,.88);
-    border:1px solid rgba(255,255,255,.075);
-    border-radius:22px;
-    box-shadow:0 14px 38px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.045);
-    backdrop-filter:blur(18px) saturate(135%);
-    -webkit-backdrop-filter:blur(18px) saturate(135%);
-    display:grid;grid-template-columns:repeat(4,1fr);align-items:stretch;gap:5px;
-}
-.bottom-nav::before{
-    content:'';position:absolute;inset:0;border-radius:22px;pointer-events:none;
-    background:linear-gradient(180deg,rgba(255,255,255,.035),transparent 55%);
+    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+    z-index:4000;width:100%;max-width:480px;height:76px;
+    padding:0 8px calc(env(safe-area-inset-bottom,0) + 6px);
+    background:rgba(28,34,51,.92);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    border-top:1px solid rgba(59,130,246,.08);
+    display:flex;align-items:center;justify-content:space-around;
 }
 .bottom-nav-item{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:4px;padding:6px 4px;border-radius:16px;
-    background:transparent;border:0;outline:0;
-    color:rgba(255,255,255,.42);
-    font-family:inherit;font-weight:700;cursor:pointer;
-    transition:color .22s ease,background .22s ease,transform .16s ease,box-shadow .22s ease;
-    text-decoration:none;position:relative;min-width:0;height:56px;
-    isolation:isolate;-webkit-user-select:none;user-select:none;
+    gap:3px;padding:6px 14px;border-radius:12px;
+    background:transparent;border:none;
+    color:rgba(255,255,255,.4);
+    font-family:inherit;font-weight:600;cursor:pointer;
+    transition:all .3s;text-decoration:none;
+    position:relative;min-height:56px;height:56px;margin:auto 0;
 }
-.bottom-nav-item::before{
-    content:'';position:absolute;inset:0;border-radius:16px;z-index:-1;
-    background:linear-gradient(180deg,rgba(72,157,255,.18),rgba(34,104,183,.10));
-    opacity:0;transform:scale(.82);
-    transition:opacity .24s ease,transform .24s cubic-bezier(.2,.85,.2,1),box-shadow .24s ease;
-}
-.bottom-nav-item::after{
-    content:'';position:absolute;bottom:3px;left:50%;
-    width:4px;height:4px;border-radius:50%;background:#3B9BFF;
-    transform:translateX(-50%) scale(0);opacity:0;
-    box-shadow:0 0 12px rgba(59,155,255,.8);
-    transition:transform .24s cubic-bezier(.2,.9,.2,1),opacity .2s ease;
-}
-.bottom-nav-item svg{
-    width:22px;height:22px;flex-shrink:0;
-    fill:currentColor;stroke:none;
-    transition:transform .28s cubic-bezier(.2,.9,.2,1),filter .25s ease;
-}
-.bottom-nav-item span{
-    font-size:10px;font-weight:700;line-height:1;
-    letter-spacing:-.1px;white-space:nowrap;
-    transition:transform .22s ease,color .22s ease;
-}
-.bottom-nav-item.active{color:#fff}
-.bottom-nav-item.active::before{
-    opacity:1;transform:scale(1);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 5px 18px rgba(31,117,215,.10);
-}
-.bottom-nav-item.active::after{opacity:1;transform:translateX(-50%) scale(1)}
-.bottom-nav-item.active svg{
-    transform:translateY(-1px) scale(1.04);
-    filter:drop-shadow(0 4px 9px rgba(59,155,255,.32));
-}
-.bottom-nav-item.active span{transform:translateY(-1px)}
-.bottom-nav-item:not(.active):hover{color:rgba(255,255,255,.72)}
-.bottom-nav-item:not(.active):hover svg{transform:translateY(-1px) scale(1.03)}
-.bottom-nav-item:active{transform:scale(.92)}
-.bottom-nav-item:active::before{transform:scale(.94);opacity:.9}
-.bottom-nav-item:focus-visible::before{
-    opacity:1;transform:scale(1);box-shadow:0 0 0 2px rgba(59,130,246,.35);
-}
-@keyframes navActivePop{
-    0%{transform:scale(.88);opacity:.5}
-    65%{transform:scale(1.04);opacity:1}
-    100%{transform:scale(1);opacity:1}
-}
-.bottom-nav-item.nav-enter::before{animation:navActivePop .34s cubic-bezier(.2,.9,.2,1)}
-.bottom-nav-item.nav-enter svg{animation:navIconPop .42s cubic-bezier(.2,.9,.2,1)}
-@keyframes navIconPop{
-    0%{transform:translateY(3px) scale(.72) rotate(-7deg)}
-    65%{transform:translateY(-2px) scale(1.1) rotate(2deg)}
-    100%{transform:translateY(-1px) scale(1.04) rotate(0)}
-}
-@media (max-width:380px){
-    .bottom-nav{width:calc(100% - 16px);height:68px;bottom:calc(env(safe-area-inset-bottom,0px) + 7px);border-radius:20px}
-    .bottom-nav-item{height:54px;border-radius:15px}
-    .bottom-nav-item svg{width:21px;height:21px}
-}
-@media (prefers-reduced-motion:reduce){
-    .bottom-nav-item,.bottom-nav-item::before,.bottom-nav-item::after,.bottom-nav-item svg,.bottom-nav-item span{transition:none!important}
-    .bottom-nav-item.nav-enter::before,.bottom-nav-item.nav-enter svg{animation:none!important}
-}
+.bottom-nav-item svg{width:22px;height:22px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2}
+.bottom-nav-item span{font-size:10px;font-weight:600;line-height:1}
+.bottom-nav-item.active{background:rgba(255,255,255,.08);color:#fff}
+.bottom-nav-item:active{transform:scale(.9)}
 .ld-screen{
     position:fixed;inset:0;background:#1C2233;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -170,13 +103,18 @@ body{
 .game-field::after{content:'';position:absolute;inset:-20%;pointer-events:none;z-index:0;opacity:.55;transition:opacity .35s;animation:sceneDrift 18s linear infinite}
 @keyframes sceneDrift{0%{transform:translate3d(0,0,0) scale(1.02)}50%{transform:translate3d(-2%,1%,0) scale(1.06)}100%{transform:translate3d(0,0,0) scale(1.02)}}
 .game-field.scene-graph{background:#101010 url('/static/img/crash_graph_bg.png') center center/cover no-repeat;}
-.game-field.scene-graph::after{background:linear-gradient(180deg,rgba(8,10,16,.08),rgba(8,10,16,.18)),linear-gradient(90deg,transparent 0%,rgba(50,150,255,.06) 50%,transparent 100%);filter:drop-shadow(0 0 18px rgba(48,132,255,.16));animation:graphSceneDrift 10s ease-in-out infinite alternate;mix-blend-mode:screen}
+.game-field.scene-graph::before{background-image:linear-gradient(rgba(99,160,255,.24) 1px,transparent 1px),linear-gradient(90deg,rgba(99,160,255,.24) 1px,transparent 1px),linear-gradient(135deg,transparent 0%,rgba(70,150,255,.08) 42%,transparent 58%);background-size:48px 48px,48px 48px,180% 180%;opacity:.5;animation:graphGridMove 7s linear infinite;}
+.game-field.scene-graph::after{background:radial-gradient(circle at 50% 50%,rgba(45,145,255,.12),transparent 42%),linear-gradient(90deg,transparent 0%,rgba(50,150,255,.08) 50%,transparent 100%);filter:blur(1px) drop-shadow(0 0 18px rgba(48,132,255,.16));animation:graphSceneDrift 9s ease-in-out infinite alternate,graphGlowMove 5s ease-in-out infinite alternate;mix-blend-mode:screen}
+@keyframes graphGridMove{0%{background-position:0 0,0 0,-100% -50%}100%{background-position:48px 48px,-48px 48px,100% 50%}}
 @keyframes graphSceneDrift{0%{transform:scale(1.01) translate3d(0,0,0)}100%{transform:scale(1.055) translate3d(-.8%,.5%,0)}}
+@keyframes graphGlowMove{0%{opacity:.45;transform:translate3d(-2%,1%,0) scale(1)}100%{opacity:.9;transform:translate3d(2%,-1%,0) scale(1.08)}}
 .game-field.scene-space{background:#02030a url('/static/img/crash_space_bg.png') center center/cover no-repeat;}
-.game-field.scene-space::before{background-image:radial-gradient(circle,rgba(255,255,255,.5) 0 1px,transparent 1.5px),radial-gradient(circle,rgba(120,170,255,.35) 0 1px,transparent 1.5px);background-size:96px 96px,154px 154px;opacity:.34;animation:starDrift 22s linear infinite}
-.game-field.scene-space::after{background:radial-gradient(circle at 70% 62%,rgba(95,135,255,.09),transparent 28%),radial-gradient(circle at 24% 68%,rgba(161,93,255,.07),transparent 24%);filter:blur(7px);animation:spaceScenePulse 8s ease-in-out infinite alternate;}
-@keyframes spaceScenePulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.08);opacity:.9}}
-@keyframes starDrift{from{background-position:0 0,0 0}to{background-position:86px 86px,-137px -137px}}
+.game-field.scene-space::before{background-image:radial-gradient(circle,rgba(255,255,255,.8) 0 1px,transparent 1.6px),radial-gradient(circle,rgba(120,170,255,.5) 0 1px,transparent 1.7px),radial-gradient(circle,rgba(205,170,255,.42) 0 1px,transparent 1.7px);background-size:88px 88px,142px 142px,190px 190px;opacity:.42;animation:starDrift 16s linear infinite,starPulse 4s ease-in-out infinite alternate;}
+.game-field.scene-space::after{background:radial-gradient(circle at 70% 62%,rgba(95,135,255,.13),transparent 28%),radial-gradient(circle at 24% 68%,rgba(161,93,255,.11),transparent 24%),radial-gradient(circle at 54% 35%,rgba(90,180,255,.07),transparent 30%);filter:blur(7px);animation:spaceScenePulse 8s ease-in-out infinite alternate,spaceNebulaDrift 14s ease-in-out infinite alternate;}
+@keyframes spaceScenePulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.1);opacity:.95}}
+@keyframes spaceNebulaDrift{0%{background-position:0 0,0 0,0 0;transform:translate3d(-1%,1%,0) scale(1)}100%{background-position:6% -4%,-5% 5%,3% 4%;transform:translate3d(1%,-1%,0) scale(1.08)}}
+@keyframes starDrift{from{background-position:0 0,0 0,0 0}to{background-position:176px 176px,-237px -137px,190px -190px}}
+@keyframes starPulse{0%{opacity:.28}100%{opacity:.58}}
 .game-field.scene-flying{filter:saturate(1.08)}
 .game-field.scene-crash{animation:sceneCrashFlash .58s ease-out both}
 @keyframes sceneCrashFlash{0%{filter:brightness(1)}12%{filter:brightness(1.9) saturate(1.35)}32%{filter:brightness(.72) saturate(.9)}100%{filter:brightness(1)}}
@@ -292,8 +230,10 @@ body{
 .bet-row.lost::after{opacity:1;background:linear-gradient(90deg,rgba(249,105,153,.07),transparent 60%)}
 .bet-right-stack{display:flex;align-items:center;gap:7px;flex-shrink:0}
 .bet-payout{width:74px;display:flex;align-items:center;justify-content:flex-end;gap:4px;color:#fff;font-size:11px;font-weight:900;white-space:nowrap}
-.bet-payout img{width:20px;height:20px;object-fit:contain;border-radius:5px;transition:opacity .2s ease,transform .2s ease}
+.bet-payout img{width:20px;height:20px;object-fit:contain;border-radius:5px;transition:opacity .12s ease,transform .12s ease}
 .bet-payout img.fade-swap{opacity:.2;transform:scale(.86)}
+.bet-payout.has-gift img{filter:drop-shadow(0 0 6px rgba(124,174,255,.22))}
+.bet-payout.has-gift span{color:#7CAEFF}
 .bet-fixed{animation:betFix .45s ease both}
 @keyframes betFix{0%{transform:scale(.96);opacity:.65}70%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
 .loading-rocket-swap{animation:loadingSwap .5s cubic-bezier(.2,.85,.2,1) both}
@@ -301,24 +241,23 @@ body{
 body.bg-graph{background-color:#111827;background-image:radial-gradient(circle at 50% 0%,rgba(70,112,255,.24),transparent 42%),linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:auto,28px 28px,28px 28px}
 body.bg-space{background-color:#020611;background-image:radial-gradient(circle at 20% 15%,rgba(120,180,255,.23),transparent 18%),radial-gradient(circle at 75% 30%,rgba(155,110,255,.18),transparent 20%),radial-gradient(circle at 45% 80%,rgba(80,190,255,.12),transparent 25%),radial-gradient(circle at 50% 20%,rgba(255,255,255,.12) 0 1px,transparent 2px),radial-gradient(circle at 15% 70%,rgba(255,255,255,.1) 0 1px,transparent 2px);background-size:auto,auto,auto,140px 140px,190px 190px;background-attachment:fixed}
 .bg-choice-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.bg-choice{padding:0;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:#111827;cursor:pointer;transition:transform .18s,border-color .25s,box-shadow .25s,background .25s;text-align:left;font-family:inherit;color:#dce7ff;display:flex;align-items:flex-end;gap:0;min-height:92px;position:relative;overflow:hidden;isolation:isolate}
-.bg-choice::before{content:'';position:absolute;inset:0;background-size:cover;background-position:center;opacity:.72;transition:transform .5s ease,opacity .3s;z-index:-2}
+.bg-choice{padding:0;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:#111827;cursor:pointer;transition:transform .18s,border-color .25s,box-shadow .25s,background .25s;font-family:inherit;color:#dce7ff;display:block;min-height:92px;position:relative;overflow:hidden;isolation:isolate}
+.bg-choice::before{content:'';position:absolute;inset:0;background-size:cover;background-position:center;opacity:.88;transition:transform .5s ease,opacity .3s;z-index:-2}
 .bg-choice.graph-preview::before{background-image:url('/static/img/crash_graph_bg.png')}
 .bg-choice.space-preview::before{background-image:url('/static/img/crash_space_bg.png')}
-.bg-choice::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,6,14,.05) 25%,rgba(3,6,14,.85) 100%);z-index:-1;transform:none;transition:background .25s}
-.bg-choice:hover::before{transform:scale(1.06)}
-.bg-choice::after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.08) 50%,transparent 80%);transform:translateX(-120%);transition:transform .5s}
-.bg-choice:hover::after{transform:translateX(120%)}
+.bg-choice::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,6,14,.02),rgba(3,6,14,.28));z-index:-1}
+.bg-choice:hover::before{transform:scale(1.08)}
 .bg-choice:active{transform:scale(.97)}
-.bg-choice.active{border-color:rgba(79,156,255,.8);background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(59,130,246,.07));box-shadow:0 0 24px rgba(59,130,246,.18),inset 0 0 0 1px rgba(255,255,255,.04)}
-.bg-choice b{display:block;font-size:12px;letter-spacing:.1px}.bg-choice small{display:block;font-size:9px;color:rgba(255,255,255,.55);margin-top:3px;font-weight:700}
-.bg-choice span:not(.bg-choice-icon){padding:0 11px 11px;position:relative;z-index:2}
-.bg-choice-icon{width:30px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;flex-shrink:0;background:rgba(5,8,16,.58);border:1px solid rgba(255,255,255,.14);margin:0 0 10px 10px;position:relative;z-index:2}
-.bg-choice.active{box-shadow:0 0 0 1px rgba(99,181,255,.45),0 10px 30px rgba(0,0,0,.28)}
-.graph-icon{color:#67B7FF;text-shadow:0 0 12px rgba(103,183,255,.7)}.space-icon{color:#D5C7FF;text-shadow:0 0 14px rgba(169,126,255,.8)}
+.bg-choice.active{border-color:rgba(79,156,255,.95);box-shadow:0 0 0 2px rgba(99,181,255,.2),0 10px 30px rgba(0,0,0,.3)}
+.bg-choice-icon,.bg-choice b,.bg-choice small,.bg-choice span{display:none!important}
 .optim-row{padding:14px;border-radius:14px;background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.15);margin-bottom:16px}
 .optim-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.optim-title{font-weight:800;font-size:14px}.optim-value{font-size:11px;color:#7caeff;font-weight:800}
-.optim-range{width:100%;accent-color:#3B82F6}
+.optim-range{width:100%;height:5px;appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.12);border-radius:999px;outline:none;cursor:pointer;accent-color:#3B82F6;display:block}
+.optim-range::-webkit-slider-runnable-track{height:5px;background:linear-gradient(90deg,#3B82F6 0%,#3B82F6 50%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.12) 100%);border-radius:999px}
+.optim-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;margin-top:-6.5px;background:#fff;border:2px solid #3B82F6;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.optim-range::-moz-range-track{height:5px;background:rgba(255,255,255,.12);border-radius:999px}
+.optim-range::-moz-range-progress{height:5px;background:#3B82F6;border-radius:999px}
+.optim-range::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid #3B82F6;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 
 .bets-list::-webkit-scrollbar{width:3px}
 .bets-list::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
@@ -376,7 +315,7 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
 .inv-grid::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
 .inv-card{background:linear-gradient(160deg,rgba(59,130,246,.06),rgba(59,130,246,.02));border:1.5px solid rgba(59,130,246,.15);border-radius:14px;padding:6px;text-align:center;cursor:pointer;transition:all .15s;position:relative;display:flex;flex-direction:column;overflow:hidden}
 .inv-card.selected{border-color:#3B82F6;background:rgba(59,130,246,.18);box-shadow:0 0 0 2px rgba(59,130,246,.4)}
-.inv-card.selected::after{content:'?';position:absolute;top:6px;right:6px;width:22px;height:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
+.inv-card.selected::after{content:'✓';position:absolute;top:6px;right:6px;width:22px;height:22px;background:linear-gradient(135deg,#3B82F6,#2563EB);border-radius:50%;color:#fff;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:2}
 .inv-card-img-wrap{width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;position:relative;background:rgba(0,0,0,.2);margin-bottom:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
 .inv-card-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;border-radius:10px}
 .inv-card .inv-name{font-weight:700;font-size:10px;color:rgba(255,255,255,.85);padding:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -574,8 +513,6 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
     .bonus-announce-title{font-size:24px}
 }
 
-}
-
 /* CRASH POLISH v2 */
 #cdDisplay{font-variant-numeric:tabular-nums;text-shadow:0 0 20px rgba(88,166,255,.45);}
 #cdDisplay.active{animation:countdownPop .72s cubic-bezier(.2,.85,.25,1) both;}
@@ -651,1068 +588,88 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
 .win-balance-bonus{margin-top:10px;padding:10px 13px;border-radius:12px;background:rgba(36,195,142,.10);border:1px solid rgba(36,195,142,.22);color:#24C38E;font-size:13px;font-weight:900;animation:bonusBalanceIn .45s ease-out both}
 @keyframes bonusBalanceIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 
+</style>
 
-/* BET MODAL — visual match to the supplied reference */
-.modal-overlay{
-    background:rgba(4,7,12,.62);
-    backdrop-filter:blur(5px);
-    -webkit-backdrop-filter:blur(5px);
-}
-.modal-sheet{
-    background:#1f242b;
-    border-radius:26px 26px 0 0;
-    max-width:480px;
-    max-height:86vh;
-    padding:10px 18px calc(24px + env(safe-area-inset-bottom,0px));
-    border-top:1px solid rgba(255,255,255,.05);
-    box-shadow:0 -18px 55px rgba(0,0,0,.34);
-}
-.modal-handle{
-    width:48px;height:4px;border-radius:8px;
-    background:rgba(255,255,255,.10);
-    margin:0 auto 14px;
-}
-.modal-title{
-    font-size:16px;
-    font-weight:850;
-    margin:0 0 15px;
-    text-align:left;
-    padding:0 1px;
-}
-.modal-tabs{
-    height:48px;
-    margin:0 0 16px;
-    padding:5px;
-    gap:3px;
-    border-radius:25px;
-    background:#292e35;
-    border:1px solid rgba(255,255,255,.035);
-}
-.modal-tab{
-    min-height:38px;
-    padding:8px 12px;
-    border-radius:20px;
-    font-size:13px;
-    font-weight:750;
-    color:rgba(255,255,255,.72);
-    gap:7px;
-}
-.modal-tab img{width:17px;height:17px;object-fit:contain}
-.modal-tab.active{
-    color:#fff;
-    background:#4388ee;
-    border:0;
-    box-shadow:none;
-}
-.modal-tab:not(.active){border:0;background:transparent}
-.gift-empty-state{
-    min-height:90px;
-    border-radius:22px;
-    position:relative;
-    overflow:hidden;
-    display:flex;
-    align-items:center;
-    padding:15px 112px 15px 16px;
-    background:
-        linear-gradient(90deg,rgba(32,38,47,.98) 0%,rgba(35,42,52,.88) 48%,rgba(35,42,52,.30) 100%),
-        url('https://cdn.giftup.cc/images/ui/wallet-not-connected-bg.jpg') right center/cover no-repeat;
-    border:1px solid rgba(255,255,255,.025);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
-}
-.gift-empty-state::after{
-    content:'';
-    position:absolute;inset:0;pointer-events:none;
-    background:linear-gradient(90deg,rgba(255,255,255,.025),transparent 55%);
-}
-.gift-empty-copy{position:relative;z-index:1;max-width:245px}
-.gift-empty-title{
-    font-size:12px;
-    font-weight:850;
-    color:#fff;
-    margin-bottom:6px;
-}
-.gift-empty-sub{
-    font-size:10px;
-    line-height:1.45;
-    font-weight:650;
-    color:rgba(255,255,255,.72);
-}
-.inv-grid{
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    margin-top:0;
-}
-.inv-empty{display:none}
-.bet-deposit-btn{
-    width:100%;
-    min-height:52px;
-    margin-top:12px;
-    border:0;
-    border-radius:27px;
-    background:#087cf0;
-    color:#fff;
-    font:800 15px/1 inherit;
-    cursor:pointer;
-    box-shadow:0 8px 22px rgba(8,124,240,.20);
-}
-.bet-deposit-btn:active{transform:scale(.985)}
-.gram-balance-hint{
-    padding:0 2px 9px;
-    font-size:11px;
-    color:rgba(255,255,255,.42);
-    font-weight:650;
-}
-.gram-balance-hint span{color:rgba(255,255,255,.82);font-weight:800}
-#starsSec .bet-input-wrap{position:relative;margin-bottom:12px}
-#starsSec .bet-input-wrap input{
-    padding-right:68px;
-    background:#292e35;
-    border:1px solid rgba(255,255,255,.07);
-    text-align:left;
-}
-.bet-input-unit{
-    position:absolute;
-    right:16px;
-    top:50%;
-    transform:translateY(-50%);
-    color:rgba(255,255,255,.5);
-    font-size:11px;
-    font-weight:800;
-}
-#starsSec .confirm-bet-btn{
-    border-radius:27px;
-    min-height:52px;
-    background:#087cf0;
-}
-.auto-cashout-row{
-    margin:12px 0 0;
-    padding:0;
-    min-height:42px;
-    height:42px;
-    background:transparent;
-    border:0;
+<style id="reference-bottom-nav">
+/* Нижняя панель по референсу */
+.bottom-nav{
+    position:fixed;
+    left:50%;
+    bottom:26px;
+    transform:translateX(-50%);
+    z-index:4000;
+    width:calc(100% - 34px);
+    max-width:400px;
+    height:62px;
+    padding:4px;
+    background:rgba(21,24,29,.96);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:32px;
+    box-shadow:0 10px 28px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.025);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
     display:flex;
     align-items:center;
     justify-content:space-between;
+    gap:2px;
 }
-.auto-cashout-left{display:flex;align-items:center;gap:12px}
-.auto-cashout-info{max-width:none;flex:0 0 auto}
-.auto-cashout-label{
-    color:#fff;
-    font-size:13px;
+.bottom-nav-item{
+    flex:1;
+    min-width:0;
+    min-height:52px;
+    height:52px;
+    margin:0;
+    padding:5px 8px 4px;
+    border-radius:28px;
+    gap:3px;
+    color:rgba(255,255,255,.42);
+    background:transparent;
+    border:none;
+    font-weight:600;
+    transition:background .22s ease,color .22s ease,transform .12s ease;
+}
+.bottom-nav-item svg{
+    width:23px;
+    height:23px;
+    flex-shrink:0;
+    stroke:none;
+}
+.bottom-nav-item span{
+    font-size:10px;
+    font-weight:650;
     line-height:1;
-    font-weight:800;
+    letter-spacing:-.1px;
 }
-.bet-toggle{
-    width:42px;height:24px;padding:0;border:0;border-radius:14px;
-    background:#343a42;position:relative;cursor:pointer;
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.2);
-}
-.bet-toggle::after{
-    content:'';
-    position:absolute;top:3px;left:3px;width:18px;height:18px;
-    border-radius:50%;background:#fff;transition:transform .18s ease;
-}
-.bet-toggle.on{background:#3f86eb}
-.bet-toggle.on::after{transform:translateX(18px)}
-.bet-coeff-control{
-    display:flex;align-items:center;justify-content:space-between;
-    width:138px;height:42px;padding:4px;border-radius:22px;
-    background:#292e35;border:1px solid rgba(255,255,255,.045);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
-}
-.bet-coeff-control span{
-    min-width:46px;text-align:center;font-size:14px;font-weight:800;
-    color:#fff;font-variant-numeric:tabular-nums;
-}
-.bet-coeff-btn{
-    width:32px;height:32px;border:0;border-radius:50%;
-    background:#323840;color:rgba(255,255,255,.58);
-    font-size:22px;line-height:1;cursor:pointer;
-}
-.bet-coeff-btn:active{transform:scale(.9)}
-@media(max-width:400px){
-    .modal-sheet{padding-left:16px;padding-right:16px}
-    .gift-empty-state{padding-right:104px}
-    .bet-coeff-control{width:132px}
-}
-
-
-/* ==============================================================
-   2026 CRASH UI REDESIGN — based on supplied dark/blue reference
-   ============================================================== */
-:root{
-  --ui-bg:#171a1f;--ui-panel:#1d2026;--ui-panel-2:#22262d;--ui-line:#2f343d;
-  --ui-blue:#0a84ff;--ui-blue-2:#3f8cf7;--ui-muted:#777d87;--ui-text:#f5f7fb;
-  --ui-radius:24px;--ui-ease:cubic-bezier(.2,.9,.2,1);
-}
-html,body{background:#171a1f!important}
-body{font-family:Inter,"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;letter-spacing:-.012em}
-.container{max-width:480px;padding-top:max(env(safe-area-inset-top,0px),8px)!important;padding-bottom:110px;background:#171a1f}
-.top-bar{padding:12px 16px 8px;min-height:58px}
-.ping-pill{height:38px;padding:0 13px;border:0!important;background:#0c3b1f!important;color:#13d45b!important;border-radius:20px;box-shadow:inset 0 0 0 1px rgba(42,220,104,.07);font-size:13px}
-.settings-btn-sm,.bal-plus-crash{width:38px;height:38px;background:#343941!important;border:0!important;color:#d7dbe2!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:transform .16s var(--ui-ease),background .18s ease}
-.settings-btn-sm:active,.bal-plus-crash:active{transform:scale(.90)}
-.bal-pill-crash{height:38px;padding:0 12px;background:#2a2e35!important;border:0!important;border-radius:20px;font-size:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.045)}
-.bal-pill-crash img{width:20px;height:20px}
-.game-field{margin:0 7px!important;min-height:405px!important;aspect-ratio:auto!important;border-radius:0!important;border:0!important;background:#171a1f!important;box-shadow:none!important;overflow:hidden}
-.game-field::before{background-image:linear-gradient(rgba(13,132,255,.78) 1px,transparent 1px),linear-gradient(90deg,rgba(13,132,255,.78) 1px,transparent 1px)!important;background-size:68px 68px!important;opacity:.72!important;mask-image:linear-gradient(to bottom,rgba(0,0,0,.9),rgba(0,0,0,.9) 82%,transparent 100%)}
-.game-field::after{display:none!important}
-.rocket-wrap img{filter:drop-shadow(0 14px 34px rgba(10,132,255,.30))!important}
-.countdown-display{font-size:min(150px,34vw);font-weight:900;letter-spacing:-.06em}
-.history-section{padding:0 23px 6px;margin-top:-43px;position:relative;z-index:30}
-.history-scroll{min-height:36px;align-items:center}
-.h-pill{background:#0a84ff!important;color:#fff!important;border:0!important;font-size:10px!important;font-weight:800!important;padding:7px 10px!important;box-shadow:none!important}
-.coeff-box{background:#0a84ff!important;color:#fff!important;border:0!important;font-size:10px!important;font-weight:800!important;padding:7px 10px!important;box-shadow:none!important;min-width:82px}
-.coeff-box.flying-pulse{animation:coeffBreath .9s ease-in-out infinite alternate}
-@keyframes coeffBreath{to{box-shadow:0 0 0 5px rgba(10,132,255,.10),0 8px 24px rgba(10,132,255,.20)}}
-.bet-area{padding:0 23px 16px!important;z-index:50}
-.action-btn{min-height:52px!important;border:0!important;border-radius:28px!important;background:#0a84ff!important;color:#fff!important;text-transform:none!important;font-size:16px!important;font-weight:800!important;letter-spacing:-.02em!important;box-shadow:0 8px 24px rgba(10,132,255,.18)!important;transition:transform .16s var(--ui-ease),filter .16s ease,box-shadow .2s ease!important;isolation:isolate}
-.action-btn::before{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(110deg,transparent 20%,rgba(255,255,255,.13) 45%,transparent 70%);transform:translateX(-130%);animation:buttonSheen 3.4s ease-in-out infinite;pointer-events:none}
-@keyframes buttonSheen{0%,65%{transform:translateX(-130%)}82%,100%{transform:translateX(130%)}}
-.action-btn:not(:disabled):active{transform:scale(.965)!important;filter:brightness(.95)}
-.action-btn.state-cashout{background:linear-gradient(135deg,#16c65b,#0fae4b)!important;color:#fff!important}
-.action-btn.state-cancel,.action-btn.state-crashed{background:linear-gradient(135deg,#ef496d,#cf3154)!important}
-.action-btn.state-placed{background:#282c33!important;color:#787e88!important;box-shadow:none!important}
-.action-btn .cb-gift-side{width:38px;height:38px;border-radius:11px;border:0;background:#ffffff12;transition:opacity .15s ease,transform .22s var(--ui-ease),filter .2s ease!important}
-.action-btn .cb-gift-side.gift-swap{animation:giftSwapBtn .34s var(--ui-ease)}
-@keyframes giftSwapBtn{0%{opacity:.15;transform:scale(.68) rotate(-7deg);filter:blur(3px)}65%{opacity:1;transform:scale(1.08) rotate(2deg);filter:blur(0)}100%{transform:scale(1) rotate(0)}}
-.bets-section{margin:0 23px 14px;padding:0!important;border-radius:27px;background:#1d2026;min-height:235px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.018)}
-.bets-header{padding:17px 17px 9px;margin:0!important}
-.bets-title{font-size:12px;color:#818792;letter-spacing:.02em;text-transform:uppercase}
-.bets-count{background:#262a31;color:#8b919b;border-radius:10px;font-size:10px}
-.bets-list{padding:0 10px 14px;gap:6px;max-height:310px}
-.bet-row{padding:8px 9px;border-radius:15px;background:#20242a!important;border:1px solid rgba(255,255,255,.025);transition:transform .2s var(--ui-ease),background .25s ease,box-shadow .25s ease!important}
-.bet-row.live-new{animation:rowIn .35s var(--ui-ease)}
-@keyframes rowIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
-.bet-avatar{width:36px;height:36px;background:#2e333b;font-size:12px}
-.bet-name{font-size:12px;font-weight:750;letter-spacing:-.015em;max-width:116px}
-.bet-amt{font-size:10px;color:#7e858f}
-.bet-amt .bet-gift-preview{width:18px;height:18px;border-radius:50%;border:0;background:transparent}
-.bet-amt .bet-amount-text{font-size:11px;font-variant-numeric:tabular-nums}
-.bet-status{min-width:64px;justify-content:center;border-radius:10px;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;transition:transform .12s ease,color .2s ease,background .2s ease}
-.bet-status.active{background:#292d34;color:#d6dae1}
-.bet-status.won{background:rgba(27,199,89,.13);color:#1fd366}
-.bet-status.lost{background:rgba(239,73,109,.12);color:#f35f7e}
-.bet-payout{width:78px;font-size:11px;font-variant-numeric:tabular-nums}
-.bet-payout img{width:24px;height:24px;border-radius:7px;will-change:transform,opacity;transition:opacity .14s ease,transform .22s var(--ui-ease),filter .2s ease!important}
-.bet-payout img.gift-swap{animation:giftSwap .34s var(--ui-ease)}
-@keyframes giftSwap{0%{opacity:.08;transform:scale(.62) rotate(-9deg);filter:blur(3px)}60%{opacity:1;transform:scale(1.12) rotate(3deg);filter:blur(0)}100%{opacity:1;transform:scale(1) rotate(0)}}
-.bet-payout span,.bet-status{font-feature-settings:"tnum" 1,"ss01" 1}
-.no-bets{min-height:170px;display:flex;align-items:center;justify-content:center;color:#5f646c;font-size:16px}
-.bottom-nav{width:calc(100% - 46px)!important;max-width:434px!important;height:66px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 10px)!important;background:#1c2025!important;border:0!important;border-radius:31px!important;box-shadow:0 14px 34px rgba(0,0,0,.28)!important;padding:6px 8px!important}
-.bottom-nav-item{height:54px;border-radius:27px;color:#737982!important;gap:3px}
-.bottom-nav-item.active{color:#328cff!important;background:#203246}
-.bottom-nav-item.active::before{background:#203246!important;box-shadow:none!important}
-.bottom-nav-item::after{display:none}
-.bottom-nav-item span{font-size:10px;font-weight:750}
-
-/* Modal from supplied reference */
-.modal-overlay{background:rgba(6,8,11,.70)!important;backdrop-filter:blur(7px)!important}
-.modal-sheet{background:#1d2025!important;border:1px solid #30353d!important;border-bottom:0!important;border-radius:28px 28px 0 0!important;padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -18px 60px rgba(0,0,0,.40)!important}
-.modal-handle{width:48px;height:5px;background:#30353c;margin:0 auto 24px}
-.modal-title{display:inline-flex;align-items:center;min-height:40px;margin:0 0 15px!important;padding:0 16px;border-radius:22px;background:#23272d;border:1px solid #343940;text-align:left;font-size:16px;font-weight:600;letter-spacing:-.02em}
-.modal-tabs{height:49px;padding:5px!important;margin-bottom:27px!important;background:#25292f!important;border:1px solid #343941;border-radius:24px!important;gap:3px}
-.modal-tab{height:38px;border-radius:19px!important;font-size:15px!important;color:#fff!important;font-weight:500!important;transition:background .22s var(--ui-ease),transform .16s var(--ui-ease),color .2s ease!important}
-.modal-tab img{display:none}
-.modal-tab.active{background:#3f8cf7!important;color:#fff!important;border:0!important;box-shadow:0 4px 14px rgba(63,140,247,.16)}
-.modal-tab:active{transform:scale(.97)}
-.gram-balance-hint{display:flex;justify-content:space-between;align-items:center;margin:0 16px 6px!important;color:#737981!important;font-size:14px!important}
-.gram-balance-hint span{color:#3f8cf7!important;text-transform:lowercase}
-.bet-input-wrap{height:46px;margin:0 0 16px!important;position:relative}
-.bet-input-wrap input{height:46px;padding:0 15px!important;text-align:left!important;border-radius:23px!important;border:1px solid #353a43!important;background:#25292f!important;color:#f4f6fa!important;font-size:15px!important;font-weight:500!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.018)}
-.bet-input-unit{display:none!important}
-.auto-cashout-row{height:54px!important;min-height:54px!important;margin:0 0 14px!important;padding:6px 8px 6px 12px!important;background:transparent!important;border:0!important;gap:12px!important}
-.auto-cashout-left{height:44px!important;flex:1!important;display:flex!important;align-items:center!important;justify-content:space-between!important;padding:0 10px!important;border-radius:23px!important;background:#24282e!important;border:1px solid #30353d!important}
-.auto-cashout-info{display:block!important;flex:1!important;max-width:none!important}
-.auto-cashout-label{color:#f0f2f5!important;font-family:Georgia,"Times New Roman",serif!important;font-size:15px!important;font-weight:700!important;letter-spacing:-.01em}
-.bet-toggle{width:40px!important;height:26px!important;border-radius:14px!important;background:#fff!important;box-shadow:none!important}
-.bet-toggle::before{width:22px!important;height:22px!important;top:1px!important;left:1px!important;background:#fff!important;box-shadow:0 1px 4px rgba(0,0,0,.35)!important;border:1px solid #d8dce2}
-.bet-toggle.on{background:#3f8cf7!important}.bet-toggle.on::before{transform:translateX(14px)!important}
-.bet-coeff-control{height:44px!important;min-width:145px!important;padding:0 6px!important;border-radius:23px!important;background:#24282e!important;border:1px solid #30353d!important;display:flex!important;align-items:center!important;justify-content:space-between!important}
-.bet-coeff-btn{width:28px!important;height:28px!important;border-radius:14px!important;border:0!important;background:#343941!important;color:#cfd4dc!important;font-size:20px!important;line-height:1!important;transition:transform .14s var(--ui-ease),background .18s ease!important}
-.bet-coeff-btn:active{transform:scale(.88);background:#3d434d!important}
-#betAutoCoeff{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
-.confirm-bet-btn,.confirm-gifts-btn{height:52px!important;padding:0!important;border-radius:27px!important;background:#0a84ff!important;font-size:16px!important;font-weight:800!important;box-shadow:none!important;transition:transform .15s var(--ui-ease),filter .15s ease!important}
-.confirm-bet-btn:active:not(:disabled),.confirm-gifts-btn:active:not(:disabled){transform:scale(.97)!important;filter:brightness(.95)}
-.gift-empty-state,.inv-grid,.selected-summary{border-radius:22px!important}
-@media(max-width:380px){.game-field{min-height:380px!important}.bets-section{margin-left:16px;margin-right:16px}.bet-area,.history-section{padding-left:16px!important;padding-right:16px!important}.bottom-nav{width:calc(100% - 32px)!important}}
-@media(prefers-reduced-motion:reduce){.action-btn::before,.coeff-box.flying-pulse,.bet-row.live-new,.bet-payout img.gift-swap,.action-btn .cb-gift-side.gift-swap{animation:none!important}}
-
-
-/* FINAL UI PATCH — mobile Crash */
-.bottom-nav{z-index:4000!important}
-.modal-overlay,.autowd-overlay,.deposit-overlay,.settings-overlay,.stars-deposit-overlay,.win-overlay{z-index:9000!important}
-.modal-overlay.show,.autowd-overlay.show,.deposit-overlay.show,.settings-overlay.show,.stars-deposit-overlay.show,.win-overlay.show{z-index:9000!important}
-.container{padding-top:calc(env(safe-area-inset-top,0px) + 30px)!important;padding-bottom:120px!important}
-.history-section{padding-top:7px!important;padding-bottom:8px!important}
-.history-scroll{gap:5px!important;grid-auto-columns:max-content!important}
-.h-pill,.coeff-box{min-width:58px!important;height:30px!important;min-height:30px!important;padding:0 9px!important;border-radius:15px!important;font-size:11px!important}
-.bets-section{margin-top:10px!important}
-/* Cleaner inventory cards: larger artwork, no artificial frame, crop transparent PNG padding */
-.inv-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:9px!important;padding:3px!important}
-.inv-card{padding:6px!important;border-radius:16px!important;background:linear-gradient(160deg,rgba(255,255,255,.055),rgba(255,255,255,.025))!important}
-.inv-card-img-wrap{aspect-ratio:1/1!important;background:rgba(255,255,255,.025)!important;border-radius:13px!important;margin-bottom:5px!important}
-.inv-card-img-wrap img{width:116%!important;height:116%!important;max-width:none!important;object-fit:contain!important;transform:translate(-8%,-8%) scale(1.02)!important;border-radius:0!important}
-.inv-card.upgraded .inv-card-img-wrap{background:linear-gradient(145deg,rgba(59,130,246,.12),rgba(255,255,255,.025))!important;border-color:rgba(59,130,246,.22)!important}
-.inv-card.upgraded .inv-card-img-wrap img{transform:translate(-8%,-8%) scale(1.08)!important}
-.inv-card .inv-name{font-size:10px!important;font-weight:800!important;line-height:1.15!important}
-.inv-card .inv-val{font-size:10px!important;margin-top:3px!important;padding:3px!important}
-/* Settings: one section only — rocket skins */
-.settings-mode,.settings-bg-options,#settingsBgPane,.bg-choice-row,.optim-head,.optim-range,.settings-mode-btn{display:none!important}
-.settings-modal{z-index:9001!important}
-.settings-content{padding-top:4px!important}
-.settings-grid{grid-template-columns:repeat(3,1fr)!important;gap:9px!important;max-height:calc(92vh - 150px)!important}
-.settings-item{height:108px!important}
-/* Gift must never replace the rocket during flight */
-#crashGiftDisplay{display:none!important}
-.rocket-wrap.gift-mode{display:block!important;opacity:1!important}
-.rocket-wrap.gift-mode img{display:block!important}
-/* Hide legacy gift toggle even if old markup survives */
-#showGiftsToggle,.settings-gift-toggle{display:none!important}
-@media(max-width:390px){
- .container{padding-top:calc(env(safe-area-inset-top,0px) + 24px)!important}
- .inv-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}
- .inv-card-img-wrap img{width:120%!important;height:120%!important;transform:translate(-10%,-10%)!important}
-}
-</style>
-<style>
-/* === FINAL INVENTORY / DEPOSIT POLISH === */
-.game-field{
-  background:
-    radial-gradient(ellipse 85% 65% at 50% 58%, rgba(22,108,255,.16) 0%, rgba(13,40,82,.08) 34%, transparent 68%),
-    radial-gradient(circle at 18% 18%, rgba(52,145,255,.13), transparent 25%),
-    radial-gradient(circle at 84% 72%, rgba(32,105,255,.11), transparent 28%),
-    linear-gradient(180deg,#11161c 0%,#171b21 48%,#14181d 100%) !important;
-}
-.game-field::before{
-  background-image:
-    linear-gradient(rgba(66,145,255,.22) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(66,145,255,.22) 1px,transparent 1px),
-    radial-gradient(circle,rgba(105,177,255,.34) 0 1px,transparent 1.8px) !important;
-  background-size:68px 68px,68px 68px,180px 180px !important;
-  background-position:0 0,0 0,30px 24px !important;
-  opacity:.48 !important;
-  mask-image:linear-gradient(to bottom,transparent 0%,#000 12%,#000 76%,transparent 100%);
-  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 12%,#000 76%,transparent 100%);
-  animation:crashGridDrift 14s linear infinite;
-}
-.game-field::after{
-  display:block !important;
-  content:"";
-  position:absolute;inset:-18%;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse at 50% 78%,rgba(10,132,255,.23),transparent 32%),
-    radial-gradient(circle at 20% 34%,rgba(22,118,255,.18),transparent 20%),
-    radial-gradient(circle at 82% 44%,rgba(58,152,255,.14),transparent 22%),
-    linear-gradient(112deg,transparent 36%,rgba(73,155,255,.055) 49%,transparent 62%);
-  filter:blur(12px);
-  opacity:.9;
-  animation:crashAtmosphere 8s ease-in-out infinite alternate;
-}
-@keyframes crashGridDrift{from{background-position:0 0,0 0,30px 24px}to{background-position:34px 24px,-34px 24px,90px 80px}}
-@keyframes crashAtmosphere{from{transform:scale(1) translate3d(0,0,0);opacity:.68}to{transform:scale(1.08) translate3d(-1.5%,1%,0);opacity:1}}
-
-/* Deposit button with the supplied plus-circle SVG */
-.bet-deposit-btn{
-  display:flex !important;align-items:center;justify-content:center;gap:9px;
-  min-height:52px !important;
-  font-size:16px !important;font-weight:800 !important;
-  letter-spacing:-.02em;
-  background:#0a84ff !important;
-  box-shadow:0 9px 28px rgba(10,132,255,.22) !important;
-  transition:transform .16s cubic-bezier(.2,.9,.2,1),filter .16s ease,box-shadow .2s ease !important;
-  overflow:hidden;position:relative;
-}
-.bet-deposit-btn::before{
-  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  background:linear-gradient(105deg,transparent 18%,rgba(255,255,255,.16) 48%,transparent 72%);
-  transform:translateX(-130%);animation:depositSheen 3.2s ease-in-out infinite;
-}
-.bet-deposit-btn:active{transform:scale(.965) !important;filter:brightness(.94)}
-.bet-deposit-icon{width:22px;height:22px;flex:0 0 22px;fill:currentColor;filter:drop-shadow(0 2px 5px rgba(0,0,0,.12));transition:transform .25s cubic-bezier(.2,.9,.2,1)}
-.bet-deposit-btn:hover .bet-deposit-icon{transform:rotate(90deg) scale(1.05)}
-@keyframes depositSheen{0%,64%{transform:translateX(-130%)}82%,100%{transform:translateX(130%)}}
-
-/* Inventory: real gift-card presentation — PNG, name, then price */
-.inv-grid{
-  display:grid !important;
-  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
-  gap:10px !important;
-  padding:2px 0 4px !important;
-  max-height:390px !important;
-  overflow-y:auto !important;
-}
-.inv-card{
-  min-width:0;
-  padding:8px 7px 9px !important;
-  border:1px solid rgba(255,255,255,.055) !important;
-  border-radius:17px !important;
-  background:linear-gradient(180deg,#252a31 0%,#20242a 100%) !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 5px 18px rgba(0,0,0,.12) !important;
-  transform:translateZ(0);
-  transition:transform .2s cubic-bezier(.2,.9,.2,1),border-color .2s ease,box-shadow .2s ease,background .2s ease !important;
-}
-.inv-card:hover{transform:translateY(-2px)}
-.inv-card:active{transform:scale(.965)}
-.inv-card.selected{
-  border-color:#3f8cf7 !important;
-  background:linear-gradient(180deg,rgba(63,140,247,.18),rgba(32,38,46,1)) !important;
-  box-shadow:0 0 0 1px rgba(63,140,247,.28),0 9px 24px rgba(10,132,255,.16) !important;
-}
-.inv-card-img-wrap{
-  width:100% !important;aspect-ratio:1/1 !important;
-  margin:0 0 7px !important;
-  border-radius:13px !important;
-  background:radial-gradient(circle at 50% 40%,rgba(73,145,255,.11),rgba(0,0,0,.08) 68%) !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.045) !important;
-}
-.inv-card-img-wrap img{
-  width:100% !important;height:100% !important;object-fit:contain !important;
-  padding:5px !important;border-radius:13px !important;
-  filter:drop-shadow(0 8px 12px rgba(0,0,0,.28));
-  transition:transform .28s cubic-bezier(.2,.9,.2,1),filter .25s ease;
-}
-.inv-card:hover .inv-card-img-wrap img{transform:translateY(-3px) scale(1.035);filter:drop-shadow(0 10px 15px rgba(0,0,0,.34))}
-.inv-card .inv-name{
-  display:block !important;
-  width:100%;
-  padding:0 3px 4px !important;
-  color:#f0f2f5 !important;
-  font-size:11px !important;font-weight:750 !important;line-height:1.2 !important;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.inv-card .inv-val{
-  min-height:24px;
-  margin-top:0 !important;padding:3px 6px !important;
-  border-radius:9px !important;
-  background:#292e35 !important;
-  color:#cfd5de !important;
-  font-size:11px !important;font-weight:850 !important;
-  gap:4px !important;
-}
-.inv-card .inv-val img{width:14px !important;height:14px !important;object-fit:contain !important}
-.selected-summary{margin-top:10px !important}
-
-/* When inventory is present, make the sheet breathe like the reference */
-#invSec{animation:invSectionIn .24s ease-out}
-@keyframes invSectionIn{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-
-/* === CRASH MODAL REBUILD: correct action order + premium spacing === */
-.bet-modal-content{display:flex;flex-direction:column;min-height:0}
-.modal-sheet{width:min(100%,480px)!important;max-height:min(82vh,620px)!important;padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px))!important}
-.modal-title{margin-bottom:14px!important}
-.modal-tabs{order:0;margin-bottom:14px!important;flex:0 0 auto}
-#invSec,#starsSec{order:1;min-height:0}
-#invSec{display:flex;flex-direction:column}
-#starsSec{display:none}
-.gift-empty-state{min-height:92px!important;margin-bottom:12px;border-radius:20px!important}
-.inv-grid{max-height:250px!important;overflow-y:auto;padding:2px!important;margin-bottom:10px}
-.inv-card{min-height:150px;border-radius:16px!important;padding:7px!important;background:linear-gradient(180deg,rgba(43,49,57,.82),rgba(31,35,41,.92))!important;border-color:rgba(255,255,255,.07)!important}
-.inv-card:hover{transform:translateY(-2px);border-color:rgba(63,140,247,.35)!important}
-.inv-card-img-wrap{aspect-ratio:1/1;border-radius:12px!important;background:radial-gradient(circle at 50% 45%,rgba(61,136,247,.15),rgba(0,0,0,.18) 68%)!important}
-.inv-card-img-wrap img{object-fit:contain!important;padding:6px;filter:drop-shadow(0 7px 14px rgba(0,0,0,.35))}
-.inv-card .inv-name{font-size:10px!important;margin-top:2px}
-.inv-card .inv-val{font-size:11px!important;margin-top:3px!important;background:rgba(63,140,247,.08)!important}
-.selected-summary{margin:0 0 10px!important;padding:9px 11px!important;border-radius:14px!important}
-.auto-cashout-row{order:2!important;width:100%!important;height:50px!important;min-height:50px!important;margin:12px 0 10px!important;padding:3px 5px 3px 8px!important;gap:8px!important;display:flex!important;align-items:center!important}
-.auto-cashout-left{height:44px!important;min-width:0!important;padding:0 9px!important;border-radius:22px!important;gap:8px!important}
-.auto-cashout-label{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:14px!important;font-weight:750!important}
-.bet-toggle{flex:0 0 auto!important;width:40px!important;height:25px!important}
-.bet-coeff-control{height:44px!important;min-width:126px!important;width:126px!important;border-radius:22px!important;padding:0 5px!important}
-.bet-coeff-btn{width:30px!important;height:30px!important}
-.confirm-gifts-btn,.bet-deposit-btn,.confirm-bet-btn{order:3!important;width:100%!important;height:52px!important;min-height:52px!important;margin:0!important;border-radius:26px!important}
-.confirm-gifts-btn{display:none}
-.confirm-gifts-btn.show{display:flex!important;align-items:center;justify-content:center}
-.bet-deposit-btn{display:flex;align-items:center;justify-content:center;gap:9px;background:#087cf0!important;box-shadow:0 8px 26px rgba(8,124,240,.22)!important;font-size:15px!important;letter-spacing:-.01em}
-.bet-deposit-icon{width:19px!important;height:19px!important;fill:#fff!important;flex:0 0 19px}
-.bet-deposit-btn:active,.confirm-bet-btn:active,.confirm-gifts-btn:active{transform:scale(.975)!important;filter:brightness(.96)}
-.confirm-bet-btn{display:none}
-#starsSec~.confirm-bet-btn{display:flex;align-items:center;justify-content:center}
-#starsSec .gram-balance-hint{margin:0 15px 7px!important;padding:0!important;height:18px!important;font-size:13px!important}
-#starsSec .gram-balance-hint span:first-child{color:#70757d!important}
-#starsSec .gram-balance-hint span:last-child{color:#3f8cf7!important;font-weight:700}
-#starsSec .bet-input-wrap{height:46px!important;margin:0!important}
-#starsSec .bet-input-wrap input{height:46px!important;font-size:15px!important}
-#starsSec .bet-input-unit{display:none!important}
-/* Keep the action buttons mutually exclusive without JS layout glitches. */
-#invSec~.confirm-bet-btn{display:none}
-.bet-modal-content:has(#starsSec[style*="block"]) #betDepositBtn{display:none!important}
-.bet-modal-content:has(#starsSec[style*="block"]) #confirmGiftsBtn{display:none!important}
-.bet-modal-content:has(#starsSec[style*="block"]) #confirmBetBtn{display:flex!important}
-.bet-modal-content:has(#invSec[style*="block"]) #confirmBetBtn{display:none!important}
-@media(max-width:390px){
- .modal-sheet{padding-left:12px!important;padding-right:12px!important}
- .modal-tabs{height:47px!important}
- .modal-tab{font-size:14px!important}
- .inv-grid{max-height:215px!important}
- .inv-card{min-height:137px}
- .bet-coeff-control{min-width:118px!important;width:118px!important}
- .auto-cashout-label{font-size:13px!important}
-}
-</style>
-
-<style id="crash-final-precision">
-/* FINAL UI PRECISION */
-.history-section{margin-top:0!important;padding:6px 20px 10px!important;position:relative!important;z-index:40!important;overflow:hidden!important}
-.history-scroll{display:grid!important;grid-auto-flow:column!important;grid-auto-columns:max-content!important;grid-template-rows:36px!important;align-items:center!important;gap:8px!important;min-height:36px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:0 1px!important;scroll-snap-type:x proximity!important}
-.h-pill,.coeff-box{height:36px!important;min-height:36px!important;min-width:70px!important;box-sizing:border-box!important;padding:0 13px!important;border-radius:19px!important;display:flex!important;align-items:center!important;justify-content:center!important;line-height:1!important;font-size:13px!important;font-weight:800!important;font-variant-numeric:tabular-nums!important;white-space:nowrap!important;flex:none!important;transform:none!important}
-.h-pill.low{background:rgba(48,151,255,.10)!important;color:#4da3ff!important;border:1.5px solid rgba(77,163,255,.85)!important}
-.h-pill.mid{background:rgba(30,228,76,.10)!important;color:#24e4a4!important;border:1.5px solid #24e4a4!important}
-.h-pill.high{background:rgba(255,174,56,.10)!important;color:#ffb13b!important;border:1.5px solid #ffb13b!important}
-.h-pill.mega{background:rgba(255,82,118,.10)!important;color:#ff5276!important;border:1.5px solid #ff5276!important}
-.h-pill.bonus{background:rgba(177,91,255,.12)!important;color:#b85cff!important;border:1.5px solid #b85cff!important}
-.coeff-box.waiting{background:#0a84ff!important;color:#fff!important;border:0!important;box-shadow:0 5px 16px rgba(10,132,255,.20)!important}
-.coeff-box.flying{background:#0a84ff!important;color:#fff!important;border:0!important;box-shadow:0 5px 18px rgba(10,132,255,.25)!important}
-.coeff-box.crashed{background:rgba(255,71,99,.10)!important;color:#ff5270!important;border:1.5px solid #ff5270!important}
-.coeff-box.bonus{background:rgba(177,91,255,.12)!important;color:#b85cff!important;border:1.5px solid #b85cff!important}
-/* settings modal matches the supplied reference */
-.settings-modal{background:#1b2026!important;border-radius:30px 30px 0 0!important;max-height:88vh!important;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px))!important}
-.settings-handle{width:44px;height:5px;border-radius:8px;background:#303640;margin:10px auto 16px}
-.settings-topbar{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;margin:0 2px 18px}
-.settings-title{font-size:16px;font-weight:800;color:#f4f6f8}
-.settings-mode{display:flex;align-items:center;padding:3px;border-radius:22px;background:#252a31;border:1px solid #30353d}
-.settings-mode-btn{height:34px;padding:0 15px;border:0;border-radius:18px;background:transparent;color:#cbd0d7;font:700 13px inherit;cursor:pointer}
-.settings-mode-btn.active{background:#343a42;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
-.settings-sound{width:38px;height:38px;border-radius:50%;border:1px solid #353a42;background:#292e35;color:#e6e9ed;font-size:15px;cursor:pointer}
-.settings-content{padding:0!important;overflow-y:auto!important}
-.settings-pane.hidden{display:none!important}
-.settings-section-label{font-size:12px;font-weight:800;color:#8c939d;margin:0 2px 10px}
-.settings-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
-.settings-item{height:116px!important;padding:10px!important;border:1px solid transparent!important;border-radius:16px!important;background:#242930!important;display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important}
-.settings-item.active{border:2px solid #0a84ff!important;background:#272d35!important;box-shadow:0 0 0 1px rgba(10,132,255,.08)}
-.settings-item img{width:78px!important;height:78px!important}
-.settings-bg-options{margin-top:14px}
-.bg-choice-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}
-.bg-choice{min-height:190px!important;border-radius:18px!important;overflow:hidden!important;position:relative!important;border:1px solid #343a42!important;background:#242930!important;color:#fff!important}
-.graph-preview{background:linear-gradient(180deg,#171a1f,#101318)!important}
-.space-preview{background:radial-gradient(circle at 50% 45%,rgba(76,133,255,.30),transparent 35%),linear-gradient(180deg,#050811,#11151d)!important}
-.bg-choice.active{border:2px solid #0a84ff!important;box-shadow:0 0 0 2px rgba(10,132,255,.12)}
-.bg-choice-icon{font-size:54px!important;display:block!important;margin:36px auto 12px!important;color:#4da3ff!important}
-.space-icon{color:#dfe8ff!important}
-.bg-choice b{font-size:13px!important}.bg-choice small{display:block!important;margin-top:3px!important;color:#8d949e!important;font-size:10px!important}
-.settings-gift-toggle.compact{margin-top:12px!important;margin-bottom:0!important;background:#23282f!important;border-color:#30363e!important}
-.settings-close-btn{width:100%;height:52px;margin:16px 0 0;border:0;border-radius:27px;background:#0a84ff;color:#fff;font:800 15px inherit;cursor:pointer}
-.settings-close-btn:active{transform:scale(.985)}
-@media(max-width:390px){.history-section{padding-left:16px!important;padding-right:16px!important}.settings-item{height:104px!important}.settings-item img{width:70px!important;height:70px!important}.bg-choice{min-height:165px!important}}
-
-/* FINAL BET/OUTPUT POLISH */
-.modal-sheet{background:linear-gradient(180deg,#1d2127 0%,#171a1f 100%);padding:14px 16px calc(18px + env(safe-area-inset-bottom,0));max-height:88vh;border:1px solid rgba(255,255,255,.06);box-shadow:0 -18px 60px rgba(0,0,0,.38)}
-.modal-handle{margin-bottom:12px;background:#303740}
-.modal-title{font-size:16px;margin-bottom:14px}
-.bet-modal-content{display:flex;flex-direction:column;gap:10px}
-.modal-tabs{margin:0;background:#252a30;border:1px solid rgba(255,255,255,.05);padding:3px;border-radius:18px}
-.modal-tab{height:38px;border-radius:15px;font-size:14px;color:#aeb4bd}
-.modal-tab.active{background:#3b82f6;color:#fff;border:0;box-shadow:0 5px 18px rgba(59,130,246,.25)}
-.inv-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-height:360px;padding:2px;order:1}
-.inv-card{min-height:126px;background:#24292f;border:1px solid rgba(255,255,255,.035);border-radius:15px;padding:8px;justify-content:flex-end;transition:transform .18s cubic-bezier(.2,.8,.2,1),border-color .18s,box-shadow .18s}
-.inv-card:hover{transform:translateY(-2px)}
-.inv-card.selected{border-color:#1683ff;background:#242b34;box-shadow:0 0 0 2px rgba(22,131,255,.28),0 10px 25px rgba(0,0,0,.22);transform:translateY(-2px)}
-.inv-card.selected::after{width:20px;height:20px;top:7px;right:7px;font-size:11px}
-.inv-card-img-wrap{width:100%;aspect-ratio:1/1;background:transparent;box-shadow:none;margin:0 auto 2px}
-.inv-card-img-wrap img{object-fit:contain;border-radius:0}
-.inv-card .inv-name{display:none}
-.inv-card .inv-val{background:transparent;margin:0;padding:2px 0 0;color:#fff;font-size:12px}
-.inv-card .inv-val img{width:13px;height:13px}
-.selected-summary{order:2;margin:0;padding:8px 11px;border-radius:12px;background:#23282e;border:1px solid rgba(59,130,246,.2)}
-.selected-count{font-size:11px;color:#b7bdc6}
-.selected-total{font-size:14px}
-.clear-selected{padding:6px 9px}
-.bet-deposit-btn{order:3;width:100%;height:48px;border-radius:15px;margin:0;background:#262b31;color:#fff;border:1px solid rgba(255,255,255,.06);font-size:14px;font-weight:800;display:flex!important;align-items:center;justify-content:center;gap:8px;transition:transform .16s,background .16s}
-.bet-deposit-btn:active,.confirm-gifts-btn:active,.confirm-bet-btn:active{transform:scale(.985)}
-.bet-deposit-icon{width:18px;height:18px;fill:#fff}
-.confirm-gifts-btn{order:4;margin:0;height:50px;padding:0;border-radius:16px;font-size:16px;background:linear-gradient(180deg,#1683ff,#0878f5);box-shadow:0 10px 28px rgba(0,120,255,.22)}
-.confirm-gifts-btn.show{display:block}
-.auto-cashout-row{order:5;margin:0;height:50px;min-height:50px;padding:3px 5px 3px 8px;background:#24292f!important;border:1px solid rgba(255,255,255,.035)!important;border-radius:16px}
-.auto-cashout-left{height:42px!important;background:transparent!important;padding:0 8px!important}
-.auto-cashout-label{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:13px!important;color:#fff!important}
-.bet-coeff-control{height:42px!important;border-radius:21px!important;background:#20252b!important}
-.confirm-bet-btn{order:6;height:50px;padding:0;margin:0;border-radius:16px;font-size:16px}
-#invSec{display:flex;flex-direction:column;gap:10px}
-#starsSec{display:flex;flex-direction:column;gap:10px}
-#starsSec[style*="display:none"]{display:none!important}
-.gift-empty-state{margin:0!important;border-radius:14px!important;min-height:86px!important}
-/* auto-withdraw selector: image-first cards */
-.autowd-modal{background:linear-gradient(180deg,#1d2127,#171a1f)!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:24px 24px 0 0!important;padding:16px!important;box-shadow:0 -18px 60px rgba(0,0,0,.45)}
-.autowd-list{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px!important;max-height:50vh!important;padding:2px!important}
-.autowd-row{min-height:118px!important;padding:8px!important;border-radius:15px!important;background:#24292f!important;border:1px solid rgba(255,255,255,.035)!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;gap:2px!important;transition:transform .18s,border-color .18s,box-shadow .18s!important}
-.autowd-row.selected{border-color:#1683ff!important;box-shadow:0 0 0 2px rgba(22,131,255,.25)!important;transform:translateY(-2px)}
-.autowd-thumb{width:76px!important;height:76px!important;background:transparent!important;border:0!important;border-radius:0!important}
-.autowd-thumb img{width:100%!important;height:100%!important;object-fit:contain!important}
-.autowd-info{width:100%!important;text-align:center!important;display:block!important}
-.autowd-name{font-size:11px!important;display:none!important}
-.autowd-coeff{display:none!important}
-.autowd-price{font-size:12px!important;font-weight:850!important;justify-content:center!important;color:#fff!important}
-.autowd-price img{width:13px!important;height:13px!important}
-.autowd-apply-btn{height:50px!important;border-radius:16px!important;margin-top:10px!important;font-size:15px!important}
-@media(max-width:380px){.inv-grid,.autowd-list{gap:7px}.inv-card,.autowd-row{min-height:108px}.inv-card-img-wrap{margin-bottom:0}.modal-sheet{padding-left:12px;padding-right:12px}}
-
-/* BET FLOW FINAL: one gift, clean inventory, CTA at bottom */
-#selectedSummary{display:none!important}
-#invSec{gap:10px!important}
-#invSec .inv-grid{order:1}
-#invSec .bet-deposit-btn{order:3}
-#invSec .auto-cashout-row{order:2}
-#invSec .confirm-gifts-btn{order:4}
-#starsSec + .auto-cashout-row{order:2}
-#starsSec + .auto-cashout-row + .confirm-gifts-btn{order:3}
-.inv-card{cursor:pointer;-webkit-tap-highlight-color:transparent}
-.inv-card:active{transform:scale(.975)!important}
-.autowd-row:active{transform:scale(.975)!important}
-.confirm-gifts-btn,.confirm-bet-btn,.bet-deposit-btn,.autowd-apply-btn{position:relative;overflow:hidden}
-.confirm-gifts-btn::after,.confirm-bet-btn::after,.bet-deposit-btn::after,.autowd-apply-btn::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.12) 50%,transparent 75%);transform:translateX(-120%);animation:ctaShine 3.2s ease-in-out infinite;pointer-events:none}
-@keyframes ctaShine{0%,55%{transform:translateX(-120%)}75%,100%{transform:translateX(120%)}}
-.inv-card-img-wrap img,.autowd-thumb img{animation:giftFloat 3.8s ease-in-out infinite}
-.inv-card:nth-child(2n) .inv-card-img-wrap img,.autowd-row:nth-child(2n) .autowd-thumb img{animation-delay:-1.2s}
-.inv-card:nth-child(3n) .inv-card-img-wrap img,.autowd-row:nth-child(3n) .autowd-thumb img{animation-delay:-2.3s}
-@keyframes giftFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.025)}}
-</style>
-
-<style id="crash-final-v3">
-/* === FINAL V3: lower, cleaner, aligned Crash === */
-.container{padding-top:calc(env(safe-area-inset-top,0px) + 24px)!important;padding-bottom:116px!important}
-.top-bar{padding-top:10px!important;padding-bottom:10px!important}
-.game-field{margin-top:2px!important;min-height:420px!important}
-.history-section{padding-top:10px!important;padding-bottom:12px!important}
-.history-scroll{grid-template-rows:38px!important;min-height:38px!important;gap:9px!important}
-.h-pill,.coeff-box{height:38px!important;min-height:38px!important;min-width:72px!important;border-radius:20px!important;font-size:13px!important}
-.bet-area{padding-top:0!important;padding-bottom:18px!important}
-.action-btn{min-height:56px!important;border-radius:29px!important;font-size:17px!important}
-.bets-section{min-height:245px!important;margin-bottom:18px!important}
-.bottom-nav{bottom:calc(env(safe-area-inset-bottom,0px) + 12px)!important}
-
-/* Settings: compact reference-like sheet */
-.settings-overlay{align-items:flex-end!important;background:rgba(3,5,8,.76)!important;backdrop-filter:blur(10px)!important}
-.settings-modal{width:min(100%,460px)!important;max-height:calc(100vh - 18px)!important;height:auto!important;background:#1c2025!important;border:1px solid #30353d!important;border-bottom:0!important;border-radius:30px 30px 0 0!important;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -20px 70px rgba(0,0,0,.45)!important}
-.settings-handle{margin:10px auto 16px!important;width:44px!important;height:5px!important;background:#30363f!important}
-.settings-topbar{grid-template-columns:1fr auto auto!important;gap:10px!important;margin:0 0 14px!important}
-.settings-title{display:inline-flex!important;align-items:center!important;height:40px!important;padding:0 16px!important;border-radius:21px!important;background:#252a30!important;border:1px solid #30363e!important;font-size:15px!important;font-weight:700!important}
-.settings-mode{height:40px!important;padding:3px!important;border-radius:21px!important;background:#252a30!important;border:1px solid #30363e!important}
-.settings-mode-btn{height:32px!important;padding:0 14px!important;border-radius:17px!important;font-size:13px!important;font-weight:650!important}
-.settings-mode-btn.active{background:#343a42!important;color:#fff!important}
-.settings-sound{width:40px!important;height:40px!important;border-radius:50%!important;background:#252a30!important;border:1px solid #343a42!important;display:flex!important;align-items:center!important;justify-content:center!important}
-.settings-sound svg{width:20px;height:20px;fill:#e8ebef;transition:transform .2s ease,opacity .2s ease}
-.settings-sound.muted svg{opacity:.35;transform:scale(.92)}
-.settings-content{padding:0 0 2px!important}
-.settings-section-label{display:none!important}
-.settings-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
-.settings-item{height:112px!important;padding:7px!important;border-radius:16px!important;background:#252a30!important;border:1px solid rgba(255,255,255,.035)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important}
-.settings-item.active{border:2px solid #1683ff!important;background:#252c34!important;box-shadow:0 0 0 2px rgba(22,131,255,.10),0 8px 24px rgba(0,0,0,.18)!important}
-.settings-item img{width:76px!important;height:76px!important;object-fit:contain!important;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28))}
-.settings-bg-options{margin-top:12px!important}
-.bg-choice-row{gap:10px!important;margin-bottom:10px!important}
-.bg-choice{min-height:150px!important;border-radius:16px!important;background:#252a30!important}
-.bg-choice::before{opacity:.9!important}
-.bg-choice::after{background:linear-gradient(180deg,rgba(3,6,14,.05) 25%,rgba(3,6,14,.88) 100%)!important}
-.bg-choice-icon{font-size:38px!important;margin:24px auto 7px!important}
-.bg-choice b{font-size:12px!important}.bg-choice small{font-size:9px!important}
-.settings-gift-toggle.compact{padding:11px 12px!important;border-radius:14px!important;margin-top:8px!important}
-.settings-gift-toggle .lbl{font-size:12px!important}.settings-gift-toggle .desc{font-size:9px!important}
-.settings-close-btn{height:52px!important;border-radius:27px!important;margin-top:12px!important;background:#0a84ff!important;font-size:15px!important}
-
-/* Auto-withdraw: new clean one-gift selector */
-.autowd-overlay{align-items:flex-end!important;background:rgba(3,5,8,.78)!important;backdrop-filter:blur(10px)!important}
-.autowd-modal{width:min(100%,460px)!important;max-width:460px!important;max-height:88vh!important;background:#1c2025!important;border:1px solid #30353d!important;border-bottom:0!important;border-radius:30px 30px 0 0!important;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -20px 70px rgba(0,0,0,.48)!important;transform:translateY(100%)!important}
-.autowd-overlay.show .autowd-modal{transform:translateY(0)!important}
-.autowd-header{padding:10px 0 12px!important;border-bottom:0!important}
-.autowd-header::before{content:"";position:absolute;top:10px;left:50%;transform:translateX(-50%);width:44px;height:5px;border-radius:8px;background:#30363f}
-.autowd-title{padding-top:16px!important;font-size:16px!important}
-.autowd-title img{width:19px!important;height:19px!important}
-.autowd-close{margin-top:14px!important;width:34px!important;height:34px!important;border-radius:50%!important;background:#292e35!important;color:#cbd0d6!important;border:1px solid #343a42!important}
-.autowd-summary{padding:11px 13px!important;border-radius:15px!important;background:#252a30!important;border:1px solid rgba(255,255,255,.045)!important}
-.autowd-summary-row{font-size:11px!important}.autowd-summary-val{font-size:12px!important}.autowd-summary-val.gold{color:#fff!important;font-size:13px!important}
-.autowd-search-wrap{padding:10px 0 8px!important}.autowd-search{height:42px!important;padding:0 13px!important;border-radius:21px!important;background:#252a30!important;border:1px solid #343a42!important;font-size:13px!important}
-.autowd-list{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;max-height:46vh!important;padding:2px!important}
-.autowd-row{min-height:128px!important;padding:8px!important;border-radius:16px!important;background:#252a30!important;border:1px solid rgba(255,255,255,.04)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important}
-.autowd-row.selected{border:2px solid #1683ff!important;background:#252d36!important;box-shadow:0 0 0 2px rgba(22,131,255,.10),0 10px 25px rgba(0,0,0,.20)!important;transform:translateY(-2px)!important}
-.autowd-thumb{width:82px!important;height:82px!important}
-.autowd-price{font-size:12px!important;color:#f4f6f8!important}
-.autowd-apply-btn{height:54px!important;border-radius:27px!important;margin:12px 0 0!important;background:#0a84ff!important;box-shadow:0 10px 28px rgba(10,132,255,.22)!important;font-size:15px!important}
-
-/* Win/output sheet: same visual language */
-.win-overlay{background:rgba(3,5,8,.55)!important;backdrop-filter:blur(9px)!important;transform:none!important}
-.win-sheet{width:min(100%,460px)!important;background:#1c2025!important;border:1px solid #30353d!important;border-bottom:0!important;border-radius:30px 30px 0 0!important;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -20px 70px rgba(0,0,0,.45)!important}
-.win-sheet-handle{width:44px!important;height:5px!important;background:#30363f!important;margin:10px auto 18px!important}
-.simple-win-card{padding:0 2px 2px!important}
-.simple-win-title{font-size:11px!important;letter-spacing:.12em!important;color:#858b94!important}
-.simple-win-multiplier{font-size:38px!important;margin-bottom:14px!important}
-.simple-win-gift{width:132px!important;height:132px!important;border-radius:26px!important;background:#252a30!important;border:1px solid #343a42!important;margin-bottom:10px!important}
-.simple-win-gift img{padding:10px!important}
-.simple-win-name{font-size:17px!important}.simple-win-value{font-size:12px!important;color:#8c929b!important}
-.simple-win-stats{margin-top:14px!important}.simple-win-stats>div{padding:10px!important;border-radius:13px!important;background:#252a30!important;border:1px solid rgba(255,255,255,.04)!important}
-.win-collect-btn{height:54px!important;border-radius:27px!important;margin-top:14px!important;background:#0a84ff!important;font-size:15px!important}
-
-/* Cleaner active bet rows */
-.bet-row{min-height:58px!important;align-items:center!important}
-.bet-right-stack{min-width:145px!important;justify-content:flex-end!important}
-.bet-status{min-width:58px!important}.bet-payout{width:82px!important}
-.bet-payout img{width:25px!important;height:25px!important}
-
-@media(max-width:390px){
- .container{padding-top:calc(env(safe-area-inset-top,0px) + 18px)!important}
- .game-field{min-height:395px!important}
- .settings-modal,.autowd-modal,.win-sheet{padding-left:12px!important;padding-right:12px!important}
- .settings-item{height:102px!important}.settings-item img{width:68px!important;height:68px!important}
- .bg-choice{min-height:136px!important}.autowd-row{min-height:116px!important}.autowd-thumb{width:70px!important;height:70px!important}
-}
-</style>
-
-<style id="crash-final-v4-polish">
-/* V4 — coherent mobile Crash UI */
-.crash-gift-display{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.72);width:190px;height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:8;opacity:0;pointer-events:none;transition:opacity .24s ease,transform .42s cubic-bezier(.16,1,.3,1)}
-.crash-gift-display.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
-.crash-gift-display img{width:156px;height:156px;object-fit:contain;filter:drop-shadow(0 14px 28px rgba(0,0,0,.55));}
-.crash-gift-display img.gift-swap{animation:crashGiftIn .42s cubic-bezier(.16,1,.3,1)}
-.crash-gift-value{margin-top:-10px;padding:6px 12px;border-radius:14px;background:rgba(17,22,30,.82);border:1px solid rgba(77,163,255,.34);color:#fff;font-weight:900;font-size:13px;line-height:1;backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
-@keyframes crashGiftIn{0%{opacity:0;transform:scale(.55) rotate(-8deg)}65%{opacity:1;transform:scale(1.08) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
-.rocket-wrap img{width:196px!important;height:196px!important;object-fit:contain!important}
-.rocket-wrap.gift-mode img{width:196px!important;height:196px!important}
-.game-field{min-height:300px!important}
-.bets-section{margin:8px 12px 12px!important;min-height:250px!important;border-radius:24px!important;background:linear-gradient(180deg,#20252b,#1a1e23)!important;border:1px solid rgba(255,255,255,.045)!important;box-shadow:0 12px 30px rgba(0,0,0,.16)!important;padding:14px!important}
-.bets-header{padding:0 4px 12px!important}
-.bets-list{min-height:205px!important;max-height:340px!important}
-.bet-row{min-height:68px!important;border-radius:16px!important;padding:9px 12px!important}
-.settings-modal{width:min(100%,500px)!important;max-height:92vh!important;border-radius:28px 28px 0 0!important;background:linear-gradient(180deg,#1d2228,#171a1f)!important;box-shadow:0 -20px 70px rgba(0,0,0,.48)!important}
-.settings-topbar{padding:4px 4px 14px!important;gap:10px!important}
-.settings-title{font-size:16px!important;font-weight:900!important}
-.settings-mode{height:40px!important;border-radius:20px!important;padding:3px!important;background:#252a31!important}
-.settings-mode-btn{min-width:66px!important;height:34px!important;border-radius:17px!important;font-weight:800!important}
-.settings-content{padding:0 2px!important}
-.settings-grid{grid-template-columns:repeat(3,1fr)!important;gap:10px!important;max-height:calc(92vh - 205px)!important;overflow:auto!important;padding:4px!important}
-.settings-item{height:112px!important;border-radius:18px!important;background:#252a31!important;border:1.5px solid rgba(255,255,255,.045)!important;display:flex!important;align-items:center!important;justify-content:center!important;transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease!important}
-.settings-item.active{border-color:#0a84ff!important;box-shadow:0 0 0 2px rgba(10,132,255,.14),0 8px 24px rgba(10,132,255,.10)!important;transform:translateY(-1px)!important}
-.settings-item img{width:82px!important;height:82px!important;object-fit:contain!important}
-.bg-choice-row{gap:10px!important}
-.bg-choice{min-height:175px!important;background:#252a31!important}
-.bg-choice-icon{font-size:42px!important;margin:28px auto 10px!important}
-.settings-gift-toggle.compact{padding:12px 13px!important;border-radius:16px!important}
-.settings-close-btn{height:54px!important;margin:14px 0 0!important;border-radius:28px!important;font-size:15px!important}
-@media(max-width:390px){.game-field{min-height:275px!important}.bets-section{min-height:220px!important}.settings-item{height:96px!important}.settings-item img{width:72px!important;height:72px!important}.crash-gift-display{width:170px;height:170px}.crash-gift-display img{width:140px;height:140px}}
-</style>
-
-<style id="crash-soft-polish">
-/* SOFT POLISH — keep the original Crash design, only make it cleaner */
-:root{
-  --soft-ease:cubic-bezier(.22,.8,.22,1);
-}
-html{background:#171a1f}
-body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-
-/* Keep the original geometry, add depth and cleaner surfaces */
-.game-field{
-  box-shadow:inset 0 0 70px rgba(0,0,0,.18),0 10px 28px rgba(0,0,0,.12)!important;
-  border:1px solid rgba(255,255,255,.025)!important;
-}
-.game-field::before{transition:opacity .35s ease}
-.game-field.flying::before{opacity:.82}
-
-/* Counter: same old visual scale, but softer and less harsh */
-#cdDisplay,.countdown-display{
-  text-rendering:geometricPrecision;
-  -webkit-font-smoothing:antialiased;
-  text-shadow:0 3px 22px rgba(0,0,0,.22),0 0 42px rgba(255,255,255,.09)!important;
-}
-#cdDisplay.active{animation:softCountdown .46s var(--soft-ease) both!important}
-@keyframes softCountdown{
-  0%{opacity:0;transform:scale(.84);filter:blur(3px)}
-  55%{opacity:1;transform:scale(1.035);filter:blur(0)}
-  100%{opacity:1;transform:scale(1)}
-}
-
-/* Rocket: retain original size/position, just make movement calmer */
-.rocket-wrap{transition:opacity .28s var(--soft-ease)!important}
-.rocket-wrap.flying{animation:softRocketFloat 1.8s ease-in-out infinite alternate!important}
-@keyframes softRocketFloat{
-  from{transform:translate(-50%,-50%) translate3d(0,2px,0)}
-  to{transform:translate(-50%,-50%) translate3d(0,-3px,0)}
-}
-.rocket-wrap img{filter:drop-shadow(0 10px 26px rgba(10,132,255,.18))!important}
-
-/* Flame is subtler — no aggressive flashing */
-.rocket-wrap.flying:after{opacity:.62!important;filter:blur(6px)!important;animation:softFlame .28s ease-in-out infinite alternate!important}
-@keyframes softFlame{
-  from{height:74px;opacity:.42;transform:translateX(-50%) rotate(16deg) scaleX(.88)}
-  to{height:102px;opacity:.72;transform:translateX(-50%) rotate(16deg) scaleX(1)}
-}
-
-/* History chips: preserve colors, improve spacing and depth */
-.history-scroll{scroll-behavior:smooth}
-.h-pill,.coeff-box{
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 3px 10px rgba(0,0,0,.10)!important;
-  transition:transform .2s var(--soft-ease),filter .2s ease!important;
-}
-.h-pill:active,.coeff-box:active{transform:scale(.96)}
-
-/* Main CTA: original blue, nicer tactile feedback */
-.action-btn{
-  box-shadow:0 7px 20px rgba(10,132,255,.16),inset 0 1px 0 rgba(255,255,255,.10)!important;
-  transition:transform .18s var(--soft-ease),filter .18s ease,box-shadow .18s ease!important;
-}
-.action-btn:active:not(:disabled){transform:scale(.975)!important;filter:brightness(.97);box-shadow:0 4px 13px rgba(10,132,255,.12)!important}
-
-/* Bet rows appear smoother without changing the old card design */
-.bet-row{transition:transform .2s var(--soft-ease),background .2s ease,opacity .2s ease!important}
-.bet-row:active{transform:scale(.99)}
-
-/* Bottom bar: original appearance, slightly softer shadow */
-.bottom-nav{
-  box-shadow:0 8px 28px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035)!important;
-}
-.bottom-nav-item{transition:transform .2s var(--soft-ease),background .2s ease,color .2s ease!important}
-.bottom-nav-item:active{transform:scale(.94)}
-
-/* Modals keep the old design, only improve entrance */
-.modal-overlay{transition:opacity .22s ease,visibility .22s ease!important}
-.modal-sheet{transition:transform .38s var(--soft-ease)!important}
-.win-overlay{transition:opacity .24s ease,visibility .24s ease,transform .4s var(--soft-ease)!important}
-
-@media(prefers-reduced-motion:reduce){
-  #cdDisplay.active,.rocket-wrap.flying,.rocket-wrap.flying:after{animation:none!important}
-  .h-pill,.coeff-box,.action-btn,.bet-row,.bottom-nav-item{transition:none!important}
-}
-
-
-/* ==============================================================
-   iPHONE / ORIGINAL DESIGN — LIGHTER FINAL POLISH
-   Keep the original layout; only improve contrast, hierarchy and motion.
-   ============================================================== */
-:root{--ui-ease:cubic-bezier(.22,.75,.2,1)}
-body{
-    background:#1d2025;
-    background-image:radial-gradient(ellipse 120% 55% at 50% 0%,#252a31 0%,#1d2025 58%,#1b1e22 100%);
-}
-.container{background:transparent}
-.top-bar{position:relative;z-index:20}
-.game-field{
-    background:#181b20!important;
-    border-color:rgba(255,255,255,.035)!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 10px 28px rgba(0,0,0,.10)!important;
-}
-.game-field::before{
-    background-image:linear-gradient(rgba(25,139,255,.48) 1px,transparent 1px),linear-gradient(90deg,rgba(25,139,255,.48) 1px,transparent 1px)!important;
-    opacity:.48!important;
-    mask-image:linear-gradient(to bottom,rgba(0,0,0,.96),rgba(0,0,0,.88) 78%,transparent 100%);
-}
-.game-field.scene-graph{background-color:#181b20!important}
-.game-field::after{opacity:.28!important}
-
-/* Countdown: smaller, crisp and softer instead of glowing heavily. */
-#cdDisplay{
-    font-size:clamp(82px,23vw,118px)!important;
-    font-weight:850!important;
-    letter-spacing:-.055em!important;
-    text-shadow:0 4px 24px rgba(0,0,0,.20),0 0 24px rgba(255,255,255,.06)!important;
-}
-#cdDisplay.active{animation:iphoneCount .46s var(--ui-ease) both!important}
-@keyframes iphoneCount{
-    0%{opacity:0;transform:scale(.86) translateY(5px);filter:blur(2px)}
-    70%{opacity:1;transform:scale(1.025) translateY(0);filter:blur(0)}
-    100%{opacity:1;transform:scale(1)}
-}
-
-/* History / multiplier pills: readable on the lighter field. */
-.history-section{padding-top:1px!important}
-.h-pill,.coeff-box{
-    min-height:30px!important;
-    padding:6px 11px!important;
-    border-radius:16px!important;
-    font-size:11px!important;
-    line-height:1!important;
-    box-shadow:0 2px 10px rgba(0,0,0,.08)!important;
-}
-.coeff-box{
-    min-width:78px!important;
-    justify-content:center!important;
-    background:#0b84ff!important;
-    border:0!important;
-    color:#fff!important;
-    text-shadow:0 1px 2px rgba(0,0,0,.15)!important;
-}
-.coeff-box.flying-pulse{animation:coeffSoftPulse 1.2s ease-in-out infinite!important}
-@keyframes coeffSoftPulse{
-    0%,100%{transform:scale(1);box-shadow:0 3px 12px rgba(10,132,255,.16)!important}
-    50%{transform:scale(1.018);box-shadow:0 5px 17px rgba(10,132,255,.24)!important}
-}
-
-/* Main action button: same old blue, less heavy. */
-.action-btn{
-    min-height:52px!important;
-    box-shadow:0 7px 20px rgba(10,132,255,.20)!important;
-}
-.action-btn::before{opacity:.75}
-
-/* Bets panel — lifted from near-black so rows separate clearly. */
-.bets-section{
-    background:#20242a!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.028),0 8px 24px rgba(0,0,0,.08)!important;
-}
-.bet-row{
-    background:#262a30!important;
-    border-color:rgba(255,255,255,.045)!important;
-    box-shadow:0 2px 10px rgba(0,0,0,.07)!important;
-}
-.bet-row:hover{background:#292e34!important}
-.bet-status{
-    min-width:68px!important;
-    height:28px!important;
-    gap:4px!important;
-    background:#30353c!important;
-    color:#eef1f5!important;
-    border:1px solid rgba(255,255,255,.035)!important;
-    transition:transform .18s var(--ui-ease),background .2s ease,color .2s ease!important;
-}
-.bet-status svg{width:12px!important;height:12px!important;opacity:.72}
-.bet-status.won{background:rgba(30,228,76,.13)!important;color:#36dd73!important}
-.bet-status.lost{background:rgba(239,73,109,.13)!important;color:#ff718b!important}
-.bet-x{font-weight:900;letter-spacing:-.02em;opacity:1;margin-right:1px}
-.bet-right-stack{gap:6px!important}
-.bet-payout{color:#f3f5f7!important}
-.bet-payout span{font-weight:800!important}
-.no-bets{color:#70757d!important}
-
-/* iPhone bottom bar: unmistakable blue active marker, like the reference. */
-.bottom-nav{
-    background:#25292f!important;
-    border:1px solid rgba(255,255,255,.045)!important;
-    box-shadow:0 12px 30px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.035)!important;
-}
-.bottom-nav-item{color:#777d86!important}
 .bottom-nav-item.active{
-    color:#3b96ff!important;
-    background:transparent!important;
+    background:#23364b;
+    color:#3f95f5;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
 }
-.bottom-nav-item.active::before{
-    background:#1d3a58!important;
-    opacity:1!important;
-    transform:scale(1)!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 4px 12px rgba(10,132,255,.08)!important;
+.bottom-nav-item.active span{
+    color:#3f95f5;
 }
-.bottom-nav-item.active::after{display:none!important}
-.bottom-nav-item.active svg{filter:drop-shadow(0 3px 7px rgba(10,132,255,.28))!important}
-.bottom-nav-item.active span{color:#3b96ff!important}
-
-/* Top pills slightly lighter to match the supplied screenshots. */
-.ping-pill{background:#0e4325!important}
-.settings-btn-sm{background:#30353b!important}
-.bal-pill-crash{background:#2d3238!important}
-.bal-plus-crash{background:#3a3f46!important}
-
-@media(max-width:390px){
-    .game-field{min-height:405px!important}
-    #cdDisplay{font-size:92px!important}
-    .history-section{padding-left:20px!important;padding-right:20px!important}
-    .bet-area{padding-left:20px!important;padding-right:20px!important}
-    .bets-section{margin-left:20px!important;margin-right:20px!important}
+.bottom-nav-item:not(.active) svg,
+.bottom-nav-item:not(.active) span{
+    opacity:.9;
 }
-@media(prefers-reduced-motion:reduce){
-    #cdDisplay.active,.coeff-box.flying-pulse{animation:none!important}
+.bottom-nav-item:active{
+    transform:scale(.95);
 }
-
-</style>
-
-
-<style id="history-premium-polish">
-/* Premium crash history — compact, glossy and readable */
-.history-section{
-  padding:6px 24px 10px!important;
-  margin-top:0!important;
-  overflow:hidden!important;
-}
-.history-scroll{
-  display:flex!important;
-  align-items:center!important;
-  gap:8px!important;
-  min-height:34px!important;
-  padding:0 1px!important;
-  overflow-x:auto!important;
-  overflow-y:hidden!important;
-  scrollbar-width:none!important;
-  -webkit-overflow-scrolling:touch;
-}
-.history-scroll::-webkit-scrollbar{display:none!important}
-.h-pill,.coeff-box{
-  flex:0 0 auto!important;
-  width:auto!important;
-  min-width:0!important;
-  height:34px!important;
-  min-height:34px!important;
-  padding:0 13px!important;
-  border-radius:18px!important;
-  display:inline-flex!important;
-  align-items:center!important;
-  justify-content:center!important;
-  font-size:12px!important;
-  font-weight:800!important;
-  letter-spacing:-.015em!important;
-  line-height:1!important;
-  font-variant-numeric:tabular-nums!important;
-  white-space:nowrap!important;
-  box-sizing:border-box!important;
-  position:relative!important;
-  overflow:hidden!important;
-  text-shadow:none!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 3px 10px rgba(0,0,0,.12)!important;
-  transition:transform .18s cubic-bezier(.2,.9,.2,1),filter .18s ease,box-shadow .18s ease!important;
-}
-.h-pill::before,.coeff-box::before{
-  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-  background:linear-gradient(135deg,rgba(255,255,255,.10),transparent 42%,rgba(255,255,255,.025));
-}
-.h-pill:active,.coeff-box:active{transform:scale(.95)!important;filter:brightness(.96)}
-/* Blue / low */
-.h-pill.low{
-  background:linear-gradient(180deg,rgba(38,145,255,.18),rgba(18,93,180,.10))!important;
-  color:#67b2ff!important;
-  border:1px solid rgba(77,163,255,.82)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 0 10px rgba(45,140,255,.07)!important;
-}
-/* Green / medium */
-.h-pill.mid{
-  background:linear-gradient(180deg,rgba(25,226,164,.15),rgba(10,150,112,.08))!important;
-  color:#35e7b0!important;
-  border:1px solid rgba(35,228,164,.88)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 0 11px rgba(35,228,164,.08)!important;
-}
-/* Yellow / high */
-.h-pill.high{
-  background:linear-gradient(180deg,rgba(255,190,45,.17),rgba(205,137,0,.08))!important;
-  color:#ffd13b!important;
-  border:1px solid rgba(255,202,42,.92)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 0 11px rgba(255,190,45,.08)!important;
-}
-/* Pink / very high */
-.h-pill.mega{
-  background:linear-gradient(180deg,rgba(255,65,145,.15),rgba(174,24,93,.08))!important;
-  color:#ff63b1!important;
-  border:1px solid rgba(255,76,170,.90)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 0 12px rgba(255,65,145,.10)!important;
-}
-/* Purple / bonus */
-.h-pill.bonus{
-  background:linear-gradient(180deg,rgba(174,92,255,.18),rgba(103,43,170,.09))!important;
-  color:#c487ff!important;
-  border:1px solid rgba(183,94,255,.92)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.10),0 0 13px rgba(174,92,255,.10)!important;
-}
-.coeff-box.waiting,.coeff-box.flying{
-  min-width:82px!important;
-  padding:0 14px!important;
-  background:linear-gradient(180deg,#148cff,#0876e8)!important;
-  color:#fff!important;
-  border:1px solid rgba(106,190,255,.28)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.20),0 5px 15px rgba(10,132,255,.18)!important;
-}
-.coeff-box.crashed{
-  background:linear-gradient(180deg,rgba(255,74,105,.15),rgba(170,35,58,.08))!important;
-  color:#ff7189!important;
-  border:1px solid rgba(255,82,112,.82)!important;
-}
-@media(max-width:390px){
-  .history-section{padding-left:24px!important;padding-right:24px!important}
-  .history-scroll{gap:7px!important}
-  .h-pill,.coeff-box{height:33px!important;min-height:33px!important;padding:0 11px!important;font-size:11px!important;border-radius:17px!important}
-  .coeff-box.waiting,.coeff-box.flying{min-width:80px!important}
+@media(max-width:400px){
+    .bottom-nav{
+        width:calc(100% - 28px);
+        bottom:22px;
+        height:60px;
+    }
+    .bottom-nav-item{
+        min-height:50px;
+        height:50px;
+        padding-left:5px;
+        padding-right:5px;
+    }
 }
 </style>
+
 </head>
 <body>
 
@@ -1734,7 +691,7 @@ body{
 
 <div class="bonus-announce" id="bonusAnnounce">
     <div class="bonus-announce-inner">
-        <span class="bonus-announce-emoji">??</span>
+        <span class="bonus-announce-emoji">🏆</span>
         <div class="bonus-announce-title">BONUS ROUND</div>
         <div class="bonus-announce-sub">Двойная выплата!</div>
     </div>
@@ -1766,15 +723,10 @@ body{
     </div>
 
     <div class="game-field" id="gameField">
-        <div class="bonus-badge" id="bonusBadge">?? BONUS ROUND ??</div>
-
+        <div class="bonus-badge" id="bonusBadge">🏆 BONUS ROUND 🏆</div>
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="rocket-wrap hide" id="rocketWrap">
             <img src="/static/gifs/rockets/crash.gif" alt="" id="rocketImg">
-        </div>
-        <div class="crash-gift-display" id="crashGiftDisplay" aria-hidden="true">
-            <img id="crashGiftImg" src="/static/img/gift.png" alt="">
-            <div class="crash-gift-value" id="crashGiftValue"></div>
         </div>
         <div class="boom-wrap" id="boomWrap">
             <img src="/static/gifs/boom.gif" alt="" id="boomImg">
@@ -1807,68 +759,37 @@ body{
 <div class="modal-overlay" id="betModal">
     <div class="modal-sheet">
         <div class="modal-handle"></div>
-        <div class="modal-title">Сделать ставку</div>
-
-
-        <div class="bet-modal-content">
-            <div class="modal-tabs">
-                <button class="modal-tab active" id="tabInv" onclick="switchTab('inv')">
-                    <img src="/static/img/gift.png" alt="">Подарки
-                </button>
-                <button class="modal-tab" id="tabStars" onclick="switchTab('stars')">
-                    <img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'" alt="GRAM">GRAM
-                </button>
+        <div class="modal-title">Place bet</div>
+        <div class="modal-tabs">
+            <button class="modal-tab active" id="tabStars" onclick="switchTab('stars')"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'"> GRAM</button>
+            <button class="modal-tab" id="tabInv" onclick="switchTab('inv')"><img src="/static/img/gift.png"> Инвентарь</button>
+        </div>
+        <div id="starsSec">
+            <div class="bet-input-wrap">
+                <input type="number" id="betInput" placeholder="Введите GRAM (мин. 0.10)" min="0.1" step="0.01" inputmode="decimal">
             </div>
-
-            <div id="invSec">
-                <div class="gift-empty-state" id="giftEmptyState">
-                    <div class="gift-empty-copy">
-                        <div class="gift-empty-title">У вас нет подарков</div>
-                        <div class="gift-empty-sub">Чтобы пополнить баланс подарками, нажмите кнопку «Пополнить» ниже.</div>
-                    </div>
-                </div>
-
-                <div class="selected-summary" id="selectedSummary">
-                    <div class="selected-info">
-                        <div class="selected-count">Выбран подарок</div>
-                        <div class="selected-total"><span id="selectedTotal">0.00</span> <span style="color:#3B82F6;font-size:12px">GRAM</span></div>
-                    </div>
-                    <button class="clear-selected" onclick="clearSelectedGifts()">Сбросить</button>
-                </div>
-
-                <div class="inv-grid" id="invGrid" style="display:none"></div>
-            </div>
-
-            <div id="starsSec" style="display:none">
-                <div class="gram-balance-hint">
-                    <span>Сумма</span><span id="gramModalBalance">balance: 0.00 GRAM</span>
-                </div>
-                <div class="bet-input-wrap">
-                    <input type="number" id="betInput" placeholder="0" min="0.1" step="0.01" inputmode="decimal">
-                    <span class="bet-input-unit">GRAM</span>
-                </div>
-            </div>
-
             <div class="auto-cashout-row">
-                <div class="auto-cashout-left">
-                    <div class="auto-cashout-info">
-                        <div class="auto-cashout-label">Авто вывод</div>
-                    </div>
-                    <button type="button" class="bet-toggle" id="betAutoToggle" onclick="toggleBetAutoWithdraw()" aria-label="Авто вывод"></button>
+                <div class="auto-cashout-info">
+                    <div class="auto-cashout-label">Автовывод</div>
+                    <div class="auto-cashout-sub">Авто-забор (от 1.10x)</div>
                 </div>
-                <div class="bet-coeff-control">
-                    <button type="button" class="bet-coeff-btn" onclick="changeBetAutoCoeff(-0.1)" aria-label="Уменьшить">?</button>
-                    <span id="betAutoCoeff">x2.0</span>
-                    <button type="button" class="bet-coeff-btn" onclick="changeBetAutoCoeff(0.1)" aria-label="Увеличить">+</button>
-                </div>
+                <button type="button" class="autowd-open-btn" id="autowdMainBtn" onclick="openAutoWithdraw()">
+                    <img src="/static/img/gift.png" alt="">
+                    <span class="autowd-btn-name">Выбрать</span>
+                </button>
             </div>
-
-            <button class="confirm-gifts-btn" id="confirmGiftsBtn" onclick="confirmGiftBet()">Поставить</button>
-            <button class="bet-deposit-btn" id="betDepositBtn" onclick="openDepositSelector()" aria-label="Пополнить">
-                <svg class="bet-deposit-icon" viewBox="0 0 300 300" aria-hidden="true"><path d="M206.25 159.375H159.375V206.25C159.375 211.406 155.184 215.625 150 215.625C144.816 215.625 140.625 211.406 140.625 206.25V159.375H93.75C88.5656 159.375 84.375 155.156 84.375 150C84.375 144.844 88.5656 140.625 93.75 140.625H140.625V93.75C140.625 88.5937 144.816 84.375 150 84.375C155.184 84.375 159.375 88.5937 159.375 93.75V140.625H206.25C211.434 140.625 215.625 144.844 215.625 150C215.625 155.156 211.434 159.375 206.25 159.375ZM150 0C67.1531 0 0 67.125 0 150C0 232.875 67.1531 300 150 300C232.847 300 300 232.875 300 150C300 67.125 232.847 0 150 0Z"></path></svg>
-                <span>Пополнить</span>
-            </button>
-            <button class="confirm-bet-btn" id="confirmBetBtn" onclick="confirmStarsBet()">Сделать ставку</button>
+            <button class="confirm-bet-btn" id="confirmBetBtn" onclick="confirmStarsBet()">BET</button>
+        </div>
+        <div id="invSec" style="display:none">
+            <div class="selected-summary" id="selectedSummary">
+                <div class="selected-info">
+                    <div class="selected-count">Выбрано: <span id="selectedCount">0</span> / 3</div>
+                    <div class="selected-total"><span id="selectedTotal">0.00</span> <span style="color:#3B82F6;font-size:12px">GRAM</span></div>
+                </div>
+                <button class="clear-selected" onclick="clearSelectedGifts()">Clear</button>
+            </div>
+            <div class="inv-grid" id="invGrid"><div class="inv-empty">Загрузка...</div></div>
+            <button class="confirm-gifts-btn" id="confirmGiftsBtn" onclick="confirmGiftBet()">BET GIFTS</button>
         </div>
     </div>
 </div>
@@ -1877,7 +798,7 @@ body{
     <div class="autowd-modal">
         <div class="autowd-header">
             <div class="autowd-title"><img src="/static/img/star2.png" alt="">Автовывод</div>
-            <button class="autowd-close" onclick="closeAutoWithdraw()">?</button>
+            <button class="autowd-close" onclick="closeAutoWithdraw()">×</button>
         </div>
         <div class="autowd-summary">
             <div class="autowd-summary-row"><span>Ставка:</span><span class="autowd-summary-val" id="autowdBetVal">0.00 GRAM</span></div>
@@ -1897,7 +818,7 @@ body{
     <div class="deposit-modal">
         <div class="deposit-header">
             <div class="deposit-title">Пополнение</div>
-            <button class="deposit-close" onclick="closeDepositSelector()">?</button>
+            <button class="deposit-close" onclick="closeDepositSelector()">×</button>
         </div>
         <div class="deposit-methods">
             <button class="deposit-method-btn" onclick="closeDepositSelector();showToast('Скоро','ok')"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'" alt="GRAM"><span>GRAM</span></button>
@@ -1910,7 +831,7 @@ body{
     <div class="stars-deposit-modal">
         <div class="stars-deposit-header">
             <div class="stars-deposit-title">Пополнение Stars</div>
-            <button class="stars-deposit-close" onclick="closeStarsDeposit()">?</button>
+            <button class="stars-deposit-close" onclick="closeStarsDeposit()">×</button>
         </div>
         <div class="stars-deposit-body">
             <img class="stars-deposit-icon" src="/static/img/star.png" alt="Stars">
@@ -1927,19 +848,37 @@ body{
 
 <div class="settings-overlay" id="settingsOverlay">
     <div class="settings-modal">
-        <div class="settings-handle"></div>
-        <div class="settings-topbar">
-            <div class="settings-title">Настройки</div>
-            <button type="button" class="settings-sound" id="settingsSoundBtn" aria-label="Звук" onclick="toggleCrashSound()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3l4 3.2V6.3L7 9.5H4Zm10.5-3.2a1 1 0 0 0-1.4 1.4 6.5 6.5 0 0 1 0 8.6 1 1 0 0 0 1.4 1.4 8.5 8.5 0 0 0 0-11.4Zm2.7-2.4a1 1 0 0 0-1.4 1.4 10 10 0 0 1 0 14.2 1 1 0 0 0 1.4 1.4 12 12 0 0 0 0-17Z"/></svg></button>
+        <div style="width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:12px auto 0"></div>
+        <div style="padding:12px 18px 8px">
+            <div style="font-weight:800;font-size:16px;color:#fff">Customization</div>
         </div>
         <div class="settings-content">
-<div class="settings-pane" id="settingsSkinPane">
-  <div class="settings-section-label">Скины ракеты</div>
-  <div class="settings-grid" id="rocketGrid"></div>
+<div class="bg-choice-row">
+  <button class="bg-choice graph-preview" id="bgGraphBtn" aria-label="График" onclick="selectCrashBackground('graph')"></button>
+  <button class="bg-choice space-preview" id="bgSpaceBtn" aria-label="Космос" onclick="selectCrashBackground('space')"></button>
+</div>
+<div class="optim-row">
+  <div class="optim-head"><div class="optim-title">Оптимизация</div><div class="optim-value" id="optimValue">Баланс</div></div>
+  <input class="optim-range" id="optimRange" type="range" min="0" max="2" step="1" value="1" oninput="setCrashOptimization(this.value)">
 </div>
 
+            <div class="settings-gift-toggle">
+                <div class="toggle-info">
+                    <div class="lbl">Показывать подарки</div>
+                    <div class="desc">Вместо ракеты — подарок при достижимом выигрыше</div>
+                </div>
+                <div class="toggle-switch on" id="showGiftsToggle" onclick="toggleShowGiftsClick()"></div>
+            </div>
+            <div class="settings-gift-toggle">
+                <div class="toggle-info">
+                    <div class="lbl">Предохранитель автовывода</div>
+                    <div class="desc">Сохранять автовывод после перезагрузки</div>
+                </div>
+                <div class="toggle-switch on" id="autoWithdrawGuardToggle" onclick="toggleAutoWithdrawGuardClick()"></div>
+            </div>
+            <div class="settings-grid" id="rocketGrid"></div>
         </div>
-        <button class="settings-close-btn" onclick="closeSettings()">close</button>
+        <button onclick="closeSettings()" style="margin:0 18px 18px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#1e3a6e,#6B7A8D);color:#fff;font-size:15px;font-weight:700;cursor:pointer">close</button>
     </div>
 </div>
 
@@ -1954,9 +893,9 @@ body{
 <script>
 'use strict';
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    STATE
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 var userData = null;
 var authReady = false;
 
@@ -1970,7 +909,7 @@ var prevStatus = 'waiting';
 var targetMult = 5.0;
 var isBonusRound = false;
 
-/* === TIME-BASED MATH === */
+/* ═══ TIME-BASED MATH ═══ */
 var flyingStartedAt = 0;         // performance.now() когда ракета полетела (1.00x)
 var countingStartedAt = 0;       // performance.now() когда начался отсчёт
 var countingDuration = 5.0;
@@ -2007,22 +946,23 @@ var lastBetsHash = '';
 var betsGeneration = 0;
 var inventoryItems = [];
 var selectedGifts = [];
-var MAX_GIFTS = 1;
+var MAX_GIFTS = 3;
 var NON_BETTABLE_GIFT_IDS = [110, 111];
 
 var currentRocket = localStorage.getItem('crash_rocket') || 'crash';
-var showGifts = false;
+var showGifts = localStorage.getItem('crash_show_gifts') !== 'off';
 var autoWithdrawGuard = true;
 var crashBackground = localStorage.getItem('crash_background') || 'graph';
 var crashOptimization = Number(localStorage.getItem('crash_optimization') || 1);
 var autoWithdrawGift = null;
-var autoWithdrawEnabled = localStorage.getItem('crash_auto_withdraw_enabled') === 'on';
-var autoWithdrawCoeff = Math.max(1.1, Math.min(99.99, Number(localStorage.getItem('crash_auto_withdraw_coeff') || 2.0)));
 var savedBetAmount = localStorage.getItem('crash_bet_amount') || '';
 
 var _giftCatalog = null;
 var _giftCatalogBuckets = null;
 var _giftImgCache = {};
+var _betGiftTickerTimer = null;
+var _betGiftTickerIndex = 0;
+var _betGiftTickerLastTs = 0;
 
 var _autowdSelected = null;
 var _autowdBet = 0;
@@ -2035,7 +975,7 @@ var _lastPingMs = 0;
 var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
 
 document.documentElement.style.setProperty('--crash-optimization', String(crashOptimization));
-/* === ANTI-FREEZE === */
+/* ═══ ANTI-FREEZE ═══ */
 var MAX_FLYING_DURATION_MS = 60000;   // 60 сек hard cap
 var flyingHardCapTimer = null;
 var _lastServerContactTs = Date.now();
@@ -2060,8 +1000,6 @@ function updateBalanceUI(){
     if(!userData) return;
     var el = $('balVal');
     if(el) el.textContent = formatCrashMoney(userData.balance_stars || 0);
-    var modalEl = $('gramModalBalance');
-    if(modalEl) modalEl.textContent = formatCrashMoney(userData.balance_stars || 0) + ' GRAM';
 }
 
 function showToast(msg, type){
@@ -2089,9 +1027,9 @@ function updatePingUI(ms){
     else if(ms > 150) pill.classList.add('medium');
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    FULLSCREEN INIT
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function initFullscreen(){
     if(typeof Telegram === 'undefined' || !Telegram.WebApp) return;
     try{
@@ -2105,9 +1043,9 @@ function initFullscreen(){
     }catch(e){}
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    LOADING
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 (function initLoading(){
     var bar = $('ldProgressBar');
     var txt = $('ldTxt');
@@ -2148,9 +1086,9 @@ function initFullscreen(){
     setTimeout(function(){clearInterval(swapTimer);},7000);
 })();
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    AUTH
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 async function initAuth(){
     window._ldSet(5);
     try{
@@ -2248,15 +1186,10 @@ async function registerAndLoad(){
     }catch(e){}
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    ROCKET
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function getRocketSrc(){ return '/static/gifs/rockets/' + currentRocket + '.gif'; }
-function preloadCrashAssets(){
-    var urls = [getRocketSrc(), '/static/gifs/boom.gif', '/static/img/ton.png', '/static/img/gram.png', '/static/img/gift.png'];
-    urls.forEach(function(src){ var im = new Image(); im.decoding = 'async'; im.src = src; });
-}
-
 function applyRocket(){
     var img = $('rocketImg');
     if(!img) return;
@@ -2267,9 +1200,9 @@ function applyRocket(){
     }
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    GIFT CATALOG
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 async function ensureGiftCatalog(){
     if(_giftCatalog) return _giftCatalog;
     try{
@@ -2318,12 +1251,6 @@ function getGiftImage(g){
     return result;
 }
 
-function getCrashRewardGift(potentialWin){
-    var win = Number(potentialWin || 0);
-    if(autoWithdrawGift && autoWithdrawGift.value > 0 && win >= Number(autoWithdrawGift.value)) return autoWithdrawGift;
-    return getAchievableGift(win);
-}
-
 function getAchievableGift(potentialWin){
     if(!_giftCatalogBuckets || _giftCatalogBuckets.length === 0){
         if(!_giftCatalog) return null;
@@ -2341,9 +1268,101 @@ function getAchievableGift(potentialWin){
     return best;
 }
 
-/* ==============================================================
+function _getBetGiftCandidates(potentialStars){
+    potentialStars = Number(potentialStars || 0);
+    if(!_giftCatalog || !_giftCatalog.length || potentialStars <= 0) return [];
+
+    var eligible = [];
+    for(var i = 0; i < _giftCatalog.length; i++){
+        var g = _giftCatalog[i];
+        var v = Number(g && g.value || 0);
+        if(v > 0 && v <= potentialStars) eligible.push(g);
+    }
+    if(!eligible.length) return [];
+    eligible.sort(function(a,b){ return (a.value || 0) - (b.value || 0); });
+    return eligible.slice(Math.max(0, eligible.length - 6));
+}
+
+function _setBetPayout(el, gift, potentialStars){
+    if(!el) return;
+    var img = el.querySelector('img');
+    var span = el.querySelector('span');
+    if(!img || !span) return;
+
+    var src = gift ? getGiftImage(gift) : '/static/img/gram.png';
+    var valueText = gift ? formatCrashMoney(gift.value) : formatCrashMoney(potentialStars);
+    var key = (gift ? String(gift.id || gift.gift_key || gift.fragment_slug || gift.image || '') : 'gram') + '|' + valueText;
+    if(el.dataset.payoutKey === key) return;
+
+    el.dataset.payoutKey = key;
+    el.classList.toggle('has-gift', !!gift);
+    img.classList.remove('fade-swap');
+    img.src = src;
+    span.textContent = valueText;
+}
+
+function updateBetGiftTicker(force){
+    var list = $('betsList');
+    if(!list || !_giftCatalog || !_giftCatalog.length) return;
+
+    var now = performance.now();
+    if(!force && now - _betGiftTickerLastTs < 180) return;
+    _betGiftTickerLastTs = now;
+
+    var rows = list.querySelectorAll('.bet-row');
+    if(!rows.length) return;
+
+    var flying = status === 'flying';
+    var changedRows = 0;
+
+    for(var i = 0; i < rows.length; i++){
+        var row = rows[i];
+        if(row.classList.contains('won') || row.classList.contains('lost')) continue;
+
+        var payout = row.querySelector('.bet-payout');
+        if(!payout) continue;
+
+        var betStars = Number(row.dataset.betAmount || 0);
+        if(!betStars) continue;
+
+        var potential = Math.floor(betStars * Math.max(1, Number(dispMult || 1)));
+        if(!flying){
+            _setBetPayout(payout, null, betStars);
+            continue;
+        }
+
+        var candidates = _getBetGiftCandidates(potential);
+        if(!candidates.length){
+            _setBetPayout(payout, null, potential);
+            continue;
+        }
+
+        _setBetPayout(payout, candidates[_betGiftTickerIndex % candidates.length], potential);
+        changedRows++;
+    }
+
+    if(flying && changedRows) _betGiftTickerIndex++;
+    else if(!flying) _betGiftTickerIndex = 0;
+}
+
+function startBetGiftTicker(){
+    if(_betGiftTickerTimer) return;
+    _betGiftTickerTimer = setInterval(function(){
+        if(!document.hidden) updateBetGiftTicker(false);
+    }, 320);
+    updateBetGiftTicker(true);
+}
+
+function stopBetGiftTicker(){
+    if(_betGiftTickerTimer){
+        clearInterval(_betGiftTickerTimer);
+        _betGiftTickerTimer = null;
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
    TIME-BASED MULTIPLIER CURVE
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function computeLocalMult(elapsedMs){
     var t = elapsedMs / 1000;
     if(t <= 0) return 1.0;
@@ -2369,9 +1388,9 @@ function estimateFlyStartFromMult(serverMult){
     return performance.now() - t * 1000;
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    POLLING
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 async function pollStatus(){
     if(!authReady) return;
     if(_polling) return;
@@ -2421,9 +1440,9 @@ function scheduleNextPoll(){
     _pollTimer = setTimeout(function(){ pollStatus(); }, _pollDelay);
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    BONUS ROUND
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function setBonusMode(active){
     if(isBonusRound === active) return;
     isBonusRound = active;
@@ -2436,7 +1455,7 @@ function setBonusMode(active){
         if(badge) badge.classList.add('show');
         showBonusAnnounce();
         applyRocket();
-        showToast('?? BONUS ROUND! Двойная выплата!', 'bonus');
+        showToast('🏆 BONUS ROUND! Двойная выплата!', 'bonus');
     } else {
         if(gf) gf.classList.remove('bonus-mode');
         if(badge) badge.classList.remove('show');
@@ -2459,9 +1478,9 @@ function showBonusAnnounce(){
     setTimeout(function(){ ann.classList.remove('show'); }, 2500);
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    APPLY SERVER STATE
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function applyServerState(d){
     var g = d.game;
     var now = performance.now();
@@ -2492,15 +1511,14 @@ function applyServerState(d){
     // COUNTING
     if(newStatus === 'counting' && oldStatus !== 'counting'){
         setCrashScenePhase('counting');
-        // Start a deterministic local 5>4>3>2>1 sequence as soon as the new round is observed.
+        // Start a deterministic local 5→4→3→2→1 sequence as soon as the new round is observed.
         // This prevents a late HTTP response from making the UI begin at 3 or 2.
-        var remainingSeed = srvTimeRem > 0 ? Math.min(5, Math.max(0, srvTimeRem)) : (srvCountdown || 5);
-        countingStartedAt = now - (5 - remainingSeed) * 1000;
+        countingStartedAt = now;
         srvCountdownOverride = 0;
         lastShownNumber = 99;
         goShownForRound = false;
         lastCountdownAt = 0;
-        var firstCd = Math.max(1, Math.min(5, Math.ceil(remainingSeed)));
+        var firstCd = srvCountdown || Math.max(1, Math.min(5, Math.ceil(srvTimeRem || 5)));
         var firstCdEl = $('cdDisplay');
         if(firstCdEl){
             firstCdEl.textContent = String(firstCd);
@@ -2524,15 +1542,11 @@ function applyServerState(d){
     if(newStatus === 'flying' && oldStatus !== 'flying'){
         setCrashScenePhase('flying');
         srvCountdownOverride = 0;
-        // Не перескакиваем 3 > GO из-за задержки polling. Сначала клиент завершает 5>1, затем GO.
-        if(countingStartedAt <= 0) countingStartedAt = now - 5000;
-        var countDone = (now - countingStartedAt) >= 5000;
+        // Последний кадр отсчёта уже был 1, теперь явно показываем ИГРА.
         var cdStart = $('cdDisplay');
-        if(countDone && cdStart){
+        if(cdStart){
             cdStart.textContent = 'GO';
-            cdStart.classList.remove('active');
-            void cdStart.offsetWidth;
-            cdStart.classList.add('active','go');
+            cdStart.classList.add('active');
         }
         flyingStartedAt = estimateFlyStartFromMult(srvCurMult);
         servMult = srvCurMult;
@@ -2574,7 +1588,7 @@ function applyServerState(d){
         var crashedGameId = newGameId;
         setTimeout(function(){
             if(gameId === crashedGameId && status === 'crashed') setBonusMode(false);
-        }, 650);
+        }, 2000);
     }
 
     if(newStatus === 'waiting' || newStatus === 'counting'){
@@ -2606,9 +1620,9 @@ function applyServerState(d){
     updateActionButton();
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    ANTI-FREEZE
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function startFlyingHardCap(){
     cancelFlyingHardCap();
     flyingHardCapTimer = setTimeout(function(){
@@ -2626,9 +1640,9 @@ function cancelFlyingHardCap(){
     }
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    RESET ROUND
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function resetRoundState(){
     cancelFlyingHardCap();
     countingStartedAt = 0;
@@ -2665,16 +1679,20 @@ function resetRoundState(){
         if(ri.src.indexOf(currentRocket) === -1) ri.src = src;
     }
 
-    // Keep the previous list visible until the new snapshot arrives; this prevents blink/empty flashes.
     lastBetsHash = '';
     betsGeneration++;
+    var bc = $('betsCount');
+    if(bc) bc.textContent = '0';
+    var bl = $('betsList');
+    if(bl) bl.innerHTML = '<div class="no-bets">Waiting for bets...</div>';
+
     loadBets();
     loadHistory();
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    CRASH ANIMATION
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function triggerCrashAnimation(finalMult){
     if(crashHandled) return;
     crashHandled = true;
@@ -2707,6 +1725,10 @@ function triggerCrashAnimation(finalMult){
         setTimeout(function(){ bm.classList.remove('playing'); }, 1900);
     }
 
+    if(hasBet){
+        showToast('CRASH ' + finalMult.toFixed(2) + 'x — ставка проиграна', 'err');
+    }
+
     hasBet = false;
     betAmt = 0;
     betGiftImg = null;
@@ -2716,9 +1738,9 @@ function triggerCrashAnimation(finalMult){
     updateActionButton();
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    GO ANIMATION
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function showGoAnimation(){
     var cd = $('cdDisplay');
     var gf = $('gameField');
@@ -2733,48 +1755,9 @@ function showGoAnimation(){
     }, 650);
 }
 
-/* ==============================================================
-   NFT / GIFT VISUAL IN GAME FIELD
-   ============================================================== */
-var _lastCrashGiftKey = '';
-function updateCrashGiftVisual(){
-    var wrap = $('crashGiftDisplay');
-    var img = $('crashGiftImg');
-    var val = $('crashGiftValue');
-    var rw = $('rocketWrap');
-    if(!wrap || !img || !rw) return;
-    if(!showGifts || status !== 'flying' || !hasBet || cashedOut){
-        wrap.classList.remove('show');
-        rw.classList.remove('gift-mode');
-        return;
-    }
-    var bonusMult = isBonusRound ? 2 : 1;
-    var currentWin = Math.floor((betAmt || 0) * dispMult) * bonusMult;
-    var gift = getCrashRewardGift(currentWin);
-    if(!gift){
-        wrap.classList.remove('show');
-        rw.classList.remove('gift-mode');
-        _lastCrashGiftKey = '';
-        return;
-    }
-    var src = getGiftImage(gift);
-    var key = String(gift.id || gift.gift_key || gift.fragment_slug || src);
-    rw.classList.add('gift-mode');
-    rw.classList.add('hide');
-    if(_lastCrashGiftKey !== key){
-        _lastCrashGiftKey = key;
-        img.classList.remove('gift-swap');
-        void img.offsetWidth;
-        img.src = src;
-        img.classList.add('gift-swap');
-        if(val) val.textContent = formatCrashMoney(gift.value || currentWin);
-    }
-    wrap.classList.add('show');
-}
-
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    GAME FIELD UI
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function updateGameFieldUI(){
     var rw = $('rocketWrap');
     var bm = $('boomWrap');
@@ -2784,24 +1767,20 @@ function updateGameFieldUI(){
 
     if(status === 'waiting' || status === 'counting'){
         if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','gift-mode','crash-hit'); }
-        var cgd = $('crashGiftDisplay'); if(cgd) cgd.classList.remove('show');
-        _lastCrashGiftKey = '';
         var ri = $('rocketImg');
         if(ri) ri.style.transform = '';
         if(bm) bm.classList.remove('playing');
         if(gf) gf.classList.remove('flying');
         if(coeff){
             coeff.className = 'coeff-box waiting' + (isBonusRound ? ' bonus' : '');
-            coeff.textContent = isBonusRound ? '?? BONUS' : 'Waiting';
+            coeff.textContent = isBonusRound ? '🏆 BONUS' : 'Waiting';
         }
     } else if(status === 'flying'){
         if(rw){ rw.classList.remove('hide','crash-hit'); }
         if(bm) bm.classList.remove('playing');
         if(gf){ gf.classList.add('flying'); gf.classList.remove('counting'); }
     } else if(status === 'crashed'){
-        if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','gift-mode'); }
-        var cgd = $('crashGiftDisplay'); if(cgd) cgd.classList.remove('show');
-        _lastCrashGiftKey = '';
+        if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
         if(gf) gf.classList.remove('flying');
         if(coeff){
             coeff.className = 'coeff-box crashed';
@@ -2811,9 +1790,9 @@ function updateGameFieldUI(){
     }
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    ACTION BUTTON
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function updateActionButton(){
     var btn = $('actionBtn');
     if(!btn) return;
@@ -2824,7 +1803,7 @@ function updateActionButton(){
 
     if(_syncingWin){
         newState = 'syncing';
-        var cgS = getCrashRewardGift(cashedOutBetAmt * servMult * (isBonusRound ? 2 : 1));
+        var cgS = getAchievableGift(cashedOutBetAmt * servMult * (isBonusRound ? 2 : 1));
         var cgiS = cgS ? getGiftImage(cgS) : '/static/img/gift.png';
         html = '<img class="cb-gift-side empty" src="' + cgiS + '" alt="">'
             + '<div class="cb-center"><span class="cb-label">Syncing</span>'
@@ -2833,7 +1812,7 @@ function updateActionButton(){
         disabled = true;
     } else if(status === 'crashed'){
         newState = 'crashed';
-        var crashGift = cashedOutBetAmt > 0 ? getCrashRewardGift(cashedOutBetAmt * servMult) : null;
+        var crashGift = cashedOutBetAmt > 0 ? getAchievableGift(cashedOutBetAmt * servMult) : null;
         var crashImg = crashGift ? getGiftImage(crashGift) : '/static/img/gift.png';
         html = '<img class="cb-gift-side empty" src="' + crashImg + '" alt="">'
             + '<div class="cb-center"><span class="cb-label">CRASH</span>'
@@ -2844,11 +1823,11 @@ function updateActionButton(){
         newState = 'cashout';
         var bonusMult = isBonusRound ? 2 : 1;
         var curWin = Math.floor((betAmt || 0) * dispMult) * bonusMult;
-        var achievable = getCrashRewardGift(curWin);
+        var achievable = getAchievableGift(curWin);
         var giftSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
         var isEmpty = !achievable ? ' empty' : '';
 
-        var label = isBonusRound ? '?? CASH OUT x2' : 'Cash OUT';
+        var label = isBonusRound ? '🏆 CASH OUT x2' : 'Cash OUT';
 
         html = '<img class="cb-gift-side' + isEmpty + '" src="' + giftSrc + '" alt="">'
             + '<div class="cb-center"><span class="cb-label">' + label + '</span>'
@@ -2878,7 +1857,7 @@ function updateActionButton(){
             var winText = formatCrashMoney(curWin2);
             if(winEl.textContent !== winText) winEl.textContent = winText;
         }
-        var achievable2 = getCrashRewardGift(curWin2);
+        var achievable2 = getAchievableGift(curWin2);
         var giftSrc2 = achievable2 ? getGiftImage(achievable2) : '/static/img/gift.png';
         var isEmpty2 = !achievable2;
         var lG = btn.querySelector('.cb-gift-side:first-child');
@@ -2886,12 +1865,12 @@ function updateActionButton(){
 
         if(lG && lG.dataset.src !== giftSrc2){
             lG.dataset.src = giftSrc2;
-            lG.classList.remove('gift-swap'); void lG.offsetWidth; lG.src = giftSrc2; lG.classList.add('gift-swap');
+            lG.src = giftSrc2;
             lG.classList.toggle('empty', isEmpty2);
         }
         if(rG && rG.dataset.src !== giftSrc2){
             rG.dataset.src = giftSrc2;
-            rG.classList.remove('gift-swap'); void rG.offsetWidth; rG.src = giftSrc2; rG.classList.add('gift-swap');
+            rG.src = giftSrc2;
             rG.classList.toggle('empty', isEmpty2);
         }
 
@@ -2937,19 +1916,18 @@ function onActionBtnClick(){
     openBetModal();
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    RENDER LOOP
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function renderLoop(ts){
     try{
         requestAnimationFrame(renderLoop);
         if(document.hidden) return;
 
         var now = ts || performance.now();
-        updateLiveBetsFrame(now);
 
         // COUNTING
-        if((status === 'counting' || (status === 'flying' && !goShownForRound)) && countingStartedAt > 0){
+        if(status === 'counting' && countingStartedAt > 0){
             var elapsed = (now - countingStartedAt) / 1000;
             var remaining = countingDuration - elapsed;
             var localSec = Math.max(1, Math.min(5, Math.ceil(remaining)));
@@ -2973,18 +1951,6 @@ function renderLoop(ts){
                     playTick();
                 }
             }
-            if(status === 'flying' && !goShownForRound && elapsed >= countingDuration){
-                goShownForRound = true;
-                var cdGo = $('cdDisplay');
-                if(cdGo){
-                    cdGo.textContent = 'GO';
-                    cdGo.classList.remove('active','countdown-hot','countdown-last');
-                    void cdGo.offsetWidth;
-                    cdGo.classList.add('active','go');
-                }
-                var gfGo = $('gameField');
-                if(gfGo) gfGo.classList.remove('counting');
-            }
         }
 
         // FLYING
@@ -2997,9 +1963,8 @@ function renderLoop(ts){
             if(computed < 1.0) computed = 1.0;
 
             dispMult = computed;
-            updateCrashGiftVisual();
-    
-            if(now - _lastRocketUpdate > 80){
+
+            if(now - _lastRocketUpdate > 100){
                 _lastRocketUpdate = now;
                 var ri = $('rocketImg');
                 var rw = $('rocketWrap');
@@ -3030,8 +1995,8 @@ function renderLoop(ts){
             }
 
             // Auto cashout
-            if(hasBet && !autoCashoutDone && autoWithdrawEnabled && autoWithdrawCoeff >= 1.1){
-                if(dispMult >= autoWithdrawCoeff){
+            if(hasBet && !autoCashoutDone && autoWithdrawGift && autoWithdrawGift.coeff >= 1.1){
+                if(dispMult >= autoWithdrawGift.coeff){
                     autoCashoutDone = true;
                     doCashout();
                 }
@@ -3040,15 +2005,14 @@ function renderLoop(ts){
     }catch(e){}
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    BET MODAL
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function openBetModal(){
     var m = $('betModal');
     if(!m) return;
     var bi = $('betInput');
     if(bi && savedBetAmount) bi.value = starsToBetInputValue(savedBetAmount);
-    switchTab('inv');
     updateAutoWithdrawButton();
     m.classList.add('show');
 }
@@ -3073,9 +2037,9 @@ function removePendingBetFromUI(){
     for(var i = 0; i < rows.length; i++) rows[i].remove();
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    CONFIRM STARS BET
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 async function confirmStarsBet(){
     if(_betLocked) return;
     if(!userData || !userData.id){ showToast('Auth error', 'err'); return; }
@@ -3171,9 +2135,9 @@ async function confirmStarsBet(){
     }
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    PENDING BET
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 async function processPendingBet(){
     if(!pendingBet || _betLocked) return;
     var bet = pendingBet;
@@ -3216,7 +2180,7 @@ async function processPendingBet(){
             updateActionButton();
             return;
         }
-        var url = (bet.type === 'gift' || giftIds.length === 1) ? '/api/ultimate-crash/place-bet-gift' : '/api/ultimate-crash/place-bet-multi-gift';
+        var url = giftIds.length === 1 ? '/api/ultimate-crash/place-bet-gift' : '/api/ultimate-crash/place-bet-multi-gift';
         var body = giftIds.length === 1
             ? { user_id: userData.id, inventory_id: giftIds[0] }
             : { user_id: userData.id, inventory_ids: giftIds };
@@ -3259,9 +2223,9 @@ function switchTab(tab){
     if(tab === 'inv') loadInventoryForBet();
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    INVENTORY BET
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 async function loadInventoryForBet(){
     if(!userData || !userData.id) return;
     try{
@@ -3270,47 +2234,21 @@ async function loadInventoryForBet(){
         if(!d.success) return;
         var grid = $('invGrid');
         if(!grid) return;
-        var rawInventory = Array.isArray(d.inventory) ? d.inventory : [];
-        inventoryItems = rawInventory.filter(function(i){
+        inventoryItems = (d.inventory || []).filter(function(i){
             return !i.is_withdrawing && i.gift_value >= 25 && NON_BETTABLE_GIFT_IDS.indexOf(Number(i.gift_id)) === -1;
         });
-        var emptyState = $('giftEmptyState');
-        var depositBtn = $('betDepositBtn');
-        var invGrid = $('invGrid');
-
-        // Кнопка «Пополнить» нужна только при полностью пустом инвентаре.
-        // Даже если подарок пока нельзя использовать для ставки, наличие хотя бы
-        // одного предмета в инвентаре означает, что «Пополнить» больше не показываем.
-        var hasAnyInventoryGift = rawInventory.length > 0;
-        if(depositBtn) depositBtn.style.display = hasAnyInventoryGift ? 'none' : 'block';
-
         if(!inventoryItems.length){
-            if(emptyState){
-                emptyState.style.display = 'flex';
-                var title = emptyState.querySelector('.gift-empty-title');
-                var sub = emptyState.querySelector('.gift-empty-sub');
-                if(hasAnyInventoryGift){
-                    if(title) title.textContent = 'Нет подходящих подарков';
-                    if(sub) sub.textContent = 'В инвентаре есть подарок, но его нельзя использовать для ставки.';
-                } else {
-                    if(title) title.textContent = 'У вас нет подарков';
-                    if(sub) sub.textContent = 'Чтобы пополнить баланс подарками, нажмите кнопку «Пополнить» ниже.';
-                }
-            }
-            if(invGrid) invGrid.style.display = 'none';
-            if(grid) grid.innerHTML = '';
+            grid.innerHTML = '<div class="inv-empty">Нет подарков (мин. 25⭐)</div>';
             return;
         }
-        if(emptyState) emptyState.style.display = 'none';
-        if(invGrid) invGrid.style.display = 'grid';
         grid.innerHTML = inventoryItems.map(function(i){
             var isSel = selectedGifts.some(function(g){ return g.id === i.id; });
             var tonVal = (i.gift_value / 100).toFixed(2);
-            var img = (i.is_upgraded && (i.gift_image || i.fragment_image)) ? (i.gift_image || i.fragment_image) : (i.gift_image || i.fragment_image || '/static/img/gift.png');
+            var img = i.gift_image || '/static/img/gift.png';
             var isUpgraded = i.is_upgraded ? ' upgraded' : '';
             return '<div class="inv-card' + (isSel ? ' selected' : '') + isUpgraded + '" data-id="' + i.id + '" onclick="toggleGiftSelection(' + i.id + ')">'
                 + '<div class="inv-card-img-wrap">'
-                +   '<img src="' + img + '" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'" loading="eager" decoding="async" draggable="false" alt="">'
+                +   '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'" loading="lazy" alt="">'
                 + '</div>'
                 + '<div class="inv-name">' + escapeHtmlCrash(i.gift_name || '') + '</div>'
                 + '<div class="inv-val"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + tonVal + '</div>'
@@ -3328,86 +2266,136 @@ function escapeHtmlCrash(s){
 function toggleGiftSelection(id){
     var item = inventoryItems.find(function(i){ return i.id === id; });
     if(!item) return;
-    var already = selectedGifts.length && selectedGifts[0].id === id;
-    selectedGifts = already ? [] : [{ id:item.id, name:item.gift_name, value:item.gift_value, image:item.gift_image }];
+    var idx = selectedGifts.findIndex(function(g){ return g.id === id; });
+    if(idx >= 0){ selectedGifts.splice(idx, 1); }
+    else {
+        if(selectedGifts.length >= MAX_GIFTS){ showToast('Максимум ' + MAX_GIFTS, 'err'); return; }
+        selectedGifts.push({ id: item.id, name: item.gift_name, value: item.gift_value, image: item.gift_image });
+    }
     var cards = document.querySelectorAll('.inv-card');
     for(var i = 0; i < cards.length; i++){
-        cards[i].classList.toggle('selected', Number(cards[i].dataset.id) === id && !already);
+        var cid = parseInt(cards[i].dataset.id);
+        var isSel = selectedGifts.some(function(g){ return g.id === cid; });
+        cards[i].classList.toggle('selected', isSel);
     }
     updateSelectedSummary();
 }
 
 function clearSelectedGifts(){
     selectedGifts = [];
-    document.querySelectorAll('.inv-card.selected').forEach(function(c){ c.classList.remove('selected'); });
+    var cards = document.querySelectorAll('.inv-card');
+    for(var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
     updateSelectedSummary();
 }
 
 function updateSelectedSummary(){
     var sum = $('selectedSummary');
+    var cnt = $('selectedCount');
     var tot = $('selectedTotal');
     var btn = $('confirmGiftsBtn');
     var count = selectedGifts.length;
-    var total = count ? selectedGifts[0].value : 0;
+    var total = selectedGifts.reduce(function(s, g){ return s + g.value; }, 0);
+    if(cnt) cnt.textContent = count;
     if(tot) tot.textContent = (total / 100).toFixed(2);
-    if(sum) sum.classList.toggle('show', count > 0);
-    if(btn){
-        btn.classList.toggle('show', count > 0);
-        btn.textContent = 'Поставить';
+    if(count > 0){
+        if(sum) sum.classList.add('show');
+        if(btn){
+            btn.classList.add('show');
+            btn.textContent = 'BET ' + count + ' GIFTS (' + (total / 100).toFixed(2) + ' GRAM)';
+        }
+    } else {
+        if(sum) sum.classList.remove('show');
+        if(btn) btn.classList.remove('show');
     }
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    CONFIRM GIFT BET
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 async function confirmGiftBet(){
     if(_giftLocked) return;
     if(!selectedGifts.length){ showToast('Выберите подарок', 'err'); return; }
     if(!userData || !userData.id) return;
-    _giftLocked = true;
-    var gift = selectedGifts[0];
-    var totalValue = Number(gift.value || 0);
-    var giftId = gift.id;
-    var firstImg = gift.image || null;
 
-    if(status === 'flying' || (status === 'counting' && countingStartedAt > 0 && ((countingDuration - (performance.now()-countingStartedAt)/1000) <= 0.6))){
-        pendingBet = { type:'gift', amount:totalValue, inventoryIds:[giftId], giftImage:firstImg };
-        closeBetModal(); clearSelectedGifts(); updateActionButton();
-        showToast('Подарок на следующий раунд', 'ok');
-        _giftLocked = false; return;
+    _giftLocked = true;
+    var sGifts = selectedGifts.slice();
+    var totalValue = sGifts.reduce(function(s, g){ return s + g.value; }, 0);
+    var giftIds = sGifts.map(function(g){ return g.id; });
+    var firstImg = sGifts[0] ? sGifts[0].image : null;
+
+    if(status === 'flying'){
+        pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
+        closeBetModal();
+        clearSelectedGifts();
+        showToast('Подарки на след. раунд', 'ok');
+        updateActionButton();
+        _giftLocked = false;
+        return;
     }
 
-    hasBet = true; betAmt = totalValue; betGiftImg = firstImg; betGiftData = [gift];
-    closeBetModal(); clearSelectedGifts(); updateActionButton();
-    showToast('Ставка сделана', 'ok');
+    if(status === 'counting' && countingStartedAt > 0){
+        var elapsed = (performance.now() - countingStartedAt) / 1000;
+        var remaining = countingDuration - elapsed;
+        if(remaining <= 0.6){
+            pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
+            closeBetModal();
+            clearSelectedGifts();
+            showToast('Поздно! Подарки на след. раунд', 'ok');
+            updateActionButton();
+            _giftLocked = false;
+            return;
+        }
+    }
+
+    hasBet = true;
+    betAmt = totalValue;
+    betGiftImg = firstImg;
+    betGiftData = sGifts;
+    closeBetModal();
+    clearSelectedGifts();
+    updateActionButton();
+    showToast('Ставка ' + sGifts.length + ' подарков', 'ok');
+
     var ac = new AbortController();
     var tId = setTimeout(function(){ ac.abort(); }, 5000);
+
     try{
-        var r = await fetch('/api/ultimate-crash/place-bet-gift', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({user_id:userData.id, inventory_id:giftId}), signal:ac.signal
-        });
+        var url = sGifts.length === 1 ? '/api/ultimate-crash/place-bet-gift' : '/api/ultimate-crash/place-bet-multi-gift';
+        var body = sGifts.length === 1
+            ? { user_id: userData.id, inventory_id: sGifts[0].id }
+            : { user_id: userData.id, inventory_ids: giftIds };
+        var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ac.signal });
         clearTimeout(tId);
         var d = await r.json();
-        if(d.success){ betAmt = d.bet_amount || totalValue; loadBets(); }
-        else{
-            hasBet=false; betAmt=0;
-            var err=String(d.error||'').toLowerCase();
-            if(err.indexOf('late')!==-1 || err.indexOf('начал')!==-1 || err.indexOf('2 сек')!==-1){
-                pendingBet={type:'gift',amount:totalValue,inventoryIds:[giftId],giftImage:firstImg};
-                showToast('Подарок на следующий раунд','ok');
-            } else showToast(d.error||'Ошибка','err');
+        if(d.success){
+            betAmt = d.bet_amount || totalValue;
+            loadBets();
+        } else {
+            hasBet = false;
+            betAmt = 0;
+            var err = (d.error || '').toLowerCase();
+            if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1 || err.indexOf('2 сек') !== -1){
+                pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
+                showToast('Подарки на след. раунд', 'ok');
+            } else {
+                showToast(d.error || 'Ошибка', 'err');
+            }
             updateActionButton();
         }
     }catch(e){
-        clearTimeout(tId); hasBet=false; betAmt=0;
-        showToast('Ошибка сети','err'); updateActionButton();
-    }finally{ _giftLocked=false; }
+        clearTimeout(tId);
+        hasBet = false;
+        betAmt = 0;
+        showToast('Ошибка сети', 'err');
+        updateActionButton();
+    }finally{
+        _giftLocked = false;
+    }
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    CASHOUT
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 async function doCashout(){
     if(!hasBet || !userData || !userData.id) return;
     if(_cashoutLocked) return;
@@ -3493,9 +2481,9 @@ async function doCashout(){
     updateActionButton();
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    WIN SHEET
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function showWinSheet(mult, winAmount, serverGifts, giftData){
     var content = $('winContent');
     var sheet = $('winSheet');
@@ -3558,107 +2546,53 @@ function closeWin(){
     if(wo) wo.classList.remove('show');
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    BETS LIST
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 var _betsFetching = false;
-var _liveBets = [];
-var _liveBetById = Object.create(null);
-var _lastLiveBetPaint = 0;
-
-function _betAvatarHtml(b){
-    var name=b.first_name || b.username || ('User '+b.user_id);
-    var ini=(String(name||'U')[0]||'U').toUpperCase();
-    return (b.photo_url && b.photo_url!='/static/img/default_avatar.png') ? '<img src="'+b.photo_url+'" alt="">' : ini;
-}
-function _swapGiftImage(img, src){
-    if(!img || !src || img.dataset.src===src) return;
-    img.dataset.src=src;
-    img.classList.remove('gift-swap');
-    void img.offsetWidth;
-    img.src=src;
-    img.classList.add('gift-swap');
-    setTimeout(function(){ if(img) img.classList.remove('gift-swap'); },380);
-}
-function _activeGiftForPotential(potential){
-    var g=getAchievableGift(Math.max(0,Number(potential||0)));
-    return g ? {src:getGiftImage(g), value:Number(g.value||0)} : {src:'/static/img/ton.png', value:Number(potential||0)};
-}
-function _renderBetsStructure(bets){
-    var list=$('betsList'); if(!list) return;
-    var existingIds={};
-    list.querySelectorAll('.bet-row[data-bet-id]').forEach(function(row){existingIds[row.dataset.betId]=row;});
-    if(!bets.length){list.innerHTML='<div class="no-bets">Ожидание ставок</div>';return;}
-    var clockSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
-    var crashSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>';
-    var html=bets.map(function(b){
-      var id=String(b.id||('u'+b.user_id));
-      var name=b.first_name || b.username || ('User '+b.user_id);
-      var statusCls=b.status==='cashed_out'?'won':(b.status==='lost'?'lost':'active');
-      var statusHtml=b.status==='cashed_out' ? '<span class="bet-x">x</span>'+Number(b.cashout_multiplier||1).toFixed(2) : (b.status==='lost' ? crashSvg+' <span class="bet-x">x</span>'+Number(b.cashout_multiplier||servMult||1).toFixed(2) : clockSvg+' <span class="bet-x">x</span>'+Number(dispMult||1).toFixed(2));
-      var statusIcon=b.status==='lost'?'lost':statusCls;
-      var potential=Math.floor(Number(b.bet_amount||0)*Number(dispMult||1));
-      var gift=_activeGiftForPotential(potential), payout=gift.value;
-      if(b.status==='cashed_out'){
-        var wg=(Array.isArray(b.win_gifts)&&b.win_gifts.length)?b.win_gifts[0]:null;
-        if(wg&&wg.image){gift={src:wg.image,value:Number(wg.value||b.win_amount||0)};payout=gift.value;}
-        else if(b.win_gift_image){gift={src:b.win_gift_image,value:Number(b.win_amount||0)};payout=gift.value;}
-        else payout=Number(b.win_amount||0);
-      }
-      return '<div class="bet-row '+statusCls+(existingIds[id]?'':' live-new')+'" data-bet-id="'+id+'" data-bet-amount="'+Number(b.bet_amount||0)+'" data-bet-status="'+b.status+'">'
-        +'<div class="bet-left"><div class="bet-avatar">'+_betAvatarHtml(b)+'</div><div class="bet-info"><div class="bet-name">'+escapeHtmlCrash(name)+'</div>'
-        +'<div class="bet-amt"><img class="bet-gift-preview" src="/static/img/ton.png" alt="TON"><span class="bet-amount-text">'+formatCrashMoney(b.bet_amount)+'</span></div></div></div>'
-        +'<div class="bet-right-stack"><div class="bet-status '+statusIcon+'">'+statusHtml+'</div><div class="bet-payout"><img data-src="'+gift.src+'" src="'+gift.src+'" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'" alt=""><span>'+formatCrashMoney(payout)+'</span></div></div></div>';
-    }).join('');
-    list.innerHTML=html;
-}
 async function loadBets(){
     if(_betsFetching) return;
-    _betsFetching=true;
+    _betsFetching = true;
     try{
-        var gen=betsGeneration;
-        var r=await fetch('/api/ultimate-crash/recent-bets?limit=30',{cache:'no-store'});
+        var gen = betsGeneration;
+        var r = await fetch('/api/ultimate-crash/recent-bets?limit=30',{cache:'no-store'});
         if(!r.ok) return;
-        var d=await r.json();
-        if(!d.success || gen!==betsGeneration) return;
-        var bets=Array.isArray(d.bets)?d.bets.slice():[];
-        bets.sort(function(a,b){return Number(b.id||0)-Number(a.id||0);});
-        _liveBets=bets;
-        _liveBetById=Object.create(null); bets.forEach(function(b){_liveBetById[String(b.id||('u'+b.user_id))]=b;});
-        var bc=$('betsCount'); if(bc) bc.textContent=bets.length;
-        _renderBetsStructure(bets);
+        var d = await r.json();
+        if(!d.success || gen !== betsGeneration) return;
+        var bets = (d.bets || []).sort(function(a,b){return (b.id||0)-(a.id||0);});
+        var bc=$('betsCount'); if(bc)bc.textContent=bets.length;
+        var list=$('betsList'); if(!list)return;
+        if(!bets.length){list.innerHTML='<div class="no-bets">Waiting for bets...</div>';return;}
+        var clockSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+        var crashSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>';
+        list.innerHTML=bets.map(function(b){
+          var name=b.first_name||('User '+b.user_id), ini=(b.first_name||'U')[0].toUpperCase();
+          var avatar=b.photo_url&&b.photo_url!='/static/img/default_avatar.png'?'<img src="'+b.photo_url+'" alt="">':ini;
+          var giftBet=b.bet_type==='gift';
+          var betImg=giftBet?((b.gift_images&&b.gift_images[0])||b.gift_image||'/static/img/gift.png'):'/static/img/gram.png';
+          var betAmt=formatCrashMoney(b.bet_amount);
+          var coeffHtml, cls='active';
+          if(b.status==='cashed_out'){ cls='won'; coeffHtml='<div class="bet-status won">×'+(b.cashout_multiplier?Number(b.cashout_multiplier).toFixed(2):'?')+'</div>'; }
+          else if(b.status==='lost'){ cls='lost'; coeffHtml='<div class="bet-status lost">'+crashSvg+' ×'+(b.cashout_multiplier?Number(b.cashout_multiplier).toFixed(2):(servMult||1).toFixed(2))+'</div>'; }
+          else coeffHtml='<div class="bet-status active">'+clockSvg+' ×'+(dispMult||1).toFixed(2)+'</div>';
+          var payoutImg=b.win_gift_image||b.gift_image||'/static/img/gram.png';
+          if(b.status==='cashed_out' && b.win_gifts && b.win_gifts[0]) payoutImg=b.win_gifts[0].image||payoutImg;
+          var payoutText=b.status==='cashed_out'
+              ? formatCrashMoney(b.win_amount||0)
+              : formatCrashMoney(b.win_value||b.potential_win||b.bet_amount||0);
+          var fixed=b.status==='cashed_out'?' bet-fixed':'';
+          var payoutClass=(b.status==='active' ? 'bet-payout live-payout' : 'bet-payout');
+          return '<div class="bet-row '+cls+fixed+'" data-bet-id="'+(b.id||'')+'" data-bet-amount="'+(Number(b.bet_amount)||0)+'">'+
+            '<div class="bet-left"><div class="bet-avatar">'+avatar+'</div><div class="bet-info">'+
+              '<div class="bet-name">'+name+'</div><div class="bet-amt"><img class="bet-gift-preview" src="'+betImg+'" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'"><span class="bet-amount-text">'+betAmt+'</span></div>'+
+            '</div></div><div class="bet-right-stack">'+coeffHtml+'<div class="'+payoutClass+'"><img src="'+payoutImg+'" onerror="this.onerror=null;this.src=\'/static/img/gram.png\'" alt=""><span>'+payoutText+'</span></div></div></div>';
+        }).join('');
+        updateBetGiftTicker(true);
     }catch(e){}finally{_betsFetching=false;}
 }
-function updateLiveBetsFrame(now){
-    /* Browsers paint on display frames (~60/120 Hz). This gives visually continuous updates
-       without hammering the server with impossible 1 ms network requests. */
-    if(document.hidden || !_liveBets.length) return;
-    if(now-_lastLiveBetPaint<8) return; // supports up to ~120 Hz
-    _lastLiveBetPaint=now;
-    var list=$('betsList'); if(!list) return;
-    var activeMult=Number(dispMult||servMult||1);
-    list.querySelectorAll('.bet-row[data-bet-status="active"]').forEach(function(row){
-        var amount=Number(row.dataset.betAmount||0);
-        var potential=Math.floor(amount*activeMult);
-        var st=row.querySelector('.bet-status.active');
-        if(st){
-            var txt='?'+activeMult.toFixed(2);
-            var last=st.lastChild;
-            if(last && last.nodeType===3){ last.nodeValue=' '+txt; } else { st.appendChild(document.createTextNode(' '+txt)); }
-        }
-        var g=_activeGiftForPotential(potential);
-        var p=row.querySelector('.bet-payout');
-        if(p){
-            var img=p.querySelector('img'), val=p.querySelector('span');
-            _swapGiftImage(img,g.src);
-            var next=formatCrashMoney(g.value||potential);
-            if(val && val.textContent!==next) val.textContent=next;
-        }
-    });
-}
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    HISTORY
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 async function loadHistory(){
     try{
         var r = await fetch('/api/ultimate-crash/history?limit=15');
@@ -3680,19 +2614,19 @@ async function loadHistory(){
             var p = document.createElement('div');
             var c = 'low';
             if(isB) c = 'bonus';
-            else if(m >= 10) c = 'mega';
+            else if(m >= 5) c = 'mega';
             else if(m >= 3) c = 'high';
             else if(m >= 1.5) c = 'mid';
             p.className = 'h-pill ' + c;
-            p.textContent = (isB ? '?? ' : '') + m.toFixed(2) + 'x';
+            p.textContent = (isB ? '🏆 ' : '') + m.toFixed(2) + 'x';
             bar.appendChild(p);
         });
     }catch(e){}
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    AUTO WITHDRAW
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function loadSavedAutoWithdrawGift(){
     try{
         autoWithdrawGuard = localStorage.getItem('crash_auto_withdraw_guard') !== 'off';
@@ -3824,7 +2758,7 @@ function updateAutoWithdrawApply(){
     var coeff = _autowdBet > 0 ? (val / _autowdBet).toFixed(2) : '?';
     var img = getGiftImage(_autowdSelected);
     btn.disabled = false;
-    btn.innerHTML = '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"> <span>Выбрать подарок</span>';
+    btn.innerHTML = 'Автовывод <img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"> <span style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800">x' + coeff + '</span>';
 }
 function applyAutoWithdraw(){
     if(!_autowdSelected) return;
@@ -3848,12 +2782,6 @@ function applyAutoWithdraw(){
     showToast('Автовывод: x' + coeff.toFixed(2), 'ok');
 }
 function updateAutoWithdrawButton(){
-    var toggle = $('betAutoToggle');
-    var coeff = $('betAutoCoeff');
-    if(toggle) toggle.classList.toggle('on', autoWithdrawEnabled);
-    if(coeff) coeff.textContent = 'x' + Number(autoWithdrawCoeff).toFixed(1);
-
-    /* Legacy selector remains supported if opened from older UI/code. */
     var btn = $('autowdMainBtn');
     if(!btn) return;
     if(!autoWithdrawGift){
@@ -3865,18 +2793,6 @@ function updateAutoWithdrawButton(){
     btn.innerHTML = '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'">'
         + '<span class="autowd-btn-name">' + nameShort + '</span>'
         + '<span class="autowd-btn-coeff">x' + autoWithdrawGift.coeff.toFixed(2) + '</span>';
-}
-
-function toggleBetAutoWithdraw(){
-    autoWithdrawEnabled = !autoWithdrawEnabled;
-    localStorage.setItem('crash_auto_withdraw_enabled', autoWithdrawEnabled ? 'on' : 'off');
-    updateAutoWithdrawButton();
-}
-
-function changeBetAutoCoeff(delta){
-    autoWithdrawCoeff = Math.max(1.1, Math.min(99.99, Math.round((autoWithdrawCoeff + Number(delta)) * 10) / 10));
-    localStorage.setItem('crash_auto_withdraw_coeff', String(autoWithdrawCoeff));
-    updateAutoWithdrawButton();
 }
 function toggleAutoWithdrawGuardClick(){
     autoWithdrawGuard = !autoWithdrawGuard;
@@ -3892,9 +2808,9 @@ function toggleAutoWithdrawGuardClick(){
     }
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    SETTINGS
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function syncSettingsToggles(){
     var el = $('showGiftsToggle');
     if(el) el.classList.toggle('on', showGifts);
@@ -3916,20 +2832,10 @@ function setCrashScenePhase(phase){
   else if(phase==='counting') gf.classList.add('scene-counting');
   else if(phase==='crash') gf.classList.add('scene-crash');
 }
-function selectCrashBackground(kind){crashBackground=kind==='space'?'space':'graph';localStorage.setItem('crash_background',crashBackground);var g=$('bgGraphBtn'),sp=$('bgSpaceBtn');if(g)g.classList.toggle('active',crashBackground==='graph');if(sp)sp.classList.toggle('active',crashBackground==='space');applyCrashBackground();}
+function selectCrashBackground(kind){crashBackground=kind==='space'?'space':'graph';localStorage.setItem('crash_background',crashBackground);applyCrashBackground();}
 function setCrashOptimization(v){crashOptimization=Number(v);localStorage.setItem('crash_optimization',String(crashOptimization));var labels=['Производительность','Баланс','Качество'];var el=$('optimValue');if(el)el.textContent=labels[crashOptimization]||labels[1];}
-function syncCrashVisualSettings(){
-    // Background and quality controls were intentionally removed from user settings.
-    showGifts = false;
-}
-function switchSettingsMode(mode){
-    var skin=$('settingsSkinPane');
-    if(skin) skin.classList.remove('hidden');
-    showGifts = false;
-}
-
+function syncCrashVisualSettings(){applyCrashBackground();var r=$('optimRange');if(r)r.value=String(crashOptimization);setCrashOptimization(crashOptimization);}
 function openSettings(){
-    try{switchSettingsMode(localStorage.getItem('crash_settings_mode')||'skin')}catch(e){switchSettingsMode('skin')}
     syncCrashVisualSettings();
     var so = $('settingsOverlay');
     if(so) so.classList.add('show');
@@ -3940,7 +2846,16 @@ function closeSettings(){
     var so = $('settingsOverlay');
     if(so) so.classList.remove('show');
 }
-function toggleShowGiftsClick(){ showGifts=false; updateCrashGiftVisual(); }
+function toggleShowGiftsClick(){
+    showGifts = !showGifts;
+    localStorage.setItem('crash_show_gifts', showGifts ? 'on' : 'off');
+    var el = $('showGiftsToggle');
+    if(el) el.classList.toggle('on', showGifts);
+    showToast(showGifts ? 'Подарки включены' : 'Только ракета', 'ok');
+    applyRocket();
+    _lastBtnKey = '';
+    updateActionButton();
+}
 function renderSettings(){
     var rg = $('rocketGrid');
     if(!rg) return;
@@ -3962,9 +2877,9 @@ function selectRocket(rid){
     setTimeout(closeSettings, 200);
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    DEPOSIT
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 function openDepositSelector(){ var so = $('depositOverlay'); if(so) so.classList.add('show'); }
 function closeDepositSelector(){ var so = $('depositOverlay'); if(so) so.classList.remove('show'); }
 function openStarsDeposit(){
@@ -4006,15 +2921,14 @@ async function payWithStars(){
     }
 }
 
-/* ==============================================================
+/* ══════════════════════════════════════════════════════════════
    INIT
-   ============================================================== */
+   ══════════════════════════════════════════════════════════════ */
 async function init(){
     syncCrashVisualSettings();
 initFullscreen();
     await initAuth();
     applyRocket();
-    preloadCrashAssets();
 
     ensureGiftCatalog().catch(function(){});
 
@@ -4035,6 +2949,7 @@ initFullscreen();
 
     requestAnimationFrame(renderLoop);
     scheduleNextPoll();
+    startBetGiftTicker();
 
     setInterval(function(){
         if(status === 'crashed') return;
@@ -4047,6 +2962,7 @@ initFullscreen();
         if(!document.hidden){
             pollStatus().catch(function(){});
             loadBets().catch(function(){});
+            updateBetGiftTicker(true);
         }
     });
 
@@ -4083,206 +2999,24 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 
 <nav class="bottom-nav" aria-label="Основная навигация">
-    <a class="bottom-nav-item active" href="/crash" data-nav="/crash" aria-current="page">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path fill-rule="evenodd" d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z" clip-rule="evenodd"></path>
-        </svg>
+    <a class="bottom-nav-item active" href="/">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z"/>
+            <path fill="currentColor" stroke="none" d="M5.26 17.242a.75.75 0 1 0-.897-1.203 5.243 5.243 0 0 0-2.05 5.022.75.75 0 0 0 .625.627 5.243 5.243 0 0 0 5.022-2.051.75.75 0 1 0-1.202-.897 3.744 3.744 0 0 1-3.008 1.51c0-1.23.592-2.323 1.51-3.008Z"/></svg>
         <span>Краш</span>
     </a>
-
-    <a class="bottom-nav-item" href="/cases" data-nav="/cases">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M9.375 3a1.875 1.875 0 0 0 0 3.75h1.875v4.5H3.375A1.875 1.875 0 0 1 1.5 9.375v-.75c0-1.036.84-1.875 1.875-1.875h3.193A3.375 3.375 0 0 1 12 2.753a3.375 3.375 0 0 1 5.432 3.997h3.943c1.035 0 1.875.84 1.875 1.875v.75c0 1.036-.84 1.875-1.875 1.875H12.75v-4.5h1.875a1.875 1.875 0 1 0-1.875-1.875V6.75h-1.5V4.875C11.25 3.839 10.41 3 9.375 3ZM11.25 12.75H3v6.75a2.25 2.25 0 0 0 2.25 2.25h6v-9ZM12.75 12.75v9h6.75a2.25 2.25 0 0 0 2.25-2.25v-6.75h-9Z"></path>
-        </svg>
+    <a class="bottom-nav-item" href="/inventory">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M9.375 3a1.875 1.875 0 0 0 0 3.75h1.875v4.5H3.375A1.875 1.875 0 0 1 1.5 9.375v-.75c0-1.036.84-1.875 1.875-1.875h3.193A3.375 3.375 0 0 1 12 2.753a3.375 3.375 0 0 1 5.432 3.997h3.943c1.035 0 1.875.84 1.875 1.875v.75c0 1.036-.84 1.875-1.875 1.875H12.75v-4.5h1.875a1.875 1.875 0 1 0-1.875-1.875V6.75h-1.5V4.875C11.25 3.839 10.41 3 9.375 3ZM11.25 12.75H3v6.75a2.25 2.25 0 0 0 2.25 2.25h6v-9ZM12.75 12.75v9h6.75a2.25 2.25 0 0 0 2.25-2.25v-6.75h-9Z"/></svg>
         <span>Кейсы</span>
     </a>
-
-    <a class="bottom-nav-item" href="/rewards" data-nav="/rewards" onclick="window.location.href='/rewards'; return false;">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path fill-rule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3.071.543a.75.75 0 0 0-.584.859 6.753 6.753 0 0 0 6.138 5.6 6.73 6.73 0 0 0 2.743 1.346A6.707 6.707 0 0 1 9.279 15H8.54c-1.036 0-1.875.84-1.875 1.875V19.5h-.75a2.25 2.25 0 0 0-2.25 2.25c0 .414.336.75.75.75h15a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-2.25-2.25h-.75v-2.625c0-1.036-.84-1.875-1.875-1.875h-.739a6.706 6.706 0 0 1-1.112-3.173 6.73 6.73 0 0 0 2.743-1.347 6.753 6.753 0 0 0 6.139-5.6.75.75 0 0 0-.585-.858 47.077 47.077 0 0 0-3.07-.543V2.62a.75.75 0 0 0-.658-.744 49.22 49.22 0 0 0-6.093-.377c-2.063 0-4.096.128-6.093.377a.75.75 0 0 0-.657.744Zm0 2.629c0 1.196.312 2.32.857 3.294A5.266 5.266 0 0 1 3.16 5.337a45.6 45.6 0 0 1 2.006-.343v.256Zm13.5 0v-.256c.674.1 1.343.214 2.006.343a5.265 5.265 0 0 1-2.863 3.207 6.72 6.72 0 0 0 .857-3.294Z" clip-rule="evenodd"></path>
-        </svg>
+    <a class="bottom-nav-item" href="/leaderboard">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M5.166 2.621v.858c-1.035.148-2.059.33-3.071.543a.75.75 0 0 0-.584.859 6.753 6.753 0 0 0 6.138 5.6 6.73 6.73 0 0 0 2.743 1.346A6.707 6.707 0 0 1 9.279 15H8.54c-1.036 0-1.875.84-1.875 1.875V19.5h-.75a2.25 2.25 0 0 0-2.25 2.25c0 .414.336.75.75.75h15a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-2.25-2.25h-.75v-2.625c0-1.036-.84-1.875-1.875-1.875h-.739a6.706 6.706 0 0 1-1.112-3.173 6.73 6.73 0 0 0 2.743-1.347 6.753 6.753 0 0 0 6.139-5.6.75.75 0 0 0-.585-.858 47.077 47.077 0 0 0-3.07-.543V2.62a.75.75 0 0 0-.658-.744 49.22 49.22 0 0 0-6.093-.377c-2.063 0-4.096.128-6.093.377a.75.75 0 0 0-.657.744Zm0 2.629c0 1.196.312 2.32.857 3.294A5.266 5.266 0 0 1 3.16 5.337a45.6 45.6 0 0 1 2.006-.343v.256Zm13.5 0v-.256c.674.1 1.343.214 2.006.343a5.265 5.265 0 0 1-2.863 3.207 6.72 6.72 0 0 0 .857-3.294Z"/></svg>
         <span>Сезон</span>
     </a>
-
-    <a class="bottom-nav-item" href="/inventory" data-nav="/inventory">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd"></path>
-        </svg>
+    <a class="bottom-nav-item" href="/profile">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/></svg>
         <span>Профиль</span>
     </a>
 </nav>
 
-<script>
-(function(){
-    var path = window.location.pathname.replace(/\/+$/, '') || '/';
-    var items = document.querySelectorAll('.bottom-nav-item[data-nav]');
-    items.forEach(function(item){
-        var target = item.getAttribute('data-nav');
-        var active = path === target || (target === '/cases' && path === '/case');
-        item.classList.toggle('active', active);
-        if(active){
-            item.setAttribute('aria-current','page');
-            requestAnimationFrame(function(){ item.classList.add('nav-enter'); });
-        }else{
-            item.removeAttribute('aria-current');
-        }
-    });
-})();
-</script>
-
-
-<script id="crash-final-v3-js">
-(function(){
-  window.toggleCrashSound=function(){
-    var b=document.getElementById('settingsSoundBtn');
-    if(!b)return;
-    var muted=b.classList.toggle('muted');
-    try{localStorage.setItem('crash_sound',muted?'off':'on')}catch(e){}
-    showToast(muted?'Звук выключен':'Звук включён','ok');
-  };
-  document.addEventListener('DOMContentLoaded',function(){
-    try{
-      if(localStorage.getItem('crash_sound')==='off'){
-        var b=document.getElementById('settingsSoundBtn');if(b)b.classList.add('muted');
-      }
-    }catch(e){}
-  });
-})();
-</script>
 </body>
 </html>
-
-<style id="crash-final-visual-polish">
-/* =========================================================
-   CRASH — animated arena + perfectly centered top-up icon
-   ========================================================= */
-
-/* Make the plus/close-looking icon in "Пополнить" optically centered. */
-.bet-deposit-btn{
-    display:flex !important;
-    align-items:center !important;
-    justify-content:center !important;
-    gap:9px !important;
-    line-height:1 !important;
-    text-align:center !important;
-    position:relative;
-}
-.bet-deposit-btn .bet-deposit-icon{
-    display:block !important;
-    width:19px !important;
-    height:19px !important;
-    flex:0 0 19px !important;
-    margin:0 !important;
-    padding:0 !important;
-    vertical-align:middle !important;
-    transform:none !important;
-}
-.bet-deposit-btn .bet-deposit-icon path{
-    transform-origin:150px 150px;
-}
-.bet-deposit-btn span{
-    display:block !important;
-    line-height:19px !important;
-    margin:0 !important;
-    padding:0 !important;
-}
-
-/* Animated Crash arena — softer than the old flat grid. */
-.game-field{
-    isolation:isolate !important;
-    background:
-        radial-gradient(circle at 50% 46%, rgba(38,112,255,.13), transparent 28%),
-        radial-gradient(circle at 12% 78%, rgba(84,62,255,.10), transparent 30%),
-        radial-gradient(circle at 88% 20%, rgba(0,174,255,.08), transparent 28%),
-        linear-gradient(180deg,#171b23 0%,#15191f 52%,#12161d 100%) !important;
-    box-shadow:inset 0 0 90px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.018) !important;
-}
-
-/* Moving light clouds / waves behind the rocket. */
-.game-field::after{
-    display:block !important;
-    content:"" !important;
-    position:absolute !important;
-    inset:-35% !important;
-    z-index:0 !important;
-    pointer-events:none !important;
-    opacity:.9 !important;
-    background:
-        radial-gradient(ellipse 34% 20% at 18% 30%, rgba(26,122,255,.16), transparent 70%),
-        radial-gradient(ellipse 30% 18% at 82% 58%, rgba(100,62,255,.13), transparent 70%),
-        radial-gradient(ellipse 45% 16% at 45% 92%, rgba(0,153,255,.10), transparent 70%),
-        linear-gradient(115deg, transparent 20%, rgba(56,137,255,.045) 42%, transparent 58%);
-    filter:blur(18px);
-    transform:translate3d(0,0,0) scale(1.02);
-    animation:crashArenaClouds 12s ease-in-out infinite alternate;
-}
-@keyframes crashArenaClouds{
-    0%{
-        transform:translate3d(-3%,1%,0) scale(1.02) rotate(-1deg);
-        opacity:.62;
-    }
-    50%{
-        transform:translate3d(3%,-2%,0) scale(1.07) rotate(1deg);
-        opacity:.9;
-    }
-    100%{
-        transform:translate3d(-1%,3%,0) scale(1.04) rotate(-.5deg);
-        opacity:.72;
-    }
-}
-
-/* Slow luminous waves at the bottom of the arena. */
-.game-field .rocket-wrap::before{
-    content:"";
-    position:absolute;
-    left:-25%;
-    right:-25%;
-    bottom:5%;
-    height:34%;
-    pointer-events:none;
-    z-index:-1;
-    border-radius:50%;
-    background:
-        radial-gradient(ellipse at center, rgba(23,124,255,.18) 0%, rgba(23,124,255,.07) 38%, transparent 70%);
-    filter:blur(14px);
-    animation:crashArenaGlow 5s ease-in-out infinite alternate;
-}
-@keyframes crashArenaGlow{
-    from{transform:translateX(-7%) scaleX(.92);opacity:.5}
-    to{transform:translateX(7%) scaleX(1.08);opacity:.95}
-}
-
-/* Tiny moving particles — intentionally subtle so they don't overpower the rocket. */
-.game-field::before{
-    background-image:
-        radial-gradient(circle at 8% 22%, rgba(255,255,255,.38) 0 1px, transparent 1.7px),
-        radial-gradient(circle at 24% 72%, rgba(70,157,255,.42) 0 1px, transparent 1.7px),
-        radial-gradient(circle at 52% 16%, rgba(255,255,255,.26) 0 1px, transparent 1.7px),
-        radial-gradient(circle at 78% 34%, rgba(72,153,255,.34) 0 1px, transparent 1.7px),
-        radial-gradient(circle at 91% 76%, rgba(255,255,255,.22) 0 1px, transparent 1.7px),
-        linear-gradient(rgba(13,132,255,.48) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(13,132,255,.48) 1px,transparent 1px) !important;
-    background-size:150px 150px,190px 190px,170px 170px,210px 210px,230px 230px,68px 68px,68px 68px !important;
-    animation:crashArenaParticles 18s linear infinite !important;
-    opacity:.48 !important;
-}
-@keyframes crashArenaParticles{
-    from{background-position:0 0,0 0,0 0,0 0,0 0,0 0,0 0}
-    to{background-position:-55px 42px,42px -65px,-35px 58px,62px 32px,-45px -52px,0 34px,34px 0}
-}
-
-/* Extra glow while the round is running. */
-.game-field.flying{
-    background:
-        radial-gradient(circle at 58% 48%, rgba(38,120,255,.18), transparent 31%),
-        radial-gradient(circle at 15% 82%, rgba(84,62,255,.12), transparent 30%),
-        linear-gradient(180deg,#151a25 0%,#141920 55%,#11161d 100%) !important;
-}
-.game-field.counting{
-    box-shadow:inset 0 0 110px rgba(59,130,246,.11),0 0 30px rgba(59,130,246,.07) !important;
-}
-
-/* Keep the central multiplier crisp above the animated background. */
-#cdDisplay{z-index:15 !important;position:relative;text-shadow:0 0 24px rgba(255,255,255,.22),0 0 70px rgba(61,139,255,.13) !important}
-.rocket-wrap{z-index:14 !important}
-</style>
