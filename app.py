@@ -908,9 +908,9 @@ def update_crash_cache(game_id, status, current_mult, target_mult, time_remainin
         _crash_game_cache = {
             'id': game_id,
             'status': status,
-            'current_multiplier': round(float(current_mult), 2),
+            'current_multiplier': round(float(current_mult), 4),
             'target_multiplier': float(target_mult),
-            'time_remaining': round(float(time_remaining), 1),
+            'time_remaining': round(float(time_remaining), 2),
             'is_bonus': bonus_flag,
             'timestamp': time.time()
         }
@@ -4295,7 +4295,7 @@ def start_ultimate_crash_loop():
                                 pass
                             logger.debug(f"DB sync skipped: {db_e}")
 
-                    time.sleep(0.05)
+                    time.sleep(0.025)
                     continue
 
                 # ═══════════════════════════════════════════════════
@@ -4766,6 +4766,11 @@ def inventory_page():
     logger.info("🎒 Запрос страницы инвентаря")
     return render_template('inventory.html')
 
+
+@app.route('/season')
+def season_page():
+    """Алиас страницы сезона."""
+    return redirect('/rewards')
 
 @app.route('/rewards')
 def rewards_page():
@@ -5305,7 +5310,7 @@ def ultimate_crash_simple_status():
     cache_age = time.time() - cached.get('timestamp', 0)
     
     # Если кэш свежий (< 0.25 сек) - не трогаем БД
-    if cache_age < 0.25 and cached.get('id', 0) > 0:
+    if cache_age < 0.10 and cached.get('id', 0) > 0:
         game_data = {
             'id': cached['id'],
             'status': cached['status'],
