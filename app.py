@@ -12827,6 +12827,17 @@ def ultimate_crash_quick_status():
             'error': 'Используются демо-данные'
         })
 
+def _parse_json_list(value):
+    if not value:
+        return []
+    if isinstance(value, list):
+        return value
+    try:
+        parsed = json.loads(value)
+        return parsed if isinstance(parsed, list) else []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
 def _parse_gift_images(gift_image_str):
     """Parse gift_image field: could be JSON array or single URL."""
     if not gift_image_str:
@@ -12891,6 +12902,8 @@ def get_recent_ultimate_crash_bets():
                     u.photo_url,
                     ucb.bet_type,
                     ucb.gift_image,
+                    ucb.gift_name,
+                    ucb.gift_data,
                     COALESCE(ucb.is_bonus_round, FALSE) as is_bonus_round,
                     ucb.win_gift_data,
                     ucb.win_gift_image
@@ -12915,6 +12928,8 @@ def get_recent_ultimate_crash_bets():
                     u.photo_url,
                     ucb.bet_type,
                     ucb.gift_image,
+                    ucb.gift_name,
+                    ucb.gift_data,
                     NULL as is_bonus_round,
                     NULL as win_gift_data,
                     NULL as win_gift_image
@@ -12943,9 +12958,12 @@ def get_recent_ultimate_crash_bets():
                 'bet_type': bet[10] or 'stars',
                 'gift_image': bet[11],
                 'gift_images': _parse_gift_images(bet[11]),
-                'is_bonus_round': bool(bet[12]) if len(bet) > 12 else False,
-                'win_gift_image': bet[14] if len(bet) > 14 else None,
-                'win_gifts': _parse_gift_images(bet[13]) if len(bet) > 13 and bet[13] else [],
+                'gift_name': bet[12] if len(bet) > 12 else None,
+                'gift_data': bet[13] if len(bet) > 13 else None,
+                'gift_items': _parse_json_list(bet[13]) if len(bet) > 13 and bet[13] else [],
+                'is_bonus_round': bool(bet[14]) if len(bet) > 14 else False,
+                'win_gifts': _parse_json_list(bet[15]) if len(bet) > 15 and bet[15] else [],
+                'win_gift_image': bet[16] if len(bet) > 16 else None,
                 'potential_win': int((bet[2] or 0) * current_game_mult) if bet[3] == 'active' else int(bet[5] or 0)
             })
 
