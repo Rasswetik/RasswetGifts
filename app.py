@@ -2571,7 +2571,7 @@ def _create_all_tables(conn):
         logger.warning(f"Users migration: {mig_e}")
 
     # Migrate ultimate_crash_bets: add gift_data column for storing full gift info
-    for _col_name, _col_type in [('gift_data', 'TEXT DEFAULT NULL'), ('gift_name', 'TEXT DEFAULT NULL')]:
+    for _col_name, _col_type in [('gift_data', 'TEXT DEFAULT NULL'), ('gift_name', 'TEXT DEFAULT NULL'), ('win_gift_data', 'TEXT DEFAULT NULL')]:
         try:
             if USE_POSTGRES:
                 conn.execute("SAVEPOINT sp_migrate")
@@ -4126,7 +4126,7 @@ def start_ultimate_crash_loop():
         live_flying_started_at = 0.0
         tick_counter = 0
 
-        FLYING_TIMEOUT_SEC = 45
+        FLYING_TIMEOUT_SEC = 42
 
         def get_loop_conn():
             nonlocal loop_conn, loop_conn_failures
@@ -4238,12 +4238,26 @@ def start_ultimate_crash_loop():
                         time.sleep(0.5)
                         continue
 
-                    # Admin-force-crash
-                    admin_ctrl = get_admin_crash_control()
+                    # Admin-force-crash: never hit the DB on every 50ms gameplay tick.
+                    # Refresh this small control cache at most 4 times/sec.
+                    if not hasattr(game_loop, '_admin_check_ts'):
+                        game_loop._admin_check_ts = 0.0
+                        game_loop._admin_ctrl_cache = {}
+                    if (now - game_loop._admin_check_ts) >= 0.25:
+                        game_loop._admin_check_ts = now
+                        try:
+                            game_loop._admin_ctrl_cache = get_admin_crash_control() or {}
+                        except Exception:
+                            game_loop._admin_ctrl_cache = {}
+                    admin_ctrl = game_loop._admin_ctrl_cache
                     if admin_ctrl.get('force_crash'):
-                        set_admin_crash_control('force_crash', False)
+                        # Consume the flag immediately; DB write is outside the hot path.
+                        try:
+                            set_admin_crash_control('force_crash', False)
+                        except Exception:
+                            pass
                         do_crash(conn, cursor, live_game_id, live_mult, live_target, live_is_bonus)
-                        time.sleep(0.5)
+                        time.sleep(0.15)
                         continue
 
                     # ★ ГЛАВНАЯ ПРОВЕРКА: достигли цели?
@@ -4289,7 +4303,7 @@ def start_ultimate_crash_loop():
                     update_crash_cache(live_game_id, 'flying', live_mult, live_target, time_remaining, is_bonus=live_is_bonus)
 
                     # Sync в БД каждые 5 тиков
-                    if tick_counter % 5 == 0:
+                    if tick_counter % 10 == 0:
                         try:
                             cursor.execute(
                                 'UPDATE ultimate_crash_games SET current_multiplier = ? WHERE id = ?',
@@ -4421,7 +4435,7 @@ def start_ultimate_crash_loop():
                     live_flying_started_at = 0.0
 
                     # Короткая пауза для анимации CRASH, затем сразу новый отсчёт 5→1.
-                    time.sleep(1.6)
+                    time.sleep(1.2)
 
                     target_multiplier = min(float(generate_extreme_crash_multiplier()), 30.0)
 
@@ -6074,6 +6088,17 @@ def ultimate_crash_cashout_simple():
                         'value': g_value
                     })
                     remaining_value -= g_value
+
+            # Persist the actual awarded gift(s) on the bet itself so the recent-bets
+            # UI can keep showing their PNG after cashout / collection.
+            try:
+                win_gift_json = json.dumps(awarded_gifts or [], ensure_ascii=False)
+                cursor.execute(
+                    'UPDATE ultimate_crash_bets SET win_gift_data = ? WHERE id = ?',
+                    (win_gift_json, bet_id)
+                )
+            except Exception as _wg_err:
+                logger.debug(f'Crash win gift persistence skipped: {_wg_err}')
 
             # Any small leftover → stars
             if remaining_value > 0:
@@ -12818,6 +12843,26 @@ def ultimate_crash_quick_status():
             'error': 'Используются демо-данные'
         })
 
+def _parse_gift_json_list(raw):
+    """Parse persisted Crash awarded gifts JSON safely."""
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw) if isinstance(raw, str) else raw
+        if isinstance(parsed, list):
+            out = []
+            for item in parsed:
+                if isinstance(item, dict):
+                    out.append({
+                        'name': item.get('name') or item.get('gift_name') or 'Подарок',
+                        'image': item.get('image') or item.get('gift_image') or '/static/img/gift.png',
+                        'value': int(item.get('value') or item.get('gift_value') or 0),
+                    })
+            return out
+    except Exception:
+        pass
+    return []
+
 def _parse_gift_images(gift_image_str):
     """Parse gift_image field: could be JSON array or single URL."""
     if not gift_image_str:
@@ -12882,6 +12927,7 @@ def get_recent_ultimate_crash_bets():
                     u.photo_url,
                     ucb.bet_type,
                     ucb.gift_image,
+                    ucb.win_gift_data,
                     COALESCE(ucb.is_bonus_round, FALSE) as is_bonus_round
                 FROM ultimate_crash_bets ucb
                 LEFT JOIN users u ON ucb.user_id = u.id
@@ -12929,7 +12975,9 @@ def get_recent_ultimate_crash_bets():
                 'bet_type': bet[10] or 'stars',
                 'gift_image': bet[11],
                 'gift_images': _parse_gift_images(bet[11]),
-                'is_bonus_round': bool(bet[12]) if len(bet) > 12 else False
+                'win_gifts': _parse_gift_json_list(bet[12]) if len(bet) > 12 else [],
+                'win_gift_image': ((_parse_gift_json_list(bet[12]) or [{}])[0].get('image') if len(bet) > 12 else None),
+                'is_bonus_round': bool(bet[13]) if len(bet) > 13 else False
             })
 
         # Bots disabled — skip fallback and bot bets
