@@ -2916,6 +2916,15 @@ async function initGames(){
             }
         }catch(e){}
     }
+    // Load the real cases from the same backend endpoint as the original index.html.
+    // This is intentionally part of the main-menu initialization so the cases
+    // appear under the game buttons, not only after opening Play Hub.
+    try{
+        await loadCases();
+    }catch(e){
+        console.error('Main menu cases init error:', e);
+    }
+
     loadTopBar();
     randomizeCrashGif();
     randomizeMarketGif();
@@ -3128,9 +3137,16 @@ function setOpening(v) {
 
 async function loadCases() {
             try {
-                const res = await fetch('/api/cases');
+                const res = await fetch('/api/cases', {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {'Accept': 'application/json'}
+                });
+                if (!res.ok) {
+                    throw new Error('HTTP ' + res.status);
+                }
                 const data = await res.json();
-                if (data.success && data.cases) {
+                if (data.success && Array.isArray(data.cases)) {
                     allCases = data.cases;
                     allCases.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
                     renderCases();
@@ -3159,6 +3175,7 @@ function getGradient(caseItem) {
 
 function renderCases() {
             const container = $('casesContainer');
+            if (!container) return;
             const filtered = allCases;
 
             if (!filtered.length) {
