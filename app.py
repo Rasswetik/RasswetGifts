@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # app.py - main application file
-from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, make_response, g, has_request_context
+from flask import Flask, render_template, render_template_string, request, jsonify, send_from_directory, redirect, make_response, g, has_request_context
 import sqlite3
 import json
 import os
@@ -801,33 +801,59 @@ LEVEL_CRATES = {
 }
 
 def _sync_levels_from_db():
-    """Загружает уровни из БД. Если пусто — заполняет из LEVEL_SYSTEM по умолчанию."""
+    """Синхронизирует уровни с БД без потери дополнительных полей конфигурации.
+
+    БД хранит базовые поля level/exp_required/reward_stars/reward_tickets,
+    а LEVEL_SYSTEM дополнительно содержит визуальные награды. Старый код
+    полностью заменял LEVEL_SYSTEM данными из БД и тем самым терял reward_rocket
+    и reward_bg. Здесь сохраняем расширенную конфигурацию и автоматически
+    добавляем отсутствующие уровни из дефолтной схемы.
+    """
     global LEVEL_SYSTEM
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT COUNT(*) FROM levels')
-            count = cursor.fetchone()[0]
-            if count == 0:
-                # Seed DB with default levels
-                for lvl in LEVEL_SYSTEM:
-                    cursor.execute('''INSERT OR IGNORE INTO levels (level, exp_required, reward_stars, reward_tickets) 
-                        VALUES (?, ?, ?, ?)''',
-                        (lvl['level'], lvl['exp_required'], lvl['reward_stars'], lvl['reward_tickets']))
-                conn.commit()
-                logger.info(f"📊 Сохранено {len(LEVEL_SYSTEM)} уровней в БД")
-            else:
-                # Load from DB
-                cursor.execute('SELECT level, exp_required, reward_stars, reward_tickets FROM levels ORDER BY level')
-                rows = cursor.fetchall()
-                LEVEL_SYSTEM = [
-                    {"level": r[0], "exp_required": r[1], "reward_stars": r[2], "reward_tickets": r[3]}
-                    for r in rows
-                ]
-                logger.info(f"📊 Загружено {len(LEVEL_SYSTEM)} уровней из БД")
-    except Exception as e:
-        logger.error(f"❌ Ошибка загрузки уровней из БД: {e}")
+            cursor.execute('SELECT level, exp_required, reward_stars, reward_tickets FROM levels ORDER BY level')
+            rows = cursor.fetchall()
 
+            defaults = {int(x['level']): dict(x) for x in LEVEL_SYSTEM}
+            db_levels = {}
+            for r in rows:
+                lvl = int(r[0])
+                base = defaults.get(lvl, {'level': lvl, 'reward_rocket': None, 'reward_bg': None})
+                base.update({
+                    'level': lvl,
+                    'exp_required': int(r[1] or 0),
+                    'reward_stars': int(r[2] or 0),
+                    'reward_tickets': int(r[3] or 0),
+                })
+                db_levels[lvl] = base
+
+            # Если таблица пустая — заполняем всеми дефолтными уровнями.
+            if not rows:
+                for lvl in sorted(defaults):
+                    d = defaults[lvl]
+                    cursor.execute(
+                        'INSERT OR IGNORE INTO levels (level, exp_required, reward_stars, reward_tickets) VALUES (?, ?, ?, ?)',
+                        (d['level'], d['exp_required'], d.get('reward_stars', 0), d.get('reward_tickets', 0))
+                    )
+                    db_levels[lvl] = dict(d)
+                conn.commit()
+            else:
+                # Не ломаем уже настроенные админом уровни, но добавляем отсутствующие.
+                for lvl, d in defaults.items():
+                    if lvl not in db_levels:
+                        cursor.execute(
+                            'INSERT OR IGNORE INTO levels (level, exp_required, reward_stars, reward_tickets) VALUES (?, ?, ?, ?)',
+                            (d['level'], d['exp_required'], d.get('reward_stars', 0), d.get('reward_tickets', 0))
+                        )
+                        db_levels[lvl] = dict(d)
+                conn.commit()
+
+            LEVEL_SYSTEM = [db_levels[k] for k in sorted(db_levels)]
+            logger.info(f'📊 Система уровней: {len(LEVEL_SYSTEM)} уровней, max={LEVEL_SYSTEM[-1]["level"] if LEVEL_SYSTEM else 0}')
+    except Exception as e:
+        logger.error(f'❌ Ошибка загрузки уровней из БД: {e}')
 
 
 # ══════════════════════════════════════════════════════════════
@@ -3062,119 +3088,92 @@ def add_case_open_history(user_id, case_id, case_name, gift_id, gift_name, gift_
         logger.error(f"Ошибка добавления в историю открытий: {e}")
         return False
 
+def _sorted_levels():
+    """Возвращает уровни в гарантированном порядке."""
+    return sorted((x for x in LEVEL_SYSTEM if isinstance(x, dict)), key=lambda x: int(x.get('level', 0)))
+
+
 def add_experience(user_id, exp_amount, reason=""):
-    """Добавляет опыт пользователю и проверяет повышение уровня"""
+    """Атомарно добавляет XP/оборот и переводит пользователя через все достигнутые уровни."""
     try:
+        exp_amount = max(0, int(exp_amount or 0))
         conn = get_db_connection()
         cursor = conn.cursor()
-
         cursor.execute('SELECT experience, current_level FROM users WHERE id = ?', (user_id,))
         result = cursor.fetchone()
-
         if not result:
             conn.close()
             return {'success': False, 'error': 'Пользователь не найден'}
 
-        current_exp, current_level = result
+        current_exp = int(result[0] or 0)
+        current_level = int(result[1] or 1)
         new_exp = current_exp + exp_amount
+        levels = _sorted_levels()
+        if not levels:
+            conn.close()
+            return {'success': False, 'error': 'Система уровней пуста'}
+
+        level_by_num = {int(x['level']): x for x in levels}
+        if current_level not in level_by_num:
+            current_level = max([n for n in level_by_num if n <= current_level] or [levels[0]['level']])
 
         new_level = current_level
-        level_up_rewards = []
-        level_up_info = None
-
-        # Проверяем повышение уровня
-        while new_level < len(LEVEL_SYSTEM):
-            next_level_info = LEVEL_SYSTEM[new_level]
-            if new_exp >= next_level_info["exp_required"]:
-                new_level += 1
-
-                # Награда ракетой
-                reward_rocket = next_level_info.get("reward_rocket")
-                if reward_rocket and new_level > 1:
-                    try:
-                        cursor.execute('''INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source)
-                            VALUES (?, 'rocket', ?, 'level_reward')''', (user_id, reward_rocket))
-                        rocket_display = ROCKET_NAMES.get(reward_rocket, reward_rocket)
-                        level_up_rewards.append(f"🚀 {rocket_display}")
-                    except Exception as re:
-                        logger.warning(f"Rocket reward error: {re}")
-
-                # Награда фоном
-                reward_bg = next_level_info.get("reward_bg")
-                if reward_bg:
-                    try:
-                        cursor.execute('''INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source)
-                            VALUES (?, 'background', ?, 'level_reward')''', (user_id, reward_bg))
-                        bg_display = BG_NAMES.get(reward_bg, reward_bg)
-                        level_up_rewards.append(f"🎨 {bg_display}")
-                    except Exception as ce:
-                        logger.warning(f"Background reward error: {ce}")
-
-                # Записываем в историю
-                cursor.execute('''
-                    INSERT INTO level_history (user_id, old_level, new_level, experience_gained, reason)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (user_id, new_level-1, new_level, exp_amount, reason))
-
-                level_up_info = {
-                    'old_level': new_level-1,
-                    'new_level': new_level,
-                    'reward_rocket': reward_rocket,
-                    'reward_bg': reward_bg,
-                    'rewards_text': ', '.join(level_up_rewards)
-                }
-
-                # Авто-уведомление о повышении уровня
-                try:
-                    reward_desc = ''
-                    if reward_rocket and new_level > 1:
-                        reward_desc += f'🚀 {ROCKET_NAMES.get(reward_rocket, reward_rocket)}'
-                    if reward_bg:
-                        if reward_desc:
-                            reward_desc += ' '
-                        reward_desc += f'🎨 {BG_NAMES.get(reward_bg, reward_bg)}'
-                    cursor.execute('''INSERT INTO admin_notifications 
-                        (title, message, image_url, notif_type, target_user_id, reward_type, reward_data)
-                        VALUES (?, ?, ?, 'level_up', ?, ?, ?)''',
-                        (f'🎉 Уровень {new_level}!',
-                         f'Поздравляем! Вы достигли уровня {new_level}!{" Награда: " + reward_desc.strip() if reward_desc.strip() else ""}',
-                         '', user_id,
-                         'rocket' if reward_rocket else ('background' if reward_bg else None),
-                         reward_rocket if reward_rocket else (reward_bg if reward_bg else None)))
-                except Exception as ne:
-                    logger.warning(f"Level notif error: {ne}")
-
-                # Send Telegram bot message about level up
-                try:
-                    import threading
-                    def send_level_up_msg():
-                        try:
-                            tg_send(user_id, 
-                                f"🎉 <b>Уровень повышен!</b>\n\n"
-                                f"Вы достигли <b>{new_level} уровня</b>!\n"
-                                f"{'Награда: ' + reward_desc.strip() if reward_desc.strip() else ''}\n\n"
-                                f"📱 Заберите награду в профиле!",
-                                parse_mode='HTML',
-                                reply_markup={'inline_keyboard': [[
-                                    {'text': '🎁 Открыть профиль', 'web_app': {'url': f'{WEBSITE_URL}/inventory'}}
-                                ]]}
-                            )
-                        except Exception as tge:
-                            logger.warning(f"Level up TG msg error: {tge}")
-                    threading.Thread(target=send_level_up_msg, daemon=True).start()
-                except Exception as te:
-                    logger.warning(f"Level up thread error: {te}")
-
-                logger.info(f"🎉 Пользователь {user_id} достиг уровня {new_level}! Награды: {', '.join(level_up_rewards)}")
-            else:
+        level_up_events = []
+        # Проверяем именно следующий уровень, а не индекс списка — это устойчиво
+        # к удалению/добавлению уровней через админку.
+        while True:
+            next_candidates = [n for n in level_by_num if n > new_level]
+            if not next_candidates:
                 break
+            next_num = min(next_candidates)
+            next_info = level_by_num[next_num]
+            if new_exp < int(next_info.get('exp_required', 0) or 0):
+                break
+            new_level = next_num
+            reward_rocket = next_info.get('reward_rocket')
+            reward_bg = next_info.get('reward_bg')
+            reward_names = []
+            if reward_rocket:
+                try:
+                    cursor.execute("INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source) VALUES (?, 'rocket', ?, 'level_reward')", (user_id, reward_rocket))
+                except Exception as e:
+                    logger.warning(f'Rocket reward error: {e}')
+                reward_names.append('🚀 ' + ROCKET_NAMES.get(reward_rocket, reward_rocket))
+            if reward_bg:
+                try:
+                    cursor.execute("INSERT OR IGNORE INTO user_customizations (user_id, item_type, item_id, source) VALUES (?, 'background', ?, 'level_reward')", (user_id, reward_bg))
+                except Exception as e:
+                    logger.warning(f'Background reward error: {e}')
+                reward_names.append('🎨 ' + BG_NAMES.get(reward_bg, reward_bg))
 
-        # Обновляем пользователя
-        cursor.execute('UPDATE users SET experience = ?, current_level = ? WHERE id = ?',
-                     (new_exp, new_level, user_id))
+            level_up_events.append({
+                'old_level': new_level - 1,
+                'new_level': new_level,
+                'reward_rocket': reward_rocket,
+                'reward_bg': reward_bg,
+                'rewards_text': ', '.join(reward_names),
+            })
 
+        cursor.execute('UPDATE users SET experience = ?, current_level = ? WHERE id = ?', (new_exp, new_level, user_id))
         conn.commit()
         conn.close()
+
+        # Уведомление только после успешного commit.
+        for event in level_up_events:
+            try:
+                reward_desc = event['rewards_text']
+                if event.get('reward_rocket') and not reward_desc:
+                    reward_desc = '🚀 ' + ROCKET_NAMES.get(event['reward_rocket'], event['reward_rocket'])
+                if event.get('reward_bg'):
+                    bg = '🎨 ' + BG_NAMES.get(event['reward_bg'], event['reward_bg'])
+                    reward_desc = (reward_desc + ' ' + bg).strip()
+                tg_send(user_id,
+                        f"🎉 <b>Уровень повышен!</b>\n\nВы достигли <b>{event['new_level']} уровня</b>!\n"
+                        f"{'Награда: ' + reward_desc if reward_desc else ''}\n\n📱 Заберите награду в профиле!",
+                        parse_mode='HTML',
+                        reply_markup={'inline_keyboard': [[{'text': '🎁 Открыть профиль', 'web_app': {'url': f'{WEBSITE_URL}/inventory'}}]]})
+            except Exception as e:
+                logger.warning(f'Level up TG msg error: {e}')
 
         return {
             'success': True,
@@ -3182,73 +3181,62 @@ def add_experience(user_id, exp_amount, reason=""):
             'new_level': new_level,
             'exp_gained': exp_amount,
             'total_exp': new_exp,
-            'level_up_info': level_up_info
+            'level_up_info': (level_up_events[-1] if level_up_events else None),
+            'level_up_events': level_up_events,
         }
-
     except Exception as e:
-        logger.error(f"Ошибка добавления опыта: {e}")
+        logger.error(f'Ошибка добавления опыта: {e}')
         return {'success': False, 'error': str(e)}
 
 
-def _grant_level_rewards(user_id, new_level):
-    """Выдаёт бонусы за достижение уровня из level_rewards"""
-    try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT id, reward_type, reward_data, description FROM level_rewards WHERE level = ? AND is_active = TRUE', (new_level,))
-        rewards = cursor.fetchall()
-        for rw in rewards:
-            rw_id, rw_type, rw_data_str, rw_desc = rw
-            rw_data = json.loads(rw_data_str) if rw_data_str else {}
-            # Создаём бонус для пользователя
-            cursor.execute('''INSERT INTO user_bonuses (user_id, bonus_type, bonus_data, source, source_id)
-                VALUES (?, ?, ?, 'level_reward', ?)''',
-                (user_id, rw_type, rw_data_str, rw_id))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        logger.error(f"Level rewards error: {e}")
-
 def get_user_level_info(user_id):
-    """Получает информацию об уровне пользователя"""
+    """Возвращает корректный прогресс между текущим и следующим уровнями."""
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-
         cursor.execute('SELECT experience, current_level FROM users WHERE id = ?', (user_id,))
         result = cursor.fetchone()
-
+        conn.close()
         if not result:
-            conn.close()
             return None
 
-        experience, current_level = result
+        experience = int(result[0] or 0)
+        current_level = int(result[1] or 1)
+        levels = _sorted_levels()
+        if not levels:
+            return None
 
-        current_level_info = next((level for level in LEVEL_SYSTEM if level["level"] == current_level), None)
-        next_level_info = next((level for level in LEVEL_SYSTEM if level["level"] == current_level + 1), None)
+        # Самовосстановление stale current_level без изменения XP.
+        reached = [x for x in levels if experience >= int(x.get('exp_required', 0) or 0)]
+        if reached:
+            calculated_level = int(reached[-1]['level'])
+            if calculated_level != current_level:
+                try:
+                    conn2 = get_db_connection()
+                    conn2.execute('UPDATE users SET current_level = ? WHERE id = ?', (calculated_level, user_id))
+                    conn2.commit(); conn2.close()
+                    current_level = calculated_level
+                except Exception:
+                    pass
 
-        conn.close()
-
-        if current_level_info and next_level_info:
-            exp_to_next_level = next_level_info["exp_required"] - experience
-            progress_percentage = ((experience - current_level_info["exp_required"]) /
-                                (next_level_info["exp_required"] - current_level_info["exp_required"])) * 100
-        else:
-            exp_to_next_level = 0
-            progress_percentage = 100
-
+        current_info = next((x for x in levels if int(x['level']) == current_level), levels[0])
+        next_info = next((x for x in levels if int(x['level']) > current_level), None)
+        cur_exp = int(current_info.get('exp_required', 0) or 0)
+        next_exp = int(next_info.get('exp_required', 0) or 0) if next_info else cur_exp
+        span = max(1, next_exp - cur_exp)
+        progress = 100 if not next_info else ((experience - cur_exp) / span) * 100
         return {
             'current_level': current_level,
             'experience': experience,
-            'exp_to_next_level': max(0, exp_to_next_level),
-            'progress_percentage': min(max(progress_percentage, 0), 100),
-            'current_level_info': current_level_info,
-            'next_level_info': next_level_info
+            'exp_to_next_level': max(0, next_exp - experience) if next_info else 0,
+            'progress_percentage': min(max(progress, 0), 100),
+            'current_level_info': current_info,
+            'next_level_info': next_info,
         }
-
     except Exception as e:
-        logger.error(f"Ошибка получения информации об уровне: {e}")
+        logger.error(f'Ошибка получения информации об уровне: {e}')
         return None
+
 
 def update_case_limit(case_id):
     """Обновляет лимит кейса (уменьшает на 1)"""
@@ -3460,8 +3448,6 @@ def process_referral(referred_user_id, referral_code):
 
                 cursor.execute('UPDATE users SET balance_tickets = balance_tickets + 1, total_earned_tickets = total_earned_tickets + 1 WHERE id = ?', (referrer_id,))
 
-                add_experience(referrer_id, 50, "Приглашение друга")
-
                 cursor.execute('SELECT first_name FROM users WHERE id = ?', (referred_user_id,))
                 referred_user = cursor.fetchone()
                 referred_name = referred_user[0] if referred_user else 'Новый пользователь'
@@ -3477,6 +3463,10 @@ def process_referral(referred_user_id, referral_code):
 
                 conn.commit()
                 conn.close()
+
+                # Начисляем XP после закрытия транзакции, чтобы не открыть второе
+                # соединение с SQLite поверх незавершённой записи.
+                add_experience(referrer_id, 50, "Приглашение друга")
 
                 logger.info(f"🎫 Пользователь {referrer_id} получил 1 билет за приглашение {referred_user_id}")
                 return True
@@ -4775,6 +4765,20 @@ def inventory_page():
     """Страница инвентаря"""
     logger.info("🎒 Запрос страницы инвентаря")
     return render_template('inventory.html')
+
+
+@app.route('/rewards')
+def rewards_page():
+    """Отдельное окно/страница наград профиля."""
+    return render_template_string(r'''<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><title>Награды</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#171b20;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}body{padding:calc(env(safe-area-inset-top,0px) + 18px) 14px calc(env(safe-area-inset-bottom,0px) + 94px)}.wrap{max-width:480px;margin:0 auto}.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.title{font-size:24px;font-weight:900;letter-spacing:-.5px}.close-top{width:38px;height:38px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:#23282e;color:#fff;font-size:18px}.level-card{background:linear-gradient(180deg,#242b32,#1d2228);border:1px solid rgba(255,255,255,.07);border-radius:22px;padding:16px;margin-bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,.18)}.level-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.level-badge{min-width:56px;height:42px;padding:0 12px;border-radius:14px;background:#2b333b;display:flex;align-items:center;justify-content:center;font-weight:900}.level-exp{text-align:right;color:rgba(255,255,255,.48);font-size:11px;font-weight:700}.reward-slot{margin-top:13px;min-height:76px;border:1px dashed rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.025);display:flex;align-items:center;justify-content:center;text-align:center;color:rgba(255,255,255,.35);font-size:12px;font-weight:750;padding:12px}.reward-slot.ready{border-style:solid;color:#fff}.empty{margin-top:16px;text-align:center;padding:28px 18px;border-radius:20px;background:#20252b;border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.38);font-weight:750}.close-bottom{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);width:min(calc(100% - 28px),452px);height:52px;border:0;border-radius:26px;background:#1687f8;color:#fff;font-size:14px;font-weight:900;box-shadow:0 10px 28px rgba(22,135,248,.25);z-index:20}.muted{color:rgba(255,255,255,.42);font-size:11px;margin-top:4px}@media(prefers-reduced-motion:no-preference){body{animation:fadeIn .22s ease both}@keyframes fadeIn{from{opacity:0}to{opacity:1}}}</style></head>
+<body><div class="wrap"><div class="head"><div><div class="title">Награды</div><div class="muted" id="levelSummary">Загрузка уровней…</div></div><button class="close-top" onclick="closeRewards()">×</button></div><div id="rewardsList"></div></div><button class="close-bottom" onclick="closeRewards()">Закрыть</button>
+<script src="https://telegram.org/js/telegram-web-app.js"></script><script>
+function closeRewards(){history.length>1?history.back():location.href='/inventory'}
+function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+async function init(){var uid=new URLSearchParams(location.search).get('user_id');if(!uid&&window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user)uid=Telegram.WebApp.initDataUnsafe.user.id;var box=document.getElementById('rewardsList');if(!uid){box.innerHTML='<div class="empty">Не удалось определить пользователя</div>';return}try{var r=await fetch('/api/rewards/info/'+encodeURIComponent(uid));var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');var levels=d.level_rewards||[];document.getElementById('levelSummary').textContent='Уровневые награды';if(!levels.length){box.innerHTML='<div class="empty">Награды пока не установлены.<br><span style="font-weight:600;color:rgba(255,255,255,.25)">Когда добавишь их в админке, они появятся здесь автоматически.</span></div>';return}box.innerHTML=levels.map(function(x){var rs=(x.rewards||[]).map(function(r){return '<div class="reward-slot ready">'+esc(r.description||r.type||'Награда')+'</div>'}).join('');return '<div class="level-card"><div class="level-row"><div class="level-badge">'+esc(x.level)+' lvl</div><div class="level-exp">'+(x.available?'Доступно':'Уровень '+esc(x.level))+'</div></div>'+(rs||'<div class="reward-slot">Награда не установлена</div>')+'</div>'}).join('')}catch(e){box.innerHTML='<div class="empty">Не удалось загрузить награды</div>'}}init();</script></body></html>''')
 
 @app.route('/profile')
 def profile_page():
@@ -8021,11 +8025,6 @@ def open_case_single():
         level_up_info = None
         if level_result and level_result.get('level_up_info'):
             level_up_info = level_result['level_up_info']
-            # Выдаём бонусы за уровень из level_rewards
-            try:
-                _grant_level_rewards(user_id, level_result['new_level'])
-            except:
-                pass
 
         result = {
             'success': True,
@@ -8823,13 +8822,13 @@ def claim_daily_bonus():
             WHERE id = ?
         ''', (total_stars, total_stars, now.isoformat(), consecutive_days, user_id))
 
-        add_experience(user_id, 10, "Ежедневный бонус")
-
         add_history_record(user_id, 'daily_bonus', total_stars,
                          f'Ежедневный бонус ({consecutive_days} день подряд)')
 
         conn.commit()
         conn.close()
+
+        add_experience(user_id, 10, "Ежедневный бонус")
 
         logger.info(f"🎁 Пользователь {user_id} получил ежедневный бонус: {total_stars} звезд")
         return jsonify({
@@ -9537,7 +9536,7 @@ def portal_search_route():
         name = request.args.get('name', '').strip()
         if not name:
             return jsonify({'success': False, 'error': 'name required'})
-        limit = int(request.args.get('limit', 20))
+        limit = min(max(int(request.args.get('limit', 5000)), 1), 5000)
         model = request.args.get('model') or None
         # Очищаем имя от (Random)
         clean = _portal_clean_name(name) if '_portal_clean_name' in globals() else name
@@ -10074,7 +10073,7 @@ def portal_search_gifts():
         from aportalsmp.gifts import search as portal_search
         loop = asyncio.new_event_loop()
         gifts_list = loop.run_until_complete(
-            portal_search(sort='price_asc', gift_name=name, limit=20, authData=auth)
+            portal_search(sort='price_asc', gift_name=name, limit=5000, authData=auth)
         )
         loop.close()
 
@@ -10084,9 +10083,6 @@ def portal_search_gifts():
             price = float(g.price) if g.price else 0
             if floor_price is None and price > 0:
                 floor_price = price
-            # Only show gifts within 5% of floor
-            if floor_price and price > floor_price * 1.05:
-                continue
             number = g.tg_id
             coll_name = g.name or name
             if number:
@@ -10842,8 +10838,6 @@ def claim_referral_bonus():
         cursor.execute('UPDATE users SET balance_stars = balance_stars + ?, total_earned_stars = total_earned_stars + ?, referral_bonus_claimed = TRUE WHERE id = ?',
                      (bonus_stars, bonus_stars, user_id))
 
-        add_experience(user_id, 100, "Реферальный бонус")
-
         add_history_record(user_id, 'referral_bonus', bonus_stars, f'Бонус за приглашение {referral_count} друзей')
 
         cursor.execute('SELECT balance_stars, balance_tickets FROM users WHERE id = ?', (user_id,))
@@ -10851,6 +10845,8 @@ def claim_referral_bonus():
 
         conn.commit()
         conn.close()
+
+        add_experience(user_id, 100, "Реферальный бонус")
 
         logger.info(f"🎁 Пользователь {user_id} получил реферальный бонус: {bonus_stars} звезд")
         return jsonify({
@@ -11734,8 +11730,6 @@ def complete_stars_payment():
         cursor.execute('UPDATE users SET balance_stars = balance_stars + ?, total_earned_stars = total_earned_stars + ? WHERE id = ?',
                      (amount, amount, user_id))
 
-        add_experience(user_id, amount // 10, f"Пополнение баланса на {amount} звезд")
-
         cursor.execute('UPDATE deposits SET status = "completed", completed_at = CURRENT_TIMESTAMP WHERE id = ?', (deposit_id,))
 
         add_history_record(user_id, 'stars_payment_completed', amount, f'Пополнение через Telegram Stars: {amount} звезд')
@@ -11745,6 +11739,8 @@ def complete_stars_payment():
         cursor.execute('SELECT balance_stars, balance_tickets FROM users WHERE id = ?', (user_id,))
         new_balance = cursor.fetchone()
         conn.close()
+
+        add_experience(user_id, amount // 10, f"Пополнение баланса на {amount} звезд")
 
         logger.info(f"✅ Платеж Stars #{deposit_id} завершен, пользователь {user_id} получил {amount} звезд")
         return jsonify({
@@ -12155,6 +12151,8 @@ def ultimate_crash_cashout():
 
         conn.commit()
         conn.close()
+
+        add_experience(user_id, exp_gained, f"Выигрыш в Ultimate Crash x{current_mult:.2f}")
 
         # Update gift challenge progress (bet turnover)
         try:
@@ -12607,7 +12605,6 @@ def cashout_final():
         ''', (win_amount, win_amount, user_id))
 
         exp_gained = max(5, win_amount // 100)
-        add_experience(user_id, exp_gained, f"Выигрыш в Ultimate Crash x{current_mult:.2f}")
 
         add_history_record(user_id, 'ultimate_crash_win', win_amount,
                          f'Выигрыш в Ultimate Crash: x{current_mult:.2f}')
@@ -17023,16 +17020,28 @@ def get_rewards_info(user_id):
         for row in cursor.fetchall():
             claimed.add(f"{row[0]}_{row[1]}")
         
-        # Level rewards
+        # Level rewards are configured in DB. If admin has not installed any rewards,
+        # the list is intentionally empty — the UI will show a clean "not installed" state.
         level_rewards = []
-        for lr in LEVEL_REWARDS:
-            rid = f"level_{lr['level']}"
+        cursor.execute('SELECT id, level, reward_type, reward_data, description, is_active FROM level_rewards WHERE is_active = TRUE ORDER BY level, id')
+        reward_rows = cursor.fetchall()
+        grouped = {}
+        for rw_id, rw_level, rw_type, rw_data, rw_desc, rw_active in reward_rows:
+            try:
+                parsed = json.loads(rw_data) if rw_data else {}
+            except Exception:
+                parsed = {}
+            grouped.setdefault(int(rw_level), []).append({
+                'id': rw_id, 'type': rw_type, 'data': parsed, 'description': rw_desc or ''
+            })
+        for rw_level, rewards_for_level in sorted(grouped.items()):
+            rid = f"level_{rw_level}"
             level_rewards.append({
-                'level': lr['level'],
-                'stars': lr['stars'],
+                'level': rw_level,
+                'rewards': rewards_for_level,
                 'claimed': rid in claimed,
-                'available': current_level >= lr['level'] and rid not in claimed,
-                'progress': min(current_level / lr['level'] * 100, 100)
+                'available': current_level >= rw_level and rid not in claimed,
+                'progress': min(current_level / rw_level * 100, 100) if rw_level else 0
             })
         
         # Referral rewards
@@ -17136,14 +17145,27 @@ def claim_reward():
         stars = 0
         
         if reward_type == 'level':
-            lr = next((l for l in LEVEL_REWARDS if l['level'] == int(reward_id)), None)
-            if not lr:
+            target_level = int(reward_id)
+            cursor.execute('SELECT id, reward_type, reward_data, description FROM level_rewards WHERE level = ? AND is_active = TRUE ORDER BY id', (target_level,))
+            reward_rows = cursor.fetchall()
+            if not reward_rows:
                 conn.close()
-                return jsonify({'success': False, 'error': 'Награда не найдена'})
-            if current_level < lr['level']:
+                return jsonify({'success': False, 'error': 'Награда для этого уровня ещё не установлена'})
+            if current_level < target_level:
                 conn.close()
-                return jsonify({'success': False, 'error': f'Нужен уровень {lr["level"]}'})
-            stars = lr['stars']
+                return jsonify({'success': False, 'error': f'Нужен уровень {target_level}'})
+            # One claim per level; grant all configured rewards for that level.
+            for rw_id, rw_type, rw_data_str, rw_desc in reward_rows:
+                try:
+                    rw_data = json.loads(rw_data_str) if rw_data_str else {}
+                except Exception:
+                    rw_data = {}
+                if str(rw_type).lower() in ('stars', 'star', 'balance_stars'):
+                    amount = int(rw_data.get('amount', rw_data.get('stars', 0)) or 0)
+                    stars += max(0, amount)
+                else:
+                    cursor.execute("INSERT INTO user_bonuses (user_id, bonus_type, bonus_data, source, source_id) VALUES (?, ?, ?, 'level_reward', ?)",
+                                   (user_id, rw_type, rw_data_str or '{}', rw_id))
         elif reward_type == 'referral':
             rr = next((r for r in REFERRAL_REWARDS_CONFIG if r['count'] == int(reward_id)), None)
             if not rr:
