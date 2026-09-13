@@ -52,7 +52,7 @@ body{
 .main{
     max-width:480px;
     margin:0 auto;
-    padding:calc(var(--safe-top) + 12px) 12px calc(var(--safe-bottom) + 92px);
+    padding:calc(var(--safe-top) + 32px) 12px calc(var(--safe-bottom) + 104px);
 }
 
 /* ══════════════ HELP TIP ══════════════ */
@@ -168,8 +168,8 @@ body{
 
 /* ══════════════ BOTTOM NAV ══════════════ */
 .bottom-nav{
-    position:fixed;left:50%;bottom:12px;transform:translateX(-50%);
-    z-index:4000;width:calc(100% - 32px);max-width:430px;height:64px;
+    position:fixed;left:16px;right:16px;bottom:calc(12px + var(--safe-bottom));transform:none;
+    z-index:4000;width:auto;max-width:430px;height:64px;margin:0 auto;
     padding:4px;
     background:rgba(28,32,36,.97);
     backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
@@ -189,7 +189,7 @@ body{
 .bnav-item span{font-size:10px;font-weight:700;line-height:1}
 .bnav-item.active{background:#1f3b59;color:#3b92ff;box-shadow:inset 0 0 0 1px rgba(59,146,255,.06)}
 .bnav-item:active{transform:scale(.95)}
-.nav-travel{position:fixed;z-index:9000;height:54px;border-radius:28px;background:linear-gradient(135deg,#167dff,#0b66e6);box-shadow:0 10px 28px rgba(11,102,230,.38),inset 0 1px 0 rgba(255,255,255,.16);pointer-events:none;will-change:left,top,width;transition:left .28s cubic-bezier(.22,.8,.2,1),top .28s cubic-bezier(.22,.8,.2,1),width .28s cubic-bezier(.22,.8,.2,1),opacity .18s ease;}
+
 .page-transition-cover{position:fixed;inset:0;z-index:8999;background:rgba(9,14,20,.18);backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px);opacity:0;pointer-events:none;transition:opacity .22s ease;}
 .page-transition-cover.show{opacity:1;}
 /* ══════════════ MODAL COMMON ══════════════ */
@@ -679,6 +679,14 @@ body{
     .podium-slot.p3 .podium-avatar{width:50px;height:50px}
     .prize-nft-img{width:120px;height:120px}
 }
+
+    .prize-card-gift,.prize-card-nft{padding:18px;border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.09);box-shadow:0 14px 36px rgba(0,0,0,.25)}
+    .prize-gift-img,.prize-nft-img{box-shadow:0 10px 28px rgba(0,0,0,.42)}
+    .prize-gift-name,.prize-nft-name{font-size:16px;font-weight:850;letter-spacing:-.2px}
+    body{animation:pageIn .24s ease both}
+    body.page-leaving{animation:pageOut .18s ease both}
+    @keyframes pageIn{from{opacity:0}to{opacity:1}}
+    @keyframes pageOut{from{opacity:1}to{opacity:0}}
 </style>
 </head>
 <body>
@@ -713,7 +721,7 @@ body{
     </a>
     <a class="bnav-item active" href="/leaderboard">
         <svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-        <span>Сезон</span>
+        <span>Лидеры</span>
     </a>
     <a class="bnav-item" href="/profile">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
@@ -1081,6 +1089,8 @@ function openPrizeModalByRank(rank){
     if(!_lbData || !_lbData.config) return;
     var rewards = _lbData.config.rewards || {};
     var rawPrize = rewards[String(rank)];
+    var row = (_lbData.leaderboard || []).find(function(u){ return Number(u.position) === Number(rank); });
+    if(row && row.reward) rawPrize = row.reward;
     openPrizeModal(rawPrize, rank);
 }
 
@@ -1372,42 +1382,22 @@ function closeInfoModal(){ $('infoOverlay').classList.remove('show'); }
 
 /* ══════════════════════════════════════════════════════════════
    NAVIGATION TRANSITION
-   Blue active pill travels to the destination before navigation.
+   Simple fade between pages; bottom nav stays fixed.
    ══════════════════════════════════════════════════════════════ */
 (function initNavTransition(){
-    var nav = document.querySelector('.bottom-nav');
-    if(!nav) return;
-    var links = nav.querySelectorAll('.bnav-item');
-    links.forEach(function(link){
-        link.addEventListener('click', function(ev){
-            var href = link.getAttribute('href');
-            if(!href || href === window.location.pathname || href === '#') return;
+    var nav=document.querySelector('.bottom-nav'); if(!nav) return;
+    nav.querySelectorAll('.bnav-item').forEach(function(link){
+        link.addEventListener('click',function(ev){
+            var href=link.getAttribute('href');
+            if(!href || href===window.location.pathname || href==='#') return;
             ev.preventDefault();
-            var active = nav.querySelector('.bnav-item.active') || link;
-            var a = active.getBoundingClientRect();
-            var b = link.getBoundingClientRect();
-            var pill = document.createElement('div');
-            pill.className = 'nav-travel';
-            pill.style.left = a.left + 'px';
-            pill.style.top = a.top + 'px';
-            pill.style.width = a.width + 'px';
-            document.body.appendChild(pill);
-            var cover = document.getElementById('pageTransitionCover');
+            var cover=document.getElementById('pageTransitionCover');
             if(cover) cover.classList.add('show');
-            requestAnimationFrame(function(){
-                requestAnimationFrame(function(){
-                    pill.style.left = b.left + 'px';
-                    pill.style.top = b.top + 'px';
-                    pill.style.width = b.width + 'px';
-                });
-            });
-            setTimeout(function(){
-                pill.style.opacity = '0';
-                window.location.href = href;
-            }, 285);
+            document.body.classList.add('page-leaving');
+            setTimeout(function(){ window.location.assign(href); },180);
         });
     });
-})();
+})();;
 
 /* ══════════════════════════════════════════════════════════════
    START
