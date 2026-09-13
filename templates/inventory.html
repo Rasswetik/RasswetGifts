@@ -1194,6 +1194,37 @@ body{background:#17191c;background-image:linear-gradient(180deg,#181b1f 0%,#1518
 .portal-withdraw-btn:disabled{background:rgba(255,255,255,.08);color:rgba(255,255,255,.32);box-shadow:none;}
 @media(max-width:380px){.inv-card{min-height:150px}.inv-card-name{font-size:9px}.portal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-left:12px;padding-right:12px}.portal-head{padding-left:14px;padding-right:14px}.portal-footer{padding-left:12px;padding-right:12px;}}
 
+
+/* FINAL INVENTORY UI POLISH */
+body{animation:invPageIn .26s ease both}
+body.page-leaving{animation:invPageOut .18s ease both}
+@keyframes invPageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes invPageOut{to{opacity:0;transform:translateY(-5px)}}
+.inv-grid{gap:10px 9px}
+.inv-card{background:linear-gradient(180deg,rgba(36,42,49,.92),rgba(25,30,35,.92));border-color:rgba(255,255,255,.07);box-shadow:0 7px 18px rgba(0,0,0,.14)}
+.inv-card-img-wrap{background:linear-gradient(145deg,#151a1f,#20262c);border-color:rgba(255,255,255,.06)}
+.inv-card-name{font-size:10.5px;font-weight:800;color:rgba(255,255,255,.94)}
+.inv-card-price{font-size:10px;font-weight:850}
+.portal-sheet{border-radius:26px 26px 0 0;background:linear-gradient(180deg,#252c34 0%,#171c21 100%);box-shadow:0 -18px 50px rgba(0,0,0,.45)}
+.portal-head{padding:16px 18px 12px}
+.portal-title{font-size:18px;font-weight:900;letter-spacing:-.3px}
+.portal-subtitle{font-size:11px;color:rgba(255,255,255,.46);margin-top:4px}
+.portal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;padding:8px 14px 18px}
+.portal-card{background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.075);border-radius:18px;padding:8px;box-shadow:0 7px 18px rgba(0,0,0,.12)}
+.portal-card img{aspect-ratio:1/1;border-radius:14px;background:#11161a;padding:2px}
+.portal-model{font-size:11px;font-weight:850;color:#fff;margin-top:1px}
+.portal-meta{font-size:9px;color:rgba(255,255,255,.42);min-height:12px;margin-top:3px}
+.portal-price{font-size:11px;font-weight:900;color:#73b7ff;margin-top:6px}
+.portal-footer{padding:10px 14px calc(16px + var(--safe-bottom,0px));background:linear-gradient(0deg,#171c21 70%,transparent)}
+.portal-withdraw-btn{min-height:52px;border-radius:15px;font-size:13px;font-weight:900}
+
+/* FINAL FIX: fixed bottom navigation + transform-free page transitions */
+body{animation:inventoryFadeIn .24s ease both!important;}
+body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
+@keyframes inventoryFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes inventoryFadeOut{from{opacity:1}to{opacity:0}}
+.bottom-nav{position:fixed!important;left:50%!important;bottom:calc(10px + var(--safe-bottom,0px))!important;top:auto!important;transform:translate3d(-50%,0,0)!important;z-index:100000!important;will-change:transform;}
+.page{padding-bottom:calc(92px + var(--safe-bottom,0px) + 82px)!important;}
 </style>
 </head>
 <body>
@@ -1221,7 +1252,7 @@ body{background:#17191c;background-image:linear-gradient(180deg,#181b1f 0%,#1518
     <div class="profile-uid" id="userUid"></div>
     <div class="level-bar-wrap">
         <div class="level-bar-bg"><div class="level-bar-fill" id="levelBar" style="width:0%"></div></div>
-        <div class="level-bar-text" id="levelText">0 / 100 GRAM</div>
+        <div class="level-bar-text" id="levelText">0.00 / 10.00 TON</div>
     </div>
     <div class="profile-stats">
         <div class="profile-stat">
@@ -1242,7 +1273,7 @@ body{background:#17191c;background-image:linear-gradient(180deg,#181b1f 0%,#1518
 <!-- ACTION -->
 <div class="action-row">
     <button class="btn-action btn-primary" onclick="openDeposit()">Пополнить</button>
-    <button class="btn-action btn-outline" onclick="window.location.href='/rewards'">Награды</button>
+    <button class="btn-action btn-outline" onclick="openRewardsPage()">Награды</button>
 </div>
 
 <!-- ADMIN -->
@@ -1419,7 +1450,7 @@ body{background:#17191c;background-image:linear-gradient(180deg,#181b1f 0%,#1518
     </a>
     <a class="bnav-item" href="/leaderboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-        <span>Топ</span>
+        <span>Лидеры</span>
     </a>
     <a class="bnav-item active" href="/inventory">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1548,6 +1579,15 @@ async function initUser(){
     }
 }
 
+/* REWARDS */
+function openRewardsPage(){
+    if(user && user.id){
+        window.location.href='/rewards?user_id='+encodeURIComponent(user.id);
+    }else{
+        window.location.href='/rewards';
+    }
+}
+
 /* UPDATE PROFILE */
 function updateProfile(){
     if(!user) return;
@@ -1593,7 +1633,7 @@ function updateProfile(){
         var tierSize = nextLvlExp - curLvlExp;
         var cur = formatTon(starsToTon(Math.max(0, withinLevel)));
         var need = tierSize > 0 ? formatTon(starsToTon(tierSize)) : 'MAX';
-        var lt = $('levelText'); if(lt) lt.textContent = cur + ' / ' + need + ' GRAM';
+        var lt = $('levelText'); if(lt) lt.textContent = cur + ' / ' + need + ' TON';
     }
 
     var rb = $('refBalance'); if(rb) rb.textContent = formatTon(starsToTon(user.referral_balance || 0));
@@ -1699,36 +1739,13 @@ function updateSelectActionBar(){
 }
 
 function openBatchSellModal(){
-    if(!selectMode || selectedItems.size === 0){
-        showNotif('Выберите хотя бы один подарок', true);
-        return;
-    }
-
+    if(!selectMode || selectedItems.size === 0){ showNotif('Выберите хотя бы один подарок', true); return; }
     _batchSellIds = Array.from(selectedItems).filter(function(id){
-        return inventory.some(function(item){ return String(item.id) === String(id) && !item.is_withdrawing; });
+        return inventory.some(function(item){ return String(item.id)===String(id) && !item.is_withdrawing; });
     });
-    if(!_batchSellIds.length){
-        showNotif('Нет доступных подарков для продажи', true);
-        return;
-    }
-
-    var items = _batchSellIds.map(function(id){
-        return inventory.find(function(item){ return String(item.id) === String(id); });
-    }).filter(Boolean);
-    var totalStars = items.reduce(function(sum, item){ return sum + Number(item.gift_value || 0); }, 0);
-
-    _batchSellMode = true;
-    var name = $('sellConfirmName');
-    var price = $('sellConfirmPrice');
-    var title = document.querySelector('.sell-confirm-title');
-    if(title) title.textContent = 'Продать выбранные подарки?';
-    if(name) name.textContent = _batchSellIds.length + ' подарков';
-    if(price) price.textContent = formatTon(starsToTon(totalStars));
-
-    var ov = $('sellConfirmOverlay');
-    if(ov) ov.classList.add('show');
-    startSellCountdown();
+    if(!_batchSellIds.length){ showNotif('Нет доступных подарков для продажи', true); return; }
     vibrateIfOn();
+    doConfirmedBatchSell();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2658,7 +2675,7 @@ async function openPortalPicker(){
     var subtitle=$('portalSubtitle'); if(subtitle) subtitle.textContent=(selectedItem.gift_name||'Подарок')+' — модели Portal';
     try{
         var name=encodeURIComponent(String(selectedItem.gift_name||'').replace(/#\d+$/,'').trim());
-        var r=await fetch('/api/portal/search?name='+name+'&limit=100');
+        var r=await fetch('/api/portal/search?name='+name+'&limit=500');
         var d=await r.json();
         if(!d.success) throw new Error(d.error||'Portal недоступен');
         _portalCandidates=(d.gifts||[]).filter(function(x){return x && x.id!=null;});
@@ -2667,6 +2684,16 @@ async function openPortalPicker(){
             var d2=await r2.json();
             if(d2.success) _portalCandidates=(d2.gifts||[]).filter(function(x){return x && x.id!=null;});
         }
+        // Portal can return thousands of NFT listings. For the picker we need
+        // every unique model, not thousands of identical listings. Keep the
+        // cheapest listing for each model so the selected ID can still be bought.
+        var byModel={};
+        _portalCandidates.forEach(function(x){
+            var key=String(x.model||x.title||'Без модели').trim().toLowerCase();
+            if(!byModel[key] || Number(x.price_ton||0) < Number(byModel[key].price_ton||0)) byModel[key]=x;
+        });
+        _portalCandidates=Object.keys(byModel).map(function(k){return byModel[k];});
+        _portalCandidates.sort(function(a,b){return Number(a.price_ton||0)-Number(b.price_ton||0);});
         renderPortalCandidates();
         if(!_portalCandidates.length) showPortalError('На Portal пока нет доступных моделей этого подарка.');
     }catch(e){ console.error('portal picker',e); showPortalError(e.message||'Не удалось загрузить модели Portal'); }
@@ -2923,6 +2950,19 @@ window.__rouletteImgFallback = function(imgEl){
         imgEl.src = '/static/img/gift.png';
     }
 };
+
+/* PAGE FADE NAVIGATION — no travelling blue pill */
+(function(){
+  document.querySelectorAll('.bottom-nav .bnav-item').forEach(function(link){
+    link.addEventListener('click',function(e){
+      var href=link.getAttribute('href');
+      if(!href || href===location.pathname || href==='#') return;
+      e.preventDefault();
+      document.body.classList.add('page-leaving');
+      setTimeout(function(){location.assign(href)},180);
+    });
+  });
+})();
 </script>
 </body>
 </html>
