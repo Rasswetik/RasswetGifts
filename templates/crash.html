@@ -1060,6 +1060,264 @@ body{font-family:Inter,"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSyst
 /* When inventory is present, make the sheet breathe like the reference */
 #invSec{animation:invSectionIn .24s ease-out}
 @keyframes invSectionIn{from{opacity:.55;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* === CRASH MODAL REBUILD: correct action order + premium spacing === */
+.bet-modal-content{display:flex;flex-direction:column;min-height:0}
+.modal-sheet{width:min(100%,480px)!important;max-height:min(82vh,620px)!important;padding:14px 16px calc(18px + env(safe-area-inset-bottom,0px))!important}
+.modal-title{margin-bottom:14px!important}
+.modal-tabs{order:0;margin-bottom:14px!important;flex:0 0 auto}
+#invSec,#starsSec{order:1;min-height:0}
+#invSec{display:flex;flex-direction:column}
+#starsSec{display:none}
+.gift-empty-state{min-height:92px!important;margin-bottom:12px;border-radius:20px!important}
+.inv-grid{max-height:250px!important;overflow-y:auto;padding:2px!important;margin-bottom:10px}
+.inv-card{min-height:150px;border-radius:16px!important;padding:7px!important;background:linear-gradient(180deg,rgba(43,49,57,.82),rgba(31,35,41,.92))!important;border-color:rgba(255,255,255,.07)!important}
+.inv-card:hover{transform:translateY(-2px);border-color:rgba(63,140,247,.35)!important}
+.inv-card-img-wrap{aspect-ratio:1/1;border-radius:12px!important;background:radial-gradient(circle at 50% 45%,rgba(61,136,247,.15),rgba(0,0,0,.18) 68%)!important}
+.inv-card-img-wrap img{object-fit:contain!important;padding:6px;filter:drop-shadow(0 7px 14px rgba(0,0,0,.35))}
+.inv-card .inv-name{font-size:10px!important;margin-top:2px}
+.inv-card .inv-val{font-size:11px!important;margin-top:3px!important;background:rgba(63,140,247,.08)!important}
+.selected-summary{margin:0 0 10px!important;padding:9px 11px!important;border-radius:14px!important}
+.auto-cashout-row{order:2!important;width:100%!important;height:50px!important;min-height:50px!important;margin:12px 0 10px!important;padding:3px 5px 3px 8px!important;gap:8px!important;display:flex!important;align-items:center!important}
+.auto-cashout-left{height:44px!important;min-width:0!important;padding:0 9px!important;border-radius:22px!important;gap:8px!important}
+.auto-cashout-label{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:14px!important;font-weight:750!important}
+.bet-toggle{flex:0 0 auto!important;width:40px!important;height:25px!important}
+.bet-coeff-control{height:44px!important;min-width:126px!important;width:126px!important;border-radius:22px!important;padding:0 5px!important}
+.bet-coeff-btn{width:30px!important;height:30px!important}
+.confirm-gifts-btn,.bet-deposit-btn,.confirm-bet-btn{order:3!important;width:100%!important;height:52px!important;min-height:52px!important;margin:0!important;border-radius:26px!important}
+.confirm-gifts-btn{display:none}
+.confirm-gifts-btn.show{display:flex!important;align-items:center;justify-content:center}
+.bet-deposit-btn{display:flex;align-items:center;justify-content:center;gap:9px;background:#087cf0!important;box-shadow:0 8px 26px rgba(8,124,240,.22)!important;font-size:15px!important;letter-spacing:-.01em}
+.bet-deposit-icon{width:19px!important;height:19px!important;fill:#fff!important;flex:0 0 19px}
+.bet-deposit-btn:active,.confirm-bet-btn:active,.confirm-gifts-btn:active{transform:scale(.975)!important;filter:brightness(.96)}
+.confirm-bet-btn{display:none}
+#starsSec~.confirm-bet-btn{display:flex;align-items:center;justify-content:center}
+#starsSec .gram-balance-hint{margin:0 15px 7px!important;padding:0!important;height:18px!important;font-size:13px!important}
+#starsSec .gram-balance-hint span:first-child{color:#70757d!important}
+#starsSec .gram-balance-hint span:last-child{color:#3f8cf7!important;font-weight:700}
+#starsSec .bet-input-wrap{height:46px!important;margin:0!important}
+#starsSec .bet-input-wrap input{height:46px!important;font-size:15px!important}
+#starsSec .bet-input-unit{display:none!important}
+/* Keep the action buttons mutually exclusive without JS layout glitches. */
+#invSec~.confirm-bet-btn{display:none}
+.bet-modal-content:has(#starsSec[style*="block"]) #betDepositBtn{display:none!important}
+.bet-modal-content:has(#starsSec[style*="block"]) #confirmGiftsBtn{display:none!important}
+.bet-modal-content:has(#starsSec[style*="block"]) #confirmBetBtn{display:flex!important}
+.bet-modal-content:has(#invSec[style*="block"]) #confirmBetBtn{display:none!important}
+@media(max-width:390px){
+ .modal-sheet{padding-left:12px!important;padding-right:12px!important}
+ .modal-tabs{height:47px!important}
+ .modal-tab{font-size:14px!important}
+ .inv-grid{max-height:215px!important}
+ .inv-card{min-height:137px}
+ .bet-coeff-control{min-width:118px!important;width:118px!important}
+ .auto-cashout-label{font-size:13px!important}
+}
+</style>
+
+<style id="crash-final-precision">
+/* FINAL UI PRECISION */
+.history-section{margin-top:0!important;padding:6px 20px 10px!important;position:relative!important;z-index:40!important;overflow:hidden!important}
+.history-scroll{display:grid!important;grid-auto-flow:column!important;grid-auto-columns:max-content!important;grid-template-rows:36px!important;align-items:center!important;gap:8px!important;min-height:36px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:0 1px!important;scroll-snap-type:x proximity!important}
+.h-pill,.coeff-box{height:36px!important;min-height:36px!important;min-width:70px!important;box-sizing:border-box!important;padding:0 13px!important;border-radius:19px!important;display:flex!important;align-items:center!important;justify-content:center!important;line-height:1!important;font-size:13px!important;font-weight:800!important;font-variant-numeric:tabular-nums!important;white-space:nowrap!important;flex:none!important;transform:none!important}
+.h-pill.low{background:rgba(48,151,255,.10)!important;color:#4da3ff!important;border:1.5px solid rgba(77,163,255,.85)!important}
+.h-pill.mid{background:rgba(30,228,76,.10)!important;color:#24e4a4!important;border:1.5px solid #24e4a4!important}
+.h-pill.high{background:rgba(255,174,56,.10)!important;color:#ffb13b!important;border:1.5px solid #ffb13b!important}
+.h-pill.mega{background:rgba(255,82,118,.10)!important;color:#ff5276!important;border:1.5px solid #ff5276!important}
+.h-pill.bonus{background:rgba(177,91,255,.12)!important;color:#b85cff!important;border:1.5px solid #b85cff!important}
+.coeff-box.waiting{background:#0a84ff!important;color:#fff!important;border:0!important;box-shadow:0 5px 16px rgba(10,132,255,.20)!important}
+.coeff-box.flying{background:#0a84ff!important;color:#fff!important;border:0!important;box-shadow:0 5px 18px rgba(10,132,255,.25)!important}
+.coeff-box.crashed{background:rgba(255,71,99,.10)!important;color:#ff5270!important;border:1.5px solid #ff5270!important}
+.coeff-box.bonus{background:rgba(177,91,255,.12)!important;color:#b85cff!important;border:1.5px solid #b85cff!important}
+/* settings modal matches the supplied reference */
+.settings-modal{background:#1b2026!important;border-radius:30px 30px 0 0!important;max-height:88vh!important;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px))!important}
+.settings-handle{width:44px;height:5px;border-radius:8px;background:#303640;margin:10px auto 16px}
+.settings-topbar{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;margin:0 2px 18px}
+.settings-title{font-size:16px;font-weight:800;color:#f4f6f8}
+.settings-mode{display:flex;align-items:center;padding:3px;border-radius:22px;background:#252a31;border:1px solid #30353d}
+.settings-mode-btn{height:34px;padding:0 15px;border:0;border-radius:18px;background:transparent;color:#cbd0d7;font:700 13px inherit;cursor:pointer}
+.settings-mode-btn.active{background:#343a42;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.settings-sound{width:38px;height:38px;border-radius:50%;border:1px solid #353a42;background:#292e35;color:#e6e9ed;font-size:15px;cursor:pointer}
+.settings-content{padding:0!important;overflow-y:auto!important}
+.settings-pane.hidden{display:none!important}
+.settings-section-label{font-size:12px;font-weight:800;color:#8c939d;margin:0 2px 10px}
+.settings-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+.settings-item{height:116px!important;padding:10px!important;border:1px solid transparent!important;border-radius:16px!important;background:#242930!important;display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important}
+.settings-item.active{border:2px solid #0a84ff!important;background:#272d35!important;box-shadow:0 0 0 1px rgba(10,132,255,.08)}
+.settings-item img{width:78px!important;height:78px!important}
+.settings-bg-options{margin-top:14px}
+.bg-choice-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}
+.bg-choice{min-height:190px!important;border-radius:18px!important;overflow:hidden!important;position:relative!important;border:1px solid #343a42!important;background:#242930!important;color:#fff!important}
+.graph-preview{background:linear-gradient(180deg,#171a1f,#101318)!important}
+.space-preview{background:radial-gradient(circle at 50% 45%,rgba(76,133,255,.30),transparent 35%),linear-gradient(180deg,#050811,#11151d)!important}
+.bg-choice.active{border:2px solid #0a84ff!important;box-shadow:0 0 0 2px rgba(10,132,255,.12)}
+.bg-choice-icon{font-size:54px!important;display:block!important;margin:36px auto 12px!important;color:#4da3ff!important}
+.space-icon{color:#dfe8ff!important}
+.bg-choice b{font-size:13px!important}.bg-choice small{display:block!important;margin-top:3px!important;color:#8d949e!important;font-size:10px!important}
+.settings-gift-toggle.compact{margin-top:12px!important;margin-bottom:0!important;background:#23282f!important;border-color:#30363e!important}
+.settings-close-btn{width:100%;height:52px;margin:16px 0 0;border:0;border-radius:27px;background:#0a84ff;color:#fff;font:800 15px inherit;cursor:pointer}
+.settings-close-btn:active{transform:scale(.985)}
+@media(max-width:390px){.history-section{padding-left:16px!important;padding-right:16px!important}.settings-item{height:104px!important}.settings-item img{width:70px!important;height:70px!important}.bg-choice{min-height:165px!important}}
+
+/* FINAL BET/OUTPUT POLISH */
+.modal-sheet{background:linear-gradient(180deg,#1d2127 0%,#171a1f 100%);padding:14px 16px calc(18px + env(safe-area-inset-bottom,0));max-height:88vh;border:1px solid rgba(255,255,255,.06);box-shadow:0 -18px 60px rgba(0,0,0,.38)}
+.modal-handle{margin-bottom:12px;background:#303740}
+.modal-title{font-size:16px;margin-bottom:14px}
+.bet-modal-content{display:flex;flex-direction:column;gap:10px}
+.modal-tabs{margin:0;background:#252a30;border:1px solid rgba(255,255,255,.05);padding:3px;border-radius:18px}
+.modal-tab{height:38px;border-radius:15px;font-size:14px;color:#aeb4bd}
+.modal-tab.active{background:#3b82f6;color:#fff;border:0;box-shadow:0 5px 18px rgba(59,130,246,.25)}
+.inv-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-height:360px;padding:2px;order:1}
+.inv-card{min-height:126px;background:#24292f;border:1px solid rgba(255,255,255,.035);border-radius:15px;padding:8px;justify-content:flex-end;transition:transform .18s cubic-bezier(.2,.8,.2,1),border-color .18s,box-shadow .18s}
+.inv-card:hover{transform:translateY(-2px)}
+.inv-card.selected{border-color:#1683ff;background:#242b34;box-shadow:0 0 0 2px rgba(22,131,255,.28),0 10px 25px rgba(0,0,0,.22);transform:translateY(-2px)}
+.inv-card.selected::after{width:20px;height:20px;top:7px;right:7px;font-size:11px}
+.inv-card-img-wrap{width:100%;aspect-ratio:1/1;background:transparent;box-shadow:none;margin:0 auto 2px}
+.inv-card-img-wrap img{object-fit:contain;border-radius:0}
+.inv-card .inv-name{display:none}
+.inv-card .inv-val{background:transparent;margin:0;padding:2px 0 0;color:#fff;font-size:12px}
+.inv-card .inv-val img{width:13px;height:13px}
+.selected-summary{order:2;margin:0;padding:8px 11px;border-radius:12px;background:#23282e;border:1px solid rgba(59,130,246,.2)}
+.selected-count{font-size:11px;color:#b7bdc6}
+.selected-total{font-size:14px}
+.clear-selected{padding:6px 9px}
+.bet-deposit-btn{order:3;width:100%;height:48px;border-radius:15px;margin:0;background:#262b31;color:#fff;border:1px solid rgba(255,255,255,.06);font-size:14px;font-weight:800;display:flex!important;align-items:center;justify-content:center;gap:8px;transition:transform .16s,background .16s}
+.bet-deposit-btn:active,.confirm-gifts-btn:active,.confirm-bet-btn:active{transform:scale(.985)}
+.bet-deposit-icon{width:18px;height:18px;fill:#fff}
+.confirm-gifts-btn{order:4;margin:0;height:50px;padding:0;border-radius:16px;font-size:16px;background:linear-gradient(180deg,#1683ff,#0878f5);box-shadow:0 10px 28px rgba(0,120,255,.22)}
+.confirm-gifts-btn.show{display:block}
+.auto-cashout-row{order:5;margin:0;height:50px;min-height:50px;padding:3px 5px 3px 8px;background:#24292f!important;border:1px solid rgba(255,255,255,.035)!important;border-radius:16px}
+.auto-cashout-left{height:42px!important;background:transparent!important;padding:0 8px!important}
+.auto-cashout-label{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif!important;font-size:13px!important;color:#fff!important}
+.bet-coeff-control{height:42px!important;border-radius:21px!important;background:#20252b!important}
+.confirm-bet-btn{order:6;height:50px;padding:0;margin:0;border-radius:16px;font-size:16px}
+#invSec{display:flex;flex-direction:column;gap:10px}
+#starsSec{display:flex;flex-direction:column;gap:10px}
+#starsSec[style*="display:none"]{display:none!important}
+.gift-empty-state{margin:0!important;border-radius:14px!important;min-height:86px!important}
+/* auto-withdraw selector: image-first cards */
+.autowd-modal{background:linear-gradient(180deg,#1d2127,#171a1f)!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:24px 24px 0 0!important;padding:16px!important;box-shadow:0 -18px 60px rgba(0,0,0,.45)}
+.autowd-list{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px!important;max-height:50vh!important;padding:2px!important}
+.autowd-row{min-height:118px!important;padding:8px!important;border-radius:15px!important;background:#24292f!important;border:1px solid rgba(255,255,255,.035)!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:flex-end!important;gap:2px!important;transition:transform .18s,border-color .18s,box-shadow .18s!important}
+.autowd-row.selected{border-color:#1683ff!important;box-shadow:0 0 0 2px rgba(22,131,255,.25)!important;transform:translateY(-2px)}
+.autowd-thumb{width:76px!important;height:76px!important;background:transparent!important;border:0!important;border-radius:0!important}
+.autowd-thumb img{width:100%!important;height:100%!important;object-fit:contain!important}
+.autowd-info{width:100%!important;text-align:center!important;display:block!important}
+.autowd-name{font-size:11px!important;display:none!important}
+.autowd-coeff{display:none!important}
+.autowd-price{font-size:12px!important;font-weight:850!important;justify-content:center!important;color:#fff!important}
+.autowd-price img{width:13px!important;height:13px!important}
+.autowd-apply-btn{height:50px!important;border-radius:16px!important;margin-top:10px!important;font-size:15px!important}
+@media(max-width:380px){.inv-grid,.autowd-list{gap:7px}.inv-card,.autowd-row{min-height:108px}.inv-card-img-wrap{margin-bottom:0}.modal-sheet{padding-left:12px;padding-right:12px}}
+
+/* BET FLOW FINAL: one gift, clean inventory, CTA at bottom */
+#selectedSummary{display:none!important}
+#invSec{gap:10px!important}
+#invSec .inv-grid{order:1}
+#invSec .bet-deposit-btn{order:3}
+#invSec .auto-cashout-row{order:2}
+#invSec .confirm-gifts-btn{order:4}
+#starsSec + .auto-cashout-row{order:2}
+#starsSec + .auto-cashout-row + .confirm-gifts-btn{order:3}
+.inv-card{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.inv-card:active{transform:scale(.975)!important}
+.autowd-row:active{transform:scale(.975)!important}
+.confirm-gifts-btn,.confirm-bet-btn,.bet-deposit-btn,.autowd-apply-btn{position:relative;overflow:hidden}
+.confirm-gifts-btn::after,.confirm-bet-btn::after,.bet-deposit-btn::after,.autowd-apply-btn::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.12) 50%,transparent 75%);transform:translateX(-120%);animation:ctaShine 3.2s ease-in-out infinite;pointer-events:none}
+@keyframes ctaShine{0%,55%{transform:translateX(-120%)}75%,100%{transform:translateX(120%)}}
+.inv-card-img-wrap img,.autowd-thumb img{animation:giftFloat 3.8s ease-in-out infinite}
+.inv-card:nth-child(2n) .inv-card-img-wrap img,.autowd-row:nth-child(2n) .autowd-thumb img{animation-delay:-1.2s}
+.inv-card:nth-child(3n) .inv-card-img-wrap img,.autowd-row:nth-child(3n) .autowd-thumb img{animation-delay:-2.3s}
+@keyframes giftFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.025)}}
+</style>
+
+<style id="crash-final-v3">
+/* === FINAL V3: lower, cleaner, aligned Crash === */
+.container{padding-top:calc(env(safe-area-inset-top,0px) + 24px)!important;padding-bottom:116px!important}
+.top-bar{padding-top:10px!important;padding-bottom:10px!important}
+.game-field{margin-top:2px!important;min-height:420px!important}
+.history-section{padding-top:10px!important;padding-bottom:12px!important}
+.history-scroll{grid-template-rows:38px!important;min-height:38px!important;gap:9px!important}
+.h-pill,.coeff-box{height:38px!important;min-height:38px!important;min-width:72px!important;border-radius:20px!important;font-size:13px!important}
+.bet-area{padding-top:0!important;padding-bottom:18px!important}
+.action-btn{min-height:56px!important;border-radius:29px!important;font-size:17px!important}
+.bets-section{min-height:245px!important;margin-bottom:18px!important}
+.bottom-nav{bottom:calc(env(safe-area-inset-bottom,0px) + 12px)!important}
+
+/* Settings: compact reference-like sheet */
+.settings-overlay{align-items:flex-end!important;background:rgba(3,5,8,.76)!important;backdrop-filter:blur(10px)!important}
+.settings-modal{width:min(100%,460px)!important;max-height:calc(100vh - 18px)!important;height:auto!important;background:#1c2025!important;border:1px solid #30353d!important;border-bottom:0!important;border-radius:30px 30px 0 0!important;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -20px 70px rgba(0,0,0,.45)!important}
+.settings-handle{margin:10px auto 16px!important;width:44px!important;height:5px!important;background:#30363f!important}
+.settings-topbar{grid-template-columns:1fr auto auto!important;gap:10px!important;margin:0 0 14px!important}
+.settings-title{display:inline-flex!important;align-items:center!important;height:40px!important;padding:0 16px!important;border-radius:21px!important;background:#252a30!important;border:1px solid #30363e!important;font-size:15px!important;font-weight:700!important}
+.settings-mode{height:40px!important;padding:3px!important;border-radius:21px!important;background:#252a30!important;border:1px solid #30363e!important}
+.settings-mode-btn{height:32px!important;padding:0 14px!important;border-radius:17px!important;font-size:13px!important;font-weight:650!important}
+.settings-mode-btn.active{background:#343a42!important;color:#fff!important}
+.settings-sound{width:40px!important;height:40px!important;border-radius:50%!important;background:#252a30!important;border:1px solid #343a42!important;display:flex!important;align-items:center!important;justify-content:center!important}
+.settings-sound svg{width:20px;height:20px;fill:#e8ebef;transition:transform .2s ease,opacity .2s ease}
+.settings-sound.muted svg{opacity:.35;transform:scale(.92)}
+.settings-content{padding:0 0 2px!important}
+.settings-section-label{display:none!important}
+.settings-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+.settings-item{height:112px!important;padding:7px!important;border-radius:16px!important;background:#252a30!important;border:1px solid rgba(255,255,255,.035)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important}
+.settings-item.active{border:2px solid #1683ff!important;background:#252c34!important;box-shadow:0 0 0 2px rgba(22,131,255,.10),0 8px 24px rgba(0,0,0,.18)!important}
+.settings-item img{width:76px!important;height:76px!important;object-fit:contain!important;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28))}
+.settings-bg-options{margin-top:12px!important}
+.bg-choice-row{gap:10px!important;margin-bottom:10px!important}
+.bg-choice{min-height:150px!important;border-radius:16px!important;background:#252a30!important}
+.bg-choice::before{opacity:.9!important}
+.bg-choice::after{background:linear-gradient(180deg,rgba(3,6,14,.05) 25%,rgba(3,6,14,.88) 100%)!important}
+.bg-choice-icon{font-size:38px!important;margin:24px auto 7px!important}
+.bg-choice b{font-size:12px!important}.bg-choice small{font-size:9px!important}
+.settings-gift-toggle.compact{padding:11px 12px!important;border-radius:14px!important;margin-top:8px!important}
+.settings-gift-toggle .lbl{font-size:12px!important}.settings-gift-toggle .desc{font-size:9px!important}
+.settings-close-btn{height:52px!important;border-radius:27px!important;margin-top:12px!important;background:#0a84ff!important;font-size:15px!important}
+
+/* Auto-withdraw: new clean one-gift selector */
+.autowd-overlay{align-items:flex-end!important;background:rgba(3,5,8,.78)!important;backdrop-filter:blur(10px)!important}
+.autowd-modal{width:min(100%,460px)!important;max-width:460px!important;max-height:88vh!important;background:#1c2025!important;border:1px solid #30353d!important;border-bottom:0!important;border-radius:30px 30px 0 0!important;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -20px 70px rgba(0,0,0,.48)!important;transform:translateY(100%)!important}
+.autowd-overlay.show .autowd-modal{transform:translateY(0)!important}
+.autowd-header{padding:10px 0 12px!important;border-bottom:0!important}
+.autowd-header::before{content:"";position:absolute;top:10px;left:50%;transform:translateX(-50%);width:44px;height:5px;border-radius:8px;background:#30363f}
+.autowd-title{padding-top:16px!important;font-size:16px!important}
+.autowd-title img{width:19px!important;height:19px!important}
+.autowd-close{margin-top:14px!important;width:34px!important;height:34px!important;border-radius:50%!important;background:#292e35!important;color:#cbd0d6!important;border:1px solid #343a42!important}
+.autowd-summary{padding:11px 13px!important;border-radius:15px!important;background:#252a30!important;border:1px solid rgba(255,255,255,.045)!important}
+.autowd-summary-row{font-size:11px!important}.autowd-summary-val{font-size:12px!important}.autowd-summary-val.gold{color:#fff!important;font-size:13px!important}
+.autowd-search-wrap{padding:10px 0 8px!important}.autowd-search{height:42px!important;padding:0 13px!important;border-radius:21px!important;background:#252a30!important;border:1px solid #343a42!important;font-size:13px!important}
+.autowd-list{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important;max-height:46vh!important;padding:2px!important}
+.autowd-row{min-height:128px!important;padding:8px!important;border-radius:16px!important;background:#252a30!important;border:1px solid rgba(255,255,255,.04)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important}
+.autowd-row.selected{border:2px solid #1683ff!important;background:#252d36!important;box-shadow:0 0 0 2px rgba(22,131,255,.10),0 10px 25px rgba(0,0,0,.20)!important;transform:translateY(-2px)!important}
+.autowd-thumb{width:82px!important;height:82px!important}
+.autowd-price{font-size:12px!important;color:#f4f6f8!important}
+.autowd-apply-btn{height:54px!important;border-radius:27px!important;margin:12px 0 0!important;background:#0a84ff!important;box-shadow:0 10px 28px rgba(10,132,255,.22)!important;font-size:15px!important}
+
+/* Win/output sheet: same visual language */
+.win-overlay{background:rgba(3,5,8,.55)!important;backdrop-filter:blur(9px)!important;transform:none!important}
+.win-sheet{width:min(100%,460px)!important;background:#1c2025!important;border:1px solid #30353d!important;border-bottom:0!important;border-radius:30px 30px 0 0!important;padding:0 16px calc(18px + env(safe-area-inset-bottom,0px))!important;box-shadow:0 -20px 70px rgba(0,0,0,.45)!important}
+.win-sheet-handle{width:44px!important;height:5px!important;background:#30363f!important;margin:10px auto 18px!important}
+.simple-win-card{padding:0 2px 2px!important}
+.simple-win-title{font-size:11px!important;letter-spacing:.12em!important;color:#858b94!important}
+.simple-win-multiplier{font-size:38px!important;margin-bottom:14px!important}
+.simple-win-gift{width:132px!important;height:132px!important;border-radius:26px!important;background:#252a30!important;border:1px solid #343a42!important;margin-bottom:10px!important}
+.simple-win-gift img{padding:10px!important}
+.simple-win-name{font-size:17px!important}.simple-win-value{font-size:12px!important;color:#8c929b!important}
+.simple-win-stats{margin-top:14px!important}.simple-win-stats>div{padding:10px!important;border-radius:13px!important;background:#252a30!important;border:1px solid rgba(255,255,255,.04)!important}
+.win-collect-btn{height:54px!important;border-radius:27px!important;margin-top:14px!important;background:#0a84ff!important;font-size:15px!important}
+
+/* Cleaner active bet rows */
+.bet-row{min-height:58px!important;align-items:center!important}
+.bet-right-stack{min-width:145px!important;justify-content:flex-end!important}
+.bet-status{min-width:58px!important}.bet-payout{width:82px!important}
+.bet-payout img{width:25px!important;height:25px!important}
+
+@media(max-width:390px){
+ .container{padding-top:calc(env(safe-area-inset-top,0px) + 18px)!important}
+ .game-field{min-height:395px!important}
+ .settings-modal,.autowd-modal,.win-sheet{padding-left:12px!important;padding-right:12px!important}
+ .settings-item{height:102px!important}.settings-item img{width:68px!important;height:68px!important}
+ .bg-choice{min-height:136px!important}.autowd-row{min-height:116px!important}.autowd-thumb{width:70px!important;height:70px!important}
+}
 </style>
 </head>
 <body>
@@ -1153,62 +1411,66 @@ body{font-family:Inter,"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSyst
         <div class="modal-handle"></div>
         <div class="modal-title">Сделать ставку</div>
 
-        <div class="modal-tabs">
-            <button class="modal-tab active" id="tabInv" onclick="switchTab('inv')">
-                <img src="/static/img/gift.png" alt="">Подарки
-            </button>
-            <button class="modal-tab" id="tabStars" onclick="switchTab('stars')">
-                <img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'" alt="GRAM">GRAM
-            </button>
-        </div>
 
-        <div id="invSec">
-            <div class="gift-empty-state" id="giftEmptyState">
-                <div class="gift-empty-copy">
-                    <div class="gift-empty-title">У вас нет подарков</div>
-                    <div class="gift-empty-sub">Чтобы пополнить баланс подарками, нажмите кнопку "Пополнить" ниже.</div>
+        <div class="bet-modal-content">
+            <div class="modal-tabs">
+                <button class="modal-tab active" id="tabInv" onclick="switchTab('inv')">
+                    <img src="/static/img/gift.png" alt="">Подарки
+                </button>
+                <button class="modal-tab" id="tabStars" onclick="switchTab('stars')">
+                    <img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'" alt="GRAM">GRAM
+                </button>
+            </div>
+
+            <div id="invSec">
+                <div class="gift-empty-state" id="giftEmptyState">
+                    <div class="gift-empty-copy">
+                        <div class="gift-empty-title">У вас нет подарков</div>
+                        <div class="gift-empty-sub">Чтобы пополнить баланс подарками, нажмите кнопку «Пополнить» ниже.</div>
+                    </div>
+                </div>
+
+                <div class="selected-summary" id="selectedSummary">
+                    <div class="selected-info">
+                        <div class="selected-count">Выбран подарок</div>
+                        <div class="selected-total"><span id="selectedTotal">0.00</span> <span style="color:#3B82F6;font-size:12px">GRAM</span></div>
+                    </div>
+                    <button class="clear-selected" onclick="clearSelectedGifts()">Сбросить</button>
+                </div>
+
+                <div class="inv-grid" id="invGrid" style="display:none"></div>
+            </div>
+
+            <div id="starsSec" style="display:none">
+                <div class="gram-balance-hint">
+                    <span>Сумма</span><span id="gramModalBalance">balance: 0.00 GRAM</span>
+                </div>
+                <div class="bet-input-wrap">
+                    <input type="number" id="betInput" placeholder="0" min="0.1" step="0.01" inputmode="decimal">
+                    <span class="bet-input-unit">GRAM</span>
                 </div>
             </div>
 
-            <div class="selected-summary" id="selectedSummary">
-                <div class="selected-info">
-                    <div class="selected-count">Выбрано: <span id="selectedCount">0</span> / 3</div>
-                    <div class="selected-total"><span id="selectedTotal">0.00</span> <span style="color:#3B82F6;font-size:12px">GRAM</span></div>
+            <div class="auto-cashout-row">
+                <div class="auto-cashout-left">
+                    <div class="auto-cashout-info">
+                        <div class="auto-cashout-label">Авто вывод</div>
+                    </div>
+                    <button type="button" class="bet-toggle" id="betAutoToggle" onclick="toggleBetAutoWithdraw()" aria-label="Авто вывод"></button>
                 </div>
-                <button class="clear-selected" onclick="clearSelectedGifts()">Очистить</button>
+                <div class="bet-coeff-control">
+                    <button type="button" class="bet-coeff-btn" onclick="changeBetAutoCoeff(-0.1)" aria-label="Уменьшить">−</button>
+                    <span id="betAutoCoeff">x2.0</span>
+                    <button type="button" class="bet-coeff-btn" onclick="changeBetAutoCoeff(0.1)" aria-label="Увеличить">+</button>
+                </div>
             </div>
 
-            <div class="inv-grid" id="invGrid" style="display:none"></div>
-            <button class="confirm-gifts-btn" id="confirmGiftsBtn" onclick="confirmGiftBet()">BET GIFTS</button>
+            <button class="confirm-gifts-btn" id="confirmGiftsBtn" onclick="confirmGiftBet()">Поставить</button>
             <button class="bet-deposit-btn" id="betDepositBtn" onclick="openDepositSelector()" aria-label="Пополнить">
                 <svg class="bet-deposit-icon" viewBox="0 0 300 300" aria-hidden="true"><path d="M206.25 159.375H159.375V206.25C159.375 211.406 155.184 215.625 150 215.625C144.816 215.625 140.625 211.406 140.625 206.25V159.375H93.75C88.5656 159.375 84.375 155.156 84.375 150C84.375 144.844 88.5656 140.625 93.75 140.625H140.625V93.75C140.625 88.5937 144.816 84.375 150 84.375C155.184 84.375 159.375 88.5937 159.375 93.75V140.625H206.25C211.434 140.625 215.625 144.844 215.625 150C215.625 155.156 211.434 159.375 206.25 159.375ZM150 0C67.1531 0 0 67.125 0 150C0 232.875 67.1531 300 150 300C232.847 300 300 232.875 300 150C300 67.125 232.847 0 150 0Z"></path></svg>
                 <span>Пополнить</span>
             </button>
-        </div>
-
-        <div id="starsSec" style="display:none">
-            <div class="gram-balance-hint">
-                Баланс <span id="gramModalBalance">0.00 GRAM</span>
-            </div>
-            <div class="bet-input-wrap">
-                <input type="number" id="betInput" placeholder="Введите GRAM (мин. 0.10)" min="0.1" step="0.01" inputmode="decimal">
-                <span class="bet-input-unit">GRAM</span>
-            </div>
             <button class="confirm-bet-btn" id="confirmBetBtn" onclick="confirmStarsBet()">Сделать ставку</button>
-        </div>
-
-        <div class="auto-cashout-row">
-            <div class="auto-cashout-left">
-                <div class="auto-cashout-info">
-                    <div class="auto-cashout-label">Авто вывод</div>
-                </div>
-                <button type="button" class="bet-toggle" id="betAutoToggle" onclick="toggleBetAutoWithdraw()" aria-label="Авто вывод"></button>
-            </div>
-            <div class="bet-coeff-control">
-                <button type="button" class="bet-coeff-btn" onclick="changeBetAutoCoeff(-0.1)" aria-label="Уменьшить">−</button>
-                <span id="betAutoCoeff">x2.0</span>
-                <button type="button" class="bet-coeff-btn" onclick="changeBetAutoCoeff(0.1)" aria-label="Увеличить">+</button>
-            </div>
         </div>
     </div>
 </div>
@@ -1267,11 +1529,22 @@ body{font-family:Inter,"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSyst
 
 <div class="settings-overlay" id="settingsOverlay">
     <div class="settings-modal">
-        <div style="width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:12px auto 0"></div>
-        <div style="padding:12px 18px 8px">
-            <div style="font-weight:800;font-size:16px;color:#fff">Customization</div>
+        <div class="settings-handle"></div>
+        <div class="settings-topbar">
+            <div class="settings-title">Настройки</div>
+            <div class="settings-mode" role="tablist">
+                <button type="button" class="settings-mode-btn active" id="settingsSkinTab" onclick="switchSettingsMode('skin')">Скин</button>
+                <button type="button" class="settings-mode-btn" id="settingsBgTab" onclick="switchSettingsMode('bg')">Фон</button>
+            </div>
+            <button type="button" class="settings-sound" id="settingsSoundBtn" aria-label="Звук" onclick="toggleCrashSound()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5v5h3l4 3.2V6.3L7 9.5H4Zm10.5-3.2a1 1 0 0 0-1.4 1.4 6.5 6.5 0 0 1 0 8.6 1 1 0 0 0 1.4 1.4 8.5 8.5 0 0 0 0-11.4Zm2.7-2.4a1 1 0 0 0-1.4 1.4 10 10 0 0 1 0 14.2 1 1 0 0 0 1.4 1.4 12 12 0 0 0 0-17Z"/></svg></button>
         </div>
         <div class="settings-content">
+<div class="settings-pane" id="settingsSkinPane">
+  <div class="settings-section-label">Скины ракеты</div>
+  <div class="settings-grid" id="rocketGrid"></div>
+</div>
+<div class="settings-pane hidden" id="settingsBgPane">
+  <div class="settings-section-label">Фон игры</div>
 <div class="bg-choice-row">
   <button class="bg-choice graph-preview" id="bgGraphBtn" onclick="selectCrashBackground('graph')">
     <span class="bg-choice-icon graph-icon">╱</span><span><b>График</b><small>Неон + сетка</small></span>
@@ -1280,28 +1553,19 @@ body{font-family:Inter,"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSyst
     <span class="bg-choice-icon space-icon">✦</span><span><b>Космос</b><small>Звёзды + туманность</small></span>
   </button>
 </div>
-<div class="optim-row">
-  <div class="optim-head"><div class="optim-title">Оптимизация</div><div class="optim-value" id="optimValue">Баланс</div></div>
-  <input class="optim-range" id="optimRange" type="range" min="0" max="2" step="1" value="1" oninput="setCrashOptimization(this.value)">
+  <div class="settings-bg-options">
+    <div class="settings-gift-toggle compact">
+      <div class="toggle-info"><div class="lbl">Показывать подарки</div><div class="desc">Подарок вместо ракеты при достижимом выигрыше</div></div>
+      <div class="toggle-switch on" id="showGiftsToggle" onclick="toggleShowGiftsClick()"></div>
+    </div>
+    <div class="settings-gift-toggle compact">
+      <div class="toggle-info"><div class="lbl">Предохранитель автовывода</div><div class="desc">Сохранять автовывод после перезагрузки</div></div>
+      <div class="toggle-switch on" id="autoWithdrawGuardToggle" onclick="toggleAutoWithdrawGuardClick()"></div>
+    </div>
+  </div>
 </div>
-
-            <div class="settings-gift-toggle">
-                <div class="toggle-info">
-                    <div class="lbl">Показывать подарки</div>
-                    <div class="desc">Вместо ракеты — подарок при достижимом выигрыше</div>
-                </div>
-                <div class="toggle-switch on" id="showGiftsToggle" onclick="toggleShowGiftsClick()"></div>
-            </div>
-            <div class="settings-gift-toggle">
-                <div class="toggle-info">
-                    <div class="lbl">Предохранитель автовывода</div>
-                    <div class="desc">Сохранять автовывод после перезагрузки</div>
-                </div>
-                <div class="toggle-switch on" id="autoWithdrawGuardToggle" onclick="toggleAutoWithdrawGuardClick()"></div>
-            </div>
-            <div class="settings-grid" id="rocketGrid"></div>
         </div>
-        <button onclick="closeSettings()" style="margin:0 18px 18px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#1e3a6e,#6B7A8D);color:#fff;font-size:15px;font-weight:700;cursor:pointer">close</button>
+        <button class="settings-close-btn" onclick="closeSettings()">close</button>
     </div>
 </div>
 
@@ -1369,7 +1633,7 @@ var lastBetsHash = '';
 var betsGeneration = 0;
 var inventoryItems = [];
 var selectedGifts = [];
-var MAX_GIFTS = 3;
+var MAX_GIFTS = 1;
 var NON_BETTABLE_GIFT_IDS = [110, 111];
 
 var currentRocket = localStorage.getItem('crash_rocket') || 'crash';
@@ -2538,7 +2802,7 @@ async function processPendingBet(){
             updateActionButton();
             return;
         }
-        var url = giftIds.length === 1 ? '/api/ultimate-crash/place-bet-gift' : '/api/ultimate-crash/place-bet-multi-gift';
+        var url = (bet.type === 'gift' || giftIds.length === 1) ? '/api/ultimate-crash/place-bet-gift' : '/api/ultimate-crash/place-bet-multi-gift';
         var body = giftIds.length === 1
             ? { user_id: userData.id, inventory_id: giftIds[0] }
             : { user_id: userData.id, inventory_ids: giftIds };
@@ -2606,7 +2870,7 @@ async function loadInventoryForBet(){
             return;
         }
         if(emptyState) emptyState.style.display = 'none';
-        if(depositBtn) depositBtn.style.display = 'none';
+        if(depositBtn) depositBtn.style.display = 'block';
         if(invGrid) invGrid.style.display = 'grid';
         grid.innerHTML = inventoryItems.map(function(i){
             var isSel = selectedGifts.some(function(g){ return g.id === i.id; });
@@ -2633,46 +2897,32 @@ function escapeHtmlCrash(s){
 function toggleGiftSelection(id){
     var item = inventoryItems.find(function(i){ return i.id === id; });
     if(!item) return;
-    var idx = selectedGifts.findIndex(function(g){ return g.id === id; });
-    if(idx >= 0){ selectedGifts.splice(idx, 1); }
-    else {
-        if(selectedGifts.length >= MAX_GIFTS){ showToast('Максимум ' + MAX_GIFTS, 'err'); return; }
-        selectedGifts.push({ id: item.id, name: item.gift_name, value: item.gift_value, image: item.gift_image });
-    }
+    var already = selectedGifts.length && selectedGifts[0].id === id;
+    selectedGifts = already ? [] : [{ id:item.id, name:item.gift_name, value:item.gift_value, image:item.gift_image }];
     var cards = document.querySelectorAll('.inv-card');
     for(var i = 0; i < cards.length; i++){
-        var cid = parseInt(cards[i].dataset.id);
-        var isSel = selectedGifts.some(function(g){ return g.id === cid; });
-        cards[i].classList.toggle('selected', isSel);
+        cards[i].classList.toggle('selected', Number(cards[i].dataset.id) === id && !already);
     }
     updateSelectedSummary();
 }
 
 function clearSelectedGifts(){
     selectedGifts = [];
-    var cards = document.querySelectorAll('.inv-card');
-    for(var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
+    document.querySelectorAll('.inv-card.selected').forEach(function(c){ c.classList.remove('selected'); });
     updateSelectedSummary();
 }
 
 function updateSelectedSummary(){
     var sum = $('selectedSummary');
-    var cnt = $('selectedCount');
     var tot = $('selectedTotal');
     var btn = $('confirmGiftsBtn');
     var count = selectedGifts.length;
-    var total = selectedGifts.reduce(function(s, g){ return s + g.value; }, 0);
-    if(cnt) cnt.textContent = count;
+    var total = count ? selectedGifts[0].value : 0;
     if(tot) tot.textContent = (total / 100).toFixed(2);
-    if(count > 0){
-        if(sum) sum.classList.add('show');
-        if(btn){
-            btn.classList.add('show');
-            btn.textContent = 'BET ' + count + ' GIFTS (' + (total / 100).toFixed(2) + ' GRAM)';
-        }
-    } else {
-        if(sum) sum.classList.remove('show');
-        if(btn) btn.classList.remove('show');
+    if(sum) sum.classList.toggle('show', count > 0);
+    if(btn){
+        btn.classList.toggle('show', count > 0);
+        btn.textContent = 'Поставить';
     }
 }
 
@@ -2683,81 +2933,45 @@ async function confirmGiftBet(){
     if(_giftLocked) return;
     if(!selectedGifts.length){ showToast('Выберите подарок', 'err'); return; }
     if(!userData || !userData.id) return;
-
     _giftLocked = true;
-    var sGifts = selectedGifts.slice();
-    var totalValue = sGifts.reduce(function(s, g){ return s + g.value; }, 0);
-    var giftIds = sGifts.map(function(g){ return g.id; });
-    var firstImg = sGifts[0] ? sGifts[0].image : null;
+    var gift = selectedGifts[0];
+    var totalValue = Number(gift.value || 0);
+    var giftId = gift.id;
+    var firstImg = gift.image || null;
 
-    if(status === 'flying'){
-        pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
-        closeBetModal();
-        clearSelectedGifts();
-        showToast('Подарки на след. раунд', 'ok');
-        updateActionButton();
-        _giftLocked = false;
-        return;
+    if(status === 'flying' || (status === 'counting' && countingStartedAt > 0 && ((countingDuration - (performance.now()-countingStartedAt)/1000) <= 0.6))){
+        pendingBet = { type:'gift', amount:totalValue, inventoryIds:[giftId], giftImage:firstImg };
+        closeBetModal(); clearSelectedGifts(); updateActionButton();
+        showToast('Подарок на следующий раунд', 'ok');
+        _giftLocked = false; return;
     }
 
-    if(status === 'counting' && countingStartedAt > 0){
-        var elapsed = (performance.now() - countingStartedAt) / 1000;
-        var remaining = countingDuration - elapsed;
-        if(remaining <= 0.6){
-            pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
-            closeBetModal();
-            clearSelectedGifts();
-            showToast('Поздно! Подарки на след. раунд', 'ok');
-            updateActionButton();
-            _giftLocked = false;
-            return;
-        }
-    }
-
-    hasBet = true;
-    betAmt = totalValue;
-    betGiftImg = firstImg;
-    betGiftData = sGifts;
-    closeBetModal();
-    clearSelectedGifts();
-    updateActionButton();
-    showToast('Ставка ' + sGifts.length + ' подарков', 'ok');
-
+    hasBet = true; betAmt = totalValue; betGiftImg = firstImg; betGiftData = [gift];
+    closeBetModal(); clearSelectedGifts(); updateActionButton();
+    showToast('Ставка сделана', 'ok');
     var ac = new AbortController();
     var tId = setTimeout(function(){ ac.abort(); }, 5000);
-
     try{
-        var url = sGifts.length === 1 ? '/api/ultimate-crash/place-bet-gift' : '/api/ultimate-crash/place-bet-multi-gift';
-        var body = sGifts.length === 1
-            ? { user_id: userData.id, inventory_id: sGifts[0].id }
-            : { user_id: userData.id, inventory_ids: giftIds };
-        var r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ac.signal });
+        var r = await fetch('/api/ultimate-crash/place-bet-gift', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:userData.id, inventory_id:giftId}), signal:ac.signal
+        });
         clearTimeout(tId);
         var d = await r.json();
-        if(d.success){
-            betAmt = d.bet_amount || totalValue;
-            loadBets();
-        } else {
-            hasBet = false;
-            betAmt = 0;
-            var err = (d.error || '').toLowerCase();
-            if(err.indexOf('late') !== -1 || err.indexOf('начал') !== -1 || err.indexOf('2 сек') !== -1){
-                pendingBet = { type: 'multi', amount: totalValue, inventoryIds: giftIds, giftImage: firstImg };
-                showToast('Подарки на след. раунд', 'ok');
-            } else {
-                showToast(d.error || 'Ошибка', 'err');
-            }
+        if(d.success){ betAmt = d.bet_amount || totalValue; loadBets(); }
+        else{
+            hasBet=false; betAmt=0;
+            var err=String(d.error||'').toLowerCase();
+            if(err.indexOf('late')!==-1 || err.indexOf('начал')!==-1 || err.indexOf('2 сек')!==-1){
+                pendingBet={type:'gift',amount:totalValue,inventoryIds:[giftId],giftImage:firstImg};
+                showToast('Подарок на следующий раунд','ok');
+            } else showToast(d.error||'Ошибка','err');
             updateActionButton();
         }
     }catch(e){
-        clearTimeout(tId);
-        hasBet = false;
-        betAmt = 0;
-        showToast('Ошибка сети', 'err');
-        updateActionButton();
-    }finally{
-        _giftLocked = false;
-    }
+        clearTimeout(tId); hasBet=false; betAmt=0;
+        showToast('Ошибка сети','err'); updateActionButton();
+    }finally{ _giftLocked=false; }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -3035,7 +3249,7 @@ async function loadHistory(){
             var p = document.createElement('div');
             var c = 'low';
             if(isB) c = 'bonus';
-            else if(m >= 5) c = 'mega';
+            else if(m >= 10) c = 'mega';
             else if(m >= 3) c = 'high';
             else if(m >= 1.5) c = 'mid';
             p.className = 'h-pill ' + c;
@@ -3179,7 +3393,7 @@ function updateAutoWithdrawApply(){
     var coeff = _autowdBet > 0 ? (val / _autowdBet).toFixed(2) : '?';
     var img = getGiftImage(_autowdSelected);
     btn.disabled = false;
-    btn.innerHTML = 'Автовывод <img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"> <span style="background:rgba(255,255,255,.2);padding:2px 8px;border-radius:8px;font-size:12px;font-weight:800">x' + coeff + '</span>';
+    btn.innerHTML = '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"> <span>Выбрать подарок</span>';
 }
 function applyAutoWithdraw(){
     if(!_autowdSelected) return;
@@ -3271,10 +3485,22 @@ function setCrashScenePhase(phase){
   else if(phase==='counting') gf.classList.add('scene-counting');
   else if(phase==='crash') gf.classList.add('scene-crash');
 }
-function selectCrashBackground(kind){crashBackground=kind==='space'?'space':'graph';localStorage.setItem('crash_background',crashBackground);applyCrashBackground();}
+function selectCrashBackground(kind){crashBackground=kind==='space'?'space':'graph';localStorage.setItem('crash_background',crashBackground);var g=$('bgGraphBtn'),sp=$('bgSpaceBtn');if(g)g.classList.toggle('active',crashBackground==='graph');if(sp)sp.classList.toggle('active',crashBackground==='space');applyCrashBackground();}
 function setCrashOptimization(v){crashOptimization=Number(v);localStorage.setItem('crash_optimization',String(crashOptimization));var labels=['Производительность','Баланс','Качество'];var el=$('optimValue');if(el)el.textContent=labels[crashOptimization]||labels[1];}
-function syncCrashVisualSettings(){applyCrashBackground();var r=$('optimRange');if(r)r.value=String(crashOptimization);setCrashOptimization(crashOptimization);}
+function syncCrashVisualSettings(){selectCrashBackground(crashBackground);var r=$('optimRange');if(r)r.value=String(crashOptimization);setCrashOptimization(crashOptimization);}
+function switchSettingsMode(mode){
+    var skin=$('settingsSkinPane'), bg=$('settingsBgPane');
+    var st=$('settingsSkinTab'), bt=$('settingsBgTab');
+    var isSkin=mode==='skin';
+    if(skin) skin.classList.toggle('hidden',!isSkin);
+    if(bg) bg.classList.toggle('hidden',isSkin);
+    if(st) st.classList.toggle('active',isSkin);
+    if(bt) bt.classList.toggle('active',!isSkin);
+    try{localStorage.setItem('crash_settings_mode',isSkin?'skin':'bg')}catch(e){}
+}
+
 function openSettings(){
+    try{switchSettingsMode(localStorage.getItem('crash_settings_mode')||'skin')}catch(e){switchSettingsMode('skin')}
     syncCrashVisualSettings();
     var so = $('settingsOverlay');
     if(so) so.classList.add('show');
@@ -3451,7 +3677,7 @@ document.addEventListener('DOMContentLoaded', function(){
         <span>Кейсы</span>
     </a>
 
-    <a class="bottom-nav-item" href="/rewards" data-nav="/rewards">
+    <a class="bottom-nav-item" href="/rewards" data-nav="/rewards" onclick="window.location.href='/rewards'; return false;">
         <svg viewBox="0 0 24 24" aria-hidden="true">
             <path fill-rule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3.071.543a.75.75 0 0 0-.584.859 6.753 6.753 0 0 0 6.138 5.6 6.73 6.73 0 0 0 2.743 1.346A6.707 6.707 0 0 1 9.279 15H8.54c-1.036 0-1.875.84-1.875 1.875V19.5h-.75a2.25 2.25 0 0 0-2.25 2.25c0 .414.336.75.75.75h15a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-2.25-2.25h-.75v-2.625c0-1.036-.84-1.875-1.875-1.875h-.739a6.706 6.706 0 0 1-1.112-3.173 6.73 6.73 0 0 0 2.743-1.347 6.753 6.753 0 0 0 6.139-5.6.75.75 0 0 0-.585-.858 47.077 47.077 0 0 0-3.07-.543V2.62a.75.75 0 0 0-.658-.744 49.22 49.22 0 0 0-6.093-.377c-2.063 0-4.096.128-6.093.377a.75.75 0 0 0-.657.744Zm0 2.629c0 1.196.312 2.32.857 3.294A5.266 5.266 0 0 1 3.16 5.337a45.6 45.6 0 0 1 2.006-.343v.256Zm13.5 0v-.256c.674.1 1.343.214 2.006.343a5.265 5.265 0 0 1-2.863 3.207 6.72 6.72 0 0 0 .857-3.294Z" clip-rule="evenodd"></path>
         </svg>
@@ -3484,5 +3710,24 @@ document.addEventListener('DOMContentLoaded', function(){
 })();
 </script>
 
+
+<script id="crash-final-v3-js">
+(function(){
+  window.toggleCrashSound=function(){
+    var b=document.getElementById('settingsSoundBtn');
+    if(!b)return;
+    var muted=b.classList.toggle('muted');
+    try{localStorage.setItem('crash_sound',muted?'off':'on')}catch(e){}
+    showToast(muted?'Звук выключен':'Звук включён','ok');
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    try{
+      if(localStorage.getItem('crash_sound')==='off'){
+        var b=document.getElementById('settingsSoundBtn');if(b)b.classList.add('muted');
+      }
+    }catch(e){}
+  });
+})();
+</script>
 </body>
 </html>
