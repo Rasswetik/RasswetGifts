@@ -1225,6 +1225,40 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
 @keyframes inventoryFadeOut{from{opacity:1}to{opacity:0}}
 .bottom-nav{position:fixed!important;left:50%!important;bottom:calc(10px + var(--safe-bottom,0px))!important;top:auto!important;transform:translate3d(-50%,0,0)!important;z-index:100000!important;will-change:transform;}
 .page{padding-bottom:calc(92px + var(--safe-bottom,0px) + 82px)!important;}
+
+/* REWARDS BOTTOM SHEET */
+.rewards-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(4,7,10,.82);backdrop-filter:blur(16px);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,Roboto,Arial,sans-serif}
+.rewards-overlay.show{opacity:1;visibility:visible;pointer-events:auto}
+.rewards-sheet{width:100%;max-width:480px;max-height:min(89vh,790px);background:linear-gradient(180deg,#20262d 0%,#181d22 52%,#14191e 100%);border:1px solid rgba(255,255,255,.10);border-bottom:0;border-radius:29px 29px 0 0;box-shadow:0 -26px 80px rgba(0,0,0,.68),0 0 0 1px rgba(0,0,0,.22);display:flex;flex-direction:column;overflow:hidden;transform:translate3d(0,100%,0);transition:transform .38s cubic-bezier(.22,1,.36,1);will-change:transform;position:relative}
+.rewards-overlay.show .rewards-sheet{transform:translate3d(0,0,0)}
+.rewards-handle{width:48px;height:5px;border-radius:99px;background:#343d47;margin:15px auto 12px;flex-shrink:0}
+.rewards-head{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:0 16px 15px;flex-shrink:0}
+.rewards-title{font-size:20px;font-weight:850;letter-spacing:-.55px;line-height:1.1;color:#fff}
+.rewards-user-level{font-size:11px;font-weight:800;color:rgba(255,255,255,.78);background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.075);padding:9px 11px;border-radius:12px;white-space:nowrap;letter-spacing:-.1px}
+.rewards-close{width:34px;height:34px;border:0;border-radius:12px;background:rgba(255,255,255,.055);color:rgba(255,255,255,.72);font-size:19px;font-weight:500;line-height:1;cursor:pointer}
+.rewards-scroll{overflow:auto;padding:0 14px calc(18px + var(--safe-bottom,0px));-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.rewards-scroll::-webkit-scrollbar{display:none}
+.rewards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.reward-level-card{position:relative;min-width:0;background:linear-gradient(145deg,#252b32,#1d2329);border:1px solid rgba(255,255,255,.075);border-radius:17px;padding:8px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.20)}
+.reward-level-card.available{border-color:rgba(22,135,248,.42);box-shadow:0 0 0 1px rgba(22,135,248,.08),0 8px 22px rgba(0,0,0,.18)}
+.reward-level-card.claimed{opacity:.62}
+.reward-level-card.locked{opacity:.72}
+.reward-level-badge{position:absolute;left:8px;top:8px;z-index:2;background:#12171c;color:#fff;border:1px solid rgba(255,255,255,.075);border-radius:8px;padding:4px 7px;font-size:9.5px;font-weight:850;line-height:1;letter-spacing:-.1px;box-shadow:0 3px 8px rgba(0,0,0,.22)}
+.reward-level-grid{display:grid;grid-template-columns:1fr;gap:7px;margin-top:22px}
+.reward-cell,.reward-empty-cell{min-width:0;aspect-ratio:1/1;border-radius:13px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018));border:1px solid rgba(255,255,255,.045);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.reward-cell img{width:78%;height:78%;object-fit:contain;display:block;filter:drop-shadow(0 10px 18px rgba(0,0,0,.28))}
+.reward-cell-empty{display:none;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;font-size:9px;color:rgba(255,255,255,.28);padding:7px}
+.reward-cell-title{position:absolute;left:4px;right:4px;bottom:4px;background:rgba(10,13,17,.72);border-radius:7px;padding:4px 3px;color:#fff;font-size:8px;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reward-cell-text{flex-direction:column;gap:5px;padding:7px;text-align:center}
+.reward-cell-icon{font-size:25px;line-height:1}
+.reward-cell-text .reward-cell-title{position:static;background:none;font-size:8px;padding:0}
+.reward-empty-cell{font-size:9px;font-weight:700;color:rgba(255,255,255,.24);text-align:center;line-height:1.25;padding:7px}
+.reward-claim-btn{width:100%;height:30px;margin-top:8px;border:0;border-radius:9px;background:#1687f8;color:#fff;font-family:inherit;font-size:10px;font-weight:900;box-shadow:0 6px 16px rgba(22,135,248,.18)}
+.reward-claim-btn:disabled{opacity:.6}
+.reward-claimed,.reward-locked{margin-top:8px;text-align:center;font-size:8px;font-weight:800;color:rgba(255,255,255,.32);min-height:30px;display:flex;align-items:center;justify-content:center}
+.reward-claimed{color:#70b9ff}
+.rewards-loading{grid-column:1/-1;text-align:center;padding:46px 10px;color:rgba(255,255,255,.42);font-size:12px;font-weight:700;letter-spacing:-.1px}
+@media(max-width:380px){.rewards-grid{gap:8px}.reward-level-card{padding:7px}.reward-level-badge{left:6px;top:6px;font-size:9px}.reward-cell-title{font-size:7px}.rewards-head{padding-left:14px;padding-right:14px}}
 </style>
 </head>
 <body>
@@ -1304,6 +1338,22 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
   </div>
 </div>
 
+</div>
+
+
+<!-- ═══ REWARDS SHEET ═══ -->
+<div class="rewards-overlay" id="rewardsOverlay" onclick="if(event.target===this)closeRewardsSheet()">
+  <div class="rewards-sheet" onclick="event.stopPropagation()">
+    <div class="rewards-handle"></div>
+    <div class="rewards-head">
+      <div class="rewards-title">Награды</div>
+      <div class="rewards-user-level" id="rewardsUserLevel">Ваш уровень: 1 lvl</div>
+      <button class="rewards-close" type="button" onclick="closeRewardsSheet()">×</button>
+    </div>
+    <div class="rewards-scroll">
+      <div class="rewards-grid" id="rewardsGrid"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ ITEM SHEET ═══ -->
@@ -1581,10 +1631,110 @@ async function initUser(){
 
 /* REWARDS */
 function openRewardsPage(){
-    if(user && user.id){
-        window.location.href='/rewards?user_id='+encodeURIComponent(user.id);
-    }else{
-        window.location.href='/rewards';
+    vibrateIfOn();
+    var ov = $('rewardsOverlay');
+    if(!ov) return;
+    ov.classList.add('show');
+    loadRewardsSheet();
+}
+function closeRewardsSheet(){
+    var ov = $('rewardsOverlay');
+    if(ov) ov.classList.remove('show');
+}
+
+async function loadRewardsSheet(){
+    var grid = $('rewardsGrid');
+    var levelLabel = $('rewardsUserLevel');
+    if(!grid) return;
+    var current = Number(user && user.current_level || 1);
+    if(levelLabel) levelLabel.textContent = 'Ваш уровень: ' + current + ' lvl';
+    grid.innerHTML = '<div class="rewards-loading">Загружаем награды…</div>';
+    try{
+        var levelsReq = await fetch('/api/crash/levels');
+        var levelsData = await levelsReq.json();
+        var rewardReq = user && user.id ? await fetch('/api/rewards/info/' + encodeURIComponent(user.id)) : null;
+        var rewardData = rewardReq ? await rewardReq.json() : {success:true,level_rewards:[]};
+        var allLevels = (levelsData && levelsData.success && Array.isArray(levelsData.levels)) ? levelsData.levels : [];
+        var configured = (rewardData && rewardData.success && Array.isArray(rewardData.level_rewards)) ? rewardData.level_rewards : [];
+        var byLevel = {};
+        configured.forEach(function(x){ byLevel[Number(x.level)] = x; });
+        if(!allLevels.length){
+            var max = 15;
+            for(var i=1;i<=max;i++) allLevels.push({level:i});
+        }
+        grid.innerHTML = allLevels.map(function(lvl){
+            var n = Number(lvl.level || 0);
+            var info = byLevel[n];
+            var rewards = info && Array.isArray(info.rewards) ? info.rewards : [];
+            var available = current >= n && rewards.length > 0 && !(info && info.claimed);
+            var claimed = !!(info && info.claimed);
+            var locked = current < n;
+            var cls = 'reward-level-card' + (available ? ' available' : '') + (claimed ? ' claimed' : '') + (locked ? ' locked' : '');
+            var body = '';
+            if(rewards.length){
+                body = rewards.map(function(r){ return rewardTileHtml(r); }).join('');
+            }else{
+                body = '<div class="reward-empty-cell"><span>Награда<br>не установлена</span></div>';
+            }
+            var action = '';
+            if(rewards.length && available){
+                action = '<button type="button" class="reward-claim-btn" onclick="claimLevelReward('+n+',event)">Забрать</button>';
+            }else if(claimed){
+                action = '<div class="reward-claimed">Получено</div>';
+            }else if(locked){
+                action = '<div class="reward-locked">Открывается на '+n+' lvl</div>';
+            }
+            return '<div class="'+cls+'">'
+                + '<div class="reward-level-badge">'+n+' lvl</div>'
+                + '<div class="reward-level-grid">'+body+'</div>'
+                + action
+                + '</div>';
+        }).join('');
+    }catch(e){
+        console.error('loadRewardsSheet:', e);
+        grid.innerHTML = '<div class="rewards-loading">Не удалось загрузить награды</div>';
+    }
+}
+
+function rewardTileHtml(r){
+    var d = r && r.data ? r.data : {};
+    var type = String(r && r.type || '').toLowerCase();
+    var img = d.image || d.gif || d.image_url || d.photo || d.icon || d.reward_image || '';
+    if(!img && type === 'rocket' && (d.item_id || d.rocket_id || d.id)) img = '/static/gifs/rockets/' + encodeURIComponent(d.item_id || d.rocket_id || d.id) + '.gif';
+    if(!img && type === 'crate' && (d.image || d.crate_image)) img = d.image || d.crate_image;
+    var title = r.description || d.name || d.title || rewardTypeName(type);
+    if(img){
+        return '<div class="reward-cell"><img src="'+escapeHtml(img)+'" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="reward-cell-empty">'+escapeHtml(title)+'</div><div class="reward-cell-title">'+escapeHtml(title)+'</div></div>';
+    }
+    return '<div class="reward-cell reward-cell-text"><div class="reward-cell-icon">'+escapeHtml(rewardTypeIcon(type))+'</div><div class="reward-cell-title">'+escapeHtml(title)+'</div></div>';
+}
+function rewardTypeName(type){
+    var m={stars:'Звёзды',star:'Звёзды',balance_stars:'Звёзды',tickets:'Билеты',ticket:'Билеты',rocket:'Ракета',crate:'Кейс',gift:'Подарок',background:'Фон',skin:'Скин',experience:'Опыт'};
+    return m[type] || 'Награда';
+}
+function rewardTypeIcon(type){
+    var m={stars:'⭐',star:'⭐',balance_stars:'⭐',tickets:'🎫',ticket:'🎫',rocket:'🚀',crate:'🎁',gift:'🎁',background:'🖼️',skin:'🎨',experience:'XP'};
+    return m[type] || '🎁';
+}
+async function claimLevelReward(level, ev){
+    if(ev){ ev.stopPropagation(); }
+    if(!user || !user.id) return;
+    var btn = ev && ev.currentTarget;
+    if(btn){ btn.disabled=true; btn.textContent='Получаем…'; }
+    try{
+        var r = await fetch('/api/rewards/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,reward_type:'level',reward_id:level})});
+        var d = await r.json();
+        if(d.success){
+            showNotif(d.message || 'Награда получена!');
+            await refreshUserData();
+            await loadRewardsSheet();
+        }else{
+            showNotif(d.error || 'Не удалось получить награду', true);
+            if(btn){ btn.disabled=false; btn.textContent='Забрать'; }
+        }
+    }catch(e){
+        showNotif('Ошибка сети', true);
+        if(btn){ btn.disabled=false; btn.textContent='Забрать'; }
     }
 }
 
