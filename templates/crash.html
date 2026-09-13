@@ -115,6 +115,25 @@ body{
 @keyframes spaceNebulaDrift{0%{background-position:0 0,0 0,0 0;transform:translate3d(-1%,1%,0) scale(1)}100%{background-position:6% -4%,-5% 5%,3% 4%;transform:translate3d(1%,-1%,0) scale(1.08)}}
 @keyframes starDrift{from{background-position:0 0,0 0,0 0}to{background-position:176px 176px,-237px -137px,190px -190px}}
 @keyframes starPulse{0%{opacity:.28}100%{opacity:.58}}
+.crash-chart{position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;overflow:visible;opacity:0;transition:opacity .25s ease}
+.crash-chart .chart-gridline{stroke:rgba(120,190,255,.08);stroke-width:.7;vector-effect:non-scaling-stroke}
+.crash-chart .chart-area{fill:url(#chartAreaGrad);opacity:.20;transition:opacity .25s ease}
+.crash-chart .chart-shadow{fill:none;stroke:rgba(74,171,255,.18);stroke-width:10;stroke-linecap:round;stroke-linejoin:round;filter:blur(7px);vector-effect:non-scaling-stroke}
+.crash-chart .chart-line{fill:none;stroke:url(#chartLineGrad);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 8px rgba(70,180,255,.72));vector-effect:non-scaling-stroke}
+.crash-chart .chart-dot{fill:#B9E8FF;stroke:#2E9FFF;stroke-width:2;filter:drop-shadow(0 0 8px rgba(87,185,255,.95));vector-effect:non-scaling-stroke}
+.crash-chart.chart-counting{opacity:.10}
+.crash-chart.chart-flying{opacity:1}
+.crash-chart.chart-crash{opacity:1}
+.crash-chart.chart-hot .chart-line{stroke-width:4.5;filter:drop-shadow(0 0 10px rgba(100,205,255,.95)) drop-shadow(0 0 24px rgba(76,133,255,.55))}
+.crash-chart.chart-hot .chart-shadow{stroke-width:16;opacity:.75}
+.crash-chart.chart-hot .chart-area{opacity:.34}
+.crash-chart.chart-hard .chart-line{animation:chartHardShake .11s linear infinite alternate,chartHardPulse .55s ease-in-out infinite alternate}
+.crash-chart.chart-hard .chart-shadow{animation:chartHardGlow .42s ease-in-out infinite alternate}
+.crash-chart.chart-hard .chart-dot{animation:chartHardDot .22s ease-in-out infinite alternate}
+@keyframes chartHardShake{0%{transform:translate(0,0)}25%{transform:translate(-.7px,1px)}50%{transform:translate(1px,-.8px)}75%{transform:translate(-1px,-.5px)}100%{transform:translate(.8px,.7px)}}
+@keyframes chartHardPulse{0%{filter:drop-shadow(0 0 8px rgba(100,205,255,.85))}100%{filter:drop-shadow(0 0 15px rgba(115,218,255,1)) drop-shadow(0 0 30px rgba(76,133,255,.75))}}
+@keyframes chartHardGlow{0%{opacity:.60;transform:scale(1)}100%{opacity:1;transform:scale(1.015)}}
+@keyframes chartHardDot{0%{transform:scale(.95)}100%{transform:scale(1.25)}}
 .game-field.scene-flying{filter:saturate(1.08)}
 .game-field.scene-crash{animation:sceneCrashFlash .58s ease-out both}
 @keyframes sceneCrashFlash{0%{filter:brightness(1)}12%{filter:brightness(1.9) saturate(1.35)}32%{filter:brightness(.72) saturate(.9)}100%{filter:brightness(1)}}
@@ -642,6 +661,29 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
     </div>
 
     <div class="game-field" id="gameField">
+        <svg class="crash-chart" id="crashChart" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+                <linearGradient id="chartLineGrad" x1="0" y1="1" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#43B8FF"/>
+                    <stop offset="65%" stop-color="#68D6FF"/>
+                    <stop offset="100%" stop-color="#C9F5FF"/>
+                </linearGradient>
+                <linearGradient id="chartAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#3DB6FF" stop-opacity=".40"/>
+                    <stop offset="100%" stop-color="#276CFF" stop-opacity="0"/>
+                </linearGradient>
+            </defs>
+            <g class="chart-guides">
+                <line class="chart-gridline" x1="0" y1="80" x2="100" y2="80"/>
+                <line class="chart-gridline" x1="0" y1="60" x2="100" y2="60"/>
+                <line class="chart-gridline" x1="0" y1="40" x2="100" y2="40"/>
+                <line class="chart-gridline" x1="0" y1="20" x2="100" y2="20"/>
+            </g>
+            <path id="chartArea" class="chart-area" d="M 4 92 L 4 92 L 100 92 L 100 92 Z"/>
+            <polyline id="chartShadow" class="chart-shadow" points="4,92 12,90 18,91 24,83 30,85 37,76 44,78 50,68 57,63 64,66 70,54 77,48 84,40 91,28 100,16"/>
+            <polyline id="chartLine" class="chart-line" points="4,92 12,90 18,91 24,83 30,85 37,76 44,78 50,68 57,63 64,66 70,54 77,48 84,40 91,28 100,16"/>
+            <circle id="chartDot" class="chart-dot" cx="4" cy="92" r="1.45"/>
+        </svg>
         <div class="bonus-badge" id="bonusBadge">🏆 BONUS ROUND 🏆</div>
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="rocket-wrap hide" id="rocketWrap">
@@ -860,6 +902,8 @@ var lastCountdownAt = 0;
 var _lastCoeffUpdate = 0;
 var _lastBtnUpdate = 0;
 var _lastRocketUpdate = 0;
+var _lastChartUpdate = 0;
+var _chartHardActive = false;
 
 var lastBetsHash = '';
 var betsGeneration = 0;
@@ -1202,7 +1246,7 @@ function _getBetGiftCandidates(potentialStars){
     return eligible.slice(Math.max(0, eligible.length - 6));
 }
 
-function _setBetPayout(el, gift, potentialStars){
+function _setBetPayout(el, gift, potentialStars, forceKey){
     if(!el) return;
     var img = el.querySelector('img');
     var span = el.querySelector('span');
@@ -1210,7 +1254,7 @@ function _setBetPayout(el, gift, potentialStars){
 
     var src = gift ? getGiftImage(gift) : '/static/img/gram.png';
     var valueText = gift ? formatCrashMoney(gift.value) : formatCrashMoney(potentialStars);
-    var key = (gift ? String(gift.id || gift.gift_key || gift.fragment_slug || gift.image || '') : 'gram') + '|' + valueText;
+    var key = forceKey || ((gift ? String(gift.id || gift.gift_key || gift.fragment_slug || gift.image || '') : 'gram') + '|' + valueText);
     if(el.dataset.payoutKey === key) return;
 
     el.dataset.payoutKey = key;
@@ -1220,48 +1264,69 @@ function _setBetPayout(el, gift, potentialStars){
     span.textContent = valueText;
 }
 
+function _getStoredWinGift(row){
+    try{
+        var raw = row && row.dataset ? row.dataset.winGiftData : '';
+        if(!raw) return null;
+        var arr = JSON.parse(decodeURIComponent(raw));
+        if(Array.isArray(arr) && arr.length) return arr[0];
+    }catch(e){}
+    return null;
+}
+
 function updateBetGiftTicker(force){
     var list = $('betsList');
-    if(!list || !_giftCatalog || !_giftCatalog.length) return;
+    if(!list) return;
 
     var now = performance.now();
-    if(!force && now - _betGiftTickerLastTs < 180) return;
+    if(!force && now - _betGiftTickerLastTs < 220) return;
     _betGiftTickerLastTs = now;
 
     var rows = list.querySelectorAll('.bet-row');
     if(!rows.length) return;
 
     var flying = status === 'flying';
-    var changedRows = 0;
-
     for(var i = 0; i < rows.length; i++){
         var row = rows[i];
-        if(row.classList.contains('won') || row.classList.contains('lost')) continue;
-
         var payout = row.querySelector('.bet-payout');
         if(!payout) continue;
+
+        // Once a bet is cashed out, NEVER replace/remove its awarded PNG.
+        if(row.classList.contains('won')){
+            var wonGift = _getStoredWinGift(row);
+            if(wonGift && wonGift.image){
+                _setBetPayout(payout, wonGift, Number(wonGift.value || 0), 'won:' + String(wonGift.image));
+            }
+            continue;
+        }
+
+        if(row.classList.contains('lost')){
+            _setBetPayout(payout, null, Number(row.dataset.betAmount || 0), 'lost:gram');
+            continue;
+        }
 
         var betStars = Number(row.dataset.betAmount || 0);
         if(!betStars) continue;
 
         var potential = Math.floor(betStars * Math.max(1, Number(dispMult || 1)));
-        if(!flying){
-            _setBetPayout(payout, null, betStars);
+        if(!flying || !_giftCatalog || !_giftCatalog.length){
+            // Below the minimum gift value: show the current amount + GRAM PNG.
+            _setBetPayout(payout, null, potential, 'gram:' + potential);
             continue;
         }
 
         var candidates = _getBetGiftCandidates(potential);
         if(!candidates.length){
-            _setBetPayout(payout, null, potential);
+            _setBetPayout(payout, null, potential, 'gram:' + potential);
             continue;
         }
 
-        _setBetPayout(payout, candidates[_betGiftTickerIndex % candidates.length], potential);
-        changedRows++;
+        var gift = candidates[_betGiftTickerIndex % candidates.length];
+        _setBetPayout(payout, gift, potential, 'gift:' + String(gift.id || gift.gift_key || gift.fragment_slug || gift.image || ''));
     }
 
-    if(flying && changedRows) _betGiftTickerIndex++;
-    else if(!flying) _betGiftTickerIndex = 0;
+    if(flying) _betGiftTickerIndex++;
+    else _betGiftTickerIndex = 0;
 }
 
 function startBetGiftTicker(){
@@ -1333,11 +1398,11 @@ async function pollStatus(){
         updatePingUI(pingMs);
         _lastServerContactTs = Date.now();
         _serverSilentWarned = false;
-        _pollDelay = 400;
+        _pollDelay = 320;
 
         if(d && d.game) applyServerState(d);
     }catch(e){
-        _pollDelay = Math.min(900, _pollDelay + 120);
+        _pollDelay = Math.min(1200, Math.max(320, _pollDelay + 120));
         var silent = Date.now() - _lastServerContactTs;
         if(silent > 5000 && status === 'flying'){
             if(!_serverSilentWarned){
@@ -1356,7 +1421,8 @@ async function pollStatus(){
 
 function scheduleNextPoll(){
     if(_pollTimer) clearTimeout(_pollTimer);
-    _pollTimer = setTimeout(function(){ pollStatus(); }, _pollDelay);
+    var delay = Math.max(250, Math.min(1200, Number(_pollDelay) || 400));
+    _pollTimer = setTimeout(function(){ pollStatus(); }, delay);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1559,6 +1625,53 @@ function cancelFlyingHardCap(){
     }
 }
 
+function _chartVisiblePoints(progress, hotSeed){
+    var base = [
+        [4,92],[12,90],[18,91],[24,83],[30,85],[37,76],[44,78],[50,68],[57,63],[64,66],[70,54],[77,48],[84,40],[91,28],[100,16]
+    ];
+    var n = base.length;
+    if(progress <= 0) return {points:'4,92 4,92', x:4, y:92};
+    var pos = Math.min(n - 1, progress * (n - 1));
+    var end = Math.floor(pos);
+    var frac = pos - end;
+    var pts = base.slice(0, end + 1).map(function(p){ return p[0]+','+p[1]; });
+    var p0 = base[end], p1 = base[Math.min(end + 1, n - 1)];
+    var x = p0[0] + (p1[0]-p0[0])*frac;
+    var y = p0[1] + (p1[1]-p0[1])*frac;
+    pts.push(x.toFixed(2)+','+y.toFixed(2));
+    if(hotSeed){
+        var j = (Math.sin(hotSeed*17.0)*2.2) + (Math.sin(hotSeed*41.0)*1.1);
+        y = y + j;
+        x = Math.min(100, x + Math.abs(Math.sin(hotSeed*9))*0.7);
+        pts[pts.length-1] = x.toFixed(2)+','+y.toFixed(2);
+    }
+    return {points:pts.join(' '), x:x, y:y};
+}
+
+function setCrashChartState(phase, mult){
+    var chart=$('crashChart');
+    if(!chart) return;
+    chart.classList.remove('chart-counting','chart-flying','chart-crash','chart-hot','chart-hard');
+    _chartHardActive = false;
+    if(phase==='counting'){ chart.classList.add('chart-counting'); return; }
+    if(phase==='crash'){ chart.classList.add('chart-crash'); return; }
+    if(phase==='flying'){ chart.classList.add('chart-flying'); }
+    var line=$('chartLine'), shadow=$('chartShadow'), area=$('chartArea'), dot=$('chartDot');
+    if(!line || !shadow || !area || !dot) return;
+    var m=Math.max(1, Number(mult)||1);
+    var hotProgress=Math.max(0, Math.min(1, (m-10)/Math.max(1, (targetMult||10)-10)));
+    var progress=Math.max(0, Math.min(1, (m-1)/9));
+    var seed=performance.now()/1000;
+    if(m>10){ chart.classList.add('chart-hot'); if(progress>=1){ chart.classList.add('chart-hard'); _chartHardActive=true; } }
+    var v=_chartVisiblePoints(progress, m>10 ? seed : 0);
+    line.setAttribute('points',v.points);
+    shadow.setAttribute('points',v.points);
+    dot.setAttribute('cx',v.x.toFixed(2));
+    dot.setAttribute('cy',v.y.toFixed(2));
+    var endX=Math.max(4,v.x);
+    area.setAttribute('d','M 4 92 L '+v.points+' L '+endX.toFixed(2)+' 92 Z');
+}
+
 /* ══════════════════════════════════════════════════════════════
    RESET ROUND
    ══════════════════════════════════════════════════════════════ */
@@ -1584,6 +1697,7 @@ function resetRoundState(){
     var cd = $('cdDisplay');
     var gf = $('gameField');
     var coeff = $('coeffBox');
+    setCrashChartState('reset', 1);
 
     if(rw){ rw.classList.add('hide'); rw.classList.remove('flying','showing-gift','cashed-out','gift-mode'); }
     if(bm){ bm.classList.remove('playing'); }
@@ -1600,11 +1714,8 @@ function resetRoundState(){
 
     lastBetsHash = '';
     betsGeneration++;
-    var bc = $('betsCount');
-    if(bc) bc.textContent = '0';
-    var bl = $('betsList');
-    if(bl) bl.innerHTML = '<div class="no-bets">Waiting for bets...</div>';
-
+    // Keep the previous rows on screen until the fresh round data arrives.
+    // Clearing the DOM here caused a visible blink and made gift PNGs disappear.
     loadBets();
     loadHistory();
 }
@@ -1629,6 +1740,7 @@ function triggerCrashAnimation(finalMult){
 
     if(rw){ rw.classList.add('hide'); rw.classList.remove('flying'); }
     if(gf){ gf.classList.remove('flying','counting'); gf.classList.add('crash-hit'); setTimeout(function(){ if(gf) gf.classList.remove('crash-hit'); }, 700); }
+    setCrashChartState('crash', finalMult);
     if(rw) rw.classList.add('crash-hit');
     if(coeff){
         coeff.className = 'coeff-box crashed';
@@ -1882,6 +1994,10 @@ function renderLoop(ts){
             if(computed < 1.0) computed = 1.0;
 
             dispMult = computed;
+            if(now - _lastChartUpdate > 45){
+                _lastChartUpdate = now;
+                setCrashChartState('flying', dispMult);
+            }
 
             if(now - _lastRocketUpdate > 100){
                 _lastRocketUpdate = now;
@@ -1907,6 +2023,7 @@ function renderLoop(ts){
                 _lastBtnUpdate = now;
                 if(hasBet && !cashedOut) updateActionButton();
             }
+            updateBetGiftTicker(false);
 
             // ANTI-FREEZE: если dispMult дошёл до targetMult — крашим локально
             if(dispMult >= targetMult && !crashHandled){
@@ -2494,19 +2611,21 @@ async function loadBets(){
           if(b.status==='cashed_out'){ cls='won'; coeffHtml='<div class="bet-status won">×'+(b.cashout_multiplier?Number(b.cashout_multiplier).toFixed(2):'?')+'</div>'; }
           else if(b.status==='lost'){ cls='lost'; coeffHtml='<div class="bet-status lost">'+crashSvg+' ×'+(b.cashout_multiplier?Number(b.cashout_multiplier).toFixed(2):(servMult||1).toFixed(2))+'</div>'; }
           else coeffHtml='<div class="bet-status active">'+clockSvg+' ×'+(dispMult||1).toFixed(2)+'</div>';
-          var payoutImg=b.win_gift_image||b.gift_image||'/static/img/gram.png';
-          if(b.status==='cashed_out' && b.win_gifts && b.win_gifts[0]) payoutImg=b.win_gifts[0].image||payoutImg;
+          var winGift = (b.win_gifts && b.win_gifts[0]) ? b.win_gifts[0] : null;
+          var payoutImg=winGift&&winGift.image ? winGift.image : '/static/img/gram.png';
           var payoutText=b.status==='cashed_out'
               ? formatCrashMoney(b.win_amount||0)
               : formatCrashMoney(b.win_value||b.potential_win||b.bet_amount||0);
           var fixed=b.status==='cashed_out'?' bet-fixed':'';
           var payoutClass=(b.status==='active' ? 'bet-payout live-payout' : 'bet-payout');
-          return '<div class="bet-row '+cls+fixed+'" data-bet-id="'+(b.id||'')+'" data-bet-amount="'+(Number(b.bet_amount)||0)+'">'+
+          var winGiftData = winGift ? encodeURIComponent(JSON.stringify([winGift])) : '';
+          return '<div class="bet-row '+cls+fixed+'" data-bet-id="'+(b.id||'')+'" data-bet-amount="'+(Number(b.bet_amount)||0)+'" data-win-gift-data="'+winGiftData+'">'+
             '<div class="bet-left"><div class="bet-avatar">'+avatar+'</div><div class="bet-info">'+
               '<div class="bet-name">'+name+'</div><div class="bet-amt"><img class="bet-gift-preview" src="'+betImg+'" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'"><span class="bet-amount-text">'+betAmt+'</span></div>'+
             '</div></div><div class="bet-right-stack">'+coeffHtml+'<div class="'+payoutClass+'"><img src="'+payoutImg+'" onerror="this.onerror=null;this.src=\'/static/img/gram.png\'" alt=""><span>'+payoutText+'</span></div></div></div>';
         }).join('');
-        updateBetGiftTicker(true);
+        if(!_giftCatalog) ensureGiftCatalog().then(function(){ updateBetGiftTicker(true); }).catch(function(){ updateBetGiftTicker(true); });
+        else updateBetGiftTicker(true);
     }catch(e){}finally{_betsFetching=false;}
 }
 /* ══════════════════════════════════════════════════════════════
@@ -2750,6 +2869,7 @@ function setCrashScenePhase(phase){
   if(phase==='flying') gf.classList.add('scene-flying');
   else if(phase==='counting') gf.classList.add('scene-counting');
   else if(phase==='crash') gf.classList.add('scene-crash');
+  setCrashChartState(phase, phase==='flying' ? dispMult : (phase==='crash' ? servMult : 1));
 }
 function selectCrashBackground(kind){crashBackground=kind==='space'?'space':'graph';localStorage.setItem('crash_background',crashBackground);applyCrashBackground();}
 function setCrashOptimization(v){crashOptimization=Number(v);localStorage.setItem('crash_optimization',String(crashOptimization));var labels=['Производительность','Баланс','Качество'];var el=$('optimValue');if(el)el.textContent=labels[crashOptimization]||labels[1];}
