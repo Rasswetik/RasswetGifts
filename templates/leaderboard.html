@@ -8,11 +8,12 @@
 <link rel="icon" type="image/png" href="/static/img/logo.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="/static/js/telegram-auth.js"></script>
+<script type="module" src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs"></script>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-    --bg:#1C2233;
+    --bg:#1b1f23;
     --surface:rgba(255,255,255,.04);
     --surface-2:rgba(255,255,255,.06);
     --border:rgba(255,255,255,.08);
@@ -35,9 +36,9 @@ html,body{
     user-select:none;
 }
 body{
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-    background:#1C2233;
-    background-image:radial-gradient(ellipse 100% 60% at 50% 0%, #1a2238 0%, #1C2233 60%);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:#1b1f23;
+    background-image:radial-gradient(ellipse 100% 55% at 50% 0%, #20272d 0%, #1b1f23 62%);
     color:var(--text);
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
@@ -51,7 +52,7 @@ body{
 .main{
     max-width:480px;
     margin:0 auto;
-    padding:calc(var(--safe-top) + 12px) 12px calc(var(--safe-bottom) + 90px);
+    padding:calc(var(--safe-top) + 12px) 12px calc(var(--safe-bottom) + 92px);
 }
 
 /* ══════════════ HELP TIP ══════════════ */
@@ -88,181 +89,41 @@ body{
     padding:0 6px;
 }
 
-/* ══════════════ PODIUM ══════════════ */
-.podium{
-    display:flex;
-    align-items:flex-end;
-    justify-content:center;
-    gap:6px;
-    margin-bottom:24px;
-    padding:0 2px;
-    position:relative;
-    min-height:260px;
-}
-.podium-slot{
-    flex:1 1 0;
-    min-width:0;
-    max-width:130px;
-    display:flex;flex-direction:column;align-items:center;
-    position:relative;
-    cursor:pointer;
-    transition:transform .15s;
-}
-.podium-slot:active{transform:scale(.97)}
-
-.podium-name{
-    margin-bottom:5px;
-    font-size:10px;font-weight:800;color:#fff;
-    max-width:100%;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap;
-    text-align:center;padding:0 3px;
-}
-.podium-slot.p1 .podium-name{font-size:12px;color:#FFD700}
-
-.podium-avatar{
-    border-radius:50%;overflow:hidden;
-    background:rgba(255,255,255,.04);
-    position:relative;flex-shrink:0;
-}
-.podium-slot.p1 .podium-avatar{
-    width:80px;height:80px;
-    border:3px solid var(--gold);
-    box-shadow:0 0 24px rgba(255,215,0,.4),0 0 48px rgba(255,215,0,.12);
-}
-.podium-slot.p2 .podium-avatar{
-    width:62px;height:62px;
-    border:3px solid var(--silver);
-    box-shadow:0 0 14px rgba(192,192,192,.3);
-}
-.podium-slot.p3 .podium-avatar{
-    width:62px;height:62px;
-    border:3px solid var(--bronze);
-    box-shadow:0 0 14px rgba(205,127,50,.3);
-}
+/* ══════════════ TOP 3 / LEADERS ══════════════ */
+.podium{display:flex;flex-direction:column;gap:0;margin:0 0 12px;padding:0;position:relative;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.04);border-radius:22px;overflow:hidden}
+.podium-slot{min-width:0;display:flex;align-items:center;gap:10px;padding:12px 14px;position:relative;cursor:pointer;background:transparent;transition:background .15s,transform .15s}
+.podium-slot + .podium-slot{border-top:1px solid rgba(255,255,255,.07)}
+.podium-slot:active{transform:scale(.99);background:rgba(255,255,255,.025)}
+.podium-medal{width:22px;height:28px;flex:0 0 22px;display:flex;align-items:center;justify-content:center;position:relative;z-index:2}
+.podium-medal img{width:24px;height:24px;object-fit:contain;filter:drop-shadow(0 3px 7px rgba(0,0,0,.45))}
+.podium-slot.p1 .podium-medal img{width:28px;height:28px}
+.podium-avatar{width:44px;height:44px;border-radius:50%;overflow:hidden;background:rgba(255,255,255,.05);position:relative;flex:0 0 44px;border:1px solid rgba(255,255,255,.09)}
+.podium-slot.p1 .podium-avatar{width:46px;height:46px;flex-basis:46px;border-color:rgba(59,130,246,.22)}
 .podium-avatar img{width:100%;height:100%;object-fit:cover;display:block}
-
-.podium-medal{
-    margin-top:-14px;margin-bottom:-6px;
-    position:relative;z-index:3;pointer-events:none;
-}
-.podium-medal img{
-    width:48px;height:48px;object-fit:contain;
-    filter:drop-shadow(0 4px 10px rgba(0,0,0,.7));
-    animation:medalBounce 2.5s ease-in-out infinite;
-}
-.podium-slot.p1 .podium-medal img{
-    width:60px;height:60px;
-    filter:drop-shadow(0 6px 16px rgba(255,215,0,.6));
-}
-@keyframes medalBounce{
-    0%,100%{transform:translateY(0) scale(1)}
-    50%{transform:translateY(-3px) scale(1.03)}
-}
-
-.podium-pedestal{
-    width:100%;
-    border-radius:12px 12px 0 0;
-    padding:10px 4px 12px;
-    display:flex;flex-direction:column;align-items:center;
-    justify-content:flex-start;
-    gap:4px;position:relative;overflow:hidden;
-}
-.podium-pedestal::before{
-    content:'';position:absolute;top:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg,transparent 10%,rgba(255,255,255,.4) 50%,transparent 90%);
-    z-index:2;
-}
-.podium-slot.p1 .podium-pedestal{
-    height:118px;
-    background:linear-gradient(180deg,rgba(255,215,0,.28) 0%,rgba(255,180,0,.15) 40%,rgba(255,160,0,.06) 100%);
-    border:1px solid rgba(255,215,0,.35);
-    border-bottom:none;
-    box-shadow:inset 0 4px 16px rgba(255,215,0,.15),0 -4px 20px rgba(255,215,0,.15);
-}
-.podium-slot.p2 .podium-pedestal{
-    height:88px;
-    background:linear-gradient(180deg,rgba(192,192,192,.22) 0%,rgba(160,160,160,.1) 40%,rgba(140,140,140,.03) 100%);
-    border:1px solid rgba(192,192,192,.25);
-    border-bottom:none;
-    box-shadow:inset 0 3px 12px rgba(192,192,192,.1),0 -3px 14px rgba(192,192,192,.1);
-}
-.podium-slot.p3 .podium-pedestal{
-    height:66px;
-    background:linear-gradient(180deg,rgba(205,127,50,.22) 0%,rgba(180,110,45,.1) 40%,rgba(160,90,30,.03) 100%);
-    border:1px solid rgba(205,127,50,.25);
-    border-bottom:none;
-    box-shadow:inset 0 3px 10px rgba(205,127,50,.1),0 -3px 14px rgba(205,127,50,.1);
-}
-
-/* ═══ PODIUM PRIZE — фиксированный квадрат ═══ */
-.podium-prize{
-    margin-bottom:2px;position:relative;z-index:1;
-    width:40px;height:40px;
-    border-radius:10px;
-    background:rgba(255,255,255,.03);
-    border:1px solid rgba(255,255,255,.08);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 8px rgba(0,0,0,.35);
-    overflow:hidden;
-    display:flex;align-items:center;justify-content:center;
-    flex-shrink:0;
-}
-.podium-slot.p1 .podium-prize{
-    width:52px;height:52px;
-    border-radius:12px;
-    border-color:rgba(255,215,0,.25);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 3px 10px rgba(255,215,0,.25);
-}
-.podium-prize img{
-    width:100%;height:100%;
-    object-fit:cover;
-    display:block;
-    border-radius:inherit;
-}
-.podium-prize.loading::after{
-    content:'';position:absolute;inset:0;
-    background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(99,102,241,.1));
-    animation:pulseLoad 1.2s ease-in-out infinite;
-}
-@keyframes pulseLoad{
-    0%,100%{opacity:.5}
-    50%{opacity:1}
-}
-
-.podium-turnover{
-    font-size:9px;font-weight:800;color:rgba(255,255,255,.75);
-    display:flex;align-items:center;gap:2px;
-    white-space:nowrap;position:relative;z-index:1;
-}
-.podium-slot.p1 .podium-turnover{font-size:10px;color:rgba(255,255,255,.9)}
-
-.podium-slot.p1::before{
-    content:'';position:absolute;
-    top:-16px;left:50%;transform:translateX(-50%);
-    width:130px;height:130px;border-radius:50%;
-    background:radial-gradient(circle,rgba(255,215,0,.15) 0%,transparent 70%);
-    z-index:-1;pointer-events:none;
-    animation:goldPulse 3s ease-in-out infinite;
-}
-@keyframes goldPulse{
-    0%,100%{opacity:.6;transform:translateX(-50%) scale(1)}
-    50%{opacity:1;transform:translateX(-50%) scale(1.1)}
-}
-
-.podium-empty{opacity:.15;pointer-events:none}
-.podium-empty .podium-pedestal{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.06)}
-
+.podium-main{flex:1;min-width:0}
+.podium-name{font-size:12px;font-weight:800;color:#fff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;margin-bottom:4px;line-height:1.2}
+.podium-sub{display:flex;align-items:center;gap:8px;min-width:0}
+.podium-sub-item{display:flex;align-items:center;gap:3px;min-width:0;color:rgba(255,255,255,.8);font-size:10px;font-weight:700;white-space:nowrap}
+.podium-sub-item img{width:12px;height:12px;object-fit:contain;display:block}
+.podium-sub-sep{color:rgba(255,255,255,.22);font-size:10px}
+.podium-level-dot{width:12px;height:12px;flex:0 0 12px;display:inline-flex;align-items:center;justify-content:center}
+.podium-level-dot svg{width:12px;height:12px;display:block}
+.podium-prize{width:48px;height:48px;flex:0 0 48px;border-radius:12px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+.podium-slot.p1 .podium-prize{width:50px;height:50px;flex-basis:50px}
+.podium-prize img{width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit}
+.podium-prize.loading::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(59,130,246,.08),rgba(255,255,255,.03));animation:pulseLoad 1.2s ease-in-out infinite}
+.podium-pedestal,.podium-turnover{display:none}.podium-empty{display:none}
+/* ══════════════ SEASON BANNER ══════════════ */
+.season-banner{width:100%;height:235px;border-radius:22px;overflow:hidden;background:#087cf7;position:relative;border:1px solid rgba(255,255,255,.05);box-shadow:0 8px 24px rgba(0,0,0,.24);margin:0 0 12px}
+.season-banner dotlottie-player{display:block;width:118% !important;height:118% !important;max-width:none !important;max-height:none !important;position:absolute;left:-9%;top:-9%;transform:none;transform-origin:center center}
+.season-banner-label{position:absolute;top:12px;right:14px;z-index:3;font-size:12px;font-weight:900;color:#fff;background:rgba(0,0,0,.28);padding:5px 8px;border-radius:9px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);white-space:nowrap;line-height:1}
+.season-wait{height:52px;border-radius:17px;background:#0b83ff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:900;margin:0 0 16px;padding:0 12px;overflow:hidden;position:relative;letter-spacing:-.1px}
+.season-wait::before{content:'';position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px);background-size:8px 8px;opacity:.22}.season-wait span{position:relative;z-index:1}
 /* ══════════════ LIST (#4+) ══════════════ */
-.leaders-list{display:flex;flex-direction:column;gap:6px}
+.leaders-list{display:flex;flex-direction:column;gap:0;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.04);border-radius:22px;overflow:hidden}
 
-.leader-item{
-    display:flex;align-items:center;gap:10px;
-    padding:10px 12px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:12px;
-    transition:all .15s;
-    cursor:pointer;
-}
+.leader-item{display:flex;align-items:center;gap:10px;padding:12px 14px;background:transparent;border:none;border-radius:0;transition:all .15s;cursor:pointer}
+.leader-item + .leader-item{border-top:1px solid rgba(255,255,255,.07)}
 .leader-item:active{transform:scale(.98);background:var(--surface-2)}
 
 .leader-rank{
@@ -318,28 +179,27 @@ body{
 
 /* ══════════════ BOTTOM NAV ══════════════ */
 .bottom-nav{
-    position:fixed;bottom:0;left:50%;transform:translateX(-50%);
-    z-index:4000;width:100%;max-width:480px;height:66px;
-    padding:0 6px calc(var(--safe-bottom) + 4px);
-    background:rgba(28,34,51,.94);
-    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    border-top:1px solid rgba(59,130,246,.08);
-    display:flex;align-items:center;justify-content:space-around;
+    position:fixed;left:50%;bottom:12px;transform:translateX(-50%);
+    z-index:4000;width:calc(100% - 32px);max-width:430px;height:64px;
+    padding:4px;
+    background:rgba(28,32,36,.97);
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border:1px solid rgba(255,255,255,.055);
+    border-radius:32px;
+    box-shadow:0 10px 28px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.025);
+    display:grid;grid-template-columns:repeat(4,1fr);gap:2px;align-items:stretch;
 }
 .bnav-item{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:2px;padding:4px 12px;border-radius:10px;
-    background:transparent;border:none;
-    color:rgba(255,255,255,.4);
-    font-family:inherit;font-weight:600;cursor:pointer;
-    transition:all .3s;text-decoration:none;
-    position:relative;min-height:52px;height:52px;margin:auto 0;
+    gap:3px;padding:3px 4px;border-radius:28px;
+    background:transparent;border:none;color:rgba(255,255,255,.38);
+    font-family:inherit;font-weight:700;cursor:pointer;transition:background .2s,color .2s,transform .15s;
+    text-decoration:none;position:relative;min-width:0;height:54px;
 }
-.bnav-item svg{width:20px;height:20px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.bnav-item span{font-size:9px;font-weight:600;line-height:1}
-.bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
-.bnav-item:active{transform:scale(.9)}
-
+.bnav-item svg{width:21px;height:21px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.bnav-item span{font-size:10px;font-weight:700;line-height:1}
+.bnav-item.active{background:#1f3b59;color:#3b92ff;box-shadow:inset 0 0 0 1px rgba(59,146,255,.06)}
+.bnav-item:active{transform:scale(.95)}
 /* ══════════════ MODAL COMMON ══════════════ */
 .modal-overlay{
     position:fixed;inset:0;
@@ -830,21 +690,11 @@ body{
 <body>
 
 <main class="main">
-    <div class="help-tip" onclick="openInfoModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
-        </svg>
-        Как попасть в лидерборд?
+    <div class="season-banner">
+        <dotlottie-player src="https://cdn.giftup.cc/dotlottie/others/pepe_leaderboard.lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
+        <div class="season-banner-label">завершено</div>
     </div>
-
-    <div class="season-timer" id="countdown">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-        <span id="countdown-text">--:--:--</span>
-    </div>
-
-    <div class="page-title">🏆 Лидерборд</div>
-    <div class="page-desc">Топ-15 по сумме ставок получают призы в GRAM и подарки</div>
-
+    <div class="season-wait"><span id="season-wait-text">Ожидание перезапуска</span></div>
     <div class="podium" id="podium"></div>
     <div class="leaders-list" id="leadersList">
         <div class="empty">
@@ -862,17 +712,17 @@ body{
         <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
         <span>Игры</span>
     </a>
-    <a class="bnav-item" href="/upgrade">
-        <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        <span>Апгрейды</span>
+    <a class="bnav-item" href="/market">
+        <svg viewBox="0 0 24 24"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v10h16V9"/><path d="M8 19v-6h8v6"/><path d="M3 9h18"/></svg>
+        <span>Маркет</span>
     </a>
     <a class="bnav-item active" href="/leaderboard">
         <svg viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-        <span>Топ</span>
+        <span>Сезон</span>
     </a>
-    <a class="bnav-item" href="/inventory">
-        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>Инвентарь</span>
+    <a class="bnav-item" href="/profile">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        <span>Профиль</span>
     </a>
 </nav>
 
@@ -1097,48 +947,23 @@ function renderPodiumSlot(u, rank, pClass){
     var avatar = u.photo_url || '/static/img/avatar-default.png';
     var placeGif = '/static/gifs/place/' + rank + '.gif';
     var uid = u.user_id || 0;
-
     var prizeHtml = '';
     if(prize){
-        prizeHtml = '<div class="podium-prize' + (prize.kind === 'nft_gift' ? ' loading' : '') + '" '
-            + 'onclick="event.stopPropagation();openPrizeModalByRank(' + rank + ')">'
-            + '<img src="' + escapeHtml(getPrizeImage(prize)) + '" alt="" loading="lazy" '
-            + 'onload="this.parentElement.classList.remove(\'loading\')" '
-            + 'onerror="this.onerror=null;this.src=\'/static/img/gift.png\';this.parentElement.classList.remove(\'loading\')">'
+        prizeHtml = '<div class="podium-prize' + (prize.kind === 'nft_gift' ? ' loading' : '') + '" onclick="event.stopPropagation();openPrizeModalByRank(' + rank + ')">'
+            + '<img src="' + escapeHtml(getPrizeImage(prize)) + '" alt="" loading="lazy" onload="this.parentElement.classList.remove(\'loading\')" onerror="this.onerror=null;this.src=\'/static/img/gift.png\';this.parentElement.classList.remove(\'loading\')">'
             + '</div>';
     }
-
-    return '<div class="podium-slot ' + pClass + '">'
-        + '<div class="podium-name" onclick="event.stopPropagation();openProfileModal(' + uid + ')">' + escapeHtml(displayName) + '</div>'
-        + '<div class="podium-avatar" onclick="event.stopPropagation();openProfileModal(' + uid + ')">'
-        +   '<img src="' + escapeHtml(avatar) + '" alt="" loading="lazy" onerror="this.src=\'/static/img/avatar-default.png\'">'
-        + '</div>'
+    return '<div class="podium-slot ' + pClass + '" onclick="openProfileModal(' + uid + ')">'
         + '<div class="podium-medal"><img src="' + placeGif + '" alt="' + rank + '" loading="lazy"></div>'
-        + '<div class="podium-pedestal" onclick="event.stopPropagation();openPrizeModalByRank(' + rank + ')">'
-        +   prizeHtml
-        +   '<div class="podium-turnover">' + turnover + ' GRAM</div>'
-        + '</div>'
-        + '</div>';
+        + '<div class="podium-avatar"><img src="' + escapeHtml(avatar) + '" alt="" loading="lazy" onerror="this.src=\'/static/img/avatar-default.png\'"></div>'
+        + '<div class="podium-main"><div class="podium-name">' + escapeHtml(displayName) + '</div>'
+        + '<div class="podium-sub"><span class="podium-sub-item"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + turnover + '</span><span class="podium-sub-sep">•</span>'
+        + '<span class="podium-sub-item"><span class="podium-level-dot"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 6C0 2.68629 2.68629 0 6 0C9.31371 0 12 2.68629 12 6C12 9.31371 9.31371 12 6 12C2.68629 12 0 9.31371 0 6Z" fill="#0B84FF"/><path d="M6 3.6a1.7 1.7 0 1 0 0 3.4a1.7 1.7 0 0 0 0-3.4Zm-3 5.7c.55-1.12 1.58-1.7 3-1.7s2.45.58 3 1.7" fill="none" stroke="#0B2A50" stroke-width=".85" stroke-linecap="round"/></svg></span>' + (u.level || 0) + ' уровень</span></div></div>'
+        + prizeHtml + '</div>';
 }
-
 function renderPodium(top3){
-    var el = $('podium');
-    if(!el) return;
-    if(top3.length >= 3){
-        el.innerHTML = renderPodiumSlot(top3[1], 2, 'p2')
-            + renderPodiumSlot(top3[0], 1, 'p1')
-            + renderPodiumSlot(top3[2], 3, 'p3');
-    } else if(top3.length === 2){
-        el.innerHTML = renderPodiumSlot(top3[1], 2, 'p2')
-            + renderPodiumSlot(top3[0], 1, 'p1')
-            + '<div class="podium-slot p3 podium-empty"><div class="podium-pedestal"></div></div>';
-    } else if(top3.length === 1){
-        el.innerHTML = '<div class="podium-slot p2 podium-empty"><div class="podium-pedestal"></div></div>'
-            + renderPodiumSlot(top3[0], 1, 'p1')
-            + '<div class="podium-slot p3 podium-empty"><div class="podium-pedestal"></div></div>';
-    } else {
-        el.innerHTML = '';
-    }
+    var el = $('podium'); if(!el) return;
+    el.innerHTML = top3.map(function(u,i){ return renderPodiumSlot(u,i+1,'p'+(i+1)); }).join('');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1204,11 +1029,9 @@ async function loadLeaderboard(){
 
         var config = data.config || {};
         var users = data.leaderboard || [];
-
-        if(config.period_end){
-            endTime = new Date(config.period_end).getTime();
-            updateCountdown();
-        }
+        var parsedEnd = config.period_end ? new Date(config.period_end).getTime() : NaN;
+        endTime = Number.isFinite(parsedEnd) && parsedEnd > 0 ? parsedEnd : null;
+        updateCountdown();
 
         if(users.length === 0){
             $('podium').innerHTML = '';
@@ -1237,18 +1060,31 @@ async function loadLeaderboard(){
    ══════════════════════════════════════════════════════════════ */
 function updateCountdown(){
     var el = $('countdown-text');
-    if(!el) return;
-    if(!endTime){ el.textContent = '--:--:--'; return; }
-    var diff = Math.max(0, endTime - Date.now());
+    var banner = document.querySelector('.season-banner-label');
+    var wait = $('season-wait-text');
+    if(!endTime){
+        if(banner) banner.textContent = 'завершено';
+        if(wait) wait.textContent = 'Ожидание перезапуска';
+        return;
+    }
+    var diff = endTime - Date.now();
+    if(diff <= 0){
+        if(el) el.textContent = '00:00:00';
+        if(banner) banner.textContent = 'завершено';
+        if(wait) wait.textContent = 'Ожидание перезапуска';
+        return;
+    }
     var d = Math.floor(diff / 86400000);
     var h = Math.floor((diff % 86400000) / 3600000);
     var m = Math.floor((diff % 3600000) / 60000);
-    var s = Math.floor((diff % 60000) / 1000);
+    var sec = Math.floor((diff % 60000) / 1000);
     var hh = String(h).padStart(2,'0');
     var mm = String(m).padStart(2,'0');
-    var ss = String(s).padStart(2,'0');
-    if(d > 0) el.textContent = d + ' дн. ' + hh + ':' + mm + ':' + ss;
-    else el.textContent = hh + ':' + mm + ':' + ss;
+    var ss = String(sec).padStart(2,'0');
+    var text = d > 0 ? (d + ' дн. ' + hh + ':' + mm + ':' + ss) : (hh + ':' + mm + ':' + ss);
+    if(el) el.textContent = text;
+    if(banner) banner.textContent = text;
+    if(wait) wait.textContent = 'Сезон активен';
 }
 
 /* ══════════════════════════════════════════════════════════════
