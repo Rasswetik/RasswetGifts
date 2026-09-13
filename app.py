@@ -14339,64 +14339,75 @@ def _save_news_json(data):
 
 
 def _sync_news_to_db(conn):
-    """Sync entries from data/news.json into the `news` DB table (insert or update)."""
+    """Safely sync data/news.json into the news table.
+
+    PostgreSQL marks a transaction as aborted after a failed SQL statement.
+    Always rollback before trying a fallback query and rollback on unexpected
+    errors so later queries are not poisoned by an aborted transaction.
+    """
+    if conn is None:
+        return False
+    news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+    if not os.path.exists(news_file):
+        return False
     try:
-        news_file = os.path.join(BASE_PATH, 'data', 'news.json')
-        if not os.path.exists(news_file):
-            return
         with open(news_file, 'r', encoding='utf-8-sig') as f:
             data = json.load(f)
-        for n in data.get('news', []):
+        items = data.get('news', [])
+        if not isinstance(items, list):
+            logger.warning('News sync skipped: invalid news.json format')
+            return False
+        for n in items:
+            if not isinstance(n, dict):
+                continue
             nid = n.get('id')
             if nid is None:
                 continue
-            title = n.get('title', '')
-            content = n.get('content', '')
-            title_en = n.get('title_en', '')
-            content_en = n.get('content_en', '')
-            image_url = n.get('cover') or n.get('banner') or n.get('image_url') or ''
-            reward_amount = int(n.get('reward_amount', 0) or 0)
-            is_active = True if n.get('is_active', True) else False
-            created_at = n.get('created_at')
-
+            vals = (
+                n.get('title', ''), n.get('content', ''), n.get('title_en', ''),
+                n.get('content_en', ''), n.get('cover') or n.get('banner') or n.get('image_url') or '',
+                int(n.get('reward_amount', 0) or 0), bool(n.get('is_active', True)), n.get('created_at')
+            )
             cur = conn.cursor()
-            cur.execute('SELECT id FROM news WHERE id = ?', (nid,))
-            if cur.fetchone():
-                try:
-                    cur.execute('''
-                        UPDATE news SET title = ?, content = ?, title_en = ?, content_en = ?, image_url = ?, reward_amount = ?, is_active = ?, created_at = ?
-                        WHERE id = ?
-                    ''', (title, content, title_en, content_en, image_url, reward_amount, is_active, created_at, nid))
-                except Exception:
-                    # fallback: try individual update without created_at if binding fails
+            try:
+                cur.execute('SELECT id FROM news WHERE id = ?', (nid,))
+                exists = cur.fetchone() is not None
+                if exists:
                     try:
-                        cur.execute('''
-                            UPDATE news SET title = ?, content = ?, title_en = ?, content_en = ?, image_url = ?, reward_amount = ?, is_active = ?
-                            WHERE id = ?
-                        ''', (title, content, title_en, content_en, image_url, reward_amount, is_active, nid))
+                        cur.execute('''UPDATE news SET title=?, content=?, title_en=?, content_en=?, image_url=?, reward_amount=?, is_active=?, created_at=? WHERE id=?''', vals + (nid,))
                     except Exception:
-                        pass
-            else:
-                try:
-                    cur.execute('''
-                        INSERT INTO news (id, title, content, title_en, content_en, image_url, reward_amount, is_active, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (nid, title, content, title_en, content_en, image_url, reward_amount, is_active, created_at))
-                except Exception:
-                    # fallback: insert without created_at
+                        try: conn.rollback()
+                        except Exception: pass
+                        try:
+                            cur = conn.cursor()
+                            cur.execute('''UPDATE news SET title=?, content=?, title_en=?, content_en=?, image_url=?, reward_amount=?, is_active=? WHERE id=?''', vals[:-1] + (nid,))
+                        except Exception as e2:
+                            try: conn.rollback()
+                            except Exception: pass
+                            logger.warning(f'News update skipped for id={nid}: {e2}')
+                else:
                     try:
-                        cur.execute('''
-                            INSERT INTO news (id, title, content, title_en, content_en, image_url, reward_amount, is_active)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (nid, title, content, title_en, content_en, image_url, reward_amount, is_active))
+                        cur.execute('''INSERT INTO news (id,title,content,title_en,content_en,image_url,reward_amount,is_active,created_at) VALUES (?,?,?,?,?,?,?,?,?)''', (nid,) + vals)
                     except Exception:
-                        pass
-        try:
-            conn.commit()
-        except Exception:
-            pass
+                        try: conn.rollback()
+                        except Exception: pass
+                        try:
+                            cur = conn.cursor()
+                            cur.execute('''INSERT INTO news (id,title,content,title_en,content_en,image_url,reward_amount,is_active) VALUES (?,?,?,?,?,?,?,?)''', (nid,) + vals[:-1])
+                        except Exception as e2:
+                            try: conn.rollback()
+                            except Exception: pass
+                            logger.warning(f'News insert skipped for id={nid}: {e2}')
+            finally:
+                try: cur.close()
+                except Exception: pass
+        conn.commit()
+        return True
     except Exception as e:
-        logger.warning(f"News sync error: {e}")
+        try: conn.rollback()
+        except Exception: pass
+        logger.warning(f'News sync error (rolled back): {e}')
+        return False
 
 @app.route('/api/admin/news-json', methods=['GET'])
 def admin_news_json_list():
@@ -21041,6 +21052,10 @@ def setup_telegram_webhook():
 
     webhook_url = f"{WEBSITE_URL}/webhook/{TELEGRAM_BOT_TOKEN}"
     try:
+        me = tg_api('getMe')
+        if not me.get('ok'):
+            logger.warning(f"⚠️ Telegram token rejected: {me.get('description', 'Unauthorized')}")
+            return False
         tg_api('deleteWebhook', drop_pending_updates=True)
         allowed = [
             'message', 'callback_query', 'pre_checkout_query',
@@ -21049,7 +21064,7 @@ def setup_telegram_webhook():
         ]
         r = tg_api('setWebhook', url=webhook_url, allowed_updates=allowed)
         if r.get('ok'):
-            logger.info(f'✅ Telegram webhook установлен: {webhook_url}')
+            logger.info(f"✅ Telegram webhook установлен для @{me.get('result', {}).get('username', 'bot')}")
         else:
             err = r.get('description', 'unknown')
             logger.warning(f'⚠️ Webhook не установлен: {err}')
