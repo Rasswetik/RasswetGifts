@@ -1263,7 +1263,7 @@ body{
 <div class="select-action-bar" id="selectActionBar">
     <div class="select-info">Выбрано: <span id="selectedCount">0</span></div>
     <div class="select-btns">
-        <button class="select-btn select-btn-sell" onclick="openBatchSellModal()">Продать</button>
+        <button class="select-btn select-btn-sell" id="batchSellBtn" type="button" onclick="openBatchSellModal()">Продать</button>
     </div>
 </div>
 
@@ -1436,7 +1436,7 @@ body{
         </div>
         <div class="sell-confirm-question">Действие нельзя отменить.</div>
         <div class="sell-confirm-actions">
-            <button class="sell-confirm-btn waiting" id="sellConfirmBtn" onclick="doConfirmedSell()">Подождите 3...</button>
+            <button class="sell-confirm-btn waiting" id="sellConfirmBtn" onclick="doSellFromConfirm()">Подождите 3...</button>
             <button class="sell-confirm-cancel" onclick="closeSellConfirm()">Отмена</button>
         </div>
     </div>
@@ -1518,6 +1518,8 @@ const _imgCache = {};
 const _nftDetailsCache = {};
 
 let _sellCountdownTimer = null;
+let _batchSellMode = false;
+let _batchSellIds = [];
 let _upgradeVariants = [];
 let _upgradeCenterIndex = 0;
 let _upgradeCurrentGift = null;
@@ -1795,7 +1797,42 @@ function updateSelectActionBar(){
     var bar = $('selectActionBar');
     var cnt = selectedItems.size;
     var sc = $('selectedCount'); if(sc) sc.textContent = cnt;
+    var btn = $('batchSellBtn');
+    if(btn) btn.disabled = cnt <= 0;
     if(bar) bar.classList.toggle('show', cnt > 0);
+}
+
+function openBatchSellModal(){
+    if(!selectMode || selectedItems.size === 0){
+        showNotif('Выберите хотя бы один подарок', true);
+        return;
+    }
+
+    _batchSellIds = Array.from(selectedItems).filter(function(id){
+        return inventory.some(function(item){ return String(item.id) === String(id) && !item.is_withdrawing; });
+    });
+    if(!_batchSellIds.length){
+        showNotif('Нет доступных подарков для продажи', true);
+        return;
+    }
+
+    var items = _batchSellIds.map(function(id){
+        return inventory.find(function(item){ return String(item.id) === String(id); });
+    }).filter(Boolean);
+    var totalStars = items.reduce(function(sum, item){ return sum + Number(item.gift_value || 0); }, 0);
+
+    _batchSellMode = true;
+    var name = $('sellConfirmName');
+    var price = $('sellConfirmPrice');
+    var title = document.querySelector('.sell-confirm-title');
+    if(title) title.textContent = 'Продать выбранные подарки?';
+    if(name) name.textContent = _batchSellIds.length + ' подарков';
+    if(price) price.textContent = formatTon(starsToTon(totalStars));
+
+    var ov = $('sellConfirmOverlay');
+    if(ov) ov.classList.add('show');
+    startSellCountdown();
+    vibrateIfOn();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2106,7 +2143,16 @@ async function openUpgradeModal(){
         if(loadBar) loadBar.style.width = '100%';
         if(loadTxt) loadTxt.textContent = 'Готово!';
 
-        await new Promise(function(resolve){ setTimeout(resolve, 300); });
+        // Сразу показываем реальные атрибуты первого загруженного варианта,
+        // а не оставляем пустые значения до первого таймера анимации.
+        var firstVariant = _upgradeVariants[0];
+        if(firstVariant){
+            setPreviewAttr($('upgradeModelVal'), $('upgradeModelRar'), firstVariant.model || '—', firstVariant.model_rarity);
+            setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), firstVariant.symbol || '—', firstVariant.symbol_rarity);
+            setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), firstVariant.backdrop || '—', firstVariant.backdrop_rarity);
+        }
+
+        await new Promise(function(resolve){ setTimeout(resolve, 120); });
 
         if(loadingEl) loadingEl.classList.add('hidden');
         if(btnEl) btnEl.disabled = false;
@@ -2186,7 +2232,7 @@ function preloadVariantImages(variants, onProgress){
                 resolved = true;
                 resolve();
             }
-        }, 15000);
+        }, 6000);
     });
 }
 
@@ -2343,9 +2389,12 @@ async function startUpgradeSpin(){
     var rouletteWrap = $('upgradeRouletteWrap');
 
     if(previewWrap) previewWrap.style.display = 'none';
-    if(rouletteWrap) rouletteWrap.classList.add('show');
+    if(rouletteWrap) rouletteWrap.classList.remove('show');
 
+    // Сначала полностью подготавливаем карточки и PNG, затем показываем рулетку.
+    // Так пользователь никогда не видит пустые карточки/плейсхолдеры.
     await buildRoulette();
+    if(rouletteWrap) rouletteWrap.classList.add('show');
 
     var total = _upgradeVariants.length;
     var chosenIndex = Math.floor(Math.random() * total);
@@ -2394,60 +2443,58 @@ function buildRoulette(){
         var strip = $('upgradeRouletteStrip');
         if(!strip){ resolve(); return; }
 
-        var html = '';
-        for(var i = 0; i < _upgradeVariants.length; i++){
-            var v = _upgradeVariants[i];
-            var chain = [];
-            if(v.image) chain.push(v.image);
-            if(v.thumb_image && chain.indexOf(v.thumb_image) === -1) chain.push(v.thumb_image);
-            if(v.fallback_image && chain.indexOf(v.fallback_image) === -1) chain.push(v.fallback_image);
-            if(chain.length === 0) chain.push('/static/img/gift.png');
-
-            var chainStr = chain.join('|').replace(/'/g, "\\'");
-            var primary = chain[0];
-
-            html += '<div class="roulette-card" data-idx="' + i + '">'
-                + '<img src="' + primary + '" '
-                + 'data-chain="' + chainStr + '" '
-                + 'data-chain-idx="0" '
-                + 'onerror="__rouletteImgFallback(this)" alt="">'
-                + '</div>';
-        }
-        strip.innerHTML = html;
+        strip.innerHTML = '';
+        strip.style.transition = 'none';
         strip.style.transform = 'translateX(0)';
 
-        var imgs = strip.querySelectorAll('.roulette-card img');
-        var total = imgs.length;
-        var loaded = 0;
-        var resolved = false;
+        var variants = _upgradeVariants || [];
+        if(!variants.length){ resolve(); return; }
 
-        function checkDone(){
-            if(resolved) return;
-            loaded++;
-            if(loaded >= total){
-                resolved = true;
-                resolve();
-            }
-        }
+        var fragment = document.createDocumentFragment();
+        var images = [];
 
-        if(total === 0){ resolve(); return; }
+        variants.forEach(function(v, idx){
+            var card = document.createElement('div');
+            card.className = 'roulette-card';
+            card.dataset.idx = String(idx);
 
-        for(var j = 0; j < imgs.length; j++){
-            var img = imgs[j];
+            var img = document.createElement('img');
+            img.alt = '';
+            img.decoding = 'async';
+            img.loading = 'eager';
+            img.src = v.image || v.fallback_image || '/static/img/gift.png';
+            img.onerror = function(){
+                this.onerror = null;
+                this.src = v.fallback_image || '/static/img/gift.png';
+            };
+
+            card.appendChild(img);
+            fragment.appendChild(card);
+            images.push(img);
+        });
+
+        strip.appendChild(fragment);
+
+        // Все изображения уже были предзагружены выше. Всё равно ждём decode(),
+        // чтобы первая отрисовка рулетки была без пустых кадров.
+        var waits = images.map(function(img){
             if(img.complete && img.naturalWidth > 0){
-                checkDone();
-            } else {
-                img.addEventListener('load', checkDone, { once: true });
-                img.addEventListener('error', checkDone, { once: true });
+                return Promise.resolve();
             }
-        }
+            return new Promise(function(res){
+                var done = false;
+                function finish(){ if(done) return; done = true; res(); }
+                img.addEventListener('load', finish, {once:true});
+                img.addEventListener('error', finish, {once:true});
+                setTimeout(finish, 2500);
+            });
+        });
 
-        setTimeout(function(){
-            if(!resolved){
-                resolved = true;
-                resolve();
-            }
-        }, 5000);
+        Promise.all(waits).then(function(){
+            requestAnimationFrame(function(){
+                requestAnimationFrame(resolve);
+            });
+        });
     });
 }
 
@@ -2647,6 +2694,10 @@ function launchConfetti(){
    ══════════════════════════════════════════════════════════════ */
 function askSellConfirm(){
     if(!selectedItem) return;
+    _batchSellMode = false;
+    _batchSellIds = [];
+    var title = document.querySelector('.sell-confirm-title');
+    if(title) title.textContent = 'Продать подарок?';
     var name = $('sellConfirmName');
     var price = $('sellConfirmPrice');
     if(name) name.textContent = selectedItem.gift_name || '—';
@@ -2660,6 +2711,10 @@ function closeSellConfirm(){
     var ov = $('sellConfirmOverlay');
     if(ov) ov.classList.remove('show');
     if(_sellCountdownTimer){ clearInterval(_sellCountdownTimer); _sellCountdownTimer = null; }
+    _batchSellMode = false;
+    _batchSellIds = [];
+    var title = document.querySelector('.sell-confirm-title');
+    if(title) title.textContent = 'Продать подарок?';
 }
 function startSellCountdown(){
     var btn = $('sellConfirmBtn');
@@ -2681,6 +2736,63 @@ function startSellCountdown(){
         }
     }, 1000);
 }
+async function doSellFromConfirm(){
+    if(_batchSellMode) return doConfirmedBatchSell();
+    return doConfirmedSell();
+}
+
+async function doConfirmedBatchSell(){
+    if(!_batchSellIds.length || !user) return;
+    var ids = _batchSellIds.slice();
+    var btn = $('sellConfirmBtn');
+    if(btn){ btn.disabled = true; btn.className = 'sell-confirm-btn waiting'; btn.textContent = 'Продаём 0/' + ids.length + '...'; }
+
+    var sold = 0;
+    var totalStars = 0;
+    try{
+        for(var i = 0; i < ids.length; i++){
+            var item = inventory.find(function(x){ return String(x.id) === String(ids[i]); });
+            if(!item || item.is_withdrawing) continue;
+            try{
+                var r = await fetch('/api/sell-gift', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({user_id:user.id, gift_id:item.id})
+                });
+                var d = await r.json();
+                if(d.success){
+                    sold++;
+                    totalStars += Number(item.gift_value || 0);
+                    if(btn) btn.textContent = 'Продаём ' + sold + '/' + ids.length + '...';
+                }
+            }catch(e){}
+        }
+
+        closeSellConfirm();
+        selectedItems.clear();
+        selectMode = false;
+        var ob = $('optionsBtn');
+        if(ob){ ob.classList.remove('active'); ob.textContent = 'Выбрать'; }
+        updateSelectActionBar();
+
+        if(sold > 0){
+            showSuccessOverlay('Подарки проданы!', formatTon(starsToTon(totalStars)));
+            await refreshUserData();
+            await loadInventory();
+        } else {
+            showNotif('Не удалось продать выбранные подарки', true);
+            await loadInventory();
+        }
+    }catch(e){
+        console.error('batch sell error:', e);
+        closeSellConfirm();
+        showNotif('Ошибка сети', true);
+    }finally{
+        _batchSellMode = false;
+        _batchSellIds = [];
+    }
+}
+
 async function doConfirmedSell(){
     if(!selectedItem) return;
     var itemId = selectedItem.id;
