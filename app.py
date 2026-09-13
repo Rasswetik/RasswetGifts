@@ -4612,18 +4612,50 @@ def check_auth_code():
 # ==================== ОСНОВНЫЕ РОУТЫ ====================
 
 def _serve_crash_html():
-    """Отдаёт Crash frontend из templates/crash.html или локального crash (10).html."""
+    """Безопасно отдаёт Crash frontend без зависимости от кодировки файла.
+
+    Некоторые версии crash.html были сохранены в Windows-1251. Flask/Jinja
+    по умолчанию читает шаблоны как UTF-8 и в таком случае отдаёт HTTP 500.
+    Здесь файл читается как bytes и декодируется с UTF-8 -> CP1251 fallback.
+    Jinja для этого standalone HTML не нужен.
+    """
     template_path = os.path.join(BASE_PATH, 'templates', 'crash.html')
     legacy_path = os.path.join(BASE_PATH, 'crash (10).html')
+
+    file_path = None
     if os.path.isfile(template_path):
-        return render_template('crash.html')
-    if os.path.isfile(legacy_path):
-        return send_from_directory(BASE_PATH, 'crash (10).html')
-    return jsonify({
-        'success': False,
-        'error': 'Crash frontend file not found',
-        'expected': ['templates/crash.html', 'crash (10).html']
-    }), 500
+        file_path = template_path
+    elif os.path.isfile(legacy_path):
+        file_path = legacy_path
+
+    if not file_path:
+        return jsonify({
+            'success': False,
+            'error': 'Crash frontend file not found',
+            'expected': ['templates/crash.html', 'crash (10).html']
+        }), 500
+
+    try:
+        with open(file_path, 'rb') as f:
+            raw = f.read()
+
+        # Основной вариант — UTF-8. Для старого файла — Windows-1251.
+        try:
+            page = raw.decode('utf-8')
+        except UnicodeDecodeError:
+            page = raw.decode('cp1251')
+
+        response = make_response(page)
+        response.headers['Content-Type'] = 'text/html; charset=utf-8'
+        response.headers['Cache-Control'] = 'no-cache'
+        return response
+
+    except Exception as e:
+        logger.exception('❌ Ошибка чтения Crash HTML: %s', e)
+        return jsonify({
+            'success': False,
+            'error': 'Crash frontend read error'
+        }), 500
 
 
 @app.route('/')
@@ -14339,75 +14371,64 @@ def _save_news_json(data):
 
 
 def _sync_news_to_db(conn):
-    """Safely sync data/news.json into the news table.
-
-    PostgreSQL marks a transaction as aborted after a failed SQL statement.
-    Always rollback before trying a fallback query and rollback on unexpected
-    errors so later queries are not poisoned by an aborted transaction.
-    """
-    if conn is None:
-        return False
-    news_file = os.path.join(BASE_PATH, 'data', 'news.json')
-    if not os.path.exists(news_file):
-        return False
+    """Sync entries from data/news.json into the `news` DB table (insert or update)."""
     try:
+        news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+        if not os.path.exists(news_file):
+            return
         with open(news_file, 'r', encoding='utf-8-sig') as f:
             data = json.load(f)
-        items = data.get('news', [])
-        if not isinstance(items, list):
-            logger.warning('News sync skipped: invalid news.json format')
-            return False
-        for n in items:
-            if not isinstance(n, dict):
-                continue
+        for n in data.get('news', []):
             nid = n.get('id')
             if nid is None:
                 continue
-            vals = (
-                n.get('title', ''), n.get('content', ''), n.get('title_en', ''),
-                n.get('content_en', ''), n.get('cover') or n.get('banner') or n.get('image_url') or '',
-                int(n.get('reward_amount', 0) or 0), bool(n.get('is_active', True)), n.get('created_at')
-            )
+            title = n.get('title', '')
+            content = n.get('content', '')
+            title_en = n.get('title_en', '')
+            content_en = n.get('content_en', '')
+            image_url = n.get('cover') or n.get('banner') or n.get('image_url') or ''
+            reward_amount = int(n.get('reward_amount', 0) or 0)
+            is_active = True if n.get('is_active', True) else False
+            created_at = n.get('created_at')
+
             cur = conn.cursor()
-            try:
-                cur.execute('SELECT id FROM news WHERE id = ?', (nid,))
-                exists = cur.fetchone() is not None
-                if exists:
+            cur.execute('SELECT id FROM news WHERE id = ?', (nid,))
+            if cur.fetchone():
+                try:
+                    cur.execute('''
+                        UPDATE news SET title = ?, content = ?, title_en = ?, content_en = ?, image_url = ?, reward_amount = ?, is_active = ?, created_at = ?
+                        WHERE id = ?
+                    ''', (title, content, title_en, content_en, image_url, reward_amount, is_active, created_at, nid))
+                except Exception:
+                    # fallback: try individual update without created_at if binding fails
                     try:
-                        cur.execute('''UPDATE news SET title=?, content=?, title_en=?, content_en=?, image_url=?, reward_amount=?, is_active=?, created_at=? WHERE id=?''', vals + (nid,))
+                        cur.execute('''
+                            UPDATE news SET title = ?, content = ?, title_en = ?, content_en = ?, image_url = ?, reward_amount = ?, is_active = ?
+                            WHERE id = ?
+                        ''', (title, content, title_en, content_en, image_url, reward_amount, is_active, nid))
                     except Exception:
-                        try: conn.rollback()
-                        except Exception: pass
-                        try:
-                            cur = conn.cursor()
-                            cur.execute('''UPDATE news SET title=?, content=?, title_en=?, content_en=?, image_url=?, reward_amount=?, is_active=? WHERE id=?''', vals[:-1] + (nid,))
-                        except Exception as e2:
-                            try: conn.rollback()
-                            except Exception: pass
-                            logger.warning(f'News update skipped for id={nid}: {e2}')
-                else:
+                        pass
+            else:
+                try:
+                    cur.execute('''
+                        INSERT INTO news (id, title, content, title_en, content_en, image_url, reward_amount, is_active, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (nid, title, content, title_en, content_en, image_url, reward_amount, is_active, created_at))
+                except Exception:
+                    # fallback: insert without created_at
                     try:
-                        cur.execute('''INSERT INTO news (id,title,content,title_en,content_en,image_url,reward_amount,is_active,created_at) VALUES (?,?,?,?,?,?,?,?,?)''', (nid,) + vals)
+                        cur.execute('''
+                            INSERT INTO news (id, title, content, title_en, content_en, image_url, reward_amount, is_active)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (nid, title, content, title_en, content_en, image_url, reward_amount, is_active))
                     except Exception:
-                        try: conn.rollback()
-                        except Exception: pass
-                        try:
-                            cur = conn.cursor()
-                            cur.execute('''INSERT INTO news (id,title,content,title_en,content_en,image_url,reward_amount,is_active) VALUES (?,?,?,?,?,?,?,?)''', (nid,) + vals[:-1])
-                        except Exception as e2:
-                            try: conn.rollback()
-                            except Exception: pass
-                            logger.warning(f'News insert skipped for id={nid}: {e2}')
-            finally:
-                try: cur.close()
-                except Exception: pass
-        conn.commit()
-        return True
+                        pass
+        try:
+            conn.commit()
+        except Exception:
+            pass
     except Exception as e:
-        try: conn.rollback()
-        except Exception: pass
-        logger.warning(f'News sync error (rolled back): {e}')
-        return False
+        logger.warning(f"News sync error: {e}")
 
 @app.route('/api/admin/news-json', methods=['GET'])
 def admin_news_json_list():
@@ -21052,10 +21073,6 @@ def setup_telegram_webhook():
 
     webhook_url = f"{WEBSITE_URL}/webhook/{TELEGRAM_BOT_TOKEN}"
     try:
-        me = tg_api('getMe')
-        if not me.get('ok'):
-            logger.warning(f"⚠️ Telegram token rejected: {me.get('description', 'Unauthorized')}")
-            return False
         tg_api('deleteWebhook', drop_pending_updates=True)
         allowed = [
             'message', 'callback_query', 'pre_checkout_query',
@@ -21064,7 +21081,7 @@ def setup_telegram_webhook():
         ]
         r = tg_api('setWebhook', url=webhook_url, allowed_updates=allowed)
         if r.get('ok'):
-            logger.info(f"✅ Telegram webhook установлен для @{me.get('result', {}).get('username', 'bot')}")
+            logger.info(f'✅ Telegram webhook установлен: {webhook_url}')
         else:
             err = r.get('description', 'unknown')
             logger.warning(f'⚠️ Webhook не установлен: {err}')
