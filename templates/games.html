@@ -495,6 +495,216 @@ body{
     .game-tile-gif{right:8px;width:100px;height:100px}
 }
 
+
+/* ══════════════ PLAY HUB WINDOW ══════════════ */
+body.playhub-open{overflow:hidden}
+
+.playhub-overlay{
+    position:fixed;
+    left:0;right:0;bottom:0;
+    top:79px;
+    z-index:9000;
+    background:#171717;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transform:translateY(8px);
+    transition:opacity .22s ease,visibility .22s ease,transform .22s ease;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+}
+.playhub-overlay.show{
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+    transform:translateY(0);
+}
+.playhub-screen{
+    width:100%;
+    max-width:480px;
+    min-height:100%;
+    margin:0 auto;
+    padding:10px 14px calc(var(--safe-bottom) + 28px);
+    background:linear-gradient(180deg,#171717 0%,#151515 100%);
+}
+.playhub-screen-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:0 2px 10px;
+}
+.playhub-screen-title{
+    font-size:18px;
+    font-weight:900;
+    letter-spacing:.2px;
+}
+.playhub-close{
+    width:34px;
+    height:34px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#242424;
+    border:1px solid #414141;
+    color:#fff;
+}
+.playhub-close svg{
+    width:17px;height:17px;
+    fill:none;stroke:currentColor;stroke-width:2;
+    stroke-linecap:round;
+}
+
+.playhub-actions{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+.playhub-upgrade-btn{
+    position:relative;
+    display:block;
+    width:100%;
+    height:156px;
+    min-height:156px;
+    padding:0;
+    overflow:hidden;
+    isolation:isolate;
+    border-radius:22px;
+    text-align:left;
+    background:#25d83a url('https://epicgift.app/assets/play-hub/upgrade-bg.webp') center/cover no-repeat;
+    box-shadow:0 8px 24px rgba(0,0,0,.28);
+}
+.playhub-upgrade-btn::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    z-index:1;
+    background:linear-gradient(90deg,rgba(12,155,25,.18),transparent 54%,rgba(255,255,255,.04));
+    pointer-events:none;
+}
+.playhub-upgrade-hot{
+    position:absolute;
+    z-index:8;
+    left:14px;
+    top:14px;
+    display:flex;
+    align-items:center;
+    gap:5px;
+    padding:6px 9px;
+    border-radius:8px;
+    background:rgba(255,255,255,.96);
+    color:#ff6b1a;
+    font-size:12px;
+    font-weight:900;
+    box-shadow:0 4px 10px rgba(0,0,0,.1);
+}
+.playhub-upgrade-hot svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8}
+.playhub-upgrade-copy{
+    position:absolute;
+    z-index:8;
+    left:20px;
+    bottom:20px;
+    display:flex;
+    flex-direction:column;
+    gap:1px;
+    pointer-events:none;
+}
+.playhub-upgrade-title{
+    color:#fff;
+    font-size:26px;
+    line-height:1;
+    font-weight:950;
+    letter-spacing:-.5px;
+    text-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+.playhub-upgrade-subtitle{
+    color:rgba(255,255,255,.7);
+    font-size:15px;
+    line-height:1.1;
+    font-weight:700;
+}
+.playhub-upgrade-decor{
+    position:absolute;
+    z-index:3;
+    right:-2px;
+    top:0;
+    width:55%;
+    height:100%;
+    object-fit:cover;
+    object-position:right center;
+    pointer-events:none;
+}
+.playhub-upgrade-circle{
+    position:absolute;
+    z-index:5;
+    right:20%;
+    top:50%;
+    width:104px;
+    height:104px;
+    transform:translate(50%,-50%);
+    border-radius:50%;
+    background:
+        radial-gradient(circle at 50% 48%,rgba(255,255,255,.98) 0 47%,rgba(255,255,255,.72) 48% 54%,rgba(255,255,255,0) 55%),
+        conic-gradient(from 225deg,rgba(255,255,255,.25) 0 25%,rgba(255,255,255,.75) 25% 46%,rgba(255,255,255,.12) 46% 100%);
+    box-shadow:0 0 28px rgba(255,255,255,.18);
+}
+.playhub-upgrade-gift{
+    position:absolute;
+    z-index:7;
+    left:50%;
+    top:50%;
+    width:76px;
+    height:76px;
+    transform:translate(-50%,-50%);
+    object-fit:contain;
+    filter:drop-shadow(0 8px 10px rgba(0,0,0,.25));
+    animation:playhubGiftFloat 2.4s ease-in-out infinite;
+    pointer-events:none;
+}
+.playhub-upgrade-badge{
+    position:absolute;
+    z-index:9;
+    left:50%;
+    bottom:15px;
+    transform:translateX(-50%);
+    min-width:48px;
+    padding:4px 8px;
+    border-radius:8px;
+    background:#fff;
+    color:#24b93a;
+    font-size:13px;
+    font-weight:950;
+    text-align:center;
+    box-shadow:0 4px 9px rgba(0,0,0,.12);
+}
+@keyframes playhubGiftFloat{
+    0%,100%{transform:translate(-50%,-50%) translateY(0) rotate(-2deg)}
+    50%{transform:translate(-50%,-50%) translateY(-5px) rotate(2deg)}
+}
+
+@media(min-width:481px){
+    .playhub-overlay{top:79px}
+    .playhub-screen{
+        max-width:1100px;
+        padding:16px 20px 32px;
+    }
+    .playhub-screen-head{
+        max-width:760px;
+        margin:0 auto 12px;
+    }
+    .playhub-actions{
+        max-width:760px;
+        margin:0 auto;
+    }
+}
+@media(max-width:380px){
+    .playhub-upgrade-btn{height:142px;min-height:142px}
+    .playhub-upgrade-title{font-size:23px}
+    .playhub-upgrade-subtitle{font-size:13px}
+    .playhub-upgrade-circle{width:94px;height:94px;right:19%}
+    .playhub-upgrade-gift{width:69px;height:69px}
+}
+
 /* ══════════════ DEPOSIT MODAL ══════════════ */
 .deposit-overlay{
     position:fixed;inset:0;
@@ -544,6 +754,133 @@ body{
     .upgrade-wheel-svg{width:135px;height:135px}
     .leaderboard-cup-svg{width:135px;height:135px}
     .game-card-tag{padding:5px 10px;border-radius:8px}
+}
+
+
+/* ══════════════ FINAL LAYOUT TUNING ══════════════ */
+html{
+    background:#242424;
+}
+body{
+    background:#242424 !important;
+    background-image:none !important;
+}
+.top-bar{
+    background:#242424 !important;
+}
+.games-container{
+    background:#171717;
+    border-radius:18px 18px 0 0;
+    margin-top:12px;
+    padding-top:8px;
+}
+.games-divider{
+    display:none;
+}
+.win-history{
+    margin-top:12px !important;
+    margin-bottom:14px !important;
+}
+.win-history-title{
+    font-size:0 !important;
+}
+.win-history-title::after{
+    content:'LIVE';
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.3px;
+}
+@media(max-width:480px){
+    .games-container{
+        margin-top:12px;
+        border-radius:16px 16px 0 0;
+        padding-top:8px;
+    }
+    .win-history{
+        margin-top:10px !important;
+        margin-bottom:14px !important;
+    }
+    .win-history-title::after{
+        font-size:13px;
+    }
+}
+
+/* ══════════════ PLAY HUB IS A PAGE, NOT A MODAL ══════════════ */
+#gamesView{
+    display:block;
+}
+#playHubOverlay{
+    position:relative !important;
+    inset:auto !important;
+    top:auto !important;
+    left:auto !important;
+    right:auto !important;
+    bottom:auto !important;
+    z-index:2 !important;
+    display:none;
+    width:100%;
+    min-height:0;
+    opacity:1 !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
+    transform:none !important;
+    background:#171717 !important;
+    overflow:visible !important;
+    transition:none !important;
+}
+#playHubOverlay.show{
+    display:block;
+}
+.playhub-screen{
+    width:480px !important;
+    max-width:100% !important;
+    min-height:calc(100dvh - 140px);
+    margin:0 auto !important;
+    padding:4px 14px calc(var(--safe-bottom) + 28px) !important;
+    background:#171717 !important;
+}
+.playhub-screen-head{
+    margin:0 0 10px !important;
+    min-height:34px;
+}
+.playhub-screen-title{
+    font-size:0;
+}
+.playhub-screen-title::after{
+    content:'PLAY HUB';
+    font-size:15px;
+    font-weight:900;
+}
+.playhub-close{
+    border-radius:10px;
+}
+.playhub-actions{
+    width:100%;
+    max-width:480px !important;
+    margin:0 auto !important;
+}
+.playhub-upgrade-btn{
+    width:100% !important;
+    max-width:480px !important;
+}
+
+/* Same content width on desktop and phone for the Play Hub page. */
+@media(min-width:481px){
+    #playHubOverlay{
+        width:100%;
+    }
+    .playhub-screen{
+        width:480px !important;
+        max-width:480px !important;
+    }
+}
+
+/* When Play Hub is active, keep the shared top bar + LIVE feed visible. */
+body.playhub-open #gamesView{
+    display:none;
+}
+body.playhub-open .games-container{
+    min-height:calc(100dvh - 120px);
 }
 
 /* FINAL MOBILE LAYOUT TUNING */
@@ -740,6 +1077,90 @@ body{
     font-size: 24px !important;
   }
 }
+
+/* ══════════════ CLEAN PLAY HUB PAGE ══════════════ */
+/* Play Hub is a full page state: avatar + balance + deposit + LIVE + Upgrade only. */
+body.playhub-open{
+    overflow-x:hidden;
+    background:#171717 !important;
+}
+body.playhub-open .top-bar{
+    width:480px !important;
+    max-width:480px !important;
+    margin:0 auto !important;
+    background:#242424 !important;
+}
+body.playhub-open .games-container{
+    width:480px !important;
+    max-width:480px !important;
+    margin:0 auto !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+    background:#171717 !important;
+}
+body.playhub-open .games-divider{
+    display:none;
+}
+body.playhub-open .win-history{
+    width:100%;
+    max-width:480px;
+    margin:12px auto 14px !important;
+}
+body.playhub-open #gamesView{
+    display:none !important;
+}
+body.playhub-open #playHubOverlay{
+    display:block !important;
+    position:relative !important;
+    width:480px !important;
+    max-width:480px !important;
+    min-height:0;
+    margin:0 auto !important;
+    inset:auto !important;
+    top:auto !important;
+    left:auto !important;
+    right:auto !important;
+    bottom:auto !important;
+    background:#171717 !important;
+    opacity:1 !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
+    transform:none !important;
+    overflow:visible !important;
+}
+body.playhub-open .playhub-screen{
+    width:480px !important;
+    max-width:480px !important;
+    min-height:0 !important;
+    margin:0 auto !important;
+    padding:0 14px 30px !important;
+    background:#171717 !important;
+}
+body.playhub-open .playhub-screen-head{
+    display:none !important;
+}
+body.playhub-open .playhub-actions{
+    width:100% !important;
+    max-width:452px !important;
+    margin:0 auto !important;
+}
+body.playhub-open .playhub-upgrade-btn{
+    width:100% !important;
+    max-width:452px !important;
+    height:156px;
+}
+
+/* Keep exactly the same 480px page width on desktop and phone. */
+@media(min-width:481px){
+    body.playhub-open .top-bar,
+    body.playhub-open .games-container,
+    body.playhub-open #playHubOverlay,
+    body.playhub-open .playhub-screen{
+        width:480px !important;
+        max-width:480px !important;
+    }
+}
+
 </style>
 
 </head>
@@ -768,13 +1189,14 @@ body{
     <div class="win-history">
         <div class="win-history-head">
             <span class="win-history-dot"></span>
-            <span class="win-history-title">История выигрышей</span>
+            <span class="win-history-title">LIVE</span>
         </div>
         <div class="win-history-scroll">
             <div class="feed-track win-history-track" id="feedTrack"></div>
         </div>
     </div>
 
+    <div id="gamesView">
     <div class="games-grid">
         <!-- 1. ROCKET / CRASH -->
         <button class="game-tile game-tile-rocket" onclick="goTo('/crash')" aria-label="Rocket">
@@ -791,7 +1213,7 @@ body{
         </button>
 
         <!-- 3. PLAY HUB -->
-        <button class="game-tile game-tile-playhub" onclick="goTo('/upgrade')" aria-label="Play Hub">
+        <button class="game-tile game-tile-playhub" onclick="openPlayHub(); return false;" aria-label="Play Hub">
             <div class="hot-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c1.1 2.4 4.1 3.4 4.7 6.2.5 2.3-1.1 4.8-3.8 5.3 1.1-1.5.6-3.7-.9-4.5-.1 2.8-2.8 4.3-4.5 3.4-2.3-1.2-2.6-4.4-.4-6.2.1 1.5 1.2 2.4 2.2 2.6C8.9 7.5 10.5 5.3 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>HOT</span></div>
             <svg class="upgrade-wheel-svg playhub-upgrade-wheel" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <defs>
@@ -814,6 +1236,48 @@ body{
                 <div class="game-tile-title"><span>PLAY HUB</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" fill="currentColor"/></svg></div>
             </div>
         </button>
+    </div>
+    </div>
+</div>
+
+
+<!-- PLAY HUB PAGE -->
+<div class="playhub-overlay" id="playHubOverlay">
+    <div class="playhub-screen">
+        <div class="playhub-actions">
+            <button class="playhub-upgrade-btn" type="button" onclick="goTo('/upgrade')" aria-label="Upgrade">
+                <div class="playhub-upgrade-hot">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3c2.5 3.1 6.3 4.7 6.3 9.1A6.3 6.3 0 1 1 5.7 12c0-2.4 1.2-4.3 3.2-5.8-.1 2.1.7 3.3 2.1 4.1C11 7.2 11.2 5 12 3Z"/>
+                    </svg>
+                    <span>HOT</span>
+                </div>
+
+                <img
+                    class="playhub-upgrade-decor"
+                    src="https://epicgift.app/assets/play-hub/upgrade-decor.svg?v=3"
+                    alt=""
+                    aria-hidden="true"
+                >
+
+                <div class="playhub-upgrade-circle" aria-hidden="true"></div>
+                <img
+                    class="playhub-upgrade-gift"
+                    id="playHubGift"
+                    src="/static/img/gifts/Pet_Snake.png"
+                    data-fallback="/static/gifs/gifts/Pet_Snake.png"
+                    alt=""
+                    onerror="playHubGiftFallback(this)"
+                >
+
+                <div class="playhub-upgrade-copy">
+                    <div class="playhub-upgrade-title">UPGRADE</div>
+                    <div class="playhub-upgrade-subtitle">Choose a dream gift</div>
+                </div>
+
+                <div class="playhub-upgrade-badge">15%</div>
+            </button>
+        </div>
     </div>
 </div>
 
@@ -935,6 +1399,101 @@ function goTo(url){
     }catch(e){}
     window.location.href = url;
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   PLAY HUB
+   ══════════════════════════════════════════════════════════════ */
+var playHubGiftTimer = null;
+var playHubGiftIndex = -1;
+
+/* PNG gifts from the local gift collection used by index.html.
+   Try /static/img/gifts first, then the existing /static/gifs/gifts path. */
+var PLAY_HUB_GIFTS = [
+    ['Pet_Snake.png','Pet_Snake.png'],
+    ['JingleBells.png','JingleBells.png'],
+    ['Crystal_Ball.png','Crystal_Ball.png'],
+    ['BDCandle.png','BDCandle.png'],
+    ['pp.png','pp.png'],
+    ['Jelly_Bunny.png','Jelly_Bunny.png'],
+    ['Holiday_Drink.png','Holiday_Drink.png'],
+    ['Neko_Helmet.png','Neko_Helmet.png'],
+    ['EternalRose.png','EternalRose.png'],
+    ['Diamond_Ring.png','Diamond_Ring.png'],
+    ['Cupid_Charm.png','Cupid_Charm.png']
+];
+
+function playHubGiftFallback(img){
+    var fallback = img.getAttribute('data-fallback');
+    if(fallback && img.src.indexOf(fallback) === -1){
+        img.onerror = function(){ this.style.opacity='0'; };
+        img.src = fallback;
+    }else{
+        img.style.opacity = '0';
+    }
+}
+
+function setPlayHubGift(){
+    var img = $('playHubGift');
+    if(!img || !PLAY_HUB_GIFTS.length) return;
+
+    var next = playHubGiftIndex;
+    while(PLAY_HUB_GIFTS.length > 1 && next === playHubGiftIndex){
+        next = Math.floor(Math.random() * PLAY_HUB_GIFTS.length);
+    }
+    playHubGiftIndex = next;
+
+    var pair = PLAY_HUB_GIFTS[next];
+    img.style.opacity = '0';
+    img.onerror = function(){ playHubGiftFallback(this); };
+    img.setAttribute('data-fallback','/static/gifs/gifts/' + pair[1]);
+    img.src = '/static/img/gifts/' + pair[0];
+
+    requestAnimationFrame(function(){
+        img.style.opacity = '1';
+    });
+}
+
+function openPlayHub(){
+    try{
+        if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
+            Telegram.WebApp.HapticFeedback.impactOccurred('light');
+        }
+    }catch(e){}
+
+    var page = $('playHubOverlay');
+    if(!page) return;
+
+    document.body.classList.add('playhub-open');
+    page.classList.add('show');
+
+    setPlayHubGift();
+
+    if(playHubGiftTimer) clearInterval(playHubGiftTimer);
+    playHubGiftTimer = setInterval(setPlayHubGift, 4000);
+
+    window.scrollTo(0, 0);
+}
+
+function closePlayHub(){
+    var page = $('playHubOverlay');
+    if(!page) return;
+
+    page.classList.remove('show');
+    document.body.classList.remove('playhub-open');
+
+    if(playHubGiftTimer){
+        clearInterval(playHubGiftTimer);
+        playHubGiftTimer = null;
+    }
+
+    window.scrollTo(0, 0);
+}
+
+document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closePlayHub();
+});
+
 
 /* ══════════════════════════════════════════════════════════════
    DEPOSIT
