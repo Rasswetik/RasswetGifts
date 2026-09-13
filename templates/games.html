@@ -40,7 +40,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 /* ══════════════ TOP BAR ══════════════ */
 .top-bar{
     display:flex;justify-content:space-between;align-items:center;
-    padding:calc(var(--safe-top) + 58px) 14px 10px;
+    padding:calc(var(--safe-top) + 20px) 14px 10px;
     max-width:480px;margin:0 auto;
     position:relative;z-index:10;
 }
@@ -84,6 +84,7 @@ body{
 }
 .top-bar{
     height:79px;
+    margin-top:34px;
     display:flex;
     align-items:center;
     justify-content:flex-end;
@@ -183,8 +184,8 @@ body{
 .games-grid{
     display:flex;
     flex-direction:column;
-    gap:12px;
-    padding:20px 23px 0;
+    gap:9px;
+    padding:8px 23px 0;
 }
 .games-grid::before{
     content:'Live';
@@ -213,8 +214,8 @@ body{
 .game-tile{
     position:relative;
     width:100%;
-    height:100px;
-    min-height:100px;
+    height:132px;
+    min-height:132px;
     border:0;
     border-radius:21px;
     overflow:hidden;
@@ -228,12 +229,12 @@ body{
 .game-tile:active{transform:scale(.98);filter:brightness(.95)}
 
 /* decorative category chips above cards */
-.games-grid .game-tile:first-child{margin-top:65px}
+.games-grid .game-tile:first-child{margin-top:40px}
 .games-grid .game-tile:first-child::before{
     content:'';
     position:absolute;
-    top:-65px;left:32px;
-    width:400px;height:48px;
+    top:-50px;left:32px;
+    width:400px;height:42px;
     background:
       radial-gradient(circle at 8% 55%,#f6b51c 0 24px,transparent 25px),
       radial-gradient(circle at 20% 55%,#ff5b88 0 24px,transparent 25px),
@@ -247,9 +248,26 @@ body{
 }
 
 /* rocket */
+
+/* Animated gradient backgrounds for Rocket + Market */
+.game-tile-rocket, .game-tile-market{
+    background-size:220% 220%;
+    animation:homeGradientShift 7s ease-in-out infinite;
+}
 .game-tile-rocket{
-    background:
-      linear-gradient(110deg,#72b4ed 0%,#579ee0 48%,#77b6ec 100%);
+    background-image:linear-gradient(125deg,#6aaee8 0%,#8ed1ff 28%,#4f8fd8 55%,#6bb5ee 78%,#8acaff 100%);
+}
+.game-tile-market{
+    background-image:linear-gradient(125deg,#ff9d00 0%,#ffd43b 28%,#f28b00 55%,#ffbd19 78%,#ffe06b 100%);
+    animation-delay:-2.2s;
+}
+@keyframes homeGradientShift{
+    0%,100%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+}
+
+.game-tile-rocket{
+    background-image:linear-gradient(125deg,#6aaee8 0%,#8ed1ff 28%,#4f8fd8 55%,#6bb5ee 78%,#8acaff 100%);
 }
 .game-tile-rocket::after{
     content:'';
@@ -293,8 +311,7 @@ body{
 }
 .game-tile-rocket .game-tile-gif{transform:rotate(-8deg)}
 .game-tile-market{
-    background:
-      linear-gradient(120deg,#ffb80f 0%,#ffad08 50%,#ffc42c 100%);
+    background-image:linear-gradient(125deg,#ff9d00 0%,#ffd43b 28%,#f28b00 55%,#ffbd19 78%,#ffe06b 100%);
 }
 .game-tile-market .game-tile-title{
     position:absolute;left:20px;bottom:18px;z-index:6;
@@ -303,17 +320,22 @@ body{
 .game-tile-market .game-tile-title{display:flex;align-items:center;gap:6px}.game-tile-market .game-tile-title svg{width:21px;height:21px;flex:none}
 .game-tile-market .game-tile-subtitle{display:none}
 .game-tile-market .game-tile-gif{
-    right:8px;top:1px;width:225px;height:98px;
+    right:-2px;top:-6px;width:132px;height:112px;
     object-fit:contain;
-    object-position:left center;
+    object-position:center;
     border-radius:0;
     mask-image:none;-webkit-mask-image:none;
+    filter:drop-shadow(0 10px 16px rgba(0,0,0,.42));
+}
+.game-tile-market::after{
+    content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:linear-gradient(90deg,rgba(255,181,20,0) 0%,rgba(255,181,20,0) 55%,rgba(255,181,20,.16) 72%,rgba(255,196,44,.34) 100%);
 }
 
 /* play hub */
 .game-tile-playhub{
-    height:100px;
-    min-height:100px;
+    height:132px;
+    min-height:132px;
     padding:0;
     background:#4313a7 url('/static/img/playhub.png') center/cover no-repeat;
     border:0;
@@ -324,9 +346,9 @@ body{
 }
 .game-tile-playhub .upg-card{
     position:absolute;z-index:5;
-    left:0;top:0;width:100px;height:130px;
-    transform-origin:0 0;
-    transform:matrix3d(.775344,.1866,0,-.000698,-.304346,.821269,0,-.000548,0,0,1,0,32.5457,-.479443,0,1);
+    right:-2px;top:-8px;width:100px;height:130px;
+    transform-origin:100% 0;
+    transform:matrix3d(.775344,.1866,0,-.000698,-.304346,.821269,0,-.000548,0,0,1,0,-18,-.479443,0,1);
     object-fit:cover;
     border-radius:10px;
     filter:drop-shadow(0 10px 16px rgba(0,0,0,.5));
@@ -334,7 +356,7 @@ body{
 }
 .playhub-copy{
     position:absolute;z-index:7;
-    left:16px;bottom:17px;margin:0;padding:0;
+    left:16px;bottom:15px;margin:0;padding:0;
 }
 .playhub-copy .game-tile-title{
     font-size:20px;
@@ -345,8 +367,8 @@ body{
     order:-1;
 }
 .playhub-copy .game-tile-subtitle{display:none}
-.playhub-arrow-orbit{position:absolute;z-index:10;left:105px;top:24px;width:66px;height:58px;transform-origin:50% 50%;animation:playhubArrowOrbit 5s linear infinite;pointer-events:none}
-.playhub-arrow{position:absolute;left:42px;top:15px;width:24px;height:27px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55));transform:rotate(12deg)}
+.playhub-arrow-orbit{position:absolute;z-index:10;right:78px;top:25px;width:58px;height:54px;transform-origin:50% 50%;animation:playhubArrowOrbit 5s linear infinite;pointer-events:none}
+.playhub-arrow{position:absolute;left:17px;top:13px;width:24px;height:27px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55));transform:rotate(12deg)}
 @keyframes playhubArrowOrbit{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 
 @media(max-width:380px){
@@ -408,6 +430,127 @@ body{
     .leaderboard-cup-svg{width:135px;height:135px}
     .game-card-tag{padding:5px 10px;border-radius:8px}
 }
+
+/* FINAL MOBILE LAYOUT TUNING */
+@media (max-width: 480px){
+  html,body{
+    width:100%;
+    min-width:0;
+    max-width:none;
+    overflow-x:hidden;
+  }
+  body{
+    min-height:100dvh;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .top-bar{
+    width:100%;
+    height:74px;
+    margin-top:28px;
+    padding:8px 12px;
+  }
+  .user-avatar{width:48px;height:48px}
+  .bal-pill-crash{min-width:92px;font-size:16px}
+  .bal-pill-crash::before{font-size:10px}
+  .bal-pill-crash img{width:20px;height:20px}
+  .deposit-top-btn{
+    min-width:96px;height:35px;padding:0 12px;border-radius:12px;
+    font-size:12px;
+  }
+  .games-container{
+    width:100%;
+    padding:0 0 calc(env(safe-area-inset-bottom,0px) + 14px);
+  }
+  .games-grid{
+    width:100%;
+    gap:10px;
+    padding:8px 14px 0;
+  }
+  /* Поднимаем игровые кнопки ближе к верхней панели, сохраняя ленту Live */
+  .games-grid .game-tile:first-child{margin-top:30px}
+  .games-grid::before{top:76px;left:27px}
+  .games-grid::after{top:84px;left:29px;width:8px;height:8px}
+  .game-tile,
+  .game-tile-playhub{
+    width:100%;
+    height:132px;
+    min-height:132px;
+    border-radius:19px;
+  }
+  .game-tile-rocket .game-tile-title,
+  .game-tile-market .game-tile-title{
+    left:17px;bottom:15px;font-size:21px;
+  }
+  .game-tile-rocket .game-tile-title svg{width:21px;height:21px}
+  .game-tile-market .game-tile-title svg{width:20px;height:20px}
+  .game-tile-gif{
+    right:7px;top:-7px;width:98px;height:98px;
+  }
+  .game-tile-market .game-tile-gif{
+    right:-3px;top:-8px;width:118px;height:102px;
+  }
+  .game-tile-rocket > .hot-label,
+  .game-tile-market > .hot-label,
+  .game-tile-playhub > .hot-label{
+    left:14px;top:12px;padding:5px 8px;border-radius:7px;font-size:9px;
+  }
+  .game-tile > .hot-label svg{width:12px;height:12px}
+  .game-tile-playhub .upg-card{
+    right:-3px;top:-9px;width:92px;height:132px;
+  }
+  .playhub-copy{left:14px;bottom:13px}
+  .playhub-copy .game-tile-title{font-size:19px}
+  .playhub-copy .game-tile-title svg{width:19px;height:19px}
+  .playhub-arrow-orbit{right:67px;top:22px;width:52px;height:49px}
+  .playhub-arrow{left:15px;top:11px;width:22px;height:25px}
+}
+
+@media (max-width:360px){
+  .top-bar{padding-left:10px;padding-right:10px}
+  .user-avatar{width:45px;height:45px}
+  .bal-pill-crash{min-width:82px;font-size:15px}
+  .deposit-top-btn{min-width:88px;padding:0 9px}
+  .games-grid{padding-left:10px;padding-right:10px;gap:9px}
+  .games-grid .game-tile:first-child{margin-top:28px}
+  .game-tile,.game-tile-playhub{height:114px;min-height:114px;border-radius:18px}
+  .game-tile-rocket .game-tile-title,.game-tile-market .game-tile-title{left:14px;bottom:13px;font-size:19px}
+  .game-tile-gif{width:92px;height:132px}
+  .game-tile-market .game-tile-gif{width:108px;height:125px}
+  .game-tile-playhub .upg-card{width:86px;height:112px}
+}
+
+/* Final mobile game-card sizing + animated gradients */
+.game-tile, .game-card {
+    min-height: 117px !important;
+}
+.game-tile-rocket, .game-tile-market {
+    background-size: 300% 300% !important;
+    animation: homeGradientShift 5s ease-in-out infinite !important;
+}
+.game-tile-rocket {
+    background-image: linear-gradient(120deg, #4f8fd8 0%, #9bd8ff 25%, #3978c2 50%, #7bc5ff 75%, #4f8fd8 100%) !important;
+}
+.game-tile-market {
+    background-image: linear-gradient(120deg, #f28b00 0%, #ffe06b 25%, #ff9d00 50%, #ffd43b 75%, #f28b00 100%) !important;
+    animation-delay: -1.7s !important;
+}
+@keyframes homeGradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+@media (max-width: 480px) {
+    .game-tile, .game-card { min-height: 117px !important; }
+}
+@media (max-width: 360px) {
+    .game-tile, .game-card { min-height: 112px !important; }
+}
+
+/* Final page vertical offset: leave 10% of viewport empty at the top */
+.top-bar,
+.games-container{
+    transform:translateY(10vh);
+}
 </style>
 </head>
 <body>
@@ -442,13 +585,13 @@ body{
         <button class="game-tile game-tile-market" onclick="goTo('/market')" aria-label="Market">
             <div class="hot-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8.5 12 3l7 5.5v9.75A1.75 1.75 0 0 1 17.25 20h-10A1.75 1.75 0 0 1 5.5 18.25V8.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 10h8v7H8z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 10V8h4v2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg><span>HOT</span></div>
             <div class="game-tile-title"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.375 3a1.875 1.875 0 0 0 0 3.75h1.875v4.5H3.375A1.875 1.875 0 0 1 1.5 9.375v-.75c0-1.036.84-1.875 1.875-1.875h3.193A3.375 3.375 0 0 1 12 2.753a3.375 3.375 0 0 1 5.432 3.997h3.943c1.035 0 1.875.84 1.875 1.875v.75c0 1.036-.84 1.875-1.875 1.875H12.75v-4.5h1.875a1.875 1.875 0 1 0-1.875-1.875V6.75h-1.5V4.875C11.25 3.839 10.41 3 9.375 3ZM11.25 12.75H3v6.75a2.25 2.25 0 0 0 2.25 2.25h6v-9ZM12.75 12.75v9h6.75a2.25 2.25 0 0 0 2.25-2.25v-6.75h-9Z" fill="currentColor"/></svg><span>Market</span></div>
-            <img src="/static/gifs/gifts/gift.gif" alt="Market" class="game-tile-gif" id="marketGif" loading="eager">
+            <img src="/static/img/upg.png" alt="Market" class="game-tile-gif market-png" id="marketGif" loading="eager">
         </button>
 
         <!-- 3. PLAY HUB -->
         <button class="game-tile game-tile-playhub" onclick="goTo('/upgrade')" aria-label="Play Hub">
             <div class="hot-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c1.1 2.4 4.1 3.4 4.7 6.2.5 2.3-1.1 4.8-3.8 5.3 1.1-1.5.6-3.7-.9-4.5-.1 2.8-2.8 4.3-4.5 3.4-2.3-1.2-2.6-4.4-.4-6.2.1 1.5 1.2 2.4 2.2 2.6C8.9 7.5 10.5 5.3 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>HOT</span></div>
-            <img src="/static/img/cards/upg.png" alt="Upgrade card" class="upg-card">
+            <img src="/static/img/upg.png" alt="Upgrade" class="upg-card">
             <div class="playhub-arrow-orbit"><svg class="playhub-arrow" viewBox="0 0 27.6 30.498" fill="none" aria-hidden="true"><path d="M5.08 28.58L25.27 16.4C26.6 15.6 26.55 13.65 25.18 12.92L4.37 1.84C2.8 1 1 2.48 1.51 4.18L4.68 14.68C4.78 15.02 4.79 15.39 4.71 15.73L2.11 26.39C1.68 28.12 3.56 29.5 5.08 28.58Z" fill="#FF9A20" stroke="#FFCFA5"/></svg></div>
             <div class="playhub-copy">
                 <div class="game-tile-title"><span>PLAY HUB</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" fill="currentColor"/></svg></div>
