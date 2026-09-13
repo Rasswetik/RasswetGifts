@@ -1377,6 +1377,863 @@ body.playhub-open .playhub-upgrade-btn{
 }
 </style>
 
+
+<style id="playhub-cases-integrated">
+/* ═══════════ CASES GRID ═══════════ */
+        .cases{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:10px;
+        }
+
+        .case{
+            position:relative;
+            border-radius:16px;
+            overflow:hidden;
+            cursor:pointer;
+            transition:transform .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1);
+            animation:caseIn .5s cubic-bezier(.4,0,.2,1) both;
+        }
+        @keyframes caseIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+        .case:nth-child(1){animation-delay:0s}.case:nth-child(2){animation-delay:.06s}
+        .case:nth-child(3){animation-delay:.12s}.case:nth-child(4){animation-delay:.18s}
+        .case:nth-child(5){animation-delay:.24s}.case:nth-child(6){animation-delay:.3s}
+        .case:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,.5)}
+        .case:active{transform:scale(.97)}
+        
+        .case-glow{
+            position:absolute;inset:0;
+            border-radius:16px;
+            padding:2px;
+            background:linear-gradient(160deg,rgba(255,255,255,.2),rgba(255,255,255,.08) 40%,transparent 70%);
+            animation:glowPulse 3s ease-in-out infinite;
+        }
+        @keyframes glowPulse{
+            0%,100%{opacity:0.8;filter:brightness(1)}
+            50%{opacity:1;filter:brightness(1.3)}
+        }
+        .case-inner{
+            background:linear-gradient(160deg,#404D66,#2D3344);
+            border-radius:14px;
+            padding:6px;
+            height:100%;
+            display:flex;flex-direction:column;
+            position:relative;
+            overflow:hidden;
+        }
+
+        /* Bottom glow effect */
+        .case-inner::after{
+            content:'';position:absolute;
+            bottom:-20px;left:10%;right:10%;height:60px;
+            border-radius:50%;
+            filter:blur(20px);
+            opacity:.7;
+            animation:bottomGlow 2.5s ease-in-out infinite;
+            pointer-events:none;z-index:0;
+        }
+        @keyframes bottomGlow{
+            0%,100%{opacity:.5;transform:scale(1)}
+            50%{opacity:.9;transform:scale(1.1)}
+        }
+
+        .case.g-yellow .case-glow{background:linear-gradient(160deg,rgba(255,210,50,0.5),rgba(253,190,19,0.25) 40%,transparent 70%);box-shadow:0 0 15px rgba(253,190,19,0.15)}
+        .case.g-yellow .case-inner{background:linear-gradient(160deg,#7A7045,#484030)}
+        .case.g-yellow .case-inner::after{background:rgba(253,190,19,0.35)}
+        .case.g-blue .case-glow{background:linear-gradient(160deg,rgba(50,180,255,0.5),rgba(0,152,234,0.25) 40%,transparent 70%);box-shadow:0 0 15px rgba(0,152,234,0.15)}
+        .case.g-blue .case-inner{background:linear-gradient(160deg,#466590,#303848)}
+        .case.g-blue .case-inner::after{background:rgba(0,152,234,0.35)}
+        .case.g-purple .case-glow{background:linear-gradient(160deg,rgba(170,120,255,0.5),rgba(139,92,246,0.25) 40%,transparent 70%);box-shadow:0 0 15px rgba(139,92,246,0.15)}
+        .case.g-purple .case-inner{background:linear-gradient(160deg,#604890,#383050)}
+        .case.g-purple .case-inner::after{background:rgba(139,92,246,0.35)}
+        .case.g-green .case-glow{background:linear-gradient(160deg,rgba(80,255,120,0.5),rgba(30,228,76,0.25) 40%,transparent 70%);box-shadow:0 0 15px rgba(30,228,76,0.15)}
+        .case.g-green .case-inner{background:linear-gradient(160deg,#488060,#304038)}
+        .case.g-green .case-inner::after{background:rgba(30,228,76,0.35)}
+        .case.g-orange .case-glow{background:linear-gradient(160deg,rgba(255,160,80,0.5),rgba(255,120,50,0.25) 40%,transparent 70%);box-shadow:0 0 15px rgba(255,120,50,0.15)}
+        .case.g-orange .case-inner{background:linear-gradient(160deg,#806050,#483830)}
+        .case.g-orange .case-inner::after{background:rgba(255,120,50,0.35)}
+        .case.g-red .case-glow{background:linear-gradient(160deg,rgba(255,100,100,0.5),rgba(239,68,68,0.25) 40%,transparent 70%);box-shadow:0 0 15px rgba(239,68,68,0.15)}
+        .case.g-red .case-inner{background:linear-gradient(160deg,#804848,#483030)}
+        .case.g-red .case-inner::after{background:rgba(239,68,68,0.35)}
+
+        .case-prices{
+            display:flex;align-items:center;gap:6px;
+            margin-bottom:4px;
+            position:relative;z-index:2;
+        }
+        .case-price{
+            display:flex;align-items:center;gap:4px;
+            font-size:11px;font-weight:700;
+        }
+        .case-price img{width:11px;height:11px}
+        .case-price.ton{color:var(--blue)}
+
+        .case-img{
+            flex:1;display:flex;align-items:center;justify-content:center;
+            padding:2px;min-height:100px;
+            position:relative;z-index:1;
+        }
+        .case-img img{
+            width:100%;max-width:120%;height:auto;
+            object-fit:contain;
+            transition:transform .4s cubic-bezier(.4,0,.2,1),filter .4s cubic-bezier(.4,0,.2,1);
+            filter:drop-shadow(0 8px 16px rgba(0,0,0,.5)) brightness(1.1);
+            animation:caseFloat 3s ease-in-out infinite;
+        }
+        @keyframes caseFloat{
+            0%,100%{transform:translateY(0)}
+            50%{transform:translateY(-6px)}
+        }
+        .case:hover .case-img img{transform:scale(1.08);filter:drop-shadow(0 12px 24px rgba(0,0,0,.6)) brightness(1.15)}
+
+        /* Case particles */
+        .case-particles{
+            position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;
+        }
+        .case-particle{
+            position:absolute;
+            width:3px;height:3px;
+            border-radius:50%;
+            background:rgba(255,255,255,.6);
+            animation:particleFloat 2.5s ease-in-out infinite;
+        }
+        @keyframes particleFloat{
+            0%{opacity:0;transform:translateY(0) scale(0)}
+            30%{opacity:1;transform:translateY(-10px) scale(1)}
+            100%{opacity:0;transform:translateY(-40px) scale(0)}
+        }
+
+        /* ═══════════ CASE MODAL ═══════════ */
+        .modal-overlay{
+            position:fixed;inset:0;
+            background:rgba(0,0,0,.85);
+            backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+            z-index:200;
+            opacity:0;visibility:hidden;
+            transition:opacity .3s,visibility .3s;
+        }
+        .modal-overlay.open{opacity:1;visibility:visible}
+
+        .modal{
+            position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);
+            z-index:201;width:100%;max-width:480px;
+            max-height:92vh;
+            background:var(--surface);
+            border-radius:24px 24px 0 0;
+            overflow:hidden;
+            transition:transform .35s cubic-bezier(.32,.72,0,1);
+        }
+        .modal-overlay.open .modal{transform:translateX(-50%) translateY(0)}
+
+        .modal-scroll{
+            max-height:92vh;overflow-y:auto;
+            padding:12px 16px calc(env(safe-area-inset-bottom,0) + 24px);
+        }
+
+        .modal-handle{width:40px;height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin:0 auto 16px}
+
+        .modal-hdr{
+            display:flex;align-items:center;justify-content:space-between;
+            margin-bottom:20px;
+        }
+        .modal-name{font-size:18px;font-weight:700}
+        .modal-price{
+            display:flex;align-items:center;gap:6px;
+            padding:8px 14px;border-radius:12px;
+            background:rgba(0,152,234,.12);border:1px solid rgba(0,152,234,.25);
+            font-size:15px;font-weight:700;color:var(--blue);
+        }
+        .modal-price img{width:18px;height:18px}
+
+        /* ═══════════ IDLE ROULETTE ═══════════ */
+        .roulette-wrap{
+            position:relative;
+            margin:0 -16px 8px;
+            background:rgba(0,0,0,.25);
+            overflow:hidden;
+        }
+        .roulette-wrap.single-mode{height:130px}
+        .roulette-wrap.multi-mode-2{height:auto}
+        .roulette-wrap.multi-mode-3{height:auto}
+        .roulette-track{
+            display:flex;gap:8px;
+            padding:6px 0 6px 6px;
+            will-change:transform;
+            backface-visibility:hidden;
+            -webkit-backface-visibility:hidden;
+            transform:translateZ(0);
+        }
+        .roulette-track.idle{animation:idleScroll 20s linear infinite}
+        .roulette-track.spinning{animation:none}
+        @keyframes idleScroll{
+            0%{transform:translateX(0)}
+            100%{transform:translateX(-50%)}
+        }
+        .roulette-item{
+            flex-shrink:0;width:110px;height:118px;
+            background:rgba(255,255,255,.05);
+            border:none;
+            border-radius:14px;
+            padding:8px;
+            position:relative;
+            display:flex;align-items:center;justify-content:center;
+        }
+        .roulette-item .ri-price{
+            position:absolute;top:6px;left:6px;
+            display:flex;align-items:center;gap:2px;
+            padding:3px 7px;border-radius:8px;
+            background:rgba(0,0,0,.45);
+            font-size:10px;font-weight:700;color:#fff;
+            line-height:1;z-index:2;
+        }
+        .roulette-item .ri-price img{width:12px;height:12px;flex-shrink:0}
+        .roulette-item .ri-img{
+            width:64px;height:64px;object-fit:contain;
+            image-rendering:-webkit-optimize-contrast;
+        }
+        .roulette-pointer{
+            position:absolute;left:50%;
+            pointer-events:none;z-index:5;
+        }
+        .roulette-pointer.ptr-top{
+            top:-6px;
+            width:14px;height:14px;
+            background:#9ca3af;
+            border-radius:2px;
+            transform:translateX(-50%) rotate(45deg);
+            filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));
+        }
+        .roulette-pointer.ptr-bottom{
+            bottom:-6px;
+            width:14px;height:14px;
+            background:#9ca3af;
+            border-radius:2px;
+            transform:translateX(-50%) rotate(45deg);
+            filter:drop-shadow(0 -2px 4px rgba(0,0,0,.3));
+        }
+        .roulette-wrap.won .roulette-pointer.ptr-top{background:#FDA100;filter:drop-shadow(0 2px 6px rgba(253,161,0,.5))}
+        .roulette-wrap.won .roulette-pointer.ptr-bottom{background:#FDA100;filter:drop-shadow(0 -2px 6px rgba(253,161,0,.5))}
+
+        /* ═══════════ MULTI ROULETTE (stacked rows) ═══════════ */
+        .roulette-multi{display:none;position:relative}
+        .roulette-multi-rows{width:100%}
+        .roulette-row{
+            position:relative;height:118px;overflow:hidden;
+            margin-bottom:6px;
+        }
+        .roulette-row:last-child{margin-bottom:0}
+        .roulette-row-track{
+            display:flex;gap:8px;
+            padding:6px 0 6px 6px;
+            will-change:transform;
+            backface-visibility:hidden;
+        }
+        .roulette-row-track.idle{animation:idleScroll 18s linear infinite}
+        .roulette-row-track.spinning{animation:none}
+        .roulette-row-item{
+            flex-shrink:0;width:110px;height:106px;
+            background:rgba(255,255,255,.05);
+            border-radius:12px;
+            position:relative;
+            display:flex;align-items:center;justify-content:center;
+        }
+        .roulette-row-item .ri-price{
+            position:absolute;top:5px;left:5px;
+            display:flex;align-items:center;gap:2px;
+            padding:3px 6px;border-radius:7px;
+            background:rgba(0,0,0,.45);
+            font-size:10px;font-weight:700;color:#fff;
+            line-height:1;z-index:2;
+        }
+        .roulette-row-item .ri-price img{width:11px;height:11px;flex-shrink:0}
+        .roulette-row-item .ri-img{width:58px;height:58px;object-fit:contain}
+        .roulette-row .roulette-pointer{
+            position:absolute;left:50%;
+            pointer-events:none;z-index:5;
+        }
+        .roulette-row .roulette-pointer.ptr-top{
+            top:-6px;
+            width:12px;height:12px;
+            background:#9ca3af;
+            border-radius:2px;
+            transform:translateX(-50%) rotate(45deg);
+            filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));
+        }
+        .roulette-row .roulette-pointer.ptr-bottom{
+            bottom:-6px;
+            width:12px;height:12px;
+            background:#9ca3af;
+            border-radius:2px;
+            transform:translateX(-50%) rotate(45deg);
+            filter:drop-shadow(0 -2px 4px rgba(0,0,0,.3));
+        }
+
+        /* ═══════════ QTY BUTTONS ═══════════ */
+        .qty-row{
+            display:flex;gap:6px;
+            padding:8px 0 4px;
+        }
+        .qty-btn{
+            flex:1;height:42px;border-radius:12px;
+            border:1px solid rgba(255,255,255,.1);
+            background:rgba(255,255,255,.05);
+            color:var(--text-2);font-size:15px;font-weight:700;
+            cursor:pointer;transition:all .2s;
+            font-family:inherit;
+        }
+        .qty-btn.active{
+            background:linear-gradient(135deg,var(--primary),#0077CC);
+            border-color:var(--primary);
+            color:#fff;box-shadow:0 4px 15px rgba(0,152,234,.3);
+        }
+        .qty-btn:active{transform:scale(.95)}
+        .qty-btn.locked{opacity:.4;pointer-events:none}
+
+        /* ═══════════ MODAL WIN ═══════════ */
+        .modal-win{
+            text-align:center;
+            padding:20px 0;
+            animation:winFadeIn .4s ease;
+        }
+        @keyframes winFadeIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+        .modal-win-badge{
+            display:inline-block;
+            padding:8px 20px;border-radius:20px;
+            background:linear-gradient(135deg,var(--accent),#19A93A);
+            color:#090B11;font-size:14px;font-weight:700;
+            margin-bottom:16px;
+        }
+        .modal-win-img{
+            width:120px;height:120px;
+            object-fit:contain;
+            margin:0 auto 12px;
+            display:block;
+            filter:drop-shadow(0 8px 20px rgba(30,228,76,.3));
+            animation:modalWinFloat 2s ease-in-out infinite;
+        }
+        @keyframes modalWinFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+        .modal-win-name{font-size:18px;font-weight:700;margin-bottom:8px}
+        .modal-win-value{
+            display:inline-flex;align-items:center;gap:6px;
+            padding:8px 16px;border-radius:12px;
+            background:rgba(0,152,234,.12);
+            font-size:16px;font-weight:700;color:var(--blue);
+        }
+        .modal-win-value img{width:18px;height:18px}
+        .modal-win-btns{
+            display:flex;gap:10px;
+            margin-top:20px;
+        }
+        .modal-win-btn{
+            flex:1;padding:14px;border-radius:14px;
+            border:none;
+            background:rgba(255,255,255,.04);
+            color:#fff;
+            font-family:inherit;font-size:14px;font-weight:600;
+            cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);
+        }
+        .modal-win-btn:hover{background:rgba(255,255,255,.1)}
+        .modal-win-btn:active{transform:scale(.95)}
+        .modal-win-btn.primary{
+            background:linear-gradient(135deg,var(--accent),#19A93A);
+            border:none;color:#fff;
+        }
+
+        /* ═══════════ PROMO INPUT ═══════════ */
+        .promo-input-wrap{
+            margin:0 0 16px;
+            padding:16px;
+            background:rgba(253,161,0,.08);
+            border:1px solid rgba(253,161,0,.2);
+            border-radius:16px;
+        }
+        .promo-input-label{
+            font-size:12px;font-weight:700;color:var(--gold);
+            margin-bottom:10px;
+        }
+        .promo-input-row{
+            display:flex;gap:10px;
+        }
+        .promo-input{
+            flex:1;padding:12px 14px;
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.1);
+            border-radius:12px;
+            color:#fff;
+            font-family:inherit;font-size:14px;font-weight:600;
+            text-transform:uppercase;
+            letter-spacing:1px;
+        }
+        .promo-input::placeholder{color:var(--text-2);text-transform:none;letter-spacing:0}
+        .promo-input:focus{outline:none;border-color:var(--gold)}
+        .promo-btn{
+            padding:12px 20px;
+            background:linear-gradient(135deg,var(--gold),#E08C00);
+            border:none;border-radius:12px;
+            color:#090B11;font-family:inherit;
+            font-size:14px;font-weight:700;
+            cursor:pointer;transition:all .2s;
+        }
+        .promo-btn:hover{transform:scale(1.02)}
+        .promo-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+        /* ═══════════ SLIDE TO OPEN ═══════════ */
+        .slider-wrap{
+            margin:20px 0;
+            position:relative;
+        }
+        .slider{
+            position:relative;
+            height:56px;
+            background:linear-gradient(90deg,rgba(0,152,234,.2),rgba(0,152,234,.1));
+            border:1px solid rgba(0,152,234,.3);
+            border-radius:28px;
+            overflow:hidden;
+        }
+        .slider-bg{
+            position:absolute;inset:0;
+            background:linear-gradient(90deg,var(--primary),#0077CC);
+            transform:scaleX(0);
+            transform-origin:left;
+            transition:transform .1s;
+        }
+        .slider.insufficient .slider-bg{
+            background:linear-gradient(90deg,#E53E3E,#C53030);
+        }
+        .slider.insufficient{
+            background:linear-gradient(90deg,rgba(229,62,62,.2),rgba(197,48,48,.1));
+            border-color:rgba(229,62,62,.5);
+        }
+        .slider.sufficient .slider-bg{
+            background:linear-gradient(90deg,#1EAA3F,#168832);
+        }
+        .slider.sufficient{
+            background:linear-gradient(90deg,rgba(30,170,63,.2),rgba(22,136,50,.1));
+            border-color:rgba(30,228,76,.5);
+        }
+        .slider-text{
+            position:absolute;inset:0;
+            display:flex;align-items:center;justify-content:center;
+            gap:8px;
+            font-size:15px;font-weight:700;color:rgba(255,255,255,.6);
+            pointer-events:none;
+            z-index:2;
+        }
+        .slider-text svg{width:20px;height:20px;animation:slideArrow 1.5s ease-in-out infinite}
+        @keyframes slideArrow{
+            0%,100%{transform:translateX(0);opacity:.6}
+            50%{transform:translateX(8px);opacity:1}
+        }
+        .slider-thumb{
+            position:absolute;top:4px;left:4px;
+            width:48px;height:48px;
+            background:linear-gradient(135deg,var(--primary),#0077CC);
+            border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            cursor:grab;
+            z-index:3;
+            transition:box-shadow .2s;
+            touch-action:none;
+        }
+        .slider-thumb:active{cursor:grabbing;box-shadow:0 0 20px rgba(0,152,234,.5)}
+        .slider.insufficient .slider-thumb{
+            background:linear-gradient(135deg,#E53E3E,#C53030);
+        }
+        .slider.sufficient .slider-thumb{
+            background:linear-gradient(135deg,#1EAA3F,#168832);
+        }
+        .slider-thumb img{width:24px;height:24px;pointer-events:none;user-select:none;-webkit-user-drag:none}
+
+        /* Swipe motivational popup */
+        .swipe-motivate{
+            position:absolute;top:-50px;left:50%;transform:translateX(-50%) scale(0);
+            padding:8px 18px;border-radius:20px;
+            background:rgba(30,228,76,.9);
+            color:#fff;font-size:14px;font-weight:800;
+            white-space:nowrap;z-index:10;
+            pointer-events:none;
+            animation:swipeMotivateIn .5s cubic-bezier(.4,0,.2,1) forwards;
+        }
+        @keyframes swipeMotivateIn{
+            0%{transform:translateX(-50%) scale(0) translateY(10px);opacity:0}
+            50%{transform:translateX(-50%) scale(1.1) translateY(-5px);opacity:1}
+            100%{transform:translateX(-50%) scale(1) translateY(0);opacity:1}
+        }
+        @keyframes swipeMotivateOut{
+            0%{transform:translateX(-50%) scale(1);opacity:1}
+            100%{transform:translateX(-50%) scale(0) translateY(-20px);opacity:0}
+        }
+        /* Incomplete swipe glow flash */
+        .slider.swipe-fail{
+            animation:swipeFailGlow .5s ease;
+        }
+        @keyframes swipeFailGlow{
+            0%{box-shadow:0 0 0 0 rgba(255,100,100,.6)}
+            50%{box-shadow:0 0 16px 4px rgba(255,100,100,.4)}
+            100%{box-shadow:none}
+        }
+
+        /* ═══════════ RANGE SLIDER ═══════════ */
+        input[type="range"]{
+            -webkit-appearance:none;appearance:none;
+            width:100%;height:6px;
+            background:rgba(255,255,255,.1);
+            border-radius:3px;outline:none;
+            cursor:pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb{
+            -webkit-appearance:none;appearance:none;
+            width:20px;height:20px;
+            background:var(--blue);
+            border-radius:50%;
+            cursor:pointer;
+            border:3px solid #fff;
+            box-shadow:0 2px 8px rgba(0,152,234,.4);
+            transition:transform .2s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover{
+            transform:scale(1.15);
+        }
+        input[type="range"]::-moz-range-thumb{
+            width:20px;height:20px;
+            background:var(--blue);
+            border-radius:50%;
+            cursor:pointer;
+            border:3px solid #fff;
+            box-shadow:0 2px 8px rgba(0,152,234,.4);
+        }
+        input[type="range"]::-webkit-slider-runnable-track{
+            height:6px;border-radius:3px;
+        }
+        input[type="range"]::-moz-range-track{
+            height:6px;background:rgba(255,255,255,.1);border-radius:3px;
+        }
+
+        /* ═══════════ CONTENTS SECTION ═══════════ */
+        .contents{margin-top:24px}
+        .contents-title{
+            font-size:13px;font-weight:700;color:var(--text-2);
+            text-transform:uppercase;letter-spacing:.5px;
+            margin-bottom:12px;
+        }
+        .contents-grid{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:12px;
+        }
+        .content-item{
+            background:rgba(255,255,255,.04);
+            border:none;
+            border-radius:16px;
+            padding:14px;
+            display:flex;flex-direction:column;
+            align-items:center;
+        }
+        .content-item-name{
+            font-size:12px;font-weight:600;color:var(--text);
+            margin-bottom:10px;
+            text-align:center;
+            line-height:1.3;
+            min-height:32px;
+            display:flex;align-items:center;justify-content:center;
+        }
+        .content-item img{
+            width:90px;height:90px;
+            object-fit:contain;
+            margin-bottom:10px;
+        }
+        .content-price{
+            display:inline-flex;align-items:center;justify-content:center;gap:4px;
+            padding:6px 12px;
+            background:rgba(0,152,234,.12);
+            border-radius:10px;
+            font-size:13px;font-weight:700;color:var(--blue);
+            white-space:nowrap;
+            margin-top:auto;
+            line-height:1;
+        }
+        .content-price img{width:14px;height:14px;flex-shrink:0;vertical-align:middle;position:relative;top:0px}
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:rgba(255,255,255,.02);border-radius:3px}
+        ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:3px}
+        ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
+
+        /* ═══════════ DEPOSIT OVERLAY ═══════════ */
+        .deposit-overlay{
+            position:fixed;inset:0;
+            background:rgba(0,0,0,.85);
+            backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+            z-index:400;
+            display:flex;align-items:center;justify-content:center;
+            opacity:0;visibility:hidden;
+            transition:opacity .3s,visibility .3s;
+        }
+        .deposit-overlay.open{opacity:1;visibility:visible}
+        .deposit-modal{
+            background:linear-gradient(180deg,#161923,#0F1219);border-radius:24px;
+            width:90%;max-width:360px;padding:24px 20px;
+            transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);
+            border:1px solid rgba(255,255,255,.1);
+        }
+        .deposit-overlay.open .deposit-modal{transform:scale(1)}
+        .deposit-header{
+            display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;
+        }
+        .deposit-title{
+            font-weight:800;font-size:18px;color:#fff;
+        }
+        .deposit-close{
+            width:32px;height:32px;border-radius:10px;border:none;
+            background:rgba(249,105,153,.15);cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:all .2s;
+        }
+        .deposit-close:hover{background:rgba(249,105,153,.25)}
+        .deposit-close img{width:14px;height:14px}
+        .deposit-methods{display:flex;gap:12px}
+        .deposit-method-btn{
+            flex:1;padding:20px 14px;border-radius:16px;border:none;
+            background:rgba(255,255,255,.04);cursor:pointer;
+            display:flex;flex-direction:column;align-items:center;gap:10px;
+            transition:all .2s;border:2px solid rgba(255,255,255,.06);
+        }
+        .deposit-method-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);transform:translateY(-2px)}
+        .deposit-method-btn:active{transform:scale(.97)}
+        .deposit-method-btn img{width:48px;height:48px;object-fit:contain}
+        .deposit-method-btn span{font-weight:700;font-size:13px;color:#fff}
+        .deposit-method-btn.disabled{opacity:.35;pointer-events:none;filter:grayscale(1)}
+
+        /* ═══════════ STARS DEPOSIT OVERLAY ═══════════ */
+        .stars-deposit-overlay{
+            position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:450;
+            display:flex;align-items:center;justify-content:center;
+            opacity:0;visibility:hidden;backdrop-filter:blur(8px);
+            transition:opacity .3s,visibility .3s;
+        }
+        .stars-deposit-overlay.show{opacity:1;visibility:visible}
+        .stars-deposit-modal{
+            background:linear-gradient(180deg,#161923,#0F1219);border-radius:24px;
+            width:92%;max-width:380px;overflow:hidden;
+            transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);
+            border:1px solid rgba(255,255,255,.1);
+        }
+        .stars-deposit-overlay.show .stars-deposit-modal{transform:scale(1)}
+        .stars-deposit-header{
+            display:flex;align-items:center;justify-content:space-between;
+            padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);
+        }
+        .stars-deposit-title{font-weight:800;font-size:16px;color:#fff}
+        .stars-deposit-close{
+            width:32px;height:32px;border-radius:50%;border:none;
+            background:rgba(249,105,153,.15);cursor:pointer;
+            display:flex;align-items:center;justify-content:center;transition:background .2s;
+        }
+        .stars-deposit-body{
+            padding:20px;display:flex;flex-direction:column;align-items:center;gap:16px;
+        }
+        .stars-deposit-icon{width:64px;height:64px}
+        .stars-deposit-label{text-align:center;color:rgba(255,255,255,.6);font-size:13px;line-height:1.5}
+        .stars-deposit-input-wrap{
+            width:100%;background:rgba(255,255,255,.05);border-radius:14px;padding:4px;
+        }
+        .stars-deposit-input{
+            width:100%;padding:14px;border:none;border-radius:12px;
+            background:transparent;color:#fff;font-size:20px;font-weight:700;
+            text-align:center;font-family:inherit;
+        }
+        .stars-deposit-pay-btn{
+            width:100%;padding:14px;border-radius:14px;border:none;
+            background:linear-gradient(135deg,#FFD700,#FFA500);
+            color:#000;font-size:15px;font-weight:700;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;gap:8px;
+        }
+        .stars-deposit-pay-btn img{width:20px;height:20px}
+
+        /* ═══════════ TON CONNECT OVERLAY ═══════════ */
+        .ton-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;backdrop-filter:blur(8px);transition:opacity .3s,visibility .3s}
+        [data-tc-wallets-modal-container],.tc-wallets-modal-container,#tc-widget-root,tc-root,.tonconnect-modal,div[class*="wallets-modal"]{position:relative!important;z-index:999999!important}
+        tc-root{display:block;position:fixed!important;inset:0;z-index:999999!important;pointer-events:none}
+        tc-root *{pointer-events:auto}
+        .ton-overlay.show{opacity:1;visibility:visible}
+        .ton-modal{background:linear-gradient(180deg,#161923,#0F1219);border-radius:24px;width:90%;max-width:360px;padding:24px 20px;transform:scale(.9);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);border:1px solid rgba(0,136,204,.2)}
+        .ton-overlay.show .ton-modal{transform:scale(1)}
+        .ton-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+        .ton-title{font-weight:800;font-size:18px;display:flex;align-items:center;gap:10px;color:#0088cc}
+        .ton-title img{width:24px;height:24px}
+        .ton-close{width:32px;height:32px;border-radius:10px;border:none;background:rgba(249,105,153,.15);cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .ton-close img{width:14px;height:14px}
+        .ton-rate{text-align:center;padding:16px;border-radius:14px;background:rgba(0,136,204,.1);border:1px solid rgba(0,136,204,.2);margin-bottom:16px}
+        .ton-rate-val{font-weight:900;font-size:28px;color:#0088cc}
+        .ton-rate-label{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px}
+        .ton-input-wrap{display:flex;gap:8px;margin-bottom:16px}
+        .ton-input{flex:1;padding:14px 16px;border-radius:14px;border:2px solid rgba(0,136,204,.3);background:rgba(0,136,204,.08);color:#fff;font-size:16px;font-weight:700;outline:none;text-align:center}
+        .ton-input:focus{border-color:rgba(0,136,204,.6)}
+        .ton-input::placeholder{color:rgba(255,255,255,.3)}
+        .ton-preview{text-align:center;margin-bottom:16px;font-weight:700;font-size:14px;color:rgba(255,255,255,.6)}
+        .ton-preview span{color:#FDA100;font-weight:800}
+        .ton-connect-btn{width:100%;padding:16px;border-radius:16px;border:none;background:linear-gradient(135deg,#0088cc,#00b4ff);color:#fff;font-weight:800;font-size:15px;cursor:pointer;transition:all .2s;box-shadow:0 8px 25px rgba(0,136,204,.3)}
+        .ton-connect-btn:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,136,204,.4)}
+        .ton-connect-btn:disabled{opacity:.5;cursor:default;transform:none}
+        .ton-step{padding:4px 0}
+        .ton-wallet-status{text-align:center;padding:20px 0}
+        .ton-wallet-icon{font-size:48px;margin-bottom:8px}
+        .ton-wallet-text{font-size:14px;color:rgba(255,255,255,.6)}
+        .ton-connected-wallet{background:rgba(24,184,62,.1);border:1px solid rgba(24,184,62,.3);border-radius:14px;padding:14px;margin-bottom:16px;text-align:center}
+        .ton-wallet-badge{font-size:12px;color:#1EE44C;font-weight:700;margin-bottom:6px}
+        .ton-wallet-addr{font-family:'Courier New',monospace;font-size:11px;color:rgba(255,255,255,.7);margin-bottom:8px;word-break:break-all}
+        .ton-disconnect-btn{padding:6px 12px;border-radius:8px;border:none;background:rgba(249,105,153,.15);color:#ff6060;font-size:11px;font-weight:600;cursor:pointer}
+        .ton-disconnect-btn:hover{background:rgba(249,105,153,.25)}
+        .ton-processing{text-align:center;padding:30px 0}
+        .ton-spinner{width:48px;height:48px;border:4px solid rgba(0,136,204,.2);border-top-color:#0088cc;border-radius:50%;animation:tonSpin 1s linear infinite;margin:0 auto 16px}
+        @keyframes tonSpin{to{transform:rotate(360deg)}}
+        .ton-processing-text{font-weight:700;font-size:16px;color:#0088cc;margin-bottom:4px}
+        .ton-processing-hint{font-size:12px;color:rgba(255,255,255,.4)}
+        .ton-success{text-align:center;padding:20px 0}
+        .ton-success-icon{font-size:48px;margin-bottom:12px}
+        .ton-success-text{font-weight:700;font-size:16px;color:#1EE44C;margin-bottom:8px}
+        .ton-success-amount{font-weight:900;font-size:28px;color:#FDA100}
+
+        /* ═══════════ TOAST ═══════════ */
+        .toast{
+            position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);
+            padding:12px 20px;border-radius:12px;
+            background:var(--surface);border:none;
+            font-size:13px;font-weight:600;
+            z-index:9999;
+            opacity:0;visibility:hidden;
+            transition:all .3s;
+        }
+        .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+        .toast.ok{border-color:rgba(30,228,76,.3);color:var(--accent)}
+        .toast.err{border-color:rgba(239,68,68,.3);color:#ef4444}
+
+        /* ═══════════ EMPTY ═══════════ */
+        .empty{
+            text-align:center;padding:60px 20px;color:var(--text-2);
+        }
+        .empty svg{width:48px;height:48px;margin-bottom:16px;opacity:.3}
+        .empty p{font-size:14px}
+
+        
+</style>
+
+<style id="playhub-cases-layout">
+.playhub-cases-section{width:100%;margin-top:14px;}
+.playhub-cases-section .tabs{margin-bottom:12px;}
+.playhub-cases-section .cases{grid-template-columns:repeat(2,minmax(0,1fr));}
+.playhub-cases-section .case{min-width:0;}
+@media(min-width:481px){
+  .playhub-cases-section{max-width:760px;margin-left:auto;margin-right:auto;}
+}
+</style>
+
+<style id="playhub-cases-scroll-fix">
+.playhub-overlay{overflow-y:auto !important;}
+.playhub-screen{padding-bottom:calc(var(--safe-bottom) + 120px) !important;}
+.playhub-cases-section .empty{padding:30px 10px;}
+</style>
+
+<style id="main-menu-cases-fix">
+.main-menu-cases{
+    width:100%;
+    margin:14px 0 0;
+}
+.main-menu-cases .tabs{
+    margin-bottom:12px;
+}
+.main-menu-cases .cases{
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:10px !important;
+}
+.main-menu-cases .case{
+    min-width:0;
+}
+</style>
+
+
+<style id="main-menu-playhub-style">
+/* Main menu: use the same clean Play Hub rhythm */
+body{
+    overflow-x:hidden;
+}
+.games-container{
+    width:480px !important;
+    max-width:100% !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+}
+.games-grid{
+    width:100% !important;
+    display:flex !important;
+    flex-direction:column !important;
+    gap:10px !important;
+}
+.games-grid > *{
+    width:100% !important;
+    min-width:0 !important;
+}
+
+/* Clear section headings matching the Play Hub tabs */
+.main-games-section-title{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:14px 0 10px;
+    padding:0 2px;
+    font-size:16px;
+    line-height:1.2;
+    font-weight:800;
+    color:#fff;
+}
+.main-games-section-title span{
+    color:rgba(255,255,255,.58);
+    font-size:11px;
+    font-weight:700;
+}
+
+/* All game buttons have the same visual width and spacing */
+.games-grid .game-card,
+.games-grid .game-tile,
+.games-grid button{
+    width:100% !important;
+    max-width:none !important;
+}
+
+/* Cases are below ALL game buttons */
+.main-menu-cases{
+    width:100% !important;
+    margin:16px 0 100px !important;
+}
+.main-menu-cases .tabs{
+    display:flex !important;
+    gap:12px !important;
+    margin:0 0 12px !important;
+    padding:0 2px !important;
+}
+.main-menu-cases .tab{
+    padding:8px 0 !important;
+    font-size:16px !important;
+    font-weight:700 !important;
+}
+.main-menu-cases .cases{
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:10px !important;
+    width:100% !important;
+}
+.main-menu-cases .case{
+    min-width:0 !important;
+}
+
+/* Keep the main menu from inheriting Play Hub-only positioning */
+body:not(.playhub-open) .main-menu-cases{
+    position:relative !important;
+}
+</style>
+
 </head>
 <body>
 
@@ -1411,7 +2268,8 @@ body.playhub-open .playhub-upgrade-btn{
     </div>
 
     <div id="gamesView">
-    <div class="games-grid">
+    <div class="main-games-section-title" id="mainGamesTitle"><div>Игры</div><span>Выбери режим</span></div>
+<div class="games-grid">
         <!-- 1. ROCKET / CRASH -->
         <button class="game-tile game-tile-rocket" onclick="goTo('/crash')" aria-label="Rocket">
             <div class="hot-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c3.5 1.2 6.2 4.2 6.9 7.9L20.5 19l-4.2-1.7L14.6 21l-2.1-3.7L8.2 19l1.7-4.2C6.2 14.1 3.2 11.4 2 7.9L7.2 8.8A7.9 7.9 0 0 1 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="13.8" cy="8.4" r="1.6" fill="currentColor"/></svg><span>HOT!</span></div>
@@ -1451,6 +2309,19 @@ body.playhub-open .playhub-upgrade-btn{
             </div>
         </button>
     </div>
+
+<!-- CASES IN MAIN MENU -->
+    <div class="playhub-cases-section main-menu-cases">
+        <div class="tabs">
+            <button class="tab active" data-tab="paid" onclick="switchTab('paid')">Платные</button>
+            <button class="tab" data-tab="free" onclick="switchTab('free')">Бесплатные</button>
+        </div>
+        <div id="casesContainer">
+            <div class="empty"><p>Загрузка кейсов...</p></div>
+        </div>
+
+
+    </div>
     </div>
 </div>
 
@@ -1486,8 +2357,85 @@ body.playhub-open .playhub-upgrade-btn{
     </div>
 </button>
         </div>
+
+        </div>
     </div>
 </div>
+
+<!-- CASE MODAL -->
+<div class="modal-overlay" id="caseModal" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+        <div class="modal-scroll">
+            <div class="modal-handle"></div>
+
+            <div class="modal-hdr">
+                <div class="modal-name" id="modalName">Кейс</div>
+                <div class="modal-price" id="modalPrice">
+                    <img src="/static/img/ton.png" alt="">
+                    <span>0</span>
+                </div>
+            </div>
+
+            <div class="roulette-wrap single-mode" id="rouletteWrap">
+                <div class="roulette-track idle" id="rouletteTrack"></div>
+                <div class="roulette-pointer ptr-top"></div>
+                <div class="roulette-pointer ptr-bottom"></div>
+                <div class="roulette-multi" id="rouletteMulti">
+                    <div class="roulette-multi-rows" id="rouletteMultiRows"></div>
+                </div>
+            </div>
+
+            <div class="qty-row" id="qtyRow">
+                <button class="qty-btn active" data-qty="1" onclick="setQty(1)">1</button>
+                <button class="qty-btn" data-qty="2" onclick="setQty(2)">2</button>
+                <button class="qty-btn" data-qty="3" onclick="setQty(3)">3</button>
+            </div>
+
+            <div class="modal-win" id="modalWin" style="display:none">
+                <div class="modal-win-badge">Вы выиграли!</div>
+                <img class="modal-win-img" id="modalWinImg" src="">
+                <div class="modal-win-name" id="modalWinName"></div>
+                <div class="modal-win-value" id="modalWinValue">
+                    <img src="/static/img/ton.png" alt="">
+                    <span>0</span>
+                </div>
+                <div class="modal-win-btns">
+                    <button class="modal-win-btn" onclick="closeModalAndReset()">Закрыть</button>
+                    <button class="modal-win-btn primary" onclick="openAgain()">Ещё раз</button>
+                </div>
+            </div>
+
+            <div class="promo-input-wrap" id="promoInputWrap" style="display:none">
+                <div class="promo-input-label">Введите промокод</div>
+                <div class="promo-input-row">
+                    <input type="text" class="promo-input" id="promoInput" placeholder="PROMO2025" maxlength="20" autocomplete="off">
+                    <button class="promo-btn" id="promoBtn" onclick="openWithPromo()">Открыть</button>
+                </div>
+            </div>
+
+            <div class="slider-wrap" id="sliderWrap">
+                <div class="slider" id="slider">
+                    <div class="slider-bg" id="sliderBg"></div>
+                    <div class="slider-text">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        Свайпни для открытия
+                    </div>
+                    <div class="slider-thumb" id="sliderThumb">
+                        <img src="/static/img/ton.png" alt="" draggable="false" ondragstart="return false">
+                    </div>
+                </div>
+            </div>
+
+            <div class="contents" id="contentsSection">
+                <div class="contents-title">Содержимое</div>
+                <div class="contents-grid" id="contentsGrid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CASE TOAST -->
+<div class="toast" id="toast"></div>
 
 <!-- DEPOSIT MODAL -->
 <div class="deposit-overlay" id="depositOverlay" onclick="if(event.target===this)closeDeposit()">
@@ -1512,6 +2460,14 @@ body.playhub-open .playhub-upgrade-btn{
 <script>
 var userId = null;
 var userData = null;
+var userBalance = 0;
+var allCases = [];
+var currentTab = 'paid';
+var currentCase = null;
+var selectedQty = 1;
+var isOpening = false;
+var lastWonGift = null;
+var _originalModalWinHTML = '';
 var ROCKET_SLOTS = ['crash','cat','dog','banana','plane','rabbit','ice','unicorn','goldenplane','telegram','TonTheMoon'];
 var lastCrashGif = 'crash';
 
@@ -1677,6 +2633,9 @@ function openPlayHub(){
 
     setPlayHubGift();
 
+    // Load the same cases from the supplied cases page when Play Hub opens.
+    loadCases();
+
     if(playHubGiftTimer) clearInterval(playHubGiftTimer);
     playHubGiftTimer = setInterval(setPlayHubGift, 4000);
 
@@ -1719,7 +2678,8 @@ async function loadTopBar(){
         var d = await r.json();
         if(d.success && d.user){
             userData = d.user;
-            $('balVal').textContent = ((userData.balance_stars || 0) / 100).toFixed(2);
+            userBalance = Number(userData.balance_stars || 0);
+            $('balVal').textContent = (userBalance / 100).toFixed(2);
         }
     }catch(e){}
 }
@@ -1847,6 +2807,848 @@ document.addEventListener('DOMContentLoaded', function () {
         // Standard Play Hub Upgrade route.
         window.location.href = '/play-hub/upgrade';
     });
+});
+</script>
+
+
+<script id="playhub-cases-integrated-js">
+function vibrate(style) {
+    try {
+        var tgApi = window.Telegram && window.Telegram.WebApp;
+        if (tgApi && tgApi.HapticFeedback) {
+            if (style === 'heavy') tgApi.HapticFeedback.impactOccurred('heavy');
+            else if (style === 'error' || style === 'warning') tgApi.HapticFeedback.notificationOccurred(style === 'error' ? 'error' : 'warning');
+            else if (style === 'success') tgApi.HapticFeedback.notificationOccurred('success');
+            else if (style === 'selection') tgApi.HapticFeedback.selectionChanged();
+            else tgApi.HapticFeedback.impactOccurred(style || 'light');
+        } else if (navigator.vibrate) {
+            navigator.vibrate(style === 'heavy' ? 20 : 8);
+        }
+    } catch(e) {}
+}
+function showToast(msg, type) {
+    var toast = $('toast');
+    if(!toast) return;
+    toast.textContent = msg;
+    toast.className = 'toast show ' + (type || 'ok');
+    vibrate(type === 'err' ? 'warning' : 'light');
+    setTimeout(function(){ toast.classList.remove('show'); }, 2500);
+}
+function getGiftPrice(gift) {
+            // ton_balance uses ton_amount directly (already in TON)
+            if (gift.type === 'ton_balance' && gift.ton_amount) {
+                return Number(gift.ton_amount);
+            }
+            // Value from gifts.json is in stars (100 stars = 1 TON)
+            return Number(gift.value || 0) / 100;
+        }
+
+function getTonSvg(amount) {
+            if (amount <= 25) return '/static/img/tons/ton_1.svg';
+            if (amount <= 50) return '/static/img/tons/ton_2.svg';
+            if (amount <= 100) return '/static/img/tons/ton_3.svg';
+            if (amount <= 250) return '/static/img/tons/ton_4.svg';
+            return '/static/img/tons/ton_5.svg';
+        }
+
+function getGiftName(gift) {
+            if (gift.type === 'ton_balance') {
+                return 'Ton Balance';
+            }
+            return (gift.name || 'Подарок').replace(' (Random)', '');
+        }
+
+function getGiftImage(gift) {
+            // TON balance gifts show TON SVG based on amount
+            if (gift.type === 'ton_balance') {
+                const amount = gift.ton_amount || 0;
+                return getTonSvg(amount);
+            }
+            
+            const img = gift.image || '';
+            const slug = gift.fragment_slug || '';
+            
+            // Local fallback mapping for common gifts
+            const LOCAL_MAP = {
+                'toybear': '/static/gifs/gifts/Toy_Bear.gif',
+                'moon': '/static/gifs/gifts/star.gif',
+                'moussecake': '/static/gifs/gifts/Mousse_Cake.gif',
+                'petsnake': '/static/gifs/gifts/Pet_Snake.png',
+                'heartlocket': '/static/gifs/gifts/hl.gif',
+                'vintagecigar': '/static/gifs/gifts/vintage_cigar.gif',
+                'jinglebells': '/static/gifs/gifts/JingleBells.png',
+                'hangingstar': '/static/gifs/gifts/hstarr.gif',
+                'crystalball': '/static/gifs/gifts/Crystal_Ball.png',
+                'bdaycandle': '/static/gifs/gifts/BDCandle.png',
+                'icecream': '/static/gifs/gifts/ice_cream.gif',
+                'lushbouquet': '/static/gifs/gifts/pp.png',
+                'jellybunny': '/static/gifs/gifts/Jelly_Bunny.png',
+                'holidaydrink': '/static/gifs/gifts/Holiday_Drink.png',
+                'xmasstocking': '/static/gifs/gifts/Xmas_Stocking.gif',
+                'westsidesign': '/static/gifs/gifts/Westside_Sign.gif',
+                'nekohelmet': '/static/gifs/gifts/Neko_Helmet.png',
+                'sakuraflower': '/static/gifs/gifts/Sakura_Flower.png',
+                'nailbracelet': '/static/gifs/gifts/Nail_Bracelet.gif',
+                'lootbag': '/static/gifs/gifts/Loot_Bag.gif',
+                'mightyarm': '/static/gifs/gifts/Mighty_Arm.gif',
+                'minioscar': '/static/gifs/gifts/Mini_Oscar.gif',
+                'magicpotion': '/static/gifs/gifts/Magic_Potion.gif',
+                'genielamp': '/static/gifs/gifts/Genie_Lamp.gif',
+                'kissedfrog': '/static/gifs/gifts/Kissed_Frog.gif',
+                'perfumebottle': '/static/gifs/gifts/perfume_bottle.gif',
+                'heroichelmet': '/static/gifs/gifts/heroic_helmet.gif',
+                'iongem': '/static/gifs/gifts/Ion_Gem.gif',
+                'electricskull': '/static/gifs/gifts/electric_skull.gif',
+                'bondedring': '/static/gifs/gifts/Bonded_Ring.gif',
+                'eternalrose': '/static/gifs/gifts/EternalRose.png',
+                'diamondring': '/static/gifs/gifts/Diamond_Ring.png',
+                'cupidcharm': '/static/gifs/gifts/Cupid_Charm.png'
+            };
+            
+            // Try local mapping first
+            if (slug && LOCAL_MAP[slug.toLowerCase()]) {
+                return LOCAL_MAP[slug.toLowerCase()];
+            }
+            
+            // Extract slug from Fragment URL
+            if (img && img.includes('fragment.com/file/gifts/')) {
+                const extractedSlug = img.split('/gifts/')[1]?.split('/')[0];
+                if (extractedSlug && LOCAL_MAP[extractedSlug.toLowerCase()]) {
+                    return LOCAL_MAP[extractedSlug.toLowerCase()];
+                }
+            }
+            
+            // Use original image (Fragment URL or other)
+            if (img && img.startsWith('/')) return img;
+            if (img) return img;
+            return '/static/img/gift.png';
+        }
+
+function setOpening(v) {
+            isOpening = v;
+            if (!v) document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('locked'));
+        }
+
+async function loadCases() {
+            try {
+                const res = await fetch('/api/cases');
+                const data = await res.json();
+                if (data.success && data.cases) {
+                    allCases = data.cases;
+                    allCases.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+                    renderCases();
+                } else {
+                    $('casesContainer').innerHTML = '<div class="empty"><p>Ошибка загрузки кейсов</p></div>';
+                }
+            } catch (e) {
+                console.error('Cases load error:', e);
+                $('casesContainer').innerHTML = '<div class="empty"><p>Ошибка подключения</p></div>';
+            }
+        }
+
+function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.tab === tab);
+            });
+            renderCases();
+        }
+
+function getGradient(caseItem) {
+            const id = caseItem.id || 0;
+            const grads = ['g-yellow', 'g-blue', 'g-purple', 'g-green', 'g-orange', 'g-red'];
+            return grads[id % grads.length];
+        }
+
+function renderCases() {
+            const container = $('casesContainer');
+            const filtered = allCases.filter(c => {
+                const isFree = c.cost === 0 || c.promo;
+                return currentTab === 'free' ? isFree : !isFree;
+            });
+
+            if (!filtered.length) {
+                container.innerHTML = `
+                    <div class="empty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+                        </svg>
+                        <p>Нет доступных кейсов</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="cases">
+                    ${filtered.map(c => {
+                        const grad = getGradient(c);
+                        return `
+                            <div class="case ${grad}" onclick="openCaseModal(${c.id})">
+                                <div class="case-glow"></div>
+                                <div class="case-particles"></div>
+                                <div class="case-inner">
+                                    <div class="case-prices">
+                                        <div class="case-price ton">
+                                            <img src="/static/img/ton.png" alt="">
+                                            ${formatTon(c.cost || 0)}
+                                        </div>
+                                    </div>
+                                    <div class="case-img">
+                                        <img src="${c.image || '/static/img/gift.png'}" alt="" onerror="this.src='/static/img/gift.png'">
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+            /* Spawn particles in each case card */
+            requestAnimationFrame(()=>{
+                document.querySelectorAll('.case-particles').forEach(el => {
+                    if(el.children.length) return;
+                    const colors = ['rgba(255,255,255,.6)','rgba(255,220,100,.5)','rgba(150,200,255,.5)'];
+                    for(let i = 0; i < 5; i++){
+                        const p = document.createElement('div');
+                        p.className = 'case-particle';
+                        p.style.left = (15 + Math.random() * 70) + '%';
+                        p.style.bottom = (5 + Math.random() * 20) + '%';
+                        p.style.animationDelay = (Math.random() * 2.5).toFixed(1) + 's';
+                        p.style.animationDuration = (2 + Math.random() * 1.5).toFixed(1) + 's';
+                        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+                        p.style.width = p.style.height = (2 + Math.random() * 2) + 'px';
+                        el.appendChild(p);
+                    }
+                });
+            });
+        }
+
+async function openCaseModal(caseId) {
+            try {
+                const res = await fetch(`/api/cases/${caseId}`);
+                const data = await res.json();
+                if (data.success && data.case) {
+                    currentCase = data.case;
+                    setOpening(false);
+                    selectedQty = 1;
+                    document.querySelectorAll('.qty-btn').forEach(b => b.classList.toggle('active', b.dataset.qty === '1'));
+                    $('rouletteWrap').className = 'roulette-wrap single-mode';
+                    renderModal();
+                    $('caseModal').classList.add('open');
+                    resetSlider();
+                }
+            } catch (e) {
+                showToast('Ошибка загрузки кейса', 'err');
+            }
+        }
+
+function setQty(q) {
+            if (isOpening) return; // Lock during spin
+            selectedQty = q;
+            document.querySelectorAll('.qty-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.qty) === q));
+            // Update price display
+            if (currentCase) {
+                const price = (currentCase.cost || 0) * q;
+                $('modalPrice').querySelector('span').textContent = formatTon(price);
+            }
+            const wrap = $('rouletteWrap');
+            // Switch between single and multi roulette
+            if (q === 1) {
+                wrap.className = 'roulette-wrap single-mode';
+                $('rouletteTrack').style.display = 'flex';
+                $('rouletteMulti').style.display = 'none';
+                $('rouletteTrack').classList.add('idle');
+            } else {
+                wrap.className = 'roulette-wrap multi-mode-' + q;
+                $('rouletteTrack').style.display = 'none';
+                $('rouletteMulti').style.display = 'block';
+                initMultiRoulette(q);
+            }
+        }
+
+function initMultiRoulette(qty) {
+            const container = $('rouletteMultiRows');
+            const gifts = currentCase ? (currentCase.gifts_details || currentCase.gifts || []) : [];
+            if (!gifts.length) return;
+            container.innerHTML = '';
+            const offsets = [0, 55, 27];
+            for (let r = 0; r < qty; r++) {
+                const row = document.createElement('div');
+                row.className = 'roulette-row';
+                const track = document.createElement('div');
+                track.className = 'roulette-row-track idle';
+                track.id = 'multiRowTrack-' + r;
+                track.style.transform = 'translateX(' + offsets[r % offsets.length] + 'px)';
+                // Fill with shuffled items
+                const items = [];
+                for (let i = 0; i < 30; i++) {
+                    const g = gifts[Math.floor(Math.random() * gifts.length)];
+                    const gPrice = getGiftPrice(g);
+                    const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
+                    items.push(`<div class="roulette-row-item">
+                        <div class="ri-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                        <img class="ri-img" src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
+                    </div>`);
+                }
+                track.innerHTML = items.join('') + items.join('');
+                row.appendChild(track);
+                // Blue triangle pointers for this row
+                const ptrT = document.createElement('div');
+                ptrT.className = 'roulette-pointer ptr-top';
+                row.appendChild(ptrT);
+                const ptrB = document.createElement('div');
+                ptrB.className = 'roulette-pointer ptr-bottom';
+                row.appendChild(ptrB);
+                container.appendChild(row);
+            }
+        }
+
+function renderModal() {
+            if (!currentCase) return;
+            
+            const price = (currentCase.cost || 0) * selectedQty;
+            $('modalName').textContent = currentCase.name || 'Кейс';
+            $('modalPrice').querySelector('span').textContent = formatTon(price);
+
+            const rawGifts = currentCase.gifts_details || currentCase.gifts || [];
+            const isPromoCase = currentCase.promo === true;
+            
+            // Sort gifts by price (expensive first)
+            const gifts = [...rawGifts].sort((a, b) => getGiftPrice(b) - getGiftPrice(a));
+            
+            // Hide win section, show controls
+            $('modalWin').style.display = 'none';
+            $('rouletteWrap').style.display = 'block';
+            $('rouletteWrap').classList.remove('won');
+            $('contentsSection').style.display = 'block';
+            
+            // Show/hide qty row (not for promo cases)
+            $('qtyRow').style.display = isPromoCase ? 'none' : 'flex';
+            
+            // Toggle single vs multi roulette
+            const wrap = $('rouletteWrap');
+            if (selectedQty === 1) {
+                wrap.className = 'roulette-wrap single-mode';
+                $('rouletteTrack').style.display = 'flex';
+                $('rouletteMulti').style.display = 'none';
+            } else {
+                wrap.className = 'roulette-wrap multi-mode-' + selectedQty;
+                $('rouletteTrack').style.display = 'none';
+                $('rouletteMulti').style.display = 'block';
+                initMultiRoulette(selectedQty);
+            }
+            
+            // Show promo input for promo cases, hide slider
+            if (isPromoCase) {
+                $('promoInputWrap').style.display = 'block';
+                $('sliderWrap').style.display = 'none';
+                $('promoInput').value = '';
+            } else {
+                $('promoInputWrap').style.display = 'none';
+                $('sliderWrap').style.display = 'block';
+            }
+            
+            if (!gifts.length) {
+                $('rouletteTrack').innerHTML = '<div style="padding:40px 20px;color:#828AA4;text-align:center;width:100%;">Нет подарков</div>';
+                $('contentsGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#828AA4;padding:20px;">Загрузка...</div>';
+                return;
+            }
+            
+            // Roulette items — price badge overlay + centered image
+            const rouletteItems = [];
+            for (let i = 0; i < 30; i++) {
+                const g = gifts[i % gifts.length];
+                const gPrice = getGiftPrice(g);
+                const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
+                rouletteItems.push(`
+                    <div class="roulette-item">
+                        <div class="ri-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                        <img class="ri-img" src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
+                    </div>
+                `);
+            }
+            const track = $('rouletteTrack');
+            track.innerHTML = rouletteItems.join('') + rouletteItems.join('');
+            track.classList.add('idle');
+            track.classList.remove('spinning');
+            track.style.transition = 'none';
+            track.style.transform = 'translateX(0)';
+
+            // Contents with names (name top, img center, price bottom)
+            $('contentsGrid').innerHTML = gifts.map(g => {
+                const gPrice = getGiftPrice(g);
+                const gName = getGiftName(g);
+                const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
+                return `
+                    <div class="content-item">
+                        <div class="content-item-name">${escapeHtml(gName)}</div>
+                        <img src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
+                        <div class="content-price">
+                            <img src="${tonIcon}" alt="">
+                            ${formatTon(gPrice)} TON
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str || '';
+            return div.innerHTML;
+        }
+
+function checkHasFunds() {
+            if (!currentCase || !userId) return true;
+            if (currentCase.cost <= 0 || currentCase.promo) return true;
+            const rawCost = currentCase.cost || 0;
+            const totalCostInStars = (currentCase.cost_type === 'ton' ? rawCost * 100 : rawCost) * selectedQty;
+            return userBalance >= totalCostInStars;
+        }
+
+function initSlider() {
+            const thumb = $('sliderThumb');
+            const slider = $('slider');
+            const bg = $('sliderBg');
+            const sliderText = slider.querySelector('.slider-text');
+            
+            let startX = 0;
+            let currentX = 0;
+            let isDragging = false;
+            let lastVibratePct = 0;
+            const maxX = () => slider.offsetWidth - thumb.offsetWidth - 8;
+
+            function onStart(e) {
+                if (isOpening) return;
+                isDragging = true;
+                startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                thumb.style.transition = 'none';
+                bg.style.transition = 'none';
+                
+                // Apply balance feedback
+                slider.classList.remove('insufficient', 'sufficient');
+                const hasFunds = checkHasFunds();
+                if (!hasFunds) {
+                    slider.classList.add('insufficient');
+                    sliderText.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 5.64l-12.72 12.72"/><path d="M5.64 5.64l12.72 12.72"/></svg> Недостаточно средств';
+                    vibrate('error');
+                } else {
+                    slider.classList.add('sufficient');
+                    sliderText.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Открыть кейс';
+                    vibrate('light');
+                }
+                lastVibratePct = 0;
+            }
+
+            function onMove(e) {
+                if (!isDragging) return;
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const diff = clientX - startX;
+                currentX = Math.max(0, Math.min(diff, maxX()));
+                thumb.style.left = (4 + currentX) + 'px';
+                bg.style.transform = `scaleX(${currentX / maxX()})`;
+                
+                // Gentle vibration during drag every 20%
+                const pct = currentX / maxX();
+                if (pct - lastVibratePct > 0.2) {
+                    vibrate('selection');
+                    lastVibratePct = pct;
+                }
+            }
+
+            function onEnd() {
+                if (!isDragging) return;
+                isDragging = false;
+                thumb.style.transition = 'left .3s';
+                bg.style.transition = 'transform .3s';
+
+                const hasFunds = checkHasFunds();
+
+                if (currentX >= maxX() * 0.9 && hasFunds) {
+                    // Successful swipe
+                    thumb.style.left = (4 + maxX()) + 'px';
+                    bg.style.transform = 'scaleX(1)';
+                    vibrate('success');
+                    // Show motivational text for multi-open
+                    if (selectedQty > 1) {
+                        showSwipeMotivate(selectedQty);
+                    }
+                    openCase();
+                } else if (currentX >= maxX() * 0.9 && !hasFunds) {
+                    // Tried to open but no funds
+                    vibrate('error');
+                    showToast('Недостаточно средств', 'err');
+                    openDeposit();
+                    resetSlider();
+                } else {
+                    // Incomplete swipe — vibrate + glow
+                    if (currentX > maxX() * 0.15) {
+                        vibrate('error');
+                        slider.classList.add('swipe-fail');
+                        setTimeout(() => slider.classList.remove('swipe-fail'), 500);
+                    }
+                    thumb.style.left = '4px';
+                    bg.style.transform = 'scaleX(0)';
+                }
+                currentX = 0;
+                
+                // Reset colors after delay
+                setTimeout(() => {
+                    slider.classList.remove('insufficient', 'sufficient');
+                    sliderText.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Свайпни для открытия';
+                }, 400);
+            }
+
+            thumb.addEventListener('mousedown', onStart);
+            thumb.addEventListener('touchstart', onStart, {passive: true});
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('touchmove', onMove, {passive: true});
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchend', onEnd);
+        }
+
+function resetSlider() {
+            const thumb = $('sliderThumb');
+            const bg = $('sliderBg');
+            const slider = $('slider');
+            thumb.style.transition = 'none';
+            bg.style.transition = 'none';
+            thumb.style.left = '4px';
+            bg.style.transform = 'scaleX(0)';
+            slider.classList.remove('insufficient', 'sufficient');
+            const sliderText = slider.querySelector('.slider-text');
+            if (sliderText) sliderText.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Свайпни для открытия';
+        }
+
+function showSwipeMotivate(qty) {
+            var msgs = [
+                ['Удачи!', 'Поехали!', 'Вперёд!'],
+                ['Двойной удар!', 'x2 — Удачи!', 'Дабл!'],
+                ['Тройной шанс!', 'x3 Тебе повезёт!', 'Три удачи!']
+            ];
+            var group = Math.min(qty, 3) - 1;
+            var msg = msgs[group][Math.floor(Math.random() * msgs[group].length)];
+            var el = document.createElement('div');
+            el.className = 'swipe-motivate';
+            el.textContent = msg;
+            var wrap = $('sliderWrap');
+            wrap.style.position = 'relative';
+            wrap.appendChild(el);
+            setTimeout(function(){
+                el.style.animation = 'swipeMotivateOut .4s ease forwards';
+                setTimeout(function(){ el.remove(); }, 400);
+            }, 1500);
+        }
+
+async function openCase() {
+            if (!currentCase || isOpening) return;
+            
+            if (!userId) {
+                showToast('Откройте через Telegram', 'err');
+                resetSlider();
+                return;
+            }
+
+            // Convert cost to stars if cost_type is 'ton' (1 TON = 100 stars)
+            const rawCost = currentCase.cost || 0;
+            const totalCostInStars = (currentCase.cost_type === 'ton' ? rawCost * 100 : rawCost) * selectedQty;
+            if (userBalance < totalCostInStars) {
+                showToast('Недостаточно средств', 'err');
+                openDeposit();
+                resetSlider();
+                return;
+            }
+
+            isOpening = true;
+            document.querySelectorAll('.qty-btn').forEach(b => b.classList.add('locked'));
+
+            try {
+                const res = await fetch('/api/cases/open', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: userId,
+                        case_id: currentCase.id,
+                        quantity: selectedQty
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    userBalance = data.new_balance ? data.new_balance.stars : (userBalance - totalCostInStars);
+                    $('balanceDisplay').textContent = formatTon(starsToTon(userBalance));
+                    runSpinRoulette(data.won_gifts || [data.won_gift]);
+                } else {
+                    showToast(data.error || 'Ошибка открытия', 'err');
+                    setOpening(false);
+                    resetSlider();
+                }
+            } catch (e) {
+                showToast('Ошибка сети', 'err');
+                setOpening(false);
+                resetSlider();
+            }
+        }
+
+async function openWithPromo() {
+            if (!currentCase || isOpening) return;
+            
+            if (!userId) {
+                showToast('Откройте через Telegram', 'err');
+                return;
+            }
+            
+            const promoCode = $('promoInput').value.trim().toUpperCase();
+            if (!promoCode) {
+                showToast('Введите промокод', 'err');
+                return;
+            }
+            
+            isOpening = true;
+            $('promoBtn').disabled = true;
+            
+            try {
+                const res = await fetch('/api/open-case', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: userId,
+                        case_id: currentCase.id,
+                        promo_code: promoCode,
+                        is_promo: true
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    runSpinRoulette(data.won_gifts || [data.won_gift]);
+                } else {
+                    showToast(data.error || 'Неверный промокод', 'err');
+                    setOpening(false);
+                }
+            } catch (e) {
+                showToast('Ошибка сети', 'err');
+                setOpening(false);
+            }
+            $('promoBtn').disabled = false;
+        }
+
+function runSpinRoulette(wonGifts) {
+            const giftsArr = Array.isArray(wonGifts) ? wonGifts : [wonGifts];
+            lastWonGift = giftsArr[0];
+            
+            // Get all gifts including ton_balance
+            const allGifts = currentCase.gifts_details || currentCase.gifts || [];
+            const gifts = allGifts;
+
+            if (selectedQty > 1 && giftsArr.length > 1) {
+                // Multi-column vertical spin
+                runMultiSpin(giftsArr, gifts);
+                return;
+            }
+
+            const track = $('rouletteTrack');
+            
+            // Stop idle animation
+            track.classList.remove('idle');
+            track.classList.add('spinning');
+            
+            // Generate spin items with winner at position 42
+            const items = [];
+            for (let i = 0; i < 50; i++) {
+                const g = gifts.length ? gifts[Math.floor(Math.random() * gifts.length)] : giftsArr[0];
+                items.push(g);
+            }
+            items[42] = giftsArr[0];
+
+            track.innerHTML = items.map(g => {
+                const gPrice = getGiftPrice(g);
+                const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
+                return `
+                    <div class="roulette-item">
+                        <div class="ri-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                        <img class="ri-img" src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
+                    </div>
+                `;
+            }).join('');
+
+            track.style.transition = 'none';
+            track.style.transform = 'translateX(0)';
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const itemWidth = 118; // 110px + 8px gap
+                    const wrap = $('rouletteWrap');
+                    const centerOffset = wrap.offsetWidth / 2;
+                    const targetPos = itemWidth * 42 + itemWidth / 2;
+                    track.style.transition = 'transform 7s cubic-bezier(.05,.85,.15,1)';
+                    track.style.transform = `translateX(${centerOffset - targetPos}px)`;
+                });
+            });
+
+            // Vibrate during spin at intervals
+            let spinVibCount = 0;
+            const spinVibInterval = setInterval(() => {
+                vibrate('light');
+                spinVibCount++;
+                if (spinVibCount > 12) clearInterval(spinVibInterval);
+            }, 500);
+
+            setTimeout(() => {
+                clearInterval(spinVibInterval);
+                vibrate('heavy');
+                showWinResultInModal(giftsArr[0]);
+            }, 7300);
+        }
+
+function runMultiSpin(wonGiftsArr, allGifts) {
+            // Show multi roulette with stacked horizontal rows
+            const wrap = $('rouletteWrap');
+            $('rouletteTrack').style.display = 'none';
+            $('rouletteMulti').style.display = 'block';
+            wrap.className = 'roulette-wrap multi-mode-' + wonGiftsArr.length;
+            
+            const container = $('rouletteMultiRows');
+            container.innerHTML = '';
+            const qty = wonGiftsArr.length;
+            const offsets = [0, 55, 27];
+            
+            for (let r = 0; r < qty; r++) {
+                const row = document.createElement('div');
+                row.className = 'roulette-row';
+                const track = document.createElement('div');
+                track.className = 'roulette-row-track spinning';
+                
+                // Generate 50 items with winner at position 42
+                const items = [];
+                for (let i = 0; i < 50; i++) {
+                    const g = allGifts.length ? allGifts[Math.floor(Math.random() * allGifts.length)] : wonGiftsArr[r];
+                    items.push(g);
+                }
+                items[42] = wonGiftsArr[r];
+                
+                track.innerHTML = items.map(g => {
+                    const gPrice = getGiftPrice(g);
+                    const tonIcon = g.type === 'ton_balance' ? getTonSvg(gPrice) : '/static/img/ton.png';
+                    return `<div class="roulette-row-item">
+                        <div class="ri-price"><img src="${tonIcon}" alt="">${formatTon(gPrice)}</div>
+                        <img class="ri-img" src="${getGiftImage(g)}" alt="" onerror="this.src='/static/img/gift.png'">
+                    </div>`;
+                }).join('');
+                
+                row.appendChild(track);
+                // Blue triangle pointers for this row
+                const ptrT = document.createElement('div');
+                ptrT.className = 'roulette-pointer ptr-top';
+                row.appendChild(ptrT);
+                const ptrB = document.createElement('div');
+                ptrB.className = 'roulette-pointer ptr-bottom';
+                row.appendChild(ptrB);
+                container.appendChild(row);
+                
+                // Animate horizontal scroll with staggered delay (no paddingLeft gap)
+                const rowOffset = offsets[r % offsets.length];
+                const delay = r * 400;
+                track.style.transition = 'none';
+                track.style.transform = `translateX(${rowOffset}px)`;
+                setTimeout(() => {
+                    const itemW = 118; // 110px + 8px gap
+                    const rowW = row.offsetWidth || 300;
+                    const centerOff = rowW / 2;
+                    const targetPos = itemW * 42 + itemW / 2;
+                    track.style.transition = `transform ${6.5 + r * 0.7}s cubic-bezier(.15,.85,.08,1)`;
+                    track.style.transform = `translateX(${centerOff - targetPos + rowOffset}px)`;
+                }, delay + 50);
+            }
+            
+            // Vibrate
+            let vc = 0;
+            const vi = setInterval(() => { vibrate('light'); vc++; if(vc > 12) clearInterval(vi); }, 500);
+            
+            const totalTime = 7000 + (qty - 1) * 1000;
+            setTimeout(() => {
+                clearInterval(vi);
+                vibrate('heavy');
+                showMultiWinResult(wonGiftsArr);
+            }, totalTime);
+        }
+
+function showMultiWinResult(giftsArr) {
+            $('rouletteWrap').classList.add('won');
+            $('sliderWrap').style.display = 'none';
+            $('contentsSection').style.display = 'none';
+            $('qtyRow').style.display = 'none';
+            
+            if (!_originalModalWinHTML) _originalModalWinHTML = $('modalWin').innerHTML;
+            
+            const totalValue = giftsArr.reduce((s, g) => s + getGiftPrice(g), 0);
+            
+            $('modalWin').innerHTML = `
+                <div style="text-align:center;padding:10px 0;">
+                    <div style="font-size:14px;color:#4ADE80;margin-bottom:12px;">Вы выиграли ${giftsArr.length} подарков!</div>
+                    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;">
+                        ${giftsArr.map(g => `
+                            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:8px;width:80px;text-align:center;">
+                                <img src="${getGiftImage(g)}" style="width:50px;height:50px;object-fit:contain;" onerror="this.src='/static/img/gift.png'">
+                                <div style="font-size:11px;color:#fff;margin-top:4px;">${formatTon(getGiftPrice(g))} TON</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="color:#4ADE80;font-size:16px;font-weight:600;">Итого: ${formatTon(totalValue)} TON</div>
+                    <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
+                        <button onclick="openAgain()" style="flex:1;max-width:140px;padding:10px;background:#3b82f6;border:none;border-radius:10px;color:white;font-size:14px;cursor:pointer;">Ещё раз</button>
+                        <button onclick="closeModalAndReset()" style="flex:1;max-width:140px;padding:10px;background:rgba(255,255,255,0.08);border:none;border-radius:10px;color:white;font-size:14px;cursor:pointer;">Закрыть</button>
+                    </div>
+                </div>
+            `;
+            $('modalWin').style.display = 'block';
+            setOpening(false);
+        }
+
+function showWinResultInModal(gift) {
+            // Show won state
+            $('rouletteWrap').classList.add('won');
+            $('sliderWrap').style.display = 'none';
+            $('contentsSection').style.display = 'none';
+            $('qtyRow').style.display = 'none';
+            
+            // Show win section in modal
+            $('modalWinImg').src = getGiftImage(gift);
+            $('modalWinName').textContent = getGiftName(gift);
+            $('modalWinValue').querySelector('span').textContent = formatTon(getGiftPrice(gift));
+            $('modalWin').style.display = 'block';
+            
+            setOpening(false);
+        }
+
+function closeModalAndReset() {
+            closeModal();
+            lastWonGift = null;
+        }
+
+function openAgain() {
+            if (!currentCase) return;
+            // Restore original modalWin HTML if it was replaced by multi-win
+            if (_originalModalWinHTML) {
+                $('modalWin').innerHTML = _originalModalWinHTML;
+                _originalModalWinHTML = '';
+            }
+            $('modalWin').style.display = 'none';
+            renderModal();
+            resetSlider();
+        }
+
+function closeModal() {
+            $('caseModal').classList.remove('open');
+            currentCase = null;
+        }
+
+
+document.addEventListener('DOMContentLoaded', function(){
+    // Cases are loaded only for the Play Hub page.
+    loadCases();
+    if (!window.__playHubCaseSliderReady) {
+        window.__playHubCaseSliderReady = true;
+        initSlider();
+    }
 });
 </script>
 
