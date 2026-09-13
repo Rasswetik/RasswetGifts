@@ -507,21 +507,7 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
     .bonus-announce-title{font-size:24px}
 }
 
-/* CRASH GRAPH v3 */
-.crash-chart{position:absolute;inset:0;width:100%;height:100%;z-index:2;overflow:visible;pointer-events:none;filter:drop-shadow(0 0 22px rgba(36,195,142,.22));opacity:0;visibility:hidden;transform:none;transition:opacity .18s ease,filter .35s ease;}
-.crash-chart-grid{fill:none;stroke:rgba(255,255,255,.06);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;opacity:.55;}
-.crash-chart-path,.crash-chart-glow{fill:none;stroke:url(#crashChartGradient);stroke-width:14;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;transition:stroke .45s ease,stroke-width .35s ease,filter .35s ease;stroke-dasharray:1 1;stroke-dashoffset:1;}
-.crash-chart-glow{stroke-width:28;opacity:.22;filter:url(#crashChartGlow);}
-.crash-chart-dot{fill:#24C38E;stroke:#fff;stroke-width:5;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 16px rgba(36,195,142,.85));transition:cx .08s linear,cy .08s linear,fill .35s ease,r .35s ease;}
-.game-field.scene-space .crash-chart{opacity:0;transform:scale(.96);}
-.crash-chart.gold .crash-chart-path,.crash-chart.gold .crash-chart-glow{stroke:url(#crashChartGold);}
-.crash-chart.gold .crash-chart-dot{fill:#FFD700;filter:drop-shadow(0 0 18px rgba(255,215,0,.95));}
-.crash-chart.hard .crash-chart-path,.crash-chart.hard .crash-chart-glow{animation:crashChartHard .18s ease-in-out infinite alternate;}
-.crash-chart.hard .crash-chart-dot{animation:crashChartDotHard .16s ease-in-out infinite alternate;}
-@keyframes crashChartHard{from{transform:translate(0,0) scaleY(1)}to{transform:translate(3px,-2px) scaleY(1.015)}}
-@keyframes crashChartDotHard{from{r:9}to{r:13}}
-.game-field.crash-hard{box-shadow:inset 0 0 90px rgba(255,215,0,.14),0 0 42px rgba(255,215,0,.18);}
-@media(max-width:520px){.crash-chart{inset:0;width:100%;height:100%;}}
+}
 
 /* CRASH POLISH v2 */
 #cdDisplay{font-variant-numeric:tabular-nums;text-shadow:0 0 20px rgba(88,166,255,.45);}
@@ -653,28 +639,7 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
 
     <div class="game-field" id="gameField">
         <div class="bonus-badge" id="bonusBadge">🏆 BONUS ROUND 🏆</div>
-        <svg class="crash-chart" id="crashChart" viewBox="0 0 1000 520" preserveAspectRatio="none" aria-hidden="true">
-            <defs>
-                <linearGradient id="crashChartGradient" x1="0" y1="1" x2="1" y2="0">
-                    <stop offset="0%" stop-color="#24C38E"/>
-                    <stop offset="58%" stop-color="#45D1B2"/>
-                    <stop offset="100%" stop-color="#3B82F6"/>
-                </linearGradient>
-                <linearGradient id="crashChartGold" x1="0" y1="1" x2="1" y2="0">
-                    <stop offset="0%" stop-color="#FFD54A"/>
-                    <stop offset="50%" stop-color="#FFD700"/>
-                    <stop offset="100%" stop-color="#FFF0A1"/>
-                </linearGradient>
-                <filter id="crashChartGlow" x="-30%" y="-30%" width="160%" height="160%">
-                    <feGaussianBlur stdDeviation="7" result="blur"/>
-                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                </filter>
-            </defs>
-            <path id="crashChartGridPath" class="crash-chart-grid" d="M -90 560 C 140 550 220 430 430 320 C 620 215 790 95 1090 -40"/>
-            <path id="crashChartGlowPath" class="crash-chart-glow" d="M -90 560 C 140 550 220 430 430 320 C 620 215 790 95 1090 -40"/>
-            <path id="crashChartPath" class="crash-chart-path" d="M -90 560 C 140 550 220 430 430 320 C 620 215 790 95 1090 -40"/>
-            <circle id="crashChartDot" class="crash-chart-dot" cx="40" cy="460" r="9"/>
-        </svg>
+
         <div class="countdown-display" id="cdDisplay"></div>
         <div class="rocket-wrap hide" id="rocketWrap">
             <img src="/static/gifs/rockets/crash.gif" alt="" id="rocketImg">
@@ -947,66 +912,6 @@ function formatCrashMoney(stars){
 }
 function starsToTon(s){ return Number(s || 0) / 100; }
 function formatTon(t){ return (Math.round(Number(t || 0) * 100) / 100).toFixed(2); }
-
-var _graphLastMult = 1.0;
-var _graphPathLength = 0;
-function initCrashGraph(){
-    var path = $('crashChartPath');
-    if(!path) return;
-    try{ _graphPathLength = path.getTotalLength(); }catch(e){ _graphPathLength = 0; }
-    var svg = $('crashChart');
-    if(svg){
-        svg.style.opacity = '0';
-        svg.style.visibility = 'hidden';
-    }
-    resetCrashGraph();
-}
-function resetCrashGraph(){
-    var svg = $('crashChart'), path = $('crashChartPath'), glow = $('crashChartGlowPath'), dot = $('crashChartDot');
-    if(!svg || !path || !dot) return;
-    if(!_graphPathLength){ try{ _graphPathLength = path.getTotalLength(); }catch(e){} }
-    var len = _graphPathLength || 1;
-    path.style.strokeDasharray = len + ' ' + len;
-    path.style.strokeDashoffset = len;
-    if(glow){ glow.style.strokeDasharray = len + ' ' + len; glow.style.strokeDashoffset = len; }
-    var pt;
-    try{ pt = path.getPointAtLength(0); }catch(e){ pt = {x:-90,y:560}; }
-    dot.setAttribute('cx', pt.x.toFixed(1));
-    dot.setAttribute('cy', pt.y.toFixed(1));
-    svg.classList.remove('visible','gold','hard');
-    var field = $('gameField'); if(field) field.classList.remove('crash-hard');
-    svg.style.opacity = '0';
-    svg.style.visibility = 'hidden';
-    _graphLastMult = 1.0;
-}
-function updateCrashGraph(mult, target){
-    var svg = $('crashChart'), path = $('crashChartPath'), glow = $('crashChartGlowPath'), dot = $('crashChartDot'), field = $('gameField');
-    if(!svg || !path || !dot) return;
-    if(!_graphPathLength){ try{ _graphPathLength = path.getTotalLength(); }catch(e){} }
-    var m = Math.max(1, Number(mult || 1));
-    var t = Math.max(1.01, Number(target || 5));
-    var endForProgress = Math.max(5, Math.min(t, 10));
-    var progress = Math.max(0, Math.min(1, (m - 1) / (endForProgress - 1)));
-    var len = _graphPathLength || 1;
-    var drawn = Math.max(0, len * progress);
-    path.style.strokeDasharray = len + ' ' + len;
-    path.style.strokeDashoffset = String(len - drawn);
-    if(glow){ glow.style.strokeDasharray = len + ' ' + len; glow.style.strokeDashoffset = String(len - drawn); }
-    try{
-        var pt = path.getPointAtLength(drawn);
-        dot.setAttribute('cx', pt.x.toFixed(1));
-        dot.setAttribute('cy', pt.y.toFixed(1));
-    }catch(e){}
-    var active = (status === 'flying' || status === 'crashed');
-    svg.classList.toggle('visible', active);
-    svg.style.visibility = active ? 'visible' : 'hidden';
-    svg.style.opacity = active ? '1' : '0';
-    if(m >= 5) svg.classList.add('gold'); else svg.classList.remove('gold');
-    if(m >= 10){ svg.classList.add('hard'); if(field) field.classList.add('crash-hard'); }
-    else { svg.classList.remove('hard'); if(field) field.classList.remove('crash-hard'); }
-    _graphLastMult = m;
-}
-
 
 function updateBalanceUI(){
     if(!userData) return;
@@ -1607,7 +1512,6 @@ function resetRoundState(){
     if(cd){ cd.classList.remove('active'); cd.textContent = ''; }
     if(gf){ gf.classList.remove('flying','counting','crash-hit','scene-flying','scene-crash','scene-counting'); applyCrashBackground(); }
     if(coeff){ coeff.className = 'coeff-box waiting'; coeff.textContent = 'Waiting'; }
-    resetCrashGraph();
 
     var ri = $('rocketImg');
     if(ri){
@@ -1621,7 +1525,6 @@ function resetRoundState(){
     betsGeneration++;
     loadBets();
     loadHistory();
-    resetCrashGraph();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1635,7 +1538,6 @@ function triggerCrashAnimation(finalMult){
     status = 'crashed';
     dispMult = finalMult;
     servMult = finalMult;
-    updateCrashGraph(finalMult, targetMult);
 
     var bm = $('boomWrap');
     var bimg = $('boomImg');
@@ -1910,8 +1812,7 @@ function renderLoop(ts){
             if(computed < 1.0) computed = 1.0;
 
             dispMult = computed;
-            updateCrashGraph(dispMult, targetMult);
-
+    
             if(now - _lastRocketUpdate > 100){
                 _lastRocketUpdate = now;
                 var ri = $('rocketImg');
@@ -2507,42 +2408,67 @@ async function loadBets(){
         if(!r.ok) return;
         var d = await r.json();
         if(!d.success || gen !== betsGeneration) return;
-        var bets = (d.bets || []).sort(function(a,b){return (b.id||0)-(a.id||0);});
-        var bc=$('betsCount'); if(bc)bc.textContent=bets.length;
+        var bets = Array.isArray(d.bets) ? d.bets.slice() : [];
+        bets.sort(function(a,b){ return Number(b.id||0)-Number(a.id||0); });
+        var bc=$('betsCount'); if(bc) bc.textContent=bets.length;
         var list=$('betsList'); if(!list)return;
-        if(!bets.length){list.innerHTML='<div class="no-bets">Waiting for bets...</div>';return;}
+        if(!bets.length){
+            list.innerHTML='<div class="no-bets">Waiting for bets...</div>';
+            return;
+        }
         var clockSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
         var crashSvg='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>';
+        var tonIcon='/static/img/ton.png';
         list.innerHTML=bets.map(function(b){
-          var name=b.first_name||('User '+b.user_id), ini=(b.first_name||'U')[0].toUpperCase();
-          var avatar=b.photo_url&&b.photo_url!='/static/img/default_avatar.png'?'<img src="'+b.photo_url+'" alt="">':ini;
-          var giftBet=b.bet_type==='gift';
-          var betImg=giftBet?((b.gift_images&&b.gift_images[0])||b.gift_image||'/static/img/gift.png'):'/static/img/ton.png';
-          var betAmt=formatCrashMoney(b.bet_amount);
-          var coeffHtml, cls='active';
-          if(b.status==='cashed_out'){ cls='won'; coeffHtml='<div class="bet-status won">×'+(b.cashout_multiplier?Number(b.cashout_multiplier).toFixed(2):'?')+'</div>'; }
-          else if(b.status==='lost'){ cls='lost'; coeffHtml='<div class="bet-status lost">'+crashSvg+' ×'+(b.cashout_multiplier?Number(b.cashout_multiplier).toFixed(2):(servMult||1).toFixed(2))+'</div>'; }
-          else coeffHtml='<div class="bet-status active">'+clockSvg+' ×'+(dispMult||1).toFixed(2)+'</div>';
+            var name=b.first_name || b.username || ('User '+b.user_id);
+            var ini=(String(name||'U')[0]||'U').toUpperCase();
+            var avatar=(b.photo_url && b.photo_url!='/static/img/default_avatar.png') ? '<img src="'+b.photo_url+'" alt="">' : ini;
+            var betAmt=formatCrashMoney(b.bet_amount);
+            var coeffHtml, cls='active';
+            if(b.status==='cashed_out'){
+                cls='won';
+                coeffHtml='<div class="bet-status won">×'+(b.cashout_multiplier?Number(b.cashout_multiplier).toFixed(2):'?')+'</div>';
+            } else if(b.status==='lost'){
+                cls='lost';
+                coeffHtml='<div class="bet-status lost">'+crashSvg+' ×'+(b.cashout_multiplier?Number(b.cashout_multiplier).toFixed(2):(servMult||1).toFixed(2))+'</div>';
+            } else {
+                coeffHtml='<div class="bet-status active">'+clockSvg+' ×'+(dispMult||1).toFixed(2)+'</div>';
+            }
 
-          var payoutImg='/static/img/ton.png';
-          var payoutText=b.status==='cashed_out'?formatCrashMoney(b.win_amount||0):formatCrashMoney(b.win_value||b.potential_win||0);
-          if(b.status==='cashed_out' && b.win_gifts && b.win_gifts[0]){
-              payoutImg=b.win_gifts[0].image||'/static/img/ton.png';
-              payoutText=formatCrashMoney(b.win_gifts[0].value || b.win_amount || 0);
-          } else if(b.status==='cashed_out' && b.win_gift_image){
-              payoutImg=b.win_gift_image;
-          } else {
-              var potential = Number(b.potential_win || 0);
-              if(!potential){ potential = Math.floor(Number(b.bet_amount||0) * Number(dispMult||1)); }
-              var isOwnBet = !!(userData && Number(b.user_id) === Number(userData.id));
-              var rg = isOwnBet ? getCrashRewardGift(potential) : getAchievableGift(potential);
-              if(rg){ payoutImg=getGiftImage(rg); payoutText=formatCrashMoney(rg.value || 0); }
-          }
-          var fixed=b.status==='cashed_out'?' bet-fixed':'';
-          return '<div class="bet-row '+cls+fixed+'">'+
-            '<div class="bet-left"><div class="bet-avatar">'+avatar+'</div><div class="bet-info">'+
-              '<div class="bet-name">'+name+'</div><div class="bet-amt"><img class="bet-gift-preview" src="'+betImg+'" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'"><span class="bet-amount-text">'+betAmt+'</span></div>'+
-            '</div></div><div class="bet-right-stack">'+coeffHtml+'<div class="bet-payout"><img src="'+payoutImg+'" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'" alt=""><span>'+payoutText+'</span></div></div></div>';
+            // Left side always shows the stake currency icon under the nickname.
+            var betIcon=tonIcon;
+
+            // Right side: first priority is the actually assigned/won gift from the server.
+            // Only while the bet is still active do we calculate the nearest reachable gift.
+            var payoutImg=tonIcon;
+            var payoutText='0.00';
+            var potential=Number(b.potential_win||0);
+            if(!potential) potential=Math.floor(Number(b.bet_amount||0)*Number(dispMult||1));
+
+            var serverWinGift=(Array.isArray(b.win_gifts)&&b.win_gifts.length) ? b.win_gifts[0] : null;
+            if(serverWinGift && serverWinGift.image){
+                payoutImg=serverWinGift.image;
+                payoutText=formatCrashMoney(serverWinGift.value || b.win_amount || 0);
+            } else if(b.win_gift_image){
+                payoutImg=b.win_gift_image;
+                payoutText=formatCrashMoney(b.win_amount||potential||0);
+            } else if(b.status==='cashed_out'){
+                payoutText=formatCrashMoney(b.win_amount||0);
+            } else if(potential > 0){
+                var rg=getAchievableGift(potential);
+                if(rg){
+                    payoutImg=getGiftImage(rg);
+                    payoutText=formatCrashMoney(rg.value||0);
+                } else {
+                    payoutText=formatCrashMoney(potential);
+                }
+            }
+
+            var fixed=b.status==='cashed_out'?' bet-fixed':'';
+            return '<div class="bet-row '+cls+fixed+'">'+
+              '<div class="bet-left"><div class="bet-avatar">'+avatar+'</div><div class="bet-info">'+
+                '<div class="bet-name">'+name+'</div><div class="bet-amt"><img class="bet-gift-preview" src="'+betIcon+'" onerror="this.onerror=null;this.src=\'/static/img/gram.png\'" alt="TON"><span class="bet-amount-text">'+betAmt+'</span></div>'+
+              '</div></div><div class="bet-right-stack">'+coeffHtml+'<div class="bet-payout"><img src="'+payoutImg+'" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'" alt=""><span>'+payoutText+'</span></div></div></div>';
         }).join('');
     }catch(e){}finally{_betsFetching=false;}
 }
@@ -2926,7 +2852,6 @@ initFullscreen();
 }
 
 document.addEventListener('DOMContentLoaded', function(){
-    initCrashGraph();
     var bm = $('betModal');
     if(bm) bm.addEventListener('click', function(e){ if(e.target === bm) closeBetModal(); });
     var so = $('settingsOverlay');
