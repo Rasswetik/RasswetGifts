@@ -4671,8 +4671,8 @@ body{padding-top:calc(env(safe-area-inset-top,0px) + 12px)!important}
 
 @app.route('/')
 def root_page():
-    """Главная страница — сразу отдаёт Crash frontend."""
-    return _serve_crash_html()
+    """Главная страница — сразу открывает Games."""
+    return render_template('games.html')
 
 
 @app.route('/api/ping')
@@ -20105,10 +20105,28 @@ def _lazy_init():
         _app_initialized = True
         logger.info("✅ Приложение инициализировано")
 
+_init_thread = None
+
+def _ensure_init_started():
+    """Запускает тяжёлую инициализацию максимум один раз и не ждёт её."""
+    global _init_thread
+    if _app_initialized:
+        return
+    with _init_lock:
+        if _app_initialized or (_init_thread is not None and _init_thread.is_alive()):
+            return
+        _init_thread = threading.Thread(target=_lazy_init, name='app-init', daemon=True)
+        _init_thread.start()
+
+
 @app.before_request
 def ensure_initialized():
-    """Гарантирует что БД и игровые циклы запущены перед обработкой запросов"""
-    _lazy_init()
+    """Не блокирует первый HTTP-запрос тяжёлой инициализацией.
+
+    Инициализация БД/фоновых циклов запускается отдельно, поэтому Games
+    может отрисоваться сразу после открытия сайта.
+    """
+    _ensure_init_started()
 
     # ── Server-side ban enforcement ──
     path = request.path
@@ -23504,52 +23522,11 @@ def api_admin_leaderboard_distribute():
         return jsonify({'success': False, 'error': str(e)})
 
 
-# --- Setup webhook on import (for Gunicorn/production) ---
-# Не обращаемся к Telegram, если токен не задан: это исключает повторяющиеся 401 на Render.
-if TELEGRAM_BOT_TOKEN:
-    try:
-        setup_telegram_webhook()
-    except Exception as e:
-        logger.error(f"Initial webhook setup error: {e}")
-else:
-    logger.warning('⚠️ TELEGRAM_BOT_TOKEN не задан — Telegram webhook отключён до добавления токена в Render Environment.')
-
-
-
-
-# ─── AUTO-START WEBHOOK (added by fix_hard.py) ───
-_auto_webhook_started = False
-
-def _auto_start_webhook():
-    """Запускает setup_telegram_webhook в фоне."""
-    global _auto_webhook_started
-    if _auto_webhook_started:
-        return
-    _auto_webhook_started = True
-    if not TELEGRAM_BOT_TOKEN:
-        logger.warning('⚠️ Автозапуск Telegram webhook пропущен: TELEGRAM_BOT_TOKEN не задан.')
-        return
-    try:
-        setup_telegram_webhook()
-    except Exception as e:
-        logger.error(f"Auto webhook start error: {e}")
-
-
-# Запуск в фоне при импорте
-try:
-    _wh_thread = threading.Thread(target=_auto_start_webhook, daemon=True)
-    _wh_thread.start()
-except Exception as _e:
-    logger.warning(f"Could not start webhook thread: {_e}")
-
+# Webhook запускается из _lazy_init в отдельном фоне.
 
 if __name__ == '__main__':
     host = os.getenv('HOST', '127.0.0.1')
     port = int(os.getenv('PORT', 5000))
-    
-    # Setup webhook on local run
-    if TELEGRAM_BOT_TOKEN:
-        setup_telegram_webhook()
     
     print("\n" + "=" * 60)
     print("🎮 RasswetGifts — Запуск сервера")
