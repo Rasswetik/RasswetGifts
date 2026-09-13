@@ -187,30 +187,6 @@ body{
     gap:9px;
     padding:8px 23px 0;
 }
-.games-grid::before{
-    content:'Live';
-    display:flex;
-    align-items:center;
-    position:absolute;
-    top:91px;
-    left:35px;
-    height:32px;
-    color:#eee;
-    font-size:15px;
-    font-weight:800;
-    writing-mode:vertical-rl;
-    transform:rotate(180deg);
-    letter-spacing:.2px;
-}
-.games-grid::after{
-    content:'';
-    position:absolute;
-    top:99px;
-    left:37px;
-    width:9px;height:9px;border-radius:50%;
-    background:#38d46a;
-    box-shadow:0 0 8px rgba(56,212,106,.25);
-}
 .game-tile{
     position:relative;
     width:100%;
@@ -394,10 +370,11 @@ body{
 @keyframes playhubArrowOrbit{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 
 
-/* ═══════════ WIN HISTORY — same cells/animation as index.html ═══════════ */
+/* ═══════════ WIN HISTORY / LIVE FEED ═══════════ */
 .win-history{
-    display:flex;align-items:center;gap:10px;
+    display:flex;align-items:center;gap:12px;
     margin:0 23px 16px;
+    min-height:48px;
     overflow:hidden;
 }
 .win-history-head{
@@ -406,18 +383,19 @@ body{
 }
 .win-history-dot{
     width:8px;height:8px;border-radius:50%;
-    background:#e53935;
+    background:#1EE44C;
+    box-shadow:0 0 8px rgba(30,228,76,.55);
     animation:blink 2s ease-in-out infinite;
     flex-shrink:0;
 }
 .win-history-title{
-    font-size:11px;font-weight:700;color:#e53935;
+    font-size:12px;font-weight:800;color:#1EE44C;
     text-transform:uppercase;flex-shrink:0;
 }
 .win-history-scroll{
-    flex:1;overflow:hidden;
-    -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
-    mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+    flex:1;min-width:0;overflow:hidden;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);
 }
 .feed-track{
     display:flex;gap:8px;
@@ -427,18 +405,17 @@ body{
 .feed-item{
     width:44px;height:44px;
     background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.06);
     border-radius:10px;
     padding:3px;flex-shrink:0;
-    position:relative;
-    overflow:hidden;
+    position:relative;overflow:hidden;
 }
 .feed-item img{width:100%;height:100%;object-fit:contain;border-radius:6px}
 .feed-item-price{
     position:absolute;bottom:0;left:0;right:0;
     background:rgba(0,0,0,.65);
-    font-size:8px;font-weight:700;
-    text-align:center;padding:1px 0;
-    color:#fff;line-height:1.2;
+    font-size:8px;font-weight:700;text-align:center;
+    padding:1px 0;color:#fff;line-height:1.2;
     border-radius:0 0 6px 6px;
 }
 @keyframes feedGlow{
@@ -451,10 +428,64 @@ body{
     100%{width:44px;padding:3px;margin-right:8px;opacity:1}
 }
 .feed-item.new{
-    animation:feedSlideIn .4s cubic-bezier(.4,0,.2,1) forwards, feedGlow .9s ease-out .2s forwards;
+    animation:feedSlideIn .4s cubic-bezier(.4,0,.2,1) forwards,feedGlow .9s ease-out .2s forwards;
 }
 
+/* PC: обычная верхняя панель + горизонтальная история */
+@media(min-width:481px){
+    body{max-width:100%;background:#171717}
+    .top-bar{
+        max-width:1100px;height:79px;margin:0 auto;padding:8px 20px;
+    }
+    .games-container{max-width:1100px}
+    .win-history{
+        max-width:1100px;margin:12px auto 18px;
+        padding:0 20px;min-height:50px;
+    }
+    .win-history-title{font-size:12px}
+    .feed-item{width:46px;height:46px}
+    .games-grid{
+        max-width:760px;margin:0 auto;
+        padding:8px 23px 24px;
+    }
+    .games-grid::before,.games-grid::after{display:none}
+    .games-grid .game-tile:first-child{margin-top:0}
+}
 
+/* Телефон: как в кейсах — LIVE вертикально, справа подарки */
+@media(max-width:480px){
+    .win-history{
+        margin:0 14px 12px;
+        min-height:50px;
+        gap:8px;
+        align-items:center;
+    }
+    .win-history-head{
+        width:25px;height:50px;
+        justify-content:center;
+        position:relative;
+        flex:0 0 25px;
+    }
+    .win-history-title{
+        writing-mode:vertical-rl;
+        transform:rotate(180deg);
+        font-size:13px;
+        line-height:1;
+        letter-spacing:.4px;
+    }
+    .win-history-dot{
+        position:absolute;
+        width:7px;height:7px;
+        top:1px;left:50%;
+        transform:translateX(-50%);
+    }
+    .win-history-scroll{
+        flex:1;height:50px;
+        display:flex;align-items:center;
+    }
+    .feed-track{gap:8px}
+    .feed-item{width:46px;height:46px;border-radius:10px}
+}
 @media(max-width:380px){
     .games-grid{padding-left:21px;padding-right:21px}
     .games-grid::before{left:31px}
