@@ -1389,303 +1389,85 @@ body{font-family:Inter,"SF Pro Display","SF Pro Text",-apple-system,BlinkMacSyst
 @media(max-width:390px){.game-field{min-height:275px!important}.bets-section{min-height:220px!important}.settings-item{height:96px!important}.settings-item img{width:72px!important;height:72px!important}.crash-gift-display{width:170px;height:170px}.crash-gift-display img{width:140px;height:140px}}
 </style>
 
-<style id="crash-visual-v4">
-/* === CRASH V4: compact reference-like layout + smoother motion === */
-:root{--crash-blue:#0a84ff;--crash-panel:#171a1f;--crash-text:#f5f7fa;--crash-muted:rgba(255,255,255,.48);--crash-ease:cubic-bezier(.22,.8,.2,1)}
-body{background:#171a1f!important;background-image:radial-gradient(ellipse 100% 55% at 50% 0%,rgba(45,78,120,.18),transparent 62%)!important}
-.container{padding-top:calc(env(safe-area-inset-top,0px) + 12px)!important;padding-bottom:104px!important}
-.top-bar{padding:6px 16px 8px!important}
-.ping-pill{padding:5px 10px!important;font-size:12px!important;min-height:30px}
-.bal-pill-crash{padding:5px 10px!important;font-size:12px!important;min-height:30px}
-.bal-plus-crash{width:28px!important;height:28px!important}
-.game-field{
-  margin:0 16px!important;min-height:330px!important;height:calc(100svh - 610px);max-height:390px!important;
-  aspect-ratio:auto!important;border-radius:20px!important;background:#0f1319!important;
-  border:1px solid rgba(255,255,255,.055)!important;box-shadow:inset 0 0 70px rgba(0,0,0,.28),0 12px 35px rgba(0,0,0,.18)!important;
-}
-.game-field::before{
-  background-image:linear-gradient(rgba(73,145,230,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(73,145,230,.12) 1px,transparent 1px),radial-gradient(circle,rgba(145,196,255,.28) 0 1px,transparent 1.5px)!important;
-  background-size:58px 58px,58px 58px,150px 150px!important;opacity:.34!important;mask-image:linear-gradient(to bottom,transparent,#000 18%,#000 72%,transparent)!important;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 18%,#000 72%,transparent)!important;
-  animation:crashGridV4 18s linear infinite!important}
-.game-field::after{
-  background:radial-gradient(ellipse at 50% 75%,rgba(10,132,255,.16),transparent 38%),radial-gradient(circle at 18% 25%,rgba(75,150,255,.08),transparent 24%),radial-gradient(circle at 82% 42%,rgba(75,150,255,.07),transparent 25%)!important;
-  filter:blur(10px)!important;opacity:.8!important;animation:crashAtmosphereV4 9s ease-in-out infinite alternate!important}
-@keyframes crashGridV4{to{background-position:58px 29px,-58px 29px,150px -150px}}
-@keyframes crashAtmosphereV4{from{transform:scale(1);opacity:.55}to{transform:scale(1.06) translate3d(-1%,1%,0);opacity:.9}}
-
-/* Countdown: deliberately smaller than the old 150–190px treatment */
-.countdown-display,#cdDisplay{font-size:clamp(64px,17vw,82px)!important;line-height:.9!important;letter-spacing:-.055em!important;font-weight:850!important;color:#fff!important;text-shadow:0 4px 24px rgba(0,0,0,.35),0 0 34px rgba(255,255,255,.10)!important;z-index:14!important}
-#cdDisplay.active{animation:crashCountV4 .46s var(--crash-ease) both!important}
-@keyframes crashCountV4{0%{opacity:0;transform:scale(.78) translateY(5px);filter:blur(4px)}55%{opacity:1;transform:scale(1.07) translateY(0);filter:blur(0)}100%{opacity:1;transform:scale(1)}}
-#cdDisplay.go{font-size:clamp(44px,12vw,58px)!important;letter-spacing:.04em!important}
-
-/* Dedicated multiplier replaces the tiny history-only counter */
-.crash-multiplier{
-  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) translateZ(0);z-index:13;
-  display:none;align-items:baseline;gap:3px;color:#fff;font-weight:850;font-size:clamp(48px,12vw,62px);line-height:.95;letter-spacing:-.055em;
-  font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;
-  text-shadow:0 5px 25px rgba(0,0,0,.35),0 0 38px rgba(10,132,255,.14);
-  will-change:transform,opacity;pointer-events:none;
-}
-.crash-multiplier span{font-size:.42em;letter-spacing:-.02em;opacity:.78;margin-left:1px}
-.game-field.flying .crash-multiplier{display:flex;animation:multiplierInV4 .45s var(--crash-ease) both}
-.game-field.counting .crash-multiplier,.game-field.crash-hit .crash-multiplier{display:none}
-@keyframes multiplierInV4{from{opacity:0;transform:translate(-50%,-50%) scale(.92);filter:blur(3px)}to{opacity:1;transform:translate(-50%,-50%) scale(1);filter:blur(0)}}
-.crash-multiplier.pulse{animation:multiplierPulseV4 .22s var(--crash-ease) both!important}
-@keyframes multiplierPulseV4{0%{transform:translate(-50%,-50%) scale(1)}45%{transform:translate(-50%,-50%) scale(1.035)}100%{transform:translate(-50%,-50%) scale(1)}}
-
-/* Smaller, smoother rocket and less aggressive flame */
-.rocket-wrap{top:57%!important;transition:opacity .28s var(--crash-ease),transform .35s var(--crash-ease)!important}
-.rocket-wrap img{width:128px!important;height:128px!important;transition:transform .16s linear,filter .25s ease,opacity .22s ease!important;filter:drop-shadow(0 10px 24px rgba(10,132,255,.22))!important}
-.rocket-wrap.flying{animation:rocketFloatV4 1.6s ease-in-out infinite alternate!important}
-@keyframes rocketFloatV4{from{transform:translate(-50%,-50%) translate3d(0,3px,0)}to{transform:translate(-50%,-50%) translate3d(0,-4px,0)}}
-.rocket-wrap.flying:after{width:18px!important;height:88px!important;top:66%!important;opacity:.58!important;filter:blur(5px)!important;animation:flamePulseV4 .22s ease-in-out infinite alternate!important}
-@keyframes flamePulseV4{from{height:58px;opacity:.38;transform:translateX(-50%) rotate(16deg) scaleX(.82)}to{height:94px;opacity:.78;transform:translateX(-50%) rotate(16deg) scaleX(1)}}
-
-/* History row matches the reference without oversized chips */
-.history-section{padding:8px 16px 7px!important;margin-top:0!important}
-.history-scroll{gap:7px!important;min-height:28px!important}
-.h-pill,.coeff-box{height:28px!important;min-height:28px!important;min-width:52px!important;padding:0 10px!important;border-radius:14px!important;font-size:11px!important;line-height:1!important}
-.coeff-box{min-width:64px!important}
-.coeff-box.flying-pulse{animation:none!important}
-
-.bet-area{padding:2px 16px 12px!important}
-.action-btn{min-height:52px!important;height:52px!important;padding:0 16px!important;border-radius:26px!important;font-size:15px!important;box-shadow:0 9px 24px rgba(10,132,255,.20)!important}
-.bets-section{min-height:190px!important;margin:0 16px 12px!important;padding:4px 0 18px!important}
-
-.bottom-nav{width:calc(100% - 28px)!important;height:64px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 8px)!important;border-radius:21px!important}
-.bottom-nav-item{height:50px!important;border-radius:15px!important}
-.bottom-nav-item svg{width:20px!important;height:20px!important}
-
-@media(max-width:390px){
-  .container{padding-top:calc(env(safe-area-inset-top,0px) + 9px)!important}
-  .game-field{margin:0 12px!important;min-height:300px!important;height:calc(100svh - 570px);max-height:355px!important;border-radius:18px!important}
-  .history-section{padding-left:12px!important;padding-right:12px!important}
-  .bet-area{padding-left:12px!important;padding-right:12px!important}
-  .bets-section{margin-left:12px!important;margin-right:12px!important}
-  .rocket-wrap img{width:116px!important;height:116px!important}
-  .countdown-display,#cdDisplay{font-size:64px!important}
-  .crash-multiplier{font-size:50px!important}
-}
-@media(prefers-reduced-motion:reduce){
-  .game-field::before,.game-field::after,.rocket-wrap.flying,.crash-multiplier.pulse{animation:none!important}
-  #cdDisplay.active{animation:none!important}
-}
-</style>
-
-
-<style id="ios-liquid-glass-v5">
-/* ================================================================
-   iOS / Liquid Glass V5
-   Dense mobile layout, translucent materials, softer motion.
-   ================================================================ */
+<style id="crash-soft-polish">
+/* SOFT POLISH — keep the original Crash design, only make it cleaner */
 :root{
-  --ios-bg:#080a0e;
-  --ios-surface:rgba(255,255,255,.075);
-  --ios-surface-strong:rgba(255,255,255,.105);
-  --ios-line:rgba(255,255,255,.105);
-  --ios-white:rgba(255,255,255,.96);
-  --ios-secondary:rgba(255,255,255,.58);
-  --ios-blue:#0a84ff;
-  --ios-green:#32d583;
-  --ios-radius:22px;
-  --ios-spring:cubic-bezier(.22,1,.36,1);
+  --soft-ease:cubic-bezier(.22,.8,.22,1);
 }
+html{background:#171a1f}
+body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 
-html{background:var(--ios-bg)!important}
-body{
-  background:
-    radial-gradient(80% 38% at 50% -5%,rgba(70,112,180,.18),transparent 68%),
-    radial-gradient(55% 35% at 8% 48%,rgba(10,132,255,.055),transparent 72%),
-    #080a0e!important;
-  color:var(--ios-white)!important;
-}
-body:before{
-  content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
-  background:radial-gradient(circle at 50% 20%,rgba(255,255,255,.025),transparent 36%);
-}
-.container{
-  max-width:480px!important;
-  padding-top:calc(env(safe-area-inset-top,0px) + 8px)!important;
-  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 92px)!important;
-}
-
-/* Top bar — floating glass capsules */
-.top-bar{padding:6px 14px 10px!important;min-height:48px;align-items:center}
-.top-left,.top-right-btns{gap:7px!important}
-.ping-pill,.bal-pill-crash,.settings-btn-sm,.bal-plus-crash{
-  background:rgba(255,255,255,.075)!important;
-  border:1px solid rgba(255,255,255,.085)!important;
-  box-shadow:0 6px 24px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.09)!important;
-  -webkit-backdrop-filter:blur(22px) saturate(150%)!important;
-  backdrop-filter:blur(22px) saturate(150%)!important;
-}
-.ping-pill,.bal-pill-crash{height:34px!important;min-height:34px!important;border-radius:17px!important;padding:0 10px!important;font-size:12px!important}
-.ping-pill svg{width:14px!important;height:14px!important}
-.settings-btn-sm{width:34px!important;height:34px!important;border-radius:17px!important;display:grid!important;place-items:center!important}
-.settings-btn-sm:active,.bal-plus-crash:active{transform:scale(.92)!important;background:rgba(255,255,255,.13)!important}
-.bal-pill-crash img{width:17px!important;height:17px!important}
-.bal-plus-crash{width:34px!important;height:34px!important;border-radius:17px!important;font-size:21px!important;line-height:1!important}
-
-/* Main crash stage — glass card, but keep it visually dark */
+/* Keep the original geometry, add depth and cleaner surfaces */
 .game-field{
-  margin:0 12px!important;
-  height:clamp(330px,51svh,430px)!important;
-  min-height:330px!important;max-height:430px!important;
-  border-radius:26px!important;
-  border:1px solid rgba(255,255,255,.085)!important;
-  background:
-    radial-gradient(ellipse at 50% 76%,rgba(10,132,255,.12),transparent 40%),
-    linear-gradient(180deg,rgba(255,255,255,.032),rgba(255,255,255,.012)),
-    rgba(8,11,16,.72)!important;
-  box-shadow:
-    0 22px 60px rgba(0,0,0,.34),
-    inset 0 1px 0 rgba(255,255,255,.075),
-    inset 0 0 90px rgba(0,0,0,.24)!important;
-  -webkit-backdrop-filter:blur(18px) saturate(135%)!important;
-  backdrop-filter:blur(18px) saturate(135%)!important;
-  overflow:hidden!important;
+  box-shadow:inset 0 0 70px rgba(0,0,0,.18),0 10px 28px rgba(0,0,0,.12)!important;
+  border:1px solid rgba(255,255,255,.025)!important;
 }
-.game-field:after{
-  opacity:.48!important;
-  filter:blur(14px)!important;
-  animation:iosAmbient 12s ease-in-out infinite alternate!important;
-}
-@keyframes iosAmbient{0%{transform:scale(1) translate3d(0,0,0);opacity:.36}100%{transform:scale(1.09) translate3d(-1.5%,1%,0);opacity:.62}}
-.game-field:before{
-  background-size:56px 56px,56px 56px,170px 170px!important;
-  opacity:.18!important;
-  mask-image:linear-gradient(to bottom,transparent 4%,#000 24%,#000 68%,transparent 98%)!important;
-  -webkit-mask-image:linear-gradient(to bottom,transparent 4%,#000 24%,#000 68%,transparent 98%)!important;
-  animation:iosGrid 22s linear infinite!important;
-}
-@keyframes iosGrid{to{background-position:56px 28px,-56px 28px,170px -170px}}
+.game-field::before{transition:opacity .35s ease}
+.game-field.flying::before{opacity:.82}
 
-/* Countdown — Apple-like, compact and crisp */
+/* Counter: same old visual scale, but softer and less harsh */
 #cdDisplay,.countdown-display{
-  font-size:clamp(58px,16vw,78px)!important;
-  font-weight:800!important;letter-spacing:-.07em!important;line-height:.9!important;
-  text-shadow:0 8px 34px rgba(0,0,0,.4),0 0 30px rgba(255,255,255,.09)!important;
+  text-rendering:geometricPrecision;
+  -webkit-font-smoothing:antialiased;
+  text-shadow:0 3px 22px rgba(0,0,0,.22),0 0 42px rgba(255,255,255,.09)!important;
 }
-#cdDisplay.active{animation:iosNumber .52s var(--ios-spring) both!important}
-@keyframes iosNumber{
-  0%{opacity:0;transform:scale(.76) translateY(5px);filter:blur(7px)}
-  55%{opacity:1;transform:scale(1.045);filter:blur(0)}
+#cdDisplay.active{animation:softCountdown .46s var(--soft-ease) both!important}
+@keyframes softCountdown{
+  0%{opacity:0;transform:scale(.84);filter:blur(3px)}
+  55%{opacity:1;transform:scale(1.035);filter:blur(0)}
   100%{opacity:1;transform:scale(1)}
 }
-#cdDisplay.go{font-size:clamp(42px,11vw,54px)!important;letter-spacing:.02em!important}
 
-/* Multiplier: smaller, stable, readable */
-.crash-multiplier{
-  font-size:clamp(42px,11vw,56px)!important;
-  font-weight:800!important;letter-spacing:-.06em!important;
-  text-shadow:0 7px 28px rgba(0,0,0,.42),0 0 30px rgba(10,132,255,.16)!important;
+/* Rocket: retain original size/position, just make movement calmer */
+.rocket-wrap{transition:opacity .28s var(--soft-ease)!important}
+.rocket-wrap.flying{animation:softRocketFloat 1.8s ease-in-out infinite alternate!important}
+@keyframes softRocketFloat{
+  from{transform:translate(-50%,-50%) translate3d(0,2px,0)}
+  to{transform:translate(-50%,-50%) translate3d(0,-3px,0)}
 }
-.crash-multiplier span{font-size:.40em!important;opacity:.62!important;font-weight:750!important}
-.crash-multiplier.pulse{animation:iosMultiplier .24s var(--ios-spring) both!important}
-@keyframes iosMultiplier{0%{transform:translate(-50%,-50%) scale(1)}45%{transform:translate(-50%,-50%) scale(1.025)}100%{transform:translate(-50%,-50%) scale(1)}}
+.rocket-wrap img{filter:drop-shadow(0 10px 26px rgba(10,132,255,.18))!important}
 
-/* Rocket — less toy-like, more float */
-.rocket-wrap{top:59%!important}
-.rocket-wrap img{width:112px!important;height:112px!important;filter:drop-shadow(0 12px 25px rgba(10,132,255,.18))!important}
-.rocket-wrap.flying{animation:iosRocketFloat 2.2s ease-in-out infinite alternate!important}
-@keyframes iosRocketFloat{0%{transform:translate(-50%,-50%) translate3d(0,4px,0) rotate(-.5deg)}100%{transform:translate(-50%,-50%) translate3d(0,-5px,0) rotate(.5deg)}}
-.rocket-wrap.flying:after{width:15px!important;height:72px!important;opacity:.52!important;filter:blur(6px)!important;animation:iosFlame .3s ease-in-out infinite alternate!important}
-@keyframes iosFlame{from{height:54px;opacity:.38;transform:translateX(-50%) rotate(16deg) scaleX(.84)}to{height:82px;opacity:.68;transform:translateX(-50%) rotate(16deg) scaleX(1)}}
+/* Flame is subtler — no aggressive flashing */
+.rocket-wrap.flying:after{opacity:.62!important;filter:blur(6px)!important;animation:softFlame .28s ease-in-out infinite alternate!important}
+@keyframes softFlame{
+  from{height:74px;opacity:.42;transform:translateX(-50%) rotate(16deg) scaleX(.88)}
+  to{height:102px;opacity:.72;transform:translateX(-50%) rotate(16deg) scaleX(1)}
+}
 
-/* History — glass chips, not bulky pills */
-.history-section{padding:8px 12px 8px!important;margin-top:0!important}
-.history-scroll{gap:6px!important;min-height:27px!important}
+/* History chips: preserve colors, improve spacing and depth */
+.history-scroll{scroll-behavior:smooth}
 .h-pill,.coeff-box{
-  height:27px!important;min-height:27px!important;min-width:50px!important;
-  padding:0 10px!important;border-radius:13.5px!important;font-size:10px!important;font-weight:750!important;
-  border:1px solid rgba(255,255,255,.08)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 14px rgba(0,0,0,.13)!important;
-  -webkit-backdrop-filter:blur(16px)!important;backdrop-filter:blur(16px)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 3px 10px rgba(0,0,0,.10)!important;
+  transition:transform .2s var(--soft-ease),filter .2s ease!important;
 }
-.coeff-box{min-width:62px!important}
-.coeff-box.flying-pulse{animation:none!important}
+.h-pill:active,.coeff-box:active{transform:scale(.96)}
 
-/* CTA — translucent blue glass instead of flat huge button */
-.bet-area{padding:3px 12px 10px!important}
+/* Main CTA: original blue, nicer tactile feedback */
 .action-btn{
-  height:50px!important;min-height:50px!important;border-radius:25px!important;
-  border:1px solid rgba(255,255,255,.14)!important;
-  background:linear-gradient(180deg,rgba(31,145,255,.98),rgba(0,108,235,.94))!important;
-  box-shadow:0 12px 30px rgba(0,112,255,.23),inset 0 1px 0 rgba(255,255,255,.22)!important;
-  font-size:15px!important;font-weight:800!important;
-  transition:transform .22s var(--ios-spring),filter .22s ease,box-shadow .22s ease!important;
+  box-shadow:0 7px 20px rgba(10,132,255,.16),inset 0 1px 0 rgba(255,255,255,.10)!important;
+  transition:transform .18s var(--soft-ease),filter .18s ease,box-shadow .18s ease!important;
 }
-.action-btn:before{opacity:.14!important}
-.action-btn:active:not(:disabled){transform:scale(.975)!important;filter:brightness(.96)!important;box-shadow:0 7px 18px rgba(0,112,255,.18),inset 0 1px 0 rgba(255,255,255,.18)!important}
+.action-btn:active:not(:disabled){transform:scale(.975)!important;filter:brightness(.97);box-shadow:0 4px 13px rgba(10,132,255,.12)!important}
 
-/* Bets panel — proper Liquid Glass sheet */
-.bets-section{
-  margin:0 12px 12px!important;padding:0!important;min-height:205px!important;
-  border-radius:24px!important;
-  background:rgba(255,255,255,.055)!important;
-  border:1px solid rgba(255,255,255,.075)!important;
-  box-shadow:0 15px 45px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.06)!important;
-  -webkit-backdrop-filter:blur(24px) saturate(135%)!important;
-  backdrop-filter:blur(24px) saturate(135%)!important;
-  overflow:hidden!important;
-}
-.bets-header{padding:13px 15px 9px!important}
-.bets-title{font-size:11px!important;letter-spacing:.08em!important;color:rgba(255,255,255,.48)!important}
-.bets-count{font-size:11px!important;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.07)!important}
-.bets-list{padding:0 10px 10px!important}
-.bet-row{border-radius:15px!important;background:rgba(255,255,255,.045)!important;border:1px solid rgba(255,255,255,.045)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;margin-bottom:5px!important}
-.no-bets{padding:62px 20px!important;color:rgba(255,255,255,.28)!important;font-size:12px!important}
+/* Bet rows appear smoother without changing the old card design */
+.bet-row{transition:transform .2s var(--soft-ease),background .2s ease,opacity .2s ease!important}
+.bet-row:active{transform:scale(.99)}
 
-/* Bottom navigation — iPhone floating glass island */
+/* Bottom bar: original appearance, slightly softer shadow */
 .bottom-nav{
-  width:calc(100% - 24px)!important;max-width:456px!important;
-  height:66px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 8px)!important;
-  border-radius:24px!important;
-  padding:5px!important;
-  background:rgba(27,30,36,.72)!important;
-  border:1px solid rgba(255,255,255,.095)!important;
-  box-shadow:0 18px 48px rgba(0,0,0,.42),inset 0 1px 0 rgba(255,255,255,.09)!important;
-  -webkit-backdrop-filter:blur(28px) saturate(170%)!important;
-  backdrop-filter:blur(28px) saturate(170%)!important;
+  box-shadow:0 8px 28px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.035)!important;
 }
-.bottom-nav:before{content:"";position:absolute;inset:1px;border-radius:23px;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.055),transparent 48%)}
-.bottom-nav-item{height:54px!important;border-radius:19px!important;transition:transform .25s var(--ios-spring),background .25s ease,color .25s ease!important;position:relative;z-index:1}
-.bottom-nav-item.active{background:rgba(10,132,255,.15)!important;color:#45a3ff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)!important}
-.bottom-nav-item svg{width:19px!important;height:19px!important}
-.bottom-nav-item span{font-size:9px!important;font-weight:700!important}
-.bottom-nav-item:active{transform:scale(.93)!important}
+.bottom-nav-item{transition:transform .2s var(--soft-ease),background .2s ease,color .2s ease!important}
+.bottom-nav-item:active{transform:scale(.94)}
 
-/* Glass modals */
-.modal-overlay,.settings-overlay,.deposit-overlay,.autowd-overlay,.stars-deposit-overlay,.win-overlay{
-  -webkit-backdrop-filter:blur(20px) saturate(135%)!important;
-  backdrop-filter:blur(20px) saturate(135%)!important;
-}
-.modal-sheet,.win-sheet{
-  background:linear-gradient(180deg,rgba(39,43,50,.94),rgba(22,25,30,.96))!important;
-  border:1px solid rgba(255,255,255,.08)!important;
-  box-shadow:0 -20px 70px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.07)!important;
-  -webkit-backdrop-filter:blur(30px) saturate(145%)!important;
-  backdrop-filter:blur(30px) saturate(145%)!important;
-}
+/* Modals keep the old design, only improve entrance */
+.modal-overlay{transition:opacity .22s ease,visibility .22s ease!important}
+.modal-sheet{transition:transform .38s var(--soft-ease)!important}
+.win-overlay{transition:opacity .24s ease,visibility .24s ease,transform .4s var(--soft-ease)!important}
 
-/* iPhone width tuning */
-@media(max-width:390px){
-  .top-bar{padding-left:12px!important;padding-right:12px!important}
-  .game-field{margin:0 10px!important;height:clamp(320px,50svh,380px)!important;min-height:320px!important;border-radius:24px!important}
-  .history-section{padding-left:10px!important;padding-right:10px!important}
-  .bet-area{padding-left:10px!important;padding-right:10px!important}
-  .bets-section{margin-left:10px!important;margin-right:10px!important}
-  .rocket-wrap img{width:104px!important;height:104px!important}
-  #cdDisplay,.countdown-display{font-size:60px!important}
-  .crash-multiplier{font-size:46px!important}
-  .bottom-nav{width:calc(100% - 20px)!important}
-}
-@media(min-width:391px) and (max-width:480px){
-  .game-field{height:clamp(350px,52svh,430px)!important}
-}
 @media(prefers-reduced-motion:reduce){
-  .game-field:before,.game-field:after,.rocket-wrap.flying,.rocket-wrap.flying:after{animation:none!important}
+  #cdDisplay.active,.rocket-wrap.flying,.rocket-wrap.flying:after{animation:none!important}
+  .h-pill,.coeff-box,.action-btn,.bet-row,.bottom-nav-item{transition:none!important}
 }
 </style>
 
@@ -1745,7 +1527,6 @@ body:before{
         <div class="bonus-badge" id="bonusBadge">?? BONUS ROUND ??</div>
 
         <div class="countdown-display" id="cdDisplay"></div>
-        <div class="crash-multiplier" id="crashMultiplier" aria-live="polite">1.00<span>x</span></div>
         <div class="rocket-wrap hide" id="rocketWrap">
             <img src="/static/gifs/rockets/crash.gif" alt="" id="rocketImg">
         </div>
@@ -2973,32 +2754,26 @@ function renderLoop(ts){
             if(computed < servMult - 0.05) computed = servMult - 0.05;
             if(computed < 1.0) computed = 1.0;
 
-            // Smooth visual interpolation. The server remains authoritative,
-            // while the display avoids visible 80–100ms jumps between polls.
-            dispMult += (computed - dispMult) * Math.min(1, (now - (window._crashLastFrame || now)) / 85);
-            window._crashLastFrame = now;
-            if(Math.abs(computed - dispMult) < 0.002) dispMult = computed;
+            dispMult = computed;
             updateCrashGiftVisual();
-
-            var ri = $('rocketImg');
-            var rw = $('rocketWrap');
-            if(ri && rw && !rw.classList.contains('showing-gift')){
-                var tilt = dispMult >= 1.35 ? Math.min(30, (dispMult - 1.35) * 4.2) : 0;
-                var sc = 1 + Math.max(0, Math.min(dispMult - 1.35, 2.5)) * 0.022;
-                ri.style.transform = 'rotate(' + tilt.toFixed(2) + 'deg) scale(' + sc.toFixed(3) + ')';
+    
+            if(now - _lastRocketUpdate > 80){
+                _lastRocketUpdate = now;
+                var ri = $('rocketImg');
+                var rw = $('rocketWrap');
+                if(ri && rw && !rw.classList.contains('showing-gift')){
+                    var tilt = dispMult >= 1.5 ? Math.min(35, (dispMult - 1.5) * 5) : 0;
+                    var sc = 1 + Math.max(0, Math.min(dispMult - 1.5, 2)) * 0.03;
+                    ri.style.transform = 'rotate(' + tilt.toFixed(1) + 'deg) scale(' + sc.toFixed(3) + ')';
+                }
             }
 
-            var cb = $('coeffBox');
-            var md = $('crashMultiplier');
-            var multText = dispMult.toFixed(2);
-            if(cb){
-                cb.className = 'coeff-box flying-pulse';
-                cb.textContent = multText + 'x';
-            }
-            if(md){
-                md.childNodes[0].nodeValue = multText;
-                if(Math.abs(computed - dispMult) > 0.035){
-                    md.classList.remove('pulse'); void md.offsetWidth; md.classList.add('pulse');
+            if(now - _lastCoeffUpdate > 100){
+                _lastCoeffUpdate = now;
+                var cb = $('coeffBox');
+                if(cb){
+                    cb.className = 'coeff-box flying-pulse';
+                    cb.textContent = dispMult.toFixed(2) + 'x';
                 }
             }
 
