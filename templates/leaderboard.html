@@ -52,7 +52,7 @@ body{
 .main{
     max-width:480px;
     margin:0 auto;
-    padding:calc(var(--safe-top) + 32px) 12px calc(var(--safe-bottom) + 104px);
+    padding:calc(var(--safe-top) + 46px) 12px calc(var(--safe-bottom) + 112px);
 }
 
 /* ══════════════ HELP TIP ══════════════ */
@@ -187,10 +187,10 @@ body{
 }
 .bnav-item svg{width:21px;height:21px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .bnav-item span{font-size:10px;font-weight:700;line-height:1}
-.bnav-item.active{background:#1f3b59;color:#3b92ff;box-shadow:inset 0 0 0 1px rgba(59,146,255,.06)}
+.bnav-item.active{background:rgba(59,146,255,.08);color:#3b92ff;box-shadow:none}
 .bnav-item:active{transform:scale(.95)}
 
-.page-transition-cover{position:fixed;inset:0;z-index:8999;background:rgba(9,14,20,.18);backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px);opacity:0;pointer-events:none;transition:opacity .22s ease;}
+.page-transition-cover{position:fixed;inset:0;z-index:10000;background:rgba(9,14,20,.18);backdrop-filter:blur(1px);-webkit-backdrop-filter:blur(1px);opacity:0;pointer-events:none;transition:opacity .22s ease;}
 .page-transition-cover.show{opacity:1;}
 /* ══════════════ MODAL COMMON ══════════════ */
 .modal-overlay{
@@ -1389,12 +1389,13 @@ function closeInfoModal(){ $('infoOverlay').classList.remove('show'); }
     nav.querySelectorAll('.bnav-item').forEach(function(link){
         link.addEventListener('click',function(ev){
             var href=link.getAttribute('href');
-            if(!href || href===window.location.pathname || href==='#') return;
+            if(!href || href===window.location.pathname || href==='#' || link.dataset.transitioning==='1') return;
             ev.preventDefault();
+            link.dataset.transitioning='1';
             var cover=document.getElementById('pageTransitionCover');
             if(cover) cover.classList.add('show');
-            document.body.classList.add('page-leaving');
-            setTimeout(function(){ window.location.assign(href); },180);
+            document.documentElement.classList.add('nav-leaving');
+            setTimeout(function(){ window.location.href=href; },220);
         });
     });
 })();;
