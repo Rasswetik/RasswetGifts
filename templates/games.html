@@ -346,10 +346,9 @@ body{
 }
 .game-tile-playhub .upg-card{
     position:absolute;z-index:5;
-    right:-2px;top:-8px;width:100px;height:130px;
-    transform-origin:100% 0;
-    transform:matrix3d(.775344,.1866,0,-.000698,-.304346,.821269,0,-.000548,0,0,1,0,-18,-.479443,0,1);
-    object-fit:cover;
+    right:2px;top:-6px;width:108px;height:136px;
+    transform:none;
+    object-fit:contain;
     border-radius:10px;
     filter:drop-shadow(0 10px 16px rgba(0,0,0,.5));
     pointer-events:none;
@@ -367,9 +366,94 @@ body{
     order:-1;
 }
 .playhub-copy .game-tile-subtitle{display:none}
+/* Upgrade wheel from the old Upgrade button, fitted across Play Hub */
+.playhub-upgrade-wheel{
+    position:absolute;
+    right:-42px;
+    bottom:-48px;
+    width:230px;
+    height:230px;
+    z-index:2;
+    pointer-events:none;
+    filter:drop-shadow(0 8px 24px rgba(167,139,250,.55));
+    animation:playhubWheelFloat 3.6s ease-in-out infinite;
+    transform-origin:50% 50%;
+}
+.playhub-upgrade-wheel .wheel-ring{fill:none;stroke:#1a1a2e;stroke-width:22}
+.playhub-upgrade-wheel .wheel-tick{stroke:#fff;stroke-width:2;stroke-linecap:round}
+.playhub-upgrade-wheel .wheel-inner{fill:none;stroke:rgba(255,255,255,.08);stroke-width:1}
+.playhub-upgrade-wheel .wheel-pointer{fill:#fff;filter:drop-shadow(0 2px 8px rgba(0,0,0,.9))}
+.playhub-upgrade-wheel .wheel-green{fill:none;stroke-width:22}
+@keyframes playhubWheelFloat{
+    0%,100%{transform:translateY(0) scale(1)}
+    50%{transform:translateY(-4px) scale(1.02)}
+}
+
 .playhub-arrow-orbit{position:absolute;z-index:10;right:78px;top:25px;width:58px;height:54px;transform-origin:50% 50%;animation:playhubArrowOrbit 5s linear infinite;pointer-events:none}
 .playhub-arrow{position:absolute;left:17px;top:13px;width:24px;height:27px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55));transform:rotate(12deg)}
 @keyframes playhubArrowOrbit{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+
+
+/* ═══════════ WIN HISTORY — same cells/animation as index.html ═══════════ */
+.win-history{
+    display:flex;align-items:center;gap:10px;
+    margin:0 23px 16px;
+    overflow:hidden;
+}
+.win-history-head{
+    display:flex;align-items:center;gap:7px;
+    flex-shrink:0;
+}
+.win-history-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:#e53935;
+    animation:blink 2s ease-in-out infinite;
+    flex-shrink:0;
+}
+.win-history-title{
+    font-size:11px;font-weight:700;color:#e53935;
+    text-transform:uppercase;flex-shrink:0;
+}
+.win-history-scroll{
+    flex:1;overflow:hidden;
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+    mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);
+}
+.feed-track{
+    display:flex;gap:8px;
+    width:max-content;
+    transition:transform .4s cubic-bezier(.4,0,.2,1);
+}
+.feed-item{
+    width:44px;height:44px;
+    background:rgba(255,255,255,.04);
+    border-radius:10px;
+    padding:3px;flex-shrink:0;
+    position:relative;
+    overflow:hidden;
+}
+.feed-item img{width:100%;height:100%;object-fit:contain;border-radius:6px}
+.feed-item-price{
+    position:absolute;bottom:0;left:0;right:0;
+    background:rgba(0,0,0,.65);
+    font-size:8px;font-weight:700;
+    text-align:center;padding:1px 0;
+    color:#fff;line-height:1.2;
+    border-radius:0 0 6px 6px;
+}
+@keyframes feedGlow{
+    0%{box-shadow:0 0 0 0 rgba(30,228,76,.6);background:rgba(30,228,76,.25)}
+    40%{box-shadow:0 0 12px 4px rgba(30,228,76,.35);background:rgba(30,228,76,.12)}
+    100%{box-shadow:none;background:rgba(255,255,255,.04)}
+}
+@keyframes feedSlideIn{
+    0%{width:0;padding:0;margin-right:0;opacity:0}
+    100%{width:44px;padding:3px;margin-right:8px;opacity:1}
+}
+.feed-item.new{
+    animation:feedSlideIn .4s cubic-bezier(.4,0,.2,1) forwards, feedGlow .9s ease-out .2s forwards;
+}
+
 
 @media(max-width:380px){
     .games-grid{padding-left:21px;padding-right:21px}
@@ -496,7 +580,7 @@ body{
   }
   .game-tile > .hot-label svg{width:12px;height:12px}
   .game-tile-playhub .upg-card{
-    right:-3px;top:-9px;width:92px;height:132px;
+    right:2px;top:-7px;width:104px;height:136px;
   }
   .playhub-copy{left:14px;bottom:13px}
   .playhub-copy .game-tile-title{font-size:19px}
@@ -516,7 +600,7 @@ body{
   .game-tile-rocket .game-tile-title,.game-tile-market .game-tile-title{left:14px;bottom:13px;font-size:19px}
   .game-tile-gif{width:92px;height:132px}
   .game-tile-market .game-tile-gif{width:108px;height:125px}
-  .game-tile-playhub .upg-card{width:86px;height:112px}
+  .game-tile-playhub .upg-card{width:96px;height:120px}
 }
 
 /* Final mobile game-card sizing + animated gradients */
@@ -551,7 +635,82 @@ body{
 .games-container{
     transform:translateY(10vh);
 }
+@media (max-width:480px){
+    .playhub-upgrade-wheel{width:220px;height:220px;right:-38px;bottom:-44px}
+}
 </style>
+
+<style id="games-label-fix">
+.game-tile,
+.game-tile-playhub {
+  position: relative;
+}
+.game-tile > .game-label,
+.game-tile-playhub > .game-label,
+.game-tile .game-title,
+.game-tile-playhub .game-title {
+  position: absolute !important;
+  left: 20px !important;
+  right: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  text-align: left !important;
+  font-size: 22px !important;
+  line-height: 1.05 !important;
+  font-weight: 800 !important;
+  letter-spacing: .2px !important;
+  z-index: 30 !important;
+}
+</style>
+
+
+<style id="playhub-final-fix">
+.game-tile-playhub {
+  position: relative !important;
+  overflow: hidden !important;
+}
+.game-tile-playhub .upgrade-wheel-svg {
+  width: 128px !important;
+  height: 128px !important;
+  right: 4px !important;
+  bottom: 2px !important;
+  max-width: 42% !important;
+  max-height: 92% !important;
+  object-fit: contain !important;
+  overflow: visible !important;
+}
+.game-tile > .game-label,
+.game-tile-playhub > .game-label,
+.game-tile .game-title,
+.game-tile-playhub .game-title {
+  left: 18px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  font-size: 25px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+}
+@media (max-width: 480px) {
+  .game-tile-playhub .upgrade-wheel-svg {
+    width: 112px !important;
+    height: 112px !important;
+    right: 2px !important;
+    bottom: 2px !important;
+    max-width: 40% !important;
+    max-height: 88% !important;
+  }
+  .game-tile > .game-label,
+  .game-tile-playhub > .game-label,
+  .game-tile .game-title,
+  .game-tile-playhub .game-title {
+    left: 16px !important;
+    font-size: 24px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -565,7 +724,7 @@ body{
             <span><img src="/static/img/ton.png" alt="TON"><b id="balVal">0.00</b></span>
         </div>
         <button class="deposit-top-btn" onclick="openDeposit()" aria-label="Deposit">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H19a1 1 0 0 1 1 1v3H6.5a2.5 2.5 0 0 0 0 5H20v3a2 2 0 0 1-2 2H6.5A2.5 2.5 0 0 1 4 16.5v-9Z"/><path d="M17 10v4M15 12h4"/></svg>
             <span>Deposit</span>
         </button>
     </div>
@@ -573,6 +732,18 @@ body{
 
 <div class="games-container">
     <div class="games-divider"></div>
+
+    <!-- WIN HISTORY -->
+    <div class="win-history">
+        <div class="win-history-head">
+            <span class="win-history-dot"></span>
+            <span class="win-history-title">История выигрышей</span>
+        </div>
+        <div class="win-history-scroll">
+            <div class="feed-track win-history-track" id="feedTrack"></div>
+        </div>
+    </div>
+
     <div class="games-grid">
         <!-- 1. ROCKET / CRASH -->
         <button class="game-tile game-tile-rocket" onclick="goTo('/crash')" aria-label="Rocket">
@@ -591,8 +762,23 @@ body{
         <!-- 3. PLAY HUB -->
         <button class="game-tile game-tile-playhub" onclick="goTo('/upgrade')" aria-label="Play Hub">
             <div class="hot-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c1.1 2.4 4.1 3.4 4.7 6.2.5 2.3-1.1 4.8-3.8 5.3 1.1-1.5.6-3.7-.9-4.5-.1 2.8-2.8 4.3-4.5 3.4-2.3-1.2-2.6-4.4-.4-6.2.1 1.5 1.2 2.4 2.2 2.6C8.9 7.5 10.5 5.3 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>HOT</span></div>
-            <img src="/static/img/upg.png" alt="Upgrade" class="upg-card">
-            <div class="playhub-arrow-orbit"><svg class="playhub-arrow" viewBox="0 0 27.6 30.498" fill="none" aria-hidden="true"><path d="M5.08 28.58L25.27 16.4C26.6 15.6 26.55 13.65 25.18 12.92L4.37 1.84C2.8 1 1 2.48 1.51 4.18L4.68 14.68C4.78 15.02 4.79 15.39 4.71 15.73L2.11 26.39C1.68 28.12 3.56 29.5 5.08 28.58Z" fill="#FF9A20" stroke="#FFCFA5"/></svg></div>
+            <svg class="upgrade-wheel-svg playhub-upgrade-wheel" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs>
+                    <linearGradient id="playhubUpgradeGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#24C38E"/>
+                        <stop offset="100%" stop-color="#10b981"/>
+                    </linearGradient>
+                </defs>
+                <g id="playhubUpgradeWheelRotator" style="transform-origin:120px 120px">
+                    <circle class="wheel-ring" cx="120" cy="120" r="100"/>
+                    <circle class="wheel-green" cx="120" cy="120" r="100" stroke="url(#playhubUpgradeGreenGrad)" stroke-dasharray="190 628" transform="rotate(-90 120 120)"/>
+                    <g id="playhubUpgradeWheelRisks" opacity="0.6"></g>
+                    <circle class="wheel-inner" cx="120" cy="120" r="86"/>
+                </g>
+                <path class="wheel-pointer" d="M120 34 L104 62 C110 58 130 58 136 62 Z" stroke="rgba(0,0,0,.4)" stroke-width="1" stroke-linejoin="round"/>
+                <circle cx="120" cy="62" r="5" fill="#fff"/>
+            </svg>
+            <div class="playhub-arrow-orbit"></div>
             <div class="playhub-copy">
                 <div class="game-tile-title"><span>PLAY HUB</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z" fill="currentColor"/></svg></div>
             </div>
@@ -683,6 +869,30 @@ function setAvatar(auth){
     wrap.innerHTML='<span style="font-size:13px;font-weight:850;color:#fff">'+initials.replace(/[<>]/g,'')+'</span>';
 }
 
+/* Old Upgrade wheel: ticks + smoother continuous spin */
+(function initPlayHubUpgradeWheel(){
+    var risksGroup = document.getElementById('playhubUpgradeWheelRisks');
+    var rotator = document.getElementById('playhubUpgradeWheelRotator');
+    if(!risksGroup || !rotator) return;
+    var cx=120, cy=120, rOuter=100, html='';
+    for(var i=0;i<60;i++){
+        var angle=(i/60)*360, major=(i%5===0);
+        var len=major?8:5, width=major?1.8:1, opacity=major?0.75:0.4;
+        var rad=(angle-90)*Math.PI/180;
+        var x1=cx+Math.cos(rad)*(rOuter-2), y1=cy+Math.sin(rad)*(rOuter-2);
+        var x2=cx+Math.cos(rad)*(rOuter-2-len), y2=cy+Math.sin(rad)*(rOuter-2-len);
+        html+='<line class="wheel-tick" x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'" stroke="rgba(255,255,255,'+opacity+')" stroke-width="'+width+'"/>';
+    }
+    risksGroup.innerHTML=html;
+    var angle=0;
+    function spin(){
+        angle+=90;
+        rotator.style.transition='transform 1.35s cubic-bezier(.22,.8,.2,1)';
+        rotator.style.transform='rotate('+angle+'deg)';
+    }
+    setTimeout(function(){spin();setInterval(spin,1700)},450);
+})();
+
 /* ══════════════════════════════════════════════════════════════
    NAV
    ══════════════════════════════════════════════════════════════ */
@@ -741,6 +951,11 @@ async function initGames(){
             if(window.Telegram && Telegram.WebApp){
                 Telegram.WebApp.ready();
                 Telegram.WebApp.expand();
+                try {
+                    if (typeof Telegram.WebApp.requestFullscreen === 'function') {
+                        Telegram.WebApp.requestFullscreen();
+                    }
+                } catch (e) {}
                 Telegram.WebApp.setHeaderColor('#1C2233');
                 Telegram.WebApp.setBackgroundColor('#1C2233');
             }
@@ -753,8 +968,65 @@ async function initGames(){
     setInterval(randomizeMarketGif, 5000);
 }
 
+
+
+/* ═══════════ WIN HISTORY DATA ═══════════ */
+var lastFeedIds = [];
+
+async function loadFeed(){
+    try{
+        var res = await fetch('/api/recent-wins?limit=20');
+        var data = await res.json();
+        if(data.success && data.wins && data.wins.length){
+            var filtered = data.wins.filter(function(w){
+                var img=w.gift_image||w.image||'';
+                var name=w.gift_name||'';
+                return img.indexOf('/tons/')===-1 && name.indexOf('TON')===-1 && name.indexOf('Stars x')===-1;
+            });
+            if(!filtered.length) return;
+            var newIds=filtered.map(function(w){return w.gift_name+'_'+w.created_at;});
+            if(lastFeedIds.length===0){
+                renderFeed(data.wins);
+            }else{
+                for(var i=filtered.length-1;i>=0;i--){
+                    if(lastFeedIds.indexOf(newIds[i])===-1) addFeedItem(filtered[i]);
+                }
+                lastFeedIds=newIds;
+            }
+        }
+    }catch(e){console.error('Feed load error:',e);}
+}
+
+function renderFeed(wins){
+    var track=document.getElementById('feedTrack');
+    if(!track) return;
+    var filtered=wins.filter(function(w){
+        var img=w.gift_image||w.image||'';
+        var name=w.gift_name||'';
+        return img.indexOf('/tons/')===-1 && name.indexOf('TON')===-1 && name.indexOf('Stars x')===-1;
+    });
+    if(!filtered.length) return;
+    lastFeedIds=filtered.map(function(w){return w.gift_name+'_'+w.created_at;});
+    track.innerHTML=filtered.map(function(w){
+        return '<div class="feed-item"><img src="'+(w.gift_image||w.image||'/static/img/gift.png')+'" alt="" onerror="this.src=\'/static/img/gift.png\'"></div>';
+    }).join('');
+}
+
+function addFeedItem(w){
+    var track=document.getElementById('feedTrack');
+    if(!track) return;
+    var div=document.createElement('div');
+    div.className='feed-item new';
+    div.innerHTML='<img src="'+(w.gift_image||w.image||'/static/img/gift.png')+'" alt="" onerror="this.src=\'/static/img/gift.png\'">';
+    track.insertBefore(div,track.firstChild);
+    if(track.children.length>30) track.removeChild(track.lastChild);
+}
+
+
 document.addEventListener('DOMContentLoaded', function(){
     initGames();
+    loadFeed();
+    setInterval(loadFeed,5000);
 });
 </script>
 
