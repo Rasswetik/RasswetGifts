@@ -4612,50 +4612,61 @@ def check_auth_code():
 # ==================== ОСНОВНЫЕ РОУТЫ ====================
 
 def _serve_crash_html():
-    """Безопасно отдаёт Crash frontend без зависимости от кодировки файла.
-
-    Некоторые версии crash.html были сохранены в Windows-1251. Flask/Jinja
-    по умолчанию читает шаблоны как UTF-8 и в таком случае отдаёт HTTP 500.
-    Здесь файл читается как bytes и декодируется с UTF-8 -> CP1251 fallback.
-    Jinja для этого standalone HTML не нужен.
-    """
+    """Отдаёт Crash frontend, устойчиво к CP1251, с актуальными UI-правками."""
     template_path = os.path.join(BASE_PATH, 'templates', 'crash.html')
     legacy_path = os.path.join(BASE_PATH, 'crash (10).html')
-
-    file_path = None
-    if os.path.isfile(template_path):
-        file_path = template_path
-    elif os.path.isfile(legacy_path):
-        file_path = legacy_path
-
-    if not file_path:
-        return jsonify({
-            'success': False,
-            'error': 'Crash frontend file not found',
-            'expected': ['templates/crash.html', 'crash (10).html']
-        }), 500
-
+    target_path = template_path if os.path.isfile(template_path) else legacy_path
+    if not os.path.isfile(target_path):
+        return jsonify({'success': False, 'error': 'Crash frontend file not found',
+                        'expected': ['templates/crash.html', 'crash (10).html']}), 500
     try:
-        with open(file_path, 'rb') as f:
+        with open(target_path, 'rb') as f:
             raw = f.read()
-
-        # Основной вариант — UTF-8. Для старого файла — Windows-1251.
         try:
             page = raw.decode('utf-8')
         except UnicodeDecodeError:
             page = raw.decode('cp1251')
-
-        response = make_response(page)
-        response.headers['Content-Type'] = 'text/html; charset=utf-8'
-        response.headers['Cache-Control'] = 'no-cache'
-        return response
-
     except Exception as e:
-        logger.exception('❌ Ошибка чтения Crash HTML: %s', e)
-        return jsonify({
-            'success': False,
-            'error': 'Crash frontend read error'
-        }), 500
+        logger.error(f'Crash frontend read error: {e}')
+        return jsonify({'success': False, 'error': 'Не удалось загрузить Crash frontend'}), 500
+
+    ui_patch = r"""
+<style id="crash-ui-patch">
+body{padding-top:calc(env(safe-area-inset-top,0px) + 12px)!important}
+.history-section{padding-top:4px!important;padding-bottom:8px!important}
+.history-scroll{display:flex!important;flex-wrap:nowrap!important;gap:6px!important;overflow-x:auto!important}
+.history-scroll .coeff-box{min-width:52px!important;width:52px!important;height:32px!important;padding:0 8px!important;font-size:12px!important;border-radius:10px!important;flex:0 0 52px!important}
+#crashGiftDisplay{display:none!important}
+#settingsBgTab,#settingsBgPane{display:none!important}
+#settingsSkinPane{display:block!important}
+.settings-mode{display:none!important}
+</style>
+<script id="crash-ui-patch-js">
+(function(){
+  try{localStorage.setItem('crash_show_gifts','off')}catch(e){}
+  function patch(){
+    var gift=document.getElementById('crashGiftDisplay');
+    if(gift) gift.style.display='none';
+    var bgTab=document.getElementById('settingsBgTab');
+    var bgPane=document.getElementById('settingsBgPane');
+    if(bgTab) bgTab.style.display='none';
+    if(bgPane) bgPane.style.display='none';
+    try{showGifts=false;localStorage.setItem('crash_show_gifts','off')}catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',patch); else patch();
+  setTimeout(patch,250);setTimeout(patch,1000);
+})();
+</script>
+"""
+    if 'id="crash-ui-patch"' not in page:
+        page = page.replace('</head>', ui_patch + '</head>', 1)
+
+    # Любой пригодный подарок в инвентаре => кнопку «Пополнить» не показываем.
+    page = page.replace(
+        "inventoryItems = (d.inventory || []).filter(function(i){\n             return !i.is_withdrawing && i.gift_value >= 25 && NON_BETTABLE_GIFT_IDS.indexOf(Number(i.gift_id)) === -1;\n         });",
+        "inventoryItems = (d.inventory || []).filter(function(i){\n             return !i.is_withdrawing && NON_BETTABLE_GIFT_IDS.indexOf(Number(i.gift_id)) === -1;\n         });"
+    )
+    return make_response(page, 200, {'Content-Type': 'text/html; charset=utf-8'})
 
 
 @app.route('/')
@@ -8533,7 +8544,7 @@ def update_user_wager_progress(user_id, wager_amount_stars, conn=None):
         cursor = conn.cursor()
         cursor.execute('''
             UPDATE user_wagers 
-            SET wagered_amount = MIN(wagered_amount + ?, wager_requirement)
+            SET wagered_amount = LEAST(wagered_amount + ?, wager_requirement)
             WHERE user_id = ? AND wagered_amount < wager_requirement
         ''', (wager_amount_stars, user_id))
         conn.commit()
