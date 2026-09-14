@@ -853,29 +853,6 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
             <div style="font-weight:800;font-size:16px;color:#fff">Customization</div>
         </div>
         <div class="settings-content">
-<div class="bg-choice-row">
-  <button class="bg-choice graph-preview" id="bgGraphBtn" aria-label="График" onclick="selectCrashBackground('graph')"></button>
-  <button class="bg-choice space-preview" id="bgSpaceBtn" aria-label="Космос" onclick="selectCrashBackground('space')"></button>
-</div>
-<div class="optim-row">
-  <div class="optim-head"><div class="optim-title">Оптимизация</div><div class="optim-value" id="optimValue">Баланс</div></div>
-  <input class="optim-range" id="optimRange" type="range" min="0" max="2" step="1" value="1" oninput="setCrashOptimization(this.value)">
-</div>
-
-            <div class="settings-gift-toggle">
-                <div class="toggle-info">
-                    <div class="lbl">Показывать подарки</div>
-                    <div class="desc">Вместо ракеты — подарок при достижимом выигрыше</div>
-                </div>
-                <div class="toggle-switch on" id="showGiftsToggle" onclick="toggleShowGiftsClick()"></div>
-            </div>
-            <div class="settings-gift-toggle">
-                <div class="toggle-info">
-                    <div class="lbl">Предохранитель автовывода</div>
-                    <div class="desc">Сохранять автовывод после перезагрузки</div>
-                </div>
-                <div class="toggle-switch on" id="autoWithdrawGuardToggle" onclick="toggleAutoWithdrawGuardClick()"></div>
-            </div>
             <div class="settings-grid" id="rocketGrid"></div>
         </div>
         <button onclick="closeSettings()" style="margin:0 18px 18px;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#1e3a6e,#6B7A8D);color:#fff;font-size:15px;font-weight:700;cursor:pointer">close</button>
@@ -941,6 +918,7 @@ var lastCountdownAt = 0;
 var _lastCoeffUpdate = 0;
 var _lastBtnUpdate = 0;
 var _lastRocketUpdate = 0;
+var _lastRenderTs = 0;
 
 var lastBetsHash = '';
 var betsGeneration = 0;
@@ -950,10 +928,13 @@ var MAX_GIFTS = 3;
 var NON_BETTABLE_GIFT_IDS = [110, 111];
 
 var currentRocket = localStorage.getItem('crash_rocket') || 'crash';
-var showGifts = localStorage.getItem('crash_show_gifts') !== 'off';
+// Настройки визуала больше не выбираются пользователем: фон всегда "клетка"
+// (graph), эффекты — всегда сбалансированный режим, ракета не подменяется
+// подарком. Единственная настройка, оставшаяся в UI, — выбор скина ракеты.
+var showGifts = false;
 var autoWithdrawGuard = true;
-var crashBackground = localStorage.getItem('crash_background') || 'graph';
-var crashOptimization = Number(localStorage.getItem('crash_optimization') || 1);
+var crashBackground = 'graph';
+var crashOptimization = 1;
 var autoWithdrawGift = null;
 var savedBetAmount = localStorage.getItem('crash_bet_amount') || '';
 
@@ -1564,14 +1545,18 @@ function applyServerState(d){
         if(srvCurMult > servMult) servMult = srvCurMult;
 
         var localNow = computeLocalMult(now - flyingStartedAt);
-        // Синхронизация: если сервер сильно отстаёт, подтянуть
+        // Синхронизация с сервером БЕЗ мгновенных скачков: если локальная кривая
+        // сильно разошлась с сервером, пересчитываем базовую точку отсчёта времени
+        // (flyingStartedAt) на будущее, но сам отображаемый dispMult не дёргаем —
+        // renderLoop плавно подтянет его к новому значению за несколько кадров.
+        // Раньше здесь было "dispMult = srvCurMult" — резкий скачок числа, из-за
+        // которого множитель на экране мог мгновенно "прыгнуть" вверх (виден как
+        // рывок/пик). Теперь любое расхождение сглаживается.
         if(srvCurMult - localNow > 0.5){
             flyingStartedAt = estimateFlyStartFromMult(srvCurMult);
-            dispMult = srvCurMult;
-        } else {
-            // Не даём клиенту отставать от сервера больше, чем на 0.1x
-            dispMult = Math.max(localNow, srvCurMult - 0.05);
         }
+        // dispMult больше не трогаем здесь — этим занимается renderLoop с
+        // ограничением скорости изменения (максимум ~maxDispMultStep за кадр).
     } else {
         servMult = srvCurMult;
         dispMult = srvCurMult;
@@ -1957,12 +1942,21 @@ function renderLoop(ts){
         if(status === 'flying' && flyingStartedAt > 0){
             var elapsedFly = now - flyingStartedAt;
             var computed = computeLocalMult(elapsedFly);
-
-            // Не отставать от сервера
-            if(computed < servMult - 0.05) computed = servMult - 0.05;
             if(computed < 1.0) computed = 1.0;
 
-            dispMult = computed;
+            // Плавное сближение с "истинной" кривой вместо мгновенного скачка.
+            // Ограничиваем, насколько быстро dispMult может меняться за кадр —
+            // любая рассинхронизация с сервером выравнивается плавно за
+            // несколько кадров, а не одним рывком (раньше это выглядело как
+            // "зависание, а потом резкий скачок/пик").
+            var frameDt = _lastRenderTs > 0 ? (now - _lastRenderTs) : 16;
+            _lastRenderTs = now;
+            var baseSpeed = Math.max(computed - 1.0, 0.3); // корректируем быстрее на высоких множителях
+            var maxStep = (frameDt / 1000) * (baseSpeed * 4 + 1.5);
+            if(computed > dispMult + maxStep) dispMult = dispMult + maxStep;
+            else if(computed < dispMult - maxStep) dispMult = dispMult - maxStep;
+            else dispMult = computed;
+            if(dispMult < 1.0) dispMult = 1.0;
 
             if(now - _lastRocketUpdate > 100){
                 _lastRocketUpdate = now;
