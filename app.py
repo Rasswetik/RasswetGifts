@@ -83,7 +83,9 @@ gifts_cache = None
 gifts_cache_time = None
 CACHE_DURATION = 600  # 10 минут кэш подарков
 FRAGMENT_SYNC_ENABLED = os.getenv('FRAGMENT_SYNC_ENABLED', '1') != '0'
-FRAGMENT_SYNC_TIMEOUT = int(os.getenv('FRAGMENT_SYNC_TIMEOUT', '6'))
+FRAGMENT_SYNC_TIMEOUT = float(os.getenv('FRAGMENT_SYNC_TIMEOUT', '12'))
+FRAGMENT_API_RETRIES = int(os.getenv('FRAGMENT_API_RETRIES', '4'))
+FRAGMENT_PRICE_WORKERS = int(os.getenv('FRAGMENT_PRICE_WORKERS', '4'))
 FRAGMENT_SYNC_MAX = int(os.getenv('FRAGMENT_SYNC_MAX', '5000'))
 FRAGMENT_PRICE_FETCH_LIMIT = int(os.getenv('FRAGMENT_PRICE_FETCH_LIMIT', '0'))
 FRAGMENT_TON_RATE = int(os.getenv('FRAGMENT_TON_RATE', '100'))
@@ -111,6 +113,14 @@ MRKT_TOKEN_FILE = os.path.join(BASE_PATH, 'data', 'mrkt_token.json')
 MRKT_REFERER = 'https://cdn.tgmrkt.io/'
 MRKT_SYNC_TIMEOUT = int(os.getenv('MRKT_SYNC_TIMEOUT', '12'))
 MRKT_SYNC_WORKERS = int(os.getenv('MRKT_SYNC_WORKERS', '8'))
+
+# Getgems public API: collection floor prices + metadata. The public docs expose
+# the gift price list without requiring an MRKT-style user token.
+GETGEMS_API_BASE = os.getenv('GETGEMS_API_BASE', 'https://api.getgems.io/public-api').strip().rstrip('/')
+GETGEMS_TIMEOUT = float(os.getenv('GETGEMS_TIMEOUT', '20'))
+GETGEMS_ENABLED = os.getenv('GETGEMS_ENABLED', '1') != '0'
+GETGEMS_PRICE_ENDPOINT = '/v1/gifts/get_gifts_price_list'
+GETGEMS_ATTRIBUTES_ENDPOINT = '/v1/gifts/get_attributes_metadata'
 
 # Background Fragment import job state. The admin UI polls this so a long
 # catalog import never leaves the browser waiting on a single HTTP request.
@@ -989,6 +999,9 @@ PORTAL_SYNC_INTERVAL_MINUTES = int(os.getenv('PORTAL_SYNC_INTERVAL_MINUTES', '10
 # Fragment HTTP session
 _fragment_http_session = None
 _fragment_http_session_lock = threading.Lock()
+_fragment_api_hash = None
+_fragment_api_hash_time = 0.0
+_fragment_api_hash_lock = threading.Lock()
 fragment_last_error = None
 
 
@@ -1244,6 +1257,246 @@ def _mrkt_min_collection_price(collection_name, token=None):
     prices = [p for p in (_mrkt_listing_price(x) for x in rows) if p is not None]
     return (min(prices) if prices else None), len(rows)
 
+def _getgems_request(path, params=None):
+    if not GETGEMS_ENABLED:
+        raise RuntimeError('Getgems sync disabled')
+    url = GETGEMS_API_BASE + path
+    headers = {'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+    try:
+        from curl_cffi import requests as curl_requests
+        r = curl_requests.get(url, headers=headers, params=params or {}, timeout=GETGEMS_TIMEOUT, impersonate='chrome')
+    except Exception:
+        r = http_requests.get(url, headers=headers, params=params or {}, timeout=GETGEMS_TIMEOUT)
+    if r.status_code >= 400:
+        raise RuntimeError(f'Getgems HTTP {r.status_code}: {r.text[:240]}')
+    try:
+        return r.json()
+    except Exception:
+        raise RuntimeError('Getgems вернул некорректный JSON')
+
+
+def _getgems_num(value):
+    try:
+        if isinstance(value, str):
+            value = value.replace(',', '.').replace(' TON', '').strip()
+        n = float(value)
+        return n if math.isfinite(n) and n > 0 else None
+    except Exception:
+        return None
+
+
+def _getgems_price_map(data):
+    out = {}
+    if not isinstance(data, dict):
+        return out
+    floors = data.get('collection_floors') or {}
+    if not isinstance(floors, dict):
+        return out
+    for name, row in floors.items():
+        if not isinstance(row, dict):
+            continue
+        price = _getgems_num(row.get('getgems'))
+        if price is not None:
+            out[_normalize_gift_name_for_match(name)] = {
+                'name': str(name),
+                'price_ton': price,
+                'last_update': row.get('last_update')
+            }
+    return out
+
+
+def _getgems_attributes_map(data):
+    out = {}
+    if isinstance(data, dict):
+        for name, row in data.items():
+            if isinstance(row, dict):
+                out[_normalize_gift_name_for_match(name)] = {
+                    'models': list(row.get('models') or []),
+                    'backdrops': list(row.get('backdrops') or []),
+                    'symbols': list(row.get('symbols') or []),
+                }
+    elif isinstance(data, list):
+        for row in data:
+            if isinstance(row, dict):
+                name = row.get('collection_name') or row.get('name')
+                if name:
+                    out[_normalize_gift_name_for_match(name)] = {
+                        'models': list(row.get('models') or []),
+                        'backdrops': list(row.get('backdrops') or []),
+                        'symbols': list(row.get('symbols') or []),
+                    }
+    return out
+
+
+def _choose_market_price(g):
+    """Select the lowest currently-known marketplace floor and retain all sources.
+
+    We never erase an existing source price just because another provider is
+    temporarily unavailable. The selected `value` is the minimum positive
+    price among Getgems, Fragment sale and MRKT active listings.
+    """
+    candidates = []
+    for key, source in (
+        ('getgems_price_ton', 'getgems'),
+        ('fragment_price_ton', 'fragment'),
+        ('mrkt_price_ton', 'mrkt'),
+    ):
+        n = _getgems_num(g.get(key))
+        if n is not None:
+            candidates.append((n, source))
+    if not candidates:
+        return None
+    price, source = min(candidates, key=lambda x: x[0])
+    g['market_price_ton'] = round(price, 4)
+    g['market_price_source'] = source
+    g['market_price_updated_at'] = datetime.utcnow().isoformat() + 'Z'
+    g['value'] = int(round(price * FRAGMENT_TON_RATE))
+    return price, source
+
+
+def _getgems_sync_prices_and_metadata(progress_callback=None):
+    """One-shot Getgems enrichment for the complete local catalog.
+
+    Getgems publishes a collection price list that includes the Getgems floor,
+    plus metadata for collection attributes. This is much cheaper and more
+    reliable than making one HTTP request per collection.
+    """
+    gifts = load_gifts_cached() or _load_fragment_catalog_disk_cache() or []
+    if not gifts:
+        return {'success': False, 'error': 'Каталог подарков пуст'}
+    started = time.time()
+    try:
+        if progress_callback:
+            progress_callback(0, 1, 'Getgems: загружаем единый price list')
+        price_data = _getgems_request(GETGEMS_PRICE_ENDPOINT, params={'models': 'true'})
+        price_map = _getgems_price_map(price_data)
+        attrs_map = {}
+        try:
+            attrs_data = _getgems_request(GETGEMS_ATTRIBUTES_ENDPOINT)
+            attrs_map = _getgems_attributes_map(attrs_data)
+        except Exception as e:
+            logger.warning('Getgems attributes unavailable: %s', e)
+
+        found = 0
+        for g in gifts:
+            key = _normalize_gift_name_for_match(g.get('name'))
+            rec = price_map.get(key)
+            if rec:
+                g['getgems_price_ton'] = round(float(rec['price_ton']), 4)
+                g['getgems_price_updated_at'] = rec.get('last_update') or datetime.utcnow().isoformat() + 'Z'
+                found += 1
+            arec = attrs_map.get(key)
+            if arec:
+                g['getgems_models'] = arec['models']
+                g['getgems_backdrops'] = arec['backdrops']
+                g['getgems_symbols'] = arec['symbols']
+            _choose_market_price(g)
+
+        _save_fragment_catalog_disk_cache(gifts)
+        _write_fragment_catalog_to_local_gifts(gifts)
+        global fragment_cache, fragment_cache_time
+        fragment_cache = gifts
+        fragment_cache_time = time.time()
+        try:
+            api_gifts_list._cache = {}
+        except Exception:
+            pass
+        elapsed = round(time.time() - started, 2)
+        if progress_callback:
+            progress_callback(1, 1, f'Getgems: {found}/{len(gifts)} цен · {elapsed}s')
+        return {'success': True, 'total': len(gifts), 'updated': found, 'attributes': len(attrs_map), 'elapsed': elapsed}
+    except Exception as e:
+        logger.error('Getgems sync failed: %s\n%s', e, traceback.format_exc())
+        return {'success': False, 'error': str(e)}
+
+
+def _multi_source_price_sync(progress_callback=None):
+    """Refresh all three marketplaces without destructive overwrites.
+
+    Getgems is fetched as a single bulk request; Fragment and MRKT retain their
+    own specialist loaders. The displayed market value is the lowest available
+    positive price, while every provider price is preserved separately.
+    """
+    gifts = _load_fragment_catalog_disk_cache() or load_gifts_cached() or []
+    if not gifts:
+        return {'success': False, 'error': 'Каталог подарков пуст'}
+    result = {'getgems': None, 'fragment': None, 'mrkt': None, 'total': len(gifts)}
+
+    def msg(text):
+        if progress_callback:
+            progress_callback(text)
+
+    # 1) Getgems — bulk
+    try:
+        gr = _getgems_sync_prices_and_metadata(lambda c,t,m: msg(m))
+        result['getgems'] = gr
+        gifts = load_gifts_cached() or gifts
+    except Exception as e:
+        result['getgems'] = {'success': False, 'error': str(e)}
+
+    # 2) Fragment — exact sale floor per collection
+    try:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        total = len(gifts); updated = 0; failed = 0
+        def one(g):
+            slug = str(g.get('fragment_slug') or '').strip().lower()
+            return g, (_fetch_fragment_collection_price(slug) if slug else None)
+        with ThreadPoolExecutor(max_workers=max(1, FRAGMENT_PRICE_WORKERS)) as ex:
+            futures = [ex.submit(one, g) for g in gifts]
+            for i, fut in enumerate(as_completed(futures), 1):
+                try:
+                    g, price = fut.result()
+                    if price is not None:
+                        g['fragment_price_ton'] = round(float(price),4)
+                        g['fragment_price_source'] = 'fragment_sale'
+                        g['fragment_price_updated_at'] = datetime.utcnow().isoformat() + 'Z'
+                        updated += 1
+                    else:
+                        failed += 1
+                    _choose_market_price(g)
+                except Exception:
+                    failed += 1
+                msg(f'Fragment: {i}/{total} · найдено {updated}')
+        result['fragment'] = {'success': True, 'total': total, 'updated': updated, 'failed': failed}
+    except Exception as e:
+        result['fragment'] = {'success': False, 'error': str(e)}
+
+    # 3) MRKT — optional token, never blocks the other two
+    try:
+        token = _mrkt_load_token()
+        if token:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            total = len(gifts); updated = 0; failed = 0
+            def mrkt_one(g):
+                return g, _mrkt_min_collection_price(g.get('name'), token=token)
+            with ThreadPoolExecutor(max_workers=max(1, MRKT_SYNC_WORKERS)) as ex:
+                futures = [ex.submit(mrkt_one, g) for g in gifts]
+                for i, fut in enumerate(as_completed(futures), 1):
+                    try:
+                        g, (price, count) = fut.result()
+                        if price is not None:
+                            g['mrkt_price_ton'] = round(float(price),4)
+                            g['mrkt_active_listings'] = count
+                            updated += 1
+                        else:
+                            failed += 1
+                        _choose_market_price(g)
+                    except Exception:
+                        failed += 1
+                    msg(f'MRKT: {i}/{total} · найдено {updated}')
+            result['mrkt'] = {'success': True, 'total': total, 'updated': updated, 'failed': failed, 'connected': True}
+        else:
+            result['mrkt'] = {'success': True, 'skipped': True, 'reason': 'MRKT token не установлен'}
+    except Exception as e:
+        result['mrkt'] = {'success': False, 'error': str(e)}
+
+    # final persistence, including every per-source price
+    _save_fragment_catalog_disk_cache(gifts)
+    _write_fragment_catalog_to_local_gifts(gifts)
+    global fragment_cache, fragment_cache_time
+    fragment_cache = gifts; fragment_cache_time = time.time()
+    return result
+
 def _write_fragment_catalog_to_local_gifts(fragment_gifts):
     """Compatibility mirror: keep admin/local gift list in step with Fragment.
     Fragment catalog remains the source of truth for the public market."""
@@ -1277,9 +1530,12 @@ def _write_fragment_catalog_to_local_gifts(fragment_gifts):
             g['name'] = name
             g['fragment_slug'] = slug
             for key in (
-                'fragment_url', 'fragment_price_ton', 'mrkt_price_ton',
-                'mrkt_active_listings', 'market_image', 'black_image',
-                'onyx_black_image', 'black_nft_number',
+                'fragment_url', 'fragment_price_ton', 'fragment_price_source',
+                'fragment_price_updated_at', 'getgems_price_ton', 'getgems_price_updated_at',
+                'getgems_models', 'getgems_backdrops', 'getgems_symbols',
+                'mrkt_price_ton', 'mrkt_active_listings',
+                'market_price_ton', 'market_price_source', 'market_price_updated_at',
+                'market_image', 'black_image', 'onyx_black_image', 'black_nft_number',
                 'onyx_black_nft_number', 'source'
             ):
                 if key in fg and fg.get(key) is not None:
@@ -1331,8 +1587,8 @@ def _mrkt_sync_prices_to_fragment_catalog(progress_callback=None):
                 g, (price, count) = fut.result()
                 if price is not None:
                     g['mrkt_price_ton'] = price
-                    g['value'] = int(round(price * FRAGMENT_TON_RATE))
                     g['mrkt_active_listings'] = count
+                    _choose_market_price(g)
                     updated += 1
                     prices_found += 1
                 else:
@@ -1355,6 +1611,74 @@ def _mrkt_sync_prices_to_fragment_catalog(progress_callback=None):
     except Exception:
         pass
     return {'success': True, 'total': total, 'updated': updated, 'failed': failed, 'prices_found': prices_found}
+
+@app.route('/api/getgems/status', methods=['GET'])
+def getgems_status():
+    return jsonify({'success': True, 'enabled': GETGEMS_ENABLED, 'api': GETGEMS_API_BASE})
+
+
+@app.route('/api/getgems/sync-prices', methods=['POST'])
+def getgems_sync_prices():
+    data = request.get_json(silent=True) or {}
+    if str(data.get('admin_id')) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    if _fragment_import_job.get('running'):
+        return jsonify({'success': False, 'error': 'Другая синхронизация уже выполняется'})
+    with _fragment_import_lock:
+        job_id = str(int(time.time() * 1000))
+        _fragment_import_job.update({'running': True, 'job_id': job_id, 'stage': 'getgems', 'current': 0,
+            'total': 1, 'collections': 0, 'variants_found': 0, 'models': 0, 'message': 'Getgems...',
+            'logs': [], 'started_at': time.time(), 'finished_at': None, 'error': None})
+    def worker():
+        try:
+            def cb(c,t,m):
+                _fragment_job_update(current=c, total=t, message=m, stage='getgems')
+                _fragment_job_log(m)
+            r = _getgems_sync_prices_and_metadata(cb)
+            if r.get('success'):
+                _fragment_job_update(running=False, stage='done', current=1, total=1, collections=r.get('total',0), message=f"Getgems: обновлено {r.get('updated',0)}/{r.get('total',0)}", finished_at=time.time())
+                _fragment_job_log(f"Getgems: обновлено {r.get('updated',0)}/{r.get('total',0)}")
+            else:
+                _fragment_job_update(running=False, stage='error', error=r.get('error'), message='Getgems: ошибка', finished_at=time.time())
+                _fragment_job_log('Getgems: '+str(r.get('error')), 'error')
+        except Exception as e:
+            _fragment_job_update(running=False, stage='error', error=str(e), message='Getgems: ошибка', finished_at=time.time())
+            _fragment_job_log('Getgems: '+str(e), 'error')
+    threading.Thread(target=worker, daemon=True, name='getgems-price-sync').start()
+    return jsonify({'success': True, 'started': True, 'job_id': job_id})
+
+
+@app.route('/api/marketplaces/sync-all', methods=['POST'])
+def marketplaces_sync_all():
+    data = request.get_json(silent=True) or {}
+    if str(data.get('admin_id')) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+    with _fragment_import_lock:
+        if _fragment_import_job.get('running'):
+            return jsonify({'success': False, 'error': 'Другая синхронизация уже выполняется'})
+        job_id = str(int(time.time() * 1000))
+        _fragment_import_job.update({'running': True, 'job_id': job_id, 'stage': 'all-marketplaces', 'current': 0,
+            'total': 3, 'collections': 0, 'variants_found': 0, 'models': 0, 'message': 'Getgems + Fragment + MRKT...',
+            'logs': [], 'started_at': time.time(), 'finished_at': None, 'error': None})
+    def worker():
+        try:
+            def cb(m):
+                _fragment_job_update(message=m, stage='all-marketplaces')
+                _fragment_job_log(m)
+            result = _multi_source_price_sync(cb)
+            failed = [k for k,v in result.items() if k in ('getgems','fragment','mrkt') and isinstance(v,dict) and v.get('success') is False]
+            updated = {k: (v.get('updated') if isinstance(v,dict) else None) for k,v in result.items() if k in ('getgems','fragment','mrkt')}
+            _fragment_job_update(running=False, stage='done' if not failed else 'done-with-errors', current=3, total=3,
+                collections=result.get('total',0), message=f"Готово · Getgems {updated.get('getgems')} · Fragment {updated.get('fragment')} · MRKT {updated.get('mrkt')}",
+                finished_at=time.time(), error=None if not failed else ', '.join(failed))
+            _fragment_job_log('Мультисинк завершён')
+        except Exception as e:
+            logger.error('marketplaces_sync_all failed: %s\n%s', e, traceback.format_exc())
+            _fragment_job_update(running=False, stage='error', error=str(e), message='Общая синхронизация: ошибка', finished_at=time.time())
+            _fragment_job_log('Общая синхронизация: '+str(e), 'error')
+    threading.Thread(target=worker, daemon=True, name='all-marketplaces-sync').start()
+    return jsonify({'success': True, 'started': True, 'job_id': job_id})
+
 
 @app.route('/api/mrkt/status', methods=['GET'])
 def mrkt_status():
@@ -1513,6 +1837,175 @@ def _fragment_mirror_url(url):
         return 'https://r.jina.ai/http://fragment.com'
     return None
 
+def _fragment_curl_get(url, timeout=None):
+    """Browser-fingerprint Fragment GET using curl_cffi.
+
+    Fragment can return a valid page to a real browser while rejecting a plain
+    requests.Session. The marketplace search API is also exposed through the
+    same dynamic-hash flow used by the current Fragment web client.
+    """
+    try:
+        from curl_cffi import requests as curl_requests
+    except Exception:
+        return None
+    try:
+        return curl_requests.get(
+            url,
+            timeout=timeout or FRAGMENT_SYNC_TIMEOUT,
+            impersonate='chrome',
+            headers={
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache',
+            },
+            allow_redirects=True,
+        )
+    except Exception as e:
+        logger.debug('Fragment curl GET failed for %s: %s', url, e)
+        return None
+
+
+def _fragment_get_api_hash(session, page_url='https://fragment.com/gifts', timeout=None, force=False):
+    """Get/cache Fragment's dynamic API hash with one browser-like page load."""
+    global _fragment_api_hash, _fragment_api_hash_time
+    now = time.time()
+    with _fragment_api_hash_lock:
+        if not force and _fragment_api_hash and now - _fragment_api_hash_time < 900:
+            return _fragment_api_hash
+    page = session.get(page_url, timeout=timeout or FRAGMENT_SYNC_TIMEOUT)
+    if page.status_code != 200:
+        raise RuntimeError(f'Fragment page HTTP {page.status_code}')
+    match = re.search(r'(?:https://fragment\.com)?\\?/api\?hash=([a-f0-9]+)', page.text or '')
+    if not match:
+        raise RuntimeError('Fragment API hash not found')
+    with _fragment_api_hash_lock:
+        _fragment_api_hash = match.group(1)
+        _fragment_api_hash_time = time.time()
+    return _fragment_api_hash
+
+
+def _fragment_api_search_gifts(collection, sort='price_asc', filter_name='sale', timeout=None):
+    """Use Fragment's own searchAuctions XHR instead of scraping collection HTML.
+
+    Current Fragment marketplace clients request ``searchAuctions`` with
+    ``type=gifts`` and the collection/sort/filter parameters. The response is
+    HTML in JSON (``html`` or paginated ``body`` + ``foot``), which we parse
+    with the same grid parser used for the public page.
+    """
+    slug = _slugify_fragment_name(collection)
+    if not slug:
+        return []
+    try:
+        from curl_cffi import requests as curl_requests
+    except Exception:
+        return []
+
+    page_url = 'https://fragment.com/gifts'
+    session = curl_requests.Session(impersonate='chrome')
+    session.headers.update({
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+    })
+    try:
+        # Fragment's API hash is dynamic. Cache it briefly to avoid 119 extra page loads.
+        try:
+            fragment_hash = _fragment_get_api_hash(session, page_url, timeout=timeout)
+        except Exception as e:
+            logger.warning('Fragment browser GET/hash failed: %s', e)
+            return []
+        payload = {
+            'method': 'searchAuctions',
+            'type': 'gifts',
+            'query': '',
+            'collection': slug,
+            'sort': sort,
+            'filter': filter_name,
+        }
+        api_url = f'https://fragment.com/api?hash={fragment_hash}'
+        headers = {
+            'Accept': 'application/json, text/javascript, */*; q=0.01',
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'Origin': 'https://fragment.com',
+            'Referer': page_url,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-origin',
+        }
+        last_status = None
+        for attempt in range(max(1, FRAGMENT_API_RETRIES)):
+            try:
+                resp = session.post(api_url, data=payload, headers=headers, timeout=timeout or FRAGMENT_SYNC_TIMEOUT)
+                last_status = resp.status_code
+                if resp.status_code == 429 and attempt + 1 < FRAGMENT_API_RETRIES:
+                    time.sleep(0.8 * (2 ** attempt) + random.random() * 0.6)
+                    continue
+                if resp.status_code in (401, 403) and attempt + 1 < FRAGMENT_API_RETRIES:
+                    # Refresh the dynamic hash/session once before giving up.
+                    try:
+                        fresh_hash = _fragment_get_api_hash(session, page_url, timeout=timeout, force=True)
+                        api_url = f'https://fragment.com/api?hash={fresh_hash}'
+                    except Exception:
+                        pass
+                    time.sleep(0.6 + random.random() * 0.4)
+                    continue
+                if resp.status_code != 200:
+                    logger.warning('Fragment searchAuctions %s -> HTTP %s', slug, resp.status_code)
+                    continue
+                try:
+                    data = resp.json()
+                except Exception as e:
+                    logger.warning('Fragment searchAuctions %s returned non-JSON: %s', slug, e)
+                    continue
+                if isinstance(data, dict) and data.get('error'):
+                    logger.warning('Fragment searchAuctions %s error: %s', slug, data.get('error'))
+                    continue
+                html = data.get('html')
+                if html is None:
+                    html = (data.get('body') or '') + (data.get('foot') or '')
+                rows = _parse_fragment_grid_prices(html or '')
+                if rows:
+                    return rows
+                # Some revisions use tm-grid-item markup without the exact
+                # class chain expected by our parser. Extract TON prices from
+                # each grid card as a conservative fallback.
+                cards = re.findall(r'<a\b[^>]*tm-grid-item[^>]*>(.*?)</a>', html or '', re.DOTALL | re.IGNORECASE)
+                fallback = []
+                for card in cards:
+                    href = re.search(r'''href=["']([^"']*?/gift/[^"']+)["']''', card, re.IGNORECASE)
+                    if not href:
+                        continue
+                    prices = []
+                    for m in re.finditer(r'(?<![\w.])([0-9][0-9,]*(?:\.[0-9]+)?)\s*TON\b', card, re.IGNORECASE):
+                        try:
+                            v = float(m.group(1).replace(',', ''))
+                            if v > 0 and math.isfinite(v): prices.append(v)
+                        except Exception:
+                            pass
+                    if prices:
+                        fallback.append((href.group(1), min(prices)))
+                fallback.sort(key=lambda x: x[1])
+                if fallback:
+                    return fallback
+                logger.debug('Fragment searchAuctions %s: no sale cards in response (status=%s)', slug, last_status)
+                break
+            except Exception as e:
+                logger.debug('Fragment searchAuctions %s attempt %s failed: %s', slug, attempt + 1, e)
+                if attempt + 1 < FRAGMENT_API_RETRIES:
+                    time.sleep(0.8 * (2 ** attempt) + random.random() * 0.5)
+        return []
+    except Exception as e:
+        logger.warning('Fragment API sale search failed for %s: %s', slug, e)
+        return []
+    finally:
+        try:
+            session.close()
+        except Exception:
+            pass
+
+
 def _fragment_get(url, timeout=None):
     global _fragment_http_session
     if _fragment_http_session is None:
@@ -1548,42 +2041,57 @@ def _fragment_get(url, timeout=None):
     raise RuntimeError(' | '.join(errors) if errors else 'Fragment request failed')
 
 def _fetch_fragment_collection_price(slug):
-    """Return the cheapest currently listed *for-sale* NFT in a collection.
+    """Return the cheapest currently listed sale from Fragment.
 
-    This intentionally does NOT use the collection floor field, auction prices,
-    sold history, or any other marketplace. It mirrors the requested Fragment
-    workflow exactly: ``filter=sale`` + ``sort=price_asc`` and take the first
-    available sale price.
+    Tier 1: Fragment's own ``searchAuctions`` XHR with collection + sale +
+    price_asc. Tier 2: browser-fingerprinted HTML page. Tier 3: the configured
+    mirror/fetch base via _fragment_get. The first valid positive sale price is
+    persisted; no collection floor, sold price, auction price, or other market
+    source is accepted.
     """
     slug = _slugify_fragment_name(slug)
     if not slug:
         return None
+
+    # Primary path: same marketplace XHR that the live Fragment UI uses.
+    rows = _fragment_api_search_gifts(slug, sort='price_asc', filter_name='sale')
+    if rows:
+        return float(rows[0][1])
+    logger.debug('Fragment primary sale search empty for %s; trying browser/mirror fallback', slug)
+
+    # Secondary path: a real-browser GET of the exact URL the admin requested.
+    url = f'https://fragment.com/gifts/{slug}?sort=price_asc&filter=sale'
+    candidates = []
+    browser_resp = _fragment_curl_get(url)
+    if browser_resp is not None and getattr(browser_resp, 'status_code', 0) == 200:
+        candidates.append(browser_resp.text or '')
+
+    # Existing proxy/mirror fallback.
     try:
-        url = f'https://fragment.com/gifts/{slug}?sort=price_asc&filter=sale'
         resp = _fragment_get(url, timeout=FRAGMENT_SYNC_TIMEOUT)
-        if resp.status_code != 200:
-            return None
-        html = resp.text or ''
+        if resp.status_code == 200:
+            candidates.append(resp.text or '')
+    except Exception as e:
+        logger.debug('Fragment HTML fallback failed for %s: %s', slug, e)
+
+    for html in candidates:
         rows = _parse_fragment_grid_prices(html)
         if rows:
             return float(rows[0][1])
-        # Fallback for markup where listing URLs and prices are rendered separately.
+        # Last-resort: only accept prices that are visibly associated with the
+        # first sale card/page and never parse a generic collection floor field.
+        card = re.search(r'<a\b[^>]*tm-grid-item[^>]*>(.*?)</a>', html, re.DOTALL | re.IGNORECASE)
+        target = card.group(1) if card else html[:25000]
         vals = []
-        for pm in re.finditer(r'data-(?:price|ton-price|price-ton)\s*=\s*[\']?([0-9][0-9,]*(?:\.[0-9]+)?)', html, re.IGNORECASE):
+        for m in re.finditer(r'(?<![\w.])([0-9][0-9,]*(?:\.[0-9]+)?)\s*TON\b', target, re.IGNORECASE):
             try:
-                v = float(pm.group(1).replace(',', ''))
-                if math.isfinite(v) and v > 0: vals.append(v)
-            except Exception: pass
-        if not vals:
-            for tm in re.finditer(r'(?<![\w.])([0-9][0-9,]*(?:\.[0-9]+)?)\s*TON\b', html, re.IGNORECASE):
-                try:
-                    v = float(tm.group(1).replace(',', ''))
-                    if math.isfinite(v) and v > 0: vals.append(v)
-                except Exception: pass
-        return min(vals) if vals else None
-    except Exception as e:
-        logger.warning('Fragment sale price failed for %s: %s', slug, e)
-        return None
+                v = float(m.group(1).replace(',', ''))
+                if v > 0 and math.isfinite(v): vals.append(v)
+            except Exception:
+                pass
+        if vals:
+            return min(vals)
+    return None
 
 
 def _fragment_nft_path_from_listing(path):
@@ -1893,6 +2401,8 @@ def fetch_fragment_gifts_catalog(force_refresh=False):
                         item, ton_price = fut.result()
                         if ton_price is not None:
                             item['fragment_price_ton'] = ton_price
+                            item['fragment_price_source'] = 'fragment_sale'
+                            item['fragment_price_updated_at'] = datetime.utcnow().isoformat() + 'Z'
                             item['value'] = int(round(ton_price * FRAGMENT_TON_RATE))
                     except Exception:
                         pass
@@ -18129,7 +18639,7 @@ def api_fragment_sync_prices():
                 def one(g):
                     slug = str(g.get('fragment_slug') or '').strip().lower()
                     return g, (_fetch_fragment_collection_price(slug) if slug else None)
-                with ThreadPoolExecutor(max_workers=8) as ex:
+                with ThreadPoolExecutor(max_workers=max(1, FRAGMENT_PRICE_WORKERS)) as ex:
                     futures = [ex.submit(one, g) for g in gifts]
                     done = 0
                     for fut in as_completed(futures):
@@ -18138,14 +18648,19 @@ def api_fragment_sync_prices():
                             g, price = fut.result()
                             if price is not None:
                                 g['fragment_price_ton'] = round(float(price), 4)
-                                g['value'] = int(round(float(price) * FRAGMENT_TON_RATE))
+                                g['fragment_price_source'] = 'fragment_sale'
+                                g['fragment_price_updated_at'] = datetime.utcnow().isoformat() + 'Z'
                                 g['name'] = _normalize_fragment_collection_name(g.get('name') or '')
+                                _choose_market_price(g)
                                 updated += 1
                             else:
                                 failed += 1
+                            if failed <= 10:
+                                logger.warning('Fragment sale price unavailable for %s', g.get('fragment_slug'))
                         except Exception as e:
                             failed += 1
-                            logger.warning('Fragment sale price worker failed: %s', e)
+                            if failed <= 10:
+                                logger.warning('Fragment sale price worker failed: %s', e)
                         _fragment_job_update(current=done, total=total, message=f'Цены Fragment: {done}/{total} · обновлено {updated}', stage='prices', collections=total)
                         if done == 1 or done == total or done % 10 == 0:
                             _fragment_job_log(f'Цены Fragment: {done}/{total} · обновлено {updated}')
@@ -18159,7 +18674,7 @@ def api_fragment_sync_prices():
                 except Exception:
                     pass
                 _fragment_job_update(running=False, stage='done', current=total, total=total, collections=total, message=f'Готово: {updated}/{total} цен', finished_at=time.time())
-                _fragment_job_log(f'Готово: обновлено {updated}/{total}, ошибок/нет в продаже: {failed}')
+                _fragment_job_log(f'Готово: обновлено {updated}/{total}; без доступного sale-лота: {failed}')
             except Exception as e:
                 logger.error('Fragment price sync failed: %s\n%s', e, traceback.format_exc())
                 _fragment_job_update(running=False, stage='error', error=str(e), message='Ошибка обновления цен', finished_at=time.time())
