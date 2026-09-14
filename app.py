@@ -84,8 +84,8 @@ gifts_cache_time = None
 CACHE_DURATION = 600  # 10 минут кэш подарков
 FRAGMENT_SYNC_ENABLED = os.getenv('FRAGMENT_SYNC_ENABLED', '1') != '0'
 FRAGMENT_SYNC_TIMEOUT = float(os.getenv('FRAGMENT_SYNC_TIMEOUT', '12'))
-FRAGMENT_API_RETRIES = int(os.getenv('FRAGMENT_API_RETRIES', '4'))
-FRAGMENT_PRICE_WORKERS = int(os.getenv('FRAGMENT_PRICE_WORKERS', '4'))
+FRAGMENT_API_RETRIES = int(os.getenv('FRAGMENT_API_RETRIES', '3'))
+FRAGMENT_PRICE_WORKERS = int(os.getenv('FRAGMENT_PRICE_WORKERS', '2'))
 FRAGMENT_SYNC_MAX = int(os.getenv('FRAGMENT_SYNC_MAX', '5000'))
 FRAGMENT_PRICE_FETCH_LIMIT = int(os.getenv('FRAGMENT_PRICE_FETCH_LIMIT', '0'))
 FRAGMENT_TON_RATE = int(os.getenv('FRAGMENT_TON_RATE', '100'))
@@ -1046,47 +1046,81 @@ def _normalize_fragment_collection_name(name):
     return text.strip() or str(name or '').strip()
 
 def _parse_fragment_grid_prices(text):
-    """Parse sale listing URLs and their local card price from Fragment HTML.
+    """Parse listing URLs and the price from the *same* Fragment card.
 
-    Fragment's markup changes frequently. The important rule is that the price
-    must belong to the same listing card, not a later card on the page.
+    Fragment changes its HTML often. In some versions the gift href appears
+    before the TON price; in others the price is rendered earlier in the card
+    or via a data-* attribute. We therefore inspect a bounded window around
+    each gift link and prefer the nearest price values.
     """
     if not text:
         return []
     html = str(text)
     href_re = re.compile(r'(?:https?://fragment\.com)?/gift/([a-z0-9_-]+)-(\d+)', re.IGNORECASE)
-    ton_re = re.compile(r'(?<![\w.])([0-9][0-9,]*(?:\.[0-9]+)?)\s*TON\b', re.IGNORECASE)
+    ton_re = re.compile(r'(?<![\w.])([0-9][0-9,]*(?:\.[0-9]+)?)\s*(?:TON|gram|g)\b', re.IGNORECASE)
     attr_re = re.compile(r'data-(?:price|ton-price|price-ton)\s*=\s*["\']?([0-9][0-9,]*(?:\.[0-9]+)?)', re.IGNORECASE)
+    tag_card_re = re.compile(r'<(?:a|div)\b[^>]*class=["\'][^"\']*tm-grid-item[^"\']*["\'][^>]*>.*?</(?:a|div)>', re.IGNORECASE | re.DOTALL)
 
-    matches = list(href_re.finditer(html))
     results, seen = [], set()
+
+    # Best case: a complete grid card contains both the href and its price.
+    for card in tag_card_re.finditer(html):
+        block = card.group(0)
+        hm = href_re.search(block)
+        if not hm:
+            continue
+        slug, number = hm.group(1).lower(), int(hm.group(2))
+        key = (slug, number)
+        if key in seen:
+            continue
+        vals = []
+        for pm in attr_re.finditer(block):
+            try:
+                v = float(pm.group(1).replace(',', ''))
+                if math.isfinite(v) and v > 0: vals.append(v)
+            except Exception:
+                pass
+        for tm in ton_re.finditer(block):
+            try:
+                v = float(tm.group(1).replace(',', ''))
+                if math.isfinite(v) and v > 0: vals.append(v)
+            except Exception:
+                pass
+        if vals:
+            seen.add(key)
+            results.append((f'/gift/{slug}-{number}', min(vals)))
+
+    # Fallback for markup where the card class is on a parent or completely absent.
+    matches = list(href_re.finditer(html))
     for idx, m in enumerate(matches):
         slug, number = m.group(1).lower(), int(m.group(2))
         key = (slug, number)
         if key in seen:
             continue
-        seen.add(key)
-        next_start = matches[idx + 1].start() if idx + 1 < len(matches) else min(len(html), m.end() + 3000)
-        # Start at this listing URL so the chunk cannot absorb the previous card's price.
-        chunks = [html[m.end():next_start]]
-        price = None
+        prev_start = matches[idx - 1].start() if idx > 0 else max(0, m.start() - 2200)
+        next_start = matches[idx + 1].start() if idx + 1 < len(matches) else min(len(html), m.end() + 2200)
+        # Use a bounded around-link window; this catches prices rendered before
+        # the href as well as prices following it, without swallowing the next card.
+        left = max(prev_start, m.start() - 900)
+        right = min(next_start, m.end() + 1500)
+        chunk = html[left:right]
         vals = []
-        for chunk in chunks:
-            for pm in attr_re.finditer(chunk):
-                try:
-                    v = float(pm.group(1).replace(',', ''))
-                    if math.isfinite(v) and v > 0: vals.append(v)
-                except Exception:
-                    pass
-            for tm in ton_re.finditer(chunk):
-                try:
-                    v = float(tm.group(1).replace(',', ''))
-                    if math.isfinite(v) and v > 0: vals.append(v)
-                except Exception:
-                    pass
+        for pm in attr_re.finditer(chunk):
+            try:
+                v = float(pm.group(1).replace(',', ''))
+                if math.isfinite(v) and v > 0: vals.append(v)
+            except Exception:
+                pass
+        for tm in ton_re.finditer(chunk):
+            try:
+                v = float(tm.group(1).replace(',', ''))
+                if math.isfinite(v) and v > 0: vals.append(v)
+            except Exception:
+                pass
         if vals:
-            price = min(vals)
-            results.append((f'/gift/{slug}-{number}', price))
+            seen.add(key)
+            results.append((f'/gift/{slug}-{number}', min(vals)))
+
     results.sort(key=lambda x: x[1])
     return results
 
@@ -1570,12 +1604,20 @@ def _write_fragment_catalog_to_local_gifts(fragment_gifts):
             ):
                 if key in fg and fg.get(key) is not None:
                     g[key] = fg.get(key)
-            # Fragment sale price is canonical when present. If an import request
-            # fails or returns no active listing, keep the previously persisted value.
-            if fg.get('fragment_price_ton') is not None:
-                g['value'] = int(round(float(fg['fragment_price_ton']) * FRAGMENT_TON_RATE))
-            elif fg.get('mrkt_price_ton') is not None:
-                g['value'] = int(round(float(fg['mrkt_price_ton']) * FRAGMENT_TON_RATE))
+            # Persist the selected market price first. Never overwrite a fresh
+            # Getgems/MRKT value with an older Fragment value merely because the
+            # Fragment request temporarily returned no sale listing.
+            selected = _getgems_num(fg.get('market_price_ton'))
+            if selected is None:
+                candidates = [
+                    _getgems_num(fg.get('getgems_price_ton')),
+                    _getgems_num(fg.get('fragment_price_ton')),
+                    _getgems_num(fg.get('mrkt_price_ton')),
+                ]
+                selected = min([x for x in candidates if x is not None], default=None)
+            if selected is not None:
+                g['market_price_ton'] = round(float(selected), 4)
+                g['value'] = int(round(float(selected) * FRAGMENT_TON_RATE))
             elif fg.get('value') is not None and not g.get('value'):
                 g['value'] = int(round(float(fg.get('value') or 0)))
             image = fg.get('market_image') or fg.get('black_image') or fg.get('onyx_black_image') or fg.get('image')
@@ -2033,16 +2075,25 @@ def _fetch_fragment_collection_price(slug):
     url = f'https://fragment.com/gifts/{slug}?sort=price_asc&filter=sale'
     candidates = []
     browser_resp = _fragment_curl_get(url)
-    if browser_resp is not None and getattr(browser_resp, 'status_code', 0) == 200:
-        candidates.append(browser_resp.text or '')
+    if browser_resp is not None:
+        logger.info('[FRAG-DEBUG] %s curl status=%s len=%s', slug,
+                    getattr(browser_resp, 'status_code', '?'), len(browser_resp.text or ''))
+        if getattr(browser_resp, 'status_code', 0) == 200:
+            candidates.append(browser_resp.text or '')
+    else:
+        logger.info('[FRAG-DEBUG] %s curl_cffi request returned None (import failed or exception)', slug)
     try:
         resp = _fragment_get(url, timeout=FRAGMENT_SYNC_TIMEOUT)
+        logger.info('[FRAG-DEBUG] %s requests status=%s len=%s', slug, resp.status_code, len(resp.text or ''))
         if resp.status_code == 200:
             candidates.append(resp.text or '')
     except Exception as e:
-        logger.debug('Fragment HTML fallback failed for %s: %s', slug, e)
+        logger.info('[FRAG-DEBUG] %s requests fallback exception: %s', slug, e)
 
-    for html in candidates:
+    for idx, html in enumerate(candidates):
+        low = (html or '').lower()
+        if any(marker in low for marker in ('just a moment', 'cf-chl', 'cf_chl', 'attention required', 'checking your browser', 'g-recaptcha', 'cf-turnstile')):
+            logger.warning('[FRAG-DEBUG] %s candidate#%s looks like a Cloudflare/anti-bot challenge page, not real content', slug, idx)
         rows = _parse_fragment_grid_prices(html)
         exact = []
         for path, price in rows:
@@ -2063,6 +2114,12 @@ def _fetch_fragment_collection_price(slug):
             except Exception: pass
         if vals:
             return min(vals)
+
+    if candidates:
+        snippet = re.sub(r'\s+', ' ', (candidates[-1] or ''))[:400]
+        logger.info('[FRAG-DEBUG] %s no price parsed from %s candidate(s); snippet: %s', slug, len(candidates), snippet)
+    else:
+        logger.info('[FRAG-DEBUG] %s got zero usable HTML candidates (both fetchers failed/non-200)', slug)
 
     # Supported RPC fallback (no invalid sort/filter fields in payload).
     rows = _fragment_api_search_gifts(slug, sort='price_asc', filter_name='sale')
