@@ -1014,6 +1014,89 @@ def load_gifts_cached():
 def _slugify_fragment_name(name):
     return re.sub(r'[^a-z0-9]+', '', str(name or '').lower()).strip()
 
+def _normalize_fragment_collection_name(name):
+    """Return the collection title without Fragment's trailing item count.
+
+    Fragment collection anchors are sometimes rendered as ``Name 1,614`` or
+    ``Name 1614 items``. The numeric suffix is inventory/count metadata, not
+    part of the public collection name, so keep only the title itself.
+    """
+    text = html_lib.unescape(re.sub(r'<[^>]+>', ' ', str(name or '')))
+    text = re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r'\s+\d[\d,]*(?:\s+items?)?\s*$', '', text, flags=re.IGNORECASE)
+    return text.strip() or str(name or '').strip()
+
+def _parse_fragment_grid_prices(text):
+    """Parse gift listing URLs and their sale prices from Fragment HTML.
+
+    The caller uses the Fragment URL with ``filter=sale&sort=price_asc``.
+    Fragment has changed markup several times, so this parser deliberately
+    accepts both explicit data-price attributes and human-readable ``TON``
+    labels near each ``/gift/<collection>-<number>`` listing.
+    """
+    if not text:
+        return []
+
+    html = str(text)
+    results = []
+    seen = set()
+
+    # 1) Explicit price attributes near a listing URL.
+    attr_re = re.compile(
+        r'(?:href=[\"\'][^\"\']*/gift/([a-z0-9_-]+)-(\d+)[^\"\']*[\"\']|'
+        r'data-(?:price|ton-price|price-ton)= [\"\']?([0-9][0-9,]*(?:\.[0-9]+)?))',
+        re.IGNORECASE | re.VERBOSE
+    )
+
+    # 2) Generic listing anchor + nearby TON value. Keep the window small so
+    # we don't accidentally attach a later card's price to this gift.
+    href_re = re.compile(r'(?:https?://fragment\.com)?/gift/([a-z0-9_-]+)-(\d+)', re.IGNORECASE)
+    ton_re = re.compile(r'(?<![\w.])([0-9][0-9,]*(?:\.[0-9]+)?)\s*TON\b', re.IGNORECASE)
+
+    for m in href_re.finditer(html):
+        slug, number = m.group(1).lower(), int(m.group(2))
+        key = (slug, number)
+        if key in seen:
+            continue
+        seen.add(key)
+        start = max(0, m.start() - 500)
+        end = min(len(html), m.end() + 2200)
+        chunk = html[start:end]
+
+        price = None
+        # Prefer explicit attributes inside the nearby card.
+        for pm in re.finditer(r'(?:data-(?:price|ton-price|price-ton)|(?:\"|\')price(?:\"|\'))\s*[:=]\s*[\"\']?([0-9][0-9,]*(?:\.[0-9]+)?)', chunk, re.IGNORECASE):
+            try:
+                price = float(pm.group(1).replace(',', ''))
+                break
+            except Exception:
+                pass
+        if price is None:
+            prices = []
+            for tm in ton_re.finditer(chunk):
+                try:
+                    value = float(tm.group(1).replace(',', ''))
+                    if math.isfinite(value) and value > 0:
+                        prices.append(value)
+                except Exception:
+                    pass
+            if prices:
+                price = min(prices)
+
+        if price is not None and price > 0:
+            results.append((f'/gift/{slug}-{number}', price))
+
+    results.sort(key=lambda x: x[1])
+    return results
+
+def _slugify_case_name(name):
+    text = str(name or '').strip().lower()
+    text = re.sub(r'[^\w\-]+', '-', text, flags=re.UNICODE)
+    return text.strip('-') or 'case'
+
+def _case_slug(case):
+    return str(case.get('slug') or _slugify_case_name(case.get('name') or f"case-{case.get('id')}")).strip()
+
 def _normalize_gift_name_for_match(name):
     text = str(name or '').lower().replace('(random)', '').strip()
     return re.sub(r'[^a-z0-9]+', '', text)
@@ -1189,7 +1272,9 @@ def _write_fragment_catalog_to_local_gifts(fragment_gifts):
         by_name = {}
         for g in existing:
             slug = str(g.get('fragment_slug') or '').strip().lower()
-            if slug: by_slug[slug] = g
+            if slug:
+                g['name'] = _normalize_fragment_collection_name(g.get('name') or '')
+                by_slug[slug] = g
             n = _normalize_gift_name_for_match(g.get('name'))
             if n: by_name[n] = g
         added = 0
@@ -1459,10 +1544,14 @@ def _fragment_get(url, timeout=None):
             resp = _fragment_http_session.get(
                 candidate_url,
                 timeout=timeout or FRAGMENT_SYNC_TIMEOUT,
-                headers={'User-Agent': 'Mozilla/5.0'},
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9'
+                },
                 proxies={'http': None, 'https': None}
             )
-            if resp.status_code < 500:
+            if 200 <= resp.status_code < 400:
                 return resp
             errors.append(f'{candidate_url} -> HTTP {resp.status_code}')
         except Exception as e:
@@ -1471,15 +1560,25 @@ def _fragment_get(url, timeout=None):
     raise RuntimeError(' | '.join(errors) if errors else 'Fragment request failed')
 
 def _fetch_fragment_collection_price(slug):
+    """Return the cheapest currently listed *for-sale* NFT in a collection.
+
+    This intentionally does NOT use the collection floor field, auction prices,
+    sold history, or any other marketplace. It mirrors the requested Fragment
+    workflow exactly: ``filter=sale`` + ``sort=price_asc`` and take the first
+    available sale price.
+    """
+    slug = _slugify_fragment_name(slug)
     if not slug:
         return None
     try:
-        url = f'https://fragment.com/gifts/{slug}'
-        resp = _fragment_get(url)
+        url = f'https://fragment.com/gifts/{slug}?sort=price_asc&filter=sale'
+        resp = _fragment_get(url, timeout=FRAGMENT_SYNC_TIMEOUT)
         if resp.status_code != 200:
             return None
-        return _parse_fragment_price_ton(resp.text)
-    except Exception:
+        rows = _parse_fragment_grid_prices(resp.text or '')
+        return float(rows[0][1]) if rows else None
+    except Exception as e:
+        logger.warning('Fragment sale price failed for %s: %s', slug, e)
         return None
 
 
@@ -1744,8 +1843,7 @@ def fetch_fragment_gifts_catalog(force_refresh=False):
             seen.add(slug)
             clean_name = re.sub(r'<[^>]+>', ' ', raw_name or '')
             clean_name = re.sub(r'\s+', ' ', clean_name).strip()
-            name = html_lib.unescape(clean_name)
-            name = re.sub(r'\s+[0-9][0-9,]*\s+items.*$', '', name, flags=re.IGNORECASE).strip()
+            name = _normalize_fragment_collection_name(clean_name)
             if not name:
                 name = slug
             gifts.append({
@@ -1888,7 +1986,7 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
     result = []
     for g in gifts:
         item = dict(g)
-        item['name'] = item.get('name') or 'Gift'
+        item['name'] = _normalize_fragment_collection_name(item.get('name') or 'Gift')
         item['value'] = _safe_int(item.get('value'), 0)
         item['image'] = (
             _normalize_local_gift_image(item.get('image'))
@@ -5193,9 +5291,17 @@ def case_main_page():
     return render_template('index.html', initial_case_id=None)
 
 @app.route('/case/<int:case_id>')
-def case_detail_page(case_id):
-    """Отдельная страница конкретного кейса."""
-    return render_template('index.html', initial_case_id=case_id)
+def case_detail_page_legacy(case_id):
+    """Legacy numeric URL: redirect to the human-readable case slug."""
+    case = next((c for c in load_cases() if int(c.get('id', 0)) == int(case_id)), None)
+    if not case:
+        return redirect('/cases')
+    return redirect('/case/' + quote_plus(_case_slug(case)))
+
+@app.route('/case/<case_slug>')
+def case_detail_page(case_slug):
+    """Standalone case page."""
+    return send_from_directory(BASE_PATH, 'case.html')
 
 @app.route('/cases')
 def cases_page():
@@ -7925,6 +8031,35 @@ def api_case_detail(case_id):
     except Exception as e:
         logger.error(f"❌ Ошибка получения деталей кейса: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/cases/by-slug/<case_slug>')
+def api_case_detail_by_slug(case_slug):
+    try:
+        target = str(case_slug or '').strip().lower()
+        cases = load_cases()
+        case = next((c for c in cases if _case_slug(c).lower() == target), None)
+        if not case:
+            return jsonify({'success': False, 'error': 'Кейс не найден'}), 404
+        # Reuse the same gift resolution as the numeric endpoint.
+        local_gifts = load_gifts_cached() or []
+        canonical_gifts = build_fragment_first_gifts_catalog()
+        gifts_details = []
+        for gift_info in case.get('gifts', []):
+            if gift_info.get('type') == 'ton_balance':
+                gifts_details.append({'id': -1, 'name': 'GRAM', 'image': '/static/img/tons/ton_1.svg', 'value': gift_info.get('ton_amount', 0), 'type': 'ton_balance', 'ton_amount': gift_info.get('ton_amount', 0), 'chance': gift_info.get('chance', 1)})
+                continue
+            target_id = gift_info.get('id'); target_id_str = str(target_id) if target_id is not None else ''
+            gift = next((g for g in canonical_gifts if (target_id is not None and str(g.get('id')) == target_id_str) or (target_id_str and str(g.get('gift_key') or '').lower() == target_id_str.lower()) or (target_id_str and str(g.get('fragment_slug') or '').lower() == target_id_str.lower())), None)
+            if not gift and gift_info.get('fragment_slug'):
+                fs = str(gift_info.get('fragment_slug')).strip().lower()
+                gift = next((g for g in canonical_gifts if str(g.get('fragment_slug') or '').lower() == fs), None)
+            if not gift and gift_info.get('name'):
+                gift = {'id': target_id or -1, 'name': gift_info.get('name',''), 'image': gift_info.get('image','/static/img/default_gift.png'), 'value': _safe_int(gift_info.get('value'),0), 'type': gift_info.get('type','gift')}
+            if gift: gifts_details.append({**gift, 'chance': gift_info.get('chance',1)})
+        return jsonify({'success': True, 'case': {**case, 'slug': _case_slug(case), 'gifts_details': gifts_details}})
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения кейса по slug: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/cases/open', methods=['POST'])
 def open_case():
@@ -16115,6 +16250,7 @@ def admin_cases_management():
             new_case = {
                 'id': new_id,
                 'name': data['name'],
+                'slug': _slugify_case_name(data.get('slug') or data['name']),
                 'image': image_url,
                 'cost': data['cost'],
                 'cost_type': data['cost_type'],
@@ -16176,6 +16312,7 @@ def admin_cases_management():
             updated_case = {
                 'id': case_id,
                 'name': data['name'],
+                'slug': _slugify_case_name(data.get('slug') or data['name']),
                 'image': image_url,
                 'cost': data['cost'],
                 'cost_type': data['cost_type'],
@@ -17905,22 +18042,10 @@ def _run_fragment_gifts_import_job(job_id):
         found = sum(1 for g in gifts if g.get('black_image') or g.get('onyx_black_image'))
         _fragment_job_log(f'Fragment: найдено {len(gifts)} коллекций, PNG вариантов: {found}')
 
-        # One admin button now performs the complete catalog refresh: Fragment
-        # collections + Black/Onyx Black assets + MRKT floor prices. This keeps
-        # the public market and the admin catalog on the same fresh snapshot.
-        if _mrkt_load_token() and gifts:
-            _fragment_job_log('MRKT: начинаем обновление цен для нового каталога')
-            def mrkt_progress(done, total, msg):
-                _fragment_job_update(current=done, total=total, stage='mrkt', collections=total, message=msg)
-                if done == 0 or done == total or done % 10 == 0:
-                    _fragment_job_log(msg)
-            mrkt_result = _mrkt_sync_prices_to_fragment_catalog(progress_callback=mrkt_progress)
-            if mrkt_result.get('success'):
-                _fragment_job_log(f"MRKT: обновлено {mrkt_result.get('updated', 0)}/{mrkt_result.get('total', 0)} цен")
-            else:
-                _fragment_job_log(f"MRKT: цены не обновлены — {mrkt_result.get('error')}", 'warn')
-        else:
-            _fragment_job_log('MRKT: токен не установлен — каталог Fragment сохранён без MRKT-цен', 'warn')
+        # Fragment sale prices are the canonical gift prices. Do not replace
+        # them with MRKT or collection-floor prices after this import.
+        priced = sum(1 for g in gifts if g.get('fragment_price_ton') is not None)
+        _fragment_job_log(f'Fragment: цены active sale (price low to high): {priced}/{len(gifts)}')
 
         try:
             api_gifts_list._cache = {}
@@ -17946,6 +18071,78 @@ def _start_fragment_import_job():
         })
     threading.Thread(target=_run_fragment_gifts_import_job, args=(job_id,), daemon=True, name='fragment-import').start()
     return True, job_id
+
+@app.route('/api/fragment/sync-prices', methods=['POST'])
+def api_fragment_sync_prices():
+    """Refresh only current Fragment fixed-price sale floors for gifts.json."""
+    try:
+        data = request.get_json(silent=True) or {}
+        if str(data.get('admin_id')) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        with _fragment_import_lock:
+            if _fragment_import_job.get('running'):
+                return jsonify({'success': False, 'error': 'Другая загрузка Fragment уже выполняется'})
+            job_id = str(int(time.time() * 1000))
+            _fragment_import_job.update({
+                'running': True, 'job_id': job_id, 'stage': 'prices', 'current': 0,
+                'total': 0, 'collections': 0, 'variants_found': 0, 'models': 0,
+                'message': 'Запуск обновления цен...', 'logs': [],
+                'started_at': time.time(), 'finished_at': None, 'error': None
+            })
+
+        def worker():
+            try:
+                gifts = _load_fragment_catalog_disk_cache() or load_gifts_cached() or []
+                total = len(gifts)
+                updated = 0
+                failed = 0
+                _fragment_job_update(total=total, collections=total)
+                _fragment_job_log(f'Старт цен Fragment: {total} коллекций')
+                from concurrent.futures import ThreadPoolExecutor, as_completed
+                def one(g):
+                    slug = str(g.get('fragment_slug') or '').strip().lower()
+                    return g, (_fetch_fragment_collection_price(slug) if slug else None)
+                with ThreadPoolExecutor(max_workers=8) as ex:
+                    futures = [ex.submit(one, g) for g in gifts]
+                    done = 0
+                    for fut in as_completed(futures):
+                        done += 1
+                        try:
+                            g, price = fut.result()
+                            if price is not None:
+                                g['fragment_price_ton'] = round(float(price), 4)
+                                g['value'] = int(round(float(price) * FRAGMENT_TON_RATE))
+                                g['name'] = _normalize_fragment_collection_name(g.get('name') or '')
+                                updated += 1
+                            else:
+                                failed += 1
+                        except Exception as e:
+                            failed += 1
+                            logger.warning('Fragment sale price worker failed: %s', e)
+                        _fragment_job_update(current=done, total=total, message=f'Цены Fragment: {done}/{total} · обновлено {updated}', stage='prices', collections=total)
+                        if done == 1 or done == total or done % 10 == 0:
+                            _fragment_job_log(f'Цены Fragment: {done}/{total} · обновлено {updated}')
+                _save_fragment_catalog_disk_cache(gifts)
+                _write_fragment_catalog_to_local_gifts(gifts)
+                global fragment_cache, fragment_cache_time
+                fragment_cache = gifts
+                fragment_cache_time = time.time()
+                try:
+                    api_gifts_list._cache = {}
+                except Exception:
+                    pass
+                _fragment_job_update(running=False, stage='done', current=total, total=total, collections=total, message=f'Готово: {updated}/{total} цен', finished_at=time.time())
+                _fragment_job_log(f'Готово: обновлено {updated}/{total}, ошибок/нет в продаже: {failed}')
+            except Exception as e:
+                logger.error('Fragment price sync failed: %s\n%s', e, traceback.format_exc())
+                _fragment_job_update(running=False, stage='error', error=str(e), message='Ошибка обновления цен', finished_at=time.time())
+                _fragment_job_log(f'Ошибка обновления цен: {e}', 'error')
+
+        threading.Thread(target=worker, daemon=True, name='fragment-price-sync').start()
+        return jsonify({'success': True, 'started': True, 'job_id': job_id})
+    except Exception as e:
+        logger.error('api_fragment_sync_prices error: %s', e)
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/fragment/import-gifts', methods=['POST'])
 def api_fragment_import_gifts():
@@ -19416,6 +19613,29 @@ def admin_upload_crate_image():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+
+@app.route('/api/admin/cases/upload-image', methods=['POST'])
+def admin_upload_case_image():
+    try:
+        admin_id = request.form.get('admin_id')
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+        file = request.files.get('file')
+        if not file or not file.filename:
+            return jsonify({'success': False, 'error': 'Файл не выбран'}), 400
+        if not allowed_file(file.filename):
+            return jsonify({'success': False, 'error': 'Разрешены PNG, JPG, JPEG, GIF и WEBP'}), 400
+        import uuid
+        ext = os.path.splitext(secure_filename(file.filename))[1].lower() or '.png'
+        fname = f"case_{uuid.uuid4().hex[:10]}{ext}"
+        save_dir = os.path.join(BASE_PATH, 'static', 'gifs', 'cases')
+        os.makedirs(save_dir, exist_ok=True)
+        file.save(os.path.join(save_dir, fname))
+        url = f'/static/gifs/cases/{fname}'
+        return jsonify({'success': True, 'url': url})
+    except Exception as e:
+        logger.error(f"Case image upload error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/admin/upload-image', methods=['POST'])
 def admin_upload_image():
@@ -23417,8 +23637,9 @@ def api_admin_gifts_list():
                 'id': gid,
                 'gift_key': g.get('gift_key', ''),
                 'fragment_slug': g.get('fragment_slug', ''),
-                'name': g.get('name', 'Gift'),
+                'name': _normalize_fragment_collection_name(g.get('name', 'Gift')),
                 'value': g.get('value', 0),
+                'fragment_price_ton': g.get('fragment_price_ton'),
                 'image': g.get('image', '/static/img/gift.png')
             })
         result.sort(key=lambda x: x.get('value', 0), reverse=True)
