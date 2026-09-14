@@ -1434,11 +1434,16 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
 .deposit-methods{display:block!important;}
 .deposit-method-btn{width:100%!important;margin-bottom:10px!important;}
 .deposit-unavailable{padding:18px 12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.68);font-size:13px;line-height:1.45;text-align:center;}
-.item-animation-block{display:none;width:100%;margin:0 0 16px;padding:10px;border-radius:18px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.06);}
+.item-animation-block{display:none;width:100%;margin:0 0 12px;padding:0;border-radius:20px;background:transparent;border:0;}
 .item-animation-block.show{display:block;}
-.item-animation-stage{width:100%;height:240px;display:flex;align-items:center;justify-content:center;}
-.item-animation-stage svg{width:100%!important;height:100%!important;}
-@media(max-width:380px){.page{transform:translateY(5vh)!important}.item-animation-stage{height:210px}}
+.item-animation-stage{width:100%;height:230px;aspect-ratio:1/1;max-width:230px;margin:0 auto;display:flex;align-items:center;justify-content:center;border-radius:20px;overflow:hidden;background:linear-gradient(145deg,#151a1f,#20262c);}
+.item-animation-stage svg{width:100%!important;height:100%!important;display:block;}
+.item-animation-fallback{width:100%;height:100%;object-fit:contain;padding:8px;display:none;}
+.item-nft-block.compact{display:flex;margin-top:4px;gap:8px;}
+.item-nft-block.compact .item-nft-img-wrap,.item-nft-block.compact .item-nft-number{display:none;}
+.item-nft-block.compact .item-nft-name{display:none;}
+.item-nft-block.compact .item-nft-attrs{margin-top:0;}
+@media(max-width:380px){.page{transform:translateY(5vh)!important}.item-animation-stage{height:210px;max-width:210px}}
 </style>
 </head>
 <body>
@@ -1541,15 +1546,16 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
         <div class="item-sheet-handle"></div>
 
         <div class="item-sheet-header" id="itemSheetHeader">
-            <img class="item-sheet-img" id="itemSheetImg" src="/static/img/gift.png" alt="">
+            <div class="item-animation-block" id="itemAnimationBlock">
+                <div class="item-animation-stage" id="itemAnimationStage">
+                    <img class="item-animation-fallback" id="itemAnimationFallback" src="/static/img/gift.png" alt="">
+                </div>
+            </div>
+            <img class="item-sheet-img" id="itemSheetImg" src="/static/img/gift.png" alt="" style="display:none">
             <div class="item-sheet-title" id="itemSheetTitle">Подарок</div>
             <div class="item-sheet-price" id="itemSheetPrice">
                 <img src="/static/img/ton.png" alt=""><span id="itemSheetPriceVal">0.00</span>
             </div>
-        </div>
-
-        <div class="item-animation-block" id="itemAnimationBlock">
-            <div class="item-animation-stage" id="itemAnimationStage"></div>
         </div>
 
         <div class="item-nft-block" id="itemNftBlock">
@@ -2081,25 +2087,35 @@ function openBatchSellModal(){
    ITEM SHEET
    ══════════════════════════════════════════════════════════════ */
 async function loadGiftAnimation(item){
-    var block=$('itemAnimationBlock'), stage=$('itemAnimationStage');
-    if(!block || !stage) return;
-    block.classList.remove('show'); stage.innerHTML='';
-    if(!item) return;
+    var block=$('itemAnimationBlock'), stage=$('itemAnimationStage'), fallback=$('itemAnimationFallback');
+    if(!block || !stage) return false;
+    if(_itemAnimation){try{_itemAnimation.destroy();}catch(e){} _itemAnimation=null;}
+    stage.querySelectorAll('svg').forEach(function(x){x.remove();});
+    if(fallback){ fallback.style.display='none'; fallback.src=getGiftImage(item)||'/static/img/gift.png'; }
+    block.classList.remove('show');
+    if(!item) return false;
     var slug=item.fragment_slug || '';
-    var num=item.nft_number || 0;
-    if(!slug || !num) {
-        var m=String(item.gift_image||'').match(/(?:gifts|gift)\/([a-z0-9_-]+)-?(\d+)?/i);
+    var num=item.nft_number || item.number || 0;
+    if(!slug || !num){
+        var m=String(item.gift_image||item.image||'').match(/(?:gifts|gift)\/([a-z0-9_-]+)-?(\d+)?/i);
         if(m){slug=m[1]||''; if(!num && m[2]) num=parseInt(m[2]);}
     }
-    if(!slug || !num) return;
+    if(!slug || !num){
+        if(fallback){fallback.style.display='block'; block.classList.add('show');}
+        return false;
+    }
     try{
         var r=await fetch('/api/fragment-gift-animation?slug='+encodeURIComponent(slug)+'&number='+encodeURIComponent(num));
         var d=await r.json();
-        if(!d.success || !d.animation) return;
-        if(_itemAnimation){try{_itemAnimation.destroy();}catch(e){} _itemAnimation=null;}
+        if(!d.success || !d.animation) throw new Error('animation unavailable');
         block.classList.add('show');
         _itemAnimation=lottie.loadAnimation({container:stage,renderer:'svg',loop:true,autoplay:true,animationData:d.animation});
-    }catch(e){console.warn('gift animation:',e);}
+        return true;
+    }catch(e){
+        console.warn('gift animation:',e);
+        if(fallback){fallback.style.display='block'; block.classList.add('show');}
+        return false;
+    }
 }
 
 function openItemSheet(itemId){
@@ -2133,7 +2149,7 @@ function openItemSheet(itemId){
 
     if(upgraded){
         if(header) header.style.display = 'none';
-        if(nftBlock) nftBlock.classList.add('show');
+        if(nftBlock){ nftBlock.classList.add('show'); nftBlock.classList.remove('compact'); }
 
         var bn = (item.gift_name || '').replace(/#\d+$/, '').trim();
         var nnm = $('itemNftName'); if(nnm) nnm.textContent = bn || 'Gift';
@@ -2174,10 +2190,21 @@ function openItemSheet(itemId){
         if(withdrawBtn) withdrawBtn.disabled = !!item.is_withdrawing;
     } else {
         if(header) header.style.display = 'flex';
-        var img = $('itemSheetImg'); if(img) img.src = getGiftImage(item);
-        var title = $('itemSheetTitle'); if(title) title.textContent = item.gift_name || 'Подарок';
+        var img = $('itemSheetImg'); if(img){ img.src = getGiftImage(item); img.style.display='none'; }
+        var title = $('itemSheetTitle'); if(title) title.textContent = String(item.gift_name || 'Подарок').replace(/#\d+$/, '').trim();
         var priceVal = $('itemSheetPriceVal');
         if(priceVal) priceVal.textContent = formatTon(starsToTon(item.gift_value));
+        if(nftBlock){ nftBlock.classList.add('show','compact'); }
+        setAttrLoading('attrModelVal', 'attrModelRarity');
+        setAttrLoading('attrBackdropVal', 'attrBackdropRarity');
+        setAttrLoading('attrSymbolVal', 'attrSymbolRarity');
+        var nslug = item.fragment_slug || '';
+        var nnum = item.nft_number || item.number || 0;
+        if(!nnum){
+            var nm = String(item.gift_image||item.image||'').match(/\/gifts\/([a-z0-9_-]+)-(\d+)/i);
+            if(nm){ nslug = nslug || nm[1]; nnum = parseInt(nm[2]); }
+        }
+        if(nslug && nnum) fetchFragmentDetails(nslug, nnum);
 
         if(item.challenge && !item.challenge.is_completed){
             if(challenge) challenge.style.display = 'block';
@@ -3051,7 +3078,7 @@ async function openPortalPicker(){
         _portalCandidates.sort(function(a,b){return Number(a.price_ton||0)-Number(b.price_ton||0);});
         renderPortalCandidates();
         if(!_portalCandidates.length) showPortalError('На Portal пока нет доступных моделей этого подарка.');
-    }catch(e){ console.error('portal picker',e); showPortalError(e.message||'Не удалось загрузить модели Portal'); }
+    }catch(e){ console.error('portal picker',e); closePortalPicker(); showNotif('Ошибка вывода, подождите позже', true); }
     finally{ if(loading) loading.style.display='none'; }
 }
 function renderPortalCandidates(){

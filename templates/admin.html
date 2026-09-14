@@ -290,6 +290,10 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
     font-size:10px;font-weight:800;
 }
 
+.fragment-log-box{margin-top:12px;background:#0e1217;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:10px;max-height:260px;overflow:auto;font-family:'Courier New',monospace;font-size:10px;line-height:1.5;}
+.fragment-log-line{padding:2px 0;color:rgba(255,255,255,.62);word-break:break-word;}
+.fragment-log-line.ok{color:#62d9aa}.fragment-log-line.err{color:#ff7a92}.fragment-log-line.warn{color:#ffd36b}.fragment-progress{height:7px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden;margin-top:10px}.fragment-progress>i{display:block;height:100%;width:0;background:#3b82f6;transition:width .25s}
+.fragment-job-status{font-size:11px;color:rgba(255,255,255,.55);margin-top:8px;line-height:1.45;}
 @media(max-width:380px){
     .tiles-grid{grid-template-columns:1fr}
     .tile-btn{min-height:auto;flex-direction:row;align-items:center;padding:16px}
@@ -349,7 +353,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 </button>
                 <button class="tile-btn tile-teal" onclick="showSection('portal')">
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
-                    <div><div class="tile-text">Portal</div><div class="tile-sub">Fragment-цены, токен</div></div>
+                    <div><div class="tile-text">MRKT</div><div class="tile-sub">Цены, токен, синхронизация</div></div>
                 </button>
             </div>
         </div>
@@ -562,26 +566,26 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
     </div>
 
-    <!-- PORTAL -->
+    <!-- MRKT -->
     <div class="section-page" id="page-portal" style="display:none">
         <div class="section-header">
-            <h2>🌐 Portal</h2>
+            <h2>🛒 MRKT</h2>
             <button class="action-btn" onclick="loadPortalStatus()">Обновить</button>
         </div>
 
         <div class="portal-status-card">
             <div class="portal-status-row"><span>Статус</span><span id="portalStatusText">—</span></div>
             <div class="portal-status-row"><span>Токен</span><span id="portalTokenText">—</span></div>
-            <div class="portal-status-row"><span>aportalsmp</span><span id="portalModuleText">—</span></div>
-            <div class="portal-status-row"><span>Fragment-коллекций</span><span id="portalCollectionsText">0</span></div>
+            
+            <div class="portal-status-row"><span>MRKT API</span><span id="portalModuleText">—</span></div>
             <div class="portal-status-row"><span>Последний синк</span><span id="portalSyncText">никогда</span></div>
         </div>
 
         <div class="card">
-            <div class="card-title">Токен (initData)</div>
+            <div class="card-title">Токен MRKT</div>
             <div class="form-group">
-                <label class="form-label">Вставь всю строку initData из Telegram WebApp</label>
-                <textarea class="form-input" id="portalTokenInput" rows="4" placeholder='user=%7B%22id%22%3A123...&hash=...' style="font-family:'Courier New',monospace;font-size:11px"></textarea>
+                <label class="form-label">Вставь токен MRKT из ответа `/api/v1/auth`</label>
+                <textarea class="form-input" id="portalTokenInput" rows="4" placeholder='eyJ... или строка токена из Response auth' style="font-family:'Courier New',monospace;font-size:11px"></textarea>
             </div>
             <div class="btn-row">
                 <button class="btn btn-success" onclick="savePortalToken(event)">💾 Сохранить</button>
@@ -590,8 +594,8 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
 
         <div class="card">
-            <div class="card-title">Синхронизация</div>
-            <button class="btn btn-primary" onclick="syncPortalPrices(event)">🔄 Синхронизировать цены с Portal</button>
+            <div class="card-title">Синхронизация MRKT</div>
+            <button class="btn btn-primary" onclick="syncPortalPrices(event)">🔄 Обновить цены с MRKT</button>
             <button class="btn btn-secondary" onclick="importFragmentGifts(event)" style="margin-top:8px">📥 Загрузить подарки + Black / Onyx Black</button>
             <button class="btn btn-secondary" onclick="importFragmentModels(event)" style="margin-top:8px">🧩 Загрузить модели (только в админ-кэш)</button>
             <button class="btn btn-secondary" onclick="importFragmentAll(event)" style="margin-top:8px">📦 Загрузить всё с Fragment</button>
@@ -599,6 +603,13 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 «Подарки» загружают все коллекции, их цены и реальные PNG с фонами Black / Onyx Black.
                 «Модели» сохраняются только в кэше админ-панели и не публикуются на маркете.
             </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Логи загрузки Fragment</div>
+            <div class="fragment-job-status" id="fragmentJobStatus">Ожидание запуска загрузки.</div>
+            <div class="fragment-progress"><i id="fragmentProgressBar"></i></div>
+            <div class="fragment-log-box" id="fragmentLogBox"><div class="fragment-log-line">[LOG] Здесь будут отображаться этапы загрузки Fragment.</div></div>
         </div>
 
         <div class="card">
@@ -887,7 +898,8 @@ async function verifyAdminAccess(){
 /* ★ Навигация назад */
 function goBackOrMenu(){
     if(currentSection === 'home'){
-        goToProfile();
+        // Do not close the Telegram Mini App. Return to the Games page.
+        window.location.href = '/games';
     } else if(currentSection === 'case-editor'){
         showSection('cases');
     } else {
@@ -912,7 +924,7 @@ var SECTION_TITLES = {
     leaderboard: '🏆 Лидерборд', challenges: '🎁 NFT Отыгрыши',
     withdrawals: '💸 Выводы',
     sbp: '💳 СБП', inventory: '🎒 Инвентарь', history: '📜 История',
-    portal: '🌐 Portal'
+    portal: '🛒 MRKT'
 };
 
 function showSection(name){
@@ -935,7 +947,7 @@ function showSection(name){
         if(name === 'gifts') loadGifts();
         if(name === 'cases') loadCasesList();
         if(name === 'promo'){ loadPromoCodes(); onPromoTypeChange(); }
-        if(name === 'portal') loadPortalStatus();
+        if(name === 'portal'){ loadPortalStatus(); pollFragmentImportStatus(); }
         if(name === 'inventory') searchInvUser();
         if(name === 'quests') loadQuests();
         if(name === 'leaderboard') loadLeaderboard();
@@ -1765,135 +1777,69 @@ async function createPromoCode(){
    ══════════════════════════════════════════════════════════════ */
 async function loadPortalStatus(){
     try{
-        var r = await fetch('/api/portal/status');
+        var r = await fetch('/api/mrkt/status?ts='+Date.now());
         var d = await r.json();
-        if(!d.success){ showToast('Ошибка загрузки Portal', 'err'); return; }
-        
-        var info = d.info || {};
-        var st = $('portalStatusText');
-        var tk = $('portalTokenText');
-        var md = $('portalModuleText');
-        var cl = $('portalCollectionsText');
-        var sy = $('portalSyncText');
-        
-        if(st){
-            st.innerHTML = d.connected 
-                ? '<span class="status-pill ok"><span class="dot"></span>Подключён</span>'
-                : '<span class="status-pill err"><span class="dot"></span>Не подключён</span>';
-        }
-        if(tk){
-            tk.innerHTML = d.has_token 
-                ? '<span class="status-pill ok">Есть</span>'
-                : '<span class="status-pill off">Нет</span>';
-        }
-        if(md){
-            md.innerHTML = d.aportalsmp_available 
-                ? '<span class="status-pill ok">Установлен</span>'
-                : '<span class="status-pill err">Не установлен</span>';
-        }
-        if(cl) cl.textContent = info.total_collections || 0;
-        if(sy) sy.textContent = info.last_sync_ago || 'никогда';
-        
-        if(info.error){
-            var errEl = $('portalStatusText');
-            if(errEl && !d.connected){
-                errEl.innerHTML = '<span style="font-size:11px;color:#FF3064">' + escapeHtml(info.error) + '</span>';
-            }
-        }
+        if(!d.success){ showToast('Ошибка загрузки MRKT', 'err'); return; }
+        var st = $('portalStatusText'), tk = $('portalTokenText'), md = $('portalModuleText');
+        if(st) st.innerHTML = d.connected
+            ? '<span class="status-pill ok"><span class="dot"></span>Подключён</span>'
+            : '<span class="status-pill err"><span class="dot"></span>Не подключён</span>';
+        if(tk) tk.innerHTML = d.has_token ? '<span class="status-pill ok">Есть '+escapeHtml(d.token_hint||'')+'</span>' : '<span class="status-pill off">Нет</span>';
+        if(md) md.innerHTML = d.api ? '<span class="status-pill ok">Доступен</span>' : '<span class="status-pill err">Недоступен</span>';
     }catch(e){ console.error(e); }
 }
 
 async function savePortalToken(evt){
     var token = ($('portalTokenInput').value || '').trim();
-    if(!token){ showToast('Вставь токен', 'err'); return; }
-    if(token.length < 30){ showToast('Токен слишком короткий', 'err'); return; }
-    
-    var btn = evt && evt.target;
-    if(btn){ btn.disabled = true; btn.textContent = 'Сохранение...'; }
-    
+    if(!token){ showToast('Вставь токен MRKT', 'err'); return; }
+    var btn = evt && evt.target; if(btn){ btn.disabled=true; btn.textContent='Проверяем...'; }
     try{
-        var r = await fetch('/api/portal/save-token', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({admin_id: ADMIN_ID, token: token})
-        });
-        var d = await r.json();
-        if(d.success){
-            showToast(d.message || 'Токен сохранён', 'ok');
-            $('portalTokenInput').value = '';
-            loadPortalStatus();
-        } else {
-            showToast(d.error || 'Ошибка', 'err');
-            if(d.hint) setTimeout(function(){ showToast(d.hint, 'err'); }, 3000);
-        }
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-    finally{
-        if(btn){ btn.disabled = false; btn.textContent = '💾 Сохранить'; }
-    }
+        var r=await fetch('/api/mrkt/save-token',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,token:token})});
+        var d=await r.json();
+        if(d.success){ showToast('MRKT токен сохранён и проверен','ok'); $('portalTokenInput').value=''; loadPortalStatus(); }
+        else showToast(d.error||'Токен MRKT не прошёл проверку','err');
+    }catch(e){showToast('Ошибка соединения с MRKT','err');}
+    finally{if(btn){btn.disabled=false;btn.textContent='💾 Сохранить';}}
 }
 
 async function deletePortalToken(){
-    if(!confirm('Удалить токен Portal?')) return;
+    if(!confirm('Удалить токен MRKT?')) return;
     try{
-        var r = await fetch('/api/portal/token', {
-            method:'DELETE', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({admin_id: ADMIN_ID})
-        });
-        var d = await r.json();
-        if(d.success){ showToast('Токен удалён', 'ok'); loadPortalStatus(); }
-        else showToast(d.error || 'Ошибка', 'err');
-    }catch(e){ showToast('Ошибка сети', 'err'); }
+        var r=await fetch('/api/mrkt/token',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
+        var d=await r.json(); if(d.success){showToast('Токен MRKT удалён','ok');loadPortalStatus();} else showToast(d.error||'Ошибка','err');
+    }catch(e){showToast('Ошибка сети','err');}
 }
 
+var fragmentLogPollTimer=null;
+function renderFragmentJob(d){
+    var st=$('fragmentJobStatus'), bar=$('fragmentProgressBar'), box=$('fragmentLogBox');
+    if(st){ var pct=d.total?Math.min(100,Math.round((d.current||0)*100/d.total)):0; st.textContent=(d.message||'Ожидание...')+'  '+(d.total?(pct+'%'):''); if(d.stage) st.textContent+=' · этап: '+d.stage; }
+    if(bar) bar.style.width=(d.total?Math.min(100,(d.current||0)*100/d.total):0)+'%';
+    if(box&&Array.isArray(d.logs)){ box.innerHTML=d.logs.map(function(x){var t=new Date((x.ts||Date.now()/1000)*1000).toLocaleTimeString();var cls=x.level==='error'?'err':(x.level==='warn'?'warn':'');return '<div class="fragment-log-line '+cls+'">['+t+'] '+escapeHtml(x.message||'')+'</div>';}).join('')||'<div class="fragment-log-line">[LOG] Ожидание...</div>'; box.scrollTop=box.scrollHeight; }
+}
+async function pollFragmentImportStatus(){
+    try{var r=await fetch('/api/fragment/import-status?ts='+Date.now());var d=await r.json();if(d.success)renderFragmentJob(d);if(d.running)fragmentLogPollTimer=setTimeout(pollFragmentImportStatus,1200);else fragmentLogPollTimer=null;}
+    catch(e){fragmentLogPollTimer=setTimeout(pollFragmentImportStatus,2500);}
+}
 async function importFragmentGifts(evt){
-    var btn=evt&&evt.currentTarget; if(btn){btn.disabled=true;btn.textContent='⏳ Загружаем подарки и фоны...';}
-    try{
-        var r=await fetch('/api/fragment/import-gifts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
-        var d=await r.json();
-        if(d.success){showToast('Fragment: '+(d.message||('загружено '+(d.collections||0))), 'ok');loadPortalStatus();}
-        else showToast(d.error||'Ошибка загрузки Fragment','err');
-    }catch(e){showToast('Ошибка соединения с Fragment','err');}
-    finally{if(btn){btn.disabled=false;btn.textContent='📥 Загрузить подарки + Black / Onyx Black';}}
+    var btn=evt&&evt.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳ Запуск загрузки...';}
+    try{var r=await fetch('/api/fragment/import-gifts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});var d=await r.json();if(d.success){showToast(d.started?'Fragment: загрузка запущена':'Загрузка уже идёт','ok');if(fragmentLogPollTimer)clearTimeout(fragmentLogPollTimer);pollFragmentImportStatus();}else showToast(d.error||'Ошибка загрузки Fragment','err');}
+    catch(e){showToast('Ошибка соединения с Fragment','err');}finally{if(btn){btn.disabled=false;btn.textContent='📥 Загрузить подарки + Black / Onyx Black';}}
 }
-
 async function importFragmentModels(evt){
-    var btn=evt&&evt.currentTarget; if(btn){btn.disabled=true;btn.textContent='⏳ Загружаем модели...';}
-    try{
-        var r=await fetch('/api/fragment/import-models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
-        var d=await r.json();
-        if(d.success){showToast('Модели сохранены: '+(d.models||0)+' (на маркет не добавлены)','ok');}
-        else showToast(d.error||'Ошибка загрузки моделей','err');
-    }catch(e){showToast('Ошибка соединения с Fragment','err');}
-    finally{if(btn){btn.disabled=false;btn.textContent='🧩 Загрузить модели (только в админ-кэш)';}}
+    var btn=evt&&evt.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳ Загружаем модели...';}
+    try{var r=await fetch('/api/fragment/import-models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});var d=await r.json();if(d.success)showToast('Модели сохранены: '+(d.models||0),'ok');else showToast(d.error||'Ошибка загрузки моделей','err');}
+    catch(e){showToast('Ошибка соединения с Fragment','err');}finally{if(btn){btn.disabled=false;btn.textContent='🧩 Загрузить модели (только в админ-кэш)';}}
 }
-
 async function importFragmentAll(evt){
-    var btn=evt&&evt.currentTarget; if(btn){btn.disabled=true;btn.textContent='⏳ Загружаем всё...';}
-    try{
-        var r=await fetch('/api/fragment/import-all',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
-        var d=await r.json();
-        if(d.success){showToast('Fragment: '+(d.collections||0)+' коллекций, '+(d.models||0)+' моделей. Модели в маркет не добавлены.','ok');loadPortalStatus();}
-        else showToast(d.error||'Ошибка полной загрузки Fragment','err');
-    }catch(e){showToast('Ошибка соединения с Fragment','err');}
-    finally{if(btn){btn.disabled=false;btn.textContent='📦 Загрузить всё с Fragment';}}
+    var btn=evt&&evt.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳ Запускаем загрузку...';}
+    try{var r=await fetch('/api/fragment/import-all',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});var d=await r.json();if(d.success){showToast('Fragment: загрузка запущена','ok');if(fragmentLogPollTimer)clearTimeout(fragmentLogPollTimer);pollFragmentImportStatus();}else showToast(d.error||'Ошибка полной загрузки Fragment','err');}
+    catch(e){showToast('Ошибка соединения с Fragment','err');}finally{if(btn){btn.disabled=false;btn.textContent='📦 Загрузить всё с Fragment';}}
 }
 async function syncPortalPrices(evt){
-    if(!confirm('Синхронизировать цены с Portal? Это может занять несколько минут.')) return;
-    var btn = evt && evt.target;
-    if(btn){ btn.disabled = true; btn.textContent = '⏳ Синхронизация...'; }
-    try{
-        var r = await fetch('/api/portal/sync-prices', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({admin_id: ADMIN_ID})
-        });
-        var d = await r.json();
-        if(d.success){
-            showToast('✅ Синк: обновлено ' + (d.updated || 0) + '/' + (d.total || 0), 'ok');
-            loadPortalStatus();
-        } else showToast(d.error || 'Ошибка', 'err');
-    }catch(e){ showToast('Ошибка сети', 'err'); }
-    finally{
-        if(btn){ btn.disabled = false; btn.textContent = '🔄 Синхронизировать цены с Portal'; }
-    }
+    var btn=evt&&evt.target;if(btn){btn.disabled=true;btn.textContent='⏳ Запуск MRKT...';}
+    try{var r=await fetch('/api/mrkt/sync-prices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});var d=await r.json();if(d.success){showToast(d.started?'MRKT: синхронизация запущена в фоне':'Синхронизация уже идёт','ok');if(fragmentLogPollTimer)clearTimeout(fragmentLogPollTimer);pollFragmentImportStatus();}else showToast(d.error||'Ошибка MRKT','err');}
+    catch(e){showToast('Ошибка соединения с MRKT','err');}finally{if(btn){btn.disabled=false;btn.textContent='🔄 Обновить цены с MRKT';}}
 }
 
 /* ══════════════════════════════════════════════════════════════
