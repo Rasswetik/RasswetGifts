@@ -1008,6 +1008,7 @@ _fragment_api_hash = None
 _fragment_api_hash_time = 0.0
 _fragment_api_hash_lock = threading.Lock()
 fragment_last_error = None
+_frag_debug_card_logged = False
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1846,9 +1847,9 @@ def mrkt_sync_prices():
     if str(data.get('admin_id')) != str(ADMIN_ID):
         return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
     with _fragment_import_lock:
-        if _fragment_job.get('running'):
+        if _fragment_import_job.get('running'):
             return jsonify({'success': True, 'started': False, 'message': 'Синхронизация уже выполняется'})
-        _fragment_job.update({'running': True, 'job_id': str(int(time.time()*1000)), 'stage': 'starting', 'current': 0, 'total': 0,
+        _fragment_import_job.update({'running': True, 'job_id': str(int(time.time()*1000)), 'stage': 'starting', 'current': 0, 'total': 0,
                               'message': 'Запуск MRKT...', 'logs': [], 'started_at': time.time(), 'finished_at': None, 'error': None})
     threading.Thread(target=_run_mrkt_sync_job, daemon=True, name='mrkt-price-sync').start()
     return jsonify({'success': True, 'started': True, 'message': 'Синхронизация MRKT запущена в фоне'})
@@ -2111,6 +2112,12 @@ def _fetch_fragment_collection_price(slug):
         wall_markers = [w for w in ('connect wallet', 'sign in', 'log in', 'you must be logged') if w in low]
         logger.info('[FRAG-DEBUG] %s candidate#%s counts: gift_href=%s ton=%s tm-grid-item=%s next_data=%s react_root=%s wall=%s',
                     slug, idx, gift_href_count, ton_count, grid_item_count, has_next_data, has_react_root, wall_markers)
+        global _frag_debug_card_logged
+        if not _frag_debug_card_logged and grid_item_count > 0 and ton_count == 0:
+            card_m = re.search(r'<(?:a|div)\b[^>]*class="[^"]*tm-grid-item[^"]*"[^>]*>.*?</(?:a|div)>', html, re.IGNORECASE | re.DOTALL)
+            if card_m:
+                logger.warning('[FRAG-DEBUG] RAW CARD MARKUP (one-time dump) for %s: %s', slug, card_m.group(0))
+                _frag_debug_card_logged = True
         if gift_href_count == 0:
             anchor = low.find('gifts-list') if 'gifts-list' in low else low.find('<body')
             if anchor == -1:
