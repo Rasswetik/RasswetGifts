@@ -116,7 +116,11 @@ MRKT_SYNC_WORKERS = int(os.getenv('MRKT_SYNC_WORKERS', '8'))
 
 # Getgems public API: collection floor prices + metadata. The public docs expose
 # the gift price list without requiring an MRKT-style user token.
-GETGEMS_API_BASE = os.getenv('GETGEMS_API_BASE', 'https://api.getgems.io/public-api').strip().rstrip('/')
+# Getgems no longer exposes the legacy bulk price-list endpoint used by older builds.
+# We use GiftAsset's public provider mirror for the `getgems` floor field, while
+# still keeping the provider isolated as Getgems source data in our catalog.
+GETGEMS_API_BASE = os.getenv('GETGEMS_API_BASE', 'https://giftasset.gifts').strip().rstrip('/')
+GETGEMS_LEGACY_API_BASE = os.getenv('GETGEMS_LEGACY_API_BASE', 'https://api.getgems.io/public-api').strip().rstrip('/')
 GETGEMS_TIMEOUT = float(os.getenv('GETGEMS_TIMEOUT', '20'))
 GETGEMS_ENABLED = os.getenv('GETGEMS_ENABLED', '1') != '0'
 GETGEMS_PRICE_ENDPOINT = '/v1/gifts/get_gifts_price_list'
@@ -1260,19 +1264,33 @@ def _mrkt_min_collection_price(collection_name, token=None):
 def _getgems_request(path, params=None):
     if not GETGEMS_ENABLED:
         raise RuntimeError('Getgems sync disabled')
-    url = GETGEMS_API_BASE + path
-    headers = {'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0'}
-    try:
-        from curl_cffi import requests as curl_requests
-        r = curl_requests.get(url, headers=headers, params=params or {}, timeout=GETGEMS_TIMEOUT, impersonate='chrome')
-    except Exception:
-        r = http_requests.get(url, headers=headers, params=params or {}, timeout=GETGEMS_TIMEOUT)
-    if r.status_code >= 400:
-        raise RuntimeError(f'Getgems HTTP {r.status_code}: {r.text[:240]}')
-    try:
-        return r.json()
-    except Exception:
-        raise RuntimeError('Getgems вернул некорректный JSON')
+    bases = [GETGEMS_API_BASE]
+    if GETGEMS_LEGACY_API_BASE and GETGEMS_LEGACY_API_BASE not in bases:
+        bases.append(GETGEMS_LEGACY_API_BASE)
+    headers = {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+    }
+    errors = []
+    for base in bases:
+        url = base.rstrip('/') + path
+        try:
+            try:
+                from curl_cffi import requests as curl_requests
+                r = curl_requests.get(url, headers=headers, params=params or {}, timeout=GETGEMS_TIMEOUT, impersonate='chrome')
+            except Exception:
+                r = http_requests.get(url, headers=headers, params=params or {}, timeout=GETGEMS_TIMEOUT)
+            if r.status_code >= 400:
+                errors.append(f'{url} -> HTTP {r.status_code}: {r.text[:180]}')
+                continue
+            try:
+                return r.json()
+            except Exception:
+                errors.append(f'{url} -> invalid JSON')
+        except Exception as e:
+            errors.append(f'{url} -> {e}')
+    raise RuntimeError('Getgems provider request failed: ' + ' | '.join(errors))
 
 
 def _getgems_num(value):
@@ -1289,19 +1307,30 @@ def _getgems_price_map(data):
     out = {}
     if not isinstance(data, dict):
         return out
-    floors = data.get('collection_floors') or {}
+    floors = data.get('collection_floors') or data.get('collections') or data.get('data') or {}
+    if isinstance(floors, list):
+        for row in floors:
+            if not isinstance(row, dict):
+                continue
+            name = row.get('collection_name') or row.get('name') or row.get('title')
+            price = _getgems_num(row.get('getgems') or row.get('floor') or row.get('floor_price') or row.get('price'))
+            if name and price is not None:
+                out[_normalize_gift_name_for_match(name)] = {'name': str(name), 'price_ton': price, 'last_update': row.get('last_update')}
+        return out
     if not isinstance(floors, dict):
         return out
     for name, row in floors.items():
-        if not isinstance(row, dict):
-            continue
-        price = _getgems_num(row.get('getgems'))
-        if price is not None:
-            out[_normalize_gift_name_for_match(name)] = {
-                'name': str(name),
-                'price_ton': price,
-                'last_update': row.get('last_update')
-            }
+        if isinstance(row, dict):
+            price = _getgems_num(row.get('getgems') or row.get('floor') or row.get('floor_price') or row.get('price'))
+            real_name = row.get('collection_name') or row.get('name') or name
+            if price is not None:
+                out[_normalize_gift_name_for_match(real_name)] = {
+                    'name': str(real_name),
+                    'price_ton': price,
+                    'last_update': row.get('last_update')
+                }
+        elif _getgems_num(row) is not None:
+            out[_normalize_gift_name_for_match(name)] = {'name': str(name), 'price_ton': _getgems_num(row), 'last_update': None}
     return out
 
 
@@ -1355,59 +1384,60 @@ def _choose_market_price(g):
 
 
 def _getgems_sync_prices_and_metadata(progress_callback=None):
-    """One-shot Getgems enrichment for the complete local catalog.
+    """Fetch Getgems prices + metadata without relying on the retired bulk endpoint.
 
-    Getgems publishes a collection price list that includes the Getgems floor,
-    plus metadata for collection attributes. This is much cheaper and more
-    reliable than making one HTTP request per collection.
+    Primary source: GiftAsset public provider API, which exposes current
+    Getgems floors and attribute metadata. Legacy Getgems API is only tried as
+    a fallback; a 404 there is expected on current deployments and is not fatal.
     """
     gifts = load_gifts_cached() or _load_fragment_catalog_disk_cache() or []
     if not gifts:
         return {'success': False, 'error': 'Каталог подарков пуст'}
     started = time.time()
+    if progress_callback:
+        progress_callback(0, 1, 'Getgems: загружаем price list')
     try:
-        if progress_callback:
-            progress_callback(0, 1, 'Getgems: загружаем единый price list')
-        price_data = _getgems_request(GETGEMS_PRICE_ENDPOINT, params={'models': 'true'})
-        price_map = _getgems_price_map(price_data)
-        attrs_map = {}
-        try:
-            attrs_data = _getgems_request(GETGEMS_ATTRIBUTES_ENDPOINT)
-            attrs_map = _getgems_attributes_map(attrs_data)
-        except Exception as e:
-            logger.warning('Getgems attributes unavailable: %s', e)
-
-        found = 0
-        for g in gifts:
-            key = _normalize_gift_name_for_match(g.get('name'))
-            rec = price_map.get(key)
-            if rec:
-                g['getgems_price_ton'] = round(float(rec['price_ton']), 4)
-                g['getgems_price_updated_at'] = rec.get('last_update') or datetime.utcnow().isoformat() + 'Z'
-                found += 1
-            arec = attrs_map.get(key)
-            if arec:
-                g['getgems_models'] = arec['models']
-                g['getgems_backdrops'] = arec['backdrops']
-                g['getgems_symbols'] = arec['symbols']
-            _choose_market_price(g)
-
-        _save_fragment_catalog_disk_cache(gifts)
-        _write_fragment_catalog_to_local_gifts(gifts)
-        global fragment_cache, fragment_cache_time
-        fragment_cache = gifts
-        fragment_cache_time = time.time()
-        try:
-            api_gifts_list._cache = {}
-        except Exception:
-            pass
-        elapsed = round(time.time() - started, 2)
-        if progress_callback:
-            progress_callback(1, 1, f'Getgems: {found}/{len(gifts)} цен · {elapsed}s')
-        return {'success': True, 'total': len(gifts), 'updated': found, 'attributes': len(attrs_map), 'elapsed': elapsed}
+        price_data = _getgems_request('/api/v1/gifts/get_gifts_price_list', params={'models': 'true'})
+    except Exception as first_error:
+        logger.warning('Getgems bulk price list failed: %s', first_error)
+        return {'success': False, 'error': str(first_error), 'updated': 0, 'total': len(gifts)}
+    price_map = _getgems_price_map(price_data)
+    attrs_map = {}
+    try:
+        attrs_data = _getgems_request('/api/v1/gifts/get_attributes_metadata')
+        attrs_map = _getgems_attributes_map(attrs_data)
     except Exception as e:
-        logger.error('Getgems sync failed: %s\n%s', e, traceback.format_exc())
-        return {'success': False, 'error': str(e)}
+        logger.warning('Getgems attributes unavailable: %s', e)
+
+    found = 0
+    for g in gifts:
+        key = _normalize_gift_name_for_match(g.get('name'))
+        rec = price_map.get(key)
+        if rec:
+            g['getgems_price_ton'] = round(float(rec['price_ton']), 4)
+            g['getgems_price_updated_at'] = rec.get('last_update') or datetime.utcnow().isoformat() + 'Z'
+            g['getgems_price_source'] = 'getgems'
+            found += 1
+        arec = attrs_map.get(key)
+        if arec:
+            g['getgems_models'] = arec['models']
+            g['getgems_backdrops'] = arec['backdrops']
+            g['getgems_symbols'] = arec['symbols']
+        _choose_market_price(g)
+
+    _save_fragment_catalog_disk_cache(gifts)
+    _write_fragment_catalog_to_local_gifts(gifts)
+    global fragment_cache, fragment_cache_time
+    fragment_cache = gifts
+    fragment_cache_time = time.time()
+    try:
+        api_gifts_list._cache = {}
+    except Exception:
+        pass
+    elapsed = round(time.time() - started, 2)
+    if progress_callback:
+        progress_callback(1, 1, f'Getgems: {found}/{len(gifts)} цен · {elapsed}s')
+    return {'success': True, 'total': len(gifts), 'updated': found, 'attributes': len(attrs_map), 'elapsed': elapsed}
 
 
 def _multi_source_price_sync(progress_callback=None):
@@ -1886,12 +1916,14 @@ def _fragment_get_api_hash(session, page_url='https://fragment.com/gifts', timeo
 
 
 def _fragment_api_search_gifts(collection, sort='price_asc', filter_name='sale', timeout=None):
-    """Use Fragment's own searchAuctions XHR instead of scraping collection HTML.
+    """Fragment API fallback using the currently supported collectibles search shape.
 
-    Current Fragment marketplace clients request ``searchAuctions`` with
-    ``type=gifts`` and the collection/sort/filter parameters. The response is
-    HTML in JSON (``html`` or paginated ``body`` + ``foot``), which we parse
-    with the same grid parser used for the public page.
+    Fragment's current public API schema accepts ``method=searchAuctions``,
+    ``query`` and ``type=collectibles``. Collection/sort/filter were removed
+    from that RPC schema, so the old payload caused the repeated Bad request
+    errors seen in production. We search by collection text and then filter
+    returned gift cards by the exact collection slug before taking the minimum
+    visible TON price.
     """
     slug = _slugify_fragment_name(collection)
     if not slug:
@@ -1900,110 +1932,58 @@ def _fragment_api_search_gifts(collection, sort='price_asc', filter_name='sale',
         from curl_cffi import requests as curl_requests
     except Exception:
         return []
-
-    page_url = 'https://fragment.com/gifts'
     session = curl_requests.Session(impersonate='chrome')
-    session.headers.update({
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-    })
+    session.headers.update({'Accept-Language':'en-US,en;q=0.9','Cache-Control':'no-cache','Pragma':'no-cache'})
     try:
-        # Fragment's API hash is dynamic. Cache it briefly to avoid 119 extra page loads.
-        try:
-            fragment_hash = _fragment_get_api_hash(session, page_url, timeout=timeout)
-        except Exception as e:
-            logger.warning('Fragment browser GET/hash failed: %s', e)
-            return []
-        payload = {
-            'method': 'searchAuctions',
-            'type': 'gifts',
-            'query': '',
-            'collection': slug,
-            'sort': sort,
-            'filter': filter_name,
-        }
+        page_url = 'https://fragment.com/gifts'
+        fragment_hash = _fragment_get_api_hash(session, page_url, timeout=timeout)
         api_url = f'https://fragment.com/api?hash={fragment_hash}'
+        payload = {'method':'searchAuctions','query':str(collection),'type':'collectibles'}
         headers = {
-            'Accept': 'application/json, text/javascript, */*; q=0.01',
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Origin': 'https://fragment.com',
-            'Referer': page_url,
-            'X-Requested-With': 'XMLHttpRequest',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-origin',
+            'Accept':'application/json, text/javascript, */*; q=0.01',
+            'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8',
+            'Origin':'https://fragment.com', 'Referer':page_url,
+            'X-Requested-With':'XMLHttpRequest'
         }
-        last_status = None
         for attempt in range(max(1, FRAGMENT_API_RETRIES)):
             try:
                 resp = session.post(api_url, data=payload, headers=headers, timeout=timeout or FRAGMENT_SYNC_TIMEOUT)
-                last_status = resp.status_code
-                if resp.status_code == 429 and attempt + 1 < FRAGMENT_API_RETRIES:
-                    time.sleep(0.8 * (2 ** attempt) + random.random() * 0.6)
+                if resp.status_code in (401,403) and attempt + 1 < FRAGMENT_API_RETRIES:
+                    fragment_hash = _fragment_get_api_hash(session, page_url, timeout=timeout, force=True)
+                    api_url = f'https://fragment.com/api?hash={fragment_hash}'
+                    time.sleep(0.5 + random.random()*0.5)
                     continue
-                if resp.status_code in (401, 403) and attempt + 1 < FRAGMENT_API_RETRIES:
-                    # Refresh the dynamic hash/session once before giving up.
-                    try:
-                        fresh_hash = _fragment_get_api_hash(session, page_url, timeout=timeout, force=True)
-                        api_url = f'https://fragment.com/api?hash={fresh_hash}'
-                    except Exception:
-                        pass
-                    time.sleep(0.6 + random.random() * 0.4)
+                if resp.status_code == 429 and attempt + 1 < FRAGMENT_API_RETRIES:
+                    time.sleep(1.0 * (2**attempt) + random.random()*0.5)
                     continue
                 if resp.status_code != 200:
                     logger.warning('Fragment searchAuctions %s -> HTTP %s', slug, resp.status_code)
-                    continue
-                try:
-                    data = resp.json()
-                except Exception as e:
-                    logger.warning('Fragment searchAuctions %s returned non-JSON: %s', slug, e)
-                    continue
-                if isinstance(data, dict) and data.get('error'):
-                    logger.warning('Fragment searchAuctions %s error: %s', slug, data.get('error'))
-                    continue
-                html = data.get('html')
-                if html is None:
+                    return []
+                data = resp.json()
+                html = (data.get('html') if isinstance(data, dict) else '') or ''
+                if isinstance(data, dict) and not html:
                     html = (data.get('body') or '') + (data.get('foot') or '')
-                rows = _parse_fragment_grid_prices(html or '')
-                if rows:
-                    return rows
-                # Some revisions use tm-grid-item markup without the exact
-                # class chain expected by our parser. Extract TON prices from
-                # each grid card as a conservative fallback.
-                cards = re.findall(r'<a\b[^>]*tm-grid-item[^>]*>(.*?)</a>', html or '', re.DOTALL | re.IGNORECASE)
-                fallback = []
-                for card in cards:
-                    href = re.search(r'''href=["']([^"']*?/gift/[^"']+)["']''', card, re.IGNORECASE)
-                    if not href:
-                        continue
-                    prices = []
-                    for m in re.finditer(r'(?<![\w.])([0-9][0-9,]*(?:\.[0-9]+)?)\s*TON\b', card, re.IGNORECASE):
-                        try:
-                            v = float(m.group(1).replace(',', ''))
-                            if v > 0 and math.isfinite(v): prices.append(v)
-                        except Exception:
-                            pass
-                    if prices:
-                        fallback.append((href.group(1), min(prices)))
-                fallback.sort(key=lambda x: x[1])
-                if fallback:
-                    return fallback
-                logger.debug('Fragment searchAuctions %s: no sale cards in response (status=%s)', slug, last_status)
-                break
+                rows = _parse_fragment_grid_prices(html)
+                exact = []
+                for path, price in rows:
+                    gift_slug, _number = _fragment_nft_path_from_listing(path)
+                    if gift_slug == slug:
+                        exact.append((path, price))
+                if exact:
+                    exact.sort(key=lambda x:x[1])
+                    return exact
+                return []
             except Exception as e:
-                logger.debug('Fragment searchAuctions %s attempt %s failed: %s', slug, attempt + 1, e)
-                if attempt + 1 < FRAGMENT_API_RETRIES:
-                    time.sleep(0.8 * (2 ** attempt) + random.random() * 0.5)
-        return []
+                if attempt + 1 == FRAGMENT_API_RETRIES:
+                    logger.debug('Fragment searchAuctions %s failed: %s', slug, e)
+                else:
+                    time.sleep(0.5 * (2**attempt) + random.random()*0.3)
     except Exception as e:
-        logger.warning('Fragment API sale search failed for %s: %s', slug, e)
+        logger.debug('Fragment API search failed for %s: %s', slug, e)
         return []
     finally:
-        try:
-            session.close()
-        except Exception:
-            pass
+        try: session.close()
+        except Exception: pass
 
 
 def _fragment_get(url, timeout=None):
@@ -2041,32 +2021,20 @@ def _fragment_get(url, timeout=None):
     raise RuntimeError(' | '.join(errors) if errors else 'Fragment request failed')
 
 def _fetch_fragment_collection_price(slug):
-    """Return the cheapest currently listed sale from Fragment.
+    """Return the cheapest active sale using Fragment's actual UI URL first.
 
-    Tier 1: Fragment's own ``searchAuctions`` XHR with collection + sale +
-    price_asc. Tier 2: browser-fingerprinted HTML page. Tier 3: the configured
-    mirror/fetch base via _fragment_get. The first valid positive sale price is
-    persisted; no collection floor, sold price, auction price, or other market
-    source is accepted.
+    This mirrors the manual workflow: ``filter=sale`` + ``sort=price_asc``.
+    The RPC search is only a fallback because its schema no longer accepts the
+    old collection/sort/filter fields.
     """
     slug = _slugify_fragment_name(slug)
     if not slug:
         return None
-
-    # Primary path: same marketplace XHR that the live Fragment UI uses.
-    rows = _fragment_api_search_gifts(slug, sort='price_asc', filter_name='sale')
-    if rows:
-        return float(rows[0][1])
-    logger.debug('Fragment primary sale search empty for %s; trying browser/mirror fallback', slug)
-
-    # Secondary path: a real-browser GET of the exact URL the admin requested.
     url = f'https://fragment.com/gifts/{slug}?sort=price_asc&filter=sale'
     candidates = []
     browser_resp = _fragment_curl_get(url)
     if browser_resp is not None and getattr(browser_resp, 'status_code', 0) == 200:
         candidates.append(browser_resp.text or '')
-
-    # Existing proxy/mirror fallback.
     try:
         resp = _fragment_get(url, timeout=FRAGMENT_SYNC_TIMEOUT)
         if resp.status_code == 200:
@@ -2076,21 +2044,30 @@ def _fetch_fragment_collection_price(slug):
 
     for html in candidates:
         rows = _parse_fragment_grid_prices(html)
-        if rows:
-            return float(rows[0][1])
-        # Last-resort: only accept prices that are visibly associated with the
-        # first sale card/page and never parse a generic collection floor field.
+        exact = []
+        for path, price in rows:
+            gift_slug, _number = _fragment_nft_path_from_listing(path)
+            if gift_slug == slug:
+                exact.append((path, price))
+        if exact:
+            exact.sort(key=lambda x:x[1])
+            return float(exact[0][1])
+        # Last-resort only on the first sale card from the requested page.
         card = re.search(r'<a\b[^>]*tm-grid-item[^>]*>(.*?)</a>', html, re.DOTALL | re.IGNORECASE)
-        target = card.group(1) if card else html[:25000]
+        target = card.group(1) if card else ''
         vals = []
         for m in re.finditer(r'(?<![\w.])([0-9][0-9,]*(?:\.[0-9]+)?)\s*TON\b', target, re.IGNORECASE):
             try:
                 v = float(m.group(1).replace(',', ''))
                 if v > 0 and math.isfinite(v): vals.append(v)
-            except Exception:
-                pass
+            except Exception: pass
         if vals:
             return min(vals)
+
+    # Supported RPC fallback (no invalid sort/filter fields in payload).
+    rows = _fragment_api_search_gifts(slug, sort='price_asc', filter_name='sale')
+    if rows:
+        return float(rows[0][1])
     return None
 
 
