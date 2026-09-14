@@ -120,9 +120,10 @@ MRKT_SYNC_WORKERS = int(os.getenv('MRKT_SYNC_WORKERS', '8'))
 # We use GiftAsset's public provider mirror for the `getgems` floor field, while
 # still keeping the provider isolated as Getgems source data in our catalog.
 GETGEMS_API_BASE = os.getenv('GETGEMS_API_BASE', 'https://giftasset.gifts').strip().rstrip('/')
-GETGEMS_LEGACY_API_BASE = os.getenv('GETGEMS_LEGACY_API_BASE', 'https://api.getgems.io/public-api').strip().rstrip('/')
+GETGEMS_LEGACY_API_BASE = os.getenv('GETGEMS_LEGACY_API_BASE', '').strip().rstrip('/')
 GETGEMS_TIMEOUT = float(os.getenv('GETGEMS_TIMEOUT', '20'))
 GETGEMS_ENABLED = os.getenv('GETGEMS_ENABLED', '1') != '0'
+GETGEMS_API_KEY = str(os.getenv('GETGEMS_API_KEY', '') or '').strip()
 GETGEMS_PRICE_ENDPOINT = '/v1/gifts/get_gifts_price_list'
 GETGEMS_ATTRIBUTES_ENDPOINT = '/v1/gifts/get_attributes_metadata'
 
@@ -1298,6 +1299,13 @@ def _mrkt_min_collection_price(collection_name, token=None):
 def _getgems_request(path, params=None):
     if not GETGEMS_ENABLED:
         raise RuntimeError('Getgems sync disabled')
+    if not GETGEMS_API_KEY:
+        raise RuntimeError(
+            'GETGEMS_API_KEY не задан. GiftAsset (giftasset.gifts) требует API-ключ '
+            '(заголовок X-API-Key). Ключ выдаётся вручную по запросу через их Telegram-канал/контакт '
+            '(t.me/s/giftassetapi) — бесплатной саморегистрации нет. '
+            'После получения ключа задай переменную окружения GETGEMS_API_KEY на Render.'
+        )
     bases = [GETGEMS_API_BASE]
     if GETGEMS_LEGACY_API_BASE and GETGEMS_LEGACY_API_BASE not in bases:
         bases.append(GETGEMS_LEGACY_API_BASE)
@@ -1305,6 +1313,7 @@ def _getgems_request(path, params=None):
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36',
         'Accept-Language': 'en-US,en;q=0.9',
+        'X-API-Key': GETGEMS_API_KEY,
     }
     errors = []
     for base in bases:
