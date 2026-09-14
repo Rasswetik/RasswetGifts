@@ -1225,6 +1225,11 @@ def _write_fragment_catalog_to_local_gifts(fragment_gifts):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(existing, f, ensure_ascii=False, indent=2)
+        # Immediately invalidate runtime cache: the next request must read the
+        # freshly persisted canonical gifts.json snapshot.
+        global gifts_cache, gifts_cache_time
+        gifts_cache = None
+        gifts_cache_time = None
         return added
     except Exception as e:
         logger.warning('Local gifts compatibility mirror failed: %s', e)
@@ -1873,314 +1878,98 @@ def _normalize_local_gift_image(src):
     return '/static/gifs/gifts/' + img
 
 def build_fragment_first_gifts_catalog(force_refresh=False):
-    local_gifts = load_gifts_cached() or []
-    fragment_gifts = fetch_fragment_gifts_catalog(force_refresh=force_refresh) or []
+    """Return the canonical gift catalog from data/gifts.json only.
 
-    if not fragment_gifts and FRAGMENT_ALLOW_LOCAL_ON_FAILURE:
-        fallback_local = []
-        for lg in local_gifts:
-            fallback_local.append({
-                'id': lg.get('id'),
-                'name': lg.get('name') or 'Gift',
-                'value': int(round(float(lg.get('value', 0)))),
-                'image': _normalize_local_gift_image(lg.get('image')) or '/static/img/default_gift.png',
-                'fragment_slug': (lg.get('fragment_slug') or _slugify_fragment_name(lg.get('name', ''))),
-                'fragment_url': '',
-                'fragment_price_ton': None,
-                'source': 'local_offline_fallback'
-            })
-        fallback_local.sort(key=lambda x: float(x.get('value', 0) or 0), reverse=True)
-        return fallback_local
-
-    if FRAGMENT_ONLY_CATALOG and not fragment_gifts:
-        return []
-
-    fragment_by_slug = {}
-    fragment_by_name = {}
-    for fg in fragment_gifts:
-        slug = (fg.get('fragment_slug') or '').strip().lower()
-        if slug:
-            fragment_by_slug[slug] = fg
-        nname = _normalize_gift_name_for_match(fg.get('name'))
-        if nname and nname not in fragment_by_name:
-            fragment_by_name[nname] = fg
-
-    merged = []
-    seen_fragment_slugs = set()
-
-    # 1) Fragment first: always include all gifts from Fragment catalog
-    for fg in fragment_gifts:
-        slug = (fg.get('fragment_slug') or '').strip().lower()
-        if not slug or slug in seen_fragment_slugs:
-            continue
-        seen_fragment_slugs.add(slug)
-
-        local_match = None
-        normalized_fg_name = _normalize_gift_name_for_match(fg.get('name'))
-        for lg in local_gifts:
-            lg_slug = (lg.get('fragment_slug') or _slugify_fragment_name(lg.get('name', ''))).strip().lower()
-            if lg_slug and lg_slug == slug:
-                local_match = lg
-                break
-            if normalized_fg_name and _normalize_gift_name_for_match(lg.get('name')) == normalized_fg_name:
-                local_match = lg
-                break
-
-        local_value = int(round(float((local_match or {}).get('value', 0))))
-        fragment_value = _safe_int(fg.get('value'), 0)
-        local_image = _normalize_local_gift_image((local_match or {}).get('image'))
-        merged.append({
-            'id': (local_match or {}).get('id'),
-            'name': (local_match or {}).get('name') or fg.get('name') or slug,
-            'value': fragment_value if fragment_value > 0 else local_value,
-            'image': fg.get('market_image') or fg.get('black_image') or local_image or fg.get('image') or '/static/img/default_gift.png',
-            'market_image': fg.get('market_image') or fg.get('black_image') or fg.get('image'),
-            'black_image': fg.get('black_image') or '',
-            'onyx_black_image': fg.get('onyx_black_image') or '',
-            'fragment_slug': slug,
-            'fragment_url': fg.get('fragment_url') or f'https://fragment.com/gifts/{slug}',
-            'fragment_price_ton': fg.get('fragment_price_ton'),
-            'getgems_floor_ton': fg.get('getgems_floor_ton'),
-            'source': 'fragment'
-        })
-
-    # 2) Local-only gifts are added only when strict fragment-only mode is disabled
-    if not FRAGMENT_ONLY_CATALOG:
-        for lg in local_gifts:
-            slug = (lg.get('fragment_slug') or _slugify_fragment_name(lg.get('name', ''))).strip().lower()
-            nname = _normalize_gift_name_for_match(lg.get('name'))
-            has_fragment = (slug and slug in fragment_by_slug) or (nname and nname in fragment_by_name)
-            if has_fragment:
-                continue
-
-            merged.append({
-                'id': lg.get('id'),
-                'name': lg.get('name') or 'Gift',
-                'value': int(round(float(lg.get('value', 0)))),
-                'image': _normalize_local_gift_image(lg.get('image')) or '/static/img/default_gift.png',
-                'fragment_slug': '',
-                'fragment_url': '',
-                'fragment_price_ton': None,
-                'source': 'local'
-            })
-
-    # 2b) Always include specific custom gifts (not on Fragment)
-    # REMOVED: Woman Bear (110) and Valentine Bear (111) - no longer forced
-    ALWAYS_INCLUDE_GIFT_IDS = set()  # Empty - no forced gifts
-    merged_ids = {g.get('id') for g in merged if g.get('id') is not None}
-    for lg in local_gifts:
-        lg_id = lg.get('id')
-        if lg_id in ALWAYS_INCLUDE_GIFT_IDS and lg_id not in merged_ids:
-            merged.append({
-                'id': lg_id,
-                'name': lg.get('name') or 'Gift',
-                'value': int(round(float(lg.get('value', 0)))),
-                'image': _normalize_local_gift_image(lg.get('image')) or '/static/img/default_gift.png',
-                'fragment_slug': '',
-                'fragment_url': '',
-                'fragment_price_ton': None,
-                'source': 'local'
-            })
-
-    # 3) Manual TON price overrides DISABLED — prices now always come from gifts.json
-    #    (Previously MANUAL_GIFT_PRICES_TON would override the API values)
-
-    merged.sort(key=lambda x: float(x.get('value', 0) or 0), reverse=True)
-    return merged
-
-def build_full_catalog_with_models(force_refresh=False):
-    """Returns full catalog: originals + all models from disk cache.
-    Used by /api/gifts-list so frontend can display everything."""
-    originals = build_fragment_first_gifts_catalog(force_refresh=force_refresh)
-    result = list(originals)  # copy
-
-    # Add all models from fragment_models_cache
-    seen_ids = set()
-    for g in result:
-        gid = g.get('id') or g.get('gift_key') or g.get('fragment_slug')
-        if gid:
-            seen_ids.add(str(gid))
-
-    for slug, model_list in fragment_models_cache.items():
-        if not isinstance(model_list, list):
-            continue
-        # Find the parent original to inherit getgems price
-        parent = next((g for g in originals if (g.get('fragment_slug') or '') == slug), None)
-        for model in model_list:
-            mid = str(model.get('id') or model.get('gift_key') or '')
-            if mid and mid not in seen_ids:
-                seen_ids.add(mid)
-                m = dict(model)
-                m['source'] = 'fragment_model'
-                model_floor_ton = m.get('getgems_model_floor_ton')
-                if model_floor_ton is not None:
-                    try:
-                        model_floor_ton = float(model_floor_ton)
-                    except Exception:
-                        model_floor_ton = None
-                if model_floor_ton and model_floor_ton > 0:
-                    m['getgems_floor_ton'] = model_floor_ton
-                    m['value'] = int(round(model_floor_ton * FRAGMENT_TON_RATE))
-                # Inherit parent value/getgems price if model has none
-                if not m.get('value') and parent:
-                    m['value'] = parent.get('value', 0)
-                if not m.get('getgems_floor_ton') and parent:
-                    m['getgems_floor_ton'] = parent.get('getgems_floor_ton')
-                result.append(m)
+    Fragment/MRKT are ingestion sources only: their data is imported by the
+    admin sync job and persisted into gifts.json. Public/runtime features must
+    never fetch or merge a live Fragment catalog here.
+    """
+    gifts = load_gifts_cached() or []
+    result = []
+    for g in gifts:
+        item = dict(g)
+        item['name'] = item.get('name') or 'Gift'
+        item['value'] = _safe_int(item.get('value'), 0)
+        item['image'] = (
+            _normalize_local_gift_image(item.get('image'))
+            or item.get('market_image')
+            or item.get('black_image')
+            or item.get('onyx_black_image')
+            or '/static/img/default_gift.png'
+        )
+        item['fragment_slug'] = (
+            item.get('fragment_slug')
+            or _slugify_fragment_name(item.get('name', ''))
+        ).strip().lower()
+        if not item.get('fragment_url') and item['fragment_slug']:
+            item['fragment_url'] = f"https://fragment.com/gifts/{item['fragment_slug']}"
+        item['source'] = 'gifts.json'
+        result.append(item)
 
     result.sort(key=lambda x: float(x.get('value', 0) or 0), reverse=True)
     return result
 
-def _extract_fragment_model_from_detail_html(html_text):
-    if not html_text:
-        return ''
-    pattern = re.compile(
-        r'<div[^>]*class="table-cell"[^>]*>\s*Model\s*</div>\s*</td>\s*<td>\s*<div[^>]*class="table-cell"[^>]*>\s*<div[^>]*class="table-cell-value\s+tm-value"[^>]*>\s*<a[^>]*>(.*?)</a>',
-        flags=re.IGNORECASE | re.DOTALL
-    )
-    m = pattern.search(html_text)
-    if not m:
-        return ''
-    return _extract_text_from_html(m.group(1))
+def _canonicalize_case_gifts(case_gifts, catalog=None):
+    """Replace stale case gift metadata with the matching gifts.json record.
 
-def _parse_fragment_grid_prices(html_text):
-    if not html_text:
-        return []
-    price_pattern = re.compile(
-        r'<a\s+href="(/gift/[a-z0-9_-]+-\d+)"\s+class="tm-grid-item"[^>]*>.*?'
-        r'<div[^>]*class="tm-grid-item-value\s+tm-value\s+icon-before\s+icon-ton"[^>]*>([^<]+)</div>',
-        flags=re.IGNORECASE | re.DOTALL
-    )
-    rows = []
-    for gift_path, raw_price in price_pattern.findall(html_text):
-        rows.append((gift_path.strip(), _safe_int(raw_price, 0)))
-    return rows
+    The case file remains responsible only for which gifts are in the case and
+    their chances. Name/image/value/Fragment metadata always come from
+    gifts.json. TON balance entries stay case-local because they are not gifts
+    from the catalog.
+    """
+    catalog = catalog if catalog is not None else (load_gifts_cached() or [])
+    by_id = {}
+    by_key = {}
+    by_slug = {}
+    by_name = {}
+    for g in catalog:
+        if g.get('id') is not None:
+            by_id[str(g.get('id'))] = g
+        for key in ('gift_key', 'fragment_slug'):
+            value = str(g.get(key) or '').strip().lower()
+            if value:
+                by_key[value] = g
+        slug = str(g.get('fragment_slug') or '').strip().lower()
+        if slug:
+            by_slug[slug] = g
+        nk = _normalize_gift_name_for_match(g.get('name'))
+        if nk:
+            by_name[nk] = g
 
-def fetch_fragment_gift_models(slug, base_name='', base_value=0, base_image='', force_refresh=False):
-    cache_key = _fragment_model_cache_key(slug)
-    if not cache_key:
-        return []
+    result = []
+    for entry in (case_gifts or []):
+        if not isinstance(entry, dict):
+            continue
+        if entry.get('type') == 'ton_balance':
+            result.append(dict(entry))
+            continue
 
-    now = time.time()
-    last_time = fragment_models_cache_time.get(cache_key)
-    if not force_refresh and cache_key in fragment_models_cache and last_time is not None:
-        if (now - last_time) < FRAGMENT_CACHE_DURATION:
-            return fragment_models_cache.get(cache_key, [])
+        target_id = entry.get('id')
+        target_str = str(target_id).strip().lower() if target_id is not None else ''
+        gift = by_id.get(target_str) or by_key.get(target_str)
+        if not gift:
+            slug = str(entry.get('fragment_slug') or '').strip().lower()
+            gift = by_slug.get(slug) if slug else None
+        if not gift:
+            nk = _normalize_gift_name_for_match(entry.get('name'))
+            gift = by_name.get(nk) if nk else None
 
-    models = []
-    previous = fragment_models_cache.get(cache_key, [])
-    # Если в памяти уже есть модели (загружены из дискового кэша) — отдаём их
-    if previous and not force_refresh:
-        return previous
-    try:
-        url = f'https://fragment.com/gifts/{cache_key}'
-        resp = _fragment_get(url)
-        if resp.status_code != 200:
-            return previous
+        if gift:
+            merged = dict(gift)
+            # Chance/type are case configuration, not catalog metadata.
+            merged['chance'] = entry.get('chance', 1)
+            if entry.get('type'):
+                merged['type'] = entry.get('type')
+            result.append(merged)
+        else:
+            # Keep unresolved custom entries rather than silently deleting a
+            # case reward; however do not invent catalog data.
+            result.append(dict(entry))
+    return result
 
-        html = resp.text
-        pattern = re.compile(
-            r'<div[^>]*class="[^"]*tm-main-filters-item[^"]*js-attribute-item[^"]*"[^>]*>.*?'
-            r'<img[^>]+src="([^"]*?/model\.[^"]+)"[^>]*>.*?'
-            r'<div[^>]*class="[^"]*tm-main-filters-name[^"]*"[^>]*>(.*?)</div>.*?'
-            r'<div[^>]*class="[^"]*tm-main-filters-count[^"]*"[^>]*>(.*?)</div>',
-            flags=re.IGNORECASE | re.DOTALL
-        )
-        seen = set()
-        model_price_by_slug = {}
-
-        # Parse collection listings (already sorted by price by default)
-        listing_rows = _parse_fragment_grid_prices(html)
-        max_price_samples = max(20, int(os.getenv('FRAGMENT_MODEL_PRICE_SAMPLES', '90') or 90))
-        for gift_path, listing_price in listing_rows[:max_price_samples]:
-            if listing_price <= 0:
-                continue
-            try:
-                detail_url = f'https://fragment.com{gift_path}'
-                detail_resp = _fragment_get(detail_url)
-                if detail_resp.status_code != 200:
-                    continue
-                detail_model = _extract_fragment_model_from_detail_html(detail_resp.text)
-                if not detail_model:
-                    continue
-                detail_slug = _slugify_fragment_name(detail_model)
-                if not detail_slug:
-                    continue
-                current_floor = model_price_by_slug.get(detail_slug)
-                if current_floor is None or listing_price < current_floor:
-                    model_price_by_slug[detail_slug] = listing_price
-            except Exception:
-                continue
-
-        for image_src, model_name_raw, count_raw in pattern.findall(html):
-            model_name = _extract_text_from_html(model_name_raw)
-            if not model_name:
-                continue
-            model_slug = _slugify_fragment_name(model_name)
-            if not model_slug or model_slug in seen:
-                continue
-            seen.add(model_slug)
-
-            image_url = image_src.strip()
-            if image_url.startswith('//'):
-                image_url = 'https:' + image_url
-            elif image_url.startswith('/'):
-                image_url = 'https://fragment.com' + image_url
-
-            count_value = _safe_int(re.sub(r'[^0-9]', '', count_raw or ''), 0)
-            model_value = _safe_int(model_price_by_slug.get(model_slug), _safe_int(base_value, 0))
-            models.append({
-                'id': _build_case_custom_gift_id(f'{base_name} {model_name}'.strip(), fragment_slug=cache_key, model_name=model_name),
-                'gift_key': _build_case_custom_gift_id(f'{base_name} {model_name}'.strip(), fragment_slug=cache_key, model_name=model_name),
-                'name': f'{base_name} • {model_name}'.strip(' •'),
-                'base_name': base_name,
-                'model_name': model_name,
-                'model_count': count_value,
-                'type': 'fragment_model',
-                'fragment_slug': cache_key,
-                'fragment_url': f'https://fragment.com/gifts/{cache_key}',
-                'image': image_url or base_image,
-                'value': model_value
-            })
-
-        if not models:
-            md_model_pattern = re.compile(
-                rf'!\[Image\s+\d+\]\((https?://fragment\.com/file/gifts/{re.escape(cache_key)}/model\.[^)]+)\)\s+([\w\W]{{1,80}}?)\s+(\d+)\s*(?:\n|\r|$)',
-                flags=re.IGNORECASE
-            )
-            seen_md = set()
-            for image_url, model_name_raw, count_raw in md_model_pattern.findall(html):
-                model_name = re.sub(r'\s+', ' ', str(model_name_raw or '').strip())
-                model_name = re.sub(r'\s*[\|`].*$', '', model_name).strip()
-                if not model_name:
-                    continue
-                model_slug = _slugify_fragment_name(model_name)
-                if not model_slug or model_slug in seen_md:
-                    continue
-                seen_md.add(model_slug)
-
-                count_value = _safe_int(count_raw, 0)
-                model_value = _safe_int(model_price_by_slug.get(model_slug), _safe_int(base_value, 0))
-                models.append({
-                    'id': _build_case_custom_gift_id(f'{base_name} {model_name}'.strip(), fragment_slug=cache_key, model_name=model_name),
-                    'gift_key': _build_case_custom_gift_id(f'{base_name} {model_name}'.strip(), fragment_slug=cache_key, model_name=model_name),
-                    'name': f'{base_name} • {model_name}'.strip(' •'),
-                    'base_name': base_name,
-                    'model_name': model_name,
-                    'model_count': count_value,
-                    'type': 'fragment_model',
-                    'fragment_slug': cache_key,
-                    'fragment_url': f'https://fragment.com/gifts/{cache_key}',
-                    'image': str(image_url or '').strip() or base_image,
-                    'value': model_value
-                })
-    except Exception as e:
-        logger.warning(f'Fragment models sync failed for {cache_key}: {e}')
-        return previous
-
-    fragment_models_cache[cache_key] = models
-    fragment_models_cache_time[cache_key] = now
-    return models
+def build_full_catalog_with_models(force_refresh=False):
+    """Canonical runtime catalog. Models are only available when persisted in gifts.json."""
+    return build_fragment_first_gifts_catalog(force_refresh=force_refresh)
 
 def _resolve_case_gift_payload(gifts, selected_gift_info):
     """Resolve a case gift entry to a full gift dict.
@@ -2195,14 +1984,6 @@ def _resolve_case_gift_payload(gifts, selected_gift_info):
     # 1. Search by ID in provided gifts list (local gifts.json)
     if target_id is not None:
         gift = next((g for g in gifts if str(g.get('id')) == target_id_str), None)
-
-    # 2. Search Fragment catalog (originals + models) by id or gift_key
-    if not gift and target_id_str:
-        try:
-            fragment_all = build_full_catalog_with_models()
-            gift = next((g for g in fragment_all if str(g.get('id')) == target_id_str or str(g.get('gift_key')) == target_id_str), None)
-        except Exception:
-            pass
 
     if gift:
         resolved = dict(gift)
@@ -2284,6 +2065,9 @@ def save_gifts(gifts):
             json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
 
         logger.info(f"✅ Сохранено {len(gifts)} подарков")
+        global gifts_cache, gifts_cache_time
+        gifts_cache = None
+        gifts_cache_time = None
         return True
     except Exception as e:
         logger.error(f"❌ Ошибка сохранения подарков: {e}")
@@ -5405,13 +5189,18 @@ def index():
 
 @app.route('/case')
 def case_main_page():
-    """Страница списка кейсов"""
-    return render_template('index.html')
+    """Страница списка кейсов."""
+    return render_template('index.html', initial_case_id=None)
+
+@app.route('/case/<int:case_id>')
+def case_detail_page(case_id):
+    """Отдельная страница конкретного кейса."""
+    return render_template('index.html', initial_case_id=case_id)
 
 @app.route('/cases')
 def cases_page():
     """Страница кейсов (алиас)"""
-    return render_template('index.html')
+    return render_template('index.html', initial_case_id=None)
 
 @app.route('/inventory')
 def inventory_page():
@@ -6838,7 +6627,7 @@ def ultimate_crash_current_gift():
         
         win_value = int(bet_amount * multiplier)
         
-        # Use Fragment catalog — originals only (no models)
+        # Crash gift display uses the canonical gifts.json catalog.
         gifts = build_fragment_first_gifts_catalog()
         if not gifts or win_value < 5:
             return jsonify({'success': True, 'gift': None})
@@ -7236,7 +7025,8 @@ def get_user_inventory(user_id):
             if name_key and name_key not in local_by_name:
                 local_by_name[name_key] = gift
 
-        fragment_gifts = fetch_fragment_gifts_catalog(force_refresh=False) or []
+        # Runtime inventory metadata comes exclusively from gifts.json.
+        fragment_gifts = load_gifts_cached() or []
         fragment_by_slug = {}
         fragment_by_name = {}
         for fg in fragment_gifts:
@@ -7274,7 +7064,14 @@ def get_user_inventory(user_id):
             if not fragment_meta and name_key:
                 fragment_meta = fragment_by_name.get(name_key)
 
-            gift_image = row.get('gift_image') or (local_meta.get('image') if local_meta else '') or '/static/img/gift.png'
+            # For ordinary gifts, gifts.json is the source of truth for
+            # name/image/value. Keep DB values only when the item is a custom
+            # or unique NFT that has no catalog record.
+            catalog_meta = local_meta or fragment_meta
+            catalog_name = (catalog_meta.get('name') if catalog_meta else None) or raw_name
+            catalog_image = (catalog_meta.get('image') if catalog_meta else None) or row.get('gift_image') or '/static/img/gift.png'
+            catalog_value = (catalog_meta.get('value') if catalog_meta and catalog_meta.get('value') is not None else row.get('gift_value', 0))
+            gift_image = catalog_image
             if str(gift_image).startswith('data:'):
                 gift_image = '/static/img/gift.png'
 
@@ -7282,9 +7079,9 @@ def get_user_inventory(user_id):
                 'id': row.get('id'),
                 'user_id': row.get('user_id'),
                 'gift_id': gift_id,
-                'gift_name': raw_name,
+                'gift_name': catalog_name,
                 'gift_image': gift_image,
-                'gift_value': row.get('gift_value', 0),
+                'gift_value': catalog_value,
                 'received_at': row.get('received_at'),
                 'is_withdrawing': bool(row.get('is_withdrawing', 0)),
                 'crate_id': row.get('crate_id'),
@@ -8058,9 +7855,8 @@ def api_case_detail(case_id):
     """Получение деталей конкретного кейса"""
     try:
         cases = load_cases()
-        local_gifts = load_gifts()
-        # Also get Fragment catalog (originals + models) for resolving all gift types
-        fragment_all = build_full_catalog_with_models()
+        local_gifts = load_gifts_cached() or []
+        canonical_gifts = build_fragment_first_gifts_catalog()
 
         case = next((c for c in cases if c['id'] == case_id), None)
         if not case:
@@ -8094,13 +7890,14 @@ def api_case_detail(case_id):
             else:
                 target_id = gift_info.get('id')
                 target_id_str = str(target_id) if target_id is not None else ''
-                # Try local gifts first (by numeric ID) — values in stars
-                gift = next((g for g in local_gifts if str(g.get('id')) == target_id_str), None) if target_id is not None else None
-                # Then try Fragment catalog (by string ID like fragment_model:slug:model)
-                if not gift and target_id_str:
-                    frag_gift = next((g for g in fragment_all if str(g.get('id')) == target_id_str or str(g.get('gift_key')) == target_id_str), None)
-                    if frag_gift:
-                        gift = dict(frag_gift)
+                # Resolve all public gift metadata exclusively from gifts.json.
+                gift = next((g for g in canonical_gifts if
+                             (target_id is not None and str(g.get('id')) == target_id_str) or
+                             (target_id_str and str(g.get('gift_key') or '').lower() == target_id_str.lower()) or
+                             (target_id_str and str(g.get('fragment_slug') or '').lower() == target_id_str.lower())), None)
+                if not gift and gift_info.get('fragment_slug'):
+                    slug = str(gift_info.get('fragment_slug')).strip().lower()
+                    gift = next((g for g in canonical_gifts if str(g.get('fragment_slug') or '').lower() == slug), None)
                 # Fallback: construct from gift_info fields
                 if not gift and gift_info.get('name'):
                     gift = {
@@ -8201,7 +7998,8 @@ def open_case():
                              (total_cost, user_id))
 
         won_gifts = []
-        gifts = build_fragment_first_gifts_catalog() or load_gifts()
+        gifts = build_fragment_first_gifts_catalog()
+        case['gifts'] = _canonicalize_case_gifts(case.get('gifts', []), gifts)
 
         # Case-specific RTP adjustment (uses case stats, not crash stats)
         rtp_mode = get_player_case_rtp_mode(user_id)
@@ -8482,7 +8280,8 @@ def open_case_single():
                              (case['cost'], user_id))
 
         # Выбор подарка
-        gifts = build_fragment_first_gifts_catalog() or load_gifts()
+        gifts = build_fragment_first_gifts_catalog()
+        case['gifts'] = _canonicalize_case_gifts(case.get('gifts', []), gifts)
         won_gift = None
         is_ton_balance = False
 
@@ -11777,7 +11576,7 @@ def upgrade_gift_fast():
 
         logger.info(f"⚡ БЫСТРЫЙ апгрейд: пользователь {user_id}, подарок {current_gift_id} -> {target_gift_id}")
 
-        # Use Fragment catalog (originals only for upgrade targets)
+        # Upgrade targets use the canonical gifts.json catalog.
         gifts = build_fragment_first_gifts_catalog()
         if not gifts:
             return jsonify({'success': False, 'error': 'Не удалось загрузить список подарков'})
@@ -11908,7 +11707,7 @@ def upgrade_gift_chance():
 
         logger.info(f"⚡ Апгрейд: {user_id} -> {current_gift_id} на {target_gift_id}")
 
-        # Use Fragment catalog (originals only for upgrade targets)
+        # Upgrade targets use the canonical gifts.json catalog.
         gifts = build_fragment_first_gifts_catalog()
         target_gift = next((g for g in gifts if g.get('id') == target_gift_id or g.get('gift_key') == str(target_gift_id) or g.get('fragment_slug') == str(target_gift_id)), None)
         if not target_gift:
@@ -12039,7 +11838,7 @@ def get_upgrade_possible_gifts():
             return jsonify({'success': False, 'error': 'Подарок не найден'})
 
         current_value = result[0]
-        # Use Fragment catalog — originals only (no models)
+        # Crash gift display uses the canonical gifts.json catalog.
         gifts = build_fragment_first_gifts_catalog()
 
         if not gifts:
@@ -12224,12 +12023,8 @@ def api_gifts():
         file_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
         file_exists = os.path.exists(file_path)
 
-        include_models = request.args.get('models', '0') in ('1', 'true', 'yes')
-        if include_models:
-            gifts = build_full_catalog_with_models(force_refresh=force_reload)
-        else:
-            gifts = build_fragment_first_gifts_catalog(force_refresh=force_reload)
-        logger.info(f"API gifts: total={len(gifts)} (models={'yes' if include_models else 'no'})")
+        gifts = build_fragment_first_gifts_catalog(force_refresh=False)
+        logger.info(f"API gifts: total={len(gifts)} (source=gifts.json)")
 
         return jsonify({
             'success': True,
@@ -18062,7 +17857,6 @@ def api_gifts_list():
     """
     try:
         force_refresh = request.args.get('refresh', '0') in ('1', 'true', 'yes')
-        include_models = request.args.get('models', '0') not in ('0', 'false', 'no')
 
         if force_refresh:
             global gifts_cache, gifts_cache_time
@@ -18082,27 +17876,8 @@ def api_gifts_list():
             item['source'] = item.get('source') or 'gifts.json'
             merged.append(item)
 
-        # Models remain optional. If they have been imported, use the persisted
-        # Fragment model cache; the base gift records still come exclusively
-        # from gifts.json.
-        if include_models:
-            try:
-                cached_models = _load_fragment_catalog_disk_cache()
-                models_by_slug = fragment_models_cache
-                if not models_by_slug and cached_models:
-                    models_by_slug = fragment_models_cache
-                base_gifts = list(merged)
-                for item in base_gifts:
-                    slug = str(item.get('fragment_slug') or '').strip().lower()
-                    for model in (models_by_slug.get(slug) or []):
-                        if isinstance(model, dict):
-                            model_item = dict(model)
-                            model_item.setdefault('base_gift_id', item.get('id'))
-                            model_item.setdefault('base_name', item.get('name'))
-                            model_item.setdefault('fragment_slug', slug)
-                            merged.append(model_item)
-            except Exception as e:
-                logger.warning('Gift model cache read failed: %s', e)
+
+        # No live/persisted Fragment model merge here: public catalog is gifts.json only.
 
         payload = {
             'success': True,
@@ -18519,9 +18294,7 @@ def _resolve_nft_monitor_user():
 
 def _match_gift_by_name(base_name):
     """Match a Telegram gift base_name against gifts catalog (Fragment + local)"""
-    gifts = build_full_catalog_with_models()
-    if not gifts:
-        gifts = load_gifts_cached() or []
+    gifts = load_gifts_cached() or []
     if not gifts:
         return None
     bn_lower = base_name.lower().strip()
@@ -20816,17 +20589,7 @@ def _lazy_init():
                 logger.info("NFT Monitor disabled via DISABLE_NFT_MONITOR env")
         except Exception as e:
             logger.error(f"❌ Не удалось запустить NFT Monitor: {e}")
-        # Pre-fetch Fragment catalog in background
-        try:
-            def _prefetch_fragment():
-                try:
-                    catalog = fetch_fragment_gifts_catalog(force_refresh=True)
-                    logger.info(f"📦 Fragment catalog pre-fetched: {len(catalog or [])} gifts")
-                except Exception as fe:
-                    logger.warning(f"⚠️ Fragment pre-fetch failed: {fe}")
-            threading.Thread(target=_prefetch_fragment, daemon=True).start()
-        except Exception as e:
-            logger.warning(f"⚠️ Fragment pre-fetch thread failed: {e}")
+        # Fragment/MRKT are ingestion-only. Public/runtime pages read gifts.json.
         _app_initialized = True
         logger.info("✅ Приложение инициализировано")
 
