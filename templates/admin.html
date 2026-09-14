@@ -454,7 +454,10 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
     <div class="section-page" id="page-gifts" style="display:none">
         <div class="section-header">
             <h2>🎁 Подарки</h2>
-            <button class="action-btn" onclick="loadGifts()">Обновить</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+                <button class="action-btn" onclick="loadGifts()">Обновить</button>
+                <button class="action-btn" onclick="syncFragmentSalePrices(event)">Цены Fragment</button>
+            </div>
         </div>
 
         <div class="card">
@@ -491,7 +494,8 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 
         <div class="card">
             <div class="card-title">Основное</div>
-            <div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="ceName" placeholder="Plush Case"></div>
+            <div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="ceName" placeholder="Starter"></div>
+            <div class="form-group"><label class="form-label">Ссылка / slug</label><input type="text" class="form-input" id="ceSlug" placeholder="starter"><div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:5px">Например: /case/starter</div></div>
             <div class="form-row">
                 <div class="form-group"><label class="form-label">Цена</label><input type="number" class="form-input" id="ceCost" placeholder="100" min="0"></div>
                 <div class="form-group"><label class="form-label">Валюта</label>
@@ -506,8 +510,14 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 <div class="form-group"><label class="form-label">Раздел</label><input type="text" class="form-input" id="ceSection" placeholder="general"></div>
                 <div class="form-group"><label class="form-label">Мин. уровень</label><input type="number" class="form-input" id="ceRequiredLevel" value="1" min="1"></div>
             </div>
-            <div class="form-group"><label class="form-label">URL картинки</label><input type="text" class="form-input" id="ceImage" placeholder="/static/img/..."></div>
+            <div class="form-group"><label class="form-label">Изображение кейса</label><input type="text" class="form-input" id="ceImage" placeholder="/static/gifs/cases/...">
+                <input type="file" id="ceImageFile" accept="image/png,image/jpeg,image/webp,image/gif" style="margin-top:8px;width:100%" onchange="uploadCaseImage()">
+                <div id="ceImagePreview" style="margin-top:8px"></div></div>
             <div class="form-group"><label class="form-label">Описание</label><textarea class="form-input" id="ceDescription" rows="2" placeholder="Описание кейса"></textarea></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Лимит</label><select class="form-input" id="ceLimited"><option value="false">Без лимита</option><option value="true">Ограниченный тираж</option></select></div><div class="form-group"><label class="form-label">Количество</label><input type="number" class="form-input" id="ceAmount" value="0" min="0"></div></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Порядок</label><input type="number" class="form-input" id="ceOrder" value="0" min="0"></div><div class="form-group"><label class="form-label">Время</label><input type="text" class="form-input" id="ceTime" value="24H"></div></div>
+            <div class="form-group"><label class="form-label">Теги</label><input type="text" class="form-input" id="ceTags" placeholder="starter, nft, promo"></div>
+            <div class="form-row"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="ceFree"> Бесплатный</label><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cePromo"> Промо-кейс</label></div>
         </div>
 
         <div class="card">
@@ -1247,7 +1257,7 @@ function renderGifts(gifts){
         return '<div class="gift-card">' +
             '<img class="gc-img" src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'">' +
             '<div class="gc-name">' + escapeHtml(g.name) + '</div>' +
-            '<div class="gc-price">💎 ' + ton + ' TON</div>' +
+            '<div class="gc-price">' + ton + ' грамм</div>' +
             '<div class="gc-actions">' +
             '<button class="gc-btn gc-btn-edit" onclick="editGift(' + g.id + ')">✎</button>' +
             '<button class="gc-btn gc-btn-del" onclick="deleteGift(' + g.id + ')">🗑</button>' +
@@ -1325,6 +1335,20 @@ async function addNewGift(){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
+async function syncFragmentSalePrices(evt){
+    var btn=evt&&evt.target;
+    if(btn){btn.disabled=true;btn.textContent='⏳ Обновление';}
+    try{
+        var r=await fetch('/api/fragment/sync-prices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
+        var d=await r.json();
+        if(!d.success){showToast(d.error||'Не удалось запустить обновление цен','err');return;}
+        showToast('Цены Fragment обновляются в фоне','ok');
+        if(fragmentLogPollTimer) clearTimeout(fragmentLogPollTimer);
+        pollFragmentImportStatus();
+    }catch(e){showToast('Ошибка запуска обновления цен','err');}
+    finally{if(btn){btn.disabled=false;btn.textContent='Цены Fragment';}}
+}
+
 /* ══════════════════════════════════════════════════════════════
    CASES
    ══════════════════════════════════════════════════════════════ */
@@ -1359,12 +1383,16 @@ function openCaseEditor(caseId){
         $('caseEditorTitle').textContent = '➕ Новый кейс';
         $('ceDeleteBtn').style.display = 'none';
         $('ceName').value = '';
+        $('ceSlug').value = '';
         $('ceCost').value = '100';
         $('ceCostType').value = 'stars';
         $('ceSection').value = 'general';
         $('ceRequiredLevel').value = '1';
         $('ceImage').value = '';
+        $('ceImageFile').value = '';
+        $('ceImagePreview').innerHTML = '';
         $('ceDescription').value = '';
+        $('ceLimited').value = 'false'; $('ceAmount').value = '0'; $('ceOrder').value = '0'; $('ceTime').value = '24H'; $('ceTags').value = ''; $('ceFree').checked = false; $('cePromo').checked = false;
     } else {
         var c = allCases.find(function(x){ return x.id === caseId; });
         if(!c){ showToast('Кейс не найден', 'err'); return; }
@@ -1373,12 +1401,16 @@ function openCaseEditor(caseId){
         $('caseEditorTitle').textContent = '✎ ' + c.name;
         $('ceDeleteBtn').style.display = 'flex';
         $('ceName').value = c.name || '';
+        $('ceSlug').value = c.slug || '';
         $('ceCost').value = c.cost || 0;
         $('ceCostType').value = c.cost_type || 'stars';
         $('ceSection').value = c.section || 'general';
         $('ceRequiredLevel').value = c.required_level || 1;
         $('ceImage').value = c.image || '';
+        $('ceImageFile').value = '';
+        $('ceImagePreview').innerHTML = c.image ? '<img src="' + escapeHtml(c.image) + '" style="width:90px;height:90px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.25)">' : '';
         $('ceDescription').value = c.description || '';
+        $('ceLimited').value = String(!!c.limited); $('ceAmount').value = c.amount || 0; $('ceOrder').value = c.display_order || 0; $('ceTime').value = c.time || '24H'; $('ceTags').value = (c.tags || []).join(', '); $('ceFree').checked = !!c.free; $('cePromo').checked = !!c.promo;
     }
 
     renderCaseGifts();
@@ -1394,14 +1426,14 @@ function renderCaseGifts(){
     el.innerHTML = caseGifts.map(function(g, i){
         var isTon = g.type === 'ton_balance';
         var img = isTon ? '/static/img/tons/ton_1.svg' : (g.image || '/static/img/gift.png');
-        var name = isTon ? (g.ton_amount + ' TON') : (g.name || 'Gift');
-        var price = isTon ? (g.ton_amount + ' TON') : ((g.value || 0) / 100).toFixed(2) + ' TON';
+        var name = isTon ? (g.ton_amount + ' грамм') : (g.name || 'Gift');
+        var price = isTon ? (g.ton_amount + ' грамм') : ((g.value || 0) / 100).toFixed(2) + ' грамм';
         var chance = g.chance || 1;
         return '<div class="case-gift-row">' +
             '<img class="case-gift-img" src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'">' +
             '<div class="case-gift-info">' +
             '<div class="case-gift-name">' + escapeHtml(name) + '</div>' +
-            '<div class="case-gift-meta"><span>' + escapeHtml(price) + '</span><span>' + (isTon ? '⭐ TON' : '🎁 Gift') + '</span></div>' +
+            '<div class="case-gift-meta"><span>' + escapeHtml(price) + '</span><span>' + (isTon ? '💰 грамм' : '🎁 Gift') + '</span></div>' +
             '</div>' +
             '<div class="case-gift-chance">' +
             '<input type="number" value="' + chance + '" min="1" onchange="updateCaseGiftChance(' + i + ', this.value)">' +
@@ -1460,8 +1492,23 @@ function addTonBalance(){
     closeModal();
     showToast('TON-баланс добавлен', 'ok');
 }
+async function uploadCaseImage(){
+    var file = $('ceImageFile').files && $('ceImageFile').files[0];
+    if(!file) return;
+    var fd = new FormData(); fd.append('file', file); fd.append('admin_id', ADMIN_ID);
+    try{
+        var r = await fetch('/api/admin/cases/upload-image', {method:'POST', body:fd});
+        var d = await r.json();
+        if(!d.success) throw Error(d.error || 'Ошибка загрузки');
+        $('ceImage').value = d.url;
+        $('ceImagePreview').innerHTML = '<img src="' + escapeHtml(d.url) + '" style="width:90px;height:90px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.25)">';
+        showToast('Изображение загружено', 'ok');
+    }catch(e){ showToast(e.message || 'Ошибка загрузки', 'err'); }
+}
+
 async function saveCase(){
     var name = ($('ceName').value || '').trim();
+    var slug = ($('ceSlug').value || '').trim();
     var cost = parseInt($('ceCost').value) || 0;
     var cost_type = $('ceCostType').value;
     var section = ($('ceSection').value || 'general').trim();
@@ -1473,9 +1520,9 @@ async function saveCase(){
     if(!caseGifts.length){ showToast('Добавьте хотя бы один подарок', 'err'); return; }
 
     var payload = {
-        admin_id: ADMIN_ID, name: name, cost: cost, cost_type: cost_type,
+        admin_id: ADMIN_ID, name: name, slug: slug, cost: cost, cost_type: cost_type,
         section: section, required_level: required_level,
-        image: image, description: description, gifts: caseGifts
+        image: image, description: description, gifts: caseGifts, limited: $('ceLimited').value === 'true', amount: parseInt($('ceAmount').value) || 0, display_order: parseInt($('ceOrder').value) || 0, time: ($('ceTime').value || '24H').trim(), tags: ($('ceTags').value || '').split(',').map(function(x){return x.trim();}).filter(Boolean), free: $('ceFree').checked, promo: $('cePromo').checked
     };
 
     try{
