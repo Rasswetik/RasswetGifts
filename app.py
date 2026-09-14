@@ -3,6 +3,10 @@
 from flask import Flask, render_template, render_template_string, request, jsonify, send_from_directory, redirect, make_response, g, has_request_context
 import sqlite3
 import json
+try:
+    from PIL import Image
+except Exception:
+    Image = None
 import os
 import logging
 import random
@@ -16,7 +20,6 @@ import math
 import shutil
 import time
 import threading
-import gzip
 import pytz
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
@@ -81,7 +84,7 @@ CACHE_DURATION = 600  # 10 минут кэш подарков
 FRAGMENT_SYNC_ENABLED = os.getenv('FRAGMENT_SYNC_ENABLED', '1') != '0'
 FRAGMENT_SYNC_TIMEOUT = int(os.getenv('FRAGMENT_SYNC_TIMEOUT', '6'))
 FRAGMENT_SYNC_MAX = int(os.getenv('FRAGMENT_SYNC_MAX', '5000'))
-FRAGMENT_PRICE_FETCH_LIMIT = int(os.getenv('FRAGMENT_PRICE_FETCH_LIMIT', '20'))
+FRAGMENT_PRICE_FETCH_LIMIT = int(os.getenv('FRAGMENT_PRICE_FETCH_LIMIT', '0'))
 FRAGMENT_TON_RATE = int(os.getenv('FRAGMENT_TON_RATE', '100'))
 FRAGMENT_CACHE_DURATION = int(os.getenv('FRAGMENT_CACHE_DURATION', '900'))
 FRAGMENT_ONLY_CATALOG = os.getenv('FRAGMENT_ONLY_CATALOG', '1') != '0'
@@ -1101,6 +1104,134 @@ def _fetch_fragment_collection_price(slug):
     except Exception:
         return None
 
+
+def _fragment_nft_path_from_listing(path):
+    m = re.search(r'/gift/([a-z0-9_-]+)-(\d+)$', str(path or ''), re.IGNORECASE)
+    if not m:
+        return None, None
+    return m.group(1).lower(), int(m.group(2))
+
+def _fragment_attr_from_nft(slug, number):
+    """Return Model/Backdrop metadata for one real Fragment NFT."""
+    try:
+        url = f'https://fragment.com/gift/{slug}-{int(number)}'
+        resp = _fragment_get(url, timeout=4)
+        if resp.status_code != 200:
+            return {}
+        html = resp.text or ''
+        attrs = {}
+        attr_pattern = re.compile(
+            r'<div[^>]*class="[^\"]*table-cell[^\"]*"[^>]*>\s*(Model|Backdrop|Symbol)\s*</div>'
+            r'.*?<div[^>]*class="[^\"]*table-cell-value[^\"]*"[^>]*>(.*?)</div>',
+            flags=re.IGNORECASE | re.DOTALL
+        )
+        for attr_name, value_html in attr_pattern.findall(html):
+            val_match = re.search(r'<a[^>]*>([^<]+)</a>', value_html)
+            if not val_match:
+                val_match = re.search(r'>([^<]+)<', value_html)
+            if val_match:
+                attrs[attr_name.lower()] = html_lib.unescape(val_match.group(1)).strip()
+        return attrs
+    except Exception:
+        return {}
+
+def _save_fragment_variant_png(slug, number, variant):
+    """Download a real Fragment NFT image and store it as PNG locally."""
+    slug = _slugify_fragment_name(slug)
+    try:
+        number = int(number)
+    except Exception:
+        return ''
+    variant = _slugify_fragment_name(variant) or 'gift'
+    out_dir = os.path.join(BASE_PATH, 'static', 'gifs', 'fragment')
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, f'{slug}_{variant}.png')
+    if os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+        return '/' + os.path.relpath(out_path, BASE_PATH).replace(os.sep, '/')
+    if Image is None:
+        return ''
+    urls = [
+        f'https://nft.fragment.com/gift/{slug}-{number}.webp',
+        f'https://nft.fragment.com/gift/{slug}-{number}.large.jpg',
+        f'https://nft.fragment.com/gift/{slug}-{number}.medium.jpg',
+    ]
+    for url in urls:
+        try:
+            resp = _fragment_get(url, timeout=8)
+            if resp.status_code != 200 or not resp.content:
+                continue
+            from io import BytesIO
+            img = Image.open(BytesIO(resp.content)).convert('RGBA')
+            img.save(out_path, 'PNG', optimize=True)
+            return '/' + os.path.relpath(out_path, BASE_PATH).replace(os.sep, '/')
+        except Exception:
+            continue
+    return ''
+
+def _find_fragment_dark_variants(slug, max_samples=40):
+    """Find real NFTs with Backdrop=Black and Backdrop=Onyx Black.
+    Returns local PNGs so the market never depends on a remote WebP.
+    """
+    result = {'black_image': '', 'onyx_black_image': '', 'black_nft_number': None, 'onyx_black_nft_number': None}
+    try:
+        resp = _fragment_get(f'https://fragment.com/gifts/{slug}', timeout=8)
+        if resp.status_code != 200:
+            return result
+        rows = _parse_fragment_grid_prices(resp.text or '')
+        # Prefer cheap/early listings but de-duplicate numbers.
+        seen = set()
+        for path, _price in rows[:max_samples]:
+            gift_slug, number = _fragment_nft_path_from_listing(path)
+            if not gift_slug or number is None or number in seen:
+                continue
+            seen.add(number)
+            attrs = _fragment_attr_from_nft(gift_slug, number)
+            backdrop = str(attrs.get('backdrop') or '').strip().lower()
+            if backdrop == 'black' and not result['black_image']:
+                result['black_nft_number'] = number
+                result['black_image'] = _save_fragment_variant_png(gift_slug, number, 'black')
+            elif backdrop == 'onyx black' and not result['onyx_black_image']:
+                result['onyx_black_nft_number'] = number
+                result['onyx_black_image'] = _save_fragment_variant_png(gift_slug, number, 'onyx_black')
+            if result['black_image'] and result['onyx_black_image']:
+                break
+    except Exception as e:
+        logger.warning(f'Fragment dark variants failed for {slug}: {e}')
+    return result
+
+def _load_fragment_gifts_with_variants(force_refresh=False):
+    gifts = fetch_fragment_gifts_catalog(force_refresh=force_refresh) or []
+    changed = False
+    for gift in gifts:
+        slug = str(gift.get('fragment_slug') or '').strip().lower()
+        if not slug:
+            continue
+        # Already have both variants: nothing to scrape.
+        if gift.get('black_image') and gift.get('onyx_black_image'):
+            if not gift.get('market_image'):
+                gift['market_image'] = gift.get('black_image')
+                changed = True
+            continue
+        variants = _find_fragment_dark_variants(slug)
+        for key in ('black_image','onyx_black_image','black_nft_number','onyx_black_nft_number'):
+            if variants.get(key) and gift.get(key) != variants.get(key):
+                gift[key] = variants[key]
+                changed = True
+        market_image = gift.get('black_image') or gift.get('onyx_black_image') or gift.get('image')
+        if market_image and gift.get('market_image') != market_image:
+            gift['market_image'] = market_image
+            changed = True
+        # The market displays the real PNG variant, not Fragment's thumb.webp.
+        if market_image and gift.get('image') != market_image:
+            gift['image'] = market_image
+            changed = True
+    if changed:
+        try:
+            _save_fragment_catalog_disk_cache(gifts)
+        except Exception:
+            pass
+    return gifts
+
 def fetch_fragment_gifts_catalog(force_refresh=False):
     global fragment_cache, fragment_cache_time, fragment_last_error
     now = time.time()
@@ -1343,7 +1474,10 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
             'id': (local_match or {}).get('id'),
             'name': (local_match or {}).get('name') or fg.get('name') or slug,
             'value': local_value if local_value > 0 else fragment_value,
-            'image': local_image or fg.get('image') or '/static/img/default_gift.png',
+            'image': fg.get('market_image') or fg.get('black_image') or local_image or fg.get('image') or '/static/img/default_gift.png',
+            'market_image': fg.get('market_image') or fg.get('black_image') or fg.get('image'),
+            'black_image': fg.get('black_image') or '',
+            'onyx_black_image': fg.get('onyx_black_image') or '',
             'fragment_slug': slug,
             'fragment_url': fg.get('fragment_url') or f'https://fragment.com/gifts/{slug}',
             'fragment_price_ton': fg.get('fragment_price_ton'),
@@ -6495,35 +6629,6 @@ def set_user_currency_mode():
 
 
 
-@app.route('/api/fragment-gift-animation', methods=['GET'])
-def api_fragment_gift_animation():
-    """Return Fragment TGS animation as decoded Lottie JSON for the inventory modal."""
-    try:
-        slug=str(request.args.get('slug','')).strip().lower()
-        number=int(request.args.get('number',0) or 0)
-        if not re.match(r'^[a-z0-9_-]+$', slug) or number<=0:
-            return jsonify({'success':False,'error':'invalid gift'}),400
-        urls=[
-            f'https://nft.fragment.com/gift/{slug}-{number}.tgs',
-            f'https://nft.fragment.com/gift/{slug}-{number}.lottie.json'
-        ]
-        last='animation unavailable'
-        for url in urls:
-            try:
-                rr=_fragment_get(url, timeout=FRAGMENT_SYNC_TIMEOUT)
-                if rr.status_code!=200: last=f'HTTP {rr.status_code}'; continue
-                raw=rr.content
-                if url.endswith('.tgs'):
-                    raw=gzip.decompress(raw)
-                data=json.loads(raw.decode('utf-8'))
-                return jsonify({'success':True,'animation':data,'source':url})
-            except Exception as e:
-                last=str(e)
-        return jsonify({'success':False,'error':last})
-    except Exception as e:
-        logger.warning(f'Fragment animation error: {e}')
-        return jsonify({'success':False,'error':str(e)})
-
 @app.route('/api/fragment-gift-details', methods=['GET'])
 def fragment_gift_details():
     """Тянет реальные данные NFT-подарка с Fragment: Model, Symbol, Backdrop + рарность"""
@@ -9496,202 +9601,95 @@ def _portal_search(collection_short_name, limit=20, model=None, backdrop=None, s
 
 
 def _portal_sync_floors():
-    """Sync the real minimum *active sale* price from Portal into gifts.json.
-    Auctions, sold/closed listings and zero prices are ignored.
-    """
+    """Синхронизация floor-цен Portal → gifts.json."""
     ok, colls = _portal_collections(limit=500)
-    if not ok: return {'success':False,'error':colls}
-    if not colls: return {'success':False,'error':'Portal вернул пустой список коллекций'}
+    if not ok:
+        return {'success': False, 'error': colls}
 
-    def active_sale(g):
-        raw=g.get('raw') if isinstance(g,dict) else {}
-        raw=raw if isinstance(raw,dict) else {}
-        status=str(raw.get('status') or raw.get('state') or raw.get('sale_status') or '').lower()
-        kind=str(raw.get('type') or raw.get('listing_type') or '').lower()
-        flags=' '.join(str(raw.get(k,'')) for k in ('is_sold','sold','is_auction','auction','is_listed','listing_status')).lower()
-        if any(x in status for x in ('sold','closed','ended','cancel')): return False
-        if any(x in kind for x in ('auction','bid')): return False
-        if any(x in flags for x in ('true','sold','auction','closed','ended')) and ('listed' not in flags or 'is_listed' not in raw):
-            return False
-        return True
+    if not colls:
+        return {'success': False, 'error': 'Portal вернул пустой список коллекций'}
 
-    portal_catalog=[]
+    # Сохраняем как fragment cache
+    portal_catalog = []
     for c in colls:
-        slug=c.get('short_name')
-        if not slug: continue
-        floor=0.0
-        # First use collection floor when present. Then verify with active sale listings.
-        try:
-            ok_s, listings=_portal_search(slug, limit=5000)
-            prices=[]
-            if ok_s:
-                for g in listings:
-                    if not active_sale(g): continue
-                    try:
-                        price=float(g.get('price_ton') or 0)
-                        if price>0: prices.append(price)
-                    except Exception: pass
-            if prices: floor=min(prices)
-        except Exception as e:
-            logger.debug(f'Portal floor search failed for {slug}: {e}')
-        if floor<=0: floor=float(c.get('floor_price') or 0)
-        item={'name':c.get('name') or slug,'fragment_slug':slug,'fragment_url':f'https://fragment.com/gifts/{slug}','image':c.get('photo_url') or f'https://fragment.com/file/gifts/{slug}/thumb.webp','source':'portal'}
-        if floor>0:
-            item['fragment_price_ton']=round(floor,4); item['value']=int(round(floor*100))
+        if not c['short_name']:
+            continue
+        item = {
+            'name': c['name'],
+            'fragment_slug': c['short_name'],
+            'fragment_url': f'https://fragment.com/gifts/{c["short_name"]}',
+            'image': c['photo_url'] or f'https://fragment.com/file/gifts/{c["short_name"]}/thumb.webp',
+            'source': 'portal',
+        }
+        if c['floor_price'] > 0:
+            item['fragment_price_ton'] = round(c['floor_price'], 4)
+            item['value'] = int(round(c['floor_price'] * 100))  # 1 TON = 100 stars
         portal_catalog.append(item)
 
     try:
         _save_fragment_catalog_disk_cache(portal_catalog)
         global fragment_cache, fragment_cache_time
-        fragment_cache=portal_catalog; fragment_cache_time=time.time()
-    except Exception as e: logger.warning(f'Portal cache write failed: {e}')
-
-    gifts_path=os.path.join(BASE_PATH,'data','gifts.json')
-    if not os.path.exists(gifts_path): return {'success':False,'error':'gifts.json не найден'}
-    with open(gifts_path,'r',encoding='utf-8') as f: raw=json.load(f)
-    gifts=raw.get('gifts',[]) if isinstance(raw,dict) else raw; wrap_dict=isinstance(raw,dict)
-    by_slug={(g.get('fragment_slug') or _slugify_fragment_name(g.get('name',''))).lower():g for g in gifts if (g.get('fragment_slug') or g.get('name'))}
-    updated=0; added=0
-    for item in portal_catalog:
-        slug=item['fragment_slug']; target=by_slug.get(slug)
-        if target is None:
-            gifts.append({**item,'id':None}); added+=1; continue
-        before=target.get('value')
-        target['fragment_slug']=slug; target['fragment_url']=item['fragment_url']
-        if item.get('image'): target['image']=item['image']
-        if item.get('fragment_price_ton'): target['fragment_price_ton']=item['fragment_price_ton']; target['value']=item['value']
-        if before!=target.get('value'): updated+=1
-    with open(gifts_path,'w',encoding='utf-8') as f: json.dump({'gifts':gifts} if wrap_dict else gifts,f,ensure_ascii=False,indent=2)
-    global gifts_cache,gifts_cache_time
-    gifts_cache=None; gifts_cache_time=None
-    sync_file=os.path.join(BASE_PATH,'data','portal_last_sync.json')
-    try:
-        with open(sync_file,'w',encoding='utf-8') as f: json.dump({'timestamp':time.time(),'updated':updated,'added':added,'total':len(gifts),'collections':len(portal_catalog)},f)
-    except Exception: pass
-    return {'success':True,'updated':updated,'added':added,'total':len(gifts),'collections':len(portal_catalog)}
-
-@app.route('/api/fragment/import-collections', methods=['POST'])
-def fragment_import_collections():
-    """Import missing collections from Fragment catalog: name + image + current price."""
-    try:
-        body=request.get_json(silent=True) or {}
-        if str(body.get('admin_id')) != str(ADMIN_ID):
-            return jsonify({'success':False,'error':'Доступ запрещен'}),403
-        catalog=fetch_fragment_gifts_catalog(force_refresh=True)
-        if not catalog: return jsonify({'success':False,'error':fragment_last_error or 'Fragment вернул пустой каталог'})
-        path=os.path.join(BASE_PATH,'data','gifts.json')
-        with open(path,'r',encoding='utf-8') as f: raw=json.load(f)
-        gifts=raw.get('gifts',[]) if isinstance(raw,dict) else raw; wrap=isinstance(raw,dict)
-        by_slug={(g.get('fragment_slug') or _slugify_fragment_name(g.get('name',''))).lower():g for g in gifts if (g.get('fragment_slug') or g.get('name'))}
-        added=0; updated=0
-        for item in catalog:
-            slug=str(item.get('fragment_slug') or '').lower().strip()
-            if not slug: continue
-            target=by_slug.get(slug)
-            if target is None:
-                gifts.append({'id':None,'name':item.get('name') or slug,'fragment_slug':slug,'fragment_url':item.get('fragment_url') or f'https://fragment.com/gifts/{slug}','image':item.get('image') or f'https://fragment.com/file/gifts/{slug}/thumb.webp','value':int(item.get('value') or 0),'fragment_price_ton':item.get('fragment_price_ton',0),'source':'fragment'}); added+=1
-            else:
-                changed=False
-                for k in ('name','image','fragment_url','fragment_price_ton','value'):
-                    if item.get(k) not in (None,'') and target.get(k)!=item.get(k): target[k]=item.get(k); changed=True
-                if changed: updated+=1
-        with open(path,'w',encoding='utf-8') as f: json.dump({'gifts':gifts} if wrap else gifts,f,ensure_ascii=False,indent=2)
-        global gifts_cache,gifts_cache_time
-        gifts_cache=None; gifts_cache_time=None
-        return jsonify({'success':True,'added':added,'updated':updated,'total':len(gifts)})
+        fragment_cache = portal_catalog
+        fragment_cache_time = time.time()
     except Exception as e:
-        logger.error(f'Fragment collection import error: {e}')
-        return jsonify({'success':False,'error':str(e)})
+        logger.warning(f'Portal: failed to update cache: {e}')
 
+    # Обновляем gifts.json
+    gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+    if not os.path.exists(gifts_path):
+        return {'success': False, 'error': 'gifts.json не найден'}
 
+    with open(gifts_path, 'r', encoding='utf-8') as f:
+        raw = json.load(f)
+    gifts = raw.get('gifts', []) if isinstance(raw, dict) else raw
+    wrap_dict = isinstance(raw, dict)
 
-# ─── TONNEL MARKETPLACE INTEGRATION ─────────────────────────────────────
-TONNEL_API_URL = os.getenv('TONNEL_API_URL', 'https://gifts2.tonnel.network/api/pageGifts')
-TONNEL_TIMEOUT = int(os.getenv('TONNEL_TIMEOUT', '15'))
-
-def _tonnel_request(payload):
-    headers={
-        'Accept':'*/*','Content-Type':'application/json','Origin':'https://market.tonnel.network',
-        'Referer':'https://market.tonnel.network/','User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/153 Safari/537.36'
-    }
-    try:
-        try:
-            from curl_cffi import requests as crequests
-            r=crequests.post(TONNEL_API_URL,json=payload,headers=headers,impersonate='chrome',timeout=TONNEL_TIMEOUT)
-        except ImportError:
-            r=http_requests.post(TONNEL_API_URL,json=payload,headers=headers,timeout=TONNEL_TIMEOUT)
-        if r.status_code!=200: return False, f'Tonnel HTTP {r.status_code}'
-        return True, r.json()
-    except Exception as e:
-        return False, str(e)
-
-def _tonnel_min_price(gift_name):
-    if not gift_name: return None
-    filt={
-        'price':{'$exists':True}, 'refunded':{'$ne':True}, 'buyer':{'$exists':False},
-        'export_at':{'$exists':True}, 'gift_name':gift_name, 'asset':'TON',
-        'status':'forsale', 'auction':None
-    }
-    payload={'page':1,'limit':30,'sort':json.dumps({'price':1,'gift_id':1}),'filter':json.dumps(filt),'price_range':None,'user_auth':''}
-    ok,data=_tonnel_request(payload)
-    if not ok: return None
-    rows=data if isinstance(data,list) else []
-    if isinstance(data,dict):
-        for key in ('gifts','items','results','data'):
-            if isinstance(data.get(key),list): rows=data[key]; break
-    prices=[]
-    for row in rows:
-        if not isinstance(row,dict): continue
-        status=str(row.get('status','')).lower()
-        auction=row.get('auction')
-        if status and status not in ('forsale','for_sale','listed'): continue
-        if auction not in (None,False,'',{}): continue
-        if row.get('buyer') not in (None,'',False): continue
-        if row.get('refunded') is True: continue
-        try:
-            price=float(row.get('price') or 0)
-            if price>0: prices.append(price)
-        except Exception: pass
-    return min(prices) if prices else None
-
-def _tonnel_sync_floors():
-    """Update gifts.json using minimum active Tonnel listing price; auctions/sold are ignored."""
-    path=os.path.join(BASE_PATH,'data','gifts.json')
-    if not os.path.exists(path): return {'success':False,'error':'gifts.json не найден'}
-    with open(path,'r',encoding='utf-8') as f: raw=json.load(f)
-    gifts=raw.get('gifts',[]) if isinstance(raw,dict) else raw; wrap=isinstance(raw,dict)
-    updated=0; checked=0; failed=0
+    by_slug = {}
     for g in gifts:
-        name=str(g.get('name') or '').strip()
-        if not name: continue
-        checked+=1
-        price=_tonnel_min_price(name)
-        if price is None:
-            failed+=1; continue
-        old=g.get('value')
-        g['tonnel_price_ton']=round(price,4)
-        g['value']=int(round(price*100))
-        if old!=g['value']: updated+=1
-    with open(path,'w',encoding='utf-8') as f: json.dump({'gifts':gifts} if wrap else gifts,f,ensure_ascii=False,indent=2)
-    global gifts_cache,gifts_cache_time
-    gifts_cache=None; gifts_cache_time=None
-    return {'success':True,'checked':checked,'updated':updated,'without_listing':failed,'total':len(gifts)}
+        slug = (g.get('fragment_slug') or _slugify_fragment_name(g.get('name', ''))).lower()
+        if slug:
+            by_slug[slug] = g
 
-@app.route('/api/tonnel/status', methods=['GET'])
-def tonnel_status():
-    try:
-        return jsonify({'success':True,'connected':bool(TONNEL_API_URL),'api':TONNEL_API_URL})
-    except Exception as e: return jsonify({'success':False,'error':str(e)})
+    updated = 0
+    for item in portal_catalog:
+        slug = item['fragment_slug']
+        target = by_slug.get(slug)
+        if target is None:
+            gifts.append({**item, 'id': None})
+            updated += 1
+            continue
+        # Обновляем поля
+        target['fragment_slug'] = slug
+        target['fragment_url'] = item['fragment_url']
+        if item.get('image'):
+            target['image'] = item['image']
+        if item.get('fragment_price_ton'):
+            target['fragment_price_ton'] = item['fragment_price_ton']
+            target['value'] = item['value']
+            updated += 1
 
-@app.route('/api/tonnel/sync-prices', methods=['POST'])
-def tonnel_sync_prices():
+    with open(gifts_path, 'w', encoding='utf-8') as f:
+        if wrap_dict:
+            json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
+        else:
+            json.dump(gifts, f, ensure_ascii=False, indent=2)
+
+    # Сбрасываем кэш
+    global gifts_cache, gifts_cache_time
+    gifts_cache = None
+    gifts_cache_time = None
+
+    # Сохраняем время синка
     try:
-        body=request.get_json(silent=True) or {}
-        if str(body.get('admin_id')) != str(ADMIN_ID): return jsonify({'success':False,'error':'Доступ запрещен'}),403
-        return jsonify(_tonnel_sync_floors())
-    except Exception as e:
-        logger.error(f'Tonnel sync error: {e}')
-        return jsonify({'success':False,'error':str(e)})
+        sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+        with open(sync_file, 'w', encoding='utf-8') as f:
+            json.dump({'timestamp': time.time(), 'updated': updated, 'total': len(gifts)}, f)
+    except Exception:
+        pass
+
+    logger.info(f'Portal sync: обновлено {updated}/{len(gifts)} подарков из {len(portal_catalog)} коллекций')
+    return {'success': True, 'updated': updated, 'total': len(gifts), 'collections': len(portal_catalog)}
+
 
 # ─── PORTAL API ROUTES ───
 
@@ -10236,9 +10234,6 @@ def portal_info():
 def portal_sync_prices():
     """Admin endpoint: sync gift prices from Portal marketplace floors."""
     try:
-        body=request.get_json(silent=True) or {}
-        if str(body.get('admin_id')) != str(ADMIN_ID):
-            return jsonify({'success':False,'error':'Доступ запрещен'}),403
         result = _portal_sync_floors()
         return jsonify(result)
     except Exception as e:
@@ -16439,7 +16434,7 @@ def admin_promo_codes_management():
             return jsonify({'success': True, 'promo_codes': promos_list})
 
         elif request.method == 'POST':
-            data = request.get_json(silent=True) or {}
+            data = request.json
 
             code = (data.get('code') or '').upper().strip()
             if not code:
@@ -16467,7 +16462,7 @@ def admin_promo_codes_management():
                 max_uses = int(data.get('max_uses', 1) or 1)
             except (ValueError, TypeError):
                 max_uses = 1
-            max_uses = max(0, min(max_uses, 2147483647))
+            max_uses = max(0, min(max_uses, 1_000_000))
 
             try:
                 expires_days = int(data.get('expires_days', 30) or 0)
@@ -17625,6 +17620,79 @@ def api_gifts_list():
     except Exception as e:
         logger.error(f"Gifts list error: {e}")
         return jsonify({'success': True, 'gifts': []})
+
+@app.route('/api/fragment/import-gifts', methods=['POST'])
+def api_fragment_import_gifts():
+    """Admin: import all Fragment collections, prices and Black/Onyx Black PNG variants."""
+    try:
+        data = request.get_json(silent=True) or {}
+        if str(data.get('admin_id')) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        gifts = _load_fragment_gifts_with_variants(force_refresh=True)
+        return jsonify({
+            'success': True,
+            'collections': len(gifts),
+            'message': f'Загружено коллекций: {len(gifts)}. Black/Onyx Black сохранены отдельно.'
+        })
+    except Exception as e:
+        logger.error(f'Fragment gifts import error: {e}\n{traceback.format_exc()}')
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/fragment/import-models', methods=['POST'])
+def api_fragment_import_models():
+    """Admin: load all Fragment models into the private cache only. Models are NOT added to market."""
+    try:
+        data = request.get_json(silent=True) or {}
+        if str(data.get('admin_id')) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        gifts = fetch_fragment_gifts_catalog(force_refresh=False) or []
+        total = 0
+        loaded = 0
+        for gift in gifts:
+            slug = str(gift.get('fragment_slug') or '').strip().lower()
+            if not slug:
+                continue
+            models = fetch_fragment_gift_models(
+                slug,
+                base_name=gift.get('name') or slug,
+                base_value=_safe_int(gift.get('value'), 0),
+                base_image=gift.get('image') or '',
+                force_refresh=True
+            )
+            loaded += 1
+            total += len(models or [])
+        _save_fragment_catalog_disk_cache(gifts)
+        return jsonify({'success': True, 'collections': loaded, 'models': total, 'market_models_added': 0})
+    except Exception as e:
+        logger.error(f'Fragment models import error: {e}\n{traceback.format_exc()}')
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/fragment/import-all', methods=['POST'])
+def api_fragment_import_all():
+    """Admin: gifts + dark backgrounds + models. Models remain private cache."""
+    try:
+        data = request.get_json(silent=True) or {}
+        if str(data.get('admin_id')) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        gifts = _load_fragment_gifts_with_variants(force_refresh=True)
+        total_models = 0
+        for gift in gifts:
+            slug = str(gift.get('fragment_slug') or '').strip().lower()
+            if not slug:
+                continue
+            models = fetch_fragment_gift_models(
+                slug,
+                base_name=gift.get('name') or slug,
+                base_value=_safe_int(gift.get('value'), 0),
+                base_image=gift.get('image') or '',
+                force_refresh=True
+            )
+            total_models += len(models or [])
+        _save_fragment_catalog_disk_cache(gifts)
+        return jsonify({'success': True, 'collections': len(gifts), 'models': total_models, 'market_models_added': 0})
+    except Exception as e:
+        logger.error(f'Fragment full import error: {e}\n{traceback.format_exc()}')
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/fragment-gift-models', methods=['GET'])
 def api_fragment_gift_models():
