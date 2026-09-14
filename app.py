@@ -14,6 +14,7 @@ import traceback
 import string
 import hashlib
 import re
+from urllib.parse import quote_plus
 import html as html_lib
 from datetime import datetime, timedelta
 import math
@@ -98,6 +99,43 @@ PORTAL_SESSION_NAME = os.getenv('PORTAL_SESSION_NAME', 'portal_account')
 PORTAL_WITHDRAW_FEE_STARS = 40
 TON_RATE = 100
 FRAGMENT_DISK_CACHE_FILE = os.path.join(BASE_PATH, 'data', 'fragment_catalog_cache.json')
+
+# MRKT marketplace (read/sync pricing). Token is supplied by the admin from
+# the MRKT web app and cached locally. The public MRKT documentation confirms
+# /auth and /gifts/saling as the read API; no purchase/transfer endpoint is
+# assumed here unless it is explicitly documented.
+MRKT_API_BASE = 'https://api.tgmrkt.io/api/v1'
+MRKT_TOKEN_FILE = os.path.join(BASE_PATH, 'data', 'mrkt_token.json')
+MRKT_REFERER = 'https://cdn.tgmrkt.io/'
+MRKT_SYNC_TIMEOUT = int(os.getenv('MRKT_SYNC_TIMEOUT', '12'))
+MRKT_SYNC_WORKERS = int(os.getenv('MRKT_SYNC_WORKERS', '8'))
+
+# Background Fragment import job state. The admin UI polls this so a long
+# catalog import never leaves the browser waiting on a single HTTP request.
+_fragment_import_lock = threading.Lock()
+_fragment_import_job = {
+    'running': False, 'job_id': None, 'stage': 'idle', 'current': 0,
+    'total': 0, 'collections': 0, 'variants_found': 0, 'models': 0,
+    'message': 'Готово', 'logs': [], 'started_at': None, 'finished_at': None,
+    'error': None
+}
+
+def _fragment_job_log(message, level='info'):
+    entry = {'ts': time.time(), 'level': level, 'message': str(message)}
+    with _fragment_import_lock:
+        _fragment_import_job.setdefault('logs', []).append(entry)
+        _fragment_import_job['logs'] = _fragment_import_job['logs'][-250:]
+        _fragment_import_job['message'] = str(message)
+    logger.info('[Fragment import] %s', message)
+
+def _fragment_job_update(**kwargs):
+    with _fragment_import_lock:
+        _fragment_import_job.update(kwargs)
+
+def _fragment_job_snapshot():
+    with _fragment_import_lock:
+        return dict(_fragment_import_job, logs=list(_fragment_import_job.get('logs') or []))
+
 fragment_cache = None
 fragment_cache_time = None
 fragment_models_cache = {}
@@ -997,6 +1035,288 @@ def _parse_fragment_price_ton(text):
             return None
     return None
 
+# ==================== MRKT MARKET ====================
+def _mrkt_load_token():
+    try:
+        if not os.path.exists(MRKT_TOKEN_FILE):
+            return ''
+        with open(MRKT_TOKEN_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return str(data.get('token') or '').strip()
+    except Exception as e:
+        logger.warning('MRKT token read failed: %s', e)
+        return ''
+
+def _mrkt_save_token(token):
+    os.makedirs(os.path.dirname(MRKT_TOKEN_FILE), exist_ok=True)
+    with open(MRKT_TOKEN_FILE, 'w', encoding='utf-8') as f:
+        json.dump({'token': str(token).strip(), 'updated_at': datetime.utcnow().isoformat() + 'Z'}, f, ensure_ascii=False)
+
+def _mrkt_delete_token():
+    try:
+        if os.path.exists(MRKT_TOKEN_FILE):
+            os.remove(MRKT_TOKEN_FILE)
+    except Exception:
+        pass
+
+def _mrkt_request(payload, token=None, timeout=None):
+    token = str(token or _mrkt_load_token()).strip()
+    if not token:
+        raise RuntimeError('MRKT token не установлен')
+    headers = {
+        'Authorization': token,
+        'Referer': MRKT_REFERER,
+        'Origin': 'https://cdn.tgmrkt.io',
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0'
+    }
+    url = f'{MRKT_API_BASE}/gifts/saling'
+    try:
+        from curl_cffi import requests as curl_requests
+        r = curl_requests.post(url, headers=headers, json=payload,
+                               timeout=timeout or MRKT_SYNC_TIMEOUT,
+                               impersonate='chrome')
+    except Exception:
+        r = http_requests.post(url, headers=headers, json=payload,
+                               timeout=timeout or MRKT_SYNC_TIMEOUT)
+    if r.status_code == 401:
+        raise RuntimeError('MRKT токен недействителен или истёк')
+    if r.status_code >= 400:
+        raise RuntimeError(f'MRKT HTTP {r.status_code}: {r.text[:300]}')
+    try:
+        data = r.json()
+    except Exception:
+        raise RuntimeError('MRKT вернул некорректный JSON')
+    if isinstance(data, dict) and data.get('error'):
+        raise RuntimeError(str(data.get('error')))
+    return data
+
+def _mrkt_num(value):
+    try:
+        if isinstance(value, str):
+            value = value.replace(',', '.').replace(' TON', '').strip()
+        n = float(value)
+        return n if math.isfinite(n) and n > 0 else None
+    except Exception:
+        return None
+
+def _mrkt_listing_price(row):
+    if not isinstance(row, dict):
+        return None
+    for key in ('price', 'priceTon', 'price_ton', 'tonPrice', 'amount', 'cost'):
+        n = _mrkt_num(row.get(key))
+        if n is not None:
+            return n
+    # Some versions nest the listing data.
+    for key in ('gift', 'nft', 'item', 'listing'):
+        child = row.get(key)
+        if isinstance(child, dict):
+            n = _mrkt_listing_price(child)
+            if n is not None:
+                return n
+    return None
+
+def _mrkt_response_gifts(data):
+    if isinstance(data, dict):
+        for key in ('gifts', 'items', 'results', 'data'):
+            value = data.get(key)
+            if isinstance(value, list):
+                return value
+            if isinstance(value, dict):
+                nested = _mrkt_response_gifts(value)
+                if nested is not None:
+                    return nested
+    if isinstance(data, list):
+        return data
+    return []
+
+def _mrkt_min_collection_price(collection_name, token=None):
+    name = str(collection_name or '').strip()
+    if not name:
+        return None, 0
+    payload = {
+        'collectionNames': [name],
+        'modelNames': [],
+        'backdropNames': [],
+        'symbolNames': [],
+        'ordering': 'Price',
+        'lowToHigh': True,
+        'maxPrice': None,
+        'minPrice': None,
+        'mintable': None,
+        'number': None,
+        'count': 20,
+        'cursor': '',
+        'query': None,
+        'promotedFirst': False,
+    }
+    data = _mrkt_request(payload, token=token)
+    rows = _mrkt_response_gifts(data)
+    prices = [p for p in (_mrkt_listing_price(x) for x in rows) if p is not None]
+    return (min(prices) if prices else None), len(rows)
+
+def _write_fragment_catalog_to_local_gifts(fragment_gifts):
+    """Compatibility mirror: keep admin/local gift list in step with Fragment.
+    Fragment catalog remains the source of truth for the public market."""
+    if not isinstance(fragment_gifts, list):
+        return 0
+    try:
+        path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        existing = load_gifts() or []
+        by_slug = {}
+        by_name = {}
+        for g in existing:
+            slug = str(g.get('fragment_slug') or '').strip().lower()
+            if slug: by_slug[slug] = g
+            n = _normalize_gift_name_for_match(g.get('name'))
+            if n: by_name[n] = g
+        added = 0
+        for fg in fragment_gifts:
+            slug = str(fg.get('fragment_slug') or '').strip().lower()
+            name = str(fg.get('name') or slug).strip()
+            g = by_slug.get(slug) or by_name.get(_normalize_gift_name_for_match(name))
+            if g is None:
+                g = {'id': max([int(x.get('id') or 0) for x in existing if str(x.get('id') or '').isdigit()] + [0]) + 1,
+                     'name': name, 'fragment_slug': slug}
+                existing.append(g)
+                added += 1
+            g['name'] = name
+            g['fragment_slug'] = slug
+            if fg.get('fragment_price_ton') is not None:
+                g['fragment_price_ton'] = fg.get('fragment_price_ton')
+            if fg.get('mrkt_price_ton') is not None:
+                g['mrkt_price_ton'] = fg.get('mrkt_price_ton')
+                g['value'] = int(round(float(fg['mrkt_price_ton']) * FRAGMENT_TON_RATE))
+            elif fg.get('value') is not None:
+                g['value'] = int(round(float(fg.get('value') or 0)))
+            image = fg.get('market_image') or fg.get('black_image') or fg.get('image')
+            if image: g['image'] = image
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(existing, f, ensure_ascii=False, indent=2)
+        return added
+    except Exception as e:
+        logger.warning('Local gifts compatibility mirror failed: %s', e)
+        return 0
+
+def _mrkt_sync_prices_to_fragment_catalog(progress_callback=None):
+    token = _mrkt_load_token()
+    if not token:
+        return {'success': False, 'error': 'MRKT token не установлен'}
+    gifts = _load_fragment_catalog_disk_cache() or fetch_fragment_gifts_catalog(force_refresh=False) or []
+    if not gifts:
+        return {'success': False, 'error': 'Fragment-каталог пуст'}
+    total = len(gifts)
+    updated = 0
+    failed = 0
+    prices_found = 0
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    def one(g):
+        return g, _mrkt_min_collection_price(g.get('name'), token=token)
+    with ThreadPoolExecutor(max_workers=max(1, MRKT_SYNC_WORKERS)) as ex:
+        futures = [ex.submit(one, g) for g in gifts]
+        done = 0
+        for fut in as_completed(futures):
+            done += 1
+            try:
+                g, (price, count) = fut.result()
+                if price is not None:
+                    g['mrkt_price_ton'] = price
+                    g['value'] = int(round(price * FRAGMENT_TON_RATE))
+                    g['mrkt_active_listings'] = count
+                    updated += 1
+                    prices_found += 1
+                else:
+                    failed += 1
+            except Exception as e:
+                failed += 1
+                logger.warning('MRKT price worker failed: %s', e)
+            if progress_callback:
+                progress_callback(done, total, f'MRKT цены: {done}/{total} · обновлено {updated}')
+    _save_fragment_catalog_disk_cache(gifts)
+    _write_fragment_catalog_to_local_gifts(gifts)
+    global fragment_cache, fragment_cache_time, fragment_last_error
+    fragment_cache = gifts
+    fragment_cache_time = time.time()
+    # Clear API catalog cache so users immediately see new prices/collections.
+    try:
+        api_gifts_list._cache = {}
+    except Exception:
+        pass
+    return {'success': True, 'total': total, 'updated': updated, 'failed': failed, 'prices_found': prices_found}
+
+@app.route('/api/mrkt/status', methods=['GET'])
+def mrkt_status():
+    token = _mrkt_load_token()
+    return jsonify({'success': True, 'connected': bool(token), 'has_token': bool(token),
+                    'token_hint': ('••••' + token[-6:] if len(token) >= 6 else ''),
+                    'api': MRKT_API_BASE})
+
+@app.route('/api/mrkt/save-token', methods=['POST'])
+def mrkt_save_token():
+    try:
+        data = request.get_json(silent=True) or {}
+        if str(data.get('admin_id')) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
+        token = str(data.get('token') or '').strip()
+        if len(token) < 20:
+            return jsonify({'success': False, 'error': 'Токен MRKT слишком короткий'})
+        _mrkt_save_token(token)
+        # Validate immediately with one cheap collection-free request.
+        try:
+            _mrkt_request({'collectionNames': [], 'modelNames': [], 'backdropNames': [], 'symbolNames': [],
+                           'ordering': 'Price', 'lowToHigh': True, 'maxPrice': None, 'minPrice': None,
+                           'mintable': None, 'number': None, 'count': 1, 'cursor': '', 'query': None,
+                           'promotedFirst': False}, token=token, timeout=8)
+        except Exception as e:
+            _mrkt_delete_token()
+            return jsonify({'success': False, 'error': f'MRKT токен не прошёл проверку: {e}'})
+        return jsonify({'success': True, 'message': 'MRKT токен сохранён и проверен'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/mrkt/token', methods=['DELETE'])
+def mrkt_delete_token():
+    data = request.get_json(silent=True) or {}
+    if str(data.get('admin_id')) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
+    _mrkt_delete_token()
+    return jsonify({'success': True})
+
+def _run_mrkt_sync_job():
+    try:
+        _fragment_job_update(running=True, stage='mrkt', current=0, total=0, collections=0, variants_found=0, models=0, error=None, finished_at=None)
+        _fragment_job_log('Старт синхронизации цен MRKT')
+        def progress(done, total, msg):
+            _fragment_job_update(current=done, total=total, message=msg, stage='mrkt', collections=total)
+            if done == 0 or done == total or done % 10 == 0:
+                _fragment_job_log(msg)
+        result = _mrkt_sync_prices_to_fragment_catalog(progress_callback=progress)
+        if result.get('success'):
+            _fragment_job_update(running=False, stage='done', current=result.get('total', 0), total=result.get('total', 0),
+                                 collections=result.get('total', 0), message=f"MRKT готов: {result.get('updated', 0)}/{result.get('total', 0)} цен обновлено", finished_at=time.time())
+            _fragment_job_log(f"MRKT завершён: {result.get('updated', 0)}/{result.get('total', 0)} цен обновлено, ошибок: {result.get('failed', 0)}")
+        else:
+            _fragment_job_update(running=False, stage='error', error=result.get('error'), message='Ошибка MRKT', finished_at=time.time())
+            _fragment_job_log(f"MRKT ОШИБКА: {result.get('error')}", 'error')
+    except Exception as e:
+        logger.error('MRKT sync failed: %s\n%s', e, traceback.format_exc())
+        _fragment_job_update(running=False, stage='error', error=str(e), message='Ошибка MRKT', finished_at=time.time())
+        _fragment_job_log(f'MRKT ОШИБКА: {e}', 'error')
+
+@app.route('/api/mrkt/sync-prices', methods=['POST'])
+def mrkt_sync_prices():
+    data = request.get_json(silent=True) or {}
+    if str(data.get('admin_id')) != str(ADMIN_ID):
+        return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
+    with _fragment_import_lock:
+        if _fragment_job.get('running'):
+            return jsonify({'success': True, 'started': False, 'message': 'Синхронизация уже выполняется'})
+        _fragment_job.update({'running': True, 'job_id': str(int(time.time()*1000)), 'stage': 'starting', 'current': 0, 'total': 0,
+                              'message': 'Запуск MRKT...', 'logs': [], 'started_at': time.time(), 'finished_at': None, 'error': None})
+    threading.Thread(target=_run_mrkt_sync_job, daemon=True, name='mrkt-price-sync').start()
+    return jsonify({'success': True, 'started': True, 'message': 'Синхронизация MRKT запущена в фоне'})
+
 def _load_fragment_catalog_disk_cache():
     try:
         if not os.path.exists(FRAGMENT_DISK_CACHE_FILE):
@@ -1168,68 +1488,137 @@ def _save_fragment_variant_png(slug, number, variant):
             continue
     return ''
 
-def _find_fragment_dark_variants(slug, max_samples=40):
-    """Find real NFTs with Backdrop=Black and Backdrop=Onyx Black.
-    Returns local PNGs so the market never depends on a remote WebP.
+def _find_fragment_dark_variants(slug, max_samples=12):
+    """Find real Fragment NFTs with Backdrop=Black and Backdrop=Onyx Black.
+
+    Fragment supports attribute-filtered gift searches. We try those URLs first,
+    which is dramatically faster than opening dozens of individual NFT pages.
+    The old sampling method remains as a fallback for installations where the
+    filtered page is not returned by Fragment.
     """
     result = {'black_image': '', 'onyx_black_image': '', 'black_nft_number': None, 'onyx_black_nft_number': None}
-    try:
-        resp = _fragment_get(f'https://fragment.com/gifts/{slug}', timeout=8)
-        if resp.status_code != 200:
-            return result
-        rows = _parse_fragment_grid_prices(resp.text or '')
-        # Prefer cheap/early listings but de-duplicate numbers.
-        seen = set()
-        for path, _price in rows[:max_samples]:
-            gift_slug, number = _fragment_nft_path_from_listing(path)
-            if not gift_slug or number is None or number in seen:
+    slug = _slugify_fragment_name(slug)
+    if not slug:
+        return result
+
+    def try_filtered(backdrop_name, key, number_key):
+        urls = [
+            f'https://fragment.com/gifts/{slug}?sort=price_asc&filter=sale&view=Backdrop&attr[Backdrop]={backdrop_name}',
+            f'https://fragment.com/gifts/{slug}?sort=price_asc&filter=sale&backdrop={backdrop_name}',
+            f'https://fragment.com/gifts/{slug}?sort=price_asc&filter=sale&backdrop={quote_plus(backdrop_name)}',
+        ]
+        for url in urls:
+            try:
+                resp = _fragment_get(url, timeout=8)
+                if resp.status_code != 200:
+                    continue
+                rows = _parse_fragment_grid_prices(resp.text or '')
+                for path, _price in rows[:8]:
+                    gift_slug, number = _fragment_nft_path_from_listing(path)
+                    if not gift_slug or number is None:
+                        continue
+                    attrs = _fragment_attr_from_nft(gift_slug, number)
+                    actual = str(attrs.get('backdrop') or '').strip().lower()
+                    if actual == backdrop_name.lower():
+                        img = _save_fragment_variant_png(gift_slug, number, key)
+                        if img:
+                            result[key + '_nft_number'] = number
+                            result[number_key] = number
+                            result[key] = img
+                            return True
+            except Exception:
                 continue
-            seen.add(number)
-            attrs = _fragment_attr_from_nft(gift_slug, number)
-            backdrop = str(attrs.get('backdrop') or '').strip().lower()
-            if backdrop == 'black' and not result['black_image']:
-                result['black_nft_number'] = number
-                result['black_image'] = _save_fragment_variant_png(gift_slug, number, 'black')
-            elif backdrop == 'onyx black' and not result['onyx_black_image']:
-                result['onyx_black_nft_number'] = number
-                result['onyx_black_image'] = _save_fragment_variant_png(gift_slug, number, 'onyx_black')
-            if result['black_image'] and result['onyx_black_image']:
-                break
-    except Exception as e:
-        logger.warning(f'Fragment dark variants failed for {slug}: {e}')
+        return False
+
+    # Filtered search is the primary route.
+    try_filtered('Black', 'black_image', 'black_nft_number')
+    try_filtered('Onyx Black', 'onyx_black_image', 'onyx_black_nft_number')
+
+    # Fallback: inspect a small number of cheapest active NFTs.
+    if not (result['black_image'] and result['onyx_black_image']):
+        try:
+            resp = _fragment_get(f'https://fragment.com/gifts/{slug}?sort=price_asc&filter=sale', timeout=8)
+            if resp.status_code == 200:
+                rows = _parse_fragment_grid_prices(resp.text or '')
+                seen = set()
+                for path, _price in rows[:max_samples]:
+                    gift_slug, number = _fragment_nft_path_from_listing(path)
+                    if not gift_slug or number is None or number in seen:
+                        continue
+                    seen.add(number)
+                    attrs = _fragment_attr_from_nft(gift_slug, number)
+                    backdrop = str(attrs.get('backdrop') or '').strip().lower()
+                    if backdrop == 'black' and not result['black_image']:
+                        result['black_nft_number'] = number
+                        result['black_image'] = _save_fragment_variant_png(gift_slug, number, 'black')
+                    elif backdrop == 'onyx black' and not result['onyx_black_image']:
+                        result['onyx_black_nft_number'] = number
+                        result['onyx_black_image'] = _save_fragment_variant_png(gift_slug, number, 'onyx_black')
+                    if result['black_image'] and result['onyx_black_image']:
+                        break
+        except Exception as e:
+            logger.warning(f'Fragment dark variants fallback failed for {slug}: {e}')
     return result
 
-def _load_fragment_gifts_with_variants(force_refresh=False):
+def _load_fragment_gifts_with_variants(force_refresh=False, progress_callback=None):
+    """Load all Fragment collections, prices and Black/Onyx Black PNGs.
+    Price requests and collection variant discovery are parallelized in small
+    batches so 100+ collections do not block the web request for minutes.
+    """
     gifts = fetch_fragment_gifts_catalog(force_refresh=force_refresh) or []
-    changed = False
-    for gift in gifts:
-        slug = str(gift.get('fragment_slug') or '').strip().lower()
-        if not slug:
-            continue
-        # Already have both variants: nothing to scrape.
-        if gift.get('black_image') and gift.get('onyx_black_image'):
-            if not gift.get('market_image'):
-                gift['market_image'] = gift.get('black_image')
-                changed = True
-            continue
-        variants = _find_fragment_dark_variants(slug)
-        for key in ('black_image','onyx_black_image','black_nft_number','onyx_black_nft_number'):
-            if variants.get(key) and gift.get(key) != variants.get(key):
-                gift[key] = variants[key]
-                changed = True
-        market_image = gift.get('black_image') or gift.get('onyx_black_image') or gift.get('image')
-        if market_image and gift.get('market_image') != market_image:
-            gift['market_image'] = market_image
-            changed = True
-        # The market displays the real PNG variant, not Fragment's thumb.webp.
-        if market_image and gift.get('image') != market_image:
-            gift['image'] = market_image
-            changed = True
-    if changed:
-        try:
-            _save_fragment_catalog_disk_cache(gifts)
-        except Exception:
-            pass
+    if not gifts:
+        return []
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    total = len(gifts)
+    if progress_callback: progress_callback(0, total, 'Коллекции Fragment получены')
+
+    # Refresh collection prices concurrently. Keep the existing value if one request fails.
+    def price_one(g):
+        slug = str(g.get('fragment_slug') or '').strip().lower()
+        return slug, _fetch_fragment_collection_price(slug) if slug else None
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        futures = [ex.submit(price_one, g) for g in gifts]
+        done = 0
+        for fut in as_completed(futures):
+            try:
+                slug, price = fut.result()
+                if slug and price is not None:
+                    for g in gifts:
+                        if str(g.get('fragment_slug') or '').lower() == slug:
+                            g['fragment_price_ton'] = price
+                            g['value'] = int(round(price * FRAGMENT_TON_RATE))
+                            break
+            except Exception:
+                pass
+            done += 1
+            if progress_callback: progress_callback(done, total, f'Цены Fragment: {done}/{total}')
+
+    def variants_one(g):
+        return g, _find_fragment_dark_variants(g.get('fragment_slug'))
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        futures = [ex.submit(variants_one, g) for g in gifts if g.get('fragment_slug')]
+        done = 0
+        for fut in as_completed(futures):
+            try:
+                g, variants = fut.result()
+                for key in ('black_image','onyx_black_image','black_nft_number','onyx_black_nft_number'):
+                    if variants.get(key): g[key] = variants[key]
+                market_image = g.get('black_image') or g.get('onyx_black_image') or g.get('image')
+                if market_image:
+                    g['market_image'] = market_image
+                    g['image'] = market_image
+            except Exception as e:
+                logger.debug('Fragment variant worker failed: %s', e)
+            done += 1
+            if progress_callback: progress_callback(done, total, f'Black / Onyx Black: {done}/{total}')
+
+    _save_fragment_catalog_disk_cache(gifts)
+    _write_fragment_catalog_to_local_gifts(gifts)
+    global fragment_cache, fragment_cache_time, fragment_last_error
+    fragment_cache = gifts
+    fragment_cache_time = time.time()
+    fragment_last_error = None
+    if progress_callback: progress_callback(total, total, f'Готово: {total} коллекций')
     return gifts
 
 def fetch_fragment_gifts_catalog(force_refresh=False):
@@ -1330,11 +1719,28 @@ def fetch_fragment_gifts_catalog(force_refresh=False):
                     break
 
         to_price = gifts if FRAGMENT_PRICE_FETCH_LIMIT <= 0 else gifts[:FRAGMENT_PRICE_FETCH_LIMIT]
-        for item in to_price:
-            ton_price = _fetch_fragment_collection_price(item.get('fragment_slug'))
-            if ton_price is not None:
-                item['fragment_price_ton'] = ton_price
-                item['value'] = int(round(ton_price * FRAGMENT_TON_RATE))
+        # Price lookups are independent; parallelize them so a 100+ collection
+        # refresh does not take several minutes of serial HTTP requests.
+        try:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            def _price_task(item):
+                return item, _fetch_fragment_collection_price(item.get('fragment_slug'))
+            with ThreadPoolExecutor(max_workers=8) as ex:
+                futures = [ex.submit(_price_task, item) for item in to_price]
+                for fut in as_completed(futures):
+                    try:
+                        item, ton_price = fut.result()
+                        if ton_price is not None:
+                            item['fragment_price_ton'] = ton_price
+                            item['value'] = int(round(ton_price * FRAGMENT_TON_RATE))
+                    except Exception:
+                        pass
+        except Exception:
+            for item in to_price:
+                ton_price = _fetch_fragment_collection_price(item.get('fragment_slug'))
+                if ton_price is not None:
+                    item['fragment_price_ton'] = ton_price
+                    item['value'] = int(round(ton_price * FRAGMENT_TON_RATE))
 
         if gifts:
             _save_fragment_catalog_disk_cache(gifts)
@@ -1473,7 +1879,7 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
         merged.append({
             'id': (local_match or {}).get('id'),
             'name': (local_match or {}).get('name') or fg.get('name') or slug,
-            'value': local_value if local_value > 0 else fragment_value,
+            'value': fragment_value if fragment_value > 0 else local_value,
             'image': fg.get('market_image') or fg.get('black_image') or local_image or fg.get('image') or '/static/img/default_gift.png',
             'market_image': fg.get('market_image') or fg.get('black_image') or fg.get('image'),
             'black_image': fg.get('black_image') or '',
@@ -9609,7 +10015,7 @@ def _portal_sync_floors():
     if not colls:
         return {'success': False, 'error': 'Portal вернул пустой список коллекций'}
 
-    # Сохраняем как fragment cache
+    # Portal is a separate source. Never overwrite Fragment's catalog cache.
     portal_catalog = []
     for c in colls:
         if not c['short_name']:
@@ -9625,14 +10031,6 @@ def _portal_sync_floors():
             item['fragment_price_ton'] = round(c['floor_price'], 4)
             item['value'] = int(round(c['floor_price'] * 100))  # 1 TON = 100 stars
         portal_catalog.append(item)
-
-    try:
-        _save_fragment_catalog_disk_cache(portal_catalog)
-        global fragment_cache, fragment_cache_time
-        fragment_cache = portal_catalog
-        fragment_cache_time = time.time()
-    except Exception as e:
-        logger.warning(f'Portal: failed to update cache: {e}')
 
     # Обновляем gifts.json
     gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
@@ -17621,46 +18019,88 @@ def api_gifts_list():
         logger.error(f"Gifts list error: {e}")
         return jsonify({'success': True, 'gifts': []})
 
+def _run_fragment_gifts_import_job(job_id):
+    try:
+        _fragment_job_update(stage='collections', current=0, total=0, collections=0, variants_found=0, models=0, error=None)
+        _fragment_job_log('Старт загрузки подарков Fragment')
+        def progress(done, total, msg):
+            _fragment_job_update(current=done, total=total, message=msg, stage='prices' if 'Цены' in msg else ('variants' if 'Black' in msg else 'collections'))
+            if done == 0 or done == total or done % 10 == 0:
+                _fragment_job_log(msg)
+        gifts = _load_fragment_gifts_with_variants(force_refresh=True, progress_callback=progress)
+        found = sum(1 for g in gifts if g.get('black_image') or g.get('onyx_black_image'))
+        _fragment_job_log(f'Fragment: найдено {len(gifts)} коллекций, PNG вариантов: {found}')
+
+        # One admin button now performs the complete catalog refresh: Fragment
+        # collections + Black/Onyx Black assets + MRKT floor prices. This keeps
+        # the public market and the admin catalog on the same fresh snapshot.
+        if _mrkt_load_token() and gifts:
+            _fragment_job_log('MRKT: начинаем обновление цен для нового каталога')
+            def mrkt_progress(done, total, msg):
+                _fragment_job_update(current=done, total=total, stage='mrkt', collections=total, message=msg)
+                if done == 0 or done == total or done % 10 == 0:
+                    _fragment_job_log(msg)
+            mrkt_result = _mrkt_sync_prices_to_fragment_catalog(progress_callback=mrkt_progress)
+            if mrkt_result.get('success'):
+                _fragment_job_log(f"MRKT: обновлено {mrkt_result.get('updated', 0)}/{mrkt_result.get('total', 0)} цен")
+            else:
+                _fragment_job_log(f"MRKT: цены не обновлены — {mrkt_result.get('error')}", 'warn')
+        else:
+            _fragment_job_log('MRKT: токен не установлен — каталог Fragment сохранён без MRKT-цен', 'warn')
+
+        try:
+            api_gifts_list._cache = {}
+        except Exception:
+            pass
+        _fragment_job_update(running=False, stage='done', current=len(gifts), total=len(gifts), collections=len(gifts), variants_found=found, message=f'Готово: {len(gifts)} коллекций', finished_at=time.time())
+        _fragment_job_log(f'Завершено: {len(gifts)} коллекций')
+    except Exception as e:
+        logger.error('Fragment gifts import job failed: %s\n%s', e, traceback.format_exc())
+        _fragment_job_update(running=False, stage='error', error=str(e), message='Ошибка загрузки', finished_at=time.time())
+        _fragment_job_log(f'ОШИБКА: {e}', 'error')
+
+def _start_fragment_import_job():
+    with _fragment_import_lock:
+        if _fragment_import_job.get('running'):
+            return False, _fragment_import_job.get('job_id')
+        job_id = str(int(time.time() * 1000))
+        _fragment_import_job.update({
+            'running': True, 'job_id': job_id, 'stage': 'starting', 'current': 0,
+            'total': 0, 'collections': 0, 'variants_found': 0, 'models': 0,
+            'message': 'Запуск...', 'logs': [], 'started_at': time.time(),
+            'finished_at': None, 'error': None
+        })
+    threading.Thread(target=_run_fragment_gifts_import_job, args=(job_id,), daemon=True, name='fragment-import').start()
+    return True, job_id
+
 @app.route('/api/fragment/import-gifts', methods=['POST'])
 def api_fragment_import_gifts():
-    """Admin: import all Fragment collections, prices and Black/Onyx Black PNG variants."""
     try:
         data = request.get_json(silent=True) or {}
         if str(data.get('admin_id')) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-        gifts = _load_fragment_gifts_with_variants(force_refresh=True)
-        return jsonify({
-            'success': True,
-            'collections': len(gifts),
-            'message': f'Загружено коллекций: {len(gifts)}. Black/Onyx Black сохранены отдельно.'
-        })
+        started, job_id = _start_fragment_import_job()
+        return jsonify({'success': True, 'started': started, 'job_id': job_id, 'message': 'Загрузка запущена в фоне'})
     except Exception as e:
-        logger.error(f'Fragment gifts import error: {e}\n{traceback.format_exc()}')
         return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/fragment/import-status', methods=['GET'])
+def api_fragment_import_status():
+    return jsonify({'success': True, **_fragment_job_snapshot()})
 
 @app.route('/api/fragment/import-models', methods=['POST'])
 def api_fragment_import_models():
-    """Admin: load all Fragment models into the private cache only. Models are NOT added to market."""
     try:
         data = request.get_json(silent=True) or {}
         if str(data.get('admin_id')) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
         gifts = fetch_fragment_gifts_catalog(force_refresh=False) or []
-        total = 0
-        loaded = 0
+        total = 0; loaded = 0
         for gift in gifts:
             slug = str(gift.get('fragment_slug') or '').strip().lower()
-            if not slug:
-                continue
-            models = fetch_fragment_gift_models(
-                slug,
-                base_name=gift.get('name') or slug,
-                base_value=_safe_int(gift.get('value'), 0),
-                base_image=gift.get('image') or '',
-                force_refresh=True
-            )
-            loaded += 1
-            total += len(models or [])
+            if not slug: continue
+            models = fetch_fragment_gift_models(slug, base_name=gift.get('name') or slug, base_value=_safe_int(gift.get('value'), 0), base_image=gift.get('image') or '', force_refresh=True)
+            loaded += 1; total += len(models or [])
         _save_fragment_catalog_disk_cache(gifts)
         return jsonify({'success': True, 'collections': loaded, 'models': total, 'market_models_added': 0})
     except Exception as e:
@@ -17669,30 +18109,8 @@ def api_fragment_import_models():
 
 @app.route('/api/fragment/import-all', methods=['POST'])
 def api_fragment_import_all():
-    """Admin: gifts + dark backgrounds + models. Models remain private cache."""
-    try:
-        data = request.get_json(silent=True) or {}
-        if str(data.get('admin_id')) != str(ADMIN_ID):
-            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-        gifts = _load_fragment_gifts_with_variants(force_refresh=True)
-        total_models = 0
-        for gift in gifts:
-            slug = str(gift.get('fragment_slug') or '').strip().lower()
-            if not slug:
-                continue
-            models = fetch_fragment_gift_models(
-                slug,
-                base_name=gift.get('name') or slug,
-                base_value=_safe_int(gift.get('value'), 0),
-                base_image=gift.get('image') or '',
-                force_refresh=True
-            )
-            total_models += len(models or [])
-        _save_fragment_catalog_disk_cache(gifts)
-        return jsonify({'success': True, 'collections': len(gifts), 'models': total_models, 'market_models_added': 0})
-    except Exception as e:
-        logger.error(f'Fragment full import error: {e}\n{traceback.format_exc()}')
-        return jsonify({'success': False, 'error': str(e)})
+    # The user-facing 'all' import starts the same fast background gift job.
+    return api_fragment_import_gifts()
 
 @app.route('/api/fragment-gift-models', methods=['GET'])
 def api_fragment_gift_models():
