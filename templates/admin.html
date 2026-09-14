@@ -456,7 +456,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <h2>🎁 Подарки</h2>
             <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
                 <button class="action-btn" onclick="loadGifts()">Обновить</button>
-                <button class="action-btn" onclick="syncFragmentSalePrices(event)">Цены Fragment</button>
+                <button class="action-btn" onclick="syncGetgemsPrices(event)">Цены Getgems</button><button class="action-btn" onclick="syncFragmentSalePrices(event)">Цены Fragment</button><button class="action-btn" onclick="syncAllMarketplaces(event)">Цены все 3</button>
             </div>
         </div>
 
@@ -604,8 +604,10 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
 
         <div class="card">
-            <div class="card-title">Синхронизация MRKT</div>
-            <button class="btn btn-primary" onclick="syncPortalPrices(event)">🔄 Обновить цены с MRKT</button>
+            <div class="card-title">Синхронизация маркетплейсов</div>
+            <button class="btn btn-primary" onclick="syncAllMarketplaces(event)">🔄 Обновить цены: Getgems + Fragment + MRKT</button>
+            <button class="btn btn-secondary" onclick="syncGetgemsPrices(event)" style="margin-top:8px">💎 Обновить цены Getgems</button>
+            <button class="btn btn-secondary" onclick="syncPortalPrices(event)" style="margin-top:8px">🛒 Обновить цены MRKT</button>
             <button class="btn btn-secondary" onclick="importFragmentGifts(event)" style="margin-top:8px">📥 Загрузить подарки</button>
             <button class="btn btn-secondary" onclick="importFragmentVariants(event)" style="margin-top:8px">🖼️ Загрузить Black + Onyx Black</button><button class="btn btn-secondary" onclick="importFragmentModels(event)" style="margin-top:8px">🧩 Загрузить модели (только в админ-кэш)</button>
             <button class="btn btn-secondary" onclick="importFragmentAll(event)" style="margin-top:8px">📦 Загрузить всё с Fragment</button>
@@ -1887,6 +1889,16 @@ async function importFragmentAll(evt){
     var btn=evt&&evt.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳ Запускаем загрузку...';}
     try{var r=await fetch('/api/fragment/import-all',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});var d=await r.json();if(d.success){showToast('Fragment: загрузка запущена','ok');if(fragmentLogPollTimer)clearTimeout(fragmentLogPollTimer);pollFragmentImportStatus();}else showToast(d.error||'Ошибка полной загрузки Fragment','err');}
     catch(e){showToast('Ошибка соединения с Fragment','err');}finally{if(btn){btn.disabled=false;btn.textContent='📦 Загрузить всё с Fragment';}}
+}
+async function syncGetgemsPrices(evt){
+    var btn=evt&&evt.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳ Getgems...';}
+    try{var r=await fetch('/api/getgems/sync-prices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});var d=await r.json();if(d.success){showToast('Getgems: синхронизация запущена','ok');if(fragmentLogPollTimer)clearTimeout(fragmentLogPollTimer);pollFragmentImportStatus();}else showToast(d.error||'Ошибка Getgems','err');}
+    catch(e){showToast('Ошибка соединения с Getgems','err');}finally{if(btn){btn.disabled=false;btn.textContent='💎 Обновить цены Getgems';}}
+}
+async function syncAllMarketplaces(evt){
+    var btn=evt&&evt.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳ Синхронизация 3 источников...';}
+    try{var r=await fetch('/api/marketplaces/sync-all',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});var d=await r.json();if(d.success){showToast('Getgems + Fragment + MRKT: запуск выполнен','ok');if(fragmentLogPollTimer)clearTimeout(fragmentLogPollTimer);pollFragmentImportStatus();}else showToast(d.error||'Ошибка общей синхронизации','err');}
+    catch(e){showToast('Ошибка запуска общей синхронизации','err');}finally{if(btn){btn.disabled=false;btn.textContent='🔄 Обновить цены: Getgems + Fragment + MRKT';}}
 }
 async function syncPortalPrices(evt){
     var btn=evt&&evt.target;if(btn){btn.disabled=true;btn.textContent='⏳ Запуск MRKT...';}
