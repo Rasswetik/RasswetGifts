@@ -8,6 +8,7 @@
 <link rel="icon" type="image/png" href="/static/img/logo.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="/static/js/telegram-auth.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
@@ -1411,6 +1412,33 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
     display:none !important;
 }
 
+
+/* ===== MOBILE EXPANDED VIEW OFFSET ===== */
+.page{
+    transform:translateY(5px);
+}
+
+
+/* ===== FINAL INVENTORY FIXES ===== */
+.inv-card{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;aspect-ratio:auto!important;min-height:0!important;overflow:visible!important;}
+.inv-card-img-wrap{width:100%!important;aspect-ratio:1/1!important;flex:none!important;margin:0 0 6px!important;background:transparent!important;border:0!important;border-radius:0!important;overflow:visible!important;}
+.inv-card-img-wrap img{width:100%!important;height:100%!important;object-fit:contain!important;padding:0!important;border-radius:0!important;}
+.inv-card-upgraded .inv-card-img-wrap{border-radius:14px!important;overflow:hidden!important;background:#171c21!important;border:0!important;}
+.inv-card-upgraded .inv-card-img-wrap img{object-fit:cover!important;border-radius:14px!important;}
+.inv-card-name{height:16px!important;min-height:16px!important;line-height:16px!important;padding:0 2px!important;font-size:10px!important;}
+.inv-card-price{height:15px!important;min-height:15px!important;margin-top:2px!important;}
+.page{padding-top:calc(var(--safe-top) + 10px)!important;transform:translateY(5vh)!important;max-height:95vh;}
+.item-sheet-overlay{z-index:2147483000!important;}
+.portal-overlay{z-index:2147482000!important;}
+.bottom-nav{z-index:100000!important;}
+.deposit-methods{display:block!important;}
+.deposit-method-btn{width:100%!important;margin-bottom:10px!important;}
+.deposit-unavailable{padding:18px 12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.68);font-size:13px;line-height:1.45;text-align:center;}
+.item-animation-block{display:none;width:100%;margin:0 0 16px;padding:10px;border-radius:18px;background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.06);}
+.item-animation-block.show{display:block;}
+.item-animation-stage{width:100%;height:240px;display:flex;align-items:center;justify-content:center;}
+.item-animation-stage svg{width:100%!important;height:100%!important;}
+@media(max-width:380px){.page{transform:translateY(5vh)!important}.item-animation-stage{height:210px}}
 </style>
 </head>
 <body>
@@ -1553,6 +1581,10 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
             </div>
         </div>
 
+        <div class="item-animation-block" id="itemAnimationBlock">
+            <div class="item-animation-stage" id="itemAnimationStage"></div>
+        </div>
+
         <div class="item-challenge" id="itemChallenge" style="display:none">
             <div class="item-challenge-label">
                 <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -1619,12 +1651,7 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
             <button class="deposit-close" onclick="closeDeposit()">✕</button>
         </div>
         <div class="deposit-methods">
-            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
-                <img src="/static/img/star.png" alt="Stars"><span>Stars</span>
-            </button>
-            <button class="deposit-method-btn" onclick="closeDeposit();window.location.href='/crash'">
-                <img src="/static/img/ton.png" alt="TON"><span>TON</span>
-            </button>
+            <div class="deposit-unavailable">Пополнение TON и Stars временно недоступно.<br>Мы уже работаем над восстановлением.</div>
         </div>
     </div>
 </div>
@@ -1671,6 +1698,7 @@ let selectedItems = new Set();
 const ADMIN_ID = 5257227756;
 const _imgCache = {};
 const _nftDetailsCache = {};
+let _itemAnimation = null;
 
 let _sellCountdownTimer = null;
 let _batchSellMode = false;
@@ -2052,11 +2080,34 @@ function openBatchSellModal(){
 /* ══════════════════════════════════════════════════════════════
    ITEM SHEET
    ══════════════════════════════════════════════════════════════ */
+async function loadGiftAnimation(item){
+    var block=$('itemAnimationBlock'), stage=$('itemAnimationStage');
+    if(!block || !stage) return;
+    block.classList.remove('show'); stage.innerHTML='';
+    if(!item) return;
+    var slug=item.fragment_slug || '';
+    var num=item.nft_number || 0;
+    if(!slug || !num) {
+        var m=String(item.gift_image||'').match(/(?:gifts|gift)\/([a-z0-9_-]+)-?(\d+)?/i);
+        if(m){slug=m[1]||''; if(!num && m[2]) num=parseInt(m[2]);}
+    }
+    if(!slug || !num) return;
+    try{
+        var r=await fetch('/api/fragment-gift-animation?slug='+encodeURIComponent(slug)+'&number='+encodeURIComponent(num));
+        var d=await r.json();
+        if(!d.success || !d.animation) return;
+        if(_itemAnimation){try{_itemAnimation.destroy();}catch(e){} _itemAnimation=null;}
+        block.classList.add('show');
+        _itemAnimation=lottie.loadAnimation({container:stage,renderer:'svg',loop:true,autoplay:true,animationData:d.animation});
+    }catch(e){console.warn('gift animation:',e);}
+}
+
 function openItemSheet(itemId){
     var item = inventory.find(function(i){ return i.id === itemId; });
     if(!item) return;
     selectedItem = item;
     vibrateIfOn();
+    loadGiftAnimation(item);
 
     var upgraded = isUpgraded(item);
 
@@ -2235,6 +2286,9 @@ function applyFragmentDetails(d){
 }
 
 function closeItemSheet(){
+    if(_itemAnimation){try{_itemAnimation.destroy();}catch(e){} _itemAnimation=null;}
+    var stage=$('itemAnimationStage'); if(stage) stage.innerHTML='';
+    var block=$('itemAnimationBlock'); if(block) block.classList.remove('show');
     var ov = $('itemSheetOverlay');
     if(ov) ov.classList.remove('show');
     selectedItem = null;

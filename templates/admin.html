@@ -383,7 +383,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="home-section">
             <div class="home-section-title">Финансы</div>
             <div class="tiles-grid">
-                <button class="tile-btn tile-indigo" onclick="showSection('sbp')">
+                <button class="tile-btn tile-indigo" style="display:none" onclick="showSection('sbp')">
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
                     <div><div class="tile-text">СБП</div><div class="tile-sub">Платежи CardLink</div></div>
                 </button>
@@ -590,8 +590,10 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
 
         <div class="card">
-            <div class="card-title">Синхронизация</div>
+            <div class="card-title">Синхронизация цен</div>
             <button class="btn btn-primary" onclick="syncPortalPrices(event)">🔄 Синхронизировать цены с Portal</button>
+            <button class="btn btn-primary" onclick="syncTonnelPrices(event)" style="margin-top:8px">🔄 Обновить цены с Tonnel</button>
+            <button class="btn btn-secondary" onclick="importFragmentCollections(event)" style="margin-top:8px">📥 Загрузить все коллекции с Fragment</button>
             <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.5">
                 Загружает floor-цены всех коллекций с Portal и обновляет gifts.json.
                 Это может занять несколько минут.
@@ -933,6 +935,7 @@ function showSection(name){
         if(name === 'cases') loadCasesList();
         if(name === 'promo'){ loadPromoCodes(); onPromoTypeChange(); }
         if(name === 'portal') loadPortalStatus();
+        if(name === 'inventory') searchInvUser();
         if(name === 'quests') loadQuests();
         if(name === 'leaderboard') loadLeaderboard();
         if(name === 'challenges') loadChallenges();
@@ -1840,6 +1843,26 @@ async function deletePortalToken(){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
+async function syncTonnelPrices(evt){
+    var btn=evt&&evt.currentTarget; if(btn){btn.disabled=true;btn.textContent='⏳ Tonnel...';}
+    try{
+        var r=await fetch('/api/tonnel/sync-prices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
+        var d=await r.json();
+        if(d.success) showToast('Tonnel: обновлено '+(d.updated||0)+' из '+(d.checked||0),'ok');
+        else showToast(d.error||'Ошибка Tonnel','err');
+    }catch(e){showToast('Ошибка сети','err');}
+    finally{if(btn){btn.disabled=false;btn.textContent='🔄 Обновить цены с Tonnel';}}
+}
+async function importFragmentCollections(evt){
+    var btn=evt&&evt.currentTarget; if(btn){btn.disabled=true;btn.textContent='⏳ Загружаем Fragment...';}
+    try{
+        var r=await fetch('/api/fragment/import-collections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
+        var d=await r.json();
+        if(d.success){showToast('Fragment: добавлено '+(d.added||0)+', обновлено '+(d.updated||0),'ok');loadPortalStatus();}
+        else showToast(d.error||'Ошибка Fragment','err');
+    }catch(e){showToast('Ошибка сети','err');}
+    finally{if(btn){btn.disabled=false;btn.textContent='📥 Загрузить все коллекции с Fragment';}}
+}
 async function syncPortalPrices(evt){
     if(!confirm('Синхронизировать цены с Portal? Это может занять несколько минут.')) return;
     var btn = evt && evt.target;
@@ -2302,7 +2325,7 @@ async function searchInvUser(){
     var q = ($('invSearch').value || '').trim();
     var el = $('invUserResults');
     if(!el) return;
-    if(!q || q.length < 2){ el.innerHTML = ''; return; }
+    if(!q){ q=''; }
     el.innerHTML = '<div class="loading">Поиск</div>';
     try{
         var r = await fetch('/api/admin/search-users?q=' + encodeURIComponent(q));
