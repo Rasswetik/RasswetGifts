@@ -2189,22 +2189,15 @@ function openItemSheet(itemId){
         if(sellBtn) sellBtn.disabled = !!item.is_withdrawing;
         if(withdrawBtn) withdrawBtn.disabled = !!item.is_withdrawing;
     } else {
+        // Unupgraded gift: show only its name, PNG, price and the two actions.
+        // NFT model/backdrop/symbol data is intentionally hidden until an upgrade.
         if(header) header.style.display = 'flex';
         var img = $('itemSheetImg'); if(img){ img.src = getGiftImage(item); img.style.display='none'; }
-        var title = $('itemSheetTitle'); if(title) title.textContent = String(item.gift_name || 'Подарок').replace(/#\d+$/, '').trim();
+        var title = $('itemSheetTitle'); if(title) title.textContent = String(item.gift_name || item.name || 'Подарок').replace(/#\d+$/, '').trim();
         var priceVal = $('itemSheetPriceVal');
         if(priceVal) priceVal.textContent = formatTon(starsToTon(item.gift_value));
-        if(nftBlock){ nftBlock.classList.add('show','compact'); }
-        setAttrLoading('attrModelVal', 'attrModelRarity');
-        setAttrLoading('attrBackdropVal', 'attrBackdropRarity');
-        setAttrLoading('attrSymbolVal', 'attrSymbolRarity');
-        var nslug = item.fragment_slug || '';
-        var nnum = item.nft_number || item.number || 0;
-        if(!nnum){
-            var nm = String(item.gift_image||item.image||'').match(/\/gifts\/([a-z0-9_-]+)-(\d+)/i);
-            if(nm){ nslug = nslug || nm[1]; nnum = parseInt(nm[2]); }
-        }
-        if(nslug && nnum) fetchFragmentDetails(nslug, nnum);
+        if(nftBlock){ nftBlock.classList.remove('show'); nftBlock.classList.add('compact'); }
+        // Do not request Fragment NFT details for an ordinary, non-upgraded item.
 
         if(item.challenge && !item.challenge.is_completed){
             if(challenge) challenge.style.display = 'block';

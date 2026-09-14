@@ -606,11 +606,11 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="card">
             <div class="card-title">Синхронизация MRKT</div>
             <button class="btn btn-primary" onclick="syncPortalPrices(event)">🔄 Обновить цены с MRKT</button>
-            <button class="btn btn-secondary" onclick="importFragmentGifts(event)" style="margin-top:8px">📥 Загрузить подарки + Black / Onyx Black</button>
-            <button class="btn btn-secondary" onclick="importFragmentModels(event)" style="margin-top:8px">🧩 Загрузить модели (только в админ-кэш)</button>
+            <button class="btn btn-secondary" onclick="importFragmentGifts(event)" style="margin-top:8px">📥 Загрузить подарки</button>
+            <button class="btn btn-secondary" onclick="importFragmentVariants(event)" style="margin-top:8px">🖼️ Загрузить Black + Onyx Black</button><button class="btn btn-secondary" onclick="importFragmentModels(event)" style="margin-top:8px">🧩 Загрузить модели (только в админ-кэш)</button>
             <button class="btn btn-secondary" onclick="importFragmentAll(event)" style="margin-top:8px">📦 Загрузить всё с Fragment</button>
             <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.5">
-                «Подарки» загружают все коллекции, их цены и реальные PNG с фонами Black / Onyx Black.
+                «Подарки» загружают только коллекции и цены. «Black + Onyx Black» загружают PNG-варианты отдельно.
                 «Модели» сохраняются только в кэше админ-панели и не публикуются на маркете.
             </div>
         </div>
@@ -1869,9 +1869,14 @@ async function pollFragmentImportStatus(){
     catch(e){fragmentLogPollTimer=setTimeout(pollFragmentImportStatus,2500);}
 }
 async function importFragmentGifts(evt){
-    var btn=evt&&evt.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳ Запуск загрузки...';}
-    try{var r=await fetch('/api/fragment/import-gifts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});var d=await r.json();if(d.success){showToast(d.started?'Fragment: загрузка запущена':'Загрузка уже идёт','ok');if(fragmentLogPollTimer)clearTimeout(fragmentLogPollTimer);pollFragmentImportStatus();}else showToast(d.error||'Ошибка загрузки Fragment','err');}
-    catch(e){showToast('Ошибка соединения с Fragment','err');}finally{if(btn){btn.disabled=false;btn.textContent='📥 Загрузить подарки + Black / Onyx Black';}}
+    var btn=evt&&evt.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳ Запуск загрузки подарков...';}
+    try{var r=await fetch('/api/fragment/import-gifts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});var d=await r.json();if(d.success){showToast(d.started?'Fragment: загрузка подарков запущена':'Загрузка уже идёт','ok');if(fragmentLogPollTimer)clearTimeout(fragmentLogPollTimer);pollFragmentImportStatus();}else showToast(d.error||'Ошибка загрузки Fragment','err');}
+    catch(e){showToast('Ошибка соединения с Fragment','err');}finally{if(btn){btn.disabled=false;btn.textContent='📥 Загрузить подарки';}}
+}
+async function importFragmentVariants(evt){
+    var btn=evt&&evt.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳ Загрузка Black + Onyx...';}
+    try{var r=await fetch('/api/fragment/import-variants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});var d=await r.json();if(d.success){showToast(d.started?'Black / Onyx Black загрузка запущена':'Загрузка уже идёт','ok');if(fragmentLogPollTimer)clearTimeout(fragmentLogPollTimer);pollFragmentImportStatus();}else showToast(d.error||'Ошибка загрузки вариантов','err');}
+    catch(e){showToast('Ошибка соединения с Fragment','err');}finally{if(btn){btn.disabled=false;btn.textContent='🖼️ Загрузить Black + Onyx Black';}}
 }
 async function importFragmentModels(evt){
     var btn=evt&&evt.currentTarget;if(btn){btn.disabled=true;btn.textContent='⏳ Загружаем модели...';}
