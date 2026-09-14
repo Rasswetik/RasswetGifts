@@ -13,6 +13,8 @@ import random
 import traceback
 import string
 import hashlib
+import hmac
+import secrets
 import re
 from urllib.parse import quote_plus
 import html as html_lib
@@ -629,235 +631,41 @@ def portal_image_urls_debug():
 
 
 def _load_crash_bots():
-    """Load crash bots config from DB into memory"""
+    """ОТКЛЮЧЕНО НАВСЕГДА. Раньше подгружала конфиг фейковых ботов и
+    автосоздавала 100 ботов при первом запуске, чтобы игра выглядела
+    оживлённой. Ставки в crash-игре теперь показывают только реальных
+    пользователей."""
     global _crash_bots_cache
-    try:
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            # settings
-            cursor.execute('SELECT enabled, min_active_bots, max_active_bots, min_real_players_threshold FROM crash_bots_settings WHERE id = 1')
-            row = cursor.fetchone()
-            if row:
-                _crash_bots_cache['enabled'] = bool(row[0])
-                _crash_bots_cache['settings'] = {
-                    'min_active_bots': row[1] or 2,
-                    'max_active_bots': row[2] or 5,
-                    'min_real_players_threshold': row[3] or 3,
-                }
-            else:
-                # Auto-enable bots on first run — use params so booleans are passed correctly
-                conn.execute(
-                    'INSERT OR IGNORE INTO crash_bots_settings (id, enabled, min_active_bots, max_active_bots, min_real_players_threshold) VALUES (?, ?, ?, ?, ?)',
-                    (1, True, 2, 5, 3)
-                )
-                conn.commit()
-                _crash_bots_cache['enabled'] = True
-                _crash_bots_cache['settings'] = {'min_active_bots': 2, 'max_active_bots': 5, 'min_real_players_threshold': 3}
-            # bots list
-            cursor.execute('SELECT id, bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active FROM crash_bots_config ORDER BY id')
-            _crash_bots_cache['bots'] = [{
-                'id': r[0], 'bot_name': r[1], 'avatar_url': r[2],
-                'min_bet': r[3] or 25, 'max_bet': r[4] or 500,
-                'auto_cashout_min': float(r[5] or 1.2), 'auto_cashout_max': float(r[6] or 5.0),
-                'is_active': bool(r[7])
-            } for r in cursor.fetchall()]
-            # Auto-seed bots if none exist
-            if not _crash_bots_cache['bots']:
-                _seed_default_bots(conn, 100)
-                cursor.execute('SELECT id, bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active FROM crash_bots_config ORDER BY id')
-                _crash_bots_cache['bots'] = [{
-                    'id': r[0], 'bot_name': r[1], 'avatar_url': r[2],
-                    'min_bet': r[3] or 25, 'max_bet': r[4] or 500,
-                    'auto_cashout_min': float(r[5] or 1.2), 'auto_cashout_max': float(r[6] or 5.0),
-                    'is_active': bool(r[7])
-                } for r in cursor.fetchall()]
-                logger.info(f"Auto-seeded {len(_crash_bots_cache['bots'])} crash bots")
-            elif len(_crash_bots_cache['bots']) < 100:
-                need_count = 100 - len(_crash_bots_cache['bots'])
-                _seed_default_bots(conn, need_count)
-                cursor.execute('SELECT id, bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active FROM crash_bots_config ORDER BY id')
-                _crash_bots_cache['bots'] = [{
-                    'id': r[0], 'bot_name': r[1], 'avatar_url': r[2],
-                    'min_bet': r[3] or 25, 'max_bet': r[4] or 500,
-                    'auto_cashout_min': float(r[5] or 1.2), 'auto_cashout_max': float(r[6] or 5.0),
-                    'is_active': bool(r[7])
-                } for r in cursor.fetchall()]
-                logger.info(f"Auto-added {need_count} crash bots to reach 100 total")
-            _crash_bots_cache['loaded'] = True
-    except Exception as e:
-        logger.warning(f"Bot config load error: {e}")
+    _crash_bots_cache['enabled'] = False
+    _crash_bots_cache['bots'] = []
+    _crash_bots_cache['settings'] = {}
+    _crash_bots_cache['loaded'] = True
 
 
 def _seed_default_bots(conn, count=100):
-    """Generate default bots (used on first startup and to backfill up to target amount)."""
-    if count <= 0:
-        return
-
-    cursor = conn.cursor()
-    cursor.execute('SELECT bot_name FROM crash_bots_config')
-    existing_names = {r[0] for r in cursor.fetchall() if r and r[0]}
-
-    names_pool = list(_BOT_NAMES_RU) + list(_BOT_NAMES_EN)
-    import random as _rnd
-    _rnd.shuffle(names_pool)
-    preferred_avatars = [
-        a for a in _BOT_AVATARS
-        if ('pravatar' in a) or ('lorelei' in a) or ('adventurer' in a) or ('set4' in a)
-    ]
-    if not preferred_avatars:
-        preferred_avatars = list(_BOT_AVATARS)
-
-    created = 0
-    idx = 0
-    while created < count:
-        if _rnd.random() < 0.72:
-            if _rnd.random() < 0.55:
-                base_name = f"{_rnd.choice(_BOT_NAMES_RU)} {_rnd.choice(_BOT_LASTNAMES_RU)}"
-            else:
-                base_name = f"{_rnd.choice(_BOT_NAMES_EN)} {_rnd.choice(_BOT_LASTNAMES_EN)}"
-        else:
-            base_name = names_pool[idx % len(names_pool)]
-        name = base_name if base_name not in existing_names else f"{base_name}_{_rnd.randint(10, 999)}"
-        while name in existing_names:
-            name = f"{base_name}_{_rnd.randint(10, 999)}"
-
-        existing_names.add(name)
-        avatar = preferred_avatars[(idx + created) % len(preferred_avatars)]
-        min_bet = _rnd.choice([25, 50, 75, 100])
-        max_bet = _rnd.choice([300, 400, 500, 700, 900])
-        if max_bet < min_bet:
-            max_bet = min_bet
-        cashout_min = round(_rnd.uniform(1.15, 1.8), 2)
-        cashout_max = round(_rnd.uniform(max(2.0, cashout_min + 0.2), 5.5), 2)
-
-        conn.execute(
-            'INSERT INTO crash_bots_config (bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            (name, avatar, min_bet, max_bet, cashout_min, cashout_max, True)
-        )
-        created += 1
-        idx += 1
-    conn.commit()
+    """ОТКЛЮЧЕНО НАВСЕГДА — больше не создаёт фиктивных ботов."""
+    return
 
 
 def _generate_bot_bets(game_id, real_player_count):
-    """Generate bot bets for a game round — DISABLED"""
-    return  # Bots disabled
+    """ОТКЛЮЧЕНО НАВСЕГДА — фиктивные ставки ботов больше не создаются."""
+    return
 
 
 def _process_bot_cashouts(game_id, current_mult):
-    """Process bot auto-cashouts during flying phase"""
-    bots = _crash_bots_active.get(game_id, [])
-    for bot in bots:
-        if bot['status'] == 'active' and current_mult >= bot.get('cashout_mult', 0):
-            bot['status'] = 'cashed_out'
-            bot['win_amount'] = int(bot['bet_amount'] * bot.get('cashout_mult', 0))
-            bot['cashout_multiplier'] = bot.get('cashout_mult')
+    """ОТКЛЮЧЕНО НАВСЕГДА."""
+    return
 
 
 def _crash_bots_on_crash(game_id):
-    """Mark remaining active bot bets as lost"""
-    bots = _crash_bots_active.get(game_id, [])
-    for bot in bots:
-        if bot['status'] == 'active':
-            bot['status'] = 'lost'
-            bot['win_amount'] = 0
+    """ОТКЛЮЧЕНО НАВСЕГДА."""
+    return
 
 
 def _get_bot_bets_for_api(game_id):
-    """Return bot bets formatted like real bets for the bets API"""
-    bots = _crash_bots_active.get(game_id, [])
-    result = []
-    for b in bots:
-        result.append({
-            'id': -b.get('bot_id', 0),  # negative IDs for bots
-            'user_id': -b.get('bot_id', 0),
-            'bet_amount': b.get('bet_amount', 0),
-            'status': b.get('status'),
-            'cashout_multiplier': b.get('cashout_multiplier'),
-            'win_amount': b.get('win_amount', 0),
-            'created_at': None,
-            'first_name': b.get('name', 'Bot'),
-            'username': None,
-            'photo_url': b.get('avatar', '/static/img/default_avatar.png'),
-            'is_bot': True,
-        })
-    return result
+    """ОТКЛЮЧЕНО НАВСЕГДА — API отдаёт только реальные ставки."""
+    return []
 
-
-# Система уровней - turnover в звёздах (100 stars = 1 TON)
-# Per-level thresholds: 10 TON, 20 TON, 30 TON, ... (cumulative)
-# Progress resets visually after each level-up
-# Rewards: rocket skins and backgrounds ONLY (no stars/tickets)
-LEVEL_SYSTEM = [
-    {"level": 1,  "exp_required": 0,       "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "crash",       "reward_bg": None},
-    {"level": 2,  "exp_required": 1000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "cosmic"},
-    {"level": 3,  "exp_required": 3000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "cat",         "reward_bg": None},
-    {"level": 4,  "exp_required": 6000,    "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 5,  "exp_required": 10000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "dog",         "reward_bg": "rainbow"},
-    {"level": 6,  "exp_required": 15000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 7,  "exp_required": 21000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "banana",      "reward_bg": None},
-    {"level": 8,  "exp_required": 28000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "aurora"},
-    {"level": 9,  "exp_required": 36000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "plane",       "reward_bg": None},
-    {"level": 10, "exp_required": 45000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "rabbit",      "reward_bg": None},
-    {"level": 11, "exp_required": 55000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": "neon"},
-    {"level": 12, "exp_required": 66000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "ice",         "reward_bg": None},
-    {"level": 13, "exp_required": 78000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 14, "exp_required": 91000,   "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "unicorn",     "reward_bg": None},
-    {"level": 15, "exp_required": 105000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 16, "exp_required": 120000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "goldenplane", "reward_bg": None},
-    {"level": 17, "exp_required": 136000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 18, "exp_required": 153000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "telegram",    "reward_bg": None},
-    {"level": 19, "exp_required": 171000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 20, "exp_required": 190000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 21, "exp_required": 210000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 22, "exp_required": 231000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 23, "exp_required": 253000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 24, "exp_required": 276000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": None,          "reward_bg": None},
-    {"level": 25, "exp_required": 300000,  "reward_stars": 0, "reward_tickets": 0, "reward_rocket": "TonTheMoon",  "reward_bg": None},
-]
-
-# Background names for display
-BG_NAMES = {
-    'grid': 'Сетка',
-    'cosmic': 'Космос',
-    'rainbow': 'Радуга',
-    'aurora': 'Аврора',
-    'neon': 'Неон',
-}
-
-# Карта названий ракет для отображения
-ROCKET_NAMES = {
-    'crash': 'Ракета',
-    'pencil': 'Карандаш',
-    'banana': 'Банан',
-    'plane': 'Самолёт',
-    'dog': 'Собака',
-    'cat': 'Кот',
-    'rabbit': 'Кролик',
-    'smesh': 'Смешарик',
-    'scorpion': 'Скорпион',
-    'telegram': 'Телеграм',
-    'ice': 'Лёд',
-    'unicorn': 'Единорог',
-    'TonTheMoon': 'TON Moon',
-    'goldenplane': 'Золотой Самолёт',
-}
-
-# Карта крейтов за уровни
-LEVEL_CRATES = {
-    'starter_crate':   {'name': 'Starter Crate',   'image': '/static/img/crates/starter.png',   'items': [('stars', '50', 'Stars x50', 40, 'common'), ('stars', '150', 'Stars x150', 30, 'uncommon'), ('tickets', '5', 'Tickets x5', 20, 'rare'), ('stars', '300', 'Stars x300', 10, 'epic')]},
-    'bronze_crate':    {'name': 'Bronze Crate',     'image': '/static/img/crates/bronze.png',    'items': [('stars', '100', 'Stars x100', 35, 'common'), ('stars', '250', 'Stars x250', 30, 'uncommon'), ('tickets', '10', 'Tickets x10', 20, 'rare'), ('stars', '500', 'Stars x500', 15, 'epic')]},
-    'silver_crate':    {'name': 'Silver Crate',     'image': '/static/img/crates/silver.png',    'items': [('stars', '200', 'Stars x200', 35, 'common'), ('stars', '400', 'Stars x400', 25, 'uncommon'), ('tickets', '15', 'Tickets x15', 25, 'rare'), ('stars', '800', 'Stars x800', 15, 'epic')]},
-    'gold_crate':      {'name': 'Gold Crate',       'image': '/static/img/crates/gold.png',      'items': [('stars', '300', 'Stars x300', 30, 'common'), ('stars', '600', 'Stars x600', 25, 'uncommon'), ('tickets', '20', 'Tickets x20', 25, 'rare'), ('stars', '1200', 'Stars x1200', 20, 'epic')]},
-    'platinum_crate':  {'name': 'Platinum Crate',   'image': '/static/img/crates/platinum.png',  'items': [('stars', '400', 'Stars x400', 25, 'common'), ('stars', '800', 'Stars x800', 25, 'uncommon'), ('tickets', '30', 'Tickets x30', 25, 'rare'), ('stars', '1500', 'Stars x1500', 25, 'epic')]},
-    'diamond_crate':   {'name': 'Diamond Crate',    'image': '/static/img/crates/diamond.png',   'items': [('stars', '500', 'Stars x500', 25, 'common'), ('stars', '1000', 'Stars x1000', 25, 'uncommon'), ('tickets', '40', 'Tickets x40', 25, 'rare'), ('stars', '2000', 'Stars x2000', 25, 'epic')]},
-    'cosmic_crate':    {'name': 'Cosmic Crate',     'image': '/static/img/crates/cosmic.png',    'items': [('stars', '700', 'Stars x700', 20, 'common'), ('stars', '1500', 'Stars x1500', 25, 'uncommon'), ('tickets', '50', 'Tickets x50', 30, 'rare'), ('stars', '3000', 'Stars x3000', 25, 'epic')]},
-    'nebula_crate':    {'name': 'Nebula Crate',     'image': '/static/img/crates/nebula.png',    'items': [('stars', '1000', 'Stars x1000', 20, 'common'), ('stars', '2000', 'Stars x2000', 25, 'uncommon'), ('tickets', '60', 'Tickets x60', 25, 'rare'), ('stars', '4000', 'Stars x4000', 30, 'epic')]},
-    'stellar_crate':   {'name': 'Stellar Crate',    'image': '/static/img/crates/stellar.png',   'items': [('stars', '1500', 'Stars x1500', 20, 'common'), ('stars', '3000', 'Stars x3000', 25, 'uncommon'), ('tickets', '80', 'Tickets x80', 25, 'rare'), ('stars', '5000', 'Stars x5000', 30, 'epic')]},
-    'galactic_crate':  {'name': 'Galactic Crate',   'image': '/static/img/crates/galactic.png',  'items': [('stars', '2000', 'Stars x2000', 15, 'common'), ('stars', '4000', 'Stars x4000', 25, 'uncommon'), ('tickets', '100', 'Tickets x100', 25, 'rare'), ('stars', '7000', 'Stars x7000', 35, 'epic')]},
-    'legendary_crate': {'name': 'Legendary Crate',  'image': '/static/img/crates/legendary.png', 'items': [('stars', '3000', 'Stars x3000', 15, 'common'), ('stars', '5000', 'Stars x5000', 20, 'uncommon'), ('tickets', '120', 'Tickets x120', 30, 'rare'), ('stars', '10000', 'Stars x10000', 35, 'epic')]},
-    'supreme_crate':   {'name': 'Supreme Crate',    'image': '/static/img/crates/supreme.png',   'items': [('stars', '5000', 'Stars x5000', 10, 'uncommon'), ('tickets', '150', 'Tickets x150', 25, 'rare'), ('stars', '15000', 'Stars x15000', 35, 'epic'), ('stars', '25000', 'Stars x25000', 30, 'legendary')]},
-}
 
 def _sync_levels_from_db():
     """Синхронизирует уровни с БД без потери дополнительных полей конфигурации.
@@ -3995,12 +3803,23 @@ def init_db():
                 if 'ban_until' not in columns:
                     cursor.execute('ALTER TABLE users ADD COLUMN ban_until TEXT')
                     logger.info("✅ Добавлена колонка ban_until")
-                if 'rtp_boost' not in columns:
-                    cursor.execute('ALTER TABLE users ADD COLUMN rtp_boost INTEGER DEFAULT 40')
-                    logger.info("✅ Добавлена колонка rtp_boost")
                 conn.commit()
             except Exception as e:
                 logger.warning(f"⚠️ Миграция колонок users: {e}")
+
+            # Миграция: ultimate_crash_games — provably-fair seed/seed_hash
+            try:
+                cursor.execute("PRAGMA table_info(ultimate_crash_games)")
+                ucg_columns = [col[1] for col in cursor.fetchall()]
+                if 'seed_hash' not in ucg_columns:
+                    cursor.execute("ALTER TABLE ultimate_crash_games ADD COLUMN seed_hash TEXT")
+                    logger.info("✅ Добавлена колонка seed_hash (provably fair)")
+                if 'seed' not in ucg_columns:
+                    cursor.execute("ALTER TABLE ultimate_crash_games ADD COLUMN seed TEXT")
+                    logger.info("✅ Добавлена колонка seed (provably fair, раскрывается после краша)")
+                conn.commit()
+            except Exception as e:
+                logger.warning(f"⚠️ Миграция колонок ultimate_crash_games: {e}")
 
             # Миграция: ultimate_crash_bets — добавляем bet_type и gift_image
             try:
@@ -4054,12 +3873,8 @@ def init_db():
             # Загрузка уровней из БД
             _sync_levels_from_db()
 
-            # Load crash bots config
-            try:
-                _load_crash_bots()
-                logger.info(f"✅ Crash боты загружены: {len(_crash_bots_cache.get('bots', []))} ботов, enabled={_crash_bots_cache.get('enabled')}")
-            except Exception as be:
-                logger.warning(f"⚠️ Ошибка загрузки crash ботов: {be}")
+            # Crash-боты отключены навсегда — ставки в игре видны только от
+            # реальных пользователей.
             # Ensure level crates are seeded after DB and bots are ready
             try:
                 init_level_crates()
@@ -4840,238 +4655,69 @@ def get_player_crash_stats(user_id, conn=None):
 
 
 def ai_adjust_target_multiplier(base_target, game_id, conn=None):
-    """Adjust the pre-generated crash target based on active bettors.
-    
-    KEY LOGIC:
-    - Large bets (>1-5 TON) → drastically reduce target (crash early)
-    - Losing players with small bets → boost target significantly (tease with high multipliers)
-    - Winning players → reduce target
-    """
-    close_conn = False
-    if conn is None:
-        conn = get_db_connection()
-        close_conn = True
-    try:
-        cursor = conn.cursor()
-        cursor.execute('''SELECT user_id, bet_amount FROM ultimate_crash_bets 
-                         WHERE game_id = ? AND status = 'active' ''', (game_id,))
-        bets = cursor.fetchall()
-        
-        if not bets:
-            if close_conn: conn.close()
-            return base_target
-        
-        # === RTP COMPENSATION: Boost for deeply losing players ===
-        # If a single real player has RTP below 40%, give them compensating multipliers
-        compensation_target = None
-        for user_id, bet_amount in bets:
-            if user_id < 0:
-                continue
-            mode, stats = get_player_rtp_mode(user_id, conn)
-            if mode == 'boost' and bet_amount < LARGE_BET_THRESHOLD:
-                # Player RTP < 40% — give bigger coefficients
-                rtp_deficit = RTP_BOOST_THRESHOLD - stats['player_rtp']
-                if bet_amount <= 5:
-                    comp_mult = round(15.0 + rtp_deficit * 20 + random.random() * 10.0, 2)
-                elif bet_amount <= 15:
-                    comp_mult = round(5.0 + rtp_deficit * 10 + random.random() * 4.0, 2)
-                elif bet_amount <= 50:
-                    comp_mult = round(3.0 + rtp_deficit * 5 + random.random() * 2.5, 2)
-                else:
-                    comp_mult = round(2.0 + rtp_deficit * 3 + random.random() * 1.5, 2)
-                # 70% chance to boost (higher than before)
-                if random.random() < 0.55:
-                    compensation_target = max(compensation_target or 0, comp_mult)
-                    logger.info(f"💰 RTP Boost: user {user_id} RTP={stats['player_rtp']:.2f}, bet={bet_amount} → target {comp_mult:.2f}x")
-        
-        if compensation_target and compensation_target > base_target:
-            if close_conn: conn.close()
-            return round(compensation_target, 2)
-        
-        # Analyze bet composition
-        total_bet_value = sum(b[1] for b in bets)
-        large_bet_value = 0
-        losing_small_bet_value = 0
-        winning_bet_value = 0
-        has_whale_bet = False
-        
-        for user_id, bet_amount in bets:
-            if user_id < 0:  # Skip bots
-                continue
-            
-            # Check for whale bets
-            if bet_amount >= WHALE_BET_THRESHOLD:
-                has_whale_bet = True
-                large_bet_value += bet_amount
-            elif bet_amount >= LARGE_BET_THRESHOLD:
-                large_bet_value += bet_amount
-            else:
-                # Small bet - check if player is losing
-                stats = get_player_crash_stats(user_id, conn)
-                if stats.get('is_losing', False) and stats.get('loss_severity', 0) > 0.2:
-                    losing_small_bet_value += bet_amount
-                elif stats.get('player_rtp', 1.0) > 1.0:
-                    winning_bet_value += bet_amount
-        
-        if close_conn: conn.close()
-        
-        # === WHALE BET: Stronger target reduction ===
-        if has_whale_bet or large_bet_value > total_bet_value * 0.7:
-            reduction = 0.20 if has_whale_bet else 0.10
-            adjusted = max(2.5, base_target * (1 - reduction))
-            logger.info(f"🐋 AI: Large bet, mild reduction {base_target:.2f}x → {adjusted:.2f}x")
-            return round(adjusted, 2)
-        
-        # === LOSING PLAYERS: Boost multipliers to help them recover ===
-        if losing_small_bet_value > total_bet_value * 0.3 and large_bet_value == 0:
-            loss_ratio = losing_small_bet_value / max(total_bet_value, 1)
-            
-            if random.random() < 0.35:  # 35% chance of big boost
-                boost = 2.0 + random.random() * 5.0  # 2x to 7x multiplier boost
-                adjusted = min(150.0, base_target * boost)
-                logger.info(f"🎰 AI: Boosting losers! Target {base_target:.2f}x → {adjusted:.2f}x")
-                return round(adjusted, 2)
-            else:
-                boost = 1.3 + loss_ratio * 1.5
-                adjusted = base_target * boost
-                logger.debug(f"🎰 AI: Moderate loser boost {base_target:.2f}x → {adjusted:.2f}x")
-                return round(min(100.0, adjusted), 2)
-        
-        # === WINNING PLAYERS: Slight target reduction ===
-        if winning_bet_value > total_bet_value * 0.7:
-            has_nerf_player = False
-            for user_id, bet_amount in bets:
-                if user_id < 0:
-                    continue
-                m, _ = get_player_rtp_mode(user_id)
-                if m == 'nerf':
-                    has_nerf_player = True
-                    break
-            
-            if has_nerf_player:
-                reduction = min(0.15, 0.05 + (winning_bet_value / total_bet_value) * 0.08)
-            else:
-                reduction = min(0.08, 0.02 + (winning_bet_value / total_bet_value) * 0.05)
-            adjusted = max(3.0, base_target * (1 - reduction))
-            logger.debug(f"🎯 AI: Winners, mild reduction {base_target:.2f}x → {adjusted:.2f}x")
-            return round(adjusted, 2)
-        
-        return base_target
-        
-    except Exception as e:
-        logger.error(f"AI RTP adjust error: {e}")
-        if close_conn:
-            try: conn.close()
-            except: pass
-        return base_target
+    """УСТАРЕЛО И ОТКЛЮЧЕНО: раньше эта функция тайно меняла точку краша
+    в зависимости от того, кто и сколько поставил (буст проигрывающим-приманка,
+    снижение множителя для крупных ставок и выигрывающих игроков). Это было
+    нечестно по отношению к игрокам и введено в заблуждение относительно
+    честности игры. Функция оставлена как no-op для обратной совместимости
+    вызовов, но больше не изменяет результат раунда."""
+    return base_target
 
 
 def ai_should_force_crash(game_id, current_mult, conn=None):
-    """Check if the game should crash NOW based on player bets and their status.
-    
-    Balanced approach: protect against extreme extractions while allowing
-    regular wins at good multipliers. Only intervene for truly dangerous payouts.
-    """
-    close_conn = False
-    if conn is None:
-        conn = get_db_connection()
-        close_conn = True
-    try:
-        cursor = conn.cursor()
-        cursor.execute('''SELECT user_id, bet_amount FROM ultimate_crash_bets 
-                         WHERE game_id = ? AND status = 'active' ''', (game_id,))
-        active_bets = cursor.fetchall()
-        
-        if not active_bets:
-            if close_conn: conn.close()
-            return False
-        
-        for user_id, bet_amount in active_bets:
-            if user_id < 0:
-                continue
-            
-            potential_win = bet_amount * current_mult
-            stats = get_player_crash_stats(user_id, conn)
-            
-            # === Large bet protection — crash earlier for big bets ===
-            if bet_amount >= LARGE_BET_THRESHOLD:
-                if bet_amount >= WHALE_BET_THRESHOLD:  # 5+ TON
-                    # Start considering crash above 3.5x for whales (softer)
-                    if current_mult > 3.5:
-                        crash_prob = 0.05 + (current_mult - 3.5) * 0.04
-                        crash_prob = min(crash_prob, 0.25)
-                        if random.random() < crash_prob:
-                            if close_conn: conn.close()
-                            logger.info(f"🐋 Whale crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
-                            return True
-                else:  # 1-5 TON range
-                    # Start considering crash above 5x for large bets (softer)
-                    if current_mult > 5.0:
-                        crash_prob = 0.03 + (current_mult - 5.0) * 0.03
-                        crash_prob = min(crash_prob, 0.20)
-                        if random.random() < crash_prob:
-                            if close_conn: conn.close()
-                            logger.info(f"💰 Large bet crash: {bet_amount} stars from user {user_id}, mult={current_mult:.2f}x")
-                            return True
-            
-            # === Profitability check — only for very profitable players ===
-            if stats['total_wagered'] >= 500:  # Needs significant history
-                mode, _ = get_player_rtp_mode(user_id, conn)
-                if mode == 'nerf' and current_mult > 6.0:
-                    excess_rtp = stats['player_rtp'] - RTP_NERF_THRESHOLD
-                    crash_prob = min(0.12, 0.03 + excess_rtp * 0.15)
-                    
-                    if potential_win > 1000:
-                        crash_prob += 0.05
-                    if potential_win > 5000:
-                        crash_prob += 0.08
-                    
-                    if random.random() < crash_prob:
-                        if close_conn: conn.close()
-                        logger.info(f"🎯 RTP Nerf crash: user {user_id} RTP={stats['player_rtp']:.2f}, prob={crash_prob:.2f}")
-                        return True
-                
-                # Losing players — never force crash on them
-                elif stats['is_losing']:
-                    continue
-        
-        if close_conn: conn.close()
-        return False
-        
-    except Exception as e:
-        logger.error(f"AI force crash check error: {e}")
-        if close_conn:
-            try: conn.close()
-            except: pass
-        return False
+    """УСТАРЕЛО И ОТКЛЮЧЕНО: раньше эта функция принудительно обрушивала раунд
+    против конкретных игроков (крупные ставки, игроки с высоким RTP). Это было
+    манипуляцией исходом уже во время полёта. Отключено — раунд идёт до заранее
+    зафиксированного (и проверяемого) множителя, без вмешательства."""
+    return False
+
+
+# ============================================================
+# ЧЕСТНАЯ (PROVABLY FAIR) ГЕНЕРАЦИЯ МНОЖИТЕЛЯ КРАША
+# ------------------------------------------------------------
+# Никакой персональной подстройки под игрока, никаких ботов,
+# никакого ручного вмешательства админа в исход раунда.
+# Единственный параметр — фиксированный, публично известный
+# house edge (комиссия дома). Результат раунда полностью
+# определяется случайным seed'ом, который:
+#   1) генерируется ДО раунда,
+#   2) его хэш (seed_hash) публикуется/сохраняется ДО раунда,
+#   3) сам seed раскрывается ПОСЛЕ краша,
+# поэтому любой игрок может пересчитать множитель сам и
+# убедиться, что sha256(seed) == seed_hash, и что результат
+# не подменили задним числом.
+# ============================================================
+
+CRASH_HOUSE_EDGE = 0.03  # 3% — фиксированная и одинаковая для всех
+
+
+def _crash_multiplier_from_seed(seed: str, game_id) -> float:
+    """Чистая детерминированная функция seed -> multiplier. Без побочных эффектов,
+    без обращений к БД, без данных о конкретном игроке."""
+    h = hmac.new(seed.encode(), f"crash:{game_id}".encode(), hashlib.sha256).hexdigest()
+    r_int = int(h[:13], 16)
+    r = r_int / float(1 << 52)
+    r = min(max(r, 1e-9), 1 - 1e-9)
+    multiplier = (1.0 - CRASH_HOUSE_EDGE) / (1.0 - r)
+    multiplier = max(1.00, round(multiplier, 2))
+    return min(multiplier, 1000.0)
+
+
+def generate_fair_crash_round(game_id):
+    """Возвращает (multiplier, seed, seed_hash) для нового раунда.
+    seed_hash нужно сохранить и показать/зафиксировать ДО начала полёта,
+    seed — раскрыть ПОСЛЕ краша, чтобы раунд можно было проверить."""
+    seed = secrets.token_hex(32)
+    seed_hash = hashlib.sha256(seed.encode()).hexdigest()
+    multiplier = _crash_multiplier_from_seed(seed, game_id)
+    return multiplier, seed, seed_hash
 
 
 def generate_extreme_crash_multiplier():
-    """Генерация множителя — сбалансированная и честная."""
-    # Мягкий анти-стрик
-    _recent_max = _get_recent_max()
-    if _recent_max >= 10.0:
-        return round(random.uniform(1.5, 4.0), 2)
-    if _recent_max >= 6.0:
-        return round(random.uniform(1.8, 7.0), 2)
-
-    r = random.random()
-
-    # Основная масса: 1.5-3x
-    if r < 0.25:
-        return round(1.2 + random.random() * 0.8, 2)   # 1.2-2.0
-    elif r < 0.50:
-        return round(2.0 + random.random() * 1.5, 2)   # 2.0-3.5
-    elif r < 0.70:
-        return round(3.5 + random.random() * 2.5, 2)   # 3.5-6.0
-    elif r < 0.84:
-        return round(6.0 + random.random() * 4.0, 2)   # 6.0-10.0
-    elif r < 0.93:
-        return round(10.0 + random.random() * 10.0, 2) # 10.0-20.0
-    elif r < 0.98:
-        return round(20.0 + random.random() * 30.0, 2) # 20.0-50.0
-    else:
-        return round(50.0 + random.random() * 50.0, 2) # 50.0-100.0
+    """Совместимость со старыми вызовами: честная генерация без seed-пруфа.
+    Новый код должен использовать generate_fair_crash_round(game_id)."""
+    multiplier, _seed, _seed_hash = generate_fair_crash_round(random.randint(1, 1 << 30))
+    return multiplier
 
 
 
@@ -5200,6 +4846,7 @@ def start_ultimate_crash_loop():
         live_status = 'waiting'
         live_target = 5.0
         live_is_bonus = False
+        live_seed = ''
         live_flying_started_at = 0.0
         tick_counter = 0
 
@@ -5224,18 +4871,27 @@ def start_ultimate_crash_loop():
                 except: pass
             loop_conn = None
 
-        def do_crash(conn, cursor, gid, crash_mult, tgt_mult, is_bonus):
-            """Гарантированный краш + запись в БД. ВСЕГДА завершает раунд."""
+        def do_crash(conn, cursor, gid, crash_mult, tgt_mult, is_bonus, reveal_seed=None):
+            """Гарантированный краш + запись в БД. ВСЕГДА завершает раунд.
+            reveal_seed, если передан, публикует seed раунда, чтобы любой
+            игрок мог пересчитать честность результата (sha256(seed) == seed_hash,
+            сохранённый в БД ещё до старта полёта)."""
             nonlocal live_status, live_mult, live_flying_started_at
             crash_mult = round(float(crash_mult), 2)
 
             try:
                 if USE_POSTGRES:
                     cursor.execute('SET LOCAL statement_timeout = 3000')
-                cursor.execute(
-                    "UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ? WHERE id = ?",
-                    (crash_mult, gid)
-                )
+                if reveal_seed:
+                    cursor.execute(
+                        "UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ?, seed = ? WHERE id = ?",
+                        (crash_mult, reveal_seed, gid)
+                    )
+                else:
+                    cursor.execute(
+                        "UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ? WHERE id = ?",
+                        (crash_mult, gid)
+                    )
                 try:
                     cursor.execute(
                         'INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at, is_bonus) VALUES (?, ?, CURRENT_TIMESTAMP, ?)',
@@ -5262,11 +4918,6 @@ def start_ultimate_crash_loop():
                             WHERE game_id = ? AND status = 'lost' AND user_id = users.id
                         ) WHERE id IN (SELECT user_id FROM ultimate_crash_bets WHERE game_id = ? AND status = 'lost')
                     """, (gid, gid))
-                except Exception:
-                    pass
-
-                try:
-                    _crash_bots_on_crash(gid)
                 except Exception:
                     pass
 
@@ -5311,21 +4962,18 @@ def start_ultimate_crash_loop():
                     # ЗАЩИТА: flying > 90 сек
                     if live_flying_started_at > 0 and (now - live_flying_started_at) > FLYING_TIMEOUT_SEC:
                         logger.warning(f"⏰ Flying timeout {FLYING_TIMEOUT_SEC}s, forcing crash at {live_mult:.2f}x")
-                        do_crash(conn, cursor, live_game_id, live_mult, live_target, live_is_bonus)
+                        do_crash(conn, cursor, live_game_id, live_mult, live_target, live_is_bonus, reveal_seed=live_seed)
                         time.sleep(0.5)
                         continue
 
-                    # Admin-force-crash
-                    admin_ctrl = get_admin_crash_control()
-                    if admin_ctrl.get('force_crash'):
-                        set_admin_crash_control('force_crash', False)
-                        do_crash(conn, cursor, live_game_id, live_mult, live_target, live_is_bonus)
-                        time.sleep(0.5)
-                        continue
+                    # Ручное вмешательство админа в исход раунда ОТКЛЮЧЕНО:
+                    # раунд обязан долетать до заранее зафиксированного (и
+                    # проверяемого через seed_hash) target_multiplier, без
+                    # исключений — иначе вся honesty-гарантия теряет смысл.
 
                     # ★ ГЛАВНАЯ ПРОВЕРКА: достигли цели?
                     if live_mult >= live_target:
-                        do_crash(conn, cursor, live_game_id, live_target, live_target, live_is_bonus)
+                        do_crash(conn, cursor, live_game_id, live_target, live_target, live_is_bonus, reveal_seed=live_seed)
                         time.sleep(0.5)
                         continue
 
@@ -5356,7 +5004,7 @@ def start_ultimate_crash_loop():
 
                     # ★ ПРОВЕРКА СРАЗУ ПОСЛЕ ИНКРЕМЕНТА
                     if live_mult >= live_target:
-                        do_crash(conn, cursor, live_game_id, live_target, live_target, live_is_bonus)
+                        do_crash(conn, cursor, live_game_id, live_target, live_target, live_is_bonus, reveal_seed=live_seed)
                         time.sleep(0.5)
                         continue
 
@@ -5500,18 +5148,13 @@ def start_ultimate_crash_loop():
                     # Короткая пауза для анимации CRASH, затем сразу новый отсчёт 5→1.
                     time.sleep(1.6)
 
-                    target_multiplier = min(float(generate_extreme_crash_multiplier()), 30.0)
-
-                    admin_ctrl = get_admin_crash_control()
-                    if admin_ctrl.get('next_multiplier'):
-                        target_multiplier = float(admin_ctrl['next_multiplier'])
-                        set_admin_crash_control('next_multiplier', None)
-                        logger.info(f"🎮 ADMIN multiplier: {target_multiplier}x")
-                    elif admin_ctrl.get('use_custom_range'):
-                        min_m = admin_ctrl.get('min_multiplier', 1.0)
-                        max_m = admin_ctrl.get('max_multiplier', 50.0)
-                        target_multiplier = round(random.uniform(min_m, max_m), 2)
-                        logger.info(f"🎮 ADMIN range: {target_multiplier}x")
+                    # Честная генерация: seed создаётся сейчас, его хэш фиксируется
+                    # в БД ДО начала полёта, а сам seed раскрывается только после
+                    # краша (см. do_crash). Никакого ручного вмешательства админа
+                    # в множитель больше нет — раунд нельзя подкрутить.
+                    _round_nonce = secrets.token_hex(16)
+                    _raw_multiplier, _round_seed, _round_seed_hash = generate_fair_crash_round(_round_nonce)
+                    target_multiplier = min(float(_raw_multiplier), 30.0)
 
                     is_bonus = random.random() < 0.005
                     if is_bonus:
@@ -5524,10 +5167,10 @@ def start_ultimate_crash_loop():
                     if USE_POSTGRES:
                         try:
                             cursor.execute("""
-                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus)
-                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?)
+                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, seed_hash)
+                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
                                 RETURNING id
-                            """, (target_multiplier, bool(is_bonus)))
+                            """, (target_multiplier, bool(is_bonus), _round_seed_hash))
                             _row = cursor.fetchone()
                             new_game_id = int(_row[0]) if _row else 0
                         except Exception:
@@ -5546,9 +5189,9 @@ def start_ultimate_crash_loop():
                     else:
                         try:
                             cursor.execute("""
-                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus)
-                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?)
-                            """, (target_multiplier, bool(is_bonus)))
+                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, seed_hash)
+                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
+                            """, (target_multiplier, bool(is_bonus), _round_seed_hash))
                         except Exception:
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
@@ -5567,6 +5210,7 @@ def start_ultimate_crash_loop():
                     live_mult = 1.0
                     live_target = target_multiplier
                     live_is_bonus = is_bonus
+                    live_seed = _round_seed
                     live_flying_started_at = 0.0
                     update_crash_cache(new_game_id, 'counting', 1.0, target_multiplier, 5.0, is_bonus=is_bonus)
 
@@ -14057,14 +13701,8 @@ def get_recent_ultimate_crash_bets():
         current_game_status = current_game[1] if current_game else None
         current_game_mult = float(current_game[2]) if current_game and current_game[2] else 1.0
 
-        # Self-heal: если боты не сгенерированы для активного раунда, создаём их on-demand
-        if current_game_id and current_game_status in ('waiting', 'counting', 'flying'):
-            if not _crash_bots_cache.get('loaded'):
-                _load_crash_bots()
-            if _crash_bots_cache.get('enabled') and current_game_id not in _crash_bots_active:
-                cursor.execute('SELECT COUNT(*) FROM ultimate_crash_bets WHERE game_id = ?', (current_game_id,))
-                real_count = cursor.fetchone()[0] or 0
-                _generate_bot_bets(current_game_id, real_count)
+        # Боты полностью отключены: список ставок показывает только реальных
+        # игроков, без имитации фейковой активности.
 
         try:
             cursor.execute('''
@@ -14146,10 +13784,6 @@ def get_recent_ultimate_crash_bets():
                 'potential_win': int((bet[2] or 0) * current_game_mult) if bet[3] == 'active' else int(bet[5] or 0)
             })
 
-        # Bots disabled — skip fallback and bot bets
-        # bot_bets = _get_bot_bets_for_api(current_game_id)
-        # bets_list.extend(bot_bets)
-
         return jsonify({
             'success': True,
             'bets': bets_list
@@ -14184,340 +13818,77 @@ def admin_crash_status():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# Ручное управление исходом раунда ОТКЛЮЧЕНО НАВСЕГДА: раньше отсюда можно
+# было принудительно обрушить раунд, задать множитель следующего раунда,
+# задать произвольный диапазон или на лету поменять целевой RTP — то есть
+# полностью управлять тем, кто выигрывает, а кто нет. Теперь единственный
+# параметр честности — фиксированный CRASH_HOUSE_EDGE в коде (3%), и он
+# одинаков для всех раундов и всех игроков.
+
+def _crash_manual_control_disabled_response():
+    return jsonify({
+        'success': False,
+        'error': 'Ручное управление исходом crash-раундов отключено навсегда: результат определяется только честным seed-алгоритмом.'
+    })
+
 @app.route('/api/admin/crash/force-crash', methods=['POST'])
 def admin_force_crash():
-    """Force crash the current game"""
-    try:
-        data = request.get_json()
-        admin_id = data.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-        
-        game_cache = get_crash_cache()
-        if game_cache.get('status') != 'flying':
-            return jsonify({'success': False, 'error': 'Игра не в полёте'})
-        
-        set_admin_crash_control('force_crash', True)
-        logger.info(f"🎮 ADMIN {admin_id} triggered force crash")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Краш активирован!',
-            'current_multiplier': game_cache.get('current_multiplier')
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+    return _crash_manual_control_disabled_response()
 
 @app.route('/api/admin/crash/set-next', methods=['POST'])
 def admin_set_next_multiplier():
-    """Set multiplier for the next game"""
-    try:
-        data = request.get_json()
-        admin_id = data.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-        
-        multiplier = data.get('multiplier')
-        if not multiplier or float(multiplier) < 1.01:
-            return jsonify({'success': False, 'error': 'Множитель должен быть >= 1.01'})
-        
-        set_admin_crash_control('next_multiplier', float(multiplier))
-        logger.info(f"🎮 ADMIN {admin_id} set next multiplier: {multiplier}x")
-        
-        return jsonify({
-            'success': True,
-            'message': f'Следующий краш будет на {multiplier}x'
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+    return _crash_manual_control_disabled_response()
 
 @app.route('/api/admin/crash/set-range', methods=['POST'])
 def admin_set_multiplier_range():
-    """Set custom multiplier range"""
-    try:
-        data = request.get_json()
-        admin_id = data.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-        
-        min_mult = float(data.get('min', 1.0))
-        max_mult = float(data.get('max', 50.0))
-        enabled = data.get('enabled', True)
-        
-        if min_mult < 1.01:
-            min_mult = 1.01
-        if max_mult < min_mult:
-            max_mult = min_mult + 1
-        
-        global _admin_crash_control
-        with _admin_control_lock:
-            _admin_crash_control['multiplier_min'] = min_mult
-            _admin_crash_control['multiplier_max'] = max_mult
-            _admin_crash_control['use_custom_range'] = enabled
-        
-        logger.info(f"🎮 ADMIN {admin_id} set range: {min_mult}x - {max_mult}x (enabled: {enabled})")
-        
-        return jsonify({
-            'success': True,
-            'message': f'Диапазон {min_mult}x - {max_mult}x ({"ВКЛ" if enabled else "ВЫКЛ"})'
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+    return _crash_manual_control_disabled_response()
 
 @app.route('/api/admin/crash/set-rtp', methods=['POST'])
 def admin_set_rtp():
-    """Set target RTP percentage"""
-    try:
-        data = request.get_json()
-        admin_id = data.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-        
-        rtp_val = float(data.get('rtp', 85))
-        if rtp_val < 1 or rtp_val > 100:
-            return jsonify({'success': False, 'error': 'RTP должен быть от 1 до 100'})
-        
-        global TARGET_RTP
-        TARGET_RTP = rtp_val / 100.0
-        _crash_rtp_cache['ts'] = 0  # reset cache so next fetch picks up new target
-        
-        logger.info(f"🎮 ADMIN {admin_id} set TARGET_RTP: {rtp_val}%")
-        
-        return jsonify({
-            'success': True,
-            'message': f'RTP установлен: {rtp_val}%'
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+    return _crash_manual_control_disabled_response()
 
 @app.route('/api/admin/crash/toggle-manual', methods=['POST'])
 def admin_toggle_manual():
-    """Toggle manual control mode"""
-    try:
-        data = request.get_json()
-        admin_id = data.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-        
-        admin_ctrl = get_admin_crash_control()
-        new_state = not admin_ctrl.get('manual_mode', False)
-        set_admin_crash_control('manual_mode', new_state)
-        
-        logger.info(f"🎮 ADMIN {admin_id} manual mode: {new_state}")
-        
-        return jsonify({
-            'success': True,
-            'manual_mode': new_state,
-            'message': f'Ручной режим {"ВКЛ" if new_state else "ВЫКЛ"}'
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
+    return _crash_manual_control_disabled_response()
 
 # ─── CRASH BOTS ADMIN API ───
+# Боты полностью и окончательно отключены: они создавали фиктивные ставки
+# и фиктивные кэшауты, чтобы выдать раунд за оживлённую игру с реальными
+# людьми. Эндпоинты ниже больше не могут ни создавать, ни включать ботов —
+# они оставлены только для того, чтобы старая админ-панель не падала на
+# 404, и всегда отвечают, что функциональность отключена.
+
+def _crash_bots_disabled_response():
+    return jsonify({
+        'success': False,
+        'error': 'Боты в crash-игре отключены навсегда: ставки показывают только реальных игроков.',
+        'enabled': False,
+        'bots': [],
+    })
 
 @app.route('/api/admin/crash-bots/settings', methods=['GET', 'POST'])
 def api_admin_crash_bots_settings():
-    """Get or update crash bots global settings"""
-    try:
-        admin_id = request.args.get('admin_id') or (request.get_json() or {}).get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-
-        if request.method == 'GET':
-            return jsonify({
-                'success': True,
-                'enabled': _crash_bots_cache.get('enabled', False),
-                'settings': _crash_bots_cache.get('settings', {}),
-                'bots': _crash_bots_cache.get('bots', []),
-                'active_game_bots': {str(k): len(v) for k, v in _crash_bots_active.items()},
-            })
-
-        # POST — update settings
-        data = request.get_json()
-        enabled = data.get('enabled')
-        min_bots = data.get('min_active_bots')
-        max_bots = data.get('max_active_bots')
-        threshold = data.get('min_real_players_threshold')
-
-        conn = get_db_connection()
-        # Ensure booleans are passed as Python bools (None if not provided)
-        enabled_val = None
-        if enabled is not None:
-            enabled_val = bool(enabled)
-        conn.execute('''INSERT INTO crash_bots_settings (id, enabled, min_active_bots, max_active_bots, min_real_players_threshold, updated_at)
-            VALUES (1, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(id) DO UPDATE SET
-                enabled = COALESCE(excluded.enabled, enabled),
-                min_active_bots = COALESCE(excluded.min_active_bots, min_active_bots),
-                max_active_bots = COALESCE(excluded.max_active_bots, max_active_bots),
-                min_real_players_threshold = COALESCE(excluded.min_real_players_threshold, min_real_players_threshold),
-                updated_at = CURRENT_TIMESTAMP
-        ''', (
-            enabled_val,
-            min_bots, max_bots, threshold
-        ))
-        conn.commit()
-        conn.close()
-        _load_crash_bots()
-        return jsonify({'success': True, 'message': 'Настройки ботов обновлены'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
+    return _crash_bots_disabled_response()
 
 @app.route('/api/admin/crash-bots/list', methods=['GET'])
 def api_admin_crash_bots_list():
-    """List all crash bots"""
-    try:
-        admin_id = request.args.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-        return jsonify({
-            'success': True,
-            'bots': _crash_bots_cache.get('bots', []),
-            'enabled': _crash_bots_cache.get('enabled', False),
-            'settings': _crash_bots_cache.get('settings', {}),
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
+    return _crash_bots_disabled_response()
 
 @app.route('/api/admin/crash-bots/add', methods=['POST'])
 def api_admin_crash_bots_add():
-    """Add a new crash bot"""
-    try:
-        data = request.get_json()
-        admin_id = data.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-
-        bot_name = data.get('bot_name', '').strip()
-        if not bot_name:
-            # Generate random name
-            if random.random() < 0.5:
-                bot_name = random.choice(_BOT_NAMES_RU)
-            else:
-                bot_name = random.choice(_BOT_NAMES_EN)
-
-        avatar_url = data.get('avatar_url', '').strip()
-        if not avatar_url:
-            avatar_url = random.choice(_BOT_AVATARS)
-
-        min_bet = int(data.get('min_bet', 25))
-        max_bet = int(data.get('max_bet', 500))
-        cashout_min = float(data.get('auto_cashout_min', 1.2))
-        cashout_max = float(data.get('auto_cashout_max', 5.0))
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('''INSERT INTO crash_bots_config (bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?)''',
-            (bot_name, avatar_url, min_bet, max_bet, cashout_min, cashout_max, True))
-        bot_id = cursor.lastrowid
-        conn.commit()
-        conn.close()
-        _load_crash_bots()
-        return jsonify({'success': True, 'bot_id': bot_id, 'message': f'Бот "{bot_name}" добавлен'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
+    return _crash_bots_disabled_response()
 
 @app.route('/api/admin/crash-bots/update', methods=['POST'])
 def api_admin_crash_bots_update():
-    """Update an existing crash bot"""
-    try:
-        data = request.get_json()
-        admin_id = data.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-
-        bot_id = data.get('bot_id')
-        if not bot_id:
-            return jsonify({'success': False, 'error': 'bot_id required'})
-
-        conn = get_db_connection()
-        updates = []
-        params = []
-        for field, col in [('bot_name','bot_name'), ('avatar_url','avatar_url'),
-                           ('min_bet','min_bet'), ('max_bet','max_bet'),
-                           ('auto_cashout_min','auto_cashout_min'), ('auto_cashout_max','auto_cashout_max'),
-                           ('is_active','is_active')]:
-            if field in data:
-                updates.append(f'{col} = ?')
-                # Ensure booleans are passed as Python bools for Postgres
-                if field == 'is_active':
-                    params.append(True if data[field] else False)
-                else:
-                    params.append(data[field])
-        if updates:
-            params.append(bot_id)
-            conn.execute(f'UPDATE crash_bots_config SET {", ".join(updates)} WHERE id = ?', params)
-            conn.commit()
-        conn.close()
-        _load_crash_bots()
-        return jsonify({'success': True, 'message': 'Бот обновлён'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
+    return _crash_bots_disabled_response()
 
 @app.route('/api/admin/crash-bots/delete', methods=['POST'])
 def api_admin_crash_bots_delete():
-    """Delete a crash bot"""
-    try:
-        data = request.get_json()
-        admin_id = data.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-        bot_id = data.get('bot_id')
-        conn = get_db_connection()
-        conn.execute('DELETE FROM crash_bots_config WHERE id = ?', (bot_id,))
-        conn.commit()
-        conn.close()
-        _load_crash_bots()
-        return jsonify({'success': True, 'message': 'Бот удалён'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
+    return _crash_bots_disabled_response()
 
 @app.route('/api/admin/crash-bots/generate', methods=['POST'])
 def api_admin_crash_bots_generate():
-    """Generate multiple bots at once"""
-    try:
-        data = request.get_json()
-        admin_id = data.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-
-        count = min(int(data.get('count', 100)), 200)
-        min_bet = int(data.get('min_bet', 25))
-        max_bet = int(data.get('max_bet', 500))
-        cashout_min = float(data.get('auto_cashout_min', 1.2))
-        cashout_max = float(data.get('auto_cashout_max', 5.0))
-
-        conn = get_db_connection()
-        used_names = set()
-        all_names = _BOT_NAMES_RU + _BOT_NAMES_EN
-        random.shuffle(all_names)
-        created = 0
-        for i in range(count):
-            if i < len(all_names):
-                name = all_names[i]
-            else:
-                name = random.choice(_BOT_NAMES_EN) + str(random.randint(10, 99))
-            if name in used_names:
-                name = name + str(random.randint(1, 9))
-            used_names.add(name)
-            avatar = _BOT_AVATARS[i % len(_BOT_AVATARS)]
-            conn.execute('''INSERT INTO crash_bots_config (bot_name, avatar_url, min_bet, max_bet, auto_cashout_min, auto_cashout_max, is_active)
-                VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                (name, avatar, min_bet, max_bet, cashout_min, cashout_max, True))
-            created += 1
-        conn.commit()
-        conn.close()
-        _load_crash_bots()
-        return jsonify({'success': True, 'created': created, 'message': f'Создано {created} ботов'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+    return _crash_bots_disabled_response()
 
 
 @app.route('/api/admin/users', methods=['GET'])
@@ -24657,39 +24028,9 @@ def api_leaderboard():
                 'is_bot': False
             })
 
-        # Include currently active crash bots in leaderboard if they are betting
-        bot_totals = {}
-        for game_bots in _crash_bots_active.values():
-            for bot in game_bots or []:
-                bot_key = int(bot.get('bot_id') or 0)
-                if bot_key <= 0:
-                    continue
-                if bot_key not in bot_totals:
-                    bot_totals[bot_key] = {
-                        'bot_id': bot_key,
-                        'first_name': bot.get('name') or f'Bot_{bot_key}',
-                        'photo_url': bot.get('avatar') or '/static/img/default_avatar.png',
-                        'turnover': 0
-                    }
-                bot_totals[bot_key]['turnover'] += int(bot.get('bet_amount') or 0)
-
-        for bot_data in bot_totals.values():
-            if bot_data['turnover'] <= 0:
-                continue
-            raw_name = str(bot_data['first_name'] or '').strip()
-            safe_name = ''.join(ch for ch in raw_name if ch.isalnum())
-            if len(safe_name) < 3:
-                safe_name = f"player{bot_data['bot_id']}"
-            bot_username = f"{safe_name.lower()}{(bot_data['bot_id'] % 97) + 1}"
-            combined_entries.append({
-                'user_id': -bot_data['bot_id'],
-                'first_name': bot_data['first_name'],
-                'username': bot_username,
-                'photo_url': bot_data['photo_url'],
-                'turnover': bot_data['turnover'],
-                'is_bot': True
-            })
-
+        # Боты убраны из лидерборда навсегда: раньше сюда подмешивались
+        # фиктивные записи ботов, чтобы таблица лидеров выглядела активнее.
+        # Теперь только реальные пользователи.
         combined_entries.sort(key=lambda item: item.get('turnover', 0), reverse=True)
         
         # If no entries in current period, fallback to all-time volume
