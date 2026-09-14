@@ -457,8 +457,11 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
 .simple-win-card{display:flex;flex-direction:column;align-items:center;padding:6px 4px 2px;text-align:center}
 .simple-win-title{font-size:12px;font-weight:900;letter-spacing:.18em;color:rgba(255,255,255,.55);margin-bottom:6px}
 .simple-win-multiplier{font-size:34px;font-weight:950;color:#fff;line-height:1;margin-bottom:14px;text-shadow:0 0 24px rgba(255,255,255,.16)}
-.simple-win-gift{width:132px;height:132px;border-radius:28px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 32px rgba(0,0,0,.35);margin-bottom:12px;overflow:hidden}
+.simple-win-gift{width:132px;height:132px;border-radius:28px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 32px rgba(0,0,0,.35);margin-bottom:12px;overflow:hidden;transition:background .3s ease,border-color .3s ease,box-shadow .3s ease}
 .simple-win-gift img{width:100%;height:100%;object-fit:contain;padding:12px;display:block}
+.simple-win-gift.currency-mode{background:radial-gradient(circle,rgba(59,130,246,.22) 0%,rgba(255,255,255,.03) 72%);border-color:rgba(59,130,246,.4);box-shadow:0 12px 34px rgba(59,130,246,.3),0 0 0 1px rgba(59,130,246,.12);animation:currencyGlow 2.4s ease-in-out infinite alternate}
+.simple-win-gift.currency-mode img{padding:30px;filter:drop-shadow(0 0 16px rgba(120,180,255,.55))}
+@keyframes currencyGlow{0%{box-shadow:0 12px 34px rgba(59,130,246,.22),0 0 0 1px rgba(59,130,246,.1)}100%{box-shadow:0 14px 42px rgba(59,130,246,.42),0 0 0 1px rgba(59,130,246,.22)}}
 .simple-win-name{font-size:18px;font-weight:900;color:#fff;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .simple-win-value{font-size:12px;font-weight:700;color:rgba(255,255,255,.48);margin-top:6px}
 .simple-win-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;margin-top:18px}
@@ -581,6 +584,7 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
 .simple-win-title{font-size:13px;letter-spacing:.16em;color:rgba(255,255,255,.62);margin-bottom:12px}
 .simple-win-gift{width:148px;height:148px;border-radius:30px;margin-bottom:12px;box-shadow:0 16px 40px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.05)}
 .simple-win-gift img{padding:9px;animation:giftWinIn .6s cubic-bezier(.16,1,.3,1) both}
+.simple-win-gift.currency-mode img{padding:34px}
 @keyframes giftWinIn{0%{opacity:0;transform:scale(.65) rotate(-5deg)}60%{opacity:1;transform:scale(1.05) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
 .simple-win-name{font-size:20px;line-height:1.12}
 .simple-win-value{font-size:13px;color:rgba(255,255,255,.58)}
@@ -719,7 +723,7 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
         </div>
         <div class="top-right-btns">
             <div class="bal-pill-crash">
-                <img src="/static/img/gram.png" width="16" height="16" alt="GRAM" onerror="this.onerror=null;this.src='/static/img/ton.png'">
+                <img src="/static/img/ton.png" width="16" height="16" alt="TON" onerror="this.onerror=null;this.src='/static/img/gram.png'">
                 <span id="balVal">0.00</span>
             </div>
             <button class="bal-plus-crash" onclick="openDepositSelector()">+</button>
@@ -765,7 +769,7 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
         <div class="modal-handle"></div>
         <div class="modal-title">Place bet</div>
         <div class="modal-tabs">
-            <button class="modal-tab active" id="tabStars" onclick="switchTab('stars')"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'"> GRAM</button>
+            <button class="modal-tab active" id="tabStars" onclick="switchTab('stars')"><img src="/static/img/ton.png" onerror="this.onerror=null;this.src='/static/img/gram.png'"> GRAM</button>
             <button class="modal-tab" id="tabInv" onclick="switchTab('inv')"><img src="/static/img/gift.png"> Инвентарь</button>
         </div>
         <div id="starsSec">
@@ -825,7 +829,7 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
             <button class="deposit-close" onclick="closeDepositSelector()">×</button>
         </div>
         <div class="deposit-methods">
-            <button class="deposit-method-btn" onclick="closeDepositSelector();showToast('Скоро','ok')"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src='/static/img/ton.png'" alt="GRAM"><span>GRAM</span></button>
+            <button class="deposit-method-btn" onclick="closeDepositSelector();showToast('Скоро','ok')"><img src="/static/img/ton.png" onerror="this.onerror=null;this.src='/static/img/gram.png'" alt="GRAM"><span>GRAM</span></button>
             <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDepositSelector();openStarsDeposit()"><img src="/static/img/star.png" alt="Stars"><span>Stars</span></button>
         </div>
     </div>
@@ -1276,7 +1280,7 @@ function _setBetPayout(el, betType, potentialStars){
 
     // Иконка выплаты всегда соответствует реальной валюте ставки —
     // без случайной подмены на посторонние подарки.
-    var src = betType === 'gift' ? (img.getAttribute('data-gift-src') || img.src) : '/static/img/gram.png';
+    var src = betType === 'gift' ? (img.getAttribute('data-gift-src') || img.src) : '/static/img/ton.png';
     var valueText = '+' + formatCrashMoney(potentialStars);
     var key = betType + '|' + valueText;
     if(el.dataset.payoutKey === key) return;
@@ -2238,7 +2242,7 @@ async function loadInventoryForBet(){
                 +   '<img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'" loading="lazy" alt="">'
                 + '</div>'
                 + '<div class="inv-name">' + escapeHtmlCrash(i.gift_name || '') + '</div>'
-                + '<div class="inv-val"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + tonVal + '</div>'
+                + '<div class="inv-val"><img src="/static/img/ton.png" onerror="this.onerror=null;this.src=\'/static/img/gram.png\'">' + tonVal + '</div>'
                 + '</div>';
         }).join('');
     }catch(e){}
@@ -2481,18 +2485,18 @@ function showWinSheet(mult, winAmount, serverGifts, giftData){
     var betTon = starsToTon(betStars);
     var winTon = starsToTon(winAmount);
 
-    // Always prefer the NEW awarded gift. For gift-bets the staked gift must NOT be shown as the reward.
-    var gift = null;
-    if(serverGifts && serverGifts.length) gift = serverGifts[0];
-    if(!gift && giftData && giftData.length) gift = giftData[0];
-    if(!gift){
-        var achievable = getAchievableGift(winAmount);
-        if(achievable) gift = {name: achievable.name, image: getGiftImage(achievable), value: achievable.value};
-    }
+    // Показываем ТОЛЬКО реально выданный подарок с сервера. Если сервер
+    // не вернул подарок — это выигрыш в TON, и мы честно показываем TON,
+    // а не «примерный» подарок из каталога.
+    var gift = (serverGifts && serverGifts.length) ? serverGifts[0] : null;
+    var isCurrencyWin = !gift;
 
-    var image = gift && (gift.image || gift.gift_image) ? (gift.image || gift.gift_image) : '/static/img/gift.png';
-    var name = gift && (gift.name || gift.gift_name) ? (gift.name || gift.gift_name) : 'Выигрыш';
-    var giftValueStars = gift && gift.value ? Number(gift.value) : Number(winAmount || 0);
+    var image = isCurrencyWin
+        ? '/static/img/ton.png'
+        : ((gift.image || gift.gift_image) || '/static/img/gift.png');
+    var imageFallback = isCurrencyWin ? '/static/img/gram.png' : '/static/img/gift.png';
+    var name = isCurrencyWin ? 'TON' : (gift.name || gift.gift_name || 'Выигрыш');
+    var giftValueStars = isCurrencyWin ? Number(winAmount || 0) : (gift.value ? Number(gift.value) : Number(winAmount || 0));
     var stakeGift = (giftData && giftData.length) ? giftData[0] : null;
     var stakeLabel = stakeGift
         ? ((stakeGift.name || stakeGift.gift_name || 'Подарок') + ' • ' + formatCrashMoney(stakeGift.value || betStars))
@@ -2506,8 +2510,8 @@ function showWinSheet(mult, winAmount, serverGifts, giftData){
     content.innerHTML = ''
         + '<div class="simple-win-card">'
         +   '<div class="simple-win-title">ВЫИГРЫШ</div>'
-        +   '<div class="simple-win-gift">'
-        +     '<img src="' + image + '" alt="" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
+        +   '<div class="simple-win-gift' + (isCurrencyWin ? ' currency-mode' : '') + '">'
+        +     '<img src="' + image + '" alt="" onerror="this.onerror=null;this.src=\'' + imageFallback + '\'">'
         +   '</div>'
         +   '<div class="simple-win-name">' + escapeHtmlCrash(name) + '</div>'
         +   '<div class="simple-win-value">' + formatCrashMoney(giftValueStars) + '</div>'
@@ -2558,7 +2562,7 @@ async function loadBets(){
           // Валюта ставки: если ставка сделана подарком — показываем PNG подарка,
           // если ставка в граммах — ВСЕГДА показываем PNG грамма (без подмен).
           var giftBet=b.bet_type==='gift';
-          var betImg=giftBet?((b.gift_images&&b.gift_images[0])||b.gift_image||'/static/img/gift.png'):'/static/img/gram.png';
+          var betImg=giftBet?((b.gift_images&&b.gift_images[0])||b.gift_image||'/static/img/gift.png'):'/static/img/ton.png';
           var betAmt=formatCrashMoney(b.bet_amount);
           var coeffHtml, cls='active';
           if(b.status==='cashed_out'){
@@ -2576,7 +2580,7 @@ async function loadBets(){
           var payoutImg, payoutText, payoutClass='bet-payout';
           if(b.status==='cashed_out'){
               var wonGift=giftBet && b.win_gifts && b.win_gifts[0];
-              payoutImg=wonGift?(b.win_gifts[0].image||betImg):'/static/img/gram.png';
+              payoutImg=wonGift?(b.win_gifts[0].image||betImg):'/static/img/ton.png';
               payoutText=formatCrashMoney(b.win_amount||0);
               if(wonGift) payoutClass+=' has-gift';
           } else if(b.status==='lost'){
@@ -2593,8 +2597,8 @@ async function loadBets(){
           var fixed=b.status==='cashed_out'?' bet-fixed':'';
           return '<div class="bet-row '+cls+fixed+'" data-bet-id="'+(b.id||'')+'" data-bet-amount="'+(Number(b.bet_amount)||0)+'" data-bet-type="'+(giftBet?'gift':'gram')+'">'+
             '<div class="bet-left"><div class="bet-avatar">'+avatar+'</div><div class="bet-info">'+
-              '<div class="bet-name">'+name+'</div><div class="bet-amt"><img class="bet-gift-preview" src="'+betImg+'" onerror="this.onerror=null;this.src=\''+(giftBet?'/static/img/gift.png':'/static/img/gram.png')+'\'"><span class="bet-amount-text">'+betAmt+'</span></div>'+
-            '</div></div><div class="bet-right-stack">'+coeffHtml+'<div class="'+payoutClass+'"><img src="'+payoutImg+'" onerror="this.onerror=null;this.src=\''+(giftBet?'/static/img/gift.png':'/static/img/gram.png')+'\'" alt=""><span>'+payoutText+'</span></div></div></div>';
+              '<div class="bet-name">'+name+'</div><div class="bet-amt"><img class="bet-gift-preview" src="'+betImg+'" onerror="this.onerror=null;this.src=\''+(giftBet?'/static/img/gift.png':'/static/img/ton.png')+'\'"><span class="bet-amount-text">'+betAmt+'</span></div>'+
+            '</div></div><div class="bet-right-stack">'+coeffHtml+'<div class="'+payoutClass+'"><img src="'+payoutImg+'" onerror="this.onerror=null;this.src=\''+(giftBet?'/static/img/gift.png':'/static/img/ton.png')+'\'" alt=""><span>'+payoutText+'</span></div></div></div>';
         }).join('');
         updateBetGiftTicker(true);
     }catch(e){}finally{_betsFetching=false;}
@@ -2743,7 +2747,7 @@ function renderAutoWithdrawGifts(){
             + '<div class="autowd-thumb"><img src="' + img + '" onerror="this.src=\'/static/img/gift.png\'"></div>'
             + '<div class="autowd-info"><div class="autowd-name">' + escapeHtmlCrash(g.name || 'Gift') + '</div>'
             + '<div class="autowd-coeff">Коэф: x' + coeff + '</div></div>'
-            + '<div class="autowd-price"><img src="/static/img/gram.png" onerror="this.onerror=null;this.src=\'/static/img/ton.png\'">' + (val / 100).toFixed(2) + '</div>'
+            + '<div class="autowd-price"><img src="/static/img/ton.png" onerror="this.onerror=null;this.src=\'/static/img/gram.png\'">' + (val / 100).toFixed(2) + '</div>'
             + '</div>';
     }).join('');
 }
