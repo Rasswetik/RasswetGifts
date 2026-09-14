@@ -2113,10 +2113,11 @@ def _fetch_fragment_collection_price(slug):
         logger.info('[FRAG-DEBUG] %s candidate#%s counts: gift_href=%s ton=%s tm-grid-item=%s next_data=%s react_root=%s wall=%s',
                     slug, idx, gift_href_count, ton_count, grid_item_count, has_next_data, has_react_root, wall_markers)
         global _frag_debug_card_logged
-        if not _frag_debug_card_logged and grid_item_count > 0 and ton_count == 0:
-            card_m = re.search(r'<(?:a|div)\b[^>]*class="[^"]*tm-grid-item[^"]*"[^>]*>.*?</(?:a|div)>', html, re.IGNORECASE | re.DOTALL)
-            if card_m:
-                logger.warning('[FRAG-DEBUG] RAW CARD MARKUP (one-time dump) for %s: %s', slug, card_m.group(0))
+        if not _frag_debug_card_logged and grid_item_count > 0:
+            open_m = re.search(r'<a\b[^>]*class="[^"]*tm-grid-item[^"]*"[^>]*>', html, re.IGNORECASE)
+            if open_m:
+                chunk = re.sub(r'\s+', ' ', html[open_m.start():open_m.start() + 2500])
+                logger.warning('[FRAG-DEBUG] RAW CARD MARKUP (one-time, fixed window) for %s: %s', slug, chunk)
                 _frag_debug_card_logged = True
         if gift_href_count == 0:
             anchor = low.find('gifts-list') if 'gifts-list' in low else low.find('<body')
