@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -126,7 +126,7 @@
         }
         @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
         .feed-label{
-            font-size:11px;font-weight:700;color:#e53935;
+            font-size:14px;font-weight:900;color:#e53935;
             text-transform:uppercase;flex-shrink:0;
         }
         .feed-scroll{
@@ -190,7 +190,7 @@
         .cases{
             display:grid;
             grid-template-columns:repeat(2,1fr);
-            gap:10px;
+            gap:12px;
         }
 
         .case{
@@ -222,7 +222,8 @@
         .case-inner{
             background:linear-gradient(160deg,#404D66,#2D3344);
             border-radius:14px;
-            padding:6px;
+            padding:8px;
+            min-height:220px;
             height:100%;
             display:flex;flex-direction:column;
             position:relative;
@@ -270,18 +271,18 @@
         }
         .case-price{
             display:flex;align-items:center;gap:4px;
-            font-size:11px;font-weight:700;
+            font-size:14px;font-weight:900;
         }
-        .case-price img{width:11px;height:11px}
+        .case-price img{width:14px;height:14px}
         .case-price.ton{color:var(--blue)}
 
         .case-img{
             flex:1;display:flex;align-items:center;justify-content:center;
-            padding:2px;min-height:100px;
+            padding:4px;min-height:150px;
             position:relative;z-index:1;
         }
         .case-img img{
-            width:100%;max-width:120%;height:auto;
+            width:100%;max-width:150%;height:auto;
             object-fit:contain;
             transition:transform .4s cubic-bezier(.4,0,.2,1),filter .4s cubic-bezier(.4,0,.2,1);
             filter:drop-shadow(0 8px 16px rgba(0,0,0,.5)) brightness(1.1);
@@ -979,12 +980,12 @@
 }
 .case:active .case-img img{transform:scale(.97)}
 .case-meta{
-    order:2;text-align:center;min-height:49px;
+    order:2;text-align:center;min-height:56px;
     display:flex;flex-direction:column;justify-content:center;
     padding:0 3px 8px;
 }
 .case-name{
-    font-size:13px;font-weight:800;line-height:1.2;
+    font-size:16px;font-weight:900;line-height:1.2;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .case-png{
@@ -1090,7 +1091,26 @@
 .content-item-name{font-size:11px!important}
 .content-item img{width:88px!important;height:88px!important}
 
-    </style>
+    .bottom-nav{
+    position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:4000;
+    width:min(calc(100% - 24px),444px);height:66px;padding:6px;
+    background:rgba(25,29,34,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border:1px solid rgba(255,255,255,.055);border-radius:27px;
+    box-shadow:0 12px 36px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.025);
+    display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;
+}
+.bnav-item{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    width:25%;height:54px;border-radius:23px;color:rgba(255,255,255,.42);
+    font-weight:700;cursor:pointer;transition:all .18s;text-decoration:none;
+    background:transparent;border:none;font-family:inherit;box-sizing:border-box;
+}
+.bnav-item svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.bnav-item span{font-size:9px;font-weight:700;line-height:1}
+.bnav-item.active{background:rgba(54,142,238,.18);color:#3E91F4;box-shadow:inset 0 0 0 1px rgba(62,145,244,.08)}
+.bnav-item.active svg{filter:drop-shadow(0 0 6px rgba(62,145,244,.22))}
+.bnav-item:active{transform:scale(.94)}
+</style>
 </head>
 <body>
     <!-- LOADER -->
@@ -1140,24 +1160,24 @@
     </main>
 
     <!-- BOTTOM NAV -->
-    <nav class="bnav">
-        <a class="active" href="/" aria-label="Кейсы">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8.5 12 4l8 4.5v8L12 21l-8-4.5z"/><path d="M4 8.5 12 13l8-4.5"/><path d="M12 13v8"/></svg>
-            <span>Кейсы</span>
-        </a>
-        <a href="/upgrade" aria-label="Апгрейды">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="m6 9 6-6 6 6"/><path d="m6 15 6 6 6-6"/></svg>
-            <span>Апгрейды</span>
-        </a>
-        <a href="/games" aria-label="Игры">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
-            <span>Игры</span>
-        </a>
-        <a href="/inventory" aria-label="Профиль">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>Профиль</span>
-        </a>
-    </nav>
+<nav class="bottom-nav" id="bottomNav">
+    <a class="bnav-item" href="/games">
+        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
+        <span>Игры</span>
+    </a>
+    <a class="bnav-item" href="/crash">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        <span>Краш</span>
+    </a>
+    <a class="bnav-item" href="/leaderboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
+        <span>Лидеры</span>
+    </a>
+    <a class="bnav-item active" href="/inventory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Профиль</span>
+    </a>
+</nav>
 
     <!-- CASE MODAL -->
     <div class="modal-overlay" id="caseModal">
@@ -1166,7 +1186,7 @@
                 <div class="modal-handle"></div>
                 
                 <div class="modal-hdr">
-                    <button class="modal-back" onclick="closeModal()" aria-label="Назад">
+                    <button class="modal-back" onclick="window.location.href='/cases'" aria-label="Назад">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                     </button>
                     <div class="modal-name" id="modalName">Кейс</div>
@@ -1462,6 +1482,7 @@
         }
         let selectedQty = 1;
 
+        const INITIAL_CASE_ID = {{ initial_case_id|default(None)|tojson }};
         document.addEventListener('DOMContentLoaded', init);
 
         async function init() {
@@ -1504,17 +1525,17 @@
                 bar.style.width = progress + '%';
             }, 100);
 
-            try {
-                await Promise.all([loadCases(), loadUser(), loadFeed()]);
-                progress = 100;
-                bar.style.width = '100%';
-                clearInterval(interval);
-                setTimeout(() => $('loader').classList.add('hide'), 300);
-            } catch (e) {
-                console.error('Init error:', e);
-                clearInterval(interval);
-                bar.style.width = '100%';
-                setTimeout(() => $('loader').classList.add('hide'), 300);
+            // Never block first paint on user/feed/API calls.
+            loadCases().catch(console.error);
+            loadUser().catch(console.error);
+            loadFeed().catch(console.error);
+            progress = 100;
+            bar.style.width = '100%';
+            clearInterval(interval);
+            $('loader').classList.add('hide');
+
+            if (INITIAL_CASE_ID) {
+                openCaseModal(INITIAL_CASE_ID, true);
             }
 
             updateOnline();
@@ -1665,16 +1686,14 @@
                     ${filtered.map(c => {
                         const image = c.image || c.png || c.png_image || '/static/img/gift.png';
                         const name = escapeHtml(c.name || 'Кейс');
-                        const pngText = c.png_count != null ? `${c.png_count} PNG` : 'PNG';
                         return `
-                            <div class="case" onclick="openCaseModal(${Number(c.id)})">
+                            <div class="case" onclick="location.href='/case/${Number(c.id)}'">
                                 <div class="case-inner">
                                     <div class="case-img">
                                         <img src="${image}" alt="" onerror="this.src='/static/img/gift.png'">
                                     </div>
                                     <div class="case-meta">
                                         <div class="case-name">${name}</div>
-                                        <div class="case-png">${pngText}</div>
                                     </div>
                                     <div class="case-prices">
                                         <div class="case-price ton">
@@ -1690,7 +1709,9 @@
             `;
         }
 
-        async function openCaseModal(caseId) {
+        async function openCaseModal(caseId, fromCasePage = false) {
+            // Open immediately; network data fills the page after first paint.
+            $('caseModal').classList.add('open');
             try {
                 const res = await fetch(`/api/cases/${caseId}`);
                 const data = await res.json();
