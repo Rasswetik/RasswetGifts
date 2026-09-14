@@ -99,6 +99,8 @@ PORTAL_SESSION_NAME = os.getenv('PORTAL_SESSION_NAME', 'portal_account')
 PORTAL_WITHDRAW_FEE_STARS = 40
 TON_RATE = 100
 FRAGMENT_DISK_CACHE_FILE = os.path.join(BASE_PATH, 'data', 'fragment_catalog_cache.json')
+# Durable canonical gift catalog. On Render, DB_DIR should point to Persistent Disk.
+GIFTS_PERSISTENT_FILE = os.path.join(os.environ.get('DB_DIR', os.path.join(BASE_PATH, 'data')), 'gifts_catalog_persistent.json')
 
 # MRKT marketplace (read/sync pricing). Token is supplied by the admin from
 # the MRKT web app and cached locally. The public MRKT documentation confirms
@@ -1027,65 +1029,47 @@ def _normalize_fragment_collection_name(name):
     return text.strip() or str(name or '').strip()
 
 def _parse_fragment_grid_prices(text):
-    """Parse gift listing URLs and their sale prices from Fragment HTML.
+    """Parse sale listing URLs and their local card price from Fragment HTML.
 
-    The caller uses the Fragment URL with ``filter=sale&sort=price_asc``.
-    Fragment has changed markup several times, so this parser deliberately
-    accepts both explicit data-price attributes and human-readable ``TON``
-    labels near each ``/gift/<collection>-<number>`` listing.
+    Fragment's markup changes frequently. The important rule is that the price
+    must belong to the same listing card, not a later card on the page.
     """
     if not text:
         return []
-
     html = str(text)
-    results = []
-    seen = set()
-
-    # 1) Explicit price attributes near a listing URL.
-    attr_re = re.compile(
-        r'(?:href=[\"\'][^\"\']*/gift/([a-z0-9_-]+)-(\d+)[^\"\']*[\"\']|'
-        r'data-(?:price|ton-price|price-ton)= [\"\']?([0-9][0-9,]*(?:\.[0-9]+)?))',
-        re.IGNORECASE | re.VERBOSE
-    )
-
-    # 2) Generic listing anchor + nearby TON value. Keep the window small so
-    # we don't accidentally attach a later card's price to this gift.
     href_re = re.compile(r'(?:https?://fragment\.com)?/gift/([a-z0-9_-]+)-(\d+)', re.IGNORECASE)
     ton_re = re.compile(r'(?<![\w.])([0-9][0-9,]*(?:\.[0-9]+)?)\s*TON\b', re.IGNORECASE)
+    attr_re = re.compile(r'data-(?:price|ton-price|price-ton)\s*=\s*["\']?([0-9][0-9,]*(?:\.[0-9]+)?)', re.IGNORECASE)
 
-    for m in href_re.finditer(html):
+    matches = list(href_re.finditer(html))
+    results, seen = [], set()
+    for idx, m in enumerate(matches):
         slug, number = m.group(1).lower(), int(m.group(2))
         key = (slug, number)
         if key in seen:
             continue
         seen.add(key)
-        start = max(0, m.start() - 500)
-        end = min(len(html), m.end() + 2200)
-        chunk = html[start:end]
-
+        next_start = matches[idx + 1].start() if idx + 1 < len(matches) else min(len(html), m.end() + 3000)
+        # Start at this listing URL so the chunk cannot absorb the previous card's price.
+        chunks = [html[m.end():next_start]]
         price = None
-        # Prefer explicit attributes inside the nearby card.
-        for pm in re.finditer(r'(?:data-(?:price|ton-price|price-ton)|(?:\"|\')price(?:\"|\'))\s*[:=]\s*[\"\']?([0-9][0-9,]*(?:\.[0-9]+)?)', chunk, re.IGNORECASE):
-            try:
-                price = float(pm.group(1).replace(',', ''))
-                break
-            except Exception:
-                pass
-        if price is None:
-            prices = []
-            for tm in ton_re.finditer(chunk):
+        vals = []
+        for chunk in chunks:
+            for pm in attr_re.finditer(chunk):
                 try:
-                    value = float(tm.group(1).replace(',', ''))
-                    if math.isfinite(value) and value > 0:
-                        prices.append(value)
+                    v = float(pm.group(1).replace(',', ''))
+                    if math.isfinite(v) and v > 0: vals.append(v)
                 except Exception:
                     pass
-            if prices:
-                price = min(prices)
-
-        if price is not None and price > 0:
+            for tm in ton_re.finditer(chunk):
+                try:
+                    v = float(tm.group(1).replace(',', ''))
+                    if math.isfinite(v) and v > 0: vals.append(v)
+                except Exception:
+                    pass
+        if vals:
+            price = min(vals)
             results.append((f'/gift/{slug}-{number}', price))
-
     results.sort(key=lambda x: x[1])
     return results
 
@@ -1300,9 +1284,13 @@ def _write_fragment_catalog_to_local_gifts(fragment_gifts):
             ):
                 if key in fg and fg.get(key) is not None:
                     g[key] = fg.get(key)
-            if fg.get('mrkt_price_ton') is not None:
+            # Fragment sale price is canonical when present. If an import request
+            # fails or returns no active listing, keep the previously persisted value.
+            if fg.get('fragment_price_ton') is not None:
+                g['value'] = int(round(float(fg['fragment_price_ton']) * FRAGMENT_TON_RATE))
+            elif fg.get('mrkt_price_ton') is not None:
                 g['value'] = int(round(float(fg['mrkt_price_ton']) * FRAGMENT_TON_RATE))
-            elif fg.get('value') is not None:
+            elif fg.get('value') is not None and not g.get('value'):
                 g['value'] = int(round(float(fg.get('value') or 0)))
             image = fg.get('market_image') or fg.get('black_image') or fg.get('onyx_black_image') or fg.get('image')
             if image:
@@ -1575,8 +1563,24 @@ def _fetch_fragment_collection_price(slug):
         resp = _fragment_get(url, timeout=FRAGMENT_SYNC_TIMEOUT)
         if resp.status_code != 200:
             return None
-        rows = _parse_fragment_grid_prices(resp.text or '')
-        return float(rows[0][1]) if rows else None
+        html = resp.text or ''
+        rows = _parse_fragment_grid_prices(html)
+        if rows:
+            return float(rows[0][1])
+        # Fallback for markup where listing URLs and prices are rendered separately.
+        vals = []
+        for pm in re.finditer(r'data-(?:price|ton-price|price-ton)\s*=\s*[\']?([0-9][0-9,]*(?:\.[0-9]+)?)', html, re.IGNORECASE):
+            try:
+                v = float(pm.group(1).replace(',', ''))
+                if math.isfinite(v) and v > 0: vals.append(v)
+            except Exception: pass
+        if not vals:
+            for tm in re.finditer(r'(?<![\w.])([0-9][0-9,]*(?:\.[0-9]+)?)\s*TON\b', html, re.IGNORECASE):
+                try:
+                    v = float(tm.group(1).replace(',', ''))
+                    if math.isfinite(v) and v > 0: vals.append(v)
+                except Exception: pass
+        return min(vals) if vals else None
     except Exception as e:
         logger.warning('Fragment sale price failed for %s: %s', slug, e)
         return None
@@ -1717,7 +1721,7 @@ def _find_fragment_dark_variants(slug, max_samples=12):
             logger.warning(f'Fragment dark variants fallback failed for {slug}: {e}')
     return result
 
-def _load_fragment_gifts_with_variants(force_refresh=False, progress_callback=None):
+def _load_fragment_gifts_with_variants(force_refresh=False, progress_callback=None, include_variants=True):
     """Load all Fragment collections, prices and Black/Onyx Black PNGs.
     Price requests and collection variant discovery are parallelized in small
     batches so 100+ collections do not block the web request for minutes.
@@ -1750,24 +1754,25 @@ def _load_fragment_gifts_with_variants(force_refresh=False, progress_callback=No
             done += 1
             if progress_callback: progress_callback(done, total, f'Цены Fragment: {done}/{total}')
 
-    def variants_one(g):
-        return g, _find_fragment_dark_variants(g.get('fragment_slug'))
-    with ThreadPoolExecutor(max_workers=8) as ex:
-        futures = [ex.submit(variants_one, g) for g in gifts if g.get('fragment_slug')]
-        done = 0
-        for fut in as_completed(futures):
-            try:
-                g, variants = fut.result()
-                for key in ('black_image','onyx_black_image','black_nft_number','onyx_black_nft_number'):
-                    if variants.get(key): g[key] = variants[key]
-                market_image = g.get('black_image') or g.get('onyx_black_image') or g.get('image')
-                if market_image:
-                    g['market_image'] = market_image
-                    g['image'] = market_image
-            except Exception as e:
-                logger.debug('Fragment variant worker failed: %s', e)
-            done += 1
-            if progress_callback: progress_callback(done, total, f'Black / Onyx Black: {done}/{total}')
+    if include_variants:
+        def variants_one(g):
+            return g, _find_fragment_dark_variants(g.get('fragment_slug'))
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            futures = [ex.submit(variants_one, g) for g in gifts if g.get('fragment_slug')]
+            done = 0
+            for fut in as_completed(futures):
+                try:
+                    g, variants = fut.result()
+                    for key in ('black_image','onyx_black_image','black_nft_number','onyx_black_nft_number'):
+                        if variants.get(key): g[key] = variants[key]
+                    market_image = g.get('black_image') or g.get('onyx_black_image') or g.get('image')
+                    if market_image:
+                        g['market_image'] = market_image
+                        g['image'] = market_image
+                except Exception as e:
+                    logger.debug('Fragment variant worker failed: %s', e)
+                done += 1
+                if progress_callback: progress_callback(done, total, f'Black / Onyx Black: {done}/{total}')
 
     _save_fragment_catalog_disk_cache(gifts)
     _write_fragment_catalog_to_local_gifts(gifts)
@@ -2106,63 +2111,76 @@ def _resolve_case_gift_payload(gifts, selected_gift_info):
         'type': selected_gift_info.get('type', 'gift')
     }
 
-def load_gifts():
-    """Загружает подарки из JSON файла"""
+def _read_gifts_file(path):
     try:
-        # Пробуем основной путь
-        file_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
-        
-        # Альтернативные пути для PythonAnywhere
-        alt_paths = [
-            '/home/rasswetik52/mysite/data/gifts.json',
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'gifts.json'),
-        ]
-        
-        # Ищем существующий файл
-        actual_path = None
-        if os.path.exists(file_path):
-            actual_path = file_path
-        else:
-            for alt in alt_paths:
-                if os.path.exists(alt):
-                    actual_path = alt
-                    logger.info(f"Gifts: использую альтернативный путь: {alt}")
-                    break
-        
-        if not actual_path:
-            logger.warning(f"Файл gifts.json не найден. Проверены пути: {file_path}, {alt_paths}")
-            return []
-        
-        logger.info(f"Gifts: загрузка из {actual_path}")
-        with open(actual_path, 'r', encoding='utf-8') as f:
+        if not os.path.exists(path):
+            return None
+        with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            # Поддержка обоих форматов: {gifts: [...]} и просто [...]
-            if isinstance(data, list):
-                logger.info(f"Загружено {len(data)} подарков (формат array)")
-                return data
-            elif isinstance(data, dict):
-                gifts = data.get('gifts', [])
-                logger.info(f"Загружено {len(gifts)} подарков (формат object)")
-                return gifts
-            else:
-                logger.error(f"Неверный формат gifts.json: {type(data)}")
-                return []
-    except json.JSONDecodeError as e:
-        logger.error(f"Ошибка парсинга gifts.json: {e}")
-        return []
+        if isinstance(data, dict):
+            gifts = data.get('gifts', [])
+        elif isinstance(data, list):
+            gifts = data
+        else:
+            return None
+        return gifts if isinstance(gifts, list) else None
     except Exception as e:
-        logger.error(f"Ошибка загрузки gifts.json: {e}")
-        return []
+        logger.warning('Gift catalog read failed for %s: %s', path, e)
+        return None
+
+def _write_gifts_file(path, gifts):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
+        f.flush()
+        try: os.fsync(f.fileno())
+        except Exception: pass
+    os.replace(tmp, path)
+
+def load_gifts():
+    """Load the canonical gift catalog from the durable copy first.
+
+    The persistent copy prevents browser refreshes/restarts and background imports
+    from silently restoring an older gifts.json snapshot.
+    """
+    paths = [
+        GIFTS_PERSISTENT_FILE,
+        os.path.join(BASE_PATH, 'data', 'gifts.json'),
+        '/home/rasswetik52/mysite/data/gifts.json',
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'gifts.json'),
+    ]
+    seen = set()
+    for file_path in paths:
+        if not file_path or file_path in seen:
+            continue
+        seen.add(file_path)
+        gifts = _read_gifts_file(file_path)
+        if gifts is None:
+            continue
+        logger.info('Загружено %s подарков из %s', len(gifts), file_path)
+        # Bootstrap the durable copy once, without changing its contents later.
+        if file_path != GIFTS_PERSISTENT_FILE and not os.path.exists(GIFTS_PERSISTENT_FILE):
+            try:
+                _write_gifts_file(GIFTS_PERSISTENT_FILE, gifts)
+            except Exception as e:
+                logger.warning('Persistent gift catalog bootstrap failed: %s', e)
+        return gifts
+    logger.warning('Файл gifts.json не найден и persistent gift catalog пуст')
+    return []
 
 def save_gifts(gifts):
-    """Сохраняет подарки в JSON файл"""
+    """Atomically persist the canonical gift catalog to both durable and legacy paths."""
     try:
-        file_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
-
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
-
-        logger.info(f"✅ Сохранено {len(gifts)} подарков")
+        if not isinstance(gifts, list):
+            gifts = []
+        _write_gifts_file(GIFTS_PERSISTENT_FILE, gifts)
+        # Keep the legacy file in sync for older endpoints/scripts.
+        try:
+            _write_gifts_file(os.path.join(BASE_PATH, 'data', 'gifts.json'), gifts)
+        except Exception as e:
+            logger.warning('Legacy gifts.json sync failed: %s', e)
+        logger.info('✅ Сохранено %s подарков', len(gifts))
         global gifts_cache, gifts_cache_time
         gifts_cache = None
         gifts_cache_time = None
@@ -5300,7 +5318,16 @@ def case_detail_page_legacy(case_id):
 
 @app.route('/case/<case_slug>')
 def case_detail_page(case_slug):
-    """Standalone case page."""
+    """Standalone case page with slug/name/id fallback."""
+    cases = load_cases()
+    raw = str(case_slug or '').strip()
+    target = raw.lower()
+    # Accept both the saved slug and a slugified case name.
+    found = next((c for c in cases if _case_slug(c).lower() == target), None)
+    if not found:
+        found = next((c for c in cases if _slugify_case_name(c.get('name')) == target), None)
+    if not found:
+        return redirect('/cases')
     return send_from_directory(BASE_PATH, 'case.html')
 
 @app.route('/cases')
@@ -8039,6 +8066,10 @@ def api_case_detail_by_slug(case_slug):
         cases = load_cases()
         case = next((c for c in cases if _case_slug(c).lower() == target), None)
         if not case:
+            case = next((c for c in cases if _slugify_case_name(c.get('name')) == target), None)
+        if not case and target.isdigit():
+            case = next((c for c in cases if str(c.get('id')) == target), None)
+        if not case:
             return jsonify({'success': False, 'error': 'Кейс не найден'}), 404
         # Reuse the same gift resolution as the numeric endpoint.
         local_gifts = load_gifts_cached() or []
@@ -10064,16 +10095,12 @@ def _portal_sync_floors():
         target['fragment_url'] = item['fragment_url']
         if item.get('image'):
             target['image'] = item['image']
+        # Portal floor is informational only; never overwrite canonical Fragment sale price/value.
         if item.get('fragment_price_ton'):
-            target['fragment_price_ton'] = item['fragment_price_ton']
-            target['value'] = item['value']
+            target['portal_price_ton'] = item['fragment_price_ton']
             updated += 1
 
-    with open(gifts_path, 'w', encoding='utf-8') as f:
-        if wrap_dict:
-            json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
-        else:
-            json.dump(gifts, f, ensure_ascii=False, indent=2)
+    save_gifts(gifts)
 
     # Сбрасываем кэш
     global gifts_cache, gifts_cache_time
@@ -18030,7 +18057,7 @@ def api_gifts_list():
         logger.error(f'Gifts list error: {e}')
         return jsonify({'success': False, 'gifts': [], 'error': str(e)})
 
-def _run_fragment_gifts_import_job(job_id):
+def _run_fragment_gifts_import_job(job_id, include_variants=True):
     try:
         _fragment_job_update(stage='collections', current=0, total=0, collections=0, variants_found=0, models=0, error=None)
         _fragment_job_log('Старт загрузки подарков Fragment')
@@ -18038,7 +18065,7 @@ def _run_fragment_gifts_import_job(job_id):
             _fragment_job_update(current=done, total=total, message=msg, stage='prices' if 'Цены' in msg else ('variants' if 'Black' in msg else 'collections'))
             if done == 0 or done == total or done % 10 == 0:
                 _fragment_job_log(msg)
-        gifts = _load_fragment_gifts_with_variants(force_refresh=True, progress_callback=progress)
+        gifts = _load_fragment_gifts_with_variants(force_refresh=True, progress_callback=progress, include_variants=include_variants)
         found = sum(1 for g in gifts if g.get('black_image') or g.get('onyx_black_image'))
         _fragment_job_log(f'Fragment: найдено {len(gifts)} коллекций, PNG вариантов: {found}')
 
@@ -18058,7 +18085,7 @@ def _run_fragment_gifts_import_job(job_id):
         _fragment_job_update(running=False, stage='error', error=str(e), message='Ошибка загрузки', finished_at=time.time())
         _fragment_job_log(f'ОШИБКА: {e}', 'error')
 
-def _start_fragment_import_job():
+def _start_fragment_import_job(include_variants=True):
     with _fragment_import_lock:
         if _fragment_import_job.get('running'):
             return False, _fragment_import_job.get('job_id')
@@ -18069,7 +18096,7 @@ def _start_fragment_import_job():
             'message': 'Запуск...', 'logs': [], 'started_at': time.time(),
             'finished_at': None, 'error': None
         })
-    threading.Thread(target=_run_fragment_gifts_import_job, args=(job_id,), daemon=True, name='fragment-import').start()
+    threading.Thread(target=_run_fragment_gifts_import_job, args=(job_id, include_variants), daemon=True, name='fragment-import').start()
     return True, job_id
 
 @app.route('/api/fragment/sync-prices', methods=['POST'])
@@ -18150,14 +18177,74 @@ def api_fragment_import_gifts():
         data = request.get_json(silent=True) or {}
         if str(data.get('admin_id')) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-        started, job_id = _start_fragment_import_job()
-        return jsonify({'success': True, 'started': started, 'job_id': job_id, 'message': 'Загрузка запущена в фоне'})
+        started, job_id = _start_fragment_import_job(include_variants=False)
+        return jsonify({'success': True, 'started': started, 'job_id': job_id, 'message': 'Загрузка подарков запущена в фоне'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/fragment/import-status', methods=['GET'])
 def api_fragment_import_status():
     return jsonify({'success': True, **_fragment_job_snapshot()})
+
+@app.route('/api/fragment/import-variants', methods=['POST'])
+def api_fragment_import_variants():
+    """Load only Black / Onyx Black PNG variants for the persisted gift catalog."""
+    try:
+        data = request.get_json(silent=True) or {}
+        if str(data.get('admin_id')) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        with _fragment_import_lock:
+            if _fragment_import_job.get('running'):
+                return jsonify({'success': False, 'error': 'Другая загрузка Fragment уже выполняется'})
+            job_id = str(int(time.time() * 1000))
+            _fragment_import_job.update({
+                'running': True, 'job_id': job_id, 'stage': 'variants', 'current': 0,
+                'total': 0, 'collections': 0, 'variants_found': 0, 'models': 0,
+                'message': 'Запуск Black / Onyx Black...', 'logs': [],
+                'started_at': time.time(), 'finished_at': None, 'error': None
+            })
+        def worker():
+            try:
+                gifts = load_gifts() or []
+                from concurrent.futures import ThreadPoolExecutor, as_completed
+                targets = [g for g in gifts if g.get('fragment_slug')]
+                total = len(targets); found = 0; done = 0
+                _fragment_job_update(total=total, collections=total)
+                _fragment_job_log(f'Старт: Black / Onyx Black для {total} коллекций')
+                def one(g): return g, _find_fragment_dark_variants(g.get('fragment_slug'))
+                with ThreadPoolExecutor(max_workers=8) as ex:
+                    futures = [ex.submit(one, g) for g in targets]
+                    for fut in as_completed(futures):
+                        done += 1
+                        try:
+                            g, variants = fut.result()
+                            for key in ('black_image','onyx_black_image','black_nft_number','onyx_black_nft_number'):
+                                if variants.get(key): g[key] = variants[key]
+                            market_image = g.get('black_image') or g.get('onyx_black_image') or g.get('image')
+                            if market_image:
+                                g['market_image'] = market_image
+                            if variants.get('black_image') or variants.get('onyx_black_image'):
+                                found += 1
+                        except Exception as e:
+                            logger.warning('Variant worker failed: %s', e)
+                        _fragment_job_update(current=done, total=total, collections=total, variants_found=found, message=f'Black / Onyx Black: {done}/{total}')
+                        if done == 1 or done == total or done % 10 == 0:
+                            _fragment_job_log(f'Black / Onyx Black: {done}/{total} · найдено {found}')
+                save_gifts(gifts)
+                _save_fragment_catalog_disk_cache(gifts)
+                global fragment_cache, fragment_cache_time
+                fragment_cache = gifts; fragment_cache_time = time.time()
+                _fragment_job_update(running=False, stage='done', current=total, total=total, collections=total, variants_found=found, message=f'Готово: {found}/{total} PNG вариантов', finished_at=time.time())
+                _fragment_job_log(f'Завершено: найдено PNG вариантов для {found}/{total}')
+            except Exception as e:
+                logger.error('Fragment variants import failed: %s\n%s', e, traceback.format_exc())
+                _fragment_job_update(running=False, stage='error', error=str(e), message='Ошибка загрузки Black / Onyx Black', finished_at=time.time())
+                _fragment_job_log(f'ОШИБКА: {e}', 'error')
+        threading.Thread(target=worker, daemon=True, name='fragment-variants').start()
+        return jsonify({'success': True, 'started': True, 'job_id': job_id})
+    except Exception as e:
+        logger.error('api_fragment_import_variants error: %s', e)
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/fragment/import-models', methods=['POST'])
 def api_fragment_import_models():
@@ -18180,8 +18267,14 @@ def api_fragment_import_models():
 
 @app.route('/api/fragment/import-all', methods=['POST'])
 def api_fragment_import_all():
-    # The user-facing 'all' import starts the same fast background gift job.
-    return api_fragment_import_gifts()
+    try:
+        data = request.get_json(silent=True) or {}
+        if str(data.get('admin_id')) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        started, job_id = _start_fragment_import_job(include_variants=True)
+        return jsonify({'success': True, 'started': started, 'job_id': job_id, 'message': 'Полная загрузка запущена в фоне'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/fragment-gift-models', methods=['GET'])
 def api_fragment_gift_models():
