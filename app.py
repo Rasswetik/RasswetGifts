@@ -1042,15 +1042,16 @@ def _mrkt_load_token():
             return ''
         with open(MRKT_TOKEN_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        return str(data.get('token') or '').strip()
+        return _mrkt_normalize_token(data.get('token'))
     except Exception as e:
         logger.warning('MRKT token read failed: %s', e)
         return ''
 
 def _mrkt_save_token(token):
+    token = _mrkt_normalize_token(token)
     os.makedirs(os.path.dirname(MRKT_TOKEN_FILE), exist_ok=True)
     with open(MRKT_TOKEN_FILE, 'w', encoding='utf-8') as f:
-        json.dump({'token': str(token).strip(), 'updated_at': datetime.utcnow().isoformat() + 'Z'}, f, ensure_ascii=False)
+        json.dump({'token': token, 'updated_at': datetime.utcnow().isoformat() + 'Z'}, f, ensure_ascii=False)
 
 def _mrkt_delete_token():
     try:
@@ -1059,14 +1060,35 @@ def _mrkt_delete_token():
     except Exception:
         pass
 
+def _mrkt_normalize_token(raw):
+    """Accept the raw MRKT token or the JSON response copied from /auth.
+    MRKT's /auth response is an object containing a `token` field.
+    The gifts API expects that token directly in Authorization (no Bearer).
+    """
+    if raw is None:
+        return ''
+    if isinstance(raw, dict):
+        raw = raw.get('token') or raw.get('access_token') or raw.get('session') or ''
+    text = str(raw).strip()
+    # Admins sometimes paste the whole JSON response from /auth.
+    if text.startswith('{') and text.endswith('}'):
+        try:
+            obj = json.loads(text)
+            text = str(obj.get('token') or obj.get('access_token') or obj.get('session') or '').strip()
+        except Exception:
+            pass
+    if text.lower().startswith('bearer '):
+        text = text[7:].strip()
+    return text
+
 def _mrkt_request(payload, token=None, timeout=None):
-    token = str(token or _mrkt_load_token()).strip()
+    token = _mrkt_normalize_token(token or _mrkt_load_token())
     if not token:
         raise RuntimeError('MRKT token не установлен')
     headers = {
+        # MRKT API uses the raw token in Authorization, not "Bearer <token>".
         'Authorization': token,
         'Referer': MRKT_REFERER,
-        'Origin': 'https://cdn.tgmrkt.io',
         'Content-Type': 'application/json',
         'User-Agent': 'Mozilla/5.0'
     }
@@ -1180,17 +1202,26 @@ def _write_fragment_catalog_to_local_gifts(fragment_gifts):
                      'name': name, 'fragment_slug': slug}
                 existing.append(g)
                 added += 1
+            # gifts.json is the canonical gift catalog. Mirror the complete
+            # Fragment/MRKT snapshot here so the UI does not depend on a
+            # second in-memory/disk catalog after an import.
             g['name'] = name
             g['fragment_slug'] = slug
-            if fg.get('fragment_price_ton') is not None:
-                g['fragment_price_ton'] = fg.get('fragment_price_ton')
+            for key in (
+                'fragment_url', 'fragment_price_ton', 'mrkt_price_ton',
+                'mrkt_active_listings', 'market_image', 'black_image',
+                'onyx_black_image', 'black_nft_number',
+                'onyx_black_nft_number', 'source'
+            ):
+                if key in fg and fg.get(key) is not None:
+                    g[key] = fg.get(key)
             if fg.get('mrkt_price_ton') is not None:
-                g['mrkt_price_ton'] = fg.get('mrkt_price_ton')
                 g['value'] = int(round(float(fg['mrkt_price_ton']) * FRAGMENT_TON_RATE))
             elif fg.get('value') is not None:
                 g['value'] = int(round(float(fg.get('value') or 0)))
-            image = fg.get('market_image') or fg.get('black_image') or fg.get('image')
-            if image: g['image'] = image
+            image = fg.get('market_image') or fg.get('black_image') or fg.get('onyx_black_image') or fg.get('image')
+            if image:
+                g['image'] = image
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(existing, f, ensure_ascii=False, indent=2)
@@ -1233,6 +1264,8 @@ def _mrkt_sync_prices_to_fragment_catalog(progress_callback=None):
                 logger.warning('MRKT price worker failed: %s', e)
             if progress_callback:
                 progress_callback(done, total, f'MRKT цены: {done}/{total} · обновлено {updated}')
+    # Persist the COMPLETE refreshed catalog (prices + PNG variants + metadata)
+    # into gifts.json. This is the canonical source used by the admin/public UI.
     _save_fragment_catalog_disk_cache(gifts)
     _write_fragment_catalog_to_local_gifts(gifts)
     global fragment_cache, fragment_cache_time, fragment_last_error
@@ -1258,19 +1291,39 @@ def mrkt_save_token():
         data = request.get_json(silent=True) or {}
         if str(data.get('admin_id')) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
-        token = str(data.get('token') or '').strip()
+        token = _mrkt_normalize_token(data.get('token'))
         if len(token) < 20:
-            return jsonify({'success': False, 'error': 'Токен MRKT слишком короткий'})
-        _mrkt_save_token(token)
-        # Validate immediately with one cheap collection-free request.
+            return jsonify({'success': False, 'error': 'Не удалось извлечь MRKT token из вставленного значения'})
+
+        # Validate with the same authenticated endpoint used by the price sync.
+        # An empty collection filter is not a reliable auth check on all MRKT
+        # deployments, so use a real known collection when available.
         try:
-            _mrkt_request({'collectionNames': [], 'modelNames': [], 'backdropNames': [], 'symbolNames': [],
-                           'ordering': 'Price', 'lowToHigh': True, 'maxPrice': None, 'minPrice': None,
-                           'mintable': None, 'number': None, 'count': 1, 'cursor': '', 'query': None,
-                           'promotedFirst': False}, token=token, timeout=8)
+            catalog = _load_fragment_catalog_disk_cache() or load_gifts() or []
+            collection = next((str(g.get('name')).strip() for g in catalog
+                               if isinstance(g, dict) and str(g.get('name') or '').strip()), None)
+            payload = {
+                'collectionNames': [collection] if collection else [],
+                'modelNames': [],
+                'backdropNames': [],
+                'symbolNames': [],
+                'ordering': 'Price',
+                'lowToHigh': True,
+                'maxPrice': None,
+                'minPrice': None,
+                'mintable': None,
+                'number': None,
+                'count': 1,
+                'cursor': '',
+                'query': None,
+                'promotedFirst': False,
+            }
+            _mrkt_request(payload, token=token, timeout=12)
         except Exception as e:
             _mrkt_delete_token()
             return jsonify({'success': False, 'error': f'MRKT токен не прошёл проверку: {e}'})
+
+        _mrkt_save_token(token)
         return jsonify({'success': True, 'message': 'MRKT токен сохранён и проверен'})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -2458,6 +2511,22 @@ def _create_all_tables(conn):
         except Exception: pass
     except Exception as _me:
         logger.warning(f"fragment_slug migration skipped: {_me}")
+
+    # Telegram user/admin IDs exceed PostgreSQL's 32-bit INTEGER range.
+    # promo_codes.created_by is written with ADMIN_ID, so make that column
+    # BIGINT on existing PostgreSQL installations as well as fresh schemas.
+    if USE_POSTGRES:
+        try:
+            conn.execute("ALTER TABLE promo_codes ALTER COLUMN created_by TYPE BIGINT")
+            conn.commit()
+            logger.info('Promo migration: promo_codes.created_by is BIGINT')
+        except Exception as _promo_mig:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            logger.warning(f"promo_codes.created_by BIGINT migration skipped: {_promo_mig}")
+
     tables_sql = {
         'users': '''CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
@@ -2580,7 +2649,7 @@ def _create_all_tables(conn):
             reward_data TEXT DEFAULT NULL,
             max_uses INTEGER DEFAULT 1,
             used_count INTEGER DEFAULT 0,
-            created_by INTEGER,
+            created_by BIGINT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             expires_at TIMESTAMP,
             is_active BOOLEAN DEFAULT TRUE
@@ -17985,39 +18054,69 @@ def api_online_count():
 
 @app.route('/api/gifts-list', methods=['GET'])
 def api_gifts_list():
-    """Return gifts catalog for UI: originals + all models from Fragment cache (cached 60s)"""
+    """Return the canonical gifts.json catalog for the UI.
+
+    Fragment/MRKT are used only by the admin import/sync jobs. Once imported,
+    all gift metadata (image/PNG variants, prices, slugs, etc.) is served from
+    gifts.json so the UI always sees the same persisted snapshot.
+    """
     try:
         force_refresh = request.args.get('refresh', '0') in ('1', 'true', 'yes')
         include_models = request.args.get('models', '0') not in ('0', 'false', 'no')
 
-        _cache = getattr(api_gifts_list, '_cache', None)
-        if _cache is None:
-            _cache = {}
-            api_gifts_list._cache = _cache
-        cache_key = 'models' if include_models else 'orig'
-        now_ts = time.time()
-        hit = _cache.get(cache_key)
-        if hit and not force_refresh and (now_ts - hit['ts']) < 60:
-            return jsonify(hit['data'])
+        if force_refresh:
+            global gifts_cache, gifts_cache_time
+            gifts_cache = None
+            gifts_cache_time = None
 
+        local_gifts = load_gifts_cached() or []
+        merged = []
+        for g in local_gifts:
+            item = dict(g)
+            item['id'] = item.get('id')
+            item['name'] = item.get('name') or 'Gift'
+            item['value'] = _safe_int(item.get('value'), 0)
+            item['image'] = _normalize_local_gift_image(item.get('image')) or item.get('market_image') or '/static/img/default_gift.png'
+            item['fragment_slug'] = (item.get('fragment_slug') or _slugify_fragment_name(item.get('name', ''))).strip().lower()
+            item['fragment_url'] = item.get('fragment_url') or (f"https://fragment.com/gifts/{item['fragment_slug']}" if item['fragment_slug'] else '')
+            item['source'] = item.get('source') or 'gifts.json'
+            merged.append(item)
+
+        # Models remain optional. If they have been imported, use the persisted
+        # Fragment model cache; the base gift records still come exclusively
+        # from gifts.json.
         if include_models:
-            merged = build_full_catalog_with_models(force_refresh=force_refresh)
-        else:
-            merged = build_fragment_first_gifts_catalog(force_refresh=force_refresh)
+            try:
+                cached_models = _load_fragment_catalog_disk_cache()
+                models_by_slug = fragment_models_cache
+                if not models_by_slug and cached_models:
+                    models_by_slug = fragment_models_cache
+                base_gifts = list(merged)
+                for item in base_gifts:
+                    slug = str(item.get('fragment_slug') or '').strip().lower()
+                    for model in (models_by_slug.get(slug) or []):
+                        if isinstance(model, dict):
+                            model_item = dict(model)
+                            model_item.setdefault('base_gift_id', item.get('id'))
+                            model_item.setdefault('base_name', item.get('name'))
+                            model_item.setdefault('fragment_slug', slug)
+                            merged.append(model_item)
+            except Exception as e:
+                logger.warning('Gift model cache read failed: %s', e)
 
         payload = {
             'success': True,
             'gifts': merged,
-            'fragment_sync': True,
-            'fragment_only_mode': FRAGMENT_ONLY_CATALOG,
+            'fragment_sync': False,
+            'fragment_only_mode': False,
             'fragment_error': fragment_last_error,
-            'offline_fallback_used': any(str(g.get('source')) == 'local_offline_fallback' for g in (merged or []))
+            'offline_fallback_used': False,
+            'source': 'gifts.json'
         }
-        _cache[cache_key] = {'ts': now_ts, 'data': payload}
         return jsonify(payload)
     except Exception as e:
-        logger.error(f"Gifts list error: {e}")
-        return jsonify({'success': True, 'gifts': []})
+        logger.error(f'Gifts list error: {e}')
+        return jsonify({'success': False, 'gifts': [], 'error': str(e)})
 
 def _run_fragment_gifts_import_job(job_id):
     try:
