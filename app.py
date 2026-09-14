@@ -3807,18 +3807,28 @@ def init_db():
             except Exception as e:
                 logger.warning(f"⚠️ Миграция колонок users: {e}")
 
-            # Миграция: ultimate_crash_games — provably-fair seed/seed_hash
+            # Миграция: ultimate_crash_games — provably-fair seed/seed_hash.
+            # На Postgres PRAGMA table_info не понимается — используем нативный
+            # ADD COLUMN IF NOT EXISTS, и обязательно делаем rollback при ошибке,
+            # чтобы не "отравить" транзакцию для миграций, идущих следом.
             try:
-                cursor.execute("PRAGMA table_info(ultimate_crash_games)")
-                ucg_columns = [col[1] for col in cursor.fetchall()]
-                if 'seed_hash' not in ucg_columns:
-                    cursor.execute("ALTER TABLE ultimate_crash_games ADD COLUMN seed_hash TEXT")
-                    logger.info("✅ Добавлена колонка seed_hash (provably fair)")
-                if 'seed' not in ucg_columns:
-                    cursor.execute("ALTER TABLE ultimate_crash_games ADD COLUMN seed TEXT")
-                    logger.info("✅ Добавлена колонка seed (provably fair, раскрывается после краша)")
+                if USE_POSTGRES:
+                    cursor.execute("ALTER TABLE ultimate_crash_games ADD COLUMN IF NOT EXISTS seed_hash TEXT")
+                    cursor.execute("ALTER TABLE ultimate_crash_games ADD COLUMN IF NOT EXISTS seed TEXT")
+                else:
+                    cursor.execute("PRAGMA table_info(ultimate_crash_games)")
+                    ucg_columns = [col[1] for col in cursor.fetchall()]
+                    if 'seed_hash' not in ucg_columns:
+                        cursor.execute("ALTER TABLE ultimate_crash_games ADD COLUMN seed_hash TEXT")
+                    if 'seed' not in ucg_columns:
+                        cursor.execute("ALTER TABLE ultimate_crash_games ADD COLUMN seed TEXT")
                 conn.commit()
+                logger.info("✅ Колонки seed/seed_hash в ultimate_crash_games готовы (provably fair)")
             except Exception as e:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
                 logger.warning(f"⚠️ Миграция колонок ultimate_crash_games: {e}")
 
             # Миграция: ultimate_crash_bets — добавляем bet_type и gift_image
@@ -4882,12 +4892,31 @@ def start_ultimate_crash_loop():
             try:
                 if USE_POSTGRES:
                     cursor.execute('SET LOCAL statement_timeout = 3000')
+                # КРИТИЧНО: запись статуса 'crashed' обязана пройти, даже если
+                # колонки seed/seed_hash почему-то ещё не появились в БД
+                # (например, миграция на конкретном окружении не успела
+                # применить ALTER TABLE). Публикация seed — это бонус для
+                # проверяемости, а не то, ради чего можно рисковать зависанием
+                # раунда навсегда. Поэтому сначала пробуем с seed, и если это
+                # падает именно из-за отсутствующей колонки — откатываем и
+                # пишем без seed, но статус 'crashed' коммитим в любом случае.
+                crashed_committed = False
                 if reveal_seed:
-                    cursor.execute(
-                        "UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ?, seed = ? WHERE id = ?",
-                        (crash_mult, reveal_seed, gid)
-                    )
-                else:
+                    try:
+                        cursor.execute(
+                            "UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ?, seed = ? WHERE id = ?",
+                            (crash_mult, reveal_seed, gid)
+                        )
+                        crashed_committed = True
+                    except Exception as seed_err:
+                        logger.warning(f"⚠️ Не удалось записать seed для игры #{gid} ({seed_err}); пишем статус без seed")
+                        try:
+                            conn.rollback()
+                        except Exception:
+                            pass
+                        if USE_POSTGRES:
+                            cursor.execute('SET LOCAL statement_timeout = 3000')
+                if not crashed_committed:
                     cursor.execute(
                         "UPDATE ultimate_crash_games SET status = 'crashed', current_multiplier = ? WHERE id = ?",
                         (crash_mult, gid)
