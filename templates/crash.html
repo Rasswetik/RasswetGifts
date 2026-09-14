@@ -1278,15 +1278,25 @@ function _setBetPayout(el, betType, potentialStars){
     var span = el.querySelector('span');
     if(!img || !span) return;
 
-    // Иконка выплаты всегда соответствует реальной валюте ставки —
-    // без случайной подмены на посторонние подарки.
-    var src = betType === 'gift' ? (img.getAttribute('data-gift-src') || img.src) : '/static/img/ton.png';
+    // Как только потенциальный выигрыш дорастает до цены минимального
+    // доступного подарка — показываем PNG этого подарка вместо TON.
+    // Для ставок подарком иконка ставки не подменяется.
+    var src, hasGift = false;
+    if(betType === 'gift'){
+        src = img.getAttribute('data-gift-src') || img.src;
+    } else {
+        var achievable = getAchievableGift(potentialStars);
+        if(achievable){ src = getGiftImage(achievable); hasGift = true; }
+        else src = '/static/img/ton.png';
+    }
     var valueText = '+' + formatCrashMoney(potentialStars);
-    var key = betType + '|' + valueText;
+    var key = betType + '|' + src + '|' + valueText;
     if(el.dataset.payoutKey === key) return;
 
     el.dataset.payoutKey = key;
+    el.classList.toggle('has-gift', hasGift);
     img.src = src;
+    img.onerror = function(){ this.onerror=null; this.src = hasGift ? '/static/img/gift.png' : '/static/img/ton.png'; };
     span.textContent = valueText;
 }
 
@@ -2574,15 +2584,21 @@ async function loadBets(){
           } else {
               coeffHtml='<div class="bet-status active" title="Текущий коэффициент">'+clockSvg+' ×'+(dispMult||1).toFixed(2)+'</div>';
           }
-          // Выплата: валюта выплаты всегда соответствует валюте ставки —
-          // подарок остаётся подарком, граммы остаются граммами. Никаких
-          // случайных подмен PNG во время полёта.
+          // Выплата: если сумма достигает стоимости минимального доступного
+          // подарка — справа показываем PNG этого подарка, иначе PNG TON.
+          // Для ставок подарком иконка ставки не подменяется.
           var payoutImg, payoutText, payoutClass='bet-payout';
           if(b.status==='cashed_out'){
               var wonGift=giftBet && b.win_gifts && b.win_gifts[0];
-              payoutImg=wonGift?(b.win_gifts[0].image||betImg):'/static/img/ton.png';
+              if(wonGift){
+                  payoutImg=b.win_gifts[0].image||betImg;
+                  payoutClass+=' has-gift';
+              } else {
+                  var achievableWon=getAchievableGift(b.win_amount||0);
+                  if(achievableWon){ payoutImg=getGiftImage(achievableWon); payoutClass+=' has-gift'; }
+                  else payoutImg='/static/img/ton.png';
+              }
               payoutText=formatCrashMoney(b.win_amount||0);
-              if(wonGift) payoutClass+=' has-gift';
           } else if(b.status==='lost'){
               payoutImg=betImg;
               payoutText='0';
@@ -2590,15 +2606,22 @@ async function loadBets(){
               // активная ставка — чёткий возможный выигрыш по текущему коэффициенту
               var liveMult=Math.max(1,Number(dispMult||1));
               var potential=Math.floor(Number(b.bet_amount||0)*liveMult);
-              payoutImg=betImg;
+              if(giftBet){
+                  payoutImg=betImg;
+              } else {
+                  var achievableLive=getAchievableGift(potential);
+                  if(achievableLive){ payoutImg=getGiftImage(achievableLive); payoutClass+=' has-gift'; }
+                  else payoutImg='/static/img/ton.png';
+              }
               payoutText='+'+formatCrashMoney(potential);
               payoutClass+=' live-payout';
           }
           var fixed=b.status==='cashed_out'?' bet-fixed':'';
+          var payoutFallback=payoutClass.indexOf('has-gift')!==-1?'/static/img/gift.png':'/static/img/ton.png';
           return '<div class="bet-row '+cls+fixed+'" data-bet-id="'+(b.id||'')+'" data-bet-amount="'+(Number(b.bet_amount)||0)+'" data-bet-type="'+(giftBet?'gift':'gram')+'">'+
             '<div class="bet-left"><div class="bet-avatar">'+avatar+'</div><div class="bet-info">'+
               '<div class="bet-name">'+name+'</div><div class="bet-amt"><img class="bet-gift-preview" src="'+betImg+'" onerror="this.onerror=null;this.src=\''+(giftBet?'/static/img/gift.png':'/static/img/ton.png')+'\'"><span class="bet-amount-text">'+betAmt+'</span></div>'+
-            '</div></div><div class="bet-right-stack">'+coeffHtml+'<div class="'+payoutClass+'"><img src="'+payoutImg+'" onerror="this.onerror=null;this.src=\''+(giftBet?'/static/img/gift.png':'/static/img/ton.png')+'\'" alt=""><span>'+payoutText+'</span></div></div></div>';
+            '</div></div><div class="bet-right-stack">'+coeffHtml+'<div class="'+payoutClass+'"><img src="'+payoutImg+'" onerror="this.onerror=null;this.src=\''+payoutFallback+'\'" alt=""><span>'+payoutText+'</span></div></div></div>';
         }).join('');
         updateBetGiftTicker(true);
     }catch(e){}finally{_betsFetching=false;}
