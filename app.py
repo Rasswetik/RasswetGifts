@@ -2094,6 +2094,20 @@ def _fetch_fragment_collection_price(slug):
         low = (html or '').lower()
         if any(marker in low for marker in ('just a moment', 'cf-chl', 'cf_chl', 'attention required', 'checking your browser', 'g-recaptcha', 'cf-turnstile')):
             logger.warning('[FRAG-DEBUG] %s candidate#%s looks like a Cloudflare/anti-bot challenge page, not real content', slug, idx)
+        gift_href_count = len(re.findall(r'/gift/[a-z0-9_-]+-\d+', low))
+        ton_count = len(re.findall(r'\d[\d,.]*\s*ton\b', low))
+        grid_item_count = low.count('tm-grid-item')
+        has_next_data = '__next_data__' in low or 'application/json' in low
+        has_react_root = 'id="root"' in low or 'data-reactroot' in low
+        wall_markers = [w for w in ('connect wallet', 'sign in', 'log in', 'you must be logged') if w in low]
+        logger.info('[FRAG-DEBUG] %s candidate#%s counts: gift_href=%s ton=%s tm-grid-item=%s next_data=%s react_root=%s wall=%s',
+                    slug, idx, gift_href_count, ton_count, grid_item_count, has_next_data, has_react_root, wall_markers)
+        if gift_href_count == 0:
+            anchor = low.find('gifts-list') if 'gifts-list' in low else low.find('<body')
+            if anchor == -1:
+                anchor = 0
+            logger.info('[FRAG-DEBUG] %s candidate#%s body snippet: %s', slug, idx,
+                        re.sub(r'\s+', ' ', html[anchor:anchor+800]))
         rows = _parse_fragment_grid_prices(html)
         exact = []
         for path, price in rows:
