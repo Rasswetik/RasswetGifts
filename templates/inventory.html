@@ -29,7 +29,7 @@
     --safe-top:env(safe-area-inset-top,20px);
     --safe-bottom:env(safe-area-inset-bottom,0px);
 }
-html,body{height:100%;overflow-x:hidden;overscroll-behavior:none;width:100%}
+html,body{min-height:100%;height:auto;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:auto;width:100%;-webkit-overflow-scrolling:touch}
 body{
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
     background:#171F2B;
@@ -1225,7 +1225,7 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
 @keyframes inventoryFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes inventoryFadeOut{from{opacity:1}to{opacity:0}}
 .bottom-nav{position:fixed!important;left:50%!important;bottom:calc(10px + var(--safe-bottom,0px))!important;top:auto!important;transform:translate3d(-50%,0,0)!important;z-index:100000!important;will-change:transform;}
-.page{padding-bottom:calc(92px + var(--safe-bottom,0px) + 82px)!important;}
+.page{padding-bottom:calc(130px + var(--safe-bottom,0px))!important;max-height:none!important;min-height:100vh!important;height:auto!important;overflow:visible!important;}
 
 /* REWARDS BOTTOM SHEET */
 .rewards-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(4,7,10,.82);backdrop-filter:blur(16px);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,Roboto,Arial,sans-serif}
@@ -1427,9 +1427,9 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
 .inv-card-upgraded .inv-card-img-wrap img{object-fit:cover!important;border-radius:14px!important;}
 .inv-card-name{height:16px!important;min-height:16px!important;line-height:16px!important;padding:0 2px!important;font-size:10px!important;}
 .inv-card-price{height:15px!important;min-height:15px!important;margin-top:2px!important;}
-.page{padding-top:calc(var(--safe-top) + 10px)!important;transform:translateY(5vh)!important;max-height:95vh;}
-.item-sheet-overlay{z-index:2147483000!important;}
-.portal-overlay{z-index:2147482000!important;}
+.page{padding-top:calc(var(--safe-top) + 10px)!important;transform:translateY(5vh)!important;max-height:none!important;height:auto!important;min-height:100vh!important;overflow:visible!important;}
+.item-sheet-overlay{z-index:2147483646!important;}
+.portal-overlay{z-index:2147483647!important;}
 .bottom-nav{z-index:100000!important;}
 .deposit-methods{display:block!important;}
 .deposit-method-btn{width:100%!important;margin-bottom:10px!important;}
@@ -1548,6 +1548,10 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
             </div>
         </div>
 
+        <div class="item-animation-block" id="itemAnimationBlock">
+            <div class="item-animation-stage" id="itemAnimationStage"></div>
+        </div>
+
         <div class="item-nft-block" id="itemNftBlock">
             <div class="item-nft-img-wrap">
                 <img id="itemNftImg" src="" alt="">
@@ -1579,10 +1583,6 @@ body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="item-animation-block" id="itemAnimationBlock">
-            <div class="item-animation-stage" id="itemAnimationStage"></div>
         </div>
 
         <div class="item-challenge" id="itemChallenge" style="display:none">
@@ -3021,7 +3021,7 @@ var _portalSelected=null;
 async function openPortalPicker(){
     if(!selectedItem || !user) return;
     if(selectedItem.is_withdrawing){ showNotif('Подарок уже выводится',true); return; }
-    var ov=$('portalOverlay'); if(ov) ov.classList.add('show');
+    var ov=$('portalOverlay'); if(ov){ ov.style.zIndex='2147483647'; ov.classList.add('show'); }
     var grid=$('portalGrid'); if(grid) grid.innerHTML='';
     var loading=$('portalLoading'); if(loading) loading.style.display='flex';
     var err=$('portalError'); if(err){ err.classList.remove('show'); err.textContent=''; }

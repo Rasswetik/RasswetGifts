@@ -590,13 +590,14 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
 
         <div class="card">
-            <div class="card-title">Синхронизация цен</div>
+            <div class="card-title">Синхронизация</div>
             <button class="btn btn-primary" onclick="syncPortalPrices(event)">🔄 Синхронизировать цены с Portal</button>
-            <button class="btn btn-primary" onclick="syncTonnelPrices(event)" style="margin-top:8px">🔄 Обновить цены с Tonnel</button>
-            <button class="btn btn-secondary" onclick="importFragmentCollections(event)" style="margin-top:8px">📥 Загрузить все коллекции с Fragment</button>
+            <button class="btn btn-secondary" onclick="importFragmentGifts(event)" style="margin-top:8px">📥 Загрузить подарки + Black / Onyx Black</button>
+            <button class="btn btn-secondary" onclick="importFragmentModels(event)" style="margin-top:8px">🧩 Загрузить модели (только в админ-кэш)</button>
+            <button class="btn btn-secondary" onclick="importFragmentAll(event)" style="margin-top:8px">📦 Загрузить всё с Fragment</button>
             <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.5">
-                Загружает floor-цены всех коллекций с Portal и обновляет gifts.json.
-                Это может занять несколько минут.
+                «Подарки» загружают все коллекции, их цены и реальные PNG с фонами Black / Onyx Black.
+                «Модели» сохраняются только в кэше админ-панели и не публикуются на маркете.
             </div>
         </div>
 
@@ -1843,25 +1844,37 @@ async function deletePortalToken(){
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
-async function syncTonnelPrices(evt){
-    var btn=evt&&evt.currentTarget; if(btn){btn.disabled=true;btn.textContent='⏳ Tonnel...';}
+async function importFragmentGifts(evt){
+    var btn=evt&&evt.currentTarget; if(btn){btn.disabled=true;btn.textContent='⏳ Загружаем подарки и фоны...';}
     try{
-        var r=await fetch('/api/tonnel/sync-prices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
+        var r=await fetch('/api/fragment/import-gifts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
         var d=await r.json();
-        if(d.success) showToast('Tonnel: обновлено '+(d.updated||0)+' из '+(d.checked||0),'ok');
-        else showToast(d.error||'Ошибка Tonnel','err');
-    }catch(e){showToast('Ошибка сети','err');}
-    finally{if(btn){btn.disabled=false;btn.textContent='🔄 Обновить цены с Tonnel';}}
+        if(d.success){showToast('Fragment: '+(d.message||('загружено '+(d.collections||0))), 'ok');loadPortalStatus();}
+        else showToast(d.error||'Ошибка загрузки Fragment','err');
+    }catch(e){showToast('Ошибка соединения с Fragment','err');}
+    finally{if(btn){btn.disabled=false;btn.textContent='📥 Загрузить подарки + Black / Onyx Black';}}
 }
-async function importFragmentCollections(evt){
-    var btn=evt&&evt.currentTarget; if(btn){btn.disabled=true;btn.textContent='⏳ Загружаем Fragment...';}
+
+async function importFragmentModels(evt){
+    var btn=evt&&evt.currentTarget; if(btn){btn.disabled=true;btn.textContent='⏳ Загружаем модели...';}
     try{
-        var r=await fetch('/api/fragment/import-collections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
+        var r=await fetch('/api/fragment/import-models',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
         var d=await r.json();
-        if(d.success){showToast('Fragment: добавлено '+(d.added||0)+', обновлено '+(d.updated||0),'ok');loadPortalStatus();}
-        else showToast(d.error||'Ошибка Fragment','err');
-    }catch(e){showToast('Ошибка сети','err');}
-    finally{if(btn){btn.disabled=false;btn.textContent='📥 Загрузить все коллекции с Fragment';}}
+        if(d.success){showToast('Модели сохранены: '+(d.models||0)+' (на маркет не добавлены)','ok');}
+        else showToast(d.error||'Ошибка загрузки моделей','err');
+    }catch(e){showToast('Ошибка соединения с Fragment','err');}
+    finally{if(btn){btn.disabled=false;btn.textContent='🧩 Загрузить модели (только в админ-кэш)';}}
+}
+
+async function importFragmentAll(evt){
+    var btn=evt&&evt.currentTarget; if(btn){btn.disabled=true;btn.textContent='⏳ Загружаем всё...';}
+    try{
+        var r=await fetch('/api/fragment/import-all',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID})});
+        var d=await r.json();
+        if(d.success){showToast('Fragment: '+(d.collections||0)+' коллекций, '+(d.models||0)+' моделей. Модели в маркет не добавлены.','ok');loadPortalStatus();}
+        else showToast(d.error||'Ошибка полной загрузки Fragment','err');
+    }catch(e){showToast('Ошибка соединения с Fragment','err');}
+    finally{if(btn){btn.disabled=false;btn.textContent='📦 Загрузить всё с Fragment';}}
 }
 async function syncPortalPrices(evt){
     if(!confirm('Синхронизировать цены с Portal? Это может занять несколько минут.')) return;
