@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # app.py - main application file
-from flask import Flask, render_template, render_template_string, request, jsonify, send_from_directory, redirect, make_response, g, has_request_context
+from flask import Flask, render_template, render_template_string, request, jsonify, send_from_directory, redirect, make_response, g, has_request_context, send_file
 from jinja2 import TemplateNotFound
 import sqlite3
 import json
@@ -2427,8 +2427,16 @@ def _canonicalize_case_gifts(case_gifts, catalog=None):
     for entry in (case_gifts or []):
         if not isinstance(entry, dict):
             continue
-        if entry.get('type') == 'ton_balance':
-            result.append(dict(entry))
+        if entry.get('type') in ('ton_balance', 'gram_balance'):
+            normalized = dict(entry)
+            amount = normalized.get('gram_amount', normalized.get('ton_amount', 0))
+            normalized['type'] = 'gram_balance'
+            normalized['name'] = 'Gram Balance'
+            normalized['image'] = '/static/img/ton.png'
+            normalized['gram_amount'] = amount
+            normalized['ton_amount'] = amount
+            normalized['value'] = amount
+            result.append(normalized)
             continue
 
         target_id = entry.get('id')
@@ -2682,6 +2690,7 @@ EVENT_DEFAULTS = {
         'id': 'witch_hat_party', 'name': 'Witch Hat Party',
         'image': '/static/img/witchhat.png', 'loading_gif': 'loading.gif',
         'enabled': False, 'ends_at': None,
+        'halloween_mode': False, 'change_leaderboard': False,
         'sections': [
             {'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]},
             {'id':'market','title':'Купить подарок','type':'market','items':[]}
@@ -2705,6 +2714,8 @@ def _event_db_defaults():
                 obj=json.loads(json.dumps(event))
                 if isinstance(legacy,dict): obj.update(legacy)
                 obj.setdefault('sections',json.loads(json.dumps(event['sections'])))
+                obj.setdefault('halloween_mode', bool(event.get('halloween_mode', False)))
+                obj.setdefault('change_leaderboard', bool(event.get('change_leaderboard', False)))
                 conn.execute('INSERT INTO event_configs (id,payload) VALUES (?,?)',(event_id,json.dumps(obj,ensure_ascii=False)))
         conn.commit()
     except Exception as e:
@@ -5761,12 +5772,16 @@ def cases_page():
 
 @app.route('/event/witch-hat-party')
 def witch_hat_party_page():
-    """Страница ивента Witch Hat Party."""
-    event_file = os.path.join(BASE_PATH, 'witch_hat_party.html')
-    if not os.path.exists(event_file):
-        logger.error('❌ Файл ивента не найден: %s', event_file)
-        return 'Event page not found', 404
-    return send_from_directory(BASE_PATH, 'witch_hat_party.html')
+    """Страница ивента Witch Hat Party. Ищем файл и в корне, и в templates."""
+    candidates = [
+        os.path.join(BASE_PATH, 'witch_hat_party.html'),
+        os.path.join(BASE_PATH, 'templates', 'witch_hat_party.html'),
+    ]
+    for event_file in candidates:
+        if os.path.isfile(event_file):
+            return send_file(event_file)
+    logger.error('❌ Файл ивента не найден. Проверены: %s', candidates)
+    return 'Event page not found', 404
 
 @app.route('/event')
 def event_page_alias():
@@ -5800,9 +5815,17 @@ async function init(){var uid=new URLSearchParams(location.search).get('user_id'
 
 @app.route('/profile')
 def profile_page():
-    """Страница профиля → редирект на инвентарь"""
-    logger.info("👤 Запрос страницы профиля → редирект на /inventory")
-    return redirect('/inventory')
+    """Рабочая страница профиля. Не зависит от отсутствующего inventory.html."""
+    return render_template_string(r'''<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><title>Профиль</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script><script src="/static/js/telegram-auth.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{min-height:100vh;background:linear-gradient(180deg,#090e1c,#0b1220);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:calc(10px + env(safe-area-inset-top)) 12px calc(90px + env(safe-area-inset-bottom))}.wrap{width:min(100%,520px);margin:0 auto}.top{height:54px;display:flex;align-items:center;gap:10px;margin-bottom:10px}.back{width:42px;height:42px;border-radius:13px;background:#121c2c;border:1px solid rgba(120,155,200,.18);color:#fff;font-size:24px}.title{font-size:20px;font-weight:900}.card{background:rgba(255,255,255,.045);border:1px solid rgba(130,165,205,.13);border-radius:22px;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.25)}.identity{display:flex;align-items:center;gap:14px}.avatar{width:72px;height:72px;border-radius:50%;padding:2px;background:#172238;border:1px solid rgba(110,145,189,.3);overflow:hidden;flex:none}.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}.name{font-size:20px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.username{margin-top:4px;color:rgba(255,255,255,.42);font-size:12px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}.stat{padding:12px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06)}.label{font-size:10px;color:rgba(255,255,255,.38);font-weight:800;text-transform:uppercase;letter-spacing:.6px}.value{margin-top:5px;font-size:16px;font-weight:900}.gram{display:flex;align-items:center;gap:5px}.gram img{width:16px;height:16px}.inventory{margin-top:16px}.inv-title{font-size:12px;font-weight:900;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.7px;margin-bottom:9px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.item{aspect-ratio:1;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);overflow:hidden}.item img{width:100%;height:100%;object-fit:cover}.bottom{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:496px;margin:auto;height:54px;border:0;border-radius:27px;background:#1687f8;color:#fff;font-weight:900;z-index:5} .empty{padding:25px;text-align:center;color:rgba(255,255,255,.35)}
+</style></head><body><div class="wrap"><div class="top"><button class="back" onclick="history.back()">‹</button><div class="title">Профиль</div></div><div class="card" id="profile"><div class="empty">Загрузка…</div></div></div><button class="bottom" onclick="location.href='/cases'">Кейсы</button>
+<script>
+(async function(){try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand()}var auth=await telegramAuth();var u=auth&&auth.id?auth.id:(Telegram.WebApp.initDataUnsafe.user||{}).id;if(!u){document.getElementById('profile').innerHTML='<div class="empty">Откройте профиль через Telegram</div>';return}var r=await fetch('/api/user/'+u);var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');var x=d.user||{};var img=x.photo_url||'/static/img/avatar-default.png';var name=[x.first_name,x.last_name].filter(Boolean).join(' ')||x.username||'Пользователь';var inv=d.inventory||[];document.getElementById('profile').innerHTML='<div class="identity"><div class="avatar"><img src="'+img+'" onerror="this.src=\'/static/img/avatar-default.png\'"></div><div><div class="name">'+esc(name)+'</div><div class="username">'+(x.username?'@'+esc(x.username):'Профиль пользователя')+'</div></div></div><div class="stats"><div class="stat"><div class="label">Баланс</div><div class="value gram"><img src="/static/img/ton.png">'+(Number(x.balance_stars||0)/100).toFixed(2)+'</div></div><div class="stat"><div class="label">Рефералы</div><div class="value">'+Number(x.referral_count||0)+'</div></div><div class="stat"><div class="label">Уровень</div><div class="value">'+Number(x.current_level||1)+'</div></div><div class="stat"><div class="label">Кейсы</div><div class="value">'+Number(x.total_cases_opened||0)+'</div></div></div>'+(inv.length?'<div class="inventory"><div class="inv-title">Инвентарь · '+inv.length+'</div><div class="grid">'+inv.slice(0,12).map(function(it){return '<div class="item"><img src="'+(it.image||'/static/img/gift.png')+'" onerror="this.src=\'/static/img/gift.png\'"></div>'}).join('')+'</div></div>':'')}catch(e){document.getElementById('profile').innerHTML='<div class="empty">Не удалось загрузить профиль</div>'}})();
+function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+</script></body></html>''')
 
 @app.route('/ref')
 def ref_page():
@@ -8434,6 +8457,8 @@ def admin_events():
             if action=='update_settings':
                 for key in ('name','image','loading_gif'):
                     if key in data: ev[key]=str(data.get(key) or '').strip()
+                if 'halloween_mode' in data: ev['halloween_mode']=bool(data.get('halloween_mode'))
+                if 'change_leaderboard' in data: ev['change_leaderboard']=bool(data.get('change_leaderboard'))
             elif action in ('add_case','remove_case'):
                 case_id=str(data.get('case_id') or '').strip(); section_id=str(data.get('section_id') or '').strip(); sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==section_id and x.get('type')=='cases'),None) or next((x for x in ev.setdefault('sections',[]) if x.get('type')=='cases'),None)
                 if sec is None: sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}; ev['sections'].insert(0,sec)
@@ -24275,6 +24300,14 @@ def api_leaderboard():
             'rewards': rewards_enriched,
             'title': config[4] or 'Лидерборд'
         }
+
+        try:
+            witch_event = get_active_events().get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party']) or {}
+            config_data['halloween_mode'] = bool(witch_event.get('enabled') and witch_event.get('halloween_mode') and witch_event.get('change_leaderboard'))
+            config_data['event_id'] = 'witch_hat_party'
+        except Exception:
+            config_data['halloween_mode'] = False
+            config_data['event_id'] = None
 
         period_start = config[1]
 
