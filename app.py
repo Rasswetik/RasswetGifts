@@ -2618,6 +2618,89 @@ EVENT_DEFAULTS = {
     }
 }
 
+
+SEASONAL_CASE_FILE = os.path.join(BASE_PATH, 'data', 'seasonal_case.json')
+SEASONAL_CASE_DEFAULT = {
+    'id': 'seasonal',
+    'seasonal': True,
+    'enabled': False,
+    'name': 'Сезонный кейс',
+    'slug': 'seasonal',
+    'image': '/static/img/gift.png',
+    'cost': 0,
+    'cost_type': 'stars',
+    'section': 'season',
+    'required_level': 1,
+    'limited': False,
+    'amount': 0,
+    'description': 'Сезонный кейс',
+    'display_order': -100,
+    'tags': ['season'],
+    'glow_effect': 'none',
+    'free': False,
+    'promo': False,
+    'time': '24H',
+    'promo_codes': [],
+    'gifts': [],
+    'season_start': None,
+    'season_end': None,
+}
+
+def load_seasonal_case():
+    try:
+        os.makedirs(os.path.dirname(SEASONAL_CASE_FILE), exist_ok=True)
+        if not os.path.exists(SEASONAL_CASE_FILE):
+            save_seasonal_case(SEASONAL_CASE_DEFAULT)
+            return json.loads(json.dumps(SEASONAL_CASE_DEFAULT))
+        with open(SEASONAL_CASE_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        obj = dict(SEASONAL_CASE_DEFAULT)
+        if isinstance(data, dict): obj.update(data.get('case', data))
+        obj['id'] = 'seasonal'; obj['seasonal'] = True
+        return obj
+    except Exception as e:
+        logger.warning('Seasonal case load failed: %s', e)
+        return json.loads(json.dumps(SEASONAL_CASE_DEFAULT))
+
+def save_seasonal_case(case_obj):
+    try:
+        os.makedirs(os.path.dirname(SEASONAL_CASE_FILE), exist_ok=True)
+        with open(SEASONAL_CASE_FILE, 'w', encoding='utf-8') as f:
+            json.dump({'case': case_obj}, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.error('Seasonal case save failed: %s', e)
+        return False
+
+def seasonal_case_is_active(case_obj=None):
+    case_obj = case_obj or load_seasonal_case()
+    if not case_obj.get('enabled'): return False
+    start = case_obj.get('season_start'); end = case_obj.get('season_end')
+    now = datetime.utcnow()
+    try:
+        if start:
+            dt = datetime.fromisoformat(str(start).replace('Z','+00:00'))
+            if getattr(dt, 'tzinfo', None):
+                from datetime import timezone
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            if now < dt: return False
+        if end:
+            dt = datetime.fromisoformat(str(end).replace('Z','+00:00'))
+            if getattr(dt, 'tzinfo', None):
+                from datetime import timezone
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            if now >= dt: return False
+    except Exception:
+        return False
+    return True
+
+def get_public_cases_with_seasonal():
+    cases = load_cases()
+    seasonal = load_seasonal_case()
+    if seasonal_case_is_active(seasonal):
+        cases = [seasonal] + [c for c in cases if str(c.get('id')) != 'seasonal']
+    return cases
+
 def load_events():
     try:
         os.makedirs(os.path.dirname(EVENTS_FILE), exist_ok=True)
@@ -8351,6 +8434,10 @@ def api_cases():
             data = json.load(f)
             cases = data.get('cases', [])
 
+        seasonal = load_seasonal_case()
+        if seasonal_case_is_active(seasonal):
+            cases = [seasonal] + [c for c in cases if str(c.get('id')) != 'seasonal']
+
         logger.info(f"✅ Загружено {len(cases)} кейсов")
         return jsonify({'success': True, 'cases': cases})
 
@@ -8453,8 +8540,11 @@ def api_case_detail(case_id):
 def api_case_detail_by_slug(case_slug):
     try:
         target = str(case_slug or '').strip().lower()
+        seasonal = load_seasonal_case()
         cases = load_cases()
-        case = next((c for c in cases if _case_slug(c).lower() == target), None)
+        case = seasonal if target == 'seasonal' and seasonal_case_is_active(seasonal) else None
+        if not case:
+            case = next((c for c in cases if _case_slug(c).lower() == target), None)
         if not case:
             case = next((c for c in cases if _slugify_case_name(c.get('name')) == target), None)
         if not case and target.isdigit():
@@ -8499,7 +8589,10 @@ def open_case():
             quantity = 1
 
         cases = load_cases()
-        case = next((c for c in cases if str(c.get('id')) == str(case_id)), None)
+        seasonal = load_seasonal_case()
+        case = seasonal if str(case_id).lower() == 'seasonal' and seasonal_case_is_active(seasonal) else None
+        if not case:
+            case = next((c for c in cases if str(c.get('id')) == str(case_id)), None)
 
         if not case:
             return jsonify({'success': False, 'error': 'Кейс не найден'})
@@ -16377,10 +16470,15 @@ def admin_cases_management():
             cases = load_cases()
 
             new_id = data.get('id')
-            if not new_id:
-                new_id = max([case['id'] for case in cases], default=0) + 1
+            if new_id not in (None, ''):
+                try:
+                    new_id = int(new_id)
+                except (TypeError, ValueError):
+                    return jsonify({'success': False, 'error': 'Некорректный ID кейса'}), 400
+            else:
+                new_id = max([int(case.get('id', 0)) for case in cases], default=0) + 1
 
-            if any(case['id'] == new_id for case in cases):
+            if any(str(case.get('id')) == str(new_id) for case in cases):
                 return jsonify({'success': False, 'error': 'Кейс с таким ID уже существует'})
 
             max_order = max([case.get('display_order', 0) for case in cases], default=0)
@@ -16439,10 +16537,13 @@ def admin_cases_management():
 
         elif request.method == 'PUT':
             data = payload
-            case_id = data['id']
+            try:
+                case_id = int(data['id'])
+            except (TypeError, ValueError, KeyError):
+                return jsonify({'success': False, 'error': 'Некорректный ID кейса'}), 400
 
             cases = load_cases()
-            case_index = next((i for i, case in enumerate(cases) if case['id'] == case_id), -1)
+            case_index = next((i for i, case in enumerate(cases) if str(case.get('id')) == str(case_id)), -1)
 
             if case_index == -1:
                 return jsonify({'success': False, 'error': 'Кейс не найден'})
@@ -16500,15 +16601,18 @@ def admin_cases_management():
                 return jsonify({'success': False, 'error': 'Ошибка сохранения кейса'})
 
         elif request.method == 'DELETE':
-            case_id = payload['id']
+            try:
+                case_id = int(payload['id'])
+            except (TypeError, ValueError, KeyError):
+                return jsonify({'success': False, 'error': 'Некорректный ID кейса'}), 400
 
             cases = load_cases()
-            case_to_delete = next((case for case in cases if case['id'] == case_id), None)
+            case_to_delete = next((case for case in cases if str(case.get('id')) == str(case_id)), None)
 
             if not case_to_delete:
                 return jsonify({'success': False, 'error': 'Кейс не найден'})
 
-            cases = [case for case in cases if case['id'] != case_id]
+            cases = [case for case in cases if str(case.get('id')) != str(case_id)]
 
             if save_cases(cases):
                 conn = get_db_connection()
@@ -19209,6 +19313,43 @@ def grant_reward_with_comp(cursor, user_id, reward_type, amount, item_id_val, ow
         logger.error(f"grant_reward_with_comp error: {e}")
     return msgs
 
+
+@app.route('/api/admin/seasonal-case', methods=['GET', 'POST'])
+def admin_seasonal_case():
+    try:
+        payload = request.get_json(silent=True) or {}
+        admin_id = request.args.get('admin_id') or payload.get('admin_id')
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+        if request.method == 'GET':
+            return jsonify({'success': True, 'case': load_seasonal_case(), 'active': seasonal_case_is_active()})
+        case = load_seasonal_case()
+        case.update({
+            'enabled': bool(payload.get('enabled', case.get('enabled', False))),
+            'name': str(payload.get('name') or case.get('name') or 'Сезонный кейс').strip(),
+            'slug': 'seasonal',
+            'image': str(payload.get('image') or case.get('image') or '/static/img/gift.png').strip(),
+            'cost': float(payload.get('cost', case.get('cost', 0)) or 0),
+            'cost_type': str(payload.get('cost_type') or case.get('cost_type') or 'stars'),
+            'section': normalize_section_id(payload.get('section') or case.get('section') or 'season'),
+            'required_level': max(1, int(payload.get('required_level', case.get('required_level', 1)) or 1)),
+            'description': str(payload.get('description') or ''),
+            'display_order': int(payload.get('display_order', case.get('display_order', -100)) or -100),
+            'free': bool(payload.get('free', case.get('free', False))),
+            'promo': bool(payload.get('promo', case.get('promo', False))),
+            'gifts': payload.get('gifts', case.get('gifts', [])),
+            'season_start': payload.get('season_start') or None,
+            'season_end': payload.get('season_end') or None,
+        })
+        if case['cost'] < 0: case['cost'] = 0
+        if not case['name']:
+            return jsonify({'success': False, 'error': 'Введите название кейса'}), 400
+        if not save_seasonal_case(case):
+            return jsonify({'success': False, 'error': 'Ошибка сохранения сезонного кейса'}), 500
+        return jsonify({'success': True, 'case': case, 'active': seasonal_case_is_active(case)})
+    except Exception as e:
+        logger.error('Seasonal case admin error: %s', e)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/admin/case-sections', methods=['GET', 'POST', 'DELETE'])
 def admin_case_sections():
