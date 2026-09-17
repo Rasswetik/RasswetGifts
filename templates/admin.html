@@ -311,7 +311,11 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 .event-theme-toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);cursor:pointer}
 .event-theme-toggle span{display:flex;flex-direction:column;gap:3px;min-width:0}.event-theme-toggle b{font-size:13px;color:#fff}.event-theme-toggle small{font-size:10px;color:rgba(255,255,255,.42);line-height:1.35}
 .event-theme-toggle input{position:absolute;opacity:0;pointer-events:none}.event-theme-toggle i{width:46px;height:26px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.08);position:relative;flex:0 0 46px;transition:.2s}.event-theme-toggle i:after{content:'';position:absolute;width:20px;height:20px;left:2px;top:2px;border-radius:50%;background:#aaa;transition:.2s;box-shadow:0 2px 6px rgba(0,0,0,.3)}.event-theme-toggle input:checked+i{background:linear-gradient(135deg,#7c3aed,#c026d3);border-color:rgba(192,38,211,.55)}.event-theme-toggle input:checked+i:after{left:22px;background:#fff}
-</style></head>
+</style><style id="gram-only-admin-v11">
+/* В кейсах используется только GRAM. Старые селекторы валюты не показываем. */
+#ceCostType,#ceSection,#ceRequiredLevel,#ceDescription,#ceLimited,#ceAmount,#ceOrder,#ceTime,#ceTags{display:none!important}
+</style>
+</head>
 <body>
 
 <div id="adminLoader">
@@ -424,6 +428,10 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 <div class="form-group"><label class="form-label">PNG события</label><input class="form-input" id="eventImageInput" placeholder="witchhat.png"></div>
                 <div class="form-group"><label class="form-label">GIF загрузки</label><input class="form-input" id="eventLoadingGifInput" placeholder="loading.gif"><div class="event-sub" style="margin-top:5px">Вводится имя файла. По умолчанию ищется в /static/img/.</div></div>
             </div>
+            <div class="event-editor-grid" style="margin-top:10px">
+                <label class="event-mode-switch"><span><b>Halloween-режим</b><small>Фиолетовое оформление и декор Witch</small></span><input type="checkbox" id="witchHalloweenToggle"><span class="event-switch"></span></label>
+                <label class="event-mode-switch"><span><b>Изменить лидерборд</b><small>Меняет дизайн лидерборда на Halloween-версию</small></span><input type="checkbox" id="witchLeaderboardToggle"><span class="event-switch"></span></label>
+            </div>
             <button class="btn btn-success" onclick="saveEventSettings()" style="margin-top:10px">Сохранить настройки</button>
         </div>
         <div class="card" style="margin-top:14px"><div class="card-title">Разделы события</div><div id="eventSectionsAdmin"></div><div class="event-actions"><button class="btn btn-primary" onclick="addEventSection()">+ Добавить раздел</button></div></div>
@@ -494,7 +502,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="card">
             <div class="card-title">Добавить подарок</div>
             <div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="newGiftName" placeholder="Plush Pepe"></div>
-            <div class="form-group"><label class="form-label">Цена (звёзды, 1 TON = 100)</label><input type="number" class="form-input" id="newGiftValue" placeholder="500" min="1"></div>
+            <div class="form-group"><label class="form-label">Цена (звёзды, 1 GRAM = 100)</label><input type="number" class="form-input" id="newGiftValue" placeholder="500" min="1"></div>
             <div class="form-group"><label class="form-label">URL картинки</label><input type="text" class="form-input" id="newGiftImage" placeholder="https://... или /static/..."></div>
             <div class="form-group"><label class="form-label">Fragment slug (опционально)</label><input type="text" class="form-input" id="newGiftSlug" placeholder="plushpepe"></div>
             <button class="btn btn-success" onclick="addNewGift()">+ Добавить</button>
@@ -527,28 +535,11 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <div class="card-title">Основное</div>
             <div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="ceName" placeholder="Starter"></div>
             <div class="form-group"><label class="form-label">Ссылка / slug</label><input type="text" class="form-input" id="ceSlug" placeholder="starter"><div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:5px">Например: /case/starter</div></div>
-            <div class="form-row">
-                <div class="form-group"><label class="form-label">Цена</label><input type="number" class="form-input" id="ceCost" placeholder="100" min="0"></div>
-                <div class="form-group"><label class="form-label">Валюта</label>
-                    <select class="form-input" id="ceCostType">
-                        <option value="stars">Звёзды</option>
-                        <option value="ton">TON</option>
-                        <option value="tickets">Билеты</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label class="form-label">Раздел</label><input type="text" class="form-input" id="ceSection" placeholder="general"></div>
-                <div class="form-group"><label class="form-label">Мин. уровень</label><input type="number" class="form-input" id="ceRequiredLevel" value="1" min="1"></div>
-            </div>
+            <div class="form-group"><label class="form-label">Цена, GRAM</label><input type="number" class="form-input" id="ceCost" placeholder="1.00" min="0" step="0.01"></div>
             <div class="form-group"><label class="form-label">Изображение кейса</label><input type="text" class="form-input" id="ceImage" placeholder="/static/gifs/cases/...">
                 <input type="file" id="ceImageFile" accept="image/png,image/jpeg,image/webp,image/gif" style="margin-top:8px;width:100%" onchange="uploadCaseImage()">
                 <div id="ceImagePreview" style="margin-top:8px"></div></div>
-            <div class="form-group"><label class="form-label">Описание</label><textarea class="form-input" id="ceDescription" rows="2" placeholder="Описание кейса"></textarea></div>
-            <div class="form-row"><div class="form-group"><label class="form-label">Лимит</label><select class="form-input" id="ceLimited"><option value="false">Без лимита</option><option value="true">Ограниченный тираж</option></select></div><div class="form-group"><label class="form-label">Количество</label><input type="number" class="form-input" id="ceAmount" value="0" min="0"></div></div>
-            <div class="form-row"><div class="form-group"><label class="form-label">Порядок</label><input type="number" class="form-input" id="ceOrder" value="0" min="0"></div><div class="form-group"><label class="form-label">Время</label><input type="text" class="form-input" id="ceTime" value="24H"></div></div>
-            <div class="form-group"><label class="form-label">Теги</label><input type="text" class="form-input" id="ceTags" placeholder="starter, nft, promo"></div>
-            <div class="form-row"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="ceFree"> Бесплатный</label><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cePromo"> Промо-кейс</label></div>
+            <div class="form-row" style="margin-top:8px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="ceFree"> Бесплатный</label><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cePromo"> Промо-кейс</label></div>
         </div>
 
         <div class="card">
@@ -556,7 +547,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <div id="ceGiftsList"></div>
             <div class="btn-row" style="margin-top:10px">
                 <button class="btn btn-primary" onclick="openGiftPicker()">+ Подарок</button>
-                <button class="btn btn-warn" onclick="openTonBalanceForm()">+ TON-баланс</button>
+                <button class="btn btn-warn" onclick="openTonBalanceForm()">+ GRAM-баланс</button>
             </div>
         </div>
 
@@ -576,12 +567,12 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <div class="form-group"><label class="form-label">Показывать в сезоне</label><label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="scEnabled"> Включить</label></div>
             <div class="form-group"><label class="form-label">Название</label><input class="form-input" id="scName" placeholder="Сезонный кейс"></div>
             <div class="form-group"><label class="form-label">Изображение кейса</label><input class="form-input" id="scImage" placeholder="/static/img/..." ></div>
-            <div class="form-row"><div class="form-group"><label class="form-label">Цена</label><input type="number" min="0" step="0.01" class="form-input" id="scCost"></div><div class="form-group"><label class="form-label">Валюта</label><select class="form-input" id="scCostType"><option value="stars">Звёзды</option><option value="ton">TON</option><option value="tickets">Билеты</option></select></div></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Цена</label><input type="number" min="0" step="0.01" class="form-input" id="scCost"></div><div class="form-group"><label class="form-label">Валюта</label><select class="form-input" id="scCostType"><option value="stars">GRAM</option><option value="ton">TON</option><option value="tickets">Билеты</option></select></div></div>
             <div class="form-row"><div class="form-group"><label class="form-label">Начало сезона</label><input type="datetime-local" class="form-input" id="scStart"></div><div class="form-group"><label class="form-label">Конец сезона</label><input type="datetime-local" class="form-input" id="scEnd"></div></div>
             <div class="form-row"><div class="form-group"><label class="form-label">Мин. уровень</label><input type="number" min="1" class="form-input" id="scLevel" value="1"></div><div class="form-group"><label class="form-label">Раздел</label><input class="form-input" id="scSection" value="season"></div></div>
             <div class="form-group"><label class="form-label">Описание</label><textarea class="form-input" id="scDescription" rows="2"></textarea></div>
         </div>
-        <div class="card"><div class="card-title">Подарки в сезонном кейсе</div><div id="scGiftsList"></div><div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" onclick="openSeasonalGiftPicker()">+ Подарок</button><button class="btn btn-warn" onclick="openSeasonalTonForm()">+ TON-баланс</button></div></div>
+        <div class="card"><div class="card-title">Подарки в сезонном кейсе</div><div id="scGiftsList"></div><div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" onclick="openSeasonalGiftPicker()">+ Подарок</button><button class="btn btn-warn" onclick="openSeasonalTonForm()">+ GRAM-баланс</button></div></div>
         <div class="btn-row" style="margin-bottom:20px"><button class="btn btn-success" onclick="saveSeasonalCase()">💾 Сохранить сезонный кейс</button></div>
     </div>
 
@@ -599,9 +590,9 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <div class="form-group">
                 <label class="form-label">Тип награды</label>
                 <select class="form-input" id="promoRewardType" onchange="onPromoTypeChange()">
-                    <option value="stars">Звёзды</option>
+                    <option value="stars">GRAM</option>
                     <option value="tickets">Билеты</option>
-                    <option value="stars+tickets">Звёзды + Билеты</option>
+                    <option value="stars+tickets">GRAM + Билеты</option>
                     <option value="crash_vip">Crash VIP</option>
                     <option value="rocket">Ракета (скин)</option>
                     <option value="background">Фон</option>
@@ -715,7 +706,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 <div class="form-group"><label class="form-label">Награда</label><input type="number" class="form-input" id="questReward" value="50" min="0"></div>
                 <div class="form-group"><label class="form-label">Тип награды</label>
                     <select class="form-input" id="questRewardType">
-                        <option value="stars">Звёзды</option>
+                        <option value="stars">GRAM</option>
                         <option value="tickets">Билеты</option>
                         <option value="vip">VIP</option>
                     </select>
@@ -752,7 +743,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <div class="form-group">
                 <label class="form-label">Тип награды</label>
                 <select class="form-input" id="lbRewardType" onchange="onLbRewardTypeChange()">
-                    <option value="stars">Звёзды (TON)</option>
+                    <option value="stars">GRAM</option>
                     <option value="gift">Подарок из каталога</option>
                     <option value="nft_gift">NFT Подарок (Fragment)</option>
                 </select>
@@ -760,7 +751,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 
             <div id="lbStarsBlock">
                 <div class="form-group">
-                    <label class="form-label">Сумма в TON</label>
+                    <label class="form-label">Сумма в GRAM</label>
                     <input type="number" class="form-input" id="lbStarsAmount" placeholder="50" min="0.01" step="0.01">
                 </div>
                 <button class="btn btn-primary" onclick="addStarsReward()">Добавить награду</button>
@@ -781,7 +772,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                     <input type="text" class="form-input" id="lbNftUrl" placeholder="https://fragment.com/gift/plushpepe-1234" oninput="onNftUrlInput()">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Цена в TON (для отображения)</label>
+                    <label class="form-label">Цена в GRAM (для отображения)</label>
                     <input type="number" class="form-input" id="lbNftPrice" placeholder="50" min="0" step="0.01">
                 </div>
                 <div id="lbNftPreview"></div>
@@ -1064,7 +1055,7 @@ function renderPickerItems(items){
     }
     grid.innerHTML = items.map(function(it, i){
         var img = it.image || '/static/img/gift.png';
-        var price = it.value ? (it.value / 100).toFixed(2) + ' TON' : '';
+        var price = it.value ? (it.value / 100).toFixed(2) + ' GRAM' : '';
         return '<div class="picker-item" onclick="selectPickerItem(' + i + ')">'
             + '<img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'" alt="">'
             + '<div class="pi-name">' + escapeHtml(it.name || '') + '</div>'
@@ -1180,13 +1171,13 @@ function openSeasonalGiftPicker(){
     });
 }
 function openSeasonalTonForm(){
-    var html='<div class="modal-title">💰 TON-баланс в сезонный кейс</div>' +
-      '<div class="form-group"><label class="form-label">Количество TON</label><input type="number" class="form-input" id="scTonAmount" placeholder="5" min="0.01" step="0.01"></div>' +
+    var html='<div class="modal-title">💰 GRAM-баланс в сезонный кейс</div>' +
+      '<div class="form-group"><label class="form-label">Количество GRAM</label><input type="number" class="form-input" id="scTonAmount" placeholder="5" min="0.01" step="0.01"></div>' +
       '<div class="form-group"><label class="form-label">Шанс (вес)</label><input type="number" class="form-input" id="scTonChance" value="10" min="1"></div>' +
       '<div class="btn-row"><button class="btn btn-success" onclick="addSeasonalTon()">Добавить</button><button class="btn btn-secondary" onclick="closeModal()">Отмена</button></div>';
     openModal(html);
 }
-function addSeasonalTon(){ var n=parseFloat($('scTonAmount').value)||0, ch=parseFloat($('scTonChance').value)||10; if(n<=0){showToast('Введите сумму','err');return;} seasonalCaseGifts.push({type:'ton_balance',ton_amount:n,chance:ch}); renderSeasonalGifts(); closeModal(); showToast('TON-баланс добавлен','ok'); }
+function addSeasonalTon(){ var n=parseFloat($('scTonAmount').value)||0, ch=parseFloat($('scTonChance').value)||10; if(n<=0){showToast('Введите сумму','err');return;} seasonalCaseGifts.push({type:'ton_balance',ton_amount:n,chance:ch}); renderSeasonalGifts(); closeModal(); showToast('GRAM-баланс добавлен','ok'); }
 async function saveSeasonalCase(){
     var payload={admin_id:ADMIN_ID,source_case_id:$('scSourceCase').value||null,enabled:$('scEnabled').checked,name:$('scName').value.trim(),image:$('scImage').value.trim(),cost:parseFloat($('scCost').value)||0,cost_type:$('scCostType').value,season_start:dtIso($('scStart').value),season_end:dtIso($('scEnd').value),required_level:parseInt($('scLevel').value)||1,section:$('scSection').value.trim()||'season',description:$('scDescription').value,gifts:seasonalCaseGifts};
     if(!payload.name){showToast('Введите название','err');return;} if(payload.season_start&&payload.season_end&&new Date(payload.season_end)<=new Date(payload.season_start)){showToast('Конец сезона должен быть позже начала','err');return;}
@@ -1222,7 +1213,7 @@ async function loadHouseBank(){
             var b = d.bank;
             var balCls = b.balance < 0 ? 'color:#FF3064' : (b.balance > 0 ? 'color:#24C38E' : '');
             var html =
-                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Баланс</span><span style="font-weight:800;' + balCls + '">' + formatTon(b.balance) + ' TON</span></div>' +
+                '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Баланс</span><span style="font-weight:800;' + balCls + '">' + formatTon(b.balance) + ' GRAM</span></div>' +
                 '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px"><span style="color:rgba(255,255,255,.6)">Режим</span><span style="font-weight:800">' + (b.mode_label || '—') + '</span></div>' +
                 '<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px"><span style="color:rgba(255,255,255,.6)">Поступления</span><span style="font-weight:800">' + formatTon(b.money_in || 0) + '</span></div>';
             var el = $('bankInfo');
@@ -1332,7 +1323,7 @@ async function openUserModal(userId){
     var html =
         '<div class="modal-title">👤 ' + escapeHtml(currentUser.first_name || ('User ' + userId)) + '</div>' +
         '<div class="card"><div class="card-title">Баланс и уровень</div>' +
-        '<div class="form-group"><label class="form-label">Звёзды</label><input type="number" class="form-input" id="userBalanceInput" value="' + (currentUser.balance_stars || 0) + '"></div>' +
+        '<div class="form-group"><label class="form-label">GRAM</label><input type="number" class="form-input" id="userBalanceInput" value="' + (currentUser.balance_stars || 0) + '"></div>' +
         '<div class="form-group"><label class="form-label">Уровень</label><input type="number" class="form-input" id="userLevelInput" min="1" max="25" value="' + (currentUser.level || 1) + '"></div>' +
         '<button class="btn btn-success" onclick="saveUserData()">💾 Сохранить</button></div>' +
         '<div class="card"><div class="card-title">RTP буст (0–100)</div>' +
@@ -1525,7 +1516,7 @@ async function loadCasesList(){
                 return '<div class="list-item" onclick="openCaseEditor(' + c.id + ')">' +
                     '<div class="avatar" style="border-radius:10px;background:rgba(0,0,0,.3)"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
                     '<div class="info"><div class="name">' + escapeHtml(c.name) + '</div>' +
-                    '<div class="meta">🎁 ' + gifts_count + ' · 💎 ' + (c.cost || 0) + ' ' + (c.cost_type || 'stars') + ' · ' + escapeHtml(c.section || 'other') + '</div></div>' +
+                    '<div class="meta">ID #' + escapeHtml(String(c.id)) + ' · 🎁 ' + gifts_count + ' · ' + ((Number(c.cost||0)/100).toFixed(2)) + ' GRAM</div></div>' +
                     '<div class="right" style="color:#7CAEFF;font-weight:800">✎</div>' +
                     '</div>';
             }).join('');
@@ -1542,10 +1533,7 @@ function openCaseEditor(caseId){
         $('ceDeleteBtn').style.display = 'none';
         $('ceName').value = '';
         $('ceSlug').value = '';
-        $('ceCost').value = '100';
-        $('ceCostType').value = 'stars';
-        $('ceSection').value = 'general';
-        $('ceRequiredLevel').value = '1';
+        $('ceCost').value = '1.00';
         $('ceImage').value = '';
         $('ceImageFile').value = '';
         $('ceImagePreview').innerHTML = '';
@@ -1560,10 +1548,7 @@ function openCaseEditor(caseId){
         $('ceDeleteBtn').style.display = 'flex';
         $('ceName').value = c.name || '';
         $('ceSlug').value = c.slug || '';
-        $('ceCost').value = c.cost || 0;
-        $('ceCostType').value = c.cost_type || 'stars';
-        $('ceSection').value = c.section || 'general';
-        $('ceRequiredLevel').value = c.required_level || 1;
+        $('ceCost').value = ((c.cost_type === 'ton' ? Number(c.cost || 0) : Number(c.cost || 0) / 100)).toFixed(2);
         $('ceImage').value = c.image || '';
         $('ceImageFile').value = '';
         $('ceImagePreview').innerHTML = c.image ? '<img src="' + escapeHtml(c.image) + '" style="width:90px;height:90px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.25)">' : '';
@@ -1582,8 +1567,8 @@ function renderCaseGifts(){
         return;
     }
     el.innerHTML = caseGifts.map(function(g, i){
-        var isTon = g.type === 'ton_balance';
-        var img = isTon ? '/static/img/tons/ton_1.svg' : (g.image || '/static/img/gift.png');
+        var isTon = g.type === 'ton_balance' || g.type === 'gram_balance';
+        var img = isTon ? '/static/img/ton.png' : (g.image || '/static/img/gift.png');
         var name = isTon ? (g.ton_amount + ' грамм') : (g.name || 'Gift');
         var price = isTon ? (g.ton_amount + ' грамм') : ((g.value || 0) / 100).toFixed(2) + ' грамм';
         var chance = g.chance || 1;
@@ -1591,7 +1576,7 @@ function renderCaseGifts(){
             '<img class="case-gift-img" src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'">' +
             '<div class="case-gift-info">' +
             '<div class="case-gift-name">' + escapeHtml(name) + '</div>' +
-            '<div class="case-gift-meta"><span>' + escapeHtml(price) + '</span><span>' + (isTon ? '💰 грамм' : '🎁 Gift') + '</span></div>' +
+            '<div class="case-gift-meta"><span>' + escapeHtml(price) + '</span><span>' + (isTon ? 'GRAM' : 'Подарок') + '</span></div>' +
             '</div>' +
             '<div class="case-gift-chance">' +
             '<input type="number" value="' + chance + '" min="1" onchange="updateCaseGiftChance(' + i + ', this.value)">' +
@@ -1632,8 +1617,8 @@ function openGiftPicker(){
 }
 function openTonBalanceForm(){
     var html =
-        '<div class="modal-title">💰 TON-баланс в кейс</div>' +
-        '<div class="form-group"><label class="form-label">Количество TON</label><input type="number" class="form-input" id="tonBalAmount" placeholder="5" min="1" step="1"></div>' +
+        '<div class="modal-title">💰 GRAM-баланс в кейс</div>' +
+        '<div class="form-group"><label class="form-label">Количество GRAM</label><input type="number" class="form-input" id="tonBalAmount" placeholder="5" min="1" step="1"></div>' +
         '<div class="form-group"><label class="form-label">Шанс (вес)</label><input type="number" class="form-input" id="tonBalChance" value="10" min="1"></div>' +
         '<div class="btn-row">' +
         '<button class="btn btn-success" onclick="addTonBalance()">Добавить</button>' +
@@ -1648,7 +1633,7 @@ function addTonBalance(){
     caseGifts.push({ type: 'ton_balance', ton_amount: amt, chance: chance });
     renderCaseGifts();
     closeModal();
-    showToast('TON-баланс добавлен', 'ok');
+    showToast('GRAM-баланс добавлен', 'ok');
 }
 async function uploadCaseImage(){
     var file = $('ceImageFile').files && $('ceImageFile').files[0];
@@ -1667,10 +1652,9 @@ async function uploadCaseImage(){
 async function saveCase(){
     var name = ($('ceName').value || '').trim();
     var slug = ($('ceSlug').value || '').trim();
-    var cost = parseInt($('ceCost').value) || 0;
-    var cost_type = $('ceCostType').value;
-    var section = ($('ceSection').value || 'general').trim();
-    var required_level = parseInt($('ceRequiredLevel').value) || 1;
+    var gramCost = parseFloat($('ceCost').value) || 0;
+    var cost = Math.round(gramCost * 100);
+    var cost_type = 'stars';
     var image = ($('ceImage').value || '').trim();
     var description = ($('ceDescription').value || '').trim();
 
@@ -1679,8 +1663,7 @@ async function saveCase(){
 
     var payload = {
         admin_id: ADMIN_ID, name: name, slug: slug, cost: cost, cost_type: cost_type,
-        section: section, required_level: required_level,
-        image: image, description: description, gifts: caseGifts, limited: $('ceLimited').value === 'true', amount: parseInt($('ceAmount').value) || 0, display_order: parseInt($('ceOrder').value) || 0, time: ($('ceTime').value || '24H').trim(), tags: ($('ceTags').value || '').split(',').map(function(x){return x.trim();}).filter(Boolean), free: $('ceFree').checked, promo: $('cePromo').checked
+        image: image, description: '', gifts: caseGifts, limited: false, amount: 0, display_order: 0, time: '24H', tags: [], free: $('ceFree').checked, promo: $('cePromo').checked
     };
 
     try{
@@ -1732,7 +1715,7 @@ async function loadPromoCodes(){
 
 function renderPromoRow(p){
     var typeLabels = {
-        'stars':'⭐ Звёзды', 'tickets':'🎫 Билеты', 'stars+tickets':'⭐🎫 Звёзды+Билеты',
+        'stars':'⭐ GRAM', 'tickets':'🎫 Билеты', 'stars+tickets':'⭐🎫 GRAM+Билеты',
         'crash_vip':'👑 Crash VIP', 'rocket':'🚀 Ракета', 'background':'🎨 Фон',
         'wager':'💰 Вейджер', 'gift_challenge':'🎁 Подарок+отыгрыш', 'case_open':'📦 Кейс'
     };
@@ -1844,12 +1827,12 @@ function onPromoTypeChange(){
     var html = '';
 
     if(type === 'stars'){
-        html = '<div class="form-group"><label class="form-label">Звёзды</label><input type="number" class="form-input" id="promoStars" value="100" min="1"></div>';
+        html = '<div class="form-group"><label class="form-label">GRAM</label><input type="number" class="form-input" id="promoStars" value="100" min="1"></div>';
     } else if(type === 'tickets'){
         html = '<div class="form-group"><label class="form-label">Билеты</label><input type="number" class="form-input" id="promoTickets" value="10" min="1"></div>';
     } else if(type === 'stars+tickets'){
         html = '<div class="form-row">'
-            + '<div class="form-group"><label class="form-label">Звёзды</label><input type="number" class="form-input" id="promoStars" value="100" min="0"></div>'
+            + '<div class="form-group"><label class="form-label">GRAM</label><input type="number" class="form-input" id="promoStars" value="100" min="0"></div>'
             + '<div class="form-group"><label class="form-label">Билеты</label><input type="number" class="form-input" id="promoTickets" value="10" min="0"></div>'
             + '</div>';
     } else if(type === 'crash_vip'){
@@ -1897,7 +1880,7 @@ function openGiftPickerForPromo(){
                 + '<img src="' + escapeHtml(item.image) + '" onerror="this.src=\'/static/img/gift.png\'">'
                 + '<div class="nft-info">'
                 + '<div class="nft-name">' + escapeHtml(item.name) + '</div>'
-                + '<div class="nft-meta">' + ((item.value||0)/100).toFixed(2) + ' TON</div>'
+                + '<div class="nft-meta">' + ((item.value||0)/100).toFixed(2) + ' GRAM</div>'
                 + '</div>'
                 + '</div>';
         }
@@ -2137,7 +2120,7 @@ async function loadChallenges(){
                 '<div class="challenge-user">👤 ' + escapeHtml(c.user_name || ('User ' + c.user_id)) + ' (ID: ' + c.user_id + ')</div>' +
                 '<div class="challenge-progress-wrap">' +
                 '<div class="challenge-progress-bg"><div class="challenge-progress-bar" style="width:' + progress.toFixed(1) + '%"></div></div>' +
-                '<div class="challenge-progress-text">' + Math.round(c.current_wager / 100) + ' / ' + Math.round(c.target_wager / 100) + ' TON (' + progress.toFixed(1) + '%)</div>' +
+                '<div class="challenge-progress-text">' + Math.round(c.current_wager / 100) + ' / ' + Math.round(c.target_wager / 100) + ' GRAM (' + progress.toFixed(1) + '%)</div>' +
                 '</div>' +
                 '</div>' +
                 statusHtml +
@@ -2290,15 +2273,15 @@ function renderLbRewards(rewards){
             isNft = true;
             img = r.image || ('https://nft.fragment.com/gift/' + (r.slug||'') + '-' + (r.number||0) + '.webp');
             name = r.name || ((r.slug||'') + ' #' + (r.number||0));
-            sub = 'NFT · ' + (r.price_ton || 0) + ' TON';
+            sub = 'NFT · ' + (r.price_ton || 0) + ' GRAM';
         } else if(type === 'gift'){
             img = r.gift_image || r.image || '/static/img/gift.png';
             name = r.gift_name || r.name || 'Подарок';
-            sub = ((r.gift_value || r.value || 0) / 100).toFixed(2) + ' TON';
+            sub = ((r.gift_value || r.value || 0) / 100).toFixed(2) + ' GRAM';
         } else {
             var amt = r.amount || 0;
-            name = formatTon(amt) + ' TON';
-            sub = 'Звёзды';
+            name = formatTon(amt) + ' GRAM';
+            sub = 'GRAM';
         }
 
         return '<div class="lb-reward-row">' +
@@ -2337,7 +2320,7 @@ function openLbGiftPicker(){
             + '<img src="' + escapeHtml(item.image) + '" onerror="this.src=\'/static/img/gift.png\'">'
             + '<div class="nft-info">'
             + '<div class="nft-name">' + escapeHtml(item.name) + '</div>'
-            + '<div class="nft-meta">' + ((item.value||0)/100).toFixed(2) + ' TON</div>'
+            + '<div class="nft-meta">' + ((item.value||0)/100).toFixed(2) + ' GRAM</div>'
             + '</div>'
             + '</div>';
         $('lbGiftAddBtn').disabled = false;
@@ -2533,7 +2516,7 @@ async function openInvUser(userId){
         var items = d.inventory || [];
         var html = '<div class="card">' +
             '<div class="card-title">👤 ' + escapeHtml(u.first_name || 'User') + ' (ID: ' + u.id + ')</div>' +
-            '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:12px">Баланс: ' + formatTon(u.balance_stars || 0) + ' TON · Подарков: ' + items.length + '</div>' +
+            '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:12px">Баланс: ' + formatTon(u.balance_stars || 0) + ' GRAM · Подарков: ' + items.length + '</div>' +
             '</div>';
         html += '<div class="card"><div class="card-title">Инвентарь</div>';
         if(!items.length){ html += '<div class="empty" style="padding:20px">Пусто</div>'; }
@@ -2542,7 +2525,7 @@ async function openInvUser(userId){
                 html += '<div class="list-item" style="cursor:default">' +
                     '<div class="avatar" style="border-radius:10px;background:rgba(0,0,0,.3)"><img src="' + escapeHtml(it.gift_image || '/static/img/gift.png') + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
                     '<div class="info"><div class="name">' + escapeHtml(it.gift_name || '—') + '</div>' +
-                    '<div class="meta">' + formatTon(it.gift_value || 0) + ' TON</div></div>' +
+                    '<div class="meta">' + formatTon(it.gift_value || 0) + ' GRAM</div></div>' +
                     '<button class="btn btn-danger btn-sm" onclick="deleteInvItem(' + it.id + ')">🗑</button>' +
                     '</div>';
             });
