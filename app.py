@@ -8597,6 +8597,20 @@ def open_case():
         if not case:
             return jsonify({'success': False, 'error': 'Кейс не найден'})
 
+        # Normalize values coming from cases.json/admin forms. Browser/admin inputs
+        # can store cost and level as strings; arithmetic with a string cost caused
+        # the endpoint to return HTTP 500, which the old frontend reported as
+        # the misleading "Ошибка сети".
+        try:
+            raw_cost = case.get('cost', 0)
+            case['cost'] = float(str(raw_cost).replace(',', '.')) if raw_cost not in (None, '') else 0.0
+        except Exception:
+            case['cost'] = 0.0
+        try:
+            case['required_level'] = int(case.get('required_level', 1) or 1)
+        except Exception:
+            case['required_level'] = 1
+
         if case.get('limited'):
             current_limit = get_case_limit(case_id)
             if current_limit is not None and current_limit <= 0:
@@ -8634,8 +8648,9 @@ def open_case():
                 })
 
         total_cost = case['cost'] * quantity
-        # Convert TON to stars if cost_type is 'ton' (1 TON = 100 stars)
-        cost_in_stars = total_cost * 100 if case.get('cost_type') == 'ton' else total_cost
+        # Convert TON to stars if cost_type is 'ton' (1 TON = 100 stars).
+        # Keep TON as a float for display/XP, but use an integer star amount for DB balance operations.
+        cost_in_stars = int(round(total_cost * 100)) if case.get('cost_type') == 'ton' else int(round(total_cost))
         
         if case['cost'] > 0:
             if case['cost_type'] in ['stars', 'ton'] and balance_stars < cost_in_stars:
@@ -8844,7 +8859,15 @@ def open_case():
 
     except Exception as e:
         logger.error(f"❌ Ошибка открытия кейса: {e}")
-        return jsonify({'success': False, 'error': str(e)})
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/open-case', methods=['POST'])
 def open_case_single():
