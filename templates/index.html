@@ -1203,7 +1203,7 @@
 body{background:radial-gradient(700px 450px at 8% 55%,rgba(24,91,145,.13),transparent 72%),radial-gradient(700px 450px at 94% 55%,rgba(95,58,53,.10),transparent 72%),linear-gradient(180deg,#090e1c 0%,#080d1b 100%)!important;color:#f7f9fd}
 body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(110,145,189,.07) 1px,transparent 1px)!important;background-size:80px 80px!important}
 .page{width:min(980px,calc(100% - 56px))!important;padding:48px 0 80px!important}.page-title{font-size:32px!important;margin-bottom:24px!important}
-.cases{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:18px!important}
+.cases{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:16px!important}
 .case{min-width:0!important;min-height:250px!important;border-radius:22px!important;background:#101727!important;border:1px solid rgba(150,170,200,.18)!important;box-shadow:0 12px 35px rgba(0,0,0,.14)!important;overflow:hidden!important}.case-glow,.case-particles{display:none!important}
 .case-inner{min-height:250px!important;height:250px!important;padding:12px 14px 14px!important;border-radius:21px!important;background:linear-gradient(155deg,#34435d,#20293a)!important;border:0!important;box-shadow:none!important;display:flex!important;flex-direction:column!important}
 .case-img{order:1!important;flex:1!important;min-height:0!important;height:auto!important;padding:5px 0 2px!important;display:flex!important;align-items:center!important;justify-content:center!important}.case-img img{width:100%!important;height:165px!important;max-height:165px!important;object-fit:contain!important;object-position:center!important;filter:drop-shadow(0 14px 22px rgba(0,0,0,.42))!important;animation:none!important}
@@ -1228,7 +1228,7 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
 .case-open-controls .qty-row{margin:0 0 14px!important}
 .case-detail.spinning .case-detail-image,.case-detail.spinning .case-detail-price{visibility:hidden!important;opacity:0!important;position:absolute!important;pointer-events:none!important}
 .case-detail.spinning .case-detail-title{visibility:visible!important;opacity:1!important;position:relative!important;margin-top:10px!important}
-.case-detail.spinning .case-open-controls,.case-detail.spinning .promo-input-wrap,.case-detail.spinning #contentsSection{display:none!important}
+.case-detail.spinning .promo-input-wrap{display:none!important}
 #rouletteWrap{display:none}
 .case-detail.spinning #rouletteWrap{display:block!important;margin-top:8px!important}
 .case-detail:not(.spinning) #modalWin{display:none!important}
@@ -1258,10 +1258,197 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
 <style id="mobile-layout-v11">
 @media(max-width:700px){
   #mainApp{padding-top:calc(25px + 10vh)!important;transform:none!important}
-  .page{padding-top:calc(25px + 10vh)!important}
   .top-bar{z-index:20}
 }
 </style>
+
+<style id="final-mobile-desktop-cases-v12">
+/* === FINAL CASES LAYOUT: stable mobile + 5-column desktop === */
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+
+/* Desktop */
+@media(min-width:1051px){
+  .page{width:min(1440px,calc(100% - 72px))!important;padding:38px 0 90px!important}
+  .page-title{font-size:36px!important;margin-bottom:24px!important}
+  .cases{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:18px!important}
+  .case,.case-inner{min-width:0!important}
+  .case-inner{height:286px!important;min-height:286px!important;padding:12px!important;border-radius:19px!important}
+  .case-img{height:205px!important;min-height:205px!important;padding:4px!important}
+  .case-img img{height:190px!important;max-height:190px!important;width:100%!important}
+  .case-meta{min-height:49px!important;padding-top:2px!important}
+  .case-name{font-size:16px!important;line-height:1.15!important}
+  .case-prices{height:30px!important;margin-top:4px!important}
+  .case-price{font-size:13px!important;height:28px!important}
+}
+@media(min-width:701px) and (max-width:1050px){
+  .page{width:min(960px,calc(100% - 36px))!important}
+  .cases{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:15px!important}
+}
+
+/* Fixed mobile bottom navigation. Never affected by page/modal transforms. */
+@media(max-width:700px){
+  .bottom-nav{
+    display:grid!important;
+    position:fixed!important;
+    left:12px!important;right:12px!important;
+    bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+    width:auto!important;height:64px!important;
+    min-height:64px!important;max-width:none!important;
+    margin:0!important;padding:5px!important;
+    transform:none!important;
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:4px!important;
+    z-index:2147483000!important;
+    border-radius:19px!important;
+    overflow:hidden!important;
+  }
+  .bottom-nav-btn{
+    width:100%!important;min-width:0!important;height:54px!important;
+    margin:0!important;padding:4px 2px!important;
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    gap:3px!important;border-radius:14px!important;
+  }
+  .bottom-nav-btn .nav-icon,.bottom-nav-btn .nav-icon svg{width:20px!important;height:20px!important}
+  .bottom-nav-btn span{font-size:9px!important;line-height:1!important}
+
+  /* Keep content above the fixed nav and avoid the old double 10vh offset. */
+  .page{width:100%!important;margin:0!important;padding:calc(22px + 10vh) 11px calc(86px + env(safe-area-inset-bottom,0px))!important}
+  .cases{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  .case{min-height:0!important;height:auto!important}
+  .case-inner{height:205px!important;min-height:205px!important;padding:8px!important;border-radius:16px!important}
+  .case-img{height:137px!important;min-height:137px!important;padding:2px!important}
+  .case-img img{height:130px!important;max-height:130px!important;width:100%!important}
+  .case-meta{min-height:43px!important;padding:1px 2px!important}
+  .case-name{font-size:12px!important;line-height:1.15!important}
+  .case-prices{height:24px!important;margin:2px 0 0!important}
+  .case-price{height:24px!important;padding:0 7px!important;font-size:10px!important;border-radius:8px!important}
+  .case-price img{width:13px!important;height:13px!important;flex-basis:13px!important}
+
+  /* Event case: compact, proportional and never stretched on a phone. */
+  .case.event-case{grid-column:1/-1!important}
+  .case.event-case .case-inner{height:205px!important;min-height:205px!important;padding:8px!important;grid-template-columns:42% 58%!important;gap:5px!important;border-radius:16px!important}
+  .case.event-case .case-img img{height:145px!important;max-height:145px!important}
+  .case.event-case .case-meta{padding:8px 3px 2px!important;min-height:0!important}
+  .case.event-case .case-name{font-size:16px!important;line-height:1.08!important;white-space:normal!important}
+  .case.event-case .case-name::before{font-size:6px!important;padding:3px 6px!important;margin-bottom:6px!important;letter-spacing:.5px!important}
+  .case.event-case .case-prices{height:24px!important;margin-top:7px!important}
+  .case.event-case .case-price{height:24px!important;font-size:10px!important;min-width:0!important;padding:0 7px!important}
+
+  /* Case opening screen: compact roulette that actually remains visible while spinning. */
+  .modal.case-detail{width:100%!important;max-width:none!important}
+  .modal-scroll{padding-left:11px!important;padding-right:11px!important;padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))!important}
+  .case-detail-hero{padding:9px 4px 5px!important}
+  .case-detail-image{width:min(58vw,220px)!important;height:175px!important;max-height:175px!important}
+  .case-detail-title{font-size:17px!important;line-height:1.15!important}
+  .case-detail-price{font-size:12px!important;padding:5px 9px!important;margin-top:5px!important}
+  .case-open-controls{display:block!important}
+  .open-action{margin:6px 0 9px!important;padding:0!important}
+  .open-action-btn{height:46px!important;border-radius:12px!important;font-size:14px!important}
+  .qty-row{gap:6px!important;margin-bottom:7px!important}
+  .qty-btn{height:38px!important;border-radius:10px!important;font-size:13px!important}
+  .roulette-wrap{margin:6px -11px 9px!important;height:112px!important;min-height:112px!important}
+  .roulette-track{gap:6px!important;padding:5px 0 5px 5px!important}
+  .roulette-item{width:92px!important;height:102px!important;border-radius:12px!important;padding:6px!important}
+  .roulette-item .ri-img{width:55px!important;height:55px!important}
+  .roulette-item .ri-price{top:5px!important;left:5px!important;font-size:8px!important;padding:3px 5px!important}
+  .roulette-item .ri-price img{width:10px!important;height:10px!important}
+  .roulette-pointer.ptr-top,.roulette-pointer.ptr-bottom{width:11px!important;height:11px!important}
+  .roulette-row{height:104px!important;margin-bottom:4px!important}
+  .roulette-row-item{width:92px!important;height:96px!important}
+  .roulette-row-item .ri-img{width:50px!important;height:50px!important}
+  .roulette-row-item .ri-price{font-size:8px!important;padding:3px 5px!important}
+
+  .contents{margin-top:10px!important}
+  .contents-title{font-size:11px!important;margin-bottom:8px!important}
+  .contents-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+  .content-item{padding:8px!important;border-radius:12px!important}
+  .content-item-name{font-size:10px!important;min-height:25px!important;margin-bottom:5px!important}
+  .content-item img{width:68px!important;height:68px!important;margin-bottom:6px!important}
+  .content-price{font-size:10px!important;padding:5px 7px!important}
+
+  /* Winning result: clear, compact and animated instead of appearing broken/off-screen. */
+  .modal-win{padding:12px 0 6px!important;margin-top:4px!important}
+  .modal-win-badge{font-size:12px!important;padding:7px 16px!important;margin-bottom:8px!important}
+  .modal-win-img{width:100px!important;height:100px!important;margin-bottom:8px!important}
+  .modal-win-name{font-size:15px!important;margin-bottom:6px!important}
+  .modal-win-value{font-size:13px!important;padding:6px 11px!important}
+  .modal-win-value img{width:15px!important;height:15px!important}
+  .modal-win-btns{gap:7px!important;margin-top:12px!important}
+  .modal-win-btn{padding:11px!important;border-radius:11px!important;font-size:13px!important}
+
+  /* Halloween decor is atmosphere, not giant UI elements. */
+  .halloween-decor{opacity:.8!important}
+  .halloween-decor .web{width:78px!important;height:78px!important;opacity:.11!important}
+  .halloween-decor .web.tl{left:-10px!important;top:68px!important}
+  .halloween-decor .web.tr{right:-10px!important;top:68px!important}
+  .halloween-decor .web.bl{left:-10px!important;bottom:72px!important}
+  .halloween-decor .web.br{right:-10px!important;bottom:72px!important}
+  .halloween-decor .pumpkin{font-size:20px!important;opacity:.18!important}
+  .halloween-decor .p3,.halloween-decor .p4{font-size:18px!important}
+}
+
+/* Spinner must be visible and animated even if older styles hide it. */
+.case-detail.spinning #rouletteWrap{display:block!important;visibility:visible!important;opacity:1!important;height:auto!important;min-height:112px!important}
+.case-detail.spinning #rouletteTrack{display:flex!important;visibility:visible!important;opacity:1!important}
+.case-detail.spinning #rouletteMulti{visibility:visible!important;opacity:1!important}
+.case-detail.spinning #contentsSection{display:block!important}
+.case-detail.spinning #caseDetailImage,.case-detail.spinning #caseDetailTitle{visibility:hidden!important;opacity:0!important}
+.case-detail.spinning #caseDetailPrice{visibility:visible!important;opacity:1!important}
+
+/* Win result gets a stronger entrance and a short glow pulse. */
+.modal-win{animation:caseWinEnter .5s cubic-bezier(.2,.8,.2,1) both!important}
+@keyframes caseWinEnter{0%{opacity:0;transform:translateY(14px) scale(.94)}70%{opacity:1;transform:translateY(-2px) scale(1.01)}100%{opacity:1;transform:none}}
+.modal-win-badge{animation:caseWinBadge .65s ease both}
+@keyframes caseWinBadge{0%{transform:scale(.65);opacity:0}65%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+</style>
+
+
+<style id="cases-layout-final-v12">
+/* Desktop: five compact, equal-width case cards. Mobile stays two per row. */
+@media(min-width:1100px){
+  .page{width:min(1420px,calc(100% - 48px))!important;padding-top:42px!important}
+  .cases{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:16px!important}
+  .case,.case-inner{min-height:270px!important;height:270px!important}
+  .case-img img{height:178px!important;max-height:178px!important}
+  .case-name{font-size:16px!important}
+}
+@media(min-width:701px) and (max-width:1099px){
+  .cases{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+/* Case modal: deterministic vertical order — open button, quantity, roulette, contents. */
+.case-detail{display:flex!important;flex-direction:column!important}
+.case-detail-hero{order:1!important}
+.case-open-controls{order:2!important;display:flex!important;flex-direction:column!important}
+.case-open-controls .open-action{order:1!important}
+.case-open-controls .qty-row{order:2!important}
+.case-detail #rouletteWrap{order:3!important;flex:0 0 auto!important}
+.case-detail #contentsSection{order:4!important}
+.case-detail #modalWin{order:5!important}
+.case-detail.spinning .case-open-controls{display:flex!important}
+.case-detail.spinning .open-action{display:block!important}
+.case-detail.spinning #rouletteWrap{margin-top:4px!important}
+/* The strip is never positioned independently of the controls. */
+.roulette-wrap{position:relative!important;float:none!important;clear:both!important}
+@media(max-width:700px){
+  .case-detail{width:100%!important}
+  .case-open-controls{margin-top:4px!important}
+  .case-open-controls .open-action{margin:0 0 7px!important}
+  .case-open-controls .qty-row{margin:0 0 7px!important}
+  .case-detail #rouletteWrap{margin:0 -11px 8px!important}
+}
+</style>
+
+
+<style id="case-polish-v13">
+@keyframes rouletteEnter{0%{opacity:0;transform:translateY(-5px)}100%{opacity:1;transform:none}}
+.case-detail.spinning #rouletteWrap{animation:rouletteEnter .22s ease-out both!important}
+.modal-win{will-change:transform,opacity}
+@media(max-width:700px){
+  .halloween-decor .web{width:58px!important;height:58px!important;opacity:.08!important}
+  .halloween-decor .pumpkin{font-size:15px!important;opacity:.13!important}
+}
+</style>
+
 </head>
 <body><div class="halloween-decor" aria-hidden="true"><div class="mist"></div>
 <svg class="web tl" viewBox="0 0 200 200" fill="none"><path d="M0 0Q100 18 200 0M0 0Q18 100 0 200M0 0L200 200M40 0L200 160M0 40L160 200M80 0L200 120M0 80L120 200M120 0L200 80M0 120L80 200" stroke="white" stroke-width="1.5"/><path d="M28 28Q100 52 172 28M28 28Q52 100 28 172M58 58Q100 76 142 58M58 58Q76 100 58 142" stroke="white"/></svg>
@@ -2435,6 +2622,16 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
             $('promoBtn').disabled = false;
         }
 
+        function getRouletteItemStep() {
+            const first = document.querySelector('#rouletteTrack .roulette-item');
+            if (first) {
+                const r = first.getBoundingClientRect();
+                const gap = parseFloat(getComputedStyle(first.parentElement).gap || '8') || 8;
+                return r.width + gap;
+            }
+            return window.matchMedia('(max-width:700px)').matches ? 98 : 118;
+        }
+
         function runSpinRoulette(wonGifts) {
             const giftsArr = Array.isArray(wonGifts) ? wonGifts : [wonGifts];
             lastWonGift = giftsArr[0];
@@ -2479,7 +2676,7 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
 
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    const itemWidth = 118; // 110px + 8px gap
+                    const itemWidth = getRouletteItemStep();
                     const wrap = $('rouletteWrap');
                     const centerOffset = wrap.offsetWidth / 2;
                     const targetPos = itemWidth * 42 + itemWidth / 2;
@@ -2499,8 +2696,8 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
             setTimeout(() => {
                 clearInterval(spinVibInterval);
                 vibrate('heavy');
-                showWinResultInModal(giftsArr[0]);
-            }, 7300);
+                requestAnimationFrame(() => showWinResultInModal(giftsArr[0]));
+            }, 7350);
         }
 
         function runMultiSpin(wonGiftsArr, allGifts) {
@@ -2554,7 +2751,7 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
                 track.style.transition = 'none';
                 track.style.transform = `translateX(${rowOffset}px)`;
                 setTimeout(() => {
-                    const itemW = 118; // 110px + 8px gap
+                    const itemW = getRouletteItemStep();
                     const rowW = row.offsetWidth || 300;
                     const centerOff = rowW / 2;
                     const targetPos = itemW * 42 + itemW / 2;
