@@ -2461,7 +2461,7 @@ def build_full_catalog_with_models(force_refresh=False):
 def _resolve_case_gift_payload(gifts, selected_gift_info):
     """Resolve a case gift entry to a full gift dict.
     Searches local gifts, Fragment catalog (originals + models), and falls back to gift_info fields."""
-    if not selected_gift_info or selected_gift_info.get('type') == 'ton_balance':
+    if not selected_gift_info or selected_gift_info.get('type') in ('ton_balance', 'gram_balance'):
         return None
 
     target_id = selected_gift_info.get('id')
@@ -5761,7 +5761,16 @@ def cases_page():
 
 @app.route('/event/witch-hat-party')
 def witch_hat_party_page():
+    """Страница ивента Witch Hat Party."""
+    event_file = os.path.join(BASE_PATH, 'witch_hat_party.html')
+    if not os.path.exists(event_file):
+        logger.error('❌ Файл ивента не найден: %s', event_file)
+        return 'Event page not found', 404
     return send_from_directory(BASE_PATH, 'witch_hat_party.html')
+
+@app.route('/event')
+def event_page_alias():
+    return redirect('/event/witch-hat-party')
 
 
 
@@ -8722,60 +8731,15 @@ def open_case():
         gifts = build_fragment_first_gifts_catalog()
         case['gifts'] = _canonicalize_case_gifts(case.get('gifts', []), gifts)
 
-        # Case-specific RTP adjustment (uses case stats, not crash stats)
-        rtp_mode = get_player_case_rtp_mode(user_id)
-
-        # 🏦 Override to nerf if house bank is negative (aggressive mode for cases)
-        try:
-            site_balance = _get_site_profit_balance()
-            if site_balance < -15000:
-                # Aggressive mode: nerf only when site is REALLY negative
-                rtp_mode = 'nerf'
-                logger.info(f"🏦 Агрессивный режим кейсов: игрок {user_id} получает дешёвые дропы (баланс: {site_balance})")
-            elif site_balance < -7000:
-                # Tight mode: nerf only if not already boosted
-                if rtp_mode != 'boost':
-                    rtp_mode = 'nerf'
-                    logger.info(f"🏦 Ужесточённый режим кейсов: игрок {user_id} получает дешёвые дропы (баланс: {site_balance})")
-        except Exception as e:
-            logger.warning(f"⚠️ Не удалось проверить баланс сайта для кейсов: {e}")
-
-        # Minimum drop value = 30% of case cost
-        case_cost_ton = float(case.get('cost', 0) or 0)
-        if case.get('cost_type') == 'stars':
-            case_cost_ton = case_cost_ton / 100.0
-        min_drop_ton = case_cost_ton * 0.30
-        min_drop_stars = int(min_drop_ton * 100)
+        # Real case odds: use exactly the chances configured for this case.
+        # No aggressive/tight/boost/nerf modes and no minimum-drop forcing.
+        adjusted_gifts = case.get('gifts', [])
 
         for _ in range(quantity):
             if case.get('gifts'):
-                # Adjust chances based on player RTP mode
+                # REAL ODDS: use the exact chance stored for every gift.
                 adjusted_gifts = case['gifts']
-                if rtp_mode in ('boost', 'nerf') and len(case['gifts']) > 1:
-                    # Sort by value to identify cheap vs expensive items
-                    sorted_by_value = sorted(case['gifts'], key=lambda g: float(g.get('value', 0) or g.get('ton_amount', 0) or 0))
-                    mid = len(sorted_by_value) // 2
-                    cheap_ids = {id(g) for g in sorted_by_value[:mid]}
-                    
-                    adjusted_gifts = []
-                    for g in case['gifts']:
-                        ag = dict(g)
-                        base_chance = ag.get('chance', 1)
-                        if rtp_mode == 'boost':
-                            # Boost: triple chance for expensive items, 0.3x for cheap
-                            if id(g) in cheap_ids:
-                                ag['chance'] = base_chance * 0.3
-                            else:
-                                ag['chance'] = base_chance * 3.0
-                        else:  # nerf
-                            # Nerf: triple chance for cheap items, 0.3x for expensive
-                            if id(g) in cheap_ids:
-                                ag['chance'] = base_chance * 3.0
-                            else:
-                                ag['chance'] = base_chance * 0.3
-                        adjusted_gifts.append(ag)
-
-                total_chance = sum(gift.get('chance', 1) for gift in adjusted_gifts)
+                total_chance = sum(float(gift.get('chance', 1) or 0) for gift in adjusted_gifts)
                 random_value = random.random() * total_chance
                 current_chance = 0
                 selected_gift_info = None
@@ -8787,23 +8751,8 @@ def open_case():
                         break
 
                 if selected_gift_info:
-                    # Enforce minimum drop floor
-                    if min_drop_stars > 0:
-                        gift_val = float(selected_gift_info.get('value', 0) or selected_gift_info.get('ton_amount', 0) or 0)
-                        if selected_gift_info.get('type') == 'ton_balance':
-                            gift_val_stars = int(float(selected_gift_info.get('ton_amount', 0) or 0) * 100)
-                        else:
-                            gift_val_stars = int(gift_val)
-                        if gift_val_stars < min_drop_stars:
-                            # Re-select from gifts meeting minimum
-                            eligible = [g for g in adjusted_gifts if (
-                                (g.get('type') == 'ton_balance' and int(float(g.get('ton_amount', 0) or 0) * 100) >= min_drop_stars) or
-                                (g.get('type') != 'ton_balance' and int(float(g.get('value', 0) or 0)) >= min_drop_stars)
-                            )]
-                            if eligible:
-                                selected_gift_info = random.choice(eligible)
-                    # Check if ton_balance
-                    if selected_gift_info.get('type') == 'ton_balance':
+                    # Check balance reward type. No chance/value substitution is applied.
+                    if selected_gift_info.get('type') in ('ton_balance', 'gram_balance'):
                         ton_amount = float(selected_gift_info.get('ton_amount', 0) or 0)
                         # Convert TON to stars (1 TON = 100 stars)
                         stars_amount = int(ton_amount * 100)
@@ -9014,52 +8963,13 @@ def open_case_single():
         won_gift = None
         is_ton_balance = False
 
-        # Case-specific RTP adjustment
-        case_rtp_mode = get_player_case_rtp_mode(user_id)
-
-        # 🏦 Override to nerf if house bank is negative (aggressive mode for cases)
-        try:
-            site_balance = _get_site_profit_balance()
-            if site_balance < -5000:
-                case_rtp_mode = 'nerf'
-                logger.info(f"🏦 Агрессивный режим (single): игрок {user_id} получает дешёвые дропы")
-            elif site_balance < -1000:
-                if case_rtp_mode != 'boost':
-                    case_rtp_mode = 'nerf'
-                    logger.info(f"🏦 Ужесточённый режим (single): игрок {user_id} получает дешёвые дропы")
-        except Exception as e:
-            logger.warning(f"⚠️ Не удалось проверить баланс сайта для кейсов: {e}")
-
-        # Minimum drop value = 30% of case cost
-        s_case_cost_ton = float(case.get('cost', 0) or 0)
-        if case.get('cost_type') == 'stars':
-            s_case_cost_ton = s_case_cost_ton / 100.0
-        s_min_drop_ton = s_case_cost_ton * 0.30
-        s_min_drop_stars = int(s_min_drop_ton * 100)
+        # Real case odds: every gift keeps its configured chance exactly as stored.
+        adjusted_gifts = case.get('gifts', [])
 
         if case.get('gifts'):
+            # REAL ODDS: exactly the configured chance from cases.json.
             adjusted_gifts = case['gifts']
-            if case_rtp_mode in ('boost', 'nerf') and len(case['gifts']) > 1:
-                sorted_by_value = sorted(case['gifts'], key=lambda g: float(g.get('value', 0) or g.get('ton_amount', 0) or 0))
-                mid = len(sorted_by_value) // 2
-                cheap_ids = {id(g) for g in sorted_by_value[:mid]}
-                adjusted_gifts = []
-                for g in case['gifts']:
-                    ag = dict(g)
-                    base_chance = ag.get('chance', 1)
-                    if case_rtp_mode == 'boost':
-                        if id(g) in cheap_ids:
-                            ag['chance'] = base_chance * 0.3
-                        else:
-                            ag['chance'] = base_chance * 3.0
-                    else:  # nerf
-                        if id(g) in cheap_ids:
-                            ag['chance'] = base_chance * 3.0
-                        else:
-                            ag['chance'] = base_chance * 0.3
-                    adjusted_gifts.append(ag)
-
-            total_chance = sum(gift.get('chance', 1) for gift in adjusted_gifts)
+            total_chance = sum(float(gift.get('chance', 1) or 0) for gift in adjusted_gifts)
             random_value = random.random() * total_chance
             current_chance = 0
             selected_gift_info = None
@@ -9071,23 +8981,8 @@ def open_case_single():
                     break
 
             if selected_gift_info:
-                # Enforce minimum drop floor (30% of case cost)
-                if s_min_drop_stars > 0:
-                    gift_val = float(selected_gift_info.get('value', 0) or selected_gift_info.get('ton_amount', 0) or 0)
-                    if selected_gift_info.get('type') == 'ton_balance':
-                        gift_val_stars = int(float(selected_gift_info.get('ton_amount', 0) or 0) * 100)
-                    else:
-                        gift_val_stars = int(gift_val)
-                    if gift_val_stars < s_min_drop_stars:
-                        eligible = [g for g in adjusted_gifts if (
-                            (g.get('type') == 'ton_balance' and int(float(g.get('ton_amount', 0) or 0) * 100) >= s_min_drop_stars) or
-                            (g.get('type') != 'ton_balance' and int(float(g.get('value', 0) or 0)) >= s_min_drop_stars)
-                        )]
-                        if eligible:
-                            selected_gift_info = random.choice(eligible)
-
-                # Check if ton_balance
-                if selected_gift_info.get('type') == 'ton_balance':
+                # Check balance reward type. No chance/value substitution is applied.
+                if selected_gift_info.get('type') in ('ton_balance', 'gram_balance'):
                     ton_amount = float(selected_gift_info.get('ton_amount', 0) or 0)
                     # Convert TON to stars (1 TON = 100 stars)
                     stars_amount = int(ton_amount * 100)
@@ -9095,10 +8990,10 @@ def open_case_single():
                                  (stars_amount, user_id))
                     won_gift = {
                         'id': -1,
-                        'name': 'TON',
-                        'image': '/static/img/tons/ton_1.svg',
+                        'name': 'Gram Balance',
+                        'image': '/static/img/ton.png',
                         'value': stars_amount,
-                        'type': 'ton_balance',
+                        'type': 'gram_balance',
                         'ton_amount': ton_amount
                     }
                     is_ton_balance = True
@@ -14424,19 +14319,9 @@ def get_admin_house_bank():
 
         bank_balance = money_in - money_out - crash_net - case_net
 
-        # Determine mode
-        if bank_balance < -5000:
-            mode = 'aggressive'
-            mode_label = '🔴 Агрессивный режим'
-        elif bank_balance < -1000:
-            mode = 'tight'
-            mode_label = '🟠 Ужесточённый режим'
-        elif bank_balance > 5000:
-            mode = 'loose'
-            mode_label = '🟢 Лояльный режим'
-        else:
-            mode = 'normal'
-            mode_label = '🟡 Нормальный режим'
+        # Case odds are never changed by the site's balance.
+        mode = 'normal'
+        mode_label = '⚪ Реальные шансы'
 
         return jsonify({
             'success': True,
@@ -18105,7 +17990,7 @@ def claim_daily_task_reward():
         
         stars = task[0]
         
-        cursor.execute('UPDATE user_daily_progress SET reward_claimed = 1 WHERE user_id = ? AND task_id = ? AND date = ?',
+        cursor.execute('UPDATE user_daily_progress SET reward_claimed = TRUE WHERE user_id = ? AND task_id = ? AND date = ?',
                       (user_id, task_id, today))
         cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (stars, user_id))
         cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
@@ -18151,7 +18036,7 @@ def update_daily_task_progress(user_id, task_type, amount=1, case_id=None):
             # Upsert progress
             cursor.execute('''
                 INSERT INTO user_daily_progress (user_id, task_id, progress, completed, reward_claimed, date) 
-                VALUES (?, ?, ?, 0, 0, ?)
+                VALUES (?, ?, ?, FALSE, FALSE, ?)
                 ON CONFLICT(user_id, task_id, date) DO UPDATE SET 
                     progress = MIN(progress + ?, ?)
             ''', (user_id, tid, min(amount, target), today, amount, target))
@@ -18161,12 +18046,18 @@ def update_daily_task_progress(user_id, task_type, amount=1, case_id=None):
                           (user_id, tid, today))
             row = cursor.fetchone()
             if row and row[0] >= target:
-                cursor.execute('UPDATE user_daily_progress SET completed = 1 WHERE user_id = ? AND task_id = ? AND date = ?',
+                cursor.execute('UPDATE user_daily_progress SET completed = TRUE WHERE user_id = ? AND task_id = ? AND date = ?',
                               (user_id, tid, today))
         
         conn.commit()
         conn.close()
     except Exception as e:
+        # PostgreSQL aborts the whole transaction after the first SQL error.
+        # Always rollback here so the shared connection cannot stay poisoned.
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         logger.error(f"❌ Ошибка обновления прогресса задания: {e}")
 
 # ==================== ADMIN DAILY TASKS API ====================
