@@ -13,6 +13,12 @@
 @media(min-width:701px){.hero{padding:32px}.case-img{max-width:220px}}
 </style>
 
+<style id="witch-custom-buttons-v3">
+.special-mode-grid{grid-template-columns:repeat(12,minmax(0,1fr));}
+.special-mode-card{grid-column:span 6;min-height:138px;}
+.special-mode-card.size-small{grid-column:span 4;min-height:112px}.special-mode-card.size-medium{grid-column:span 6}.special-mode-card.size-large{grid-column:span 8;min-height:158px}.special-mode-card.size-full{grid-column:1/-1;min-height:170px}
+@media(max-width:700px){.special-mode-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.special-mode-card,.special-mode-card.size-small,.special-mode-card.size-medium,.special-mode-card.size-large{grid-column:span 1;min-height:124px}.special-mode-card.size-full{grid-column:1/-1;min-height:145px}}
+</style>
 <style id="witch-party-polish-v2">
 /* Witch Hat Party uses the same visual language as the event banner on Games. */
 .hero{
@@ -142,37 +148,28 @@ function casePrice(c){
 function renderSections(sections){
   const root=$('content');root.innerHTML='';let delay=0;
   const list=Array.isArray(sections)?sections.slice():[];
-  // Event page always starts with its special modes. Ghost Road is a mode of Witch Hat Party,
-  // not a separate event/page.
-  if(!list.some(function(x){return x&&x.type==='mode';})){
-    return;
-  }else{
-    var modeSec=list.find(function(x){return x&&x.type==='mode'});
-    if(modeSec){modeSec.title='Особые режимы';modeSec.items=Array.isArray(modeSec.items)?modeSec.items:[];
-      if(!modeSec.items.some(function(x){return x&&x.id==='ghost_road_mode'})) modeSec.items.unshift({id:'ghost_road_mode',name:'Ghost Road',image:'/static/img/ghost_road.png',path:'/event/witch-hat-party?mode=ghost-road',visible:true});
-    }
-  }
+  // Event content is fully administrator-controlled; no hardcoded Ghost Road fallback.
   // Keep only the intended Event order: special modes -> cases -> market -> other configured sections.
   list.sort(function(a,b){var rank=function(x){var t=String(x&&x.type||'');return t==='mode'?0:(t==='cases'?1:(t==='market'?2:3))};return rank(a)-rank(b)});
   for(const sec of list){
     if(!sec || sec.visible===false) continue;
+    const hasItems = sec.type==='mode' ? (sec.items||[]).some(function(x){return x&&x.visible!==false}) : (sec.type==='cases' ? (sec.case_ids||[]).length>0 : (sec.type==='market' ? (sec.items||[]).length>0 : ((sec.items||[]).length>0 || (sec.case_ids||[]).length>0)));
+    if(!hasItems) continue;
     const wrap=document.createElement('section');wrap.className='section fade-up';wrap.style.animationDelay=(delay++)*60+'ms';
     const h=document.createElement('div');h.className='section-head';h.innerHTML='<div class="section-title"></div>';h.querySelector('.section-title').textContent=sec.title||'Раздел';wrap.appendChild(h);
     const grid=document.createElement('div');
     if(sec.type==='mode'){
       grid.className='special-mode-grid';
       const items=(sec.items||[]).filter(function(x){return x&&x.visible!==false});
-      if(!items.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Особые режимы пока не добавлены</div>'}
       items.forEach(function(it){
-        const card=document.createElement('button');card.type='button';card.className='special-mode-card';
-        card.innerHTML='<div class="special-mode-copy"><div class="special-mode-name"></div><div class="special-mode-sub">Уникальный режим</div></div>';
-        card.style.setProperty('--mode-image', "url(" + JSON.stringify(imgSrc(it.image||'/static/img/ghost_road.png')) + ")");
-        card.querySelector('.special-mode-name').textContent=it.name||'Ghost Road';
+        const card=document.createElement('button');card.type='button';card.className='special-mode-card size-'+(it.size||'medium');
+        card.innerHTML='<div class="special-mode-copy"><div class="special-mode-name"></div><div class="special-mode-sub"></div></div>';
+        if(it.image) card.style.setProperty('--mode-image', "url(" + JSON.stringify(imgSrc(it.image)) + ")");
+        card.querySelector('.special-mode-name').textContent=it.name||'Кнопка';
+        card.querySelector('.special-mode-sub').textContent=it.subtitle||'';
         const unlock=it.unlock_at?new Date(it.unlock_at):null; const locked=!!unlock && !isNaN(unlock.getTime()) && unlock.getTime()>Date.now();
         if(locked){card.classList.add('is-locked');const badge=document.createElement('div');badge.className='special-mode-lock';badge.textContent='Откроется через '+fmt(Math.ceil((unlock.getTime()-Date.now())/1000));card.appendChild(badge);}
-        card.onclick=function(){
-          if(locked)return; const path=String(it.path||'').trim(); if(path) location.href=path;
-        };
+        card.onclick=function(){if(locked)return;const path=String(it.path||'').trim();if(path&&path!=='#')location.href=path;};
         grid.appendChild(card);
       });
     }else if(sec.type==='cases'){
@@ -258,13 +255,6 @@ setInterval(()=>{if(left>0){left--;if($('timer'))$('timer').textContent=fmt(left
 </div>
 
 
-<style id="unified-bottom-nav-v3">
-body{padding-bottom:calc(92px + env(safe-area-inset-bottom))}.bottom-nav{display:none}@media(max-width:700px){.bottom-nav{position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:100;display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:6px;border:1px solid rgba(111,151,198,.18);border-radius:20px;background:rgba(10,16,28,.88);box-shadow:0 14px 45px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.04);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.bottom-nav-btn{appearance:none;border:0;min-width:0;padding:8px 4px;border-radius:15px;background:transparent;color:#7f8da6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:850 10px/1 inherit;transition:transform .18s ease,background .18s ease,color .18s ease}.bottom-nav-btn:active{transform:scale(.94)}.bottom-nav-btn .nav-icon,.bottom-nav-btn .nav-icon svg{width:21px;height:21px}.bottom-nav-btn.active{color:#d8a8ff;background:rgba(139,92,246,.18);box-shadow:inset 0 0 0 1px rgba(168,85,247,.30)}}
-</style>
-<nav class="bottom-nav" aria-label="Навигация">
-<button class="bottom-nav-btn" onclick="location.href='/profile'"><span class="nav-icon">👤</span><span>Профиль</span></button>
-<button class="bottom-nav-btn" onclick="location.href='/upgrade'"><span class="nav-icon">↗</span><span>Апгрейды</span></button>
-<button class="bottom-nav-btn" onclick="location.href='/leaderboard'"><span class="nav-icon">🏆</span><span>Сезон</span></button>
-<button class="bottom-nav-btn active" onclick="location.href='/games'"><span class="nav-icon">🎮</span><span>Игры</span></button>
-</nav>
+
+
 </body></html>
