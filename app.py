@@ -2606,6 +2606,74 @@ def save_cases(cases):
         return False
 
 
+# ─── Seasonal case compatibility / persistence ─────────────────────────────
+SEASONAL_CASE_FILE = os.path.join(BASE_PATH, 'data', 'seasonal_case.json')
+SEASONAL_CASE_DEFAULT = {
+    'id': 'seasonal', 'seasonal': True, 'enabled': False,
+    'name': 'Сезонный кейс', 'slug': 'seasonal',
+    'image': '/static/img/gift.png', 'cost': 0, 'cost_type': 'stars',
+    'section': 'season', 'required_level': 1, 'limited': False, 'amount': 0,
+    'description': 'Сезонный кейс', 'display_order': -100,
+    'tags': ['season'], 'glow_effect': 'none', 'free': False, 'promo': False,
+    'time': '24H', 'promo_codes': [], 'gifts': [],
+    'season_start': None, 'season_end': None, 'source_case_id': None
+}
+
+def load_seasonal_case():
+    try:
+        os.makedirs(os.path.dirname(SEASONAL_CASE_FILE), exist_ok=True)
+        if not os.path.exists(SEASONAL_CASE_FILE):
+            return json.loads(json.dumps(SEASONAL_CASE_DEFAULT))
+        with open(SEASONAL_CASE_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        obj = json.loads(json.dumps(SEASONAL_CASE_DEFAULT))
+        if isinstance(data, dict):
+            obj.update(data.get('case', data))
+        obj['id'] = 'seasonal'; obj['seasonal'] = True
+        return obj
+    except Exception as e:
+        logger.warning('Seasonal case load failed: %s', e)
+        return json.loads(json.dumps(SEASONAL_CASE_DEFAULT))
+
+def save_seasonal_case(case_obj):
+    try:
+        os.makedirs(os.path.dirname(SEASONAL_CASE_FILE), exist_ok=True)
+        with open(SEASONAL_CASE_FILE, 'w', encoding='utf-8') as f:
+            json.dump({'case': case_obj}, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.error('Seasonal case save failed: %s', e)
+        return False
+
+def seasonal_case_is_active(case_obj=None):
+    case_obj = case_obj or load_seasonal_case()
+    if not case_obj.get('enabled'): return False
+    now = datetime.utcnow()
+    try:
+        start = case_obj.get('season_start'); end = case_obj.get('season_end')
+        if start:
+            dt = datetime.fromisoformat(str(start).replace('Z', '+00:00'))
+            if getattr(dt, 'tzinfo', None):
+                from datetime import timezone
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            if now < dt: return False
+        if end:
+            dt = datetime.fromisoformat(str(end).replace('Z', '+00:00'))
+            if getattr(dt, 'tzinfo', None):
+                from datetime import timezone
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            if now >= dt: return False
+    except Exception:
+        return False
+    return True
+
+def get_public_cases_with_seasonal():
+    cases = load_cases()
+    seasonal = load_seasonal_case()
+    if seasonal_case_is_active(seasonal):
+        cases = [seasonal] + [c for c in cases if str(c.get('id')) != 'seasonal']
+    return cases
+
 # ─── Events ────────────────────────────────────────────────────────────────
 EVENTS_FILE = os.path.join(BASE_PATH, 'data', 'events.json')
 EVENT_DEFAULTS = {
@@ -5694,6 +5762,42 @@ def cases_page():
 def witch_hat_party_page():
     return send_from_directory(BASE_PATH, 'witch_hat_party.html')
 
+
+
+def inventory_page():
+    """Страница инвентаря"""
+    logger.info("🎒 Запрос страницы инвентаря")
+    return render_template('inventory.html')
+
+def season_page():
+    """Алиас страницы сезона."""
+    return redirect('/rewards')
+
+def rewards_page():
+    """Отдельное окно/страница наград профиля."""
+    return render_template_string(r'''<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><title>Награды</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#171b20;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}body{padding:calc(env(safe-area-inset-top,0px) + 18px) 14px calc(env(safe-area-inset-bottom,0px) + 94px)}.wrap{max-width:480px;margin:0 auto}.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.title{font-size:24px;font-weight:900;letter-spacing:-.5px}.close-top{width:38px;height:38px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:#23282e;color:#fff;font-size:18px}.level-card{background:linear-gradient(180deg,#242b32,#1d2228);border:1px solid rgba(255,255,255,.07);border-radius:22px;padding:16px;margin-bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,.18)}.level-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.level-badge{min-width:56px;height:42px;padding:0 12px;border-radius:14px;background:#2b333b;display:flex;align-items:center;justify-content:center;font-weight:900}.level-exp{text-align:right;color:rgba(255,255,255,.48);font-size:11px;font-weight:700}.reward-slot{margin-top:13px;min-height:76px;border:1px dashed rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.025);display:flex;align-items:center;justify-content:center;text-align:center;color:rgba(255,255,255,.35);font-size:12px;font-weight:750;padding:12px}.reward-slot.ready{border-style:solid;color:#fff}.empty{margin-top:16px;text-align:center;padding:28px 18px;border-radius:20px;background:#20252b;border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.38);font-weight:750}.close-bottom{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);width:min(calc(100% - 28px),452px);height:52px;border:0;border-radius:26px;background:#1687f8;color:#fff;font-size:14px;font-weight:900;box-shadow:0 10px 28px rgba(22,135,248,.25);z-index:20}.muted{color:rgba(255,255,255,.42);font-size:11px;margin-top:4px}@media(prefers-reduced-motion:no-preference){body{animation:fadeIn .22s ease both}@keyframes fadeIn{from{opacity:0}to{opacity:1}}}</style></head>
+<body><div class="wrap"><div class="head"><div><div class="title">Награды</div><div class="muted" id="levelSummary">Загрузка уровней…</div></div><button class="close-top" onclick="closeRewards()">×</button></div><div id="rewardsList"></div></div><button class="close-bottom" onclick="closeRewards()">Закрыть</button>
+<script src="https://telegram.org/js/telegram-web-app.js"></script><script>
+function closeRewards(){history.length>1?history.back():location.href='/inventory'}
+function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+async function init(){var uid=new URLSearchParams(location.search).get('user_id');if(!uid&&window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user)uid=Telegram.WebApp.initDataUnsafe.user.id;var box=document.getElementById('rewardsList');if(!uid){box.innerHTML='<div class="empty">Не удалось определить пользователя</div>';return}try{var r=await fetch('/api/rewards/info/'+encodeURIComponent(uid));var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');var levels=d.level_rewards||[];document.getElementById('levelSummary').textContent='Уровневые награды';if(!levels.length){box.innerHTML='<div class="empty">Награды пока не установлены.<br><span style="font-weight:600;color:rgba(255,255,255,.25)">Когда добавишь их в админке, они появятся здесь автоматически.</span></div>';return}box.innerHTML=levels.map(function(x){var rs=(x.rewards||[]).map(function(r){return '<div class="reward-slot ready">'+esc(r.description||r.type||'Награда')+'</div>'}).join('');return '<div class="level-card"><div class="level-row"><div class="level-badge">'+esc(x.level)+' lvl</div><div class="level-exp">'+(x.available?'Доступно':'Уровень '+esc(x.level))+'</div></div>'+(rs||'<div class="reward-slot">Награда не установлена</div>')+'</div>'}).join('')}catch(e){box.innerHTML='<div class="empty">Не удалось загрузить награды</div>'}}init();</script></body></html>''')
+
+def profile_page():
+    """Страница профиля → редирект на инвентарь"""
+    logger.info("👤 Запрос страницы профиля → редирект на /inventory")
+    return redirect('/inventory')
+
+def ref_page():
+    """Страница реферальной системы"""
+    return render_template('ref.html')
+
+def lobby_page():
+    """Страница лобби"""
+    return render_template('lobby.html')
+
 @app.route('/games')
 def games_page():
     """Страница выбора игр"""
@@ -8315,7 +8419,7 @@ def admin_events():
                 for key in ('name','image','loading_gif'):
                     if key in data: ev[key]=str(data.get(key) or '').strip()
             elif action in ('add_case','remove_case'):
-                case_id=str(data.get('case_id') or '').strip(); sec=next((x for x in ev.setdefault('sections',[]) if x.get('type')=='cases'),None)
+                case_id=str(data.get('case_id') or '').strip(); section_id=str(data.get('section_id') or '').strip(); sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==section_id and x.get('type')=='cases'),None) or next((x for x in ev.setdefault('sections',[]) if x.get('type')=='cases'),None)
                 if sec is None: sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}; ev['sections'].insert(0,sec)
                 ids=sec.setdefault('case_ids',[])
                 if action=='add_case':
@@ -16902,49 +17006,6 @@ def admin_create_case():
         return jsonify({'success': False, 'error': str(e)})
 
 
-@app.route('/api/admin/case-gifts/<int:case_id>', methods=['GET'])
-def get_case_gifts(case_id):
-    """Получить список подарков в кейсе"""
-    try:
-        admin_id = request.args.get('admin_id')
-        if not admin_id or int(admin_id) != ADMIN_ID:
-            return jsonify({'success': False, 'error': 'Доступ запрещен'})
-
-        cases = load_cases()
-        case = next((c for c in cases if c['id'] == case_id), None)
-
-        if not case:
-            return jsonify({'success': False, 'error': 'Кейс не найден'})
-
-        gifts = load_gifts()
-        result = []
-
-        for gift_info in case.get('gifts', []):
-            if gift_info.get('type') == 'ton_balance':
-                result.append({
-                    'id': -1,
-                    'name': f"⭐ {gift_info.get('ton_amount', 0)} Stars",
-                    'image': '/static/img/tons/ton_1.svg',
-                    'chance': gift_info.get('chance', 1),
-                    'type': 'ton_balance',
-                    'ton_amount': gift_info.get('ton_amount', 0)
-                })
-            else:
-                gift = next((g for g in gifts if g['id'] == gift_info['id']), None)
-                if gift:
-                    result.append({
-                        'id': gift['id'],
-                        'name': gift['name'],
-                        'image': gift['image'],
-                        'chance': gift_info.get('chance', 1),
-                        'value': gift.get('value', 0)
-                    })
-
-        return jsonify({'success': True, 'gifts': result, 'case_name': case['name']})
-
-    except Exception as e:
-        logger.error(f"❌ Ошибка получения подарков кейса: {e}")
-        return jsonify({'success': False, 'error': str(e)})
 
 
 @app.route('/api/admin/add-gift-to-case', methods=['POST'])
@@ -19274,6 +19335,25 @@ def grant_reward_with_comp(cursor, user_id, reward_type, amount, item_id_val, ow
     return msgs
 
 
+@app.route('/api/admin/seasonal-case/options', methods=['GET'])
+def admin_seasonal_case_options():
+    try:
+        admin_id = request.args.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+        cases = load_cases()
+        options = []
+        for c in cases:
+            section = str(c.get('section') or '').strip().lower()
+            tags = [str(x).strip().lower() for x in (c.get('tags') or [])]
+            if section == 'season' or 'season' in tags:
+                options.append(c)
+        options.sort(key=lambda x: (int(x.get('display_order', 0) or 0), str(x.get('name') or '').lower()))
+        return jsonify({'success': True, 'cases': options, 'selected_id': load_seasonal_case().get('source_case_id')})
+    except Exception as e:
+        logger.error('Seasonal case options error: %s', e)
+        return jsonify({'success': False, 'error': str(e), 'cases': []}), 500
+
 @app.route('/api/admin/seasonal-case', methods=['GET', 'POST'])
 def admin_seasonal_case():
     try:
@@ -19284,6 +19364,18 @@ def admin_seasonal_case():
         if request.method == 'GET':
             return jsonify({'success': True, 'case': load_seasonal_case(), 'active': seasonal_case_is_active()})
         case = load_seasonal_case()
+        source_case_id = payload.get('source_case_id')
+        if source_case_id not in (None, ''):
+            source = next((c for c in load_cases() if str(c.get('id')) == str(source_case_id)), None)
+            if not source:
+                return jsonify({'success': False, 'error': 'Выбранный сезонный кейс не найден'}), 404
+            source_section = str(source.get('section') or '').strip().lower()
+            source_tags = [str(x).strip().lower() for x in (source.get('tags') or [])]
+            if source_section != 'season' and 'season' not in source_tags:
+                return jsonify({'success': False, 'error': 'Можно выбирать только кейсы из раздела сезона'}), 400
+            cloned = json.loads(json.dumps(source))
+            cloned['id'] = 'seasonal'; cloned['seasonal'] = True; cloned['source_case_id'] = source.get('id')
+            case = {**json.loads(json.dumps(SEASONAL_CASE_DEFAULT)), **cloned}
         case.update({
             'enabled': bool(payload.get('enabled', case.get('enabled', False))),
             'name': str(payload.get('name') or case.get('name') or 'Сезонный кейс').strip(),
@@ -19300,6 +19392,7 @@ def admin_seasonal_case():
             'gifts': payload.get('gifts', case.get('gifts', [])),
             'season_start': payload.get('season_start') or None,
             'season_end': payload.get('season_end') or None,
+            'source_case_id': payload.get('source_case_id', case.get('source_case_id')),
         })
         if case['cost'] < 0: case['cost'] = 0
         if not case['name']:
