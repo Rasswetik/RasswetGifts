@@ -7,235 +7,39 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="/static/js/telegram-auth.js"></script>
 <style>
-:root{--bg:#090d19;--panel:#0e1625;--line:rgba(112,149,191,.18);--purple:#b36cff;--cyan:#20b8ff;--text:#f7f9fd;--muted:#8e9db5}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{min-height:100%;min-height:100dvh;background:linear-gradient(180deg,#090d19,#0a0f1b);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}body{padding:calc(8px + env(safe-area-inset-top)) 14px calc(28px + env(safe-area-inset-bottom));overflow-x:hidden}.wrap{width:min(100%,1180px);margin:0 auto}.head{height:54px;display:flex;align-items:center;gap:12px;position:relative}.back{width:42px;height:42px;border-radius:13px;border:1px solid rgba(128,164,203,.2);background:#101a2b;color:#fff;font-size:26px;line-height:1}.title{font-size:20px;font-weight:950;letter-spacing:-.3px}.party-mark{margin-left:auto;width:46px;height:46px;border-radius:14px;object-fit:contain;background:rgba(174,99,255,.1);border:1px solid rgba(179,108,255,.24);padding:5px;filter:drop-shadow(0 6px 18px rgba(150,70,240,.25))}.loading{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:#090d19;transition:opacity .25s ease}.loading.hide{opacity:0;pointer-events:none}.loading img{width:90px;height:90px;object-fit:contain}.loading-text{position:absolute;margin-top:135px;color:#8797b0;font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase}.hero{position:relative;margin-top:10px;padding:26px;border-radius:25px;overflow:hidden;background:radial-gradient(circle at 75% 15%,rgba(179,108,255,.22),transparent 35%),linear-gradient(145deg,#141c2c,#0d1422);border:1px solid rgba(125,160,202,.17);box-shadow:0 20px 70px rgba(0,0,0,.28)}.hero:after{content:"";position:absolute;inset:-40%;background:radial-gradient(circle,rgba(179,108,255,.07),transparent 52%);animation:pulse 5s ease-in-out infinite;pointer-events:none}.hero h1{font-size:clamp(31px,5vw,54px);line-height:.98;font-weight:1000;letter-spacing:-1.8px;position:relative;z-index:1}.hero p{margin-top:10px;color:var(--muted);font-size:13px;font-weight:700;position:relative;z-index:1}.timer{margin-top:18px;display:flex;align-items:center;gap:10px;position:relative;z-index:1}.timer-box{min-width:110px;padding:12px 14px;border-radius:15px;background:rgba(179,108,255,.09);border:1px solid rgba(179,108,255,.2)}.timer-label{font-size:9px;color:#8e7aa8;text-transform:uppercase;letter-spacing:1.1px;font-weight:900}.timer-value{margin-top:3px;font-size:23px;font-weight:950;color:#e9d8ff;font-variant-numeric:tabular-nums}.section{margin-top:24px}.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}.section-title{font-size:18px;font-weight:950;letter-spacing:-.4px}.section-count{font-size:11px;color:#71829d;font-weight:800}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.case-card,.market-card{position:relative;border-radius:20px;background:linear-gradient(145deg,#111a2a,#0c1422);border:1px solid var(--line);overflow:hidden;transition:.18s ease}.case-card{padding:15px;text-align:center;cursor:default;background:transparent;border:0;border-radius:16px;box-shadow:none}.market-card:hover{transform:translateY(-2px);border-color:rgba(179,108,255,.35)}.case-img{width:min(100%,210px);aspect-ratio:1/1;object-fit:contain;margin:0 auto;filter:drop-shadow(0 12px 22px rgba(0,0,0,.35))}.case-name{font-size:14px;font-weight:900;margin-top:3px}.case-price,.market-price{margin-top:7px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:13px;font-weight:950}.case-price img,.market-price img{width:16px;height:16px;object-fit:contain}.market-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px}.market-card{padding:11px}.market-img{width:100%;aspect-ratio:1/1;object-fit:contain;border-radius:13px;background:rgba(255,255,255,.025)}.market-name{font-size:11px;font-weight:850;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#dbe4f1}.empty{padding:25px;border-radius:18px;text-align:center;background:rgba(255,255,255,.025);border:1px solid var(--line);color:#71829d;font-size:12px;font-weight:750}.error{color:#ff8099}.fade-up{animation:up .45s ease both}@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes pulse{0%,100%{transform:scale(.9);opacity:.45}50%{transform:scale(1.05);opacity:1}}
-@media(max-width:700px){body{padding-top:calc(8px + 7vh + env(safe-area-inset-top));padding-left:11px;padding-right:11px}.head{height:54px}.hero{padding:21px 18px;border-radius:21px}.hero h1{font-size:32px}.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.case-card{padding:10px;border-radius:16px}.case-img{width:100%}.case-name{font-size:12px}.case-price{font-size:11px}.market-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.market-card{padding:9px;border-radius:16px}.market-name{font-size:10px}.market-price{font-size:11px}.timer-box{min-width:100px}}
-@media(min-width:701px){.hero{padding:32px}.case-img{max-width:220px}}
-</style>
-
-<style id="witch-party-polish-v2">
-/* Witch Hat Party uses the same visual language as the event banner on Games. */
-.hero{
-  min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;
-  padding:30px 32px 28px!important;
-  background-image:linear-gradient(90deg,rgba(10,4,18,.82) 0%,rgba(15,6,24,.58) 42%,rgba(15,6,24,.16) 100%),url('/static/img/banner_witchparty.webp')!important;
-  background-size:cover!important;background-position:center!important;
-  border-color:rgba(208,141,255,.42)!important;box-shadow:0 20px 70px rgba(83,30,113,.28)!important;
-}
-.hero h1{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;text-shadow:0 3px 18px rgba(0,0,0,.72)!important}
-.hero p{font-weight:800!important;text-shadow:0 2px 10px rgba(0,0,0,.65)}
-.hero:before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 78% 45%,rgba(179,108,255,.18),transparent 35%)}
-.hero>*{position:relative;z-index:3}
-.witch-hamsters{position:absolute;right:2.5%;bottom:-2px;width:320px;height:100%;z-index:2;pointer-events:none}
-.witch-hamster{position:absolute;width:clamp(92px,11vw,135px);height:auto;object-fit:contain;filter:drop-shadow(0 12px 17px rgba(0,0,0,.46));transform-origin:bottom center}
-.witch-hamster-1{right:125px;bottom:8px;animation:witchHamsterA 4s ease-in-out infinite}
-.witch-hamster-2{right:8px;bottom:3px;animation:witchHamsterB 4.6s ease-in-out infinite;animation-delay:-1.4s}
-@keyframes witchHamsterA{0%,100%{transform:translate3d(0,5px,0) rotate(-2deg)}50%{transform:translate3d(-5px,-10px,0) rotate(2deg)}}
-@keyframes witchHamsterB{0%,100%{transform:translate3d(0,3px,0) rotate(2deg) scale(.98)}50%{transform:translate3d(5px,-10px,0) rotate(-2deg) scale(1)}}
-@keyframes partyGlow{0%,100%{box-shadow:0 20px 70px rgba(83,30,113,.22)}50%{box-shadow:0 24px 85px rgba(132,57,174,.34)}}
-.hero{animation:partyGlow 5s ease-in-out infinite}
-@media(max-width:700px){
-  .hero{min-height:205px!important;padding:18px 16px 18px!important;border-radius:20px!important;background-position:center!important}
-  .hero h1{font-size:29px!important;max-width:62%!important;line-height:.98!important}
-  .hero p{font-size:11px!important;margin-top:7px!important;max-width:55%}
-  .timer{margin-top:11px!important}
-  .timer-box{min-width:94px!important;padding:9px 11px!important}
-  .timer-value{font-size:18px!important}
-  .witch-hamsters{right:-1%;width:205px!important}
-  .witch-hamster{width:82px!important}
-  .witch-hamster-1{right:76px!important;bottom:7px!important}
-  .witch-hamster-2{right:1px!important;bottom:2px!important}
-  .party-mark{width:40px!important;height:40px!important;border-radius:12px!important}
-}
-</style>
-
-<style id="event-special-mode-v5">
-.special-mode-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.special-mode-card{position:relative;height:125px;border-radius:20px;overflow:hidden;border:1px solid rgba(150,170,200,.18);background:#101727;text-align:left;cursor:pointer;isolation:isolate;box-shadow:0 14px 36px rgba(0,0,0,.22);transition:transform .22s ease,box-shadow .22s ease,filter .22s ease}
-.special-mode-card:before{content:"";position:absolute;inset:0;z-index:-3;background-image:var(--mode-image);background-position:center;background-size:cover;background-repeat:no-repeat;transition:transform .45s ease}
-.special-mode-card:after{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(180deg,rgba(4,7,14,.02) 18%,rgba(4,7,14,.18) 48%,rgba(4,7,14,.92) 100%),linear-gradient(90deg,rgba(4,7,14,.46),transparent 75%)}
-.special-mode-card:hover{transform:translateY(-3px);box-shadow:0 18px 45px rgba(0,0,0,.3)}.special-mode-card:hover:before{transform:scale(1.035)}
-.special-mode-copy{position:absolute;left:18px;right:16px;bottom:17px;z-index:2}.special-mode-name{font-size:22px;line-height:1;font-weight:950;color:#fff;letter-spacing:-.4px;text-shadow:0 2px 12px rgba(0,0,0,.55)}
-.special-mode-sub{margin-top:6px;font-size:10px;color:rgba(255,255,255,.72);font-weight:850;text-transform:uppercase;letter-spacing:.8px;text-shadow:0 2px 8px rgba(0,0,0,.55)}
-.special-mode-lock{position:absolute;top:11px;right:11px;z-index:3;padding:6px 8px;border-radius:9px;background:rgba(5,8,14,.64);border:1px solid rgba(255,255,255,.1);color:#dfe6f1;font-size:9px;font-weight:900;backdrop-filter:blur(6px)}
-.special-mode-card.is-locked{filter:grayscale(.55);opacity:.78;cursor:not-allowed}.special-mode-card.is-locked:after{background:linear-gradient(180deg,rgba(12,15,23,.28),rgba(10,13,20,.92))}
-@media(max-width:700px){.special-mode-grid{grid-template-columns:1fr 1fr;gap:10px}.special-mode-card{height:112px;border-radius:17px}.special-mode-copy{left:13px;right:10px;bottom:13px}.special-mode-name{font-size:18px}.special-mode-sub{font-size:8px;margin-top:5px}.special-mode-lock{top:8px;right:8px;font-size:8px;padding:5px 6px}}
-</style>
-<style id="event-interaction-v3">
-.event-market-note{font-size:10px;color:rgba(255,255,255,.38);margin-top:6px}
-.event-modal{position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;visibility:hidden;transition:.2s}
-.event-modal.show{opacity:1;visibility:visible}
-.event-modal-sheet{width:min(480px,100%);padding:18px 18px calc(18px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;background:linear-gradient(180deg,#293546,#1e2937);border:1px solid rgba(255,255,255,.08);box-shadow:0 -15px 50px rgba(0,0,0,.4)}
-.event-modal-media{height:220px;border-radius:18px;background:rgba(255,255,255,.035);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
-.event-modal-media img{width:100%;height:100%;object-fit:contain}.gift-media-stage{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}.gift-png{width:62%;height:62%;object-fit:contain;z-index:1}.gift-webp{position:absolute!important;width:100%!important;height:100%!important;object-fit:contain!important;opacity:.82;z-index:2;pointer-events:none}.event-modal-price{color:#fff!important}.event-modal-price span{color:#fff!important}
-.event-modal-media dotlottie-player{width:100%;height:100%}
-.event-modal-title{font-size:20px;font-weight:950;margin-top:14px}
-.event-modal-desc{font-size:11px;color:rgba(255,255,255,.48);margin-top:5px;line-height:1.4}
-.event-modal-price{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;font-size:18px;font-weight:950}
-.event-modal-price img{width:19px;height:19px;object-fit:contain}
-.event-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
-.event-buy,.event-close{height:46px;border:0;border-radius:14px;font:inherit;font-weight:900;cursor:pointer}
-.event-buy{background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff}
-.event-close{background:rgba(255,255,255,.06);color:#d8e1ed;border:1px solid rgba(255,255,255,.08)}
-@media(min-width:701px){.event-modal{align-items:center;padding:20px}.event-modal-sheet{border-radius:24px}}
-</style>
-
-<style id="witch-party-layout-fix-v1">
-@media(min-width:701px){
-  .hero{min-height:205px!important;padding:26px 30px 24px!important}
-  .section{margin-top:16px!important}
-  .special-mode-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-  .special-mode-card{height:auto!important;min-height:0!important;aspect-ratio:16/9}
-  .special-mode-copy{left:20px;right:18px;bottom:20px}
-  .special-mode-name{font-size:24px}
-  .special-mode-sub{font-size:11px}
-}
-@media(max-width:700px){
-  .section{margin-top:18px!important}
-  .special-mode-card{height:112px!important}
-}
+:root{--bg:#070914;--panel:#101426;--panel2:#151a30;--line:rgba(255,255,255,.09);--text:#f8f8ff;--muted:#8f98b4;--violet:#a66cff;--violet2:#7047e8;--gold:#ffd76a;--green:#41d69b;--danger:#ff6485}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}html,body{min-height:100%;background:radial-gradient(circle at 50% -10%,#1c1230 0,#090b18 38%,#070914 100%);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}body{padding:calc(8px + env(safe-area-inset-top)) 12px calc(28px + env(safe-area-inset-bottom));overflow-x:hidden}.wrap{width:min(1180px,100%);margin:auto}.top{height:52px;display:flex;align-items:center;gap:10px}.back{width:42px;height:42px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.045);color:#fff;font-size:28px;line-height:1;cursor:pointer}.title{font-size:18px;font-weight:950;letter-spacing:-.4px}.mark{margin-left:auto;width:42px;height:42px;border-radius:13px;object-fit:contain;background:rgba(166,108,255,.1);border:1px solid rgba(166,108,255,.25);padding:5px}.hero{position:relative;min-height:280px;margin-top:10px;border:1px solid rgba(193,139,255,.28);border-radius:28px;overflow:hidden;background:linear-gradient(90deg,rgba(8,5,15,.93) 0%,rgba(11,7,19,.72) 42%,rgba(12,7,20,.2) 100%),url('/static/img/banner_witchparty.webp') center/cover;box-shadow:0 28px 80px rgba(61,24,100,.35);animation:heroPulse 6s ease-in-out infinite}.hero:after{content:"";position:absolute;inset:-40%;background:radial-gradient(circle,rgba(190,111,255,.14),transparent 48%);animation:orb 7s ease-in-out infinite;pointer-events:none}.hero-copy{position:absolute;left:28px;bottom:28px;z-index:3;max-width:58%}.eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:1.8px;color:#d3b5ff;font-weight:900}.hero h1{font-size:clamp(34px,5vw,60px);line-height:.94;letter-spacing:-2px;margin-top:8px;font-weight:1000;text-shadow:0 8px 30px rgba(0,0,0,.5)}.hero p{margin-top:10px;color:rgba(255,255,255,.68);font-size:13px;font-weight:750}.timer{margin-top:18px;display:inline-flex;padding:10px 13px;border-radius:16px;background:rgba(7,6,15,.52);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(12px)}.timer small{display:block;color:#a69ab7;text-transform:uppercase;font-size:8px;font-weight:900;letter-spacing:1.2px}.timer b{display:block;margin-top:3px;font-size:22px;font-variant-numeric:tabular-nums}.hamsters{position:absolute;right:2%;bottom:0;width:43%;height:100%;z-index:2;pointer-events:none}.hamsters img{position:absolute;width:clamp(100px,13vw,160px);filter:drop-shadow(0 15px 20px rgba(0,0,0,.55))}.h1{right:48%;bottom:2%;animation:floatA 4.2s ease-in-out infinite}.h2{right:5%;bottom:1%;animation:floatB 4.8s ease-in-out infinite -1.5s}.section{margin-top:24px;animation:rise .45s ease both}.section-head{display:flex;align-items:end;justify-content:space-between;gap:10px;margin-bottom:11px}.section-head h2{font-size:19px;font-weight:950;letter-spacing:-.5px}.section-head span{font-size:10px;color:#69738d;font-weight:800}.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.mode{position:relative;min-height:145px;border:1px solid rgba(255,255,255,.09);border-radius:20px;overflow:hidden;background:#111526;cursor:pointer;text-align:left;isolation:isolate;transition:transform .25s,box-shadow .25s}.mode:before{content:"";position:absolute;inset:0;background:var(--img) center/cover;z-index:-2;transition:transform .45s}.mode:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 25%,rgba(3,4,10,.88) 100%);z-index:-1}.mode:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.3)}.mode:hover:before{transform:scale(1.05)}.mode-copy{position:absolute;left:15px;right:10px;bottom:14px}.mode-name{font-size:21px;font-weight:950;line-height:1}.mode-sub{font-size:9px;color:rgba(255,255,255,.6);margin-top:6px;font-weight:800;text-transform:uppercase;letter-spacing:1px}.locked{filter:grayscale(.7);opacity:.7;cursor:not-allowed}.lock{position:absolute;top:9px;right:9px;padding:5px 7px;border-radius:9px;background:rgba(0,0,0,.5);font-size:9px;font-weight:900}.case-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.case{background:transparent;border:0;box-shadow:none;text-align:center;cursor:default;padding:0 4px}.case img{width:100%;aspect-ratio:1;object-fit:contain;display:block;filter:drop-shadow(0 13px 22px rgba(0,0,0,.35));transition:transform .35s}.case:hover img{transform:translateY(-4px) scale(1.025)}.case-name{font-size:14px;font-weight:900;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.case-price{margin-top:6px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:950}.case-price img,.market-price img{width:16px;height:16px;object-fit:contain}.market-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.market{border:1px solid rgba(255,255,255,.08);background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));border-radius:18px;padding:10px;cursor:pointer;text-align:left;transition:transform .2s,border-color .2s}.market:hover{transform:translateY(-3px);border-color:rgba(166,108,255,.38)}.market img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:13px;background:rgba(255,255,255,.025)}.market-name{margin-top:8px;font-size:11px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.market-price{margin-top:6px;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:950}.empty{padding:28px;border:1px dashed rgba(255,255,255,.1);border-radius:18px;text-align:center;color:#6f7891;font-size:12px;font-weight:750;grid-column:1/-1}.loader{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:#070914;transition:.35s}.loader.hide{opacity:0;visibility:hidden}.spinner{width:48px;height:48px;border-radius:50%;border:3px solid rgba(255,255,255,.08);border-top-color:var(--violet);animation:spin .8s linear infinite}.modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.72);backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:.22s}.modal.show{opacity:1;visibility:visible}.sheet{width:min(520px,100%);padding:16px 16px calc(18px + env(safe-area-inset-bottom));border-radius:25px 25px 0 0;background:linear-gradient(180deg,#20263b,#111627);border:1px solid rgba(255,255,255,.1);transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.8,.2,1)}.modal.show .sheet{transform:none}.media{height:270px;border-radius:19px;background:rgba(255,255,255,.035);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}.media img{max-width:100%;max-height:100%;object-fit:contain}.media .anim{position:absolute;width:100%;height:100%;object-fit:contain;opacity:.8}.m-title{font-size:20px;font-weight:950;margin-top:14px}.m-desc{margin-top:5px;color:#808aa2;font-size:11px}.m-price{text-align:center;margin-top:14px;font-size:18px;font-weight:950}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.actions button{height:46px;border-radius:14px;border:0;font:inherit;font-weight:900;cursor:pointer}.buy{background:linear-gradient(135deg,#a66cff,#7047e8);color:#fff}.close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08)!important;color:#dfe4f0}
+@keyframes spin{to{transform:rotate(360deg)}}@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@keyframes heroPulse{0%,100%{box-shadow:0 28px 80px rgba(61,24,100,.28)}50%{box-shadow:0 32px 95px rgba(112,45,155,.42)}}@keyframes orb{0%,100%{transform:translate(-5%,-3%) scale(.9)}50%{transform:translate(5%,4%) scale(1.08)}}@keyframes floatA{0%,100%{transform:translateY(4px) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}@keyframes floatB{0%,100%{transform:translateY(2px) rotate(2deg)}50%{transform:translateY(-11px) rotate(-2deg)}}
+@media(max-width:700px){body{padding-left:10px;padding-right:10px;padding-top:calc(8px + 7vh + env(safe-area-inset-top))}.hero{min-height:218px;border-radius:22px}.hero-copy{left:17px;bottom:17px;max-width:62%}.hero h1{font-size:31px}.hero p{font-size:11px;margin-top:7px}.timer{margin-top:11px;padding:8px 10px}.timer b{font-size:17px}.hamsters{width:53%}.hamsters img{width:92px}.h1{right:43%}.h2{right:-1%}.mode-grid{grid-template-columns:1fr 1fr;gap:9px}.mode{min-height:112px;border-radius:16px}.mode-copy{left:12px;bottom:11px}.mode-name{font-size:17px}.case-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.case-name{font-size:12px}.case-price{font-size:11px}.market-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.market{border-radius:15px;padding:8px}.market-name{font-size:10px}.market-price{font-size:10px}.section{margin-top:19px}}
+@media(min-width:701px){.case-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 </style>
 </head>
 <body>
-<div class="loading" id="loading"><img id="loadingGif" src="/static/img/loading.gif" alt=""><div class="loading-text">Загрузка</div></div>
+<div class="loader" id="loader"><div class="spinner"></div></div>
 <div class="wrap">
-<header class="head"><button class="back" onclick="history.back()" aria-label="Назад">‹</button><div class="title" id="eventTitle">Witch Hat Party</div><img class="party-mark" id="partyMark" src="/static/img/witchhat.png" alt="Party"></header>
-<section class="hero"><h1>Witch Hat Party</h1><p>Специальное событие</p><div class="timer"><div class="timer-box"><div class="timer-label">До конца</div><div class="timer-value" id="timer">00:00:00</div></div></div><div class="witch-hamsters" aria-hidden="true"><img class="witch-hamster witch-hamster-1" src="/static/img/hamster1.png" alt=""><img class="witch-hamster witch-hamster-2" src="/static/img/hamster2.png" alt=""></div></section>
+<header class="top"><button class="back" onclick="history.back()" aria-label="Назад">‹</button><div class="title" id="title">Witch Hat Party</div><img class="mark" id="mark" src="/static/img/witchhat.png" alt=""></header>
+<section class="hero"><div class="hero-copy"><div class="eyebrow">Halloween Event</div><h1 id="heroTitle">Witch Hat Party</h1><p>Особое событие · режимы, кейсы и коллекционные подарки</p><div class="timer"><div><small>До конца</small><b id="timer">00:00:00</b></div></div></div><div class="hamsters" aria-hidden="true"><img class="h1" src="/static/img/hamster1.png"><img class="h2" src="/static/img/hamster2.png"></div></section>
 <main id="content"></main>
 </div>
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="sheet"><div class="media" id="media"></div><div class="m-title" id="mTitle"></div><div class="m-desc" id="mDesc"></div><div class="m-price" id="mPrice"></div><div class="actions"><button class="close" onclick="closeModal()">Закрыть</button><button class="buy" id="buyBtn" onclick="buyGift()">Купить</button></div></div></div>
 <script>
-const $=id=>document.getElementById(id);
-let eventData=null, left=0;
-function fmt(sec){sec=Math.max(0,Number(sec||0));let h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=Math.floor(sec%60);return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}
-function imgSrc(v){return v||'/static/img/gift.png'}
-function price(v){return Number(v||0).toFixed(2)}
-function resolveLoading(name){let n=String(name||'loading.gif').trim();if(!n)n='loading.gif';if(n.startsWith('/'))return n;if(n.includes('/'))return '/static/'+n.replace(/^\/+/, '');return '/static/img/'+n}
-function caseApi(id){
-  var sid=String(id);
-  var url=(sid==='seasonal')?('/api/cases/by-slug/seasonal'):('/api/cases/'+encodeURIComponent(sid));
-  return fetch(url,{cache:'no-store'}).then(function(r){return r.json()});
-}
-function casePrice(c){
-  var raw=Number(c&&c.cost||0);
-  if(c&&c.seasonal) return raw;
-  return c&&c.cost_type==='ton' ? raw : raw/100;
-}
-function renderSections(sections){
-  const root=$('content');root.innerHTML='';let delay=0;
-  const list=Array.isArray(sections)?sections.slice():[];
-  // Event page always starts with its special modes. Ghost Road is a mode of Witch Hat Party,
-  // not a separate event/page.
-  if(!list.some(function(x){return x&&x.type==='mode';})){
-    return;
-  }else{
-    var modeSec=list.find(function(x){return x&&x.type==='mode'});
-    if(modeSec){modeSec.title='Особые режимы';modeSec.items=Array.isArray(modeSec.items)?modeSec.items:[];
-      if(!modeSec.items.some(function(x){return x&&x.id==='ghost_road_mode'})) modeSec.items.unshift({id:'ghost_road_mode',name:'Ghost Road',image:'/static/img/ghost_road.png',path:'/event/witch-hat-party?mode=ghost-road',visible:true});
-    }
-  }
-  // Keep only the intended Event order: special modes -> cases -> market -> other configured sections.
-  list.sort(function(a,b){var rank=function(x){var t=String(x&&x.type||'');return t==='mode'?0:(t==='cases'?1:(t==='market'?2:3))};return rank(a)-rank(b)});
-  for(const sec of list){
-    if(!sec || sec.visible===false) continue;
-    const wrap=document.createElement('section');wrap.className='section fade-up';wrap.style.animationDelay=(delay++)*60+'ms';
-    const h=document.createElement('div');h.className='section-head';h.innerHTML='<div class="section-title"></div>';h.querySelector('.section-title').textContent=sec.title||'Раздел';wrap.appendChild(h);
-    const grid=document.createElement('div');
-    if(sec.type==='mode'){
-      grid.className='special-mode-grid';
-      const items=(sec.items||[]).filter(function(x){return x&&x.visible!==false});
-      if(!items.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Особые режимы пока не добавлены</div>'}
-      items.forEach(function(it){
-        const card=document.createElement('button');card.type='button';card.className='special-mode-card';
-        card.innerHTML='<div class="special-mode-copy"><div class="special-mode-name"></div><div class="special-mode-sub">Уникальный режим</div></div>';
-        card.style.setProperty('--mode-image', "url(" + JSON.stringify(imgSrc(it.image||'/static/img/ghost_road.png')) + ")");
-        card.querySelector('.special-mode-name').textContent=it.name||'Ghost Road';
-        const unlock=it.unlock_at?new Date(it.unlock_at):null; const locked=!!unlock && !isNaN(unlock.getTime()) && unlock.getTime()>Date.now();
-        if(locked){card.classList.add('is-locked');const badge=document.createElement('div');badge.className='special-mode-lock';badge.textContent='Откроется через '+fmt(Math.ceil((unlock.getTime()-Date.now())/1000));card.appendChild(badge);}
-        card.onclick=function(){
-          if(locked)return; const path=String(it.path||'').trim(); if(path) location.href=path;
-        };
-        grid.appendChild(card);
-      });
-    }else if(sec.type==='cases'){
-      grid.className='cards';
-      const ids=(sec.case_ids||[]).map(String);
-      if(!ids.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Кейсы события пока не добавлены</div>';}
-      else Promise.allSettled(ids.map(caseApi)).then(results=>{
-        grid.innerHTML='';
-        results.forEach(function(result){
-          const d=result.status==='fulfilled'?result.value:null;
-          const c=d&&d.success?d.case:null;if(!c)return;
-          const card=document.createElement('button');card.className='case-card';card.type='button';
-          card.setAttribute('aria-label',c.name||'Кейс');
-          card.innerHTML='<img class="case-img" loading="lazy"><div class="case-name"></div><div class="case-price"><img src="/static/img/ton.png"><span></span> GRAM</div>';
-          card.querySelector('.case-img').src=imgSrc(c.image||c.png);card.querySelector('.case-name').textContent=c.name||'Кейс';card.querySelector('.case-price span').textContent=price(casePrice(c));
-          // Case cards are intentionally non-interactive for now.
-          grid.appendChild(card);
-        });
-        if(!grid.children.length)grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить кейсы события</div>';
-      });
-    }else if(sec.type==='market'){
-      grid.className='market-grid';
-      fetch('/api/events/witch-hat-party/market?ts='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
-        grid.innerHTML='';const items=d.items||[];
-        if(!items.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Подарки пока не найдены</div>';return;}
-        items.forEach(function(it){
-          const card=document.createElement('button');card.type='button';card.className='market-card';
-          card.innerHTML='<img class="market-img" loading="lazy"><div class="market-name"></div><div class="market-price"><img src="/static/img/ton.png"><span></span></div><div class="event-market-note">1 шт. · Подробнее</div>';
-          card.querySelector('.market-img').src=imgSrc(it.image);card.querySelector('.market-name').textContent=it.name||'Подарок';card.querySelector('.market-price span').textContent=price(it.price_gram||it.price_ton)+' GRAM';
-          card.onclick=function(){openEventGiftModal(it)};grid.appendChild(card);
-        });
-      }).catch(function(){grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить маркет</div>'});
-    }else{
-      grid.className='market-grid';
-    }
-    wrap.appendChild(grid);root.appendChild(wrap);
-  }
-}
-
-function openEventGiftModal(item){
-  var overlay=$('eventGiftModal');if(!overlay)return;
-  overlay.dataset.url=item.url||item.gift_url||'';overlay.dataset.item=JSON.stringify(item);
-  $('eventGiftModalTitle').textContent=item.name||'Подарок';
-  $('eventGiftModalDesc').textContent='Коллекционный подарок · в наличии 1 штука';
-  $('eventGiftModalPrice').textContent=price(item.price_gram||item.price_ton)+' GRAM';
-  var media=$('eventGiftModalMedia');media.innerHTML='';
-  var stage=document.createElement('div');stage.className='gift-media-stage';
-  var png=document.createElement('img');png.className='gift-png';png.src=imgSrc(item.png||item.image);png.alt='';stage.appendChild(png);
-  var webp=item.animation_webp||item.animation||item.image; if(webp){var anim=document.createElement('img');anim.className='gift-webp';anim.src=webp;anim.alt='';stage.appendChild(anim)}
-  media.appendChild(stage);
-  overlay.classList.add('show');
-}
-function closeEventGiftModal(){var o=$('eventGiftModal');if(o)o.classList.remove('show')}
-async function buyEventGift(){
-  var o=$('eventGiftModal');if(!o)return;
-  var item=JSON.parse(o.dataset.item||'{}');var user=null;
-  try{user=await telegramAuth()}catch(e){
-    user=(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user)||null;
-  }
-  var initData=(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData)||'';
-  if(!user||!user.id||!initData){alert('Откройте приложение через Telegram');return}
-  var btn=$('eventBuyBtn');btn.disabled=true;btn.textContent='Покупка…';
-  try{
-    var r=await fetch('/api/events/witch-hat-party/market/buy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,gift_url:item.url||item.gift_url,initData:initData})});
-    var d=await r.json();if(!r.ok||!d.success)throw Error(d.error||'Ошибка покупки');
-    closeEventGiftModal();alert('Подарок куплен и добавлен в инвентарь');
-    document.querySelectorAll('.market-card').forEach(function(card){if(card.querySelector('.market-name')&&card.querySelector('.market-name').textContent===item.name)card.remove()});
-  }catch(e){alert(e.message||'Ошибка покупки')}finally{btn.disabled=false;btn.textContent='Купить'}
-}
-
-async function load(){try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();try{if(typeof Telegram.WebApp.requestFullscreen==='function')Telegram.WebApp.requestFullscreen()}catch(e){}}const r=await fetch('/api/events/witch-hat-party?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();eventData=d.event||{};if(eventData.name)$('eventTitle').textContent=eventData.name;if(eventData.image)$('partyMark').src=eventData.image;left=Number(eventData.remaining_seconds||0);if(!left&&eventData.ends_at){try{left=Math.max(0,Math.ceil((new Date(eventData.ends_at).getTime()-Date.now())/1000))}catch(e){}}if(eventData.loading_gif)$('loadingGif').src=resolveLoading(eventData.loading_gif);$('timer').textContent=fmt(left);if(!eventData.active){$('content').innerHTML='<section class="section"><div class="empty">Ивент сейчас не активен</div></section>'}else{renderSections(eventData.sections||[])}setTimeout(()=>$('loading').classList.add('hide'),180)}catch(e){$('content').innerHTML='<section class="section"><div class="empty error">Не удалось загрузить ивент</div></section>';setTimeout(()=>$('loading').classList.add('hide'),300)}}
-setInterval(()=>{if(left>0){left--;if($('timer'))$('timer').textContent=fmt(left)}},1000);setInterval(()=>{if(document.visibilityState==='visible')load()},15000);load();
+const $=id=>document.getElementById(id);let state={remaining:0,event:null,current:null};
+const fmt=s=>{s=Math.max(0,Number(s||0));return String(Math.floor(s/3600)).padStart(2,'0')+':'+String(Math.floor(s%3600/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0')};
+const src=v=>v||'/static/img/gift.png';
+async function json(url,opt){const r=await fetch(url,opt);const d=await r.json().catch(()=>({}));if(!r.ok||d.success===false)throw Error(d.error||('HTTP '+r.status));return d}
+async function caseData(id){const u=String(id)==='seasonal'?'/api/cases/by-slug/seasonal':'/api/cases/'+encodeURIComponent(id);return json(u,{cache:'no-store'})}
+function casePrice(c){const n=Number(c?.cost||0);return c?.seasonal?n:(c?.cost_type==='ton'?n:n/100)}
+function section(root,title,meta){const s=document.createElement('section');s.className='section';const h=document.createElement('div');h.className='section-head';h.innerHTML='<h2></h2><span></span>';h.children[0].textContent=title||'Раздел';h.children[1].textContent=meta||'';s.appendChild(h);root.appendChild(s);return s}
+async function render(ev){const root=$('content');root.innerHTML='';if(!ev.active){const s=section(root,'Witch Hat Party');s.append(Object.assign(document.createElement('div'),{className:'empty',textContent:'Ивент сейчас не активен'}));return}
+ let sections=Array.isArray(ev.sections)?ev.sections:[];sections=[...sections].sort((a,b)=>{const rank=x=>x.type==='mode'?0:x.type==='cases'?1:x.type==='market'?2:3;return rank(a)-rank(b)});
+ for(const sec of sections){if(!sec||sec.visible===false)continue;if(sec.type==='mode'){const s=section(root,sec.title||'Особые режимы');const grid=document.createElement('div');grid.className='mode-grid';let items=Array.isArray(sec.items)?sec.items.filter(x=>x&&x.visible!==false):[];if(!items.length){grid.innerHTML='<div class="empty">Режимы пока не добавлены</div>'}for(const it of items){const b=document.createElement('button');b.className='mode';b.type='button';b.style.setProperty('--img',`url(${JSON.stringify(src(it.image))})`);const unlock=it.unlock_at?new Date(it.unlock_at):null;const locked=!!unlock&&!isNaN(unlock)&&unlock.getTime()>Date.now();if(locked)b.classList.add('locked');b.innerHTML='<div class="mode-copy"><div class="mode-name"></div><div class="mode-sub">Особый режим</div></div>';b.querySelector('.mode-name').textContent=it.name||'Режим';if(locked){const x=document.createElement('span');x.className='lock';x.textContent='Откроется через '+fmt(Math.ceil((unlock-Date.now())/1000));b.appendChild(x)}b.onclick=()=>{if(!locked&&it.path)location.href=it.path};grid.appendChild(b)}s.appendChild(grid)}
+ else if(sec.type==='cases'){const s=section(root,sec.title||'Кейсы события',(sec.case_ids||[]).length+' шт.');const grid=document.createElement('div');grid.className='case-grid';s.appendChild(grid);const ids=[...(sec.case_ids||[])].map(String);if(!ids.length){grid.innerHTML='<div class="empty">Кейсы события пока не добавлены</div>';continue}const results=await Promise.allSettled(ids.map(caseData));let count=0;results.forEach(res=>{if(res.status!=='fulfilled')return;const c=res.value?.case;if(!c)return;count++;const b=document.createElement('button');b.type='button';b.className='case';b.innerHTML='<img loading="lazy"><div class="case-name"></div><div class="case-price"><img src="/static/img/ton.png"><span></span> GRAM</div>';b.querySelector('img').src=src(c.image||c.png);b.querySelector('.case-name').textContent=c.name||'Кейс';b.querySelector('.case-price span').textContent=casePrice(c).toFixed(2);grid.appendChild(b)});if(!count)grid.innerHTML='<div class="empty">Не удалось загрузить кейсы</div>'}
+ else if(sec.type==='market'){const s=section(root,sec.title||'Маркет');const grid=document.createElement('div');grid.className='market-grid';s.appendChild(grid);try{const d=await json('/api/events/witch-hat-party/market?ts='+Date.now(),{cache:'no-store'});const items=d.items||[];if(!items.length){grid.innerHTML='<div class="empty">Подарки пока не добавлены</div>';continue}items.forEach(it=>{const b=document.createElement('button');b.type='button';b.className='market';b.innerHTML='<img loading="lazy"><div class="market-name"></div><div class="market-price"><img src="/static/img/ton.png"><span></span></div>';b.querySelector('img').src=src(it.image||it.png);b.querySelector('.market-name').textContent=it.name||'Подарок';b.querySelector('.market-price span').textContent=Number(it.price_gram||0).toFixed(2)+' GRAM';b.onclick=()=>openGift(it);grid.appendChild(b)})}catch(e){grid.innerHTML='<div class="empty">Не удалось загрузить маркет</div>'}}
+ }}
+function openGift(it){state.current=it;$('mTitle').textContent=it.name||'Подарок';$('mDesc').textContent='Коллекционный подарок · в наличии 1 шт.';$('mPrice').textContent=Number(it.price_gram||0).toFixed(2)+' GRAM';const m=$('media');m.innerHTML='';const img=document.createElement('img');img.src=src(it.png||it.image);m.appendChild(img);if(it.animation_webp||it.animation){const a=document.createElement('img');a.className='anim';a.src=it.animation_webp||it.animation;m.appendChild(a)}$('modal').classList.add('show')}
+function closeModal(){$('modal').classList.remove('show');state.current=null}
+async function buyGift(){const it=state.current;if(!it)return;let user=null;try{user=await telegramAuth()}catch(e){};const tg=window.Telegram?.WebApp;user=user||tg?.initDataUnsafe?.user;const initData=tg?.initData||'';if(!user?.id||!initData){alert('Откройте приложение через Telegram');return}const btn=$('buyBtn');btn.disabled=true;btn.textContent='Покупка…';try{const d=await json('/api/events/witch-hat-party/market/buy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,gift_url:it.url||it.gift_url,initData})});closeModal();alert('Подарок куплен и добавлен в инвентарь');await load()}catch(e){alert(e.message||'Ошибка покупки')}finally{btn.disabled=false;btn.textContent='Купить'}}
+async function load(){try{if(window.Telegram?.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();try{Telegram.WebApp.requestFullscreen?.()}catch(e){}}const d=await json('/api/events/witch-hat-party?ts='+Date.now(),{cache:'no-store'});state.event=d.event||{};state.remaining=Number(state.event.remaining_seconds||0);$('title').textContent=state.event.name||'Witch Hat Party';$('heroTitle').textContent=state.event.name||'Witch Hat Party';if(state.event.image)$('mark').src=state.event.image;$('timer').textContent=fmt(state.remaining);await render(state.event);$('loader').classList.add('hide')}catch(e){$('content').innerHTML='<section class="section"><div class="empty">Не удалось загрузить ивент. Попробуйте ещё раз.</div></section>';$('loader').classList.add('hide')}}
+setInterval(()=>{if(state.remaining>0){state.remaining--;if($('timer'))$('timer').textContent=fmt(state.remaining)}},1000);setInterval(()=>{if(document.visibilityState==='visible')load()},20000);load();
 </script>
-
-<div class="event-modal" id="eventGiftModal" onclick="if(event.target===this)closeEventGiftModal()">
-  <div class="event-modal-sheet">
-    <div class="event-modal-media" id="eventGiftModalMedia"></div>
-    <div class="event-modal-title" id="eventGiftModalTitle">Подарок</div>
-    <div class="event-modal-desc" id="eventGiftModalDesc"></div>
-    <div class="event-modal-price"><img src="/static/img/ton.png" alt=""><span id="eventGiftModalPrice">0.00 GRAM</span></div>
-    <div class="event-modal-actions"><button class="event-close" onclick="closeEventGiftModal()">Закрыть</button><button class="event-buy" id="eventBuyBtn" onclick="buyEventGift()">Купить</button></div>
-  </div>
-</div>
-
 </body></html>
