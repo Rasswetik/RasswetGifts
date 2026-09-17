@@ -47,6 +47,25 @@
   .party-mark{width:40px!important;height:40px!important;border-radius:12px!important}
 }
 </style>
+
+<style id="event-interaction-v3">
+.event-market-note{font-size:10px;color:rgba(255,255,255,.38);margin-top:6px}
+.event-modal{position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;visibility:hidden;transition:.2s}
+.event-modal.show{opacity:1;visibility:visible}
+.event-modal-sheet{width:min(480px,100%);padding:18px 18px calc(18px + env(safe-area-inset-bottom));border-radius:24px 24px 0 0;background:linear-gradient(180deg,#293546,#1e2937);border:1px solid rgba(255,255,255,.08);box-shadow:0 -15px 50px rgba(0,0,0,.4)}
+.event-modal-media{height:220px;border-radius:18px;background:rgba(255,255,255,.035);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.event-modal-media img{width:100%;height:100%;object-fit:contain}
+.event-modal-media dotlottie-player{width:100%;height:100%}
+.event-modal-title{font-size:20px;font-weight:950;margin-top:14px}
+.event-modal-desc{font-size:11px;color:rgba(255,255,255,.48);margin-top:5px;line-height:1.4}
+.event-modal-price{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;font-size:18px;font-weight:950}
+.event-modal-price img{width:19px;height:19px;object-fit:contain}
+.event-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.event-buy,.event-close{height:46px;border:0;border-radius:14px;font:inherit;font-weight:900;cursor:pointer}
+.event-buy{background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff}
+.event-close{background:rgba(255,255,255,.06);color:#d8e1ed;border:1px solid rgba(255,255,255,.08)}
+@media(min-width:701px){.event-modal{align-items:center;padding:20px}.event-modal-sheet{border-radius:24px}}
+</style>
 </head>
 <body>
 <div class="loading" id="loading"><img id="loadingGif" src="/static/img/loading.gif" alt=""><div class="loading-text">Загрузка</div></div>
@@ -62,8 +81,92 @@ function fmt(sec){sec=Math.max(0,Number(sec||0));let d=Math.floor(sec/86400);let
 function imgSrc(v){return v||'/static/img/gift.png'}
 function price(v){return Number(v||0).toFixed(2)}
 function resolveLoading(name){let n=String(name||'loading.gif').trim();if(!n)n='loading.gif';if(n.startsWith('/'))return n;if(n.includes('/'))return '/static/'+n.replace(/^\/+/, '');return '/static/img/'+n}
-function renderSections(sections){const root=$('content');root.innerHTML='';let delay=0;for(const sec of (sections||[])){const wrap=document.createElement('section');wrap.className='section fade-up';wrap.style.animationDelay=(delay++)*60+'ms';const h=document.createElement('div');h.className='section-head';h.innerHTML='<div class="section-title"></div>';h.querySelector('.section-title').textContent=sec.title||'Раздел';wrap.appendChild(h);const grid=document.createElement('div');if(sec.type==='cases'){grid.className='cards';const ids=(sec.case_ids||[]).map(String);const loadCases=ids.map(id=>fetch('/api/cases/'+encodeURIComponent(id)).then(r=>r.json()).catch(()=>null));Promise.all(loadCases).then(ds=>{grid.innerHTML='';for(const d of ds){const c=d&&d.success?d.case:null;if(!c)continue;const card=document.createElement('button');card.className='case-card';card.innerHTML='<img class="case-img"><div class="case-name"></div><div class="case-price"><img src="/static/img/ton.png"><span></span></div>';card.querySelector('.case-img').src=imgSrc(c.image||c.png);card.querySelector('.case-name').textContent=c.name||'Кейс';card.querySelector('.case-price span').textContent=(Number(c.cost||0)).toLocaleString('ru-RU');card.onclick=()=>location.href='/cases?case='+encodeURIComponent(c.id);grid.appendChild(card)}})}else{grid.className='market-grid';fetch('/api/events/witch-hat-party/market').then(r=>r.json()).then(d=>{grid.innerHTML='';const items=d.items||[];if(!items.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Подарки пока не найдены</div>';return}items.forEach(it=>{const card=document.createElement('div');card.className='market-card';card.innerHTML='<img class="market-img"><div class="market-name"></div><div class="market-price"><img src="/static/img/ton.png"><span></span></div>';card.querySelector('.market-img').src=imgSrc(it.image);card.querySelector('.market-name').textContent=it.name;card.querySelector('.market-price span').textContent=price(it.price_ton)+' GRAM';grid.appendChild(card)})}).catch(()=>grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить маркет</div>')}wrap.appendChild(grid);root.appendChild(wrap)}}
+function caseApi(id){
+  var sid=String(id);
+  var url=(sid==='seasonal')?('/api/cases/by-slug/seasonal'):('/api/cases/'+encodeURIComponent(sid));
+  return fetch(url,{cache:'no-store'}).then(function(r){return r.json()});
+}
+function casePrice(c){
+  var raw=Number(c&&c.cost||0);
+  if(c&&c.seasonal) return raw;
+  return c&&c.cost_type==='ton' ? raw : raw/100;
+}
+function renderSections(sections){
+  const root=$('content');root.innerHTML='';let delay=0;
+  for(const sec of (sections||[])){
+    const wrap=document.createElement('section');wrap.className='section fade-up';wrap.style.animationDelay=(delay++)*60+'ms';
+    const h=document.createElement('div');h.className='section-head';h.innerHTML='<div class="section-title"></div>';h.querySelector('.section-title').textContent=sec.title||'Раздел';wrap.appendChild(h);
+    const grid=document.createElement('div');
+    if(sec.type==='cases'){
+      grid.className='cards';
+      const ids=(sec.case_ids||[]).map(String);
+      if(!ids.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Кейсы пока не добавлены</div>';}
+      else Promise.all(ids.map(caseApi)).then(ds=>{
+        grid.innerHTML='';
+        ds.forEach(function(d){
+          const c=d&&d.success?d.case:null;if(!c)return;
+          const card=document.createElement('button');card.className='case-card';card.type='button';
+          card.innerHTML='<img class="case-img" loading="lazy"><div class="case-name"></div><div class="case-price"><img src="/static/img/ton.png"><span></span> GRAM</div>';
+          card.querySelector('.case-img').src=imgSrc(c.image||c.png);card.querySelector('.case-name').textContent=c.name||'Кейс';card.querySelector('.case-price span').textContent=price(casePrice(c));
+          card.onclick=function(){location.href='/cases?case='+encodeURIComponent(c.slug||c.id)};
+          grid.appendChild(card);
+        });
+        if(!grid.children.length)grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить кейсы</div>';
+      }).catch(function(){grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить кейсы</div>'});
+    }else{
+      grid.className='market-grid';
+      fetch('/api/events/witch-hat-party/market?ts='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
+        grid.innerHTML='';const items=d.items||[];
+        if(!items.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Подарки пока не найдены</div>';return;}
+        items.forEach(function(it){
+          const card=document.createElement('button');card.type='button';card.className='market-card';
+          card.innerHTML='<img class="market-img" loading="lazy"><div class="market-name"></div><div class="market-price"><img src="/static/img/ton.png"><span></span></div><div class="event-market-note">1 шт. · Подробнее</div>';
+          card.querySelector('.market-img').src=imgSrc(it.image);card.querySelector('.market-name').textContent=it.name||'Подарок';card.querySelector('.market-price span').textContent=price(it.price_gram||it.price_ton)+' GRAM';
+          card.onclick=function(){openEventGiftModal(it)};grid.appendChild(card);
+        });
+      }).catch(function(){grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить маркет</div>'});
+    }
+    wrap.appendChild(grid);root.appendChild(wrap);
+  }
+}
+function openEventGiftModal(item){
+  var overlay=$('eventGiftModal');if(!overlay)return;
+  overlay.dataset.url=item.url||item.gift_url||'';overlay.dataset.item=JSON.stringify(item);
+  $('eventGiftModalTitle').textContent=item.name||'Подарок';
+  $('eventGiftModalDesc').textContent='Коллекционный подарок · в наличии 1 штука';
+  $('eventGiftModalPrice').textContent=price(item.price_gram||item.price_ton)+' GRAM';
+  var media=$('eventGiftModalMedia');media.innerHTML='';
+  if(item.animation){var player=document.createElement('dotlottie-player');player.setAttribute('src',item.animation);player.setAttribute('background','transparent');player.setAttribute('speed','1');player.setAttribute('loop','');player.setAttribute('autoplay','');media.appendChild(player);}
+  else {var im=document.createElement('img');im.src=imgSrc(item.image);media.appendChild(im)}
+  overlay.classList.add('show');
+}
+function closeEventGiftModal(){var o=$('eventGiftModal');if(o)o.classList.remove('show')}
+async function buyEventGift(){
+  var o=$('eventGiftModal');if(!o)return;
+  var item=JSON.parse(o.dataset.item||'{}');var user=null;
+  try{user=await telegramAuth()}catch(e){}
+  if(!user||!user.id){alert('Откройте приложение через Telegram');return}
+  var btn=$('eventBuyBtn');btn.disabled=true;btn.textContent='Покупка…';
+  try{
+    var r=await fetch('/api/events/witch-hat-party/market/buy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,gift_url:item.url||item.gift_url})});
+    var d=await r.json();if(!r.ok||!d.success)throw Error(d.error||'Ошибка покупки');
+    closeEventGiftModal();alert('Подарок куплен и добавлен в инвентарь');
+    document.querySelectorAll('.market-card').forEach(function(card){if(card.querySelector('.market-name')&&card.querySelector('.market-name').textContent===item.name)card.remove()});
+  }catch(e){alert(e.message||'Ошибка покупки')}finally{btn.disabled=false;btn.textContent='Купить'}
+}
+
 async function load(){try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();try{if(typeof Telegram.WebApp.requestFullscreen==='function')Telegram.WebApp.requestFullscreen()}catch(e){}}const r=await fetch('/api/events/witch-hat-party?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();eventData=d.event||{};if(eventData.name)$('eventTitle').textContent=eventData.name;if(eventData.image)$('partyMark').src=eventData.image;left=Number(eventData.remaining_seconds||0);if(eventData.loading_gif)$('loadingGif').src=resolveLoading(eventData.loading_gif);$('timer').textContent=fmt(left);if(!eventData.active){$('content').innerHTML='<section class="section"><div class="empty">Ивент сейчас не активен</div></section>'}else{renderSections(eventData.sections||[])}setTimeout(()=>$('loading').classList.add('hide'),180)}catch(e){$('content').innerHTML='<section class="section"><div class="empty error">Не удалось загрузить ивент</div></section>';setTimeout(()=>$('loading').classList.add('hide'),300)}}
 setInterval(()=>{if(left>0){left--;if($('timer'))$('timer').textContent=fmt(left)}},1000);load();
 </script>
+
+<div class="event-modal" id="eventGiftModal" onclick="if(event.target===this)closeEventGiftModal()">
+  <div class="event-modal-sheet">
+    <div class="event-modal-media" id="eventGiftModalMedia"></div>
+    <div class="event-modal-title" id="eventGiftModalTitle">Подарок</div>
+    <div class="event-modal-desc" id="eventGiftModalDesc"></div>
+    <div class="event-modal-price"><img src="/static/img/ton.png" alt=""><span id="eventGiftModalPrice">0.00 GRAM</span></div>
+    <div class="event-modal-actions"><button class="event-close" onclick="closeEventGiftModal()">Закрыть</button><button class="event-buy" id="eventBuyBtn" onclick="buyEventGift()">Купить</button></div>
+  </div>
+</div>
+
 </body></html>
