@@ -425,26 +425,52 @@ img{display:block}
     50%{opacity:1;transform:scale(1)}
 }
 
-.event-hamster{
+.event-hamsters{
     position:absolute;
+    right:4%;
+    bottom:0;
+    width:270px;
+    height:100%;
     z-index:6;
-    right:5%;
-    bottom:-5px;
-    width:min(245px,31%);
-    height:auto;
-    object-fit:contain;
-    filter:drop-shadow(0 12px 17px rgba(0,0,0,.38));
-    transform-origin:bottom center;
-    animation:hamsterBob 3.2s ease-in-out infinite;
     pointer-events:none;
 }
 
-@keyframes hamsterBob{
-    0%,100%{transform:translateY(5px) rotate(-1.2deg)}
-    50%{transform:translateY(-9px) rotate(1.4deg)}
+.event-hamster{
+    position:absolute;
+    width:clamp(86px,10vw,126px);
+    height:auto;
+    object-fit:contain;
+    filter:drop-shadow(0 10px 15px rgba(0,0,0,.42));
+    transform-origin:bottom center;
 }
 
-.event-card:hover .event-hamster{animation-duration:2.1s}
+.event-hamster-1{
+    right:112px;
+    bottom:8px;
+    z-index:2;
+    animation:hamsterFloatOne 3.8s ease-in-out infinite;
+}
+
+.event-hamster-2{
+    right:8px;
+    bottom:4px;
+    z-index:3;
+    animation:hamsterFloatTwo 4.4s ease-in-out infinite;
+    animation-delay:-1.2s;
+}
+
+@keyframes hamsterFloatOne{
+    0%,100%{transform:translate3d(0,5px,0) rotate(-2deg)}
+    50%{transform:translate3d(-5px,-9px,0) rotate(2deg)}
+}
+
+@keyframes hamsterFloatTwo{
+    0%,100%{transform:translate3d(0,3px,0) rotate(2deg) scale(.98)}
+    50%{transform:translate3d(5px,-11px,0) rotate(-2deg) scale(1)}
+}
+
+.event-card:hover .event-hamster-1{animation-duration:2.8s}
+.event-card:hover .event-hamster-2{animation-duration:3.2s}
 
 /* HALLOWEEN ACTIVE */
 .halloween-active body{
@@ -516,6 +542,10 @@ img{display:block}
     .game-subtitle{font-size:11px;margin-top:7px}
 
     .event-card{grid-column:1;height:178px}
+    .event-hamsters{right:1%;width:210px}
+    .event-hamster{width:92px}
+    .event-hamster-1{right:88px}
+    .event-hamster-2{right:3px}
     .event-content{padding:18px 17px}
     .event-title{font-size:26px}
     .event-remaining{margin-top:8px;font-size:11px;padding:6px 8px}
@@ -841,7 +871,10 @@ img{display:block}
                 <g class="spark" fill="#e6baff"><circle cx="770" cy="28" r="3"/><circle cx="915" cy="45" r="2"/><circle cx="620" cy="55" r="2.5"/></g>
                 <g class="spark" fill="#fff1ff"><path d="M850 126l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z"/><path d="M720 146l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/></g>
             </svg>
-            <img class="event-hamster" src="/static/img/witchhat_hamster.png" alt="" aria-hidden="true">
+            <div class="event-hamsters" aria-hidden="true">
+                <img class="event-hamster event-hamster-1" src="/static/img/hamster1.png" alt="">
+                <img class="event-hamster event-hamster-2" src="/static/img/hamster2.png" alt="">
+            </div>
             <div class="event-content">
                 <div class="event-copy">
                     <div class="event-title">Witch Hat<br>Party</div>
@@ -856,7 +889,7 @@ img{display:block}
             </div>
         </button>
 
-        <button class="game-card mines is-disabled" type="button" disabled aria-disabled="true" aria-label="Mines — недоступно">
+        <button class="game-card mines is-disabled" type="button" disabled tabindex="-1" aria-disabled="true" aria-label="Mines — недоступно">
             <div class="game-card-content">
                 <div class="game-name">Mines</div>
                 <span class="game-subtitle">Мины</span>
