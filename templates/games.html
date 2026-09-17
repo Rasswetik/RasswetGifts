@@ -230,79 +230,102 @@ img{display:block}
     margin-bottom:27px;
 }
 
-/* ONLY TWO GAME BUTTONS */
+/* GAMES */
 .games-grid{
     display:grid;
     grid-template-columns:repeat(2,minmax(0,1fr));
-    gap:26px;
+    gap:18px;
     width:100%;
+    align-items:stretch;
 }
 
 .game-card{
-    height:245px;
+    min-width:0;
+    height:220px;
     position:relative;
     overflow:hidden;
     border-radius:22px;
     background:#101727;
     text-align:left;
     isolation:isolate;
-    transition:transform .18s ease,box-shadow .18s ease;
+    border:1px solid rgba(150,170,200,.18);
+    transition:transform .22s ease,box-shadow .22s ease,filter .22s ease,opacity .22s ease;
 }
 
 .game-card:before{
     content:"";
     position:absolute;
     inset:0;
-    z-index:-2;
+    z-index:-3;
     background-position:center;
     background-size:cover;
     background-repeat:no-repeat;
     transform:scale(1.001);
-    transition:transform .35s ease;
+    transition:transform .45s ease;
 }
 
 .game-card:after{
     content:"";
     position:absolute;
     inset:0;
-    z-index:-1;
+    z-index:-2;
     background:
-        linear-gradient(180deg,rgba(4,7,14,.03) 20%,rgba(4,7,14,.12) 45%,rgba(4,7,14,.88) 100%),
-        linear-gradient(90deg,rgba(4,7,14,.34),transparent 65%);
+        linear-gradient(180deg,rgba(4,7,14,.02) 18%,rgba(4,7,14,.15) 48%,rgba(4,7,14,.91) 100%),
+        linear-gradient(90deg,rgba(4,7,14,.38),transparent 72%);
 }
 
 .game-card.crash{
-    border:2px solid var(--red);
-    box-shadow:
-        0 0 0 1px rgba(255,49,93,.12),
-        0 0 30px rgba(255,49,93,.11);
+    border-color:rgba(255,49,93,.82);
+    box-shadow:0 0 0 1px rgba(255,49,93,.10),0 12px 35px rgba(255,49,93,.10);
 }
 
 .game-card.mines{
-    border:2px solid var(--cyan);
-    box-shadow:
-        0 0 0 1px rgba(32,184,255,.11),
-        0 0 30px rgba(32,184,255,.10);
+    border-color:rgba(130,145,165,.42);
+    box-shadow:0 0 0 1px rgba(130,145,165,.07),0 12px 35px rgba(0,0,0,.14);
 }
 
 .game-card.crash:before{background-image:url("/static/img/crash.png")}
 .game-card.mines:before{background-image:url("/static/img/mines.png")}
 
-.game-card:hover{transform:translateY(-3px)}
-.game-card:hover:before{transform:scale(1.035)}
-.game-card:active{transform:scale(.985)}
+.game-card:not(.is-disabled):hover{transform:translateY(-3px)}
+.game-card:not(.is-disabled):hover:before{transform:scale(1.035)}
+.game-card:not(.is-disabled):active{transform:scale(.987)}
+
+/* Mines пока недоступны */
+.game-card.is-disabled{
+    cursor:not-allowed;
+    filter:grayscale(1) saturate(.35);
+    opacity:.62;
+    box-shadow:none!important;
+}
+.game-card.is-disabled:after{
+    background:linear-gradient(180deg,rgba(30,36,46,.50),rgba(18,22,29,.91));
+}
+.game-card.is-disabled .game-subtitle{color:#a8b0bc}
+.game-card.is-disabled .disabled-label{
+    display:inline-flex;
+    margin-top:9px;
+    padding:6px 9px;
+    border-radius:8px;
+    color:#b8c0ca;
+    background:rgba(145,155,170,.12);
+    border:1px solid rgba(180,190,205,.15);
+    font-size:11px;
+    font-weight:900;
+    text-transform:uppercase;
+}
 
 .game-card-content{
     position:absolute;
-    left:27px;
+    left:24px;
     right:20px;
-    bottom:22px;
-    z-index:2;
+    bottom:20px;
+    z-index:4;
 }
 
 .game-name{
     color:#fff;
-    font-size:34px;
+    font-size:32px;
     line-height:1;
     font-weight:900;
     letter-spacing:-.7px;
@@ -311,14 +334,252 @@ img{display:block}
 
 .game-subtitle{
     display:block;
-    margin-top:9px;
+    margin-top:8px;
     color:#fff;
-    font-size:13px;
+    font-size:12px;
     line-height:1;
     font-weight:800;
     letter-spacing:.35px;
     text-transform:uppercase;
     text-shadow:0 1px 7px rgba(0,0,0,.8);
+}
+
+/* WITCH HAT PARTY */
+.event-card{
+    grid-column:1/-1;
+    height:190px;
+    display:none;
+    border:1px solid rgba(208,141,255,.70);
+    background:#16091f;
+    box-shadow:0 16px 50px rgba(83,30,113,.24),inset 0 0 0 1px rgba(255,255,255,.04);
+    cursor:pointer;
+}
+
+.event-card:before{
+    background-image:url("/static/img/banner_witchparty.webp");
+    background-size:cover;
+    background-position:center;
+    filter:saturate(1.05) contrast(1.04);
+}
+
+.event-card:after{
+    z-index:-1;
+    background:linear-gradient(90deg,rgba(18,5,27,.91) 0%,rgba(22,7,32,.68) 38%,rgba(22,7,32,.12) 78%,rgba(22,7,32,.22) 100%);
+}
+
+.event-content{
+    position:absolute;
+    inset:0;
+    z-index:5;
+    display:flex;
+    align-items:flex-end;
+    padding:22px 25px;
+    pointer-events:none;
+}
+
+.event-copy{position:relative;z-index:8}
+.event-title{
+    color:#fff;
+    font-size:31px;
+    line-height:.92;
+    font-weight:950;
+    letter-spacing:-.8px;
+    text-shadow:0 3px 18px rgba(0,0,0,.75);
+}
+.event-remaining{
+    display:inline-flex;
+    margin-top:11px;
+    padding:7px 10px;
+    border-radius:9px;
+    color:#f2ddff;
+    background:rgba(103,44,139,.42);
+    border:1px solid rgba(228,185,255,.24);
+    font-size:12px;
+    font-weight:900;
+    text-shadow:0 1px 7px rgba(0,0,0,.45);
+}
+
+/* Анимированные SVG-слои */
+.event-svg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    z-index:3;
+    pointer-events:none;
+    overflow:visible;
+}
+.event-svg .float-hat{transform-box:fill-box;transform-origin:center;animation:hatFloat 4.8s ease-in-out infinite}
+.event-svg .float-hat:nth-child(2){animation-delay:-1.4s;animation-duration:5.7s}
+.event-svg .float-hat:nth-child(3){animation-delay:-2.8s;animation-duration:4.3s}
+.event-svg .spark{animation:sparkBlink 2.2s ease-in-out infinite}
+.event-svg .spark:nth-of-type(2){animation-delay:-.7s}
+.event-svg .spark:nth-of-type(3){animation-delay:-1.2s}
+
+@keyframes hatFloat{
+    0%,100%{transform:translate3d(0,8px,0) rotate(-4deg)}
+    50%{transform:translate3d(0,-10px,0) rotate(5deg)}
+}
+@keyframes sparkBlink{
+    0%,100%{opacity:.2;transform:scale(.7)}
+    50%{opacity:1;transform:scale(1)}
+}
+
+.event-hamster{
+    position:absolute;
+    z-index:6;
+    right:5%;
+    bottom:-5px;
+    width:min(245px,31%);
+    height:auto;
+    object-fit:contain;
+    filter:drop-shadow(0 12px 17px rgba(0,0,0,.38));
+    transform-origin:bottom center;
+    animation:hamsterBob 3.2s ease-in-out infinite;
+    pointer-events:none;
+}
+
+@keyframes hamsterBob{
+    0%,100%{transform:translateY(5px) rotate(-1.2deg)}
+    50%{transform:translateY(-9px) rotate(1.4deg)}
+}
+
+.event-card:hover .event-hamster{animation-duration:2.1s}
+
+/* HALLOWEEN ACTIVE */
+.halloween-active body{
+    background:
+        radial-gradient(700px 500px at 8% 40%,rgba(113,45,145,.24),transparent 70%),
+        radial-gradient(700px 500px at 94% 65%,rgba(168,85,247,.17),transparent 70%),
+        linear-gradient(180deg,#12051c 0%,#08040d 100%);
+}
+.halloween-active body:before{
+    background-image:
+        linear-gradient(rgba(168,85,247,.07) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(168,85,247,.07) 1px,transparent 1px);
+}
+.halloween-active .top-bar{
+    background:rgba(18,7,28,.96);
+    border-bottom-color:rgba(168,85,247,.22);
+}
+.halloween-active .nav-btn.active{
+    color:#dfb7ff;
+    background:rgba(139,92,246,.18);
+    box-shadow:inset 0 0 0 1px rgba(168,85,247,.35),0 4px 18px rgba(139,92,246,.1);
+}
+.halloween-active .page-title{color:#f0dcff}
+.halloween-active .bottom-nav{
+    background:rgba(20,8,30,.96);
+    border-top-color:rgba(168,85,247,.26);
+}
+
+/* MOBILE */
+@media(max-width:700px){
+    body:before{inset:62px 0 0;background-size:65px 65px}
+
+    .top-bar{
+        height:auto;
+        min-height:62px;
+        padding:8px 11px;
+        background:#0b111e;
+    }
+
+    .desktop-left{display:none}
+
+    .account{
+        width:100%;
+        justify-content:flex-end;
+        gap:7px;
+    }
+
+    .balance{min-width:88px;height:34px;padding:0 9px;border-radius:10px;font-size:12.5px}
+    .balance img{width:15px;height:15px}
+    .plus-btn{width:25px;height:25px;border-radius:8px;font-size:0}
+    .plus-btn svg{width:12px;height:12px}
+    .avatar{width:38px;height:38px}
+
+    .page{
+        width:100%;
+        padding:25px 12px calc(88px + env(safe-area-inset-bottom));
+    }
+
+    .page-title{font-size:28px;margin-bottom:17px}
+
+    .games-grid{
+        grid-template-columns:1fr;
+        gap:12px;
+    }
+
+    .game-card{height:165px;border-radius:17px}
+    .game-card-content{left:17px;bottom:16px}
+    .game-name{font-size:27px}
+    .game-subtitle{font-size:11px;margin-top:7px}
+
+    .event-card{grid-column:1;height:178px}
+    .event-content{padding:18px 17px}
+    .event-title{font-size:26px}
+    .event-remaining{margin-top:8px;font-size:11px;padding:6px 8px}
+    .event-hamster{right:0;width:48%;bottom:-2px}
+}
+
+/* Нижняя навигация только для телефонов/узких экранов */
+.bottom-nav{
+    display:none;
+}
+
+@media(max-width:700px){
+    .bottom-nav{
+        position:fixed;
+        left:10px;
+        right:10px;
+        bottom:calc(8px + env(safe-area-inset-bottom));
+        z-index:100;
+        height:66px;
+        padding:6px;
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+        gap:4px;
+        border-radius:20px;
+        background:rgba(12,18,32,.96);
+        border:1px solid rgba(111,151,198,.18);
+        box-shadow:0 14px 45px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.04);
+        backdrop-filter:blur(16px);
+        -webkit-backdrop-filter:blur(16px);
+    }
+    .bottom-nav-btn{
+        min-width:0;
+        border-radius:15px;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:4px;
+        color:#7f8da6;
+        font-size:10px;
+        font-weight:850;
+        transition:.18s ease;
+    }
+    .bottom-nav-btn .nav-icon{width:21px;height:21px}
+    .bottom-nav-btn .nav-icon svg{width:21px;height:21px}
+    .bottom-nav-btn.active{
+        color:#20b8ff;
+        background:rgba(28,128,189,.15);
+        box-shadow:inset 0 0 0 1px rgba(32,184,255,.22);
+    }
+    .halloween-active .bottom-nav-btn.active{
+        color:#d8a8ff;
+        background:rgba(139,92,246,.18);
+        box-shadow:inset 0 0 0 1px rgba(168,85,247,.30);
+    }
+}
+
+@media(min-width:701px){
+    .bottom-nav{display:none!important}
+}
+
+@media(max-width:420px){
+    .event-hamster{width:52%}
+    .event-title{font-size:24px}
 }
 
 /* DEPOSIT */
@@ -470,8 +731,7 @@ img{display:block}
     .game-subtitle{font-size:11px;margin-top:7px}
 }
 
-<style id="events-halloween-css">.event-card{grid-column:1/-1;height:190px!important;border:2px solid #a855f7!important;background:linear-gradient(120deg,#261039,#4c1d68)!important;box-shadow:0 0 35px rgba(168,85,247,.18),inset 0 0 35px rgba(168,85,247,.08)!important}.event-card:before{background-image:url("/static/img/witchhat.png")!important;background-size:contain!important;background-position:right center!important}.event-card:after{background:linear-gradient(90deg,rgba(22,5,35,.96) 0%,rgba(22,5,35,.72) 45%,rgba(22,5,35,.08) 100%)!important}.event-card .game-name{color:#f2dcff;font-size:31px;line-height:.95;max-width:220px}.event-card .event-timer{display:inline-flex;margin-top:10px;padding:7px 10px;border-radius:10px;background:rgba(168,85,247,.18);border:1px solid rgba(216,180,254,.25);color:#e9d5ff;font-size:12px;font-weight:900}.halloween-active{--bg:#0d0617;--header:#12091e;--line:rgba(168,85,247,.28)}.halloween-active body{background:radial-gradient(700px 500px at 8% 40%,rgba(113,45,145,.22),transparent 70%),radial-gradient(700px 500px at 94% 65%,rgba(168,85,247,.18),transparent 70%),linear-gradient(180deg,#12051c,#08040d)}.halloween-active body:before{background-image:linear-gradient(rgba(168,85,247,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,.08) 1px,transparent 1px)}.halloween-active .top-bar{background:rgba(18,7,28,.96);border-bottom-color:rgba(168,85,247,.22)}.halloween-active .nav-btn.active{color:#d8a8ff;background:rgba(139,92,246,.18);box-shadow:inset 0 0 0 1px rgba(168,85,247,.35),0 4px 18px rgba(139,92,246,.1)}.halloween-active .page-title{color:#f0dcff}.halloween-active .game-card:not(.event-card){filter:saturate(.85) hue-rotate(8deg)}@media(max-width:700px){.event-card{height:178px!important}.event-card .game-name{font-size:26px}.event-card:before{background-size:190px auto!important}}
-</style>
+
 </style>
 </head>
 
@@ -564,9 +824,29 @@ img{display:block}
 
     <section class="games-grid" id="gamesGrid">
         <button class="game-card event-card" id="witchHatEvent" style="display:none" onclick="goTo('/event/witch-hat-party')" aria-label="Witch Hat Party">
-            <div class="game-card-content">
-                <div class="game-name">Witch Hat<br>Party</div>
-                <div class="event-timer" id="witchHatTimer">Загрузка…</div>
+            <svg class="event-svg" viewBox="0 0 1000 190" preserveAspectRatio="none" aria-hidden="true">
+                <g class="float-hat" opacity=".80" transform="translate(690 25) rotate(-12)">
+                    <path d="M0 37 Q45 28 86 37 Q47 48 0 37Z" fill="#16061f" stroke="#d59aff" stroke-width="2"/>
+                    <path d="M30 35 L47 -2 L66 35Z" fill="#1d0928" stroke="#d59aff" stroke-width="2"/>
+                    <path d="M39 19 Q49 26 59 17" fill="none" stroke="#8f4ac2" stroke-width="3"/>
+                </g>
+                <g class="float-hat" opacity=".60" transform="translate(815 85) rotate(15) scale(.72)">
+                    <path d="M0 37 Q45 28 86 37 Q47 48 0 37Z" fill="#16061f" stroke="#c986ef" stroke-width="2"/>
+                    <path d="M30 35 L47 -2 L66 35Z" fill="#1d0928" stroke="#c986ef" stroke-width="2"/>
+                </g>
+                <g class="float-hat" opacity=".55" transform="translate(590 105) rotate(9) scale(.48)">
+                    <path d="M0 37 Q45 28 86 37 Q47 48 0 37Z" fill="#16061f" stroke="#b978dc" stroke-width="3"/>
+                    <path d="M30 35 L47 -2 L66 35Z" fill="#1d0928" stroke="#b978dc" stroke-width="3"/>
+                </g>
+                <g class="spark" fill="#e6baff"><circle cx="770" cy="28" r="3"/><circle cx="915" cy="45" r="2"/><circle cx="620" cy="55" r="2.5"/></g>
+                <g class="spark" fill="#fff1ff"><path d="M850 126l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z"/><path d="M720 146l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/></g>
+            </svg>
+            <img class="event-hamster" src="/static/img/witchhat_hamster.png" alt="" aria-hidden="true">
+            <div class="event-content">
+                <div class="event-copy">
+                    <div class="event-title">Witch Hat<br>Party</div>
+                    <div class="event-remaining" id="witchHatTimer">Осталось — загрузка…</div>
+                </div>
             </div>
         </button>
         <button class="game-card crash" onclick="goTo('/crash')" aria-label="Crash">
@@ -576,14 +856,56 @@ img{display:block}
             </div>
         </button>
 
-        <button class="game-card mines" onclick="goTo('/mines')" aria-label="Mines">
+        <button class="game-card mines is-disabled" type="button" disabled aria-disabled="true" aria-label="Mines — недоступно">
             <div class="game-card-content">
                 <div class="game-name">Mines</div>
                 <span class="game-subtitle">Мины</span>
+                <span class="disabled-label">Скоро</span>
             </div>
         </button>
     </section>
 </main>
+
+<!-- МОБИЛЬНАЯ НИЖНЯЯ НАВИГАЦИЯ -->
+<nav class="bottom-nav" aria-label="Навигация">
+    <button class="bottom-nav-btn" onclick="goTo('/cases')">
+        <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 10.2h16v8.3A2.5 2.5 0 0 1 17.5 21h-11A2.5 2.5 0 0 1 4 18.5v-8.3Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <path d="M2.75 6.6A1.4 1.4 0 0 1 4.15 5.2h15.7a1.4 1.4 0 0 1 1.4 1.4v3.6h-18.5V6.6Z" fill="currentColor" fill-opacity=".3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                <path d="M11.1 5.2c-1.5-2.15-4.15-3.1-5.35-1.6S8.3 6.3 11.1 5.2ZM12.9 5.2c1.5-2.15 3.15-3.1 5.05-1.6S15.7 6.3 12.9 5.2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+        </span>
+        <span>Кейсы</span>
+    </button>
+    <button class="bottom-nav-btn" onclick="goTo('/upgrade')">
+        <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 17 10 11l4 4 6-7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </span>
+        <span>Апгрейды</span>
+    </button>
+    <button class="bottom-nav-btn" onclick="goTo('/leaderboard')">
+        <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 4h10v5.5c0 3.2-2.1 5.7-5 6.4-2.9-.7-5-3.2-5-6.4V4Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M7 7H4v2.5A3.5 3.5 0 0 0 7.5 13M17 7h3v2.5a3.5 3.5 0 0 1-3.5 3M12 15.9V19M8.5 21h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+        </span>
+        <span>Сезон</span>
+    </button>
+    <button class="bottom-nav-btn active" onclick="goTo('/games')">
+        <span class="nav-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 8h10a4.5 4.5 0 0 1 4.42 5.36l-.6 3.02A3 3 0 0 1 15.5 17.3l-.85-1.06a2 2 0 0 0-1.56-.74h-2.18a2 2 0 0 0-1.56.74L8.5 17.3a3 3 0 0 1-5.32-.92l-.6-3.02A4.5 4.5 0 0 1 7 8Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M7.5 11.5v3M6 13h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <circle cx="15.5" cy="12" r="1" fill="currentColor"/><circle cx="17.5" cy="14" r="1" fill="currentColor"/>
+            </svg>
+        </span>
+        <span>Игры</span>
+    </button>
+</nav>
 
 <!-- POPUP ПОПОЛНЕНИЯ -->
 <div class="deposit-overlay" id="depositOverlay" onclick="if(event.target===this)closeDeposit()">
@@ -712,26 +1034,48 @@ async function loadTopBar(){
 
 async function loadHalloweenEvent(){
     try{
-        var r=await fetch('/api/events/witch-hat-party');
+        var r=await fetch('/api/events/witch-hat-party',{cache:'no-store'});
         var d=await r.json();
         var e=d.event||{};
         var card=$('witchHatEvent');
         if(!card) return;
+
+        clearInterval(window._eventTimer);
+
         if(e.active){
             document.documentElement.classList.add('halloween-active');
             card.style.display='block';
-            var left=Number(e.remaining_seconds||0);
-            function tick(){
-                left=Math.max(0,left-1);
-                var x=Math.floor(left/86400),h=Math.floor(left%86400/3600),m=Math.floor(left%3600/60),sec=left%60;
-                var text=(x?x+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
-                var el=$('witchHatTimer');if(el)el.textContent='Осталось '+text;
-                if(left<=0){card.style.display='none';document.documentElement.classList.remove('halloween-active');}
+
+            var left=Math.max(0,Number(e.remaining_seconds||0));
+            function render(){
+                var total=Math.max(0,Math.floor(left));
+                var days=Math.floor(total/86400);
+                var hours=Math.floor((total%86400)/3600);
+                var mins=Math.floor((total%3600)/60);
+                var sec=total%60;
+                var text=(days?days+'д ':'')+String(hours).padStart(2,'0')+':'+String(mins).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+                var el=$('witchHatTimer');
+                if(el) el.textContent='Осталось '+text;
             }
-            if($('witchHatTimer')) $('witchHatTimer').textContent='Осталось '+(function(){var x=Math.floor(left/86400),h=Math.floor(left%86400/3600),m=Math.floor(left%3600/60),sec=left%60;return (x?x+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')})();
-            clearInterval(window._eventTimer);window._eventTimer=setInterval(tick,1000);
-        }else{card.style.display='none';document.documentElement.classList.remove('halloween-active')}
-    }catch(e){}
+            render();
+            window._eventTimer=setInterval(function(){
+                left=Math.max(0,left-1);
+                render();
+                if(left<=0){
+                    clearInterval(window._eventTimer);
+                    card.style.display='none';
+                    document.documentElement.classList.remove('halloween-active');
+                }
+            },1000);
+        }else{
+            card.style.display='none';
+            document.documentElement.classList.remove('halloween-active');
+        }
+    }catch(e){
+        var card=$('witchHatEvent');
+        if(card) card.style.display='none';
+        document.documentElement.classList.remove('halloween-active');
+    }
 }
 
 async function initGames(){
