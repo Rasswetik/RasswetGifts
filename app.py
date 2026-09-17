@@ -2685,18 +2685,91 @@ def get_public_cases_with_seasonal():
 
 # ─── Events ────────────────────────────────────────────────────────────────
 EVENTS_FILE = os.path.join(BASE_PATH, 'data', 'events.json')
+GAME_UI_DEFAULTS = {
+    # Public Games page: only the Event entry and ordinary game modes live here.
+    # Event-specific content (special mode, event cases, market) belongs to the
+    # Event page itself, not to Games.
+    'sections': [
+        {
+            'id': 'games', 'title': 'Игры', 'visible': True, 'order': 0,
+            'items': [
+                {'id': 'event', 'name': 'Событие', 'image': '/static/img/witchhat.png', 'path': '/event/witch-hat-party', 'visible': True, 'mandatory': True},
+                {'id': 'crash', 'name': 'Crash', 'image': '/static/img/crash.png', 'path': '/crash', 'visible': True},
+                {'id': 'mines', 'name': 'Mines', 'image': '/static/img/mines.png', 'path': '/mines', 'visible': True}
+            ]
+        }
+    ]
+}
+
 EVENT_DEFAULTS = {
+    'ghost_road': {
+        'id': 'ghost_road', 'name': 'Ghost Road',
+        'image': '/static/img/ghost_road.png',
+        'enabled': True, 'ends_at': None,
+        'sections': [
+            {'id':'special_mode','title':'Особый режим','type':'mode','items':[
+                {'id':'ghost_road_mode','name':'Ghost Road','image':'/static/img/ghost_road.png','path':'/event/ghost-road','visible':True}
+            ]},
+            {'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[]},
+            {'id':'market','title':'Маркет','type':'market','items':[]}
+        ]
+    },
     'witch_hat_party': {
         'id': 'witch_hat_party', 'name': 'Witch Hat Party',
         'image': '/static/img/witchhat.png', 'loading_gif': 'loading.gif',
         'enabled': False, 'ends_at': None,
-        'halloween_mode': False, 'change_leaderboard': False,
+        'halloween_mode': False, 'change_leaderboard': False, 'event_button_visible': True,
         'sections': [
-            {'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]},
+            {'id':'special_mode','title':'Особые режимы','type':'mode','items':[{'id':'ghost_road_mode','name':'Ghost Road','image':'/static/img/ghost_road.png','path':'/event/witch-hat-party?mode=ghost-road','visible':True,'mandatory':True}]},
+            {'id':'event_cases','title':'Особые кейсы','type':'cases','case_ids':[]},
             {'id':'market','title':'Купить подарок','type':'market','items':[]}
         ]
     }
 }
+
+def _normalize_witch_event_structure(obj):
+    """Normalize Witch Hat Party so Event owns its special mode/cases/market."""
+    if not isinstance(obj, dict):
+        return obj
+    sections = obj.get('sections') if isinstance(obj.get('sections'), list) else []
+    # Remove obsolete Ghost Road as a top-level event/section.
+    clean=[]
+    special=None; cases=None; market=None
+    for sec in sections:
+        if not isinstance(sec, dict):
+            continue
+        sid=str(sec.get('id') or '').strip().lower()
+        typ=str(sec.get('type') or '').strip().lower()
+        title=str(sec.get('title') or '').strip().lower()
+        if sid in ('ghost_road','ghost-road'):
+            continue
+        if typ=='mode' or sid in ('special_mode','special_modes') or title in ('особый режим','особые режимы'):
+            if special is None: special=sec
+            continue
+        if typ=='cases' or sid in ('event_cases','special_cases') or 'кейс' in title:
+            if cases is None: cases=sec
+            continue
+        if typ=='market' or sid=='market' or 'маркет' in title:
+            if market is None: market=sec
+            continue
+        clean.append(sec)
+    if special is None:
+        special={'id':'special_mode','title':'Особые режимы','type':'mode','items':[]}
+    items=special.get('items') if isinstance(special.get('items'), list) else []
+    items=[x for x in items if isinstance(x,dict) and str(x.get('id'))!='ghost_road_mode']
+    items.insert(0, {'id':'ghost_road_mode','name':'Ghost Road','image':'/static/img/ghost_road.png','path':'/event/witch-hat-party','visible':True,'mandatory':True})
+    special['id']='special_mode'; special['title']='Особые режимы'; special['type']='mode'; special['items']=items
+    if cases is None:
+        cases={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[]}
+    else:
+        cases['id']='event_cases'; cases['title']=cases.get('title') or 'Кейсы события'; cases['type']='cases'; cases['case_ids']=list(cases.get('case_ids') or [])
+    if market is None:
+        market={'id':'market','title':'Маркет','type':'market','items':[]}
+    else:
+        market['id']='market'; market['title']=market.get('title') or 'Маркет'; market['type']='market'; market['items']=list(market.get('items') or [])
+    obj['sections']=[special,cases,market]+clean
+    obj['event_button_visible']=bool(obj.get('event_button_visible',True))
+    return obj
 
 def _event_db_defaults():
     conn=get_db_connection()
@@ -2716,6 +2789,7 @@ def _event_db_defaults():
                 obj.setdefault('sections',json.loads(json.dumps(event['sections'])))
                 obj.setdefault('halloween_mode', bool(event.get('halloween_mode', False)))
                 obj.setdefault('change_leaderboard', bool(event.get('change_leaderboard', False)))
+                if event_id == 'witch_hat_party': obj=_normalize_witch_event_structure(obj)
                 conn.execute('INSERT INTO event_configs (id,payload) VALUES (?,?)',(event_id,json.dumps(obj,ensure_ascii=False)))
         conn.commit()
     except Exception as e:
@@ -2857,11 +2931,75 @@ def _sync_event_cases(ev):
     except Exception:
         return False
 
+def load_game_ui_config():
+    """Load the public Games navigation and migrate the old 3-section config.
+
+    Ghost Road is deliberately NOT a separate Games section anymore: Games has
+    one compact list with an Event button plus ordinary modes.
+    """
+    try:
+        _event_db_defaults(); conn=get_db_connection()
+        row=conn.execute('SELECT payload FROM event_configs WHERE id = ?', ('games_ui',)).fetchone()
+        base=json.loads(json.dumps(GAME_UI_DEFAULTS))
+        if not row or not row[0]:
+            return base
+        obj=json.loads(row[0]) if isinstance(row[0],str) else dict(row[0])
+        old_sections=obj.get('sections',[]) if isinstance(obj,dict) else []
+        # If already migrated, use it directly.
+        if any(isinstance(x,dict) and x.get('id')=='games' for x in old_sections):
+            sec=next(x for x in old_sections if x.get('id')=='games')
+            clean=json.loads(json.dumps(base))
+            clean['sections'][0].update({k:v for k,v in sec.items() if k in ('title','visible','order')})
+            clean['sections'][0]['items']=list(sec.get('items') or [])
+        else:
+            old_other=next((x for x in old_sections if isinstance(x,dict) and x.get('id')=='other'),None)
+            old_modes=next((x for x in old_sections if isinstance(x,dict) and x.get('id')=='special_modes'),None)
+            items=[]
+            for source in (old_other, old_modes):
+                if source:
+                    items.extend([x for x in (source.get('items') or []) if isinstance(x,dict) and x.get('id') not in ('ghost_road','event')])
+            clean=json.loads(json.dumps(base))
+            clean['sections'][0]['items']=clean['sections'][0]['items'][:1]+items
+            try:
+                save_game_ui_config(clean)
+            except Exception: pass
+        # Mandatory Event button is always first and cannot disappear.
+        items=clean['sections'][0].setdefault('items',[])
+        items[:]=[x for x in items if str(x.get('id')) not in ('ghost_road','event')]
+        try:
+            witch=get_active_events().get('witch_hat_party',EVENT_DEFAULTS['witch_hat_party'])
+            _normalize_witch_event_structure(witch)
+            event_visible=bool(witch.get('event_button_visible',True))
+            mode=next((x for x in witch.get('sections',[]) if x.get('type')=='mode'),None)
+            mode_item=next((x for x in (mode or {}).get('items',[]) if x.get('id')=='ghost_road_mode'),{})
+            event_image=str(witch.get('image') or '/static/img/witchhat.png')
+            # Button is managed from Event; its artwork is the Event artwork, not Ghost Road.
+            event_name='Событие'
+        except Exception:
+            event_visible=True; event_image='/static/img/witchhat.png'; event_name='Событие'
+        items.insert(0, {'id':'event','name':event_name,'image':event_image,'path':'/event/witch-hat-party','visible':event_visible,'mandatory':False})
+        clean['sections'][0]['id']='games'; clean['sections'][0]['title']=clean['sections'][0].get('title') or 'Игры'; clean['sections'][0]['visible']=True
+        return clean
+    except Exception as e:
+        logger.warning('Games UI config load failed: %s',e)
+        return json.loads(json.dumps(GAME_UI_DEFAULTS))
+
+def save_game_ui_config(config):
+    _event_db_defaults()
+    conn=get_db_connection()
+    conn.execute('INSERT INTO event_configs (id,payload,updated_at) VALUES (?,?,CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=CURRENT_TIMESTAMP', ('games_ui',json.dumps(config,ensure_ascii=False)))
+    conn.commit()
+    return True
+
 def get_active_events():
     events = load_events()
     now = datetime.utcnow()
     changed = False
-    for ev in events.values():
+    for _eid, ev in events.items():
+        if _eid == 'witch_hat_party':
+            before=json.dumps(ev,ensure_ascii=False,sort_keys=True)
+            _normalize_witch_event_structure(ev)
+            if json.dumps(ev,ensure_ascii=False,sort_keys=True) != before: changed=True
         if ev.get('enabled') and ev.get('ends_at'):
             try:
                 end = datetime.fromisoformat(str(ev['ends_at']).replace('Z','+00:00'))
@@ -5859,6 +5997,11 @@ def cases_page():
     """Страница кейсов (алиас)"""
     return render_template('index.html', initial_case_id=None)
 
+@app.route('/event/ghost-road')
+def ghost_road_page():
+    # Ghost Road is a mode inside the active Event, not a separate event page.
+    return redirect('/event/witch-hat-party')
+
 @app.route('/event/witch-hat-party')
 def witch_hat_party_page():
     """Страница ивента Witch Hat Party. Ищем файл и в корне, и в templates."""
@@ -5880,9 +6023,8 @@ def event_page_alias():
 
 @app.route('/inventory')
 def inventory_page():
-    """Страница инвентаря"""
-    logger.info("🎒 Запрос страницы инвентаря")
-    return render_template('inventory.html')
+    # Единственная пользовательская страница профиля + инвентаря.
+    return redirect('/profile')
 
 @app.route('/season')
 def season_page():
@@ -5898,7 +6040,7 @@ def rewards_page():
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#171b20;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}body{padding:calc(env(safe-area-inset-top,0px) + 18px) 14px calc(env(safe-area-inset-bottom,0px) + 94px)}.wrap{max-width:480px;margin:0 auto}.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.title{font-size:24px;font-weight:900;letter-spacing:-.5px}.close-top{width:38px;height:38px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:#23282e;color:#fff;font-size:18px}.level-card{background:linear-gradient(180deg,#242b32,#1d2228);border:1px solid rgba(255,255,255,.07);border-radius:22px;padding:16px;margin-bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,.18)}.level-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.level-badge{min-width:56px;height:42px;padding:0 12px;border-radius:14px;background:#2b333b;display:flex;align-items:center;justify-content:center;font-weight:900}.level-exp{text-align:right;color:rgba(255,255,255,.48);font-size:11px;font-weight:700}.reward-slot{margin-top:13px;min-height:76px;border:1px dashed rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.025);display:flex;align-items:center;justify-content:center;text-align:center;color:rgba(255,255,255,.35);font-size:12px;font-weight:750;padding:12px}.reward-slot.ready{border-style:solid;color:#fff}.empty{margin-top:16px;text-align:center;padding:28px 18px;border-radius:20px;background:#20252b;border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.38);font-weight:750}.close-bottom{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);width:min(calc(100% - 28px),452px);height:52px;border:0;border-radius:26px;background:#1687f8;color:#fff;font-size:14px;font-weight:900;box-shadow:0 10px 28px rgba(22,135,248,.25);z-index:20}.muted{color:rgba(255,255,255,.42);font-size:11px;margin-top:4px}@media(prefers-reduced-motion:no-preference){body{animation:fadeIn .22s ease both}@keyframes fadeIn{from{opacity:0}to{opacity:1}}}</style></head>
 <body><div class="wrap"><div class="head"><div><div class="title">Награды</div><div class="muted" id="levelSummary">Загрузка уровней…</div></div><button class="close-top" onclick="closeRewards()">×</button></div><div id="rewardsList"></div></div><button class="close-bottom" onclick="closeRewards()">Закрыть</button>
 <script src="https://telegram.org/js/telegram-web-app.js"></script><script>
-function closeRewards(){history.length>1?history.back():location.href='/inventory'}
+function closeRewards(){history.length>1?history.back():location.href='/profile'}
 function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 async function init(){var uid=new URLSearchParams(location.search).get('user_id');if(!uid&&window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user)uid=Telegram.WebApp.initDataUnsafe.user.id;var box=document.getElementById('rewardsList');if(!uid){box.innerHTML='<div class="empty">Не удалось определить пользователя</div>';return}try{var r=await fetch('/api/rewards/info/'+encodeURIComponent(uid));var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');var levels=d.level_rewards||[];document.getElementById('levelSummary').textContent='Уровневые награды';if(!levels.length){box.innerHTML='<div class="empty">Награды пока не установлены.<br><span style="font-weight:600;color:rgba(255,255,255,.25)">Когда добавишь их в админке, они появятся здесь автоматически.</span></div>';return}box.innerHTML=levels.map(function(x){var rs=(x.rewards||[]).map(function(r){return '<div class="reward-slot ready">'+esc(r.description||r.type||'Награда')+'</div>'}).join('');return '<div class="level-card"><div class="level-row"><div class="level-badge">'+esc(x.level)+' lvl</div><div class="level-exp">'+(x.available?'Доступно':'Уровень '+esc(x.level))+'</div></div>'+(rs||'<div class="reward-slot">Награда не установлена</div>')+'</div>'}).join('')}catch(e){box.innerHTML='<div class="empty">Не удалось загрузить награды</div>'}}init();</script></body></html>''')
 
@@ -8510,11 +8652,24 @@ def api_events():
         return jsonify({'success':True,'events':public})
     except Exception as e: return jsonify({'success':False,'error':str(e)}),500
 
+@app.route('/api/events/ghost-road')
+def api_ghost_road():
+    try:
+        events=get_active_events()
+        ev=events.get('ghost_road',EVENT_DEFAULTS['ghost_road'])
+        ev['active']=bool(ev.get('enabled',True))
+        ev['remaining_seconds']=0
+        return jsonify({'success':True,'event':ev})
+    except Exception as e:
+        return jsonify({'success':False,'error':str(e)}),500
+
 @app.route('/api/events/witch-hat-party')
 def api_witch_hat_party():
-    ev=dict(get_active_events().get('witch_hat_party',EVENT_DEFAULTS['witch_hat_party']))
+    events=get_active_events()
+    ev=events.get('witch_hat_party',EVENT_DEFAULTS['witch_hat_party'])
     try:
-        _sync_event_cases(ev)
+        if _sync_event_cases(ev):
+            save_events(events)
 
         end=datetime.fromisoformat(str(ev['ends_at']).replace('Z','+00:00')) if ev.get('ends_at') else None
         if end and end.tzinfo:
@@ -8523,6 +8678,26 @@ def api_witch_hat_party():
     except Exception: remaining=0
     ev['active']=bool(ev.get('enabled') and remaining>0); ev['remaining_seconds']=remaining
     return jsonify({'success':True,'event':ev})
+
+@app.route('/api/events/ghost-road/market')
+def api_ghost_road_market():
+    try:
+        ev=get_active_events().get('ghost_road',EVENT_DEFAULTS['ghost_road'])
+        items=[]
+        for sec in ev.get('sections',[]):
+            if sec.get('type')!='market': continue
+            for item in sec.get('items',[]):
+                items.append({
+                    'name':str(item.get('name') or 'Подарок'),
+                    'image':str(item.get('image') or '/static/img/gift.png'),
+                    'animation':str(item.get('animation') or ''),
+                    'price_gram':float(item.get('price_gram') or item.get('price') or 0),
+                    'number':item.get('number'),
+                    'gift_url':str(item.get('gift_url') or item.get('url') or '')
+                })
+        return jsonify({'success':True,'items':items})
+    except Exception as e:
+        return jsonify({'success':False,'error':str(e)}),500
 
 @app.route('/api/events/witch-hat-party/market')
 def api_witch_hat_market():
@@ -8657,6 +8832,61 @@ def api_witch_hat_market_buy():
             except Exception: pass
         return jsonify({'success': False, 'error': 'Ошибка покупки, попробуйте ещё раз'}), 500
 
+@app.route('/api/games-ui')
+def api_games_ui():
+    try:
+        cfg=load_game_ui_config()
+        sections=sorted([x for x in cfg.get('sections',[]) if isinstance(x,dict)], key=lambda x:int(x.get('order',0)))
+        now=datetime.utcnow()
+        for sec in sections:
+            for item in sec.get('items',[]) or []:
+                unlock=item.get('unlock_at')
+                if unlock:
+                    try:
+                        dt=datetime.fromisoformat(str(unlock).replace('Z','+00:00'))
+                        if dt.tzinfo:
+                            from datetime import timezone
+                            dt=dt.astimezone(timezone.utc).replace(tzinfo=None)
+                        item['locked']=now < dt
+                    except Exception:
+                        item['locked']=False
+                else:
+                    item['locked']=False
+        return jsonify({'success':True,'sections':sections})
+    except Exception as e:
+        logger.error('Games UI config error: %s',e)
+        return jsonify({'success':False,'error':str(e)}),500
+
+@app.route('/api/admin/games-ui',methods=['GET','POST'])
+def admin_games_ui():
+    try:
+        data=request.get_json(silent=True) or {}; admin_id=data.get('admin_id') or request.args.get('admin_id')
+        if str(admin_id)!=str(ADMIN_ID): return jsonify({'success':False,'error':'Доступ запрещён'}),403
+        if request.method=='POST':
+            cfg=data.get('config')
+            if not isinstance(cfg,dict): return jsonify({'success':False,'error':'Некорректная конфигурация'}),400
+            sec=next((x for x in (cfg.get('sections') or []) if isinstance(x,dict) and x.get('id')=='games'),None)
+            if sec is None: sec={'id':'games','title':'Игры','visible':True,'order':0,'items':[]}
+            items=[]
+            for item in sec.get('items') or []:
+                if not isinstance(item,dict): continue
+                iid=str(item.get('id') or '').strip()
+                if iid in ('event','ghost_road') or not iid: continue
+                items.append({
+                    'id':iid, 'name':str(item.get('name') or iid).strip(),
+                    'image':str(item.get('image') or '').strip(),
+                    'path':str(item.get('path') or '#').strip(),
+                    'visible':bool(item.get('visible',True)),
+                    'unlock_at':str(item.get('unlock_at')) if item.get('unlock_at') else None
+                })
+            event_item={'id':'event','name':'Событие','image':'/static/img/witchhat.png','path':'/event/witch-hat-party','visible':True,'mandatory':True}
+            clean={'sections':[{'id':'games','title':str(sec.get('title') or 'Игры').strip() or 'Игры','visible':True,'order':0,'items':[event_item]+items}]}
+            save_game_ui_config(clean)
+        return jsonify({'success':True,'config':load_game_ui_config()})
+    except Exception as e:
+        logger.error('Admin games UI error: %s',e)
+        return jsonify({'success':False,'error':str(e)}),500
+
 @app.route('/api/admin/events',methods=['GET','POST'])
 def admin_events():
     try:
@@ -8666,12 +8896,40 @@ def admin_events():
         if eid not in events: return jsonify({'success':False,'error':'Ивент не найден'}),404
         if _sync_event_cases(events[eid]): save_events(events)
         if request.method=='POST':
-            ev=events[eid]; action=str(data.get('action') or 'toggle')
+            ev=events[eid]
+            if eid == 'witch_hat_party': _normalize_witch_event_structure(ev)
+            action=str(data.get('action') or 'toggle')
             if action=='update_settings':
                 for key in ('name','image','loading_gif'):
                     if key in data: ev[key]=str(data.get(key) or '').strip()
                 if 'halloween_mode' in data: ev['halloween_mode']=bool(data.get('halloween_mode'))
                 if 'change_leaderboard' in data: ev['change_leaderboard']=bool(data.get('change_leaderboard'))
+                if 'event_button_visible' in data: ev['event_button_visible']=bool(data.get('event_button_visible'))
+                if isinstance(data.get('special_mode'),dict):
+                    _normalize_witch_event_structure(ev)
+                    mode=next((x for x in ev.get('sections',[]) if x.get('type')=='mode'),None)
+                    if mode is None:
+                        mode={'id':'special_mode','title':'Особые режимы','type':'mode','items':[]}; ev.setdefault('sections',[]).insert(0,mode)
+                    sm=data.get('special_mode') or {}; item=next((x for x in mode.setdefault('items',[]) if x.get('id')=='ghost_road_mode'),None)
+                    if item is None:
+                        item={'id':'ghost_road_mode','mandatory':True}; mode['items'].insert(0,item)
+                    item['name']=str(sm.get('name') or 'Ghost Road').strip()
+                    item['image']=str(sm.get('image') or '/static/img/ghost_road.png').strip()
+                    item['path']=str(sm.get('path') or '/event/witch-hat-party?mode=ghost-road').strip()
+                    item['visible']=bool(sm.get('visible',True))
+                    mode['title']='Особые режимы'
+                if isinstance(data.get('sections_meta'),list):
+                    _normalize_witch_event_structure(ev)
+                    byid={str(x.get('id')):x for x in ev.get('sections',[]) if isinstance(x,dict)}
+                    for meta in data.get('sections_meta') or []:
+                        if not isinstance(meta,dict): continue
+                        sec=byid.get(str(meta.get('id')));
+                        if not sec: continue
+                        if 'title' in meta: sec['title']=str(meta.get('title') or sec.get('title') or 'Раздел').strip()
+                        if 'visible' in meta: sec['visible']=bool(meta.get('visible'))
+                        if 'order' in meta:
+                            try: sec['order']=int(meta.get('order'))
+                            except Exception: pass
             elif action in ('add_case','remove_case'):
                 case_id=str(data.get('case_id') or '').strip(); section_id=str(data.get('section_id') or '').strip(); sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==section_id and x.get('type')=='cases'),None) or next((x for x in ev.setdefault('sections',[]) if x.get('type')=='cases'),None)
                 if sec is None: sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}; ev['sections'].insert(0,sec)
@@ -8750,6 +9008,14 @@ def api_cases():
         seasonal = load_seasonal_case()
         if seasonal_case_is_active(seasonal):
             cases = [seasonal] + [c for c in cases if str(c.get('id')) != 'seasonal']
+
+        def _is_public_season_case(c):
+            section=str(c.get('section') or '').strip().lower()
+            tags=[str(x).strip().lower() for x in (c.get('tags') or [])]
+            return bool(c.get('seasonal')) or str(c.get('id')).lower()=='seasonal' or section in ('season','seasonal') or 'season' in tags
+        season_cases=[c for c in cases if _is_public_season_case(c)]
+        other_cases=[c for c in cases if not _is_public_season_case(c)]
+        cases=season_cases+other_cases
 
         logger.info(f"✅ Загружено {len(cases)} кейсов")
         return jsonify({'success': True, 'cases': cases})
