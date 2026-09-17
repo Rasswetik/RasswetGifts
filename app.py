@@ -9025,6 +9025,51 @@ def admin_events():
                         if 'order' in meta:
                             try: sec['order']=int(meta.get('order'))
                             except Exception: pass
+            elif action in ('add_mode_item','update_mode_item','remove_mode_item'):
+                # Полноценное управление кнопками особых режимов. Размеры:
+                # small = 1 обычная ячейка, medium = 2 ячейки по ширине,
+                # high = 4 обычные ячейки по площади (2x ширина/высота).
+                _normalize_witch_event_structure(ev)
+                mode=next((x for x in ev.setdefault('sections',[]) if x.get('type')=='mode'),None)
+                if mode is None:
+                    mode={'id':'special_mode','title':'Особые режимы','type':'mode','items':[]}
+                    ev['sections'].insert(0,mode)
+                items=mode.setdefault('items',[])
+                if action=='add_mode_item':
+                    name=str(data.get('name') or '').strip()
+                    if not name: return jsonify({'success':False,'error':'Введите название кнопки'}),400
+                    size=str(data.get('size') or 'medium').strip().lower()
+                    if size in ('large','full'): size='high'
+                    if size not in ('small','medium','high'): size='medium'
+                    new_id='mode_'+secrets.token_hex(6)
+                    items.append({
+                        'id':new_id, 'name':name,
+                        'subtitle':str(data.get('subtitle') or '').strip(),
+                        'image':str(data.get('image') or '').strip(),
+                        'path':str(data.get('path') or '#').strip() or '#',
+                        'size':size, 'visible':bool(data.get('visible',True)),
+                        'unlock_at':None, 'mandatory':False
+                    })
+                elif action=='update_mode_item':
+                    item_id=str(data.get('id') or '').strip()
+                    item=next((x for x in items if str(x.get('id'))==item_id),None)
+                    if item is None: return jsonify({'success':False,'error':'Кнопка не найдена'}),404
+                    name=str(data.get('name') or '').strip()
+                    if not name: return jsonify({'success':False,'error':'Введите название кнопки'}),400
+                    size=str(data.get('size') or item.get('size') or 'medium').strip().lower()
+                    if size in ('large','full'): size='high'
+                    if size not in ('small','medium','high'): size='medium'
+                    item['name']=name
+                    item['subtitle']=str(data.get('subtitle') or '').strip()
+                    item['image']=str(data.get('image') or '').strip()
+                    item['path']=str(data.get('path') or '#').strip() or '#'
+                    item['size']=size
+                    item['visible']=bool(data.get('visible',True))
+                else:
+                    item_id=str(data.get('id') or '').strip()
+                    if item_id=='ghost_road_mode':
+                        return jsonify({'success':False,'error':'Обязательную кнопку Ghost Road нельзя удалить'}),400
+                    mode['items']=[x for x in items if str(x.get('id'))!=item_id]
             elif action in ('add_case','remove_case'):
                 case_id=str(data.get('case_id') or '').strip(); section_id=str(data.get('section_id') or '').strip(); sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==section_id and x.get('type')=='cases'),None) or next((x for x in ev.setdefault('sections',[]) if x.get('type')=='cases'),None)
                 if sec is None: sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}; ev['sections'].insert(0,sec)
@@ -17453,6 +17498,51 @@ def admin_case_images():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+
+@app.route('/api/admin/site-images', methods=['GET'])
+def admin_site_images():
+    """Возвращает каталог изображений сайта для выбора в админке."""
+    try:
+        admin_id=request.args.get('admin_id')
+        if not admin_id or int(admin_id)!=ADMIN_ID:
+            return jsonify({'success':False,'error':'Доступ запрещен'}),403
+        import glob
+        root=os.path.dirname(__file__)
+        allowed={'.png','.jpg','.jpeg','.gif','.webp','.svg'}
+        patterns=['static/img/**/*','static/gifs/**/*','static/uploads/**/*']
+        images=[]; seen=set()
+        for pattern in patterns:
+            for f in glob.glob(os.path.join(root,pattern),recursive=True):
+                if not os.path.isfile(f) or os.path.splitext(f)[1].lower() not in allowed: continue
+                rel='/' + os.path.relpath(f,root).replace(os.sep,'/')
+                if rel not in seen:
+                    seen.add(rel); images.append({'url':rel,'name':os.path.basename(f)})
+        images.sort(key=lambda x:x['url'].lower())
+        return jsonify({'success':True,'images':images})
+    except Exception as e:
+        logger.error('Site image catalog error: %s',e)
+        return jsonify({'success':False,'error':str(e)}),500
+
+@app.route('/api/admin/event-mode-image', methods=['POST'])
+def admin_upload_event_mode_image():
+    try:
+        admin_id=request.form.get('admin_id')
+        if not admin_id or int(admin_id)!=ADMIN_ID:
+            return jsonify({'success':False,'error':'Доступ запрещен'}),403
+        file=request.files.get('file')
+        if not file or not file.filename:
+            return jsonify({'success':False,'error':'Файл не выбран'}),400
+        if not allowed_file(file.filename):
+            return jsonify({'success':False,'error':'Разрешены PNG, JPG, JPEG, GIF, WEBP'}),400
+        ext=os.path.splitext(file.filename)[1].lower() or '.png'
+        fname='event_mode_'+secrets.token_hex(8)+ext
+        save_dir=os.path.join(BASE_PATH,'static','img','event')
+        os.makedirs(save_dir,exist_ok=True)
+        file.save(os.path.join(save_dir,fname))
+        return jsonify({'success':True,'url':f'/static/img/event/{fname}'})
+    except Exception as e:
+        logger.error('Event mode image upload error: %s',e)
+        return jsonify({'success':False,'error':str(e)}),500
 
 @app.route('/api/admin/create-case', methods=['POST'])
 def admin_create_case():
