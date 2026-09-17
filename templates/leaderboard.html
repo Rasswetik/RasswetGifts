@@ -1129,6 +1129,7 @@ async function loadLeaderboard(){
         if(list) list.classList.remove('loading');
         var halloween = !!(data.success && data.config && data.config.halloween_mode);
         document.body.classList.toggle('halloween-theme', halloween);
+        document.documentElement.classList.toggle('halloween-theme', halloween);
         var witchVideo = $('halloweenBannerVideo');
         if (witchVideo) { if (halloween) { witchVideo.play().catch(function(){}); } else { witchVideo.pause(); } }
 
@@ -1151,8 +1152,8 @@ async function loadLeaderboard(){
         }
 
         var visibleUsers = users.slice(0, 30);
-        $('podium').innerHTML = '';
-        renderList(visibleUsers, 1);
+        renderPodium(visibleUsers.slice(0, 3));
+        renderList(visibleUsers.slice(3), 4);
 
     }catch(e){
         var list=document.getElementById('leadersList'); if(list){list.classList.remove('loading');list.innerHTML='<div class="empty"><p>Не удалось загрузить лидерборд</p></div>';}
@@ -1387,6 +1388,8 @@ function setAttrsFailed(){
 var _pcLoading = false;
 function openProfileModal(userId){
     if(!userId || userId <= 0) return;
+    window.location.href = '/profile';
+    return;
     if(_pcLoading) return;
     _pcLoading = true;
     var cont = $('profileContent');
