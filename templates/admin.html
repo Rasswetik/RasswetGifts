@@ -566,6 +566,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="section-header"><h2>🎃 Сезонный кейс</h2><button class="action-btn" onclick="showSection('events')">← Назад</button></div>
         <div class="card">
             <div class="card-title">Основное</div>
+            <div class="form-group"><label class="form-label">Кейс из раздела «Сезон»</label><select class="form-input" id="scSourceCase" onchange="selectSeasonalSource(this.value)"><option value="">Выберите созданный сезонный кейс</option></select><div style="font-size:11px;color:rgba(255,255,255,.42);margin-top:6px">ID вводить не нужно — здесь отображаются только уже созданные кейсы из раздела «Сезон».</div></div>
             <div class="form-group"><label class="form-label">Показывать в сезоне</label><label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="scEnabled"> Включить</label></div>
             <div class="form-group"><label class="form-label">Название</label><input class="form-input" id="scName" placeholder="Сезонный кейс"></div>
             <div class="form-group"><label class="form-label">Изображение кейса</label><input class="form-input" id="scImage" placeholder="/static/img/..." ></div>
@@ -1097,7 +1098,17 @@ async function stopWitchEvent(){try{await eventAdminPost({event_id:'witch_hat_pa
 async function saveEventSettings(){try{await eventAdminPost({event_id:'witch_hat_party',action:'update_settings',name:$('eventNameInput').value.trim(),image:$('eventImageInput').value.trim(),loading_gif:$('eventLoadingGifInput').value.trim()});showToast('Настройки ивента сохранены','ok');loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function addEventSection(){var title=prompt('Название нового раздела');if(!title)return;var type=confirm('Это Market-раздел? Нажмите ОК для Market, Отмена — для кейсов.')?'market':'cases';try{await eventAdminPost({event_id:'witch_hat_party',action:'add_section',title:title,type:type});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function removeEventSection(id){if(!confirm('Удалить раздел?'))return;try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_section',section_id:id});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
-async function addEventCase(sectionId){var ref=prompt('Введите ID или slug кейса');if(!ref)return;try{await eventAdminPost({event_id:'witch_hat_party',action:'add_case',case_id:ref});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
+async function addEventCase(sectionId){
+    try{
+        var r=await fetch('/api/cases?ts='+Date.now()), d=await r.json();
+        if(!d.success) throw Error(d.error||'Не удалось загрузить кейсы');
+        var cases=(d.cases||[]).filter(function(c){return String(c.id)!=='seasonal';});
+        if(!cases.length){showToast('Нет созданных кейсов','err');return;}
+        openPicker('Добавить кейс в событие',cases,function(item){
+            eventAdminPost({event_id:'witch_hat_party',action:'add_case',section_id:sectionId,case_id:item.id}).then(function(){showToast('Кейс добавлен','ok');loadEvents();}).catch(function(e){showToast(e.message||'Ошибка','err');});
+        });
+    }catch(e){showToast(e.message||'Ошибка загрузки кейсов','err');}
+}
 async function removeEventCase(sectionId,id){try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_case',case_id:id});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function addEventMarket(sectionId){var name=prompt('Введите коллекцию Fragment, например Witch Head');if(!name)return;try{await eventAdminPost({event_id:'witch_hat_party',action:'add_market_collection',section_id:sectionId,collection:name});showToast('Коллекция добавлена и проверена по Fragment','ok');loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function removeEventMarket(slug){try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_market_collection',fragment_slug:slug});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
@@ -1120,10 +1131,36 @@ async function loadSeasonalCaseStatus(){
 }
 function openSeasonalCaseEditor(){ showSection('seasonal-case'); }
 async function loadSeasonalCaseEditor(){
-    try{ var r=await fetch('/api/admin/seasonal-case?admin_id='+ADMIN_ID); var d=await r.json(); if(!d.success) throw Error(d.error||'Ошибка'); seasonalCaseData=d.case||{}; seasonalCaseGifts=(seasonalCaseData.gifts||[]).slice();
+    try{
+        var results=await Promise.all([
+            fetch('/api/admin/seasonal-case?admin_id='+ADMIN_ID+'&ts='+Date.now()),
+            fetch('/api/admin/seasonal-case/options?admin_id='+ADMIN_ID+'&ts='+Date.now())
+        ]);
+        var d=await results[0].json(), o=await results[1].json();
+        if(!d.success) throw Error(d.error||'Ошибка загрузки сезонного кейса');
+        if(!o.success) throw Error(o.error||'Ошибка загрузки списка сезонных кейсов');
+        seasonalCaseData=d.case||{}; seasonalCaseGifts=(seasonalCaseData.gifts||[]).slice();
+        var select=$('scSourceCase');
+        if(select){
+            select.innerHTML='<option value="">Выберите созданный сезонный кейс</option>'+(o.cases||[]).map(function(c){
+                return '<option value="'+escapeHtml(String(c.id))+'">'+escapeHtml(c.name||('Кейс #'+c.id))+'</option>';
+            }).join('');
+            if(seasonalCaseData.source_case_id!=null) select.value=String(seasonalCaseData.source_case_id);
+        }
         $('scEnabled').checked=!!seasonalCaseData.enabled; $('scName').value=seasonalCaseData.name||'Сезонный кейс'; $('scImage').value=seasonalCaseData.image||''; $('scCost').value=seasonalCaseData.cost||0; $('scCostType').value=seasonalCaseData.cost_type||'stars'; $('scStart').value=dtLocalValue(seasonalCaseData.season_start); $('scEnd').value=dtLocalValue(seasonalCaseData.season_end); $('scLevel').value=seasonalCaseData.required_level||1; $('scSection').value=seasonalCaseData.section||'season'; $('scDescription').value=seasonalCaseData.description||''; renderSeasonalGifts();
     }catch(e){ showToast(e.message||'Ошибка загрузки сезонного кейса','err'); }
 }
+function selectSeasonalSource(id){
+    if(!id) return;
+    fetch('/api/cases/'+encodeURIComponent(id)+'?ts='+Date.now()).then(function(r){return r.json()}).then(function(d){
+        if(!d.success) throw Error(d.error||'Не удалось загрузить кейс');
+        var c=d.case||{}; seasonalCaseData=c; seasonalCaseData.source_case_id=c.id;
+        $('scName').value=c.name||''; $('scImage').value=c.image||''; $('scCost').value=c.cost||0; $('scCostType').value=c.cost_type||'stars'; $('scLevel').value=c.required_level||1; $('scSection').value=c.section||'season'; $('scDescription').value=c.description||'';
+        seasonalCaseGifts=(c.gifts||c.gifts_details||[]).map(function(g){return {id:g.id,gift_key:g.gift_key||'',name:g.name,image:g.image,value:g.value||0,fragment_slug:g.fragment_slug||'',type:g.type||'gift',chance:g.chance==null?1:g.chance,ton_amount:g.ton_amount};});
+        renderSeasonalGifts(); showToast('Кейс выбран','ok');
+    }).catch(function(e){showToast(e.message||'Ошибка выбора кейса','err');});
+}
+
 function renderSeasonalGifts(){
     var el=$('scGiftsList'); if(!el)return;
     if(!seasonalCaseGifts.length){el.innerHTML='<div class="empty">Подарков пока нет</div>';return;}
@@ -1145,7 +1182,7 @@ function openSeasonalTonForm(){
 }
 function addSeasonalTon(){ var n=parseFloat($('scTonAmount').value)||0, ch=parseFloat($('scTonChance').value)||10; if(n<=0){showToast('Введите сумму','err');return;} seasonalCaseGifts.push({type:'ton_balance',ton_amount:n,chance:ch}); renderSeasonalGifts(); closeModal(); showToast('TON-баланс добавлен','ok'); }
 async function saveSeasonalCase(){
-    var payload={admin_id:ADMIN_ID,enabled:$('scEnabled').checked,name:$('scName').value.trim(),image:$('scImage').value.trim(),cost:parseFloat($('scCost').value)||0,cost_type:$('scCostType').value,season_start:dtIso($('scStart').value),season_end:dtIso($('scEnd').value),required_level:parseInt($('scLevel').value)||1,section:$('scSection').value.trim()||'season',description:$('scDescription').value,gifts:seasonalCaseGifts};
+    var payload={admin_id:ADMIN_ID,source_case_id:$('scSourceCase').value||null,enabled:$('scEnabled').checked,name:$('scName').value.trim(),image:$('scImage').value.trim(),cost:parseFloat($('scCost').value)||0,cost_type:$('scCostType').value,season_start:dtIso($('scStart').value),season_end:dtIso($('scEnd').value),required_level:parseInt($('scLevel').value)||1,section:$('scSection').value.trim()||'season',description:$('scDescription').value,gifts:seasonalCaseGifts};
     if(!payload.name){showToast('Введите название','err');return;} if(payload.season_start&&payload.season_end&&new Date(payload.season_end)<=new Date(payload.season_start)){showToast('Конец сезона должен быть позже начала','err');return;}
     try{var r=await fetch('/api/admin/seasonal-case',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');showToast('Сезонный кейс сохранён','ok');showSection('events');}catch(e){showToast(e.message||'Ошибка сохранения','err');}
 }
