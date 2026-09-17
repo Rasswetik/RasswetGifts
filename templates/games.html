@@ -22,9 +22,11 @@
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 
-html,body{min-height:100%}
+html,body{min-height:100%;min-height:100dvh;width:100%}
 
 body{
+    min-height:100dvh;
+    overscroll-behavior:none;
     font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
     color:var(--text);
     background:
@@ -509,12 +511,12 @@ img{display:block}
 
 /* MOBILE */
 @media(max-width:700px){
-    body:before{inset:62px 0 0;background-size:65px 65px}
+    body:before{inset:calc(62px + env(safe-area-inset-top)) 0 0;background-size:65px 65px}
 
     .top-bar{
         height:auto;
-        min-height:62px;
-        padding:8px 11px;
+        min-height:calc(62px + env(safe-area-inset-top));
+        padding:calc(8px + env(safe-area-inset-top)) 11px 8px;
         background:#0b111e;
     }
 
@@ -703,12 +705,12 @@ img{display:block}
 
 /* MOBILE */
 @media(max-width:700px){
-    body:before{inset:62px 0 0;background-size:65px 65px}
+    body:before{inset:calc(62px + env(safe-area-inset-top)) 0 0;background-size:65px 65px}
 
     .top-bar{
         height:auto;
-        min-height:62px;
-        padding:8px 11px;
+        min-height:calc(62px + env(safe-area-inset-top));
+        padding:calc(8px + env(safe-area-inset-top)) 11px 8px;
         background:#0b111e;
     }
 
@@ -805,6 +807,7 @@ img{display:block}
                         <circle cx="12" cy="9.6" r="1.65" stroke="currentColor" stroke-width="1.5"></circle>
                         <path d="M8.4 14.9 5.9 16.6l.55-3.05M15.6 14.9l2.5 1.7-.55-3.05" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
                         <path d="M9.6 18.3l.7 2.5h3.4l.7-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <path d="M16.2 16.8h4.1M17.9 15.1l2.4 1.7-2.4 1.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
                     </svg>
                 </span>
                 <span>Апгрейды</span>
@@ -921,7 +924,7 @@ img{display:block}
     <button class="bottom-nav-btn" onclick="goTo('/upgrade')">
         <span class="nav-icon">
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 17 10 11l4 4 6-7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 17 10 11l4 4 6-7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 8H20v3.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
         </span>
         <span>Апгрейды</span>
@@ -1144,6 +1147,8 @@ async function initGames(){
             if(window.Telegram && Telegram.WebApp){
                 Telegram.WebApp.ready();
                 Telegram.WebApp.expand();
+                try{ if(typeof Telegram.WebApp.requestFullscreen === 'function'){ Telegram.WebApp.requestFullscreen(); } }catch(e){}
+                document.documentElement.style.setProperty('--tg-safe-top', (Telegram.WebApp.safeAreaInsetTop || 0) + 'px');
                 Telegram.WebApp.setHeaderColor('#0b111c');
                 Telegram.WebApp.setBackgroundColor('#0b111c');
             }
