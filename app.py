@@ -8695,8 +8695,10 @@ def api_witch_hat_party():
         if end and end.tzinfo:
             from datetime import timezone; end=end.astimezone(timezone.utc).replace(tzinfo=None)
         remaining=max(0,int((end-datetime.utcnow()).total_seconds())) if end else 0
-    except Exception: remaining=0
-    ev['active']=bool(ev.get('enabled') and remaining>0)
+    except Exception: remaining=0; end=None
+    # An enabled event without an end date is intentionally active.  The old
+    # `remaining > 0` condition made such an event flip to inactive on clients.
+    ev['active']=bool(ev.get('enabled') and (end is None or remaining>0))
     _normalize_witch_event_structure(ev)
     now=datetime.utcnow()
     for sec in ev.get('sections',[]):
@@ -8750,13 +8752,55 @@ def api_witch_hat_market():
     except Exception as e: return jsonify({'success':False,'error':str(e)}),500
 
 # Event market: every manually added gift is a single stock item.
+def _verify_telegram_webapp_init_data(init_data):
+    """Verify Telegram Mini App initData and return the Telegram user dict.
+
+    The browser may send user_id for compatibility, but the server always trusts
+    the signed Telegram initData instead.  This also auto-registers a user who
+    opened the Mini App directly without first pressing /start in the bot.
+    """
+    raw=str(init_data or '').strip()
+    if raw.startswith('tma '): raw=raw[4:].strip()
+    if not raw or not TELEGRAM_BOT_TOKEN:
+        return None, 'Откройте приложение через Telegram'
+    try:
+        from urllib.parse import parse_qsl, unquote
+        params=dict(parse_qsl(raw, keep_blank_values=True))
+        received=params.pop('hash', '')
+        if not received:
+            return None, 'Не удалось проверить Telegram авторизацию'
+        data_check='\n'.join(f'{k}={params[k]}' for k in sorted(params))
+        secret=hmac.new(b'WebAppData', TELEGRAM_BOT_TOKEN.encode('utf-8'), hashlib.sha256).digest()
+        calculated=hmac.new(secret, data_check.encode('utf-8'), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(calculated, received):
+            return None, 'Telegram авторизация недействительна'
+        user_raw=params.get('user','')
+        user=json.loads(unquote(user_raw))
+        uid=int(user.get('id'))
+        if uid<=0: raise ValueError('bad user id')
+        # Keep the site's existing user table in sync with Telegram Mini App.
+        try:
+            bot_add_user(uid, str(user.get('first_name') or ''), str(user.get('username') or ''))
+        except Exception as e:
+            logger.warning('Event market auto-registration failed: %s', e)
+        return user, None
+    except Exception as e:
+        logger.warning('Telegram WebApp initData verification failed: %s', e)
+        return None, 'Не удалось проверить Telegram авторизацию'
+
 @app.route('/api/events/witch-hat-party/market/buy', methods=['POST'])
 def api_witch_hat_market_buy():
     import random as _rnd
     conn = None
     try:
         data = request.get_json(force=True, silent=True) or {}
-        user_id = int(data.get('user_id'))
+        telegram_user, auth_error = _verify_telegram_webapp_init_data(data.get('initData'))
+        if not telegram_user:
+            return jsonify({'success': False, 'error': auth_error or 'Откройте приложение через Telegram'}), 401
+        user_id = int(telegram_user.get('id'))
+        supplied_user_id = data.get('user_id')
+        if supplied_user_id is not None and str(supplied_user_id) != str(user_id):
+            return jsonify({'success': False, 'error': 'Пользователь Telegram не совпадает с user_id'}), 403
         gift_url = str(data.get('gift_url') or '').strip()
         if not gift_url:
             return jsonify({'success': False, 'error': 'Подарок не указан'}), 400
