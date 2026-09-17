@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # app.py - main application file
 from flask import Flask, render_template, render_template_string, request, jsonify, send_from_directory, redirect, make_response, g, has_request_context
+from jinja2 import TemplateNotFound
 import sqlite3
 import json
 try:
@@ -5764,15 +5765,18 @@ def witch_hat_party_page():
 
 
 
+@app.route('/inventory')
 def inventory_page():
     """Страница инвентаря"""
     logger.info("🎒 Запрос страницы инвентаря")
     return render_template('inventory.html')
 
+@app.route('/season')
 def season_page():
     """Алиас страницы сезона."""
     return redirect('/rewards')
 
+@app.route('/rewards')
 def rewards_page():
     """Отдельное окно/страница наград профиля."""
     return render_template_string(r'''<!doctype html>
@@ -5785,15 +5789,18 @@ function closeRewards(){history.length>1?history.back():location.href='/inventor
 function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 async function init(){var uid=new URLSearchParams(location.search).get('user_id');if(!uid&&window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user)uid=Telegram.WebApp.initDataUnsafe.user.id;var box=document.getElementById('rewardsList');if(!uid){box.innerHTML='<div class="empty">Не удалось определить пользователя</div>';return}try{var r=await fetch('/api/rewards/info/'+encodeURIComponent(uid));var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');var levels=d.level_rewards||[];document.getElementById('levelSummary').textContent='Уровневые награды';if(!levels.length){box.innerHTML='<div class="empty">Награды пока не установлены.<br><span style="font-weight:600;color:rgba(255,255,255,.25)">Когда добавишь их в админке, они появятся здесь автоматически.</span></div>';return}box.innerHTML=levels.map(function(x){var rs=(x.rewards||[]).map(function(r){return '<div class="reward-slot ready">'+esc(r.description||r.type||'Награда')+'</div>'}).join('');return '<div class="level-card"><div class="level-row"><div class="level-badge">'+esc(x.level)+' lvl</div><div class="level-exp">'+(x.available?'Доступно':'Уровень '+esc(x.level))+'</div></div>'+(rs||'<div class="reward-slot">Награда не установлена</div>')+'</div>'}).join('')}catch(e){box.innerHTML='<div class="empty">Не удалось загрузить награды</div>'}}init();</script></body></html>''')
 
+@app.route('/profile')
 def profile_page():
     """Страница профиля → редирект на инвентарь"""
     logger.info("👤 Запрос страницы профиля → редирект на /inventory")
     return redirect('/inventory')
 
+@app.route('/ref')
 def ref_page():
     """Страница реферальной системы"""
     return render_template('ref.html')
 
+@app.route('/lobby')
 def lobby_page():
     """Страница лобби"""
     return render_template('lobby.html')
@@ -8527,15 +8534,16 @@ def api_case_detail(case_id):
         case_gifts = []
         for gift_info in case['gifts']:
             # Обработка ton_balance
-            if gift_info.get('type') == 'ton_balance':
-                ton_amount = gift_info.get('ton_amount', 0)
+            if gift_info.get('type') in ('ton_balance', 'gram_balance'):
+                ton_amount = gift_info.get('ton_amount', gift_info.get('gram_amount', 0))
                 case_gifts.append({
                     'id': -1,
-                    'name': 'TON',
-                    'image': '/static/img/tons/ton_1.svg',
+                    'name': 'Gram Balance',
+                    'image': '/static/img/ton.png',
                     'value': ton_amount,
-                    'type': 'ton_balance',
+                    'type': 'gram_balance',
                     'ton_amount': ton_amount,
+                    'gram_amount': ton_amount,
                     'chance': gift_info.get('chance', 1)
                 })
             else:
@@ -8597,8 +8605,9 @@ def api_case_detail_by_slug(case_slug):
         canonical_gifts = build_fragment_first_gifts_catalog()
         gifts_details = []
         for gift_info in case.get('gifts', []):
-            if gift_info.get('type') == 'ton_balance':
-                gifts_details.append({'id': -1, 'name': 'GRAM', 'image': '/static/img/tons/ton_1.svg', 'value': gift_info.get('ton_amount', 0), 'type': 'ton_balance', 'ton_amount': gift_info.get('ton_amount', 0), 'chance': gift_info.get('chance', 1)})
+            if gift_info.get('type') in ('ton_balance', 'gram_balance'):
+                amount = gift_info.get('ton_amount', gift_info.get('gram_amount', 0))
+                gifts_details.append({'id': -1, 'name': 'Gram Balance', 'image': '/static/img/ton.png', 'value': amount, 'type': 'gram_balance', 'ton_amount': amount, 'gram_amount': amount, 'chance': gift_info.get('chance', 1)})
                 continue
             target_id = gift_info.get('id'); target_id_str = str(target_id) if target_id is not None else ''
             gift = next((g for g in canonical_gifts if (target_id is not None and str(g.get('id')) == target_id_str) or (target_id_str and str(g.get('gift_key') or '').lower() == target_id_str.lower()) or (target_id_str and str(g.get('fragment_slug') or '').lower() == target_id_str.lower())), None)
