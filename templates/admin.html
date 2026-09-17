@@ -301,6 +301,9 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
     .tile-btn .tile-icon svg{width:24px;height:24px}
     .tile-btn .tile-text{font-size:14px}
 }
+
+<style id="events-admin-css">.event-admin-card{padding:14px}.event-row{display:flex;align-items:center;gap:14px}.event-preview{width:92px;height:92px;border-radius:18px;object-fit:contain;background:radial-gradient(circle,#3b1b59,#171020);border:1px solid rgba(168,85,247,.3);padding:7px;flex-shrink:0}.event-info{flex:1;min-width:0}.event-name{font-size:18px;font-weight:950}.event-sub{margin-top:4px;font-size:11px;color:rgba(255,255,255,.48)}.event-toggle{position:relative;width:58px;height:32px;flex:0 0 58px}.event-toggle input{opacity:0;width:0;height:0}.event-switch{position:absolute;inset:0;border-radius:20px;background:#343b49;cursor:pointer;transition:.2s}.event-switch:before{content:"";position:absolute;width:24px;height:24px;left:4px;top:4px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 2px 6px rgba(0,0,0,.3)}.event-toggle input:checked+.event-switch{background:linear-gradient(135deg,#7c3aed,#a855f7);box-shadow:0 0 18px rgba(168,85,247,.35)}.event-toggle input:checked+.event-switch:before{transform:translateX(26px)}.event-duration{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.07)}.event-status{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.18);font-size:12px;color:#d9b9ff;font-weight:750}.event-actions{display:flex;gap:8px;margin-top:12px}.event-actions .btn{flex:1}.tile-event{background:linear-gradient(135deg,#581c87,#a855f7)!important;order:-1}
+</style>
 </style>
 </head>
 <body>
@@ -327,6 +330,10 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="home-section">
             <div class="home-section-title">Главное</div>
             <div class="tiles-grid">
+                <button class="tile-btn tile-event" onclick="showSection('events')">
+                    <div class="tile-icon"><img src="/static/img/witchhat.png" style="width:34px;height:34px;object-fit:contain" alt=""></div>
+                    <div><div class="tile-text">Events</div><div class="tile-sub">Управление ивентами</div></div>
+                </button>
                 <button class="tile-btn tile-blue" onclick="showSection('dashboard')">
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
                     <div><div class="tile-text">Дашборд</div><div class="tile-sub">Статистика и банк</div></div>
@@ -396,6 +403,32 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                     <div><div class="tile-text">История</div><div class="tile-sub">Победы и открытия</div></div>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- EVENTS -->
+    <div class="section-page" id="page-events" style="display:none">
+        <div class="section-header">
+            <h2>Events</h2>
+            <button class="action-btn" onclick="showSection('home')">← Назад</button>
+        </div>
+        <div class="card event-admin-card">
+            <div class="event-row">
+                <img class="event-preview" src="/static/img/witchhat.png" alt="Witch Hat Party">
+                <div class="event-info">
+                    <div class="event-name">Witch Hat Party</div>
+                    <div class="event-sub">Halloween event · /static/img/witchhat.png</div>
+                </div>
+                <label class="event-toggle" title="Включить ивент">
+                    <input type="checkbox" id="witchEventToggle" onchange="onWitchEventToggle()">
+                    <span class="event-switch"></span>
+                </label>
+            </div>
+            <div class="event-duration" id="witchEventDuration" style="display:none">
+                <div class="form-group" style="margin-bottom:0"><label class="form-label">На сколько включить (часов)</label><input type="number" class="form-input" id="witchEventHours" min="0.1" max="8760" step="0.1" placeholder="Например, 24"></div>
+                <div class="event-actions"><button class="btn btn-primary" onclick="startWitchEvent()">Запустить</button><button class="btn btn-danger" onclick="stopWitchEvent()">Выключить</button></div>
+            </div>
+            <div class="event-status" id="witchEventStatus">Загрузка…</div>
         </div>
     </div>
 
@@ -929,7 +962,7 @@ function goToProfile(){
 
 var currentSection = 'home';
 var SECTION_TITLES = {
-    home: 'Главное меню', dashboard: '📊 Дашборд', crash: '🎮 Управление Краш',
+    home: 'Главное меню', events: 'Events', dashboard: '📊 Дашборд', crash: '🎮 Управление Краш',
     users: '👥 Пользователи', gifts: '🎁 Подарки', cases: '📦 Кейсы',
     'case-editor': '📦 Редактор кейса',
     promo: '🎟️ Промокоды', quests: '🎯 Задания',
@@ -953,6 +986,7 @@ function showSection(name){
     try{ window.scrollTo({top: 0, behavior: 'instant'}); }catch(e){ window.scrollTo(0,0); }
 
     try{
+        if(name === 'events') loadEvents();
         if(name === 'dashboard') loadStats();
         if(name === 'crash') loadCrashStatus();
         if(name === 'users') loadUsers();
@@ -1035,6 +1069,46 @@ function selectPickerItem(idx){
     if(!item) return;
     if(pickerCallback) pickerCallback(item);
     closePicker();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   EVENTS
+   ══════════════════════════════════════════════════════════════ */
+function formatEventTime(sec){
+    sec=Math.max(0,Number(sec||0));
+    var d=Math.floor(sec/86400); var h=Math.floor(sec%86400/3600); var m=Math.floor(sec%3600/60); var s=Math.floor(sec%60);
+    return (d?d+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+async function loadEvents(){
+    try{
+        var r=await fetch('/api/admin/events?admin_id='+ADMIN_ID); var d=await r.json();
+        if(!d.success) throw Error(d.error||'Ошибка');
+        var e=(d.events||{}).witch_hat_party||{};
+        var active=!!e.enabled && !!e.ends_at;
+        if($('witchEventToggle')) $('witchEventToggle').checked=active;
+        if($('witchEventDuration')) $('witchEventDuration').style.display=active?'block':'none';
+        if($('witchEventStatus')) $('witchEventStatus').textContent=active ? '🟣 Ивент включён · до '+new Date(e.ends_at).toLocaleString('ru-RU') : '⚪ Ивент выключен';
+    }catch(e){ if($('witchEventStatus')) $('witchEventStatus').textContent='Ошибка загрузки: '+e.message; }
+}
+function onWitchEventToggle(){
+    var on=$('witchEventToggle')&&$('witchEventToggle').checked;
+    if($('witchEventDuration')) $('witchEventDuration').style.display=on?'block':'none';
+    if(!on) stopWitchEvent();
+}
+async function startWitchEvent(){
+    var hours=parseFloat($('witchEventHours')&&$('witchEventHours').value);
+    if(!hours || hours<=0){showToast('Укажите срок ивента','err');return;}
+    try{
+        var r=await fetch('/api/admin/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,event_id:'witch_hat_party',enabled:true,hours:hours})});
+        var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');showToast('Witch Hat Party запущен','ok');loadEvents();
+    }catch(e){showToast(e.message||'Ошибка','err')}
+}
+async function stopWitchEvent(){
+    try{
+        var r=await fetch('/api/admin/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,event_id:'witch_hat_party',enabled:false})});
+        var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');
+        if($('witchEventToggle'))$('witchEventToggle').checked=false;if($('witchEventDuration'))$('witchEventDuration').style.display='none';showToast('Ивент выключен','ok');loadEvents();
+    }catch(e){showToast(e.message||'Ошибка','err')}
 }
 
 /* ══════════════════════════════════════════════════════════════
