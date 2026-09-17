@@ -1239,8 +1239,8 @@ function modeButtonEditorHtml(item){
       +'<div class="form-group"><label class="form-label">Переход</label><input class="form-input" id="modeEditorPath" value="'+escapeHtml(item.path||'#')+'" placeholder="/mines или /event/witch-hat-party?mode=ghost-road"></div>'
       +'<div class="form-group"><label class="form-label">Размер кнопки</label><div class="mode-size-options">'
       +['small','medium','high'].map(function(x){var labels={small:'SMALL · 1 ячейка',medium:'MEDIUM · 2 ячейки',high:'HIGH · 4× обычной'};return '<label class="mode-size-option '+(size===x?'active':'')+'"><input type="radio" name="modeEditorSize" value="'+x+'" '+(size===x?'checked':'')+'><span><b>'+x.toUpperCase()+'</b><small>'+labels[x]+'</small></span></label>';}).join('')
-      +'</div><div class="event-sub mode-size-help">На телефоне SMALL — две кнопки в ряд. MEDIUM — вся строка той же высоты. HIGH — увеличенная 2×2 кнопка.</div></div>'
-      +'<div class="form-group"><label class="form-label">Изображение</label><div class="mode-image-picker-row"><div class="mode-editor-image-preview" id="modeEditorImagePreview">'+(item.image?'<img src="'+escapeHtml(item.image)+'" onerror="this.src=\'/static/img/gift.png\'">':'<span>Нет изображения</span>')+'</div><div class="mode-image-actions"><button type="button" class="btn btn-secondary btn-sm" onclick="openSiteImagePickerForMode()">Выбрать из каталога</button><button type="button" class="btn btn-secondary btn-sm" onclick="chooseModeImageUpload()">Загрузить файл</button><input type="file" id="modeEditorImageFile" accept="image/png,image/jpeg,image/gif,image/webp" style="display:none" onchange="uploadModeEditorImage()"></div></div><input class="form-input" id="modeEditorImage" value="'+escapeHtml(item.image||'')+'" placeholder="/static/img/..." style="margin-top:8px"></div>'
+      +'</div><div class="event-sub mode-size-help">SMALL — размер одной карточки Mines/Crash. MEDIUM — ширина двух таких карточек. HIGH — блок 2×2, то есть четыре обычные карточки.</div></div>'
+      +'<div class="form-group"><label class="form-label">Изображение</label><div class="mode-image-picker-row"><div class="mode-editor-image-preview" id="modeEditorImagePreview">'+(item.image?'<img src="'+escapeHtml(item.image)+'" onerror="this.src=\'/static/img/gift.png\'">':'<span>Нет изображения</span>')+'</div><div class="mode-image-actions"><button type="button" class="btn btn-secondary btn-sm" onclick="openSiteImagePickerForMode()">Выбрать из каталога</button><button type="button" class="btn btn-secondary btn-sm" onclick="chooseModeImageUpload()">Загрузить файл</button><input type="file" id="modeEditorImageFile" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" style="display:none" onchange="uploadModeEditorImage()"></div></div><input class="form-input" id="modeEditorImage" value="'+escapeHtml(item.image||'')+'" placeholder="/static/img/..." style="margin-top:8px"></div>'
       +'<label class="event-mode-switch mode-visible-switch"><span><b>Показывать пользователям</b><small>Кнопка будет отображаться на странице Event</small></span><input type="checkbox" id="modeEditorVisible" '+(item.visible!==false?'checked':'')+'><span class="event-switch"></span></label>'
       +'<div class="btn-row mode-editor-buttons"><button class="btn btn-success" type="button" onclick="saveModeButtonEditor()">Сохранить</button><button class="btn btn-secondary" type="button" onclick="closeModal()">Отмена</button></div>'
       +'</div>';
@@ -1264,6 +1264,15 @@ async function saveModeButtonEditor(){
     }catch(e){showToast(e.message||'Ошибка сохранения','err');}
 }
 async function removeModeButton(sectionId,itemId){if(!confirm('Удалить эту кнопку?'))return;try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_mode_item',id:itemId});showToast('Кнопка удалена','ok');loadEvents()}catch(e){showToast(e.message||'Ошибка','err')}}
+
+document.addEventListener('change',function(ev){
+  var input=ev.target;
+  if(!input||input.name!=='modeEditorSize')return;
+  document.querySelectorAll('.mode-size-option').forEach(function(x){
+    var r=x.querySelector('input[name=\"modeEditorSize\"]');
+    x.classList.toggle('active',!!(r&&r.checked));
+  });
+});
 
 async function loadEvents(){
  var status=$('witchEventStatus');
