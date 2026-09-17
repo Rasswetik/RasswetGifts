@@ -353,12 +353,14 @@ img{display:block}
 .event-card{
     grid-column:1/-1;
     height:190px;
-    display:none;
+    display:block;
     border:1px solid rgba(208,141,255,.70);
     background:#16091f;
     box-shadow:0 16px 50px rgba(83,30,113,.24),inset 0 0 0 1px rgba(255,255,255,.04);
     cursor:pointer;
 }
+
+.event-card.is-hidden{display:none!important}
 
 .event-card:before{
     background-image:url("/static/img/banner_witchparty.webp");
@@ -875,7 +877,7 @@ img{display:block}
     <h1 class="page-title">Игры</h1>
 
     <section class="games-grid" id="gamesGrid">
-        <button class="game-card event-card" id="witchHatEvent" style="display:none" onclick="goTo('/event/witch-hat-party')" aria-label="Witch Hat Party">
+        <button class="game-card event-card is-hidden" id="witchHatEvent" onclick="goTo('/event/witch-hat-party')" aria-label="Witch Hat Party">
             <svg class="event-svg" viewBox="0 0 1000 190" preserveAspectRatio="none" aria-hidden="true">
                 <g class="spark spark-a" fill="#e9c6ff">
                     <circle cx="770" cy="30" r="3.2"/><circle cx="915" cy="46" r="2.2"/><circle cx="620" cy="57" r="2.8"/>
@@ -1086,21 +1088,18 @@ async function loadTopBar(){
 }
 
 async function loadHalloweenEvent(){
+    var card=$('witchHatEvent');
+    if(!card) return;
     try{
-        var r=await fetch('/api/events/witch-hat-party',{cache:'no-store'});
+        var r=await fetch('/api/events/witch-hat-party?ts='+Date.now(),{cache:'no-store'});
         var d=await r.json();
         var e=d.event||{};
-        var card=$('witchHatEvent');
-        if(!card) return;
-
-        clearInterval(window._eventTimer);
-
-        var crashCard = document.querySelector('.game-card.crash');
-        if(e.active){
+        var crashCard=document.querySelector('.game-card.crash');
+        var active=!!e.active;
+        card.classList.toggle('is-hidden',!active);
+        if(active){
             document.documentElement.classList.add('halloween-active');
             if(crashCard) crashCard.classList.add('witch-mode');
-            card.style.display='block';
-
             var left=Math.max(0,Number(e.remaining_seconds||0));
             function render(){
                 var total=Math.max(0,Math.floor(left));
@@ -1110,29 +1109,29 @@ async function loadHalloweenEvent(){
                 var sec=total%60;
                 var text=(days?days+'д ':'')+String(hours).padStart(2,'0')+':'+String(mins).padStart(2,'0')+':'+String(sec).padStart(2,'0');
                 var el=$('witchHatTimer');
-                if(el) el.textContent='Осталось '+text;
+                if(el) el.textContent=left>0?'Осталось '+text:'Ивент активен';
             }
+            clearInterval(window._eventTimer);
             render();
             window._eventTimer=setInterval(function(){
                 left=Math.max(0,left-1);
                 render();
+                // Never hide the card locally: the server is the source of truth.
+                // Re-read only when a finite timer expires.
                 if(left<=0){
                     clearInterval(window._eventTimer);
-                    card.style.display='none';
-                    document.documentElement.classList.remove('halloween-active');
+                    setTimeout(loadHalloweenEvent,1000);
                 }
             },1000);
         }else{
-            card.style.display='none';
+            clearInterval(window._eventTimer);
             if(crashCard) crashCard.classList.remove('witch-mode');
             document.documentElement.classList.remove('halloween-active');
         }
     }catch(e){
-        var card=$('witchHatEvent');
-        var crashCard = document.querySelector('.game-card.crash');
-        if(card) card.style.display='none';
-        if(crashCard) crashCard.classList.remove('witch-mode');
-        document.documentElement.classList.remove('halloween-active');
+        // A transient network error must not make an already visible event blink.
+        // Keep the current state and retry quietly.
+        setTimeout(loadHalloweenEvent,3000);
     }
 }
 
