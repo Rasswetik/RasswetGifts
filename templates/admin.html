@@ -197,8 +197,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 .case-gift-info{flex:1;min-width:0}
 .case-gift-name{font-weight:800;font-size:13px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .case-gift-meta{font-size:11px;color:rgba(255,255,255,.55);margin-top:2px;font-weight:600;display:flex;gap:8px;flex-wrap:wrap}
-.case-gift-chance{font-size:11px;color:#7CAEFF;font-weight:800;display:flex;align-items:center;gap:6px;flex-shrink:0}
-.case-gift-chance input{width:60px;padding:6px 8px;border-radius:8px;border:1.5px solid rgba(59,130,246,.3);background:rgba(0,0,0,.25);color:#fff;font-size:12px;font-weight:800;text-align:center;font-family:inherit}
 .case-gift-del{padding:6px 8px;border-radius:8px;background:rgba(255,48,100,.15);color:#FF3064;font-weight:800;font-size:14px;cursor:pointer;border:none;font-family:inherit;line-height:1}
 
 /* PICKER */
@@ -319,7 +317,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 </style>
 <style id="event-case-admin-v2">
 #page-cases .event-case-note{padding:10px 12px;border-radius:12px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.18);color:#d9b9ff;font-size:11px;line-height:1.45;margin-bottom:12px}
-#page-cases .case-gift-chance{display:none!important}
 </style>
 
 <style id="event-case-editor-fix-v1">
@@ -471,11 +468,10 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             </div>
             <button class="btn btn-primary" style="margin-top:10px" onclick="addEventGift()">+ Добавить подарок</button>
             <div id="eventGiftPreview" style="margin-top:10px"></div>
-            <div id="eventSectionsAdmin" style="margin-top:14px"></div><div class="event-actions"><button class="btn btn-primary" onclick="showSection('cases');setTimeout(function(){openCaseEditor(null)},50)">+ Создать Event-кейс</button></div>
+            <div id="eventSectionsAdmin" style="margin-top:14px"></div><div class="event-actions"><button class="btn btn-primary" onclick="openAddCaseFlow()">+ Добавить кейс</button></div>
             <div class="event-actions"><button class="btn btn-secondary" onclick="addEventSection()">+ Добавить раздел</button></div>
         </div>
-        <div class="card seasonal-case-admin" id="seasonal-case-admin" style="margin-top:14px"><div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span>Сезонный кейс</span><button class="action-btn" onclick="openSeasonalCaseEditor()">Настроить</button></div><div style="font-size:12px;color:rgba(255,255,255,.48);line-height:1.45">Кейс автоматически показывается только в заданный период сезона и использует те же кейсовые механики открытия.</div><div id="seasonalCaseStatus" class="event-status" style="margin-top:10px">Загрузка…</div></div>
-    </div>
+        </div>
 
     <!-- GAMES UI -->
     <div class="section-page" id="page-games-ui" style="display:none">
@@ -569,7 +565,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
     <div class="section-page" id="page-cases" style="display:none">
         <div class="section-header">
             <h2>🎃 Event-кейсы</h2>
-            <button class="action-btn" onclick="openCaseEditor(null)">+ Новый</button>
+            <button class="action-btn" onclick="openAddCaseFlow()">+ Добавить кейс</button>
         </div>
         <div id="casesList"><div class="loading">Загрузка</div></div>
     </div>
@@ -584,16 +580,15 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="card">
             <div class="card-title">Основное</div>
             <div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="ceName" placeholder="Starter"></div>
-            <div class="form-group"><label class="form-label">Ссылка / slug</label><input type="text" class="form-input" id="ceSlug" placeholder="starter"><div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:5px">Например: /case/starter</div></div>
             <div class="form-group"><label class="form-label">Цена, GRAM</label><input type="number" class="form-input" id="ceCost" placeholder="1.00" min="0" step="0.01"></div>
             <div class="form-group"><label class="form-label">Изображение кейса</label><input type="text" class="form-input" id="ceImage" placeholder="/static/gifs/cases/...">
                 <input type="file" id="ceImageFile" accept="image/png,image/jpeg,image/webp,image/gif" style="margin-top:8px;width:100%" onchange="uploadCaseImage()">
                 <div id="ceImagePreview" style="margin-top:8px"></div></div>
-            <div class="form-row" style="margin-top:8px"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="ceFree"> Бесплатный</label><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="cePromo"> Промо-кейс</label></div>
         </div>
 
         <div class="card">
-            <div class="card-title">Подарки в кейсе</div>
+            <div class="card-title">Наполнение кейса</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.48);line-height:1.45;margin:-4px 0 10px">Добавьте подарок из каталога или фиксированную сумму GRAM-баланса.</div>
             <div id="ceGiftsList"></div>
             <div class="btn-row" style="margin-top:10px">
                 <button class="btn btn-primary" onclick="openGiftPicker()">+ Подарок</button>
@@ -605,25 +600,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <button class="btn btn-success" onclick="saveCase()">💾 Сохранить</button>
             <button class="btn btn-danger" onclick="deleteCase()" id="ceDeleteBtn" style="display:none">🗑 Удалить</button>
         </div>
-    </div>
-
-
-    <!-- SEASONAL CASE EDITOR -->
-    <div class="section-page" id="page-seasonal-case" style="display:none">
-        <div class="section-header"><h2>🎃 Сезонный кейс</h2><button class="action-btn" onclick="showSection('events')">← Назад</button></div>
-        <div class="card">
-            <div class="card-title">Основное</div>
-            <div class="form-group"><label class="form-label">Кейс из раздела «Сезон»</label><select class="form-input" id="scSourceCase" onchange="selectSeasonalSource(this.value)"><option value="">Выберите созданный сезонный кейс</option></select><div style="font-size:11px;color:rgba(255,255,255,.42);margin-top:6px">ID вводить не нужно — здесь отображаются только уже созданные кейсы из раздела «Сезон».</div></div>
-            <div class="form-group"><label class="form-label">Показывать в сезоне</label><label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="scEnabled"> Включить</label></div>
-            <div class="form-group"><label class="form-label">Название</label><input class="form-input" id="scName" placeholder="Сезонный кейс"></div>
-            <div class="form-group"><label class="form-label">Изображение кейса</label><input class="form-input" id="scImage" placeholder="/static/img/..." ></div>
-            <div class="form-row"><div class="form-group"><label class="form-label">Цена</label><input type="number" min="0" step="0.01" class="form-input" id="scCost"></div><div class="form-group"><label class="form-label">Валюта</label><select class="form-input" id="scCostType"><option value="stars">GRAM</option><option value="ton">TON</option><option value="tickets">Билеты</option></select></div></div>
-            <div class="form-row"><div class="form-group"><label class="form-label">Начало сезона</label><input type="datetime-local" class="form-input" id="scStart"></div><div class="form-group"><label class="form-label">Конец сезона</label><input type="datetime-local" class="form-input" id="scEnd"></div></div>
-            <div class="form-row"><div class="form-group"><label class="form-label">Мин. уровень</label><input type="number" min="1" class="form-input" id="scLevel" value="1"></div><div class="form-group"><label class="form-label">Раздел</label><input class="form-input" id="scSection" value="season"></div></div>
-            <div class="form-group"><label class="form-label">Описание</label><textarea class="form-input" id="scDescription" rows="2"></textarea></div>
-        </div>
-        <div class="card"><div class="card-title">Подарки в сезонном кейсе</div><div id="scGiftsList"></div><div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" onclick="openSeasonalGiftPicker()">+ Подарок</button><button class="btn btn-warn" onclick="openSeasonalTonForm()">+ GRAM-баланс</button></div></div>
-        <div class="btn-row" style="margin-bottom:20px"><button class="btn btn-success" onclick="saveSeasonalCase()">💾 Сохранить сезонный кейс</button></div>
     </div>
 
     <!-- PROMO -->
@@ -1017,9 +993,9 @@ function goToProfile(){
 var currentSection = 'home';
 var SECTION_TITLES = {
     home: 'Главное меню', events: 'Events',
-    'seasonal-case': '🎃 Сезонный кейс', dashboard: '📊 Дашборд', crash: '🎮 Управление Краш',
-    users: '👥 Пользователи', gifts: '🎁 Подарки', cases: 'Архив',
-    'case-editor': 'Архив',
+    dashboard: '📊 Дашборд', crash: '🎮 Управление Краш',
+    users: '👥 Пользователи', gifts: '🎁 Подарки', cases: '🎃 Кейсы',
+    'case-editor': 'Кейс',
     promo: '🎟️ Промокоды', quests: '🎯 Задания',
     leaderboard: '🏆 Лидерборд', challenges: '🎁 NFT Отыгрыши',
     withdrawals: '💸 Выводы',
@@ -1041,9 +1017,8 @@ function showSection(name){
     try{ window.scrollTo({top: 0, behavior: 'instant'}); }catch(e){ window.scrollTo(0,0); }
 
     try{
-        if(name === 'events') { loadEvents(); loadSeasonalCaseStatus(); }
+        if(name === 'events') { loadEvents(); }
         if(name === 'games-ui') loadGamesUIAdmin();
-        if(name === 'seasonal-case') loadSeasonalCaseEditor();
         if(name === 'dashboard') loadStats();
         if(name === 'crash') loadCrashStatus();
         if(name === 'users') loadUsers();
@@ -1180,7 +1155,7 @@ function renderEventSections(events){
        '<label class="event-mode-switch" style="margin-top:8px"><span><b>Показывать режим</b><small>Режим можно скрыть, но удалить нельзя</small></span><input class="ev-mode-visible" type="checkbox" '+(item.visible!==false?'checked':'')+'><span class="event-switch"></span></label>';
    } else if(sec.type==='cases'){
      var ids=sec.case_ids||[];
-     content='<div class="event-section-tools"><button class="btn btn-primary btn-sm event-add-case" data-section-id="'+escapeHtml(sid)+'">+ Добавить из кейсов</button></div>'+
+     content='<div class="event-section-tools"><button class="btn btn-primary btn-sm event-add-case" data-section-id="'+escapeHtml(sid)+'">+ Добавить кейс</button></div>'+
        '<div class="event-mini-list event-case-admin-list">'+(ids.length?ids.map(function(id){return '<div class="event-mini event-case-admin" data-section-id="'+escapeHtml(sid)+'" data-case-id="'+escapeHtml(String(id))+'"><span>Загрузка кейса #'+escapeHtml(String(id))+'…</span><button class="event-remove-case" type="button">✕</button></div>';}).join(''):'<span class="event-sub">Кейсы события пока не привязаны</span>')+'</div>';
    } else if(sec.type==='market'){
      var items=sec.items||[];
@@ -1233,17 +1208,54 @@ async function saveEventSettings(){try{await eventAdminPost({event_id:'witch_hat
 async function saveEventContentSettings(){return saveEventSettings()}
 async function addEventSection(){var title=prompt('Название нового раздела');if(!title)return;var type=confirm('Это Market-раздел? Нажмите ОК для Market, Отмена — для кейсов.')?'market':'cases';try{await eventAdminPost({event_id:'witch_hat_party',action:'add_section',title:title,type:type});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function removeEventSection(id){if(!confirm('Удалить раздел?'))return;try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_section',section_id:id});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
-async function addEventCase(sectionId){
+async function openAddCaseFlow(sectionId){
+    sectionId = sectionId || null;
+    if(!sectionId && eventAdminData && Array.isArray(eventAdminData.sections)){
+        var defaultCaseSection = eventAdminData.sections.find(function(x){ return x && x.type === 'cases'; });
+        if(defaultCaseSection) sectionId = String(defaultCaseSection.id || '');
+    }
     try{
-        var r=await fetch('/api/cases?ts='+Date.now()), d=await r.json();
-        if(!d.success) throw Error(d.error||'Не удалось загрузить кейсы');
-        var cases=(d.cases||[]).filter(function(c){ return !!c.event_case || (Array.isArray(c.tags) && c.tags.some(function(t){ return String(t).toLowerCase()==='event'; })); });
-        if(!cases.length){showToast('Нет созданных кейсов','err');return;}
-        openPicker('Добавить кейс в событие',cases,function(item){
-            eventAdminPost({event_id:'witch_hat_party',action:'add_case',section_id:sectionId,case_id:item.id}).then(function(){showToast('Кейс добавлен','ok');loadEvents();}).catch(function(e){showToast(e.message||'Ошибка','err');});
-        });
-    }catch(e){showToast(e.message||'Ошибка загрузки кейсов','err');}
+        var r = await fetch('/api/cases?ts='+Date.now(), {cache:'no-store'});
+        var d = await r.json();
+        if(!d.success) throw Error(d.error || 'Не удалось загрузить кейсы');
+        var cases = d.cases || [];
+        if(!cases.length){
+            openCaseEditor(null, sectionId);
+            return;
+        }
+        var html =
+            '<div class="modal-title">➕ Добавить кейс</div>' +
+            '<div style="font-size:13px;color:rgba(255,255,255,.62);line-height:1.5;margin-bottom:14px">Выберите уже созданный кейс или создайте новый.</div>' +
+            '<div class="btn-row" style="display:grid;grid-template-columns:1fr;gap:10px">' +
+            '<button class="btn btn-primary" id="addCaseExistingBtn">Выбрать из существующих</button>' +
+            '<button class="btn btn-success" id="addCaseNewBtn">Создать новый</button>' +
+            '<button class="btn btn-secondary" onclick="closeModal()">Отмена</button>' +
+            '</div>';
+        openModal(html);
+        $('addCaseExistingBtn').onclick = function(){
+            closeModal();
+            openPicker('Выбрать существующий кейс', cases, function(item){
+                if(sectionId){
+                    eventAdminPost({event_id:'witch_hat_party', action:'add_case', section_id:sectionId, case_id:item.id})
+                        .then(function(){showToast('Кейс добавлен','ok');loadEvents();})
+                        .catch(function(e){showToast(e.message||'Ошибка','err');});
+                }else{
+                    showSection('cases');
+                    setTimeout(function(){loadCasesList();},50);
+                    showToast('Кейс выбран','ok');
+                }
+            });
+        };
+        $('addCaseNewBtn').onclick = function(){
+            closeModal();
+            openCaseEditor(null, sectionId);
+        };
+    }catch(e){
+        showToast(e.message || 'Ошибка загрузки кейсов','err');
+    }
 }
+
+async function addEventCase(sectionId){ return openAddCaseFlow(sectionId); }
 async function removeEventCase(sectionId,id){try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_case',case_id:id});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function addEventGift(){
  var url=($('eventGiftUrlInput')&&$('eventGiftUrlInput').value||'').trim();var price=parseFloat($('eventGiftPriceInput')&&$('eventGiftPriceInput').value||0);var section=($('eventGiftSectionInput')&&$('eventGiftSectionInput').value||'market').trim()||'market';
@@ -1253,80 +1265,6 @@ async function addEventGift(){
 async function removeEventGift(url){try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_market_gift',gift_url:url});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function addEventMarket(sectionId){showToast('Для нового магазина добавляйте конкретную ссылку на подарок','err')}
 async function removeEventMarket(slug){try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_market_collection',fragment_slug:slug});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
-
-/* ══════════════════════════════════════════════════════════════
-   SEASONAL CASE
-   ══════════════════════════════════════════════════════════════ */
-var seasonalCaseData = null;
-var seasonalCaseGifts = [];
-function dtLocalValue(v){
-    if(!v) return '';
-    try{ var d=new Date(v); if(isNaN(d.getTime())) return ''; var off=d.getTimezoneOffset(); d=new Date(d.getTime()-off*60000); return d.toISOString().slice(0,16); }catch(e){ return ''; }
-}
-function dtIso(v){
-    if(!v) return null;
-    try{ return new Date(v).toISOString(); }catch(e){ return null; }
-}
-async function loadSeasonalCaseStatus(){
-    try{ var r=await fetch('/api/admin/seasonal-case?admin_id='+ADMIN_ID+'&ts='+Date.now()); var d=await r.json(); if(!d.success) throw Error(d.error||'Ошибка'); var c=d.case||{}; $('seasonalCaseStatus').textContent=(d.active?'🟢 Сезонный кейс сейчас показывается':'⚪ Сезонный кейс не показывается')+' · '+(c.name||'Без названия')+(c.season_start?' · '+new Date(c.season_start).toLocaleString('ru-RU'):''); }catch(e){ if($('seasonalCaseStatus')) $('seasonalCaseStatus').textContent='Ошибка: '+e.message; }
-}
-function openSeasonalCaseEditor(){ showSection('seasonal-case'); }
-async function loadSeasonalCaseEditor(){
-    try{
-        var results=await Promise.all([
-            fetch('/api/admin/seasonal-case?admin_id='+ADMIN_ID+'&ts='+Date.now()),
-            fetch('/api/admin/seasonal-case/options?admin_id='+ADMIN_ID+'&ts='+Date.now())
-        ]);
-        var d=await results[0].json(), o=await results[1].json();
-        if(!d.success) throw Error(d.error||'Ошибка загрузки сезонного кейса');
-        if(!o.success) throw Error(o.error||'Ошибка загрузки списка сезонных кейсов');
-        seasonalCaseData=d.case||{}; seasonalCaseGifts=(seasonalCaseData.gifts||[]).slice();
-        var select=$('scSourceCase');
-        if(select){
-            select.innerHTML='<option value="">Выберите созданный сезонный кейс</option>'+(o.cases||[]).map(function(c){
-                return '<option value="'+escapeHtml(String(c.id))+'">'+escapeHtml(c.name||('Кейс #'+c.id))+'</option>';
-            }).join('');
-            if(seasonalCaseData.source_case_id!=null) select.value=String(seasonalCaseData.source_case_id);
-        }
-        $('scEnabled').checked=!!seasonalCaseData.enabled; $('scName').value=seasonalCaseData.name||'Сезонный кейс'; $('scImage').value=seasonalCaseData.image||''; $('scCost').value=seasonalCaseData.cost||0; $('scCostType').value=seasonalCaseData.cost_type||'stars'; $('scStart').value=dtLocalValue(seasonalCaseData.season_start); $('scEnd').value=dtLocalValue(seasonalCaseData.season_end); $('scLevel').value=seasonalCaseData.required_level||1; $('scSection').value=seasonalCaseData.section||'season'; $('scDescription').value=seasonalCaseData.description||''; renderSeasonalGifts();
-    }catch(e){ showToast(e.message||'Ошибка загрузки сезонного кейса','err'); }
-}
-function selectSeasonalSource(id){
-    if(!id) return;
-    fetch('/api/cases/'+encodeURIComponent(id)+'?ts='+Date.now()).then(function(r){return r.json()}).then(function(d){
-        if(!d.success) throw Error(d.error||'Не удалось загрузить кейс');
-        var c=d.case||{}; seasonalCaseData=c; seasonalCaseData.source_case_id=c.id;
-        $('scName').value=c.name||''; $('scImage').value=c.image||''; $('scCost').value=c.cost||0; $('scCostType').value=c.cost_type||'stars'; $('scLevel').value=c.required_level||1; $('scSection').value=c.section||'season'; $('scDescription').value=c.description||'';
-        seasonalCaseGifts=(c.gifts||c.gifts_details||[]).map(function(g){return {id:g.id,gift_key:g.gift_key||'',name:g.name,image:g.image,value:g.value||0,fragment_slug:g.fragment_slug||'',type:g.type||'gift',chance:g.chance==null?1:g.chance,ton_amount:g.ton_amount};});
-        renderSeasonalGifts(); showToast('Кейс выбран','ok');
-    }).catch(function(e){showToast(e.message||'Ошибка выбора кейса','err');});
-}
-
-function renderSeasonalGifts(){
-    var el=$('scGiftsList'); if(!el)return;
-    if(!seasonalCaseGifts.length){el.innerHTML='<div class="empty">Подарков пока нет</div>';return;}
-    el.innerHTML=seasonalCaseGifts.map(function(g,i){return '<div class="list-item" style="cursor:default"><div class="avatar" style="border-radius:10px"><img src="'+escapeHtml(g.image||'/static/img/gift.png')+'" onerror="this.src=\'/static/img/gift.png\'"></div><div class="info"><div class="name">'+escapeHtml(g.name||'Подарок')+'</div><div class="meta">Шанс: '+(g.chance??1)+'</div></div><button class="btn btn-danger btn-sm" onclick="seasonalCaseGifts.splice('+i+',1);renderSeasonalGifts()">✕</button></div>';}).join('');
-}
-function openSeasonalGiftPicker(){
-    if(!allGifts.length){ showToast('Загрузка каталога...', 'ok'); loadGifts().then(openSeasonalGiftPicker); return; }
-    openPicker('Выбрать подарок', allGifts, function(item){
-        seasonalCaseGifts.push({id:item.id,gift_key:item.gift_key||'',name:item.name,image:item.image,value:item.value||0,fragment_slug:item.fragment_slug||'',type:'gift',chance:10});
-        renderSeasonalGifts(); showToast('Подарок добавлен','ok');
-    });
-}
-function openSeasonalTonForm(){
-    var html='<div class="modal-title">💰 GRAM-баланс в сезонный кейс</div>' +
-      '<div class="form-group"><label class="form-label">Количество GRAM</label><input type="number" class="form-input" id="scTonAmount" placeholder="5" min="0.01" step="0.01"></div>' +
-      '<div class="form-group"><label class="form-label">Шанс (вес)</label><input type="number" class="form-input" id="scTonChance" value="10" min="1"></div>' +
-      '<div class="btn-row"><button class="btn btn-success" onclick="addSeasonalTon()">Добавить</button><button class="btn btn-secondary" onclick="closeModal()">Отмена</button></div>';
-    openModal(html);
-}
-function addSeasonalTon(){ var n=parseFloat($('scTonAmount').value)||0, ch=parseFloat($('scTonChance').value)||10; if(n<=0){showToast('Введите сумму','err');return;} seasonalCaseGifts.push({type:'ton_balance',ton_amount:n,chance:ch}); renderSeasonalGifts(); closeModal(); showToast('GRAM-баланс добавлен','ok'); }
-async function saveSeasonalCase(){
-    var payload={admin_id:ADMIN_ID,source_case_id:$('scSourceCase').value||null,enabled:$('scEnabled').checked,name:$('scName').value.trim(),image:$('scImage').value.trim(),cost:parseFloat($('scCost').value)||0,cost_type:$('scCostType').value,season_start:dtIso($('scStart').value),season_end:dtIso($('scEnd').value),required_level:parseInt($('scLevel').value)||1,section:$('scSection').value.trim()||'season',description:$('scDescription').value,gifts:seasonalCaseGifts};
-    if(!payload.name){showToast('Введите название','err');return;} if(payload.season_start&&payload.season_end&&new Date(payload.season_end)<=new Date(payload.season_start)){showToast('Конец сезона должен быть позже начала','err');return;}
-    try{var r=await fetch('/api/admin/seasonal-case',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');showToast('Сезонный кейс сохранён','ok');showSection('events');}catch(e){showToast(e.message||'Ошибка сохранения','err');}
-}
 
 /* ══════════════════════════════════════════════════════════════
    DASHBOARD
@@ -1667,22 +1605,20 @@ async function loadCasesList(){
         }
     }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
 }
-function openCaseEditor(caseId){
+function openCaseEditor(caseId, eventSectionId){
     currentCase = null;
     caseGifts = [];
 
     if(caseId === null){
-        currentCase = { id: null };
-        $('caseEditorTitle').textContent = '➕ Новый Event-кейс';
+        currentCase = { id: null, event_section_id: eventSectionId || null };
+        $('caseEditorTitle').textContent = '➕ Новый кейс';
         $('ceDeleteBtn').style.display = 'none';
         $('ceName').value = '';
-        $('ceSlug').value = '';
         $('ceCost').value = '1.00';
         $('ceImage').value = '';
         $('ceImageFile').value = '';
         $('ceImagePreview').innerHTML = '';
-        $('ceDescription').value = '';
-        $('ceLimited').value = 'false'; $('ceAmount').value = '0'; $('ceOrder').value = '0'; $('ceTime').value = '24H'; $('ceTags').value = ''; $('ceFree').checked = false; $('cePromo').checked = false;
+
     } else {
         var c = allCases.find(function(x){ return x.id === caseId; });
         if(!c){ showToast('Кейс не найден', 'err'); return; }
@@ -1691,13 +1627,11 @@ function openCaseEditor(caseId){
         $('caseEditorTitle').textContent = '✎ ' + c.name;
         $('ceDeleteBtn').style.display = 'flex';
         $('ceName').value = c.name || '';
-        $('ceSlug').value = c.slug || '';
         $('ceCost').value = ((c.cost_type === 'ton' ? Number(c.cost || 0) : Number(c.cost || 0) / 100)).toFixed(2);
         $('ceImage').value = c.image || '';
         $('ceImageFile').value = '';
         $('ceImagePreview').innerHTML = c.image ? '<img src="' + escapeHtml(c.image) + '" style="width:90px;height:90px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.25)">' : '';
-        $('ceDescription').value = c.description || '';
-        $('ceLimited').value = String(!!c.limited); $('ceAmount').value = c.amount || 0; $('ceOrder').value = c.display_order || 0; $('ceTime').value = c.time || '24H'; $('ceTags').value = (c.tags || []).join(', '); $('ceFree').checked = !!c.free; $('cePromo').checked = !!c.promo;
+
     }
 
     renderCaseGifts();
@@ -1715,24 +1649,18 @@ function renderCaseGifts(){
         var img = isTon ? '/static/img/ton.png' : (g.image || '/static/img/gift.png');
         var name = isTon ? (g.ton_amount + ' грамм') : (g.name || 'Gift');
         var price = isTon ? (g.ton_amount + ' грамм') : ((g.value || 0) / 100).toFixed(2) + ' грамм';
-        var chance = g.chance || 1;
         return '<div class="case-gift-row">' +
             '<img class="case-gift-img" src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'">' +
             '<div class="case-gift-info">' +
             '<div class="case-gift-name">' + escapeHtml(name) + '</div>' +
             '<div class="case-gift-meta"><span>' + escapeHtml(price) + '</span><span>' + (isTon ? 'GRAM' : 'Подарок') + '</span></div>' +
             '</div>' +
-            '<div class="case-gift-chance">' +
-            '<input type="number" value="' + chance + '" min="1" onchange="updateCaseGiftChance(' + i + ', this.value)">' +
-            '</div>' +
             '<button class="case-gift-del" onclick="removeCaseGift(' + i + ')">✕</button>' +
             '</div>';
     }).join('');
 }
 function updateCaseGiftChance(idx, val){
-    var chance = parseInt(val) || 1;
-    if(chance < 1) chance = 1;
-    caseGifts[idx].chance = chance;
+    // Randomized drop-weight editing is intentionally not exposed here.
 }
 function removeCaseGift(idx){
     caseGifts.splice(idx, 1);
@@ -1752,8 +1680,7 @@ function openGiftPicker(){
             image: item.image,
             value: item.value,
             fragment_slug: item.fragment_slug || '',
-            type: 'gift',
-            chance: 10
+            type: 'gift'
         });
         renderCaseGifts();
         showToast('Подарок добавлен', 'ok');
@@ -1763,7 +1690,6 @@ function openTonBalanceForm(){
     var html =
         '<div class="modal-title">💰 GRAM-баланс в кейс</div>' +
         '<div class="form-group"><label class="form-label">Количество GRAM</label><input type="number" class="form-input" id="tonBalAmount" placeholder="5" min="1" step="1"></div>' +
-        '<div class="form-group"><label class="form-label">Шанс (вес)</label><input type="number" class="form-input" id="tonBalChance" value="10" min="1"></div>' +
         '<div class="btn-row">' +
         '<button class="btn btn-success" onclick="addTonBalance()">Добавить</button>' +
         '<button class="btn btn-secondary" onclick="closeModal()">Отмена</button>' +
@@ -1772,9 +1698,8 @@ function openTonBalanceForm(){
 }
 function addTonBalance(){
     var amt = parseInt($('tonBalAmount').value) || 0;
-    var chance = parseInt($('tonBalChance').value) || 10;
     if(amt <= 0){ showToast('Введите сумму', 'err'); return; }
-    caseGifts.push({ type: 'ton_balance', ton_amount: amt, chance: chance });
+    caseGifts.push({ type: 'ton_balance', ton_amount: amt });
     renderCaseGifts();
     closeModal();
     showToast('GRAM-баланс добавлен', 'ok');
@@ -1795,19 +1720,20 @@ async function uploadCaseImage(){
 
 async function saveCase(){
     var name = ($('ceName').value || '').trim();
-    var slug = ($('ceSlug').value || '').trim();
+    var slug = (currentCase && currentCase.slug || '').trim();
+    if(!slug) slug = name.toLowerCase().replace(/[^a-z0-9а-яё]+/gi,'-').replace(/^-+|-+$/g,'').slice(0,48) || ('case-'+Date.now());
     var gramCost = parseFloat($('ceCost').value) || 0;
     var cost = Math.round(gramCost * 100);
     var cost_type = 'stars';
     var image = ($('ceImage').value || '').trim();
-    var description = ($('ceDescription').value || '').trim();
+    var description = '';
 
     if(!name){ showToast('Введите название', 'err'); return; }
     if(!caseGifts.length){ showToast('Добавьте хотя бы один подарок', 'err'); return; }
 
     var payload = {
         admin_id: ADMIN_ID, name: name, slug: slug, cost: cost, cost_type: cost_type,
-        image: image, description: description, gifts: caseGifts, event_case: true, section: 'event', limited: false, amount: 0, display_order: (currentCase && currentCase.display_order) || 0, time: '24H', tags: ['event'], free: $('ceFree').checked, promo: $('cePromo').checked
+        image: image, description: description, gifts: caseGifts, event_case: true, section: 'event', limited: false, amount: 0, display_order: (currentCase && currentCase.display_order) || 0, time: '24H', tags: ['event'], free: false, promo: false
     };
 
     try{
@@ -1823,9 +1749,21 @@ async function saveCase(){
         if(!r.ok && !d.error) d.error='HTTP '+r.status;
         if(d.success){
             currentCase = d.case || currentCase;
-            showToast('Event-кейс сохранён', 'ok');
-            showSection('events');
-            setTimeout(function(){ loadEvents(); }, 80);
+            var savedCaseId = currentCase && currentCase.id;
+            var eventSectionId = currentCase && currentCase.event_section_id;
+            if(savedCaseId && eventSectionId){
+                try{
+                    await eventAdminPost({event_id:'witch_hat_party', action:'add_case', section_id:eventSectionId, case_id:savedCaseId});
+                }catch(bindErr){
+                    showToast('Кейс создан, но не удалось добавить его в Event: '+(bindErr.message||'ошибка'),'err');
+                    showSection('events');
+                    setTimeout(function(){ loadEvents(); }, 80);
+                    return;
+                }
+            }
+            showToast('Кейс сохранён', 'ok');
+            showSection(eventSectionId ? 'events' : 'cases');
+            setTimeout(function(){ eventSectionId ? loadEvents() : loadCasesList(); }, 80);
         } else showToast(d.error || 'Ошибка сохранения кейса', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
@@ -1838,7 +1776,7 @@ async function deleteCase(){
             body: JSON.stringify({admin_id: ADMIN_ID, id: currentCase.id})
         });
         var d = await r.json();
-        if(d.success){ showToast('Event-кейс удалён', 'ok'); showSection('events'); }
+        if(d.success){ showToast('Кейс удалён', 'ok'); showSection('events'); }
         else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
