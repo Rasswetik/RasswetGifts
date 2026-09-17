@@ -2832,6 +2832,31 @@ def _event_market_item_from_collection(collection):
     floor=listings[0]['price_ton'] if listings else _fetch_fragment_collection_price(slug)
     return {'collection':name,'fragment_slug':slug,'image':image,'floor_ton':round(float(floor),4) if floor is not None else None,'listings':listings}
 
+def _sync_event_cases(ev):
+    """Attach cases explicitly marked for Event to the first case section."""
+    try:
+        all_cases = get_public_cases_with_seasonal()
+        auto_ids=[]
+        for c in all_cases:
+            section=str(c.get('section') or '').strip().lower()
+            tags=[str(x).strip().lower() for x in (c.get('tags') or [])]
+            if section in ('event','witch_hat_party') or 'event' in tags or 'witch_hat_party' in tags:
+                auto_ids.append(str(c.get('id')))
+        if not auto_ids: return False
+        sections=ev.setdefault('sections',[])
+        sec=next((x for x in sections if x.get('type')=='cases'),None)
+        if sec is None:
+            sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}
+            sections.insert(0,sec)
+        ids=[str(x) for x in sec.get('case_ids',[])]
+        changed=False
+        for cid in auto_ids:
+            if cid not in ids: ids.append(cid); changed=True
+        sec['case_ids']=ids
+        return changed
+    except Exception:
+        return False
+
 def get_active_events():
     events = load_events()
     now = datetime.utcnow()
@@ -8489,6 +8514,8 @@ def api_events():
 def api_witch_hat_party():
     ev=dict(get_active_events().get('witch_hat_party',EVENT_DEFAULTS['witch_hat_party']))
     try:
+        _sync_event_cases(ev)
+
         end=datetime.fromisoformat(str(ev['ends_at']).replace('Z','+00:00')) if ev.get('ends_at') else None
         if end and end.tzinfo:
             from datetime import timezone; end=end.astimezone(timezone.utc).replace(tzinfo=None)
@@ -8514,6 +8541,122 @@ def api_witch_hat_market():
         return jsonify({'success':True,'items':items,'sections':ev.get('sections',[])})
     except Exception as e: return jsonify({'success':False,'error':str(e)}),500
 
+# Event market: every manually added gift is a single stock item.
+@app.route('/api/events/witch-hat-party/market/buy', methods=['POST'])
+def api_witch_hat_market_buy():
+    import random as _rnd
+    conn = None
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        user_id = int(data.get('user_id'))
+        gift_url = str(data.get('gift_url') or '').strip()
+        if not gift_url:
+            return jsonify({'success': False, 'error': 'Подарок не указан'}), 400
+
+        # Resolve current event item first; stock is exactly one.
+        events = get_active_events()
+        ev = events.get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party'])
+        found = None
+        found_sec = None
+        found_idx = -1
+        for sec in ev.get('sections', []):
+            if sec.get('type') != 'market':
+                continue
+            for i, item in enumerate(sec.get('items', [])):
+                if str(item.get('gift_url') or '').strip().lower() == gift_url.lower():
+                    found, found_sec, found_idx = item, sec, i
+                    break
+            if found: break
+        if not found:
+            return jsonify({'success': False, 'error': 'Этот подарок уже куплен или больше не доступен'}), 404
+
+        price_gram = float(found.get('price_gram') or found.get('price_ton') or 0)
+        price_stars = int(round(price_gram * 100))
+        if price_stars <= 0:
+            return jsonify({'success': False, 'error': 'Некорректная цена подарка'}), 400
+
+        slug = str(found.get('fragment_slug') or '').strip()
+        nft_number = int(found.get('number') or 0)
+        gift_name = str(found.get('name') or 'Подарок').strip()
+        gift_image = str(found.get('image') or '').strip()
+        if slug and nft_number > 0:
+            gift_image = f'https://nft.fragment.com/gift/{slug}-{nft_number}.webp'
+            if not gift_name.lower().endswith(f'#{nft_number}'.lower()):
+                gift_name = f'{gift_name} #{nft_number}'
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT balance_stars, is_banned FROM users WHERE id = ?', (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close(); conn = None
+            return jsonify({'success': False, 'error': 'Пользователь не найден'}), 404
+        balance = int(row[0] or 0)
+        if bool(row[1] if len(row) > 1 else False):
+            conn.close(); conn = None
+            return jsonify({'success': False, 'error': 'Вы заблокированы'}), 403
+        if balance < price_stars:
+            conn.close(); conn = None
+            return jsonify({'success': False, 'error': 'Недостаточно GRAM'}), 400
+
+        # Remove the one available item in the same logical purchase operation.
+        # The in-process lock is backed by the shared DB transaction for the
+        # actual balance/inventory update.
+        try:
+            if USE_POSTGRES:
+                cursor.execute('SAVEPOINT sp_event_market')
+        except Exception:
+            pass
+        cursor.execute('UPDATE users SET balance_stars = balance_stars - ? WHERE id = ?', (price_stars, user_id))
+        inv_columns = _get_inventory_columns(cursor)
+        cols = ['user_id','gift_id','gift_name','gift_image','gift_value']
+        vals = [user_id, None, gift_name, gift_image, price_stars]
+        if 'fragment_slug' in inv_columns and slug:
+            cols.append('fragment_slug'); vals.append(slug)
+        if 'nft_number' in inv_columns and nft_number:
+            cols.append('nft_number'); vals.append(nft_number)
+        cursor.execute(f"INSERT INTO inventory ({', '.join(cols)}) VALUES ({', '.join(['?']*len(cols))})", vals)
+        inv_id = cursor.lastrowid
+        try:
+            cursor.execute("INSERT INTO user_history (user_id, operation_type, amount, description) VALUES (?, 'event_market_buy', ?, ?)",
+                           (user_id, -price_stars, f'Покупка Event: {gift_name}'))
+        except Exception as e:
+            logger.warning('Event market history insert failed: %s', e)
+        try:
+            cursor.execute('SELECT first_name FROM users WHERE id = ?', (user_id,))
+            uname_row = cursor.fetchone(); uname = (uname_row[0] if uname_row and uname_row[0] else f'User_{user_id}')
+            cursor.execute("INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name) VALUES (?, ?, ?, ?, ?, 'Event Market')",
+                           (user_id, uname, gift_name, gift_image, price_stars))
+        except Exception as e:
+            logger.warning('Event market win history insert failed: %s', e)
+
+        cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+        new_balance = int((cursor.fetchone() or [balance-price_stars])[0] or 0)
+        conn.commit(); conn.close(); conn = None
+
+        # Persist removal only after the user transaction succeeded. If another
+        # request races here, its stock lookup will normally see the same process
+        # state; the event item is then removed from the shared config.
+        found_sec['items'].pop(found_idx)
+        save_events(events)
+        try: _user_balance_cache.pop(user_id, None)
+        except Exception: pass
+        try: _user_cache.pop(user_id, None)
+        except Exception: pass
+        try: add_experience(user_id, price_stars, f'Event Market buy {gift_name}')
+        except Exception: pass
+        return jsonify({'success': True, 'gift_name': gift_name, 'gift_image': gift_image,
+                        'animation': found.get('animation') or '', 'price_gram': price_gram,
+                        'price_stars': price_stars, 'new_balance': new_balance, 'inventory_id': inv_id})
+    except Exception as e:
+        logger.error('Event market buy error: %s\n%s', e, traceback.format_exc())
+        if conn:
+            try: conn.rollback()
+            except Exception: pass
+            try: conn.close()
+            except Exception: pass
+        return jsonify({'success': False, 'error': 'Ошибка покупки, попробуйте ещё раз'}), 500
+
 @app.route('/api/admin/events',methods=['GET','POST'])
 def admin_events():
     try:
@@ -8521,6 +8664,7 @@ def admin_events():
         if str(admin_id)!=str(ADMIN_ID): return jsonify({'success':False,'error':'Доступ запрещён'}),403
         events=get_active_events(); eid=str(data.get('event_id') or 'witch_hat_party')
         if eid not in events: return jsonify({'success':False,'error':'Ивент не найден'}),404
+        if _sync_event_cases(events[eid]): save_events(events)
         if request.method=='POST':
             ev=events[eid]; action=str(data.get('action') or 'toggle')
             if action=='update_settings':
@@ -8821,7 +8965,10 @@ def open_case():
         total_cost = case['cost'] * quantity
         # Convert TON to stars if cost_type is 'ton' (1 TON = 100 stars).
         # Keep TON as a float for display/XP, but use an integer star amount for DB balance operations.
-        cost_in_stars = int(round(total_cost * 100)) if case.get('cost_type') == 'ton' else int(round(total_cost))
+        # Seasonal cases store their admin price in displayed GRAM while regular
+        # cases keep the legacy integer balance units. Convert seasonal GRAM to
+        # the internal balance units as well.
+        cost_in_stars = int(round(total_cost * 100)) if (case.get('cost_type') == 'ton' or case.get('seasonal')) else int(round(total_cost))
         
         if case['cost'] > 0:
             if case['cost_type'] in ['stars', 'ton'] and balance_stars < cost_in_stars:
