@@ -310,6 +310,9 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 .event-theme-toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);cursor:pointer}
 .event-theme-toggle span{display:flex;flex-direction:column;gap:3px;min-width:0}.event-theme-toggle b{font-size:13px;color:#fff}.event-theme-toggle small{font-size:10px;color:rgba(255,255,255,.42);line-height:1.35}
 .event-theme-toggle input{position:absolute;opacity:0;pointer-events:none}.event-theme-toggle i{width:46px;height:26px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.08);position:relative;flex:0 0 46px;transition:.2s}.event-theme-toggle i:after{content:'';position:absolute;width:20px;height:20px;left:2px;top:2px;border-radius:50%;background:#aaa;transition:.2s;box-shadow:0 2px 6px rgba(0,0,0,.3)}.event-theme-toggle input:checked+i{background:linear-gradient(135deg,#7c3aed,#c026d3);border-color:rgba(192,38,211,.55)}.event-theme-toggle input:checked+i:after{left:22px;background:#fff}
+<style id="games-ui-admin-v1">
+.games-ui-list{display:flex;flex-direction:column;gap:12px}.games-ui-section{border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.025);padding:14px}.games-ui-section.mandatory{border-color:rgba(168,85,247,.35);box-shadow:0 8px 28px rgba(70,30,100,.12)}.games-ui-head{display:flex;align-items:center;gap:10px}.games-ui-head strong{font-size:14px;flex:1}.games-ui-fields{display:grid;grid-template-columns:1fr 110px 110px;gap:8px;margin-top:10px}.games-ui-items{display:flex;flex-direction:column;gap:8px;margin-top:10px}.games-ui-item{display:grid;grid-template-columns:48px 1fr 150px auto;gap:9px;align-items:center;padding:9px;border-radius:12px;background:rgba(255,255,255,.035)}.games-ui-item img{width:48px;height:48px;object-fit:contain;border-radius:10px;background:rgba(0,0,0,.16)}.games-ui-item .mini{font-size:10px;color:rgba(255,255,255,.45);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.games-ui-lock{display:flex;align-items:center;gap:7px;font-size:11px;color:#b9c5d8}.games-ui-lock input{accent-color:#8b5cf6}.games-ui-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.games-ui-note{font-size:11px;color:rgba(255,255,255,.48);line-height:1.45;margin-top:8px}@media(max-width:700px){.games-ui-fields{grid-template-columns:1fr}.games-ui-item{grid-template-columns:42px 1fr;}.games-ui-item .item-controls{grid-column:1/-1}.games-ui-item img{width:42px;height:42px}}
+</style>
 </style><style id="gram-only-admin-v11">
 /* В кейсах используется только GRAM. Старые селекторы валюты не показываем. */
 #ceCostType,#ceSection,#ceRequiredLevel,#ceDescription,#ceLimited,#ceAmount,#ceOrder,#ceTime,#ceTags{display:none!important}
@@ -343,6 +346,10 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                     <div class="tile-icon"><img src="/static/img/witchhat.png" style="width:34px;height:34px;object-fit:contain" alt=""></div>
                     <div><div class="tile-text">Events</div><div class="tile-sub">Управление ивентами</div></div>
                 </button>
+                <button class="tile-btn tile-purple" style="display:none" onclick="showSection('games-ui')">
+                    <div class="tile-icon"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></div>
+                    <div><div class="tile-text">Games UI</div><div class="tile-sub">Разделы и особые режимы</div></div>
+                </button>
                 <button class="tile-btn tile-blue" onclick="showSection('dashboard')">
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
                     <div><div class="tile-text">Дашборд</div><div class="tile-sub">Статистика и банк</div></div>
@@ -359,9 +366,9 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></div>
                     <div><div class="tile-text">Подарки</div><div class="tile-sub">Каталог</div></div>
                 </button>
-                <button class="tile-btn tile-orange" onclick="showSection('cases')">
-                    <div class="tile-icon"><svg viewBox="0 0 24 24"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/></svg></div>
-                    <div><div class="tile-text">Кейсы</div><div class="tile-sub">Подарки, шансы</div></div>
+                <button class="tile-btn tile-orange" onclick="goToProfile()">
+                    <div class="tile-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                    <div><div class="tile-text">Профиль</div><div class="tile-sub">Аккаунт администратора</div></div>
                 </button>
                 <button class="tile-btn tile-pink" onclick="showSection('promo')">
                     <div class="tile-icon"><svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
@@ -434,6 +441,18 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <button class="btn btn-success" onclick="saveEventSettings()" style="margin-top:10px">Сохранить настройки</button>
         </div>
         <div class="card" style="margin-top:14px">
+            <div class="card-title">Содержимое Event</div>
+            <div class="event-sub" style="margin-bottom:10px">Кнопка «Событие» в Games и содержимое Event управляются здесь. Ghost Road — особый режим внутри Witch Hat Party, а не отдельный ивент.</div>
+            <div class="event-editor-grid">
+                <label class="event-mode-switch"><span><b>Показывать кнопку «Событие»</b><small>Показывать вход в Event на странице Games</small></span><input type="checkbox" id="eventButtonVisibleToggle" checked><span class="event-switch"></span></label>
+                <div class="form-group"><label class="form-label">Название особого режима</label><input class="form-input" id="eventSpecialModeName" value="Ghost Road"></div>
+                <div class="form-group"><label class="form-label">PNG особого режима</label><input class="form-input" id="eventSpecialModeImage" value="/static/img/ghost_road.png"></div>
+                <div class="form-group"><label class="form-label">Путь режима</label><input class="form-input" id="eventSpecialModePath" value="/event/witch-hat-party?mode=ghost-road"></div>
+            </div>
+            <label class="event-mode-switch" style="margin-top:10px"><span><b>Показывать Ghost Road внутри Event</b><small>Особый режим нельзя удалить, но его можно скрыть</small></span><input type="checkbox" id="eventSpecialModeVisible" checked><span class="event-switch"></span></label>
+            <button class="btn btn-success" onclick="saveEventContentSettings()" style="margin-top:10px">Сохранить содержимое Event</button>
+        </div>
+        <div class="card" style="margin-top:14px">
             <div class="card-title">Управление магазином Event</div>
             <div class="event-sub" style="margin-bottom:10px">Добавляй конкретные подарки по ссылке. Название, PNG и Lottie-анимация подгружаются автоматически, а цену задаёшь здесь.</div>
             <div class="event-editor-grid">
@@ -447,6 +466,17 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <div class="event-actions"><button class="btn btn-secondary" onclick="addEventSection()">+ Добавить раздел</button></div>
         </div>
         <div class="card seasonal-case-admin" id="seasonal-case-admin" style="margin-top:14px"><div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span>Сезонный кейс</span><button class="action-btn" onclick="openSeasonalCaseEditor()">Настроить</button></div><div style="font-size:12px;color:rgba(255,255,255,.48);line-height:1.45">Кейс автоматически показывается только в заданный период сезона и использует те же кейсовые механики открытия.</div><div id="seasonalCaseStatus" class="event-status" style="margin-top:10px">Загрузка…</div></div>
+    </div>
+
+    <!-- GAMES UI -->
+    <div class="section-page" id="page-games-ui" style="display:none">
+        <div class="section-header"><h2>Games — разделы</h2><button class="action-btn" onclick="loadGamesUIAdmin()">Обновить</button></div>
+        <div class="card">
+            <div class="card-title">Игры</div>
+            <div class="event-status">В Games находится только кнопка «Событие» и обычные игровые режимы. Содержимое события открывается отдельно на странице Event.</div>
+            <div id="gamesOtherAdmin" style="margin-top:12px"></div>
+        </div>
+        <div class="btn-row" style="margin-top:14px"><button class="btn btn-success" onclick="saveGamesUIAdmin()">💾 Сохранить Games</button></div>
     </div>
 
     <!-- DASHBOARD -->
@@ -970,26 +1000,22 @@ function goBackOrMenu(){
         showSection('home');
     }
 }
-/* ★ Кнопка "В профиль" — ведёт на /inventory */
+/* ★ Профиль ведёт в настоящий профиль приложения */
 function goToProfile(){
-    if(tg && tg.close){
-        // Если открыт в Telegram — закрываем TMA (возврат в чат)
-        try{ tg.close(); return; }catch(e){}
-    }
-    window.location.href = '/inventory';
+    window.location.href = '/profile';
 }
 
 var currentSection = 'home';
 var SECTION_TITLES = {
     home: 'Главное меню', events: 'Events',
     'seasonal-case': '🎃 Сезонный кейс', dashboard: '📊 Дашборд', crash: '🎮 Управление Краш',
-    users: '👥 Пользователи', gifts: '🎁 Подарки', cases: '📦 Кейсы',
-    'case-editor': '📦 Редактор кейса',
+    users: '👥 Пользователи', gifts: '🎁 Подарки', cases: 'Архив',
+    'case-editor': 'Архив',
     promo: '🎟️ Промокоды', quests: '🎯 Задания',
     leaderboard: '🏆 Лидерборд', challenges: '🎁 NFT Отыгрыши',
     withdrawals: '💸 Выводы',
     sbp: '💳 СБП', inventory: '🎒 Инвентарь', history: '📜 История',
-    portal: '🛒 MRKT'
+    portal: '🛒 MRKT', 'games-ui': '🎮 Games — разделы'
 };
 
 function showSection(name){
@@ -1007,6 +1033,7 @@ function showSection(name){
 
     try{
         if(name === 'events') { loadEvents(); loadSeasonalCaseStatus(); }
+        if(name === 'games-ui') loadGamesUIAdmin();
         if(name === 'seasonal-case') loadSeasonalCaseEditor();
         if(name === 'dashboard') loadStats();
         if(name === 'crash') loadCrashStatus();
@@ -1093,31 +1120,76 @@ function selectPickerItem(idx){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   GAMES UI
+   ══════════════════════════════════════════════════════════════ */
+var gamesUIAdminData=null;
+function renderGamesUIAdmin(cfg){
+    gamesUIAdminData=JSON.parse(JSON.stringify(cfg||{sections:[]}));
+    var sec=(gamesUIAdminData.sections||[]).find(function(x){return x.id==='games'})||{id:'games',title:'Игры',visible:true,order:0,items:[]};
+    sec.items=sec.items||[];
+    sec.items=sec.items.filter(function(x){return x.id!=='ghost_road'&&x.id!=='event'});
+    sec.items.unshift({id:'event',name:'Событие',image:'/static/img/ghost_road.png',path:'/event/witch-hat-party',visible:true,mandatory:true});
+    gamesUIAdminData.sections=[sec];
+    $('gamesOtherAdmin').innerHTML=gamesSectionEditorHtml(sec);
+}
+function gamesSectionEditorHtml(sec){
+    var html='<div class="games-ui-section" data-sec="games"><div class="games-ui-head"><strong>Игры</strong><span class="event-chip">основной экран</span></div><div class="games-ui-fields"><input class="form-input gui-title" value="'+escapeHtml(sec.title||'Игры')+'" placeholder="Название раздела" disabled><label class="games-ui-lock"><input class="gui-visible" type="checkbox" checked disabled> Показывать</label><input class="form-input gui-order" type="number" value="0" disabled></div><div class="games-ui-items">';
+    html+='<div class="games-ui-item" data-item="event"><img src="/static/img/ghost_road.png" alt=""><div><b>Событие</b><div class="mini">/event/witch-hat-party · содержимое на странице Event</div></div><label class="games-ui-lock"><input type="checkbox" checked disabled> Всегда</label><button class="btn btn-secondary btn-sm" type="button" disabled>Обязательная кнопка</button></div>';
+    (sec.items||[]).filter(function(it){return it.id!=='event'}).forEach(function(it){
+        html+='<div class="games-ui-item" data-item="'+escapeHtml(it.id||'')+'"><img src="'+escapeHtml(it.image||'/static/img/gift.png')+'" alt=""><div><b>'+escapeHtml(it.name||it.id||'Режим')+'</b><div class="mini">'+escapeHtml(it.image||'')+' · '+escapeHtml(it.path||'#')+'</div></div><div class="item-controls"><label class="games-ui-lock"><input class="gui-item-visible" type="checkbox" '+(it.visible!==false?'checked':'')+'> Показывать</label></div><button class="btn btn-secondary btn-sm" type="button" onclick="editGamesItem(this)">Изменить</button></div>';
+    });
+    html+='</div><div class="games-ui-actions"><button class="btn btn-secondary btn-sm" type="button" onclick="addGamesMode()">+ Добавить обычный режим</button></div></div>';
+    return html;
+}
+function syncGamesUIFromDom(){
+    if(!gamesUIAdminData)return;
+    var sec=gamesUIAdminData.sections[0]; var el=document.querySelector('.games-ui-section[data-sec="games"]'); if(!sec||!el)return;
+    el.querySelectorAll('.games-ui-item[data-item]').forEach(function(row){var id=row.dataset.item;var it=(sec.items||[]).find(function(x){return x.id===id});if(it&&id!=='event'){var cb=row.querySelector('.gui-item-visible');it.visible=cb?cb.checked:true;}});
+}
+function editGamesItem(btn){var row=btn.closest('.games-ui-item'),id=row.dataset.item,item=(gamesUIAdminData.sections[0].items||[]).find(function(x){return x.id===id});if(!item)return;var name=prompt('Название',item.name||'');if(name===null)return;var image=prompt('Путь к изображению',item.image||'');if(image===null)return;var path=prompt('Путь страницы',item.path||'#');if(path===null)return;item.name=name.trim()||item.name;item.image=image.trim()||item.image;item.path=path.trim()||item.path;renderGamesUIAdmin(gamesUIAdminData);}
+function addGamesMode(){syncGamesUIFromDom();var sec=gamesUIAdminData.sections[0];var name=prompt('Название обычного режима');if(!name)return;var id='mode_'+Date.now();var image=prompt('Путь к изображению','/static/img/mines.png')||'/static/img/mines.png';var path=prompt('Путь страницы','/mines')||'/mines';sec.items.push({id:id,name:name.trim(),image:image.trim(),path:path.trim(),visible:true,unlock_at:null});renderGamesUIAdmin(gamesUIAdminData);}
+async function loadGamesUIAdmin(){try{var r=await fetch('/api/admin/games-ui?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'}),d=await r.json();if(!r.ok||!d.success)throw Error(d.error||'Ошибка');renderGamesUIAdmin(d.config);}catch(e){showToast(e.message||'Ошибка загрузки Games','err');}}
+async function saveGamesUIAdmin(){try{syncGamesUIFromDom();await fetch('/api/admin/games-ui',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,config:gamesUIAdminData})}).then(function(r){return r.json()}).then(function(d){if(!d.success)throw Error(d.error||'Ошибка')});showToast('Настройки Games сохранены','ok');loadGamesUIAdmin();}catch(e){showToast(e.message||'Ошибка сохранения Games','err');}}
+
+/* ══════════════════════════════════════════════════════════════
    EVENTS
    ══════════════════════════════════════════════════════════════ */
 function formatEventTime(sec){sec=Math.max(0,Number(sec||0));var d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60),s=Math.floor(sec%60);return (d?d+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
 var eventAdminData=null;
 async function eventAdminPost(payload){payload=payload||{};payload.admin_id=ADMIN_ID;var r=await fetch('/api/admin/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');return d;}
 function renderEventSections(events){
- var ev=(events||{}).witch_hat_party||{};eventAdminData=ev;var box=$('eventSectionsAdmin');if(!box)return;var sections=ev.sections||[];
- if(!sections.length){box.innerHTML='<div class="empty">Разделов пока нет</div>';return;}
+ var ev=(events||{}).witch_hat_party||{};eventAdminData=ev;var box=$('eventSectionsAdmin');if(!box)return;var sections=Array.isArray(ev.sections)?ev.sections:[];
+ sections.sort(function(a,b){var rank=function(x){var t=String(x&&x.type||'');return t==='mode'?0:(t==='cases'?1:(t==='market'?2:3))};return rank(a)-rank(b)});
  box.innerHTML=sections.map(function(sec){
-   var content='';
-   if(sec.type==='cases'){
+   var content=''; var sid=String(sec.id||'');
+   if(sec.type==='mode'){
+     var item=(sec.items||[]).find(function(x){return x&&x.id==='ghost_road_mode'}) || (sec.items||[])[0] || {};
+     content='<div class="event-editor-grid" style="margin-top:10px">'+
+       '<div class="form-group"><label class="form-label">Название</label><input class="form-input ev-mode-name" value="'+escapeHtml(item.name||'Ghost Road')+'"></div>'+
+       '<div class="form-group"><label class="form-label">PNG</label><input class="form-input ev-mode-image" value="'+escapeHtml(item.image||'/static/img/ghost_road.png')+'"></div>'+
+       '<div class="form-group"><label class="form-label">Путь</label><input class="form-input ev-mode-path" value="'+escapeHtml(item.path||'/event/witch-hat-party?mode=ghost-road')+'"></div></div>'+
+       '<label class="event-mode-switch" style="margin-top:8px"><span><b>Показывать режим</b><small>Режим можно скрыть, но удалить нельзя</small></span><input class="ev-mode-visible" type="checkbox" '+(item.visible!==false?'checked':'')+'><span class="event-switch"></span></label>';
+   } else if(sec.type==='cases'){
      var ids=sec.case_ids||[];
-     content='<div class="event-mini-list">'+(ids.length?ids.map(function(id){return '<div class="event-mini">Кейс #'+escapeHtml(String(id))+'</div>';}).join(''):'<span class="event-sub">Кейсы не добавлены</span>')+'</div>';
-   }else{
+     content='<div class="event-section-tools"><button class="btn btn-primary btn-sm event-add-case" data-section-id="'+escapeHtml(sid)+'">+ Добавить из архива</button></div>'+
+       '<div class="event-mini-list event-case-admin-list">'+(ids.length?ids.map(function(id){return '<div class="event-mini event-case-admin" data-section-id="'+escapeHtml(sid)+'" data-case-id="'+escapeHtml(String(id))+'"><span>Загрузка кейса #'+escapeHtml(String(id))+'…</span><button class="event-remove-case" type="button">✕</button></div>';}).join(''):'<span class="event-sub">Кейсы события пока не добавлены</span>')+'</div>';
+   } else if(sec.type==='market'){
      var items=sec.items||[];
-     content='<div class="event-mini-list">'+(items.length?items.map(function(it){
-       var label=it.name||it.collection||it.fragment_slug||'Подарок';
-       var price=Number(it.price_gram||0).toFixed(2);
-       var remove=it.gift_url?'removeEventGift(\''+escapeHtml(String(it.gift_url))+'\')':'removeEventMarket(\''+escapeHtml(String(it.fragment_slug||''))+'\')';
-       return '<div class="event-mini" style="min-width:100%;justify-content:space-between"><span>'+escapeHtml(label)+' · '+price+' GRAM</span><button onclick="'+remove+'">✕</button></div>';
-     }).join(''):'<span class="event-sub">Подарки не добавлены</span>')+'</div>';
+     content='<div class="event-mini-list">'+(items.length?items.map(function(it){var label=it.name||it.fragment_slug||'Подарок';var price=Number(it.price_gram||0).toFixed(2);return '<div class="event-mini" style="min-width:100%;justify-content:space-between"><span>'+escapeHtml(label)+' · '+price+' GRAM</span><button class="event-remove-gift" data-gift-url="'+escapeHtml(String(it.gift_url||''))+'" data-fragment-slug="'+escapeHtml(String(it.fragment_slug||''))+'">✕</button></div>';}).join(''):'<span class="event-sub">Подарки не добавлены</span>')+'</div>';
    }
-   return '<div class="event-section-row"><div class="event-section-head"><strong>'+escapeHtml(sec.title||'Раздел')+'</strong><span class="event-chip">'+escapeHtml(sec.type||'market')+'</span><button class="btn btn-danger btn-sm" onclick="removeEventSection(\''+escapeHtml(String(sec.id))+'\')">Удалить</button></div>'+content+'</div>';
+   var canDelete=sec.type==='mode';
+   return '<div class="event-section-row" data-section-id="'+escapeHtml(sid)+'"><div class="event-section-head"><strong>'+escapeHtml(sec.title||'Раздел')+'</strong><span class="event-chip">'+escapeHtml(sec.type||'')+'</span>'+(!canDelete?'<button class="btn btn-danger btn-sm event-remove-section" data-section-id="'+escapeHtml(sid)+'">Удалить</button>':'<span class="event-chip">обязательный</span>')+'</div>'+content+'</div>';
  }).join('');
+ box.querySelectorAll('.event-add-case').forEach(function(b){b.onclick=function(){addEventCase(b.dataset.sectionId)}});
+ box.querySelectorAll('.event-remove-case').forEach(function(b){b.onclick=function(){var row=b.closest('.event-case-admin');removeEventCase(row.dataset.sectionId,row.dataset.caseId)}});
+ box.querySelectorAll('.event-remove-section').forEach(function(b){b.onclick=function(){removeEventSection(b.dataset.sectionId)}});
+ box.querySelectorAll('.event-remove-gift').forEach(function(b){b.onclick=function(){if(b.dataset.giftUrl)removeEventGift(b.dataset.giftUrl);else removeEventMarket(b.dataset.fragmentSlug)}});
+ box.querySelectorAll('.event-case-admin[data-case-id]').forEach(function(row){
+   var id=row.dataset.caseId;var url=(id==='seasonal')?'/api/cases/by-slug/seasonal':'/api/cases/'+encodeURIComponent(id);
+   fetch(url,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){var c=d&&d.success?d.case:null;if(!c)return;row.innerHTML='<img src="'+escapeHtml(c.image||'/static/img/gift.png')+'" style="width:38px;height:38px;object-fit:contain;border-radius:8px"><span style="flex:1"><b>'+escapeHtml(c.name||'Кейс')+'</b><small style="display:block;color:rgba(255,255,255,.4)">'+(c.seasonal?'Сезонный':'Event')+'</small></span><button class="event-remove-case" type="button">✕</button>';row.querySelector('.event-remove-case').onclick=function(){removeEventCase(row.dataset.sectionId,row.dataset.caseId)}}).catch(function(){});
+ });
 }
+
 async function loadEvents(){
  var status=$('witchEventStatus');
  try{
@@ -1134,20 +1206,28 @@ async function loadEvents(){
    if($('eventLoadingGifInput'))$('eventLoadingGifInput').value=e.loading_gif||'loading.gif';
    if($('witchHalloweenToggle'))$('witchHalloweenToggle').checked=!!e.halloween_mode;
    if($('witchLeaderboardToggle'))$('witchLeaderboardToggle').checked=!!e.change_leaderboard;
+   if($('eventButtonVisibleToggle'))$('eventButtonVisibleToggle').checked=e.event_button_visible!==false;
+   var mode=(e.sections||[]).find(function(x){return x&&x.type==='mode'}), mi=mode&&((mode.items||[]).find(function(x){return x&&x.id==='ghost_road_mode'})||(mode.items||[])[0]);
+   mi=mi||{};
+   if($('eventSpecialModeName'))$('eventSpecialModeName').value=mi.name||'Ghost Road';
+   if($('eventSpecialModeImage'))$('eventSpecialModeImage').value=mi.image||'/static/img/ghost_road.png';
+   if($('eventSpecialModePath'))$('eventSpecialModePath').value=mi.path||'/event/witch-hat-party?mode=ghost-road';
+   if($('eventSpecialModeVisible'))$('eventSpecialModeVisible').checked=mi.visible!==false;
    renderEventSections(d.events||{});
  }catch(err){if(status)status.textContent='Ошибка Event: '+(err.name==='AbortError'?'таймаут загрузки':err.message);console.error(err);}
 }
 function onWitchEventToggle(){var on=$('witchEventToggle')&&$('witchEventToggle').checked;if($('witchEventDuration'))$('witchEventDuration').style.display=on?'block':'none';if(!on)stopWitchEvent();}
 async function startWitchEvent(){var hours=parseFloat($('witchEventHours')&&$('witchEventHours').value);if(!hours||hours<=0){showToast('Укажите срок ивента','err');return;}try{await eventAdminPost({event_id:'witch_hat_party',enabled:true,hours:hours});showToast('Witch Hat Party запущен','ok');loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function stopWitchEvent(){try{await eventAdminPost({event_id:'witch_hat_party',enabled:false});if($('witchEventToggle'))$('witchEventToggle').checked=false;loadEvents();showToast('Ивент выключен','ok');}catch(e){showToast(e.message||'Ошибка','err')}}
-async function saveEventSettings(){try{await eventAdminPost({event_id:'witch_hat_party',action:'update_settings',name:$('eventNameInput').value.trim(),image:$('eventImageInput').value.trim(),loading_gif:$('eventLoadingGifInput').value.trim(),halloween_mode:!!($('witchHalloweenToggle')&&$('witchHalloweenToggle').checked),change_leaderboard:!!($('witchLeaderboardToggle')&&$('witchLeaderboardToggle').checked)});showToast('Настройки ивента сохранены','ok');loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
+async function saveEventSettings(){try{await eventAdminPost({event_id:'witch_hat_party',action:'update_settings',name:$('eventNameInput').value.trim(),image:$('eventImageInput').value.trim(),loading_gif:$('eventLoadingGifInput').value.trim(),halloween_mode:!!($('witchHalloweenToggle')&&$('witchHalloweenToggle').checked),change_leaderboard:!!($('witchLeaderboardToggle')&&$('witchLeaderboardToggle').checked),event_button_visible:!!($('eventButtonVisibleToggle')&&$('eventButtonVisibleToggle').checked),special_mode:{name:$('eventSpecialModeName').value.trim(),image:$('eventSpecialModeImage').value.trim(),path:$('eventSpecialModePath').value.trim(),visible:!!($('eventSpecialModeVisible')&&$('eventSpecialModeVisible').checked)}});showToast('Настройки Event сохранены','ok');loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
+async function saveEventContentSettings(){return saveEventSettings()}
 async function addEventSection(){var title=prompt('Название нового раздела');if(!title)return;var type=confirm('Это Market-раздел? Нажмите ОК для Market, Отмена — для кейсов.')?'market':'cases';try{await eventAdminPost({event_id:'witch_hat_party',action:'add_section',title:title,type:type});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function removeEventSection(id){if(!confirm('Удалить раздел?'))return;try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_section',section_id:id});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function addEventCase(sectionId){
     try{
         var r=await fetch('/api/cases?ts='+Date.now()), d=await r.json();
         if(!d.success) throw Error(d.error||'Не удалось загрузить кейсы');
-        var cases=(d.cases||[]).filter(function(c){return String(c.id)!=='seasonal';});
+        var cases=(d.cases||[]);
         if(!cases.length){showToast('Нет созданных кейсов','err');return;}
         openPicker('Добавить кейс в событие',cases,function(item){
             eventAdminPost({event_id:'witch_hat_party',action:'add_case',section_id:sectionId,case_id:item.id}).then(function(){showToast('Кейс добавлен','ok');loadEvents();}).catch(function(e){showToast(e.message||'Ошибка','err');});
