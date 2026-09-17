@@ -129,6 +129,35 @@ body:before{left:-8px;top:70px;width:150px;height:150px;background-image:url('/s
 body:after{right:6px;bottom:14px;width:96px;height:145px;background-image:url('/static/img/halloween-lantern.svg');opacity:.30;}
 .wrap{position:relative;z-index:2}.hero,.special-mode-card,.market-card{isolation:isolate}.special-mode-card:before{filter:saturate(1.04)}
 </style>
+
+<style id="event-button-size-v6">
+/* Размеры кнопок привязаны к карточке игры из games.html: 165px на телефоне и 220px на desktop.
+   SMALL = одна карточка, MEDIUM = две карточки по ширине, HIGH = 2x2 карточки. */
+.special-mode-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important;align-items:stretch!important}
+.special-mode-card{grid-column:span 2!important;height:220px!important;min-height:220px!important;max-height:220px!important;width:100%!important}
+.special-mode-card.size-small{grid-column:span 1!important;height:220px!important;min-height:220px!important;max-height:220px!important}
+.special-mode-card.size-medium{grid-column:span 2!important;height:220px!important;min-height:220px!important;max-height:220px!important}
+.special-mode-card.size-high,.special-mode-card.size-large,.special-mode-card.size-full{grid-column:span 4!important;height:454px!important;min-height:454px!important;max-height:454px!important}
+@media(max-width:700px){
+  .special-mode-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+  .special-mode-card,.special-mode-card.size-small{grid-column:span 1!important;height:165px!important;min-height:165px!important;max-height:165px!important}
+  .special-mode-card.size-medium{grid-column:span 2!important;height:165px!important;min-height:165px!important;max-height:165px!important}
+  .special-mode-card.size-high,.special-mode-card.size-large,.special-mode-card.size-full{grid-column:span 2!important;height:339px!important;min-height:339px!important;max-height:339px!important}
+}
+</style>
+
+<style id="event-gift-modal-v4">
+.event-modal-media{display:flex!important;align-items:center!important;justify-content:center!important;min-height:260px!important}
+.gift-media-stage{position:relative!important;width:100%!important;height:260px!important;display:flex!important;align-items:center!important;justify-content:center!important;overflow:hidden!important}
+.gift-png{width:72%!important;height:72%!important;object-fit:contain!important;z-index:1!important;clip-path:inset(3% round 12px)!important;filter:drop-shadow(0 16px 28px rgba(0,0,0,.38))!important}
+.gift-webp{display:none!important}
+.event-gift-attrs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.event-gift-attr{padding:10px 8px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);text-align:center}
+.event-gift-attr b{display:block;color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.7px}
+.event-gift-attr span{display:block;margin-top:4px;color:#dfe6f3;font-size:12px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.event-gift-attrs-loading{margin-top:12px;color:rgba(255,255,255,.4);font-size:11px;text-align:center}
+.event-modal-price,.event-modal-price span{color:#fff!important}
+</style>
 </head>
 <body>
 <div class="loading" id="loading"><img id="loadingGif" src="/static/img/loading.gif" alt=""><div class="loading-text">Загрузка</div></div>
@@ -218,6 +247,46 @@ function renderSections(sections){
   }
 }
 
+function getTelegramInitData(){
+  try{
+    if(window.Telegram&&Telegram.WebApp){
+      var direct=String(Telegram.WebApp.initData||'').trim();
+      if(direct)return direct;
+    }
+  }catch(e){}
+  try{
+    var qs=new URLSearchParams(location.search);
+    var q=qs.get('tgWebAppData')||qs.get('initData')||'';
+    if(q)return q;
+  }catch(e){}
+  try{
+    var h=String(location.hash||'');
+    var m=h.match(/(?:^|[&#])tgWebAppData=([^&]+)/);
+    if(m)return decodeURIComponent(m[1]);
+  }catch(e){}
+  return '';
+}
+function setGiftAttrs(attrs){
+  var box=$('eventGiftAttrs');if(!box)return;
+  attrs=attrs||{};
+  function val(k){var x=attrs[k];return x&&x.value?x.value:'—'}
+  box.innerHTML='<div class="event-gift-attr"><b>Модель</b><span>'+String(val('model')).replace(/</g,'&lt;')+'</span></div>'+
+    '<div class="event-gift-attr"><b>Фон</b><span>'+String(val('backdrop')).replace(/</g,'&lt;')+'</span></div>'+
+    '<div class="event-gift-attr"><b>Символ</b><span>'+String(val('symbol')).replace(/</g,'&lt;')+'</span></div>';
+}
+async function loadEventGiftAttrs(item){
+  var box=$('eventGiftAttrs');if(!box)return;
+  var slug=String(item.fragment_slug||'').trim();var number=Number(item.number||0);
+  if(!slug||!number){box.innerHTML='<div class="event-gift-attrs-loading" style="grid-column:1/-1">Данные Fragment недоступны</div>';return}
+  box.innerHTML='<div class="event-gift-attrs-loading" style="grid-column:1/-1">Загрузка данных Fragment…</div>';
+  try{
+    var r=await fetch('/api/fragment-gift-details?slug='+encodeURIComponent(slug)+'&number='+encodeURIComponent(number)+'&ts='+Date.now(),{cache:'no-store'});
+    var d=await r.json();
+    if(!r.ok||!d.success)throw Error(d.error||'Ошибка');
+    setGiftAttrs(d.attrs||{});
+    if(d.image){var p=document.querySelector('#eventGiftModalMedia .gift-png');if(p)p.src=d.image;}
+  }catch(e){box.innerHTML='<div class="event-gift-attrs-loading" style="grid-column:1/-1">Не удалось загрузить данные Fragment</div>';}
+}
 function openEventGiftModal(item){
   var overlay=$('eventGiftModal');if(!overlay)return;
   overlay.dataset.url=item.url||item.gift_url||'';overlay.dataset.item=JSON.stringify(item);
@@ -226,20 +295,33 @@ function openEventGiftModal(item){
   $('eventGiftModalPrice').textContent=price(item.price_gram||item.price_ton)+' GRAM';
   var media=$('eventGiftModalMedia');media.innerHTML='';
   var stage=document.createElement('div');stage.className='gift-media-stage';
-  var png=document.createElement('img');png.className='gift-png';png.src=imgSrc(item.png||item.image);png.alt='';stage.appendChild(png);
-  var webp=item.animation_webp||item.animation||item.image; if(webp){var anim=document.createElement('img');anim.className='gift-webp';anim.src=webp;anim.alt='';stage.appendChild(anim)}
-  media.appendChild(stage);
+  var png=document.createElement('img');png.className='gift-png';png.src=imgSrc(item.png||item.image);png.alt=item.name||'Подарок';
+  png.onerror=function(){this.onerror=null;this.src=imgSrc(item.image)};stage.appendChild(png);media.appendChild(stage);
+  var attrs=document.createElement('div');attrs.id='eventGiftAttrs';attrs.className='event-gift-attrs';attrs.innerHTML='<div class="event-gift-attrs-loading" style="grid-column:1/-1">Загрузка данных Fragment…</div>';
+  var sheet=overlay.querySelector('.event-modal-sheet');
+  var old=sheet.querySelector('#eventGiftAttrs');if(old)old.remove();
+  var priceEl=sheet.querySelector('.event-modal-price');sheet.insertBefore(attrs,priceEl||null);
   overlay.classList.add('show');
+  loadEventGiftAttrs(item);
 }
 function closeEventGiftModal(){var o=$('eventGiftModal');if(o)o.classList.remove('show')}
 async function buyEventGift(){
   var o=$('eventGiftModal');if(!o)return;
-  var item=JSON.parse(o.dataset.item||'{}');var user=null;
-  try{user=await telegramAuth()}catch(e){
-    user=(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user)||null;
+  var item=JSON.parse(o.dataset.item||'{}');
+  var initData=getTelegramInitData();
+  var user=null;
+  try{
+    if(initData){
+      var parsed=new URLSearchParams(initData).get('user');
+      if(parsed)user=JSON.parse(decodeURIComponent(parsed));
+    }
+  }catch(e){}
+  if(!user){
+    try{user=await telegramAuth()}catch(e){}
   }
-  var initData=(window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initData)||'';
-  if(!user||!user.id||!initData){alert('Откройте приложение через Telegram');return}
+  try{if(!user&&window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe)user=Telegram.WebApp.initDataUnsafe.user||null}catch(e){}
+  if(!initData){alert('Не удалось получить данные Telegram. Перезапусти Mini App через Telegram.');return}
+  if(!user||!user.id){alert('Не удалось определить пользователя Telegram.');return}
   var btn=$('eventBuyBtn');btn.disabled=true;btn.textContent='Покупка…';
   try{
     var r=await fetch('/api/events/witch-hat-party/market/buy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,gift_url:item.url||item.gift_url,initData:initData})});
