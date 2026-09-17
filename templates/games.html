@@ -469,6 +469,9 @@ img{display:block}
     .game-name{font-size:27px}
     .game-subtitle{font-size:11px;margin-top:7px}
 }
+
+<style id="events-halloween-css">.event-card{grid-column:1/-1;height:190px!important;border:2px solid #a855f7!important;background:linear-gradient(120deg,#261039,#4c1d68)!important;box-shadow:0 0 35px rgba(168,85,247,.18),inset 0 0 35px rgba(168,85,247,.08)!important}.event-card:before{background-image:url("/static/img/witchhat.png")!important;background-size:contain!important;background-position:right center!important}.event-card:after{background:linear-gradient(90deg,rgba(22,5,35,.96) 0%,rgba(22,5,35,.72) 45%,rgba(22,5,35,.08) 100%)!important}.event-card .game-name{color:#f2dcff;font-size:31px;line-height:.95;max-width:220px}.event-card .event-timer{display:inline-flex;margin-top:10px;padding:7px 10px;border-radius:10px;background:rgba(168,85,247,.18);border:1px solid rgba(216,180,254,.25);color:#e9d5ff;font-size:12px;font-weight:900}.halloween-active{--bg:#0d0617;--header:#12091e;--line:rgba(168,85,247,.28)}.halloween-active body{background:radial-gradient(700px 500px at 8% 40%,rgba(113,45,145,.22),transparent 70%),radial-gradient(700px 500px at 94% 65%,rgba(168,85,247,.18),transparent 70%),linear-gradient(180deg,#12051c,#08040d)}.halloween-active body:before{background-image:linear-gradient(rgba(168,85,247,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,.08) 1px,transparent 1px)}.halloween-active .top-bar{background:rgba(18,7,28,.96);border-bottom-color:rgba(168,85,247,.22)}.halloween-active .nav-btn.active{color:#d8a8ff;background:rgba(139,92,246,.18);box-shadow:inset 0 0 0 1px rgba(168,85,247,.35),0 4px 18px rgba(139,92,246,.1)}.halloween-active .page-title{color:#f0dcff}.halloween-active .game-card:not(.event-card){filter:saturate(.85) hue-rotate(8deg)}@media(max-width:700px){.event-card{height:178px!important}.event-card .game-name{font-size:26px}.event-card:before{background-size:190px auto!important}}
+</style>
 </style>
 </head>
 
@@ -521,18 +524,6 @@ img{display:block}
                 <span>Сезон</span>
             </button>
 
-            <!-- МАРКЕТ -->
-            <button class="nav-btn" onclick="goTo('/market')">
-                <span class="nav-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 9.5h16v9.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9.5Z" fill="currentColor" fill-opacity=".10" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
-                        <path d="M3 9.5 5 4h14l2 5.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
-                        <path d="M8 13h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
-                    </svg>
-                </span>
-                <span>Маркет</span>
-            </button>
-
             <!-- ИГРЫ -->
             <button class="nav-btn active" onclick="goTo('/games')">
                 <span class="nav-icon">
@@ -571,7 +562,13 @@ img{display:block}
 <main class="page">
     <h1 class="page-title">Игры</h1>
 
-    <section class="games-grid">
+    <section class="games-grid" id="gamesGrid">
+        <button class="game-card event-card" id="witchHatEvent" style="display:none" onclick="goTo('/event/witch-hat-party')" aria-label="Witch Hat Party">
+            <div class="game-card-content">
+                <div class="game-name">Witch Hat<br>Party</div>
+                <div class="event-timer" id="witchHatTimer">Загрузка…</div>
+            </div>
+        </button>
         <button class="game-card crash" onclick="goTo('/crash')" aria-label="Crash">
             <div class="game-card-content">
                 <div class="game-name">Crash</div>
@@ -713,6 +710,30 @@ async function loadTopBar(){
     }catch(e){}
 }
 
+async function loadHalloweenEvent(){
+    try{
+        var r=await fetch('/api/events/witch-hat-party');
+        var d=await r.json();
+        var e=d.event||{};
+        var card=$('witchHatEvent');
+        if(!card) return;
+        if(e.active){
+            document.documentElement.classList.add('halloween-active');
+            card.style.display='block';
+            var left=Number(e.remaining_seconds||0);
+            function tick(){
+                left=Math.max(0,left-1);
+                var x=Math.floor(left/86400),h=Math.floor(left%86400/3600),m=Math.floor(left%3600/60),sec=left%60;
+                var text=(x?x+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
+                var el=$('witchHatTimer');if(el)el.textContent='Осталось '+text;
+                if(left<=0){card.style.display='none';document.documentElement.classList.remove('halloween-active');}
+            }
+            if($('witchHatTimer')) $('witchHatTimer').textContent='Осталось '+(function(){var x=Math.floor(left/86400),h=Math.floor(left%86400/3600),m=Math.floor(left%3600/60),sec=left%60;return (x?x+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')})();
+            clearInterval(window._eventTimer);window._eventTimer=setInterval(tick,1000);
+        }else{card.style.display='none';document.documentElement.classList.remove('halloween-active')}
+    }catch(e){}
+}
+
 async function initGames(){
     var auth = null;
 
@@ -746,6 +767,7 @@ async function initGames(){
     }
 
     loadTopBar();
+    loadHalloweenEvent();
 }
 
 document.addEventListener('DOMContentLoaded',initGames);
