@@ -2610,124 +2610,83 @@ def save_cases(cases):
 EVENTS_FILE = os.path.join(BASE_PATH, 'data', 'events.json')
 EVENT_DEFAULTS = {
     'witch_hat_party': {
-        'id': 'witch_hat_party',
-        'name': 'Witch Hat Party',
-        'image': '/static/img/witchhat.png',
-        'enabled': False,
-        'ends_at': None,
+        'id': 'witch_hat_party', 'name': 'Witch Hat Party',
+        'image': '/static/img/witchhat.png', 'loading_gif': 'loading.gif',
+        'enabled': False, 'ends_at': None,
+        'sections': [
+            {'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]},
+            {'id':'market','title':'Купить подарок','type':'market','items':[]}
+        ]
     }
 }
 
-
-SEASONAL_CASE_FILE = os.path.join(BASE_PATH, 'data', 'seasonal_case.json')
-SEASONAL_CASE_DEFAULT = {
-    'id': 'seasonal',
-    'seasonal': True,
-    'enabled': False,
-    'name': 'Сезонный кейс',
-    'slug': 'seasonal',
-    'image': '/static/img/gift.png',
-    'cost': 0,
-    'cost_type': 'stars',
-    'section': 'season',
-    'required_level': 1,
-    'limited': False,
-    'amount': 0,
-    'description': 'Сезонный кейс',
-    'display_order': -100,
-    'tags': ['season'],
-    'glow_effect': 'none',
-    'free': False,
-    'promo': False,
-    'time': '24H',
-    'promo_codes': [],
-    'gifts': [],
-    'season_start': None,
-    'season_end': None,
-}
-
-def load_seasonal_case():
+def _event_db_defaults():
+    conn=get_db_connection()
     try:
-        os.makedirs(os.path.dirname(SEASONAL_CASE_FILE), exist_ok=True)
-        if not os.path.exists(SEASONAL_CASE_FILE):
-            save_seasonal_case(SEASONAL_CASE_DEFAULT)
-            return json.loads(json.dumps(SEASONAL_CASE_DEFAULT))
-        with open(SEASONAL_CASE_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        obj = dict(SEASONAL_CASE_DEFAULT)
-        if isinstance(data, dict): obj.update(data.get('case', data))
-        obj['id'] = 'seasonal'; obj['seasonal'] = True
-        return obj
+        conn.execute('''CREATE TABLE IF NOT EXISTS event_configs (id TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+        for event_id,event in EVENT_DEFAULTS.items():
+            row=conn.execute('SELECT payload FROM event_configs WHERE id = ?', (event_id,)).fetchone()
+            if row is None:
+                legacy=None
+                try:
+                    if os.path.exists(EVENTS_FILE):
+                        with open(EVENTS_FILE,'r',encoding='utf-8') as f: raw=json.load(f)
+                        legacy=(raw.get('events',raw) if isinstance(raw,dict) else {}).get(event_id)
+                except Exception: pass
+                obj=json.loads(json.dumps(event))
+                if isinstance(legacy,dict): obj.update(legacy)
+                obj.setdefault('sections',json.loads(json.dumps(event['sections'])))
+                conn.execute('INSERT INTO event_configs (id,payload) VALUES (?,?)',(event_id,json.dumps(obj,ensure_ascii=False)))
+        conn.commit()
     except Exception as e:
-        logger.warning('Seasonal case load failed: %s', e)
-        return json.loads(json.dumps(SEASONAL_CASE_DEFAULT))
-
-def save_seasonal_case(case_obj):
-    try:
-        os.makedirs(os.path.dirname(SEASONAL_CASE_FILE), exist_ok=True)
-        with open(SEASONAL_CASE_FILE, 'w', encoding='utf-8') as f:
-            json.dump({'case': case_obj}, f, ensure_ascii=False, indent=2)
-        return True
-    except Exception as e:
-        logger.error('Seasonal case save failed: %s', e)
-        return False
-
-def seasonal_case_is_active(case_obj=None):
-    case_obj = case_obj or load_seasonal_case()
-    if not case_obj.get('enabled'): return False
-    start = case_obj.get('season_start'); end = case_obj.get('season_end')
-    now = datetime.utcnow()
-    try:
-        if start:
-            dt = datetime.fromisoformat(str(start).replace('Z','+00:00'))
-            if getattr(dt, 'tzinfo', None):
-                from datetime import timezone
-                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
-            if now < dt: return False
-        if end:
-            dt = datetime.fromisoformat(str(end).replace('Z','+00:00'))
-            if getattr(dt, 'tzinfo', None):
-                from datetime import timezone
-                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
-            if now >= dt: return False
-    except Exception:
-        return False
-    return True
-
-def get_public_cases_with_seasonal():
-    cases = load_cases()
-    seasonal = load_seasonal_case()
-    if seasonal_case_is_active(seasonal):
-        cases = [seasonal] + [c for c in cases if str(c.get('id')) != 'seasonal']
-    return cases
+        logger.warning('Event DB init failed: %s', e)
 
 def load_events():
     try:
-        os.makedirs(os.path.dirname(EVENTS_FILE), exist_ok=True)
-        if not os.path.exists(EVENTS_FILE):
-            save_events(EVENT_DEFAULTS)
-            return json.loads(json.dumps(EVENT_DEFAULTS))
-        with open(EVENTS_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        events = data.get('events', data) if isinstance(data, dict) else {}
-        if not isinstance(events, dict): events = {}
-        merged = json.loads(json.dumps(EVENT_DEFAULTS))
-        for k,v in events.items():
-            if k in merged and isinstance(v, dict): merged[k].update(v)
-        return merged
+        _event_db_defaults(); conn=get_db_connection()
+        rows=conn.execute('SELECT id,payload FROM event_configs').fetchall()
+        result=json.loads(json.dumps(EVENT_DEFAULTS))
+        for row in rows:
+            try:
+                eid,payload=row[0],row[1]; obj=json.loads(payload) if isinstance(payload,str) else dict(payload)
+                if eid in result and isinstance(obj,dict): result[eid].update(obj)
+            except Exception: pass
+        return result
     except Exception as e:
-        logger.warning('Events load failed: %s', e)
-        return json.loads(json.dumps(EVENT_DEFAULTS))
+        logger.warning('Events DB load failed: %s',e); return json.loads(json.dumps(EVENT_DEFAULTS))
 
 def save_events(events):
     try:
-        os.makedirs(os.path.dirname(EVENTS_FILE), exist_ok=True)
-        with open(EVENTS_FILE, 'w', encoding='utf-8') as f:
-            json.dump({'events': events}, f, ensure_ascii=False, indent=2)
+        _event_db_defaults(); conn=get_db_connection()
+        for eid,event in (events or {}).items():
+            conn.execute('INSERT INTO event_configs (id,payload,updated_at) VALUES (?,?,CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=CURRENT_TIMESTAMP',(str(eid),json.dumps(event,ensure_ascii=False)))
+        conn.commit()
         return True
     except Exception as e:
-        logger.error('Events save failed: %s', e)
-        return False
+        logger.error('Events DB save failed: %s',e); return False
+
+def _event_find_case(case_ref):
+    ref=str(case_ref or '').strip().lower()
+    return next((c for c in get_public_cases_with_seasonal() if str(c.get('id')).lower()==ref or _case_slug(c).lower()==ref or _slugify_case_name(c.get('name')).lower()==ref),None)
+
+def _event_market_item_from_collection(collection):
+    query=str(collection or '').strip()
+    if not query: raise ValueError('Укажите коллекцию')
+    catalog=build_fragment_first_gifts_catalog(force_refresh=False) or []; q=query.lower()
+    item=next((g for g in catalog if str(g.get('name') or '').lower()==q or str(g.get('fragment_slug') or '').lower()==q),None)
+    if not item: item=next((g for g in catalog if q in str(g.get('name') or '').lower() or q in str(g.get('fragment_slug') or '').lower()),None)
+    slug=str((item or {}).get('fragment_slug') or '').strip().lower() or _slugify_fragment_name(query)
+    name=(item or {}).get('name') or query; image=(item or {}).get('image') or f'https://fragment.com/file/gifts/{slug}/thumb.webp'
+    rows=_fragment_api_search_gifts(slug,sort='price_asc',filter_name='sale') or []
+    listings=[]; seen=set()
+    for path,price in rows:
+        gift_slug,number=_fragment_nft_path_from_listing(path)
+        if gift_slug!=slug or number is None or number in seen: continue
+        seen.add(number); price=float(price)
+        listings.append({'collection':name,'fragment_slug':slug,'number':int(number),'name':f'{name} #{number}','image':f'https://nft.fragment.com/gift/{slug}-{int(number)}.webp','price_ton':round(price,4),'price_stars':int(round(price*FRAGMENT_TON_RATE)),'url':f'https://fragment.com/gift/{slug}-{int(number)}'})
+        if len(listings)>=5: break
+    floor=listings[0]['price_ton'] if listings else _fetch_fragment_collection_price(slug)
+    return {'collection':name,'fragment_slug':slug,'image':image,'floor_ton':round(float(floor),4) if floor is not None else None,'listings':listings}
 
 def get_active_events():
     events = load_events()
@@ -2954,6 +2913,11 @@ def _create_all_tables(conn):
             logger.warning(f"promo_codes.created_by BIGINT migration skipped: {_promo_mig}")
 
     tables_sql = {
+        'event_configs': '''CREATE TABLE IF NOT EXISTS event_configs (
+            id TEXT PRIMARY KEY,
+            payload TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''',
         'users': '''CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY,
             first_name TEXT,
@@ -5728,51 +5692,7 @@ def cases_page():
 
 @app.route('/event/witch-hat-party')
 def witch_hat_party_page():
-    return render_template_string(r'''<!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><title>Witch Hat Party</title>
-<style>*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#10051f,#1b0830 55%,#09040f);color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{padding:18px 14px 32px}.wrap{width:min(100%,560px);margin:0 auto}.head{height:52px;display:flex;align-items:center;gap:12px}.back{width:42px;height:42px;border-radius:14px;border:1px solid rgba(198,125,255,.3);background:rgba(145,65,220,.16);color:#fff;font-size:22px}.title{font-size:20px;font-weight:950}.hero{margin-top:16px;padding:30px 20px;border-radius:28px;background:radial-gradient(circle at 50% 20%,rgba(168,85,247,.25),transparent 50%),linear-gradient(145deg,rgba(68,25,105,.75),rgba(20,5,35,.95));border:1px solid rgba(190,120,255,.28);box-shadow:0 20px 70px rgba(80,20,130,.35);text-align:center}.hero img{width:min(68vw,300px);height:min(68vw,300px);object-fit:contain;margin:0 auto;filter:drop-shadow(0 18px 30px rgba(185,100,255,.28));animation:float 3s ease-in-out infinite}.eyebrow{color:#cda5ff;font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:1.8px;margin-top:6px}.event-title{font-size:34px;line-height:.98;font-weight:1000;margin-top:8px}.timer{margin-top:20px;padding:16px;border-radius:18px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08)}.timer-label{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1.2px}.timer-value{font-size:28px;font-weight:950;margin-top:5px;color:#e8cfff}.off{padding:34px 20px;text-align:center;border-radius:22px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.55);font-weight:750}@keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-8px) rotate(1deg)}}</style></head>
-<body><div class="wrap"><div class="head"><button class="back" onclick="location.href='/games'">‹</button><div class="title">Events</div></div><div id="root"></div></div><script>function fmt(s){s=Math.max(0,Number(s||0));var d=Math.floor(s/86400);s%=86400;var h=Math.floor(s/3600);s%=3600;var m=Math.floor(s/60);var sec=Math.floor(s%60);return (d?d+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')}async function load(){try{var r=await fetch('/api/events/witch-hat-party');var d=await r.json();var e=d.event||{};if(!e.active){root.innerHTML='<div class="off">Ивент сейчас не активен</div>';return}root.innerHTML='<section class="hero"><img src="'+e.image+'" onerror="this.style.display=\'none\'"><div class="eyebrow">Halloween Event</div><div class="event-title">Witch Hat<br>Party</div><div class="timer"><div class="timer-label">Осталось</div><div class="timer-value" id="timer">'+fmt(e.remaining_seconds)+'</div></div></section>';var left=Number(e.remaining_seconds||0);setInterval(function(){left=Math.max(0,left-1);var t=document.getElementById('timer');if(t)t.textContent=fmt(left)},1000)}catch(x){root.innerHTML='<div class="off">Не удалось загрузить ивент</div>'}}load()</script></body></html>''')
-
-@app.route('/inventory')
-def inventory_page():
-    """Страница инвентаря"""
-    logger.info("🎒 Запрос страницы инвентаря")
-    return render_template('inventory.html')
-
-
-@app.route('/season')
-def season_page():
-    """Алиас страницы сезона."""
-    return redirect('/rewards')
-
-@app.route('/rewards')
-def rewards_page():
-    """Отдельное окно/страница наград профиля."""
-    return render_template_string(r'''<!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><title>Награды</title>
-<style>
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#171b20;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}body{padding:calc(env(safe-area-inset-top,0px) + 18px) 14px calc(env(safe-area-inset-bottom,0px) + 94px)}.wrap{max-width:480px;margin:0 auto}.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.title{font-size:24px;font-weight:900;letter-spacing:-.5px}.close-top{width:38px;height:38px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:#23282e;color:#fff;font-size:18px}.level-card{background:linear-gradient(180deg,#242b32,#1d2228);border:1px solid rgba(255,255,255,.07);border-radius:22px;padding:16px;margin-bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,.18)}.level-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.level-badge{min-width:56px;height:42px;padding:0 12px;border-radius:14px;background:#2b333b;display:flex;align-items:center;justify-content:center;font-weight:900}.level-exp{text-align:right;color:rgba(255,255,255,.48);font-size:11px;font-weight:700}.reward-slot{margin-top:13px;min-height:76px;border:1px dashed rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.025);display:flex;align-items:center;justify-content:center;text-align:center;color:rgba(255,255,255,.35);font-size:12px;font-weight:750;padding:12px}.reward-slot.ready{border-style:solid;color:#fff}.empty{margin-top:16px;text-align:center;padding:28px 18px;border-radius:20px;background:#20252b;border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.38);font-weight:750}.close-bottom{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);transform:translateX(-50%);width:min(calc(100% - 28px),452px);height:52px;border:0;border-radius:26px;background:#1687f8;color:#fff;font-size:14px;font-weight:900;box-shadow:0 10px 28px rgba(22,135,248,.25);z-index:20}.muted{color:rgba(255,255,255,.42);font-size:11px;margin-top:4px}@media(prefers-reduced-motion:no-preference){body{animation:fadeIn .22s ease both}@keyframes fadeIn{from{opacity:0}to{opacity:1}}}</style></head>
-<body><div class="wrap"><div class="head"><div><div class="title">Награды</div><div class="muted" id="levelSummary">Загрузка уровней…</div></div><button class="close-top" onclick="closeRewards()">×</button></div><div id="rewardsList"></div></div><button class="close-bottom" onclick="closeRewards()">Закрыть</button>
-<script src="https://telegram.org/js/telegram-web-app.js"></script><script>
-function closeRewards(){history.length>1?history.back():location.href='/inventory'}
-function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-async function init(){var uid=new URLSearchParams(location.search).get('user_id');if(!uid&&window.Telegram&&Telegram.WebApp&&Telegram.WebApp.initDataUnsafe&&Telegram.WebApp.initDataUnsafe.user)uid=Telegram.WebApp.initDataUnsafe.user.id;var box=document.getElementById('rewardsList');if(!uid){box.innerHTML='<div class="empty">Не удалось определить пользователя</div>';return}try{var r=await fetch('/api/rewards/info/'+encodeURIComponent(uid));var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');var levels=d.level_rewards||[];document.getElementById('levelSummary').textContent='Уровневые награды';if(!levels.length){box.innerHTML='<div class="empty">Награды пока не установлены.<br><span style="font-weight:600;color:rgba(255,255,255,.25)">Когда добавишь их в админке, они появятся здесь автоматически.</span></div>';return}box.innerHTML=levels.map(function(x){var rs=(x.rewards||[]).map(function(r){return '<div class="reward-slot ready">'+esc(r.description||r.type||'Награда')+'</div>'}).join('');return '<div class="level-card"><div class="level-row"><div class="level-badge">'+esc(x.level)+' lvl</div><div class="level-exp">'+(x.available?'Доступно':'Уровень '+esc(x.level))+'</div></div>'+(rs||'<div class="reward-slot">Награда не установлена</div>')+'</div>'}).join('')}catch(e){box.innerHTML='<div class="empty">Не удалось загрузить награды</div>'}}init();</script></body></html>''')
-
-@app.route('/profile')
-def profile_page():
-    """Страница профиля → редирект на инвентарь"""
-    logger.info("👤 Запрос страницы профиля → редирект на /inventory")
-    return redirect('/inventory')
-
-@app.route('/ref')
-def ref_page():
-    """Страница реферальной системы"""
-    return render_template('ref.html')
-
-@app.route('/lobby')
-def lobby_page():
-    """Страница лобби"""
-    return render_template('lobby.html')
+    return send_from_directory(BASE_PATH, 'witch_hat_party.html')
 
 @app.route('/games')
 def games_page():
@@ -8344,76 +8264,93 @@ def claim_skin_reward():
 @app.route('/api/events')
 def api_events():
     try:
-        events = get_active_events()
-        now = datetime.utcnow()
-        public = []
+        events=get_active_events(); now=datetime.utcnow(); public=[]
         for ev in events.values():
-            item = dict(ev)
-            remaining = 0
+            item=dict(ev); remaining=0
             if item.get('enabled') and item.get('ends_at'):
                 try:
-                    end = datetime.fromisoformat(str(item['ends_at']).replace('Z','+00:00'))
+                    end=datetime.fromisoformat(str(item['ends_at']).replace('Z','+00:00'))
                     if end.tzinfo:
-                        from datetime import timezone
-                        end = end.astimezone(timezone.utc).replace(tzinfo=None)
-                    remaining = max(0, int((end-now).total_seconds()))
-                except Exception:
-                    remaining = 0
-            item['active'] = bool(item.get('enabled') and remaining > 0)
-            item['remaining_seconds'] = remaining
-            public.append(item)
-        return jsonify({'success': True, 'events': public})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+                        from datetime import timezone; end=end.astimezone(timezone.utc).replace(tzinfo=None)
+                    remaining=max(0,int((end-now).total_seconds()))
+                except Exception: pass
+            item['active']=bool(item.get('enabled') and remaining>0); item['remaining_seconds']=remaining; public.append(item)
+        return jsonify({'success':True,'events':public})
+    except Exception as e: return jsonify({'success':False,'error':str(e)}),500
 
 @app.route('/api/events/witch-hat-party')
 def api_witch_hat_party():
-    events = get_active_events()
-    ev = dict(events.get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party']))
+    ev=dict(get_active_events().get('witch_hat_party',EVENT_DEFAULTS['witch_hat_party']))
     try:
-        end = datetime.fromisoformat(str(ev['ends_at']).replace('Z','+00:00')) if ev.get('ends_at') else None
+        end=datetime.fromisoformat(str(ev['ends_at']).replace('Z','+00:00')) if ev.get('ends_at') else None
         if end and end.tzinfo:
-            from datetime import timezone
-            end = end.astimezone(timezone.utc).replace(tzinfo=None)
-        remaining = max(0, int((end-datetime.utcnow()).total_seconds())) if end else 0
-    except Exception:
-        remaining = 0
-    ev['active'] = bool(ev.get('enabled') and remaining > 0)
-    ev['remaining_seconds'] = remaining
-    return jsonify({'success': True, 'event': ev})
+            from datetime import timezone; end=end.astimezone(timezone.utc).replace(tzinfo=None)
+        remaining=max(0,int((end-datetime.utcnow()).total_seconds())) if end else 0
+    except Exception: remaining=0
+    ev['active']=bool(ev.get('enabled') and remaining>0); ev['remaining_seconds']=remaining
+    return jsonify({'success':True,'event':ev})
 
-@app.route('/api/admin/events', methods=['GET','POST'])
+@app.route('/api/events/witch-hat-party/market')
+def api_witch_hat_market():
+    try:
+        ev=get_active_events().get('witch_hat_party',EVENT_DEFAULTS['witch_hat_party']); items=[]
+        for sec in ev.get('sections',[]):
+            if sec.get('type')!='market': continue
+            for item in sec.get('items',[]):
+                try: items.extend((_event_market_item_from_collection(item.get('collection') or item.get('name')) or {}).get('listings') or [])
+                except Exception as e: logger.warning('Event market collection failed: %s',e)
+        return jsonify({'success':True,'items':items,'sections':ev.get('sections',[])})
+    except Exception as e: return jsonify({'success':False,'error':str(e)}),500
+
+@app.route('/api/admin/events',methods=['GET','POST'])
 def admin_events():
     try:
-        data = request.get_json(silent=True) or {}
-        admin_id = data.get('admin_id') or request.args.get('admin_id')
-        if str(admin_id) != str(ADMIN_ID):
-            return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
-        events = get_active_events()
-        if request.method == 'POST':
-            event_id = str(data.get('event_id') or 'witch_hat_party')
-            if event_id not in events:
-                return jsonify({'success': False, 'error': 'Ивент не найден'}), 404
-            enabled = bool(data.get('enabled'))
-            if enabled:
-                try:
-                    hours = float(data.get('hours'))
-                except Exception:
-                    hours = 0
-                if hours <= 0 or hours > 8760:
-                    return jsonify({'success': False, 'error': 'Укажите срок от 0.1 до 8760 часов'}), 400
-                events[event_id]['enabled'] = True
-                events[event_id]['ends_at'] = (datetime.utcnow() + timedelta(hours=hours)).isoformat(timespec='seconds') + 'Z'
+        data=request.get_json(silent=True) or {}; admin_id=data.get('admin_id') or request.args.get('admin_id')
+        if str(admin_id)!=str(ADMIN_ID): return jsonify({'success':False,'error':'Доступ запрещён'}),403
+        events=get_active_events(); eid=str(data.get('event_id') or 'witch_hat_party')
+        if eid not in events: return jsonify({'success':False,'error':'Ивент не найден'}),404
+        if request.method=='POST':
+            ev=events[eid]; action=str(data.get('action') or 'toggle')
+            if action=='update_settings':
+                for key in ('name','image','loading_gif'):
+                    if key in data: ev[key]=str(data.get(key) or '').strip()
+            elif action in ('add_case','remove_case'):
+                case_id=str(data.get('case_id') or '').strip(); sec=next((x for x in ev.setdefault('sections',[]) if x.get('type')=='cases'),None)
+                if sec is None: sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}; ev['sections'].insert(0,sec)
+                ids=sec.setdefault('case_ids',[])
+                if action=='add_case':
+                    if not _event_find_case(case_id): return jsonify({'success':False,'error':'Кейс не найден'}),404
+                    if case_id not in [str(x) for x in ids]: ids.append(case_id)
+                else: sec['case_ids']=[x for x in ids if str(x)!=case_id]
+            elif action=='add_section':
+                title=str(data.get('title') or '').strip()
+                if not title: return jsonify({'success':False,'error':'Введите название раздела'}),400
+                sid=re.sub(r'[^a-z0-9_-]+','_',title.lower())[:40] or f'section_{int(time.time())}'; base=sid; n=2
+                while any(str(x.get('id'))==sid for x in ev.setdefault('sections',[])): sid=f'{base}_{n}'; n+=1
+                ev['sections'].append({'id':sid,'title':title,'type':str(data.get('type') or 'market'),'items':[],'case_ids':[]})
+            elif action=='remove_section': ev['sections']=[x for x in ev.get('sections',[]) if str(x.get('id'))!=str(data.get('section_id') or '')]
+            elif action=='add_market_collection':
+                resolved=_event_market_item_from_collection(str(data.get('collection') or '').strip())
+                if not resolved.get('listings'): return jsonify({'success':False,'error':'Не удалось найти активные лоты этой коллекции на Fragment'}),404
+                sid=str(data.get('section_id') or 'market'); sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==sid),None)
+                if sec is None: sec={'id':sid,'title':'Купить подарок','type':'market','items':[],'case_ids':[]}; ev['sections'].append(sec)
+                if not any(str(x.get('fragment_slug'))==resolved['fragment_slug'] for x in sec.setdefault('items',[])): sec['items'].append({'collection':resolved['collection'],'fragment_slug':resolved['fragment_slug'],'image':resolved['image'],'floor_ton':resolved.get('floor_ton')})
+            elif action=='remove_market_collection':
+                slug=str(data.get('fragment_slug') or '').strip().lower()
+                for sec in ev.setdefault('sections',[]):
+                    if sec.get('type')=='market': sec['items']=[x for x in sec.get('items',[]) if str(x.get('fragment_slug','')).lower()!=slug]
             else:
-                events[event_id]['enabled'] = False
-                events[event_id]['ends_at'] = None
+                enabled=bool(data.get('enabled'))
+                if enabled:
+                    try: hours=float(data.get('hours'))
+                    except Exception: hours=0
+                    if hours<=0 or hours>8760: return jsonify({'success':False,'error':'Укажите срок от 0.1 до 8760 часов'}),400
+                    ev['enabled']=True; ev['ends_at']=(datetime.utcnow()+timedelta(hours=hours)).isoformat(timespec='seconds')+'Z'
+                else: ev['enabled']=False; ev['ends_at']=None
             save_events(events)
-        # Return remaining time after write/expiry normalization.
-        events = get_active_events()
-        return jsonify({'success': True, 'events': events})
+        return jsonify({'success':True,'events':get_active_events()})
     except Exception as e:
-        logger.error('Admin events error: %s', e)
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.error('Admin events error: %s',e); return jsonify({'success':False,'error':str(e)}),500
 
 @app.route('/api/cases')
 def api_cases():
