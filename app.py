@@ -2605,6 +2605,66 @@ def save_cases(cases):
         logger.error(f"❌ Ошибка сохранения кейсов: {e}")
         return False
 
+
+# ─── Events ────────────────────────────────────────────────────────────────
+EVENTS_FILE = os.path.join(BASE_PATH, 'data', 'events.json')
+EVENT_DEFAULTS = {
+    'witch_hat_party': {
+        'id': 'witch_hat_party',
+        'name': 'Witch Hat Party',
+        'image': '/static/img/witchhat.png',
+        'enabled': False,
+        'ends_at': None,
+    }
+}
+
+def load_events():
+    try:
+        os.makedirs(os.path.dirname(EVENTS_FILE), exist_ok=True)
+        if not os.path.exists(EVENTS_FILE):
+            save_events(EVENT_DEFAULTS)
+            return json.loads(json.dumps(EVENT_DEFAULTS))
+        with open(EVENTS_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        events = data.get('events', data) if isinstance(data, dict) else {}
+        if not isinstance(events, dict): events = {}
+        merged = json.loads(json.dumps(EVENT_DEFAULTS))
+        for k,v in events.items():
+            if k in merged and isinstance(v, dict): merged[k].update(v)
+        return merged
+    except Exception as e:
+        logger.warning('Events load failed: %s', e)
+        return json.loads(json.dumps(EVENT_DEFAULTS))
+
+def save_events(events):
+    try:
+        os.makedirs(os.path.dirname(EVENTS_FILE), exist_ok=True)
+        with open(EVENTS_FILE, 'w', encoding='utf-8') as f:
+            json.dump({'events': events}, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        logger.error('Events save failed: %s', e)
+        return False
+
+def get_active_events():
+    events = load_events()
+    now = datetime.utcnow()
+    changed = False
+    for ev in events.values():
+        if ev.get('enabled') and ev.get('ends_at'):
+            try:
+                end = datetime.fromisoformat(str(ev['ends_at']).replace('Z','+00:00'))
+                if end.tzinfo:
+                    from datetime import timezone
+                    end = end.astimezone(timezone.utc).replace(tzinfo=None)
+                if end <= now:
+                    ev['enabled'] = False
+                    changed = True
+            except Exception:
+                pass
+    if changed: save_events(events)
+    return events
+
 def load_case_sections():
     """Загружает список разделов кейсов"""
     try:
@@ -5583,6 +5643,13 @@ def cases_page():
     """Страница кейсов (алиас)"""
     return render_template('index.html', initial_case_id=None)
 
+@app.route('/event/witch-hat-party')
+def witch_hat_party_page():
+    return render_template_string(r'''<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><title>Witch Hat Party</title>
+<style>*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#10051f,#1b0830 55%,#09040f);color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}body{padding:18px 14px 32px}.wrap{width:min(100%,560px);margin:0 auto}.head{height:52px;display:flex;align-items:center;gap:12px}.back{width:42px;height:42px;border-radius:14px;border:1px solid rgba(198,125,255,.3);background:rgba(145,65,220,.16);color:#fff;font-size:22px}.title{font-size:20px;font-weight:950}.hero{margin-top:16px;padding:30px 20px;border-radius:28px;background:radial-gradient(circle at 50% 20%,rgba(168,85,247,.25),transparent 50%),linear-gradient(145deg,rgba(68,25,105,.75),rgba(20,5,35,.95));border:1px solid rgba(190,120,255,.28);box-shadow:0 20px 70px rgba(80,20,130,.35);text-align:center}.hero img{width:min(68vw,300px);height:min(68vw,300px);object-fit:contain;margin:0 auto;filter:drop-shadow(0 18px 30px rgba(185,100,255,.28));animation:float 3s ease-in-out infinite}.eyebrow{color:#cda5ff;font-size:12px;font-weight:850;text-transform:uppercase;letter-spacing:1.8px;margin-top:6px}.event-title{font-size:34px;line-height:.98;font-weight:1000;margin-top:8px}.timer{margin-top:20px;padding:16px;border-radius:18px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.08)}.timer-label{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1.2px}.timer-value{font-size:28px;font-weight:950;margin-top:5px;color:#e8cfff}.off{padding:34px 20px;text-align:center;border-radius:22px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.55);font-weight:750}@keyframes float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-8px) rotate(1deg)}}</style></head>
+<body><div class="wrap"><div class="head"><button class="back" onclick="location.href='/games'">‹</button><div class="title">Events</div></div><div id="root"></div></div><script>function fmt(s){s=Math.max(0,Number(s||0));var d=Math.floor(s/86400);s%=86400;var h=Math.floor(s/3600);s%=3600;var m=Math.floor(s/60);var sec=Math.floor(s%60);return (d?d+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0')}async function load(){try{var r=await fetch('/api/events/witch-hat-party');var d=await r.json();var e=d.event||{};if(!e.active){root.innerHTML='<div class="off">Ивент сейчас не активен</div>';return}root.innerHTML='<section class="hero"><img src="'+e.image+'" onerror="this.style.display=\'none\'"><div class="eyebrow">Halloween Event</div><div class="event-title">Witch Hat<br>Party</div><div class="timer"><div class="timer-label">Осталось</div><div class="timer-value" id="timer">'+fmt(e.remaining_seconds)+'</div></div></section>';var left=Number(e.remaining_seconds||0);setInterval(function(){left=Math.max(0,left-1);var t=document.getElementById('timer');if(t)t.textContent=fmt(left)},1000)}catch(x){root.innerHTML='<div class="off">Не удалось загрузить ивент</div>'}}load()</script></body></html>''')
+
 @app.route('/inventory')
 def inventory_page():
     """Страница инвентаря"""
@@ -8190,6 +8257,81 @@ def claim_skin_reward():
         return jsonify({'success': False, 'error': str(e)})
 
 # CASES API
+
+@app.route('/api/events')
+def api_events():
+    try:
+        events = get_active_events()
+        now = datetime.utcnow()
+        public = []
+        for ev in events.values():
+            item = dict(ev)
+            remaining = 0
+            if item.get('enabled') and item.get('ends_at'):
+                try:
+                    end = datetime.fromisoformat(str(item['ends_at']).replace('Z','+00:00'))
+                    if end.tzinfo:
+                        from datetime import timezone
+                        end = end.astimezone(timezone.utc).replace(tzinfo=None)
+                    remaining = max(0, int((end-now).total_seconds()))
+                except Exception:
+                    remaining = 0
+            item['active'] = bool(item.get('enabled') and remaining > 0)
+            item['remaining_seconds'] = remaining
+            public.append(item)
+        return jsonify({'success': True, 'events': public})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/events/witch-hat-party')
+def api_witch_hat_party():
+    events = get_active_events()
+    ev = dict(events.get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party']))
+    try:
+        end = datetime.fromisoformat(str(ev['ends_at']).replace('Z','+00:00')) if ev.get('ends_at') else None
+        if end and end.tzinfo:
+            from datetime import timezone
+            end = end.astimezone(timezone.utc).replace(tzinfo=None)
+        remaining = max(0, int((end-datetime.utcnow()).total_seconds())) if end else 0
+    except Exception:
+        remaining = 0
+    ev['active'] = bool(ev.get('enabled') and remaining > 0)
+    ev['remaining_seconds'] = remaining
+    return jsonify({'success': True, 'event': ev})
+
+@app.route('/api/admin/events', methods=['GET','POST'])
+def admin_events():
+    try:
+        data = request.get_json(silent=True) or {}
+        admin_id = data.get('admin_id') or request.args.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Доступ запрещён'}), 403
+        events = get_active_events()
+        if request.method == 'POST':
+            event_id = str(data.get('event_id') or 'witch_hat_party')
+            if event_id not in events:
+                return jsonify({'success': False, 'error': 'Ивент не найден'}), 404
+            enabled = bool(data.get('enabled'))
+            if enabled:
+                try:
+                    hours = float(data.get('hours'))
+                except Exception:
+                    hours = 0
+                if hours <= 0 or hours > 8760:
+                    return jsonify({'success': False, 'error': 'Укажите срок от 0.1 до 8760 часов'}), 400
+                events[event_id]['enabled'] = True
+                events[event_id]['ends_at'] = (datetime.utcnow() + timedelta(hours=hours)).isoformat(timespec='seconds') + 'Z'
+            else:
+                events[event_id]['enabled'] = False
+                events[event_id]['ends_at'] = None
+            save_events(events)
+        # Return remaining time after write/expiry normalization.
+        events = get_active_events()
+        return jsonify({'success': True, 'events': events})
+    except Exception as e:
+        logger.error('Admin events error: %s', e)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/cases')
 def api_cases():
     """Получение всех кейсов с актуальными лимитами"""
@@ -8347,10 +8489,17 @@ def open_case():
         data = request.get_json()
         user_id = data['user_id']
         case_id = data['case_id']
-        quantity = data.get('quantity', 1)
+        try:
+            case_id = int(case_id)
+        except Exception:
+            pass
+        try:
+            quantity = max(1, min(3, int(data.get('quantity', 1))))
+        except Exception:
+            quantity = 1
 
         cases = load_cases()
-        case = next((c for c in cases if c['id'] == case_id), None)
+        case = next((c for c in cases if str(c.get('id')) == str(case_id)), None)
 
         if not case:
             return jsonify({'success': False, 'error': 'Кейс не найден'})
