@@ -3,31 +3,100 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0d0817">
+<meta name="theme-color" content="#171F2B" id="themeColorMeta">
 <title>Профиль — Rasswet Gifts</title>
 <link rel="icon" type="image/png" href="/static/img/logo.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="/static/js/telegram-auth.js"></script>
 <style>
+/* ══════════════════════════════════════════════════════════════
+   ТЕМА: обычный стиль сайта по умолчанию.
+   Хэллоуин — это отдельный слой (.halloween-active на <html>),
+   который включается автоматически, когда активен ивент
+   (см. loadHalloweenEvent), и просто переопределяет переменные ниже.
+   ══════════════════════════════════════════════════════════════ */
 :root{
-    --bg:#0d0817;
-    --header:#120a1f;
+    /* базовые цвета (всегда одинаковые) */
     --text:#f7f9fd;
-    --muted:#a99cc4;
-    --muted-2:#7a6f92;
     --blue:#4D9DDB;
     --blue-2:#367FB6;
     --blue-light:#92C7EA;
-    --purple:#8B5CF6;
-    --purple-2:#6D3FD1;
-    --orange:#FF8A3D;
     --green:#24C38E;
     --red:#FF3064;
-    --line:rgba(139,92,246,.22);
-    --card:rgba(32,20,52,.55);
-    --card-2:rgba(38,24,60,.7);
+    --purple:#8B5CF6;
+    --orange:#FF8A3D;
     --safe-top:env(safe-area-inset-top,0px);
     --safe-bottom:env(safe-area-inset-bottom,0px);
+
+    /* обычная тема (по умолчанию) */
+    --muted:#8b96ab;
+    --muted-2:#5c6a80;
+    --line:rgba(110,145,189,.20);
+    --card:rgba(28,36,49,.62);
+    --glow-1:rgba(77,157,219,.14);
+    --glow-2:rgba(77,157,219,.07);
+    --glow-3:rgba(77,157,219,.09);
+    --bg-a:#171F2B;
+    --bg-b:#141b26;
+    --bg-c:#121722;
+    --grid-line:rgba(110,145,189,.07);
+    --topbar-bg:rgba(15,20,29,.96);
+    --topbar-border:rgba(110,145,189,.14);
+    --nav-hover-color:#c7d3e6;
+    --nav-hover-bg:rgba(77,157,219,.08);
+    --nav-active-color:#7CAEFF;
+    --nav-active-bg:rgba(77,157,219,.16);
+    --nav-active-shadow:rgba(77,157,219,.32);
+    --ring-1:#4D9DDB;
+    --ring-2:#367FB6;
+    --avatar-bg-a:#243447;
+    --avatar-bg-b:#182231;
+    --bottomnav-bg:rgba(17,22,31,.96);
+    --bottomnav-border:rgba(110,145,189,.18);
+    --bnav-active-color:#7CAEFF;
+    --bnav-active-bg:rgba(77,157,219,.15);
+    --bnav-active-shadow:rgba(77,157,219,.3);
+    --sheet-bg-a:#212c3c;
+    --sheet-bg-b:#151d29;
+    --sheet-border:rgba(77,157,219,.30);
+    --notif-border:rgba(77,157,219,.35);
+    --pumpkin-display:none;
+}
+
+/* хэллоуин — включается классом .halloween-active на <html> */
+html.halloween-active{
+    --muted:#9b8bb8;
+    --muted-2:#7a6f92;
+    --line:rgba(139,92,246,.22);
+    --card:rgba(32,20,52,.55);
+    --glow-1:rgba(139,92,246,.20);
+    --glow-2:rgba(255,138,61,.13);
+    --glow-3:rgba(77,157,219,.10);
+    --bg-a:#0f0a1c;
+    --bg-b:#0d0817;
+    --bg-c:#0a0612;
+    --grid-line:rgba(139,92,246,.09);
+    --topbar-bg:rgba(18,7,28,.96);
+    --topbar-border:rgba(168,85,247,.22);
+    --nav-hover-color:#d7c9ef;
+    --nav-hover-bg:rgba(139,92,246,.09);
+    --nav-active-color:#dfb7ff;
+    --nav-active-bg:rgba(139,92,246,.18);
+    --nav-active-shadow:rgba(168,85,247,.35);
+    --ring-1:var(--orange);
+    --ring-2:var(--purple);
+    --avatar-bg-a:#2a1c44;
+    --avatar-bg-b:#1a1128;
+    --bottomnav-bg:rgba(20,8,30,.96);
+    --bottomnav-border:rgba(168,85,247,.26);
+    --bnav-active-color:#d8a8ff;
+    --bnav-active-bg:rgba(139,92,246,.18);
+    --bnav-active-shadow:rgba(168,85,247,.30);
+    --sheet-bg-a:#211235;
+    --sheet-bg-b:#160c26;
+    --sheet-border:rgba(139,92,246,.30);
+    --notif-border:rgba(139,92,246,.35);
+    --pumpkin-display:inline;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -38,12 +107,13 @@ body{
     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Arial,sans-serif;
     color:var(--text);
     background:
-        radial-gradient(650px 420px at 10% 10%,rgba(139,92,246,.20),transparent 68%),
-        radial-gradient(650px 420px at 92% 20%,rgba(255,138,61,.13),transparent 70%),
-        radial-gradient(700px 500px at 50% 100%,rgba(77,157,219,.10),transparent 70%),
-        linear-gradient(180deg,#0f0a1c 0%,#0d0817 55%,#0a0612 100%);
+        radial-gradient(650px 420px at 10% 10%,var(--glow-1),transparent 68%),
+        radial-gradient(650px 420px at 92% 20%,var(--glow-2),transparent 70%),
+        radial-gradient(700px 500px at 50% 100%,var(--glow-3),transparent 70%),
+        linear-gradient(180deg,var(--bg-a) 0%,var(--bg-b) 55%,var(--bg-c) 100%);
     -webkit-font-smoothing:antialiased;
     overflow-x:hidden;
+    transition:background .4s ease;
 }
 body:before{
     content:"";
@@ -52,20 +122,22 @@ body:before{
     pointer-events:none;
     opacity:.22;
     background-image:
-        linear-gradient(rgba(139,92,246,.09) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(139,92,246,.09) 1px,transparent 1px);
+        linear-gradient(var(--grid-line) 1px,transparent 1px),
+        linear-gradient(90deg,var(--grid-line) 1px,transparent 1px);
     background-size:80px 80px;
+    transition:background-image .4s ease;
 }
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 img{display:block}
 
-/* ══════════════ TOP BAR (стиль раздела «Игры», адаптированный под тему профиля) ══════════════ */
+/* ══════════════ TOP BAR (стиль раздела «Игры», в цветах этого раздела) ══════════════ */
 .top-bar{
     height:76px;width:100%;padding:0 42px;
     display:flex;align-items:center;position:relative;z-index:20;
-    background:rgba(15,9,26,.96);
-    border-bottom:1px solid rgba(139,92,246,.20);
+    background:var(--topbar-bg);
+    border-bottom:1px solid var(--topbar-border);
     box-shadow:0 1px 25px rgba(0,0,0,.28);
+    transition:background .3s ease,border-color .3s ease;
 }
 .desktop-left{display:flex;align-items:center}
 .logo-btn{width:48px;height:48px;display:flex;align-items:center;justify-content:center}
@@ -74,14 +146,14 @@ img{display:block}
 .nav-btn{
     height:40px;padding:0 13px;border-radius:22px;
     display:flex;align-items:center;gap:8px;
-    color:#9b8bb8;font-size:14px;font-weight:700;white-space:nowrap;
+    color:var(--muted);font-size:14px;font-weight:700;white-space:nowrap;
     transition:.18s ease;
 }
-.nav-btn:hover{color:#d7c9ef;background:rgba(139,92,246,.09)}
+.nav-btn:hover{color:var(--nav-hover-color);background:var(--nav-hover-bg)}
 .nav-btn.active{
-    color:#7CAEFF;
-    background:rgba(77,157,219,.16);
-    box-shadow:inset 0 0 0 1px rgba(77,157,219,.32),0 4px 18px rgba(77,157,219,.10);
+    color:var(--nav-active-color);
+    background:var(--nav-active-bg);
+    box-shadow:inset 0 0 0 1px var(--nav-active-shadow),0 4px 18px var(--nav-active-shadow);
 }
 .nav-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:currentColor}
 .nav-icon svg{width:18px;height:18px}
@@ -89,31 +161,33 @@ img{display:block}
 .balance{
     height:36px;min-width:88px;padding:0 10px;border-radius:11px;
     display:flex;align-items:center;justify-content:center;gap:6px;
-    color:#f2edff;
-    background:linear-gradient(180deg,#211235,#170c26);
+    color:#eaf2fb;
+    background:linear-gradient(180deg,var(--sheet-bg-a),var(--sheet-bg-b));
     border:1px solid rgba(77,157,219,.38);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
     font-size:14px;font-weight:800;
+    transition:background .3s ease;
 }
 .balance img{width:16px;height:16px;object-fit:contain}
 .balance-value{min-width:35px;text-align:right}
 .plus-btn{
     width:28px;height:28px;border-radius:9px;
     display:flex;align-items:center;justify-content:center;color:#eaf3ff;
-    background:linear-gradient(180deg,rgba(77,157,219,.26),rgba(77,60,140,.24));
+    background:linear-gradient(180deg,rgba(77,157,219,.26),rgba(77,110,180,.20));
     border:1px solid rgba(77,157,219,.48);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 4px 16px rgba(77,157,219,.16);
     transition:.18s ease;
 }
 .plus-btn svg{width:13px;height:13px}
-.plus-btn:hover{background:linear-gradient(180deg,rgba(77,157,219,.38),rgba(77,60,140,.32));border-color:rgba(77,157,219,.7)}
+.plus-btn:hover{background:linear-gradient(180deg,rgba(77,157,219,.38),rgba(77,110,180,.28));border-color:rgba(77,157,219,.7)}
 .plus-btn:active{transform:scale(.92)}
 .avatar-btn{
     width:43px;height:43px;padding:2px;border-radius:50%;overflow:hidden;
-    background:#170c26;
+    background:var(--avatar-bg-b);
     border:2px solid;
-    border-image:linear-gradient(135deg,var(--orange),var(--purple)) 1;
-    box-shadow:0 0 0 2px rgba(139,92,246,.14);
+    border-image:linear-gradient(135deg,var(--ring-1),var(--ring-2)) 1;
+    box-shadow:0 0 0 2px rgba(77,157,219,.14);
+    transition:border-image .3s ease;
 }
 .avatar-btn img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 
@@ -124,18 +198,19 @@ img{display:block}
         position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));
         z-index:4000;height:66px;padding:6px;display:grid;
         grid-template-columns:repeat(4,1fr);gap:4px;border-radius:20px;
-        background:rgba(17,10,28,.96);
-        border:1px solid rgba(139,92,246,.24);
+        background:var(--bottomnav-bg);
+        border:1px solid var(--bottomnav-border);
         box-shadow:0 14px 45px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04);
         backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+        transition:background .3s ease,border-color .3s ease;
     }
     .bottom-nav-btn{
         min-width:0;border-radius:15px;display:flex;flex-direction:column;
         align-items:center;justify-content:center;gap:4px;
-        color:#8b7fa4;font-size:10px;font-weight:850;transition:.18s ease;
+        color:var(--muted);font-size:10px;font-weight:850;transition:.18s ease;
     }
     .bottom-nav-btn .nav-icon,.bottom-nav-btn .nav-icon svg{width:21px;height:21px}
-    .bottom-nav-btn.active{color:#7CAEFF;background:rgba(77,157,219,.15);box-shadow:inset 0 0 0 1px rgba(77,157,219,.3)}
+    .bottom-nav-btn.active{color:var(--bnav-active-color);background:var(--bnav-active-bg);box-shadow:inset 0 0 0 1px var(--bnav-active-shadow)}
 }
 @media(min-width:701px){.bottom-nav{display:none!important}}
 
@@ -145,7 +220,7 @@ img{display:block}
     font-size:26px;font-weight:900;letter-spacing:-.6px;margin-bottom:22px;
     display:flex;align-items:center;gap:10px;
 }
-.page-title .pumpkin{font-size:24px;filter:drop-shadow(0 0 10px rgba(255,138,61,.5))}
+.page-title .pumpkin{font-size:24px;filter:drop-shadow(0 0 10px rgba(255,138,61,.5));display:var(--pumpkin-display)}
 
 .top-grid{display:grid;grid-template-columns:1fr 1.35fr;gap:16px;margin-bottom:16px;align-items:stretch}
 
@@ -155,11 +230,13 @@ img{display:block}
     border-radius:22px;padding:22px;
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
     position:relative;overflow:hidden;
+    transition:background .3s ease,border-color .3s ease;
 }
 .panel:before{
     content:"";position:absolute;top:-70px;right:-40px;width:200px;height:200px;
-    background:radial-gradient(circle,rgba(139,92,246,.20) 0%,transparent 70%);
+    background:radial-gradient(circle,var(--glow-1) 0%,transparent 70%);
     pointer-events:none;
+    transition:background .3s ease;
 }
 
 /* PROFILE PANEL */
@@ -167,14 +244,16 @@ img{display:block}
 .avatar-wrap{
     width:76px;height:76px;min-width:76px;border-radius:50%;
     padding:3px;
-    background:linear-gradient(135deg,var(--orange),var(--purple));
-    box-shadow:0 0 26px rgba(139,92,246,.35);
+    background:linear-gradient(135deg,var(--ring-1),var(--ring-2));
+    box-shadow:0 0 26px rgba(77,157,219,.30);
     position:relative;z-index:1;
+    transition:background .3s ease;
 }
 .avatar-inner{
     width:100%;height:100%;border-radius:50%;overflow:hidden;
-    background:linear-gradient(135deg,#2a1c44,#1a1128);
+    background:linear-gradient(135deg,var(--avatar-bg-a),var(--avatar-bg-b));
     display:flex;align-items:center;justify-content:center;
+    transition:background .3s ease;
 }
 .avatar-inner img{width:100%;height:100%;object-fit:cover;display:block}
 .avatar-fallback{font-size:28px;font-weight:800;color:#fff}
@@ -244,11 +323,11 @@ img{display:block}
 @media(max-width:700px){.inv-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
 
 .item-card{
-    background:rgba(20,12,32,.72);
-    border:1px solid rgba(139,92,246,.16);
+    background:rgba(14,18,26,.72);
+    border:1px solid var(--line);
     border-radius:16px;padding:9px 8px 10px;
     display:flex;flex-direction:column;
-    transition:border-color .15s,transform .15s;
+    transition:border-color .15s,transform .15s,background .3s ease;
 }
 .item-card:hover{border-color:rgba(77,157,219,.35)}
 .item-name{
@@ -281,7 +360,7 @@ img{display:block}
 .inv-empty{
     grid-column:1/-1;
     width:100%;min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
-    border-radius:18px;border:1px dashed rgba(139,92,246,.24);
+    border-radius:18px;border:1px dashed var(--line);
     color:rgba(255,255,255,.32);font-size:14px;font-weight:700;
 }
 .inv-empty svg{width:44px;height:44px;stroke:rgba(255,255,255,.24);fill:none;stroke-width:1.6}
@@ -290,7 +369,7 @@ img{display:block}
     body:before{inset:calc(62px + env(safe-area-inset-top)) 0 0;background-size:65px 65px}
     .top-bar{
         margin-top:4vh;height:auto;min-height:calc(62px + env(safe-area-inset-top));
-        padding:calc(8px + env(safe-area-inset-top)) 11px 8px;background:#100a1c;
+        padding:calc(8px + env(safe-area-inset-top)) 11px 8px;background:var(--topbar-bg);
     }
     .desktop-left{display:none}
     .account{width:100%;justify-content:flex-end;gap:7px}
@@ -320,11 +399,11 @@ img{display:block}
 }
 .overlay.show{opacity:1;visibility:visible}
 .sheet{
-    background:linear-gradient(180deg,#211235 0%,#160c26 100%);
+    background:linear-gradient(180deg,var(--sheet-bg-a) 0%,var(--sheet-bg-b) 100%);
     border-radius:24px 24px 0 0;width:100%;max-width:520px;
     padding:16px 18px calc(24px + var(--safe-bottom));
-    transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1);
-    border-top:1px solid rgba(139,92,246,.3);max-height:88vh;overflow-y:auto;
+    transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1),background .3s ease;
+    border-top:1px solid var(--sheet-border);max-height:88vh;overflow-y:auto;
 }
 .overlay.show .sheet{transform:translateY(0)}
 .sheet-handle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 16px}
@@ -334,7 +413,7 @@ img{display:block}
 .sheet-close{width:32px;height:32px;border-radius:10px;background:rgba(255,48,100,.15);color:#FF3064;font-size:14px;font-weight:800}
 
 .mrkt-loading{display:flex;align-items:center;gap:10px;padding:24px 4px;color:var(--muted);font-size:13px;font-weight:700}
-.mrkt-spinner{width:22px;height:22px;border:3px solid rgba(139,92,246,.2);border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite}
+.mrkt-spinner{width:22px;height:22px;border:3px solid rgba(77,157,219,.2);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .mrkt-error{color:var(--red);font-size:13px;font-weight:700;padding:10px 2px;display:none}
 .mrkt-error.show{display:block}
@@ -358,9 +437,10 @@ img{display:block}
 
 /* DEPOSIT */
 .deposit-modal{
-    background:linear-gradient(180deg,#211235,#160c26);border-radius:22px;
-    width:min(100%,380px);padding:22px;border:1px solid rgba(139,92,246,.3);
+    background:linear-gradient(180deg,var(--sheet-bg-a),var(--sheet-bg-b));border-radius:22px;
+    width:min(100%,380px);padding:22px;border:1px solid var(--sheet-border);
     box-shadow:0 25px 90px rgba(0,0,0,.55);
+    transition:background .3s ease,border-color .3s ease;
 }
 .deposit-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .deposit-title{font-size:17px;font-weight:850}
@@ -370,9 +450,9 @@ img{display:block}
 /* NOTIF */
 .notif{
     position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translate(-50%,140%);
-    z-index:99999;background:rgba(24,14,38,.98);border:1px solid rgba(139,92,246,.35);
+    z-index:99999;background:rgba(18,14,26,.98);border:1px solid var(--notif-border);
     color:#fff;font-size:13px;font-weight:700;padding:12px 20px;border-radius:14px;
-    box-shadow:0 10px 30px rgba(0,0,0,.5);transition:transform .3s cubic-bezier(.32,1,.23,1);
+    box-shadow:0 10px 30px rgba(0,0,0,.5);transition:transform .3s cubic-bezier(.32,1,.23,1),border-color .3s ease;
     max-width:calc(100% - 32px);text-align:center;
 }
 .notif.show{transform:translate(-50%,0)}
@@ -600,12 +680,42 @@ document.addEventListener('DOMContentLoaded', function(){
         try{
             Telegram.WebApp.ready();
             Telegram.WebApp.expand();
-            Telegram.WebApp.setHeaderColor('#0d0817');
-            Telegram.WebApp.setBackgroundColor('#0d0817');
+            Telegram.WebApp.setHeaderColor('#171F2B');
+            Telegram.WebApp.setBackgroundColor('#171F2B');
         }catch(e){}
     }
     initUser();
+    loadHalloweenEvent();
 });
+
+/* ══════════════════════════════════════════════════════════════
+   ХЭЛЛОУИН — тема включается сама, когда ивент активен на сервере
+   (тот же источник, что и на странице «Игры»). По умолчанию —
+   обычное оформление сайта.
+   ══════════════════════════════════════════════════════════════ */
+function setHalloweenTheme(active){
+    document.documentElement.classList.toggle('halloween-active', !!active);
+    var tc = $('themeColorMeta');
+    if(tc) tc.setAttribute('content', active ? '#0d0817' : '#171F2B');
+    try{
+        if(window.Telegram && Telegram.WebApp){
+            Telegram.WebApp.setHeaderColor(active ? '#0d0817' : '#171F2B');
+            Telegram.WebApp.setBackgroundColor(active ? '#0d0817' : '#171F2B');
+        }
+    }catch(e){}
+}
+async function loadHalloweenEvent(){
+    try{
+        var r = await fetch('/api/events/witch-hat-party?ts=' + Date.now(), {cache:'no-store'});
+        var d = await r.json();
+        var active = !!(d && d.event && d.event.active);
+        setHalloweenTheme(active);
+    }catch(e){
+        /* сеть недоступна — не трогаем текущую тему, тихо повторим позже */
+    }finally{
+        setTimeout(loadHalloweenEvent, 30000);
+    }
+}
 
 async function initUser(){
     var authData = null;
