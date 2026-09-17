@@ -2,1720 +2,541 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#1C2233">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d0817">
 <title>Профиль — Rasswet Gifts</title>
 <link rel="icon" type="image/png" href="/static/img/logo.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="/static/js/telegram-auth.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{
-    --bg:#171F2B;
-    --surface:#202B39;
-    --surface-2:#263344;
-    --border:rgba(132,176,219,.16);
-    --text:#fff;
-    --text-2:rgba(255,255,255,.55);
-    --text-3:rgba(255,255,255,.35);
+    --bg:#0d0817;
+    --header:#120a1f;
+    --text:#f7f9fd;
+    --muted:#a99cc4;
+    --muted-2:#7a6f92;
     --blue:#4D9DDB;
     --blue-2:#367FB6;
     --blue-light:#92C7EA;
-    --green:#24C38E;
-    --gold:#FFD700;
-    --red:#FF3064;
     --purple:#8B5CF6;
-    --safe-top:env(safe-area-inset-top,20px);
+    --purple-2:#6D3FD1;
+    --orange:#FF8A3D;
+    --green:#24C38E;
+    --red:#FF3064;
+    --line:rgba(139,92,246,.22);
+    --card:rgba(32,20,52,.55);
+    --card-2:rgba(38,24,60,.7);
+    --safe-top:env(safe-area-inset-top,0px);
     --safe-bottom:env(safe-area-inset-bottom,0px);
 }
-html,body{min-height:100%;height:auto;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:auto;width:100%;-webkit-overflow-scrolling:touch}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%;min-height:100dvh;width:100%}
 body{
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
-    background:#171F2B;
-    background-image:linear-gradient(180deg,#1B2635 0%,#171F2B 55%,#151D28 100%);
+    min-height:100dvh;
+    overscroll-behavior:none;
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Arial,sans-serif;
     color:var(--text);
-    min-height:100vh;
+    background:
+        radial-gradient(650px 420px at 10% 10%,rgba(139,92,246,.20),transparent 68%),
+        radial-gradient(650px 420px at 92% 20%,rgba(255,138,61,.13),transparent 70%),
+        radial-gradient(700px 500px at 50% 100%,rgba(77,157,219,.10),transparent 70%),
+        linear-gradient(180deg,#0f0a1c 0%,#0d0817 55%,#0a0612 100%);
     -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
 }
-
-.page{
-    width:100%;max-width:480px;margin:0 auto;
-    padding:calc(var(--safe-top) + 58px) 14px calc(var(--safe-bottom) + 110px);
-    position:relative;
-}
-
-/* TOP BAR */
-.top-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 0 14px;gap:8px}
-.top-left{display:flex;gap:6px;align-items:center}
-.top-icon-btn{
-    width:36px;height:36px;border-radius:12px;
-    border:1.5px solid rgba(255,255,255,.08);
-    background:rgba(255,255,255,.04);
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer;transition:all .15s;
-}
-.top-icon-btn:active{transform:scale(.9)}
-.top-icon-btn svg{width:18px;height:18px;color:rgba(255,255,255,.7);stroke:currentColor;fill:none;stroke-width:2}
-.top-icon-btn img.lang-flag{width:22px;height:22px;object-fit:cover;border-radius:4px}
-.top-right{display:flex;gap:6px;align-items:center}
-.bal-pill{
-    display:flex;align-items:center;gap:6px;
-    background:rgba(120,135,160,.12);
-    border:1px solid rgba(120,135,160,.25);
-    border-radius:20px;padding:6px 12px;
-    font-size:13px;font-weight:800;
-}
-.bal-pill img{width:16px;height:16px}
-.bal-plus{
-    width:28px;height:28px;border-radius:50%;
-    background:rgba(120,135,160,.3);
-    border:1px solid rgba(120,135,160,.45);
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer;font-size:16px;color:#A0B0C4;font-weight:800;
-    transition:all .15s;
-}
-.bal-plus:active{transform:scale(.9)}
-
-/* PROFILE */
-.profile-section{
-    display:flex;flex-direction:column;align-items:center;
-    margin-bottom:16px;padding:22px 14px 18px;
-    background:linear-gradient(180deg,rgba(59,130,246,.08) 0%,rgba(59,130,246,.01) 100%);
-    border-radius:22px;
-    border:1.5px solid rgba(59,130,246,.18);
-    position:relative;overflow:hidden;
-}
-.profile-section::before{
-    content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);
-    width:220px;height:220px;
-    background:radial-gradient(circle,rgba(59,130,246,.18) 0%,transparent 70%);
-    pointer-events:none;
-}
-.avatar-wrap{
-    width:88px;height:88px;min-width:88px;min-height:88px;
-    border-radius:50%;
-    border:3px solid rgba(59,130,246,.5);
-    overflow:hidden;margin-bottom:14px;
-    background:linear-gradient(135deg,#2a3544,#1f2a38);
-    box-shadow:0 0 30px rgba(59,130,246,.3);
-    position:relative;z-index:1;
-    display:flex;align-items:center;justify-content:center;
-}
-.avatar-wrap img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;border-radius:50%}
-.avatar-fallback{
-    width:100%;height:100%;
-    display:flex;align-items:center;justify-content:center;
-    font-size:32px;font-weight:800;color:rgba(255,255,255,.7);
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    border-radius:50%;
-}
-.profile-name{
-    font-size:18px;font-weight:800;margin-bottom:4px;text-align:center;
-    letter-spacing:-.2px;position:relative;z-index:1;
-    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    padding:0 10px;
-}
-.profile-uid{font-size:11px;color:var(--text-3);margin-bottom:14px;font-weight:600;position:relative;z-index:1}
-.level-bar-wrap{width:100%;max-width:280px;margin-bottom:16px;position:relative;z-index:1}
-.level-bar-bg{width:100%;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
-.level-bar-fill{height:100%;background:linear-gradient(90deg,#3B82F6,#7CAEFF);border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
-.level-bar-text{font-size:10px;color:var(--text-3);text-align:center;margin-top:5px;font-weight:700}
-.profile-stats{display:flex;gap:8px;width:100%;position:relative;z-index:1}
-.profile-stat{
-    flex:1;display:flex;flex-direction:column;align-items:center;
-    padding:12px 4px;
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.06);
-    border-radius:14px;min-width:0;
-}
-.profile-stat-val{
-    font-size:14px;font-weight:800;color:#fff;
-    display:flex;align-items:center;gap:4px;line-height:1;
-    max-width:100%;overflow:hidden;
-}
-.profile-stat-val img{width:14px;height:14px;flex-shrink:0}
-.profile-stat-val span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.profile-stat-label{font-size:9px;color:var(--text-3);font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
-
-/* ACTION */
-.action-row{display:flex;gap:10px;width:100%;margin-bottom:12px}
-.btn-action{
-    flex:1;padding:15px;border-radius:14px;border:none;
-    font-family:inherit;font-size:14px;font-weight:800;
-    cursor:pointer;transition:transform .15s;
-    display:flex;align-items:center;justify-content:center;gap:6px;
-}
-.btn-action:active{transform:scale(.97)}
-.btn-primary{background:#1687f8;color:#fff;box-shadow:none;border:0}
-.btn-outline{background:rgba(59,130,246,.12);color:#7CAEFF;border:1.5px solid rgba(59,130,246,.35)}
-
-/* ADMIN */
-.admin-btn{
-    width:100%;padding:14px 16px;border-radius:14px;
-    background:linear-gradient(135deg,#2D4054,#243444);
-    border:1px solid rgba(108,170,214,.28);color:#9ED2F2;font-weight:850;font-size:13px;
-    cursor:pointer;margin-bottom:12px;
-    display:flex;align-items:center;justify-content:center;gap:9px;
-    box-shadow:0 8px 24px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.04);
-    transition:transform .15s,background .2s,border-color .2s;
-    text-transform:uppercase;letter-spacing:.8px;
-}
-.admin-btn:hover{background:linear-gradient(135deg,#334A60,#293B4E);border-color:rgba(126,190,229,.42)}
-.admin-btn:active{transform:scale(.97)}
-.admin-btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-
-/* REFERRAL */
-.ref-card{
-    background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
-    border:1px solid rgba(255,255,255,.08);
-    border-radius:18px;padding:16px;margin-bottom:20px;
-    position:relative;overflow:hidden;
-}
-.ref-card-title{font-size:15px;font-weight:800;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px;color:#fff}
-.ref-card-desc{font-size:12px;color:var(--text-2);line-height:1.5;margin-bottom:12px;max-width:75%}
-.ref-stats{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-.ref-stat{
-    display:flex;align-items:center;gap:4px;
-    background:rgba(59,130,246,.1);
-    border:1px solid rgba(59,130,246,.2);
-    border-radius:20px;padding:5px 10px;
-    font-size:11px;font-weight:700;color:#7CAEFF;
-}
-.ref-stat img,.ref-stat svg{width:14px;height:14px;flex-shrink:0}
-.ref-links{display:flex;gap:14px;flex-wrap:wrap}
-.ref-link{
-    font-size:13px;font-weight:700;color:#7CAEFF;
-    cursor:pointer;background:none;border:none;font-family:inherit;
-    padding:0;transition:opacity .15s;
-}
-.ref-link:active{opacity:.6}
-
-/* SECTION HEADER */
-
-/* INVENTORY GRID */
-.inv-grid{
-    display:grid;
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:12px 9px;
-    width:100%;
-    margin:0 0 22px;
-}
-.inv-card{
-    min-width:0;
-    width:100%;
-    background:rgba(28,34,41,.72);
-    border:1px solid rgba(255,255,255,.055);
-    border-radius:18px;
-    padding:8px 7px 9px;
-    text-align:center;
-    cursor:pointer;
-    transition:transform .16s,border-color .16s,background .16s,box-shadow .16s;
-    position:relative;
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-    box-sizing:border-box;
-    min-height:156px;
-    -webkit-tap-highlight-color:transparent;
-}
-.inv-card:active{transform:scale(.97)}
-.inv-card:hover{border-color:rgba(74,150,235,.24);background:rgba(31,39,49,.9)}
-.inv-card.selected{box-shadow:0 0 0 2px #3B82F6;background:rgba(59,130,246,.12);border-color:#3B82F6}
-.inv-card.selected::after{
-    content:'✓';position:absolute;top:6px;right:6px;width:21px;height:21px;
-    background:#2E8BFF;border-radius:50%;font-size:11px;display:flex;
-    align-items:center;justify-content:center;color:#fff;font-weight:900;z-index:4;
-    box-shadow:0 3px 10px rgba(46,139,255,.35)
-}
-.inv-card-img-wrap{
-    width:100%;
-    aspect-ratio:1/1;
-    display:flex;align-items:center;justify-content:center;
-    overflow:hidden;
-    border-radius:14px;
-    position:relative;
-    background:rgba(17,22,28,.9);
-    border:1px solid rgba(255,255,255,.035);
-    flex:none;
-}
-.inv-card-img-wrap img{width:100%;height:100%;object-fit:contain;padding:7px;display:block}
-.inv-card-name{
-    font-size:10px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    padding:7px 3px 3px;line-height:1.15;color:rgba(255,255,255,.92);min-height:22px;
-}
-.inv-card-price{
-    display:flex;align-items:center;justify-content:center;gap:4px;
-    font-size:10px;font-weight:800;color:#73B7FF;padding:2px 2px 0;line-height:1;
-    min-height:14px;
-}
-.inv-card-price img{width:11px;height:11px;display:block;object-fit:contain}
-.inv-card-challenge{
-    position:absolute;top:11px;left:11px;width:20px;height:20px;background:rgba(0,0,0,.7);
-    border-radius:6px;display:flex;align-items:center;justify-content:center;z-index:3;
-    border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(4px)
-}
-.inv-card-challenge svg{width:11px;height:11px;color:#fff;stroke:currentColor;fill:none;stroke-width:2.5}
-.inv-card-upgraded{border-color:rgba(102,173,233,.16)!important;background:rgba(31,39,49,.82)!important}
-.inv-card-upgraded .inv-card-img-wrap{background:rgba(12,17,22,.96)}
-.inv-empty{
-    width:100%;min-height:190px;display:flex;align-items:center;justify-content:center;
-    border-radius:31px;border:1px solid rgba(255,255,255,.05);padding:40px 20px;
-    box-sizing:border-box;color:rgba(255,255,255,.20);font-size:14px;font-weight:700;
-    background:transparent;text-align:center;
-}
-.inv-empty img{display:none}
-
-/* SELECT ACTION BAR */
-.select-action-bar{display:none;
+body:before{
+    content:"";
     position:fixed;
-    bottom:calc(var(--safe-bottom,0px) + 90px);
-    left:50%;transform:translateX(-50%) translateY(140%);
-    z-index:4999;
-    width:calc(100% - 28px);max-width:452px;
-    background:rgba(28,34,51,.98);
-    border-radius:16px;padding:12px 16px;
-    border:1.5px solid rgba(59,130,246,.3);
-    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    display:flex;align-items:center;justify-content:space-between;
-    gap:12px;
-    box-shadow:0 8px 30px rgba(0,0,0,.6);
-    transition:transform .3s cubic-bezier(.32,1,.23,1);
-    pointer-events:none;visibility:hidden;opacity:0;
+    inset:76px 0 0;
+    pointer-events:none;
+    opacity:.22;
+    background-image:
+        linear-gradient(rgba(139,92,246,.09) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(139,92,246,.09) 1px,transparent 1px);
+    background-size:80px 80px;
 }
-.select-action-bar.show{
-    transform:translateX(-50%) translateY(0);
-    pointer-events:auto;visibility:visible;opacity:1;
-}
-.select-info{font-size:13px;font-weight:700;color:rgba(255,255,255,.75)}
-.select-info span{color:#3B82F6;font-weight:900}
-.select-btns{display:flex;gap:8px}
-.select-btn{
-    padding:11px 16px;border-radius:12px;border:none;
-    font-size:13px;font-weight:800;cursor:pointer;
-    transition:transform .15s;font-family:inherit;
-}
-.select-btn:active{transform:scale(.95)}
-.select-btn-sell{background:rgba(255,255,255,.1);color:#fff}
-.select-btn-withdraw{
-    background:linear-gradient(135deg,#4D9DDB,#367FB6);
-    color:#fff;box-shadow:0 4px 14px rgba(59,130,246,.4);
-}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+img{display:block}
 
-/* BOTTOM NAV */
-.bottom-nav{
-    position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:4000;
-    width:min(calc(100% - 24px),444px);height:66px;padding:6px;
-    background:rgba(25,29,34,.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-    border:1px solid rgba(255,255,255,.055);border-radius:27px;
-    box-shadow:0 12px 36px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.025);
-    display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;
+/* ══════════════ TOP BAR (стиль раздела «Игры», адаптированный под тему профиля) ══════════════ */
+.top-bar{
+    height:76px;width:100%;padding:0 42px;
+    display:flex;align-items:center;position:relative;z-index:20;
+    background:rgba(15,9,26,.96);
+    border-bottom:1px solid rgba(139,92,246,.20);
+    box-shadow:0 1px 25px rgba(0,0,0,.28);
 }
-.bnav-item{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-    width:25%;height:54px;border-radius:23px;color:rgba(255,255,255,.42);
-    font-weight:700;cursor:pointer;transition:all .18s;text-decoration:none;
-    background:transparent;border:none;font-family:inherit;box-sizing:border-box;
+.desktop-left{display:flex;align-items:center}
+.logo-btn{width:48px;height:48px;display:flex;align-items:center;justify-content:center}
+.logo-btn img{width:38px;height:38px;object-fit:contain}
+.main-nav{display:flex;align-items:center;gap:2px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.nav-btn{
+    height:40px;padding:0 13px;border-radius:22px;
+    display:flex;align-items:center;gap:8px;
+    color:#9b8bb8;font-size:14px;font-weight:700;white-space:nowrap;
+    transition:.18s ease;
 }
-.bnav-item svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-.bnav-item span{font-size:9px;font-weight:700;line-height:1}
-.bnav-item.active{background:rgba(54,142,238,.18);color:#3E91F4;box-shadow:inset 0 0 0 1px rgba(62,145,244,.08)}
-.bnav-item.active svg{filter:drop-shadow(0 0 6px rgba(62,145,244,.22))}
-.bnav-item:active{transform:scale(.94)}
-
-/* MODALS */
-.overlay{
-    position:fixed;inset:0;z-index:5000;
-    display:none;align-items:center;justify-content:center;
-    background:rgba(0,0,0,.75);
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-    padding:20px;
+.nav-btn:hover{color:#d7c9ef;background:rgba(139,92,246,.09)}
+.nav-btn.active{
+    color:#7CAEFF;
+    background:rgba(77,157,219,.16);
+    box-shadow:inset 0 0 0 1px rgba(77,157,219,.32),0 4px 18px rgba(77,157,219,.10);
 }
-.overlay.show{display:flex}
-
-/* ══════════════════════════════════════════════════════════════
-   ITEM SHEET
-   ══════════════════════════════════════════════════════════════ */
-.item-sheet-overlay{
-    position:fixed;inset:0;z-index:60000;
-    background:rgba(0,0,0,.85);
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-    opacity:0;visibility:hidden;
-    transition:opacity .28s,visibility .28s;
-    display:flex;align-items:flex-end;justify-content:center;
-}
-.item-sheet-overlay.show{opacity:1;visibility:visible}
-
-.item-sheet{
-    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
-    border-radius:24px 24px 0 0;
-    width:100%;max-width:480px;
-    padding:16px 20px calc(30px + var(--safe-bottom,0px));
-    transform:translateY(100%);
-    transition:transform .35s cubic-bezier(.32,1,.23,1);
-    border-top:1px solid rgba(59,130,246,.25);
-    max-height:92vh;
-    overflow-y:auto;
-}
-.item-sheet-overlay.show .item-sheet{transform:translateY(0)}
-
-.item-sheet-handle{
-    width:40px;height:4px;
-    background:rgba(255,255,255,.15);
-    border-radius:2px;margin:0 auto 18px;
-}
-
-.item-sheet-header{
-    display:flex;flex-direction:column;align-items:center;
-    gap:10px;margin-bottom:20px;text-align:center;
-}
-.item-sheet-img{
-    width:120px;height:120px;
-    object-fit:contain;border-radius:20px;
-    background:rgba(0,0,0,.25);
-    padding:10px;
-    box-shadow:0 6px 24px rgba(0,0,0,.4);
-}
-.item-sheet-title{
-    font-size:16px;font-weight:800;color:#fff;
-    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    padding:0 8px;
-}
-.item-sheet-price{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:6px 14px;border-radius:12px;
-    background:rgba(59,130,246,.12);
-    border:1px solid rgba(59,130,246,.3);
-    font-size:15px;font-weight:800;color:#7CAEFF;
-}
-.item-sheet-price img{width:16px;height:16px}
-
-.item-nft-block{
-    width:100%;display:none;
-    flex-direction:column;align-items:center;
-    gap:14px;margin-bottom:20px;
-}
-.item-nft-block.show{display:flex}
-
-.item-nft-img-wrap{
-    width:200px;height:200px;
-    border-radius:22px;overflow:hidden;
-    position:relative;
-    background:rgba(0,0,0,.3);
-    border:2px solid rgba(140,150,170,.4);
-    box-shadow:0 10px 32px rgba(0,0,0,.6);
-}
-.item-nft-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
-.item-nft-img-wrap .nft-loader{
-    position:absolute;inset:0;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(0,0,0,.6);
-    color:rgba(255,255,255,.7);
-    font-size:12px;font-weight:700;
-}
-.item-nft-img-wrap .nft-loader.hidden{display:none}
-
-.item-nft-name{
-    font-size:18px;font-weight:800;color:#fff;
-    text-align:center;line-height:1.2;
-    max-width:100%;padding:0 8px;
-}
-.item-nft-number{
-    display:inline-flex;align-items:center;gap:4px;
-    font-size:13px;font-weight:800;
-    color:rgba(255,255,255,.7);
-    background:rgba(140,150,170,.15);
-    border:1px solid rgba(140,150,170,.3);
-    padding:5px 14px;border-radius:10px;
-}
-
-.item-nft-attrs{
-    width:100%;display:flex;flex-direction:column;gap:1px;
-    background:rgba(0,0,0,.25);
-    border-radius:16px;overflow:hidden;
-    border:1px solid rgba(255,255,255,.06);
-    margin-top:6px;
-}
-.item-nft-attr{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:14px 18px;
-    border-bottom:1px solid rgba(255,255,255,.05);
-    gap:12px;
-    background:rgba(255,255,255,.01);
-}
-.item-nft-attr:last-child{border-bottom:none}
-.item-nft-attr-label{
-    font-size:12px;color:rgba(255,255,255,.5);font-weight:700;
-    text-transform:uppercase;letter-spacing:.5px;flex-shrink:0;
-}
-.item-nft-attr-right{
-    display:flex;flex-direction:column;align-items:flex-end;gap:3px;
-    min-width:0;flex:1;
-}
-.item-nft-attr-value{
-    font-size:14px;color:#fff;font-weight:800;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    max-width:100%;text-align:right;
-}
-.item-nft-attr-rarity{
-    font-size:11px;color:#FFD700;font-weight:700;
-}
-.item-nft-attr-rarity.empty{color:rgba(255,255,255,.35)}
-
-.item-challenge{
-    width:100%;margin-bottom:16px;padding:14px;
-    background:rgba(59,130,246,.08);
-    border:1px solid rgba(59,130,246,.25);
-    border-radius:14px;
-}
-.item-challenge-label{
-    display:flex;align-items:center;gap:6px;
-    font-size:12px;font-weight:700;color:#7CAEFF;
-    margin-bottom:8px;
-}
-.item-challenge-label svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
-.item-challenge-bar-bg{
-    width:100%;height:8px;background:rgba(255,255,255,.08);
-    border-radius:4px;overflow:hidden;margin-bottom:6px;
-}
-.item-challenge-bar{
-    height:100%;
-    background:linear-gradient(90deg,#3B82F6,#7CAEFF);
-    border-radius:4px;transition:width .4s;
-}
-.item-challenge-text{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;text-align:center}
-
-/* ACTIONS */
-.item-sheet-actions{
-    width:100%;
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:10px;margin-top:6px;
-}
-.item-sheet-actions.single{grid-template-columns:1fr;}
-.item-btn{
-    padding:16px 12px;border-radius:16px;border:none;
-    font-family:inherit;font-size:13px;font-weight:800;
-    cursor:pointer;transition:transform .15s,opacity .15s;
+.nav-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:currentColor}
+.nav-icon svg{width:18px;height:18px}
+.account{margin-left:auto;display:flex;align-items:center;gap:9px}
+.balance{
+    height:36px;min-width:88px;padding:0 10px;border-radius:11px;
     display:flex;align-items:center;justify-content:center;gap:6px;
-    text-transform:uppercase;letter-spacing:.4px;
-    min-height:54px;
+    color:#f2edff;
+    background:linear-gradient(180deg,#211235,#170c26);
+    border:1px solid rgba(77,157,219,.38);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.035);
+    font-size:14px;font-weight:800;
 }
-.item-btn:active:not(:disabled){transform:scale(.97)}
-.item-btn:disabled{opacity:.35;cursor:not-allowed}
-.item-btn svg{
-    width:18px;height:18px;stroke:currentColor;fill:none;
-    stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;
-    flex-shrink:0;
+.balance img{width:16px;height:16px;object-fit:contain}
+.balance-value{min-width:35px;text-align:right}
+.plus-btn{
+    width:28px;height:28px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;color:#eaf3ff;
+    background:linear-gradient(180deg,rgba(77,157,219,.26),rgba(77,60,140,.24));
+    border:1px solid rgba(77,157,219,.48);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 4px 16px rgba(77,157,219,.16);
+    transition:.18s ease;
 }
-.item-btn-sell{
-    background:rgba(255,255,255,.08);
-    color:rgba(255,255,255,.9);
-    border:1.5px solid rgba(255,255,255,.12);
+.plus-btn svg{width:13px;height:13px}
+.plus-btn:hover{background:linear-gradient(180deg,rgba(77,157,219,.38),rgba(77,60,140,.32));border-color:rgba(77,157,219,.7)}
+.plus-btn:active{transform:scale(.92)}
+.avatar-btn{
+    width:43px;height:43px;padding:2px;border-radius:50%;overflow:hidden;
+    background:#170c26;
+    border:2px solid;
+    border-image:linear-gradient(135deg,var(--orange),var(--purple)) 1;
+    box-shadow:0 0 0 2px rgba(139,92,246,.14);
 }
-.item-btn-upgrade{
-    background:linear-gradient(135deg,#4D9DDB,#367FB6);
-    color:#fff;
-    box-shadow:0 6px 18px rgba(77,157,219,.28);
-}
-.item-btn-withdraw{
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;box-shadow:0 6px 18px rgba(59,130,246,.4);
-}
-.item-btn-claim{
-    grid-column:1/-1;
-    background:linear-gradient(135deg,#24C38E,#10b981);
-    color:#fff;box-shadow:0 6px 18px rgba(36,195,142,.4);
-}
+.avatar-btn img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 
-/* ══════════════════════════════════════════════════════════════
-   UPGRADE MODAL
-   ══════════════════════════════════════════════════════════════ */
-.upgrade-overlay{
-    position:fixed;inset:0;z-index:85000;
-    background:rgba(0,0,0,.92);
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    opacity:0;visibility:hidden;
-    transition:opacity .3s,visibility .3s;
-    display:flex;align-items:flex-end;justify-content:center;
+/* Нижняя навигация — только для телефонов */
+.bottom-nav{display:none}
+@media(max-width:700px){
+    .bottom-nav{
+        position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));
+        z-index:4000;height:66px;padding:6px;display:grid;
+        grid-template-columns:repeat(4,1fr);gap:4px;border-radius:20px;
+        background:rgba(17,10,28,.96);
+        border:1px solid rgba(139,92,246,.24);
+        box-shadow:0 14px 45px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04);
+        backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    }
+    .bottom-nav-btn{
+        min-width:0;border-radius:15px;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:4px;
+        color:#8b7fa4;font-size:10px;font-weight:850;transition:.18s ease;
+    }
+    .bottom-nav-btn .nav-icon,.bottom-nav-btn .nav-icon svg{width:21px;height:21px}
+    .bottom-nav-btn.active{color:#7CAEFF;background:rgba(77,157,219,.15);box-shadow:inset 0 0 0 1px rgba(77,157,219,.3)}
 }
-.upgrade-overlay.show{opacity:1;visibility:visible}
+@media(min-width:701px){.bottom-nav{display:none!important}}
 
-.upgrade-sheet{
-    background:linear-gradient(180deg,#263546 0%,#1A2431 100%);
-    border-radius:24px 24px 0 0;
-    width:100%;max-width:480px;
-    height:auto;
-    max-height:88vh;
-    display:flex;flex-direction:column;
-    transform:translateY(100%);
-    transition:transform .4s cubic-bezier(.32,1,.23,1);
-    border-top:1.5px solid rgba(108,170,214,.34);
-    overflow:hidden;position:relative;
+/* ══════════════ PAGE ══════════════ */
+.page{width:min(100%,980px);margin:0 auto;padding:40px 24px calc(40px + var(--safe-bottom));position:relative;z-index:1}
+.page-title{
+    font-size:26px;font-weight:900;letter-spacing:-.6px;margin-bottom:22px;
+    display:flex;align-items:center;gap:10px;
 }
-.upgrade-overlay.show .upgrade-sheet{transform:translateY(0)}
+.page-title .pumpkin{font-size:24px;filter:drop-shadow(0 0 10px rgba(255,138,61,.5))}
 
-.upgrade-header{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:14px 18px 12px;
-    border-bottom:1px solid rgba(59,130,246,.15);
-    flex-shrink:0;position:relative;
-    background:linear-gradient(180deg,rgba(38,53,70,1) 0%,rgba(34,47,61,.96) 100%);
-}
-.upgrade-handle{
-    width:40px;height:4px;
-    background:rgba(255,255,255,.15);
-    border-radius:2px;
-    position:absolute;top:8px;left:50%;transform:translateX(-50%);
-}
-.upgrade-title{
-    font-size:14px;font-weight:900;color:#fff;
-    display:flex;align-items:center;gap:6px;
-    padding-top:4px;
-    text-transform:uppercase;letter-spacing:.8px;
-}
-.upgrade-title svg{width:16px;height:16px;stroke:#7CAEFF;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.upgrade-close{
-    width:30px;height:30px;border-radius:10px;border:none;
-    background:rgba(255,48,100,.15);color:#FF3064;
-    cursor:pointer;font-size:14px;font-weight:700;
-    display:flex;align-items:center;justify-content:center;
-    margin-top:4px;
-    transition:transform .15s;
-}
-.upgrade-close:active{transform:scale(.9)}
+.top-grid{display:grid;grid-template-columns:1fr 1.35fr;gap:16px;margin-bottom:16px;align-items:stretch}
 
-.upgrade-stage{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    padding:18px 16px 14px;
-    position:relative;
-    min-height:280px;
-    background:radial-gradient(circle at center, rgba(59,130,246,.08) 0%, transparent 70%);
+.panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:22px;padding:22px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    position:relative;overflow:hidden;
 }
-
-/* ЗАГРУЗКА */
-.upgrade-loading{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:18px;
-    padding:40px 20px;
-    position:absolute;
-    inset:0;
-    background:rgba(26,34,50,.95);
-    z-index:20;
-}
-.upgrade-loading.hidden{display:none}
-.upgrade-loading-spinner{
-    width:56px;height:56px;
-    border:4px solid rgba(59,130,246,.15);
-    border-top-color:#3B82F6;
-    border-radius:50%;
-    animation:upgradeSpin .9s linear infinite;
-}
-@keyframes upgradeSpin{to{transform:rotate(360deg)}}
-.upgrade-loading-text{
-    font-size:13px;font-weight:800;color:rgba(255,255,255,.6);
-    letter-spacing:.5px;
-}
-.upgrade-loading-progress{
-    width:200px;height:4px;
-    background:rgba(255,255,255,.08);
-    border-radius:2px;
-    overflow:hidden;
-}
-.upgrade-loading-bar{
-    height:100%;
-    width:0%;
-    background:linear-gradient(90deg,#3B82F6,#7CAEFF);
-    border-radius:2px;
-    transition:width .3s;
-}
-
-.upgrade-preview-wrap{
-    width:160px;height:160px;
-    border-radius:22px;
-    overflow:hidden;
-    background:rgba(0,0,0,.3);
-    border:2px solid rgba(59,130,246,.35);
-    box-shadow:0 12px 40px rgba(0,0,0,.6);
-    position:relative;
-    display:flex;align-items:center;justify-content:center;
-    flex-shrink:0;
-}
-.upgrade-preview-wrap img{
-    width:100%;height:100%;
-    object-fit:cover;display:block;
-    transition:opacity .35s ease;
-    opacity:1;
-}
-.upgrade-preview-wrap img.fading{
-    opacity:0;
-}
-
-.upgrade-roulette-wrap{
-    width:100%;
-    height:180px;
-    display:none;
-    position:relative;
-    flex-shrink:0;
-}
-.upgrade-roulette-wrap.show{display:block;}
-
-.upgrade-roulette{
-    width:100%;
-    height:180px;
-    position:relative;
-    overflow:hidden;
-    border-radius:20px;
-    background:linear-gradient(180deg,#1e2738 0%,#1a2232 100%);
-    border:1.5px solid rgba(59,130,246,.25);
-    box-shadow:inset 0 0 60px rgba(0,0,0,.7), 0 10px 40px rgba(0,0,0,.5);
-}
-.upgrade-roulette-strip{
-    display:flex;
-    gap:0;
-    height:100%;
-    align-items:stretch;
-    padding:0;
-    will-change:transform;
-}
-.roulette-card{
-    width:180px;
-    height:180px;
-    flex-shrink:0;
-    background:linear-gradient(180deg,#1e2738 0%,#1a2232 100%);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:0;
-    margin:0;
-    overflow:hidden;
-    position:relative;
-    border:none;
-}
-.roulette-card::before{
-    content:'🎁';
-    position:absolute;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:48px;
-    opacity:.15;
-    z-index:1;
+.panel:before{
+    content:"";position:absolute;top:-70px;right:-40px;width:200px;height:200px;
+    background:radial-gradient(circle,rgba(139,92,246,.20) 0%,transparent 70%);
     pointer-events:none;
 }
-.roulette-card img{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    display:block;
-    border-radius:0;
-    background:transparent;
-    position:relative;
-    z-index:2;
-    opacity:1;
-}
 
-.upgrade-pointer-line{
-    position:absolute;
-    top:0;bottom:0;
-    left:50%;width:3px;
-    transform:translateX(-50%);
-    background:linear-gradient(180deg,transparent 0%,#24C38E 15%,#24C38E 85%,transparent 100%);
-    z-index:5;pointer-events:none;
-    opacity:0;transition:opacity .3s;
-    box-shadow:0 0 20px rgba(36,195,142,.9), 0 0 40px rgba(36,195,142,.5);
+/* PROFILE PANEL */
+.profile-panel{display:flex;align-items:center;gap:16px}
+.avatar-wrap{
+    width:76px;height:76px;min-width:76px;border-radius:50%;
+    padding:3px;
+    background:linear-gradient(135deg,var(--orange),var(--purple));
+    box-shadow:0 0 26px rgba(139,92,246,.35);
+    position:relative;z-index:1;
 }
-.upgrade-pointer-line.active{opacity:1}
-.upgrade-pointer-line::before,
-.upgrade-pointer-line::after{
-    content:'';position:absolute;left:50%;
-    transform:translateX(-50%);
-    width:0;height:0;
-    border-left:8px solid transparent;
-    border-right:8px solid transparent;
+.avatar-inner{
+    width:100%;height:100%;border-radius:50%;overflow:hidden;
+    background:linear-gradient(135deg,#2a1c44,#1a1128);
+    display:flex;align-items:center;justify-content:center;
 }
-.upgrade-pointer-line::before{
-    top:-2px;border-top:12px solid #24C38E;
-}
-.upgrade-pointer-line::after{
-    bottom:-2px;border-bottom:12px solid #24C38E;
-}
-
-.upgrade-roulette::before,
-.upgrade-roulette::after{
-    content:'';position:absolute;top:0;bottom:0;
-    width:60px;z-index:4;pointer-events:none;
-}
-.upgrade-roulette::before{
-    left:0;
-    background:linear-gradient(90deg,rgba(26,34,50,.85) 0%,rgba(26,34,50,.4) 50%,rgba(26,34,50,0) 100%);
-}
-.upgrade-roulette::after{
-    right:0;
-    background:linear-gradient(270deg,rgba(26,34,50,.85) 0%,rgba(26,34,50,.4) 50%,rgba(26,34,50,0) 100%);
-}
-
-.upgrade-attrs-panel{
-    width:100%;
-    display:flex;flex-direction:column;gap:1px;
-    background:rgba(0,0,0,.25);
-    border-radius:14px;overflow:hidden;
-    border:1.5px solid rgba(59,130,246,.2);
-    margin-top:16px;
-}
-.upgrade-attr-row{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:10px 14px;
-    border-bottom:1px solid rgba(59,130,246,.08);
-    gap:10px;
-    background:rgba(59,130,246,.04);
-    min-height:40px;
-}
-.upgrade-attr-row:last-child{border-bottom:none}
-.upgrade-attr-label{
-    font-size:10px;
-    color:rgba(124,174,255,.8);
-    font-weight:800;
-    text-transform:uppercase;
-    letter-spacing:.6px;
-    flex-shrink:0;
-}
-.upgrade-attr-right{
-    display:flex;align-items:center;gap:6px;
-    min-width:0;flex:1;
-    justify-content:flex-end;
-}
-.upgrade-attr-value{
-    font-size:12px;color:#fff;font-weight:800;
+.avatar-inner img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar-fallback{font-size:28px;font-weight:800;color:#fff}
+.profile-info{min-width:0;flex:1;position:relative;z-index:1}
+.profile-name{
+    font-size:18px;font-weight:850;letter-spacing:-.2px;margin-bottom:8px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    max-width:120px;text-align:right;
-    transition:opacity .3s ease;
-    opacity:1;
 }
-.upgrade-attr-value.fading{opacity:0;}
-.upgrade-attr-rarity{
-    font-size:10px;color:#7CAEFF;font-weight:700;
-    background:rgba(59,130,246,.12);
-    padding:2px 7px;border-radius:6px;
-    border:1px solid rgba(59,130,246,.25);
-    flex-shrink:0;
-    min-width:44px;text-align:center;
-    transition:opacity .3s ease;
-    opacity:1;
+.profile-balance{
+    display:inline-flex;align-items:center;gap:7px;
+    background:rgba(77,157,219,.14);border:1px solid rgba(77,157,219,.32);
+    border-radius:14px;padding:8px 14px;font-size:15px;font-weight:800;color:#9FCBFF;
 }
-.upgrade-attr-rarity.fading{opacity:0;}
-.upgrade-attr-rarity.empty{
-    background:rgba(255,255,255,.04);
-    border-color:rgba(255,255,255,.08);
-    color:rgba(255,255,255,.3);
+.profile-balance img{width:16px;height:16px}
+
+/* SETTINGS PANEL */
+.settings-title{font-size:15px;font-weight:850;margin-bottom:16px;display:flex;align-items:center;gap:8px;position:relative;z-index:1}
+.settings-row{margin-bottom:14px;position:relative;z-index:1}
+.settings-row:last-child{margin-bottom:0}
+.settings-label{font-size:12px;font-weight:750;color:var(--muted);margin-bottom:9px;text-transform:uppercase;letter-spacing:.4px}
+.lang-toggle{display:inline-flex;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px}
+.lang-btn{
+    padding:8px 18px;border-radius:9px;font-size:13px;font-weight:800;color:var(--muted);
+    transition:.15s ease;
+}
+.lang-btn.active{background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff;box-shadow:0 4px 14px rgba(77,157,219,.35)}
+.promo-row{display:flex;gap:8px}
+.promo-field{
+    flex:1;min-width:0;background:rgba(0,0,0,.28);border:1px solid var(--line);
+    border-radius:12px;padding:12px 14px;color:#fff;font-size:14px;font-family:inherit;
+    outline:none;transition:border-color .15s;
+}
+.promo-field::placeholder{color:var(--muted-2)}
+.promo-field:focus{border-color:rgba(77,157,219,.55)}
+.promo-apply{
+    padding:0 18px;border-radius:12px;font-size:13px;font-weight:800;color:#fff;
+    background:linear-gradient(135deg,var(--blue),var(--blue-2));
+    box-shadow:0 4px 14px rgba(77,157,219,.3);white-space:nowrap;
+    transition:transform .15s,opacity .15s;
+}
+.promo-apply:active{transform:scale(.96)}
+.promo-apply:disabled{opacity:.5;cursor:not-allowed}
+.promo-msg{font-size:12px;font-weight:700;margin-top:8px;min-height:14px}
+.promo-msg.err{color:var(--red)}
+.promo-msg.ok{color:var(--green)}
+
+/* INVENTORY PANEL */
+.inv-panel{padding:22px}
+.inv-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px;position:relative;z-index:1;flex-wrap:wrap}
+.inv-head-left{display:flex;align-items:center;gap:10px}
+.inv-head-title{font-size:16px;font-weight:850}
+.inv-count{
+    background:rgba(77,157,219,.16);border:1px solid rgba(77,157,219,.35);
+    color:#9FCBFF;font-size:12px;font-weight:850;border-radius:20px;padding:4px 11px;min-width:22px;text-align:center;
+}
+.sell-all-btn{
+    padding:11px 18px;border-radius:12px;font-size:13px;font-weight:800;color:#fff;
+    background:linear-gradient(135deg,var(--blue),var(--blue-2));
+    box-shadow:0 4px 14px rgba(77,157,219,.3);
+    transition:transform .15s,opacity .15s;
+}
+.sell-all-btn:active{transform:scale(.96)}
+.sell-all-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.inv-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;width:100%;position:relative;z-index:1}
+@media(max-width:900px){.inv-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:700px){.inv-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+
+.item-card{
+    background:rgba(20,12,32,.72);
+    border:1px solid rgba(139,92,246,.16);
+    border-radius:16px;padding:9px 8px 10px;
+    display:flex;flex-direction:column;
+    transition:border-color .15s,transform .15s;
+}
+.item-card:hover{border-color:rgba(77,157,219,.35)}
+.item-name{
+    font-size:11px;font-weight:750;color:rgba(255,255,255,.9);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    padding:2px 2px 7px;text-align:center;
+}
+.item-img-wrap{
+    width:100%;aspect-ratio:1/1;border-radius:12px;
+    background:rgba(0,0,0,.32);border:1px solid rgba(255,255,255,.04);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+}
+.item-img-wrap img{width:100%;height:100%;object-fit:contain;padding:8px}
+.item-price{
+    display:flex;align-items:center;justify-content:center;gap:4px;
+    font-size:11px;font-weight:800;color:#9FCBFF;padding:8px 0 9px;
+}
+.item-price img{width:12px;height:12px}
+.item-actions{display:flex;gap:6px}
+.item-btn{
+    flex:1;padding:8px 4px;border-radius:9px;font-size:10px;font-weight:800;
+    text-transform:uppercase;letter-spacing:.3px;
+    transition:transform .15s,opacity .15s;
+}
+.item-btn:active:not(:disabled){transform:scale(.94)}
+.item-btn:disabled{opacity:.4;cursor:not-allowed}
+.item-btn-sell{background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.12)}
+.item-btn-withdraw{background:linear-gradient(135deg,var(--blue),var(--blue-2));color:#fff}
+
+.inv-empty{
+    grid-column:1/-1;
+    width:100%;min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+    border-radius:18px;border:1px dashed rgba(139,92,246,.24);
+    color:rgba(255,255,255,.32);font-size:14px;font-weight:700;
+}
+.inv-empty svg{width:44px;height:44px;stroke:rgba(255,255,255,.24);fill:none;stroke-width:1.6}
+
+@media(max-width:700px){
+    body:before{inset:calc(62px + env(safe-area-inset-top)) 0 0;background-size:65px 65px}
+    .top-bar{
+        margin-top:4vh;height:auto;min-height:calc(62px + env(safe-area-inset-top));
+        padding:calc(8px + env(safe-area-inset-top)) 11px 8px;background:#100a1c;
+    }
+    .desktop-left{display:none}
+    .account{width:100%;justify-content:flex-end;gap:7px}
+    .balance{min-width:88px;height:34px;padding:0 9px;border-radius:10px;font-size:12.5px}
+    .balance img{width:15px;height:15px}
+    .plus-btn{width:25px;height:25px;border-radius:8px}
+    .plus-btn svg{width:12px;height:12px}
+    .avatar-btn{width:38px;height:38px}
+
+    .page{padding:24px 12px calc(100px + env(safe-area-inset-bottom))}
+    .page-title{font-size:22px;margin-bottom:16px}
+    .top-grid{grid-template-columns:1fr;gap:12px}
+    .panel{padding:18px;border-radius:18px}
+    .profile-panel{gap:13px}
+    .avatar-wrap{width:64px;height:64px;min-width:64px}
+    .profile-name{font-size:16px}
+    .promo-row{flex-direction:column}
+    .promo-apply{padding:12px}
+    .inv-panel{padding:18px}
 }
 
-.upgrade-action-wrap{
-    padding:12px 20px calc(18px + var(--safe-bottom,0px));
-    flex-shrink:0;
-    background:linear-gradient(0deg,rgba(26,34,50,1) 0%,rgba(26,34,50,.9) 80%,rgba(26,34,50,0) 100%);
-    position:relative;z-index:10;
+/* MODAL: MRKT WITHDRAW PICKER */
+.overlay{
+    position:fixed;inset:0;z-index:60000;display:flex;align-items:flex-end;justify-content:center;
+    background:rgba(6,3,12,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    opacity:0;visibility:hidden;transition:opacity .28s,visibility .28s;
 }
-.upgrade-action-btn{
-    width:100%;
-    padding:15px;
-    border-radius:16px;
-    border:none;
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;
-    font-family:inherit;
-    font-size:14px;
-    font-weight:900;
-    cursor:pointer;
-    transition:transform .15s,opacity .2s,box-shadow .2s;
-    box-shadow:0 8px 25px rgba(77,157,219,.30);
-    text-transform:uppercase;
-    letter-spacing:.8px;
-    display:flex;align-items:center;justify-content:center;gap:8px;
-    min-height:50px;
+.overlay.show{opacity:1;visibility:visible}
+.sheet{
+    background:linear-gradient(180deg,#211235 0%,#160c26 100%);
+    border-radius:24px 24px 0 0;width:100%;max-width:520px;
+    padding:16px 18px calc(24px + var(--safe-bottom));
+    transform:translateY(100%);transition:transform .35s cubic-bezier(.32,1,.23,1);
+    border-top:1px solid rgba(139,92,246,.3);max-height:88vh;overflow-y:auto;
 }
-.upgrade-action-btn:active:not(:disabled){transform:scale(.97)}
-.upgrade-action-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
-.upgrade-action-btn.loading{
-    background:linear-gradient(135deg,#2563EB,#1e40af);
-    cursor:wait;pointer-events:none;
-}
-.upgrade-action-btn svg{
-    width:18px;height:18px;fill:none;stroke:currentColor;
-    stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
-}
-.upgrade-skip-btn{
-    width:100%;margin-top:8px;padding:12px 15px;border-radius:13px;
-    border:1px solid rgba(135,180,215,.22);background:#202C3A;color:#A8C7DE;
-    font-family:inherit;font-size:12px;font-weight:850;letter-spacing:.7px;
-    cursor:pointer;display:none;transition:transform .15s,background .2s,border-color .2s;
-}
-.upgrade-skip-btn.show{display:flex;align-items:center;justify-content:center;gap:7px}
-.upgrade-skip-btn:active{transform:scale(.98)}
-.upgrade-skip-btn:hover{background:#263648;border-color:rgba(135,180,215,.38)}
+.overlay.show .sheet{transform:translateY(0)}
+.sheet-handle{width:40px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;margin:0 auto 16px}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sheet-title{font-size:16px;font-weight:850}
+.sheet-subtitle{font-size:12px;color:var(--muted);margin-top:2px}
+.sheet-close{width:32px;height:32px;border-radius:10px;background:rgba(255,48,100,.15);color:#FF3064;font-size:14px;font-weight:800}
 
-/* CONFETTI */
-.confetti-container{
-    position:absolute;inset:0;
-    pointer-events:none;z-index:50;overflow:hidden;
+.mrkt-loading{display:flex;align-items:center;gap:10px;padding:24px 4px;color:var(--muted);font-size:13px;font-weight:700}
+.mrkt-spinner{width:22px;height:22px;border:3px solid rgba(139,92,246,.2);border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.mrkt-error{color:var(--red);font-size:13px;font-weight:700;padding:10px 2px;display:none}
+.mrkt-error.show{display:block}
+.mrkt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.mrkt-card{
+    background:rgba(0,0,0,.28);border:1.5px solid rgba(255,255,255,.06);border-radius:14px;
+    padding:10px;text-align:left;transition:border-color .15s,background .15s;
 }
-.confetti-piece{
-    position:absolute;
-    width:8px;height:14px;
-    opacity:.9;
-    animation:confettiFall linear forwards;
+.mrkt-card.selected{border-color:var(--blue);background:rgba(77,157,219,.14)}
+.mrkt-card img{width:100%;aspect-ratio:1/1;object-fit:contain;border-radius:10px;background:rgba(255,255,255,.03);margin-bottom:6px}
+.mrkt-model{font-size:12px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrkt-meta{font-size:10px;color:var(--muted);margin:3px 0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrkt-price{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:800;color:#9FCBFF}
+.mrkt-price img{width:12px;height:12px}
+.mrkt-submit{
+    width:100%;padding:15px;border-radius:14px;font-size:14px;font-weight:800;color:#fff;
+    background:linear-gradient(135deg,var(--blue),var(--blue-2));
+    box-shadow:0 6px 18px rgba(77,157,219,.35);
 }
-@keyframes confettiFall{
-    0%{transform:translateY(-20px) rotate(0deg);opacity:1}
-    100%{transform:translateY(110vh) rotate(720deg);opacity:0}
-}
+.mrkt-submit:disabled{opacity:.4;cursor:not-allowed}
 
-/* RESULT OVERLAY */
-.upgrade-result-overlay{
-    position:absolute;inset:0;z-index:60;
-    background:rgba(10,15,25,.96);
-    backdrop-filter:blur(10px);
-    display:none;flex-direction:column;
-    align-items:center;justify-content:center;
-    padding:30px 24px;
-    opacity:0;transition:opacity .4s;
-}
-.upgrade-result-overlay.show{display:flex;opacity:1;}
-.upgrade-result-overlay-img{
-    width:150px;height:150px;
-    object-fit:cover;border-radius:20px;
-    background:rgba(0,0,0,.3);
-    border:3px solid rgba(36,195,142,.7);
-    box-shadow:0 0 60px rgba(36,195,142,.6), inset 0 0 30px rgba(36,195,142,.1);
-    margin-bottom:18px;
-    animation:resultZoom .6s cubic-bezier(.22,1.5,.5,1);
-}
-@keyframes resultZoom{
-    0%{transform:scale(0) rotate(-180deg);opacity:0}
-    70%{transform:scale(1.15) rotate(10deg);opacity:1}
-    100%{transform:scale(1) rotate(0deg);opacity:1}
-}
-.upgrade-result-overlay-name{
-    font-size:20px;font-weight:900;color:#fff;
-    text-align:center;margin-bottom:8px;
-    max-width:100%;padding:0 10px;
-}
-.upgrade-result-overlay-msg{
-    display:flex;align-items:center;gap:6px;
-    font-size:14px;font-weight:800;color:#24C38E;
-    padding:6px 16px;
-    background:rgba(36,195,142,.12);
-    border:1.5px solid rgba(36,195,142,.35);
-    border-radius:12px;margin-bottom:20px;
-}
-.upgrade-result-overlay-claim{
-    padding:14px 36px;border-radius:14px;border:none;
-    background:linear-gradient(135deg,#24C38E,#10b981);
-    color:#fff;font-family:inherit;font-size:14px;
-    font-weight:900;cursor:pointer;
-    box-shadow:0 8px 25px rgba(36,195,142,.5);
-    text-transform:uppercase;letter-spacing:.6px;
-    transition:transform .15s;min-width:180px;
-}
-.upgrade-result-overlay-claim:active{transform:scale(.97)}
-
-/* SELL CONFIRM */
-.sell-confirm-overlay{
-    position:fixed;inset:0;z-index:70000;
-    background:rgba(0,0,0,.9);
-    backdrop-filter:blur(10px);
-    opacity:0;visibility:hidden;
-    transition:opacity .25s,visibility .25s;
-    display:flex;align-items:center;justify-content:center;
-    padding:24px;
-}
-.sell-confirm-overlay.show{opacity:1;visibility:visible;}
-.sell-confirm-modal{
-    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
-    border-radius:24px;width:100%;max-width:360px;
-    padding:26px 22px;
-    border:1px solid rgba(59,130,246,.25);
-    box-shadow:0 24px 60px rgba(0,0,0,.7);
-    transform:scale(.9);
-    transition:transform .3s cubic-bezier(.32,1,.23,1);
-    display:flex;flex-direction:column;align-items:center;
-    text-align:center;
-}
-.sell-confirm-overlay.show .sell-confirm-modal{transform:scale(1)}
-.sell-confirm-icon{
-    width:80px;height:80px;border-radius:50%;
-    background:rgba(255,48,100,.12);
-    border:2px solid rgba(255,48,100,.35);
-    display:flex;align-items:center;justify-content:center;
-    margin-bottom:18px;
-}
-.sell-confirm-icon svg{
-    width:36px;height:36px;stroke:#FF3064;fill:none;
-    stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;
-}
-.sell-confirm-title{font-size:18px;font-weight:800;color:#fff;margin-bottom:8px;line-height:1.3}
-.sell-confirm-gift-name{
-    font-size:13px;font-weight:700;color:rgba(255,255,255,.7);
-    margin-bottom:6px;
-    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-    padding:0 8px;
-}
-.sell-confirm-price{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:10px 20px;border-radius:14px;
-    background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,140,0,.08));
-    border:1.5px solid rgba(255,215,0,.35);
-    font-size:20px;font-weight:900;color:#FFD700;
-    margin-top:8px;margin-bottom:20px;
-}
-.sell-confirm-price img{width:20px;height:20px}
-.sell-confirm-question{font-size:13px;color:rgba(255,255,255,.55);font-weight:600;margin-bottom:20px;line-height:1.5}
-.sell-confirm-actions{width:100%;display:flex;flex-direction:column;gap:10px}
-.sell-confirm-btn{
-    width:100%;padding:16px;border-radius:14px;border:none;
-    font-family:inherit;font-size:15px;font-weight:800;
-    cursor:pointer;transition:all .25s;
-    text-transform:uppercase;letter-spacing:.5px;
-    min-height:54px;display:flex;align-items:center;justify-content:center;gap:6px;
-}
-.sell-confirm-btn.waiting{background:rgba(255,255,255,.06);color:rgba(255,255,255,.35);cursor:not-allowed}
-.sell-confirm-btn.ready{background:linear-gradient(135deg,#E8527A,#C42247);color:#fff;box-shadow:0 8px 24px rgba(232,82,122,.4)}
-.sell-confirm-btn.ready:active{transform:scale(.97)}
-.sell-confirm-cancel{
-    width:100%;padding:14px;border-radius:14px;border:none;
-    background:rgba(255,255,255,.06);
-    color:rgba(255,255,255,.7);
-    font-family:inherit;font-size:14px;font-weight:700;
-    cursor:pointer;transition:all .15s;
-    border:1.5px solid rgba(255,255,255,.08);
-}
-.sell-confirm-cancel:active{transform:scale(.97)}
-
-/* PROMO */
-.promo-modal{
-    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
-    border-radius:24px;width:100%;max-width:380px;
-    padding:24px 22px;border:1px solid rgba(59,130,246,.2);
-    box-shadow:0 20px 60px rgba(0,0,0,.6);
-}
-.promo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.promo-title{font-weight:800;font-size:18px;color:#fff}
-.promo-close{
-    width:36px;height:36px;border-radius:12px;border:none;
-    background:rgba(249,105,153,.15);color:#F96999;
-    cursor:pointer;font-size:16px;font-weight:700;
-    display:flex;align-items:center;justify-content:center;
-}
-.promo-hint{font-size:12px;color:var(--text-2);margin-bottom:14px;line-height:1.5;font-weight:600}
-.promo-input{
-    width:100%;padding:18px 20px;
-    border:2px solid rgba(59,130,246,.3);
-    border-radius:16px;background:rgba(59,130,246,.08);
-    color:#fff;font-size:22px;font-weight:800;
-    font-family:'Courier New',monospace;
-    letter-spacing:4px;text-align:center;text-transform:uppercase;
-    outline:none;transition:all .15s;margin-bottom:16px;
-}
-.promo-input:focus{border-color:rgba(59,130,246,.7);background:rgba(59,130,246,.14)}
-.promo-input::placeholder{color:rgba(255,255,255,.2);font-weight:600;letter-spacing:2px;font-size:16px}
-.promo-submit{
-    width:100%;padding:16px;border-radius:14px;border:none;
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;font-size:15px;font-weight:800;
-    cursor:pointer;transition:transform .15s;
-    box-shadow:0 6px 20px rgba(59,130,246,.4);
-    text-transform:uppercase;letter-spacing:.5px;
-}
-.promo-submit:active:not(:disabled){transform:scale(.97)}
-.promo-submit:disabled{opacity:.5;cursor:not-allowed}
-.promo-error{
-    color:#F96999;font-size:12px;text-align:center;display:none;
-    margin-bottom:12px;font-weight:700;padding:10px;
-    background:rgba(249,105,153,.1);
-    border:1px solid rgba(249,105,153,.25);
-    border-radius:10px;
-}
-.promo-error.show{display:block}
-
+/* DEPOSIT */
 .deposit-modal{
-    background:linear-gradient(180deg,#2a3544 0%,#1f2a38 100%);
-    border-radius:24px;width:100%;max-width:380px;
-    padding:24px 20px;border:1px solid rgba(59,130,246,.2);
-    box-shadow:0 20px 60px rgba(0,0,0,.6);
+    background:linear-gradient(180deg,#211235,#160c26);border-radius:22px;
+    width:min(100%,380px);padding:22px;border:1px solid rgba(139,92,246,.3);
+    box-shadow:0 25px 90px rgba(0,0,0,.55);
 }
-.deposit-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.deposit-title{font-weight:800;font-size:18px;color:#fff}
-.deposit-close{
-    width:36px;height:36px;border-radius:12px;border:none;
-    background:rgba(249,105,153,.15);color:#F96999;
-    cursor:pointer;font-size:16px;font-weight:700;
-    display:flex;align-items:center;justify-content:center;
-}
-.deposit-methods{display:flex;gap:12px}
-.deposit-method-btn{
-    flex:1;padding:20px 14px;border-radius:18px;
-    border:1.5px solid rgba(59,130,246,.2);
-    background:rgba(59,130,246,.08);
-    cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;
-    transition:transform .15s;font-family:inherit;
-}
-.deposit-method-btn:active{transform:scale(.96)}
-.deposit-method-btn img{width:48px;height:48px;object-fit:contain}
-.deposit-method-btn span{font-weight:800;font-size:13px;color:#fff}
-
-/* SUCCESS */
-.success-overlay{
-    position:fixed;inset:0;z-index:90000;
-    background:rgba(10,12,20,.97);
-    display:none;flex-direction:column;align-items:center;justify-content:center;
-    padding:40px 24px;
-}
-.success-overlay.show{display:flex}
-.success-gif{width:130px;height:130px;object-fit:contain;margin-bottom:20px}
-.success-title{font-size:20px;font-weight:800;color:#fff;text-align:center;margin-bottom:6px}
-.success-price{font-size:14px;font-weight:700;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:5px;margin-bottom:28px}
-.success-price img{width:14px;height:14px}
-.success-ok{
-    width:100%;max-width:320px;padding:16px;border-radius:14px;border:none;
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;font-size:15px;font-weight:800;
-    cursor:pointer;font-family:inherit;
-    box-shadow:0 6px 20px rgba(59,130,246,.4);
-}
+.deposit-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.deposit-title{font-size:17px;font-weight:850}
+.deposit-close{width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.08);color:#cfc3e6}
+.deposit-unavailable{font-size:13px;color:var(--muted);line-height:1.6;text-align:center;padding:14px 2px}
 
 /* NOTIF */
 .notif{
-    position:fixed;top:calc(var(--safe-top) + 70px);
-    left:50%;transform:translateX(-50%) translateY(-120%);
-    background:linear-gradient(135deg,#3B82F6,#2563EB);
-    color:#fff;padding:12px 24px;border-radius:14px;
-    font-weight:700;font-size:14px;z-index:99999;
-    transition:transform .3s,opacity .3s;
-    max-width:90%;text-align:center;
-    box-shadow:0 8px 25px rgba(59,130,246,.4);
-    opacity:0;pointer-events:none;
+    position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translate(-50%,140%);
+    z-index:99999;background:rgba(24,14,38,.98);border:1px solid rgba(139,92,246,.35);
+    color:#fff;font-size:13px;font-weight:700;padding:12px 20px;border-radius:14px;
+    box-shadow:0 10px 30px rgba(0,0,0,.5);transition:transform .3s cubic-bezier(.32,1,.23,1);
+    max-width:calc(100% - 32px);text-align:center;
 }
-.notif.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
-.notif.error{background:linear-gradient(135deg,#E53935,#D32F2F);box-shadow:0 8px 25px rgba(229,57,53,.4)}
-
-@media(max-width:380px){
-    .inv-grid{gap:6px}
-    .inv-card-name{font-size:8px}
-    .inv-card-price{font-size:9px}
-    .profile-stat-val{font-size:13px}
-    .item-sheet-img{width:100px;height:100px}
-    .item-nft-img-wrap{width:170px;height:170px}
-    .item-btn{font-size:12px;padding:14px 8px}
-    .upgrade-preview-wrap{width:130px;height:130px}
-    .upgrade-roulette-wrap{height:150px}
-    .upgrade-roulette{height:150px}
-    .roulette-card{width:150px;height:150px}
-    .upgrade-result-overlay-img{width:130px;height:130px}
-    .bnav-item{padding:6px 4px}
-    .bnav-item span{font-size:9px}
-}
-
-/* ===== PROFILE / INVENTORY VISUAL V3 ===== */
-body{background:#17191c;background-image:linear-gradient(180deg,#181b1f 0%,#15181b 100%);}
-.page{max-width:480px;padding:calc(var(--safe-top) + 10px) 13px calc(var(--safe-bottom) + 92px);}
-.top-bar{padding:8px 0 12px;}
-.top-icon-btn{width:40px;height:40px;border-radius:50%;background:#2b2f34;border:1px solid rgba(255,255,255,.05);}
-.top-right{gap:5px}.bal-pill{background:#2b2f34;border:1px solid rgba(255,255,255,.05);padding:4px 8px;border-radius:21px;gap:7px}.bal-pill img{width:19px;height:19px}.bal-plus{width:30px;height:30px;background:#666b72;color:#fff;border:none;font-size:22px;line-height:30px;padding:0;text-align:center;display:flex;align-items:center;justify-content:center;}
-.profile-section{margin:2px 0 14px;padding:8px 8px 4px;background:transparent;border:0;border-radius:0;overflow:visible;}
-.profile-section::before{display:none}
-.avatar-wrap{width:124px;height:124px;min-width:124px;min-height:124px;margin-bottom:10px;border:0;box-shadow:none;background:#24272c;}
-.profile-name{font-size:27px;line-height:1.1;font-weight:800;letter-spacing:-.6px;margin-bottom:5px;padding:0;}
-.profile-uid{display:none}
-.level-bar-wrap{max-width:292px;margin:0 auto 14px}.level-text-only{height:auto}.level-bar-bg,.level-bar-fill{display:none}.level-bar-text{font-size:15px;color:#8d9299;margin-top:0;font-weight:600}
-.profile-stats{display:none}
-.action-row{gap:14px;margin-bottom:14px}.btn-action{height:52px;padding:0;border-radius:28px;font-size:15px;font-weight:700}.btn-primary{background:#1687f8;box-shadow:none;border:0;color:#fff}.btn-outline{background:transparent;border:1.5px solid #1687f8;color:#1687f8}
-.admin-btn{width:auto;margin:0 auto 12px;padding:10px 16px;border-radius:22px;background:#23282e;border:1px solid rgba(36,137,245,.45);color:#4da5ff;box-shadow:none;text-transform:none;letter-spacing:0;font-size:12px;}
-.admin-btn:hover{background:#293038;border-color:#2489f5}.admin-btn svg{width:15px;height:15px}
-.ref-card{height:144px;margin-bottom:16px;padding:15px 16px 0;border-radius:22px;border:1px solid rgba(255,255,255,.07);background:#22262b url('https://raw.githubusercontent.com/Rasswetik/RasswetGifts/main/static/img/ref_banner.png') center center/100% 100% no-repeat;position:relative;box-shadow:inset 0 0 0 999px rgba(18,21,24,.12);}
-.ref-card::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(25,29,34,.92) 0%,rgba(25,29,34,.72) 44%,rgba(25,29,34,.14) 100%);pointer-events:none}
-.ref-card>*{position:relative;z-index:1}.ref-card-title{font-size:20px;letter-spacing:1.5px;margin-bottom:2px}.ref-card-desc{font-size:12px;line-height:1.35;max-width:68%;color:#fff;margin-bottom:8px;font-weight:650}.ref-stats{gap:5px;margin-bottom:8px;flex-wrap:nowrap}.ref-stat{padding:4px 8px;border:none;background:#16191d;color:#fff;font-size:9px;white-space:nowrap}.ref-stat img,.ref-stat svg{width:12px;height:12px}.ref-links{position:absolute;left:0;right:0;bottom:0;display:flex;gap:0;background:rgba(19,22,26,.76);border-top:1px solid rgba(255,255,255,.05)}.ref-link{flex:1;text-align:center;padding:10px 6px;font-size:12px;color:#3f96ff}.ref-link+.ref-link{border-left:1px solid rgba(255,255,255,.07)}
-.section-wrap{background:transparent;border:0;border-radius:0;padding:0;margin:0 0 16px;min-height:212px;display:flex;flex-direction:column;}
-.section-header{display:none}.section-title{display:none}.btn-options{display:none}.inv-search{display:none}
-.inv-grid{gap:12px 9px;width:100%;}
-.inv-card{border-radius:18px;min-height:156px}.inv-card-img-wrap{border-radius:14px;background:#11161b}.inv-card-name{font-size:10px;color:rgba(255,255,255,.92)}.inv-card-price{font-size:10px;color:#73b7ff}
-.inv-empty{flex:1;min-height:212px;width:100%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.05);border-radius:31px;padding:40px;color:rgba(255,255,255,.20);font-size:14px;font-weight:700;background:transparent;text-align:center;}
-.bottom-nav{left:50%;transform:translateX(-50%);width:min(calc(100% - 24px),444px);height:66px;bottom:10px;background:rgba(25,29,34,.96);border:1px solid rgba(255,255,255,.055);border-radius:27px;padding:6px;box-shadow:0 12px 36px rgba(0,0,0,.34),inset 0 1px rgba(255,255,255,.025);}
-.bnav-item{width:25%;height:54px;border-radius:23px;padding:0 4px}.bnav-item.active{background:rgba(54,142,238,.18);color:#3e91f4}.bnav-item svg{width:21px;height:21px}.bnav-item span{font-size:9px;margin-top:0;color:inherit}
-@media(max-width:420px){.avatar-wrap{width:116px;height:116px;min-width:116px;min-height:116px}.profile-name{font-size:25px}.ref-card{height:140px}.btn-action{height:50px}}
-
-
-/* ===== INVENTORY CLEAN UI ===== */
-.inv-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;}
-.inv-card{position:relative;min-width:0;min-height:165px;padding:8px 8px 10px;border-radius:19px;background:linear-gradient(180deg,#20262c 0%,#1b2025 100%);border:1px solid rgba(255,255,255,.06);box-shadow:0 7px 18px rgba(0,0,0,.18);display:flex;flex-direction:column;align-items:center;transition:transform .15s,background .2s,border-color .2s;overflow:hidden;}
-.inv-card:active{transform:scale(.975)}
-.inv-card-img-wrap{width:100%;aspect-ratio:1/1;border-radius:14px;background:radial-gradient(circle at 50% 35%,#2c333b 0%,#161b20 70%);border:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:8px;}
-.inv-card-img-wrap img{width:100%;height:100%;object-fit:contain;padding:6px;display:block;}
-.inv-card-name{width:100%;font-size:10px;line-height:1.2;color:#eef3f8;font-weight:750;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:13px;}
-.inv-card-price{display:flex;align-items:center;justify-content:center;gap:3px;margin-top:5px;font-size:10px;line-height:1;color:#6eb5ff;font-weight:850;white-space:nowrap;}
-.inv-card-price img{width:12px;height:12px;object-fit:contain;}
-.inv-card-upgraded{border-color:rgba(88,166,255,.18)!important;background:linear-gradient(180deg,#202830 0%,#1a2025 100%)!important;}
-.section-wrap{margin-top:2px!important;}
-.item-sheet{background:linear-gradient(180deg,#222930 0%,#191e23 100%);border:1px solid rgba(255,255,255,.06);}
-.item-sheet-actions{grid-template-columns:1fr 1fr!important;gap:10px!important;padding-top:14px!important;}
-.item-btn{min-height:50px!important;border-radius:16px!important;font-weight:850!important;font-size:13px!important;}
-.item-btn-sell{background:#2a3036!important;color:#fff!important;border:1px solid rgba(255,255,255,.08)!important;}
-.item-btn-withdraw{background:linear-gradient(135deg,#1687f8,#0c71df)!important;color:#fff!important;border:none!important;box-shadow:0 8px 22px rgba(22,135,248,.25)!important;}
-
-/* Portal picker */
-.portal-overlay{position:fixed;inset:0;z-index:99000;background:rgba(7,10,14,.86);backdrop-filter:blur(12px);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s;}
-.portal-overlay.show{opacity:1;visibility:visible;}
-.portal-sheet{width:100%;max-width:480px;max-height:90vh;background:linear-gradient(180deg,#222a31 0%,#171c21 100%);border-radius:26px 26px 0 0;border-top:1px solid rgba(85,162,230,.18);display:flex;flex-direction:column;overflow:hidden;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.23,1);}
-.portal-overlay.show .portal-sheet{transform:translateY(0)}
-.portal-head{display:flex;justify-content:space-between;align-items:center;padding:18px 18px 12px;flex-shrink:0;}
-.portal-title{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.2px}
-.portal-subtitle{font-size:11px;color:rgba(255,255,255,.45);margin-top:3px;font-weight:650}
-.portal-close{width:34px;height:34px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06);color:#fff;font-size:15px;font-weight:800;}
-.portal-loading{display:flex;align-items:center;justify-content:center;gap:9px;min-height:120px;color:rgba(255,255,255,.5);font-size:12px;font-weight:700;}
-.portal-spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.12);border-top-color:#3e9cff;border-radius:50%;animation:portalSpin .8s linear infinite;}@keyframes portalSpin{to{transform:rotate(360deg)}}
-.portal-error{display:none;margin:0 18px 10px;padding:11px 12px;border-radius:12px;background:rgba(229,57,53,.10);border:1px solid rgba(229,57,53,.22);color:#ff8380;font-size:12px;font-weight:700;}
-.portal-error.show{display:block}
-.portal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:8px 16px 16px;overflow:auto;min-height:0;}
-.portal-card{position:relative;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);border-radius:17px;padding:9px;cursor:pointer;transition:transform .15s,border-color .2s,background .2s;}
-.portal-card:active{transform:scale(.98)}
-.portal-card.selected{border-color:#3e9cff;background:rgba(62,156,255,.10);box-shadow:0 0 0 1px rgba(62,156,255,.22),0 10px 24px rgba(22,135,248,.12)}
-.portal-card img{width:100%;aspect-ratio:1/1;display:block;object-fit:contain;border-radius:13px;background:#12171b;margin-bottom:8px;}
-.portal-model{font-size:11px;color:#fff;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.portal-meta{font-size:9px;color:rgba(255,255,255,.42);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.portal-price{display:flex;align-items:center;gap:4px;margin-top:6px;color:#77bcff;font-size:11px;font-weight:900}
-.portal-price img{width:12px;height:12px;aspect-ratio:auto;background:none;margin:0}
-.portal-footer{padding:10px 16px calc(14px + var(--safe-bottom,0px));border-top:1px solid rgba(255,255,255,.05);background:linear-gradient(180deg,rgba(23,28,33,.65),#171c21 22%);flex-shrink:0;}
-.portal-withdraw-btn{width:100%;min-height:52px;border:none;border-radius:16px;background:linear-gradient(135deg,#1687f8,#0b70df);color:#fff;font-family:inherit;font-size:14px;font-weight:900;box-shadow:0 8px 24px rgba(22,135,248,.22);}
-.portal-withdraw-btn:disabled{background:rgba(255,255,255,.08);color:rgba(255,255,255,.32);box-shadow:none;}
-@media(max-width:380px){.inv-card{min-height:150px}.inv-card-name{font-size:9px}.portal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding-left:12px;padding-right:12px}.portal-head{padding-left:14px;padding-right:14px}.portal-footer{padding-left:12px;padding-right:12px;}}
-
-
-/* FINAL INVENTORY UI POLISH */
-body{animation:invPageIn .26s ease both}
-body.page-leaving{animation:invPageOut .18s ease both}
-@keyframes invPageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@keyframes invPageOut{to{opacity:0;transform:translateY(-5px)}}
-.inv-grid{gap:10px 9px}
-.inv-card{background:linear-gradient(180deg,rgba(36,42,49,.92),rgba(25,30,35,.92));border-color:rgba(255,255,255,.07);box-shadow:0 7px 18px rgba(0,0,0,.14)}
-.inv-card-img-wrap{background:linear-gradient(145deg,#151a1f,#20262c);border-color:rgba(255,255,255,.06)}
-.inv-card-name{font-size:10.5px;font-weight:800;color:rgba(255,255,255,.94)}
-.inv-card-price{font-size:10px;font-weight:850}
-.portal-sheet{border-radius:26px 26px 0 0;background:linear-gradient(180deg,#252c34 0%,#171c21 100%);box-shadow:0 -18px 50px rgba(0,0,0,.45)}
-.portal-head{padding:16px 18px 12px}
-.portal-title{font-size:18px;font-weight:900;letter-spacing:-.3px}
-.portal-subtitle{font-size:11px;color:rgba(255,255,255,.46);margin-top:4px}
-.portal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;padding:8px 14px 18px}
-.portal-card{background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));border:1px solid rgba(255,255,255,.075);border-radius:18px;padding:8px;box-shadow:0 7px 18px rgba(0,0,0,.12)}
-.portal-card img{aspect-ratio:1/1;border-radius:14px;background:#11161a;padding:2px}
-.portal-model{font-size:11px;font-weight:850;color:#fff;margin-top:1px}
-.portal-meta{font-size:9px;color:rgba(255,255,255,.42);min-height:12px;margin-top:3px}
-.portal-price{font-size:11px;font-weight:900;color:#73b7ff;margin-top:6px}
-.portal-footer{padding:10px 14px calc(16px + var(--safe-bottom,0px));background:linear-gradient(0deg,#171c21 70%,transparent)}
-.portal-withdraw-btn{min-height:52px;border-radius:15px;font-size:13px;font-weight:900}
-
-/* FINAL FIX: fixed bottom navigation + transform-free page transitions */
-body{animation:inventoryFadeIn .24s ease both!important;}
-body.page-leaving{animation:inventoryFadeOut .18s ease both!important;}
-@keyframes inventoryFadeIn{from{opacity:0}to{opacity:1}}
-@keyframes inventoryFadeOut{from{opacity:1}to{opacity:0}}
-.bottom-nav{position:fixed!important;left:50%!important;bottom:calc(10px + var(--safe-bottom,0px))!important;top:auto!important;transform:translate3d(-50%,0,0)!important;z-index:100000!important;will-change:transform;}
-.page{padding-bottom:calc(130px + var(--safe-bottom,0px))!important;max-height:none!important;min-height:100vh!important;height:auto!important;overflow:visible!important;}
-
-/* REWARDS BOTTOM SHEET */
-.rewards-overlay{position:fixed;inset:0;z-index:2147483000;background:rgba(4,7,10,.82);backdrop-filter:blur(16px);display:flex;align-items:flex-end;justify-content:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,Roboto,Arial,sans-serif}
-.rewards-overlay.show{opacity:1;visibility:visible;pointer-events:auto}
-.rewards-sheet{width:100%;max-width:480px;max-height:min(89vh,790px);background:linear-gradient(180deg,#20262d 0%,#181d22 52%,#14191e 100%);border:1px solid rgba(255,255,255,.10);border-bottom:0;border-radius:29px 29px 0 0;box-shadow:0 -26px 80px rgba(0,0,0,.68),0 0 0 1px rgba(0,0,0,.22);display:flex;flex-direction:column;overflow:hidden;transform:translate3d(0,100%,0);transition:transform .38s cubic-bezier(.22,1,.36,1);will-change:transform;position:relative}
-.rewards-overlay.show .rewards-sheet{transform:translate3d(0,0,0)}
-.rewards-handle{width:48px;height:5px;border-radius:99px;background:#343d47;margin:15px auto 12px;flex-shrink:0}
-.rewards-head{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:0 16px 15px;flex-shrink:0}
-.rewards-title{font-size:20px;font-weight:850;letter-spacing:-.55px;line-height:1.1;color:#fff}
-.rewards-user-level{font-size:11px;font-weight:800;color:rgba(255,255,255,.78);background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.075);padding:9px 11px;border-radius:12px;white-space:nowrap;letter-spacing:-.1px}
-.rewards-close{width:34px;height:34px;border:0;border-radius:12px;background:rgba(255,255,255,.055);color:rgba(255,255,255,.72);font-size:19px;font-weight:500;line-height:1;cursor:pointer}
-.rewards-scroll{overflow:auto;padding:0 14px calc(18px + var(--safe-bottom,0px));-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.rewards-scroll::-webkit-scrollbar{display:none}
-.rewards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.reward-level-card{position:relative;min-width:0;background:linear-gradient(145deg,#252b32,#1d2329);border:1px solid rgba(255,255,255,.075);border-radius:17px;padding:8px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.20)}
-.reward-level-card.available{border-color:rgba(22,135,248,.42);box-shadow:0 0 0 1px rgba(22,135,248,.08),0 8px 22px rgba(0,0,0,.18)}
-.reward-level-card.claimed{opacity:.62}
-.reward-level-card.locked{opacity:.72}
-.reward-level-badge{position:absolute;left:8px;top:8px;z-index:2;background:#12171c;color:#fff;border:1px solid rgba(255,255,255,.075);border-radius:8px;padding:4px 7px;font-size:9.5px;font-weight:850;line-height:1;letter-spacing:-.1px;box-shadow:0 3px 8px rgba(0,0,0,.22)}
-.reward-level-grid{display:grid;grid-template-columns:1fr;gap:7px;margin-top:22px}
-.reward-cell,.reward-empty-cell{min-width:0;aspect-ratio:1/1;border-radius:13px;background:linear-gradient(145deg,rgba(255,255,255,.045),rgba(255,255,255,.018));border:1px solid rgba(255,255,255,.045);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
-.reward-cell img{width:78%;height:78%;object-fit:contain;display:block;filter:drop-shadow(0 10px 18px rgba(0,0,0,.28))}
-.reward-cell-empty{display:none;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;font-size:9px;color:rgba(255,255,255,.28);padding:7px}
-.reward-cell-title{position:absolute;left:4px;right:4px;bottom:4px;background:rgba(10,13,17,.72);border-radius:7px;padding:4px 3px;color:#fff;font-size:8px;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.reward-cell-text{flex-direction:column;gap:5px;padding:7px;text-align:center}
-.reward-cell-icon{font-size:25px;line-height:1}
-.reward-cell-text .reward-cell-title{position:static;background:none;font-size:8px;padding:0}
-.reward-empty-cell{font-size:9px;font-weight:700;color:rgba(255,255,255,.24);text-align:center;line-height:1.25;padding:7px}
-.reward-claim-btn{width:100%;height:30px;margin-top:8px;border:0;border-radius:9px;background:#1687f8;color:#fff;font-family:inherit;font-size:10px;font-weight:900;box-shadow:0 6px 16px rgba(22,135,248,.18)}
-.reward-claim-btn:disabled{opacity:.6}
-.reward-claimed,.reward-locked{margin-top:8px;text-align:center;font-size:8px;font-weight:800;color:rgba(255,255,255,.32);min-height:30px;display:flex;align-items:center;justify-content:center}
-.reward-claimed{color:#70b9ff}
-.rewards-loading{grid-column:1/-1;text-align:center;padding:46px 10px;color:rgba(255,255,255,.42);font-size:12px;font-weight:700;letter-spacing:-.1px}
-@media(max-width:380px){.rewards-grid{gap:8px}.reward-level-card{padding:7px}.reward-level-badge{left:6px;top:6px;font-size:9px}.reward-cell-title{font-size:7px}.rewards-head{padding-left:14px;padding-right:14px}}
-
-/* ===== INVENTORY FINAL CLEANUP ===== */
-
-/* Deposit plus: optical centering */
-.bal-plus{
-    line-height:1;
-    padding:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    text-align:center;
-}
-
-/* Referral: banner fills the available width cleanly */
-.ref-card{
-    background-size:100% 100% !important;
-    background-position:center !important;
-}
-.ref-earned{
-    gap:5px;
-}
-.ref-earned-label{
-    color:rgba(255,255,255,.55);
-    font-size:8px;
-    font-weight:700;
-}
-.ref-earned #refBalance{
-    font-size:10px;
-    font-weight:900;
-    color:#fff;
-}
-
-/* Inventory: three true square cards, without the nested "frame inside frame". */
-.inv-grid{
-    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
-    gap:10px !important;
-}
-.inv-card{
-    width:100%;
-    aspect-ratio:1 / 1 !important;
-    min-height:0 !important;
-    height:auto;
-    padding:7px !important;
-    border-radius:17px !important;
-    background:#20252a !important;
-    border:1px solid rgba(255,255,255,.065) !important;
-    box-shadow:0 5px 14px rgba(0,0,0,.14) !important;
-    overflow:hidden;
-}
-.inv-card-img-wrap{
-    width:100% !important;
-    min-height:0;
-    flex:1 1 auto;
-    aspect-ratio:auto !important;
-    margin:0 0 5px !important;
-    border:0 !important;
-    border-radius:11px !important;
-    background:transparent !important;
-    overflow:hidden !important;
-}
-.inv-card-img-wrap img{
-    width:100% !important;
-    height:100% !important;
-    padding:0 !important;
-    object-fit:contain;
-    border-radius:10px;
-}
-.inv-card-upgraded .inv-card-img-wrap{
-    background:transparent !important;
-}
-.inv-card-upgraded .inv-card-img-wrap img{
-    object-fit:cover !important;
-    border-radius:10px;
-}
-.inv-card-name{
-    flex:0 0 auto;
-    width:100%;
-    min-height:13px !important;
-    height:13px;
-    padding:0 2px !important;
-    font-size:10px !important;
-    line-height:13px !important;
-    font-weight:800 !important;
-}
-.inv-card-price{
-    flex:0 0 auto;
-    height:14px;
-    min-height:14px !important;
-    margin-top:3px !important;
-    padding:0 !important;
-    font-size:10px !important;
-    line-height:14px !important;
-}
-.inv-card-price img{
-    width:11px !important;
-    height:11px !important;
-}
-
-/* Item information sheet must always sit above the fixed bottom navigation. */
-.item-sheet-overlay{
-    z-index:200000 !important;
-}
-.item-sheet{
-    z-index:200001;
-}
-.bottom-nav{
-    z-index:100000 !important;
-}
-
-/* Rewards: simple header + compact square reward tiles. */
-.rewards-head{
-    grid-template-columns:1fr auto !important;
-}
-.rewards-user-level{
-    background:transparent !important;
-    border:0 !important;
-    padding:0 !important;
-    border-radius:0 !important;
-    font-size:13px !important;
-    font-weight:850 !important;
-    color:rgba(255,255,255,.82) !important;
-}
-.reward-level-card{
-    padding:7px !important;
-    border-radius:15px !important;
-}
-.reward-level-badge{
-    left:7px !important;
-    top:7px !important;
-    background:rgba(10,14,18,.78) !important;
-    border:0 !important;
-    border-radius:7px !important;
-    padding:4px 6px !important;
-}
-.reward-level-grid{
-    margin-top:0 !important;
-}
-.reward-cell,.reward-empty-cell{
-    border-radius:12px !important;
-    background:#1a2025 !important;
-}
-.reward-cell img{
-    width:82% !important;
-    height:82% !important;
-}
-.reward-cell-title{
-    display:none !important;
-}
-.reward-locked{
-    display:none !important;
-}
-
-
-/* ===== MOBILE EXPANDED VIEW OFFSET ===== */
-.page{
-    transform:translateY(5px);
-}
-
-
-/* ===== FINAL INVENTORY FIXES ===== */
-.inv-card{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;aspect-ratio:auto!important;min-height:0!important;overflow:visible!important;}
-.inv-card-img-wrap{width:100%!important;aspect-ratio:1/1!important;flex:none!important;margin:0 0 6px!important;background:transparent!important;border:0!important;border-radius:0!important;overflow:visible!important;}
-.inv-card-img-wrap img{width:100%!important;height:100%!important;object-fit:contain!important;padding:0!important;border-radius:0!important;}
-.inv-card-upgraded .inv-card-img-wrap{border-radius:14px!important;overflow:hidden!important;background:#171c21!important;border:0!important;}
-.inv-card-upgraded .inv-card-img-wrap img{object-fit:cover!important;border-radius:14px!important;}
-.inv-card-name{height:16px!important;min-height:16px!important;line-height:16px!important;padding:0 2px!important;font-size:10px!important;}
-.inv-card-price{height:15px!important;min-height:15px!important;margin-top:2px!important;}
-.page{padding-top:calc(var(--safe-top) + 10px)!important;transform:translateY(5vh)!important;max-height:none!important;height:auto!important;min-height:100vh!important;overflow:visible!important;}
-.item-sheet-overlay{z-index:2147483646!important;}
-.portal-overlay{z-index:2147483647!important;}
-.bottom-nav{z-index:100000!important;}
-.deposit-methods{display:block!important;}
-.deposit-method-btn{width:100%!important;margin-bottom:10px!important;}
-.deposit-unavailable{padding:18px 12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.68);font-size:13px;line-height:1.45;text-align:center;}
-.item-animation-block{display:none;width:100%;margin:0 0 12px;padding:0;border-radius:20px;background:transparent;border:0;}
-.item-animation-block.show{display:block;}
-.item-animation-stage{width:100%;height:230px;aspect-ratio:1/1;max-width:230px;margin:0 auto;display:flex;align-items:center;justify-content:center;border-radius:20px;overflow:hidden;background:linear-gradient(145deg,#151a1f,#20262c);}
-.item-animation-stage svg{width:100%!important;height:100%!important;display:block;}
-.item-animation-fallback{width:100%;height:100%;object-fit:contain;padding:8px;display:none;}
-.item-nft-block.compact{display:flex;margin-top:4px;gap:8px;}
-.item-nft-block.compact .item-nft-img-wrap,.item-nft-block.compact .item-nft-number{display:none;}
-.item-nft-block.compact .item-nft-name{display:none;}
-.item-nft-block.compact .item-nft-attrs{margin-top:0;}
-@media(max-width:380px){.page{transform:translateY(5vh)!important}.item-animation-stage{height:210px;max-width:210px}}
+.notif.show{transform:translate(-50%,0)}
+.notif.error{border-color:rgba(255,48,100,.45);color:#ffb3c4}
 </style>
 </head>
 <body>
 
-<div class="page">
-
-<!-- TOP BAR -->
-<div class="top-bar">
-    <div class="top-left">
-        <div class="top-icon-btn" id="langBtn" onclick="toggleLang()"><img class="lang-flag" id="langFlag" src="/static/gifs/ru.gif" alt="RU"></div>
-        <div class="top-icon-btn" id="vibBtn" onclick="toggleVibration()"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
-    </div>
-    <div class="top-right">
-        <div class="bal-pill"><img src="/static/img/ton.png" alt=""><span id="hdrBalance">0.00</span></div>
-        <div class="bal-plus" onclick="openDeposit()">+</div>
-    </div>
-</div>
-
-<!-- PROFILE -->
-<div class="profile-section">
-    <div class="avatar-wrap" id="avatarWrap">
-        <div class="avatar-fallback" id="avatarFallback">U</div>
-    </div>
-    <div class="profile-name" id="userName">Загрузка...</div>
-    <div class="profile-uid" id="userUid"></div>
-    <div class="level-bar-wrap">
-        <div class="level-bar-bg"><div class="level-bar-fill" id="levelBar" style="width:0%"></div></div>
-        <div class="level-bar-text" id="levelText">0.00 / 10.00 TON</div>
-    </div>
-    <div class="profile-stats">
-        <div class="profile-stat">
-            <div class="profile-stat-val"><img src="/static/img/ton.png" alt=""><span id="statBalance">0.00</span></div>
-            <div class="profile-stat-label">Баланс</div>
-        </div>
-        <div class="profile-stat">
-            <div class="profile-stat-val"><span id="statGifts">0</span></div>
-            <div class="profile-stat-label">Подарки</div>
-        </div>
-        <div class="profile-stat">
-            <div class="profile-stat-val"><span id="statLevel">1</span></div>
-            <div class="profile-stat-label">Уровень</div>
-        </div>
-    </div>
-</div>
-
-<!-- ACTION -->
-<div class="action-row">
-    <button class="btn-action btn-primary" onclick="openDeposit()">Пополнить</button>
-    <button class="btn-action btn-outline" onclick="openRewardsPage()">Награды</button>
-</div>
-
-<!-- ADMIN -->
-<button class="admin-btn" id="adminBtn" onclick="window.location.href='/admin'" style="display:none">
-    <svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-2.8 8.2-7 10-4.2-1.8-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
-    Панель управления
-</button>
-
-<!-- REFERRAL -->
-<div class="ref-card">
-    <div class="ref-card-title">РЕФЕРАЛЫ</div>
-    <div class="ref-card-desc">Приглашайте друзей и получайте<br>10% с депозитов ваших друзей!</div>
-    <div class="ref-stats">
-        <div class="ref-stat ref-earned"><img src="/static/img/gram.png" alt=""><span class="ref-earned-label">Заработано</span><span id="refBalance">0.00</span></div>
-        <div class="ref-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span>Рефералов: <span id="refCount">0</span></span></div>
-        <div class="ref-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></svg><span>Условия</span></div>
-    </div>
-    <div class="ref-links">
-        <button class="ref-link" onclick="inviteFriends()">Пригласить друзей</button>
-        <button class="ref-link" onclick="copyRefLink()">Копировать ссылку</button>
-    </div>
-</div>
-
-<!-- INVENTORY -->
-<div class="section-wrap">
-  <div id="inventoryContainer">
-      <div class="inv-empty">Инвентарь пуст</div>
-  </div>
-</div>
-
-</div>
-
-
-<!-- ═══ REWARDS SHEET ═══ -->
-<div class="rewards-overlay" id="rewardsOverlay" onclick="if(event.target===this)closeRewardsSheet()">
-  <div class="rewards-sheet" onclick="event.stopPropagation()">
-    <div class="rewards-handle"></div>
-    <div class="rewards-head">
-      <div class="rewards-title">Награды</div>
-      <div class="rewards-user-level" id="rewardsUserLevel">1 lvl</div>
-    </div>
-    <div class="rewards-scroll">
-      <div class="rewards-grid" id="rewardsGrid"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ ITEM SHEET ═══ -->
-<div class="item-sheet-overlay" id="itemSheetOverlay" onclick="if(event.target===this)closeItemSheet()">
-    <div class="item-sheet" onclick="event.stopPropagation()">
-        <div class="item-sheet-handle"></div>
-
-        <div class="item-sheet-header" id="itemSheetHeader">
-            <div class="item-animation-block" id="itemAnimationBlock">
-                <div class="item-animation-stage" id="itemAnimationStage">
-                    <img class="item-animation-fallback" id="itemAnimationFallback" src="/static/img/gift.png" alt="">
-                </div>
-            </div>
-            <img class="item-sheet-img" id="itemSheetImg" src="/static/img/gift.png" alt="" style="display:none">
-            <div class="item-sheet-title" id="itemSheetTitle">Подарок</div>
-            <div class="item-sheet-price" id="itemSheetPrice">
-                <img src="/static/img/ton.png" alt=""><span id="itemSheetPriceVal">0.00</span>
-            </div>
-        </div>
-
-        <div class="item-nft-block" id="itemNftBlock">
-            <div class="item-nft-img-wrap">
-                <img id="itemNftImg" src="" alt="">
-                <div class="nft-loader" id="nftLoader">Загрузка...</div>
-            </div>
-            <div class="item-nft-name" id="itemNftName">—</div>
-            <div class="item-nft-number" id="itemNftNumber">#?</div>
-
-            <div class="item-nft-attrs">
-                <div class="item-nft-attr" id="attrModelRow">
-                    <span class="item-nft-attr-label">Model</span>
-                    <div class="item-nft-attr-right">
-                        <span class="item-nft-attr-value" id="attrModelVal">—</span>
-                        <span class="item-nft-attr-rarity empty" id="attrModelRarity"></span>
-                    </div>
-                </div>
-                <div class="item-nft-attr" id="attrBackdropRow">
-                    <span class="item-nft-attr-label">Backdrop</span>
-                    <div class="item-nft-attr-right">
-                        <span class="item-nft-attr-value" id="attrBackdropVal">—</span>
-                        <span class="item-nft-attr-rarity empty" id="attrBackdropRarity"></span>
-                    </div>
-                </div>
-                <div class="item-nft-attr" id="attrSymbolRow">
-                    <span class="item-nft-attr-label">Symbol</span>
-                    <div class="item-nft-attr-right">
-                        <span class="item-nft-attr-value" id="attrSymbolVal">—</span>
-                        <span class="item-nft-attr-rarity empty" id="attrSymbolRarity"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="item-challenge" id="itemChallenge" style="display:none">
-            <div class="item-challenge-label">
-                <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                Отыгрыш
-            </div>
-            <div class="item-challenge-bar-bg"><div class="item-challenge-bar" id="itemChallengeBar" style="width:0%"></div></div>
-            <div class="item-challenge-text" id="itemChallengeText">0 / 0 TON</div>
-        </div>
-
-        <div class="item-sheet-actions" id="itemSheetActions">
-            <button class="item-btn item-btn-sell" id="itemBtnSell" onclick="sellSelectedItem()">
-                <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                Продать
+<!-- ══════════════ TOP BAR ══════════════ -->
+<header class="top-bar">
+    <div class="desktop-left">
+        <button class="logo-btn" onclick="goTo('/games')" aria-label="Rasswet Gifts">
+            <img src="/static/img/logo.png" alt="Rasswet Gifts">
+        </button>
+        <nav class="main-nav">
+            <button class="nav-btn active" onclick="goTo('/profile')">
+                <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/></svg></span>
+                <span>Профиль</span>
             </button>
-            <button class="item-btn item-btn-withdraw" id="itemBtnWithdraw" onclick="openPortalPicker()">
-                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Вывод
+            <button class="nav-btn" onclick="goTo('/upgrade')">
+                <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17 10 11l4 4 6-7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 8H20v3.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <span>Апгрейды</span>
             </button>
-            <button class="item-btn item-btn-claim" id="itemBtnClaim" onclick="claimChallenge()" style="display:none">
-                Получить
+            <button class="nav-btn" onclick="goTo('/leaderboard')">
+                <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h10v5.5c0 3.2-2.1 5.7-5 6.4-2.9-.7-5-3.2-5-6.4V4Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.8"/><path d="M7 7H4v2.5A3.5 3.5 0 0 0 7.5 13M17 7h3v2.5a3.5 3.5 0 0 1-3.5 3M12 15.9V19M8.5 21h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+                <span>Сезон</span>
             </button>
+            <button class="nav-btn" onclick="goTo('/games')">
+                <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 8h10a4.5 4.5 0 0 1 4.42 5.36l-.6 3.02A3 3 0 0 1 15.5 17.3l-.85-1.06a2 2 0 0 0-1.56-.74h-2.18a2 2 0 0 0-1.56.74L8.5 17.3a3 3 0 0 1-5.32-.92l-.6-3.02A4.5 4.5 0 0 1 7 8Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 11.5v3M6 13h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="15.5" cy="12" r="1" fill="currentColor"/><circle cx="17.5" cy="14" r="1" fill="currentColor"/></svg></span>
+                <span>Игры</span>
+            </button>
+        </nav>
+    </div>
+    <div class="account">
+        <div class="balance" aria-label="Баланс">
+            <img src="/static/img/ton.png" alt="TON">
+            <span class="balance-value" id="hdrBalance">0.00</span>
         </div>
+        <button class="plus-btn" onclick="openDeposit()" aria-label="Пополнение">
+            <svg viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="avatar-btn" onclick="goTo('/profile')" aria-label="Профиль">
+            <img id="topAvatarImg" src="/static/img/logo.png" alt="">
+        </button>
     </div>
-</div>
+</header>
 
-<!-- PORTAL WITHDRAW PICKER -->
-<div class="portal-overlay" id="portalOverlay" onclick="if(event.target===this)closePortalPicker()">
-  <div class="portal-sheet" onclick="event.stopPropagation()">
-    <div class="portal-head">
-      <div>
-        <div class="portal-title">Вывод через Portal</div>
-        <div class="portal-subtitle" id="portalSubtitle">Выберите модель подарка</div>
-      </div>
-      <button class="portal-close" onclick="closePortalPicker()">✕</button>
-    </div>
-    <div class="portal-loading" id="portalLoading"><div class="portal-spinner"></div><span>Загружаем модели с Portal…</span></div>
-    <div class="portal-error" id="portalError"></div>
-    <div class="portal-grid" id="portalGrid"></div>
-    <div class="portal-footer">
-      <button class="portal-withdraw-btn" id="portalWithdrawBtn" disabled onclick="confirmPortalWithdraw()">Выберите модель</button>
-    </div>
-  </div>
-</div>
+<main class="page">
+    <h1 class="page-title"><span class="pumpkin">🎃</span> Профиль</h1>
 
-<!-- PROMO -->
-<div class="overlay" id="promoOverlay" onclick="if(event.target===this)closePromoModal()">
-    <div class="promo-modal">
-        <div class="promo-header">
-            <div class="promo-title">Промокод</div>
-            <button class="promo-close" onclick="closePromoModal()">✕</button>
+    <div class="top-grid">
+        <!-- BLOCK: PROFILE (avatar / nickname / balance) -->
+        <section class="panel profile-panel">
+            <div class="avatar-wrap">
+                <div class="avatar-inner" id="avatarInner"><div class="avatar-fallback" id="avatarFallback">U</div></div>
+            </div>
+            <div class="profile-info">
+                <div class="profile-name" id="userName">Загрузка...</div>
+                <div class="profile-balance"><img src="/static/img/ton.png" alt="">
+                    <span id="statBalance">0.00</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- BLOCK: SETTINGS (язык + промокод) -->
+        <section class="panel">
+            <div class="settings-title">⚙️ Настройки</div>
+            <div class="settings-row">
+                <div class="settings-label">Язык</div>
+                <div class="lang-toggle">
+                    <button class="lang-btn" id="langRu" onclick="setLang('ru')">RU</button>
+                    <button class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-label">Промокод</div>
+                <div class="promo-row">
+                    <input class="promo-field" id="promoInput" type="text" placeholder="Введите промокод" maxlength="24" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+                    <button class="promo-apply" id="promoBtn" onclick="activatePromo()">Применить</button>
+                </div>
+                <div class="promo-msg" id="promoMsg"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- BLOCK: INVENTORY -->
+    <section class="panel inv-panel">
+        <div class="inv-head">
+            <div class="inv-head-left">
+                <div class="inv-head-title">Инвентарь</div>
+                <div class="inv-count" id="invCount">0</div>
+            </div>
+            <button class="sell-all-btn" id="sellAllBtn" onclick="sellAll()">Продать всё</button>
         </div>
-        <div class="promo-hint">Введите код, чтобы получить награду</div>
-        <input class="promo-input" id="promoInput" type="text" placeholder="КОД" maxlength="24" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
-        <div class="promo-error" id="promoError"></div>
-        <button class="promo-submit" id="promoSubmitBtn" onclick="activatePromo()">Активировать</button>
+        <div class="inv-grid" id="inventoryGrid">
+            <div class="inv-empty">
+                <svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+                Инвентарь пуст
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- BOTTOM NAV (mobile) -->
+<nav class="bottom-nav" aria-label="Навигация">
+    <button class="bottom-nav-btn active" onclick="goTo('/profile')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/></svg></span>
+        <span>Профиль</span>
+    </button>
+    <button class="bottom-nav-btn" onclick="goTo('/upgrade')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17 10 11l4 4 6-7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 8H20v3.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>Апгрейды</span>
+    </button>
+    <button class="bottom-nav-btn" onclick="goTo('/leaderboard')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h10v5.5c0 3.2-2.1 5.7-5 6.4-2.9-.7-5-3.2-5-6.4V4Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.8"/><path d="M7 7H4v2.5A3.5 3.5 0 0 0 7.5 13M17 7h3v2.5a3.5 3.5 0 0 1-3.5 3M12 15.9V19M8.5 21h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+        <span>Сезон</span>
+    </button>
+    <button class="bottom-nav-btn" onclick="goTo('/games')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 8h10a4.5 4.5 0 0 1 4.42 5.36l-.6 3.02A3 3 0 0 1 15.5 17.3l-.85-1.06a2 2 0 0 0-1.56-.74h-2.18a2 2 0 0 0-1.56.74L8.5 17.3a3 3 0 0 1-5.32-.92l-.6-3.02A4.5 4.5 0 0 1 7 8Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 11.5v3M6 13h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="15.5" cy="12" r="1" fill="currentColor"/><circle cx="17.5" cy="14" r="1" fill="currentColor"/></svg></span>
+        <span>Игры</span>
+    </button>
+</nav>
+
+<!-- MRKT WITHDRAW PICKER -->
+<div class="overlay" id="mrktOverlay" onclick="if(event.target===this)closeMrktPicker()">
+    <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+            <div>
+                <div class="sheet-title">Вывод подарка</div>
+                <div class="sheet-subtitle" id="mrktSubtitle">Выберите модель</div>
+            </div>
+            <button class="sheet-close" onclick="closeMrktPicker()">✕</button>
+        </div>
+        <div class="mrkt-loading" id="mrktLoading"><div class="mrkt-spinner"></div><span>Загружаем модели…</span></div>
+        <div class="mrkt-error" id="mrktError"></div>
+        <div class="mrkt-grid" id="mrktGrid"></div>
+        <button class="mrkt-submit" id="mrktSubmitBtn" disabled onclick="confirmMrktWithdraw()">Выберите модель</button>
     </div>
 </div>
 
 <!-- DEPOSIT -->
 <div class="overlay" id="depositOverlay" onclick="if(event.target===this)closeDeposit()">
-    <div class="deposit-modal">
-        <div class="deposit-header">
+    <div class="deposit-modal" onclick="event.stopPropagation()">
+        <div class="deposit-head">
             <div class="deposit-title">Пополнение</div>
             <button class="deposit-close" onclick="closeDeposit()">✕</button>
         </div>
-        <div class="deposit-methods">
-            <div class="deposit-unavailable">Пополнение TON и Stars временно недоступно.<br>Мы уже работаем над восстановлением.</div>
-        </div>
+        <div class="deposit-unavailable">Пополнение TON и Stars временно недоступно.<br>Мы уже работаем над восстановлением.</div>
     </div>
 </div>
 
-<!-- SUCCESS -->
-<div class="success-overlay" id="successOverlay">
-    <img class="success-gif" id="successGif" src="/static/gifs/Hlop.gif" alt="" onerror="this.style.display='none'">
-    <div class="success-title" id="successTitle"></div>
-    <div class="success-price" id="successPrice"></div>
-    <button class="success-ok" onclick="closeSuccessOverlay()">OK</button>
-</div>
-
 <div class="notif" id="notif"></div>
-
-<!-- BOTTOM NAV -->
-<nav class="bottom-nav" id="bottomNav">
-    <a class="bnav-item" href="/games">
-        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="18" cy="12" r="1" fill="currentColor" stroke="none"/></svg>
-        <span>Игры</span>
-    </a>
-    <a class="bnav-item" href="/crash">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        <span>Краш</span>
-    </a>
-    <a class="bnav-item" href="/leaderboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>
-        <span>Лидеры</span>
-    </a>
-    <a class="bnav-item active" href="/inventory">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>Профиль</span>
-    </a>
-</nav>
 
 <script>
 /* ══════════════════════════════════════════════════════════════
    STATE
    ══════════════════════════════════════════════════════════════ */
-let user = null;
-let inventory = [];
-let selectedItem = null;
-let selectMode = false;
-let selectedItems = new Set();
-const ADMIN_ID = 5257227756;
-const _imgCache = {};
-const _nftDetailsCache = {};
-let _itemAnimation = null;
-
-let _sellCountdownTimer = null;
-let _batchSellMode = false;
-let _batchSellIds = [];
-let _upgradeVariants = [];
-let _upgradeCenterIndex = 0;
-let _upgradeCurrentGift = null;
-let _upgradeSpinRunning = false;
-let _upgradeSpinContext = null;
-let _previewAnimTimer = null;
-let _previewAnimRunning = false;
+var user = null;
+var inventory = [];
+var currentLang = localStorage.getItem('app_lang') || 'ru';
+var _mrktCandidates = [];
+var _mrktSelected = null;
+var _mrktTargetItem = null;
 
 function $(id){ return document.getElementById(id); }
 function starsToTon(s){ return Number(s || 0) / 100; }
@@ -1726,21 +547,12 @@ function formatTon(t){
     if(v >= 10) return v.toFixed(1);
     return v.toFixed(2);
 }
-
-/* VIBRATION */
-let vibrationOn = localStorage.getItem('vibration') !== 'off';
-function initVibration(){
-    var b = $('vibBtn');
-    if(b) b.classList.toggle('vibration-off', !vibrationOn);
-}
-function toggleVibration(){
-    vibrationOn = !vibrationOn;
-    localStorage.setItem('vibration', vibrationOn ? 'on' : 'off');
-    initVibration();
-    vibrateIfOn();
+function escapeHtml(str){
+    var div = document.createElement('div');
+    div.textContent = str == null ? '' : str;
+    return div.innerHTML;
 }
 function vibrateIfOn(){
-    if(!vibrationOn) return;
     try{
         if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
             Telegram.WebApp.HapticFeedback.impactOccurred('light');
@@ -1749,32 +561,47 @@ function vibrateIfOn(){
     }catch(e){}
     if(navigator.vibrate) navigator.vibrate(30);
 }
-
-/* LANG */
-let currentLang = localStorage.getItem('app_lang') || 'ru';
-function initLang(){
-    var f = $('langFlag');
-    if(!f) return;
-    if(currentLang === 'en'){ f.src = '/static/gifs/eg.gif'; f.alt = 'EN'; }
-    else { f.src = '/static/gifs/ru.gif'; f.alt = 'RU'; }
+function goTo(url){
+    vibrateIfOn();
+    window.location.href = url;
 }
-function toggleLang(){
-    currentLang = currentLang === 'ru' ? 'en' : 'ru';
-    localStorage.setItem('app_lang', currentLang);
+function showNotif(msg, isError){
+    var el = $('notif');
+    if(!el) return;
+    el.textContent = msg;
+    el.className = 'notif' + (isError ? ' error' : '');
+    void el.offsetWidth;
+    el.classList.add('show');
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(function(){ el.classList.remove('show'); }, 3000);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LANGUAGE
+   ══════════════════════════════════════════════════════════════ */
+function initLang(){
+    var ru = $('langRu'), en = $('langEn');
+    if(ru) ru.classList.toggle('active', currentLang === 'ru');
+    if(en) en.classList.toggle('active', currentLang === 'en');
+}
+function setLang(lang){
+    currentLang = lang;
+    localStorage.setItem('app_lang', lang);
     initLang();
     vibrateIfOn();
 }
 
-/* INIT */
+/* ══════════════════════════════════════════════════════════════
+   INIT / AUTH
+   ══════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function(){
     initLang();
-    initVibration();
     if(window.Telegram && window.Telegram.WebApp){
         try{
             Telegram.WebApp.ready();
             Telegram.WebApp.expand();
-            Telegram.WebApp.setHeaderColor('#171F2B');
-            Telegram.WebApp.setBackgroundColor('#171F2B');
+            Telegram.WebApp.setHeaderColor('#0d0817');
+            Telegram.WebApp.setBackgroundColor('#0d0817');
         }catch(e){}
     }
     initUser();
@@ -1803,10 +630,6 @@ async function initUser(){
             user = d.user;
             updateProfile();
             await loadInventory();
-            if(String(user.id) === String(ADMIN_ID)){
-                var ab = $('adminBtn');
-                if(ab) ab.style.display = 'flex';
-            }
         }
     }catch(e){
         console.error('initUser:', e);
@@ -1814,1435 +637,54 @@ async function initUser(){
     }
 }
 
-/* REWARDS */
-function openRewardsPage(){
-    vibrateIfOn();
-    var ov = $('rewardsOverlay');
-    if(!ov) return;
-    ov.classList.add('show');
-    loadRewardsSheet();
-}
-function closeRewardsSheet(){
-    var ov = $('rewardsOverlay');
-    if(ov) ov.classList.remove('show');
-}
-
-async function loadRewardsSheet(){
-    var grid = $('rewardsGrid');
-    var levelLabel = $('rewardsUserLevel');
-    if(!grid) return;
-    var current = Number(user && user.current_level || 1);
-    if(levelLabel) levelLabel.textContent = current + ' lvl';
-    grid.innerHTML = '<div class="rewards-loading">Загружаем награды…</div>';
-    try{
-        var levelsReq = await fetch('/api/crash/levels');
-        var levelsData = await levelsReq.json();
-        var rewardReq = user && user.id ? await fetch('/api/rewards/info/' + encodeURIComponent(user.id)) : null;
-        var rewardData = rewardReq ? await rewardReq.json() : {success:true,level_rewards:[]};
-        var allLevels = (levelsData && levelsData.success && Array.isArray(levelsData.levels)) ? levelsData.levels : [];
-        var configured = (rewardData && rewardData.success && Array.isArray(rewardData.level_rewards)) ? rewardData.level_rewards : [];
-        var byLevel = {};
-        configured.forEach(function(x){ byLevel[Number(x.level)] = x; });
-        if(!allLevels.length){
-            var max = 15;
-            for(var i=1;i<=max;i++) allLevels.push({level:i});
-        }
-        grid.innerHTML = allLevels.map(function(lvl){
-            var n = Number(lvl.level || 0);
-            var info = byLevel[n];
-            var rewards = info && Array.isArray(info.rewards) ? info.rewards : [];
-            var available = current >= n && rewards.length > 0 && !(info && info.claimed);
-            var claimed = !!(info && info.claimed);
-            var locked = current < n;
-            var cls = 'reward-level-card' + (available ? ' available' : '') + (claimed ? ' claimed' : '') + (locked ? ' locked' : '');
-            var body = '';
-            if(rewards.length){
-                body = rewards.map(function(r){ return rewardTileHtml(r); }).join('');
-            }else{
-                body = '<div class="reward-empty-cell"><span>Награда<br>не установлена</span></div>';
-            }
-            var action = '';
-            if(rewards.length && available){
-                action = '<button type="button" class="reward-claim-btn" onclick="claimLevelReward('+n+',event)">Забрать</button>';
-            }else if(claimed){
-                action = '<div class="reward-claimed">Получено</div>';
-            }else if(locked){
-                action = '';
-            }
-            return '<div class="'+cls+'">'
-                + '<div class="reward-level-badge">'+n+' lvl</div>'
-                + '<div class="reward-level-grid">'+body+'</div>'
-                + action
-                + '</div>';
-        }).join('');
-    }catch(e){
-        console.error('loadRewardsSheet:', e);
-        grid.innerHTML = '<div class="rewards-loading">Не удалось загрузить награды</div>';
-    }
-}
-
-function rewardTileHtml(r){
-    var d = r && r.data ? r.data : {};
-    var type = String(r && r.type || '').toLowerCase();
-    var img = d.image || d.gif || d.image_url || d.photo || d.icon || d.reward_image || '';
-    if(!img && type === 'rocket' && (d.item_id || d.rocket_id || d.id)) img = '/static/gifs/rockets/' + encodeURIComponent(d.item_id || d.rocket_id || d.id) + '.gif';
-    if(!img && type === 'crate' && (d.image || d.crate_image)) img = d.image || d.crate_image;
-    var title = r.description || d.name || d.title || rewardTypeName(type);
-    if(img){
-        return '<div class="reward-cell"><img src="'+escapeHtml(img)+'" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="reward-cell-empty">'+escapeHtml(title)+'</div><div class="reward-cell-title">'+escapeHtml(title)+'</div></div>';
-    }
-    return '<div class="reward-cell reward-cell-text"><div class="reward-cell-icon">'+escapeHtml(rewardTypeIcon(type))+'</div><div class="reward-cell-title">'+escapeHtml(title)+'</div></div>';
-}
-function rewardTypeName(type){
-    var m={stars:'Звёзды',star:'Звёзды',balance_stars:'Звёзды',tickets:'Билеты',ticket:'Билеты',rocket:'Ракета',crate:'Кейс',gift:'Подарок',background:'Фон',skin:'Скин',experience:'Опыт'};
-    return m[type] || 'Награда';
-}
-function rewardTypeIcon(type){
-    var m={stars:'⭐',star:'⭐',balance_stars:'⭐',tickets:'🎫',ticket:'🎫',rocket:'🚀',crate:'🎁',gift:'🎁',background:'🖼️',skin:'🎨',experience:'XP'};
-    return m[type] || '🎁';
-}
-async function claimLevelReward(level, ev){
-    if(ev){ ev.stopPropagation(); }
-    if(!user || !user.id) return;
-    var btn = ev && ev.currentTarget;
-    if(btn){ btn.disabled=true; btn.textContent='Получаем…'; }
-    try{
-        var r = await fetch('/api/rewards/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,reward_type:'level',reward_id:level})});
-        var d = await r.json();
-        if(d.success){
-            showNotif(d.message || 'Награда получена!');
-            await refreshUserData();
-            await loadRewardsSheet();
-        }else{
-            showNotif(d.error || 'Не удалось получить награду', true);
-            if(btn){ btn.disabled=false; btn.textContent='Забрать'; }
-        }
-    }catch(e){
-        showNotif('Ошибка сети', true);
-        if(btn){ btn.disabled=false; btn.textContent='Забрать'; }
-    }
-}
-
-/* UPDATE PROFILE */
-function updateProfile(){
-    if(!user) return;
-    var name = user.first_name || 'User';
-    var level = user.current_level || 1;
-
-    var nm = $('userName'); if(nm) nm.textContent = name + ' · ' + level + ' level';
-    var uid = $('userUid'); if(uid) uid.textContent = '';
-
-    var avatarWrap = $('avatarWrap');
-    if(avatarWrap){
-        var photoUrl = user.photo_url;
-        var validPhoto = photoUrl && photoUrl !== '' && String(photoUrl).indexOf('default_avatar') === -1;
-        if(validPhoto){
-            var img = document.createElement('img');
-            img.alt = 'Avatar';
-            img.onerror = function(){
-                avatarWrap.innerHTML = '<div class="avatar-fallback">' + (name[0] || 'U').toUpperCase() + '</div>';
-            };
-            img.onload = function(){
-                avatarWrap.innerHTML = '';
-                avatarWrap.appendChild(img);
-            };
-            img.src = photoUrl;
-        } else {
-            avatarWrap.innerHTML = '<div class="avatar-fallback">' + (name[0] || 'U').toUpperCase() + '</div>';
-        }
-    }
-
-    var bal = formatTon(starsToTon(user.balance_stars));
-    var hb = $('hdrBalance'); if(hb) hb.textContent = bal;
-    var sb = $('statBalance'); if(sb) sb.textContent = bal;
-    var sg = $('statGifts'); if(sg) sg.textContent = inventory.length || 0;
-    var sl = $('statLevel'); if(sl) sl.textContent = level;
-
-    var li = user.level_info;
-    if(li){
-        var pct = li.progress_percentage || 0;
-        var lb = $('levelBar'); if(lb) lb.style.width = Math.min(pct, 100) + '%';
-        var curLvlExp = li.current_level_info ? (li.current_level_info.exp_required || 0) : 0;
-        var nextLvlExp = li.next_level_info ? (li.next_level_info.exp_required || 0) : curLvlExp;
-        var withinLevel = (li.experience || 0) - curLvlExp;
-        var tierSize = nextLvlExp - curLvlExp;
-        var cur = formatTon(starsToTon(Math.max(0, withinLevel)));
-        var need = tierSize > 0 ? formatTon(starsToTon(tierSize)) : 'MAX';
-        var lt = $('levelText'); if(lt) lt.textContent = cur + ' / ' + need + ' TON';
-    }
-
-    var rb = $('refBalance'); if(rb) rb.textContent = formatTon(starsToTon(user.referral_balance || 0));
-    var rc = $('refCount'); if(rc) rc.textContent = user.referral_count || 0;
-}
-
-/* INVENTORY */
-async function loadInventory(){
-    if(!user) return;
-    try{
-        var r = await fetch('/api/inventory/' + user.id);
-        var d = await r.json();
-        if(d.success){
-            inventory = d.inventory || [];
-            renderInventory();
-            var sg = $('statGifts'); if(sg) sg.textContent = inventory.length;
-        } else {
-            var c = $('inventoryContainer');
-            if(c) c.innerHTML = '<div class="inv-empty">Инвентарь пуст</div>';
-        }
-    }catch(e){
-        console.error('loadInventory:', e);
-        var c2 = $('inventoryContainer');
-        if(c2) c2.innerHTML = '<div class="inv-empty">Инвентарь пуст</div>';
-    }
-}
-
-function isUpgraded(item){
-    if(!item) return false;
-    if(item.is_upgraded) return true;
-    if(/#\d+/.test(String(item.gift_name || ''))) return true;
-    return false;
-}
-
-function getGiftImage(item){
-    var key = item.id + '_' + (item.gift_image || '');
-    if(_imgCache[key]) return _imgCache[key];
-    var img = item.gift_image || '';
-    if(!img){
-        if(item.fragment_slug) img = 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp';
-        else img = '/static/img/default_gift.png';
-    }
-    _imgCache[key] = img;
-    return img;
-}
-
-function renderInventory(){
-    var c = $('inventoryContainer');
-    if(!c) return;
-    var filtered = inventory || [];
-    if(!filtered.length){
-        c.innerHTML = '<div class="inv-empty">Инвентарь пуст</div>';
-        return;
-    }
-    var html = '<div class="inv-grid">';
-    filtered.forEach(function(item){
-        var ton = starsToTon(item.gift_value);
-        var imgSrc = getGiftImage(item);
-        var onerr = "this.onerror=null;this.src='/static/img/default_gift.png'";
-        var upgraded = isUpgraded(item);
-        var chBadge = (item.challenge && !item.challenge.is_completed)
-            ? '<div class="inv-card-challenge"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' : '';
-        var cardClass = 'inv-card' + (upgraded ? ' inv-card-upgraded' : '');
-        var click = 'openItemSheet(' + item.id + ')';
-        html += '<div class="' + cardClass + '" onclick="' + click + '">'
-            + '<div class="inv-card-img-wrap"><img src="' + imgSrc + '" alt="" loading="lazy" decoding="async" onerror="' + onerr + '"></div>'
-            + chBadge
-            + '<div class="inv-card-name">' + (item.gift_name || item.name || 'Подарок') + '</div>'
-            + '<div class="inv-card-price"><img src="/static/img/ton.png" alt="">' + formatTon(ton) + '</div>'
-            + '</div>';
-    });
-    html += '</div>';
-    c.innerHTML = html;
-}
-
-/* SELECT MODE */
-function toggleSelectMode(){
-    selectMode = !selectMode;
-    selectedItems.clear();
-    var ob = $('optionsBtn');
-    if(ob){
-        ob.classList.toggle('active', selectMode);
-        ob.textContent = selectMode ? 'Отмена' : 'Выбрать';
-    }
-    renderInventory();
-    vibrateIfOn();
-    updateSelectActionBar();
-}
-function toggleSelectItem(id){
-    if(selectedItems.has(id)) selectedItems.delete(id);
-    else selectedItems.add(id);
-    vibrateIfOn();
-    renderInventory();
-    updateSelectActionBar();
-}
-function updateSelectActionBar(){
-    var bar = $('selectActionBar');
-    var cnt = selectedItems.size;
-    var sc = $('selectedCount'); if(sc) sc.textContent = cnt;
-    var btn = $('batchSellBtn');
-    if(btn) btn.disabled = cnt <= 0;
-    if(bar) bar.classList.toggle('show', cnt > 0);
-}
-
-function openBatchSellModal(){
-    if(!selectMode || selectedItems.size === 0){ showNotif('Выберите хотя бы один подарок', true); return; }
-    _batchSellIds = Array.from(selectedItems).filter(function(id){
-        return inventory.some(function(item){ return String(item.id)===String(id) && !item.is_withdrawing; });
-    });
-    if(!_batchSellIds.length){ showNotif('Нет доступных подарков для продажи', true); return; }
-    vibrateIfOn();
-    doConfirmedBatchSell();
-}
-
-/* ══════════════════════════════════════════════════════════════
-   ITEM SHEET
-   ══════════════════════════════════════════════════════════════ */
-async function loadGiftAnimation(item){
-    var block=$('itemAnimationBlock'), stage=$('itemAnimationStage'), fallback=$('itemAnimationFallback');
-    if(!block || !stage) return false;
-    if(_itemAnimation){try{_itemAnimation.destroy();}catch(e){} _itemAnimation=null;}
-    stage.querySelectorAll('svg').forEach(function(x){x.remove();});
-    if(fallback){ fallback.style.display='none'; fallback.src=getGiftImage(item)||'/static/img/gift.png'; }
-    block.classList.remove('show');
-    if(!item) return false;
-    var slug=item.fragment_slug || '';
-    var num=item.nft_number || item.number || 0;
-    if(!slug || !num){
-        var m=String(item.gift_image||item.image||'').match(/(?:gifts|gift)\/([a-z0-9_-]+)-?(\d+)?/i);
-        if(m){slug=m[1]||''; if(!num && m[2]) num=parseInt(m[2]);}
-    }
-    if(!slug || !num){
-        if(fallback){fallback.style.display='block'; block.classList.add('show');}
-        return false;
-    }
-    try{
-        var r=await fetch('/api/fragment-gift-animation?slug='+encodeURIComponent(slug)+'&number='+encodeURIComponent(num));
-        var d=await r.json();
-        if(!d.success || !d.animation) throw new Error('animation unavailable');
-        block.classList.add('show');
-        _itemAnimation=lottie.loadAnimation({container:stage,renderer:'svg',loop:true,autoplay:true,animationData:d.animation});
-        return true;
-    }catch(e){
-        console.warn('gift animation:',e);
-        if(fallback){fallback.style.display='block'; block.classList.add('show');}
-        return false;
-    }
-}
-
-function openItemSheet(itemId){
-    var item = inventory.find(function(i){ return i.id === itemId; });
-    if(!item) return;
-    selectedItem = item;
-    vibrateIfOn();
-    loadGiftAnimation(item);
-
-    var upgraded = isUpgraded(item);
-
-    var header = $('itemSheetHeader');
-    var nftBlock = $('itemNftBlock');
-    var challenge = $('itemChallenge');
-    var actions = $('itemSheetActions');
-    var sellBtn = $('itemBtnSell');
-    var upgradeBtn = $('itemBtnUpgrade');
-    var withdrawBtn = $('itemBtnWithdraw');
-    var claimBtn = $('itemBtnClaim');
-
-    if(nftBlock) nftBlock.classList.remove('show');
-    if(challenge) challenge.style.display = 'none';
-    if(actions){
-        actions.style.display = 'grid';
-        actions.classList.remove('single');
-    }
-    if(sellBtn) sellBtn.style.display = 'flex';
-    if(upgradeBtn) upgradeBtn.style.display = 'none';
-    if(withdrawBtn) withdrawBtn.style.display = 'flex';
-    if(claimBtn) claimBtn.style.display = 'none';
-
-    if(upgraded){
-        if(header) header.style.display = 'none';
-        if(nftBlock){ nftBlock.classList.add('show'); nftBlock.classList.remove('compact'); }
-
-        var bn = (item.gift_name || '').replace(/#\d+$/, '').trim();
-        var nnm = $('itemNftName'); if(nnm) nnm.textContent = bn || 'Gift';
-        var nnum = $('itemNftNumber'); if(nnum) nnum.textContent = '#' + (item.nft_number || '?');
-
-        var nimg = $('itemNftImg');
-        if(nimg){
-            nimg.src = item.gift_image || '/static/img/gift.png';
-            nimg.onerror = function(){ this.onerror = null; this.src = '/static/img/gift.png'; };
-        }
-
-        var loader = $('nftLoader'); if(loader) loader.classList.remove('hidden');
-        setAttrLoading('attrModelVal', 'attrModelRarity');
-        setAttrLoading('attrBackdropVal', 'attrBackdropRarity');
-        setAttrLoading('attrSymbolVal', 'attrSymbolRarity');
-
-        var slug = item.fragment_slug || '';
-        var num = item.nft_number || 0;
-
-        if(!slug){
-            var m = String(item.gift_image || '').match(/\/gifts\/([a-z0-9_-]+)-(\d+)/i);
-            if(m){ slug = m[1]; if(!num) num = parseInt(m[2]); }
-        }
-
-        if(slug && num){
-            fetchFragmentDetails(slug, num);
-        } else {
-            if(loader) loader.classList.add('hidden');
-            setAttrFinal('attrModelVal', item.nft_model || '—', item.nft_model_rarity, 'attrModelRarity');
-            setAttrFinal('attrBackdropVal', item.nft_backdrop || '—', item.nft_backdrop_rarity, 'attrBackdropRarity');
-            setAttrFinal('attrSymbolVal', item.nft_symbol || '—', item.nft_symbol_rarity, 'attrSymbolRarity');
-        }
-
-        if(sellBtn) sellBtn.style.display = 'flex';
-        if(withdrawBtn) withdrawBtn.style.display = 'flex';
-        if(upgradeBtn) upgradeBtn.style.display = 'none';
-        if(sellBtn) sellBtn.disabled = !!item.is_withdrawing;
-        if(withdrawBtn) withdrawBtn.disabled = !!item.is_withdrawing;
-    } else {
-        // Unupgraded gift: show only its name, PNG, price and the two actions.
-        // NFT model/backdrop/symbol data is intentionally hidden until an upgrade.
-        if(header) header.style.display = 'flex';
-        var img = $('itemSheetImg'); if(img){ img.src = getGiftImage(item); img.style.display='none'; }
-        var title = $('itemSheetTitle'); if(title) title.textContent = String(item.gift_name || item.name || 'Подарок').replace(/#\d+$/, '').trim();
-        var priceVal = $('itemSheetPriceVal');
-        if(priceVal) priceVal.textContent = formatTon(starsToTon(item.gift_value));
-        if(nftBlock){ nftBlock.classList.remove('show'); nftBlock.classList.add('compact'); }
-        // Do not request Fragment NFT details for an ordinary, non-upgraded item.
-
-        if(item.challenge && !item.challenge.is_completed){
-            if(challenge) challenge.style.display = 'block';
-            var pct = item.challenge.target_wager > 0
-                ? Math.min(100, (item.challenge.current_wager / item.challenge.target_wager) * 100)
-                : 0;
-            var cb = $('itemChallengeBar'); if(cb) cb.style.width = pct.toFixed(1) + '%';
-            var ct = $('itemChallengeText');
-            if(ct){
-                var cur = (item.challenge.current_wager / 100).toFixed(2);
-                var tgt = (item.challenge.target_wager / 100).toFixed(2);
-                ct.textContent = cur + ' / ' + tgt + ' TON';
-            }
-            if(actions) actions.style.display = 'none';
-            if(item.challenge.current_wager >= item.challenge.target_wager){
-                if(actions){
-                    actions.style.display = 'grid';
-                    actions.classList.add('single');
-                }
-                if(sellBtn) sellBtn.style.display = 'none';
-                if(upgradeBtn) upgradeBtn.style.display = 'none';
-                if(withdrawBtn) withdrawBtn.style.display = 'none';
-                if(claimBtn) claimBtn.style.display = 'flex';
-            }
-        } else if(item.crate_id){
-            if(actions) actions.style.display = 'none';
-        } else {
-            if(actions){
-                actions.style.display = 'grid';
-                actions.classList.remove('single');
-            }
-            if(sellBtn) sellBtn.style.display = 'flex';
-            if(upgradeBtn) upgradeBtn.style.display = 'none';
-            if(withdrawBtn) withdrawBtn.style.display = 'flex';
-            if(sellBtn) sellBtn.disabled = !!item.is_withdrawing;
-            if(upgradeBtn) upgradeBtn.disabled = !!item.is_withdrawing;
-        }
-    }
-
-    var ov = $('itemSheetOverlay');
-    if(ov) ov.classList.add('show');
-}
-
-function setAttrLoading(valId, rarId){
-    var val = $(valId); if(val) val.textContent = 'Загрузка...';
-    var rar = $(rarId); if(rar){ rar.textContent = '—'; rar.classList.add('empty'); }
-}
-
-function setAttrFinal(valId, value, rarity, rarId){
-    var val = $(valId); if(val) val.textContent = value || '—';
-    var rar = $(rarId);
-    if(rar){
-        if(rarity){
-            var r = parseFloat(rarity);
-            if(r > 60) r = r / 10;
-            rar.textContent = r.toFixed(1) + '%';
-            rar.classList.remove('empty');
-        } else {
-            rar.textContent = '—';
-            rar.classList.add('empty');
-        }
-    }
-}
-
-async function fetchFragmentDetails(slug, number){
-    var cacheKey = slug + '_' + number;
-    if(_nftDetailsCache[cacheKey]){
-        applyFragmentDetails(_nftDetailsCache[cacheKey]);
-        return;
-    }
-    try{
-        var r = await fetch('/api/fragment-gift-details?slug=' + encodeURIComponent(slug) + '&number=' + number);
-        var d = await r.json();
-        if(d.success && d.attrs){
-            _nftDetailsCache[cacheKey] = d;
-            applyFragmentDetails(d);
-        } else {
-            var loader = $('nftLoader'); if(loader) loader.classList.add('hidden');
-            var item = selectedItem || {};
-            setAttrFinal('attrModelVal', item.nft_model || '—', item.nft_model_rarity, 'attrModelRarity');
-            setAttrFinal('attrBackdropVal', item.nft_backdrop || '—', item.nft_backdrop_rarity, 'attrBackdropRarity');
-            setAttrFinal('attrSymbolVal', item.nft_symbol || '—', item.nft_symbol_rarity, 'attrSymbolRarity');
-        }
-    } catch(e){
-        var loader2 = $('nftLoader'); if(loader2) loader2.classList.add('hidden');
-        var item2 = selectedItem || {};
-        setAttrFinal('attrModelVal', item2.nft_model || '—', item2.nft_model_rarity, 'attrModelRarity');
-        setAttrFinal('attrBackdropVal', item2.nft_backdrop || '—', item2.nft_backdrop_rarity, 'attrBackdropRarity');
-        setAttrFinal('attrSymbolVal', item2.nft_symbol || '—', item2.nft_symbol_rarity, 'attrSymbolRarity');
-    }
-}
-
-function applyFragmentDetails(d){
-    var loader = $('nftLoader'); if(loader) loader.classList.add('hidden');
-    var attrs = d.attrs || {};
-    var model = attrs.model || {};
-    var symbol = attrs.symbol || {};
-    var backdrop = attrs.backdrop || {};
-    setAttrFinal('attrModelVal', model.value || '—', model.rarity, 'attrModelRarity');
-    setAttrFinal('attrBackdropVal', backdrop.value || '—', backdrop.rarity, 'attrBackdropRarity');
-    setAttrFinal('attrSymbolVal', symbol.value || '—', symbol.rarity, 'attrSymbolRarity');
-    if(d.image){
-        var nimg = $('itemNftImg');
-        if(nimg) nimg.src = d.image;
-    }
-}
-
-function closeItemSheet(){
-    if(_itemAnimation){try{_itemAnimation.destroy();}catch(e){} _itemAnimation=null;}
-    var stage=$('itemAnimationStage'); if(stage) stage.innerHTML='';
-    var block=$('itemAnimationBlock'); if(block) block.classList.remove('show');
-    var ov = $('itemSheetOverlay');
-    if(ov) ov.classList.remove('show');
-    selectedItem = null;
-}
-
-async function claimChallenge(){
-    if(!selectedItem) return;
-    var btn = $('itemBtnClaim');
-    if(btn){ btn.disabled = true; btn.textContent = 'Получаем...'; }
-    showNotif('Подарок получен!');
-    closeItemSheet();
-    await loadInventory();
-}
-
-/* ══════════════════════════════════════════════════════════════
-   UPGRADE MODAL
-   ══════════════════════════════════════════════════════════════ */
-async function openUpgradeModal(){
-    if(!selectedItem) return;
-    if(isUpgraded(selectedItem)){
-        showNotif('Этот подарок уже улучшен', true);
-        return;
-    }
-    if(selectedItem.crate_id){
-        showNotif('Ящик нельзя улучшить', true);
-        return;
-    }
-    vibrateIfOn();
-
-    var ov = $('upgradeOverlay');
-    if(!ov) return;
-    ov.classList.add('show');
-
-    _upgradeSpinRunning = false;
-    _previewAnimRunning = false;
-    if(_previewAnimTimer){
-        clearTimeout(_previewAnimTimer);
-        _previewAnimTimer = null;
-    }
-    _upgradeVariants = [];
-    _upgradeCenterIndex = 0;
-    _upgradeCurrentGift = null;
-
-    var resultOverlay = $('upgradeResultOverlay');
-    if(resultOverlay) resultOverlay.classList.remove('show');
-
-    var btnEl = $('upgradeActionBtn');
-    var skipEl = $('upgradeSkipBtn');
-    if(skipEl) skipEl.classList.remove('show');
-    if(btnEl){
-        btnEl.classList.remove('loading');
-        btnEl.disabled = true;
-        var btxt = $('upgradeBtnText');
-        if(btxt) btxt.textContent = 'АПГРЕЙД';
-    }
-
-    var loadingEl = $('upgradeLoading');
-    var previewWrap = $('upgradePreviewWrap');
-    var rouletteWrap = $('upgradeRouletteWrap');
-
-    if(loadingEl) loadingEl.classList.remove('hidden');
-    if(previewWrap) previewWrap.style.display = 'flex';
-    if(rouletteWrap) rouletteWrap.classList.remove('show');
-
-    var loadBar = $('upgradeLoadingBar');
-    var loadTxt = $('upgradeLoadingText');
-    if(loadBar) loadBar.style.width = '0%';
-    if(loadTxt) loadTxt.textContent = 'Подготовка...';
-
-    var pimg = $('upgradePreviewImg');
-    if(pimg){
-        pimg.src = getGiftImage(selectedItem);
-        pimg.onerror = function(){
-            this.onerror = null;
-            this.src = '/static/img/gift.png';
-        };
-        pimg.classList.remove('fading');
-    }
-
-    setPreviewAttr($('upgradeModelVal'), $('upgradeModelRar'), '—', null);
-    setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), '—', null);
-    setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), '—', null);
-
-    try{
-        if(loadTxt) loadTxt.textContent = 'Загрузка вариантов...';
-        if(loadBar) loadBar.style.width = '20%';
-
-        var r = await fetch('/api/inventory/upgrade-prepare', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({
-                user_id: user.id,
-                inventory_id: selectedItem.id
-            })
-        });
-        var d = await r.json();
-        if(!d.success){
-            showNotif(d.error || 'Ошибка подготовки', true);
-            closeUpgradeModal();
-            return;
-        }
-
-        _upgradeVariants = d.variants || [];
-        _upgradeCenterIndex = d.center_index || 0;
-        _upgradeCurrentGift = d.current || null;
-
-        if(!_upgradeVariants.length){
-            showNotif('Нет данных для улучшения', true);
-            closeUpgradeModal();
-            return;
-        }
-
-        if(loadBar) loadBar.style.width = '40%';
-        if(loadTxt) loadTxt.textContent = 'Загрузка картинок...';
-
-        await preloadVariantImages(_upgradeVariants, function(loaded, total){
-            var pct = 40 + Math.round((loaded / total) * 55);
-            if(loadBar) loadBar.style.width = pct + '%';
-            if(loadTxt) loadTxt.textContent = 'Загрузка картинок... ' + loaded + '/' + total;
-        });
-
-        if(loadBar) loadBar.style.width = '100%';
-        if(loadTxt) loadTxt.textContent = 'Готово!';
-
-        // Сразу показываем реальные атрибуты первого загруженного варианта,
-        // а не оставляем пустые значения до первого таймера анимации.
-        var firstVariant = (_upgradeCurrentGift && _upgradeCurrentGift.model) ? _upgradeCurrentGift : _upgradeVariants[0];
-        if(firstVariant){
-            setPreviewAttr($('upgradeModelVal'), $('upgradeModelRar'), firstVariant.model || firstVariant.nft_model || '—', firstVariant.model_rarity || firstVariant.nft_model_rarity);
-            setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), firstVariant.symbol || firstVariant.nft_symbol || '—', firstVariant.symbol_rarity || firstVariant.nft_symbol_rarity);
-            setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), firstVariant.backdrop || firstVariant.nft_backdrop || '—', firstVariant.backdrop_rarity || firstVariant.nft_backdrop_rarity);
-        }
-
-        // Строим рулетку уже во время загрузки модалки, чтобы при нажатии
-        // «АПГРЕЙД» она открывалась мгновенно, без пустых карточек.
-        await buildRoulette();
-        await new Promise(function(resolve){ setTimeout(resolve, 80); });
-
-        if(loadingEl) loadingEl.classList.add('hidden');
-        if(btnEl) btnEl.disabled = false;
-
-        startFadePreviewAnimation();
-
-    }catch(e){
-        console.error('upgrade prepare error', e);
-        showNotif('Ошибка сети', true);
-        closeUpgradeModal();
-    }
-}
-
-/* ★ Каскадная предзагрузка: image → thumb_image → fallback_image */
-function preloadVariantImages(variants, onProgress){
-    return new Promise(function(resolve){
-        var total = variants.length;
-        if(!total){ resolve(); return; }
-        var loaded = 0;
-        var resolved = false;
-
-        function done(){
-            if(resolved) return;
-            loaded++;
-            if(onProgress) onProgress(loaded, total);
-            if(loaded >= total && !resolved){
-                resolved = true;
-                resolve();
-            }
-        }
-
-        variants.forEach(function(v){
-            var candidates = [];
-            if(v.image) candidates.push(v.image);
-            if(v.thumb_image && candidates.indexOf(v.thumb_image) === -1) candidates.push(v.thumb_image);
-            if(v.fallback_image && candidates.indexOf(v.fallback_image) === -1) candidates.push(v.fallback_image);
-            if(candidates.length === 0) candidates.push('/static/img/gift.png');
-
-            var tryIdx = 0;
-
-            function tryNext(){
-                if(tryIdx >= candidates.length){
-                    v.image = candidates[candidates.length - 1];
-                    done();
-                    return;
-                }
-                var src = candidates[tryIdx];
-                var img = new Image();
-                var timedOut = false;
-
-                var timer = setTimeout(function(){
-                    timedOut = true;
-                    tryIdx++;
-                    tryNext();
-                }, 4000);
-
-                img.onload = function(){
-                    if(timedOut) return;
-                    clearTimeout(timer);
-                    v.image = src;
-                    done();
-                };
-                img.onerror = function(){
-                    if(timedOut) return;
-                    clearTimeout(timer);
-                    tryIdx++;
-                    tryNext();
-                };
-                img.src = src;
-            }
-
-            tryNext();
-        });
-
-        setTimeout(function(){
-            if(!resolved){
-                resolved = true;
-                resolve();
-            }
-        }, 6000);
-    });
-}
-
-/* ★ ФАЗА 1: PNG меняется каждые 3 секунды */
-function startFadePreviewAnimation(){
-    if(!_upgradeVariants.length) return;
-    _previewAnimRunning = true;
-
-    var total = _upgradeVariants.length;
-    var idx = 0;
-    var SWAP_INTERVAL = 3000;
-
-    function scheduleNext(){
-        if(!_previewAnimRunning) return;
-
-        var v = _upgradeVariants[idx % total];
-        swapPreviewVariant(v);
-        idx++;
-
-        _previewAnimTimer = setTimeout(scheduleNext, SWAP_INTERVAL);
-    }
-
-    scheduleNext();
-}
-
-/* ★ Плавная смена PNG */
-function swapPreviewVariant(variant){
-    var pimg = $('upgradePreviewImg');
-    var mVal = $('upgradeModelVal'), mRar = $('upgradeModelRar');
-    var sVal = $('upgradeSymbolVal'), sRar = $('upgradeSymbolRar');
-    var bVal = $('upgradeBackdropVal'), bRar = $('upgradeBackdropRar');
-
-    if(pimg) pimg.classList.add('fading');
-    if(mVal) mVal.classList.add('fading');
-    if(mRar) mRar.classList.add('fading');
-    if(sVal) sVal.classList.add('fading');
-    if(sRar) sRar.classList.add('fading');
-    if(bVal) bVal.classList.add('fading');
-    if(bRar) bRar.classList.add('fading');
-
-    var newSrc = variant.image || variant.fallback_image || '/static/img/gift.png';
-
-    setTimeout(function(){
-        if(!pimg) return;
-
-        var tempImg = new Image();
-        var alreadyDone = false;
-
-        function applyNew(){
-            if(alreadyDone) return;
-            alreadyDone = true;
-
-            pimg.src = newSrc;
-            pimg.onerror = function(){
-                this.onerror = null;
-                this.src = variant.fallback_image || '/static/img/gift.png';
-            };
-
-            setPreviewAttr(mVal, mRar, variant.model || '—', variant.model_rarity);
-            setPreviewAttr(sVal, sRar, variant.symbol || '—', variant.symbol_rarity);
-            setPreviewAttr(bVal, bRar, variant.backdrop || '—', variant.backdrop_rarity);
-
-            requestAnimationFrame(function(){
-                requestAnimationFrame(function(){
-                    if(pimg) pimg.classList.remove('fading');
-                    if(mVal) mVal.classList.remove('fading');
-                    if(mRar) mRar.classList.remove('fading');
-                    if(sVal) sVal.classList.remove('fading');
-                    if(sRar) sRar.classList.remove('fading');
-                    if(bVal) bVal.classList.remove('fading');
-                    if(bRar) bRar.classList.remove('fading');
-                });
-            });
-        }
-
-        tempImg.onload = applyNew;
-        tempImg.onerror = function(){
-            newSrc = variant.fallback_image || '/static/img/gift.png';
-            applyNew();
-        };
-        tempImg.src = newSrc;
-
-        setTimeout(function(){
-            if(!alreadyDone){
-                newSrc = variant.fallback_image || '/static/img/gift.png';
-                applyNew();
-            }
-        }, 1500);
-
-    }, 350);
-
-    vibrateIfOn();
-}
-
-function setPreviewAttr(valEl, rarEl, value, rarity){
-    if(valEl) valEl.textContent = value || '—';
-    if(rarEl){
-        if(rarity){
-            var r = parseFloat(rarity);
-            if(r > 60) r = r / 10;
-            rarEl.textContent = r.toFixed(1) + '%';
-            rarEl.classList.remove('empty');
-        } else {
-            rarEl.textContent = '—';
-            rarEl.classList.add('empty');
-        }
-    }
-}
-
-function closeUpgradeModal(){
-    var ov = $('upgradeOverlay');
-    if(!ov) return;
-    ov.classList.remove('show');
-    _upgradeSpinRunning = false;
-    _upgradeSpinContext = null;
-    var skipEl = $('upgradeSkipBtn');
-    if(skipEl) skipEl.classList.remove('show');
-    _previewAnimRunning = false;
-    if(_previewAnimTimer){
-        clearTimeout(_previewAnimTimer);
-        _previewAnimTimer = null;
-    }
-
-    var cc = $('confettiContainer');
-    if(cc) cc.innerHTML = '';
-
-    var loadingEl = $('upgradeLoading');
-    if(loadingEl) loadingEl.classList.add('hidden');
-}
-
-/* ══════════════════════════════════════════════════════════════
-   UPGRADE SPIN — плавное ускорение и торможение
-   ══════════════════════════════════════════════════════════════ */
-async function startUpgradeSpin(){
-    if(_upgradeSpinRunning) return;
-    if(!selectedItem || !user) return;
-    if(!_upgradeVariants.length){
-        showNotif('Нет данных для улучшения', true);
-        return;
-    }
-    _upgradeSpinRunning = true;
-
-    _previewAnimRunning = false;
-    if(_previewAnimTimer){
-        clearTimeout(_previewAnimTimer);
-        _previewAnimTimer = null;
-    }
-
-    vibrateIfOn();
-
-    var btnEl = $('upgradeActionBtn');
-    var btxt = $('upgradeBtnText');
-    if(btnEl) btnEl.classList.add('loading');
-    if(btxt) btxt.textContent = 'КРУТИМ...';
-
-    var previewWrap = $('upgradePreviewWrap');
-    var rouletteWrap = $('upgradeRouletteWrap');
-
-    if(previewWrap) previewWrap.style.display = 'none';
-    if(rouletteWrap) rouletteWrap.classList.add('show');
-    var skipEl = $('upgradeSkipBtn');
-    if(skipEl) skipEl.classList.remove('show');
-
-    // Рулетка уже прогружена при открытии модалки. Здесь только показываем её.
-
-
-    var total = _upgradeVariants.length;
-    var chosenIndex = Math.floor(Math.random() * total);
-    var chosenVariant = _upgradeVariants[chosenIndex];
-
-    var spinResult = null;
-    try{
-        var r = await fetch('/api/inventory/upgrade-spin', {
-            method: 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({
-                user_id: user.id,
-                inventory_id: selectedItem.id,
-                chosen_index: chosenIndex,
-                variants: _upgradeVariants
-            })
-        });
-        var d = await r.json();
-        if(!d.success){
-            _upgradeSpinRunning = false;
-            if(previewWrap) previewWrap.style.display = 'flex';
-            if(rouletteWrap) rouletteWrap.classList.remove('show');
-            if(btnEl) btnEl.classList.remove('loading');
-            if(skipEl) skipEl.classList.remove('show');
-            if(btxt) btxt.textContent = 'АПГРЕЙД';
-            showNotif(d.error || 'Ошибка', true);
-            return;
-        }
-        spinResult = d;
-        _upgradeSpinContext = {targetIndex: chosenIndex, chosenVariant: chosenVariant, result: spinResult, startedAt: performance.now()};
-        if(skipEl) skipEl.classList.add('show');
-    }catch(e){
-        console.error('spin error', e);
-        _upgradeSpinRunning = false;
-        if(previewWrap) previewWrap.style.display = 'flex';
-        if(rouletteWrap) rouletteWrap.classList.remove('show');
-        if(btnEl) btnEl.classList.remove('loading');
-        if(btxt) btxt.textContent = 'АПГРЕЙД';
-        showNotif('Ошибка сети', true);
-        return;
-    }
-
-    spinRoulette(chosenIndex, chosenVariant, spinResult);
-}
-
-/* ★ Построить рулетку с каскадным fallback */
-function buildRoulette(){
-    return new Promise(function(resolve){
-        var strip = $('upgradeRouletteStrip');
-        if(!strip){ resolve(); return; }
-
-        strip.innerHTML = '';
-        strip.style.transition = 'none';
-        strip.style.transform = 'translateX(0)';
-
-        var variants = _upgradeVariants || [];
-        if(!variants.length){ resolve(); return; }
-
-        var fragment = document.createDocumentFragment();
-        var images = [];
-
-        variants.forEach(function(v, idx){
-            var card = document.createElement('div');
-            card.className = 'roulette-card';
-            card.dataset.idx = String(idx);
-
-            var img = document.createElement('img');
-            img.alt = '';
-            img.decoding = 'async';
-            img.loading = 'eager';
-            img.src = v.image || v.fallback_image || '/static/img/gift.png';
-            img.onerror = function(){
-                this.onerror = null;
-                this.src = v.fallback_image || '/static/img/gift.png';
-            };
-
-            card.appendChild(img);
-            fragment.appendChild(card);
-            images.push(img);
-        });
-
-        strip.appendChild(fragment);
-
-        // Все изображения уже были предзагружены выше. Всё равно ждём decode(),
-        // чтобы первая отрисовка рулетки была без пустых кадров.
-        var waits = images.map(function(img){
-            if(img.complete && img.naturalWidth > 0){
-                return Promise.resolve();
-            }
-            return new Promise(function(res){
-                var done = false;
-                function finish(){ if(done) return; done = true; res(); }
-                img.addEventListener('load', finish, {once:true});
-                img.addEventListener('error', finish, {once:true});
-                setTimeout(finish, 2500);
-            });
-        });
-
-        Promise.all(waits).then(function(){
-            requestAnimationFrame(function(){
-                requestAnimationFrame(resolve);
-            });
-        });
-    });
-}
-
-/* ★ Плавное ускорение → торможение рулетки */
-function spinRoulette(targetIdx, chosenVariant, result){
-    var strip = $('upgradeRouletteStrip');
-    var rouletteEl = $('upgradeRoulette');
-    var pointer = $('upgradePointerLine');
-    if(!strip || !rouletteEl) return;
-
-    var cards = strip.querySelectorAll('.roulette-card');
-    if(!cards.length) return;
-
-    var cardWidth = cards[0].offsetWidth || 180;
-    var step = cardWidth;
-
-    var containerW = rouletteEl.offsetWidth || 400;
-    var centerX = containerW / 2;
-
-    var targetCenterInStrip = targetIdx * step + cardWidth / 2;
-    var finalOffset = centerX - targetCenterInStrip;
-
-    var spins = 8 + Math.floor(Math.random() * 3);
-    var spinDistance = step * _upgradeVariants.length * spins;
-    var startX = finalOffset + spinDistance;
-
-    strip.style.transition = 'none';
-    strip.style.transform = 'translateX(' + startX + 'px)';
-    void strip.offsetWidth;
-
-    var duration = 7500;
-    var ease = 'cubic-bezier(.1, .7, .15, 1)';
-    strip.style.transition = 'transform ' + duration + 'ms ' + ease;
-    strip.style.transform = 'translateX(' + finalOffset + 'px)';
-
-    startAttrShuffleDuringSpin(duration);
-
-    if(pointer) pointer.classList.add('active');
-
-    var tickStart = performance.now() + 500;
-    var tickEnd = tickStart + duration - 800;
-    var lastTick = 0;
-
-    function tickLoop(){
-        var now = performance.now();
-        if(now > tickEnd + 1000) return;
-        if(now >= tickStart && now <= tickEnd){
-            var progress = (now - tickStart) / duration;
-            var interval = 40 + Math.pow(progress, 3) * 600;
-            if(now - lastTick > interval){
-                vibrateIfOn();
-                lastTick = now;
-            }
-        }
-        if(now < tickEnd + 1000) requestAnimationFrame(tickLoop);
-    }
-    requestAnimationFrame(tickLoop);
-
-    if(_upgradeSpinContext) _upgradeSpinContext.finishTimer = setTimeout(function(){
-        if(!_upgradeSpinRunning) return;
-        finishUpgradeSpinNow(targetIdx, chosenVariant, result);
-    }, duration + 100);
-}
-
-function finishUpgradeSpinNow(targetIdx, chosenVariant, result){
-    if(!_upgradeSpinRunning && !_upgradeSpinContext) return;
-    var pointer = $('upgradePointerLine');
-    var strip = $('upgradeRouletteStrip');
-    if(_upgradeSpinContext && _upgradeSpinContext.finishTimer){ clearTimeout(_upgradeSpinContext.finishTimer); _upgradeSpinContext.finishTimer = null; }
-    if(pointer) pointer.classList.remove('active');
-    stopAttrShuffle();
-    var cards = strip ? strip.querySelectorAll('.roulette-card') : [];
-    if(cards[targetIdx]){
-        var cardWidth = cards[targetIdx].offsetWidth || 180;
-        var rouletteEl = $('upgradeRoulette');
-        var centerX = (rouletteEl && rouletteEl.offsetWidth ? rouletteEl.offsetWidth : 400) / 2;
-        var targetCenter = targetIdx * cardWidth + cardWidth / 2;
-        strip.style.transition = 'transform 220ms ease-out';
-        strip.style.transform = 'translateX(' + (centerX - targetCenter) + 'px)';
-        cards[targetIdx].style.boxShadow = 'inset 0 0 0 3px #59B7EA, 0 0 26px rgba(77,157,219,.6)';
-    }
-    setPreviewAttr($('upgradeModelVal'), $('upgradeModelRar'), chosenVariant.model || '—', chosenVariant.model_rarity);
-    setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), chosenVariant.symbol || '—', chosenVariant.symbol_rarity);
-    setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), chosenVariant.backdrop || '—', chosenVariant.backdrop_rarity);
-    finalizeSpin(targetIdx, chosenVariant, result);
-}
-
-function skipUpgradeAnimation(){
-    if(!_upgradeSpinRunning || !_upgradeSpinContext) return;
-    var ctx = _upgradeSpinContext;
-    finishUpgradeSpinNow(ctx.targetIndex, ctx.chosenVariant, ctx.result);
-}
-
-var _attrShuffleInterval = null;
-function startAttrShuffleDuringSpin(duration){
-    if(_attrShuffleInterval) clearInterval(_attrShuffleInterval);
-    var variants = _upgradeVariants;
-    var total = variants.length;
-    var startTime = performance.now();
-
-    _attrShuffleInterval = setInterval(function(){
-        var elapsed = performance.now() - startTime;
-        if(elapsed > duration - 500){
-            clearInterval(_attrShuffleInterval);
-            _attrShuffleInterval = null;
-            return;
-        }
-        var v = variants[Math.floor(Math.random() * total)];
-        setPreviewAttr($('upgradeModelVal'), $('upgradeModelRar'), v.model || '—', v.model_rarity);
-        setPreviewAttr($('upgradeSymbolVal'), $('upgradeSymbolRar'), v.symbol || '—', v.symbol_rarity);
-        setPreviewAttr($('upgradeBackdropVal'), $('upgradeBackdropRar'), v.backdrop || '—', v.backdrop_rarity);
-    }, 250);
-}
-function stopAttrShuffle(){
-    if(_attrShuffleInterval){
-        clearInterval(_attrShuffleInterval);
-        _attrShuffleInterval = null;
-    }
-}
-
-function finalizeSpin(idx, variant, result){
-    _upgradeSpinRunning = false;
-    var skipEl = $('upgradeSkipBtn');
-    if(skipEl) skipEl.classList.remove('show');
-    _upgradeSpinContext = null;
-
-    var strip = $('upgradeRouletteStrip');
-    var cards = strip ? strip.querySelectorAll('.roulette-card') : [];
-    if(cards[idx]){
-        cards[idx].style.boxShadow = 'inset 0 0 0 3px #59B7EA, 0 0 30px rgba(77,157,219,.65)';
-    }
-
-    try{
-        if(window.Telegram && Telegram.WebApp && Telegram.WebApp.HapticFeedback){
-            Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-        }
-    }catch(e){}
-    if(navigator.vibrate) navigator.vibrate([50,30,50]);
-
-    launchConfetti();
-
-    var btnEl = $('upgradeActionBtn');
-    var btxt = $('upgradeBtnText');
-    if(btnEl) btnEl.classList.remove('loading');
-    if(btxt) btxt.textContent = 'ГОТОВО';
-
-    setTimeout(function(){
-        showUpgradeResultOverlay(variant);
-    }, 800);
-}
-
-function showUpgradeResultOverlay(variant){
-    var overlay = $('upgradeResultOverlay');
-    if(!overlay) return;
-    var oimg = $('upgradeResultOverlayImg');
-    var oname = $('upgradeResultOverlayName');
-
-    if(oimg){
-        oimg.src = variant.image || variant.fallback_image || '/static/img/gift.png';
-        oimg.onerror = function(){
-            this.onerror = null;
-            this.src = variant.fallback_image || '/static/img/gift.png';
-        };
-    }
-    if(oname) oname.textContent = variant.name || 'Gift';
-    overlay.classList.add('show');
-}
-
-function closeUpgradeResultOverlay(){
-    var overlay = $('upgradeResultOverlay');
-    if(overlay) overlay.classList.remove('show');
-
-    refreshUserData();
-    loadInventory();
-
-    closeUpgradeModal();
-    closeItemSheet();
-}
-
 async function refreshUserData(){
     if(!user) return;
     try{
         var r = await fetch('/api/user/' + user.id);
         var d = await r.json();
-        if(d.success){ user = d.user; updateProfile(); }
+        if(d.success && d.user){ user = d.user; updateProfile(); }
     }catch(e){}
 }
 
-/* ══════════════════════════════════════════════════════════════
-   CONFETTI
-   ══════════════════════════════════════════════════════════════ */
-function launchConfetti(){
-    var container = $('confettiContainer');
-    if(!container) return;
-    container.innerHTML = '';
+function updateProfile(){
+    if(!user) return;
+    var name = user.first_name || 'User';
+    var nm = $('userName'); if(nm) nm.textContent = name;
 
-    var colors = ['#FFD700','#FFA500','#3B82F6','#2563EB','#24C38E','#7CAEFF','#FFFFFF'];
-    var count = 90;
-
-    for(var i = 0; i < count; i++){
-        (function(idx){
-            var piece = document.createElement('div');
-            piece.className = 'confetti-piece';
-            var color = colors[Math.floor(Math.random() * colors.length)];
-            piece.style.background = color;
-            piece.style.left = Math.random() * 100 + '%';
-            piece.style.top = '-20px';
-            piece.style.width = (6 + Math.random() * 6) + 'px';
-            piece.style.height = (10 + Math.random() * 8) + 'px';
-            piece.style.animationDuration = (2 + Math.random() * 2) + 's';
-            piece.style.animationDelay = (Math.random() * 0.4) + 's';
-            if(Math.random() > 0.6) piece.style.borderRadius = '50%';
-            container.appendChild(piece);
-            setTimeout(function(){
-                if(piece.parentNode) piece.parentNode.removeChild(piece);
-            }, 5000);
-        })(i);
-    }
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   DIRECT SELL / PORTAL WITHDRAW
-   ══════════════════════════════════════════════════════════════ */
-async function sellSelectedItem(){
-    if(!selectedItem || !user || selectedItem.is_withdrawing) return;
-    var itemId = selectedItem.id;
-    var itemName = selectedItem.gift_name || 'Подарок';
-    var tonVal = formatTon(starsToTon(selectedItem.gift_value));
-    try{
-        showNotif('Продаём подарок…');
-        var r = await fetch('/api/sell-gift', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,gift_id:itemId})});
-        var d = await r.json();
-        if(d.success){
-            closeItemSheet();
-            showSuccessOverlay('Подарок продан!', tonVal);
-            await refreshUserData();
-            await loadInventory();
-        }else showNotif(d.error || ('Не удалось продать «'+itemName+'»'), true);
-    }catch(e){ console.error('direct sell',e); showNotif('Ошибка сети',true); }
-}
-
-var _portalCandidates=[];
-var _portalSelected=null;
-async function openPortalPicker(){
-    if(!selectedItem || !user) return;
-    if(selectedItem.is_withdrawing){ showNotif('Подарок уже выводится',true); return; }
-    var ov=$('portalOverlay'); if(ov){ ov.style.zIndex='2147483647'; ov.classList.add('show'); }
-    var grid=$('portalGrid'); if(grid) grid.innerHTML='';
-    var loading=$('portalLoading'); if(loading) loading.style.display='flex';
-    var err=$('portalError'); if(err){ err.classList.remove('show'); err.textContent=''; }
-    var btn=$('portalWithdrawBtn'); if(btn){ btn.disabled=true; btn.textContent='Выберите модель'; }
-    _portalCandidates=[]; _portalSelected=null;
-    var subtitle=$('portalSubtitle'); if(subtitle) subtitle.textContent=(selectedItem.gift_name||'Подарок')+' — модели Portal';
-    try{
-        var name=encodeURIComponent(String(selectedItem.gift_name||'').replace(/#\d+$/,'').trim());
-        var r=await fetch('/api/portal/search?name='+name+'&limit=500');
-        var d=await r.json();
-        if(!d.success) throw new Error(d.error||'Portal недоступен');
-        _portalCandidates=(d.gifts||[]).filter(function(x){return x && x.id!=null;});
-        if(!_portalCandidates.length){
-            var r2=await fetch('/api/portal/gifts?name='+name);
-            var d2=await r2.json();
-            if(d2.success) _portalCandidates=(d2.gifts||[]).filter(function(x){return x && x.id!=null;});
-        }
-        // Portal can return thousands of NFT listings. For the picker we need
-        // every unique model, not thousands of identical listings. Keep the
-        // cheapest listing for each model so the selected ID can still be bought.
-        var byModel={};
-        _portalCandidates.forEach(function(x){
-            var key=String(x.model||x.title||'Без модели').trim().toLowerCase();
-            if(!byModel[key] || Number(x.price_ton||0) < Number(byModel[key].price_ton||0)) byModel[key]=x;
-        });
-        _portalCandidates=Object.keys(byModel).map(function(k){return byModel[k];});
-        _portalCandidates.sort(function(a,b){return Number(a.price_ton||0)-Number(b.price_ton||0);});
-        renderPortalCandidates();
-        if(!_portalCandidates.length) showPortalError('На Portal пока нет доступных моделей этого подарка.');
-    }catch(e){ console.error('portal picker',e); closePortalPicker(); showNotif('Ошибка вывода, подождите позже', true); }
-    finally{ if(loading) loading.style.display='none'; }
-}
-function renderPortalCandidates(){
-    var grid=$('portalGrid'); if(!grid) return;
-    if(!_portalCandidates.length){ grid.innerHTML=''; return; }
-    grid.innerHTML=_portalCandidates.map(function(g,i){
-        var model=g.model||g.title||('Модель '+(i+1));
-        var meta=[]; if(g.backdrop) meta.push(g.backdrop); if(g.symbol) meta.push(g.symbol); if(g.number) meta.push('#'+g.number);
-        var img=g.image||'/static/img/gift.png';
-        return '<button type="button" class="portal-card" data-i="'+i+'" onclick="selectPortalCandidate('+i+')">'
-            +'<img src="'+escapeHtml(img)+'" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
-            +'<div class="portal-model">'+escapeHtml(model)+'</div>'
-            +'<div class="portal-meta">'+escapeHtml(meta.join(' · '))+'</div>'
-            +'<div class="portal-price"><img src="/static/img/ton.png" alt="">'+Number(g.price_ton||0).toFixed(2)+' TON</div>'
-            +'</button>';
-    }).join('');
-}
-function selectPortalCandidate(index){
-    _portalSelected=_portalCandidates[index]||null;
-    document.querySelectorAll('.portal-card').forEach(function(el){ el.classList.toggle('selected',Number(el.dataset.i)===index); });
-    var btn=$('portalWithdrawBtn');
-    if(btn){
-        if(_portalSelected){ btn.disabled=false; btn.textContent='Вывести выбранный подарок'; }
-        else { btn.disabled=true; btn.textContent='Выберите модель'; }
-    }
-    vibrateIfOn();
-}
-function showPortalError(msg){var e=$('portalError');if(e){e.textContent=msg;e.classList.add('show');}}
-function closePortalPicker(){var ov=$('portalOverlay');if(ov)ov.classList.remove('show');_portalSelected=null;_portalCandidates=[];}
-async function confirmPortalWithdraw(){
-    if(!_portalSelected || !selectedItem || !user) return;
-    var btn=$('portalWithdrawBtn');
-    if(btn){btn.disabled=true;btn.textContent='Оформляем вывод…';}
-    try{
-        var r=await fetch('/api/portal/buy-withdraw',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:user.id,inventory_id:selectedItem.id,portal_gift_id:_portalSelected.id,portal_gift_price:Number(_portalSelected.price_ton||0)})});
-        var d=await r.json();
-        if(d.success){
-            closePortalPicker(); closeItemSheet();
-            showNotif(d.message||'Заявка на вывод создана');
-            await refreshUserData(); await loadInventory();
-        }else{ if(btn){btn.disabled=false;btn.textContent='Вывести выбранный подарок';} showNotif(d.error||'Ошибка вывода',true); }
-    }catch(e){ if(btn){btn.disabled=false;btn.textContent='Вывести выбранный подарок';} showNotif('Ошибка сети',true); }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   SELL
-   ══════════════════════════════════════════════════════════════ */
-
-async function doConfirmedBatchSell(){
-    if(!_batchSellIds.length || !user) return;
-    var ids = _batchSellIds.slice();
-    var btn = $('sellConfirmBtn');
-    if(btn){ btn.disabled = true; btn.className = 'sell-confirm-btn waiting'; btn.textContent = 'Продаём 0/' + ids.length + '...'; }
-
-    var sold = 0;
-    var totalStars = 0;
-    try{
-        for(var i = 0; i < ids.length; i++){
-            var item = inventory.find(function(x){ return String(x.id) === String(ids[i]); });
-            if(!item || item.is_withdrawing) continue;
-            try{
-                var r = await fetch('/api/sell-gift', {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body:JSON.stringify({user_id:user.id, gift_id:item.id})
-                });
-                var d = await r.json();
-                if(d.success){
-                    sold++;
-                    totalStars += Number(item.gift_value || 0);
-                    if(btn) btn.textContent = 'Продаём ' + sold + '/' + ids.length + '...';
-                }
-            }catch(e){}
-        }
-
-        closeSellConfirm();
-        selectedItems.clear();
-        selectMode = false;
-        var ob = $('optionsBtn');
-        if(ob){ ob.classList.remove('active'); ob.textContent = 'Выбрать'; }
-        updateSelectActionBar();
-
-        if(sold > 0){
-            showSuccessOverlay('Подарки проданы!', formatTon(starsToTon(totalStars)));
-            await refreshUserData();
-            await loadInventory();
+    var photoUrl = user.photo_url;
+    var validPhoto = photoUrl && photoUrl !== '' && String(photoUrl).indexOf('default_avatar') === -1;
+    var avatarInner = $('avatarInner');
+    if(avatarInner){
+        if(validPhoto){
+            var img = document.createElement('img');
+            img.alt = 'Avatar';
+            img.onerror = function(){ avatarInner.innerHTML = '<div class="avatar-fallback">' + (name[0]||'U').toUpperCase() + '</div>'; };
+            img.onload = function(){ avatarInner.innerHTML=''; avatarInner.appendChild(img); };
+            img.src = photoUrl;
         } else {
-            showNotif('Не удалось продать выбранные подарки', true);
-            await loadInventory();
+            avatarInner.innerHTML = '<div class="avatar-fallback">' + (name[0]||'U').toUpperCase() + '</div>';
         }
-    }catch(e){
-        console.error('batch sell error:', e);
-        closeSellConfirm();
-        showNotif('Ошибка сети', true);
-    }finally{
-        _batchSellMode = false;
-        _batchSellIds = [];
     }
-}
+    var topAvatar = $('topAvatarImg');
+    if(topAvatar && validPhoto) topAvatar.src = photoUrl;
 
-async function doConfirmedSell(){
-    if(!selectedItem) return;
-    var itemId = selectedItem.id;
-    var tonVal = formatTon(starsToTon(selectedItem.gift_value));
-    var btn = $('sellConfirmBtn');
-    if(btn){ btn.disabled = true; btn.textContent = 'Продаём...'; }
-    try{
-        var r = await fetch('/api/sell-gift', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({user_id: user.id, gift_id: itemId})
-        });
-        var d = await r.json();
-        if(d.success){
-            closeSellConfirm();
-            closeItemSheet();
-            showSuccessOverlay('Подарок продан!', tonVal);
-            await refreshUserData();
-            await loadInventory();
-        } else {
-            if(btn){ btn.disabled = false; btn.className = 'sell-confirm-btn ready'; btn.textContent = 'Повторить'; }
-            showNotif(d.error || 'Ошибка', true);
-        }
-    }catch(e){
-        if(btn){ btn.disabled = false; btn.className = 'sell-confirm-btn ready'; btn.textContent = 'Повторить'; }
-        showNotif('Ошибка сети', true);
-    }
+    var bal = formatTon(starsToTon(user.balance_stars));
+    var hb = $('hdrBalance'); if(hb) hb.textContent = bal;
+    var sb = $('statBalance'); if(sb) sb.textContent = bal;
 }
 
 /* ══════════════════════════════════════════════════════════════
-   SUCCESS / NOTIF
+   PROMO
    ══════════════════════════════════════════════════════════════ */
-function showSuccessOverlay(title, price){
-    var st = $('successTitle'); if(st) st.textContent = title;
-    var sp = $('successPrice');
-    if(sp) sp.innerHTML = price ? '<img src="/static/img/ton.png">' + price + ' TON' : '';
-    var sg = $('successGif'); if(sg) sg.src = '/static/gifs/Hlop.gif?' + Date.now();
-    var so = $('successOverlay'); if(so) so.classList.add('show');
-}
-function closeSuccessOverlay(){
-    var so = $('successOverlay'); if(so) so.classList.remove('show');
-}
-function showNotif(msg, isError){
-    var el = $('notif');
-    if(!el) return;
-    el.textContent = msg;
-    el.className = 'notif' + (isError ? ' error' : '');
-    void el.offsetWidth;
-    el.classList.add('show');
-    clearTimeout(el._hideTimer);
-    el._hideTimer = setTimeout(function(){ el.classList.remove('show'); }, 3000);
-}
-
-/* PROMO */
-function openPromoModal(){
-    vibrateIfOn();
-    var po = $('promoOverlay'); if(po) po.classList.add('show');
-    var pe = $('promoError'); if(pe){ pe.classList.remove('show'); pe.textContent = ''; }
-    var pi = $('promoInput'); if(pi){ pi.value = ''; setTimeout(function(){ pi.focus(); }, 100); }
-}
-function closePromoModal(){ var po = $('promoOverlay'); if(po) po.classList.remove('show'); }
-
 async function activatePromo(){
     var pi = $('promoInput');
-    var pe = $('promoError');
+    var msg = $('promoMsg');
     var code = pi ? pi.value.trim().toUpperCase() : '';
-    if(!code){ if(pe){ pe.textContent = 'Введите код'; pe.classList.add('show'); } return; }
-    if(!user) return;
-    var btn = $('promoSubmitBtn');
+    if(msg){ msg.textContent=''; msg.className='promo-msg'; }
+    if(!code){ if(msg){ msg.textContent='Введите код'; msg.className='promo-msg err'; } return; }
+    if(!user){ showNotif('Подождите загрузку профиля', true); return; }
+    var btn = $('promoBtn');
     if(btn){ btn.disabled = true; btn.textContent = 'Проверка...'; }
-    if(pe){ pe.classList.remove('show'); pe.textContent = ''; }
     try{
         var r = await fetch('/api/activate-promo', {
             method:'POST',
@@ -3252,92 +694,245 @@ async function activatePromo(){
         var d = await r.json();
         if(d.success){
             vibrateIfOn();
-            closePromoModal();
-            showNotif(d.message || 'Активирован!');
+            if(pi) pi.value = '';
+            if(msg){ msg.textContent = d.message || 'Промокод активирован!'; msg.className = 'promo-msg ok'; }
             await refreshUserData();
             await loadInventory();
         } else {
-            if(pe){ pe.textContent = d.error || 'Неверный код'; pe.classList.add('show'); }
+            if(msg){ msg.textContent = d.error || 'Неверный код'; msg.className = 'promo-msg err'; }
         }
     }catch(e){
-        if(pe){ pe.textContent = 'Ошибка сети'; pe.classList.add('show'); }
+        if(msg){ msg.textContent = 'Ошибка сети'; msg.className = 'promo-msg err'; }
     }
-    if(btn){ btn.disabled = false; btn.textContent = 'Активировать'; }
+    if(btn){ btn.disabled = false; btn.textContent = 'Применить'; }
 }
 
-/* DEPOSIT */
-function openDeposit(){
-    vibrateIfOn();
-    var do_ = $('depositOverlay'); if(do_) do_.classList.add('show');
+/* ══════════════════════════════════════════════════════════════
+   INVENTORY
+   ══════════════════════════════════════════════════════════════ */
+function getGiftImage(item){
+    var img = item.gift_image || '';
+    if(!img){
+        if(item.fragment_slug) img = 'https://fragment.com/file/gifts/' + item.fragment_slug + '/thumb.webp';
+        else img = '/static/img/default_gift.png';
+    }
+    return img;
 }
-function closeDeposit(){ var do_ = $('depositOverlay'); if(do_) do_.classList.remove('show'); }
 
-/* REFERRAL */
-function inviteFriends(){
-    if(window.Telegram && window.Telegram.WebApp){
-        var link = 'https://t.me/rasswetgifts_bot?start=ref_' + (user.referral_code || user.id);
-        window.Telegram.WebApp.openTelegramLink('https://t.me/share/url?url=' + encodeURIComponent(link));
-    } else copyRefLink();
-}
-function copyRefLink(){
-    var link = 'https://t.me/rasswetgifts_bot?start=ref_' + (user.referral_code || user.id);
-    navigator.clipboard.writeText(link).then(function(){ showNotif('Скопировано!'); })
-        .catch(function(){ showNotif('Не удалось', true); });
-}
-async function withdrawRefBalance(){
+async function loadInventory(){
     if(!user) return;
-    var refBal = starsToTon(user.referral_balance || 0);
-    if(refBal < 1){ showNotif('Минимум 1 TON', true); return; }
+    try{
+        var r = await fetch('/api/inventory/' + user.id);
+        var d = await r.json();
+        inventory = (d.success && d.inventory) ? d.inventory : [];
+    }catch(e){
+        console.error('loadInventory:', e);
+        inventory = [];
+    }
+    renderInventory();
+}
+
+function renderInventory(){
+    var grid = $('inventoryGrid');
+    var count = $('invCount');
+    var sellAllBtn = $('sellAllBtn');
+    if(count) count.textContent = inventory.length;
+    if(sellAllBtn) sellAllBtn.disabled = inventory.length === 0;
+    if(!grid) return;
+
+    if(!inventory.length){
+        grid.innerHTML = '<div class="inv-empty">'
+            + '<svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>'
+            + 'Инвентарь пуст</div>';
+        return;
+    }
+
+    var html = '';
+    inventory.forEach(function(item){
+        var ton = starsToTon(item.gift_value);
+        var imgSrc = getGiftImage(item);
+        var onerr = "this.onerror=null;this.src='/static/img/default_gift.png'";
+        var busy = !!item.is_withdrawing;
+        var name = escapeHtml(item.gift_name || item.name || 'Подарок');
+        html += '<div class="item-card">'
+            + '<div class="item-name">' + name + '</div>'
+            + '<div class="item-img-wrap"><img src="' + escapeHtml(imgSrc) + '" alt="" loading="lazy" decoding="async" onerror="' + onerr + '"></div>'
+            + '<div class="item-price"><img src="/static/img/ton.png" alt="">' + formatTon(ton) + '</div>'
+            + '<div class="item-actions">'
+            + '<button class="item-btn item-btn-sell" ' + (busy?'disabled':'') + ' onclick="sellItem(' + item.id + ')">Продать</button>'
+            + '<button class="item-btn item-btn-withdraw" ' + (busy?'disabled':'') + ' onclick="openMrktPicker(' + item.id + ')">Вывод</button>'
+            + '</div>'
+            + '</div>';
+    });
+    grid.innerHTML = html;
+}
+
+/* Мгновенная продажа — без подтверждения */
+async function sellItem(itemId){
+    if(!user) return;
     vibrateIfOn();
     try{
-        var r = await fetch('/api/referral/withdraw', {
+        var r = await fetch('/api/sell-gift', {
             method:'POST',
             headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({user_id: user.id})
+            body:JSON.stringify({user_id: user.id, gift_id: itemId})
         });
         var d = await r.json();
-        if(d.success){ showNotif('Переведено!'); await refreshUserData(); }
-        else showNotif(d.error || 'Ошибка', true);
-    }catch(e){ showNotif('Ошибка', true); }
-}
-
-/* UTILS */
-function escapeHtml(str){
-    var div = document.createElement('div');
-    div.textContent = str == null ? '' : str;
-    return div.innerHTML;
-}
-
-/* ★ Каскадный fallback для картинок рулетки */
-window.__rouletteImgFallback = function(imgEl){
-    try{
-        var chain = (imgEl.dataset.chain || '').split('|').filter(Boolean);
-        var idx = parseInt(imgEl.dataset.chainIdx || '0', 10) + 1;
-        if(idx < chain.length){
-            imgEl.dataset.chainIdx = idx;
-            imgEl.src = chain[idx];
+        if(d.success){
+            showNotif('Подарок продан!');
+            await refreshUserData();
+            await loadInventory();
         } else {
-            imgEl.onerror = null;
-            imgEl.src = '/static/img/gift.png';
+            showNotif(d.error || 'Ошибка продажи', true);
         }
     }catch(e){
-        imgEl.onerror = null;
-        imgEl.src = '/static/img/gift.png';
+        showNotif('Ошибка сети', true);
     }
-};
+}
 
-/* PAGE FADE NAVIGATION — no travelling blue pill */
-(function(){
-  document.querySelectorAll('.bottom-nav .bnav-item').forEach(function(link){
-    link.addEventListener('click',function(e){
-      var href=link.getAttribute('href');
-      if(!href || href===location.pathname || href==='#') return;
-      e.preventDefault();
-      document.body.classList.add('page-leaving');
-      setTimeout(function(){location.assign(href)},180);
-    });
-  });
-})();
+/* Продать всё сразу — без подтверждения */
+async function sellAll(){
+    if(!user || !inventory.length) return;
+    var ids = inventory.filter(function(i){ return !i.is_withdrawing; }).map(function(i){ return i.id; });
+    if(!ids.length){ showNotif('Нет доступных подарков для продажи', true); return; }
+    vibrateIfOn();
+    var btn = $('sellAllBtn');
+    if(btn){ btn.disabled = true; btn.textContent = 'Продаём 0/' + ids.length + '...'; }
+    var sold = 0;
+    for(var i = 0; i < ids.length; i++){
+        try{
+            var r = await fetch('/api/sell-gift', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({user_id:user.id, gift_id:ids[i]})
+            });
+            var d = await r.json();
+            if(d.success){
+                sold++;
+                if(btn) btn.textContent = 'Продаём ' + sold + '/' + ids.length + '...';
+            }
+        }catch(e){}
+    }
+    if(btn){ btn.disabled = false; btn.textContent = 'Продать всё'; }
+    if(sold > 0) showNotif(sold + ' подарков продано!');
+    else showNotif('Не удалось продать подарки', true);
+    await refreshUserData();
+    await loadInventory();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ВЫВОД — модели загружаются с торговой площадки (MRKT)
+   ══════════════════════════════════════════════════════════════ */
+async function openMrktPicker(itemId){
+    var item = inventory.find(function(i){ return String(i.id) === String(itemId); });
+    if(!item || !user) return;
+    if(item.is_withdrawing){ showNotif('Подарок уже выводится', true); return; }
+    _mrktTargetItem = item;
+    vibrateIfOn();
+
+    var ov = $('mrktOverlay'); if(ov) ov.classList.add('show');
+    var grid = $('mrktGrid'); if(grid) grid.innerHTML = '';
+    var loading = $('mrktLoading'); if(loading) loading.style.display = 'flex';
+    var err = $('mrktError'); if(err){ err.classList.remove('show'); err.textContent = ''; }
+    var btn = $('mrktSubmitBtn'); if(btn){ btn.disabled = true; btn.textContent = 'Выберите модель'; }
+    _mrktCandidates = []; _mrktSelected = null;
+    var subtitle = $('mrktSubtitle'); if(subtitle) subtitle.textContent = (item.gift_name || 'Подарок') + ' — доступные модели';
+
+    try{
+        var name = encodeURIComponent(String(item.gift_name || '').replace(/#\d+$/, '').trim());
+        var r = await fetch('/api/portal/search?name=' + name + '&limit=500');
+        var d = await r.json();
+        if(!d.success) throw new Error(d.error || 'Площадка недоступна');
+        _mrktCandidates = (d.gifts || []).filter(function(x){ return x && x.id != null; });
+        if(!_mrktCandidates.length){
+            var r2 = await fetch('/api/portal/gifts?name=' + name);
+            var d2 = await r2.json();
+            if(d2.success) _mrktCandidates = (d2.gifts || []).filter(function(x){ return x && x.id != null; });
+        }
+        var byModel = {};
+        _mrktCandidates.forEach(function(x){
+            var key = String(x.model || x.title || 'Без модели').trim().toLowerCase();
+            if(!byModel[key] || Number(x.price_ton||0) < Number(byModel[key].price_ton||0)) byModel[key] = x;
+        });
+        _mrktCandidates = Object.keys(byModel).map(function(k){ return byModel[k]; });
+        _mrktCandidates.sort(function(a,b){ return Number(a.price_ton||0) - Number(b.price_ton||0); });
+        renderMrktCandidates();
+        if(!_mrktCandidates.length) showMrktError('Сейчас нет доступных моделей этого подарка.');
+    }catch(e){
+        console.error('mrkt picker', e);
+        closeMrktPicker();
+        showNotif('Ошибка вывода, попробуйте позже', true);
+    }finally{
+        if(loading) loading.style.display = 'none';
+    }
+}
+
+function renderMrktCandidates(){
+    var grid = $('mrktGrid'); if(!grid) return;
+    if(!_mrktCandidates.length){ grid.innerHTML = ''; return; }
+    grid.innerHTML = _mrktCandidates.map(function(g, i){
+        var model = g.model || g.title || ('Модель ' + (i+1));
+        var meta = []; if(g.backdrop) meta.push(g.backdrop); if(g.symbol) meta.push(g.symbol); if(g.number) meta.push('#'+g.number);
+        var img = g.image || '/static/img/gift.png';
+        return '<button type="button" class="mrkt-card" data-i="' + i + '" onclick="selectMrktCandidate(' + i + ')">'
+            + '<img src="' + escapeHtml(img) + '" alt="" loading="lazy" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'">'
+            + '<div class="mrkt-model">' + escapeHtml(model) + '</div>'
+            + '<div class="mrkt-meta">' + escapeHtml(meta.join(' · ')) + '</div>'
+            + '<div class="mrkt-price"><img src="/static/img/ton.png" alt="">' + Number(g.price_ton||0).toFixed(2) + ' TON</div>'
+            + '</button>';
+    }).join('');
+}
+function selectMrktCandidate(index){
+    _mrktSelected = _mrktCandidates[index] || null;
+    document.querySelectorAll('.mrkt-card').forEach(function(el){ el.classList.toggle('selected', Number(el.dataset.i) === index); });
+    var btn = $('mrktSubmitBtn');
+    if(btn){
+        if(_mrktSelected){ btn.disabled = false; btn.textContent = 'Вывести выбранный подарок'; }
+        else { btn.disabled = true; btn.textContent = 'Выберите модель'; }
+    }
+    vibrateIfOn();
+}
+function showMrktError(msg){ var e = $('mrktError'); if(e){ e.textContent = msg; e.classList.add('show'); } }
+function closeMrktPicker(){
+    var ov = $('mrktOverlay'); if(ov) ov.classList.remove('show');
+    _mrktSelected = null; _mrktCandidates = []; _mrktTargetItem = null;
+}
+async function confirmMrktWithdraw(){
+    if(!_mrktSelected || !_mrktTargetItem || !user) return;
+    var btn = $('mrktSubmitBtn');
+    if(btn){ btn.disabled = true; btn.textContent = 'Оформляем вывод…'; }
+    try{
+        var r = await fetch('/api/portal/buy-withdraw', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({
+                user_id: user.id,
+                inventory_id: _mrktTargetItem.id,
+                portal_gift_id: _mrktSelected.id,
+                portal_gift_price: Number(_mrktSelected.price_ton || 0)
+            })
+        });
+        var d = await r.json();
+        if(d.success){
+            closeMrktPicker();
+            showNotif(d.message || 'Заявка на вывод создана');
+            await refreshUserData();
+            await loadInventory();
+        } else {
+            if(btn){ btn.disabled = false; btn.textContent = 'Вывести выбранный подарок'; }
+            showNotif(d.error || 'Ошибка вывода', true);
+        }
+    }catch(e){
+        if(btn){ btn.disabled = false; btn.textContent = 'Вывести выбранный подарок'; }
+        showNotif('Ошибка сети', true);
+    }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   DEPOSIT
+   ══════════════════════════════════════════════════════════════ */
+function openDeposit(){ vibrateIfOn(); var ov = $('depositOverlay'); if(ov) ov.classList.add('show'); }
+function closeDeposit(){ var ov = $('depositOverlay'); if(ov) ov.classList.remove('show'); }
 </script>
 </body>
 </html>
