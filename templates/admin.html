@@ -434,7 +434,20 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             </div>
             <button class="btn btn-success" onclick="saveEventSettings()" style="margin-top:10px">Сохранить настройки</button>
         </div>
-        <div class="card" style="margin-top:14px"><div class="card-title">Разделы события</div><div id="eventSectionsAdmin"></div><div class="event-actions"><button class="btn btn-primary" onclick="addEventSection()">+ Добавить раздел</button></div></div>
+        <div class="card" style="margin-top:14px">
+            <div class="card-title">Управление магазином Event</div>
+            <div class="event-sub" style="margin-bottom:10px">Добавляй конкретные подарки по ссылке. Название, PNG и Lottie-анимация подгружаются автоматически, а цену задаёшь здесь.</div>
+            <div class="event-editor-grid">
+                <div class="form-group"><label class="form-label">Ссылка на подарок</label><input class="form-input" id="eventGiftUrlInput" placeholder="https://fragment.com/gift/..."></div>
+                <div class="form-group"><label class="form-label">Цена, GRAM</label><input class="form-input" id="eventGiftPriceInput" type="number" min="0.01" step="0.01" placeholder="100"></div>
+                <div class="form-group"><label class="form-label">Раздел магазина</label><input class="form-input" id="eventGiftSectionInput" value="market" placeholder="market"></div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:10px" onclick="addEventGift()">+ Добавить подарок</button>
+            <div id="eventGiftPreview" style="margin-top:10px"></div>
+            <div id="eventSectionsAdmin" style="margin-top:14px"></div>
+            <div class="event-actions"><button class="btn btn-secondary" onclick="addEventSection()">+ Добавить раздел</button></div>
+        </div>
+</div>
         <div class="card seasonal-case-admin" id="seasonal-case-admin" style="margin-top:14px"><div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span>Сезонный кейс</span><button class="action-btn" onclick="openSeasonalCaseEditor()">Настроить</button></div><div style="font-size:12px;color:rgba(255,255,255,.48);line-height:1.45">Кейс автоматически показывается только в заданный период сезона и использует те же кейсовые механики открытия.</div><div id="seasonalCaseStatus" class="event-status" style="margin-top:10px">Загрузка…</div></div>
     </div>
 
@@ -1087,8 +1100,45 @@ function selectPickerItem(idx){
 function formatEventTime(sec){sec=Math.max(0,Number(sec||0));var d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60),s=Math.floor(sec%60);return (d?d+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
 var eventAdminData=null;
 async function eventAdminPost(payload){payload=payload||{};payload.admin_id=ADMIN_ID;var r=await fetch('/api/admin/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');return d;}
-function renderEventSections(events){var ev=(events||{}).witch_hat_party||{};eventAdminData=ev;var box=$('eventSectionsAdmin');if(!box)return;var sections=ev.sections||[];if(!sections.length){box.innerHTML='<div class="empty">Разделов пока нет</div>';return;}box.innerHTML=sections.map(function(sec){var content='';if(sec.type==='cases'){var ids=sec.case_ids||[];content='<div class="event-mini-list">'+(ids.length?ids.map(function(id){return '<div class="event-mini">Кейс #'+escapeHtml(String(id))+' <button onclick="removeEventCase(\''+escapeHtml(String(sec.id))+'\',\''+escapeHtml(String(id))+'\')">✕</button></div>';}).join(''):'<span class="event-sub">Кейсы не добавлены</span>')+'</div><div class="event-section-tools"><button class="btn btn-secondary btn-sm" onclick="addEventCase(\''+escapeHtml(String(sec.id))+'\')">+ Кейс</button></div>';}else{var items=sec.items||[];content='<div class="event-mini-list">'+(items.length?items.map(function(it){return '<div class="event-mini">'+escapeHtml(it.collection||it.fragment_slug||'Коллекция')+' <button onclick="removeEventMarket(\''+escapeHtml(String(it.fragment_slug||''))+'\')">✕</button></div>';}).join(''):'<span class="event-sub">Коллекции не добавлены</span>')+'</div><div class="event-section-tools"><button class="btn btn-secondary btn-sm" onclick="addEventMarket(\''+escapeHtml(String(sec.id))+'\')">+ Коллекция в Market</button></div>';}return '<div class="event-section-row"><div class="event-section-head"><strong>'+escapeHtml(sec.title||'Раздел')+'</strong><span class="event-chip">'+escapeHtml(sec.type||'market')+'</span><button class="btn btn-danger btn-sm" onclick="removeEventSection(\''+escapeHtml(String(sec.id))+'\')">Удалить</button></div>'+content+'</div>';}).join('');}
-async function loadEvents(){try{var r=await fetch('/api/admin/events?admin_id='+ADMIN_ID);var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');var e=(d.events||{}).witch_hat_party||{};if($('witchEventToggle'))$('witchEventToggle').checked=!!e.enabled&&!!e.ends_at;if($('witchEventDuration'))$('witchEventDuration').style.display=e.enabled?'block':'none';if($('witchEventStatus'))$('witchEventStatus').textContent=e.enabled?'🟣 Ивент включён · до '+new Date(e.ends_at).toLocaleString('ru-RU'):'⚪ Ивент выключен';if($('eventNameInput'))$('eventNameInput').value=e.name||'Witch Hat Party';if($('eventImageInput'))$('eventImageInput').value=e.image||'';if($('eventLoadingGifInput'))$('eventLoadingGifInput').value=e.loading_gif||'loading.gif';if($('witchHalloweenToggle'))$('witchHalloweenToggle').checked=!!e.halloween_mode;if($('witchLeaderboardToggle'))$('witchLeaderboardToggle').checked=!!e.change_leaderboard;renderEventSections(d.events||{});}catch(e){if($('witchEventStatus'))$('witchEventStatus').textContent='Ошибка загрузки: '+e.message;}}
+function renderEventSections(events){
+ var ev=(events||{}).witch_hat_party||{};eventAdminData=ev;var box=$('eventSectionsAdmin');if(!box)return;var sections=ev.sections||[];
+ if(!sections.length){box.innerHTML='<div class="empty">Разделов пока нет</div>';return;}
+ box.innerHTML=sections.map(function(sec){
+   var content='';
+   if(sec.type==='cases'){
+     var ids=sec.case_ids||[];
+     content='<div class="event-mini-list">'+(ids.length?ids.map(function(id){return '<div class="event-mini">Кейс #'+escapeHtml(String(id))+'</div>';}).join(''):'<span class="event-sub">Кейсы не добавлены</span>')+'</div>';
+   }else{
+     var items=sec.items||[];
+     content='<div class="event-mini-list">'+(items.length?items.map(function(it){
+       var label=it.name||it.collection||it.fragment_slug||'Подарок';
+       var price=Number(it.price_gram||0).toFixed(2);
+       var remove=it.gift_url?'removeEventGift(\''+escapeHtml(String(it.gift_url))+'\')':'removeEventMarket(\''+escapeHtml(String(it.fragment_slug||''))+'\')';
+       return '<div class="event-mini" style="min-width:100%;justify-content:space-between"><span>'+escapeHtml(label)+' · '+price+' GRAM</span><button onclick="'+remove+'">✕</button></div>';
+     }).join(''):'<span class="event-sub">Подарки не добавлены</span>')+'</div>';
+   }
+   return '<div class="event-section-row"><div class="event-section-head"><strong>'+escapeHtml(sec.title||'Раздел')+'</strong><span class="event-chip">'+escapeHtml(sec.type||'market')+'</span><button class="btn btn-danger btn-sm" onclick="removeEventSection(\''+escapeHtml(String(sec.id))+'\')">Удалить</button></div>'+content+'</div>';
+ }).join('');
+}
+async function loadEvents(){
+ var status=$('witchEventStatus');
+ try{
+   if(status)status.textContent='Загрузка Event…';
+   var controller=new AbortController();var timer=setTimeout(function(){controller.abort();},10000);
+   var r=await fetch('/api/admin/events?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store',signal:controller.signal});clearTimeout(timer);
+   var d=await r.json();if(!r.ok||!d.success)throw Error(d.error|| ('HTTP '+r.status));
+   var e=(d.events||{}).witch_hat_party||{};
+   if($('witchEventToggle'))$('witchEventToggle').checked=!!e.enabled&&!!e.ends_at;
+   if($('witchEventDuration'))$('witchEventDuration').style.display=e.enabled?'block':'none';
+   if(status)status.textContent=e.enabled?'🟣 Ивент включён · до '+new Date(e.ends_at).toLocaleString('ru-RU'):'⚪ Ивент выключен';
+   if($('eventNameInput'))$('eventNameInput').value=e.name||'Witch Hat Party';
+   if($('eventImageInput'))$('eventImageInput').value=e.image||'';
+   if($('eventLoadingGifInput'))$('eventLoadingGifInput').value=e.loading_gif||'loading.gif';
+   if($('witchHalloweenToggle'))$('witchHalloweenToggle').checked=!!e.halloween_mode;
+   if($('witchLeaderboardToggle'))$('witchLeaderboardToggle').checked=!!e.change_leaderboard;
+   renderEventSections(d.events||{});
+ }catch(err){if(status)status.textContent='Ошибка Event: '+(err.name==='AbortError'?'таймаут загрузки':err.message);console.error(err);}
+}
 function onWitchEventToggle(){var on=$('witchEventToggle')&&$('witchEventToggle').checked;if($('witchEventDuration'))$('witchEventDuration').style.display=on?'block':'none';if(!on)stopWitchEvent();}
 async function startWitchEvent(){var hours=parseFloat($('witchEventHours')&&$('witchEventHours').value);if(!hours||hours<=0){showToast('Укажите срок ивента','err');return;}try{await eventAdminPost({event_id:'witch_hat_party',enabled:true,hours:hours});showToast('Witch Hat Party запущен','ok');loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function stopWitchEvent(){try{await eventAdminPost({event_id:'witch_hat_party',enabled:false});if($('witchEventToggle'))$('witchEventToggle').checked=false;loadEvents();showToast('Ивент выключен','ok');}catch(e){showToast(e.message||'Ошибка','err')}}
@@ -1107,7 +1157,13 @@ async function addEventCase(sectionId){
     }catch(e){showToast(e.message||'Ошибка загрузки кейсов','err');}
 }
 async function removeEventCase(sectionId,id){try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_case',case_id:id});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
-async function addEventMarket(sectionId){var name=prompt('Введите коллекцию Fragment, например Witch Head');if(!name)return;try{await eventAdminPost({event_id:'witch_hat_party',action:'add_market_collection',section_id:sectionId,collection:name});showToast('Коллекция добавлена и проверена по Fragment','ok');loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
+async function addEventGift(){
+ var url=($('eventGiftUrlInput')&&$('eventGiftUrlInput').value||'').trim();var price=parseFloat($('eventGiftPriceInput')&&$('eventGiftPriceInput').value||0);var section=($('eventGiftSectionInput')&&$('eventGiftSectionInput').value||'market').trim()||'market';
+ if(!url){showToast('Вставьте ссылку на подарок','err');return;}if(!price||price<=0){showToast('Укажите цену в GRAM','err');return;}
+ try{showToast('Загружаю данные подарка…');await eventAdminPost({event_id:'witch_hat_party',action:'add_market_gift',section_id:section,gift_url:url,price_gram:price});showToast('Подарок добавлен','ok');if($('eventGiftUrlInput'))$('eventGiftUrlInput').value='';if($('eventGiftPriceInput'))$('eventGiftPriceInput').value='';loadEvents();}catch(e){showToast(e.message||'Ошибка загрузки подарка','err');}
+}
+async function removeEventGift(url){try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_market_gift',gift_url:url});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
+async function addEventMarket(sectionId){showToast('Для нового магазина добавляйте конкретную ссылку на подарок','err')}
 async function removeEventMarket(slug){try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_market_collection',fragment_slug:slug});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 
 /* ══════════════════════════════════════════════════════════════
