@@ -430,6 +430,14 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             </div>
             <div class="event-status" id="witchEventStatus">Загрузка…</div>
         </div>
+        <div class="card seasonal-case-admin" id="seasonal-case-admin" style="margin-top:14px">
+            <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <span>Сезонный кейс</span>
+                <button class="action-btn" onclick="openSeasonalCaseEditor()">Настроить</button>
+            </div>
+            <div style="font-size:12px;color:rgba(255,255,255,.48);line-height:1.45">Кейс автоматически показывается только в заданный период сезона и использует те же кейсовые механики открытия.</div>
+            <div id="seasonalCaseStatus" class="event-status" style="margin-top:10px">Загрузка…</div>
+        </div>
     </div>
 
     <!-- DASHBOARD -->
@@ -566,6 +574,24 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <button class="btn btn-success" onclick="saveCase()">💾 Сохранить</button>
             <button class="btn btn-danger" onclick="deleteCase()" id="ceDeleteBtn" style="display:none">🗑 Удалить</button>
         </div>
+    </div>
+
+
+    <!-- SEASONAL CASE EDITOR -->
+    <div class="section-page" id="page-seasonal-case" style="display:none">
+        <div class="section-header"><h2>🎃 Сезонный кейс</h2><button class="action-btn" onclick="showSection('events')">← Назад</button></div>
+        <div class="card">
+            <div class="card-title">Основное</div>
+            <div class="form-group"><label class="form-label">Показывать в сезоне</label><label style="display:flex;align-items:center;gap:9px"><input type="checkbox" id="scEnabled"> Включить</label></div>
+            <div class="form-group"><label class="form-label">Название</label><input class="form-input" id="scName" placeholder="Сезонный кейс"></div>
+            <div class="form-group"><label class="form-label">Изображение кейса</label><input class="form-input" id="scImage" placeholder="/static/img/..." ></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Цена</label><input type="number" min="0" step="0.01" class="form-input" id="scCost"></div><div class="form-group"><label class="form-label">Валюта</label><select class="form-input" id="scCostType"><option value="stars">Звёзды</option><option value="ton">TON</option><option value="tickets">Билеты</option></select></div></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Начало сезона</label><input type="datetime-local" class="form-input" id="scStart"></div><div class="form-group"><label class="form-label">Конец сезона</label><input type="datetime-local" class="form-input" id="scEnd"></div></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Мин. уровень</label><input type="number" min="1" class="form-input" id="scLevel" value="1"></div><div class="form-group"><label class="form-label">Раздел</label><input class="form-input" id="scSection" value="season"></div></div>
+            <div class="form-group"><label class="form-label">Описание</label><textarea class="form-input" id="scDescription" rows="2"></textarea></div>
+        </div>
+        <div class="card"><div class="card-title">Подарки в сезонном кейсе</div><div id="scGiftsList"></div><div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" onclick="openSeasonalGiftPicker()">+ Подарок</button><button class="btn btn-warn" onclick="openSeasonalTonForm()">+ TON-баланс</button></div></div>
+        <div class="btn-row" style="margin-bottom:20px"><button class="btn btn-success" onclick="saveSeasonalCase()">💾 Сохранить сезонный кейс</button></div>
     </div>
 
     <!-- PROMO -->
@@ -962,7 +988,8 @@ function goToProfile(){
 
 var currentSection = 'home';
 var SECTION_TITLES = {
-    home: 'Главное меню', events: 'Events', dashboard: '📊 Дашборд', crash: '🎮 Управление Краш',
+    home: 'Главное меню', events: 'Events',
+    'seasonal-case': '🎃 Сезонный кейс', dashboard: '📊 Дашборд', crash: '🎮 Управление Краш',
     users: '👥 Пользователи', gifts: '🎁 Подарки', cases: '📦 Кейсы',
     'case-editor': '📦 Редактор кейса',
     promo: '🎟️ Промокоды', quests: '🎯 Задания',
@@ -986,7 +1013,8 @@ function showSection(name){
     try{ window.scrollTo({top: 0, behavior: 'instant'}); }catch(e){ window.scrollTo(0,0); }
 
     try{
-        if(name === 'events') loadEvents();
+        if(name === 'events') { loadEvents(); loadSeasonalCaseStatus(); }
+        if(name === 'seasonal-case') loadSeasonalCaseEditor();
         if(name === 'dashboard') loadStats();
         if(name === 'crash') loadCrashStatus();
         if(name === 'users') loadUsers();
@@ -1109,6 +1137,54 @@ async function stopWitchEvent(){
         var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');
         if($('witchEventToggle'))$('witchEventToggle').checked=false;if($('witchEventDuration'))$('witchEventDuration').style.display='none';showToast('Ивент выключен','ok');loadEvents();
     }catch(e){showToast(e.message||'Ошибка','err')}
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SEASONAL CASE
+   ══════════════════════════════════════════════════════════════ */
+var seasonalCaseData = null;
+var seasonalCaseGifts = [];
+function dtLocalValue(v){
+    if(!v) return '';
+    try{ var d=new Date(v); if(isNaN(d.getTime())) return ''; var off=d.getTimezoneOffset(); d=new Date(d.getTime()-off*60000); return d.toISOString().slice(0,16); }catch(e){ return ''; }
+}
+function dtIso(v){
+    if(!v) return null;
+    try{ return new Date(v).toISOString(); }catch(e){ return null; }
+}
+async function loadSeasonalCaseStatus(){
+    try{ var r=await fetch('/api/admin/seasonal-case?admin_id='+ADMIN_ID+'&ts='+Date.now()); var d=await r.json(); if(!d.success) throw Error(d.error||'Ошибка'); var c=d.case||{}; $('seasonalCaseStatus').textContent=(d.active?'🟢 Сезонный кейс сейчас показывается':'⚪ Сезонный кейс не показывается')+' · '+(c.name||'Без названия')+(c.season_start?' · '+new Date(c.season_start).toLocaleString('ru-RU'):''); }catch(e){ if($('seasonalCaseStatus')) $('seasonalCaseStatus').textContent='Ошибка: '+e.message; }
+}
+function openSeasonalCaseEditor(){ showSection('seasonal-case'); }
+async function loadSeasonalCaseEditor(){
+    try{ var r=await fetch('/api/admin/seasonal-case?admin_id='+ADMIN_ID); var d=await r.json(); if(!d.success) throw Error(d.error||'Ошибка'); seasonalCaseData=d.case||{}; seasonalCaseGifts=(seasonalCaseData.gifts||[]).slice();
+        $('scEnabled').checked=!!seasonalCaseData.enabled; $('scName').value=seasonalCaseData.name||'Сезонный кейс'; $('scImage').value=seasonalCaseData.image||''; $('scCost').value=seasonalCaseData.cost||0; $('scCostType').value=seasonalCaseData.cost_type||'stars'; $('scStart').value=dtLocalValue(seasonalCaseData.season_start); $('scEnd').value=dtLocalValue(seasonalCaseData.season_end); $('scLevel').value=seasonalCaseData.required_level||1; $('scSection').value=seasonalCaseData.section||'season'; $('scDescription').value=seasonalCaseData.description||''; renderSeasonalGifts();
+    }catch(e){ showToast(e.message||'Ошибка загрузки сезонного кейса','err'); }
+}
+function renderSeasonalGifts(){
+    var el=$('scGiftsList'); if(!el)return;
+    if(!seasonalCaseGifts.length){el.innerHTML='<div class="empty">Подарков пока нет</div>';return;}
+    el.innerHTML=seasonalCaseGifts.map(function(g,i){return '<div class="list-item" style="cursor:default"><div class="avatar" style="border-radius:10px"><img src="'+escapeHtml(g.image||'/static/img/gift.png')+'" onerror="this.src=\'/static/img/gift.png\'"></div><div class="info"><div class="name">'+escapeHtml(g.name||'Подарок')+'</div><div class="meta">Шанс: '+(g.chance??1)+'</div></div><button class="btn btn-danger btn-sm" onclick="seasonalCaseGifts.splice('+i+',1);renderSeasonalGifts()">✕</button></div>';}).join('');
+}
+function openSeasonalGiftPicker(){
+    if(!allGifts.length){ showToast('Загрузка каталога...', 'ok'); loadGifts().then(openSeasonalGiftPicker); return; }
+    openPicker('Выбрать подарок', allGifts, function(item){
+        seasonalCaseGifts.push({id:item.id,gift_key:item.gift_key||'',name:item.name,image:item.image,value:item.value||0,fragment_slug:item.fragment_slug||'',type:'gift',chance:10});
+        renderSeasonalGifts(); showToast('Подарок добавлен','ok');
+    });
+}
+function openSeasonalTonForm(){
+    var html='<div class="modal-title">💰 TON-баланс в сезонный кейс</div>' +
+      '<div class="form-group"><label class="form-label">Количество TON</label><input type="number" class="form-input" id="scTonAmount" placeholder="5" min="0.01" step="0.01"></div>' +
+      '<div class="form-group"><label class="form-label">Шанс (вес)</label><input type="number" class="form-input" id="scTonChance" value="10" min="1"></div>' +
+      '<div class="btn-row"><button class="btn btn-success" onclick="addSeasonalTon()">Добавить</button><button class="btn btn-secondary" onclick="closeModal()">Отмена</button></div>';
+    openModal(html);
+}
+function addSeasonalTon(){ var n=parseFloat($('scTonAmount').value)||0, ch=parseFloat($('scTonChance').value)||10; if(n<=0){showToast('Введите сумму','err');return;} seasonalCaseGifts.push({type:'ton_balance',ton_amount:n,chance:ch}); renderSeasonalGifts(); closeModal(); showToast('TON-баланс добавлен','ok'); }
+async function saveSeasonalCase(){
+    var payload={admin_id:ADMIN_ID,enabled:$('scEnabled').checked,name:$('scName').value.trim(),image:$('scImage').value.trim(),cost:parseFloat($('scCost').value)||0,cost_type:$('scCostType').value,season_start:dtIso($('scStart').value),season_end:dtIso($('scEnd').value),required_level:parseInt($('scLevel').value)||1,section:$('scSection').value.trim()||'season',description:$('scDescription').value,gifts:seasonalCaseGifts};
+    if(!payload.name){showToast('Введите название','err');return;} if(payload.season_start&&payload.season_end&&new Date(payload.season_end)<=new Date(payload.season_start)){showToast('Конец сезона должен быть позже начала','err');return;}
+    try{var r=await fetch('/api/admin/seasonal-case',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');showToast('Сезонный кейс сохранён','ok');showSection('events');}catch(e){showToast(e.message||'Ошибка сохранения','err');}
 }
 
 /* ══════════════════════════════════════════════════════════════
