@@ -2749,7 +2749,71 @@ def _event_find_case(case_ref):
     ref=str(case_ref or '').strip().lower()
     return next((c for c in get_public_cases_with_seasonal() if str(c.get('id')).lower()==ref or _case_slug(c).lower()==ref or _slugify_case_name(c.get('name')).lower()==ref),None)
 
+def _parse_event_gift_url(value):
+    """Parse a single collectible gift URL without requiring a collection name."""
+    raw=str(value or '').strip()
+    if not raw:
+        raise ValueError('Укажите ссылку на подарок')
+    m=re.search(r'(?:fragment\.com/gift/|t\.me/nft/)([A-Za-z0-9_-]+)-(\d+)', raw)
+    if not m:
+        # Also accept a bare gift slug such as ToyBear-123.
+        m=re.fullmatch(r'([A-Za-z0-9_-]+)-(\d+)', raw)
+    if not m:
+        raise ValueError('Нужна ссылка на конкретный подарок: fragment.com/gift/... или t.me/nft/...')
+    slug=m.group(1).strip().lower()
+    number=int(m.group(2))
+    return slug, number
+
+
+def _fetch_fragment_gift_metadata(gift_url):
+    """Load the public metadata for one Fragment collectible gift.
+
+    Fragment exposes a JSON document plus WebP and Lottie assets for a minted
+    gift. The admin only stores the resolved URLs; it does not need to upload
+    the remote assets to the server.
+    """
+    slug,number=_parse_event_gift_url(gift_url)
+    base=f'https://nft.fragment.com/gift/{slug}-{number}'
+    metadata_url=base+'.json'
+    image_url=base+'.webp'
+    animation_url=base+'.lottie.json'
+    name=f'{slug.replace("-", " ").title()} #{number}'
+    description=''
+    try:
+        r=requests.get(metadata_url,timeout=12,headers={'User-Agent':'Mozilla/5.0'})
+        if r.ok:
+            meta=r.json() if r.content else {}
+            if isinstance(meta,dict):
+                name=str(meta.get('name') or meta.get('title') or name).strip()
+                description=str(meta.get('description') or '').strip()
+                image_url=str(meta.get('image') or meta.get('image_url') or image_url).strip()
+                animation_url=str(meta.get('lottie') or meta.get('animation_url') or animation_url).strip()
+    except Exception as e:
+        logger.warning('Event gift metadata failed for %s: %s',gift_url,e)
+    return {
+        'gift_url': str(gift_url).strip(),
+        'fragment_slug': slug,
+        'number': number,
+        'name': name,
+        'description': description,
+        'image': image_url,
+        'animation': animation_url,
+        'metadata_url': metadata_url,
+    }
+
+
+def _event_market_item_from_gift(item):
+    info=_fetch_fragment_gift_metadata(item.get('gift_url') or item.get('url'))
+    price=float(item.get('price_gram') or item.get('price') or 0)
+    info['price_gram']=round(price,2)
+    info['price_stars']=int(round(price*100))
+    info['price_ton']=round(price,2)
+    info['url']=info['gift_url']
+    return info
+
+
 def _event_market_item_from_collection(collection):
+    """Legacy collection resolver kept for old saved events."""
     query=str(collection or '').strip()
     if not query: raise ValueError('Укажите коллекцию')
     catalog=build_fragment_first_gifts_catalog(force_refresh=False) or []; q=query.lower()
@@ -8440,8 +8504,13 @@ def api_witch_hat_market():
         for sec in ev.get('sections',[]):
             if sec.get('type')!='market': continue
             for item in sec.get('items',[]):
-                try: items.extend((_event_market_item_from_collection(item.get('collection') or item.get('name')) or {}).get('listings') or [])
-                except Exception as e: logger.warning('Event market collection failed: %s',e)
+                try:
+                    if item.get('gift_url'):
+                        g=_event_market_item_from_gift(item)
+                        items.append({'collection':g['name'],'fragment_slug':g['fragment_slug'],'number':g['number'],'name':g['name'],'image':g['image'],'animation':g['animation'],'price_gram':g['price_gram'],'price_stars':g['price_stars'],'price_ton':g['price_gram'],'url':g['gift_url']})
+                    else:
+                        items.extend((_event_market_item_from_collection(item.get('collection') or item.get('name')) or {}).get('listings') or [])
+                except Exception as e: logger.warning('Event market item failed: %s',e)
         return jsonify({'success':True,'items':items,'sections':ev.get('sections',[])})
     except Exception as e: return jsonify({'success':False,'error':str(e)}),500
 
@@ -8474,6 +8543,24 @@ def admin_events():
                 while any(str(x.get('id'))==sid for x in ev.setdefault('sections',[])): sid=f'{base}_{n}'; n+=1
                 ev['sections'].append({'id':sid,'title':title,'type':str(data.get('type') or 'market'),'items':[],'case_ids':[]})
             elif action=='remove_section': ev['sections']=[x for x in ev.get('sections',[]) if str(x.get('id'))!=str(data.get('section_id') or '')]
+            elif action=='add_market_gift':
+                gift_url=str(data.get('gift_url') or '').strip()
+                if not gift_url: return jsonify({'success':False,'error':'Укажите ссылку на подарок'}),400
+                try: resolved=_event_market_item_from_gift({'gift_url':gift_url,'price_gram':data.get('price_gram')})
+                except Exception as e: return jsonify({'success':False,'error':str(e)}),400
+                if float(resolved.get('price_gram') or 0) <= 0: return jsonify({'success':False,'error':'Укажите цену подарка в GRAM'}),400
+                sid=str(data.get('section_id') or 'market'); sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==sid),None)
+                if sec is None: sec={'id':sid,'title':'Купить подарок','type':'market','items':[],'case_ids':[]}; ev['sections'].append(sec)
+                items=sec.setdefault('items',[])
+                if not any(str(x.get('gift_url','')).strip().lower()==gift_url.lower() for x in items):
+                    items.append(resolved)
+                else:
+                    for x in items:
+                        if str(x.get('gift_url','')).strip().lower()==gift_url.lower(): x.update(resolved)
+            elif action=='remove_market_gift':
+                gift_url=str(data.get('gift_url') or '').strip().lower()
+                for sec in ev.setdefault('sections',[]):
+                    if sec.get('type')=='market': sec['items']=[x for x in sec.get('items',[]) if str(x.get('gift_url','')).strip().lower()!=gift_url]
             elif action=='add_market_collection':
                 resolved=_event_market_item_from_collection(str(data.get('collection') or '').strip())
                 if not resolved.get('listings'): return jsonify({'success':False,'error':'Не удалось найти активные лоты этой коллекции на Fragment'}),404
