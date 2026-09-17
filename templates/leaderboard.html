@@ -687,13 +687,53 @@ body{
     body.page-leaving{animation:pageOut .18s ease both}
     @keyframes pageIn{from{opacity:0}to{opacity:1}}
     @keyframes pageOut{from{opacity:1}to{opacity:0}}
+
+/* ══════════════ HALLOWEEN / WITCH LEADERBOARD ══════════════ */
+.season-banner{background:#160d26;transition:background .3s,border-color .3s,box-shadow .3s}
+.halloween-banner-video,.witch-web,.witch-pumpkin{display:none}
+body.halloween-theme{background:#10091a;background-image:radial-gradient(ellipse 90% 48% at 50% 0%,#32104d 0%,#180b28 45%,#10091a 78%)}
+body.halloween-theme .main{padding-top:calc(var(--safe-top) + 34px)}
+body.halloween-theme .season-banner{height:218px;background:linear-gradient(135deg,#2a0b45,#12071f 75%);border-color:rgba(168,85,247,.35);box-shadow:0 12px 34px rgba(93,31,130,.36),inset 0 1px 0 rgba(255,255,255,.06)}
+body.halloween-theme .default-banner-art{display:none}
+body.halloween-theme .halloween-banner-video{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1}
+body.halloween-theme .season-banner:after{content:'';position:absolute;inset:0;z-index:2;background:linear-gradient(180deg,rgba(20,4,31,.04),rgba(15,4,25,.32));pointer-events:none}
+body.halloween-theme .season-banner-label{z-index:6;background:rgba(30,8,48,.62);border:1px solid rgba(192,132,252,.2)}
+body.halloween-theme .season-wait{background:linear-gradient(135deg,#6d28a9,#4c1d75);border:1px solid rgba(216,180,254,.14);box-shadow:0 8px 22px rgba(91,33,128,.2)}
+body.halloween-theme .leaders-list,body.halloween-theme .podium{background:rgba(48,17,67,.5);border-color:rgba(168,85,247,.18);box-shadow:0 10px 30px rgba(30,6,44,.28)}
+body.halloween-theme .leader-item + .leader-item,body.halloween-theme .podium-slot + .podium-slot{border-top-color:rgba(192,132,252,.12)}
+body.halloween-theme .leader-prize,body.halloween-theme .podium-prize{background:rgba(126,34,206,.12);border-color:rgba(192,132,252,.22)}
+body.halloween-theme .leader-name,body.halloween-theme .podium-name{color:#fff}
+body.halloween-theme .leader-level,body.halloween-theme .leader-turnover,body.halloween-theme .podium-sub-item{color:rgba(243,232,255,.72)}
+body.halloween-theme .leader-rank{color:rgba(233,213,255,.52)}
+body.halloween-theme .bnav-item.active{background:rgba(168,85,247,.13);color:#c084fc}
+body.halloween-theme .bottom-nav{background:rgba(25,10,35,.96);border-color:rgba(192,132,252,.12)}
+body.halloween-theme .witch-web{display:block;position:absolute;z-index:5;pointer-events:none;width:115px;height:115px;opacity:.8}
+.witch-web-a{left:-18px;top:-20px;transform:rotate(15deg);background:radial-gradient(circle at 0 0,transparent 0 18px,rgba(255,255,255,.2) 19px 20px,transparent 21px 32px,rgba(255,255,255,.16) 33px 34px,transparent 35px 47px,rgba(255,255,255,.13) 48px 49px,transparent 50px),linear-gradient(25deg,transparent 47%,rgba(255,255,255,.16) 48% 49%,transparent 50%),linear-gradient(65deg,transparent 47%,rgba(255,255,255,.16) 48% 49%,transparent 50%),linear-gradient(105deg,transparent 47%,rgba(255,255,255,.16) 48% 49%,transparent 50%),linear-gradient(145deg,transparent 47%,rgba(255,255,255,.16) 48% 49%,transparent 50%)}
+.witch-web-b{right:-20px;bottom:-24px;transform:rotate(195deg) scale(.9)}
+body.halloween-theme .witch-pumpkin{display:block;position:absolute;z-index:5;width:44px;height:34px;border-radius:45% 45% 42% 42%;background:linear-gradient(90deg,#ff7a18 0 18%,#ff982b 19% 38%,#ff7a18 39% 58%,#ff982b 59% 78%,#ff7a18 79%);box-shadow:inset -5px -5px 9px rgba(89,20,0,.22),0 5px 14px rgba(0,0,0,.35);transform-origin:center bottom;pointer-events:none}
+body.halloween-theme .witch-pumpkin:before{content:'';position:absolute;width:9px;height:8px;left:18px;top:-5px;border-radius:5px 5px 2px 2px;background:#5d8f35;transform:rotate(-8deg)}
+body.halloween-theme .witch-pumpkin:after{content:'••';position:absolute;left:10px;top:7px;color:#321021;font-size:17px;font-weight:1000;letter-spacing:7px;line-height:12px;transform:scaleX(1.15)}
+body.halloween-theme .witch-pumpkin span{position:absolute;left:9px;bottom:5px;width:27px;height:9px;border-bottom:3px solid #321021;border-radius:0 0 50% 50%;z-index:2}
+body.halloween-theme .pumpkin-a{left:12px;bottom:13px;transform:rotate(-9deg) scale(.92)}
+body.halloween-theme .pumpkin-b{right:15px;top:16px;transform:rotate(9deg) scale(.72)}
+body.halloween-theme .pumpkin-c{right:62px;bottom:9px;transform:rotate(-3deg) scale(.52);opacity:.9}
+body.halloween-theme .page-title{color:#f3e8ff;text-shadow:0 0 18px rgba(192,132,252,.22)}
+body.halloween-theme .page-desc{color:rgba(233,213,255,.55)}
+body.halloween-theme .season-timer{color:#d8b4fe;background:rgba(168,85,247,.1);border-color:rgba(192,132,252,.25)}
+@media(max-width:380px){body.halloween-theme .season-banner{height:190px}}
 </style>
 </head>
 <body>
 
 <main class="main">
-    <div class="season-banner">
-        <dotlottie-player src="https://cdn.giftup.cc/dotlottie/others/pepe_leaderboard.lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
+    <div class="season-banner" id="seasonBanner">
+        <dotlottie-player class="default-banner-art" src="https://cdn.giftup.cc/dotlottie/others/pepe_leaderboard.lottie" background="transparent" speed="1" loop autoplay></dotlottie-player>
+        <video class="halloween-banner-video" id="halloweenBannerVideo" src="/static/top_witch.mp4" autoplay muted loop playsinline preload="auto"></video>
+        <div class="witch-web witch-web-a"></div>
+        <div class="witch-web witch-web-b"></div>
+        <div class="witch-pumpkin pumpkin-a"><span></span></div>
+        <div class="witch-pumpkin pumpkin-b"><span></span></div>
+        <div class="witch-pumpkin pumpkin-c"><span></span></div>
         <div class="season-banner-label">завершено</div>
     </div>
     <div class="season-wait"><span id="season-wait-text">Ожидание перезапуска</span></div>
@@ -1022,6 +1062,10 @@ async function loadLeaderboard(){
         var res = await fetch('/api/leaderboard');
         var data = await res.json();
         _lbData = data;
+        var halloween = !!(data.success && data.config && data.config.halloween_mode);
+        document.body.classList.toggle('halloween-theme', halloween);
+        var witchVideo = $('halloweenBannerVideo');
+        if (witchVideo) { if (halloween) { witchVideo.play().catch(function(){}); } else { witchVideo.pause(); } }
 
         if(!data.success || !data.active){
             $('podium').innerHTML = '';
