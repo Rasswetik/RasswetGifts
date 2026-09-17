@@ -1243,6 +1243,25 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
 .halloween-decor .mist{position:absolute;inset:0;background:radial-gradient(500px 260px at 50% 10%,rgba(171,96,255,.10),transparent 70%),radial-gradient(380px 240px at 50% 90%,rgba(120,50,170,.08),transparent 70%)}
 @media(max-width:700px){.halloween-decor .web{width:120px;height:120px;opacity:.16}.halloween-decor .pumpkin{font-size:30px;opacity:.30}.halloween-decor .p3,.halloween-decor .p4{font-size:26px}.case-detail-image{height:215px!important}}
 </style>
+
+<style id="case-open-behavior-v11">
+/* При открытии кейса скрываются только PNG кейса и его название. Остальной интерфейс остаётся на месте. */
+.case-detail.spinning #caseDetailImage{visibility:hidden!important}
+.case-detail.spinning #caseDetailTitle{visibility:hidden!important}
+.case-detail.spinning #caseDetailPrice{visibility:visible!important}
+.case-detail.spinning #caseOpenControls{display:block!important}
+.case-detail.spinning #sliderWrap{display:block!important}
+.case-detail.spinning #qtyRow{display:flex!important}
+.case-detail.spinning #contentsSection{display:block!important}
+</style>
+
+<style id="mobile-layout-v11">
+@media(max-width:700px){
+  #mainApp{padding-top:calc(25px + 10vh)!important;transform:none!important}
+  .page{padding-top:calc(25px + 10vh)!important}
+  .top-bar{z-index:20}
+}
+</style>
 </head>
 <body><div class="halloween-decor" aria-hidden="true"><div class="mist"></div>
 <svg class="web tl" viewBox="0 0 200 200" fill="none"><path d="M0 0Q100 18 200 0M0 0Q18 100 0 200M0 0L200 200M40 0L200 160M0 40L160 200M80 0L200 120M0 80L120 200M120 0L200 80M0 120L80 200" stroke="white" stroke-width="1.5"/><path d="M28 28Q100 52 172 28M28 28Q52 100 28 172M58 58Q100 76 142 58M58 58Q76 100 58 142" stroke="white"/></svg>
@@ -1325,7 +1344,7 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
     </button>
 
     <div class="account">
-        <div class="balance" aria-label="Баланс">
+        <div class="balance" aria-label="Баланс GRAM">
             <img src="/static/img/ton.png" alt="">
             <span class="balance-value" id="balVal">0.00</span>
         </div>
@@ -1471,7 +1490,7 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
                     <div class="modal-win-badge">Вы выиграли!</div>
                     <img class="modal-win-img" id="modalWinImg" src="/static/img/gift.png" alt="">
                     <div class="modal-win-name" id="modalWinName">Подарок</div>
-                    <div class="modal-win-value"><img src="/static/img/ton.png" alt=""><span>0.00</span> TON</div>
+                    <div class="modal-win-value"><img src="/static/img/ton.png" alt=""><span>0.00</span> GRAM</div>
                     <div class="modal-win-btns">
                         <button class="modal-win-btn primary" onclick="openAgain()">Ещё раз</button>
                         <button class="modal-win-btn" onclick="closeModalAndReset()">Закрыть</button>
@@ -1493,7 +1512,7 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
             </div>
             <div class="deposit-methods">
                 <button class="deposit-method-btn" onclick="closeDeposit();openTonDeposit()">
-                    <img src="/static/img/ton.png" alt="TON" onerror="this.src='/static/img/plus.png'">
+                    <img src="/static/img/ton.png" alt="GRAM" onerror="this.src='/static/img/plus.png'">
                     <span>TON</span>
                 </button>
                 <button class="deposit-method-btn" id="starsDepositBtn" onclick="closeDeposit();openStarsDeposit()">
@@ -1513,7 +1532,7 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
             </div>
             <div class="stars-deposit-body">
                 <img class="stars-deposit-icon" src="/static/img/star.png" alt="Stars">
-                <div class="stars-deposit-label">Введите количество Stars<br>100 Stars = 1 TON</div>
+                <div class="stars-deposit-label">Введите количество Stars<br>100 Stars = 1 GRAM</div>
                 <div class="stars-deposit-input-wrap">
                     <input type="number" class="stars-deposit-input" id="starsDepositAmount" placeholder="100" min="1" max="10000" value="100">
                 </div>
@@ -1729,7 +1748,14 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
             const auth = await telegramAuth();
             if (auth && auth.id) {
                 userId = auth.id;
+                const tgUser = auth.user || auth.telegram_user || auth;
+                const photo = tgUser && (tgUser.photo_url || tgUser.photoUrl);
+                if (photo && $('avatarImg')) $('avatarImg').src = photo;
             }
+            try {
+                const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+                if (tgUser && tgUser.photo_url && $('avatarImg')) $('avatarImg').src = tgUser.photo_url;
+            } catch(e) {}
 
             // URL param fallback for dev testing
             if (!userId) {
@@ -2316,9 +2342,9 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
             isOpening = true;
             $('caseDetail').classList.add('spinning');
             $('rouletteWrap').style.display = 'block';
-            $('contentsSection').style.display = 'none';
+            $('contentsSection').style.display = 'block';
             $('caseDetailImage').style.visibility = 'hidden';
-            $('caseDetailPrice').style.visibility = 'hidden';
+            $('caseDetailTitle').style.visibility = 'hidden';
             const btn = $('openCaseBtn');
             if (btn) { btn.disabled = true; btn.textContent = 'Открываем…'; }
             document.querySelectorAll('.qty-btn').forEach(b => b.classList.add('locked'));
@@ -2361,7 +2387,7 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
                 $('rouletteWrap').style.display = 'none';
                 $('contentsSection').style.display = 'block';
                 $('caseDetailImage').style.visibility = 'visible';
-                $('caseDetailPrice').style.visibility = 'visible';
+                $('caseDetailTitle').style.visibility = 'visible';
                 if (btn) { btn.disabled = false; btn.textContent = 'Открыть кейс'; }
                 document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('locked'));
             }
@@ -2553,9 +2579,9 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
 
         function showMultiWinResult(giftsArr) {
             $('rouletteWrap').classList.add('won');
-            $('sliderWrap').style.display = 'none';
-            $('contentsSection').style.display = 'none';
-            $('qtyRow').style.display = 'none';
+            $('sliderWrap').style.display = 'block';
+            $('contentsSection').style.display = 'block';
+            $('qtyRow').style.display = 'flex';
             
             if (!_originalModalWinHTML) _originalModalWinHTML = $('modalWin').innerHTML;
             
@@ -2568,11 +2594,11 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
                         ${giftsArr.map(g => `
                             <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:8px;width:80px;text-align:center;">
                                 <img src="${getGiftImage(g)}" style="width:50px;height:50px;object-fit:contain;" onerror="this.src='/static/img/gift.png'">
-                                <div style="font-size:11px;color:#fff;margin-top:4px;">${formatTon(getGiftPrice(g))} TON</div>
+                                <div style="font-size:11px;color:#fff;margin-top:4px;">${formatTon(getGiftPrice(g))} GRAM</div>
                             </div>
                         `).join('')}
                     </div>
-                    <div style="color:#4ADE80;font-size:16px;font-weight:600;">Итого: ${formatTon(totalValue)} TON</div>
+                    <div style="color:#4ADE80;font-size:16px;font-weight:600;">Итого: ${formatTon(totalValue)} GRAM</div>
                     <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;">
                         <button onclick="openAgain()" style="flex:1;max-width:140px;padding:10px;background:#3b82f6;border:none;border-radius:10px;color:white;font-size:14px;cursor:pointer;">Ещё раз</button>
                         <button onclick="closeModalAndReset()" style="flex:1;max-width:140px;padding:10px;background:rgba(255,255,255,0.08);border:none;border-radius:10px;color:white;font-size:14px;cursor:pointer;">Закрыть</button>
@@ -2586,9 +2612,9 @@ body:before{opacity:.30;background-image:linear-gradient(rgba(110,145,189,.07) 1
         function showWinResultInModal(gift) {
             // Show won state
             $('rouletteWrap').classList.add('won');
-            $('sliderWrap').style.display = 'none';
-            $('contentsSection').style.display = 'none';
-            $('qtyRow').style.display = 'none';
+            $('sliderWrap').style.display = 'block';
+            $('contentsSection').style.display = 'block';
+            $('qtyRow').style.display = 'flex';
             
             // Show win section in modal
             $('modalWinImg').src = getGiftImage(gift);
