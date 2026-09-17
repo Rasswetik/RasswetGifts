@@ -2716,7 +2716,7 @@ EVENT_DEFAULTS = {
         'enabled': True, 'ends_at': None,
         'sections': [
             {'id':'special_mode','title':'Особый режим','type':'mode','items':[
-                {'id':'ghost_road_mode','name':'Ghost Road','image':'/static/img/ghost_road.png','path':'/event/ghost-road','visible':True}
+                {'id':'ghost_road_mode','name':'Ghost Road','subtitle':'','image':'/static/img/ghost_road.png','path':'/event/ghost-road','size':'small','visible':True}
             ]},
             {'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[]},
             {'id':'market','title':'Маркет','type':'market','items':[]}
@@ -2728,7 +2728,7 @@ EVENT_DEFAULTS = {
         'enabled': False, 'ends_at': None,
         'halloween_mode': False, 'change_leaderboard': False, 'event_button_visible': True,
         'sections': [
-            {'id':'special_mode','title':'Особые режимы','type':'mode','items':[{'id':'ghost_road_mode','name':'Ghost Road','image':'/static/img/ghost_road.png','path':'/event/witch-hat-party?mode=ghost-road','visible':True,'mandatory':True,'unlock_at':None}]},
+            {'id':'special_mode','title':'Особые режимы','type':'mode','items':[{'id':'ghost_road_mode','name':'Ghost Road','subtitle':'','image':'/static/img/ghost_road.png','path':'/event/witch-hat-party?mode=ghost-road','size':'small','visible':True,'mandatory':True,'unlock_at':None}]},
             {'id':'event_cases','title':'Особые кейсы','type':'cases','case_ids':[]},
             {'id':'market','title':'Купить подарок','type':'market','items':[]}
         ]
@@ -2775,7 +2775,9 @@ def _normalize_witch_event_structure(obj):
         'id':'ghost_road_mode',
         'name':str(existing.get('name') or 'Ghost Road'),
         'image':str(existing.get('image') or '/static/img/ghost_road.png'),
+        'subtitle':str(existing.get('subtitle') or '').strip(),
         'path':str(existing.get('path') or '/event/witch-hat-party?mode=ghost-road'),
+        'size':(str(existing.get('size') or 'small').strip().lower() if str(existing.get('size') or 'small').strip().lower() in ('small','medium','high') else 'small'),
         'visible':bool(existing.get('visible', True)),
         'mandatory':True,
         'unlock_at':existing.get('unlock_at')
@@ -9000,8 +9002,11 @@ def admin_events():
                     if item is None:
                         item={'id':'ghost_road_mode','mandatory':True}; mode['items'].insert(0,item)
                     item['name']=str(sm.get('name') or 'Ghost Road').strip()
+                    item['subtitle']=str(sm.get('subtitle') or item.get('subtitle') or '').strip()
                     item['image']=str(sm.get('image') or '/static/img/ghost_road.png').strip()
                     item['path']=str(sm.get('path') or '/event/witch-hat-party?mode=ghost-road').strip()
+                    sz=str(sm.get('size') or item.get('size') or 'small').strip().lower()
+                    item['size']=sz if sz in ('small','medium','high') else 'small'
                     item['visible']=bool(sm.get('visible',True))
                     unlock=sm.get('unlock_at')
                     if unlock:
@@ -17533,7 +17538,7 @@ def admin_upload_event_mode_image():
         if not file or not file.filename:
             return jsonify({'success':False,'error':'Файл не выбран'}),400
         if not allowed_file(file.filename):
-            return jsonify({'success':False,'error':'Разрешены PNG, JPG, JPEG, GIF, WEBP'}),400
+            return jsonify({'success':False,'error':'Разрешены PNG, JPG, JPEG, GIF, WEBP, SVG'}),400
         ext=os.path.splitext(file.filename)[1].lower() or '.png'
         fname='event_mode_'+secrets.token_hex(8)+ext
         save_dir=os.path.join(BASE_PATH,'static','img','event')
