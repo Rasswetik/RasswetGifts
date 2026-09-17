@@ -3230,4 +3230,65 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
         });
     </script>
 </body>
-</html>
+</html><style id="final-case-layout-v17">
+/* Final desktop layout: use the whole viewport, not the old 480px mobile width. */
+@media (min-width:701px){
+  .main#mainApp{
+    width:calc(100% - 64px)!important;
+    max-width:1700px!important;
+    margin-left:auto!important;
+    margin-right:auto!important;
+    padding-left:0!important;
+    padding-right:0!important;
+  }
+  #casesContainer .cases{width:100%!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:18px!important}
+  #casesContainer .case{width:100%!important}
+}
+/* Halloween case cards inherit the Games purple treatment. */
+.halloween-active #casesContainer .case-inner{
+  background:linear-gradient(155deg,#42205a 0%,#24112f 100%)!important;
+  border:1px solid rgba(196,132,252,.24)!important;
+  box-shadow:0 14px 36px rgba(61,20,86,.25),inset 0 1px rgba(255,255,255,.05)!important;
+}
+.halloween-active #casesContainer .case-price{background:rgba(139,92,246,.20)!important;border-color:rgba(196,132,252,.20)!important}
+
+/* Mobile cases: lower the page/header by exactly four viewport-percent points. */
+@media(max-width:700px){
+  .header{margin-top:calc(env(safe-area-inset-top,20px) + 10vh)!important}
+  .main#mainApp{padding-top:8px!important}
+
+  /* Case modal opens as a controlled bottom sheet instead of occupying the whole screen. */
+  #caseModal .modal.case-detail{
+    top:auto!important;bottom:0!important;left:50%!important;
+    width:100%!important;height:calc(94dvh - env(safe-area-inset-top,0px))!important;
+    max-height:94dvh!important;border-radius:22px 22px 0 0!important;
+    transform:translateX(-50%) translateY(105%)!important;
+    overflow:hidden!important;
+    background:#101727!important;
+    border:1px solid rgba(120,155,200,.14)!important;
+    box-shadow:0 -18px 60px rgba(0,0,0,.48)!important;
+  }
+  #caseModal.open .modal.case-detail{transform:translateX(-50%) translateY(0)!important}
+  #caseModal .modal-scroll{height:100%!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))!important}
+  #caseModal .modal-hdr{position:sticky!important;top:0!important}
+
+  /* One predictable order: controls -> tape -> drop. */
+  #caseModal .case-detail:not(.spinning) .case-open-controls{display:flex!important;flex-direction:column!important}
+  #caseModal .case-detail:not(.spinning) #rouletteWrap{display:none!important}
+  #caseModal .case-detail.spinning .case-detail-hero,
+  #caseModal .case-detail.spinning .case-open-controls,
+  #caseModal .case-detail.spinning .promo-input-wrap{display:none!important}
+  #caseModal .case-detail.spinning #rouletteWrap{order:2!important;margin:0 -11px 10px!important;height:108px!important;min-height:108px!important;overflow:hidden!important}
+  #caseModal .case-detail.spinning #contentsSection{order:3!important;margin:0!important}
+  #caseModal .case-detail.spinning #modalWin{order:4!important}
+
+  /* Avoid a giant horizontal tape / accidental overflow. */
+  #caseModal .roulette-track{gap:6px!important;max-width:none!important}
+  #caseModal .roulette-item{flex:0 0 88px!important;width:88px!important;height:96px!important}
+  #caseModal .roulette-multi-rows{gap:4px!important;overflow:hidden!important}
+  #caseModal .roulette-row{max-width:100%!important;overflow:hidden!important}
+
+  /* Keep prices readable on small screens. */
+  #caseModal .case-detail-price,#caseModal .modal-price{font-variant-numeric:tabular-nums;white-space:nowrap!important}
+}
+</style>
