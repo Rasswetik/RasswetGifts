@@ -48,6 +48,9 @@
 }
 </style>
 
+<style id="event-special-mode-v4">
+.special-mode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.special-mode-card{position:relative;min-height:170px;border-radius:20px;overflow:hidden;border:1px solid rgba(179,108,255,.28);background:linear-gradient(145deg,#171329,#0d0b18);text-align:left;cursor:pointer;box-shadow:0 16px 38px rgba(0,0,0,.25);transition:transform .18s ease,border-color .18s ease}.special-mode-card:hover{transform:translateY(-2px);border-color:rgba(209,153,255,.5)}.special-mode-card:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 78% 18%,rgba(179,108,255,.28),transparent 42%),linear-gradient(110deg,rgba(8,5,18,.94),rgba(25,13,39,.35));z-index:0}.special-mode-card img{position:absolute;right:5%;bottom:-7px;width:175px;height:175px;object-fit:contain;z-index:1;filter:drop-shadow(0 14px 24px rgba(0,0,0,.48))}.special-mode-copy{position:absolute;left:18px;bottom:18px;z-index:2;max-width:62%}.special-mode-name{font-size:21px;font-weight:950;letter-spacing:-.4px}.special-mode-sub{margin-top:5px;font-size:10px;color:rgba(255,255,255,.52);font-weight:800;text-transform:uppercase;letter-spacing:.7px}.special-mode-badge{display:inline-flex;margin-bottom:7px;padding:5px 8px;border-radius:8px;background:rgba(179,108,255,.14);border:1px solid rgba(179,108,255,.2);color:#e6c9ff;font-size:9px;font-weight:900}@media(max-width:700px){.special-mode-grid{grid-template-columns:1fr}.special-mode-card{min-height:142px}.special-mode-card img{width:135px;height:135px}.special-mode-copy{left:14px;bottom:14px;max-width:64%}.special-mode-name{font-size:18px}}
+</style>
 <style id="event-interaction-v3">
 .event-market-note{font-size:10px;color:rgba(255,255,255,.38);margin-top:6px}
 .event-modal{position:fixed;inset:0;z-index:5000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);opacity:0;visibility:hidden;transition:.2s}
@@ -93,14 +96,42 @@ function casePrice(c){
 }
 function renderSections(sections){
   const root=$('content');root.innerHTML='';let delay=0;
-  for(const sec of (sections||[])){
+  const list=Array.isArray(sections)?sections.slice():[];
+  // Event page always starts with its special modes. Ghost Road is a mode of Witch Hat Party,
+  // not a separate event/page.
+  if(!list.some(function(x){return x&&x.type==='mode';})){
+    list.unshift({id:'special_mode',title:'Особые режимы',type:'mode',items:[{id:'ghost_road_mode',name:'Ghost Road',image:'/static/img/ghost_road.png',path:'/event/witch-hat-party?mode=ghost-road',visible:true}]});
+  }else{
+    var modeSec=list.find(function(x){return x&&x.type==='mode'});
+    if(modeSec){modeSec.title='Особые режимы';modeSec.items=Array.isArray(modeSec.items)?modeSec.items:[];
+      if(!modeSec.items.some(function(x){return x&&x.id==='ghost_road_mode'})) modeSec.items.unshift({id:'ghost_road_mode',name:'Ghost Road',image:'/static/img/ghost_road.png',path:'/event/witch-hat-party?mode=ghost-road',visible:true});
+    }
+  }
+  // Keep only the intended Event order: special modes -> cases -> market -> other configured sections.
+  list.sort(function(a,b){var rank=function(x){var t=String(x&&x.type||'');return t==='mode'?0:(t==='cases'?1:(t==='market'?2:3))};return rank(a)-rank(b)});
+  for(const sec of list){
+    if(!sec || sec.visible===false) continue;
     const wrap=document.createElement('section');wrap.className='section fade-up';wrap.style.animationDelay=(delay++)*60+'ms';
     const h=document.createElement('div');h.className='section-head';h.innerHTML='<div class="section-title"></div>';h.querySelector('.section-title').textContent=sec.title||'Раздел';wrap.appendChild(h);
     const grid=document.createElement('div');
-    if(sec.type==='cases'){
+    if(sec.type==='mode'){
+      grid.className='special-mode-grid';
+      const items=(sec.items||[]).filter(function(x){return x&&x.visible!==false});
+      if(!items.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Особые режимы пока не добавлены</div>'}
+      items.forEach(function(it){
+        const card=document.createElement('button');card.type='button';card.className='special-mode-card';
+        card.innerHTML='<img loading="lazy"><div class="special-mode-copy"><span class="special-mode-badge">УНИКАЛЬНОЕ СОБЫТИЕ</span><div class="special-mode-name"></div><div class="special-mode-sub">Особый режим Witch Hat Party</div></div>';
+        card.querySelector('img').src=imgSrc(it.image||'/static/img/ghost_road.png');card.querySelector('.special-mode-name').textContent=it.name||'Ghost Road';
+        card.onclick=function(){
+          const path=String(it.path||'').trim();
+          if(path) location.href=path;
+        };
+        grid.appendChild(card);
+      });
+    }else if(sec.type==='cases'){
       grid.className='cards';
       const ids=(sec.case_ids||[]).map(String);
-      if(!ids.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Кейсы пока не добавлены</div>';}
+      if(!ids.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Кейсы события пока не добавлены</div>';}
       else Promise.all(ids.map(caseApi)).then(ds=>{
         grid.innerHTML='';
         ds.forEach(function(d){
@@ -111,9 +142,9 @@ function renderSections(sections){
           card.onclick=function(){location.href='/cases?case='+encodeURIComponent(c.slug||c.id)};
           grid.appendChild(card);
         });
-        if(!grid.children.length)grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить кейсы</div>';
-      }).catch(function(){grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить кейсы</div>'});
-    }else{
+        if(!grid.children.length)grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить кейсы события</div>';
+      }).catch(function(){grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить кейсы события</div>'});
+    }else if(sec.type==='market'){
       grid.className='market-grid';
       fetch('/api/events/witch-hat-party/market?ts='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
         grid.innerHTML='';const items=d.items||[];
@@ -125,10 +156,13 @@ function renderSections(sections){
           card.onclick=function(){openEventGiftModal(it)};grid.appendChild(card);
         });
       }).catch(function(){grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить маркет</div>'});
+    }else{
+      grid.className='market-grid';
     }
     wrap.appendChild(grid);root.appendChild(wrap);
   }
 }
+
 function openEventGiftModal(item){
   var overlay=$('eventGiftModal');if(!overlay)return;
   overlay.dataset.url=item.url||item.gift_url||'';overlay.dataset.item=JSON.stringify(item);
