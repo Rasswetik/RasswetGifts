@@ -308,6 +308,9 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 .event-theme-toggle{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 14px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035);cursor:pointer}
 .event-theme-toggle span{display:flex;flex-direction:column;gap:3px;min-width:0}.event-theme-toggle b{font-size:13px;color:#fff}.event-theme-toggle small{font-size:10px;color:rgba(255,255,255,.42);line-height:1.35}
 .event-theme-toggle input{position:absolute;opacity:0;pointer-events:none}.event-theme-toggle i{width:46px;height:26px;border-radius:99px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.08);position:relative;flex:0 0 46px;transition:.2s}.event-theme-toggle i:after{content:'';position:absolute;width:20px;height:20px;left:2px;top:2px;border-radius:50%;background:#aaa;transition:.2s;box-shadow:0 2px 6px rgba(0,0,0,.3)}.event-theme-toggle input:checked+i{background:linear-gradient(135deg,#7c3aed,#c026d3);border-color:rgba(192,38,211,.55)}.event-theme-toggle input:checked+i:after{left:22px;background:#fff}
+<style id="event-button-admin-v3">
+.mode-items-admin{display:flex;flex-direction:column;gap:10px;margin-top:12px}.mode-item-admin{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.025)}.mode-item-grid{display:grid;grid-template-columns:64px 1fr 1fr 120px;gap:9px;align-items:end}.mode-item-grid .full{grid-column:1/-1}.mode-item-preview{width:64px;height:64px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.18)}.mode-item-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:9px;flex-wrap:wrap}.mode-item-actions .btn{min-width:80px}.mode-empty-admin{padding:12px;border-radius:12px;background:rgba(255,255,255,.025);color:rgba(255,255,255,.45);font-size:11px}.mode-add-box{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07)}@media(max-width:700px){.mode-item-grid{grid-template-columns:56px 1fr}.mode-item-preview{width:56px;height:56px}.mode-item-grid .full{grid-column:1/-1}}
+</style>
 <style id="games-ui-admin-v1">
 .games-ui-list{display:flex;flex-direction:column;gap:12px}.games-ui-section{border:1px solid rgba(255,255,255,.08);border-radius:16px;background:rgba(255,255,255,.025);padding:14px}.games-ui-section.mandatory{border-color:rgba(168,85,247,.35);box-shadow:0 8px 28px rgba(70,30,100,.12)}.games-ui-head{display:flex;align-items:center;gap:10px}.games-ui-head strong{font-size:14px;flex:1}.games-ui-fields{display:grid;grid-template-columns:1fr 110px 110px;gap:8px;margin-top:10px}.games-ui-items{display:flex;flex-direction:column;gap:8px;margin-top:10px}.games-ui-item{display:grid;grid-template-columns:48px 1fr 150px auto;gap:9px;align-items:center;padding:9px;border-radius:12px;background:rgba(255,255,255,.035)}.games-ui-item img{width:48px;height:48px;object-fit:contain;border-radius:10px;background:rgba(0,0,0,.16)}.games-ui-item .mini{font-size:10px;color:rgba(255,255,255,.45);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.games-ui-lock{display:flex;align-items:center;gap:7px;font-size:11px;color:#b9c5d8}.games-ui-lock input{accent-color:#8b5cf6}.games-ui-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.games-ui-note{font-size:11px;color:rgba(255,255,255,.48);line-height:1.45;margin-top:8px}@media(max-width:700px){.games-ui-fields{grid-template-columns:1fr}.games-ui-item{grid-template-columns:42px 1fr;}.games-ui-item .item-controls{grid-column:1/-1}.games-ui-item img{width:42px;height:42px}}
 </style>
@@ -328,6 +331,8 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 .case-gift-chance{width:92px;flex:0 0 92px}.case-gift-chance label{display:block;font-size:10px;color:rgba(255,255,255,.5);font-weight:800;margin:0 0 4px}.case-gift-chance input{width:100%;box-sizing:border-box;padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.10);background:rgba(0,0,0,.22);color:#fff;font:700 12px inherit;outline:none}.case-gift-chance input:focus{border-color:rgba(168,85,247,.55);box-shadow:0 0 0 3px rgba(168,85,247,.08)}
 @media(max-width:700px){.case-gift-row{gap:7px}.case-gift-chance{width:78px;flex-basis:78px}.case-gift-del{align-self:center}}
 </style>
+
+<style id="event-legacy-mode-hide-v1">#eventSpecialModeName,#eventSpecialModeImage,#eventSpecialModePath,#eventSpecialModeVisible,#eventSpecialModeUnlockHours{display:none!important}</style>
 </head>
 <body>
 
@@ -1153,12 +1158,10 @@ function renderEventSections(events){
  box.innerHTML=sections.map(function(sec){
    var content=''; var sid=String(sec.id||'');
    if(sec.type==='mode'){
-     var item=(sec.items||[]).find(function(x){return x&&x.id==='ghost_road_mode'}) || (sec.items||[])[0] || {};
-     content='<div class="event-editor-grid" style="margin-top:10px">'+
-       '<div class="form-group"><label class="form-label">Название</label><input class="form-input ev-mode-name" value="'+escapeHtml(item.name||'Ghost Road')+'"></div>'+
-       '<div class="form-group"><label class="form-label">PNG</label><input class="form-input ev-mode-image" value="'+escapeHtml(item.image||'/static/img/ghost_road.png')+'"></div>'+
-       '<div class="form-group"><label class="form-label">Путь</label><input class="form-input ev-mode-path" value="'+escapeHtml(item.path||'/event/witch-hat-party?mode=ghost-road')+'"></div></div>'+
-       '<label class="event-mode-switch" style="margin-top:8px"><span><b>Показывать режим</b><small>Режим можно скрыть, но удалить нельзя</small></span><input class="ev-mode-visible" type="checkbox" '+(item.visible!==false?'checked':'')+'><span class="event-switch"></span></label>';
+     var modeItems=Array.isArray(sec.items)?sec.items:[];
+     content='<div class="event-sub" style="margin-top:6px">Здесь можно самостоятельно создавать любые кнопки: заголовок, подпись, изображение, внутренний путь и размер.</div>'+
+       '<div class="mode-items-admin">'+(modeItems.length?modeItems.map(function(it){return modeItemEditorHtml(it,sid);}).join(''):'<div class="mode-empty-admin">Кнопок пока нет</div>')+'</div>'+
+       '<div class="mode-add-box"><button class="btn btn-primary btn-sm mode-add-item" data-section-id="'+escapeHtml(sid)+'">+ Добавить кнопку</button></div>';
    } else if(sec.type==='cases'){
      var ids=sec.case_ids||[];
      content='<div class="event-section-tools"><button class="btn btn-primary btn-sm event-add-case" data-section-id="'+escapeHtml(sid)+'">+ Добавить кейс</button></div>'+
@@ -1173,6 +1176,9 @@ function renderEventSections(events){
  box.querySelectorAll('.event-add-case').forEach(function(b){b.onclick=function(){addEventCase(b.dataset.sectionId)}});
  box.querySelectorAll('.event-remove-case').forEach(function(b){b.onclick=function(){var row=b.closest('.event-case-admin');removeEventCase(row.dataset.sectionId,row.dataset.caseId)}});
  box.querySelectorAll('.event-remove-section').forEach(function(b){b.onclick=function(){removeEventSection(b.dataset.sectionId)}});
+ box.querySelectorAll('.mode-add-item').forEach(function(b){b.onclick=function(){addModeButton(b.dataset.sectionId)}});
+ box.querySelectorAll('.mode-edit-item').forEach(function(b){b.onclick=function(){editModeButton(b.dataset.sectionId,b.dataset.itemId)}});
+ box.querySelectorAll('.mode-remove-item').forEach(function(b){b.onclick=function(){removeModeButton(b.dataset.sectionId,b.dataset.itemId)}});
  box.querySelectorAll('.event-remove-gift').forEach(function(b){b.onclick=function(){if(b.dataset.giftUrl)removeEventGift(b.dataset.giftUrl);else removeEventMarket(b.dataset.fragmentSlug)}});
  box.querySelectorAll('.event-case-admin[data-case-id]').forEach(function(row){
    var id=row.dataset.caseId;var url=(id==='seasonal')?'/api/cases/by-slug/seasonal':'/api/cases/'+encodeURIComponent(id);
@@ -1184,6 +1190,12 @@ function renderEventSections(events){
     }).catch(function(){});
  });
 }
+
+function modeItemEditorHtml(it,sid){var iid=String(it.id||'');return '<div class="mode-item-admin" data-section-id="'+escapeHtml(sid)+'" data-item-id="'+escapeHtml(iid)+'"><div class="mode-item-grid"><img class="mode-item-preview" src="'+escapeHtml(it.image||'/static/img/gift.png')+'" alt=""><div class="form-group"><label class="form-label">Заголовок</label><input class="form-input" value="'+escapeHtml(it.name||'')+'" disabled></div><div class="form-group"><label class="form-label">Подпись</label><input class="form-input" value="'+escapeHtml(it.subtitle||'')+'" disabled></div><div class="form-group"><label class="form-label">Размер</label><input class="form-input" value="'+escapeHtml(it.size||'medium')+'" disabled></div><div class="form-group full"><label class="form-label">Переход</label><input class="form-input" value="'+escapeHtml(it.path||'#')+'" disabled></div><div class="form-group full"><label class="form-label">Изображение</label><input class="form-input" value="'+escapeHtml(it.image||'')+'" disabled></div></div><div class="mode-item-actions"><span class="event-chip">'+(it.visible===false?'скрыта':'видна')+'</span><button type="button" class="btn btn-secondary btn-sm mode-edit-item" data-section-id="'+escapeHtml(sid)+'" data-item-id="'+escapeHtml(iid)+'">Изменить</button><button type="button" class="btn btn-danger btn-sm mode-remove-item" data-section-id="'+escapeHtml(sid)+'" data-item-id="'+escapeHtml(iid)+'">Удалить</button></div></div>'}
+function modeButtonPrompt(item){item=item||{};var name=prompt('Заголовок кнопки',item.name||'');if(name===null)return null;name=name.trim();if(!name){showToast('Заголовок обязателен','err');return null}var subtitle=prompt('Подпись под заголовком (можно пусто)',item.subtitle||'');if(subtitle===null)return null;var image=prompt('Путь к изображению, например /static/img/leaderboard.png',item.image||'');if(image===null)return null;var path=prompt('Внутренний путь, например /leaderboard',item.path||'/leaderboard');if(path===null)return null;var size=prompt('Размер: small / medium / large / full',item.size||'medium');if(size===null)return null;size=size.trim().toLowerCase();if(['small','medium','large','full'].indexOf(size)<0)size='medium';var visible=confirm('Показывать кнопку пользователям?');return{name:name,subtitle:subtitle.trim(),image:image.trim(),path:path.trim()||'#',size:size,visible:visible}}
+async function addModeButton(sectionId){var data=modeButtonPrompt(null);if(!data)return;try{await eventAdminPost(Object.assign({event_id:'witch_hat_party',action:'add_mode_item'},data));showToast('Кнопка добавлена','ok');loadEvents()}catch(e){showToast(e.message||'Ошибка','err')}}
+async function editModeButton(sectionId,itemId){var sec=(eventAdminData&&eventAdminData.sections||[]).find(function(x){return String(x.id)===String(sectionId)}),item=sec&&((sec.items||[]).find(function(x){return String(x.id)===String(itemId)}));if(!item)return;var data=modeButtonPrompt(item);if(!data)return;try{await eventAdminPost(Object.assign({event_id:'witch_hat_party',action:'update_mode_item',id:itemId},data));showToast('Кнопка сохранена','ok');loadEvents()}catch(e){showToast(e.message||'Ошибка','err')}}
+async function removeModeButton(sectionId,itemId){if(!confirm('Удалить эту кнопку?'))return;try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_mode_item',id:itemId});showToast('Кнопка удалена','ok');loadEvents()}catch(e){showToast(e.message||'Ошибка','err')}}
 
 async function loadEvents(){
  var status=$('witchEventStatus');
