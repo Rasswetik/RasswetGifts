@@ -2601,17 +2601,25 @@ def load_cases():
         return []
 
 def save_cases(cases):
-    """Сохраняет кейсы в JSON файл"""
+    """Надёжно сохраняет кейсы в data/cases.json."""
     try:
-        file_path = os.path.join(BASE_PATH, 'data', 'cases.json')
-
-        with open(file_path, 'w', encoding='utf-8') as f:
+        data_dir = os.path.join(BASE_PATH, 'data')
+        os.makedirs(data_dir, exist_ok=True)
+        file_path = os.path.join(data_dir, 'cases.json')
+        tmp_path = file_path + '.tmp'
+        with open(tmp_path, 'w', encoding='utf-8') as f:
             json.dump({'cases': cases}, f, ensure_ascii=False, indent=2)
-
-        logger.info(f"✅ Сохранено {len(cases)} кейсов")
+            f.flush()
+            try: os.fsync(f.fileno())
+            except Exception: pass
+        os.replace(tmp_path, file_path)
+        logger.info(f"✅ Сохранено {len(cases)} кейсов в {file_path}")
         return True
     except Exception as e:
-        logger.error(f"❌ Ошибка сохранения кейсов: {e}")
+        logger.error(f"❌ Ошибка сохранения кейсов: {e}", exc_info=True)
+        try:
+            if os.path.exists(file_path + '.tmp'): os.remove(file_path + '.tmp')
+        except Exception: pass
         return False
 
 
@@ -2757,9 +2765,21 @@ def _normalize_witch_event_structure(obj):
         special={'id':'special_mode','title':'Особые режимы','type':'mode','items':[]}
     items=special.get('items') if isinstance(special.get('items'), list) else []
     items=[x for x in items if isinstance(x,dict) and str(x.get('id'))!='ghost_road_mode']
-    existing=next((x for x in items if str(x.get('id'))=='ghost_road_mode'),None)
-    unlock_at=existing.get('unlock_at') if isinstance(existing,dict) else None
-    items.insert(0, {'id':'ghost_road_mode','name':'Ghost Road','image':'/static/img/ghost_road.png','path':'/event/witch-hat-party?mode=ghost-road','visible':True,'mandatory':True,'unlock_at':unlock_at})
+    # Preserve the administrator's visibility/name/image/path/unlock settings.
+    # The previous normalizer recreated the item with visible=True on every read,
+    # which made a hidden Ghost Road immediately reappear.
+    old_items = special.get('items') if isinstance(special.get('items'), list) else []
+    existing=next((x for x in old_items if isinstance(x,dict) and str(x.get('id'))=='ghost_road_mode'),None)
+    existing = existing if isinstance(existing,dict) else {}
+    items.insert(0, {
+        'id':'ghost_road_mode',
+        'name':str(existing.get('name') or 'Ghost Road'),
+        'image':str(existing.get('image') or '/static/img/ghost_road.png'),
+        'path':str(existing.get('path') or '/event/witch-hat-party?mode=ghost-road'),
+        'visible':bool(existing.get('visible', True)),
+        'mandatory':True,
+        'unlock_at':existing.get('unlock_at')
+    })
     special['id']='special_mode'; special['title']='Особые режимы'; special['type']='mode'; special['items']=items
     if cases is None:
         cases={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[]}
@@ -2920,7 +2940,7 @@ def _sync_event_cases(ev):
         for c in all_cases:
             section=str(c.get('section') or '').strip().lower()
             tags=[str(x).strip().lower() for x in (c.get('tags') or [])]
-            if section in ('event','witch_hat_party') or 'event' in tags or 'witch_hat_party' in tags:
+            if bool(c.get('event_case')) or section in ('event','witch_hat_party') or 'event' in tags or 'witch_hat_party' in tags:
                 auto_ids.append(str(c.get('id')))
         if not auto_ids: return False
         sections=ev.setdefault('sections',[])
@@ -2933,6 +2953,7 @@ def _sync_event_cases(ev):
         for cid in auto_ids:
             if cid not in ids: ids.append(cid); changed=True
         sec['case_ids']=ids
+        return changed
         return changed
     except Exception:
         return False
@@ -17014,7 +17035,7 @@ def admin_cases_management():
                 'image': image_url,
                 'cost': data['cost'],
                 'cost_type': data['cost_type'],
-                'section': normalize_section_id(data.get('section', 'other')),
+                'section': 'event' if data.get('event_case') else normalize_section_id(data.get('section', 'other')),
                 'required_level': data.get('required_level', 1),
                 'limited': data.get('limited', False),
                 'amount': data.get('amount', 0),
@@ -17027,7 +17048,8 @@ def admin_cases_management():
                 'promo': data.get('promo', False),
                 'time': data.get('time', '24H'),
                 'promo_codes': data.get('promo_codes', []),
-                'gifts': data.get('gifts', [])
+                'gifts': data.get('gifts', []),
+                'event_case': bool(data.get('event_case', False))
             }
 
             cases.append(new_case)
@@ -17079,7 +17101,7 @@ def admin_cases_management():
                 'image': image_url,
                 'cost': data['cost'],
                 'cost_type': data['cost_type'],
-                'section': normalize_section_id(data.get('section', cases[case_index].get('section', 'other'))),
+                'section': 'event' if data.get('event_case') else normalize_section_id(data.get('section', cases[case_index].get('section', 'other'))),
                 'required_level': data.get('required_level', 1),
                 'limited': data.get('limited', False),
                 'amount': data.get('amount', 0),
@@ -17092,7 +17114,8 @@ def admin_cases_management():
                 'promo': data.get('promo', cases[case_index].get('promo', False)),
                 'time': data.get('time', cases[case_index].get('time', '24H')),
                 'promo_codes': data.get('promo_codes', cases[case_index].get('promo_codes', [])),
-                'gifts': data.get('gifts', [])
+                'gifts': data.get('gifts', []),
+                'event_case': bool(data.get('event_case', cases[case_index].get('event_case', False)))
             }
 
             cases[case_index] = updated_case
@@ -17420,7 +17443,7 @@ def admin_create_case():
             'image': image_url,
             'cost': data['cost'],
             'cost_type': data['cost_type'],
-            'section': normalize_section_id(data.get('section', 'other')),
+            'section': 'event' if data.get('event_case') else normalize_section_id(data.get('section', 'other')),
             'required_level': data.get('required_level', 1),
             'limited': data.get('limited', False),
             'amount': data.get('amount', 0),
