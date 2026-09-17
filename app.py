@@ -3004,7 +3004,9 @@ def load_game_ui_config():
             event_name='Событие'
         except Exception:
             event_visible=True; event_image='/static/img/witchhat.png'; event_name='Событие'
-        items.insert(0, {'id':'event','name':event_name,'image':event_image,'path':'/event/witch-hat-party','visible':event_visible,'mandatory':False})
+        # Event is a mandatory Games entry. Keep it first even if an old saved config
+        # accidentally removed it; its visibility is controlled only by the Event setting.
+        items.insert(0, {'id':'event','name':event_name,'image':event_image,'path':'/event/witch-hat-party','visible':event_visible,'mandatory':True})
         clean['sections'][0]['id']='games'; clean['sections'][0]['title']=clean['sections'][0].get('title') or 'Игры'; clean['sections'][0]['visible']=True
         return clean
     except Exception as e:
