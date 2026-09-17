@@ -321,6 +321,10 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 #page-cases .event-case-note{padding:10px 12px;border-radius:12px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.18);color:#d9b9ff;font-size:11px;line-height:1.45;margin-bottom:12px}
 #page-cases .case-gift-chance{display:none!important}
 </style>
+
+<style id="event-case-editor-fix-v1">
+#page-case-editor .event-case-editor-note{margin:0 0 12px;padding:11px 12px;border-radius:12px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.18);color:#d9b9ff;font-size:11px;line-height:1.45}
+</style>
 </head>
 <body>
 
@@ -454,7 +458,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 <div class="form-group"><label class="form-label">Путь режима</label><input class="form-input" id="eventSpecialModePath" value="/event/witch-hat-party?mode=ghost-road"></div>
             </div>
             <label class="event-mode-switch" style="margin-top:10px"><span><b>Показывать Ghost Road внутри Event</b><small>Особый режим нельзя удалить, но его можно скрыть</small></span><input type="checkbox" id="eventSpecialModeVisible" checked><span class="event-switch"></span></label>
-            <div class="form-group" style="margin-top:10px"><label class="form-label">Открыть Ghost Road через</label><div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center"><input class="form-input" id="eventSpecialModeUnlockDays" type="number" min="0" step="1" placeholder="0"><span class="event-sub">дней</span></div><div class="event-sub" style="margin-top:5px">0 — доступен сразу. При значении больше 0 кнопка станет серой и покажет таймер.</div></div>
+            <div class="form-group" style="margin-top:10px"><label class="form-label">Открыть Ghost Road через</label><div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center"><input class="form-input" id="eventSpecialModeUnlockHours" type="number" min="0" step="0.1" placeholder="0"><span class="event-sub">часов</span></div><div class="event-sub" style="margin-top:5px">0 — доступен сразу. При значении больше 0 кнопка станет серой и покажет таймер в часах.</div></div>
             <button class="btn btn-success" onclick="saveEventContentSettings()" style="margin-top:10px">Сохранить содержимое Event</button>
         </div>
         <div class="card" style="margin-top:14px">
@@ -1218,14 +1222,14 @@ async function loadEvents(){
    if($('eventSpecialModeImage'))$('eventSpecialModeImage').value=mi.image||'/static/img/ghost_road.png';
    if($('eventSpecialModePath'))$('eventSpecialModePath').value=mi.path||'/event/witch-hat-party?mode=ghost-road';
    if($('eventSpecialModeVisible'))$('eventSpecialModeVisible').checked=mi.visible!==false;
-   if($('eventSpecialModeUnlockDays')){var u=mi.unlock_at?new Date(mi.unlock_at):null;$('eventSpecialModeUnlockDays').value=(u&&!isNaN(u.getTime())&&u.getTime()>Date.now()?Math.max(1,Math.ceil((u.getTime()-Date.now())/86400000)):0);}
+   if($('eventSpecialModeUnlockHours')){var u=mi.unlock_at?new Date(mi.unlock_at):null;$('eventSpecialModeUnlockHours').value=(u&&!isNaN(u.getTime())&&u.getTime()>Date.now()?Math.max(1,Math.ceil((u.getTime()-Date.now())/3600000)):0);}
    renderEventSections(d.events||{});
  }catch(err){if(status)status.textContent='Ошибка Event: '+(err.name==='AbortError'?'таймаут загрузки':err.message);console.error(err);}
 }
 function onWitchEventToggle(){var on=$('witchEventToggle')&&$('witchEventToggle').checked;if($('witchEventDuration'))$('witchEventDuration').style.display=on?'block':'none';if(!on)stopWitchEvent();}
 async function startWitchEvent(){var hours=parseFloat($('witchEventHours')&&$('witchEventHours').value);if(!hours||hours<=0){showToast('Укажите срок ивента','err');return;}try{await eventAdminPost({event_id:'witch_hat_party',enabled:true,hours:hours});showToast('Witch Hat Party запущен','ok');loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function stopWitchEvent(){try{await eventAdminPost({event_id:'witch_hat_party',enabled:false});if($('witchEventToggle'))$('witchEventToggle').checked=false;loadEvents();showToast('Ивент выключен','ok');}catch(e){showToast(e.message||'Ошибка','err')}}
-async function saveEventSettings(){try{await eventAdminPost({event_id:'witch_hat_party',action:'update_settings',name:$('eventNameInput').value.trim(),image:$('eventImageInput').value.trim(),loading_gif:$('eventLoadingGifInput').value.trim(),halloween_mode:!!($('witchHalloweenToggle')&&$('witchHalloweenToggle').checked),change_leaderboard:!!($('witchLeaderboardToggle')&&$('witchLeaderboardToggle').checked),event_button_visible:!!($('eventButtonVisibleToggle')&&$('eventButtonVisibleToggle').checked),special_mode:(function(){var days=parseInt($('eventSpecialModeUnlockDays')&&$('eventSpecialModeUnlockDays').value||0,10)||0;return {name:$('eventSpecialModeName').value.trim(),image:$('eventSpecialModeImage').value.trim(),path:$('eventSpecialModePath').value.trim(),visible:!!($('eventSpecialModeVisible')&&$('eventSpecialModeVisible').checked),unlock_at:days>0?new Date(Date.now()+days*86400000).toISOString():null};})()});showToast('Настройки Event сохранены','ok');loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
+async function saveEventSettings(){try{await eventAdminPost({event_id:'witch_hat_party',action:'update_settings',name:$('eventNameInput').value.trim(),image:$('eventImageInput').value.trim(),loading_gif:$('eventLoadingGifInput').value.trim(),halloween_mode:!!($('witchHalloweenToggle')&&$('witchHalloweenToggle').checked),change_leaderboard:!!($('witchLeaderboardToggle')&&$('witchLeaderboardToggle').checked),event_button_visible:!!($('eventButtonVisibleToggle')&&$('eventButtonVisibleToggle').checked),special_mode:(function(){var hours=parseFloat($('eventSpecialModeUnlockHours')&&$('eventSpecialModeUnlockHours').value||0)||0;return {name:$('eventSpecialModeName').value.trim(),image:$('eventSpecialModeImage').value.trim(),path:$('eventSpecialModePath').value.trim(),visible:!!($('eventSpecialModeVisible')&&$('eventSpecialModeVisible').checked),unlock_at:hours>0?new Date(Date.now()+hours*3600000).toISOString():null};})()});showToast('Настройки Event сохранены','ok');loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function saveEventContentSettings(){return saveEventSettings()}
 async function addEventSection(){var title=prompt('Название нового раздела');if(!title)return;var type=confirm('Это Market-раздел? Нажмите ОК для Market, Отмена — для кейсов.')?'market':'cases';try{await eventAdminPost({event_id:'witch_hat_party',action:'add_section',title:title,type:type});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
 async function removeEventSection(id){if(!confirm('Удалить раздел?'))return;try{await eventAdminPost({event_id:'witch_hat_party',action:'remove_section',section_id:id});loadEvents();}catch(e){showToast(e.message||'Ошибка','err')}}
@@ -1649,7 +1653,7 @@ async function loadCasesList(){
         var d = await r.json();
         if(d.success){
             allCases = (d.cases || []).filter(function(c){ return !!c.event_case || (Array.isArray(c.tags) && c.tags.some(function(t){ return String(t).toLowerCase()==='event'; })); });
-            if(!allCases.length){ el.innerHTML = '<div class="empty">Кейсов нет. Создайте первый!</div>'; return; }
+            if(!allCases.length){ el.innerHTML = '<div class="empty">Event-кейсов пока нет. Создайте первый из Event.</div>'; return; }
             el.innerHTML = allCases.map(function(c){
                 var img = c.image || '/static/img/gift.png';
                 var gifts_count = (c.gifts || []).length;
@@ -1803,7 +1807,7 @@ async function saveCase(){
 
     var payload = {
         admin_id: ADMIN_ID, name: name, slug: slug, cost: cost, cost_type: cost_type,
-        image: image, description: '', gifts: caseGifts, event_case: true, limited: false, amount: 0, display_order: 0, time: '24H', tags: ['event'], free: $('ceFree').checked, promo: $('cePromo').checked
+        image: image, description: description, gifts: caseGifts, event_case: true, section: 'event', limited: false, amount: 0, display_order: (currentCase && currentCase.display_order) || 0, time: '24H', tags: ['event'], free: $('ceFree').checked, promo: $('cePromo').checked
     };
 
     try{
@@ -1815,9 +1819,14 @@ async function saveCase(){
             payload.display_order = currentCase.display_order || 0;
         }
         var r = await fetch(url, { method: method, headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-        var d = await r.json();
-        if(d.success){ showToast('Event-кейс сохранён', 'ok'); showSection('events'); }
-        else showToast(d.error || 'Ошибка', 'err');
+        var d = await r.json().catch(function(){ return {success:false,error:'Сервер вернул некорректный ответ'}; });
+        if(!r.ok && !d.error) d.error='HTTP '+r.status;
+        if(d.success){
+            currentCase = d.case || currentCase;
+            showToast('Event-кейс сохранён', 'ok');
+            showSection('events');
+            setTimeout(function(){ loadEvents(); }, 80);
+        } else showToast(d.error || 'Ошибка сохранения кейса', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 async function deleteCase(){
