@@ -11,12 +11,48 @@
 @media(max-width:700px){body{padding-top:calc(8px + 10vh + env(safe-area-inset-top));padding-left:11px;padding-right:11px}.head{height:54px}.hero{padding:21px 18px;border-radius:21px}.hero h1{font-size:32px}.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.case-card{padding:10px;border-radius:16px}.case-img{width:100%}.case-name{font-size:12px}.case-price{font-size:11px}.market-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.market-card{padding:9px;border-radius:16px}.market-name{font-size:10px}.market-price{font-size:11px}.timer-box{min-width:100px}}
 @media(min-width:701px){.hero{padding:32px}.case-img{max-width:220px}}
 </style>
+
+<style id="witch-party-polish-v2">
+/* Witch Hat Party uses the same visual language as the event banner on Games. */
+.hero{
+  min-height:250px;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:30px 32px 28px!important;
+  background-image:linear-gradient(90deg,rgba(10,4,18,.82) 0%,rgba(15,6,24,.58) 42%,rgba(15,6,24,.16) 100%),url('/static/img/banner_witchparty.webp')!important;
+  background-size:cover!important;background-position:center!important;
+  border-color:rgba(208,141,255,.42)!important;box-shadow:0 20px 70px rgba(83,30,113,.28)!important;
+}
+.hero h1{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;text-shadow:0 3px 18px rgba(0,0,0,.72)!important}
+.hero p{font-weight:800!important;text-shadow:0 2px 10px rgba(0,0,0,.65)}
+.hero:before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 78% 45%,rgba(179,108,255,.18),transparent 35%)}
+.hero>*{position:relative;z-index:3}
+.witch-hamsters{position:absolute;right:2.5%;bottom:-2px;width:320px;height:100%;z-index:2;pointer-events:none}
+.witch-hamster{position:absolute;width:clamp(92px,11vw,135px);height:auto;object-fit:contain;filter:drop-shadow(0 12px 17px rgba(0,0,0,.46));transform-origin:bottom center}
+.witch-hamster-1{right:125px;bottom:8px;animation:witchHamsterA 4s ease-in-out infinite}
+.witch-hamster-2{right:8px;bottom:3px;animation:witchHamsterB 4.6s ease-in-out infinite;animation-delay:-1.4s}
+@keyframes witchHamsterA{0%,100%{transform:translate3d(0,5px,0) rotate(-2deg)}50%{transform:translate3d(-5px,-10px,0) rotate(2deg)}}
+@keyframes witchHamsterB{0%,100%{transform:translate3d(0,3px,0) rotate(2deg) scale(.98)}50%{transform:translate3d(5px,-10px,0) rotate(-2deg) scale(1)}}
+@keyframes partyGlow{0%,100%{box-shadow:0 20px 70px rgba(83,30,113,.22)}50%{box-shadow:0 24px 85px rgba(132,57,174,.34)}}
+.hero{animation:partyGlow 5s ease-in-out infinite}
+@media(max-width:700px){
+  .hero{min-height:205px!important;padding:18px 16px 18px!important;border-radius:20px!important;background-position:center!important}
+  .hero h1{font-size:29px!important;max-width:62%!important;line-height:.98!important}
+  .hero p{font-size:11px!important;margin-top:7px!important;max-width:55%}
+  .timer{margin-top:11px!important}
+  .timer-box{min-width:94px!important;padding:9px 11px!important}
+  .timer-value{font-size:18px!important}
+  .witch-hamsters{right:-1%;width:205px!important}
+  .witch-hamster{width:82px!important}
+  .witch-hamster-1{right:76px!important;bottom:7px!important}
+  .witch-hamster-2{right:1px!important;bottom:2px!important}
+  .party-mark{width:40px!important;height:40px!important;border-radius:12px!important}
+}
+</style>
 </head>
 <body>
 <div class="loading" id="loading"><img id="loadingGif" src="/static/img/loading.gif" alt=""><div class="loading-text">Загрузка</div></div>
 <div class="wrap">
 <header class="head"><button class="back" onclick="history.back()" aria-label="Назад">‹</button><div class="title" id="eventTitle">Witch Hat Party</div><img class="party-mark" id="partyMark" src="/static/img/witchhat.png" alt="Party"></header>
-<section class="hero"><h1>Witch Hat Party</h1><p>Специальное событие</p><div class="timer"><div class="timer-box"><div class="timer-label">Ивент идёт</div><div class="timer-value" id="timer">00:00:00</div></div></div></section>
+<section class="hero"><h1>Witch Hat Party</h1><p>Специальное событие</p><div class="timer"><div class="timer-box"><div class="timer-label">Ивент идёт</div><div class="timer-value" id="timer">00:00:00</div></div></div><div class="witch-hamsters" aria-hidden="true"><img class="witch-hamster witch-hamster-1" src="/static/img/hamster1.png" alt=""><img class="witch-hamster witch-hamster-2" src="/static/img/hamster2.png" alt=""></div></section>
 <main id="content"></main>
 </div>
 <script>
@@ -27,7 +63,7 @@ function imgSrc(v){return v||'/static/img/gift.png'}
 function price(v){return Number(v||0).toFixed(2)}
 function resolveLoading(name){let n=String(name||'loading.gif').trim();if(!n)n='loading.gif';if(n.startsWith('/'))return n;if(n.includes('/'))return '/static/'+n.replace(/^\/+/, '');return '/static/img/'+n}
 function renderSections(sections){const root=$('content');root.innerHTML='';let delay=0;for(const sec of (sections||[])){const wrap=document.createElement('section');wrap.className='section fade-up';wrap.style.animationDelay=(delay++)*60+'ms';const h=document.createElement('div');h.className='section-head';h.innerHTML='<div class="section-title"></div>';h.querySelector('.section-title').textContent=sec.title||'Раздел';wrap.appendChild(h);const grid=document.createElement('div');if(sec.type==='cases'){grid.className='cards';const ids=(sec.case_ids||[]).map(String);const loadCases=ids.map(id=>fetch('/api/cases/'+encodeURIComponent(id)).then(r=>r.json()).catch(()=>null));Promise.all(loadCases).then(ds=>{grid.innerHTML='';for(const d of ds){const c=d&&d.success?d.case:null;if(!c)continue;const card=document.createElement('button');card.className='case-card';card.innerHTML='<img class="case-img"><div class="case-name"></div><div class="case-price"><img src="/static/img/ton.png"><span></span></div>';card.querySelector('.case-img').src=imgSrc(c.image||c.png);card.querySelector('.case-name').textContent=c.name||'Кейс';card.querySelector('.case-price span').textContent=(Number(c.cost||0)).toLocaleString('ru-RU');card.onclick=()=>location.href='/cases?case='+encodeURIComponent(c.id);grid.appendChild(card)}})}else{grid.className='market-grid';fetch('/api/events/witch-hat-party/market').then(r=>r.json()).then(d=>{grid.innerHTML='';const items=d.items||[];if(!items.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Подарки пока не найдены</div>';return}items.forEach(it=>{const card=document.createElement('div');card.className='market-card';card.innerHTML='<img class="market-img"><div class="market-name"></div><div class="market-price"><img src="/static/img/ton.png"><span></span></div>';card.querySelector('.market-img').src=imgSrc(it.image);card.querySelector('.market-name').textContent=it.name;card.querySelector('.market-price span').textContent=price(it.price_ton)+' GRAM';grid.appendChild(card)})}).catch(()=>grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить маркет</div>')}wrap.appendChild(grid);root.appendChild(wrap)}}
-async function load(){try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();try{if(typeof Telegram.WebApp.requestFullscreen==='function')Telegram.WebApp.requestFullscreen()}catch(e){}}const r=await fetch('/api/events/witch-hat-party?ts='+Date.now());const d=await r.json();eventData=d.event||{};if(eventData.name)$('eventTitle').textContent=eventData.name;if(eventData.image)$('partyMark').src=eventData.image;left=Number(eventData.remaining_seconds||0);if(eventData.loading_gif)$('loadingGif').src=resolveLoading(eventData.loading_gif);$('timer').textContent=fmt(left);if(!eventData.active){$('content').innerHTML='<section class="section"><div class="empty">Ивент сейчас не активен</div></section>'}else{renderSections(eventData.sections||[])}setTimeout(()=>$('loading').classList.add('hide'),180)}catch(e){$('content').innerHTML='<section class="section"><div class="empty error">Не удалось загрузить ивент</div></section>';setTimeout(()=>$('loading').classList.add('hide'),300)}}
+async function load(){try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();try{if(typeof Telegram.WebApp.requestFullscreen==='function')Telegram.WebApp.requestFullscreen()}catch(e){}}const r=await fetch('/api/events/witch-hat-party?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();eventData=d.event||{};if(eventData.name)$('eventTitle').textContent=eventData.name;if(eventData.image)$('partyMark').src=eventData.image;left=Number(eventData.remaining_seconds||0);if(eventData.loading_gif)$('loadingGif').src=resolveLoading(eventData.loading_gif);$('timer').textContent=fmt(left);if(!eventData.active){$('content').innerHTML='<section class="section"><div class="empty">Ивент сейчас не активен</div></section>'}else{renderSections(eventData.sections||[])}setTimeout(()=>$('loading').classList.add('hide'),180)}catch(e){$('content').innerHTML='<section class="section"><div class="empty error">Не удалось загрузить ивент</div></section>';setTimeout(()=>$('loading').classList.add('hide'),300)}}
 setInterval(()=>{if(left>0){left--;if($('timer'))$('timer').textContent=fmt(left)}},1000);load();
 </script>
 </body></html>
