@@ -55,6 +55,11 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .loading-text{font-size:13px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase}
 .loading-progress{width:220px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
 .loading-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#24C38E,#10b981);border-radius:2px;transition:width .3s ease}
+.halloween-active .loading-screen{background:radial-gradient(circle at 50% 45%,#2a0c37 0%,#16071e 45%,#09040d 100%)}
+.halloween-active .loading-wheel .ld-green{stroke:url(#halloweenLoadingGrad)!important;filter:drop-shadow(0 0 18px rgba(245,132,31,.45))}
+.halloween-active .loading-wheel .ld-ring{stroke:#24102d}
+.halloween-active .loading-progress-bar{background:linear-gradient(90deg,#f97316,#fb923c,#a855f7)}
+.halloween-active .loading-text{color:rgba(255,218,190,.72)}
 .loading-arrow{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:10;filter:drop-shadow(0 4px 12px rgba(0,0,0,.8))}
 
 /* TOP BAR — desktop mirrors Games */
@@ -107,7 +112,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .plus-btn:hover{background:linear-gradient(180deg,rgba(32,184,255,.36),rgba(16,90,140,.3));border-color:rgba(32,184,255,.68)}
 .plus-btn:active{transform:scale(.92)}
 .avatar{
-    width:43px;height:43px;padding:2px;border-radius:50%;overflow:hidden;
+    width:46px;height:46px;padding:2px;border-radius:50%;overflow:hidden;
     background:#101a2b;border:2px solid #257fca;box-shadow:0 0 0 2px rgba(37,127,202,.12);
 }
 .avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
@@ -936,7 +941,7 @@ body{background:radial-gradient(circle at 50% -10%,rgba(88,166,255,.16),transpar
         </div>
         <div class="loading-wheel">
             <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                <defs><linearGradient id="ldGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#24C38E"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs>
+                <defs><linearGradient id="halloweenLoadingGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#F97316"/><stop offset="55%" stop-color="#FB923C"/><stop offset="100%" stop-color="#A855F7"/></linearGradient><linearGradient id="ldGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#24C38E"/><stop offset="100%" stop-color="#10b981"/></linearGradient></defs>
                 <circle class="ld-ring" cx="100" cy="100" r="86"/>
                 <circle class="ld-green" cx="100" cy="100" r="86" stroke-dasharray="135 540" transform="rotate(-90 100 100)"/>
                 <g id="ldRisks"></g>
@@ -1569,6 +1574,13 @@ function hideGoldArc(){
     var arc = $('goldArc');
     if(arc){ arc.classList.remove('visible'); arc.style.filter = ''; }
     _goldAngle = -1;
+}
+
+
+/* NAVIGATION */
+function goTo(path){
+    if(!path) return;
+    window.location.assign(path);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2554,7 +2566,7 @@ async function loadHalloweenEvent(){
     try{
         var r = await fetch('/api/events/witch-hat-party',{cache:'no-store'});
         var d = await r.json();
-        var active = !!(d && d.event && d.event.active);
+        var active = !!(d && d.event && d.event.active && d.event.halloween_mode);
         document.documentElement.classList.toggle('halloween-active', active);
         try{
             if(tg){
@@ -2592,10 +2604,10 @@ async function loadHalloweenEvent(){
         }catch(e){}
     }
     setLoadingProgress(30);
+    await loadHalloweenEvent();
     await loadTopBar();
     loadOnline();
     setInterval(loadOnline, 30000);
-    await loadHalloweenEvent();
     setLoadingProgress(50);
     await loadInventory(true);
     setLoadingProgress(80);
