@@ -2720,7 +2720,7 @@ EVENT_DEFAULTS = {
         'enabled': False, 'ends_at': None,
         'halloween_mode': False, 'change_leaderboard': False, 'event_button_visible': True,
         'sections': [
-            {'id':'special_mode','title':'Особые режимы','type':'mode','items':[{'id':'ghost_road_mode','name':'Ghost Road','image':'/static/img/ghost_road.png','path':'/event/witch-hat-party?mode=ghost-road','visible':True,'mandatory':True}]},
+            {'id':'special_mode','title':'Особые режимы','type':'mode','items':[{'id':'ghost_road_mode','name':'Ghost Road','image':'/static/img/ghost_road.png','path':'/event/witch-hat-party?mode=ghost-road','visible':True,'mandatory':True,'unlock_at':None}]},
             {'id':'event_cases','title':'Особые кейсы','type':'cases','case_ids':[]},
             {'id':'market','title':'Купить подарок','type':'market','items':[]}
         ]
@@ -2757,7 +2757,9 @@ def _normalize_witch_event_structure(obj):
         special={'id':'special_mode','title':'Особые режимы','type':'mode','items':[]}
     items=special.get('items') if isinstance(special.get('items'), list) else []
     items=[x for x in items if isinstance(x,dict) and str(x.get('id'))!='ghost_road_mode']
-    items.insert(0, {'id':'ghost_road_mode','name':'Ghost Road','image':'/static/img/ghost_road.png','path':'/event/witch-hat-party','visible':True,'mandatory':True})
+    existing=next((x for x in items if str(x.get('id'))=='ghost_road_mode'),None)
+    unlock_at=existing.get('unlock_at') if isinstance(existing,dict) else None
+    items.insert(0, {'id':'ghost_road_mode','name':'Ghost Road','image':'/static/img/ghost_road.png','path':'/event/witch-hat-party?mode=ghost-road','visible':True,'mandatory':True,'unlock_at':unlock_at})
     special['id']='special_mode'; special['title']='Особые режимы'; special['type']='mode'; special['items']=items
     if cases is None:
         cases={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[]}
@@ -2851,6 +2853,8 @@ def _fetch_fragment_gift_metadata(gift_url):
     metadata_url=base+'.json'
     image_url=base+'.webp'
     animation_url=base+'.lottie.json'
+    png_url=base+'.png'
+    animation_webp=image_url
     name=f'{slug.replace("-", " ").title()} #{number}'
     description=''
     try:
@@ -2871,7 +2875,9 @@ def _fetch_fragment_gift_metadata(gift_url):
         'name': name,
         'description': description,
         'image': image_url,
+        'png': png_url,
         'animation': animation_url,
+        'animation_webp': animation_webp,
         'metadata_url': metadata_url,
     }
 
@@ -6023,8 +6029,8 @@ def event_page_alias():
 
 @app.route('/inventory')
 def inventory_page():
-    # Единственная пользовательская страница профиля + инвентаря.
-    return redirect('/profile')
+    """Единая настоящая страница профиля/инвентаря."""
+    return render_template('inventory.html')
 
 @app.route('/season')
 def season_page():
@@ -6046,17 +6052,8 @@ async function init(){var uid=new URLSearchParams(location.search).get('user_id'
 
 @app.route('/profile')
 def profile_page():
-    """Рабочая страница профиля. Не зависит от отсутствующего inventory.html."""
-    return render_template_string(r'''<!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><title>Профиль</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script><script src="/static/js/telegram-auth.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{min-height:100vh;background:linear-gradient(180deg,#090e1c,#0b1220);color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:calc(10px + env(safe-area-inset-top)) 12px calc(90px + env(safe-area-inset-bottom))}.wrap{width:min(100%,520px);margin:0 auto}.top{height:54px;display:flex;align-items:center;gap:10px;margin-bottom:10px}.back{width:42px;height:42px;border-radius:13px;background:#121c2c;border:1px solid rgba(120,155,200,.18);color:#fff;font-size:24px}.title{font-size:20px;font-weight:900}.card{background:rgba(255,255,255,.045);border:1px solid rgba(130,165,205,.13);border-radius:22px;padding:20px;box-shadow:0 18px 50px rgba(0,0,0,.25)}.identity{display:flex;align-items:center;gap:14px}.avatar{width:72px;height:72px;border-radius:50%;padding:2px;background:#172238;border:1px solid rgba(110,145,189,.3);overflow:hidden;flex:none}.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}.name{font-size:20px;font-weight:900;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.username{margin-top:4px;color:rgba(255,255,255,.42);font-size:12px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:18px}.stat{padding:12px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06)}.label{font-size:10px;color:rgba(255,255,255,.38);font-weight:800;text-transform:uppercase;letter-spacing:.6px}.value{margin-top:5px;font-size:16px;font-weight:900}.gram{display:flex;align-items:center;gap:5px}.gram img{width:16px;height:16px}.inventory{margin-top:16px}.inv-title{font-size:12px;font-weight:900;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.7px;margin-bottom:9px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.item{aspect-ratio:1;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);overflow:hidden}.item img{width:100%;height:100%;object-fit:cover}.bottom{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:496px;margin:auto;height:54px;border:0;border-radius:27px;background:#1687f8;color:#fff;font-weight:900;z-index:5} .empty{padding:25px;text-align:center;color:rgba(255,255,255,.35)}
-</style></head><body><div class="wrap"><div class="top"><button class="back" onclick="history.back()">‹</button><div class="title">Профиль</div></div><div class="card" id="profile"><div class="empty">Загрузка…</div></div></div><button class="bottom" onclick="location.href='/cases'">Кейсы</button>
-<script>
-(async function(){try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand()}var auth=await telegramAuth();var u=auth&&auth.id?auth.id:(Telegram.WebApp.initDataUnsafe.user||{}).id;if(!u){document.getElementById('profile').innerHTML='<div class="empty">Откройте профиль через Telegram</div>';return}var r=await fetch('/api/user/'+u);var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');var x=d.user||{};var img=x.photo_url||'/static/img/avatar-default.png';var name=[x.first_name,x.last_name].filter(Boolean).join(' ')||x.username||'Пользователь';var inv=d.inventory||[];document.getElementById('profile').innerHTML='<div class="identity"><div class="avatar"><img src="'+img+'" onerror="this.src=\'/static/img/avatar-default.png\'"></div><div><div class="name">'+esc(name)+'</div><div class="username">'+(x.username?'@'+esc(x.username):'Профиль пользователя')+'</div></div></div><div class="stats"><div class="stat"><div class="label">Баланс</div><div class="value gram"><img src="/static/img/ton.png">'+(Number(x.balance_stars||0)/100).toFixed(2)+'</div></div><div class="stat"><div class="label">Рефералы</div><div class="value">'+Number(x.referral_count||0)+'</div></div><div class="stat"><div class="label">Уровень</div><div class="value">'+Number(x.current_level||1)+'</div></div><div class="stat"><div class="label">Кейсы</div><div class="value">'+Number(x.total_cases_opened||0)+'</div></div></div>'+(inv.length?'<div class="inventory"><div class="inv-title">Инвентарь · '+inv.length+'</div><div class="grid">'+inv.slice(0,12).map(function(it){return '<div class="item"><img src="'+(it.image||'/static/img/gift.png')+'" onerror="this.src=\'/static/img/gift.png\'"></div>'}).join('')+'</div></div>':'')}catch(e){document.getElementById('profile').innerHTML='<div class="empty">Не удалось загрузить профиль</div>'}})();
-function esc(v){return String(v??'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-</script></body></html>''')
+    """Профиль и инвентарь используют одну и ту же страницу."""
+    return render_template('inventory.html')
 
 @app.route('/ref')
 def ref_page():
@@ -8676,7 +8673,20 @@ def api_witch_hat_party():
             from datetime import timezone; end=end.astimezone(timezone.utc).replace(tzinfo=None)
         remaining=max(0,int((end-datetime.utcnow()).total_seconds())) if end else 0
     except Exception: remaining=0
-    ev['active']=bool(ev.get('enabled') and remaining>0); ev['remaining_seconds']=remaining
+    ev['active']=bool(ev.get('enabled') and remaining>0)
+    _normalize_witch_event_structure(ev)
+    now=datetime.utcnow()
+    for sec in ev.get('sections',[]):
+        for item in sec.get('items',[]) if isinstance(sec,dict) else []:
+            unlock=item.get('unlock_at')
+            item['locked']=False
+            if unlock:
+                try:
+                    dt=datetime.fromisoformat(str(unlock).replace('Z','+00:00'))
+                    if dt.tzinfo:
+                        from datetime import timezone; dt=dt.astimezone(timezone.utc).replace(tzinfo=None)
+                    item['locked']=now < dt
+                except Exception: pass
     return jsonify({'success':True,'event':ev})
 
 @app.route('/api/events/ghost-road/market')
@@ -8709,7 +8719,7 @@ def api_witch_hat_market():
                 try:
                     if item.get('gift_url'):
                         g=_event_market_item_from_gift(item)
-                        items.append({'collection':g['name'],'fragment_slug':g['fragment_slug'],'number':g['number'],'name':g['name'],'image':g['image'],'animation':g['animation'],'price_gram':g['price_gram'],'price_stars':g['price_stars'],'price_ton':g['price_gram'],'url':g['gift_url']})
+                        items.append({'collection':g['name'],'fragment_slug':g['fragment_slug'],'number':g['number'],'name':g['name'],'image':g['image'],'png':g.get('png') or g['image'],'animation':g['animation'],'animation_webp':g.get('animation_webp') or g['image'],'price_gram':g['price_gram'],'price_stars':g['price_stars'],'price_ton':g['price_gram'],'url':g['gift_url']})
                     else:
                         items.extend((_event_market_item_from_collection(item.get('collection') or item.get('name')) or {}).get('listings') or [])
                 except Exception as e: logger.warning('Event market item failed: %s',e)
@@ -8837,6 +8847,15 @@ def api_games_ui():
     try:
         cfg=load_game_ui_config()
         sections=sorted([x for x in cfg.get('sections',[]) if isinstance(x,dict)], key=lambda x:int(x.get('order',0)))
+        # The Event button is controlled from Witch Hat Party settings, not from a separate Games editor.
+        try:
+            witch=get_active_events().get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party'])
+            for sec in sections:
+                for item in sec.get('items',[]) or []:
+                    if str(item.get('id'))=='event':
+                        item['visible']=bool(witch.get('event_button_visible',True))
+        except Exception:
+            pass
         now=datetime.utcnow()
         for sec in sections:
             for item in sec.get('items',[]) or []:
@@ -8917,6 +8936,15 @@ def admin_events():
                     item['image']=str(sm.get('image') or '/static/img/ghost_road.png').strip()
                     item['path']=str(sm.get('path') or '/event/witch-hat-party?mode=ghost-road').strip()
                     item['visible']=bool(sm.get('visible',True))
+                    unlock=sm.get('unlock_at')
+                    if unlock:
+                        try:
+                            dt=datetime.fromisoformat(str(unlock).replace('Z','+00:00'))
+                            item['unlock_at']=dt.isoformat()
+                        except Exception:
+                            item['unlock_at']=None
+                    else:
+                        item['unlock_at']=None
                     mode['title']='Особые режимы'
                 if isinstance(data.get('sections_meta'),list):
                     _normalize_witch_event_structure(ev)
