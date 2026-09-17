@@ -78,18 +78,34 @@
 .event-close{background:rgba(255,255,255,.06);color:#d8e1ed;border:1px solid rgba(255,255,255,.08)}
 @media(min-width:701px){.event-modal{align-items:center;padding:20px}.event-modal-sheet{border-radius:24px}}
 </style>
+
+<style id="witch-party-layout-fix-v1">
+@media(min-width:701px){
+  .hero{min-height:205px!important;padding:26px 30px 24px!important}
+  .section{margin-top:16px!important}
+  .special-mode-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .special-mode-card{height:auto!important;min-height:0!important;aspect-ratio:16/9}
+  .special-mode-copy{left:20px;right:18px;bottom:20px}
+  .special-mode-name{font-size:24px}
+  .special-mode-sub{font-size:11px}
+}
+@media(max-width:700px){
+  .section{margin-top:18px!important}
+  .special-mode-card{height:112px!important}
+}
+</style>
 </head>
 <body>
 <div class="loading" id="loading"><img id="loadingGif" src="/static/img/loading.gif" alt=""><div class="loading-text">Загрузка</div></div>
 <div class="wrap">
 <header class="head"><button class="back" onclick="history.back()" aria-label="Назад">‹</button><div class="title" id="eventTitle">Witch Hat Party</div><img class="party-mark" id="partyMark" src="/static/img/witchhat.png" alt="Party"></header>
-<section class="hero"><h1>Witch Hat Party</h1><p>Специальное событие</p><div class="timer"><div class="timer-box"><div class="timer-label">Ивент идёт</div><div class="timer-value" id="timer">00:00:00</div></div></div><div class="witch-hamsters" aria-hidden="true"><img class="witch-hamster witch-hamster-1" src="/static/img/hamster1.png" alt=""><img class="witch-hamster witch-hamster-2" src="/static/img/hamster2.png" alt=""></div></section>
+<section class="hero"><h1>Witch Hat Party</h1><p>Специальное событие</p><div class="timer"><div class="timer-box"><div class="timer-label">До конца</div><div class="timer-value" id="timer">00:00:00</div></div></div><div class="witch-hamsters" aria-hidden="true"><img class="witch-hamster witch-hamster-1" src="/static/img/hamster1.png" alt=""><img class="witch-hamster witch-hamster-2" src="/static/img/hamster2.png" alt=""></div></section>
 <main id="content"></main>
 </div>
 <script>
 const $=id=>document.getElementById(id);
 let eventData=null, left=0;
-function fmt(sec){sec=Math.max(0,Number(sec||0));let d=Math.floor(sec/86400);let h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60),s=Math.floor(sec%60);return (d?d+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}
+function fmt(sec){sec=Math.max(0,Number(sec||0));let h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=Math.floor(sec%60);return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}
 function imgSrc(v){return v||'/static/img/gift.png'}
 function price(v){return Number(v||0).toFixed(2)}
 function resolveLoading(name){let n=String(name||'loading.gif').trim();if(!n)n='loading.gif';if(n.startsWith('/'))return n;if(n.includes('/'))return '/static/'+n.replace(/^\/+/, '');return '/static/img/'+n}
@@ -109,7 +125,7 @@ function renderSections(sections){
   // Event page always starts with its special modes. Ghost Road is a mode of Witch Hat Party,
   // not a separate event/page.
   if(!list.some(function(x){return x&&x.type==='mode';})){
-    list.unshift({id:'special_mode',title:'Особые режимы',type:'mode',items:[{id:'ghost_road_mode',name:'Ghost Road',image:'/static/img/ghost_road.png',path:'/event/witch-hat-party?mode=ghost-road',visible:true}]});
+    return;
   }else{
     var modeSec=list.find(function(x){return x&&x.type==='mode'});
     if(modeSec){modeSec.title='Особые режимы';modeSec.items=Array.isArray(modeSec.items)?modeSec.items:[];
@@ -202,8 +218,8 @@ async function buyEventGift(){
   }catch(e){alert(e.message||'Ошибка покупки')}finally{btn.disabled=false;btn.textContent='Купить'}
 }
 
-async function load(){try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();try{if(typeof Telegram.WebApp.requestFullscreen==='function')Telegram.WebApp.requestFullscreen()}catch(e){}}const r=await fetch('/api/events/witch-hat-party?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();eventData=d.event||{};if(eventData.name)$('eventTitle').textContent=eventData.name;if(eventData.image)$('partyMark').src=eventData.image;left=Number(eventData.remaining_seconds||0);if(eventData.loading_gif)$('loadingGif').src=resolveLoading(eventData.loading_gif);$('timer').textContent=fmt(left);if(!eventData.active){$('content').innerHTML='<section class="section"><div class="empty">Ивент сейчас не активен</div></section>'}else{renderSections(eventData.sections||[])}setTimeout(()=>$('loading').classList.add('hide'),180)}catch(e){$('content').innerHTML='<section class="section"><div class="empty error">Не удалось загрузить ивент</div></section>';setTimeout(()=>$('loading').classList.add('hide'),300)}}
-setInterval(()=>{if(left>0){left--;if($('timer'))$('timer').textContent=fmt(left)}},1000);load();
+async function load(){try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();try{if(typeof Telegram.WebApp.requestFullscreen==='function')Telegram.WebApp.requestFullscreen()}catch(e){}}const r=await fetch('/api/events/witch-hat-party?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();eventData=d.event||{};if(eventData.name)$('eventTitle').textContent=eventData.name;if(eventData.image)$('partyMark').src=eventData.image;left=Number(eventData.remaining_seconds||0);if(!left&&eventData.ends_at){try{left=Math.max(0,Math.ceil((new Date(eventData.ends_at).getTime()-Date.now())/1000))}catch(e){}}if(eventData.loading_gif)$('loadingGif').src=resolveLoading(eventData.loading_gif);$('timer').textContent=fmt(left);if(!eventData.active){$('content').innerHTML='<section class="section"><div class="empty">Ивент сейчас не активен</div></section>'}else{renderSections(eventData.sections||[])}setTimeout(()=>$('loading').classList.add('hide'),180)}catch(e){$('content').innerHTML='<section class="section"><div class="empty error">Не удалось загрузить ивент</div></section>';setTimeout(()=>$('loading').classList.add('hide'),300)}}
+setInterval(()=>{if(left>0){left--;if($('timer'))$('timer').textContent=fmt(left)}},1000);setInterval(()=>{if(document.visibilityState==='visible')load()},15000);load();
 </script>
 
 <div class="event-modal" id="eventGiftModal" onclick="if(event.target===this)closeEventGiftModal()">
