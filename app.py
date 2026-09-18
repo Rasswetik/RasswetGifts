@@ -74,6 +74,13 @@ app.secret_key = 'rsw_FsL1QH7R8yIqB6_nGVoFNk15zfwy2LSU4lNcGs7FMHE'
 
 # Конфигурация
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+# Единая точка для всех файлов с данными, которые должны переживать рестарт/редеплой.
+# Если на хостинге подключён постоянный диск, укажите переменную окружения DB_DIR
+# (например, на Render это точка монтирования диска) — тогда ВСЕ файлы ниже
+# (кейсы, сезонный кейс, токен MRKT, кэш Fragment и т.д.) будут писаться туда,
+# а не в папку рядом с кодом, которая стирается при каждом деплое.
+PERSISTENT_DATA_DIR = os.environ.get('DB_DIR', os.path.join(BASE_PATH, 'data'))
+os.makedirs(PERSISTENT_DATA_DIR, exist_ok=True)
 ADMIN_ID = 5257227756
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '').strip()
 WEBSITE_URL = os.getenv('WEBSITE_URL', 'https://goshangifts.onrender.com').strip().rstrip('/')
@@ -99,20 +106,20 @@ FRAGMENT_FETCH_BASE = str(os.getenv('FRAGMENT_FETCH_BASE', '') or '').strip().rs
 PORTAL_AUTH_TOKEN = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
 PORTAL_API_ID = os.getenv('PORTAL_API_ID', '')
 PORTAL_API_HASH = os.getenv('PORTAL_API_HASH', '')
-PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', os.path.join(BASE_PATH, 'data'))
+PORTAL_SESSION_PATH = os.getenv('PORTAL_SESSION_PATH', PERSISTENT_DATA_DIR)
 PORTAL_SESSION_NAME = os.getenv('PORTAL_SESSION_NAME', 'portal_account')
 PORTAL_WITHDRAW_FEE_STARS = 40
 TON_RATE = 100
-FRAGMENT_DISK_CACHE_FILE = os.path.join(BASE_PATH, 'data', 'fragment_catalog_cache.json')
+FRAGMENT_DISK_CACHE_FILE = os.path.join(PERSISTENT_DATA_DIR, 'fragment_catalog_cache.json')
 # Durable canonical gift catalog. On Render, DB_DIR should point to Persistent Disk.
-GIFTS_PERSISTENT_FILE = os.path.join(os.environ.get('DB_DIR', os.path.join(BASE_PATH, 'data')), 'gifts_catalog_persistent.json')
+GIFTS_PERSISTENT_FILE = os.path.join(PERSISTENT_DATA_DIR, 'gifts_catalog_persistent.json')
 
 # MRKT marketplace (read/sync pricing). Token is supplied by the admin from
 # the MRKT web app and cached locally. The public MRKT documentation confirms
 # /auth and /gifts/saling as the read API; no purchase/transfer endpoint is
 # assumed here unless it is explicitly documented.
 MRKT_API_BASE = 'https://api.tgmrkt.io/api/v1'
-MRKT_TOKEN_FILE = os.path.join(BASE_PATH, 'data', 'mrkt_token.json')
+MRKT_TOKEN_FILE = os.path.join(PERSISTENT_DATA_DIR, 'mrkt_token.json')
 MRKT_REFERER = 'https://cdn.tgmrkt.io/'
 MRKT_SYNC_TIMEOUT = int(os.getenv('MRKT_SYNC_TIMEOUT', '12'))
 MRKT_SYNC_WORKERS = int(os.getenv('MRKT_SYNC_WORKERS', '8'))
@@ -210,7 +217,7 @@ _BOT_AVATARS = [
 ]
 
 # Пути для токена
-PORTAL_TOKEN_FILE = os.path.join(BASE_PATH, 'data', 'portal_token.txt')
+PORTAL_TOKEN_FILE = os.path.join(PERSISTENT_DATA_DIR, 'portal_token.txt')
 _portal_token_cache = {'token': '', 'loaded_at': 0}
 _portal_token_lock = threading.Lock()
 _portal_auth_lock = threading.Lock()
@@ -533,7 +540,7 @@ def _portal_do_sync(token):
             logger.warning(f'Portal cache write failed: {e}')
 
         # 4. Обновляем gifts.json
-        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        gifts_path = os.path.join(PERSISTENT_DATA_DIR, 'gifts.json')
         if not os.path.exists(gifts_path):
             return {'success': False, 'error': 'gifts.json не найден'}
 
@@ -582,7 +589,7 @@ def _portal_do_sync(token):
 
         # Время последнего синка
         try:
-            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            sync_file = os.path.join(PERSISTENT_DATA_DIR, 'portal_last_sync.json')
             with open(sync_file, 'w', encoding='utf-8') as f:
                 json.dump({
                     'timestamp': time.time(),
@@ -1387,7 +1394,7 @@ def _write_fragment_catalog_to_local_gifts(fragment_gifts):
     if not isinstance(fragment_gifts, list):
         return 0
     try:
-        path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        path = os.path.join(PERSISTENT_DATA_DIR, 'gifts.json')
         existing = load_gifts() or []
         by_slug = {}
         by_name = {}
@@ -2539,7 +2546,7 @@ def load_gifts():
     """
     paths = [
         GIFTS_PERSISTENT_FILE,
-        os.path.join(BASE_PATH, 'data', 'gifts.json'),
+        os.path.join(PERSISTENT_DATA_DIR, 'gifts.json'),
         '/home/rasswetik52/mysite/data/gifts.json',
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'gifts.json'),
     ]
@@ -2570,7 +2577,7 @@ def save_gifts(gifts):
         _write_gifts_file(GIFTS_PERSISTENT_FILE, gifts)
         # Keep the legacy file in sync for older endpoints/scripts.
         try:
-            _write_gifts_file(os.path.join(BASE_PATH, 'data', 'gifts.json'), gifts)
+            _write_gifts_file(os.path.join(PERSISTENT_DATA_DIR, 'gifts.json'), gifts)
         except Exception as e:
             logger.warning('Legacy gifts.json sync failed: %s', e)
         logger.info('✅ Сохранено %s подарков', len(gifts))
@@ -2582,31 +2589,62 @@ def save_gifts(gifts):
         logger.error(f"❌ Ошибка сохранения подарков: {e}")
         return False
 
+def _cases_legacy_json_path():
+    return os.path.join(PERSISTENT_DATA_DIR, 'cases.json')
+
 def load_cases():
-    """Загружает кейсы из JSON файла"""
+    """Загружает кейсы. Источник истины — таблица event_configs в БД (id='cases_catalog'),
+    так что кейсы переживают рестарт/редеплой наравне с событиями.
+    Если в БД пока пусто (первый запуск после обновления или ещё не мигрировали),
+    один раз подхватываем старый data/cases.json и сразу сохраняем в БД."""
     try:
-        file_path = os.path.join(BASE_PATH, 'data', 'cases.json')
+        _event_db_defaults(); conn = get_db_connection()
+        row = conn.execute('SELECT payload FROM event_configs WHERE id = ?', ('cases_catalog',)).fetchone()
+        if row and row[0]:
+            cases = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+            if isinstance(cases, list):
+                return cases
+    except Exception as e:
+        logger.warning(f'Cases DB load failed: {e}')
 
+    # Миграция/резервный вариант: старый JSON-файл.
+    try:
+        file_path = _cases_legacy_json_path()
         if not os.path.exists(file_path):
-            logger.error(f"❌ Файл cases.json не найден!")
+            logger.error("❌ Кейсы не найдены ни в БД, ни в cases.json!")
             return []
-
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            cases = data.get('cases', [])
-            logger.info(f"✅ Загружено {len(cases)} кейсов")
-            return cases
-
+        cases = data.get('cases', [])
+        logger.info(f"✅ Загружено {len(cases)} кейсов из legacy cases.json, переносим в БД")
+        try:
+            save_cases(cases)
+        except Exception as e:
+            logger.warning(f'Cases migration to DB failed: {e}')
+        return cases
     except Exception as e:
         logger.error(f"❌ Ошибка загрузки кейсов: {e}")
         return []
 
 def save_cases(cases):
-    """Надёжно сохраняет кейсы в data/cases.json."""
+    """Надёжно сохраняет кейсы в БД (event_configs, id='cases_catalog').
+    Дополнительно дублирует в data/cases.json как человекочитаемый бэкап —
+    но именно запись в БД является основным источником данных при загрузке."""
+    ok = True
     try:
-        data_dir = os.path.join(BASE_PATH, 'data')
-        os.makedirs(data_dir, exist_ok=True)
-        file_path = os.path.join(data_dir, 'cases.json')
+        _event_db_defaults(); conn = get_db_connection()
+        conn.execute(
+            'INSERT INTO event_configs (id,payload,updated_at) VALUES (?,?,CURRENT_TIMESTAMP) '
+            'ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=CURRENT_TIMESTAMP',
+            ('cases_catalog', json.dumps(cases, ensure_ascii=False))
+        )
+        conn.commit()
+        logger.info(f"✅ Сохранено {len(cases)} кейсов в БД")
+    except Exception as e:
+        ok = False
+        logger.error(f"❌ Ошибка сохранения кейсов в БД: {e}", exc_info=True)
+    try:
+        file_path = _cases_legacy_json_path()
         tmp_path = file_path + '.tmp'
         with open(tmp_path, 'w', encoding='utf-8') as f:
             json.dump({'cases': cases}, f, ensure_ascii=False, indent=2)
@@ -2614,18 +2652,13 @@ def save_cases(cases):
             try: os.fsync(f.fileno())
             except Exception: pass
         os.replace(tmp_path, file_path)
-        logger.info(f"✅ Сохранено {len(cases)} кейсов в {file_path}")
-        return True
     except Exception as e:
-        logger.error(f"❌ Ошибка сохранения кейсов: {e}", exc_info=True)
-        try:
-            if os.path.exists(file_path + '.tmp'): os.remove(file_path + '.tmp')
-        except Exception: pass
-        return False
+        logger.warning(f"⚠️ Не удалось обновить бэкап cases.json: {e}")
+    return ok
 
 
 # ─── Seasonal case compatibility / persistence ─────────────────────────────
-SEASONAL_CASE_FILE = os.path.join(BASE_PATH, 'data', 'seasonal_case.json')
+SEASONAL_CASE_FILE = os.path.join(PERSISTENT_DATA_DIR, 'seasonal_case.json')
 SEASONAL_CASE_DEFAULT = {
     'id': 'seasonal', 'seasonal': True, 'enabled': False,
     'name': 'Сезонный кейс', 'slug': 'seasonal',
@@ -2639,6 +2672,19 @@ SEASONAL_CASE_DEFAULT = {
 
 def load_seasonal_case():
     try:
+        _event_db_defaults(); conn = get_db_connection()
+        row = conn.execute('SELECT payload FROM event_configs WHERE id = ?', ('seasonal_case',)).fetchone()
+        if row and row[0]:
+            data = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+            if isinstance(data, dict):
+                obj = json.loads(json.dumps(SEASONAL_CASE_DEFAULT))
+                obj.update(data)
+                obj['id'] = 'seasonal'; obj['seasonal'] = True
+                return obj
+    except Exception as e:
+        logger.warning('Seasonal case DB load failed: %s', e)
+    # Миграция/резервный вариант: старый JSON-файл.
+    try:
         os.makedirs(os.path.dirname(SEASONAL_CASE_FILE), exist_ok=True)
         if not os.path.exists(SEASONAL_CASE_FILE):
             return json.loads(json.dumps(SEASONAL_CASE_DEFAULT))
@@ -2648,20 +2694,33 @@ def load_seasonal_case():
         if isinstance(data, dict):
             obj.update(data.get('case', data))
         obj['id'] = 'seasonal'; obj['seasonal'] = True
+        try: save_seasonal_case(obj)
+        except Exception as e: logger.warning('Seasonal case migration to DB failed: %s', e)
         return obj
     except Exception as e:
         logger.warning('Seasonal case load failed: %s', e)
         return json.loads(json.dumps(SEASONAL_CASE_DEFAULT))
 
 def save_seasonal_case(case_obj):
+    ok = True
+    try:
+        _event_db_defaults(); conn = get_db_connection()
+        conn.execute(
+            'INSERT INTO event_configs (id,payload,updated_at) VALUES (?,?,CURRENT_TIMESTAMP) '
+            'ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=CURRENT_TIMESTAMP',
+            ('seasonal_case', json.dumps(case_obj, ensure_ascii=False))
+        )
+        conn.commit()
+    except Exception as e:
+        ok = False
+        logger.error('Seasonal case DB save failed: %s', e)
     try:
         os.makedirs(os.path.dirname(SEASONAL_CASE_FILE), exist_ok=True)
         with open(SEASONAL_CASE_FILE, 'w', encoding='utf-8') as f:
             json.dump({'case': case_obj}, f, ensure_ascii=False, indent=2)
-        return True
     except Exception as e:
-        logger.error('Seasonal case save failed: %s', e)
-        return False
+        logger.warning('Seasonal case backup file save failed: %s', e)
+    return ok
 
 def seasonal_case_is_active(case_obj=None):
     case_obj = case_obj or load_seasonal_case()
@@ -2693,7 +2752,7 @@ def get_public_cases_with_seasonal():
     return cases
 
 # ─── Events ────────────────────────────────────────────────────────────────
-EVENTS_FILE = os.path.join(BASE_PATH, 'data', 'events.json')
+EVENTS_FILE = os.path.join(PERSISTENT_DATA_DIR, 'events.json')
 GAME_UI_DEFAULTS = {
     # Public Games page: only the Event entry and ordinary game modes live here.
     # Event-specific content (special mode, event cases, market) belongs to the
@@ -3103,7 +3162,7 @@ def get_active_events():
 def load_case_sections():
     """Загружает список разделов кейсов"""
     try:
-        file_path = os.path.join(BASE_PATH, 'data', 'case_sections.json')
+        file_path = os.path.join(PERSISTENT_DATA_DIR, 'case_sections.json')
         if not os.path.exists(file_path):
             return []
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -3118,7 +3177,7 @@ def load_case_sections():
 def save_case_sections(sections):
     """Сохраняет список разделов кейсов"""
     try:
-        file_path = os.path.join(BASE_PATH, 'data', 'case_sections.json')
+        file_path = os.path.join(PERSISTENT_DATA_DIR, 'case_sections.json')
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump({'sections': sections}, f, ensure_ascii=False, indent=2)
         return True
@@ -3137,7 +3196,7 @@ _db_ready = False
 _db_lock = threading.Lock()  # Один замок на все операции с БД
 
 # Путь к БД: если задан DB_DIR (persistent disk), используем его; иначе — data/ в проекте
-_db_dir = os.environ.get('DB_DIR', os.path.join(BASE_PATH, 'data'))
+_db_dir = PERSISTENT_DATA_DIR
 os.makedirs(_db_dir, exist_ok=True)
 DB_PATH = os.path.join(_db_dir, 'raswet_gifts.db')
 
@@ -4147,7 +4206,7 @@ def init_db():
         _db_ready = False
 
         os.makedirs(_db_dir, exist_ok=True)
-        data_path = os.path.join(BASE_PATH, 'data')
+        data_path = os.path.join(PERSISTENT_DATA_DIR)
         os.makedirs(data_path, exist_ok=True)
         for sub in ['static/gifs/gifts', 'static/gifs/cases', 'static/uploads/notifications']:
             os.makedirs(os.path.join(BASE_PATH, sub), exist_ok=True)
@@ -7808,7 +7867,7 @@ def fragment_gift_details():
             return jsonify({'success': False, 'error': 'slug и number обязательны'})
 
         # Кэш на 24 часа
-        cache_dir = os.path.join(BASE_PATH, 'data', 'fragment_gift_cache')
+        cache_dir = os.path.join(PERSISTENT_DATA_DIR, 'fragment_gift_cache')
         os.makedirs(cache_dir, exist_ok=True)
         cache_file = os.path.join(cache_dir, str(slug) + '_' + str(number) + '.json')
 
@@ -9227,7 +9286,7 @@ def api_cases():
     try:
         logger.info("📦 Загрузка кейсов из файла...")
 
-        data_path = os.path.join(BASE_PATH, 'data')
+        data_path = os.path.join(PERSISTENT_DATA_DIR)
         file_path = os.path.join(data_path, 'cases.json')
 
         logger.info(f"📁 Путь к файлу: {file_path}")
@@ -10586,7 +10645,7 @@ def get_recent_wins():
 
         win_history_list = []
         # load cases list to map case_name -> case_id
-        cases_path = os.path.join(BASE_PATH, 'data', 'cases.json')
+        cases_path = os.path.join(PERSISTENT_DATA_DIR, 'cases.json')
         cases_map = {}
         try:
             if os.path.exists(cases_path):
@@ -11356,7 +11415,7 @@ def _portal_sync_floors():
         portal_catalog.append(item)
 
     # Обновляем gifts.json
-    gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+    gifts_path = os.path.join(PERSISTENT_DATA_DIR, 'gifts.json')
     if not os.path.exists(gifts_path):
         return {'success': False, 'error': 'gifts.json не найден'}
 
@@ -11398,7 +11457,7 @@ def _portal_sync_floors():
 
     # Сохраняем время синка
     try:
-        sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+        sync_file = os.path.join(PERSISTENT_DATA_DIR, 'portal_last_sync.json')
         with open(sync_file, 'w', encoding='utf-8') as f:
             json.dump({'timestamp': time.time(), 'updated': updated, 'total': len(gifts)}, f)
     except Exception:
@@ -11775,7 +11834,7 @@ def portal_status_legacy():
         last_sync_ago = 'никогда'
         last_updated = 0
         try:
-            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            sync_file = os.path.join(PERSISTENT_DATA_DIR, 'portal_last_sync.json')
             if os.path.exists(sync_file):
                 with open(sync_file, 'r', encoding='utf-8') as f:
                     sd = json.load(f)
@@ -11838,7 +11897,7 @@ def portal_status():
         last_sync_ago = 'никогда'
         last_updated = 0
         try:
-            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            sync_file = os.path.join(PERSISTENT_DATA_DIR, 'portal_last_sync.json')
             if os.path.exists(sync_file):
                 with open(sync_file, 'r', encoding='utf-8') as f:
                     sd = json.load(f)
@@ -11912,7 +11971,7 @@ def portal_info():
         last_sync_ago = 'никогда'
         last_updated = 0
         try:
-            sync_file = os.path.join(BASE_PATH, 'data', 'portal_last_sync.json')
+            sync_file = os.path.join(PERSISTENT_DATA_DIR, 'portal_last_sync.json')
             if os.path.exists(sync_file):
                 with open(sync_file, 'r', encoding='utf-8') as f:
                     sd = json.load(f)
@@ -13471,7 +13530,7 @@ def api_gifts():
             fragment_cache_time = None
             logger.info("API gifts: принудительная перезагрузка кэша")
 
-        file_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        file_path = os.path.join(PERSISTENT_DATA_DIR, 'gifts.json')
         file_exists = os.path.exists(file_path)
 
         gifts = build_fragment_first_gifts_catalog(force_refresh=False)
@@ -14618,7 +14677,7 @@ def ultimate_crash_quick_status():
     """Быстрый статус без блокировок базы данных"""
     try:
         # Используем кэширование или файловую систему для минимальной блокировки
-        status_file = os.path.join(BASE_PATH, 'data', 'crash_status.json')
+        status_file = os.path.join(PERSISTENT_DATA_DIR, 'crash_status.json')
 
         # Пытаемся прочитать из файла
         if os.path.exists(status_file):
@@ -15763,7 +15822,7 @@ def api_get_news():
         user_id = request.args.get('user_id')
         
         # Загружаем из news.json
-        news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+        news_file = os.path.join(PERSISTENT_DATA_DIR, 'news.json')
         if not os.path.exists(news_file):
             return jsonify({'success': True, 'news': []})
         
@@ -15827,7 +15886,7 @@ def api_get_news():
 def api_get_news_detail(news_id):
     """Получить детали одной новости из news.json"""
     try:
-        news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+        news_file = os.path.join(PERSISTENT_DATA_DIR, 'news.json')
         if not os.path.exists(news_file):
             return jsonify({'success': False, 'error': 'Новость не найдена'})
         
@@ -15858,7 +15917,7 @@ def api_claim_news_reward():
             return jsonify({'success': False, 'error': 'user_id и news_id обязательны'})
         
         # Загружаем из news.json
-        news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+        news_file = os.path.join(PERSISTENT_DATA_DIR, 'news.json')
         if not os.path.exists(news_file):
             return jsonify({'success': False, 'error': 'Новость не найдена'})
         
@@ -15936,12 +15995,12 @@ def api_claim_news_reward():
 # ===== NEWS.JSON MANAGEMENT (admin) =====
 
 def _load_news_json():
-    news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+    news_file = os.path.join(PERSISTENT_DATA_DIR, 'news.json')
     with open(news_file, 'r', encoding='utf-8-sig') as f:
         return json.load(f)
 
 def _save_news_json(data):
-    news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+    news_file = os.path.join(PERSISTENT_DATA_DIR, 'news.json')
     with open(news_file, 'w', encoding='utf-8-sig') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
@@ -15949,7 +16008,7 @@ def _save_news_json(data):
 def _sync_news_to_db(conn):
     """Sync entries from data/news.json into the `news` DB table (insert or update)."""
     try:
-        news_file = os.path.join(BASE_PATH, 'data', 'news.json')
+        news_file = os.path.join(PERSISTENT_DATA_DIR, 'news.json')
         if not os.path.exists(news_file):
             return
         with open(news_file, 'r', encoding='utf-8-sig') as f:
@@ -16414,7 +16473,7 @@ def portal_parse_gift_url():
         if not name:
             # Ищем подарок в gifts.json по slug
             try:
-                with open(os.path.join(BASE_PATH, 'data', 'gifts.json'), 'r', encoding='utf-8') as f:
+                with open(os.path.join(PERSISTENT_DATA_DIR, 'gifts.json'), 'r', encoding='utf-8') as f:
                     raw = json.load(f)
                 for g in (raw.get('gifts') or []):
                     gslug = (g.get('fragment_slug') or _slugify_fragment_name(g.get('name', ''))).lower()
@@ -16459,7 +16518,7 @@ def admin_gifts_update():
         if gift_id is None:
             return jsonify({'success': False, 'error': 'id обязателен'})
 
-        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        gifts_path = os.path.join(PERSISTENT_DATA_DIR, 'gifts.json')
         with open(gifts_path, 'r', encoding='utf-8') as f:
             raw = json.load(f)
         gifts = raw.get('gifts', []) if isinstance(raw, dict) else raw
@@ -16524,7 +16583,7 @@ def admin_gifts_add():
         if not name or value <= 0:
             return jsonify({'success': False, 'error': 'Нужны name и value'})
 
-        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        gifts_path = os.path.join(PERSISTENT_DATA_DIR, 'gifts.json')
         with open(gifts_path, 'r', encoding='utf-8') as f:
             raw = json.load(f)
         gifts = raw.get('gifts', []) if isinstance(raw, dict) else raw
@@ -16579,7 +16638,7 @@ def admin_gifts_delete():
         if gift_id is None:
             return jsonify({'success': False, 'error': 'id обязателен'})
 
-        gifts_path = os.path.join(BASE_PATH, 'data', 'gifts.json')
+        gifts_path = os.path.join(PERSISTENT_DATA_DIR, 'gifts.json')
         with open(gifts_path, 'r', encoding='utf-8') as f:
             raw = json.load(f)
         gifts = raw.get('gifts', []) if isinstance(raw, dict) else raw
@@ -24502,7 +24561,7 @@ def api_level_system():
 def api_level_rewards():
     """Возвращает награды за уровни из levels.json"""
     try:
-        levels_file = os.path.join(BASE_PATH, 'data', 'levels.json')
+        levels_file = os.path.join(PERSISTENT_DATA_DIR, 'levels.json')
         if os.path.exists(levels_file):
             with open(levels_file, 'r', encoding='utf-8') as f:
                 levels = json.load(f)
