@@ -9578,11 +9578,12 @@ def open_case():
                                      (stars_amount, user_id))
                         won_gift = {
                             'id': -1,
-                            'name': f'? {ton_amount} TON',
-                            'image': '/static/img/tons/ton_1.svg',
+                            'name': f'{ton_amount} GRAM',
+                            'image': '/static/img/ton.png',
                             'value': stars_amount,
                             'type': 'ton_balance',
-                            'ton_amount': ton_amount
+                            'ton_amount': ton_amount,
+                            'inventory_id': None
                         }
                         won_gifts.append(won_gift)
 
@@ -9593,6 +9594,8 @@ def open_case():
                     else:
                         gift = _resolve_case_gift_payload(gifts, selected_gift_info)
                         if gift:
+                            # Копия, чтобы не мутировать общий каталог подарков.
+                            gift = dict(gift)
                             won_gifts.append(gift)
 
                             inv_gift_id = gift.get('id') if isinstance(gift.get('id'), int) else None
@@ -9601,6 +9604,11 @@ def open_case():
                                 INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
                                 VALUES (?, ?, ?, ?, ?)
                             ''', (user_id, inv_gift_id, gift['name'], gift['image'], gift.get('value', 0)))
+                            # ID записи в инвентаре нужен странице кейса для кнопки «Продать».
+                            try:
+                                gift['inventory_id'] = cursor.lastrowid
+                            except Exception:
+                                gift['inventory_id'] = None
 
                             cursor.execute('''
                                 INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
@@ -9608,13 +9616,17 @@ def open_case():
                             ''', (user_id, f"User_{user_id}", gift['name'], gift['image'], gift.get('value', 0), case['name']))
             else:
                 if gifts:
-                    gift = random.choice(gifts)
+                    gift = dict(random.choice(gifts))
                     won_gifts.append(gift)
 
                     cursor.execute('''
                         INSERT INTO inventory (user_id, gift_id, gift_name, gift_image, gift_value)
                         VALUES (?, ?, ?, ?, ?)
                     ''', (user_id, gift['id'], gift['name'], gift['image'], gift.get('value', 0)))
+                    try:
+                        gift['inventory_id'] = cursor.lastrowid
+                    except Exception:
+                        gift['inventory_id'] = None
 
         if case.get('limited'):
             try:
