@@ -161,6 +161,14 @@ body:after{right:6px;bottom:14px;width:96px;height:145px;background-image:url('/
 @keyframes buySuccessCheck{to{stroke-dashoffset:0}}
 .buy-success-text{color:#fff;font-size:14px;font-weight:850;text-align:center;white-space:nowrap}
 </style>
+<style id="event-unlock-timer-v1">
+.section.is-locked-section{position:relative}
+.section.is-locked-section .cards,.section.is-locked-section .market-grid,.section.is-locked-section .special-mode-grid{filter:grayscale(.85);opacity:.5;pointer-events:none;user-select:none}
+.section-lock-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:rgba(10,14,24,.72);border:1px solid rgba(255,255,255,.1);color:#cfd8e8;font-size:10px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap}
+.special-mode-card.is-locked{filter:grayscale(.9)!important;opacity:.62!important;cursor:not-allowed!important}
+.special-mode-card.is-locked .special-mode-sub{color:#ffd9a8!important;text-transform:none!important;letter-spacing:.2px!important;font-size:11px!important;font-weight:900!important}
+@media(max-width:700px){.special-mode-card.is-locked .special-mode-sub{font-size:9px!important}.section-lock-chip{font-size:9px;padding:5px 8px}}
+</style>
 </head>
 <body>
 <div class="loading" id="loading"><img id="loadingGif" src="/static/img/loading.gif" alt=""><div class="loading-text">Загрузка</div></div>
@@ -174,12 +182,68 @@ const $=id=>document.getElementById(id);
 let eventData=null, left=0;
 function fmt(sec){sec=Math.max(0,Number(sec||0));let h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=Math.floor(sec%60);return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')}
 function imgSrc(v){return v||'/static/img/gift.png'}
+function fmtLeft(sec){
+  sec=Math.max(0,Math.ceil(Number(sec||0)));
+  var d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60),s=sec%60;
+  if(d>0)return d+' д '+h+' ч';
+  if(h>0)return h+' ч '+m+' мин';
+  if(m>0)return m+' мин '+s+' сек';
+  return s+' сек';
+}
+function unlockUntil(obj){
+  if(!obj)return 0;
+  if(typeof obj.unlock_in==='number'&&obj.unlock_in>0)return Date.now()+obj.unlock_in*1000;
+  if(obj.unlock_at){var t=new Date(obj.unlock_at).getTime();if(!isNaN(t))return t}
+  return 0;
+}
+var lockTickers=[];
+function registerLock(el,until,prefix){if(!el||!until)return;lockTickers.push({el:el,until:until,prefix:prefix===undefined?'Откроется через ':prefix});el.textContent=(prefix===undefined?'Откроется через ':prefix)+fmtLeft((until-Date.now())/1000);}
+setInterval(function(){
+  var now=Date.now(),reload=false;
+  lockTickers=lockTickers.filter(function(t){
+    if(!t.el||!t.el.isConnected)return false;
+    var left=(t.until-now)/1000;
+    if(left<=0){reload=true;return false}
+    t.el.textContent=t.prefix+fmtLeft(left);return true;
+  });
+  if(reload)load();
+},1000);
 function price(v){return Number(v||0).toFixed(2)}
 function resolveLoading(name){let n=String(name||'loading.gif').trim();if(!n)n='loading.gif';if(n.startsWith('/'))return n;if(n.includes('/'))return '/static/'+n.replace(/^\/+/, '');return '/static/img/'+n}
 function caseApi(id){
   var sid=String(id);
   var url=(sid==='seasonal')?('/api/cases/by-slug/seasonal'):('/api/cases/'+encodeURIComponent(sid));
-  return fetch(url,{cache:'no-store'}).then(function(r){return r.json()});
+  return fetch(url,{cache:'no-store'}).then(function(r){return r.json()}).catch(function(){return {success:false}});
+}
+/* Кейсы события грузятся одним пакетным запросом; если он недоступен
+   (старый бэкенд/сеть), падаем на поштучную загрузку и показываем
+   ровно те кейсы, которые удалось получить. */
+function loadEventCases(ids){
+  var list=(ids||[]).map(String).filter(Boolean);
+  if(!list.length)return Promise.resolve([]);
+  var url='/api/cases/batch?ids='+encodeURIComponent(list.join(','))+'&ts='+Date.now();
+  return fetch(url,{cache:'no-store'}).then(function(r){
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(d){
+    if(!d||!d.success||!Array.isArray(d.cases))throw new Error('bad payload');
+    var byRef={};
+    d.cases.forEach(function(c){
+      if(!c)return;
+      [c.requested_id,c.id,c.slug].forEach(function(k){if(k!==undefined&&k!==null)byRef[String(k).toLowerCase()]=c});
+    });
+    var out=list.map(function(id){return byRef[String(id).toLowerCase()]||null});
+    if(out.some(function(x){return !x}))return fallbackEventCases(list,out);
+    return out;
+  }).catch(function(){
+    return fallbackEventCases(list,list.map(function(){return null}));
+  });
+}
+function fallbackEventCases(list,partial){
+  return Promise.all(list.map(function(id,i){
+    if(partial&&partial[i])return partial[i];
+    return caseApi(id).then(function(d){return d&&d.success?d.case:null});
+  }));
 }
 function casePrice(c){
   var raw=Number(c&&c.cost||0);
@@ -197,7 +261,12 @@ function renderSections(sections){
     const hasItems = sec.type==='mode' ? (sec.items||[]).some(function(x){return x&&x.visible!==false}) : (sec.type==='cases' ? (sec.case_ids||[]).length>0 : (sec.type==='market' ? (sec.items||[]).length>0 : ((sec.items||[]).length>0 || (sec.case_ids||[]).length>0)));
     if(!hasItems) continue;
     const wrap=document.createElement('section');wrap.className='section fade-up';wrap.style.animationDelay=(delay++)*60+'ms';
-    const h=document.createElement('div');h.className='section-head';h.innerHTML='<div class="section-title"></div>';h.querySelector('.section-title').textContent=sec.title||'Раздел';wrap.appendChild(h);
+    const sectionUntil=unlockUntil(sec);
+    const sectionLocked=!!sectionUntil&&sectionUntil>Date.now();
+    if(sectionLocked)wrap.classList.add('is-locked-section');
+    const h=document.createElement('div');h.className='section-head';h.innerHTML='<div class="section-title"></div>';h.querySelector('.section-title').textContent=sec.title||'Раздел';
+    if(sectionLocked){const chip=document.createElement('div');chip.className='section-lock-chip';h.appendChild(chip);registerLock(chip,sectionUntil,'🔒 Откроется через ');}
+    wrap.appendChild(h);
     const grid=document.createElement('div');
     if(sec.type==='mode'){
       grid.className='special-mode-grid';
@@ -208,28 +277,52 @@ function renderSections(sections){
         if(it.image) card.style.setProperty('--mode-image', "url(" + JSON.stringify(imgSrc(it.image)) + ")");
         card.querySelector('.special-mode-name').textContent=it.name||'Кнопка';
         card.querySelector('.special-mode-sub').textContent=it.subtitle||'';
-        const unlock=it.unlock_at?new Date(it.unlock_at):null; const locked=!!unlock && !isNaN(unlock.getTime()) && unlock.getTime()>Date.now();
-        if(locked){card.classList.add('is-locked');const badge=document.createElement('div');badge.className='special-mode-lock';badge.textContent='Откроется через '+fmt(Math.ceil((unlock.getTime()-Date.now())/1000));card.appendChild(badge);}
+        const until=unlockUntil(it); const locked=sectionLocked||(!!until&&until>Date.now());
+        if(locked){
+          card.classList.add('is-locked');
+          card.disabled=true;
+          const badge=document.createElement('div');badge.className='special-mode-lock';badge.textContent='🔒 Закрыто';card.appendChild(badge);
+          // Вместо нижней подписи показываем, сколько осталось до открытия.
+          const sub=card.querySelector('.special-mode-sub');
+          if(until>Date.now())registerLock(sub,until,'Откроется через ');
+          else if(sub)sub.textContent='Раздел ещё закрыт';
+        }
         card.onclick=function(){if(locked)return;const path=String(it.path||'').trim();if(path&&path!=='#')location.href=path;};
         grid.appendChild(card);
       });
     }else if(sec.type==='cases'){
       grid.className='cards';
-      const ids=(sec.case_ids||[]).map(String);
+      const ids=(sec.case_ids||[]).map(String).filter(Boolean);
       if(!ids.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Кейсы события пока не добавлены</div>';}
-      else Promise.allSettled(ids.map(caseApi)).then(results=>{
-        grid.innerHTML='';
-        results.forEach(function(result){
-          const d=result.status==='fulfilled'?result.value:null;
-          const c=d&&d.success?d.case:null;if(!c)return;
-          const card=document.createElement('button');card.className='case-card';card.type='button';
-          card.setAttribute('aria-label',c.name||'Кейс');
-          card.innerHTML='<div class="case-name"></div><img class="case-img" loading="lazy"><div class="case-price"><img src="/static/img/ton.png"><span></span> GRAM</div>';
-          card.querySelector('.case-img').src=imgSrc(c.image||c.png);card.querySelector('.case-name').textContent=c.name||'Кейс';card.querySelector('.case-price span').textContent=price(casePrice(c));
-          grid.appendChild(card);
+      else{
+        grid.innerHTML='<div class="empty" style="grid-column:1/-1">Загрузка кейсов…</div>';
+        loadEventCases(ids).then(function(cases){
+          grid.innerHTML='';
+          var missing=0;
+          (cases||[]).forEach(function(c){
+            if(!c){missing++;return}
+            const card=document.createElement('button');card.className='case-card';card.type='button';
+            card.setAttribute('aria-label',c.name||'Кейс');
+            card.innerHTML='<div class="case-name"></div><img class="case-img" loading="lazy"><div class="case-price"><img src="/static/img/ton.png"><span></span> GRAM</div>';
+            card.querySelector('.case-img').src=imgSrc(c.image||c.png);
+            card.querySelector('.case-img').onerror=function(){this.onerror=null;this.src='/static/img/gift.png'};
+            card.querySelector('.case-name').textContent=c.name||'Кейс';
+            card.querySelector('.case-price span').textContent=price(casePrice(c));
+            card.style.cursor=sectionLocked?'not-allowed':'pointer';
+            card.onclick=function(){if(sectionLocked)return;var slug=c.slug||c.id;if(slug)location.href='/case/'+encodeURIComponent(slug)};
+            grid.appendChild(card);
+          });
+          if(!grid.children.length){
+            grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить кейсы события<br><button type="button" class="event-retry">Повторить</button></div>';
+            var rb=grid.querySelector('.event-retry');
+            if(rb){rb.style.cssText='margin-top:10px;padding:8px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-weight:800;cursor:pointer';rb.onclick=function(){load()}}
+          }else if(missing>0){
+            var note=document.createElement('div');note.className='empty';note.style.gridColumn='1/-1';
+            note.textContent='Часть кейсов события недоступна ('+missing+' шт.) — проверьте их в админ-панели.';
+            grid.appendChild(note);
+          }
         });
-        if(!grid.children.length)grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить кейсы события</div>';
-      });
+      }
     }else if(sec.type==='market'){
       grid.className='market-grid';
       fetch('/api/events/witch-hat-party/market?ts='+Date.now(),{cache:'no-store'}).then(r=>r.json()).then(d=>{
@@ -239,7 +332,7 @@ function renderSections(sections){
           const card=document.createElement('button');card.type='button';card.className='market-card';
           card.innerHTML='<img class="market-img" loading="lazy"><div class="market-name"></div><div class="market-price"><img src="/static/img/ton.png"><span></span></div><div class="event-market-note">1 шт. · Подробнее</div>';
           card.querySelector('.market-img').src=imgSrc(it.image);card.querySelector('.market-name').textContent=it.name||'Подарок';card.querySelector('.market-price span').textContent=price(it.price_gram||it.price_ton)+' GRAM';
-          card.onclick=function(){openEventGiftModal(it)};grid.appendChild(card);
+          card.onclick=function(){if(sectionLocked)return;openEventGiftModal(it)};grid.appendChild(card);
         });
       }).catch(function(){grid.innerHTML='<div class="empty error" style="grid-column:1/-1">Не удалось загрузить маркет</div>'});
     }else{
