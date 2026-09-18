@@ -4020,6 +4020,18 @@ def _create_all_tables(conn):
             completed_at TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )''',
+        'ghost_road_sessions': '''CREATE TABLE IF NOT EXISTS ghost_road_sessions (
+            token TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            bet REAL NOT NULL,
+            difficulty TEXT NOT NULL DEFAULT 'light',
+            step INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'active',
+            payout REAL NOT NULL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )''',
     }
 
     ok = 0
@@ -4089,6 +4101,7 @@ def _create_all_tables(conn):
         'CREATE INDEX IF NOT EXISTS idx_case_open_user ON case_open_history(user_id)',
         'CREATE INDEX IF NOT EXISTS idx_win_history_user ON win_history(user_id)',
         'CREATE INDEX IF NOT EXISTS idx_quests_active ON crash_quests(is_active)',
+        'CREATE INDEX IF NOT EXISTS idx_ghost_road_user ON ghost_road_sessions(user_id, status)',
     ]
     for idx_sql in indexes:
         try:
@@ -6331,6 +6344,19 @@ def lobby_page():
     """Страница лобби"""
     return render_template('lobby.html')
 
+@app.route('/ghost-road')
+def ghost_road_game_page():
+    """Страница игрового режима Ghost Road."""
+    candidates = [
+        os.path.join(BASE_PATH, 'ghost_road.html'),
+        os.path.join(BASE_PATH, 'templates', 'ghost_road.html'),
+    ]
+    for event_file in candidates:
+        if os.path.isfile(event_file):
+            return send_file(event_file)
+    logger.error('❌ Файл Ghost Road не найден. Проверены: %s', candidates)
+    return 'Ghost Road page not found', 404
+
 @app.route('/games')
 def games_page():
     """Страница выбора игр"""
@@ -6693,6 +6719,334 @@ def lucky_buy_spin():
         return jsonify({'success': False, 'error': 'Server error'})
     finally:
         conn.close()
+
+# ══════════════════════════════════════════════════════════════════════
+#  GHOST ROAD — режим «перейди дорогу».
+#  Исход каждого шага решает сервер, клиент только рисует анимацию —
+#  подменой JS результат не изменить.
+# ══════════════════════════════════════════════════════════════════════
+
+GHOST_ROAD_EDGE = 0.03           # маржа заведения, 3%
+GHOST_ROAD_LANES = 15
+
+GHOST_ROAD_PAYOUTS = {
+    'light': [
+        1.01, 1.05, 1.10, 1.16, 1.24,
+        1.35, 1.50, 1.70, 2.00, 2.45,
+        3.15, 4.30, 6.30, 9.60, 15.00,
+    ],
+    # сюда позже добавляются medium / hard — формат тот же, длина 15
+}
+
+GHOST_ROAD_MIN_BET = 0.10
+GHOST_ROAD_MAX_BET = 100.0
+GHOST_ROAD_CARS_DIR = 'static/road/cars'
+
+
+def _gr_survival_chances(difficulty='light'):
+    """Шанс выжить на каждом шаге, [0..1].
+
+    p_1 = (1 - edge) / P_1
+    p_i = P_(i-1) / P_i   при i >= 2
+
+    При таком расчёте матожидание одинаково на любом шаге и равно
+    (1 - GHOST_ROAD_EDGE). Поменять сложность = поменять только
+    таблицу выплат, проценты пересчитаются сами.
+    """
+    payouts = GHOST_ROAD_PAYOUTS.get(difficulty) or GHOST_ROAD_PAYOUTS['light']
+    chances = []
+    prev = None
+    for i, p in enumerate(payouts):
+        chance = (1.0 - GHOST_ROAD_EDGE) / p if i == 0 else prev / p
+        chances.append(min(0.999, max(0.01, chance)))
+        prev = p
+    return chances
+
+
+def _gr_load_session(cursor, token, user_id):
+    cursor.execute(
+        'SELECT token, user_id, bet, difficulty, step, status '
+        'FROM ghost_road_sessions WHERE token = ? AND user_id = ?',
+        (token, user_id)
+    )
+    row = cursor.fetchone()
+    if not row:
+        return None
+    return {
+        'token': row[0], 'user_id': row[1], 'bet': float(row[2]),
+        'difficulty': row[3], 'step': int(row[4]), 'status': row[5],
+    }
+
+
+@app.route('/api/ghost-road/config', methods=['GET'])
+def ghost_road_config():
+    difficulty = (request.args.get('difficulty') or 'light').lower()
+    payouts = GHOST_ROAD_PAYOUTS.get(difficulty) or GHOST_ROAD_PAYOUTS['light']
+
+    cars = []
+    try:
+        cars_path = os.path.join(BASE_PATH, GHOST_ROAD_CARS_DIR)
+        for name in sorted(os.listdir(cars_path)):
+            if name.lower().endswith(('.png', '.webp', '.gif')):
+                cars.append('/' + GHOST_ROAD_CARS_DIR + '/' + name)
+    except Exception as e:
+        logger.warning(f'Ghost Road: не читается папка машин: {e}')
+
+    return jsonify({
+        'success': True,
+        'lanes': GHOST_ROAD_LANES,
+        'difficulty': difficulty,
+        'difficulties': list(GHOST_ROAD_PAYOUTS.keys()),
+        'payouts': payouts,
+        'min_bet': GHOST_ROAD_MIN_BET,
+        'max_bet': GHOST_ROAD_MAX_BET,
+        'cars': cars,
+    })
+
+
+@app.route('/api/ghost-road/start', methods=['POST'])
+def ghost_road_start():
+    data = request.get_json(force=True) or {}
+    user_id = data.get('user_id')
+    difficulty = (data.get('difficulty') or 'light').lower()
+
+    if not user_id:
+        return jsonify({'success': False, 'error': 'Не передан user_id'})
+    if difficulty not in GHOST_ROAD_PAYOUTS:
+        difficulty = 'light'
+
+    try:
+        bet = round(float(data.get('bet') or 0), 2)
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'error': 'Некорректная ставка'})
+
+    if bet < GHOST_ROAD_MIN_BET:
+        return jsonify({'success': False, 'error': f'Минимальная ставка {GHOST_ROAD_MIN_BET:.2f}'})
+    if bet > GHOST_ROAD_MAX_BET:
+        return jsonify({'success': False, 'error': f'Максимальная ставка {GHOST_ROAD_MAX_BET:.2f}'})
+
+    conn = get_db_connection()
+    try:
+        with conn:
+            cursor = conn.cursor()
+
+            cursor.execute(
+                "UPDATE ghost_road_sessions SET status = 'abandoned' "
+                "WHERE user_id = ? AND status = 'active'",
+                (user_id,)
+            )
+
+            cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({'success': False, 'error': 'Пользователь не найден'})
+
+            balance = float(row[0] or 0)
+            if balance < bet:
+                return jsonify({'success': False, 'error': 'Недостаточно средств'})
+
+            new_balance = round(balance - bet, 2)
+            cursor.execute('UPDATE users SET balance_stars = ? WHERE id = ?', (new_balance, user_id))
+
+            token = secrets.token_urlsafe(16)
+            cursor.execute(
+                'INSERT INTO ghost_road_sessions (token, user_id, bet, difficulty, step, status) '
+                "VALUES (?, ?, ?, ?, 0, 'active')",
+                (token, user_id, bet, difficulty)
+            )
+            cursor.execute(
+                'INSERT INTO user_history (user_id, operation_type, amount, description) VALUES (?, ?, ?, ?)',
+                (user_id, 'ghost_road_bet', -bet, f'Ghost Road: ставка {bet:.2f} ({difficulty})')
+            )
+
+            _set_cached_balance(user_id, new_balance)
+
+        return jsonify({
+            'success': True,
+            'token': token,
+            'bet': bet,
+            'difficulty': difficulty,
+            'payouts': GHOST_ROAD_PAYOUTS[difficulty],
+            'new_balance': new_balance,
+        })
+    except Exception as e:
+        logger.error(f'Ghost Road start error: {e}')
+        return jsonify({'success': False, 'error': 'Ошибка сервера'})
+    finally:
+        conn.close()
+
+
+@app.route('/api/ghost-road/step', methods=['POST'])
+def ghost_road_step():
+    data = request.get_json(force=True) or {}
+    user_id = data.get('user_id')
+    token = data.get('token')
+
+    if not user_id or not token:
+        return jsonify({'success': False, 'error': 'Нет активного забега'})
+
+    conn = get_db_connection()
+    try:
+        with conn:
+            cursor = conn.cursor()
+            s = _gr_load_session(cursor, token, user_id)
+            if not s:
+                return jsonify({'success': False, 'error': 'Забег не найден'})
+            if s['status'] != 'active':
+                return jsonify({'success': False, 'error': 'Забег уже завершён'})
+
+            payouts = GHOST_ROAD_PAYOUTS.get(s['difficulty']) or GHOST_ROAD_PAYOUTS['light']
+            chances = _gr_survival_chances(s['difficulty'])
+
+            step_index = s['step']
+            if step_index >= len(payouts):
+                return jsonify({'success': False, 'error': 'Дорога уже пройдена'})
+
+            survived = random.random() < chances[step_index]
+
+            if not survived:
+                cursor.execute(
+                    "UPDATE ghost_road_sessions SET status = 'crashed', payout = 0, "
+                    "updated_at = CURRENT_TIMESTAMP WHERE token = ?",
+                    (token,)
+                )
+                cursor.execute(
+                    'INSERT INTO user_history (user_id, operation_type, amount, description) VALUES (?, ?, ?, ?)',
+                    (user_id, 'ghost_road_lose', -s['bet'],
+                     f"Ghost Road: сбит на полосе {step_index + 1}")
+                )
+                return jsonify({
+                    'success': True,
+                    'survived': False,
+                    'step': step_index + 1,
+                    'lane': step_index + 1,
+                    'bet': s['bet'],
+                })
+
+            new_step = step_index + 1
+            finished = new_step >= len(payouts)
+            payout = round(s['bet'] * payouts[new_step - 1], 2)
+
+            cursor.execute(
+                'UPDATE ghost_road_sessions SET step = ?, updated_at = CURRENT_TIMESTAMP WHERE token = ?',
+                (new_step, token)
+            )
+
+            return jsonify({
+                'success': True,
+                'survived': True,
+                'step': new_step,
+                'lane': new_step,
+                'multiplier': payouts[new_step - 1],
+                'payout': payout,
+                'next_multiplier': payouts[new_step] if not finished else None,
+                'finished': finished,
+            })
+    except Exception as e:
+        logger.error(f'Ghost Road step error: {e}')
+        return jsonify({'success': False, 'error': 'Ошибка сервера'})
+    finally:
+        conn.close()
+
+
+@app.route('/api/ghost-road/cashout', methods=['POST'])
+def ghost_road_cashout():
+    data = request.get_json(force=True) or {}
+    user_id = data.get('user_id')
+    token = data.get('token')
+
+    if not user_id or not token:
+        return jsonify({'success': False, 'error': 'Нет активного забега'})
+
+    conn = get_db_connection()
+    try:
+        with conn:
+            cursor = conn.cursor()
+            s = _gr_load_session(cursor, token, user_id)
+            if not s:
+                return jsonify({'success': False, 'error': 'Забег не найден'})
+            if s['status'] != 'active':
+                return jsonify({'success': False, 'error': 'Забег уже завершён'})
+            if s['step'] <= 0:
+                return jsonify({'success': False, 'error': 'Сначала сделай хотя бы один шаг'})
+
+            payouts = GHOST_ROAD_PAYOUTS.get(s['difficulty']) or GHOST_ROAD_PAYOUTS['light']
+            multiplier = payouts[min(s['step'], len(payouts)) - 1]
+            payout = round(s['bet'] * multiplier, 2)
+
+            cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
+            row = cursor.fetchone()
+            if not row:
+                return jsonify({'success': False, 'error': 'Пользователь не найден'})
+
+            new_balance = round(float(row[0] or 0) + payout, 2)
+            cursor.execute('UPDATE users SET balance_stars = ? WHERE id = ?', (new_balance, user_id))
+            cursor.execute(
+                "UPDATE ghost_road_sessions SET status = 'cashed', payout = ?, "
+                "updated_at = CURRENT_TIMESTAMP WHERE token = ?",
+                (payout, token)
+            )
+            cursor.execute(
+                'INSERT INTO user_history (user_id, operation_type, amount, description) VALUES (?, ?, ?, ?)',
+                (user_id, 'ghost_road_win', payout,
+                 f'Ghost Road: забрал {payout:.2f} на {multiplier:.2f}x')
+            )
+
+            _set_cached_balance(user_id, new_balance)
+
+        return jsonify({
+            'success': True,
+            'payout': payout,
+            'multiplier': multiplier,
+            'step': s['step'],
+            'bet': s['bet'],
+            'new_balance': new_balance,
+        })
+    except Exception as e:
+        logger.error(f'Ghost Road cashout error: {e}')
+        return jsonify({'success': False, 'error': 'Ошибка сервера'})
+    finally:
+        conn.close()
+
+
+@app.route('/api/ghost-road/recent', methods=['GET'])
+def ghost_road_recent():
+    try:
+        limit = min(30, max(1, int(request.args.get('limit', 12))))
+    except (TypeError, ValueError):
+        limit = 12
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT s.payout, s.bet, s.step, u.first_name, u.username, u.photo_url
+            FROM ghost_road_sessions s
+            LEFT JOIN users u ON u.id = s.user_id
+            WHERE s.status = 'cashed' AND s.payout > 0
+            ORDER BY s.updated_at DESC
+            LIMIT ?
+        ''', (limit,))
+
+        items = []
+        for r in cursor.fetchall():
+            bet = float(r[1] or 0)
+            payout = float(r[0] or 0)
+            items.append({
+                'payout': round(payout, 2),
+                'bet': round(bet, 2),
+                'multiplier': round(payout / bet, 2) if bet else 0,
+                'step': int(r[2] or 0),
+                'name': (r[3] or r[4] or 'Игрок'),
+                'photo_url': r[5] or '',
+            })
+        return jsonify({'success': True, 'items': items})
+    except Exception as e:
+        logger.error(f'Ghost Road recent error: {e}')
+        return jsonify({'success': True, 'items': []})
+    finally:
+        conn.close()
+
 
 @app.route('/upgrade')
 def upgrade_page():
