@@ -1015,6 +1015,603 @@ body.crash-halloween .action-btn.state-cashout {
   }
 }
 </style>
+<style id="mobile-top-bar-v2">
+/* ══════════════════════════════════════════════════════════════
+   МОБИЛЬНАЯ ШАПКА: аватар + пинг + настройки слева,
+   баланс и кнопка пополнения справа. Немного опущена вниз.
+   Кошелёк убран из нижней панели — он теперь сверху.
+   ══════════════════════════════════════════════════════════════ */
+.avatar-btn-crash{
+    width:36px;height:36px;flex-shrink:0;padding:0;
+    border-radius:50%;overflow:hidden;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#2a3648,#18202f);
+    border:1px solid rgba(120,160,220,.30);
+    box-shadow:0 2px 10px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+    color:#cfdcef;font-family:inherit;font-weight:800;font-size:13px;line-height:1;
+    transition:transform .12s ease,border-color .25s ease,box-shadow .25s ease;
+}
+.avatar-btn-crash img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
+.avatar-btn-crash:active{transform:scale(.92)}
+
+@media (min-width:701px){
+    .avatar-btn-crash{width:40px;height:40px;font-size:14px}
+}
+
+@media (max-width:700px){
+    /* Шапка снова видна на телефоне */
+    .top-bar{
+        display:flex!important;
+        position:relative;
+        width:100%;
+        height:auto!important;
+        min-height:0!important;
+        margin-top:0!important;
+        padding:9px 12px!important;
+        align-items:center;
+        gap:7px;
+        background:rgba(12,17,28,.97)!important;
+        border-bottom:1px solid rgba(110,145,189,.13)!important;
+        box-shadow:0 6px 22px rgba(0,0,0,.28)!important;
+        z-index:30;
+    }
+    .desktop-left{display:none!important}
+    .top-left{
+        display:flex!important;align-items:center;gap:7px;
+        margin-right:auto;margin-left:0;min-width:0;
+    }
+    .top-right-btns{display:flex!important;align-items:center;gap:7px;margin-left:auto}
+
+    /* «чуть ниже»: отступ сверху = системная зона + запас */
+    .container{
+        padding-top:calc(env(safe-area-inset-top,0px) + 22px)!important;
+        padding-bottom:108px!important;
+    }
+
+    .ping-pill{padding:4px 9px!important;font-size:11px!important;gap:4px!important}
+    .ping-pill svg{width:11px;height:11px}
+    .settings-btn-sm{width:32px;height:32px}
+    .bal-pill-crash{
+        height:34px!important;min-width:82px!important;padding:0 10px!important;
+        border-radius:11px!important;font-size:13px!important;
+    }
+    .bal-plus-crash{
+        width:34px!important;height:34px!important;border-radius:11px!important;
+        font-size:20px!important;font-weight:500!important;
+    }
+
+    /* кошелёк из нижней панели убран */
+    .mobile-wallet{display:none!important}
+    .bottom-nav{justify-content:space-around!important;gap:2px!important}
+    .bottom-nav-item{flex:1 1 0!important}
+}
+
+@media (max-width:360px){
+    .top-bar{padding:8px 9px!important;gap:5px}
+    .top-left{gap:5px}
+    .top-right-btns{gap:5px}
+    .ping-pill{display:none!important}
+    .bal-pill-crash{min-width:72px!important;font-size:12px!important;padding:0 8px!important}
+    .avatar-btn-crash{width:33px;height:33px}
+    .settings-btn-sm{width:30px;height:30px}
+}
+</style>
+
+<style id="halloween-v2">
+/* ══════════════════════════════════════════════════════════════
+   HALLOWEEN v2 — цельная тема «Witch Hat Party».
+   Перекрашивается ВСЁ: фон, шапка, поле, история, кнопки,
+   окно ставок, инвентарь, автовывод, депозит, настройки,
+   окно выигрыша, тосты, нижняя панель и загрузчик.
+   ══════════════════════════════════════════════════════════════ */
+body.crash-halloween{
+    --hw-void:#0a0503;
+    --hw-deep:#140a05;
+    --hw-panel:linear-gradient(180deg,rgba(38,20,10,.97),rgba(23,12,6,.98));
+    --hw-panel-flat:rgba(30,16,8,.96);
+    --hw-card:rgba(255,150,60,.055);
+    --hw-line:rgba(255,138,40,.20);
+    --hw-line-2:rgba(255,138,40,.38);
+    --hw-orange:#ff8a28;
+    --hw-orange-lt:#ffb35c;
+    --hw-ember:#ff5a12;
+    --hw-blood:#c4321f;
+    --hw-witch:#8b5cf6;
+    --hw-poison:#9ede4f;
+    --hw-text:#f8ece0;
+    --hw-muted:#b89a82;
+    color:var(--hw-text)!important;
+}
+
+/* ─── фон: угли, луна, туман ─────────────────────────────────── */
+body.crash-halloween{
+    background:
+        radial-gradient(ellipse 60% 40% at 78% 4%, rgba(255,196,110,.14), transparent 62%),
+        radial-gradient(ellipse 90% 55% at 50% 0%, rgba(255,110,20,.13), transparent 60%),
+        radial-gradient(ellipse 70% 50% at 8% 78%, rgba(120,60,200,.10), transparent 58%),
+        linear-gradient(180deg,#160c06 0%,#0f0704 46%,#080402 100%)!important;
+    background-attachment:fixed!important;
+}
+body.crash-halloween::before{
+    content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+        radial-gradient(circle at 82% 9%, rgba(255,226,170,.55) 0 22px, rgba(255,200,120,.13) 23px 46px, transparent 62px),
+        radial-gradient(ellipse 120% 40% at 50% 100%, rgba(255,110,20,.09), transparent 70%);
+    opacity:.85;
+    animation:hwMoonBreathe 9s ease-in-out infinite alternate;
+}
+body.crash-halloween::after{
+    content:"";position:fixed;left:-25%;right:-25%;bottom:-12%;height:58%;
+    z-index:0;pointer-events:none;
+    background:
+        radial-gradient(ellipse 42% 60% at 22% 60%, rgba(255,140,40,.075), transparent 70%),
+        radial-gradient(ellipse 48% 55% at 70% 45%, rgba(150,80,220,.065), transparent 70%);
+    filter:blur(12px);
+    animation:hwFog 26s ease-in-out infinite alternate;
+}
+@keyframes hwMoonBreathe{0%{opacity:.68}100%{opacity:.95}}
+@keyframes hwFog{0%{transform:translate3d(-4%,0,0) scale(1)}100%{transform:translate3d(5%,-2%,0) scale(1.09)}}
+body.crash-halloween .container{position:relative;z-index:1}
+
+/* ─── верхняя панель ─────────────────────────────────────────── */
+body.crash-halloween .top-bar{
+    background:linear-gradient(180deg,rgba(35,18,9,.98),rgba(20,10,5,.97))!important;
+    border-bottom:1px solid var(--hw-line)!important;
+    box-shadow:0 8px 30px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,140,40,.07)!important;
+}
+body.crash-halloween .logo-btn-crash{
+    background:rgba(255,138,40,.08)!important;border-color:rgba(255,138,40,.22)!important;
+}
+body.crash-halloween .avatar-btn-crash{
+    background:linear-gradient(135deg,#3a1d0c,#1d0e06)!important;
+    border-color:rgba(255,138,40,.40)!important;
+    color:var(--hw-orange-lt)!important;
+    box-shadow:0 0 14px rgba(255,120,25,.22), inset 0 1px 0 rgba(255,190,130,.10)!important;
+}
+body.crash-halloween .nav-btn-crash{color:#bda08a!important}
+body.crash-halloween .nav-btn-crash:hover{color:#ffe3c9!important;background:rgba(255,138,40,.09)!important}
+body.crash-halloween .nav-btn-crash.active{
+    color:var(--hw-orange-lt)!important;background:rgba(255,124,22,.16)!important;
+    box-shadow:inset 0 0 0 1px rgba(255,138,40,.32),0 4px 18px rgba(255,100,10,.10)!important;
+}
+body.crash-halloween .ping-pill{
+    background:rgba(255,124,22,.09)!important;border-color:rgba(255,138,40,.28)!important;color:var(--hw-orange-lt)!important;
+}
+body.crash-halloween .ping-pill.medium{background:rgba(255,190,60,.10)!important;border-color:rgba(255,190,60,.30)!important;color:#ffcf6b!important}
+body.crash-halloween .ping-pill.high{background:rgba(196,50,31,.14)!important;border-color:rgba(196,50,31,.40)!important;color:#ff7a62!important}
+body.crash-halloween .settings-btn-sm{
+    background:rgba(255,138,40,.07)!important;border-color:rgba(255,138,40,.22)!important;color:var(--hw-orange-lt)!important;
+}
+body.crash-halloween .settings-btn-sm svg{stroke:var(--hw-orange-lt)!important}
+body.crash-halloween .bal-pill-crash{
+    background:linear-gradient(180deg,rgba(54,28,13,.96),rgba(31,15,7,.96))!important;
+    border-color:rgba(255,138,40,.30)!important;color:#fff1e2!important;
+}
+body.crash-halloween .bal-plus-crash{
+    background:linear-gradient(135deg,#ffab52,#ff6a14)!important;
+    border-color:rgba(255,190,130,.35)!important;color:#1d0902!important;
+    box-shadow:0 4px 16px rgba(255,100,10,.30)!important;
+}
+
+/* ─── игровое поле ───────────────────────────────────────────── */
+body.crash-halloween .game-field{
+    background:
+        radial-gradient(circle at 50% 24%, rgba(255,140,35,.13), transparent 44%),
+        radial-gradient(circle at 15% 88%, rgba(130,60,200,.10), transparent 42%),
+        linear-gradient(180deg,#1a1009 0%,#0e0805 60%,#080402 100%)!important;
+    border:1px solid var(--hw-line)!important;
+    box-shadow:inset 0 0 110px rgba(255,100,10,.07), 0 16px 40px rgba(0,0,0,.42)!important;
+}
+body.crash-halloween .game-field::before{
+    background-image:
+        linear-gradient(rgba(255,138,40,.13) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(255,138,40,.13) 1px,transparent 1px)!important;
+    opacity:.45!important;
+}
+body.crash-halloween .game-field.spooky-mode{
+    background:
+        radial-gradient(circle at 50% 40%, rgba(255,146,42,.30), transparent 33%),
+        radial-gradient(circle at 16% 80%, rgba(180,45,10,.22), transparent 30%),
+        radial-gradient(circle at 86% 18%, rgba(120,55,190,.20), transparent 32%),
+        linear-gradient(180deg,#2a1307 0%,#170a04 55%,#0c0502 100%)!important;
+    border-color:rgba(255,150,55,.60)!important;
+    box-shadow:inset 0 0 150px rgba(255,115,12,.22), 0 0 70px rgba(255,95,10,.20)!important;
+    animation:hwSpookyPulse 3.4s ease-in-out infinite alternate;
+}
+@keyframes hwSpookyPulse{
+    0%{box-shadow:inset 0 0 130px rgba(255,115,12,.16),0 0 50px rgba(255,95,10,.14)}
+    100%{box-shadow:inset 0 0 175px rgba(255,115,12,.30),0 0 90px rgba(255,95,10,.28)}
+}
+body.crash-halloween .game-field.spooky-mode::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.40) 100%);
+}
+body.crash-halloween .countdown-display{
+    color:#ffcf9a!important;
+    text-shadow:0 0 34px rgba(255,120,25,.55),0 0 90px rgba(255,80,10,.30)!important;
+}
+body.crash-halloween .spooky-badge{
+    background:linear-gradient(135deg,#ffb45c 0%,#ff7a18 48%,#cf3f06 100%)!important;
+    color:#1b0902!important;border:1px solid rgba(255,208,155,.32)!important;
+    box-shadow:0 8px 28px rgba(255,100,10,.34), inset 0 1px 0 rgba(255,255,255,.20)!important;
+}
+body.crash-halloween .rocket-wrap.gift-mode img{
+    box-shadow:0 0 34px rgba(255,120,25,.48)!important;
+}
+
+/* ─── история коэффициентов ──────────────────────────────────── */
+body.crash-halloween .h-pill.low{
+    background:rgba(255,220,190,.05)!important;color:#c3a793!important;border-color:rgba(255,190,140,.10)!important;
+}
+body.crash-halloween .h-pill.mid{
+    background:rgba(158,222,79,.11)!important;color:var(--hw-poison)!important;border-color:rgba(158,222,79,.24)!important;
+}
+body.crash-halloween .h-pill.high{
+    background:rgba(255,160,50,.14)!important;color:#ffb35c!important;border-color:rgba(255,160,50,.28)!important;
+}
+body.crash-halloween .h-pill.mega{
+    background:linear-gradient(135deg,rgba(255,170,60,.24),rgba(255,90,18,.16))!important;
+    color:#ffc87a!important;border-color:rgba(255,170,60,.42)!important;
+}
+body.crash-halloween .h-pill.spooky{
+    background:linear-gradient(135deg,rgba(139,92,246,.30),rgba(255,120,25,.22))!important;
+    color:#d9bbff!important;border:1px solid rgba(160,110,255,.50)!important;
+}
+body.crash-halloween .coeff-box{
+    background:rgba(158,222,79,.11)!important;color:var(--hw-poison)!important;border-color:rgba(158,222,79,.26)!important;
+}
+body.crash-halloween .coeff-box.waiting{
+    background:rgba(255,124,22,.12)!important;border-color:rgba(255,138,40,.30)!important;color:var(--hw-orange-lt)!important;
+}
+body.crash-halloween .coeff-box.crashed{
+    background:rgba(196,50,31,.18)!important;color:#ff7a62!important;border-color:rgba(196,50,31,.40)!important;
+}
+body.crash-halloween .coeff-box.spooky{
+    background:linear-gradient(135deg,rgba(139,92,246,.28),rgba(255,120,25,.18))!important;
+    color:#d9bbff!important;border-color:rgba(160,110,255,.50)!important;
+}
+
+/* ─── главная кнопка (все состояния) ─────────────────────────── */
+body.crash-halloween .action-btn{
+    background:linear-gradient(135deg,#ffab52 0%,#ff7a18 46%,#d0450a 100%)!important;
+    color:#1c0902!important;
+    border:2px solid rgba(255,196,140,.34)!important;
+    box-shadow:0 10px 30px rgba(255,100,10,.30), inset 0 1px 0 rgba(255,255,255,.18)!important;
+}
+body.crash-halloween .action-btn.state-cancel{
+    background:linear-gradient(135deg,#a8281a,#6d1408)!important;color:#ffdcd2!important;
+    border-color:rgba(255,110,80,.34)!important;box-shadow:0 10px 30px rgba(150,30,10,.35)!important;
+}
+body.crash-halloween .action-btn.state-placed{
+    background:rgba(255,160,80,.06)!important;color:rgba(255,200,160,.40)!important;
+    border-color:rgba(255,138,40,.14)!important;box-shadow:none!important;
+}
+body.crash-halloween .action-btn.state-cashout{
+    background:linear-gradient(135deg,#b6f06a 0%,#79c62f 52%,#4e8a15 100%)!important;
+    color:#101f04!important;border-color:rgba(200,255,140,.38)!important;
+    box-shadow:0 12px 38px rgba(130,210,50,.30)!important;
+}
+body.crash-halloween .action-btn.state-cashout.spooky-cashout{
+    background:linear-gradient(135deg,#c79bff 0%,#8b5cf6 45%,#ff7a18 100%)!important;
+    color:#15051f!important;border-color:rgba(210,180,255,.45)!important;
+    box-shadow:0 12px 46px rgba(150,90,255,.45)!important;
+}
+body.crash-halloween .action-btn.state-crashed{
+    background:linear-gradient(135deg,#a8281a,#5d1006)!important;color:#ffd9d1!important;
+    border-color:rgba(255,110,80,.40)!important;box-shadow:0 12px 35px rgba(150,30,10,.35)!important;
+}
+body.crash-halloween .action-btn.state-syncing{
+    background:linear-gradient(135deg,#7b4bd8,#4c2a95)!important;color:#efe4ff!important;
+    border-color:rgba(190,150,255,.35)!important;
+}
+body.crash-halloween .action-btn .cb-gift-side{
+    border-color:rgba(255,190,130,.25)!important;background:rgba(30,12,4,.35)!important;
+}
+
+/* ─── список ставок ──────────────────────────────────────────── */
+body.crash-halloween .bets-title{color:#ffddbe!important;letter-spacing:.6px}
+body.crash-halloween .bets-count{
+    background:rgba(255,138,40,.12)!important;color:var(--hw-orange-lt)!important;
+}
+body.crash-halloween .bet-row{
+    background:linear-gradient(180deg,rgba(40,21,10,.88),rgba(26,13,6,.88))!important;
+    border:1px solid rgba(255,138,40,.10);
+}
+body.crash-halloween .bet-row.won{
+    background:rgba(158,222,79,.07)!important;
+    box-shadow:inset 0 0 0 1px rgba(158,222,79,.24),0 0 18px rgba(158,222,79,.08)!important;
+}
+body.crash-halloween .bet-row.won::after{background:linear-gradient(90deg,rgba(158,222,79,.09),transparent 60%)!important}
+body.crash-halloween .bet-row.lost{
+    background:rgba(196,50,31,.06)!important;box-shadow:inset 0 0 0 1px rgba(196,50,31,.16)!important;
+}
+body.crash-halloween .bet-row.lost::after{background:linear-gradient(90deg,rgba(196,50,31,.08),transparent 60%)!important}
+body.crash-halloween .bet-avatar{
+    background:linear-gradient(135deg,#3a1d0c,#1f0f06)!important;color:rgba(255,190,140,.60)!important;
+}
+body.crash-halloween .bet-name{color:#f6e3d2!important}
+body.crash-halloween .bet-amt{color:var(--hw-muted)!important}
+body.crash-halloween .bet-amt .bet-amount-text{color:#fff0e0!important}
+body.crash-halloween .bet-payout{color:#fff0e0!important}
+body.crash-halloween .bet-payout.has-gift span{color:#ffb35c!important}
+body.crash-halloween .bet-payout.live-payout span{color:var(--hw-poison)!important;text-shadow:0 0 12px rgba(158,222,79,.35)!important}
+body.crash-halloween .bet-status.active{background:rgba(255,190,140,.08)!important;color:rgba(255,205,165,.65)!important}
+body.crash-halloween .bet-status.won{background:rgba(158,222,79,.12)!important;color:var(--hw-poison)!important}
+body.crash-halloween .bet-status.lost{background:rgba(196,50,31,.14)!important;color:#ff7a62!important}
+body.crash-halloween .no-bets{color:rgba(255,200,160,.24)!important}
+body.crash-halloween .bets-list::-webkit-scrollbar-thumb{background:rgba(255,138,40,.32)!important}
+
+/* ─── ОКНО СТАВКИ ────────────────────────────────────────────── */
+body.crash-halloween .modal-overlay{background:rgba(8,4,2,.76)!important}
+body.crash-halloween .modal-sheet{
+    background:
+        radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,124,22,.12), transparent 64%),
+        linear-gradient(180deg,#2a1608 0%,#170c05 55%,#100704 100%)!important;
+    border-top:1px solid rgba(255,138,40,.34)!important;
+    box-shadow:0 -22px 70px rgba(0,0,0,.62), 0 -1px 0 rgba(255,160,60,.14) inset!important;
+}
+body.crash-halloween .modal-handle{background:rgba(255,160,70,.28)!important}
+body.crash-halloween .modal-title{
+    color:#ffcf9a!important;letter-spacing:1.2px;text-transform:uppercase;
+    text-shadow:0 0 24px rgba(255,120,25,.30);
+}
+body.crash-halloween .modal-tabs{background:rgba(255,138,40,.05)!important;border:1px solid rgba(255,138,40,.10)}
+body.crash-halloween .modal-tab{color:rgba(255,200,160,.40)!important}
+body.crash-halloween .modal-tab.active{
+    background:rgba(255,124,22,.16)!important;color:var(--hw-orange-lt)!important;
+    border:1px solid rgba(255,138,40,.34)!important;
+}
+body.crash-halloween .bet-input-wrap input{
+    background:rgba(255,124,22,.06)!important;border:1px solid rgba(255,138,40,.20)!important;
+    color:#fff2e4!important;
+}
+body.crash-halloween .bet-input-wrap input:focus{
+    border-color:rgba(255,138,40,.50)!important;background:rgba(255,124,22,.10)!important;
+    box-shadow:0 0 0 3px rgba(255,120,25,.10)!important;
+}
+body.crash-halloween .bet-input-wrap input::placeholder{color:rgba(255,190,140,.30)!important}
+body.crash-halloween .auto-cashout-row{
+    background:rgba(139,92,246,.09)!important;border:1px solid rgba(160,110,255,.22)!important;
+}
+body.crash-halloween .auto-cashout-label{color:#c9a8ff!important}
+body.crash-halloween .auto-cashout-sub{color:rgba(255,215,185,.45)!important}
+body.crash-halloween .autowd-open-btn{
+    background:linear-gradient(135deg,#ffc06a,#ff8a28)!important;color:#1c0902!important;
+}
+body.crash-halloween .autowd-open-btn .autowd-btn-coeff{background:rgba(0,0,0,.24)!important}
+body.crash-halloween .confirm-bet-btn,
+body.crash-halloween .confirm-gifts-btn{
+    background:linear-gradient(135deg,#ffab52 0%,#ff7a18 48%,#d0450a 100%)!important;
+    color:#1c0902!important;letter-spacing:1px;
+    box-shadow:0 6px 22px rgba(255,100,10,.32)!important;
+}
+body.crash-halloween .selected-summary{
+    background:rgba(255,124,22,.08)!important;border:1px solid rgba(255,138,40,.20)!important;
+}
+body.crash-halloween .selected-count{color:rgba(255,215,185,.55)!important}
+body.crash-halloween .selected-total{color:var(--hw-orange-lt)!important}
+body.crash-halloween .selected-total span{color:var(--hw-orange-lt)!important}
+body.crash-halloween .clear-selected{background:rgba(196,50,31,.18)!important;color:#ff8a70!important}
+body.crash-halloween .inv-card{
+    background:linear-gradient(160deg,rgba(255,138,40,.07),rgba(255,138,40,.02))!important;
+    border:1.5px solid rgba(255,138,40,.16)!important;
+}
+body.crash-halloween .inv-card.selected{
+    border-color:var(--hw-orange)!important;background:rgba(255,124,22,.18)!important;
+    box-shadow:0 0 0 2px rgba(255,138,40,.40),0 0 22px rgba(255,100,10,.20)!important;
+}
+body.crash-halloween .inv-card.selected::after{
+    background:linear-gradient(135deg,#ffab52,#ff6a14)!important;color:#1c0902!important;
+}
+body.crash-halloween .inv-card-img-wrap{background:rgba(20,9,3,.35)!important}
+body.crash-halloween .inv-card .inv-name{color:rgba(255,232,212,.88)!important}
+body.crash-halloween .inv-card .inv-val{background:rgba(255,138,40,.10)!important;color:#e3bb9a!important}
+body.crash-halloween .inv-empty{color:rgba(255,200,160,.30)!important}
+body.crash-halloween .inv-grid::-webkit-scrollbar-thumb{background:rgba(255,138,40,.32)!important}
+
+/* ─── АВТОВЫВОД ──────────────────────────────────────────────── */
+body.crash-halloween .autowd-overlay{background:rgba(8,4,2,.88)!important}
+body.crash-halloween .autowd-modal{
+    background:linear-gradient(180deg,#261307,#120903)!important;
+    border:1px solid rgba(255,138,40,.26)!important;
+    box-shadow:0 30px 90px rgba(0,0,0,.70),0 0 60px rgba(255,100,10,.10)!important;
+}
+body.crash-halloween .autowd-header{border-bottom-color:rgba(255,138,40,.14)!important}
+body.crash-halloween .autowd-title{color:#ffcf9a!important}
+body.crash-halloween .autowd-close{background:rgba(196,50,31,.18)!important;color:#ff8a70!important}
+body.crash-halloween .autowd-summary{background:rgba(255,124,22,.07)!important}
+body.crash-halloween .autowd-summary-row{color:rgba(255,215,185,.55)!important}
+body.crash-halloween .autowd-summary-val{color:#fff2e4!important}
+body.crash-halloween .autowd-summary-val.gold{color:var(--hw-orange-lt)!important}
+body.crash-halloween .autowd-search{
+    background:rgba(255,124,22,.06)!important;border:1.5px solid rgba(255,138,40,.18)!important;color:#fff2e4!important;
+}
+body.crash-halloween .autowd-search::placeholder{color:rgba(255,190,140,.30)!important}
+body.crash-halloween .autowd-row{
+    background:rgba(255,138,40,.045)!important;border:1.5px solid rgba(255,138,40,.12)!important;
+}
+body.crash-halloween .autowd-row.selected{background:rgba(255,124,22,.16)!important;border-color:var(--hw-orange)!important}
+body.crash-halloween .autowd-thumb{background:rgba(20,9,3,.35)!important}
+body.crash-halloween .autowd-name{color:rgba(255,235,216,.92)!important}
+body.crash-halloween .autowd-coeff{color:#c4a189!important}
+body.crash-halloween .autowd-price{color:var(--hw-orange-lt)!important}
+body.crash-halloween .autowd-empty{color:rgba(255,200,160,.30)!important}
+body.crash-halloween .autowd-apply-btn{
+    background:linear-gradient(135deg,#ffab52,#ff6a14)!important;color:#1c0902!important;
+}
+body.crash-halloween .autowd-apply-btn:disabled{background:rgba(255,160,80,.07)!important;color:rgba(255,200,160,.35)!important}
+
+/* ─── ДЕПОЗИТ / ЗВЁЗДЫ ───────────────────────────────────────── */
+body.crash-halloween .deposit-overlay,
+body.crash-halloween .stars-deposit-overlay,
+body.crash-halloween .settings-overlay{background:rgba(8,4,2,.84)!important}
+body.crash-halloween .deposit-modal,
+body.crash-halloween .stars-deposit-modal,
+body.crash-halloween .settings-modal{
+    background:linear-gradient(180deg,#27140a,#130904)!important;
+    border:1px solid rgba(255,138,40,.24)!important;
+    box-shadow:0 26px 80px rgba(0,0,0,.66)!important;
+}
+body.crash-halloween .settings-modal{border-top:1px solid rgba(255,138,40,.30)!important}
+body.crash-halloween .deposit-title,
+body.crash-halloween .stars-deposit-title{color:#ffcf9a!important}
+body.crash-halloween .deposit-close,
+body.crash-halloween .stars-deposit-close{background:rgba(196,50,31,.18)!important;color:#ff8a70!important}
+body.crash-halloween .deposit-method-btn{
+    background:rgba(255,138,40,.055)!important;border:2px solid rgba(255,138,40,.14)!important;
+}
+body.crash-halloween .deposit-method-btn:active{border-color:rgba(255,138,40,.45)!important}
+body.crash-halloween .deposit-method-btn span{color:#ffe3c9!important}
+body.crash-halloween .stars-deposit-label{color:rgba(255,215,185,.50)!important}
+body.crash-halloween .stars-deposit-input-wrap{
+    background:rgba(255,124,22,.07)!important;border:2px solid rgba(255,138,40,.18)!important;
+}
+body.crash-halloween .stars-deposit-input{color:#fff2e4!important}
+body.crash-halloween .stars-deposit-pay-btn{
+    background:linear-gradient(135deg,#ffc06a,#ff7a18)!important;color:#1c0902!important;
+}
+
+/* ─── НАСТРОЙКИ ──────────────────────────────────────────────── */
+body.crash-halloween .settings-item{background:rgba(255,138,40,.055)!important}
+body.crash-halloween .settings-item.active{
+    border-color:rgba(255,138,40,.60)!important;background:rgba(255,124,22,.12)!important;
+}
+body.crash-halloween .settings-gift-toggle,
+body.crash-halloween .optim-row{
+    background:rgba(255,124,22,.06)!important;border:1px solid rgba(255,138,40,.17)!important;
+}
+body.crash-halloween .settings-gift-toggle .desc{color:rgba(255,215,185,.50)!important}
+body.crash-halloween .optim-value{color:var(--hw-orange-lt)!important}
+body.crash-halloween .optim-range{accent-color:var(--hw-orange)!important}
+body.crash-halloween .optim-range::-webkit-slider-runnable-track{
+    background:linear-gradient(90deg,var(--hw-orange) 0%,var(--hw-orange) 50%,rgba(255,190,140,.14) 50%,rgba(255,190,140,.14) 100%)!important;
+}
+body.crash-halloween .optim-range::-webkit-slider-thumb{background:#ffe6cc!important;border-color:var(--hw-orange)!important}
+body.crash-halloween .optim-range::-moz-range-progress{background:var(--hw-orange)!important}
+body.crash-halloween .optim-range::-moz-range-thumb{background:#ffe6cc!important;border-color:var(--hw-orange)!important}
+body.crash-halloween .toggle-switch{background:rgba(70,40,20,.75)!important}
+body.crash-halloween .toggle-switch.on{background:linear-gradient(135deg,#ffab52,#ff6a14)!important}
+body.crash-halloween .bg-choice{background:#1a0f07!important;border-color:rgba(255,138,40,.14)!important}
+body.crash-halloween .bg-choice.active{
+    border-color:rgba(255,150,55,.95)!important;
+    box-shadow:0 0 0 2px rgba(255,150,55,.22),0 10px 30px rgba(0,0,0,.40)!important;
+}
+
+/* ─── ОКНО ВЫИГРЫША ─────────────────────────────────────────── */
+body.crash-halloween .win-sheet{
+    background:
+        radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,124,22,.14), transparent 62%),
+        linear-gradient(180deg,#26130a 0%,#140a05 100%)!important;
+    border-top:2px solid rgba(255,138,40,.34)!important;
+}
+body.crash-halloween .win-sheet.spooky-win{
+    border-top-color:#a855f7!important;
+    background:
+        radial-gradient(ellipse 80% 40% at 50% 0%, rgba(139,92,246,.20), transparent 62%),
+        linear-gradient(180deg,#22103a 0%,#130a1c 100%)!important;
+}
+body.crash-halloween .win-sheet-handle{background:rgba(255,160,70,.24)!important}
+body.crash-halloween .win-collect-btn{
+    background:linear-gradient(135deg,#ffab52,#ff6a14)!important;color:#1c0902!important;
+}
+body.crash-halloween .win-gift-row{
+    background:rgba(255,138,40,.055)!important;border:1.5px solid rgba(255,138,40,.18)!important;
+}
+body.crash-halloween .win-gift-row.spooky-gift{
+    background:rgba(139,92,246,.10)!important;border-color:rgba(160,110,255,.45)!important;
+}
+body.crash-halloween .win-gift-row.spooky-gift .win-gift-label{color:#c9a8ff!important}
+body.crash-halloween .win-gift-img{background:rgba(20,9,3,.35)!important;border-color:rgba(255,190,140,.16)!important}
+body.crash-halloween .win-gift-label{color:rgba(255,215,185,.50)!important}
+body.crash-halloween .win-gift-value{color:var(--hw-orange-lt)!important}
+body.crash-halloween .win-gift-badge{background:linear-gradient(135deg,#ffc06a,#ff7a18)!important;color:#1c0902!important}
+body.crash-halloween .simple-win-title{color:rgba(255,210,175,.55)!important}
+body.crash-halloween .simple-win-multiplier{
+    color:#ffcf9a!important;text-shadow:0 0 30px rgba(255,120,25,.40)!important;
+}
+body.crash-halloween .simple-win-gift{
+    background:rgba(255,138,40,.05)!important;border-color:rgba(255,138,40,.16)!important;
+}
+body.crash-halloween .simple-win-gift.currency-mode{
+    background:radial-gradient(circle,rgba(255,124,22,.24) 0%,rgba(255,138,40,.04) 72%)!important;
+    border-color:rgba(255,138,40,.45)!important;
+    box-shadow:0 12px 34px rgba(255,100,10,.30),0 0 0 1px rgba(255,138,40,.14)!important;
+}
+body.crash-halloween .simple-win-gift.currency-mode img{filter:drop-shadow(0 0 16px rgba(255,170,90,.55))!important}
+body.crash-halloween .simple-win-value{color:rgba(255,215,185,.48)!important}
+body.crash-halloween .simple-win-stats>div{
+    background:rgba(255,138,40,.05)!important;border-color:rgba(255,138,40,.14)!important;
+}
+body.crash-halloween .simple-win-stats>div:first-child{border-right-color:rgba(255,138,40,.14)!important}
+body.crash-halloween .simple-win-stats span{color:rgba(255,210,175,.42)!important}
+body.crash-halloween .simple-win-stats b{color:#fff2e4!important}
+body.crash-halloween .simple-win-stats b.win{color:var(--hw-poison)!important}
+body.crash-halloween .win-balance-bonus{
+    background:rgba(158,222,79,.10)!important;border-color:rgba(158,222,79,.24)!important;color:var(--hw-poison)!important;
+}
+body.crash-halloween .win-spooky-reveal{
+    background:rgba(139,92,246,.14)!important;border-color:rgba(160,110,255,.35)!important;color:#c9a8ff!important;
+}
+
+/* ─── ОБЪЯВЛЕНИЕ SPOOKY ROUND ───────────────────────────────── */
+body.crash-halloween .spooky-announce{background:rgba(7,3,1,.86)!important;backdrop-filter:blur(10px)}
+body.crash-halloween .spooky-announce-inner{
+    padding:26px 34px;border-radius:24px;
+    background:linear-gradient(180deg,rgba(48,22,8,.97),rgba(20,9,4,.98))!important;
+    border:1px solid rgba(255,138,40,.30)!important;
+    box-shadow:0 25px 90px rgba(0,0,0,.70),0 0 60px rgba(255,100,10,.18)!important;
+}
+body.crash-halloween .spooky-announce-title{
+    background:linear-gradient(135deg,#ffd29a,#ff7a18,#c9a8ff)!important;
+    -webkit-background-clip:text!important;background-clip:text!important;
+    -webkit-text-fill-color:transparent!important;
+}
+body.crash-halloween .spooky-announce-sub{color:#c9aa91!important}
+
+/* ─── ТОСТЫ ──────────────────────────────────────────────────── */
+body.crash-halloween .toast{
+    background:linear-gradient(180deg,rgba(40,20,9,.97),rgba(22,11,5,.97))!important;
+    border:1px solid rgba(255,138,40,.22)!important;color:#ffeeda!important;
+}
+body.crash-halloween .toast.ok{border-color:rgba(158,222,79,.32)!important}
+body.crash-halloween .toast.err{border-color:rgba(196,50,31,.40)!important}
+body.crash-halloween .toast.spooky{
+    background:linear-gradient(135deg,#a855f7,#ff7a18)!important;color:#1a0602!important;border-color:rgba(255,190,130,.40)!important;
+}
+
+/* ─── ЗАГРУЗЧИК ──────────────────────────────────────────────── */
+body.crash-halloween .ld-screen{background:#100702!important}
+body.crash-halloween .ld-panel:nth-child(1){background:#ff7a18}
+body.crash-halloween .ld-panel:nth-child(2){background:#8b5cf6}
+body.crash-halloween .ld-panel:nth-child(3){background:#9ede4f}
+body.crash-halloween .ld-panel:nth-child(4){background:#c4321f}
+body.crash-halloween .ld-panel:nth-child(5){background:#ffab52}
+body.crash-halloween .ld-panel:nth-child(6){background:#6d28d9}
+body.crash-halloween .ld-panel:nth-child(7){background:#ff5a12}
+body.crash-halloween .ld-panel:nth-child(8){background:#a855f7}
+body.crash-halloween .ld-panel:nth-child(9){background:#ffc46a}
+body.crash-halloween .ld-txt{color:rgba(255,200,150,.60)!important}
+body.crash-halloween .ld-progress{background:rgba(255,160,80,.14)!important}
+body.crash-halloween .ld-progress-bar{background:linear-gradient(90deg,#ffc46a,#ff6a14)!important}
+
+/* ─── НИЖНЯЯ ПАНЕЛЬ (моб.) ──────────────────────────────────── */
+@media (max-width:700px){
+    body.crash-halloween .top-bar{
+        background:linear-gradient(180deg,rgba(35,18,9,.98),rgba(18,9,4,.98))!important;
+        border-bottom-color:rgba(255,138,40,.22)!important;
+    }
+    body.crash-halloween .bottom-nav{
+        background:linear-gradient(180deg,rgba(35,18,9,.98),rgba(19,9,4,.98))!important;
+        border:1px solid rgba(255,138,40,.22)!important;
+        box-shadow:0 14px 38px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,150,50,.07)!important;
+    }
+    body.crash-halloween .bottom-nav-item{color:#bda08a!important}
+    body.crash-halloween .bottom-nav-item.active{
+        color:var(--hw-orange-lt)!important;background:rgba(255,124,22,.15)!important;
+    }
+}
+</style>
+
 </head>
 <body>
 
@@ -1074,6 +1671,10 @@ body.crash-halloween .action-btn.state-cashout {
         </div>
 
         <div class="top-left">
+            <button class="avatar-btn-crash" id="avatarBtnCrash" onclick="location.href='/profile'" aria-label="Профиль">
+                <img id="avatarImgCrash" src="" alt="" style="display:none">
+                <span id="avatarInitCrash">•</span>
+            </button>
             <div class="ping-pill" id="pingPill">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M12 20h.01"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 13a10 10 0 0 1 14 0"/><path d="M2 9.5a15 15 0 0 1 20 0"/>
@@ -3452,6 +4053,56 @@ document.addEventListener('DOMContentLoaded', function(){
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',sync); else sync();
   setInterval(sync,700);
+})();
+</script>
+
+<script id="top-avatar-sync">
+(function(){
+  var DEFAULT_AV = '/static/img/default_avatar.png';
+  var done = false;
+
+  function pickUser(){
+    try{
+      if(typeof userData !== 'undefined' && userData && userData.id) return userData;
+    }catch(e){}
+    try{
+      var raw = localStorage.getItem('rasswet_user');
+      if(raw){ var p = JSON.parse(raw); if(p && p.id) return p; }
+    }catch(e){}
+    try{
+      if(window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user){
+        return Telegram.WebApp.initDataUnsafe.user;
+      }
+    }catch(e){}
+    return null;
+  }
+
+  function apply(){
+    var img  = document.getElementById('avatarImgCrash');
+    var init = document.getElementById('avatarInitCrash');
+    if(!img || !init) return;
+
+    var u = pickUser();
+    var name = (u && (u.first_name || u.username)) || '';
+    init.textContent = name ? name.trim().charAt(0).toUpperCase() : '•';
+
+    var url = u && u.photo_url ? String(u.photo_url).trim() : '';
+    if(!url || url === DEFAULT_AV) return;
+
+    img.onerror = function(){ img.style.display = 'none'; init.style.display = ''; };
+    img.onload  = function(){ img.style.display = 'block'; init.style.display = 'none'; done = true; };
+    if(img.getAttribute('src') !== url) img.src = url;
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply);
+  else apply();
+
+  var tries = 0;
+  var t = setInterval(function(){
+    tries++;
+    apply();
+    if(done || tries > 40) clearInterval(t);
+  }, 500);
 })();
 </script>
 </body>
