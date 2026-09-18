@@ -1177,11 +1177,22 @@ function unlockParts(iso){
   var left=unlockLeftSeconds(iso);
   return {hours:Math.floor(left/3600),minutes:Math.round(left%3600/60)};
 }
+function ruPlural(n,one,few,many){
+  n=Math.abs(Math.trunc(n))%100;var n1=n%10;
+  if(n>10&&n<20)return many;
+  if(n1>1&&n1<5)return few;
+  if(n1===1)return one;
+  return many;
+}
+function ruDays(n){return n+' '+ruPlural(n,'день','дня','дней')}
+function ruHours(n){return n+' '+ruPlural(n,'час','часа','часов')}
+function ruMinutes(n){return n+' '+ruPlural(n,'минута','минуты','минут')}
+function ruSeconds(n){return n+' '+ruPlural(n,'секунда','секунды','секунд')}
 function unlockLabel(iso){
   var left=unlockLeftSeconds(iso);
   if(left<=0)return {text:'Раздел открыт',cls:'open'};
-  var h=Math.floor(left/3600),m=Math.floor(left%3600/60),s=left%60;
-  var human=h>0?(h+' ч '+m+' мин'):(m>0?(m+' мин '+s+' сек'):(s+' сек'));
+  var d=Math.floor(left/86400),h=Math.floor(left%86400/3600),m=Math.floor(left%3600/60),s=left%60;
+  var human=d>0?(ruDays(d)+' '+ruHours(h)):(h>0?(ruHours(h)+' '+ruMinutes(m)):(m>0?(ruMinutes(m)+' '+ruSeconds(s)):ruSeconds(s)));
   var when=new Date(iso).toLocaleString('ru-RU');
   return {text:'🔒 Закрыт · откроется через '+human+' ('+when+')',cls:'locked'};
 }
