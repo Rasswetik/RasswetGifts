@@ -2692,38 +2692,30 @@ def _cases_legacy_json_path():
     return os.path.join(PERSISTENT_DATA_DIR, 'cases.json')
 
 def load_cases():
-    """Загружает кейсы. Источник истины — таблица event_configs в БД (id='cases_catalog'),
-    так что кейсы переживают рестарт/редеплой наравне с событиями.
-    Если в БД пока пусто (первый запуск после обновления или ещё не мигрировали),
-    один раз подхватываем старый data/cases.json и сразу сохраняем в БД."""
+    """Load event cases from persistent cases.json first, with DB as fallback."""
+    file_path = _cases_legacy_json_path()
     try:
-        _event_db_defaults(); conn = get_db_connection()
-        row = conn.execute('SELECT payload FROM event_configs WHERE id = ?', ('cases_catalog',)).fetchone()
-        if row and row[0]:
-            cases = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            cases = data.get('cases', []) if isinstance(data, dict) else data
             if isinstance(cases, list):
                 return cases
     except Exception as e:
-        logger.warning(f'Cases DB load failed: {e}')
-
-    # Миграция/резервный вариант: старый JSON-файл.
+        logger.warning(f'cases.json load failed: {e}')
     try:
-        file_path = _cases_legacy_json_path()
-        if not os.path.exists(file_path):
-            logger.error("❌ Кейсы не найдены ни в БД, ни в cases.json!")
-            return []
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        cases = data.get('cases', [])
-        logger.info(f"✅ Загружено {len(cases)} кейсов из legacy cases.json, переносим в БД")
-        try:
-            save_cases(cases)
-        except Exception as e:
-            logger.warning(f'Cases migration to DB failed: {e}')
-        return cases
+        _event_db_defaults(); conn = get_db_connection()
+        row = conn.execute('SELECT payload FROM event_configs WHERE id = ?', ('cases_catalog',)).fetchone()
+        conn.close()
+        if row and row[0]:
+            cases = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+            if isinstance(cases, list):
+                save_cases(cases)
+                return cases
     except Exception as e:
-        logger.error(f"❌ Ошибка загрузки кейсов: {e}")
-        return []
+        logger.warning(f'Cases DB load failed: {e}')
+    logger.error('❌ Кейсы не найдены ни в cases.json, ни в БД!')
+    return []
 
 def save_cases(cases):
     """Надёжно сохраняет кейсы в БД (event_configs, id='cases_catalog').
@@ -6763,59 +6755,31 @@ def _gr_survival_chances(difficulty='light'):
     return chances
 
 
-def _gr_normalize_user_id(value):
-    """Normalize Telegram/user ids so API requests use one canonical value."""
-    try:
-        return int(str(value).strip())
-    except (TypeError, ValueError, AttributeError):
-        return None
-
-
 def _gr_load_session(cursor, token, user_id):
-    """Load a Ghost Road session robustly.
-
-    The browser may have an old/missing token after a reload, while the DB
-    still contains the user's active session. In that case recover the
-    latest active session for the user instead of returning 'Забег не найден'.
-    The returned token is always the canonical DB token and callers must use
-    it for subsequent UPDATEs.
-    """
-    uid = _gr_normalize_user_id(user_id)
-    if uid is None:
-        return None
-
-    token = str(token or '').strip()
-    row = None
-
-    if token:
-        cursor.execute(
-            'SELECT token, user_id, bet, difficulty, step, status '
-            'FROM ghost_road_sessions WHERE token = ?',
-            (token,)
-        )
-        row = cursor.fetchone()
-        if row:
-            try:
-                row_uid = int(row[1])
-            except (TypeError, ValueError):
-                row_uid = None
-            if row_uid != uid:
-                row = None
-
-    # Recovery path: token is stale/missing but the user has an active run.
-    if row is None:
-        cursor.execute(
-            'SELECT token, user_id, bet, difficulty, step, status '
-            'FROM ghost_road_sessions '
-            "WHERE user_id = ? AND status = 'active' "
-            'ORDER BY updated_at DESC LIMIT 1',
-            (uid,)
-        )
-        row = cursor.fetchone()
-
+    # user_id приходит из JSON и может оказаться int, str или float
+    # ("12345" vs 12345 vs 12345.0) в зависимости от клиента (Telegram
+    # WebApp initData vs localStorage-кэш). Колонка user_id — INTEGER,
+    # так что сравниваем по нормализованному int, а не "как есть" —
+    # иначе строка находится по токену, но не проходит по user_id и
+    # клиент получает "Забег не найден" на живой сессии.
+    try:
+        uid_int = int(user_id)
+    except (TypeError, ValueError):
+        uid_int = user_id
+    cursor.execute(
+        'SELECT token, user_id, bet, difficulty, step, status '
+        'FROM ghost_road_sessions WHERE token = ?',
+        (token,)
+    )
+    row = cursor.fetchone()
     if not row:
         return None
-
+    try:
+        row_uid = int(row[1])
+    except (TypeError, ValueError):
+        row_uid = row[1]
+    if row_uid != uid_int:
+        return None
     return {
         'token': row[0], 'user_id': row[1], 'bet': float(row[2]),
         'difficulty': row[3], 'step': int(row[4]), 'status': row[5],
@@ -6851,10 +6815,10 @@ def ghost_road_config():
 @app.route('/api/ghost-road/start', methods=['POST'])
 def ghost_road_start():
     data = request.get_json(force=True) or {}
-    user_id = _gr_normalize_user_id(data.get('user_id'))
+    user_id = data.get('user_id')
     difficulty = (data.get('difficulty') or 'light').lower()
 
-    if user_id is None:
+    if not user_id:
         return jsonify({'success': False, 'error': 'Не передан user_id'})
     if difficulty not in GHOST_ROAD_PAYOUTS:
         difficulty = 'light'
@@ -6920,43 +6884,13 @@ def ghost_road_start():
         conn.close()
 
 
-@app.route('/api/ghost-road/active', methods=['GET'])
-def ghost_road_active():
-    """Return the user's active Ghost Road session for page reload/recovery."""
-    uid = _gr_normalize_user_id(request.args.get('user_id'))
-    if uid is None:
-        return jsonify({'success': True, 'active': False})
-    conn = get_db_connection()
-    try:
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT token, user_id, bet, difficulty, step, status "
-            "FROM ghost_road_sessions WHERE user_id = ? AND status = 'active' "
-            "ORDER BY updated_at DESC LIMIT 1",
-            (uid,)
-        )
-        row = cursor.fetchone()
-        if not row:
-            return jsonify({'success': True, 'active': False})
-        return jsonify({
-            'success': True, 'active': True, 'token': row[0], 'user_id': row[1],
-            'bet': float(row[2]), 'difficulty': row[3], 'step': int(row[4]),
-            'status': row[5]
-        })
-    except Exception as e:
-        logger.error(f'Ghost Road active error: {e}')
-        return jsonify({'success': False, 'error': 'Ошибка сервера'})
-    finally:
-        conn.close()
-
-
 @app.route('/api/ghost-road/step', methods=['POST'])
 def ghost_road_step():
     data = request.get_json(force=True) or {}
-    user_id = _gr_normalize_user_id(data.get('user_id'))
-    token = str(data.get('token') or '').strip()
+    user_id = data.get('user_id')
+    token = data.get('token')
 
-    if user_id is None:
+    if not user_id or not token:
         return jsonify({'success': False, 'error': 'Нет активного забега'})
 
     conn = get_db_connection()
@@ -6966,7 +6900,6 @@ def ghost_road_step():
             s = _gr_load_session(cursor, token, user_id)
             if not s:
                 return jsonify({'success': False, 'error': 'Забег не найден'})
-            token = s['token']
             if s['status'] != 'active':
                 return jsonify({'success': False, 'error': 'Забег уже завершён'})
 
@@ -7027,10 +6960,10 @@ def ghost_road_step():
 @app.route('/api/ghost-road/cashout', methods=['POST'])
 def ghost_road_cashout():
     data = request.get_json(force=True) or {}
-    user_id = _gr_normalize_user_id(data.get('user_id'))
-    token = str(data.get('token') or '').strip()
+    user_id = data.get('user_id')
+    token = data.get('token')
 
-    if user_id is None:
+    if not user_id or not token:
         return jsonify({'success': False, 'error': 'Нет активного забега'})
 
     conn = get_db_connection()
@@ -7040,7 +6973,6 @@ def ghost_road_cashout():
             s = _gr_load_session(cursor, token, user_id)
             if not s:
                 return jsonify({'success': False, 'error': 'Забег не найден'})
-            token = s['token']
             if s['status'] != 'active':
                 return jsonify({'success': False, 'error': 'Забег уже завершён'})
             if s['step'] <= 0:
@@ -17150,15 +17082,9 @@ def admin_gifts_update():
         if not changed:
             return jsonify({'success': True, 'message': 'Ничего не изменилось'})
 
-        with open(gifts_path, 'w', encoding='utf-8') as f:
-            json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
-
-        # Сброс кэша
-        global gifts_cache, gifts_cache_time
-        gifts_cache = None
-        gifts_cache_time = None
-
-        return jsonify({'success': True, 'message': 'Подарок обновлён', 'gift': target})
+        if not save_gifts(gifts):
+            return jsonify({'success': False, 'error': 'Не удалось сохранить подарок'})
+        return jsonify({'success': True, 'message': 'Подарок обновлён навсегда', 'gift': target})
 
     except Exception as e:
         logger.error('admin_gifts_update error: ' + str(e))
@@ -21046,7 +20972,32 @@ def purchase_shop_deal():
 # ADMIN SHOP DEALS MANAGEMENT
 # ============================================================
 
-@app.route('/api/admin/shop-deals', methods=['GET', 'POST'])
+@app.route('/api/admin/shop-purchases', methods=['GET'])
+def admin_shop_purchases():
+    """Recent shop purchases for the admin panel."""
+    try:
+        admin_id = request.args.get('admin_id')
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+        conn = get_db_connection(); cursor = conn.cursor()
+        cursor.execute('''CREATE TABLE IF NOT EXISTS shop_purchases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, deal_id INTEGER NOT NULL,
+            price_paid INTEGER NOT NULL, currency TEXT DEFAULT 'stars', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''')
+        conn.commit()
+        cursor.execute('''SELECT p.id,p.user_id,p.deal_id,p.price_paid,p.currency,p.created_at,d.title,d.section
+                          FROM shop_purchases p LEFT JOIN shop_deals d ON d.id=p.deal_id
+                          ORDER BY p.created_at DESC,p.id DESC LIMIT 100''')
+        rows=cursor.fetchall(); conn.close()
+        purchases=[{'id':r[0],'user_id':r[1],'deal_id':r[2],'price_paid':r[3],
+                    'price_gram':round((r[3] or 0)/100,2),'currency':r[4] or 'stars',
+                    'created_at':r[5],'title':r[6] or ('Товар #'+str(r[2])),'section':r[7] or 'general'} for r in rows]
+        return jsonify({'success':True,'purchases':purchases})
+    except Exception as e:
+        logger.error('admin_shop_purchases error: %s',e)
+        return jsonify({'success':False,'error':str(e)}),500
+
+@app.route('/api/admin/shop-deals', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_shop_deals():
     """Admin CRUD for shop deals"""
     if request.method == 'GET':
@@ -21085,7 +21036,7 @@ def admin_shop_deals():
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)})
 
-    else:  # POST — create
+    elif request.method == 'POST':  # create
         try:
             data = request.get_json()
             admin_id = data.get('admin_id')
@@ -21120,6 +21071,39 @@ def admin_shop_deals():
         except Exception as e:
             return jsonify({'success': False, 'error': str(e)})
 
+    elif request.method == 'PUT':
+        try:
+            data=request.get_json() or {}; admin_id=data.get('admin_id')
+            if not admin_id or int(admin_id)!=ADMIN_ID:
+                return jsonify({'success':False,'error':'Доступ запрещен'})
+            deal_id=int(data.get('id')); conn=get_db_connection(); cur=conn.cursor()
+            fields=[]; vals=[]
+            mapping={'title':'title','description':'description','section':'section','items':'items','price':'price','old_price':'old_price','currency':'currency','duration_hours':'duration_hours','ends_at':'ends_at','is_active':'is_active','sort_order':'sort_order','icon':'icon'}
+            for key,col in mapping.items():
+                if key in data:
+                    val=data[key]
+                    if key=='items': val=json.dumps(val if isinstance(val,list) else [],ensure_ascii=False)
+                    if key in ('price','old_price') and data.get('price_in_grams',False): val=int(round(float(val or 0)*100))
+                    fields.append(col+'=?'); vals.append(val)
+            if not fields:
+                conn.close(); return jsonify({'success':True,'message':'Ничего не изменено'})
+            vals.append(deal_id)
+            cur.execute('UPDATE shop_deals SET '+','.join(fields)+' WHERE id=?',vals)
+            changed=cur.rowcount; conn.commit(); conn.close()
+            return jsonify({'success':bool(changed),'error':None if changed else 'Предложение не найдено'})
+        except Exception as e:
+            return jsonify({'success':False,'error':str(e)}),400
+    elif request.method == 'DELETE':
+        try:
+            data=request.get_json() or {}; admin_id=data.get('admin_id')
+            if not admin_id or int(admin_id)!=ADMIN_ID:
+                return jsonify({'success':False,'error':'Доступ запрещен'})
+            conn=get_db_connection(); cur=conn.cursor()
+            cur.execute('DELETE FROM shop_deals WHERE id=?',(int(data.get('id')),))
+            changed=cur.rowcount; conn.commit(); conn.close()
+            return jsonify({'success':bool(changed),'error':None if changed else 'Предложение не найдено'})
+        except Exception as e:
+            return jsonify({'success':False,'error':str(e)}),400
 
 @app.route('/api/admin/shop-deals/toggle', methods=['POST'])
 def admin_toggle_shop_deal():
