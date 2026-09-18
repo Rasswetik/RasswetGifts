@@ -273,6 +273,21 @@ img{display:block}
 
 /* SETTINGS PANEL */
 .settings-title{font-size:15px;font-weight:850;margin-bottom:16px;display:flex;align-items:center;gap:8px;position:relative;z-index:1}
+.settings-title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+.settings-title-row .settings-title{margin-bottom:0}
+.admin-btn{
+    display:none;align-items:center;gap:6px;flex-shrink:0;
+    height:32px;padding:0 13px;border-radius:10px;
+    font-size:12px;font-weight:850;letter-spacing:.2px;color:#fff;
+    background:linear-gradient(135deg,var(--red),#c22350);
+    border:1px solid rgba(255,48,100,.5);
+    box-shadow:0 4px 14px rgba(255,48,100,.28);
+    transition:.15s ease;
+}
+.admin-btn.show{display:inline-flex}
+.admin-btn:hover{filter:brightness(1.08)}
+.admin-btn:active{transform:scale(.96)}
+.admin-btn svg{width:14px;height:14px;flex-shrink:0}
 .settings-row{margin-bottom:14px;position:relative;z-index:1}
 .settings-row:last-child{margin-bottom:0}
 .settings-label{font-size:12px;font-weight:750;color:var(--muted);margin-bottom:9px;text-transform:uppercase;letter-spacing:.4px}
@@ -393,6 +408,8 @@ img{display:block}
     .promo-row{flex-direction:column}
     .promo-apply{padding:12px}
     .inv-panel{padding:14px}
+    .settings-title-row{flex-wrap:wrap;gap:8px}
+    .admin-btn{font-size:11px;height:30px;padding:0 11px}
 }
 
 /* MODAL: MRKT WITHDRAW PICKER */
@@ -619,7 +636,13 @@ html.halloween-active .inv-empty{background:rgba(19,7,29,.22)}
 
         <!-- BLOCK: SETTINGS (язык + промокод) -->
         <section class="panel">
-            <div class="settings-title"><span class="settings-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5l1.4 1.8 2.3-.2.8 2.2 2.1.9-.5 2.3 1.5 1.8-1.5 1.8.5 2.3-2.1.9-.8 2.2-2.3-.2L12 20.5l-1.4-1.8-2.3.2-.8-2.2-2.1-.9.5-2.3-1.5-1.8 1.5-1.8-.5-2.3 2.1-.9.8-2.2 2.3.2L12 3.5Z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/></svg></span>Настройки</div>
+            <div class="settings-title-row">
+                <div class="settings-title"><span class="settings-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3.5l1.4 1.8 2.3-.2.8 2.2 2.1.9-.5 2.3 1.5 1.8-1.5 1.8.5 2.3-2.1.9-.8 2.2-2.3-.2L12 20.5l-1.4-1.8-2.3.2-.8-2.2-2.1-.9.5-2.3-1.5-1.8 1.5-1.8-.5-2.3 2.1-.9.8-2.2 2.3.2L12 3.5Z" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/></svg></span>Настройки</div>
+                <button class="admin-btn" id="adminBtn" onclick="goTo('/admin')">
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5.5v5.2c0 4.9 3.4 9.4 8 10.8 4.6-1.4 8-5.9 8-10.8V5.5L12 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.2 12.2l2 2 3.6-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    АДМИН панель
+                </button>
+            </div>
             <div class="settings-row">
                 <div class="settings-label">Язык</div>
                 <div class="lang-toggle">
@@ -860,6 +883,9 @@ function updateProfile(){
     if(!user) return;
     var name = user.first_name || 'User';
     var nm = $('userName'); if(nm) nm.textContent = name;
+
+    var adminBtn = $('adminBtn');
+    if(adminBtn) adminBtn.classList.toggle('show', !!(user.is_admin || user.admin || user.role === 'admin'));
 
     var photoUrl = user.photo_url;
     var validPhoto = photoUrl && photoUrl !== '' && String(photoUrl).indexOf('default_avatar') === -1;
