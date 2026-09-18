@@ -810,6 +810,105 @@ def refresh_crash_bet_cache(game_id, target_multiplier=5.0):
         pass
 
 
+# SPOOKY ROUND (Halloween, Witch Hat Party)
+_crash_spooky_settings_cache = {'value': None, 'ts': 0}
+
+def get_crash_spooky_settings():
+    now = time.time()
+    if _crash_spooky_settings_cache['value'] is not None and now - _crash_spooky_settings_cache['ts'] < 5:
+        return _crash_spooky_settings_cache['value']
+    defaults = {'enabled': False, 'chance_percent': 1.0, 'min_multiplier': 1.1, 'max_multiplier': 3.0}
+    try:
+        conn = get_db_connection()
+        conn.execute('''CREATE TABLE IF NOT EXISTS crash_spooky_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            enabled BOOLEAN DEFAULT 0,
+            chance_percent REAL DEFAULT 1.0,
+            min_multiplier REAL DEFAULT 1.1,
+            max_multiplier REAL DEFAULT 3.0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''')
+        row = conn.execute('SELECT enabled, chance_percent, min_multiplier, max_multiplier FROM crash_spooky_settings WHERE id = 1').fetchone()
+        if row is None:
+            conn.execute('INSERT INTO crash_spooky_settings (id, enabled, chance_percent, min_multiplier, max_multiplier) VALUES (1, ?, ?, ?, ?)',
+                         (defaults['enabled'], defaults['chance_percent'], defaults['min_multiplier'], defaults['max_multiplier']))
+            conn.commit()
+            result = dict(defaults)
+        else:
+            result = {
+                'enabled': bool(row[0]),
+                'chance_percent': float(row[1]) if row[1] is not None else defaults['chance_percent'],
+                'min_multiplier': float(row[2]) if row[2] is not None else defaults['min_multiplier'],
+                'max_multiplier': float(row[3]) if row[3] is not None else defaults['max_multiplier'],
+            }
+        _crash_spooky_settings_cache['value'] = result
+        _crash_spooky_settings_cache['ts'] = now
+        return result
+    except Exception as e:
+        logger.warning(f"get_crash_spooky_settings: {e}")
+        return dict(defaults)
+
+
+def save_crash_spooky_settings(enabled, chance_percent, min_multiplier=None, max_multiplier=None):
+    chance_percent = max(0.0, min(100.0, float(chance_percent)))
+    conn = get_db_connection()
+    try:
+        conn.execute('''CREATE TABLE IF NOT EXISTS crash_spooky_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            enabled BOOLEAN DEFAULT 0,
+            chance_percent REAL DEFAULT 1.0,
+            min_multiplier REAL DEFAULT 1.1,
+            max_multiplier REAL DEFAULT 3.0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''')
+        current = get_crash_spooky_settings()
+        min_m = float(min_multiplier) if min_multiplier is not None else current['min_multiplier']
+        max_m = float(max_multiplier) if max_multiplier is not None else current['max_multiplier']
+        if min_m < 1.01: min_m = 1.01
+        if max_m <= min_m: max_m = min_m + 0.01
+        row = conn.execute('SELECT id FROM crash_spooky_settings WHERE id = 1').fetchone()
+        if row is None:
+            conn.execute('INSERT INTO crash_spooky_settings (id, enabled, chance_percent, min_multiplier, max_multiplier, updated_at) VALUES (1, ?, ?, ?, ?, CURRENT_TIMESTAMP)',
+                         (bool(enabled), chance_percent, min_m, max_m))
+        else:
+            conn.execute('UPDATE crash_spooky_settings SET enabled = ?, chance_percent = ?, min_multiplier = ?, max_multiplier = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1',
+                         (bool(enabled), chance_percent, min_m, max_m))
+        conn.commit()
+        _crash_spooky_settings_cache['value'] = {'enabled': bool(enabled), 'chance_percent': chance_percent, 'min_multiplier': min_m, 'max_multiplier': max_m}
+        _crash_spooky_settings_cache['ts'] = time.time()
+        return True
+    except Exception as e:
+        logger.warning(f"save_crash_spooky_settings: {e}")
+        return False
+
+
+def is_spooky_round_available():
+    """Spooky round can only appear while the Witch Hat Party (Halloween)
+    event is enabled AND the admin toggle for it is on."""
+    try:
+        settings = get_crash_spooky_settings()
+        if not settings.get('enabled'):
+            return False, settings
+        witch = get_active_events().get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party'])
+        if not witch.get('enabled'):
+            return False, settings
+        end = witch.get('ends_at')
+        if end:
+            try:
+                end_dt = datetime.fromisoformat(str(end).replace('Z', '+00:00'))
+                if end_dt.tzinfo:
+                    from datetime import timezone
+                    end_dt = end_dt.astimezone(timezone.utc).replace(tzinfo=None)
+                if end_dt <= datetime.utcnow():
+                    return False, settings
+            except Exception:
+                pass
+        return True, settings
+    except Exception as e:
+        logger.warning(f"is_spooky_round_available: {e}")
+        return False, {'enabled': False, 'chance_percent': 0, 'min_multiplier': 1.1, 'max_multiplier': 3.0}
+
+
 # ══════════════════════════════════════════════════════════════
 # ★ ВОССТАНОВЛЕННЫЕ PORTAL ПЕРЕМЕННЫЕ
 # ══════════════════════════════════════════════════════════════
@@ -3894,6 +3993,14 @@ def _create_all_tables(conn):
             min_real_players_threshold INTEGER DEFAULT 3,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''',
+        'crash_spooky_settings': '''CREATE TABLE IF NOT EXISTS crash_spooky_settings (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            enabled BOOLEAN DEFAULT 0,
+            chance_percent REAL DEFAULT 1.0,
+            min_multiplier REAL DEFAULT 1.1,
+            max_multiplier REAL DEFAULT 3.0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''',
         'promo_gift_challenges': '''CREATE TABLE IF NOT EXISTS promo_gift_challenges (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -4070,6 +4177,12 @@ def _create_all_tables(conn):
         ('ultimate_crash_games', 'is_bonus', 'BOOLEAN DEFAULT FALSE'),
         ('ultimate_crash_history', 'is_bonus', 'BOOLEAN DEFAULT FALSE'),
         ('ultimate_crash_bets', 'is_bonus_round', 'BOOLEAN DEFAULT FALSE'),
+        # Spooky round (Halloween): is_bonus/is_bonus_round above are reused as the
+        # "spooky round" flag, spooky_multiplier holds the hidden coefficient
+        # (1.1x–3.0x) that is applied to the payout only at cashout time.
+        ('ultimate_crash_games', 'spooky_multiplier', 'REAL DEFAULT 1.0'),
+        ('ultimate_crash_history', 'spooky_multiplier', 'REAL DEFAULT 1.0'),
+        ('ultimate_crash_bets', 'spooky_multiplier', 'REAL DEFAULT 1.0'),
     ]
     for _tbl, _col, _typ in _crash_migrations:
         try:
@@ -5744,21 +5857,33 @@ def start_ultimate_crash_loop():
                     _raw_multiplier, _round_seed, _round_seed_hash = generate_fair_crash_round(_round_nonce)
                     target_multiplier = min(float(_raw_multiplier), 30.0)
 
-                    is_bonus = random.random() < 0.005
-                    if is_bonus:
-                        target_multiplier = round(target_multiplier * random.uniform(1.5, 3.0), 2)
-                        target_multiplier = min(target_multiplier, 200.0)
-                        logger.info(f"🏆 BONUS ROUND! target: {target_multiplier}x")
+                    # 👻 Spooky round: only possible while the Witch Hat Party
+                    # (Halloween) event is enabled AND the admin toggle is on,
+                    # with the admin-configured probability. Unlike the old
+                    # bonus round, the target multiplier itself is NOT touched —
+                    # only the payout at cashout time is secretly multiplied by
+                    # a hidden coefficient, revealed only after cashout.
+                    is_bonus = False
+                    spooky_multiplier = 1.0
+                    _spooky_available, _spooky_settings = is_spooky_round_available()
+                    if _spooky_available:
+                        _chance = max(0.0, min(100.0, float(_spooky_settings.get('chance_percent', 0)))) / 100.0
+                        if random.random() < _chance:
+                            is_bonus = True
+                            _s_min = float(_spooky_settings.get('min_multiplier', 1.1))
+                            _s_max = float(_spooky_settings.get('max_multiplier', 3.0))
+                            spooky_multiplier = round(random.uniform(_s_min, _s_max), 2)
+                            logger.info(f"👻 SPOOKY ROUND! hidden multiplier: {spooky_multiplier}x")
 
                     # PostgreSQL does not provide sqlite's cursor.lastrowid.
                     # Always fetch the generated id explicitly on PostgreSQL.
                     if USE_POSTGRES:
                         try:
                             cursor.execute("""
-                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, seed_hash)
-                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
+                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
+                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
                                 RETURNING id
-                            """, (target_multiplier, bool(is_bonus), _round_seed_hash))
+                            """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
                             _row = cursor.fetchone()
                             new_game_id = int(_row[0]) if _row else 0
                         except Exception:
@@ -5777,9 +5902,9 @@ def start_ultimate_crash_loop():
                     else:
                         try:
                             cursor.execute("""
-                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, seed_hash)
-                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
-                            """, (target_multiplier, bool(is_bonus), _round_seed_hash))
+                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
+                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
+                            """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
                         except Exception:
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
@@ -7276,30 +7401,32 @@ def ultimate_crash_cashout_simple():
 
             bet_id, bet_amount, bet_type, gift_data_raw, bet_gift_name, bet_gift_image = bet
 
-            # ★ Проверяем бонус-раунд (для x2 выплаты)
+            # 👻 Проверяем спуки-раунд (хэллоуин): скрытый коэффициент, который
+            # умножает выплату при кэшауте. Источник истины — только БД,
+            # клиентский флаг больше не учитывается (чтобы его нельзя было
+            # подделать).
             is_bonus_round_db = False
+            spooky_multiplier = 1.0
             try:
-                cursor.execute('SELECT is_bonus FROM ultimate_crash_games WHERE id = ?', (game_id,))
+                cursor.execute('SELECT is_bonus, spooky_multiplier FROM ultimate_crash_games WHERE id = ?', (game_id,))
                 _brow = cursor.fetchone()
                 if _brow and _brow[0]:
                     is_bonus_round_db = True
+                    spooky_multiplier = float(_brow[1]) if len(_brow) > 1 and _brow[1] else 1.0
             except Exception:
                 pass
 
-            # Бонус-раунд применяется, если сервер ИЛИ клиент подтвердил
-            client_bonus = bool(data.get('is_bonus', False))
-            is_bonus_round = is_bonus_round_db or client_bonus
-
-            bonus_mult = 2 if is_bonus_round else 1
-            win_amount = int(bet_amount * current_mult) * bonus_mult
-            original_win_amount = int(bet_amount * current_mult)  # без бонуса
+            is_bonus_round = is_bonus_round_db
+            bonus_mult = spooky_multiplier if is_bonus_round else 1
+            win_amount = int(bet_amount * current_mult * bonus_mult)
+            original_win_amount = int(bet_amount * current_mult)  # без спуки-бонуса
 
             # Mark bet as cashed out
             try:
                 cursor.execute('''
-                    UPDATE ultimate_crash_bets SET status = 'cashed_out', cashout_multiplier = ?, win_amount = ?, is_bonus_round = ?
+                    UPDATE ultimate_crash_bets SET status = 'cashed_out', cashout_multiplier = ?, win_amount = ?, is_bonus_round = ?, spooky_multiplier = ?
                     WHERE id = ? AND status = 'active'
-                ''', (current_mult, win_amount, bool(is_bonus_round), bet_id))
+                ''', (current_mult, win_amount, bool(is_bonus_round), bonus_mult, bet_id))
             except Exception:
                 cursor.execute('''
                     UPDATE ultimate_crash_bets SET status = 'cashed_out', cashout_multiplier = ?, win_amount = ?
@@ -7541,6 +7668,7 @@ def ultimate_crash_cashout_simple():
         response = {
             'success': True,
             'win_amount': win_amount,
+            'original_win_amount': original_win_amount,
             'bet_amount': bet_amount,
             'multiplier': current_mult,
             'new_balance': new_balance,
@@ -7549,6 +7677,7 @@ def ultimate_crash_cashout_simple():
             'balance_delta_stars': remaining_value if remaining_value > 0 else 0,
             'has_upgraded_original': has_upgraded_original,
             'is_bonus_round': bool(is_bonus_round),
+            'spooky_multiplier': bonus_mult if is_bonus_round else 1.0,
         }
 
         if awarded_gifts:
@@ -14947,7 +15076,47 @@ def admin_crash_status():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-# Ручное управление исходом раунда ОТКЛЮЧЕНО НАВСЕГДА: раньше отсюда можно
+@app.route('/api/admin/crash/spooky-settings', methods=['GET', 'POST'])
+def admin_crash_spooky_settings():
+    """👻 Настройки спуки-раунда (Хэллоуин) для краша.
+
+    GET: текущие настройки.
+    POST: {admin_id, enabled, chance_percent} — сохраняет в БД.
+    Спуки-раунд может появиться в краше только пока включено событие
+    Witch Hat Party И включён этот переключатель.
+    """
+    try:
+        if request.method == 'GET':
+            admin_id = request.args.get('admin_id')
+            if not admin_id or int(admin_id) != ADMIN_ID:
+                return jsonify({'success': False, 'error': 'Доступ запрещен'})
+            settings = get_crash_spooky_settings()
+            witch = get_active_events().get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party'])
+            settings['halloween_event_enabled'] = bool(witch.get('enabled'))
+            return jsonify({'success': True, 'settings': settings})
+
+        data = request.get_json(force=True) or {}
+        admin_id = data.get('admin_id')
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'})
+
+        enabled = bool(data.get('enabled', False))
+        try:
+            chance_percent = float(data.get('chance_percent', 1.0))
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': 'Некорректная вероятность'})
+        if chance_percent < 0 or chance_percent > 100:
+            return jsonify({'success': False, 'error': 'Вероятность должна быть от 0 до 100'})
+
+        min_multiplier = data.get('min_multiplier')
+        max_multiplier = data.get('max_multiplier')
+
+        ok = save_crash_spooky_settings(enabled, chance_percent, min_multiplier, max_multiplier)
+        if not ok:
+            return jsonify({'success': False, 'error': 'Не удалось сохранить настройки'})
+        return jsonify({'success': True, 'settings': get_crash_spooky_settings(), 'message': '👻 Настройки спуки-раунда сохранены'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}) раньше отсюда можно
 # было принудительно обрушить раунд, задать множитель следующего раунда,
 # задать произвольный диапазон или на лету поменять целевой RTP — то есть
 # полностью управлять тем, кто выигрывает, а кто нет. Теперь единственный
