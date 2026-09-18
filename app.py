@@ -968,13 +968,14 @@ def _parse_fragment_price_ton(text):
 def _mrkt_load_token():
     try:
         if not os.path.exists(MRKT_TOKEN_FILE):
-            return ''
+            return _mrkt_normalize_token(os.environ.get('MRKT_TOKEN', ''))
         with open(MRKT_TOKEN_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        return _mrkt_normalize_token(data.get('token'))
+        token = _mrkt_normalize_token(data.get('token'))
+        return token or _mrkt_normalize_token(os.environ.get('MRKT_TOKEN', ''))
     except Exception as e:
         logger.warning('MRKT token read failed: %s', e)
-        return ''
+        return _mrkt_normalize_token(os.environ.get('MRKT_TOKEN', ''))
 
 def _mrkt_save_token(token):
     token = _mrkt_normalize_token(token)
