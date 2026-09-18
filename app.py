@@ -2795,6 +2795,60 @@ def _normalize_witch_event_structure(obj):
     obj['event_button_visible']=bool(obj.get('event_button_visible',True))
     return obj
 
+def _parse_unlock_input(data, current=None):
+    """Разбирает срок открытия: ISO-дата либо часы + минуты от текущего момента.
+
+    Возвращает ISO-строку (UTC) или None, если открывать нужно сразу.
+    """
+    if not isinstance(data, dict):
+        return current
+    raw = data.get('unlock_at')
+    has_parts = ('unlock_hours' in data) or ('unlock_minutes' in data)
+    if raw not in (None, '', False):
+        try:
+            dt = datetime.fromisoformat(str(raw).replace('Z', '+00:00'))
+            if dt.tzinfo:
+                from datetime import timezone
+                dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+            return dt.isoformat(timespec='seconds') + 'Z'
+        except Exception:
+            return None
+    if has_parts:
+        try:
+            hours = float(data.get('unlock_hours') or 0)
+        except Exception:
+            hours = 0.0
+        try:
+            minutes = float(data.get('unlock_minutes') or 0)
+        except Exception:
+            minutes = 0.0
+        total_minutes = max(0.0, hours * 60.0 + minutes)
+        if total_minutes <= 0:
+            return None
+        if total_minutes > 8760 * 60:
+            total_minutes = 8760 * 60
+        return (datetime.utcnow() + timedelta(minutes=total_minutes)).isoformat(timespec='seconds') + 'Z'
+    if 'unlock_at' in data:
+        return None
+    return current
+
+
+def _event_unlock_state(value, now=None):
+    """(locked, seconds_left) для unlock_at."""
+    if not value:
+        return False, 0
+    try:
+        dt = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+        if dt.tzinfo:
+            from datetime import timezone
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+    except Exception:
+        return False, 0
+    now = now or datetime.utcnow()
+    left = int((dt - now).total_seconds())
+    return (left > 0), max(0, left)
+
+
 def _event_db_defaults():
     conn=get_db_connection()
     try:
@@ -6001,27 +6055,29 @@ def case_main_page():
     """Страница списка кейсов."""
     return render_template('index.html', initial_case_id=None)
 
+def _serve_case_template():
+    """Единый шаблон страницы кейса (корень проекта или templates/)."""
+    for path in (os.path.join(BASE_PATH, 'case.html'),
+                 os.path.join(BASE_PATH, 'templates', 'case.html')):
+        if os.path.isfile(path):
+            return send_file(path)
+    logger.error('❌ Файл case.html не найден')
+    return redirect('/cases')
+
 @app.route('/case/<int:case_id>')
 def case_detail_page_legacy(case_id):
     """Legacy numeric URL: redirect to the human-readable case slug."""
-    case = next((c for c in load_cases() if int(c.get('id', 0)) == int(case_id)), None)
+    case = _resolve_case_ref(case_id)
     if not case:
         return redirect('/cases')
-    return redirect('/case/' + quote_plus(_case_slug(case)))
+    return redirect('/case/' + quote_plus(_case_slug(case) or str(case.get('id'))))
 
 @app.route('/case/<case_slug>')
 def case_detail_page(case_slug):
-    """Standalone case page with slug/name/id fallback."""
-    cases = load_cases()
-    raw = str(case_slug or '').strip()
-    target = raw.lower()
-    # Accept both the saved slug and a slugified case name.
-    found = next((c for c in cases if _case_slug(c).lower() == target), None)
-    if not found:
-        found = next((c for c in cases if _slugify_case_name(c.get('name')) == target), None)
-    if not found:
+    """Единая страница кейса: slug, имя, числовой ID и сезонный кейс."""
+    if not _resolve_case_ref(case_slug):
         return redirect('/cases')
-    return send_from_directory(BASE_PATH, 'case.html')
+    return _serve_case_template()
 
 @app.route('/cases')
 def cases_page():
@@ -8704,16 +8760,13 @@ def api_witch_hat_party():
     _normalize_witch_event_structure(ev)
     now=datetime.utcnow()
     for sec in ev.get('sections',[]):
-        for item in sec.get('items',[]) if isinstance(sec,dict) else []:
-            unlock=item.get('unlock_at')
-            item['locked']=False
-            if unlock:
-                try:
-                    dt=datetime.fromisoformat(str(unlock).replace('Z','+00:00'))
-                    if dt.tzinfo:
-                        from datetime import timezone; dt=dt.astimezone(timezone.utc).replace(tzinfo=None)
-                    item['locked']=now < dt
-                except Exception: pass
+        if not isinstance(sec,dict): continue
+        s_locked,s_left=_event_unlock_state(sec.get('unlock_at'),now)
+        sec['locked']=bool(s_locked); sec['unlock_in']=int(s_left)
+        for item in (sec.get('items') or []):
+            if not isinstance(item,dict): continue
+            i_locked,i_left=_event_unlock_state(item.get('unlock_at'),now)
+            item['locked']=bool(i_locked); item['unlock_in']=int(i_left)
     return jsonify({'success':True,'event':ev})
 
 @app.route('/api/events/ghost-road/market')
@@ -9071,7 +9124,7 @@ def admin_events():
                         'image':str(data.get('image') or '').strip(),
                         'path':str(data.get('path') or '#').strip() or '#',
                         'size':size, 'visible':bool(data.get('visible',True)),
-                        'unlock_at':None, 'mandatory':False
+                        'unlock_at':_parse_unlock_input(data, None), 'mandatory':False
                     })
                 elif action=='update_mode_item':
                     item_id=str(data.get('id') or '').strip()
@@ -9088,6 +9141,7 @@ def admin_events():
                     item['path']=str(data.get('path') or '#').strip() or '#'
                     item['size']=size
                     item['visible']=bool(data.get('visible',True))
+                    item['unlock_at']=_parse_unlock_input(data, item.get('unlock_at'))
                 else:
                     item_id=str(data.get('id') or '').strip()
                     if item_id=='ghost_road_mode':
@@ -9101,6 +9155,23 @@ def admin_events():
                     if not _event_find_case(case_id): return jsonify({'success':False,'error':'Кейс не найден'}),404
                     if case_id not in [str(x) for x in ids]: ids.append(case_id)
                 else: sec['case_ids']=[x for x in ids if str(x)!=case_id]
+            elif action=='set_section_unlock':
+                # Открытие раздела по таймеру: часы + минуты от текущего момента.
+                _normalize_witch_event_structure(ev) if eid=='witch_hat_party' else None
+                sid=str(data.get('section_id') or '').strip()
+                sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==sid),None)
+                if sec is None: return jsonify({'success':False,'error':'Раздел не найден'}),404
+                sec['unlock_at']=_parse_unlock_input(data, sec.get('unlock_at'))
+                if 'locked_note' in data:
+                    sec['locked_note']=str(data.get('locked_note') or '').strip()
+            elif action=='set_item_unlock':
+                _normalize_witch_event_structure(ev) if eid=='witch_hat_party' else None
+                sid=str(data.get('section_id') or '').strip(); iid=str(data.get('id') or '').strip()
+                sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==sid),None) or next((x for x in ev.get('sections',[]) if x.get('type')=='mode'),None)
+                if sec is None: return jsonify({'success':False,'error':'Раздел не найден'}),404
+                item=next((x for x in sec.setdefault('items',[]) if str(x.get('id'))==iid),None)
+                if item is None: return jsonify({'success':False,'error':'Кнопка не найдена'}),404
+                item['unlock_at']=_parse_unlock_input(data, item.get('unlock_at'))
             elif action=='add_section':
                 title=str(data.get('title') or '').strip()
                 if not title: return jsonify({'success':False,'error':'Введите название раздела'}),400
@@ -9202,116 +9273,175 @@ def api_case_sections():
         logger.error(f"❌ Ошибка получения разделов кейсов: {e}")
         return jsonify({'success': False, 'sections': [], 'error': str(e)})
 
-@app.route('/api/cases/<int:case_id>')
-def api_case_detail(case_id):
-    """Получение деталей конкретного кейса"""
+def _case_ref_candidates(case):
+    """Все идентификаторы, по которым можно найти кейс."""
+    out = set()
     try:
-        cases = load_cases()
-        local_gifts = load_gifts_cached() or []
-        canonical_gifts = build_fragment_first_gifts_catalog()
+        cid = case.get('id')
+        if cid is not None:
+            out.add(str(cid).strip().lower())
+            try:
+                out.add(str(int(cid)))
+            except Exception:
+                pass
+        slug = _case_slug(case)
+        if slug:
+            out.add(str(slug).strip().lower())
+        name_slug = _slugify_case_name(case.get('name'))
+        if name_slug:
+            out.add(str(name_slug).strip().lower())
+    except Exception:
+        pass
+    return {x for x in out if x}
 
-        case = next((c for c in cases if c['id'] == case_id), None)
-        if not case:
-            logger.error(f"❌ Кейс с ID {case_id} не найден!")
-            return jsonify({'success': False, 'error': 'Кейс не найден'})
 
-        if case.get('limited'):
-            current_limit = get_case_limit(case_id)
-            logger.info(f"📊 Детали кейса {case_id} - лимит: {current_limit}")
-            if current_limit is not None:
-                case['current_amount'] = current_limit
-            else:
-                case['current_amount'] = case['amount']
-        else:
-            case['current_amount'] = None
+def _resolve_case_ref(case_ref):
+    """Находит кейс по числовому ID, slug или имени.
 
-        case_gifts = []
-        for gift_info in case['gifts']:
-            # Обработка ton_balance
+    Раньше эндпоинт деталей принимал только <int:case_id> и сравнивал
+    c['id'] == case_id строго по типу. Из-за этого кейсы события с
+    ID-строкой, сезонный кейс и кейсы, привязанные по slug, отдавали
+    'Кейс не найден', а страница Event показывала общую ошибку загрузки.
+    """
+    ref = str(case_ref if case_ref is not None else '').strip().lower()
+    if not ref:
+        return None
+    try:
+        cases = get_public_cases_with_seasonal()
+    except Exception as e:
+        logger.error(f"❌ Не удалось получить список кейсов: {e}")
+        try:
+            cases = load_cases()
+        except Exception:
+            cases = []
+    for c in cases:
+        if not isinstance(c, dict):
+            continue
+        if ref in _case_ref_candidates(c):
+            return c
+    return None
+
+
+def _case_gift_details(case):
+    """Собирает подарки кейса, не падая на частично заполненных данных."""
+    gifts_details = []
+    try:
+        canonical_gifts = build_fragment_first_gifts_catalog() or []
+    except Exception as e:
+        logger.warning(f"⚠️ Каталог подарков недоступен: {e}")
+        canonical_gifts = []
+
+    for gift_info in (case.get('gifts') or []):
+        try:
+            if not isinstance(gift_info, dict):
+                continue
             if gift_info.get('type') in ('ton_balance', 'gram_balance'):
-                ton_amount = gift_info.get('ton_amount', gift_info.get('gram_amount', 0))
-                case_gifts.append({
-                    'id': -1,
-                    'name': 'Gram Balance',
-                    'image': '/static/img/ton.png',
-                    'value': ton_amount,
-                    'type': 'gram_balance',
-                    'ton_amount': ton_amount,
-                    'gram_amount': ton_amount,
+                amount = gift_info.get('ton_amount', gift_info.get('gram_amount', 0))
+                gifts_details.append({
+                    'id': -1, 'name': 'Gram Balance', 'image': '/static/img/ton.png',
+                    'value': amount, 'type': 'gram_balance',
+                    'ton_amount': amount, 'gram_amount': amount,
                     'chance': gift_info.get('chance', 1)
                 })
+                continue
+
+            target_id = gift_info.get('id')
+            target_id_str = str(target_id) if target_id is not None else ''
+            gift = next((g for g in canonical_gifts if
+                         (target_id is not None and str(g.get('id')) == target_id_str) or
+                         (target_id_str and str(g.get('gift_key') or '').lower() == target_id_str.lower()) or
+                         (target_id_str and str(g.get('fragment_slug') or '').lower() == target_id_str.lower())), None)
+            if not gift and gift_info.get('fragment_slug'):
+                slug = str(gift_info.get('fragment_slug')).strip().lower()
+                gift = next((g for g in canonical_gifts if str(g.get('fragment_slug') or '').lower() == slug), None)
+            if not gift and gift_info.get('name'):
+                gift = {
+                    'id': target_id or -1,
+                    'name': gift_info.get('name', ''),
+                    'image': gift_info.get('image', '/static/img/default_gift.png'),
+                    'value': _safe_int(gift_info.get('value'), 0),
+                    'type': gift_info.get('type', 'gift'),
+                    'fragment_slug': gift_info.get('fragment_slug', ''),
+                    'model_name': gift_info.get('model_name', ''),
+                }
+            if gift:
+                gifts_details.append({**gift, 'chance': gift_info.get('chance', 1)})
             else:
-                target_id = gift_info.get('id')
-                target_id_str = str(target_id) if target_id is not None else ''
-                # Resolve all public gift metadata exclusively from gifts.json.
-                gift = next((g for g in canonical_gifts if
-                             (target_id is not None and str(g.get('id')) == target_id_str) or
-                             (target_id_str and str(g.get('gift_key') or '').lower() == target_id_str.lower()) or
-                             (target_id_str and str(g.get('fragment_slug') or '').lower() == target_id_str.lower())), None)
-                if not gift and gift_info.get('fragment_slug'):
-                    slug = str(gift_info.get('fragment_slug')).strip().lower()
-                    gift = next((g for g in canonical_gifts if str(g.get('fragment_slug') or '').lower() == slug), None)
-                # Fallback: construct from gift_info fields
-                if not gift and gift_info.get('name'):
-                    gift = {
-                        'id': target_id or -1,
-                        'name': gift_info.get('name', ''),
-                        'image': gift_info.get('image', '/static/img/default_gift.png'),
-                        'value': _safe_int(gift_info.get('value'), 0),
-                        'type': gift_info.get('type', 'gift'),
-                        'fragment_slug': gift_info.get('fragment_slug', ''),
-                        'model_name': gift_info.get('model_name', ''),
-                    }
-                if gift:
-                    case_gifts.append({
-                        **gift,
-                        'chance': gift_info.get('chance', 1)
-                    })
-                else:
-                    logger.warning(f"⚠️ Подарок с ID {gift_info.get('id')} не найден для кейса {case_id}")
+                logger.warning(f"⚠️ Подарок {target_id_str or '?'} не найден для кейса {case.get('id')}")
+        except Exception as e:
+            logger.warning(f"⚠️ Ошибка обработки подарка кейса {case.get('id')}: {e}")
+    return gifts_details
 
-        case_with_gifts = {**case, 'gifts_details': case_gifts}
 
-        logger.info(f"📦 Отправлены детали кейса {case_id}")
-        return jsonify({'success': True, 'case': case_with_gifts})
+def _build_case_payload(case):
+    """Готовит кейс для фронтенда. Никогда не бросает исключение целиком."""
+    data = dict(case or {})
+    try:
+        if data.get('limited'):
+            current_limit = None
+            try:
+                current_limit = get_case_limit(data.get('id'))
+            except Exception as e:
+                logger.warning(f"⚠️ Лимит кейса {data.get('id')} недоступен: {e}")
+            data['current_amount'] = current_limit if current_limit is not None else data.get('amount')
+        else:
+            data['current_amount'] = None
+    except Exception:
+        data['current_amount'] = None
+    data['slug'] = _case_slug(data)
+    data['gifts_details'] = _case_gift_details(data)
+    return data
 
+
+@app.route('/api/cases/batch')
+def api_cases_batch():
+    """Пакетная загрузка кейсов: /api/cases/batch?ids=1,7,seasonal
+
+    Одна неудачная позиция больше не ломает всю выдачу — фронтенд получает
+    найденные кейсы и отдельный список ненайденных.
+    """
+    try:
+        raw = request.args.get('ids') or ''
+        refs = [x.strip() for x in re.split(r'[,\s]+', raw) if x.strip()]
+        found, missing = [], []
+        for ref in refs[:60]:
+            case = _resolve_case_ref(ref)
+            if case:
+                payload = _build_case_payload(case)
+                payload['requested_id'] = ref
+                found.append(payload)
+            else:
+                missing.append(ref)
+        return jsonify({'success': True, 'cases': found, 'missing': missing})
     except Exception as e:
-        logger.error(f"❌ Ошибка получения деталей кейса: {e}")
-        return jsonify({'success': False, 'error': str(e)})
+        logger.error(f"❌ Ошибка пакетной загрузки кейсов: {e}")
+        return jsonify({'success': False, 'cases': [], 'missing': [], 'error': str(e)}), 500
+
+
+@app.route('/api/cases/<case_ref>')
+def api_case_detail(case_ref):
+    """Детали кейса по ID, slug или имени (включая сезонный кейс)."""
+    try:
+        ref = str(case_ref or '').strip()
+        if ref.lower() in ('open', 'batch', 'by-slug', ''):
+            return jsonify({'success': False, 'error': 'Кейс не найден'}), 404
+        case = _resolve_case_ref(ref)
+        if not case:
+            logger.error(f"❌ Кейс '{ref}' не найден!")
+            return jsonify({'success': False, 'error': 'Кейс не найден'}), 404
+        return jsonify({'success': True, 'case': _build_case_payload(case)})
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения деталей кейса {case_ref}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 @app.route('/api/cases/by-slug/<case_slug>')
 def api_case_detail_by_slug(case_slug):
     try:
-        target = str(case_slug or '').strip().lower()
-        seasonal = load_seasonal_case()
-        cases = load_cases()
-        case = seasonal if target == 'seasonal' and seasonal_case_is_active(seasonal) else None
-        if not case:
-            case = next((c for c in cases if _case_slug(c).lower() == target), None)
-        if not case:
-            case = next((c for c in cases if _slugify_case_name(c.get('name')) == target), None)
-        if not case and target.isdigit():
-            case = next((c for c in cases if str(c.get('id')) == target), None)
+        case = _resolve_case_ref(case_slug)
         if not case:
             return jsonify({'success': False, 'error': 'Кейс не найден'}), 404
-        # Reuse the same gift resolution as the numeric endpoint.
-        local_gifts = load_gifts_cached() or []
-        canonical_gifts = build_fragment_first_gifts_catalog()
-        gifts_details = []
-        for gift_info in case.get('gifts', []):
-            if gift_info.get('type') in ('ton_balance', 'gram_balance'):
-                amount = gift_info.get('ton_amount', gift_info.get('gram_amount', 0))
-                gifts_details.append({'id': -1, 'name': 'Gram Balance', 'image': '/static/img/ton.png', 'value': amount, 'type': 'gram_balance', 'ton_amount': amount, 'gram_amount': amount, 'chance': gift_info.get('chance', 1)})
-                continue
-            target_id = gift_info.get('id'); target_id_str = str(target_id) if target_id is not None else ''
-            gift = next((g for g in canonical_gifts if (target_id is not None and str(g.get('id')) == target_id_str) or (target_id_str and str(g.get('gift_key') or '').lower() == target_id_str.lower()) or (target_id_str and str(g.get('fragment_slug') or '').lower() == target_id_str.lower())), None)
-            if not gift and gift_info.get('fragment_slug'):
-                fs = str(gift_info.get('fragment_slug')).strip().lower()
-                gift = next((g for g in canonical_gifts if str(g.get('fragment_slug') or '').lower() == fs), None)
-            if not gift and gift_info.get('name'):
-                gift = {'id': target_id or -1, 'name': gift_info.get('name',''), 'image': gift_info.get('image','/static/img/default_gift.png'), 'value': _safe_int(gift_info.get('value'),0), 'type': gift_info.get('type','gift')}
-            if gift: gifts_details.append({**gift, 'chance': gift_info.get('chance',1)})
-        return jsonify({'success': True, 'case': {**case, 'slug': _case_slug(case), 'gifts_details': gifts_details}})
+        return jsonify({'success': True, 'case': _build_case_payload(case)})
     except Exception as e:
         logger.error(f"❌ Ошибка получения кейса по slug: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -9328,7 +9458,7 @@ def open_case():
         except Exception:
             pass
         try:
-            quantity = max(1, min(3, int(data.get('quantity', 1))))
+            quantity = max(1, min(5, int(data.get('quantity', 1))))
         except Exception:
             quantity = 1
 
