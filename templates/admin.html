@@ -119,6 +119,12 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .form-group{margin-bottom:14px}
 .form-label{display:block;font-weight:800;font-size:11px;color:rgba(255,255,255,.55);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
 .form-input{width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#fff;font-size:14px;font-weight:600;outline:none;transition:all .15s;font-family:inherit}
+.switch{position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch .slider{position:absolute;cursor:pointer;inset:0;background:rgba(255,255,255,.14);border-radius:26px;transition:.2s}
+.switch .slider:before{position:absolute;content:"";height:20px;width:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked + .slider{background:#FF8C1A}
+.switch input:checked + .slider:before{transform:translateX(20px)}
 .form-input:focus{border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.08)}
 .form-input::placeholder{color:rgba(255,255,255,.3)}
 select.form-input{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.5)' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
@@ -524,7 +530,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
     <div class="section-page" id="page-crash" style="display:none">
         <div class="section-header">
             <h2>🎮 Управление Краш</h2>
-            <button class="action-btn" onclick="loadCrashStatus()">Обновить</button>
+            <button class="action-btn" onclick="loadCrashStatus(); loadSpookySettings();">Обновить</button>
         </div>
         <div class="card"><div class="card-title">Текущее состояние</div><div id="crashLiveState"></div></div>
         <div class="card">
@@ -542,6 +548,26 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             <button class="btn btn-warn" onclick="toggleManualMode()" id="manualModeBtn">⚪ Ручной режим: ВЫКЛ</button>
             <div style="height:8px"></div>
             <button class="btn btn-danger" onclick="forceCrash()">⚡ Форсировать краш</button>
+        </div>
+        <div class="card">
+            <div class="card-title">👻 Спуки-раунд (Хэллоуин)</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.48);line-height:1.45;margin:-4px 0 10px">
+                Появляется в краше только пока включено событие Witch Hat Party. Ставка принимается вслепую — игрок узнаёт,
+                что раунд был «спуки», и получает случайно умноженный приз (1.1x–3.0x) только после кэшаута.
+            </div>
+            <div id="spookyEventHint" style="font-size:12px;font-weight:800;margin-bottom:10px;padding:8px 10px;border-radius:10px"></div>
+            <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <label class="form-label" style="margin:0">Спуки-раунд включён</label>
+                <label class="switch">
+                    <input type="checkbox" id="spookyEnabledInput">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Вероятность появления на раунд (%)</label>
+                <input type="number" class="form-input" id="spookyChanceInput" placeholder="1" min="0" max="100" step="0.1">
+            </div>
+            <button class="btn btn-primary" onclick="saveSpookySettings()">💾 Сохранить</button>
         </div>
     </div>
 
@@ -1043,7 +1069,7 @@ function showSection(name){
         if(name === 'events') { loadEvents(); }
         if(name === 'games-ui') loadGamesUIAdmin();
         if(name === 'dashboard') loadStats();
-        if(name === 'crash') loadCrashStatus();
+        if(name === 'crash'){ loadCrashStatus(); loadSpookySettings(); }
         if(name === 'users') loadUsers();
         if(name === 'gifts') loadGifts();
         if(name === 'cases') loadCasesList();
@@ -1553,6 +1579,37 @@ async function toggleManualMode(){
         var r = await fetch('/api/admin/crash/toggle-manual', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID}) });
         var d = await r.json();
         if(d.success){ showToast(d.message || 'OK', 'ok'); loadCrashStatus(); } else showToast(d.error || 'Ошибка', 'err');
+    }catch(e){ showToast('Ошибка сети', 'err'); }
+}
+async function loadSpookySettings(){
+    try{
+        var r = await fetch('/api/admin/crash/spooky-settings?admin_id=' + ADMIN_ID);
+        var d = await r.json();
+        if(d.success){
+            var s = d.settings || {};
+            if($('spookyEnabledInput')) $('spookyEnabledInput').checked = !!s.enabled;
+            if($('spookyChanceInput')) $('spookyChanceInput').value = (s.chance_percent != null) ? s.chance_percent : 1;
+            var hint = $('spookyEventHint');
+            if(hint){
+                if(s.halloween_event_enabled){
+                    hint.textContent = '🎃 Событие Witch Hat Party включено — спуки-раунд может появляться.';
+                    hint.style.background = 'rgba(255,140,0,.12)'; hint.style.color = '#FF8C1A';
+                } else {
+                    hint.textContent = '⚠️ Событие Witch Hat Party выключено — спуки-раунд появляться не будет, даже если включён ниже.';
+                    hint.style.background = 'rgba(255,255,255,.06)'; hint.style.color = 'rgba(255,255,255,.55)';
+                }
+            }
+        }
+    }catch(e){ console.error(e); }
+}
+async function saveSpookySettings(){
+    var enabled = $('spookyEnabledInput') ? $('spookyEnabledInput').checked : false;
+    var chance = parseFloat($('spookyChanceInput').value);
+    if(isNaN(chance) || chance < 0 || chance > 100){ showToast('Вероятность: 0–100', 'err'); return; }
+    try{
+        var r = await fetch('/api/admin/crash/spooky-settings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, enabled: enabled, chance_percent: chance}) });
+        var d = await r.json();
+        if(d.success){ showToast(d.message || 'OK', 'ok'); loadSpookySettings(); } else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
 
