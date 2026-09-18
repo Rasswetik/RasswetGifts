@@ -6349,9 +6349,7 @@ def ghost_road_game_page():
     """Страница игрового режима Ghost Road."""
     candidates = [
         os.path.join(BASE_PATH, 'ghost_road.html'),
-        os.path.join(BASE_PATH, 'ghost_road_fixed.html'),
         os.path.join(BASE_PATH, 'templates', 'ghost_road.html'),
-        os.path.join(BASE_PATH, 'templates', 'ghost_road_fixed.html'),
     ]
     for event_file in candidates:
         if os.path.isfile(event_file):
@@ -6766,46 +6764,57 @@ def _gr_survival_chances(difficulty='light'):
 
 
 def _gr_normalize_user_id(value):
-    """Normalize Telegram user ids from JSON/localStorage/DB consistently."""
+    """Normalize Telegram/user ids so API requests use one canonical value."""
     try:
-        if value is None or str(value).strip() == '':
-            return None
-        return int(float(str(value).strip()))
-    except (TypeError, ValueError):
-        return str(value).strip() if value is not None else None
-
-
-def _gr_load_session(cursor, token, user_id=None):
-    """Load a Ghost Road session by its canonical token.
-
-    The token is the primary session identifier returned by /start. Older
-    clients sometimes sent Telegram user_id with a different JSON type, so
-    user id is normalized before ownership is checked. We deliberately do not
-    use user_id in the SQL lookup itself: a live token must not disappear just
-    because the client serialized the Telegram id differently.
-    """
-    token = str(token or '').strip()
-    if not token:
+        return int(str(value).strip())
+    except (TypeError, ValueError, AttributeError):
         return None
 
-    cursor.execute(
-        'SELECT token, user_id, bet, difficulty, step, status '
-        'FROM ghost_road_sessions WHERE token = ?',
-        (token,)
-    )
-    row = cursor.fetchone()
+
+def _gr_load_session(cursor, token, user_id):
+    """Load a Ghost Road session robustly.
+
+    The browser may have an old/missing token after a reload, while the DB
+    still contains the user's active session. In that case recover the
+    latest active session for the user instead of returning 'Забег не найден'.
+    The returned token is always the canonical DB token and callers must use
+    it for subsequent UPDATEs.
+    """
+    uid = _gr_normalize_user_id(user_id)
+    if uid is None:
+        return None
+
+    token = str(token or '').strip()
+    row = None
+
+    if token:
+        cursor.execute(
+            'SELECT token, user_id, bet, difficulty, step, status '
+            'FROM ghost_road_sessions WHERE token = ?',
+            (token,)
+        )
+        row = cursor.fetchone()
+        if row:
+            try:
+                row_uid = int(row[1])
+            except (TypeError, ValueError):
+                row_uid = None
+            if row_uid != uid:
+                row = None
+
+    # Recovery path: token is stale/missing but the user has an active run.
+    if row is None:
+        cursor.execute(
+            'SELECT token, user_id, bet, difficulty, step, status '
+            'FROM ghost_road_sessions '
+            "WHERE user_id = ? AND status = 'active' "
+            'ORDER BY updated_at DESC LIMIT 1',
+            (uid,)
+        )
+        row = cursor.fetchone()
+
     if not row:
         return None
-
-    if user_id is not None:
-        requested_uid = _gr_normalize_user_id(user_id)
-        session_uid = _gr_normalize_user_id(row[1])
-        if requested_uid is not None and session_uid is not None and requested_uid != session_uid:
-            logger.warning(
-                'Ghost Road ownership mismatch: token=%s user_id=%s session_user_id=%s',
-                token[:8] + '…', requested_uid, session_uid
-            )
-            return None
 
     return {
         'token': row[0], 'user_id': row[1], 'bet': float(row[2]),
@@ -6842,11 +6851,10 @@ def ghost_road_config():
 @app.route('/api/ghost-road/start', methods=['POST'])
 def ghost_road_start():
     data = request.get_json(force=True) or {}
-    user_id = data.get('user_id')
+    user_id = _gr_normalize_user_id(data.get('user_id'))
     difficulty = (data.get('difficulty') or 'light').lower()
 
-    user_id = _gr_normalize_user_id(user_id)
-    if not user_id:
+    if user_id is None:
         return jsonify({'success': False, 'error': 'Не передан user_id'})
     if difficulty not in GHOST_ROAD_PAYOUTS:
         difficulty = 'light'
@@ -6914,15 +6922,13 @@ def ghost_road_start():
 
 @app.route('/api/ghost-road/active', methods=['GET'])
 def ghost_road_active():
-    """Return the current active Ghost Road session for a user, if any."""
-    user_id = request.args.get('user_id')
-    if not user_id:
+    """Return the user's active Ghost Road session for page reload/recovery."""
+    uid = _gr_normalize_user_id(request.args.get('user_id'))
+    if uid is None:
         return jsonify({'success': True, 'active': False})
-
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        uid = _gr_normalize_user_id(user_id)
         cursor.execute(
             "SELECT token, user_id, bet, difficulty, step, status "
             "FROM ghost_road_sessions WHERE user_id = ? AND status = 'active' "
@@ -6933,14 +6939,9 @@ def ghost_road_active():
         if not row:
             return jsonify({'success': True, 'active': False})
         return jsonify({
-            'success': True,
-            'active': True,
-            'token': row[0],
-            'user_id': row[1],
-            'bet': float(row[2]),
-            'difficulty': row[3],
-            'step': int(row[4]),
-            'status': row[5],
+            'success': True, 'active': True, 'token': row[0], 'user_id': row[1],
+            'bet': float(row[2]), 'difficulty': row[3], 'step': int(row[4]),
+            'status': row[5]
         })
     except Exception as e:
         logger.error(f'Ghost Road active error: {e}')
@@ -6952,11 +6953,10 @@ def ghost_road_active():
 @app.route('/api/ghost-road/step', methods=['POST'])
 def ghost_road_step():
     data = request.get_json(force=True) or {}
-    user_id = data.get('user_id')
-    token = data.get('token')
-    user_id = _gr_normalize_user_id(user_id)
+    user_id = _gr_normalize_user_id(data.get('user_id'))
+    token = str(data.get('token') or '').strip()
 
-    if not user_id or not token:
+    if user_id is None:
         return jsonify({'success': False, 'error': 'Нет активного забега'})
 
     conn = get_db_connection()
@@ -6966,6 +6966,7 @@ def ghost_road_step():
             s = _gr_load_session(cursor, token, user_id)
             if not s:
                 return jsonify({'success': False, 'error': 'Забег не найден'})
+            token = s['token']
             if s['status'] != 'active':
                 return jsonify({'success': False, 'error': 'Забег уже завершён'})
 
@@ -7026,11 +7027,10 @@ def ghost_road_step():
 @app.route('/api/ghost-road/cashout', methods=['POST'])
 def ghost_road_cashout():
     data = request.get_json(force=True) or {}
-    user_id = data.get('user_id')
-    token = data.get('token')
-    user_id = _gr_normalize_user_id(user_id)
+    user_id = _gr_normalize_user_id(data.get('user_id'))
+    token = str(data.get('token') or '').strip()
 
-    if not user_id or not token:
+    if user_id is None:
         return jsonify({'success': False, 'error': 'Нет активного забега'})
 
     conn = get_db_connection()
@@ -7040,6 +7040,7 @@ def ghost_road_cashout():
             s = _gr_load_session(cursor, token, user_id)
             if not s:
                 return jsonify({'success': False, 'error': 'Забег не найден'})
+            token = s['token']
             if s['status'] != 'active':
                 return jsonify({'success': False, 'error': 'Забег уже завершён'})
             if s['step'] <= 0:
