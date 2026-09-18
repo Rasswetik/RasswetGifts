@@ -117,7 +117,7 @@ body{
 .gr-lane-mark.locked{opacity:.42}
 
 .gr-hamster{
-    position:absolute;top:50%;
+    position:absolute;top:48%;
     transform:translate(-50%,-50%);
     transform-origin:50% 90%;
     filter:drop-shadow(0 6px 10px rgba(0,0,0,.55));
@@ -141,7 +141,7 @@ body{
 @keyframes grStopIn{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 
 .gr-car{
-    position:absolute;transform:translate(-50%,-50%);
+    position:absolute;transform:translate(-50%,-50%);m:translate(-50%,-50%);
     z-index:4;will-change:top;
     filter:drop-shadow(0 8px 14px rgba(0,0,0,.5));
 }
@@ -415,10 +415,11 @@ body{
         0 0 0 1px rgba(255,255,255,.025) inset;
 }
 .gr-world{
-    top:0!important;left:0!important;
+    top:0!important;left:0;
     width:100%!important;height:100%!important;
-    transform:none!important;
-    overflow:hidden;
+    transform-origin:0 0;
+    overflow:visible;
+    will-change:left,transform;
 }
 .gr-road{
     position:absolute;
@@ -426,11 +427,22 @@ body{
     width:100%!important;height:100%!important;
     object-fit:fill!important;
     display:block;
+    user-select:none;
 }
+/* После стартовой анимации камера приближает PNG и дальше следует за хомяком. */
+.gr-stage.gr-compact .gr-world{
+    overflow:visible;
+}
+.gr-stage.gr-compact #grCars,
+.gr-stage.gr-compact #grSigns,
+.gr-stage.gr-compact #grHamster{
+    /* актёры масштабируются вместе с PNG */
+}
+
 .gr-layer{inset:0!important}
 #grLanes{display:none!important}
 .gr-hamster{
-    top:55%!important;
+    top:50%!important;
     z-index:10;
     width:auto;
     max-width:none;
@@ -611,7 +623,7 @@ body.crash-halloween .gr-result-inner{
         margin:0 12px;
         border-radius:20px;
     }
-    .gr-hamster{top:55%!important}
+    .gr-hamster{top:50%!important}
     .gr-controls{padding:14px 12px 0}
     .gr-row{gap:8px}
     .gr-field{min-height:66px;padding:10px 12px;border-radius:14px}
@@ -812,6 +824,14 @@ var ROAD = {
 // хомяка и ширину полос по факту под свою картинку road.png и впиши
 // получившиеся числа сюда.
 
+var GR_CAMERA = {
+    zoom: 2.55,              // крупный кадр дороги после входной анимации
+    heroScreenPct: 23,       // хомяк остаётся чуть левее центра кадра
+    introMs: 900,            // большая PNG плавно превращается в компактный кадр
+    compact: false,
+    animating: false
+};
+
 var LANES = 15;
 var CARS_FALLBACK = [
     '/static/road/cars/car1.png','/static/road/cars/car2.png',
@@ -888,19 +908,19 @@ function setBalance(v){
 
 async function loadUser(){
     var u = readStoredUser();
+    // Always validate the stored Telegram id against the real backend user.
+    // This prevents an old localStorage profile from being used for a new run.
     if(u && u.id){
-        S.user = u;
-        paintAvatar(u);
         try{
-            var r = await fetch('/api/user/' + u.id, {cache:'no-store'});
-            var d = await r.json();
-            var info = d.user || d;
-            if(info){
-                if(info.photo_url) paintAvatar(info);
-                setBalance(info.balance_stars != null ? info.balance_stars : 0);
+            var vr = await fetch('/api/telegram/user?user_id=' + encodeURIComponent(u.id), {cache:'no-store'});
+            var vd = await vr.json();
+            if(vd && vd.success && vd.user && vd.user.id){
+                S.user = vd.user;
+                paintAvatar(vd.user);
+                setBalance(vd.user.balance_stars != null ? vd.user.balance_stars : 0);
+                return;
             }
         }catch(e){}
-        return;
     }
     try{
         if(typeof telegramAuth === 'function'){
@@ -909,10 +929,52 @@ async function loadUser(){
                 S.user = auth;
                 paintAvatar(auth);
                 setBalance(auth.balance_stars || 0);
+                try{ localStorage.setItem('rasswet_user', JSON.stringify(auth)); }catch(e){}
+                return;
+            }
+        }
+    }catch(e){}
+    try{
+        if(window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user){
+            var tgUser = Telegram.WebApp.initDataUnsafe.user;
+            var tr = await fetch('/api/telegram/user?user_id=' + encodeURIComponent(tgUser.id), {cache:'no-store'});
+            var td = await tr.json();
+            if(td && td.success && td.user){
+                S.user = td.user;
+                paintAvatar(td.user);
+                setBalance(td.user.balance_stars || 0);
+                try{ localStorage.setItem('rasswet_user', JSON.stringify(td.user)); }catch(e){}
             }
         }
     }catch(e){}
 }
+
+async function restoreActiveRun(){
+    if(!S.user || !S.user.id) return false;
+    try{
+        var r = await fetch('/api/ghost-road/active?user_id=' + encodeURIComponent(S.user.id), {cache:'no-store'});
+        var d = await r.json();
+        if(!d || !d.success || !d.active || !d.token) return false;
+        S.token = String(d.token);
+        S.bet = Number(d.bet) || S.minBet;
+        S.difficulty = d.difficulty || S.difficulty;
+        S.step = Number(d.step) || 0;
+        S.phase = 'running';
+        try{ sessionStorage.setItem('ghost_road_token', S.token); }catch(e){}
+        if(S.payouts && S.payouts.length){ /* config already loaded */ }
+        hideResult();
+        writeBet(S.bet);
+        clearSigns();
+        $('grHamster').classList.remove('squashed');
+        $('grHamster').src = IMG.base;
+        buildLaneMarks();
+        moveCamera(false);
+        startTraffic();
+        renderUI();
+        return true;
+    }catch(e){ return false; }
+}
+
 
 /* ─── конфиг режима ─────────────────────────────────────────────── */
 async function loadConfig(){
@@ -956,11 +1018,44 @@ function heroPct(){
 
 function moveCamera(animate){
     if(!world || !stage) return;
-    // Камера больше не уезжает за пределы дороги: всё игровое поле всегда
-    // находится внутри окна, а хомяк просто перемещается по его ширине.
-    world.style.transition = 'none';
-    world.style.transform = 'none';
+
+    var zoom = GR_CAMERA.compact ? GR_CAMERA.zoom : 1;
+    var hero = heroPct() / 100;
+    var W = stage.clientWidth || 1;
+
+    // До входа показываем всю PNG. После входной анимации — крупный
+    // фрагмент, а камера двигается по той же PNG вместе с хомяком.
+    var target = GR_CAMERA.heroScreenPct / 100;
+    var tx = (target - hero * zoom) * W;
+    var minTx = W - W * zoom;
+    tx = Math.max(minTx, Math.min(0, tx));
+
+    world.style.transition = animate ? 'left .52s cubic-bezier(.22,.8,.24,1), transform .52s cubic-bezier(.22,.8,.24,1)' : 'none';
+    world.style.left = tx + 'px';
+    world.style.transformOrigin = '0 0';
+    world.style.transform = 'scale(' + zoom + ')';
     $('grHamster').style.left = heroPct() + '%';
+}
+
+function playEntryCamera(){
+    if(!world || !stage || GR_CAMERA.animating) return;
+    GR_CAMERA.animating = true;
+    GR_CAMERA.compact = false;
+    world.style.transition = 'none';
+    world.style.left = '0px';
+    world.style.transformOrigin = '0 0';
+    world.style.transform = 'scale(1)';
+    stage.classList.remove('gr-compact');
+
+    // Маленькая пауза даёт браузеру отрисовать исходное большое поле.
+    requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+            GR_CAMERA.compact = true;
+            stage.classList.add('gr-compact');
+            moveCamera(true);
+            setTimeout(function(){ GR_CAMERA.animating = false; }, GR_CAMERA.introMs + 80);
+        });
+    });
 }
 
 function laneSizePx(){ return (ROAD.lanePct / 100) * worldWidth(); }
@@ -1036,7 +1131,13 @@ function spawnCar(lane, opts){
     car.style.transform = 'translate(-50%,-50%) rotate(' + (downward ? 0 : 180) + 'deg)';
 
     var dur = opts.duration || rnd(1900, 2900);
-    $('grCars').appendChild(car);
+    // Машина стартует и заканчивает движение внутри вертикального
+    // дорожного полотна. Никакого clip-path по кадру: при приближении
+    // камеры машины должны естественно пересекать весь мост/дорогу.
+    var carsLayer = $('grCars');
+    carsLayer.style.clipPath = 'none';
+    carsLayer.style.webkitClipPath = 'none';
+    carsLayer.appendChild(car);
 
     requestAnimationFrame(function(){
         car.style.transition = 'top ' + dur + 'ms cubic-bezier(.22,.55,.28,1)';
@@ -1186,6 +1287,7 @@ async function startRun(){
         // Поддерживаем token и варианты идентификатора забега от разных
         // версий API, чтобы первый шаг не получал «забег не найден».
         S.token = d.token || d.run_id || d.id || d.game_id || d.session_id || null;
+        if(S.token){ try{ sessionStorage.setItem('ghost_road_token', String(S.token)); }catch(e){} }
         if(!S.token){
             toast('Сервер не вернул идентификатор забега', 'err');
             return;
@@ -1201,6 +1303,8 @@ async function startRun(){
         $('grHamster').classList.remove('squashed');
         $('grHamster').src = IMG.base;
         buildLaneMarks();
+        GR_CAMERA.compact = true;
+        stage.classList.add('gr-compact');
         moveCamera(false);
         startTraffic();
     }catch(e){
@@ -1227,6 +1331,7 @@ async function doStep(){
             if(/забег|run|session|not found|не найден/i.test(String(stepErr))){
                 S.phase = 'over';
                 S.token = null;
+                try{ sessionStorage.removeItem('ghost_road_token'); }catch(e){}
                 stopTraffic();
             }
             toast(stepErr, 'err');
@@ -1268,6 +1373,7 @@ async function doStep(){
                 blockedLane = 0;
                 S.phase = 'over';
                 S.token = null;
+                try{ sessionStorage.removeItem('ghost_road_token'); }catch(e){}
                 S.busy = false;
                 showResult('lose', S.bet, 'Полоса ' + targetLane + ' из ' + LANES);
                 renderUI();
@@ -1295,6 +1401,7 @@ async function cashout(){
         stopTraffic();
         S.phase = 'over';
         S.token = null;
+        try{ sessionStorage.removeItem('ghost_road_token'); }catch(e){}
         showResult('win', d.payout, d.multiplier.toFixed(2) + 'x · полоса ' + d.step);
         loadWins();
     }catch(e){
@@ -1392,7 +1499,6 @@ function initTune(){
         el.value = ROAD[map[id]];
         el.addEventListener('input', function(){
             ROAD[map[id]] = parseFloat(el.value);
-            world.style.height = (ROAD.zoom * 100) + '%';
             buildLaneMarks();
             sizeActors();
             moveCamera(false);
@@ -1431,7 +1537,18 @@ async function init(){
         });
     }
 
-    writeBet(S.minBet);
+    var restored = await restoreActiveRun();
+    if(!restored){
+        writeBet(S.minBet);
+        // Каждый повторный вход начинается с большой PNG и плавно
+        // переходит в рабочий крупный кадр.
+        playEntryCamera();
+    }else{
+        // Если был незаконченный забег, сразу показываем нужный участок PNG.
+        GR_CAMERA.compact = true;
+        stage.classList.add('gr-compact');
+        moveCamera(false);
+    }
     renderUI();
     loadWins();
     initTune();
