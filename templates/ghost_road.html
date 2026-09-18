@@ -380,6 +380,252 @@ body.crash-halloween .gr-result-note{color:rgba(210,195,230,.6)}
     .gr-world,.gr-hamster{transition-duration:.01ms}
     .gr-stage.shake{animation:none}
 }
+
+/* ═════════════════════════════════════════════════════════════════════
+   GHOST ROAD — VISUAL OVERHAUL
+   Чистое игровое поле, дорога целиком внутри окна, крупный трафик.
+   ═════════════════════════════════════════════════════════════════════ */
+:root{
+    --gr-bg:#090611;
+    --gr-panel:rgba(19,13,31,.88);
+    --gr-line:rgba(178,135,239,.18);
+    --gr-purple:#9b72ed;
+    --gr-purple-2:#7448cf;
+    --gr-text:#f4efff;
+    --gr-muted:#8d839f;
+}
+body{
+    background:
+        radial-gradient(900px 500px at 50% -120px,rgba(104,62,180,.20),transparent 65%),
+        radial-gradient(600px 500px at 100% 50%,rgba(57,28,103,.10),transparent 70%),
+        #090611;
+}
+.container{max-width:940px;padding-bottom:56px}
+.gr-head{max-width:940px;margin:0 auto;padding:30px 22px 16px}
+.gr-title{font-size:32px;font-weight:950;letter-spacing:-.8px}
+.gr-stage{
+    margin:0 22px;
+    aspect-ratio:16/9;
+    min-height:0;
+    border-radius:24px;
+    border:1px solid rgba(185,151,240,.20);
+    background:#0b0713;
+    box-shadow:
+        0 24px 70px rgba(0,0,0,.42),
+        0 0 0 1px rgba(255,255,255,.025) inset;
+}
+.gr-world{
+    top:0!important;left:0!important;
+    width:100%!important;height:100%!important;
+    transform:none!important;
+    overflow:hidden;
+}
+.gr-road{
+    position:absolute;
+    inset:0;
+    width:100%!important;height:100%!important;
+    object-fit:fill!important;
+    display:block;
+}
+.gr-layer{inset:0!important}
+#grLanes{display:none!important}
+.gr-hamster{
+    top:58%!important;
+    z-index:10;
+    width:auto;
+    max-width:none;
+    transform:translate(-50%,-50%);
+    transition:left .52s cubic-bezier(.22,.8,.24,1);
+    filter:drop-shadow(0 10px 15px rgba(0,0,0,.62));
+}
+.gr-hamster.hop{animation:grHopClean .52s cubic-bezier(.22,.8,.24,1)}
+@keyframes grHopClean{
+    0%{margin-top:0;transform:translate(-50%,-50%) rotate(0)}
+    38%{margin-top:-8px;transform:translate(-50%,-50%) rotate(-2deg)}
+    70%{margin-top:-3px;transform:translate(-50%,-50%) rotate(2deg)}
+    100%{margin-top:0;transform:translate(-50%,-50%) rotate(0)}
+}
+.gr-car{
+    z-index:4;
+    transform-origin:50% 50%;
+    filter:drop-shadow(0 10px 13px rgba(0,0,0,.58));
+}
+.gr-result{
+    background:rgba(7,4,13,.76);
+    backdrop-filter:blur(7px);
+}
+.gr-result-inner{
+    min-width:220px;
+    padding:24px 30px;
+    border-radius:22px;
+    background:rgba(20,13,31,.92);
+    border:1px solid rgba(181,143,235,.18);
+    box-shadow:0 22px 70px rgba(0,0,0,.48);
+}
+.gr-result-value{font-size:44px}
+.gr-controls{padding:18px 22px 0;gap:12px}
+.gr-row{gap:12px}
+.gr-field{
+    min-height:72px;
+    padding:11px 15px;
+    border-radius:16px;
+    background:linear-gradient(145deg,rgba(27,18,43,.92),rgba(15,10,24,.92));
+    border-color:rgba(178,135,239,.16);
+    box-shadow:0 8px 28px rgba(0,0,0,.14);
+}
+.gr-field-label{font-size:9px;letter-spacing:.16em}
+.gr-bet-input input{font-size:21px}
+.gr-diff-arrow{display:none}
+.gr-diff{justify-content:center}
+.gr-diff-name{
+    font-size:13px;
+    padding:8px 16px;
+    border-radius:10px;
+    background:rgba(155,114,237,.08);
+    border:1px solid rgba(155,114,237,.14);
+}
+.gr-quick{gap:9px}
+.gr-quick button{
+    min-height:42px;
+    border-radius:13px;
+    background:rgba(21,14,34,.9);
+    border-color:rgba(178,135,239,.14);
+    color:#a99eb8;
+}
+.gr-quick button:hover{
+    color:#eee7fa;
+    background:rgba(155,114,237,.10);
+    border-color:rgba(155,114,237,.30);
+}
+.gr-quick button.accent{
+    color:#d9c6ff;
+    background:linear-gradient(135deg,rgba(155,114,237,.16),rgba(116,72,207,.12));
+    border-color:rgba(155,114,237,.34);
+}
+.gr-actions{gap:12px}
+.gr-btn{
+    min-height:60px;
+    border-radius:17px;
+    border:1px solid rgba(199,175,246,.34);
+    background:linear-gradient(135deg,#9a70ec,#7548cf);
+    box-shadow:0 12px 32px rgba(116,72,207,.24),0 0 0 1px rgba(255,255,255,.04) inset;
+    font-size:15px;
+}
+.gr-btn:hover:not(:disabled){
+    transform:translateY(-1px);
+    box-shadow:0 15px 36px rgba(116,72,207,.30),0 0 0 1px rgba(255,255,255,.05) inset;
+}
+.gr-btn.cashout{
+    background:linear-gradient(135deg,#b083f2,#7748cf);
+    color:#fff;
+}
+.gr-btn:disabled{opacity:.36}
+.gr-wins{
+    margin:22px 22px 0;
+    border-radius:18px;
+    background:rgba(15,10,24,.72);
+    border-color:rgba(178,135,239,.13);
+    box-shadow:0 12px 36px rgba(0,0,0,.16);
+}
+.gr-wins-head{padding:15px 18px;color:rgba(213,200,231,.52)}
+.gr-wins-empty{padding:38px 20px;color:rgba(230,220,242,.25)}
+.gr-progress{display:none!important}
+
+/* Хэллоуин: не перекрашиваем дорогу в синий — оставляем изображение читаемым,
+   а атмосферу создаём мягкими фиолетово-оранжевыми свечениями. */
+body.crash-halloween{
+    background:
+        radial-gradient(700px 430px at 50% -80px,rgba(126,75,206,.24),transparent 66%),
+        radial-gradient(560px 420px at 8% 70%,rgba(255,113,45,.10),transparent 72%),
+        linear-gradient(180deg,#12081d 0%,#0b0611 55%,#07040b 100%);
+}
+body.crash-halloween .gr-title{
+    background:linear-gradient(135deg,#f5e9ff 0%,#c39aff 48%,#ff9b52 100%);
+    -webkit-background-clip:text;background-clip:text;
+}
+body.crash-halloween .gr-stage{
+    border-color:rgba(181,132,240,.34);
+    box-shadow:
+        0 24px 75px rgba(0,0,0,.54),
+        0 0 45px rgba(111,61,184,.13),
+        0 0 0 1px rgba(255,255,255,.025) inset;
+}
+body.crash-halloween .gr-stage::before{
+    content:"";
+    position:absolute;inset:0;z-index:8;pointer-events:none;
+    background:
+        radial-gradient(circle at 14% 18%,rgba(255,139,70,.11),transparent 20%),
+        radial-gradient(circle at 82% 22%,rgba(142,91,226,.12),transparent 24%),
+        linear-gradient(180deg,rgba(10,5,16,.03),rgba(6,3,10,.20));
+}
+body.crash-halloween .gr-stage::after{
+    content:"";
+    position:absolute;left:-10%;right:-10%;bottom:-18%;height:48%;z-index:7;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 50%,rgba(136,80,215,.12),transparent 67%);
+    filter:blur(18px);
+    animation:hwFogRoadClean 18s ease-in-out infinite alternate;
+}
+@keyframes hwFogRoadClean{
+    from{transform:translateX(-3%) scale(1)}
+    to{transform:translateX(3%) scale(1.04)}
+}
+body.crash-halloween .gr-road{
+    filter:saturate(1.04) contrast(1.03) brightness(.90);
+}
+body.crash-halloween .gr-car{
+    filter:drop-shadow(0 10px 14px rgba(0,0,0,.65)) saturate(1.02);
+}
+body.crash-halloween .gr-hamster{
+    filter:drop-shadow(0 10px 16px rgba(0,0,0,.70)) drop-shadow(0 0 11px rgba(170,100,240,.18));
+}
+body.crash-halloween .gr-cobweb{
+    opacity:.28;
+    color:#d9c8ed;
+}
+body.crash-halloween .gr-field{
+    background:linear-gradient(145deg,rgba(31,18,43,.94),rgba(15,8,22,.94));
+    border-color:rgba(180,133,239,.18);
+}
+body.crash-halloween .gr-quick button{
+    background:rgba(28,16,39,.90);
+    border-color:rgba(180,133,239,.16);
+}
+body.crash-halloween .gr-btn{
+    background:linear-gradient(135deg,#a276ee,#7848cf);
+    border-color:rgba(224,197,255,.34);
+    box-shadow:0 12px 34px rgba(119,69,206,.30);
+}
+body.crash-halloween .gr-btn.cashout{
+    background:linear-gradient(135deg,#b27ef2,#7140c8);
+}
+body.crash-halloween .gr-result-inner{
+    background:rgba(24,12,33,.94);
+    border-color:rgba(196,151,242,.24);
+}
+
+@media(max-width:700px){
+    .container{padding-bottom:118px}
+    .gr-head{padding:20px 14px 12px}
+    .gr-title{font-size:25px}
+    .gr-stage{
+        margin:0 12px;
+        border-radius:20px;
+    }
+    .gr-hamster{top:58%!important}
+    .gr-controls{padding:14px 12px 0}
+    .gr-row{gap:8px}
+    .gr-field{min-height:66px;padding:10px 12px;border-radius:14px}
+    .gr-bet-input input{font-size:18px}
+    .gr-quick{gap:7px}
+    .gr-quick button{min-height:40px;padding:9px 0;font-size:11px}
+    .gr-btn{min-height:56px;border-radius:15px}
+    .gr-wins{margin:18px 12px 0}
+}
+@media(max-width:390px){
+    .gr-row{grid-template-columns:1fr}
+    .gr-field{min-height:62px}
+}
+
 </style>
 </head>
 <body>
@@ -542,11 +788,11 @@ body.crash-halloween .gr-result-note{color:rgba(210,195,230,.6)}
    скопируй числа из зелёной строки сюда — и всё встанет ровно.
    ──────────────────────────────────────────────────────────────── */
 var ROAD = {
-    zoom:      4.5,   // во сколько раз картинка выше окна сцены (больше = "ближе")
-    startPct:  4.0,   // где стоит хомяк до начала забега
-    firstPct: 10.0,   // центр первой полосы
-    lanePct:   5.6,   // ширина одной полосы
-    heroPct:  26      // где держать хомяка в окне сцены (% ширины окна, меньше = левее)
+    zoom:      1.0,   // дорога целиком помещается в игровое окно
+    startPct:  5.0,   // старт хомяка
+    firstPct:  8.0,   // центр первой позиции
+    lanePct:   6.0,   // шаг между 15 позициями
+    heroPct:   50      // камера не двигается — герой идёт по самой дороге
 };
 // Это стартовые значения. Открой страницу с ?tune=1 (или нажми клавишу K) —
 // внизу справа появится панель с ползунками: подгони приближение, позицию
@@ -681,7 +927,8 @@ function worldWidth(){ return world ? world.offsetWidth : 0; }
 
 function layoutWorld(){
     stage = $('grStage'); world = $('grWorld'); roadImg = $('grRoad');
-    world.style.height = (ROAD.zoom * 100) + '%';
+    world.style.height = '100%';
+    world.style.width = '100%';
     buildLaneMarks();
     moveCamera(false);
 }
@@ -690,21 +937,17 @@ function lanePct(i){            // i = 1..LANES
     return ROAD.firstPct + (i - 1) * ROAD.lanePct;
 }
 function heroPct(){
-    return S.step === 0 ? ROAD.startPct : lanePct(S.step);
+    var p = S.step === 0 ? ROAD.startPct : lanePct(S.step);
+    return Math.max(3.5, Math.min(96.5, p));
 }
 
 function moveCamera(animate){
     if(!world || !stage) return;
-    if(!animate) world.style.transition = 'none';
-    var ww = worldWidth();
-    var targetX = (heroPct() / 100) * ww;
-    var anchor  = stage.offsetWidth * (ROAD.heroPct / 100);
-    world.style.transform = 'translate3d(' + (anchor - targetX) + 'px, -50%, 0)';
+    // Камера больше не уезжает за пределы дороги: всё игровое поле всегда
+    // находится внутри окна, а хомяк просто перемещается по его ширине.
+    world.style.transition = 'none';
+    world.style.transform = 'none';
     $('grHamster').style.left = heroPct() + '%';
-    if(!animate){
-        void world.offsetWidth;
-        world.style.transition = '';
-    }
 }
 
 function laneSizePx(){ return (ROAD.lanePct / 100) * worldWidth(); }
@@ -749,38 +992,43 @@ function paintLaneMarks(){
 }
 
 function sizeActors(){
-    var w = laneSizePx();
     var h = $('grHamster');
-    h.style.width = Math.max(34, w * 0.95) + 'px';
+    if(!stage) return;
+    // Герой чуть меньше, чтобы на дороге было больше воздуха и движения.
+    h.style.width = Math.max(42, Math.min(76, stage.clientWidth * 0.065)) + 'px';
 }
 
 /* ─── машины ────────────────────────────────────────────────────── */
 function spawnCar(lane, opts){
     opts = opts || {};
     if(!S.cars.length) return null;
-    var w = laneSizePx();
+
     var car = document.createElement('img');
     car.className = 'gr-car';
     car.src = S.cars[Math.floor(Math.random() * S.cars.length)];
     car.onerror = function(){ if(car.parentNode) car.parentNode.removeChild(car); };
-    car.style.width = Math.max(38, w * 1.1) + 'px';
-    car.style.left = lanePct(lane) + '%';
-    car.style.zIndex = opts.hit ? 7 : 4;      // машина-убийца рисуется поверх хомяка
 
-    var downward = opts.downward != null ? opts.downward : (lane % 2 === 0);
-    var from = downward ? -30 : 130;
-    var to   = downward ? 130 : -30;
+    // Машины заметно крупнее героя и читаются как полноценные препятствия.
+    var carW = stage ? Math.max(58, Math.min(104, stage.clientWidth * 0.085)) : 72;
+    car.style.width = carW + 'px';
+    car.style.left = lanePct(lane) + '%';
+    car.style.zIndex = opts.hit ? 12 : 4;
+
+    // Два направления: часть потока идёт сверху вниз, часть — снизу вверх.
+    var downward = opts.downward != null ? !!opts.downward : Math.random() < 0.5;
+    var from = downward ? -22 : 122;
+    var to   = downward ? 122 : -22;
     car.style.top = from + '%';
     car.style.transform = 'translate(-50%,-50%) rotate(' + (downward ? 0 : 180) + 'deg)';
 
-    var dur = opts.duration || rnd(2200, 3200);
+    var dur = opts.duration || rnd(1900, 2900);
     $('grCars').appendChild(car);
 
     requestAnimationFrame(function(){
-        car.style.transition = 'top ' + dur + 'ms linear';
+        car.style.transition = 'top ' + dur + 'ms cubic-bezier(.22,.55,.28,1)';
         car.style.top = to + '%';
     });
-    setTimeout(function(){ if(car.parentNode) car.parentNode.removeChild(car); }, dur + 120);
+    setTimeout(function(){ if(car.parentNode) car.parentNode.removeChild(car); }, dur + 180);
     return car;
 }
 
@@ -800,7 +1048,7 @@ function startTraffic(){
         if(lane === blockedLane) return;
         if(Math.abs(lane - (S.step || 1)) > visibleLaneRadius()) return;
         spawnCar(lane);
-    }, 850);
+    }, 700);
 }
 function stopTraffic(){ if(trafficTimer){ clearInterval(trafficTimer); trafficTimer = null; } }
 
@@ -866,7 +1114,7 @@ function renderUI(){
         betInput.disabled = false;
         cash.style.display = 'none';
         main.textContent = 'Начать путь';
-        main.disabled = S.busy;
+        main.disabled = S.busy || !S.user || !S.user.id || S.balance < readBet();
     }
 
     Array.prototype.forEach.call($('grQuick').children, function(b){
@@ -978,7 +1226,7 @@ async function doStep(){
         }else{
             // машина приезжает ровно в момент, когда хомяк на полосе
             setTimeout(function(){
-                spawnCar(targetLane, {duration:600, downward:Math.random() < .5, hit:true});
+                spawnCar(targetLane, {duration:720, downward:Math.random() < .5, hit:true});
             }, 500);
             setTimeout(function(){
                 stopRunAnim();
@@ -1035,6 +1283,17 @@ $('grMainBtn').addEventListener('click', function(){
     else { hideResult(); startRun(); }
 });
 $('grCashBtn').addEventListener('click', cashout);
+
+$('grBet').addEventListener('input', function(){
+    if(S.phase !== 'running') renderUI();
+});
+$('grBet').addEventListener('blur', function(){
+    writeBet(readBet());
+    renderUI();
+});
+$('grBet').addEventListener('keydown', function(e){
+    if(e.key === 'Enter' && S.phase !== 'running') startRun();
+});
 
 /* ─── последние победы ──────────────────────────────────────────── */
 async function loadWins(){
