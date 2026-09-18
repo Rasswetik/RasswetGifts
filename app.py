@@ -15116,7 +15116,7 @@ def admin_crash_spooky_settings():
             return jsonify({'success': False, 'error': 'Не удалось сохранить настройки'})
         return jsonify({'success': True, 'settings': get_crash_spooky_settings(), 'message': '👻 Настройки спуки-раунда сохранены'})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}) раньше отсюда можно
+        return jsonify({'success': False, 'error': str(e)})
 # было принудительно обрушить раунд, задать множитель следующего раунда,
 # задать произвольный диапазон или на лету поменять целевой RTP — то есть
 # полностью управлять тем, кто выигрывает, а кто нет. Теперь единственный
