@@ -1,0 +1,1129 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1C2233">
+<link rel="icon" type="image/png" href="/static/img/logo.png">
+<title>Ghost Road</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="/static/js/telegram-auth.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%}
+body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:#1C2233;
+    background-image:radial-gradient(ellipse 100% 60% at 50% 0%, #1a2238 0%, #1C2233 60%);
+    color:#fff;-webkit-font-smoothing:antialiased;
+    min-height:100vh;overflow-x:hidden;overscroll-behavior-y:contain;
+}
+.container{max-width:760px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative;padding-bottom:40px}
+
+/* ─── ВЕРХНЯЯ ПАНЕЛЬ ─────────────────────────────────────────── */
+.top-bar{
+    height:76px;width:100%;padding:0 34px;display:flex;align-items:center;gap:20px;
+    position:relative;z-index:10;
+    background:rgba(10,15,29,.96);border-bottom:1px solid rgba(110,145,189,.12);
+    box-shadow:0 1px 25px rgba(0,0,0,.16);
+}
+.desktop-left{display:flex;align-items:center;flex:0 0 auto}
+.logo-btn-crash{width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);border-radius:13px;cursor:pointer}
+.logo-btn-crash img{width:28px;height:28px;object-fit:contain}
+.main-nav-crash{display:flex;align-items:center;gap:4px;margin-left:18px}
+.nav-btn-crash{height:42px;padding:0 15px;border-radius:21px;display:flex;align-items:center;gap:8px;color:#8e9db6;font-size:13px;font-weight:700;background:transparent;border:0;font-family:inherit;cursor:pointer;transition:.18s ease;white-space:nowrap}
+.nav-btn-crash:hover{color:#c4d1e2;background:rgba(106,143,185,.07)}
+.nav-btn-crash.active{color:#20b8ff;background:rgba(28,128,189,.17);box-shadow:inset 0 0 0 1px rgba(32,184,255,.28)}
+.nav-btn-crash .nav-icon,.nav-btn-crash .nav-icon svg{width:18px;height:18px}
+.top-right-btns{margin-left:auto;display:flex;gap:8px;align-items:center}
+.bal-pill-crash{height:40px;min-width:108px;padding:0 13px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;color:#edf5ff;background:linear-gradient(180deg,#14253a,#101d30);border:1px solid rgba(38,153,218,.34);font-size:13px;font-weight:800}
+.bal-pill-crash img{width:16px;height:16px;object-fit:contain}
+.bal-plus-crash{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#eaf7ff;font-size:18px;line-height:1;background:linear-gradient(180deg,rgba(32,184,255,.24),rgba(16,90,140,.22));border:1px solid rgba(32,184,255,.45);cursor:pointer;font-family:inherit}
+.avatar-btn-crash{
+    width:40px;height:40px;flex-shrink:0;padding:0;border-radius:50%;overflow:hidden;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#2a3648,#18202f);border:1px solid rgba(120,160,220,.30);
+    box-shadow:0 2px 10px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+    color:#cfdcef;font-family:inherit;font-weight:800;font-size:14px;line-height:1;
+    transition:transform .12s ease;
+}
+.avatar-btn-crash img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.avatar-btn-crash:active{transform:scale(.92)}
+
+/* ─── ЗАГОЛОВОК ──────────────────────────────────────────────── */
+.gr-head{padding:26px 22px 14px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.gr-title{
+    font-size:30px;font-weight:900;letter-spacing:-.5px;line-height:1;
+    color:#eaf2ff;text-shadow:0 0 30px rgba(120,190,255,.22);
+}
+
+/* ─── СЦЕНА ──────────────────────────────────────────────────── */
+.gr-stage{
+    position:relative;margin:0 22px;border-radius:20px;overflow:hidden;
+    background:#0B1120;border:1px solid rgba(59,130,246,.14);
+    aspect-ratio:16/9;min-height:230px;
+    box-shadow:0 18px 44px rgba(0,0,0,.35);
+    user-select:none;
+}
+.gr-stage.shake{animation:grShake .42s cubic-bezier(.36,.07,.19,.97)}
+@keyframes grShake{
+    0%,100%{transform:translate3d(0,0,0)}
+    15%{transform:translate3d(-7px,2px,0)}
+    35%{transform:translate3d(6px,-3px,0)}
+    55%{transform:translate3d(-4px,2px,0)}
+    75%{transform:translate3d(3px,-1px,0)}
+}
+.gr-world{
+    position:absolute;top:50%;left:0;
+    height:100%;width:auto;
+    transform-origin:0 50%;
+    will-change:transform;
+    transition:transform .45s cubic-bezier(.3,.85,.35,1);
+}
+.gr-world img.gr-road{height:100%;width:auto;display:block;image-rendering:auto}
+.gr-layer{position:absolute;inset:0;pointer-events:none}
+
+.gr-lane-mark{
+    position:absolute;top:50%;transform:translate(-50%,-50%);
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    pointer-events:none;
+}
+.gr-lane-coin{
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, rgba(255,255,255,.35), rgba(120,145,180,.18) 55%, rgba(30,40,58,.55));
+    border:1px solid rgba(190,215,245,.35);
+    box-shadow:0 2px 10px rgba(0,0,0,.4);
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease, background .25s ease;
+}
+.gr-lane-coin span{font-weight:900;color:#dfeaff;line-height:1}
+.gr-lane-mark.passed .gr-lane-coin{
+    background:radial-gradient(circle at 35% 30%, rgba(190,255,215,.5), rgba(40,190,120,.30) 55%, rgba(12,50,35,.6));
+    border-color:rgba(90,235,160,.6);
+}
+.gr-lane-mark.current .gr-lane-coin{
+    background:radial-gradient(circle at 35% 30%, rgba(255,235,190,.6), rgba(255,190,80,.35) 55%, rgba(70,45,10,.6));
+    border-color:rgba(255,205,110,.85);
+    box-shadow:0 0 22px rgba(255,190,80,.5);
+    transform:scale(1.18);
+}
+.gr-lane-label{
+    font-size:11px;font-weight:900;color:#fff;
+    text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 10px rgba(0,0,0,.7);
+    white-space:nowrap;
+}
+.gr-lane-mark.passed .gr-lane-label{color:#7CF0AE}
+.gr-lane-mark.current .gr-lane-label{color:#FFD27A}
+.gr-lane-mark.locked{opacity:.42}
+
+.gr-hamster{
+    position:absolute;top:50%;
+    transform:translate(-50%,-50%);
+    transform-origin:50% 90%;
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,.55));
+    transition:left .45s cubic-bezier(.3,.85,.35,1);
+    z-index:6;
+}
+.gr-hamster.hop{animation:grHop .45s ease-in-out}
+@keyframes grHop{0%,100%{margin-top:0}50%{margin-top:-7px}}
+.gr-hamster.squashed{
+    transform:translate(-50%,-50%) scale(1.25,.22);
+    filter:drop-shadow(0 2px 6px rgba(0,0,0,.6)) grayscale(.35) brightness(.7);
+    transition:transform .18s cubic-bezier(.3,1.6,.5,1), filter .18s;
+}
+
+.gr-stop{
+    position:absolute;transform:translate(-50%,-50%) scale(.3);
+    opacity:0;z-index:5;
+    filter:drop-shadow(0 4px 10px rgba(0,0,0,.55));
+    animation:grStopIn .4s cubic-bezier(.2,1.5,.4,1) forwards;
+}
+@keyframes grStopIn{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+
+.gr-car{
+    position:absolute;transform:translate(-50%,-50%);
+    z-index:4;will-change:top;
+    filter:drop-shadow(0 8px 14px rgba(0,0,0,.5));
+}
+
+/* результат поверх сцены */
+.gr-result{
+    position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+    background:rgba(6,10,18,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    opacity:0;visibility:hidden;transition:opacity .28s,visibility .28s;
+}
+.gr-result.show{opacity:1;visibility:visible}
+.gr-result-inner{text-align:center;padding:18px 26px;transform:scale(.8);transition:transform .34s cubic-bezier(.2,1.5,.4,1)}
+.gr-result.show .gr-result-inner{transform:scale(1)}
+.gr-result-kicker{font-size:11px;font-weight:800;letter-spacing:.24em;color:rgba(200,220,250,.5);margin-bottom:8px}
+.gr-result-value{font-size:38px;font-weight:900;line-height:1;color:#fff}
+.gr-result.win .gr-result-value{color:#5BE59A;text-shadow:0 0 34px rgba(60,220,140,.4)}
+.gr-result.lose .gr-result-value{color:#F96999;text-shadow:0 0 34px rgba(249,105,153,.32)}
+.gr-result-note{margin-top:8px;font-size:13px;font-weight:600;color:rgba(200,220,250,.6)}
+
+/* ─── ПАНЕЛЬ ПРОГРЕССА ──────────────────────────────────────── */
+.gr-progress{margin:12px 22px 0;display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:rgba(160,185,220,.65)}
+.gr-progress-bar{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden}
+.gr-progress-fill{height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,#3B82F6,#5BE59A);transition:width .45s ease}
+.gr-progress b{color:#dfeaff}
+
+/* ─── УПРАВЛЕНИЕ ─────────────────────────────────────────────── */
+.gr-controls{padding:16px 22px 0;display:flex;flex-direction:column;gap:10px}
+.gr-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gr-field{background:rgba(18,25,40,.85);border:1px solid rgba(90,125,175,.18);border-radius:14px;padding:9px 14px}
+.gr-field-label{font-size:10px;font-weight:800;letter-spacing:.14em;color:rgba(150,175,210,.5);margin-bottom:3px}
+.gr-bet-input{display:flex;align-items:center;gap:8px}
+.gr-bet-input img{width:18px;height:18px;object-fit:contain}
+.gr-bet-input input{
+    flex:1;min-width:0;background:none;border:none;outline:none;
+    color:#fff;font-family:inherit;font-size:19px;font-weight:800;
+}
+.gr-bet-input input:disabled{opacity:.5}
+.gr-diff{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.gr-diff-arrow{width:28px;height:28px;border-radius:9px;border:1px solid rgba(90,125,175,.2);background:rgba(255,255,255,.04);color:#9db2d0;cursor:pointer;font-family:inherit;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center}
+.gr-diff-arrow:disabled{opacity:.3;cursor:default}
+.gr-diff-name{font-size:14px;font-weight:900;letter-spacing:.08em;color:#eaf2ff}
+
+.gr-quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.gr-quick button{
+    padding:11px 0;border-radius:12px;border:1px solid rgba(90,125,175,.18);
+    background:rgba(18,25,40,.85);color:#a8bcd8;
+    font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.06em;cursor:pointer;
+    transition:.15s ease;
+}
+.gr-quick button:hover{color:#dfeaff;border-color:rgba(90,125,175,.36)}
+.gr-quick button:active{transform:scale(.96)}
+.gr-quick button.accent{background:rgba(255,190,80,.12);border-color:rgba(255,190,80,.35);color:#FFC86B}
+.gr-quick button:disabled{opacity:.4;cursor:default}
+
+.gr-actions{display:flex;gap:10px}
+.gr-btn{
+    flex:1;min-height:56px;padding:15px;border-radius:16px;border:2px solid rgba(59,130,246,.3);
+    font-family:inherit;font-weight:900;font-size:15px;letter-spacing:.06em;text-transform:uppercase;
+    cursor:pointer;color:#fff;background:linear-gradient(135deg,#3B82F6,#2563EB);
+    box-shadow:0 8px 25px rgba(59,130,246,.25);
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    transition:transform .14s ease, background .3s ease, box-shadow .3s ease, opacity .2s;
+}
+.gr-btn:active:not(:disabled){transform:scale(.98)}
+.gr-btn:disabled{opacity:.42;cursor:default}
+.gr-btn.cashout{background:linear-gradient(135deg,#1EE44C,#18b83e);border-color:rgba(30,228,76,.45);color:#061510;box-shadow:0 8px 25px rgba(30,228,76,.22)}
+.gr-btn small{display:block;font-size:11px;font-weight:800;opacity:.75;letter-spacing:.04em}
+.gr-btn .gr-btn-stack{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+
+/* ─── ПОСЛЕДНИЕ ПОБЕДЫ ──────────────────────────────────────── */
+.gr-wins{margin:22px 22px 0;background:rgba(15,21,35,.7);border:1px solid rgba(90,125,175,.14);border-radius:18px;overflow:hidden}
+.gr-wins-head{padding:14px 18px;font-size:11px;font-weight:800;letter-spacing:.18em;color:rgba(150,175,210,.55);border-bottom:1px solid rgba(90,125,175,.12)}
+.gr-wins-list{display:flex;flex-direction:column;max-height:320px;overflow-y:auto;scrollbar-width:thin}
+.gr-wins-list::-webkit-scrollbar{width:3px}
+.gr-wins-list::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:2px}
+.gr-win-row{display:flex;align-items:center;gap:11px;padding:10px 18px;border-bottom:1px solid rgba(90,125,175,.07)}
+.gr-win-row:last-child{border-bottom:none}
+.gr-win-av{width:36px;height:36px;border-radius:50%;flex-shrink:0;overflow:hidden;background:linear-gradient(135deg,#2a3040,#3a4558);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:rgba(255,255,255,.6)}
+.gr-win-av img{width:100%;height:100%;object-fit:cover}
+.gr-win-info{flex:1;min-width:0}
+.gr-win-name{font-size:13px;font-weight:800;color:#eaf2ff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gr-win-meta{font-size:11px;font-weight:700;color:rgba(150,175,210,.55);display:flex;align-items:center;gap:6px;margin-top:2px}
+.gr-win-meta img{width:12px;height:12px;object-fit:contain}
+.gr-win-amt{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:12px;background:rgba(30,228,76,.12);border:1px solid rgba(30,228,76,.22);color:#5BE59A;font-size:13px;font-weight:900}
+.gr-win-amt img{width:14px;height:14px;object-fit:contain}
+.gr-wins-empty{padding:34px 20px;text-align:center;font-size:13px;color:rgba(255,255,255,.22)}
+
+/* ─── ТОСТ ───────────────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(20,24,34,.96);padding:11px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.08);box-shadow:0 8px 30px rgba(0,0,0,.5);z-index:7000;font-weight:700;font-size:13px;max-width:90%;text-align:center;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
+.toast.show{opacity:1;visibility:visible}
+.toast.err{border-color:rgba(249,105,153,.35)}
+.toast.ok{border-color:rgba(30,228,76,.3)}
+
+/* ─── НИЖНЯЯ НАВИГАЦИЯ (моб.) ───────────────────────────────── */
+.bottom-nav{display:none}
+.bottom-nav-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;color:rgba(255,255,255,.42);font-family:inherit;font-weight:600;cursor:pointer;text-decoration:none}
+.bottom-nav-item svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.8}
+.bottom-nav-item span{font-size:9px;font-weight:650;line-height:1}
+
+@media (max-width:700px){
+    .desktop-left{display:none}
+    .top-bar{
+        height:auto;padding:9px 12px;gap:7px;
+        background:rgba(12,17,28,.97);border-bottom:1px solid rgba(110,145,189,.13);
+    }
+    .top-right-btns{margin-left:auto}
+    .container{padding-top:calc(env(safe-area-inset-top,0px) + 22px);padding-bottom:108px;max-width:none}
+    .bal-pill-crash{height:34px;min-width:82px;padding:0 10px;border-radius:11px;font-size:13px}
+    .bal-plus-crash{width:34px;height:34px;border-radius:11px}
+    .avatar-btn-crash{width:36px;height:36px;font-size:13px}
+    .gr-head{padding:18px 14px 10px}
+    .gr-title{font-size:24px}
+    .gr-stage{margin:0 12px;min-height:200px}
+    .gr-controls{padding:14px 12px 0}
+    .gr-progress{margin:10px 14px 0}
+    .gr-wins{margin:18px 12px 0}
+    .bottom-nav{
+        display:flex;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));
+        z-index:4000;height:72px;padding:6px;border-radius:22px;
+        align-items:center;justify-content:space-around;gap:5px;
+        background:rgba(13,18,29,.97);border:1px solid rgba(110,145,189,.16);
+        box-shadow:0 12px 35px rgba(0,0,0,.42);
+        backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    }
+    .bottom-nav-item{flex:1 1 0;min-width:0;height:58px;border-radius:17px;padding:4px 2px}
+    .bottom-nav-item.active{background:rgba(59,130,246,.15);color:#62a8ff}
+}
+@media (max-width:360px){
+    .gr-title{font-size:21px}
+    .bal-pill-crash{min-width:72px;font-size:12px;padding:0 8px}
+}
+
+/* ─── ПАНЕЛЬ КАЛИБРОВКИ (только ?tune=1 или клавиша K) ───────── */
+.gr-tune{
+    position:fixed;right:14px;bottom:14px;z-index:9000;width:250px;
+    background:rgba(10,14,24,.97);border:1px solid rgba(90,125,175,.3);border-radius:14px;
+    padding:14px;font-size:11px;display:none;box-shadow:0 18px 50px rgba(0,0,0,.6);
+}
+.gr-tune.show{display:block}
+.gr-tune h4{font-size:11px;letter-spacing:.14em;color:#8fa8c8;margin-bottom:10px;font-weight:800}
+.gr-tune label{display:block;margin-bottom:9px;color:#a8bcd8;font-weight:700}
+.gr-tune input[type=range]{width:100%;accent-color:#3B82F6;margin-top:3px}
+.gr-tune code{display:block;margin-top:8px;padding:8px;background:rgba(0,0,0,.4);border-radius:8px;color:#7CF0AE;font-size:10px;line-height:1.5;word-break:break-all}
+
+/* ─── ХЭЛЛОУИН ──────────────────────────────────────────────── */
+body.crash-halloween{
+    background:
+        radial-gradient(ellipse 60% 40% at 78% 4%, rgba(255,196,110,.14), transparent 62%),
+        radial-gradient(ellipse 90% 55% at 50% 0%, rgba(255,110,20,.13), transparent 60%),
+        linear-gradient(180deg,#160c06 0%,#0f0704 46%,#080402 100%);
+    background-attachment:fixed;color:#f8ece0;
+}
+body.crash-halloween .top-bar{background:linear-gradient(180deg,rgba(35,18,9,.98),rgba(20,10,5,.97));border-bottom-color:rgba(255,138,40,.22)}
+body.crash-halloween .logo-btn-crash{background:rgba(255,138,40,.08);border-color:rgba(255,138,40,.22)}
+body.crash-halloween .avatar-btn-crash{background:linear-gradient(135deg,#3a1d0c,#1d0e06);border-color:rgba(255,138,40,.40);color:#ffb35c}
+body.crash-halloween .bal-pill-crash{background:linear-gradient(180deg,rgba(54,28,13,.96),rgba(31,15,7,.96));border-color:rgba(255,138,40,.30);color:#fff1e2}
+body.crash-halloween .bal-plus-crash{background:linear-gradient(135deg,#ffab52,#ff6a14);border-color:rgba(255,190,130,.35);color:#1d0902}
+body.crash-halloween .nav-btn-crash{color:#bda08a}
+body.crash-halloween .nav-btn-crash.active{color:#ffb35c;background:rgba(255,124,22,.16);box-shadow:inset 0 0 0 1px rgba(255,138,40,.32)}
+body.crash-halloween .gr-title{
+    color:#ffd9b3;text-shadow:0 0 34px rgba(255,130,30,.35);
+    background:linear-gradient(135deg,#ffd9b3,#ff9a3d 55%,#c9a8ff);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+body.crash-halloween .gr-field,
+body.crash-halloween .gr-quick button{background:rgba(40,21,10,.85);border-color:rgba(255,138,40,.18);color:#e0c2a6}
+body.crash-halloween .gr-field-label{color:rgba(230,190,155,.5)}
+body.crash-halloween .gr-diff-name,
+body.crash-halloween .gr-bet-input input{color:#fff1e2}
+body.crash-halloween .gr-quick button.accent{background:rgba(255,160,50,.16);border-color:rgba(255,160,50,.4);color:#ffc46a}
+body.crash-halloween .gr-btn{background:linear-gradient(135deg,#ffab52,#ff7a18 48%,#d0450a);border-color:rgba(255,196,140,.34);color:#1c0902;box-shadow:0 10px 30px rgba(255,100,10,.28)}
+body.crash-halloween .gr-btn.cashout{background:linear-gradient(135deg,#c79bff,#8b5cf6 52%,#ff7a18);border-color:rgba(210,180,255,.4);color:#15051f;box-shadow:0 10px 34px rgba(150,90,255,.32)}
+body.crash-halloween .gr-progress-fill{background:linear-gradient(90deg,#ff7a18,#8b5cf6)}
+body.crash-halloween .gr-wins{background:rgba(30,16,8,.72);border-color:rgba(255,138,40,.16)}
+body.crash-halloween .gr-wins-head{color:rgba(230,190,155,.55);border-bottom-color:rgba(255,138,40,.14)}
+body.crash-halloween .gr-win-row{border-bottom-color:rgba(255,138,40,.08)}
+body.crash-halloween .gr-win-name{color:#fff1e2}
+body.crash-halloween .gr-win-meta{color:rgba(230,190,155,.5)}
+body.crash-halloween .gr-win-amt{background:rgba(158,222,79,.12);border-color:rgba(158,222,79,.24);color:#9ede4f}
+body.crash-halloween .bottom-nav{background:linear-gradient(180deg,rgba(35,18,9,.98),rgba(19,9,4,.98));border-color:rgba(255,138,40,.22)}
+body.crash-halloween .bottom-nav-item.active{color:#ffb35c;background:rgba(255,124,22,.15)}
+
+/* ─── сцена: ночная дорога, тыквенное свечение, туман ────────── */
+body.crash-halloween .gr-stage{
+    background:
+        radial-gradient(circle at 50% 30%, rgba(255,140,35,.14), transparent 46%),
+        radial-gradient(circle at 12% 85%, rgba(139,92,246,.12), transparent 42%),
+        #0d0603;
+    border-color:rgba(255,138,40,.28);
+    box-shadow:inset 0 0 90px rgba(255,100,10,.10), 0 18px 44px rgba(0,0,0,.5);
+}
+body.crash-halloween .gr-stage::before{
+    content:"";position:absolute;inset:0;z-index:8;pointer-events:none;
+    background:radial-gradient(ellipse at center, transparent 55%, rgba(10,4,1,.55) 100%);
+}
+body.crash-halloween .gr-stage::after{
+    content:"";position:absolute;left:-20%;right:-20%;bottom:-10%;height:55%;z-index:7;pointer-events:none;
+    background:radial-gradient(ellipse 50% 60% at 30% 60%, rgba(255,140,40,.10), transparent 70%),
+               radial-gradient(ellipse 50% 55% at 72% 45%, rgba(139,92,246,.09), transparent 70%);
+    filter:blur(10px);
+    animation:hwFogRoad 22s ease-in-out infinite alternate;
+}
+@keyframes hwFogRoad{0%{transform:translate3d(-4%,0,0) scale(1)}100%{transform:translate3d(5%,-2%,0) scale(1.08)}}
+body.crash-halloween .gr-road{
+    filter:sepia(.4) saturate(1.5) hue-rotate(-14deg) brightness(.72) contrast(1.08);
+}
+body.crash-halloween .gr-lane-coin{
+    background:radial-gradient(circle at 35% 30%, rgba(255,210,160,.4), rgba(255,140,40,.16) 55%, rgba(40,18,6,.6));
+    border-color:rgba(255,160,70,.35);
+}
+body.crash-halloween .gr-lane-label{color:#ffd9b3}
+body.crash-halloween .gr-lane-mark.passed .gr-lane-coin{
+    background:radial-gradient(circle at 35% 30%, rgba(200,255,160,.5), rgba(120,200,60,.28) 55%, rgba(15,40,10,.6));
+    border-color:rgba(158,222,79,.6);
+}
+body.crash-halloween .gr-lane-mark.passed .gr-lane-label{color:#9ede4f}
+body.crash-halloween .gr-lane-mark.current .gr-lane-coin{
+    background:radial-gradient(circle at 35% 30%, rgba(255,225,180,.65), rgba(255,150,40,.4) 55%, rgba(70,30,5,.6));
+    border-color:rgba(255,170,60,.9);box-shadow:0 0 24px rgba(255,140,30,.55);
+}
+body.crash-halloween .gr-lane-mark.current .gr-lane-label{color:#ffc46a}
+body.crash-halloween .gr-hamster{filter:drop-shadow(0 6px 12px rgba(0,0,0,.7)) drop-shadow(0 0 10px rgba(255,150,50,.25))}
+body.crash-halloween .gr-stop{filter:drop-shadow(0 4px 10px rgba(0,0,0,.6)) drop-shadow(0 0 12px rgba(255,150,50,.4)) hue-rotate(230deg) saturate(1.3)}
+body.crash-halloween .gr-car{filter:drop-shadow(0 8px 14px rgba(0,0,0,.6)) sepia(.3) hue-rotate(-10deg)}
+body.crash-halloween .gr-result{background:rgba(8,4,2,.78)}
+body.crash-halloween .gr-result.win .gr-result-value{color:#9ede4f;text-shadow:0 0 34px rgba(158,222,79,.4)}
+body.crash-halloween .gr-result.lose .gr-result-value{color:#ff7a62;text-shadow:0 0 34px rgba(255,90,40,.4)}
+body.crash-halloween .gr-result-kicker,
+body.crash-halloween .gr-result-note{color:rgba(230,190,155,.6)}
+
+@media (prefers-reduced-motion:reduce){
+    .gr-world,.gr-hamster{transition-duration:.01ms}
+    .gr-stage.shake{animation:none}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="top-bar">
+        <div class="desktop-left">
+            <button class="logo-btn-crash" onclick="location.href='/games'" aria-label="Игры">
+                <img src="/static/img/logo.png" alt="">
+            </button>
+            <nav class="main-nav-crash" aria-label="Основная навигация">
+                <button class="nav-btn-crash" onclick="location.href='/profile'">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/></svg></span><span>Профиль</span>
+                </button>
+                <button class="nav-btn-crash" onclick="location.href='/upgrade'">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17 10 11l4 4 6-7M16.5 8H20v3.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Апгрейды</span>
+                </button>
+                <button class="nav-btn-crash" onclick="location.href='/leaderboard'">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h10v5.5c0 3.2-2.1 5.7-5 6.4-2.9-.7-5-3.2-5-6.4V4Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.8"/><path d="M7 7H4v2.5A3.5 3.5 0 0 0 7.5 13M17 7h3v2.5a3.5 3.5 0 0 1-3.5 3M12 15.9V19M8.5 21h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span>Сезон</span>
+                </button>
+                <button class="nav-btn-crash active" onclick="location.href='/games'">
+                    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 8h10a4.5 4.5 0 0 1 4.42 5.36l-.6 3.02A3 3 0 0 1 15.5 17.3l-.85-1.06a2 2 0 0 0-1.56-.74h-2.18a2 2 0 0 0-1.56.74L8.5 17.3a3 3 0 0 1-5.32-.92l-.6-3.02A4.5 4.5 0 0 1 7 8Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.8"/><circle cx="15.5" cy="12" r="1" fill="currentColor"/></svg></span><span>Игры</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="top-right-btns">
+            <div class="bal-pill-crash">
+                <img src="/static/img/ton.png" alt="" onerror="this.onerror=null;this.src='/static/img/gram.png'">
+                <span id="balVal">0.00</span>
+            </div>
+            <button class="bal-plus-crash" onclick="goDeposit()" aria-label="Пополнить">+</button>
+            <button class="avatar-btn-crash" id="avatarBtn" onclick="location.href='/profile'" aria-label="Профиль">
+                <img id="avatarImg" src="" alt="" style="display:none">
+                <span id="avatarInit">•</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="gr-head">
+        <h1 class="gr-title">Ghost Road</h1>
+    </div>
+
+    <div class="gr-stage" id="grStage">
+        <div class="gr-world" id="grWorld">
+            <img class="gr-road" id="grRoad" src="/static/road/road.png" alt="">
+            <div class="gr-layer" id="grLanes"></div>
+            <div class="gr-layer" id="grCars"></div>
+            <div class="gr-layer" id="grSigns"></div>
+            <img class="gr-hamster" id="grHamster" src="/static/road/hamster/base_pose.png" alt="">
+        </div>
+        <div class="gr-result" id="grResult">
+            <div class="gr-result-inner">
+                <div class="gr-result-kicker" id="grResultKicker">ЗАБРАЛ</div>
+                <div class="gr-result-value" id="grResultValue">0.00</div>
+                <div class="gr-result-note" id="grResultNote"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="gr-progress">
+        <span>Полоса <b id="grStepNow">0</b> / <b id="grStepMax">15</b></span>
+        <div class="gr-progress-bar"><div class="gr-progress-fill" id="grProgressFill"></div></div>
+        <span id="grCurrentMult">1.00x</span>
+    </div>
+
+    <div class="gr-controls">
+        <div class="gr-row">
+            <div class="gr-field">
+                <div class="gr-field-label">Ставка</div>
+                <div class="gr-bet-input">
+                    <img src="/static/img/ton.png" alt="" onerror="this.onerror=null;this.src='/static/img/gram.png'">
+                    <input type="number" id="grBet" value="0.10" min="0.1" step="0.01" inputmode="decimal">
+                </div>
+            </div>
+            <div class="gr-field">
+                <div class="gr-field-label">Сложность</div>
+                <div class="gr-diff">
+                    <button class="gr-diff-arrow" id="grDiffPrev" disabled>‹</button>
+                    <div class="gr-diff-name" id="grDiffName">LIGHT</div>
+                    <button class="gr-diff-arrow" id="grDiffNext" disabled>›</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="gr-quick" id="grQuick">
+            <button data-act="min">MIN</button>
+            <button data-act="half">/2</button>
+            <button data-act="double">×2</button>
+            <button data-act="max" class="accent">MAX</button>
+        </div>
+
+        <div class="gr-actions">
+            <button class="gr-btn" id="grMainBtn">Начать путь</button>
+            <button class="gr-btn cashout" id="grCashBtn" style="display:none">
+                <span class="gr-btn-stack"><span id="grCashTop">Забрать</span><small id="grCashSub">0.00</small></span>
+            </button>
+        </div>
+    </div>
+
+    <div class="gr-wins">
+        <div class="gr-wins-head">Последние победы</div>
+        <div class="gr-wins-list" id="grWinsList">
+            <div class="gr-wins-empty">Пока никто не перешёл дорогу</div>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav" aria-label="Навигация">
+    <button class="bottom-nav-item" onclick="location.href='/profile'">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-linecap="round"/><circle cx="12" cy="7" r="4"/></svg><span>Профиль</span>
+    </button>
+    <button class="bottom-nav-item" onclick="location.href='/upgrade'">
+        <svg viewBox="0 0 24 24"><path d="M4 17 10 11l4 4 6-7M16.5 8H20v3.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Апгрейды</span>
+    </button>
+    <button class="bottom-nav-item" onclick="location.href='/leaderboard'">
+        <svg viewBox="0 0 24 24"><path d="M7 4h10v5.5c0 3.2-2.1 5.7-5 6.4-2.9-.7-5-3.2-5-6.4V4Z"/><path d="M7 7H4v2.5A3.5 3.5 0 0 0 7.5 13M17 7h3v2.5a3.5 3.5 0 0 1-3.5 3M12 15.9V19M8.5 21h7" stroke-linecap="round"/></svg><span>Сезон</span>
+    </button>
+    <button class="bottom-nav-item active" onclick="location.href='/games'">
+        <svg viewBox="0 0 24 24"><path d="M7 8h10a4.5 4.5 0 0 1 4.42 5.36l-.6 3.02A3 3 0 0 1 15.5 17.3l-.85-1.06a2 2 0 0 0-1.56-.74h-2.18a2 2 0 0 0-1.56.74L8.5 17.3a3 3 0 0 1-5.32-.92l-.6-3.02A4.5 4.5 0 0 1 7 8Z"/></svg><span>Игры</span>
+    </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<div class="gr-tune" id="grTune">
+    <h4>КАЛИБРОВКА ДОРОГИ</h4>
+    <label>Приближение <input type="range" id="tZoom" min="1" max="6" step="0.05"></label>
+    <label>Старт хомяка, % <input type="range" id="tStart" min="0" max="30" step="0.1"></label>
+    <label>Первая полоса, % <input type="range" id="tFirst" min="0" max="40" step="0.1"></label>
+    <label>Ширина полосы, % <input type="range" id="tLane" min="1" max="12" step="0.05"></label>
+    <label>Хомяк по горизонтали, % <input type="range" id="tHero" min="10" max="80" step="1"></label>
+    <code id="tOut"></code>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════
+   GHOST ROAD
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ─── КАЛИБРОВКА ПОД КАРТИНКУ road.png ──────────────────────────────
+   Все значения — проценты от ШИРИНЫ картинки дороги.
+   Открой страницу с ?tune=1 (или нажми K), подгони ползунками,
+   скопируй числа из зелёной строки сюда — и всё встанет ровно.
+   ──────────────────────────────────────────────────────────────── */
+var ROAD = {
+    zoom:      2.6,   // во сколько раз картинка выше окна сцены
+    startPct:  4.0,   // где стоит хомяк до начала забега
+    firstPct: 10.0,   // центр первой полосы
+    lanePct:   5.6,   // ширина одной полосы
+    heroPct:  38      // где держать хомяка в окне сцены (% ширины окна)
+};
+
+var LANES = 15;
+var CARS_FALLBACK = [
+    '/static/road/cars/car1.png','/static/road/cars/car2.png',
+    '/static/road/cars/car3.png','/static/road/cars/car4.png',
+    '/static/road/cars/car5.png','/static/road/cars/car6.png'
+];
+
+var IMG = {
+    base:  '/static/road/hamster/base_pose.png',
+    run1:  '/static/road/hamster/run_pose1.png',
+    run2:  '/static/road/hamster/run_pose2.png',
+    stop:  '/static/road/stop.png'
+};
+
+/* ─── состояние ─────────────────────────────────────────────────── */
+var S = {
+    user: null,
+    balance: 0,
+    payouts: [],
+    cars: CARS_FALLBACK.slice(),
+    difficulty: 'light',
+    token: null,
+    step: 0,
+    bet: 0.10,
+    busy: false,
+    phase: 'idle',      // idle | running | over
+    minBet: 0.10,
+    maxBet: 100
+};
+
+function $(id){ return document.getElementById(id); }
+function fmt(n){ return (Math.round(Number(n) * 100) / 100).toFixed(2); }
+function rnd(a, b){ return a + Math.random() * (b - a); }
+
+function toast(msg, kind){
+    var t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (kind || '');
+    clearTimeout(t._t);
+    t._t = setTimeout(function(){ t.className = 'toast'; }, 2600);
+}
+
+function goDeposit(){ location.href = '/profile'; }
+
+/* ─── пользователь ──────────────────────────────────────────────── */
+function readStoredUser(){
+    try{
+        var raw = localStorage.getItem('rasswet_user');
+        if(raw){ var p = JSON.parse(raw); if(p && p.id) return p; }
+    }catch(e){}
+    try{
+        if(window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user){
+            return Telegram.WebApp.initDataUnsafe.user;
+        }
+    }catch(e){}
+    return null;
+}
+
+function paintAvatar(u){
+    var img = $('avatarImg'), ini = $('avatarInit');
+    var name = (u && (u.first_name || u.username)) || '';
+    ini.textContent = name ? name.trim().charAt(0).toUpperCase() : '•';
+    var url = u && u.photo_url ? String(u.photo_url).trim() : '';
+    if(!url || url === '/static/img/default_avatar.png') return;
+    img.onload = function(){ img.style.display = 'block'; ini.style.display = 'none'; };
+    img.onerror = function(){ img.style.display = 'none'; ini.style.display = ''; };
+    img.src = url;
+}
+
+function setBalance(v){
+    S.balance = Number(v) || 0;
+    $('balVal').textContent = fmt(S.balance);
+}
+
+async function loadUser(){
+    var u = readStoredUser();
+    if(u && u.id){
+        S.user = u;
+        paintAvatar(u);
+        try{
+            var r = await fetch('/api/user/' + u.id, {cache:'no-store'});
+            var d = await r.json();
+            var info = d.user || d;
+            if(info){
+                if(info.photo_url) paintAvatar(info);
+                setBalance(info.balance_stars != null ? info.balance_stars : 0);
+            }
+        }catch(e){}
+        return;
+    }
+    try{
+        if(typeof telegramAuth === 'function'){
+            var auth = await telegramAuth();
+            if(auth && auth.id){
+                S.user = auth;
+                paintAvatar(auth);
+                setBalance(auth.balance_stars || 0);
+            }
+        }
+    }catch(e){}
+}
+
+/* ─── конфиг режима ─────────────────────────────────────────────── */
+async function loadConfig(){
+    try{
+        var r = await fetch('/api/ghost-road/config?difficulty=' + S.difficulty, {cache:'no-store'});
+        var d = await r.json();
+        if(d && d.success){
+            S.payouts = d.payouts || [];
+            LANES = d.lanes || LANES;
+            S.minBet = d.min_bet || S.minBet;
+            S.maxBet = d.max_bet || S.maxBet;
+            if(d.cars && d.cars.length) S.cars = d.cars;
+        }
+    }catch(e){}
+    if(!S.payouts.length){
+        S.payouts = [1.01,1.05,1.10,1.16,1.24,1.35,1.50,1.70,2.00,2.45,3.15,4.30,6.30,9.60,15.00];
+    }
+    $('grStepMax').textContent = LANES;
+}
+
+/* ─── геометрия сцены ───────────────────────────────────────────── */
+var world = null, stage = null, roadImg = null;
+
+function worldWidth(){ return world ? world.offsetWidth : 0; }
+
+function layoutWorld(){
+    stage = $('grStage'); world = $('grWorld'); roadImg = $('grRoad');
+    world.style.height = (ROAD.zoom * 100) + '%';
+    buildLaneMarks();
+    moveCamera(false);
+}
+
+function lanePct(i){            // i = 1..LANES
+    return ROAD.firstPct + (i - 1) * ROAD.lanePct;
+}
+function heroPct(){
+    return S.step === 0 ? ROAD.startPct : lanePct(S.step);
+}
+
+function moveCamera(animate){
+    if(!world || !stage) return;
+    if(!animate) world.style.transition = 'none';
+    var ww = worldWidth();
+    var targetX = (heroPct() / 100) * ww;
+    var anchor  = stage.offsetWidth * (ROAD.heroPct / 100);
+    world.style.transform = 'translate3d(' + (anchor - targetX) + 'px, -50%, 0)';
+    $('grHamster').style.left = heroPct() + '%';
+    if(!animate){
+        void world.offsetWidth;
+        world.style.transition = '';
+    }
+}
+
+function laneSizePx(){ return (ROAD.lanePct / 100) * worldWidth(); }
+
+function buildLaneMarks(){
+    var box = $('grLanes');
+    box.innerHTML = '';
+    var w = laneSizePx();
+    for(var i = 1; i <= LANES; i++){
+        var m = document.createElement('div');
+        m.className = 'gr-lane-mark';
+        m.dataset.lane = i;
+        m.style.left = lanePct(i) + '%';
+        var coin = document.createElement('div');
+        coin.className = 'gr-lane-coin';
+        coin.style.width = Math.max(24, w * 0.52) + 'px';
+        coin.style.height = Math.max(24, w * 0.52) + 'px';
+        var sp = document.createElement('span');
+        sp.style.fontSize = Math.max(9, w * 0.2) + 'px';
+        sp.textContent = i;
+        coin.appendChild(sp);
+        var lbl = document.createElement('div');
+        lbl.className = 'gr-lane-label';
+        lbl.style.fontSize = Math.max(9, w * 0.2) + 'px';
+        lbl.textContent = (S.payouts[i-1] != null ? S.payouts[i-1].toFixed(2) : '—') + 'x';
+        m.appendChild(coin);
+        m.appendChild(lbl);
+        box.appendChild(m);
+    }
+    paintLaneMarks();
+}
+
+function paintLaneMarks(){
+    var marks = $('grLanes').children;
+    for(var i = 0; i < marks.length; i++){
+        var lane = i + 1;
+        marks[i].className = 'gr-lane-mark' +
+            (lane <= S.step ? ' passed' : '') +
+            (lane === S.step + 1 && S.phase === 'running' ? ' current' : '') +
+            (S.phase === 'idle' ? ' locked' : '');
+    }
+}
+
+function sizeActors(){
+    var w = laneSizePx();
+    var h = $('grHamster');
+    h.style.width = Math.max(18, w * 0.6) + 'px';
+}
+
+/* ─── машины ────────────────────────────────────────────────────── */
+function spawnCar(lane, opts){
+    opts = opts || {};
+    if(!S.cars.length) return null;
+    var w = laneSizePx();
+    var car = document.createElement('img');
+    car.className = 'gr-car';
+    car.src = S.cars[Math.floor(Math.random() * S.cars.length)];
+    car.onerror = function(){ if(car.parentNode) car.parentNode.removeChild(car); };
+    car.style.width = Math.max(20, w * 0.74) + 'px';
+    car.style.left = lanePct(lane) + '%';
+    car.style.zIndex = opts.hit ? 7 : 4;      // машина-убийца рисуется поверх хомяка
+
+    var downward = opts.downward != null ? opts.downward : (lane % 2 === 0);
+    var from = downward ? -30 : 130;
+    var to   = downward ? 130 : -30;
+    car.style.top = from + '%';
+    car.style.transform = 'translate(-50%,-50%) rotate(' + (downward ? 0 : 180) + 'deg)';
+
+    var dur = opts.duration || rnd(650, 1050);
+    $('grCars').appendChild(car);
+
+    requestAnimationFrame(function(){
+        car.style.transition = 'top ' + dur + 'ms linear';
+        car.style.top = to + '%';
+    });
+    setTimeout(function(){ if(car.parentNode) car.parentNode.removeChild(car); }, dur + 120);
+    return car;
+}
+
+var trafficTimer = null;
+var blockedLane = 0;
+
+function visibleLaneRadius(){
+    // сколько полос примерно помещается в кадре при текущем приближении
+    return Math.max(2, Math.ceil(LANES / ROAD.zoom / 2) + 1);
+}
+
+function startTraffic(){
+    stopTraffic();
+    trafficTimer = setInterval(function(){
+        if(document.hidden) return;
+        var lane = 1 + Math.floor(Math.random() * LANES);
+        if(lane === blockedLane) return;
+        if(Math.abs(lane - (S.step || 1)) > visibleLaneRadius()) return;
+        spawnCar(lane);
+    }, 320);
+}
+function stopTraffic(){ if(trafficTimer){ clearInterval(trafficTimer); trafficTimer = null; } }
+
+/* ─── хомяк ─────────────────────────────────────────────────────── */
+var runTimer = null;
+function startRunAnim(){
+    var h = $('grHamster'), flip = false;
+    clearInterval(runTimer);
+    runTimer = setInterval(function(){
+        h.src = flip ? IMG.run1 : IMG.run2;
+        flip = !flip;
+    }, 110);
+    h.classList.add('hop');
+}
+function stopRunAnim(){
+    clearInterval(runTimer);
+    runTimer = null;
+    var h = $('grHamster');
+    h.src = IMG.base;
+    h.classList.remove('hop');
+}
+
+function spawnStopSign(lane){
+    var w = laneSizePx();
+    var sign = document.createElement('img');
+    sign.className = 'gr-stop';
+    sign.src = IMG.stop;
+    sign.style.width = Math.max(16, w * 0.42) + 'px';
+    sign.style.left = lanePct(lane) + '%';
+    sign.style.top = '30%';                      // чуть выше хомяка
+    $('grSigns').appendChild(sign);
+}
+
+function clearSigns(){ $('grSigns').innerHTML = ''; $('grCars').innerHTML = ''; }
+
+/* ─── интерфейс ─────────────────────────────────────────────────── */
+function currentMult(){
+    return S.step > 0 ? S.payouts[S.step - 1] : 1;
+}
+function nextMult(){
+    return S.payouts[S.step] != null ? S.payouts[S.step] : null;
+}
+
+function renderUI(){
+    var main = $('grMainBtn'), cash = $('grCashBtn');
+    var betInput = $('grBet');
+
+    $('grStepNow').textContent = S.step;
+    $('grCurrentMult').textContent = currentMult().toFixed(2) + 'x';
+    $('grProgressFill').style.width = (S.step / LANES * 100) + '%';
+
+    if(S.phase === 'running'){
+        betInput.disabled = true;
+        cash.style.display = 'flex';
+        var nm = nextMult();
+        main.innerHTML = nm
+            ? '<span class="gr-btn-stack"><span>Шаг</span><small>' + nm.toFixed(2) + 'x</small></span>'
+            : 'Финиш';
+        main.disabled = S.busy || !nm;
+        cash.disabled = S.busy || S.step === 0;
+        $('grCashSub').textContent = fmt(S.bet * currentMult());
+    }else{
+        betInput.disabled = false;
+        cash.style.display = 'none';
+        main.textContent = 'Начать путь';
+        main.disabled = S.busy;
+    }
+
+    Array.prototype.forEach.call($('grQuick').children, function(b){
+        b.disabled = S.phase === 'running';
+    });
+    paintLaneMarks();
+}
+
+function showResult(kind, value, note){
+    var box = $('grResult');
+    $('grResultKicker').textContent = kind === 'win' ? 'ЗАБРАЛ' : 'СБИТ';
+    $('grResultValue').textContent = kind === 'win' ? '+' + fmt(value) : '−' + fmt(value);
+    $('grResultNote').textContent = note || '';
+    box.className = 'gr-result show ' + kind;
+}
+function hideResult(){ $('grResult').className = 'gr-result'; }
+
+/* ─── ставка ────────────────────────────────────────────────────── */
+function readBet(){
+    var v = parseFloat($('grBet').value);
+    if(!isFinite(v) || v <= 0) v = S.minBet;
+    return Math.max(S.minBet, Math.min(S.maxBet, Math.round(v * 100) / 100));
+}
+function writeBet(v){
+    $('grBet').value = fmt(Math.max(S.minBet, Math.min(S.maxBet, v)));
+}
+
+$('grQuick').addEventListener('click', function(e){
+    var b = e.target.closest('button');
+    if(!b || b.disabled) return;
+    var cur = readBet();
+    if(b.dataset.act === 'min')    writeBet(S.minBet);
+    if(b.dataset.act === 'half')   writeBet(cur / 2);
+    if(b.dataset.act === 'double') writeBet(cur * 2);
+    if(b.dataset.act === 'max')    writeBet(Math.min(S.balance, S.maxBet));
+});
+
+/* ─── игровой цикл ──────────────────────────────────────────────── */
+async function startRun(){
+    if(S.busy) return;
+    if(!S.user || !S.user.id){ toast('Сначала войди через Telegram', 'err'); return; }
+
+    var bet = readBet();
+    if(bet > S.balance){ toast('Недостаточно средств', 'err'); return; }
+
+    S.busy = true; renderUI();
+    try{
+        var r = await fetch('/api/ghost-road/start', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({user_id:S.user.id, bet:bet, difficulty:S.difficulty})
+        });
+        var d = await r.json();
+        if(!d.success){ toast(d.error || 'Не удалось начать', 'err'); return; }
+
+        S.token = d.token;
+        S.bet = d.bet;
+        S.step = 0;
+        S.phase = 'running';
+        if(d.payouts && d.payouts.length) S.payouts = d.payouts;
+        setBalance(d.new_balance);
+
+        hideResult();
+        clearSigns();
+        $('grHamster').classList.remove('squashed');
+        $('grHamster').src = IMG.base;
+        buildLaneMarks();
+        moveCamera(false);
+        startTraffic();
+    }catch(e){
+        toast('Сеть недоступна', 'err');
+    }finally{
+        S.busy = false; renderUI();
+    }
+}
+
+async function doStep(){
+    if(S.busy || S.phase !== 'running') return;
+    var targetLane = S.step + 1;
+    if(targetLane > LANES) return;
+
+    S.busy = true; renderUI();
+    try{
+        var r = await fetch('/api/ghost-road/step', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({user_id:S.user.id, token:S.token})
+        });
+        var d = await r.json();
+        if(!d.success){ toast(d.error || 'Ошибка шага', 'err'); S.busy = false; renderUI(); return; }
+
+        blockedLane = targetLane;
+        startRunAnim();
+
+        // хомяк переходит на полосу
+        S.step = targetLane;
+        moveCamera(true);
+
+        if(d.survived){
+            setTimeout(function(){
+                stopRunAnim();
+                spawnStopSign(targetLane);
+                blockedLane = 0;
+                S.busy = false;
+                if(d.finished){
+                    finishRun();
+                }else{
+                    renderUI();
+                }
+            }, 460);
+        }else{
+            // машина приезжает ровно в момент, когда хомяк на полосе
+            setTimeout(function(){
+                spawnCar(targetLane, {duration:340, downward:Math.random() < .5, hit:true});
+            }, 300);
+            setTimeout(function(){
+                stopRunAnim();
+                $('grHamster').classList.add('squashed');
+                stage.classList.add('shake');
+                setTimeout(function(){ stage.classList.remove('shake'); }, 450);
+                stopTraffic();
+                blockedLane = 0;
+                S.phase = 'over';
+                S.token = null;
+                S.busy = false;
+                showResult('lose', S.bet, 'Полоса ' + targetLane + ' из ' + LANES);
+                renderUI();
+                loadWins();
+            }, 520);
+        }
+    }catch(e){
+        toast('Сеть недоступна', 'err');
+        S.busy = false; renderUI();
+    }
+}
+
+async function cashout(){
+    if(S.busy || S.phase !== 'running' || S.step === 0) return;
+    S.busy = true; renderUI();
+    try{
+        var r = await fetch('/api/ghost-road/cashout', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({user_id:S.user.id, token:S.token})
+        });
+        var d = await r.json();
+        if(!d.success){ toast(d.error || 'Не удалось забрать', 'err'); S.busy = false; renderUI(); return; }
+
+        setBalance(d.new_balance);
+        stopTraffic();
+        S.phase = 'over';
+        S.token = null;
+        showResult('win', d.payout, d.multiplier.toFixed(2) + 'x · полоса ' + d.step);
+        loadWins();
+    }catch(e){
+        toast('Сеть недоступна', 'err');
+    }finally{
+        S.busy = false; renderUI();
+    }
+}
+
+function finishRun(){
+    // дорога пройдена целиком — забираем автоматически
+    cashout();
+}
+
+$('grMainBtn').addEventListener('click', function(){
+    if(S.phase === 'running') doStep();
+    else { hideResult(); startRun(); }
+});
+$('grCashBtn').addEventListener('click', cashout);
+
+/* ─── последние победы ──────────────────────────────────────────── */
+async function loadWins(){
+    try{
+        var r = await fetch('/api/ghost-road/recent?limit=12', {cache:'no-store'});
+        var d = await r.json();
+        var box = $('grWinsList');
+        if(!d.success || !d.items || !d.items.length){
+            box.innerHTML = '<div class="gr-wins-empty">Пока никто не перешёл дорогу</div>';
+            return;
+        }
+        box.innerHTML = d.items.map(function(w){
+            var av = w.photo_url
+                ? '<img src="' + w.photo_url + '" alt="">'
+                : (w.name || '?').charAt(0).toUpperCase();
+            return '<div class="gr-win-row">' +
+                '<div class="gr-win-av">' + av + '</div>' +
+                '<div class="gr-win-info">' +
+                    '<div class="gr-win-name">' + escapeHtml(w.name) + '</div>' +
+                    '<div class="gr-win-meta">' +
+                        '<img src="/static/img/ton.png" alt="" onerror="this.style.display=\'none\'">' +
+                        fmt(w.bet) + ' · ×' + w.multiplier.toFixed(2) + ' · полоса ' + w.step +
+                    '</div>' +
+                '</div>' +
+                '<div class="gr-win-amt">+' + fmt(w.payout) +
+                    '<img src="/static/img/ton.png" alt="" onerror="this.style.display=\'none\'"></div>' +
+            '</div>';
+        }).join('');
+    }catch(e){}
+}
+function escapeHtml(s){
+    return String(s || '').replace(/[&<>"']/g, function(c){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
+
+/* ─── хэллоуин ──────────────────────────────────────────────────── */
+async function syncHalloweenTheme(){
+    try{
+        var r = await fetch('/api/events', {cache:'no-store'});
+        var d = await r.json();
+        var witch = (d.events || []).find(function(e){ return e.id === 'witch_hat_party'; });
+        var active = !!(witch && (witch.active || (witch.enabled && (!witch.ends_at || Number(witch.remaining_seconds || 0) > 0))));
+        document.body.classList.toggle('crash-halloween', active);
+    }catch(e){}
+}
+
+/* ─── калибровка ────────────────────────────────────────────────── */
+function initTune(){
+    var panel = $('grTune');
+    var map = {tZoom:'zoom', tStart:'startPct', tFirst:'firstPct', tLane:'lanePct', tHero:'heroPct'};
+    function refresh(){
+        $('tOut').textContent =
+            'zoom:' + ROAD.zoom + ', startPct:' + ROAD.startPct +
+            ', firstPct:' + ROAD.firstPct + ', lanePct:' + ROAD.lanePct +
+            ', heroPct:' + ROAD.heroPct;
+    }
+    Object.keys(map).forEach(function(id){
+        var el = $(id);
+        el.value = ROAD[map[id]];
+        el.addEventListener('input', function(){
+            ROAD[map[id]] = parseFloat(el.value);
+            world.style.height = (ROAD.zoom * 100) + '%';
+            buildLaneMarks();
+            sizeActors();
+            moveCamera(false);
+            refresh();
+        });
+    });
+    refresh();
+    if(location.search.indexOf('tune=1') !== -1) panel.classList.add('show');
+    document.addEventListener('keydown', function(e){
+        if(e.key === 'k' || e.key === 'K' || e.key === 'л' || e.key === 'Л'){
+            panel.classList.toggle('show');
+        }
+    });
+}
+
+/* ─── старт ─────────────────────────────────────────────────────── */
+async function init(){
+    try{
+        if(window.Telegram && Telegram.WebApp){ Telegram.WebApp.ready(); Telegram.WebApp.expand(); }
+    }catch(e){}
+
+    layoutWorld();
+    syncHalloweenTheme();
+
+    await loadConfig();
+    await loadUser();
+
+    buildLaneMarks();
+    sizeActors();
+
+    if(roadImg.complete && roadImg.naturalWidth){
+        moveCamera(false);
+    }else{
+        roadImg.addEventListener('load', function(){
+            buildLaneMarks(); sizeActors(); moveCamera(false);
+        });
+    }
+
+    writeBet(S.minBet);
+    renderUI();
+    loadWins();
+    initTune();
+
+    window.addEventListener('resize', function(){
+        buildLaneMarks(); sizeActors(); moveCamera(false);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
