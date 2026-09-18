@@ -354,7 +354,14 @@ function renderSections(sections){
       if(!ids.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Кейсы события пока не добавлены</div>';}
       else{
         grid.innerHTML='<div class="empty" style="grid-column:1/-1">Загрузка кейсов…</div>';
-        loadEventCases(ids).then(function(cases){
+        var attempt=function(tries){
+          return loadEventCases(ids).then(function(cases){
+            var got=(cases||[]).filter(Boolean).length;
+            if(!got&&tries>0)return new Promise(function(res){setTimeout(function(){res(attempt(tries-1))},700)});
+            return cases;
+          });
+        };
+        attempt(1).then(function(cases){
           grid.innerHTML='';
           var missing=0;
           (cases||[]).forEach(function(c){
