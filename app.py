@@ -6764,13 +6764,29 @@ def _gr_survival_chances(difficulty='light'):
 
 
 def _gr_load_session(cursor, token, user_id):
+    # user_id приходит из JSON и может оказаться int, str или float
+    # ("12345" vs 12345 vs 12345.0) в зависимости от клиента (Telegram
+    # WebApp initData vs localStorage-кэш). Колонка user_id — INTEGER,
+    # так что сравниваем по нормализованному int, а не "как есть" —
+    # иначе строка находится по токену, но не проходит по user_id и
+    # клиент получает "Забег не найден" на живой сессии.
+    try:
+        uid_int = int(user_id)
+    except (TypeError, ValueError):
+        uid_int = user_id
     cursor.execute(
         'SELECT token, user_id, bet, difficulty, step, status '
-        'FROM ghost_road_sessions WHERE token = ? AND user_id = ?',
-        (token, user_id)
+        'FROM ghost_road_sessions WHERE token = ?',
+        (token,)
     )
     row = cursor.fetchone()
     if not row:
+        return None
+    try:
+        row_uid = int(row[1])
+    except (TypeError, ValueError):
+        row_uid = row[1]
+    if row_uid != uid_int:
         return None
     return {
         'token': row[0], 'user_id': row[1], 'bet': float(row[2]),
