@@ -568,65 +568,33 @@ body.epic-mode .wheel-green-arc{
 .deposit-method span{font-weight:700;font-size:13px;color:#fff}
 
 /* ═══════════════════════════════════════════════════════
-   BOTTOM NAV — 4 ровные кнопки: Игры, Краш, Топ, Профиль
+   BOTTOM NAV — как на странице профиля (плавающая пилюля)
    ═══════════════════════════════════════════════════════ */
-.bottom-nav{
-    position:fixed;
-    bottom:0;
-    left:50%;
-    transform:translateX(-50%);
-    z-index:4000;
-    width:100%;
-    max-width:480px;
-    height:76px;
-    padding:0 8px calc(var(--safe-bottom) + 6px);
-    background:rgba(28,34,51,.95);
-    backdrop-filter:blur(10px);
-    -webkit-backdrop-filter:blur(10px);
-    border-top:1px solid rgba(59,130,246,.08);
-    display:flex;
-    align-items:center;
-    justify-content:space-around;
-    gap:0;
+.bottom-nav{display:none}
+@media(max-width:700px){
+    .bottom-nav{
+        position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));
+        z-index:4000;height:66px;padding:6px;display:grid;
+        grid-template-columns:repeat(4,1fr);gap:4px;border-radius:20px;
+        background:rgba(17,22,31,.96);
+        border:1px solid rgba(110,145,189,.16);
+        box-shadow:0 14px 45px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04);
+        backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+        transition:background .3s ease,border-color .3s ease;
+    }
+    .bottom-nav-btn{
+        min-width:0;border-radius:15px;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:4px;
+        color:#8b96ab;font-size:10px;font-weight:850;font-family:inherit;
+        background:transparent;border:none;cursor:pointer;transition:.18s ease;
+    }
+    .bottom-nav-btn .nav-icon,.bottom-nav-btn .nav-icon svg{width:21px;height:21px}
+    .bottom-nav-btn.active{color:#7CAEFF;background:rgba(77,157,219,.12);box-shadow:inset 0 0 0 1px rgba(77,157,219,.18)}
+    .bottom-nav-btn:active{transform:scale(.94)}
+    .halloween-active .bottom-nav{background:rgba(20,16,26,.96);border-color:rgba(139,92,246,.14)}
+    .halloween-active .bottom-nav-btn.active{color:#c2a8dd;background:rgba(139,92,246,.11);box-shadow:inset 0 0 0 1px rgba(139,92,246,.15)}
 }
-.bnav-item{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:3px;
-    padding:6px 4px;
-    border-radius:12px;
-    background:transparent;
-    border:none;
-    color:rgba(255,255,255,.4);
-    font-family:inherit;
-    font-weight:600;
-    cursor:pointer;
-    transition:all .2s;
-    text-decoration:none;
-    min-height:56px;
-    height:56px;
-    max-width:96px;
-}
-.bnav-item svg{
-    width:22px;height:22px;
-    flex-shrink:0;
-    stroke:currentColor;
-    fill:none;
-    stroke-width:2;
-    stroke-linecap:round;
-    stroke-linejoin:round;
-}
-.bnav-item span{
-    font-size:10px;
-    font-weight:600;
-    line-height:1;
-    white-space:nowrap;
-}
-.bnav-item.active{background:rgba(255,255,255,.08);color:#fff}
-.bnav-item:active{transform:scale(.9)}
+@media(min-width:701px){.bottom-nav{display:none!important}}
 
 /* UPGRADE RESULT — stable shared result card, including Halloween */
 .center-result{
@@ -857,10 +825,6 @@ body.epic-mode .wheel-green-arc{
     box-shadow:0 8px 25px rgba(124,58,237,.38);
 }
 .halloween-active .ios-switch.on{background:#a855f7}
-.halloween-active .bottom-nav{
-    background:rgba(20,8,30,.97);border-top-color:rgba(168,85,247,.26);
-}
-.halloween-active .bnav-item.active{background:rgba(139,92,246,.18);color:#f0dcff}
 .halloween-active .toast{
     background:rgba(18,7,28,.97);border-color:rgba(192,119,255,.30);
 }
@@ -943,13 +907,6 @@ body{background:radial-gradient(circle at 50% -10%,rgba(88,166,255,.16),transpar
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 
-<style id="upgrade-unified-nav-polish">
-.bottom-nav{height:78px;padding-bottom:max(6px,var(--safe-bottom));background:rgba(20,27,43,.96);border-top:1px solid rgba(99,160,255,.12);box-shadow:0 -12px 35px rgba(0,0,0,.18)}
-.bnav-item{height:58px;min-height:58px;border-radius:14px;transition:transform .18s ease,background .18s ease,color .18s ease}
-.bnav-item.active{background:rgba(32,184,255,.12);color:#fff;box-shadow:inset 0 0 0 1px rgba(32,184,255,.12)}
-.halloween-active .bottom-nav{background:rgba(25,10,34,.96);border-top-color:rgba(168,85,247,.20);box-shadow:0 -12px 40px rgba(0,0,0,.28)}
-.halloween-active .bnav-item.active{background:rgba(139,92,246,.18);color:#f0dcff;box-shadow:inset 0 0 0 1px rgba(168,85,247,.18)}
-</style>
 </head>
 <body>
 <div class="halloween-decor" aria-hidden="true">
@@ -1246,22 +1203,22 @@ body{background:radial-gradient(circle at 50% -10%,rgba(88,166,255,.16),transpar
      BOTTOM NAV — 4 ровные кнопки: Игры, Краш, Топ, Профиль
      ═══════════════════════════════════════════════════════ -->
 <nav class="bottom-nav" aria-label="Навигация">
-    <a class="bnav-item" href="/inventory">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <button class="bottom-nav-btn" onclick="goTo('/profile')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/></svg></span>
         <span>Профиль</span>
-    </a>
-    <a class="bnav-item active" href="/upgrade">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17 10 11l4 4 6-7"/><path d="M16.5 8H20v3.5"/></svg>
+    </button>
+    <button class="bottom-nav-btn active" onclick="goTo('/upgrade')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 17 10 11l4 4 6-7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 8H20v3.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <span>Апгрейды</span>
-    </a>
-    <a class="bnav-item" href="/leaderboard">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5.5c0 3.2-2.1 5.7-5 6.4-2.9-.7-5-3.2-5-6.4V4Z" fill="currentColor" fill-opacity=".16"/><path d="M7 7H4v2.5A3.5 3.5 0 0 0 7.5 13M17 7h3v2.5a3.5 3.5 0 0 1-3.5 3M12 15.9V19M8.5 21h7"/></svg>
+    </button>
+    <button class="bottom-nav-btn" onclick="goTo('/leaderboard')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h10v5.5c0 3.2-2.1 5.7-5 6.4-2.9-.7-5-3.2-5-6.4V4Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.8"/><path d="M7 7H4v2.5A3.5 3.5 0 0 0 7.5 13M17 7h3v2.5a3.5 3.5 0 0 1-3.5 3M12 15.9V19M8.5 21h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>
         <span>Сезон</span>
-    </a>
-    <a class="bnav-item" href="/games">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h10a4.5 4.5 0 0 1 4.42 5.36l-.6 3.02A3 3 0 0 1 15.5 17.3l-.85-1.06a2 2 0 0 0-1.56-.74h-2.18a2 2 0 0 0-1.56.74L8.5 17.3a3 3 0 0 1-5.32-.92l-.6-3.02A4.5 4.5 0 0 1 7 8Z" fill="currentColor" fill-opacity=".16"/><path d="M7.5 11.5v3M6 13h3"/><circle cx="15.5" cy="12" r="1" fill="currentColor"/><circle cx="17.5" cy="14" r="1" fill="currentColor"/></svg>
+    </button>
+    <button class="bottom-nav-btn" onclick="goTo('/games')">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M7 8h10a4.5 4.5 0 0 1 4.42 5.36l-.6 3.02A3 3 0 0 1 15.5 17.3l-.85-1.06a2 2 0 0 0-1.56-.74h-2.18a2 2 0 0 0-1.56.74L8.5 17.3a3 3 0 0 1-5.32-.92l-.6-3.02A4.5 4.5 0 0 1 7 8Z" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="1.8"/><path d="M7.5 11.5v3M6 13h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="15.5" cy="12" r="1" fill="currentColor"/><circle cx="17.5" cy="14" r="1" fill="currentColor"/></svg></span>
         <span>Игры</span>
-    </a>
+    </button>
 </nav>
 
 <script>
@@ -1635,6 +1592,10 @@ async function loadTopBar(){
             var gramBalEl = $('gramBalanceVal');
             if(gramBalEl) gramBalEl.textContent = formatGram(userData.balance_stars);
             updateGramConfirmBtn();
+            var photoUrl = userData.photo_url;
+            var validPhoto = photoUrl && photoUrl !== '' && String(photoUrl).indexOf('default_avatar') === -1;
+            var avatarEl = $('avatarImg');
+            if(avatarEl && validPhoto) avatarEl.src = photoUrl;
         }
     }catch(e){}
 }
