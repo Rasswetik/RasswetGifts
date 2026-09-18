@@ -27,10 +27,10 @@ body{
     background:rgba(10,15,29,.96);border-bottom:1px solid rgba(110,145,189,.12);
     box-shadow:0 1px 25px rgba(0,0,0,.16);
 }
-.desktop-left{display:flex;align-items:center;flex:0 0 auto}
-.logo-btn-crash{width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);border-radius:13px;cursor:pointer}
+.desktop-left{display:contents}
+.logo-btn-crash{position:absolute;left:34px;top:50%;transform:translateY(-50%);width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);border-radius:13px;cursor:pointer}
 .logo-btn-crash img{width:28px;height:28px;object-fit:contain}
-.main-nav-crash{display:flex;align-items:center;gap:4px;margin-left:18px}
+.main-nav-crash{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:4px;margin-left:0}
 .nav-btn-crash{height:42px;padding:0 15px;border-radius:21px;display:flex;align-items:center;gap:8px;color:#8e9db6;font-size:13px;font-weight:700;background:transparent;border:0;font-family:inherit;cursor:pointer;transition:.18s ease;white-space:nowrap}
 .nav-btn-crash:hover{color:#c4d1e2;background:rgba(106,143,185,.07)}
 .nav-btn-crash.active{color:#20b8ff;background:rgba(28,128,189,.17);box-shadow:inset 0 0 0 1px rgba(32,184,255,.28)}
@@ -430,7 +430,7 @@ body{
 .gr-layer{inset:0!important}
 #grLanes{display:none!important}
 .gr-hamster{
-    top:58%!important;
+    top:55%!important;
     z-index:10;
     width:auto;
     max-width:none;
@@ -611,7 +611,7 @@ body.crash-halloween .gr-result-inner{
         margin:0 12px;
         border-radius:20px;
     }
-    .gr-hamster{top:58%!important}
+    .gr-hamster{top:55%!important}
     .gr-controls{padding:14px 12px 0}
     .gr-row{gap:8px}
     .gr-field{min-height:66px;padding:10px 12px;border-radius:14px}
@@ -626,6 +626,15 @@ body.crash-halloween .gr-result-inner{
     .gr-field{min-height:62px}
 }
 
+
+/* Финальная геометрия Ghost Road */
+@media(min-width:701px){
+    .top-bar{position:relative}
+    .main-nav-crash{white-space:nowrap}
+}
+@media(max-width:700px){
+    .top-bar .desktop-left{display:none}
+}
 </style>
 </head>
 <body>
@@ -774,6 +783,8 @@ body.crash-halloween .gr-result-inner{
     <label>Первая полоса, % <input type="range" id="tFirst" min="0" max="40" step="0.1"></label>
     <label>Ширина полосы, % <input type="range" id="tLane" min="1" max="12" step="0.05"></label>
     <label>Хомяк по горизонтали, % <input type="range" id="tHero" min="10" max="80" step="1"></label>
+    <label>Верх машин, % <input type="range" id="tRoadTop" min="20" max="60" step="0.1"></label>
+    <label>Низ машин, % <input type="range" id="tRoadBottom" min="55" max="90" step="0.1"></label>
     <code id="tOut"></code>
 </div>
 
@@ -788,11 +799,13 @@ body.crash-halloween .gr-result-inner{
    скопируй числа из зелёной строки сюда — и всё встанет ровно.
    ──────────────────────────────────────────────────────────────── */
 var ROAD = {
-    zoom:      1.0,   // дорога целиком помещается в игровое окно
-    startPct:  5.0,   // старт хомяка
-    firstPct:  8.0,   // центр первой позиции
-    lanePct:   6.0,   // шаг между 15 позициями
-    heroPct:   50      // камера не двигается — герой идёт по самой дороге
+    zoom:         1.0,   // дорога целиком помещается в игровое окно
+    startPct:     5.0,   // старт хомяка
+    firstPct:     8.0,   // центр первой позиции
+    lanePct:      6.0,   // шаг между 15 позициями
+    heroPct:      50,    // камера не двигается — герой идёт по самой дороге
+    roadTopPct:   39.0,  // верхняя граница центра движения машин
+    roadBottomPct:73.0   // нижняя граница центра движения машин
 };
 // Это стартовые значения. Открой страницу с ?tune=1 (или нажми клавишу K) —
 // внизу справа появится панель с ползунками: подгони приближение, позицию
@@ -1014,10 +1027,11 @@ function spawnCar(lane, opts){
     car.style.left = lanePct(lane) + '%';
     car.style.zIndex = opts.hit ? 12 : 4;
 
-    // Два направления: часть потока идёт сверху вниз, часть — снизу вверх.
+    // Машины ездят ТОЛЬКО по центральному дорожному полотну,
+    // строго вдоль одной вертикальной полосы. На фон они не выезжают.
     var downward = opts.downward != null ? !!opts.downward : Math.random() < 0.5;
-    var from = downward ? -22 : 122;
-    var to   = downward ? 122 : -22;
+    var from = downward ? ROAD.roadTopPct : ROAD.roadBottomPct;
+    var to   = downward ? ROAD.roadBottomPct : ROAD.roadTopPct;
     car.style.top = from + '%';
     car.style.transform = 'translate(-50%,-50%) rotate(' + (downward ? 0 : 180) + 'deg)';
 
@@ -1169,8 +1183,14 @@ async function startRun(){
         var d = await r.json();
         if(!d.success){ toast(d.error || 'Не удалось начать', 'err'); return; }
 
-        S.token = d.token;
-        S.bet = d.bet;
+        // Поддерживаем token и варианты идентификатора забега от разных
+        // версий API, чтобы первый шаг не получал «забег не найден».
+        S.token = d.token || d.run_id || d.id || d.game_id || d.session_id || null;
+        if(!S.token){
+            toast('Сервер не вернул идентификатор забега', 'err');
+            return;
+        }
+        S.bet = Number(d.bet != null ? d.bet : bet);
         S.step = 0;
         S.phase = 'running';
         if(d.payouts && d.payouts.length) S.payouts = d.payouts;
@@ -1202,7 +1222,18 @@ async function doStep(){
             body: JSON.stringify({user_id:S.user.id, token:S.token})
         });
         var d = await r.json();
-        if(!d.success){ toast(d.error || 'Ошибка шага', 'err'); S.busy = false; renderUI(); return; }
+        if(!d.success){
+            var stepErr = d.error || d.message || 'Ошибка шага';
+            if(/забег|run|session|not found|не найден/i.test(String(stepErr))){
+                S.phase = 'over';
+                S.token = null;
+                stopTraffic();
+            }
+            toast(stepErr, 'err');
+            S.busy = false;
+            renderUI();
+            return;
+        }
 
         blockedLane = targetLane;
         startRunAnim();
@@ -1344,12 +1375,17 @@ async function syncHalloweenTheme(){
 /* ─── калибровка ────────────────────────────────────────────────── */
 function initTune(){
     var panel = $('grTune');
-    var map = {tZoom:'zoom', tStart:'startPct', tFirst:'firstPct', tLane:'lanePct', tHero:'heroPct'};
+    var map = {
+        tZoom:'zoom', tStart:'startPct', tFirst:'firstPct', tLane:'lanePct',
+        tHero:'heroPct', tRoadTop:'roadTopPct', tRoadBottom:'roadBottomPct'
+    };
     function refresh(){
         $('tOut').textContent =
             'zoom:' + ROAD.zoom + ', startPct:' + ROAD.startPct +
             ', firstPct:' + ROAD.firstPct + ', lanePct:' + ROAD.lanePct +
-            ', heroPct:' + ROAD.heroPct;
+            ', heroPct:' + ROAD.heroPct +
+            ', roadTopPct:' + ROAD.roadTopPct +
+            ', roadBottomPct:' + ROAD.roadBottomPct;
     }
     Object.keys(map).forEach(function(id){
         var el = $(id);
