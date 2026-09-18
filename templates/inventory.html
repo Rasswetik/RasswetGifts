@@ -387,20 +387,11 @@ img{display:block}
 .inv-empty svg{width:44px;height:44px;stroke:rgba(255,255,255,.24);fill:none;stroke-width:1.6}
 
 @media(max-width:700px){
-    body:before{inset:calc(62px + 5vh + env(safe-area-inset-top)) 0 0;background-size:65px 65px}
-    .top-bar{
-        margin-top:0;height:auto;min-height:calc(62px + 5vh + env(safe-area-inset-top));
-        padding:calc(8px + 5vh + env(safe-area-inset-top)) 11px 8px;background:var(--topbar-bg);
-    }
+    body:before{inset:0 0 0;background-size:65px 65px}
+    .top-bar{display:none}
     .desktop-left{display:none}
-    .account{width:100%;justify-content:flex-end;gap:7px}
-    .balance{min-width:88px;height:34px;padding:0 9px;border-radius:10px;font-size:12.5px}
-    .balance img{width:15px;height:15px}
-    .plus-btn{width:44px;height:44px;border-radius:12px}
-    .plus-btn svg{width:12px;height:12px}
-    .avatar-btn{width:44px;height:44px}
 
-    .page{padding:24px 12px calc(100px + env(safe-area-inset-bottom))}
+    .page{padding:calc(16px + env(safe-area-inset-top)) 12px calc(100px + env(safe-area-inset-bottom))}
     .page-title{font-size:22px;margin-bottom:16px}
     .top-grid{grid-template-columns:1fr;gap:12px}
     .panel{padding:18px;border-radius:18px}
@@ -604,18 +595,6 @@ html.halloween-active .inv-empty{background:rgba(17,13,24,.22)}
                 <span>Игры</span>
             </button>
         </nav>
-    </div>
-    <div class="account">
-        <div class="balance" aria-label="Баланс">
-            <img src="/static/img/ton.png" alt="TON">
-            <span class="balance-value" id="hdrBalance">0.00</span>
-        </div>
-        <button class="plus-btn" onclick="openDeposit()" aria-label="Пополнение">
-            <svg viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        </button>
-        <button class="avatar-btn" onclick="goTo('/profile')" aria-label="Профиль">
-            <img id="topAvatarImg" src="/static/img/logo.png" alt="">
-        </button>
     </div>
 </header>
 
@@ -1037,33 +1016,31 @@ async function sellItem(itemId){
     }
 }
 
-/* Продать всё сразу — без подтверждения */
+/* Продать всё сразу — мгновенно, одним запросом */
 async function sellAll(){
     if(!user || !inventory.length) return;
-    var ids = inventory.filter(function(i){ return !i.is_withdrawing; }).map(function(i){ return i.id; });
-    if(!ids.length){ showNotif('Нет доступных подарков для продажи', true); return; }
+    var hasSellable = inventory.some(function(i){ return !i.is_withdrawing; });
+    if(!hasSellable){ showNotif('Нет доступных подарков для продажи', true); return; }
     vibrateIfOn();
     var btn = $('sellAllBtn');
-    if(btn){ btn.disabled = true; btn.textContent = 'Продаём 0/' + ids.length + '...'; }
-    var sold = 0;
-    for(var i = 0; i < ids.length; i++){
-        try{
-            var r = await fetch('/api/sell-gift', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({user_id:user.id, gift_id:ids[i]})
-            });
-            var d = await r.json();
-            if(d.success){
-                sold++;
-                applyApiBalance(d);
-                if(btn) btn.textContent = 'Продаём ' + sold + '/' + ids.length + '...';
-            }
-        }catch(e){}
+    if(btn){ btn.disabled = true; btn.textContent = 'Продаём...'; }
+    try{
+        var r = await fetch('/api/sell-all-gifts', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({user_id:user.id})
+        });
+        var d = await r.json();
+        if(d.success){
+            applyApiBalance(d);
+            showNotif((d.sold_count || 0) + ' подарков продано!');
+        } else {
+            showNotif(d.error || 'Не удалось продать подарки', true);
+        }
+    }catch(e){
+        showNotif('Ошибка сети', true);
     }
     if(btn){ btn.disabled = false; btn.textContent = 'Продать всё'; }
-    if(sold > 0) showNotif(sold + ' подарков продано!');
-    else showNotif('Не удалось продать подарки', true);
     await refreshUserData();
     await loadInventory();
 }
