@@ -795,6 +795,7 @@ body.crash-halloween .gr-result-inner{
     <label>Первая полоса, % <input type="range" id="tFirst" min="0" max="40" step="0.1"></label>
     <label>Ширина полосы, % <input type="range" id="tLane" min="1" max="12" step="0.05"></label>
     <label>Хомяк по горизонтали, % <input type="range" id="tHero" min="10" max="80" step="1"></label>
+    <label>Хомяк по вертикали, % <input type="range" id="tHeroY" min="45" max="80" step="0.1"></label>
     <label>Верх машин, % <input type="range" id="tRoadTop" min="20" max="60" step="0.1"></label>
     <label>Низ машин, % <input type="range" id="tRoadBottom" min="55" max="90" step="0.1"></label>
     <code id="tOut"></code>
@@ -815,7 +816,8 @@ var ROAD = {
     startPct:     5.0,   // старт хомяка
     firstPct:     8.0,   // центр первой позиции
     lanePct:      6.0,   // шаг между 15 позициями
-    heroPct:      50,    // камера не двигается — герой идёт по самой дороге
+    heroPct:      50,    // горизонтальная позиция хомяка
+    heroYPct:     65.5,  // вертикальный центр хомяка на основной дороге
     roadTopPct:   39.0,  // верхняя граница центра движения машин
     roadBottomPct:73.0   // нижняя граница центра движения машин
 };
@@ -826,7 +828,8 @@ var ROAD = {
 
 var GR_CAMERA = {
     zoom: 2.55,              // крупный кадр дороги после входной анимации
-    heroScreenPct: 23,       // хомяк остаётся чуть левее центра кадра
+    heroScreenPct: 50,       // в компактном кадре хомяк/дорога держатся по центру
+    heroScreenYPct: 50,      // камера смотрит в центр дорожного полотна, а не в верх леса
     introMs: 900,            // большая PNG плавно превращается в компактный кадр
     compact: false,
     animating: false
@@ -1025,16 +1028,31 @@ function moveCamera(animate){
 
     // До входа показываем всю PNG. После входной анимации — крупный
     // фрагмент, а камера двигается по той же PNG вместе с хомяком.
-    var target = GR_CAMERA.heroScreenPct / 100;
-    var tx = (target - hero * zoom) * W;
+    var targetX = GR_CAMERA.heroScreenPct / 100;
+    var tx = (targetX - hero * zoom) * W;
     var minTx = W - W * zoom;
     tx = Math.max(minTx, Math.min(0, tx));
 
-    world.style.transition = animate ? 'left .52s cubic-bezier(.22,.8,.24,1), transform .52s cubic-bezier(.22,.8,.24,1)' : 'none';
+    // ВАЖНО: road.png имеет лес сверху, а основное дорожное полотно
+    // находится примерно на 65.5% высоты исходной PNG. Раньше zoom
+    // выполнялся от верхнего левого угла, поэтому при 2.55x камера
+    // смотрела почти только в верхнюю часть картинки. Теперь вертикальная
+    // камера привязана к центру дороги и при zoom показывает именно её.
+    var H = stage.clientHeight || 1;
+    var targetY = GR_CAMERA.heroScreenYPct / 100;
+    var heroY = ROAD.heroYPct / 100;
+    var ty = (targetY - heroY * zoom) * H;
+    var minTy = H - H * zoom;
+    ty = Math.max(minTy, Math.min(0, ty));
+
+    world.style.transition = animate ? 'left .52s cubic-bezier(.22,.8,.24,1), top .52s cubic-bezier(.22,.8,.24,1), transform .52s cubic-bezier(.22,.8,.24,1)' : 'none';
     world.style.left = tx + 'px';
+    world.style.top = ty + 'px';
     world.style.transformOrigin = '0 0';
     world.style.transform = 'scale(' + zoom + ')';
     $('grHamster').style.left = heroPct() + '%';
+    $('grHamster').style.top = ROAD.heroYPct + '%';
+    $('grHamster').style.top = ROAD.heroYPct + '%';
 }
 
 function playEntryCamera(){
@@ -1043,8 +1061,10 @@ function playEntryCamera(){
     GR_CAMERA.compact = false;
     world.style.transition = 'none';
     world.style.left = '0px';
+    world.style.top = '0px';
     world.style.transformOrigin = '0 0';
     world.style.transform = 'scale(1)';
+    $('grHamster').style.top = ROAD.heroYPct + '%';
     stage.classList.remove('gr-compact');
 
     // Маленькая пауза даёт браузеру отрисовать исходное большое поле.
@@ -1321,11 +1341,45 @@ async function doStep(){
 
     S.busy = true; renderUI();
     try{
+        // Синхронизируем токен с сервером перед шагом. Это защищает от
+        // старого sessionStorage/localStorage после перезахода.
+        if(!S.token){
+            try{
+                var ar = await fetch('/api/ghost-road/active?user_id=' + encodeURIComponent(S.user.id), {cache:'no-store'});
+                var ad = await ar.json();
+                if(ad && ad.success && ad.active && ad.token){
+                    S.token = String(ad.token);
+                    S.step = Number(ad.step) || S.step;
+                    try{ sessionStorage.setItem('ghost_road_token', S.token); }catch(e){}
+                }
+            }catch(e){}
+        }
+
         var r = await fetch('/api/ghost-road/step', {
             method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({user_id:S.user.id, token:S.token})
+            body: JSON.stringify({user_id:S.user.id, token:S.token || ''})
         });
         var d = await r.json();
+
+        // Если сервер сообщает, что токен устарел, один раз восстанавливаем
+        // активный забег из БД и повторяем шаг с каноническим token.
+        if(!d.success && /забег|run|session|not found|не найден/i.test(String(d.error || d.message || ''))){
+            try{
+                var rr = await fetch('/api/ghost-road/active?user_id=' + encodeURIComponent(S.user.id), {cache:'no-store'});
+                var rd = await rr.json();
+                if(rd && rd.success && rd.active && rd.token){
+                    S.token = String(rd.token);
+                    S.step = Number(rd.step) || S.step;
+                    targetLane = S.step + 1;
+                    try{ sessionStorage.setItem('ghost_road_token', S.token); }catch(e){}
+                    r = await fetch('/api/ghost-road/step', {
+                        method:'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({user_id:S.user.id, token:S.token})
+                    });
+                    d = await r.json();
+                }
+            }catch(e){}
+        }
         if(!d.success){
             var stepErr = d.error || d.message || 'Ошибка шага';
             if(/забег|run|session|not found|не найден/i.test(String(stepErr))){
@@ -1484,13 +1538,14 @@ function initTune(){
     var panel = $('grTune');
     var map = {
         tZoom:'zoom', tStart:'startPct', tFirst:'firstPct', tLane:'lanePct',
-        tHero:'heroPct', tRoadTop:'roadTopPct', tRoadBottom:'roadBottomPct'
+        tHero:'heroPct', tHeroY:'heroYPct', tRoadTop:'roadTopPct', tRoadBottom:'roadBottomPct'
     };
     function refresh(){
         $('tOut').textContent =
             'zoom:' + ROAD.zoom + ', startPct:' + ROAD.startPct +
             ', firstPct:' + ROAD.firstPct + ', lanePct:' + ROAD.lanePct +
             ', heroPct:' + ROAD.heroPct +
+            ', heroYPct:' + ROAD.heroYPct +
             ', roadTopPct:' + ROAD.roadTopPct +
             ', roadBottomPct:' + ROAD.roadBottomPct;
     }
