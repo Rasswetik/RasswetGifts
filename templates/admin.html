@@ -335,6 +335,15 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 @media(max-width:700px){.case-gift-row{gap:7px}.case-gift-chance{width:78px;flex-basis:78px}.case-gift-del{align-self:center}}
 </style>
 
+<style id="event-unlock-admin-v1">
+.event-unlock-box{margin-top:10px;padding:10px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07)}
+.event-unlock-row{display:grid;grid-template-columns:1fr 1fr auto auto;gap:8px;align-items:center}
+.event-unlock-row .form-input{margin:0}
+.event-unlock-status{margin-top:7px;font-size:11px;font-weight:800}
+.event-unlock-status.locked{color:#ffb86b}
+.event-unlock-status.open{color:#24C38E}
+@media(max-width:620px){.event-unlock-row{grid-template-columns:1fr 1fr;}.event-unlock-row .btn{grid-column:span 1}}
+</style>
 <style id="event-legacy-mode-hide-v1">#eventSpecialModeName,#eventSpecialModeImage,#eventSpecialModePath,#eventSpecialModeVisible,#eventSpecialModeUnlockHours{display:none!important}</style>
 </head>
 <body>
@@ -1157,6 +1166,67 @@ async function saveGamesUIAdmin(){try{syncGamesUIFromDom();await fetch('/api/adm
 function formatEventTime(sec){sec=Math.max(0,Number(sec||0));var d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60),s=Math.floor(sec%60);return (d?d+'д ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
 var eventAdminData=null;
 async function eventAdminPost(payload){payload=payload||{};payload.admin_id=ADMIN_ID;var r=await fetch('/api/admin/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');return d;}
+/* ── Таймеры открытия разделов и кнопок Event ─────────────────────── */
+function unlockLeftSeconds(iso){
+  if(!iso)return 0;
+  var t=new Date(iso).getTime();
+  if(isNaN(t))return 0;
+  return Math.max(0,Math.round((t-Date.now())/1000));
+}
+function unlockParts(iso){
+  var left=unlockLeftSeconds(iso);
+  return {hours:Math.floor(left/3600),minutes:Math.round(left%3600/60)};
+}
+function unlockLabel(iso){
+  var left=unlockLeftSeconds(iso);
+  if(left<=0)return {text:'Раздел открыт',cls:'open'};
+  var h=Math.floor(left/3600),m=Math.floor(left%3600/60),s=left%60;
+  var human=h>0?(h+' ч '+m+' мин'):(m>0?(m+' мин '+s+' сек'):(s+' сек'));
+  var when=new Date(iso).toLocaleString('ru-RU');
+  return {text:'🔒 Закрыт · откроется через '+human+' ('+when+')',cls:'locked'};
+}
+function unlockControlsHtml(kind,id,sectionId,iso){
+  var p=unlockParts(iso),lab=unlockLabel(iso);
+  return '<div class="event-unlock-box" data-unlock-kind="'+kind+'" data-unlock-id="'+escapeHtml(String(id||''))+'" data-unlock-section="'+escapeHtml(String(sectionId||''))+'">'
+    +'<label class="form-label">Открыть '+(kind==='section'?'раздел':'кнопку')+' через</label>'
+    +'<div class="event-unlock-row">'
+    +'<input class="form-input unlock-hours" type="number" min="0" max="8760" step="1" placeholder="часы" value="'+(p.hours||'')+'">'
+    +'<input class="form-input unlock-minutes" type="number" min="0" max="59" step="1" placeholder="минуты" value="'+(p.minutes||'')+'">'
+    +'<button type="button" class="btn btn-primary btn-sm unlock-apply">Запустить таймер</button>'
+    +'<button type="button" class="btn btn-secondary btn-sm unlock-open">Открыть сейчас</button>'
+    +'</div>'
+    +'<div class="event-unlock-status '+lab.cls+'">'+escapeHtml(lab.text)+'</div>'
+    +'<div class="event-sub" style="margin-top:5px">0 часов и 0 минут — открыт сразу. Пока таймер идёт, на странице Event блок серый, кликов нет, а вместо подписи показывается обратный отсчёт.</div>'
+    +'</div>';
+}
+function bindUnlockControls(root){
+  (root||document).querySelectorAll('.event-unlock-box').forEach(function(box){
+    var kind=box.dataset.unlockKind,id=box.dataset.unlockId,sid=box.dataset.unlockSection;
+    var apply=box.querySelector('.unlock-apply'),openNow=box.querySelector('.unlock-open');
+    if(apply)apply.onclick=function(){
+      var h=parseFloat(box.querySelector('.unlock-hours').value||0)||0;
+      var m=parseFloat(box.querySelector('.unlock-minutes').value||0)||0;
+      saveUnlockTimer(kind,id,sid,h,m);
+    };
+    if(openNow)openNow.onclick=function(){
+      box.querySelector('.unlock-hours').value='';
+      box.querySelector('.unlock-minutes').value='';
+      saveUnlockTimer(kind,id,sid,0,0);
+    };
+  });
+}
+async function saveUnlockTimer(kind,id,sectionId,hours,minutes){
+  var total=(Number(hours)||0)*60+(Number(minutes)||0);
+  try{
+    if(kind==='section')
+      await eventAdminPost({event_id:'witch_hat_party',action:'set_section_unlock',section_id:sectionId||id,unlock_hours:Number(hours)||0,unlock_minutes:Number(minutes)||0});
+    else
+      await eventAdminPost({event_id:'witch_hat_party',action:'set_item_unlock',section_id:sectionId,id:id,unlock_hours:Number(hours)||0,unlock_minutes:Number(minutes)||0});
+    showToast(total>0?'Таймер открытия установлен':'Открыто сразу','ok');
+    loadEvents();
+  }catch(e){showToast(e.message||'Ошибка','err')}
+}
+
 function renderEventSections(events){
  var ev=(events||{}).witch_hat_party||{};eventAdminData=ev;var box=$('eventSectionsAdmin');if(!box)return;var sections=Array.isArray(ev.sections)?ev.sections:[];
  sections.sort(function(a,b){var rank=function(x){var t=String(x&&x.type||'');return t==='mode'?0:(t==='cases'?1:(t==='market'?2:3))};return rank(a)-rank(b)});
@@ -1176,7 +1246,8 @@ function renderEventSections(events){
      content='<div class="event-mini-list">'+(items.length?items.map(function(it){var label=it.name||it.fragment_slug||'Подарок';var price=Number(it.price_gram||0).toFixed(2);return '<div class="event-mini" style="min-width:100%;justify-content:space-between"><span>'+escapeHtml(label)+' · '+price+' GRAM</span><button class="event-remove-gift" data-gift-url="'+escapeHtml(String(it.gift_url||''))+'" data-fragment-slug="'+escapeHtml(String(it.fragment_slug||''))+'">✕</button></div>';}).join(''):'<span class="event-sub">Подарки не добавлены</span>')+'</div>';
    }
    var canDelete=sec.type==='mode';
-   return '<div class="event-section-row" data-section-id="'+escapeHtml(sid)+'"><div class="event-section-head"><strong>'+escapeHtml(sec.title||'Раздел')+'</strong><span class="event-chip">'+escapeHtml(sec.type||'')+'</span>'+(!canDelete?'<button class="btn btn-danger btn-sm event-remove-section" data-section-id="'+escapeHtml(sid)+'">Удалить</button>':'<span class="event-chip">обязательный</span>')+'</div>'+content+'</div>';
+   var lockChip=unlockLeftSeconds(sec.unlock_at)>0?'<span class="event-chip" style="color:#ffb86b">🔒 закрыт</span>':'';
+   return '<div class="event-section-row" data-section-id="'+escapeHtml(sid)+'"><div class="event-section-head"><strong>'+escapeHtml(sec.title||'Раздел')+'</strong><span class="event-chip">'+escapeHtml(sec.type||'')+'</span>'+lockChip+(!canDelete?'<button class="btn btn-danger btn-sm event-remove-section" data-section-id="'+escapeHtml(sid)+'">Удалить</button>':'<span class="event-chip">обязательный</span>')+'</div>'+content+unlockControlsHtml('section',sid,sid,sec.unlock_at)+'</div>';
  }).join('');
  box.querySelectorAll('.event-add-case').forEach(function(b){b.onclick=function(){addEventCase(b.dataset.sectionId)}});
  box.querySelectorAll('.event-remove-case').forEach(function(b){b.onclick=function(){var row=b.closest('.event-case-admin');removeEventCase(row.dataset.sectionId,row.dataset.caseId)}});
@@ -1184,15 +1255,26 @@ function renderEventSections(events){
  box.querySelectorAll('.mode-add-item').forEach(function(b){b.onclick=function(){addModeButton(b.dataset.sectionId)}});
  box.querySelectorAll('.mode-edit-item').forEach(function(b){b.onclick=function(){editModeButton(b.dataset.sectionId,b.dataset.itemId)}});
  box.querySelectorAll('.mode-remove-item').forEach(function(b){b.onclick=function(){removeModeButton(b.dataset.sectionId,b.dataset.itemId)}});
+ bindUnlockControls(box);
  box.querySelectorAll('.event-remove-gift').forEach(function(b){b.onclick=function(){if(b.dataset.giftUrl)removeEventGift(b.dataset.giftUrl);else removeEventMarket(b.dataset.fragmentSlug)}});
  box.querySelectorAll('.event-case-admin[data-case-id]').forEach(function(row){
-   var id=row.dataset.caseId;var url=(id==='seasonal')?'/api/cases/by-slug/seasonal':'/api/cases/'+encodeURIComponent(id);
-   fetch(url,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){var c=d&&d.success?d.case:null;if(!c)return;row.innerHTML='<img src="'+escapeHtml(c.image||'/static/img/gift.png')+'" style="width:38px;height:38px;object-fit:contain;border-radius:8px"><span style="flex:1"><b>'+escapeHtml(c.name||'Кейс')+'</b><small style="display:block;color:rgba(255,255,255,.4)">'+(c.seasonal?'Сезонный':'Event')+'</small></span><button class="event-remove-case" type="button">✕</button>';row.querySelector('.event-remove-case').onclick=function(){removeEventCase(row.dataset.sectionId,row.dataset.caseId)};
-      row.querySelector('span').style.cursor='pointer';
-      row.querySelector('span').onclick=function(){openCaseEditor(Number(id), row.dataset.sectionId)};
-      row.querySelector('img').style.cursor='pointer';
-      row.querySelector('img').onclick=function(){openCaseEditor(Number(id), row.dataset.sectionId)};
-    }).catch(function(){});
+   var id=row.dataset.caseId;
+   var url='/api/cases/'+encodeURIComponent(id)+'?ts='+Date.now();
+   function failRow(msg){
+     row.innerHTML='<span style="flex:1;color:#ff8099">'+escapeHtml(msg)+'</span><button class="event-remove-case" type="button">✕</button>';
+     row.querySelector('.event-remove-case').onclick=function(){removeEventCase(row.dataset.sectionId,row.dataset.caseId)};
+   }
+   fetch(url,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+     var c=d&&d.success?d.case:null;
+     if(!c){failRow('Кейс #'+id+' не найден — удалите привязку');return}
+     row.innerHTML='<img src="'+escapeHtml(c.image||'/static/img/gift.png')+'" style="width:38px;height:38px;object-fit:contain;border-radius:8px"><span style="flex:1"><b>'+escapeHtml(c.name||'Кейс')+'</b><small style="display:block;color:rgba(255,255,255,.4)">'+(c.seasonal?'Сезонный':'Event')+'</small></span><button class="event-remove-case" type="button">✕</button>';
+     row.querySelector('.event-remove-case').onclick=function(){removeEventCase(row.dataset.sectionId,row.dataset.caseId)};
+     var openEditor=function(){var num=Number(c.id);openCaseEditor(isNaN(num)?c.id:num, row.dataset.sectionId)};
+     row.querySelector('span').style.cursor='pointer';
+     row.querySelector('span').onclick=openEditor;
+     row.querySelector('img').style.cursor='pointer';
+     row.querySelector('img').onclick=openEditor;
+   }).catch(function(){failRow('Кейс #'+id+': ошибка загрузки, обновите страницу')});
  });
 }
 
@@ -1202,7 +1284,7 @@ function modeItemEditorHtml(it,sid){
     var mandatory=!!it.mandatory || iid==='ghost_road_mode';
     return '<div class="mode-item-admin" data-section-id="'+escapeHtml(sid)+'" data-item-id="'+escapeHtml(iid)+'">'
         +'<div class="mode-item-preview-wrap"><img class="mode-item-preview" src="'+escapeHtml(it.image||'/static/img/gift.png')+'" onerror="this.src=\'/static/img/gift.png\'" alt=""><span class="mode-size-badge">'+escapeHtml(size)+'</span></div>'
-        +'<div class="mode-item-main"><div class="mode-item-name">'+escapeHtml(it.name||'Кнопка')+'</div><div class="mode-item-sub">'+escapeHtml(it.subtitle||'Без подписи')+'</div><div class="mode-item-meta"><span>'+escapeHtml(it.path||'#')+'</span><span>·</span><span>'+(it.visible===false?'скрыта':'видна')+'</span></div></div>'
+        +'<div class="mode-item-main"><div class="mode-item-name">'+escapeHtml(it.name||'Кнопка')+'</div><div class="mode-item-sub">'+escapeHtml(it.subtitle||'Без подписи')+'</div><div class="mode-item-meta"><span>'+escapeHtml(it.path||'#')+'</span><span>·</span><span>'+(it.visible===false?'скрыта':'видна')+'</span>'+(unlockLeftSeconds(it.unlock_at)>0?'<span>·</span><span style="color:#ffb86b">'+escapeHtml(unlockLabel(it.unlock_at).text)+'</span>':'')+'</div></div>'
         +'<div class="mode-item-actions"><button type="button" class="btn btn-secondary btn-sm mode-edit-item" data-section-id="'+escapeHtml(sid)+'" data-item-id="'+escapeHtml(iid)+'">Изменить</button>'
         +(mandatory?'<span class="event-chip">обязательная</span>':'<button type="button" class="btn btn-danger btn-sm mode-remove-item" data-section-id="'+escapeHtml(sid)+'" data-item-id="'+escapeHtml(iid)+'">Удалить</button>')+'</div>'
         +'</div>';
@@ -1242,6 +1324,7 @@ function modeButtonEditorHtml(item){
       +'</div><div class="event-sub mode-size-help">SMALL — размер одной карточки Mines/Crash. MEDIUM — ширина двух таких карточек. HIGH — блок 2×2, то есть четыре обычные карточки.</div></div>'
       +'<div class="form-group"><label class="form-label">Изображение</label><div class="mode-image-picker-row"><div class="mode-editor-image-preview" id="modeEditorImagePreview">'+(item.image?'<img src="'+escapeHtml(item.image)+'" onerror="this.src=\'/static/img/gift.png\'">':'<span>Нет изображения</span>')+'</div><div class="mode-image-actions"><button type="button" class="btn btn-secondary btn-sm" onclick="openSiteImagePickerForMode()">Выбрать из каталога</button><button type="button" class="btn btn-secondary btn-sm" onclick="chooseModeImageUpload()">Загрузить файл</button><input type="file" id="modeEditorImageFile" accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml" style="display:none" onchange="uploadModeEditorImage()"></div></div><input class="form-input" id="modeEditorImage" value="'+escapeHtml(item.image||'')+'" placeholder="/static/img/..." style="margin-top:8px"></div>'
       +'<label class="event-mode-switch mode-visible-switch"><span><b>Показывать пользователям</b><small>Кнопка будет отображаться на странице Event</small></span><input type="checkbox" id="modeEditorVisible" '+(item.visible!==false?'checked':'')+'><span class="event-switch"></span></label>'
+      +'<div class="form-group" style="margin-top:10px"><label class="form-label">Открыть режим через</label><div class="event-unlock-row"><input class="form-input" id="modeEditorUnlockHours" type="number" min="0" max="8760" step="1" placeholder="часы" value="'+(unlockParts(item.unlock_at).hours||'')+'"><input class="form-input" id="modeEditorUnlockMinutes" type="number" min="0" max="59" step="1" placeholder="минуты" value="'+(unlockParts(item.unlock_at).minutes||'')+'"></div><div class="event-unlock-status '+unlockLabel(item.unlock_at).cls+'">'+escapeHtml(unlockLabel(item.unlock_at).text)+'</div><div class="event-sub" style="margin-top:5px">0 и 0 — режим доступен сразу. Пока идёт таймер, кнопка на странице Event серая, неактивная, а вместо подписи показывается, сколько осталось до открытия.</div></div>'
       +'<div class="btn-row mode-editor-buttons"><button class="btn btn-success" type="button" onclick="saveModeButtonEditor()">Сохранить</button><button class="btn btn-secondary" type="button" onclick="closeModal()">Отмена</button></div>'
       +'</div>';
 }
@@ -1256,7 +1339,9 @@ function editModeButton(sectionId,itemId){openModeButtonEditor(sectionId,itemId)
 async function saveModeButtonEditor(){
     var name=modeEditorValue('modeEditorName'); if(!name){showToast('Введите заголовок','err');return;}
     var size=(document.querySelector('input[name="modeEditorSize"]:checked')||{}).value||'medium';
-    var data={name:name,subtitle:modeEditorValue('modeEditorSubtitle'),image:modeEditorValue('modeEditorImage'),path:modeEditorValue('modeEditorPath')||'#',size:size,visible:!!($('modeEditorVisible')&&$('modeEditorVisible').checked)};
+    var uh=parseFloat($('modeEditorUnlockHours')&&$('modeEditorUnlockHours').value||0)||0;
+    var um=parseFloat($('modeEditorUnlockMinutes')&&$('modeEditorUnlockMinutes').value||0)||0;
+    var data={name:name,subtitle:modeEditorValue('modeEditorSubtitle'),image:modeEditorValue('modeEditorImage'),path:modeEditorValue('modeEditorPath')||'#',size:size,visible:!!($('modeEditorVisible')&&$('modeEditorVisible').checked),unlock_hours:uh,unlock_minutes:um};
     try{
       if(modeEditorState.itemId) await eventAdminPost(Object.assign({event_id:'witch_hat_party',action:'update_mode_item',id:modeEditorState.itemId},data));
       else await eventAdminPost(Object.assign({event_id:'witch_hat_party',action:'add_mode_item'},data));
