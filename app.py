@@ -83,8 +83,9 @@ PERSISTENT_DATA_DIR = os.environ.get('DB_DIR', os.path.join(BASE_PATH, 'data'))
 os.makedirs(PERSISTENT_DATA_DIR, exist_ok=True)
 ADMIN_ID = 5257227756
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '').strip()
-WEBSITE_URL = os.getenv('WEBSITE_URL', 'https://goshangifts.onrender.com').strip().rstrip('/')
+WEBSITE_URL = os.getenv('WEBSITE_URL', 'https://rasswetgifts.onrender.com').strip().rstrip('/')
 TG_API = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}'
+TELEGRAM_WEBHOOK_PATH = '/telegram/webhook'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 MAX_FILE_SIZE = 16 * 1024 * 1024
 
@@ -22610,6 +22611,22 @@ def _lazy_init():
             return
         logger.info("🚀 Инициализация приложения...")
         try:
+            _log_startup_config()
+        except Exception as e:
+            logger.warning(f"Не удалось вывести стартовую конфигурацию: {e}")
+
+        # Telegram поднимаем ПЕРВЫМ, чтобы бот начал принимать /start сразу,
+        # даже если инициализация БД, игр или маркетов занимает много времени.
+        try:
+            threading.Thread(
+                target=setup_telegram_webhook,
+                name='telegram-webhook-setup',
+                daemon=True
+            ).start()
+        except Exception as e:
+            logger.error(f"❌ Не удалось запустить настройку Telegram webhook: {e}")
+
+        try:
             safe_init_db()
         except Exception as e:
             logger.error(f"❌ Ошибка инициализации БД: {e}")
@@ -22632,11 +22649,6 @@ def _lazy_init():
                 logger.info("🔄 Portal auto-sync disabled via PORTAL_SYNC_ENABLED env")
         except Exception as e:
             logger.error(f"❌ Не удалось запустить Portal price sync: {e}")
-        # Webhook Telegram
-        try:
-            threading.Thread(target=setup_telegram_webhook, daemon=True).start()
-        except Exception as e:
-            logger.error(f"❌ Не удалось настроить webhook: {e}")
         # NFT Gift Monitor — allow disabling via environment (temporary mitigation)
         try:
             if os.getenv('DISABLE_NFT_MONITOR', '').lower() not in ('1', 'true', 'yes', 'y'):
@@ -23573,7 +23585,7 @@ def handle_business_message(bm):
 
 
 # --- Webhook route ---
-@app.route(f'/webhook/{TELEGRAM_BOT_TOKEN}', methods=['POST'])
+@app.route(TELEGRAM_WEBHOOK_PATH, methods=['POST'])
 def telegram_webhook():
     """Обработка входящих обновлений от Telegram"""
     try:
@@ -23659,15 +23671,31 @@ def setup_telegram_webhook():
         logger.warning(f'⚠️ WEBSITE_URL = {WEBSITE_URL}. Telegram не сможет достучаться. Webhook пропущен.')
         return False
 
-    webhook_url = f"{WEBSITE_URL}/webhook/{TELEGRAM_BOT_TOKEN}"
+    webhook_url = f"{WEBSITE_URL}{TELEGRAM_WEBHOOK_PATH}"
     try:
-        tg_api('deleteWebhook', drop_pending_updates=True)
+        # Сначала проверяем, что Render действительно получил рабочий токен.
+        me = tg_api('getMe')
+        if not me.get('ok'):
+            logger.error(f"❌ Telegram token check failed: {me}")
+            return False
+        bot_username = (me.get('result') or {}).get('username', '')
+        logger.info(f"🤖 Telegram bot token OK: @{bot_username}")
+
+        # setWebhook идемпотентен: не удаляем webhook перед каждым рестартом.
+        # Это исключает окно, когда бот временно остаётся без webhook, и не
+        # выбрасывает команды, пришедшие во время перезапуска Render.
         allowed = [
             'message', 'callback_query', 'pre_checkout_query',
             'business_connection', 'business_message',
             'edited_business_message', 'deleted_business_messages'
         ]
-        r = tg_api('setWebhook', url=webhook_url, allowed_updates=allowed)
+        r = tg_api(
+            'setWebhook',
+            url=webhook_url,
+            allowed_updates=allowed,
+            drop_pending_updates=False,
+            max_connections=40
+        )
         if r.get('ok'):
             logger.info(f'✅ Telegram webhook установлен: {webhook_url}')
         else:
@@ -23709,7 +23737,7 @@ def setup_telegram_webhook():
 
 # --- Ручное управление вебхуком через браузер (для диагностики без редеплоя) ---
 # Открой в браузере (замени ADMIN_ID на свой числовой Telegram id — он же в коде):
-#   https://<твой-сайт>.onrender.com/api/admin/webhook?admin_id=5257227756
+#   https://rasswetgifts.onrender.com/api/admin/webhook?admin_id=5257227756
 # GET  — просто показывает текущий статус вебхука (getWebhookInfo), ничего не меняет.
 # POST с тем же admin_id в теле — принудительно пересоздаёт вебхук (deleteWebhook + setWebhook).
 @app.route('/api/admin/webhook', methods=['GET', 'POST'])
@@ -23730,7 +23758,7 @@ def api_admin_webhook():
             'success': info.get('ok', False),
             'token_configured': bool(TELEGRAM_BOT_TOKEN) and len(TELEGRAM_BOT_TOKEN) >= 20 and ':' in TELEGRAM_BOT_TOKEN,
             'website_url': WEBSITE_URL,
-            'expected_webhook_url': f"{WEBSITE_URL}/webhook/{TELEGRAM_BOT_TOKEN}" if TELEGRAM_BOT_TOKEN else None,
+            'expected_webhook_url': f"{WEBSITE_URL}{TELEGRAM_WEBHOOK_PATH}" if TELEGRAM_BOT_TOKEN else None,
             'webhook_info': info.get('result', info)
         })
     except Exception as e:
