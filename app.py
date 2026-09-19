@@ -23707,6 +23707,35 @@ def setup_telegram_webhook():
         return False
 
 
+# --- Ручное управление вебхуком через браузер (для диагностики без редеплоя) ---
+# Открой в браузере (замени ADMIN_ID на свой числовой Telegram id — он же в коде):
+#   https://<твой-сайт>.onrender.com/api/admin/webhook?admin_id=5257227756
+# GET  — просто показывает текущий статус вебхука (getWebhookInfo), ничего не меняет.
+# POST с тем же admin_id в теле — принудительно пересоздаёт вебхук (deleteWebhook + setWebhook).
+@app.route('/api/admin/webhook', methods=['GET', 'POST'])
+def api_admin_webhook():
+    try:
+        admin_id = request.args.get('admin_id') or (request.get_json(silent=True) or {}).get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Not admin'}), 403
+
+        if request.method == 'POST':
+            ok = setup_telegram_webhook()
+            info = tg_api('getWebhookInfo')
+            return jsonify({'success': ok, 'webhook_info': info.get('result', info)})
+
+        # GET — только посмотреть текущее состояние, без изменений
+        info = tg_api('getWebhookInfo')
+        return jsonify({
+            'success': info.get('ok', False),
+            'token_configured': bool(TELEGRAM_BOT_TOKEN) and len(TELEGRAM_BOT_TOKEN) >= 20 and ':' in TELEGRAM_BOT_TOKEN,
+            'website_url': WEBSITE_URL,
+            'expected_webhook_url': f"{WEBSITE_URL}/webhook/{TELEGRAM_BOT_TOKEN}" if TELEGRAM_BOT_TOKEN else None,
+            'webhook_info': info.get('result', info)
+        })
+    except Exception as e:
+        logger.error(f"api_admin_webhook error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/user-bonuses', methods=['GET'])
