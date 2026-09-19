@@ -82,7 +82,7 @@ def _set_cached_balance(user_id, balance):
 
 # Создаем приложение Flask
 app = Flask(__name__)
-app.secret_key = 'rsw_FsL1QH7R8yIqB6_nGVoFNk15zfwy2LSU4lNcGs7FMHE'
+app.secret_key = os.getenv('SECRET_KEY') or secrets.token_hex(32)
 
 # Конфигурация
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -93,7 +93,7 @@ BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 # а не в папку рядом с кодом, которая стирается при каждом деплое.
 PERSISTENT_DATA_DIR = os.environ.get('DB_DIR', os.path.join(BASE_PATH, 'data'))
 os.makedirs(PERSISTENT_DATA_DIR, exist_ok=True)
-ADMIN_ID = 5257227756
+ADMIN_ID = int(os.getenv('ADMIN_ID', '5257227756'))
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '').strip()
 WEBSITE_URL = os.getenv('WEBSITE_URL', 'https://rasswetgifts.onrender.com').strip().rstrip('/')
 TG_API = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}'
@@ -941,7 +941,7 @@ def is_spooky_round_available():
 # ══════════════════════════════════════════════════════════════
 
 PORTAL_SYNC_ENABLED = os.getenv('PORTAL_SYNC_ENABLED', '1') != '0'
-PORTAL_SYNC_INTERVAL_MINUTES = int(os.getenv('PORTAL_SYNC_INTERVAL_MINUTES', '60'))
+PORTAL_SYNC_INTERVAL_MINUTES = 10
 
 # Fragment HTTP session
 _fragment_http_session = None
@@ -3411,24 +3411,14 @@ def get_db_connection():
                     _db_ready = True
                 except:
                     pass
+            if has_request_context():
+                g._owned_connections = getattr(g, '_owned_connections', []) + [conn]
             return conn
-        except sqlite3.DatabaseError as e:
-            if 'malformed' in str(e) or 'disk' in str(e):
-                logger.error(f"❌ БД повреждена, попытка восстановления {attempt+1}/3")
-                try:
-                    # Удаляем повреждённые файлы
-                    for ext in ['-wal', '-shm', '-journal']:
-                        p = DB_PATH + ext
-                        if os.path.exists(p):
-                            os.remove(p)
-                except:
-                    pass
-                time.sleep(0.5)
-            else:
-                raise
-    
-    # Последняя попытка
-    return sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
+        except sqlite3.DatabaseError:
+            # Never delete a WAL file: it can contain committed user balances.
+            logger.exception('Database unavailable; preserve files for recovery')
+            raise
+    raise RuntimeError('Database unavailable')
 
 
 @app.teardown_request
@@ -3449,15 +3439,8 @@ def _close_request_db(exc=None):
         pass
 
 def _nuke_db():
-    """Полностью удаляет все файлы БД (вызывать под _db_lock!)"""
-    for ext in ['', '-wal', '-shm', '-journal']:
-        p = DB_PATH + ext
-        try:
-            if os.path.exists(p):
-                os.remove(p)
-                logger.info(f"🗑️ Удалён: {p}")
-        except Exception as e:
-            logger.error(f"Не удалось удалить {p}: {e}")
+    raise RuntimeError('Database recovery required. Original database preserved; restore a verified backup.')
+
 
 def _check_disk_space():
     """Проверяет свободное место на диске"""
@@ -6510,6 +6493,7 @@ def api_market_buy():
 
         conn = get_db_connection()
         cursor = conn.cursor()
+        if not USE_POSTGRES: conn.execute('BEGIN IMMEDIATE')
 
         # ── Пользователь + баланс + бан ──
         cursor.execute('SELECT balance_stars, is_banned FROM users WHERE id = ?', (user_id_int,))
@@ -10593,6 +10577,7 @@ def activate_promo_for_case():
 
         conn = get_db_connection()
         cursor = conn.cursor()
+        if not USE_POSTGRES: conn.execute('BEGIN IMMEDIATE')
 
         # Проверяем промокод в таблице promo_codes
         cursor.execute('''
@@ -10695,7 +10680,7 @@ def activate_promo_for_case():
         if expires_at:
             try:
                 expires_date = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
-                if datetime.now() > expires_date:
+                if datetime.now(expires_date.tzinfo) > expires_date:
                     conn.close()
                     return jsonify({'success': False, 'error': 'Срок действия промокода истек'})
             except:
@@ -10723,7 +10708,7 @@ def activate_promo_for_case():
             'tickets': reward_tickets  # For inventory.html compatibility
         }
         
-        if reward_type == 'stars' or reward_type == 'tickets':
+        if reward_type in ('stars', 'gram', 'tickets', 'stars+tickets'):
             # Стандартные награды
             if reward_stars > 0:
                 cursor.execute('UPDATE users SET balance_stars = balance_stars + ? WHERE id = ?', (reward_stars, user_id))
@@ -10815,7 +10800,7 @@ def activate_promo_for_case():
                 gift_data.get('id', 0),
                 gift_name,
                 gift_image,
-                gift_data.get('price', 0)
+                gift_data.get('value', gift_data.get('price', 0))
             ))
             response_data['message'] = f'Промокод активирован! Подарок добавлен в инвентарь!'
             response_data['gift_name'] = gift_name
@@ -10853,7 +10838,7 @@ def activate_promo_for_case():
             
             gift_name = challenge_gift.get('name', 'Подарок')
             gift_image = challenge_gift.get('image', '/static/img/gift.png')
-            gift_value = int(float(challenge_gift.get('value', 0)) * 100)  # TON -> stars
+            gift_value = int(challenge_gift.get('value', 0))  # TON -> stars
             
             # Check if user already has active challenge
             cursor.execute('SELECT id FROM promo_gift_challenges WHERE user_id = ? AND is_completed = FALSE', (user_id,))
@@ -11391,6 +11376,7 @@ def sell_gift():
 
         conn = get_db_connection()
         cursor = conn.cursor()
+        if not USE_POSTGRES: conn.execute('BEGIN IMMEDIATE')
 
         cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ?', (gift_id, user_id))
         raw = cursor.fetchone()
@@ -11477,6 +11463,7 @@ def sell_all_gifts():
 
         conn = get_db_connection()
         cursor = conn.cursor()
+        if not USE_POSTGRES: conn.execute('BEGIN IMMEDIATE')
 
         # crate_id column always exists in DDL now
         _has_crate_col = True
@@ -11573,6 +11560,7 @@ def sell_gifts_batch():
 
         conn = get_db_connection()
         cursor = conn.cursor()
+        if not USE_POSTGRES: conn.execute('BEGIN IMMEDIATE')
 
         # Fetch selected gifts
         placeholders = ','.join('?' * len(item_ids))
@@ -12492,7 +12480,7 @@ def _portal_collection_filters(short_name):
                         raw = value
                         break
 
-    if not isinstance(raw, dict):
+    if not isinstance(raw, dict) or not any(key in raw for key in ('models','model','backdrops','backgrounds','backdrop','symbols','symbol')):
         return False, 'Portal filters returned an unexpected response'
 
     return True, {
@@ -12603,7 +12591,7 @@ def _portal_build_daily_snapshot(force=False):
 
     A non-forced call never updates more often than PORTAL_SYNC_INTERVAL_MINUTES.
     """
-    interval_seconds = max(3600, int(PORTAL_SYNC_INTERVAL_MINUTES) * 60)
+    interval_seconds = 600
     now = time.time()
 
     current = _portal_load_daily_snapshot()
@@ -12802,7 +12790,7 @@ def portal_daily_status():
 
         snapshot = _portal_load_daily_snapshot()
         updated_at = float((snapshot or {}).get('updated_at') or 0)
-        interval_seconds = max(3600, int(PORTAL_SYNC_INTERVAL_MINUTES) * 60)
+        interval_seconds = 600
         next_at = updated_at + interval_seconds if updated_at else 0
 
         return jsonify({
@@ -15758,6 +15746,7 @@ def use_promo_code():
 
         conn = get_db_connection()
         cursor = conn.cursor()
+        if not USE_POSTGRES: conn.execute('BEGIN IMMEDIATE')
 
         cursor.execute('''
             SELECT id, reward_stars, reward_tickets, max_uses, used_count, expires_at, is_active
@@ -15779,7 +15768,7 @@ def use_promo_code():
 
         if expires_at:
             expires_date = datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
-            if datetime.now() > expires_date:
+            if datetime.now(expires_date.tzinfo) > expires_date:
                 conn.close()
                 return jsonify({'success': False, 'error': 'Срок действия промокода истек'})
 
@@ -19463,7 +19452,7 @@ def admin_cases_management():
                 'promo': data.get('promo', cases[case_index].get('promo', False)),
                 'time': data.get('time', cases[case_index].get('time', '24H')),
                 'promo_codes': data.get('promo_codes', cases[case_index].get('promo_codes', [])),
-                'gifts': data.get('gifts', []),
+                'gifts': data.get('gifts', cases[case_index].get('gifts', [])),
                 'event_case': bool(data.get('event_case', cases[case_index].get('event_case', False)))
             }
 
@@ -20844,6 +20833,7 @@ def claim_reward():
         
         conn = get_db_connection()
         cursor = conn.cursor()
+        if not USE_POSTGRES: conn.execute('BEGIN IMMEDIATE')
         
         # Check if already claimed
         full_id = f"{reward_type}_{reward_id}"
@@ -24145,7 +24135,8 @@ def _lazy_init():
                 reset_crash_cache()
             except Exception as _re:
                 logger.warning(f'Reset in lazy_init failed: {_re}')
-            start_ultimate_crash_loop()
+            if os.getenv('ENABLE_GAME_LOOPS', '0') == '1':
+                start_ultimate_crash_loop()
         except Exception as e:
             logger.error(f"❌ Не удалось запустить Ultimate Crash loop: {e}")
         # Portal auto-sync prices
@@ -24158,7 +24149,7 @@ def _lazy_init():
             logger.error(f"❌ Не удалось запустить Portal price sync: {e}")
         # NFT Gift Monitor — allow disabling via environment (temporary mitigation)
         try:
-            if os.getenv('DISABLE_NFT_MONITOR', '').lower() not in ('1', 'true', 'yes', 'y'):
+            if os.getenv('DISABLE_NFT_MONITOR', '1').lower() not in ('1', 'true', 'yes', 'y'):
                 start_nft_monitor()
             else:
                 logger.info("NFT Monitor disabled via DISABLE_NFT_MONITOR env")
@@ -24211,7 +24202,8 @@ def ensure_initialized():
     Инициализация БД/фоновых циклов запускается отдельно, поэтому Games
     может отрисоваться сразу после открытия сайта.
     """
-    _ensure_init_started()
+    if os.getenv('APP_TESTING') != '1':
+        _ensure_init_started()
 
     # ── Server-side ban enforcement ──
     path = request.path
@@ -27684,6 +27676,9 @@ def api_admin_leaderboard_distribute():
         return jsonify({'success': False, 'error': str(e)})
 
 
+from admin_services import install as _install_admin_services
+_install_admin_services(globals())
+
 # ─── Render fix: не ждём первый HTTP-запрос, чтобы поднять бота ───
 # Раньше _lazy_init() (регистрация вебхука + фоновые циклы) запускалась
 # только из @app.before_request, то есть только после ПЕРВОГО визита
@@ -27696,7 +27691,8 @@ def api_admin_leaderboard_distribute():
 # app.run()), то есть в обоих случаях вебхук встанет сразу при старте
 # процесса, а не по факту первого запроса.
 try:
-    _ensure_init_started()
+    if os.getenv('APP_TESTING') != '1':
+        _ensure_init_started()
 except Exception as _e:
     logger.error(f"❌ Не удалось запустить раннюю инициализацию: {_e}")
 
