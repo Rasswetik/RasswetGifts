@@ -22664,15 +22664,37 @@ def _lazy_init():
 _init_thread = None
 
 def _ensure_init_started():
-    """Запускает тяжёлую инициализацию максимум один раз и не ждёт её."""
+    """Запускает тяжёлую инициализацию максимум один раз, НЕ блокируя HTTP-запросы.
+
+    Важно: _lazy_init() держит _init_lock во время тяжёлой инициализации.
+    Поэтому здесь нельзя делать обычный ``with _init_lock`` на каждом запросе:
+    иначе первый открытый сайт / Telegram webhook ждёт завершения всей
+    инициализации и Render может вернуть 502/timeout.
+    """
     global _init_thread
+
     if _app_initialized:
         return
-    with _init_lock:
-        if _app_initialized or (_init_thread is not None and _init_thread.is_alive()):
+
+    # Если инициализация уже идёт — сразу отдаём управление HTTP-запросу.
+    thread = _init_thread
+    if thread is not None and thread.is_alive():
+        return
+
+    # Никогда не ждём lock в request-потоке. Если его уже держит _lazy_init,
+    # значит инициализация запущена и нам достаточно просто вернуться.
+    if not _init_lock.acquire(blocking=False):
+        return
+    try:
+        if _app_initialized:
+            return
+        thread = _init_thread
+        if thread is not None and thread.is_alive():
             return
         _init_thread = threading.Thread(target=_lazy_init, name='app-init', daemon=True)
         _init_thread.start()
+    finally:
+        _init_lock.release()
 
 
 @app.before_request
@@ -22688,7 +22710,8 @@ def ensure_initialized():
     path = request.path
     # Skip ban check for: static, ban page, check-ban, admin routes, webhooks
     if (path.startswith('/static') or path in ('/ban', '/api/check-ban', '/favicon.ico')
-            or path.startswith('/api/admin/') or path.startswith('/webhook')):
+            or path.startswith('/api/admin/') or path.startswith('/webhook')
+            or path.startswith('/telegram/webhook')):
         return
     # Only enforce on API mutation endpoints
     if path.startswith('/api/'):
