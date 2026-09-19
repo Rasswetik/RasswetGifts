@@ -2565,10 +2565,16 @@ def _canonicalize_case_gifts(case_gifts, catalog=None):
 
         if gift:
             merged = dict(gift)
-            # Chance/type are case configuration, not catalog metadata.
+            # Chance/type/model selection are case configuration, not catalog metadata.
             merged['chance'] = entry.get('chance', 1)
             if entry.get('type'):
                 merged['type'] = entry.get('type')
+            for _case_key in (
+                'model_random', 'model_name', 'portal_model_name',
+                'portal_collection_name', 'model_count'
+            ):
+                if _case_key in entry:
+                    merged[_case_key] = entry.get(_case_key)
             result.append(merged)
         else:
             # Keep unresolved custom entries rather than silently deleting a
@@ -2585,6 +2591,30 @@ def _resolve_case_gift_payload(gifts, selected_gift_info):
     Searches local gifts, Fragment catalog (originals + models), and falls back to gift_info fields."""
     if not selected_gift_info or selected_gift_info.get('type') in ('ton_balance', 'gram_balance'):
         return None
+
+    # Case editor can store a collection with "random model".
+    # Resolve a concrete Portal model only when this reward actually wins.
+    if selected_gift_info.get('model_random'):
+        _random_slug = str(selected_gift_info.get('fragment_slug') or '').strip().lower()
+        if _random_slug:
+            try:
+                _collection, _unused = _portal_snapshot_find(_random_slug, None)
+                _models = (_collection or {}).get('models') or []
+                if _collection and _models:
+                    _picked_model = random.choice(_models)
+                    try:
+                        # Materialize the selected model into the canonical catalog
+                        # so inventory/withdrawal code receives a stable integer gift id.
+                        return _portal_upsert_catalog_item(_collection, _picked_model)
+                    except Exception:
+                        _payload = _portal_catalog_payload(_collection, _picked_model)
+                        _payload['id'] = -1
+                        return _payload
+            except Exception as _random_model_error:
+                logger.warning(
+                    'Random Portal model resolve failed for %s: %s',
+                    _random_slug, _random_model_error
+                )
 
     target_id = selected_gift_info.get('id')
     target_id_str = str(target_id) if target_id is not None else ''
@@ -2614,6 +2644,7 @@ def _resolve_case_gift_payload(gifts, selected_gift_info):
         'gift_key': selected_gift_info.get('gift_key'),
         'fragment_slug': selected_gift_info.get('fragment_slug'),
         'model_name': selected_gift_info.get('model_name'),
+        'model_random': bool(selected_gift_info.get('model_random')),
         'type': selected_gift_info.get('type', 'gift')
     }
 
@@ -27098,11 +27129,27 @@ def api_leaderboard():
                     'is_bot': False,
                     'is_placeholder': True
                 })
+            try:
+                witch_event = get_active_events().get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party']) or {}
+                fallback_halloween = bool(
+                    witch_event.get('enabled') and witch_event.get('change_leaderboard')
+                )
+            except Exception:
+                fallback_halloween = False
+
             conn.close()
             return jsonify({
                 'success': True,
                 'active': True,
-                'config': {'id': 0, 'period_start': None, 'period_end': None, 'rewards': {}, 'title': 'Top'},
+                'config': {
+                    'id': 0,
+                    'period_start': None,
+                    'period_end': None,
+                    'rewards': {},
+                    'title': 'Top',
+                    'halloween_mode': fallback_halloween,
+                    'event_id': 'witch_hat_party' if fallback_halloween else None
+                },
                 'leaderboard': fallback_users
             })
         
@@ -27150,7 +27197,7 @@ def api_leaderboard():
 
         try:
             witch_event = get_active_events().get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party']) or {}
-            config_data['halloween_mode'] = bool(witch_event.get('enabled') and witch_event.get('halloween_mode') and witch_event.get('change_leaderboard'))
+            config_data['halloween_mode'] = bool(witch_event.get('enabled') and witch_event.get('change_leaderboard'))
             config_data['event_id'] = 'witch_hat_party'
         except Exception:
             config_data['halloween_mode'] = False
