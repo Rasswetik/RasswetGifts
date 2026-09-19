@@ -23573,24 +23573,20 @@ def handle_business_message(bm):
 
 
 # --- Webhook route ---
-@app.route(f'/webhook/{TELEGRAM_BOT_TOKEN}', methods=['POST'])
-def telegram_webhook():
-    """Обработка входящих обновлений от Telegram"""
+def _process_telegram_update(update):
+    """Вся фактическая обработка апдейта — выполняется в фоновом потоке,
+    чтобы HTTP-ответ Telegram'у отдавался мгновенно (см. telegram_webhook)."""
     try:
-        update = request.get_json(force=True)
-        if not update:
-            return 'ok'
-
         # Callback query (InlineKeyboard)
         if 'callback_query' in update:
             handle_callback(update['callback_query'])
-            return 'ok'
+            return
 
         # Pre-checkout query — must answer within 10 seconds
         if 'pre_checkout_query' in update:
             pcq = update['pre_checkout_query']
             tg_api('answerPreCheckoutQuery', pre_checkout_query_id=pcq['id'], ok=True)
-            return 'ok'
+            return
 
         # === Business Bot: business_connection (connect/disconnect) ===
         if 'business_connection' in update:
@@ -23612,22 +23608,22 @@ def telegram_webhook():
                     pass
             else:
                 logger.info(f"Business Bot: disconnected by {bc_name} ({bc_user_id}), connection_id={bc_id}")
-            return 'ok'
+            return
 
         # === Business Bot: business_message (messages in business chats) ===
         if 'business_message' in update:
             bm = update['business_message']
             handle_business_message(bm)
-            return 'ok'
+            return
 
         msg = update.get('message')
         if not msg:
-            return 'ok'
+            return
 
         # Successful payment (Stars)
         if 'successful_payment' in msg:
             handle_successful_payment(msg)
-            return 'ok'
+            return
 
         text = msg.get('text', '')
 
@@ -23641,7 +23637,30 @@ def telegram_webhook():
             handle_admin(msg)
         else:
             handle_message(msg)
+    except Exception as e:
+        logger.error(f"Webhook processing error: {e}")
 
+
+@app.route(f'/webhook/{TELEGRAM_BOT_TOKEN}', methods=['POST'])
+def telegram_webhook():
+    """Принимает апдейт от Telegram и СРАЗУ отвечает 'ok'.
+
+    Раньше вся обработка (БД, рефералка, отправка ответа юзеру через
+    Telegram API) выполнялась прямо здесь, и Telegram ждал, пока это
+    всё отработает. Если что-то из этого тормозило (холодный старт
+    Render, медленная БД, задержка на стороне Telegram API) — Telegram
+    не дожидался ответа и писал `last_error_message: "Read timeout
+    expired"`, а апдейты копились в pending_update_count.
+
+    Теперь сама обработка уходит в фоновый поток, а HTTP-ответ
+    отдаётся немедленно — время ответа вебхука больше не зависит от
+    скорости бизнес-логики.
+    """
+    try:
+        update = request.get_json(force=True)
+        if not update:
+            return 'ok'
+        threading.Thread(target=_process_telegram_update, args=(update,), daemon=True).start()
         return 'ok'
     except Exception as e:
         logger.error(f"Webhook error: {e}")
@@ -23710,8 +23729,10 @@ def setup_telegram_webhook():
 # --- Ручное управление вебхуком через браузер (для диагностики без редеплоя) ---
 # Открой в браузере (замени ADMIN_ID на свой числовой Telegram id — он же в коде):
 #   https://<твой-сайт>.onrender.com/api/admin/webhook?admin_id=5257227756
-# GET  — просто показывает текущий статус вебхука (getWebhookInfo), ничего не меняет.
-# POST с тем же admin_id в теле — принудительно пересоздаёт вебхук (deleteWebhook + setWebhook).
+#   -> просто показывает текущий статус вебхука (getWebhookInfo), ничего не меняет.
+#   https://<твой-сайт>.onrender.com/api/admin/webhook?admin_id=5257227756&action=set
+#   -> принудительно пересоздаёт вебхук (deleteWebhook + setWebhook) — тоже просто ссылкой,
+#      без curl/Postman. То же самое можно сделать и POST-запросом с admin_id в теле.
 @app.route('/api/admin/webhook', methods=['GET', 'POST'])
 def api_admin_webhook():
     try:
@@ -23719,12 +23740,14 @@ def api_admin_webhook():
         if str(admin_id) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Not admin'}), 403
 
-        if request.method == 'POST':
+        should_set = request.method == 'POST' or request.args.get('action') == 'set'
+
+        if should_set:
             ok = setup_telegram_webhook()
             info = tg_api('getWebhookInfo')
             return jsonify({'success': ok, 'webhook_info': info.get('result', info)})
 
-        # GET — только посмотреть текущее состояние, без изменений
+        # Без action=set — только посмотреть текущее состояние, без изменений
         info = tg_api('getWebhookInfo')
         return jsonify({
             'success': info.get('ok', False),
