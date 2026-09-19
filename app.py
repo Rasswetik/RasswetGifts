@@ -22753,6 +22753,13 @@ def tg_get_file(file_id):
 def make_play_button():
     return {'inline_keyboard': [[{'text': '🎮 ИГРАТЬ', 'web_app': {'url': WEBSITE_URL}}]]}
 
+def make_start_menu():
+    return {'inline_keyboard': [
+        [{'text': '🎮 Играть', 'web_app': {'url': WEBSITE_URL}}],
+        [{'text': '📢 Канал', 'url': 'https://t.me/goshangifts'}],
+        [{'text': '🆘 Поддержка', 'url': 'https://t.me/Goshangifts_sup_bot'}]
+    ]}
+
 def make_admin_menu():
     return {'inline_keyboard': [
         [{'text': '📢 Рассылка', 'callback_data': 'admin_broadcast'},
@@ -22824,7 +22831,15 @@ def handle_start(msg):
                 except Exception as e:
                     logger.error(f"❌ Ошибка реферала через бота: {e}")
     
-    tg_send(chat_id, f"Привет, {first_name}! 🎮\n\nНажми кнопку чтобы начать:", reply_markup=make_play_button())
+    welcome_text = (
+        "🎉 Привет, на связи команда GOSHANGIFTS и теперь ты в нашей большой семье! 🎁\n\n"
+        "Открывай кейсы и выигрывай лучшие NFT гифты!\n\n"
+        "💰 Делись своей реферальной ссылкой с друзьями – и за каждого приведённого друга который сделает депозит ты получишь 10% от суммы их пополнений!\n"
+        "Заинтересовало?\n\n"
+        "🎁 Хочешь попробовать?\n"
+        "Жми «Открыть кейс» и забирай свой приз!"
+    )
+    tg_send(chat_id, welcome_text, reply_markup=make_start_menu())
 
 # --- /auth handler ---
 def handle_auth(msg):
