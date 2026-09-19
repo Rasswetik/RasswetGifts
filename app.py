@@ -7131,6 +7131,13 @@ def admin_page():
     # Для Telegram Mini App - проверяем через JS на клиенте
     # Серверная защита от прямого доступа
     logger.info(f"🛠️ Запрос страницы админ-панели от user_id: {user_id}")
+    # Two-file handoff: the delivered admin.html beside app.py is authoritative.
+    # Prefer it even when an older templates/admin.html is still present in the
+    # original project, otherwise Flask would silently serve the stale panel.
+    admin_file = os.path.join(BASE_PATH, 'admin.html')
+    if os.path.isfile(admin_file):
+        with open(admin_file, 'r', encoding='utf-8') as fh:
+            return render_template_string(fh.read(), admin_id=ADMIN_ID)
     return render_template('admin.html', admin_id=ADMIN_ID)
 
 @app.route('/shop-verification-QX2XNbyDv5.txt')
@@ -27676,7 +27683,1019 @@ def api_admin_leaderboard_distribute():
         return jsonify({'success': False, 'error': str(e)})
 
 
-from admin_services import install as _install_admin_services
+# ── Embedded admin services: this file is standalone; no admin_services.py required. ──
+"""Durable admin services for the supplied SQLite application.
+
+Installed once, before workers start. Legacy endpoint names remain compatible.
+Money is integer minor units; one GRAM is 100 units. Portals TON quotes use
+PORTAL_GRAM_PER_TON, explicitly configured by the operator (default 1).
+"""
+import copy
+import hashlib
+import hmac
+import io
+import json
+import math
+import os
+import re
+import secrets
+import sqlite3
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from functools import wraps
+from pathlib import Path
+from urllib.parse import parse_qsl, urlparse
+
+from flask import request, jsonify, session, g, send_from_directory
+import requests
+
+
+def minor(value):
+    try:
+        v = Decimal(str(value))
+        if not v.is_finite() or v < 0 or v > Decimal('20000000'):
+            raise ValueError()
+        return int((v * 100).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+    except (ValueError, InvalidOperation, TypeError):
+        raise ValueError('Укажите неотрицательную сумму GRAM, не более 20 000 000')
+
+
+def install(n):
+    app = n['app']
+    if n['USE_POSTGRES'] or os.getenv('DATABASE_URL'):
+        raise RuntimeError('This archive supports SQLite only. Set DB_DIR to a persistent volume and remove DATABASE_URL; no PostgreSQL adapter was supplied.')
+    app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Strict',
+                      SESSION_COOKIE_SECURE=os.getenv('COOKIE_SECURE') == '1',
+                      MAX_CONTENT_LENGTH=16 * 1024 * 1024)
+    mutation_lock = threading.RLock()
+    sync_lock = threading.Lock()
+    worker_lock = threading.Lock()
+    worker = None
+    defaults = [{'level': i, 'exp_required': (i-1)**2 * 1000,
+                 'reward_stars': 0, 'reward_tickets': 0} for i in range(1, 51)]
+    for key in ('ROCKET_NAMES', 'BG_NAMES', 'LEVEL_CRATES'):
+        n.setdefault(key, {})
+    n.setdefault('LEVEL_SYSTEM', defaults)
+
+    @contextmanager
+    def db(write=False):
+        con = sqlite3.connect(n['DB_PATH'], timeout=5)
+        con.row_factory = sqlite3.Row
+        con.execute('PRAGMA busy_timeout=5000')
+        try:
+            if write:
+                con.execute('BEGIN IMMEDIATE')
+            yield con
+            if write:
+                con.commit()
+        except Exception:
+            con.rollback()
+            raise
+        finally:
+            con.close()
+
+    # Create legacy schema first, then additive migrations; never remove data.
+    with db() as con:
+        con.execute('PRAGMA journal_mode=WAL')
+        if not n['_create_all_tables'](con):
+            raise RuntimeError('Could not initialize database')
+        con.commit()
+    with db(True) as con:
+        con.execute('CREATE TABLE IF NOT EXISTS app_documents (key TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at REAL NOT NULL)')
+        con.execute('CREATE TABLE IF NOT EXISTS admin_audit (id INTEGER PRIMARY KEY, actor TEXT, action TEXT, target TEXT, created_at REAL)')
+        con.execute('CREATE TABLE IF NOT EXISTS level_grants (user_id INTEGER, level INTEGER, PRIMARY KEY(user_id,level))')
+        cols = {x[1] for x in con.execute('PRAGMA table_info(inventory)')}
+        for col, kind in [('model_name','TEXT'), ('fragment_slug','TEXT'), ('gift_key','TEXT'), ('animation','TEXT')]:
+            if col not in cols:
+                con.execute(f'ALTER TABLE inventory ADD COLUMN {col} {kind}')
+        for name, table, columns in [('idx_inventory_user','inventory','user_id,is_withdrawing'),
+                                     ('idx_withdraw_status','withdrawals','status,created_at'),
+                                     ('idx_history_user','user_history','user_id,created_at')]:
+            con.execute(f'CREATE INDEX IF NOT EXISTS {name} ON {table}({columns})')
+        if not con.execute('SELECT 1 FROM levels LIMIT 1').fetchone():
+            con.executemany('INSERT INTO levels(level,exp_required,reward_stars,reward_tickets) VALUES (:level,:exp_required,:reward_stars,:reward_tickets)', defaults)
+    n['_db_ready'] = True
+    n['safe_init_db'] = lambda *args, **kwargs: True
+
+    def audit(con, action, target):
+        con.execute('INSERT INTO admin_audit(actor,action,target,created_at) VALUES (?,?,?,?)',
+                    (str(n['ADMIN_ID']), action, str(target), time.time()))
+
+    def getdoc(key, default=None, con=None):
+        if con is None:
+            with db() as conn:
+                return getdoc(key, default, conn)
+        row = con.execute('SELECT payload FROM app_documents WHERE key=?', (key,)).fetchone()
+        return json.loads(row[0]) if row else copy.deepcopy(default)
+
+    def putdoc(key, payload, con=None):
+        if con is None:
+            with db(True) as conn:
+                return putdoc(key, payload, conn)
+        con.execute('INSERT INTO app_documents VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at',
+                    (key, json.dumps(payload, ensure_ascii=False, allow_nan=False), time.time()))
+        return True
+
+    def bootstrap(key, paths, default, wrapper=None):
+        if getdoc(key) is not None:
+            return
+        value = copy.deepcopy(default)
+        # Existing DB is authoritative; import legacy JSON only on first migration.
+        with db() as con:
+            row = con.execute('SELECT payload FROM event_configs WHERE id=?', (key,)).fetchone()
+        if row:
+            value = json.loads(row[0])
+        else:
+            for path in paths:
+                if Path(path).is_file():
+                    raw = json.loads(Path(path).read_text(encoding='utf-8'))
+                    value = raw.get(wrapper, raw) if wrapper and isinstance(raw, dict) else raw
+                    break
+        putdoc(key, value)
+
+    root = Path(n['PERSISTENT_DATA_DIR'])
+    bootstrap('gifts', [n['GIFTS_PERSISTENT_FILE'],root/'gifts.json',Path(n['BASE_PATH'])/'data/gifts.json'], [], 'gifts')
+    bootstrap('cases_catalog',[root/'cases.json'], [], 'cases')
+    bootstrap('seasonal_case',[root/'seasonal_case.json'],n['SEASONAL_CASE_DEFAULT'],'case')
+    bootstrap('case_sections',[root/'case_sections.json'],[],'sections')
+    bootstrap('mode_gift_pools',[n['MODE_GIFT_POOLS_FILE']],{})
+    bootstrap('mode_loot_settings',[n['MODE_LOOT_SETTINGS_FILE']],{})
+    bootstrap('portal_snapshot',[n['PORTAL_DAILY_SNAPSHOT_FILE']],{})
+    # Read legacy events exactly once; no remote calls in read endpoints.
+    legacy = n['load_events']()
+    bootstrap('events',[],legacy)
+    for name, key in [('gifts','gifts'),('cases','cases_catalog'),('seasonal_case','seasonal_case'),
+                      ('case_sections','case_sections'),('events','events')]:
+        n['load_'+name] = lambda k=key: getdoc(k, [] if k in ('gifts','cases_catalog','case_sections') else {})
+        n['save_'+name] = lambda value, k=key: putdoc(k, value)
+    n['_mode_gift_pools_load'] = lambda: getdoc('mode_gift_pools',{})
+    n['_mode_gift_pools_save'] = lambda value: putdoc('mode_gift_pools',value)
+    n['_mode_loot_settings_load'] = lambda: getdoc('mode_loot_settings',{})
+    n['_mode_loot_settings_save'] = lambda value: putdoc('mode_loot_settings',value)
+    n['_portal_load_daily_snapshot'] = lambda: getdoc('portal_snapshot',{}) or None
+    n['_portal_save_daily_snapshot'] = lambda value: putdoc('portal_snapshot',value)
+    n['load_gifts_cached'] = lambda: getdoc('gifts',[])
+    n['_sync_event_cases'] = lambda ev: False  # Explicit section membership must survive removals.
+
+    def active_events():
+        events = getdoc('events',{})
+        for ev in events.values():
+            if ev.get('ends_at') and timestamp(ev['ends_at']) <= time.time():
+                ev['enabled'] = False
+        return events
+    n['get_active_events'] = active_events
+
+    def timestamp(value):
+        dt = datetime.fromisoformat(str(value).replace('Z','+00:00'))
+        return (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).timestamp()
+
+    def reload_levels():
+        with db() as con:
+            n['LEVEL_SYSTEM'] = [dict(row) for row in con.execute('SELECT * FROM levels ORDER BY level')]
+    n['_sync_levels_from_db'] = reload_levels
+    reload_levels()
+
+    def reconcile_level(con, uid, delta=0):
+        row = con.execute('SELECT experience,current_level FROM users WHERE id=?',(uid,)).fetchone()
+        if row is None:
+            raise ValueError('Пользователь не найден')
+        xp, old = int(row[0] or 0) + max(0,int(delta)), int(row[1] or 1)
+        levels = [dict(r) for r in con.execute('SELECT * FROM levels ORDER BY level')]
+        reached = [x for x in levels if xp >= x['exp_required']]
+        level = reached[-1]['level'] if reached else levels[0]['level']
+        con.execute('UPDATE users SET experience=?,current_level=? WHERE id=?',(xp,level,uid))
+        return xp,old,level,levels
+
+    def add_xp(uid, delta, reason=''):
+        with db(True) as con:
+            xp,old,new,levels = reconcile_level(con, uid,delta)
+        return {'success':True,'old_level':old,'new_level':new,'total_exp':xp,'exp_gained':max(0,int(delta)),
+                'level_up_events':[{'old_level':old,'new_level':new}] if new>old else [],
+                'level_up_info':{'old_level':old,'new_level':new} if new>old else None}
+
+    def level_info(uid):
+        with db(True) as con:
+            xp,old,new,levels = reconcile_level(con,uid)
+        current = next(x for x in levels if x['level']==new)
+        nxt = next((x for x in levels if x['level']>new),None)
+        return {'current_level':new,'experience':xp,'current_level_info':current,'next_level_info':nxt,
+                'exp_to_next_level':max(0,nxt['exp_required']-xp) if nxt else 0,
+                'progress_percentage':min(100,max(0,(xp-current['exp_required'])*100/max(1,nxt['exp_required']-current['exp_required']))) if nxt else 100}
+    n['add_experience'],n['get_user_level_info'] = add_xp,level_info
+
+    # Signed Telegram identity or a server-side admin session. An admin_id is not authentication.
+    def identity(raw):
+        try:
+            fields = dict(parse_qsl(str(raw or '').removeprefix('tma '),keep_blank_values=True))
+            supplied = fields.pop('hash','')
+            bot = n['TELEGRAM_BOT_TOKEN']
+            if not bot or not supplied or abs(time.time()-int(fields.get('auth_date',0))) > 86400:
+                return None
+            secret = hmac.new(b'WebAppData',bot.encode(),hashlib.sha256).digest()
+            check = '\n'.join(f'{k}={fields[k]}' for k in sorted(fields))
+            digest = hmac.new(secret,check.encode(),hashlib.sha256).hexdigest()
+            return json.loads(fields['user']) if hmac.compare_digest(digest,supplied) else None
+        except (ValueError,KeyError,TypeError):
+            return None
+
+    def guard():
+        path = request.path
+        data = request.get_json(silent=True) or {}
+        if not isinstance(data,dict):
+            return jsonify(success=False,error='Ожидается JSON объект'),400
+        admin_route = path.startswith(('/api/admin/','/api/portal/','/api/fragment/','/api/mrkt/','/api/getgems/','/api/marketplaces/'))
+        if path == '/api/admin/session':
+            return
+        if admin_route:
+            token = request.headers.get('X-Admin-Token','')
+            expected = os.getenv('ADMIN_ACCESS_TOKEN','')
+            user = identity(request.headers.get('X-Telegram-Init-Data','') or data.get('initData'))
+            authorized = (session.get('admin_id') == n['ADMIN_ID'] or
+                          bool(expected and hmac.compare_digest(token,expected)) or
+                          bool(user and str(user.get('id'))==str(n['ADMIN_ID'])))
+            if not authorized:
+                return jsonify(success=False,error='Требуется вход администратора'),401
+            if request.method not in ('GET','HEAD','OPTIONS') and session.get('admin_id') and not token and not user:
+                if not hmac.compare_digest(request.headers.get('X-CSRF-Token',''),session.get('csrf','!')):
+                    return jsonify(success=False,error='Обновите страницу: CSRF'),403
+        elif path.startswith('/api/'):
+            uid = data.get('user_id') or request.args.get('user_id') or (request.view_args or {}).get('user_id')
+            if uid is not None:
+                user = identity(request.headers.get('X-Telegram-Init-Data','') or data.get('initData'))
+                if not user or str(user.get('id'))!=str(uid):
+                    return jsonify(success=False,error='Требуется подписанная Telegram авторизация'),401
+                with db() as con:
+                    banned = con.execute('SELECT is_banned,ban_until FROM users WHERE id=?',(uid,)).fetchone()
+                if banned and banned[0] and (not banned[1] or timestamp(banned[1]) > time.time()):
+                    return jsonify(success=False,error='banned'),403
+
+    # Run auth before original initialization and handlers.
+    app.before_request_funcs.setdefault(None,[]).insert(0,guard)
+
+    @app.route('/api/admin/session',methods=['GET','POST','DELETE'])
+    def admin_session():
+        if request.method=='DELETE':
+            session.clear()
+            return jsonify(success=True)
+        if request.method=='POST':
+            data=request.get_json(silent=True) or {}
+            user=identity(data.get('initData'))
+            token=str(data.get('token') or '')
+            expected=os.getenv('ADMIN_ACCESS_TOKEN','')
+            if not ((expected and hmac.compare_digest(token,expected)) or (user and str(user.get('id'))==str(n['ADMIN_ID']))):
+                return jsonify(success=False,error='Неверный ключ или Telegram авторизация'),401
+            session.clear(); session['admin_id']=n['ADMIN_ID']; session['csrf']=secrets.token_hex(24)
+        return jsonify(success=session.get('admin_id')==n['ADMIN_ID'],csrf=session.get('csrf',''))
+
+    @app.teardown_request
+    def close_owned(_error):
+        for conn in getattr(g,'_owned_connections',[]):
+            try: conn.close()
+            except sqlite3.Error: pass
+
+    def replace(name, fn):
+        n[name]=fn
+        if name in app.view_functions:
+            app.view_functions[name]=fn
+
+    def api_errors(fn):
+        @wraps(fn)
+        def run(*a,**kw):
+            try:
+                return fn(*a,**kw)
+            except (ValueError,KeyError,TypeError,InvalidOperation) as e:
+                return jsonify(success=False,error=str(e)),400
+            except sqlite3.IntegrityError:
+                return jsonify(success=False,error='Запись уже существует или операция уже выполнена'),409
+            except sqlite3.OperationalError:
+                n['logger'].exception('Database operation failed')
+                return jsonify(success=False,error='База данных занята; повторите запрос'),503
+        return run
+
+    # Serialize old read-modify-write admin handlers with new sync operations in the single worker.
+    for rule in app.url_map.iter_rules():
+        if rule.rule.startswith('/api/admin/') and set(rule.methods)&{'POST','PUT','DELETE'}:
+            original=app.view_functions[rule.endpoint]
+            @wraps(original)
+            def locked(*a,_fn=original,**kw):
+                with mutation_lock:
+                    return _fn(*a,**kw)
+            app.view_functions[rule.endpoint]=locked
+
+    quote_rate=Decimal(os.getenv('PORTAL_GRAM_PER_TON','1'))
+    if not quote_rate.is_finite() or quote_rate<=0:
+        raise ValueError('PORTAL_GRAM_PER_TON must be positive')
+
+    def gift_payload(coll,model=None):
+        model=model or {}
+        slug=str(coll['short_name']).lower()
+        model_name=model.get('name')
+        price=model.get('floor_price') if model_name else coll.get('floor_price')
+        price=float(price or 0)
+        valid=math.isfinite(price) and price>0
+        name=coll.get('name') or slug
+        key='portal:'+slug+':'+str(model_name or '').strip().casefold()
+        image=model.get('image') or model.get('photo_url') if model_name else (coll.get('photo_url') or n['_portal_collection_image_url'](slug))
+        return {'gift_key':key,'name':name+((' — '+model_name) if model_name else ''),
+                'type':'item','fragment_slug':slug,'portal_collection_name':name,
+                'model_name':model_name,'portal_model_name':model_name,'portal_source':True,'source':'portal',
+                'image':image or '/static/img/gift.png','animation':model.get('animation') or '',
+                'value':minor(Decimal(str(price))*quote_rate) if valid else 0,
+                'portal_price_ton':price if valid else None,'price_gram':float(Decimal(str(price))*quote_rate) if valid else None,
+                'price_available':valid,'active':valid,'portal_updated_at':coll.get('updated_at'),
+                'image_status':'available' if image else 'missing'}
+    n['_portal_catalog_payload']=gift_payload
+
+    def apply_snapshot(snapshot):
+        with mutation_lock,db(True) as con:
+            old=getdoc('gifts',[],con)
+            by_key={}
+            max_id=max([int(x.get('id') or 0) for x in old if str(x.get('id') or '0').isdigit()] or [0])
+            used_ids=set()
+            for x in old:
+                key=x.get('gift_key') or n['_build_case_custom_gift_id'](x.get('name',''),fragment_slug=x.get('fragment_slug'),model_name=x.get('model_name') or x.get('portal_model_name'))
+                x['gift_key']=key
+                if not x.get('id') or x['id'] in used_ids:
+                    max_id+=1; x['id']=max_id
+                used_ids.add(x['id']); by_key[key]=x
+                if x.get('source')=='portal' or x.get('portal_source'):
+                    x['active']=False
+            changed=0
+            for coll in snapshot['collections']:
+                for model in [None]+coll.get('models',[]):
+                    fresh=gift_payload(coll,model)
+                    existing=by_key.get(fresh['gift_key'])
+                    if existing is None:
+                        max_id+=1; existing={'id':max_id}; old.append(existing);by_key[fresh['gift_key']]=existing
+                    existing.update(fresh);changed+=1
+            putdoc('gifts',old,con)
+            putdoc('portal_snapshot',snapshot,con)
+            # Refresh catalog-linked case/mode prices, retaining weights and manual event sale prices.
+            for key in ('cases_catalog','mode_gift_pools'):
+                doc=getdoc(key,[] if key=='cases_catalog' else {},con)
+                pools=[x.get('gifts',[]) for x in doc] if key=='cases_catalog' else doc.values()
+                for pool in pools:
+                    for item in pool:
+                        fresh=by_key.get(item.get('gift_key'))
+                        if fresh and fresh.get('portal_source'):
+                            for field in ('value','image','animation','price_available','portal_updated_at'):
+                                item[field]=fresh.get(field)
+                putdoc(key,doc,con)
+        n['gifts_cache']=None; n['gifts_cache_time']=None
+        return {'changed':changed,'total':len(old)}
+    n['_portal_apply_daily_snapshot_to_gifts']=apply_snapshot
+
+    def sync(force=False):
+        if not sync_lock.acquire(False):
+            return {'success':True,'running':True}
+        try:
+            previous=getdoc('portal_snapshot',{})
+            if not force and time.time()-previous.get('updated_at',0)<600:
+                return {'success':True,'cached':True}
+            if not n['_portal_get_token']():
+                raise ValueError('Добавьте действующий Portals initData в настройках')
+            n['_portal_daily_job_update'](running=True,started_at=time.time(),error='',current=0,total=0)
+            ok,collections=n['_portal_all_collections']()
+            if not ok or not collections:
+                raise ValueError('Portals: '+str(collections or 'пустой ответ; предыдущий каталог сохранён'))
+            n['_portal_daily_job_update'](total=len(collections))
+            errors=[];completed=0
+            old={x['short_name']:x for x in previous.get('collections',[])}
+            # Bounded parallelism avoids a slow collection blocking the HTTP server.
+            with ThreadPoolExecutor(max_workers=3) as pool:
+                futures={pool.submit(n['_portal_collection_filters'],x['short_name']):x for x in collections}
+                for future in as_completed(futures):
+                    coll=futures[future]; completed+=1
+                    try: ok,filters=future.result()
+                    except Exception as e: ok,filters=False,str(e)
+                    prior=old.get(coll['short_name'],{})
+                    if str(prior.get('photo_url','')).startswith('/static/gift-media/'):
+                        coll['photo_url']=prior['photo_url']
+                    coll['updated_at']=datetime.now(timezone.utc).isoformat()
+                    if ok:
+                        for key in ('models','backdrops','symbols'):
+                            coll[key]=filters.get(key,[])
+                        # Preserve known model artwork; never substitute collection art for a model.
+                        images={x['name']:x for x in prior.get('models',[])}
+                        for model in coll['models']:
+                            for field in ('image','photo_url','animation'):
+                                if field in images.get(model['name'],{}): model[field]=images[model['name']][field]
+                    else:
+                        errors.append({'collection':coll['short_name'],'error':str(filters)[:180]})
+                        coll['models']=copy.deepcopy(prior.get('models',[]))
+                        coll['models_stale']=True
+                    n['_portal_daily_job_update'](current=completed,collection=coll.get('name',''))
+            snapshot={'success':True,'updated_at':time.time(),'interval_minutes':10,'collections':collections,
+                      'total_collections':len(collections),'total_models':sum(len(x.get('models',[])) for x in collections),
+                      'filter_errors':errors,'partial':bool(errors),'currency':'GRAM','gram_per_ton':str(quote_rate)}
+            result=apply_snapshot(snapshot)
+            n['_portal_daily_job_update'](running=False,finished_at=time.time(),collections=len(collections),
+                models=snapshot['total_models'],error=(f'Не обновлены модели {len(errors)} коллекций' if errors else ''))
+            return {'success':True,**result,'partial':bool(errors)}
+        except Exception as e:
+            n['_portal_daily_job_update'](running=False,finished_at=time.time(),error=str(e)[:250])
+            return {'success':False,'error':str(e)}
+        finally:
+            sync_lock.release()
+
+    def start_sync(force=True):
+        nonlocal worker
+        with worker_lock:
+            if (worker and worker.is_alive()) or sync_lock.locked(): return False
+            worker=threading.Thread(target=sync,kwargs={'force':force},name='portals-sync',daemon=True)
+            worker.start()
+        return True
+
+    def start_loop():
+        def loop():
+            while True:
+                job=n['_portal_daily_job_snapshot']()
+                retry_ok=not job.get('error') or time.time()-job.get('finished_at',0)>=60
+                if retry_ok and n['_portal_get_token'](): start_sync(False)
+                time.sleep(5)
+        threading.Thread(target=loop,name='portals-scheduler',daemon=True).start()
+    n['_portal_build_daily_snapshot']=sync
+    n['_portal_start_daily_sync']=start_sync
+    n['start_portal_price_sync_loop']=start_loop
+
+    def sync_status():
+        snapshot=getdoc('portal_snapshot',{}); updated=snapshot.get('updated_at',0)
+        return jsonify(success=True,job=n['_portal_daily_job_snapshot'](),updated_at=updated,
+            next_update_at=updated+600 if updated else 0,interval_minutes=10,
+            total_collections=snapshot.get('total_collections',0),total_models=snapshot.get('total_models',0),
+            stale=not updated or time.time()-updated>600,partial=snapshot.get('partial',False),
+            filter_errors=snapshot.get('filter_errors',[]),currency='GRAM')
+    replace('portal_daily_status',sync_status)
+
+    @app.route('/api/admin/catalog')
+    @api_errors
+    def catalog():
+        q=request.args.get('q','').casefold(); model=request.args.get('model','').casefold()
+        kind=request.args.get('kind','all'); source=request.args.get('source','all')
+        rows=[x for x in getdoc('gifts',[]) if x.get('active',True)]
+        rows=[x for x in rows if q in x.get('name','').casefold() and model in (x.get('model_name') or '').casefold()
+              and (kind=='all' or bool(x.get('model_name'))==(kind=='models'))
+              and (source=='all' or x.get('source')==source)]
+        offset=max(0,int(request.args.get('offset',0))); limit=min(100,max(1,int(request.args.get('limit',40))))
+        return jsonify(success=True,items=rows[offset:offset+limit],total=len(rows),offset=offset,currency='GRAM')
+
+    def find_gift(data):
+        gift=next((x for x in getdoc('gifts',[]) if str(x.get('id'))==str(data.get('gift_id'))),None)
+        if not gift and data.get('short_name'):
+            c,m=n['_portal_snapshot_find'](data['short_name'],data.get('model_name'))
+            if c and (not data.get('model_name') or m):
+                key=gift_payload(c,m)['gift_key']
+                gift=next((x for x in getdoc('gifts',[]) if x.get('gift_key')==key),None)
+        if not gift: raise ValueError('Подарок не найден в каталоге')
+        if not gift.get('active',True) or gift.get('value',0)<=0:
+            raise ValueError('Нет актуальной цены подарка')
+        if gift.get('portal_source'):
+            snapshot=getdoc('portal_snapshot',{})
+            coll=next((x for x in snapshot.get('collections',[]) if x['short_name']==gift.get('fragment_slug')), {})
+            if not snapshot or time.time()-snapshot.get('updated_at',0)>1200 or (gift.get('model_name') and coll.get('models_stale')):
+                raise ValueError('Цена устарела. Обновите Portals перед добавлением')
+        return copy.deepcopy(gift)
+
+    def inventory_insert(con,uid,gift):
+        if not con.execute('SELECT 1 FROM users WHERE id=?',(uid,)).fetchone(): raise ValueError('Пользователь не найден')
+        cur=con.execute('INSERT INTO inventory(user_id,gift_id,gift_name,gift_image,gift_value,model_name,fragment_slug,gift_key,animation,nft_number) VALUES (?,?,?,?,?,?,?,?,?,?)',
+            (uid,gift.get('id'),gift['name'],gift.get('image',''),int(gift['value']),gift.get('model_name'),gift.get('fragment_slug'),gift.get('gift_key'),gift.get('animation'),gift.get('number')))
+        return cur.lastrowid
+
+    @app.route('/api/admin/catalog/action',methods=['POST'])
+    @api_errors
+    def catalog_action():
+        data=request.get_json(); action=data.get('action')
+        with mutation_lock:
+            gift=find_gift(data)
+            if action=='case':
+                chance=float(data.get('chance',1))
+                if not math.isfinite(chance) or not 0<chance<=100: raise ValueError('Вес от 0 до 100')
+                n['_portal_add_item_to_case'](data['case_id'],gift,chance)
+            elif action=='mode': n['_portal_add_item_to_mode'](data['mode_id'],gift)
+            elif action=='inventory':
+                with db(True) as con:
+                    iid=inventory_insert(con,int(data['user_id']),gift);audit(con,'inventory_add',iid)
+            elif action=='event':
+                with db(True) as con:
+                    events=getdoc('events',{},con); ev=events[data.get('event_id','witch_hat_party')]
+                    sid=data.get('section_id','market')
+                    sec=next((s for s in ev['sections'] if s['id']==sid and s['type']=='market'),None)
+                    if sec is None: raise ValueError('Раздел маркета не найден')
+                    price=minor(data['price_gram']) if data.get('price_gram') not in (None,'') else gift['value']
+                    if price<=0: raise ValueError('Цена должна быть положительной')
+                    gift.update(gift_url='catalog:'+secrets.token_hex(12),price_gram=price/100,price_stars=price,stock=1)
+                    sec.setdefault('items',[]).append(gift); putdoc('events',events,con);audit(con,'event_add',gift['gift_url'])
+            elif action!='catalog': raise ValueError('Неизвестное действие')
+        return jsonify(success=True,gift=gift,message='Подарок добавлен')
+    replace('admin_portal_item_action',catalog_action)
+
+    @app.route('/api/admin/catalog/manual',methods=['POST'])
+    @api_errors
+    def manual_gift():
+        data=request.get_json(); name=str(data.get('name','')).strip()
+        if not name or len(name)>160: raise ValueError('Введите название до 160 символов')
+        value=minor(data.get('price_gram'))
+        if not value: raise ValueError('Цена должна быть положительной')
+        image=str(data.get('image') or '/static/img/gift.png')
+        if not (image.startswith('/static/') or image.startswith('https://')): raise ValueError('Нужен HTTPS адрес PNG или /static/...')
+        with mutation_lock,db(True) as con:
+            gifts=getdoc('gifts',[],con); gid=max([int(x.get('id') or 0) for x in gifts] or [0])+1
+            gift={'id':gid,'gift_key':'manual:'+secrets.token_hex(12),'name':name,'image':image,
+                  'model_name':str(data.get('model_name') or '').strip() or None,'value':value,'price_gram':value/100,
+                  'source':'manual','active':True,'price_available':True,'type':'item'}
+            gifts.append(gift);putdoc('gifts',gifts,con);audit(con,'catalog_manual',gid)
+        return jsonify(success=True,gift=gift)
+
+    @app.route('/api/admin/catalog/fragment',methods=['POST'])
+    @api_errors
+    def import_fragment():
+        data=request.get_json(); slug,number=n['_parse_event_gift_url'](data.get('url'))
+        value=minor(data.get('price_gram'))
+        if not value: raise ValueError('Укажите цену продажи в GRAM')
+        # This is a specific collectible import, not a fabricated Fragment market quote.
+        url=f'https://nft.fragment.com/gift/{slug}-{number}.json'
+        try:
+            resp=requests.get(url,timeout=(3,8));resp.raise_for_status();meta=resp.json()
+        except Exception:
+            return jsonify(success=False,error='Fragment не вернул метаданные. Подарок не добавлен'),502
+        model=next((x.get('value') for x in meta.get('attributes',[]) if str(x.get('trait_type') or x.get('type')).lower()=='model'),None)
+        with mutation_lock,db(True) as con:
+            gifts=getdoc('gifts',[],con); key=f'fragment:{slug}:{number}'
+            gift=next((x for x in gifts if x.get('gift_key')==key),None)
+            if gift is None:
+                gift={'id':max([int(x.get('id') or 0) for x in gifts] or [0])+1};gifts.append(gift)
+            gift.update(gift_key=key,name=meta.get('name') or f'{slug} #{number}',fragment_slug=slug,number=number,
+                image=meta.get('image') or f'https://nft.fragment.com/gift/{slug}-{number}.webp',
+                animation=meta.get('animation_url') or '',model_name=model,value=value,price_gram=value/100,
+                source='fragment',price_source='manual',active=True,price_available=True,type='item')
+            putdoc('gifts',gifts,con);audit(con,'fragment_import',key)
+        return jsonify(success=True,gift=gift)
+
+    def market_read(event_id='witch_hat_party'):
+        ev=active_events().get(event_id,{})
+        items=[]
+        if ev.get('enabled'):
+            for sec in ev.get('sections',[]):
+                if sec.get('type')!='market' or sec.get('visible') is False: continue
+                if sec.get('unlock_at') and timestamp(sec['unlock_at'])>time.time(): continue
+                for x in sec.get('items',[]):
+                    row=dict(x);row['url']=row.get('gift_url') or row.get('url');items.append(row)
+        return jsonify(success=True,items=items,sections=ev.get('sections',[]))
+    replace('api_witch_hat_market',market_read)
+    replace('api_ghost_road_market',lambda:market_read('ghost_road'))
+
+    @api_errors
+    def event_buy():
+        data=request.get_json();uid=int(data['user_id']); url=data.get('gift_url')
+        with mutation_lock,db(True) as con:
+            events=getdoc('events',{},con);ev=events['witch_hat_party']
+            if not ev.get('enabled') or (ev.get('ends_at') and timestamp(ev['ends_at'])<=time.time()): raise ValueError('Ивент завершён')
+            sec=None;gift=None
+            for section in ev['sections']:
+                if section.get('type')=='market':
+                    for item in section.get('items',[]):
+                        if item.get('gift_url')==url: sec,gift=section,item
+            if gift is None: return jsonify(success=False,error='Подарок уже продан'),409
+            if sec.get('visible') is False or (sec.get('unlock_at') and timestamp(sec['unlock_at'])>time.time()): raise ValueError('Раздел ещё закрыт')
+            value=minor(gift['price_gram'])
+            if value<=0: raise ValueError('Некорректная цена')
+            changed=con.execute('UPDATE users SET balance_stars=balance_stars-? WHERE id=? AND balance_stars>=?',(value,uid,value)).rowcount
+            if not changed: raise ValueError('Недостаточно GRAM')
+            item=dict(gift);item['value']=value
+            iid=inventory_insert(con,uid,item)
+            sec['items'].remove(gift);putdoc('events',events,con)
+            reconcile_level(con,uid,value)
+            con.execute("INSERT INTO user_history(user_id,operation_type,amount,description) VALUES (?,'event_market_buy',?,?)",(uid,-value,gift['name']))
+            balance=con.execute('SELECT balance_stars FROM users WHERE id=?',(uid,)).fetchone()[0]
+        n['_user_balance_cache'].pop(uid,None);n['_user_cache'].pop(uid,None)
+        return jsonify(success=True,inventory_id=iid,new_balance=balance,price_gram=value/100,gift_name=gift['name'],gift_image=gift.get('image'))
+    replace('api_witch_hat_market_buy',event_buy)
+
+    @api_errors
+    def request_withdrawal():
+        data=request.get_json();uid=int(data['user_id']);iid=int(data['gift_id'])
+        with db(True) as con:
+            item=con.execute('SELECT * FROM inventory WHERE id=? AND user_id=?',(iid,uid)).fetchone()
+            if not item: raise ValueError('Подарок не найден')
+            if item['is_withdrawing']:
+                row=con.execute("SELECT id FROM withdrawals WHERE inventory_id=? AND status IN ('pending','processing') ORDER BY id DESC LIMIT 1",(iid,)).fetchone()
+                if row: return jsonify(success=True,withdrawal_id=row[0],already_requested=True)
+                raise ValueError('Подарок заблокирован')
+            if item['crate_id']: raise ValueError('Сначала откройте ящик')
+            if con.execute('SELECT 1 FROM promo_gift_challenges WHERE inventory_id=? AND is_completed=0',(iid,)).fetchone():
+                raise ValueError('Завершите отыгрыш подарка')
+            user=con.execute('SELECT first_name,username,photo_url FROM users WHERE id=?',(uid,)).fetchone()
+            if not user: raise ValueError('Пользователь не найден')
+            con.execute('UPDATE inventory SET is_withdrawing=1 WHERE id=?',(iid,))
+            cur=con.execute("INSERT INTO withdrawals(user_id,inventory_id,gift_name,gift_image,gift_value,telegram_username,user_photo_url,user_first_name,status) VALUES (?,?,?,?,?,?,?,?,'pending')",
+                (uid,iid,item['gift_name'],item['gift_image'] or '',item['gift_value'],user['username'],user['photo_url'],user['first_name']))
+            wid=cur.lastrowid
+            con.execute("INSERT INTO user_history(user_id,operation_type,amount,description) VALUES (?,'withdraw_request',0,?)",(uid,f'Заявка #{wid}'))
+        return jsonify(success=True,withdrawal_id=wid,message='Заявка на ручной вывод создана')
+    replace('withdraw_gift',request_withdrawal)
+
+    @api_errors
+    def withdrawal_status():
+        data=request.get_json();wid=int(data['withdrawal_id']);status=data['status']
+        transitions={'pending':{'processing','rejected'},'processing':{'approved','rejected','error'}}
+        with db(True) as con:
+            row=con.execute('SELECT * FROM withdrawals WHERE id=?',(wid,)).fetchone()
+            if not row: raise ValueError('Заявка не найдена')
+            if row['status']==status: return jsonify(success=True,unchanged=True)
+            if status not in transitions.get(row['status'],set()):
+                return jsonify(success=False,error='Недопустимый переход. Сначала возьмите заявку в обработку'),409
+            notes=str(data.get('admin_notes') or '').strip()
+            if status=='approved' and not notes: raise ValueError('Укажите подтверждение перевода: ссылку/ID операции или примечание')
+            con.execute('UPDATE withdrawals SET status=?,admin_notes=?,processed_at=CURRENT_TIMESTAMP WHERE id=?',(status,notes,wid))
+            if status=='approved':
+                if not con.execute('DELETE FROM inventory WHERE id=? AND user_id=? AND is_withdrawing=1',(row['inventory_id'],row['user_id'])).rowcount:
+                    raise ValueError('Зарезервированный подарок не найден')
+            elif status in ('rejected','error'):
+                con.execute('UPDATE inventory SET is_withdrawing=0 WHERE id=? AND user_id=?',(row['inventory_id'],row['user_id']))
+            audit(con,'withdraw_'+status,wid)
+            con.execute("INSERT INTO user_history(user_id,operation_type,amount,description) VALUES (?,?,0,?)",(row['user_id'],'withdraw_'+status,f'Заявка #{wid}'))
+        return jsonify(success=True,message='Статус обновлён')
+    replace('update_withdrawal_status',withdrawal_status)
+
+    @api_errors
+    def inventory_add():
+        data=request.get_json()
+        if data.get('gift_id') or data.get('short_name'): gift=find_gift(data)
+        else:
+            value=int(data.get('gift_value',0));name=str(data.get('gift_name') or '').strip()
+            if not name or value<0: raise ValueError('Нужны название и неотрицательная стоимость')
+            gift={'name':name,'value':value,'image':str(data.get('gift_image') or '/static/img/gift.png')}
+        with db(True) as con:
+            iid=inventory_insert(con,int(data['user_id']),gift);audit(con,'inventory_add',iid)
+        return jsonify(success=True,id=iid,message='Предмет добавлен')
+    replace('admin_user_inventory_add',inventory_add)
+    replace('admin_add_inventory_item',inventory_add)
+
+    @api_errors
+    def inventory_edit(delete=False):
+        data=request.get_json();iid=int(data.get('item_id') or data.get('inventory_id'))
+        with db(True) as con:
+            item=con.execute('SELECT * FROM inventory WHERE id=?',(iid,)).fetchone()
+            if not item: raise ValueError('Предмет не найден')
+            if data.get('user_id') and str(item['user_id'])!=str(data['user_id']): raise ValueError('Предмет другого пользователя')
+            if item['is_withdrawing']: return jsonify(success=False,error='Предмет зарезервирован для вывода'),409
+            if delete: con.execute('DELETE FROM inventory WHERE id=?',(iid,))
+            else:
+                name=str(data.get('gift_name',item['gift_name'])).strip()
+                value=int(data.get('gift_value',item['gift_value']))
+                if not name or value<0: raise ValueError('Некорректное название или цена')
+                con.execute('UPDATE inventory SET gift_name=?,gift_image=?,gift_value=? WHERE id=?',
+                    (name,data.get('gift_image',item['gift_image']),value,iid))
+            audit(con,'inventory_delete' if delete else 'inventory_edit',iid)
+        return jsonify(success=True,message='Сохранено')
+    replace('admin_user_inventory_edit',inventory_edit)
+    replace('admin_user_inventory_delete',lambda:inventory_edit(True))
+    replace('admin_remove_inventory_item',lambda:inventory_edit(True))
+
+    @api_errors
+    def levels_save():
+        data=request.get_json();level=int(data['level']);xp=int(data.get('exp_required',0));reward=int(data.get('reward_stars',0))
+        if level<1 or xp<0 or reward<0 or (level==1 and xp!=0): raise ValueError('Уровень ≥1, XP ≥0; первый уровень — 0 XP')
+        with db(True) as con:
+            other=[dict(x) for x in con.execute('SELECT * FROM levels WHERE level!=? ORDER BY level',(level,))]
+            if any((x['level']<level and x['exp_required']>=xp) or (x['level']>level and x['exp_required']<=xp) for x in other):
+                raise ValueError('Пороги XP должны строго возрастать')
+            con.execute('INSERT INTO levels(level,exp_required,reward_stars,reward_tickets) VALUES (?,?,?,0) ON CONFLICT(level) DO UPDATE SET exp_required=excluded.exp_required,reward_stars=excluded.reward_stars,reward_tickets=0',(level,xp,reward))
+            con.execute("DELETE FROM level_rewards WHERE level=? AND description='admin_level_gram'",(level,))
+            if reward:
+                con.execute("INSERT INTO level_rewards(level,reward_type,reward_data,description) VALUES (?,'stars',?,'admin_level_gram')",(level,json.dumps({'amount':reward})))
+            audit(con,'level_save',level)
+        reload_levels()
+        return jsonify(success=True)
+    replace('api_admin_levels_save',levels_save)
+
+    @api_errors
+    def levels_delete(level_num):
+        if level_num==1: raise ValueError('Первый уровень нельзя удалить')
+        with db(True) as con:
+            con.execute('DELETE FROM levels WHERE level=?',(level_num,));con.execute('DELETE FROM level_rewards WHERE level=?',(level_num,));audit(con,'level_delete',level_num)
+        reload_levels();return jsonify(success=True)
+    replace('api_admin_levels_delete',levels_delete)
+
+    # Both activation URLs use the same extended implementation and same UNIQUE constraint.
+    original_promo=n['activate_promo_for_case']
+    @api_errors
+    def activate_promo():
+        data=request.get_json();uid=int(data['user_id'])
+        with db() as con:
+            if not con.execute('SELECT 1 FROM users WHERE id=?',(uid,)).fetchone(): raise ValueError('Пользователь не найден')
+            row=con.execute('SELECT reward_type,reward_stars,reward_data,expires_at FROM promo_codes WHERE code=?',(str(data['promo_code']).strip().upper(),)).fetchone()
+        allowed={'stars','gram','tickets','stars+tickets','crash_vip','case_discount','rocket','background','inventory_gift','wager','gift_challenge','case_open'}
+        if row:
+            if (row['reward_type'] or 'stars') not in allowed: raise ValueError('Неизвестный тип награды')
+            if row['expires_at'] and timestamp(row['expires_at'])<=time.time(): raise ValueError('Срок действия промокода истёк')
+        response=original_promo()
+        res=response[0] if isinstance(response,tuple) else response
+        payload=res.get_json()
+        if payload.get('success'):
+            n['_user_balance_cache'].pop(uid,None);n['_user_cache'].pop(uid,None)
+            payload['currency']='GRAM';payload['reward_gram']=int(payload.get('reward_stars',0))/100
+            if payload.get('reward_type') in ('stars','gram','stars+tickets'):
+                payload['message']=f"Промокод активирован: {payload['reward_gram']:.2f} GRAM"
+            return jsonify(payload)
+        return response
+    replace('activate_promo_for_case',activate_promo)
+    replace('use_promo_code',activate_promo)
+
+    # Current legacy market API reads the same catalog; old/stale rows stay in history only.
+    def runtime_catalog(force_refresh=False):
+        return [x for x in getdoc('gifts',[]) if x.get('active',True) and x.get('value',0)>0]
+    n['build_full_catalog_with_models']=runtime_catalog
+    n['build_fragment_first_gifts_catalog']=runtime_catalog
+
+    # PNG conversion only for known provider artwork; no arbitrary URL proxy or redirects.
+    media_dir=root/'gift_media';media_dir.mkdir(exist_ok=True)
+    media_hosts={'nft.fragment.com','fragment.com','cdn.portals-market.com','portals-market.com','portal-market.com'}
+    def cache_png(url):
+        parsed=urlparse(str(url))
+        if parsed.scheme!='https' or parsed.hostname not in media_hosts or parsed.port not in (None,443):
+            raise ValueError('Источник изображения не поддерживается')
+        key=hashlib.sha256(url.encode()).hexdigest()+'.png';dest=media_dir/key
+        if not dest.exists():
+            response=requests.get(url,timeout=(3,8),stream=True,allow_redirects=False)
+            if response.status_code!=200: raise ValueError('Изображение недоступно')
+            raw=bytearray()
+            with response:
+                for chunk in response.iter_content(65536):
+                    raw.extend(chunk)
+                    if len(raw)>8*1024*1024: raise ValueError('Изображение слишком большое')
+            from PIL import Image
+            with Image.open(io.BytesIO(raw)) as img:
+                if img.width*img.height>16000000: raise ValueError('Слишком большое разрешение')
+                img.thumbnail((1024,1024))
+                tmp=dest.with_name(dest.name+'.'+secrets.token_hex(6)+'.tmp')
+                img.convert('RGBA').save(tmp,format='PNG');os.replace(tmp,dest)
+        return '/static/gift-media/'+key
+
+    @app.route('/static/gift-media/<filename>')
+    def gift_media(filename):
+        if not re.fullmatch(r'[a-f0-9]{64}\.png',filename): return '',404
+        return send_from_directory(media_dir,filename,max_age=86400)
+
+    @app.route('/api/admin/catalog/artwork',methods=['POST'])
+    @api_errors
+    def artwork():
+        data=request.get_json();gift=find_gift(data)
+        return jsonify(success=True,image=hydrate_artwork(gift))
+
+    def hydrate_artwork(gift):
+        image=gift.get('image')
+        if gift.get('source')=='portal' and gift.get('model_name') and image=='/static/img/gift.png':
+            coll,_=n['_portal_snapshot_find'](gift['fragment_slug'],gift['model_name'])
+            ok,result,_=n['_portal_request']('GET','/nfts/search',params={
+                'filter_by_collections':coll['name'],'filter_by_models':gift['model_name'],'sort_by':'price asc','limit':20},timeout=8)
+            if not ok: raise ValueError('Не удалось загрузить пример модели с Portals')
+            rows=n['_portal_extract_array'](result,('results','nfts','items','gifts'))
+            exemplar=next((x for x in rows if n['_portal_attr'](x,'model').casefold()==gift['model_name'].casefold()),None)
+            if not exemplar: raise ValueError('Нет доступного изображения этой модели')
+            image=exemplar.get('photo_url');gift['animation']=exemplar.get('animation_url') or ''
+        if str(image).startswith('/static/gift-media/'): return image
+        png=cache_png(image)
+        with mutation_lock,db(True) as con:
+            gifts=getdoc('gifts',[],con)
+            for row in gifts:
+                if row['id']==gift['id']: row.update(image=png,png=png,image_status='available',animation=gift.get('animation',''))
+            putdoc('gifts',gifts,con)
+            snapshot=getdoc('portal_snapshot',{},con)
+            for coll in snapshot.get('collections',[]):
+                if coll['short_name']==gift.get('fragment_slug'):
+                    if gift.get('model_name'):
+                        for model in coll.get('models',[]):
+                            if model['name']==gift['model_name']: model.update(image=png,animation=gift.get('animation',''))
+                    else: coll['photo_url']=png
+            putdoc('portal_snapshot',snapshot,con)
+        return png
+
+    @app.route('/api/admin/service-health')
+    def service_health():
+        start=time.perf_counter()
+        with db() as con: con.execute('SELECT 1').fetchone()
+        snap=getdoc('portal_snapshot',{})
+        return jsonify(success=True,db_ms=round((time.perf_counter()-start)*1000,2),
+            currency='GRAM',interval_seconds=600,portal_connected=bool(n['_portal_get_token']()),
+            catalog_updated_at=snap.get('updated_at'),catalog_partial=snap.get('partial',False))
+
+    # Exposed for focused transaction tests without network calls.
+    n['_admin_services']={'db':db,'getdoc':getdoc,'putdoc':putdoc,'sync':sync,'apply_snapshot':apply_snapshot,
+                          'minor':minor,'identity':identity,'level_info':level_info}
+
+    transport = threading.local()
+    def portal_request(method,path,token=None,json_body=None,params=None,timeout=10):
+        auth=n['_portal_normalize_auth_token'](token if token is not None else n['_portal_get_token']())
+        if not auth: return False,'Portals initData не задан',0
+        base=os.getenv('PORTAL_API_BASE','https://portals-market.com/api').rstrip('/')
+        if not base.startswith('https://'): return False,'PORTAL_API_BASE должен использовать HTTPS',0
+        if not hasattr(transport,'client'):
+            if n['_PORTAL_CURL_AVAILABLE']:
+                transport.client=n['_portal_curl_requests'].Session(impersonate='chrome')
+            else: transport.client=requests.Session()
+        try:
+            response=transport.client.request(method,base+'/'+path.lstrip('/'),params=params,json=json_body,
+                headers={'Authorization':auth,'Accept':'application/json','Origin':base.split('/api')[0]},
+                timeout=min(float(timeout),10),allow_redirects=False)
+            status=response.status_code
+            if status in (401,403): return False,'Portals отклонил авторизацию или доступ. Обновите initData.',status
+            if status==429: return False,'Лимит Portals. Повторная попытка не раньше чем через минуту.',status
+            if not 200<=status<300: return False,f'Portals HTTP {status}',status
+            result=response.json()
+            n['_portal_working_base']=base
+            return True,result,status
+        except Exception:
+            return False,'Portals недоступен или вернул неверный JSON; предыдущие данные сохранены',0
+    n['_portal_request']=portal_request
+
+    def portal_local_status():
+        snapshot=getdoc('portal_snapshot',{});token=bool(n['_portal_get_token']());job=n['_portal_daily_job_snapshot']()
+        return jsonify(success=True,has_token=token,connected=bool(token and snapshot.get('updated_at') and not job.get('error')),
+            error=job.get('error'),info={'total_collections':snapshot.get('total_collections',0),
+            'last_sync_ago': str(int(time.time()-snapshot['updated_at']))+' сек назад' if snapshot.get('updated_at') else 'никогда'},
+            currency='GRAM',interval_minutes=10)
+    replace('portal_status_legacy',portal_local_status)
+    replace('portal_auth_status',portal_local_status)
+
+    @api_errors
+    def token_endpoint():
+        if request.method=='GET': return portal_local_status()
+        data=request.get_json(silent=True) or {}
+        if request.method=='DELETE' or request.endpoint=='portal_logout':
+            n['_portal_delete_token']();return jsonify(success=True,message='Portals отключён')
+        token=str(data.get('token') or data.get('initData') or data.get('auth_data') or '').strip()
+        valid,error=n['_portal_validate_token'](token)
+        if not valid: raise ValueError(error)
+        n['_portal_save_token'](token)
+        try: os.chmod(n['PORTAL_TOKEN_FILE'],0o600)
+        except OSError: pass
+        start_sync(True)
+        return jsonify(success=True,has_token=True,message='Токен сохранён; обновление запущено в фоне')
+    for name in ('portal_token','portal_save_token','portal_logout'): replace(name,token_endpoint)
+
+    @api_errors
+    def sync_endpoint():
+        if not n['_portal_get_token'](): raise ValueError('Сначала сохраните Portals initData')
+        started=start_sync(True)
+        return jsonify(success=True,started=started,message='Обновление запущено' if started else 'Обновление уже идёт')
+    replace('portal_sync_prices',sync_endpoint)
+
+    old_claim=n['claim_reward']
+    @api_errors
+    def claim_reward():
+        data=request.get_json();level_info(int(data['user_id']))
+        with mutation_lock:
+            result=old_claim()
+        n['_user_balance_cache'].pop(int(data['user_id']),None)
+        return result
+    replace('claim_reward',claim_reward)
+
+    def media_loop():
+        while True:
+            snap=getdoc('portal_snapshot',{})
+            if snap and time.time()-snap.get('updated_at',0)<1200:
+                attempts=getdoc('media_attempts',{})
+                gifts=[x for x in getdoc('gifts',[]) if x.get('source') in ('portal','fragment') and x.get('active',True)
+                       and not str(x.get('image','')).startswith('/static/gift-media/')
+                       and time.time()-attempts.get(str(x['id']),0)>600]
+                for gift in gifts[:20]:
+                    try: hydrate_artwork(gift)
+                    except Exception as e: n['logger'].info('Artwork unavailable for gift %s: %s',gift['id'],str(e)[:120])
+                    attempts[str(gift['id'])]=time.time();putdoc('media_attempts',attempts)
+                    time.sleep(1)
+            time.sleep(10)
+    if os.getenv('APP_TESTING')!='1' and os.getenv('AUTO_GIFT_PNG','1')=='1':
+        threading.Thread(target=media_loop,name='gift-png-cache',daemon=True).start()
+
+    with db(True) as con:
+        con.execute('CREATE TABLE IF NOT EXISTS case_code_redemptions(user_id INTEGER,case_id TEXT,code TEXT,PRIMARY KEY(user_id,case_id,code))')
+
+    @api_errors
+    def open_case():
+        data=request.get_json();uid=int(data['user_id']);ref=str(data['case_id'])
+        quantity=1 if request.endpoint=='open_case_single' else int(data.get('quantity',1))
+        if not 1<=quantity<=5: raise ValueError('Можно открыть от 1 до 5 кейсов')
+        with mutation_lock,db(True) as con:
+            cases=getdoc('cases_catalog',[],con)
+            case=next((x for x in cases if ref in n['_case_ref_candidates'](x)),None)
+            if ref=='seasonal':
+                case=getdoc('seasonal_case',{},con)
+                if not n['seasonal_case_is_active'](case): raise ValueError('Сезонный кейс закрыт')
+            if case is None: raise ValueError('Кейс не найден')
+            case_id=case['id']
+            if case.get('open_date') and timestamp(case['open_date'])>time.time(): raise ValueError('Кейс ещё закрыт')
+            if case.get('event_case'):
+                events=getdoc('events',{},con)
+                accessible=False
+                for ev in events.values():
+                    if not ev.get('enabled') or (ev.get('ends_at') and timestamp(ev['ends_at'])<=time.time()): continue
+                    for sec in ev.get('sections',[]):
+                        if str(case_id) in [str(x) for x in sec.get('case_ids',[])] and sec.get('visible',True) and not (sec.get('unlock_at') and timestamp(sec['unlock_at'])>time.time()): accessible=True
+                if not accessible: raise ValueError('Кейс ивента закрыт')
+            xp,old,current,levels=reconcile_level(con,uid)
+            if current<int(case.get('required_level',1)): raise ValueError('Недостаточный уровень')
+            free=bool(case.get('free'));promo=bool(case.get('promo'))
+            if free:
+                if quantity!=1: raise ValueError('Бесплатный кейс открывается по одному')
+                remaining=n['_get_free_case_remaining_seconds'](con.cursor(),uid,case)
+                if remaining>0: raise ValueError(f'Повторное открытие через {remaining} секунд')
+            if promo:
+                if quantity!=1: raise ValueError('Промокейс открывается по одному')
+                code=str(data.get('promo_code') or '').strip().upper()
+                embedded=next((x for x in case.get('promo_codes',[]) if str(x.get('code','')).upper()==code),None)
+                stored=con.execute('SELECT * FROM promo_codes WHERE code=?',(code,)).fetchone()
+                valid=bool(embedded)
+                if embedded and embedded.get('expires_at') and timestamp(embedded['expires_at'])<=time.time(): valid=False
+                if stored and stored['reward_type']=='case_open' and stored['is_active']:
+                    meta=json.loads(stored['reward_data'] or '{}')
+                    valid=str(meta.get('case_id',case_id))==str(case_id)
+                    if stored['expires_at'] and timestamp(stored['expires_at'])<=time.time():valid=False
+                    if valid and not con.execute('SELECT 1 FROM used_promo_codes WHERE user_id=? AND promo_code_id=?',(uid,stored['id'])).fetchone():
+                        if stored['max_uses'] and stored['used_count']>=stored['max_uses']: valid=False
+                        else:
+                            con.execute('INSERT INTO used_promo_codes(user_id,promo_code_id) VALUES (?,?)',(uid,stored['id']))
+                            con.execute('UPDATE promo_codes SET used_count=used_count+1 WHERE id=?',(stored['id'],))
+                if not code or not valid: raise ValueError('Промокод не подходит или истёк')
+                if embedded:
+                    maximum=int(embedded.get('uses_left',0) or 0)
+                    used=con.execute('SELECT COUNT(*) FROM case_code_redemptions WHERE case_id=? AND code=?',(str(case_id),code)).fetchone()[0]
+                    if maximum and used>=maximum: raise ValueError('Лимит промокода исчерпан')
+                con.execute('INSERT INTO case_code_redemptions VALUES (?,?,?)',(uid,str(case_id),code))
+            cost=minor(case.get('cost',0)) if case.get('cost_type') in ('ton','gram') else int(case.get('cost',0))
+            if cost<0: raise ValueError('Некорректная цена кейса')
+            if case.get('cost_type')=='tickets': raise ValueError('Измените валюту кейса на GRAM в админке')
+            charged=0 if free or promo else cost*quantity
+            if not con.execute('UPDATE users SET balance_stars=balance_stars-? WHERE id=? AND balance_stars>=?',(charged,uid,charged)).rowcount:
+                raise ValueError('Недостаточно GRAM')
+            if case.get('limited'):
+                row=con.execute('SELECT current_amount FROM case_limits WHERE case_id=?',(case_id,)).fetchone()
+                left=int(row[0] if row else case.get('amount',0))
+                if left<quantity: raise ValueError('Лимит кейса исчерпан')
+                con.execute('INSERT INTO case_limits(case_id,current_amount) VALUES (?,?) ON CONFLICT(case_id) DO UPDATE SET current_amount=excluded.current_amount',(case_id,left-quantity))
+            gifts=getdoc('gifts',[],con);by_id={str(x['id']):x for x in gifts};pool=[];weights=[]
+            for entry in case.get('gifts',[]):
+                weight=float(entry.get('chance',0))
+                if not math.isfinite(weight) or weight<0: raise ValueError('Неверный вес подарка')
+                if weight==0:continue
+                if entry.get('type') in ('gram_balance','ton_balance'):
+                    amount=minor(entry.get('gram_amount',entry.get('ton_amount',0)))
+                    item={'id':-1,'name':'GRAM','image':'/static/img/gift.png','type':'gram_balance','value':amount}
+                else:
+                    item=by_id.get(str(entry.get('id') or entry.get('gift_id')))
+                    if not item or not item.get('active',True) or item.get('price_available') is False:
+                        raise ValueError('В кейсе есть недоступный подарок; обновите состав')
+                pool.append(item);weights.append(weight)
+            if not pool: raise ValueError('В кейсе нет подарков с положительным весом')
+            import random
+            wins=[]
+            for _ in range(quantity):
+                gift=copy.deepcopy(random.SystemRandom().choices(pool,weights=weights,k=1)[0])
+                if gift.get('type')=='gram_balance':con.execute('UPDATE users SET balance_stars=balance_stars+? WHERE id=?',(gift['value'],uid))
+                else:gift['inventory_id']=inventory_insert(con,uid,gift)
+                con.execute('INSERT INTO case_open_history(user_id,case_id,case_name,gift_id,gift_name,gift_image,gift_value,cost,cost_type) VALUES (?,?,?,?,?,?,?,?,?)',
+                    (uid,case_id,case['name'],gift['id'],gift['name'],gift['image'],gift['value'],charged//quantity,'stars'))
+                con.execute('INSERT INTO win_history(user_id,user_name,gift_name,gift_image,gift_value,case_name) VALUES (?,?,?,?,?,?)',
+                    (uid,str(uid),gift['name'],gift['image'],gift['value'],case['name']))
+                wins.append(gift)
+            con.execute('UPDATE users SET total_cases_opened=total_cases_opened+? WHERE id=?',(quantity,uid))
+            _,old,new,_=reconcile_level(con,uid,charged)
+            balance=con.execute('SELECT balance_stars,balance_tickets FROM users WHERE id=?',(uid,)).fetchone()
+        n['_user_balance_cache'].pop(uid,None);n['_user_cache'].pop(uid,None)
+        return jsonify(success=True,gift=wins[0],won_gifts=wins,new_balance={'stars':balance[0],'tickets':balance[1]},
+                       balance_gram=balance[0]/100,exp_gained=charged,level_up={'old_level':old,'new_level':new} if new>old else None)
+    replace('open_case',open_case)
+    replace('open_case_single',open_case)
+
+    def fragment_metadata(gift_url):
+        slug,number=n['_parse_event_gift_url'](gift_url)
+        base=f'https://nft.fragment.com/gift/{slug}-{number}'
+        try:
+            response=requests.get(base+'.json',timeout=(3,8));response.raise_for_status();meta=response.json()
+            if not isinstance(meta,dict) or not meta.get('name'):raise ValueError()
+        except Exception:
+            raise ValueError('Не удалось проверить подарок на Fragment. Повторите позже.')
+        return {'gift_url':f'https://fragment.com/gift/{slug}-{number}','fragment_slug':slug,'number':number,
+                'name':meta['name'],'image':meta.get('image') or base+'.webp',
+                'animation':meta.get('animation_url') or '',
+                'model_name':next((x.get('value') for x in meta.get('attributes',[]) if str(x.get('trait_type') or x.get('type')).lower()=='model'),None),
+                'source':'fragment','price_source':'manual','metadata_url':base+'.json'}
+    n['_fetch_fragment_gift_metadata']=fragment_metadata
+
+    old_rewards_info=n['get_rewards_info']
+    @api_errors
+    def rewards_info(user_id):
+        level_info(user_id)
+        return old_rewards_info(user_id)
+    replace('get_rewards_info',rewards_info)
+
+
+_install_admin_services = install
 _install_admin_services(globals())
 
 # ─── Render fix: не ждём первый HTTP-запрос, чтобы поднять бота ───
