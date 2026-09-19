@@ -412,6 +412,156 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 }
 </style>
 
+
+<style id="portal-daily-models-css">
+.portal-daily-card{
+  border:1px solid rgba(255,255,255,.065);
+  border-radius:14px;
+  background:rgba(255,255,255,.032);
+  overflow:hidden;
+}
+.portal-daily-main{
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  padding:10px;
+  cursor:pointer;
+}
+.portal-daily-main:hover{background:rgba(255,255,255,.025)}
+.portal-daily-models{
+  display:none;
+  padding:0 10px 10px 68px;
+  border-top:1px solid rgba(255,255,255,.045);
+}
+.portal-daily-card.open .portal-daily-models{display:block}
+.portal-model-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  padding:8px 0;
+  border-bottom:1px solid rgba(255,255,255,.04);
+}
+.portal-model-row:last-child{border-bottom:0}
+.portal-model-name{font-size:11px;color:#dfe7f7;font-weight:780}
+.portal-model-price{font-size:11px;color:#64f0bb;font-weight:900;white-space:nowrap}
+.portal-model-count{
+  margin-top:4px;
+  font-size:9px;
+  color:rgba(255,255,255,.42);
+}
+.portal-daily-empty{
+  padding:18px 8px;
+  text-align:center;
+  color:rgba(255,255,255,.42);
+  font-size:11px;
+}
+@media(max-width:520px){
+  .portal-price-toolbar{display:grid!important;grid-template-columns:1fr!important}
+  #portalDailySort{max-width:none!important}
+  .portal-daily-models{padding-left:12px}
+}
+</style>
+
+
+<style id="portal-hourly-actions-css">
+.portal-filter-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+}
+.portal-filter-search{grid-column:1/-1}
+.portal-filter-note{
+  margin-top:4px;
+  color:rgba(255,255,255,.40);
+  font-size:10px;
+  line-height:1.45;
+}
+.portal-result-card{
+  border:1px solid rgba(255,255,255,.065);
+  border-radius:14px;
+  background:rgba(255,255,255,.032);
+  overflow:hidden;
+}
+.portal-result-main{
+  display:grid;
+  grid-template-columns:46px minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  padding:10px;
+}
+.portal-result-model{
+  border-top:1px solid rgba(255,255,255,.045);
+  padding:8px 10px 8px 66px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+}
+.portal-result-model.match{background:rgba(36,195,142,.045)}
+.portal-item-name{font-size:11px;font-weight:850;color:#e7edf9}
+.portal-item-meta{font-size:9px;color:rgba(255,255,255,.42);margin-top:3px}
+.portal-item-price{font-size:11px;color:#64f0bb;font-weight:900;white-space:nowrap}
+.portal-item-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:6px;
+}
+.portal-mini-btn{
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;
+  background:rgba(255,255,255,.045);
+  color:#c8d3e8;
+  padding:5px 7px;
+  font-size:9px;
+  font-weight:850;
+}
+.portal-mini-btn.case{color:#d8b4fe;border-color:rgba(168,85,247,.20);background:rgba(168,85,247,.07)}
+.portal-mini-btn.mode{color:#7dd3fc;border-color:rgba(56,189,248,.20);background:rgba(56,189,248,.07)}
+.portal-mini-btn.catalog{color:#86efac;border-color:rgba(34,197,94,.20);background:rgba(34,197,94,.07)}
+.portal-mode-pool-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:9px 10px;
+  border-bottom:1px solid rgba(255,255,255,.045);
+}
+.portal-mode-pool-row:last-child{border-bottom:0}
+.portal-mode-pool-row b{font-size:11px}
+.portal-mode-pool-row span{font-size:10px;color:#64f0bb;font-weight:850}
+.portal-target-list{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  max-height:420px;
+  overflow:auto;
+}
+.portal-target-btn{
+  width:100%;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;
+  background:rgba(255,255,255,.035);
+  color:#fff;
+  padding:10px;
+  text-align:left;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.portal-target-btn small{color:rgba(255,255,255,.40)}
+@media(max-width:700px){
+  .portal-filter-grid{grid-template-columns:1fr}
+  .portal-filter-search{grid-column:auto}
+  .portal-result-model{padding-left:12px}
+  .portal-result-main{grid-template-columns:42px minmax(0,1fr)}
+  .portal-result-main>.portal-item-price{grid-column:2}
+}
+</style>
+
 </head>
 <body>
 
@@ -689,15 +839,15 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
     <div class="section-page" id="page-portal" style="display:none">
         <div class="section-header">
             <h2>🛒 Portal Market</h2>
-            <button class="action-btn green" onclick="loadPortalDashboard(true)">↻ Live</button>
+            <button class="action-btn green" id="portalDailySyncTopBtn" onclick="startPortalDailySync()">Обновить сейчас</button>
         </div>
 
         <div class="portal-status-card">
             <div class="portal-market-head">
                 <div>
-                    <div style="font-weight:900;font-size:16px">Portal Market LIVE</div>
+                    <div style="font-weight:900;font-size:16px">Portal Market — Hourly Catalog</div>
                     <div style="font-size:10px;color:rgba(255,255,255,.45);margin-top:3px">
-                        Все коллекции + все текущие листинги с актуальными ценами
+                        Все подарки, все модели и floor-цены. Автоматическое полное обновление раз в час.
                     </div>
                 </div>
                 <span class="status-pill off" id="portalStatusPill"><span class="dot"></span><span id="portalStatusText">Проверка...</span></span>
@@ -705,19 +855,26 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 
             <div class="portal-market-grid">
                 <div class="portal-market-stat"><small>Токен</small><b id="portalTokenText">—</b></div>
-                <div class="portal-market-stat"><small>API</small><b id="portalModuleText">—</b></div>
-                <div class="portal-market-stat"><small>Коллекций</small><b id="portalCollectionsCountText">0</b></div>
-                <div class="portal-market-stat"><small>Последний sync</small><b id="portalSyncText">никогда</b></div>
-                <div class="portal-market-stat"><small>Обновлено цен</small><b id="portalUpdatedText">0</b></div>
-                <div class="portal-market-stat"><small>Автосинхронизация</small><b id="portalAutoText">—</b></div>
+                <div class="portal-market-stat"><small>Подарков</small><b id="portalCollectionsCountText">0</b></div>
+                <div class="portal-market-stat"><small>Моделей</small><b id="portalModelsCountText">0</b></div>
+                <div class="portal-market-stat"><small>Последний sync</small><b id="portalDailyUpdatedText">никогда</b></div>
+                <div class="portal-market-stat"><small>Следующий sync</small><b id="portalNextUpdateText">—</b></div>
+                <div class="portal-market-stat"><small>Автообновление</small><b id="portalAutoText">каждый час</b></div>
             </div>
 
             <div class="portal-live-note">
-                <strong>LIVE:</strong> коллекции/floor обновляются каждые 20 сек,
-                открытая страница листингов — каждые 10 сек.
-                Backend отдельно синхронизирует каталог приложения автоматически.
+                Снимок Portal хранится на сервере. Кнопка «Обновить сейчас» запускает полное обновление немедленно,
+                не дожидаясь следующего часа.
             </div>
+
             <div class="portal-market-error" id="portalMarketError"></div>
+
+            <div id="portalDailyProgress" style="display:none;margin-top:10px">
+                <div style="height:7px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden">
+                    <div id="portalDailyProgressBar" style="height:100%;width:0;background:linear-gradient(90deg,#24c38e,#39e5a8);transition:width .25s"></div>
+                </div>
+                <div id="portalDailyProgressText" style="font-size:10px;color:rgba(255,255,255,.50);margin-top:6px">Подготовка...</div>
+            </div>
         </div>
 
         <div class="card">
@@ -732,75 +889,60 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         </div>
 
         <div class="card">
-            <div class="card-title">⚡ Синхронизация с приложением</div>
-            <button class="btn btn-success" id="portalSyncNowBtn" onclick="syncPortalPrices(event)">Обновить цены в приложении сейчас</button>
-            <div style="font-size:10px;color:rgba(255,255,255,.43);line-height:1.5;margin-top:8px">
-                Все коллекции Portal добавляются/обновляются в gifts.json.
-                Цена Portal хранится отдельно как portal_price_ton и не затирает другие источники.
-            </div>
-        </div>
-
-        <div class="portal-tabs">
-            <button class="portal-tab active" id="portalTabCollections" onclick="switchPortalTab('collections')">Все подарки</button>
-            <button class="portal-tab" id="portalTabListings" onclick="switchPortalTab('listings')">Все листинги</button>
-        </div>
-
-        <div class="portal-pane active" id="portalPaneCollections">
-            <div class="card">
-                <div class="card-title">🎁 Все подарки Portal Market</div>
-                <div class="portal-price-toolbar">
-                    <input class="form-input" id="portalPriceSearch" placeholder="Поиск подарка..." oninput="renderPortalCollections()">
-                    <button class="btn btn-secondary" onclick="loadPortalCollections(true)">↻ Обновить</button>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px">
-                    <div id="portalPriceUpdatedAt" class="portal-refresh-live">ожидание</div>
-                    <div style="font-size:10px;color:#64f0bb;font-weight:800" id="portalFloorCount">0 подарков</div>
-                </div>
-                <div class="portal-price-list" id="portalPriceList"><div class="loading">Загрузка Portal</div></div>
-            </div>
-        </div>
-
-        <div class="portal-pane" id="portalPaneListings">
-            <div class="card">
-                <div class="card-title">🏷 Все выставленные подарки Portal</div>
-                <div class="portal-listing-controls">
-                    <select class="form-input" id="portalListingCollection" onchange="resetPortalListings()">
-                        <option value="">Все коллекции</option>
-                    </select>
-                    <select class="form-input" id="portalListingSort" onchange="resetPortalListings()">
-                        <option value="price_asc">Цена ↑</option>
-                        <option value="price_desc">Цена ↓</option>
-                        <option value="latest">Новые листинги</option>
-                        <option value="gift_id_asc">Номер ↑</option>
-                        <option value="gift_id_desc">Номер ↓</option>
+            <div class="card-title">🔎 Фильтры как в Portal</div>
+            <div class="portal-filter-grid">
+                <div class="form-group">
+                    <label class="form-label">Подарок</label>
+                    <select class="form-input" id="portalGiftFilter" onchange="onPortalGiftFilterChange()">
+                        <option value="">Все подарки</option>
                     </select>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px">
-                    <div id="portalListingsUpdatedAt" class="portal-refresh-live">ожидание</div>
-                    <div style="font-size:10px;color:#64f0bb;font-weight:800" id="portalListingsCount">0</div>
+                <div class="form-group">
+                    <label class="form-label">Модель</label>
+                    <select class="form-input" id="portalModelFilter" onchange="renderPortalDailyCatalog()">
+                        <option value="">Все модели</option>
+                    </select>
                 </div>
-
-                <div class="portal-listing-list" id="portalListingsList">
-                    <div class="loading">Загрузка листингов Portal</div>
+                <div class="form-group portal-filter-search">
+                    <label class="form-label">Поиск</label>
+                    <input class="form-input" id="portalPriceSearch"
+                           placeholder="Название подарка или модели..."
+                           oninput="renderPortalDailyCatalog()">
                 </div>
-
-                <div class="portal-pager">
-                    <button class="btn btn-secondary btn-sm" id="portalPrevBtn" onclick="portalPrevPage()">← Назад</button>
-                    <span id="portalPageText">1</span>
-                    <button class="btn btn-secondary btn-sm" id="portalNextBtn" onclick="portalNextPage()">Далее →</button>
+                <div class="form-group">
+                    <label class="form-label">Сортировка</label>
+                    <select class="form-input" id="portalDailySort" onchange="renderPortalDailyCatalog()">
+                        <option value="name">Название</option>
+                        <option value="floor_asc">Floor ↑</option>
+                        <option value="floor_desc">Floor ↓</option>
+                        <option value="models_desc">Больше моделей</option>
+                    </select>
                 </div>
+            </div>
+            <div class="portal-filter-note">
+                Выбери подарок → список «Модель» автоматически покажет только модели этого подарка.
             </div>
         </div>
 
         <div class="card">
-            <div class="card-title">Как получить Portal initData</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.6);line-height:1.65">
-                1. Открой Portal Market внутри Telegram WebApp<br>
-                2. DevTools → Network<br>
-                3. Открой любой запрос к Portal API<br>
-                4. Скопируй весь заголовок <b>Authorization</b>, начиная с <b>tma </b><br>
-                5. Вставь его выше
+            <div class="card-title">🎁 Подарки и модели Portal</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 10px">
+                <div id="portalCatalogStamp" style="font-size:10px;color:rgba(255,255,255,.42)">Каталог ещё не загружен</div>
+                <div id="portalCatalogCount" style="font-size:10px;color:#64f0bb;font-weight:800">0 позиций</div>
             </div>
+
+            <div id="portalDailyCatalogList" class="portal-price-list">
+                <div class="loading">Загрузка Portal Market</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">🎮 Пулы подарков режимов</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.45);line-height:1.5;margin-bottom:10px">
+                Кнопка «В режим» сохраняет выбранный подарок/модель в пул конкретного режима.
+                Для игровых страниц доступен API <b>/api/mode-gift-pool/&lt;mode_id&gt;</b>.
+            </div>
+            <div id="portalModePools"><div class="loading">Загрузка пулов</div></div>
         </div>
     </div>
 
@@ -1089,7 +1231,7 @@ function showSection(name){
         if(name === 'gifts') loadGifts();
         if(name === 'cases') loadCasesList();
         if(name === 'promo'){ loadPromoCodes(); onPromoTypeChange(); }
-        if(name === 'portal'){ loadPortalDashboard(true); }
+        if(name === 'portal'){ loadPortalDashboard(); }
         if(name === 'purchases') loadPurchasesAdmin();
         if(name === 'inventory') searchInvUser();
         if(name === 'leaderboard') loadLeaderboard();
@@ -3013,354 +3155,425 @@ if(tg){
 
 <script id="portal-market-live-js">
 (function(){
-    var portalCollectionsCache = [];
-    var portalCatalogTimer = null;
-    var portalListingsTimer = null;
-    var portalStatusTimer = null;
-    var portalListingsOffset = 0;
-    var portalListingsLimit = 20;
-    var portalListingsHasMore = false;
-    var portalActiveTab = 'collections';
+    var portalDailyCatalog = [];
+    var portalDailyPoll = null;
+    var portalLastJobRunning = false;
+    var portalTargets = {cases:[], modes:[]};
+    var portalModePools = {};
 
     function portalEsc(v){
         return String(v == null ? '' : v).replace(/[&<>"']/g,function(c){
             return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];
         });
     }
-
+    function portalAttr(v){
+        return portalEsc(v).replace(/`/g,'&#96;');
+    }
     function portalSetError(msg){
-        var el = document.getElementById('portalMarketError');
-        if(!el) return;
-        if(msg){ el.textContent = msg; el.classList.add('show'); }
-        else { el.textContent = ''; el.classList.remove('show'); }
+        var el=document.getElementById('portalMarketError');
+        if(!el)return;
+        if(msg){el.textContent=msg;el.classList.add('show');}
+        else{el.textContent='';el.classList.remove('show');}
+    }
+    function fmtTime(ts){
+        ts=Number(ts||0);
+        if(!ts)return 'никогда';
+        try{return new Date(ts*1000).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}
+        catch(_){return '—';}
+    }
+    function findCollection(slug){
+        slug=String(slug||'').toLowerCase();
+        return portalDailyCatalog.find(function(c){return String(c.short_name||'').toLowerCase()===slug;})||null;
     }
 
-    window.switchPortalTab = function(tab){
-        portalActiveTab = tab;
-        var isCollections = tab === 'collections';
-        var tc = document.getElementById('portalTabCollections');
-        var tl = document.getElementById('portalTabListings');
-        var pc = document.getElementById('portalPaneCollections');
-        var pl = document.getElementById('portalPaneListings');
-        if(tc) tc.classList.toggle('active', isCollections);
-        if(tl) tl.classList.toggle('active', !isCollections);
-        if(pc) pc.classList.toggle('active', isCollections);
-        if(pl) pl.classList.toggle('active', !isCollections);
-        if(!isCollections) loadPortalListings(true);
+    window.loadPortalStatus=async function(){
+        try{
+            var r=await fetch('/api/portal/status?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var d=await r.json();
+            if(!r.ok||d.success===false)throw new Error(d.error||'Ошибка Portal');
+            var connected=!!d.connected;
+            var pill=document.getElementById('portalStatusPill');
+            var txt=document.getElementById('portalStatusText');
+            if(txt)txt.textContent=connected?'Подключён':'Не подключён';
+            if(pill)pill.className='status-pill '+(connected?'ok':'err');
+            var tok=document.getElementById('portalTokenText');
+            if(tok)tok.textContent=d.has_token?(d.token_preview||'сохранён'):'не задан';
+            if(d.info&&d.info.error)portalSetError(d.info.error);else if(connected)portalSetError('');
+            return d;
+        }catch(e){portalSetError(e.message||String(e));return null;}
     };
 
-    window.loadPortalStatus = async function(){
+    window.savePortalToken=async function(evt){
+        var btn=evt&&evt.currentTarget;
+        var input=document.getElementById('portalTokenInput');
+        var token=input?input.value.trim():'';
+        if(!token){showToast('Вставь Portal initData / Authorization','err');return;}
+        if(btn){btn.disabled=true;btn.textContent='⏳ Подключение...';}
         try{
-            var r = await fetch('/api/portal/status?admin_id=' + encodeURIComponent(ADMIN_ID), {cache:'no-store'});
-            var d = await r.json();
-            if(!r.ok || d.success === false) throw new Error(d.error || 'Ошибка статуса Portal');
+            var r=await fetch('/api/portal/save-token',{
+                method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({admin_id:ADMIN_ID,token:token})
+            });
+            var d=await r.json();
+            if(!r.ok||d.success===false)throw new Error(d.error||'Ошибка');
+            if(input)input.value='';
+            showToast(d.message||'Portal подключён','ok');
+            await loadPortalStatus();
+            startPortalDailyPolling(true);
+        }catch(e){showToast(e.message||'Ошибка Portal','err');portalSetError(e.message||String(e));}
+        finally{if(btn){btn.disabled=false;btn.textContent='💾 Сохранить и подключить';}}
+    };
 
-            var info = d.info || {};
-            var connected = !!d.connected;
+    window.deletePortalToken=async function(){
+        if(!confirm('Отключить Portal Market?'))return;
+        try{
+            var r=await fetch('/api/portal/logout',{
+                method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({admin_id:ADMIN_ID})
+            });
+            var d=await r.json();
+            if(!r.ok||d.success===false)throw new Error(d.error||'Ошибка');
+            showToast('Portal отключён','ok');
+            await loadPortalStatus();
+        }catch(e){showToast(e.message||'Ошибка','err');}
+    };
 
-            var pill = document.getElementById('portalStatusPill');
-            var statusText = document.getElementById('portalStatusText');
-            if(statusText) statusText.textContent = connected ? 'Подключён' : 'Не подключён';
-            if(pill) pill.className = 'status-pill ' + (connected ? 'ok' : 'err');
+    window.startPortalDailySync=async function(){
+        var btn=document.getElementById('portalDailySyncTopBtn');
+        if(btn){btn.disabled=true;btn.textContent='Запускаю...';}
+        try{
+            var r=await fetch('/api/portal/daily-sync',{
+                method:'POST',headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({admin_id:ADMIN_ID})
+            });
+            var d=await r.json();
+            if(!r.ok||d.success===false)throw new Error(d.error||'Не удалось запустить обновление');
+            showToast(d.message||'Полное обновление запущено','ok');
+            startPortalDailyPolling(true);
+        }catch(e){showToast(e.message||'Ошибка обновления','err');portalSetError(e.message||String(e));}
+        finally{if(btn){btn.disabled=false;btn.textContent='Обновить сейчас';}}
+    };
 
-            var tokenEl = document.getElementById('portalTokenText');
-            if(tokenEl) tokenEl.textContent = d.has_token ? (d.token_preview || 'сохранён') : 'не задан';
+    async function loadPortalHourlyStatus(){
+        try{
+            var r=await fetch('/api/portal/daily-status?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var d=await r.json();
+            if(!r.ok||d.success===false)throw new Error(d.error||'Ошибка status');
+            var job=d.job||{}, running=!!job.running;
+            var c=document.getElementById('portalCollectionsCountText');
+            var m=document.getElementById('portalModelsCountText');
+            var u=document.getElementById('portalDailyUpdatedText');
+            var n=document.getElementById('portalNextUpdateText');
+            var a=document.getElementById('portalAutoText');
+            if(c)c.textContent=Number(d.total_collections||job.collections||0).toLocaleString('ru-RU');
+            if(m)m.textContent=Number(d.total_models||job.models||0).toLocaleString('ru-RU');
+            if(u)u.textContent=fmtTime(d.updated_at);
+            if(n)n.textContent=d.next_update_at?fmtTime(d.next_update_at):'после первого sync';
+            if(a)a.textContent='каждые '+Number(d.interval_minutes||60)+' мин';
 
-            var moduleEl = document.getElementById('portalModuleText');
-            if(moduleEl) moduleEl.textContent = d.api_base ? d.api_base.replace(/^https?:\/\//,'') : (connected ? 'online' : '—');
+            var wrap=document.getElementById('portalDailyProgress');
+            var bar=document.getElementById('portalDailyProgressBar');
+            var txt=document.getElementById('portalDailyProgressText');
+            if(wrap)wrap.style.display=running?'block':'none';
+            if(running){
+                var total=Math.max(1,Number(job.total||1)), current=Math.max(0,Number(job.current||0));
+                var pct=Math.min(100,Math.round(current/total*100));
+                if(bar)bar.style.width=pct+'%';
+                if(txt)txt.textContent='Сканирование: '+current+' / '+total+(job.collection?' · '+job.collection:'')+' · моделей: '+Number(job.models||0);
+            }
+            if(job.error)portalSetError(job.error);
 
-            var countEl = document.getElementById('portalCollectionsCountText');
-            if(countEl) countEl.textContent = Number(info.total_collections || portalCollectionsCache.length || 0).toLocaleString('ru-RU');
+            if(portalLastJobRunning&&!running){
+                await loadPortalHourlyCatalog();
+                showToast('Portal каталог обновлён','ok');
+            }
+            portalLastJobRunning=running;
+            return d;
+        }catch(e){portalSetError(e.message||String(e));return null;}
+    }
 
-            var syncEl = document.getElementById('portalSyncText');
-            if(syncEl) syncEl.textContent = info.last_sync_ago || 'никогда';
+    function populateGiftFilter(){
+        var sel=document.getElementById('portalGiftFilter');
+        if(!sel)return;
+        var prev=sel.value;
+        sel.innerHTML='<option value="">Все подарки</option>'+portalDailyCatalog.map(function(c){
+            return '<option value="'+portalAttr(c.short_name||'')+'">'+portalEsc(c.name||c.short_name||'Gift')+'</option>';
+        }).join('');
+        if([].some.call(sel.options,function(o){return o.value===prev;}))sel.value=prev;
+        populateModelFilter();
+    }
 
-            var updEl = document.getElementById('portalUpdatedText');
-            if(updEl) updEl.textContent = Number(info.last_updated || 0).toLocaleString('ru-RU');
+    function populateModelFilter(){
+        var giftSel=document.getElementById('portalGiftFilter');
+        var modelSel=document.getElementById('portalModelFilter');
+        if(!modelSel)return;
+        var prev=modelSel.value;
+        var coll=findCollection(giftSel?giftSel.value:'');
+        var models=coll&&Array.isArray(coll.models)?coll.models:[];
+        modelSel.innerHTML='<option value="">Все модели</option>'+models.map(function(m){
+            return '<option value="'+portalAttr(m.name||'')+'">'+portalEsc(m.name||'Model')+'</option>';
+        }).join('');
+        modelSel.disabled=!coll;
+        if([].some.call(modelSel.options,function(o){return o.value===prev;}))modelSel.value=prev;
+    }
 
-            var autoEl = document.getElementById('portalAutoText');
-            if(autoEl) autoEl.textContent = info.sync_enabled === false ? 'выкл' : ('каждые ' + Number(info.interval_minutes || 1) + ' мин');
+    window.onPortalGiftFilterChange=function(){
+        populateModelFilter();
+        renderPortalDailyCatalog();
+    };
 
-            portalSetError(info.error || '');
+    window.loadPortalHourlyCatalog=async function(){
+        var list=document.getElementById('portalDailyCatalogList');
+        if(list&&!portalDailyCatalog.length)list.innerHTML='<div class="loading">Загрузка Portal Market</div>';
+        try{
+            var r=await fetch('/api/portal/daily-catalog?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var d=await r.json();
+            if(!r.ok||d.success===false)throw new Error(d.error||'Не удалось загрузить каталог');
+            portalDailyCatalog=Array.isArray(d.collections)?d.collections:[];
+            var stamp=document.getElementById('portalCatalogStamp');
+            if(stamp)stamp.textContent=d.updated_at?'Обновлено: '+fmtTime(d.updated_at):'Каталог ещё не синхронизирован';
+            var c=document.getElementById('portalCollectionsCountText');
+            var m=document.getElementById('portalModelsCountText');
+            if(c)c.textContent=Number(d.total_collections||portalDailyCatalog.length||0).toLocaleString('ru-RU');
+            if(m)m.textContent=Number(d.total_models||0).toLocaleString('ru-RU');
+            populateGiftFilter();
+            renderPortalDailyCatalog();
             return d;
         }catch(e){
-            var pill = document.getElementById('portalStatusPill');
-            if(pill) pill.className = 'status-pill err';
-            var t = document.getElementById('portalStatusText');
-            if(t) t.textContent = 'Ошибка';
-            portalSetError(e.message || String(e));
+            if(list)list.innerHTML='<div class="portal-daily-empty">Ошибка загрузки каталога.</div>';
+            portalSetError(e.message||String(e));
             return null;
         }
     };
 
-    window.savePortalToken = async function(evt){
-        var btn = evt && evt.currentTarget;
-        var input = document.getElementById('portalTokenInput');
-        var token = input ? input.value.trim() : '';
-        if(!token){ showToast('Вставь полный Portal initData / Authorization', 'err'); return; }
-
-        if(btn){ btn.disabled = true; btn.textContent = '⏳ Подключение...'; }
-        try{
-            var r = await fetch('/api/portal/save-token', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({admin_id:ADMIN_ID, token:token})
-            });
-            var d = await r.json();
-            if(!r.ok || d.success === false) throw new Error(d.error || 'Не удалось сохранить токен');
-            showToast(d.verified ? 'Portal Market подключён' : (d.message || 'Токен сохранён'), d.verified ? 'ok' : 'ok');
-            if(input && d.verified) input.value = '';
-            await loadPortalDashboard(true);
-        }catch(e){
-            showToast(e.message || 'Ошибка Portal', 'err');
-        }finally{
-            if(btn){ btn.disabled = false; btn.textContent = '💾 Сохранить и подключить'; }
-        }
-    };
-
-    window.deletePortalToken = async function(){
-        if(!confirm('Отключить Portal Market?')) return;
-        try{
-            var r = await fetch('/api/portal/logout', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({admin_id:ADMIN_ID})
-            });
-            var d = await r.json();
-            if(!r.ok || d.success === false) throw new Error(d.error || 'Ошибка');
-            portalCollectionsCache = [];
-            renderPortalCollections();
-            showToast('Portal отключён', 'ok');
-            await loadPortalStatus();
-        }catch(e){ showToast(e.message || 'Ошибка', 'err'); }
-    };
-
-    window.syncPortalPrices = async function(evt){
-        var btn = evt && evt.currentTarget;
-        if(btn){ btn.disabled = true; btn.textContent = '⏳ Обновляю...'; }
-        try{
-            var r = await fetch('/api/portal/sync-prices', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({admin_id:ADMIN_ID})
-            });
-            var d = await r.json();
-            if(!r.ok || d.success === false) throw new Error(d.error || 'Ошибка синхронизации');
-            showToast('Portal: обновлено ' + Number(d.updated || 0) + ', добавлено ' + Number(d.added || 0), 'ok');
-            await Promise.all([loadPortalStatus(), loadPortalCollections(true)]);
-        }catch(e){
-            portalSetError(e.message || String(e));
-            showToast(e.message || 'Ошибка Portal sync', 'err');
-        }finally{
-            if(btn){ btn.disabled = false; btn.textContent = 'Обновить цены в приложении сейчас'; }
-        }
-    };
-
-    function fillCollectionSelect(){
-        var sel = document.getElementById('portalListingCollection');
-        if(!sel) return;
-        var prev = sel.value;
-        sel.innerHTML = '<option value="">Все коллекции</option>' + portalCollectionsCache.map(function(c){
-            return '<option value="' + portalEsc(c.name || c.short_name || '') + '">' + portalEsc(c.name || c.short_name || 'Gift') + '</option>';
-        }).join('');
-        if([].some.call(sel.options,function(o){return o.value === prev;})) sel.value = prev;
+    function actionButtons(c,model){
+        var slug=portalAttr(c.short_name||'');
+        var modelName=portalAttr(model?model.name:'');
+        return '<div class="portal-item-actions">'+
+          '<button class="portal-mini-btn catalog" data-portal-action="catalog" data-slug="'+slug+'" data-model="'+modelName+'">В каталог</button>'+
+          '<button class="portal-mini-btn case" data-portal-action="case" data-slug="'+slug+'" data-model="'+modelName+'">В кейс</button>'+
+          '<button class="portal-mini-btn mode" data-portal-action="mode" data-slug="'+slug+'" data-model="'+modelName+'">В режим</button>'+
+        '</div>';
     }
 
-    window.loadPortalCollections = async function(force){
-        var list = document.getElementById('portalPriceList');
-        if(!list) return;
-        if(force || !portalCollectionsCache.length) list.innerHTML = '<div class="loading">Загрузка всех подарков Portal</div>';
+    window.renderPortalDailyCatalog=function(){
+        var list=document.getElementById('portalDailyCatalogList');
+        if(!list)return;
 
-        try{
-            var url = '/api/portal/catalog?admin_id=' + encodeURIComponent(ADMIN_ID) + (force ? '&force=1' : '');
-            var r = await fetch(url, {cache:'no-store'});
-            var d = await r.json();
-            if(!r.ok || d.success === false) throw new Error(d.error || 'Не удалось получить Portal catalog');
+        var giftSlug=(document.getElementById('portalGiftFilter')||{}).value||'';
+        var modelName=(document.getElementById('portalModelFilter')||{}).value||'';
+        var q=((document.getElementById('portalPriceSearch')||{}).value||'').trim().toLowerCase();
+        var sort=(document.getElementById('portalDailySort')||{}).value||'name';
 
-            portalCollectionsCache = Array.isArray(d.collections) ? d.collections : [];
-            portalCollectionsCache.sort(function(a,b){
-                var an=String(a.name||'').toLowerCase(), bn=String(b.name||'').toLowerCase();
-                return an.localeCompare(bn);
-            });
+        var rows=portalDailyCatalog.filter(function(c){
+            if(giftSlug&&String(c.short_name||'')!==giftSlug)return false;
+            if(!q)return true;
+            if(String(c.name||'').toLowerCase().indexOf(q)!==-1)return true;
+            return (c.models||[]).some(function(m){return String(m.name||'').toLowerCase().indexOf(q)!==-1;});
+        }).slice();
 
-            var ts = document.getElementById('portalPriceUpdatedAt');
-            if(ts) ts.textContent = (d.stale ? 'кэш: ' : 'live: ') + new Date().toLocaleTimeString('ru-RU');
-
-            var cnt = document.getElementById('portalCollectionsCountText');
-            if(cnt) cnt.textContent = portalCollectionsCache.length.toLocaleString('ru-RU');
-
-            fillCollectionSelect();
-            renderPortalCollections();
-            portalSetError(d.stale ? 'Portal временно недоступен — показан последний сохранённый каталог.' : '');
-        }catch(e){
-            if(!portalCollectionsCache.length) list.innerHTML = '<div class="empty">Portal не ответил. Проверь initData.</div>';
-            portalSetError(e.message || String(e));
-        }
-    };
-
-    window.renderPortalCollections = function(){
-        var list = document.getElementById('portalPriceList');
-        if(!list) return;
-        var input = document.getElementById('portalPriceSearch');
-        var q = (input ? input.value : '').trim().toLowerCase();
-
-        var rows = portalCollectionsCache.filter(function(c){
-            if(!q) return true;
-            return String(c.name||'').toLowerCase().indexOf(q)!==-1 ||
-                   String(c.short_name||'').toLowerCase().indexOf(q)!==-1;
+        rows.sort(function(a,b){
+            if(sort==='floor_asc'){
+                var ap=Number(a.floor_price||0),bp=Number(b.floor_price||0);
+                if(ap<=0)return 1;if(bp<=0)return -1;return ap-bp;
+            }
+            if(sort==='floor_desc')return Number(b.floor_price||0)-Number(a.floor_price||0);
+            if(sort==='models_desc')return Number((b.models||[]).length)-Number((a.models||[]).length);
+            return String(a.name||'').localeCompare(String(b.name||''),'ru');
         });
 
-        var count = document.getElementById('portalFloorCount');
-        if(count) count.textContent = rows.length.toLocaleString('ru-RU') + ' подарков';
+        var positionCount=0;
+        var html=rows.map(function(c){
+            var price=Number(c.floor_price||0);
+            var image=String(c.photo_url||'');
+            var models=Array.isArray(c.models)?c.models:[];
+            var selectedModels=models.filter(function(m){
+                if(modelName&&String(m.name||'')!==modelName)return false;
+                if(q && String(c.name||'').toLowerCase().indexOf(q)===-1 &&
+                    String(m.name||'').toLowerCase().indexOf(q)===-1)return false;
+                return true;
+            });
 
-        if(!rows.length){
-            list.innerHTML = '<div class="empty">' + (portalCollectionsCache.length ? 'Ничего не найдено' : 'Нет данных') + '</div>';
-            return;
-        }
+            // If a collection is explicitly selected, show all its models.
+            // With no gift filter, keep the UI compact unless the search matched a model.
+            var showModels=!!giftSlug || !!modelName || !!q;
+            positionCount += 1 + (showModels?selectedModels.length:0);
 
-        list.innerHTML = rows.map(function(c){
-            var price = Number(c.floor_price || 0);
-            var image = String(c.photo_url || '');
-            var img = image
-                ? '<img class="portal-price-img" src="' + portalEsc(image) + '" alt="">'
-                : '<div class="portal-price-placeholder">🎁</div>';
-            return '<div class="portal-price-row portal-catalog-row" onclick="openPortalCollection(' + JSON.stringify(String(c.name||c.short_name||'')) .replace(/</g,'\\u003c') + ')">' +
-                img +
-                '<div class="portal-price-main">' +
-                    '<div class="portal-price-name">' + portalEsc(c.name || c.short_name || 'Gift') + '</div>' +
-                    '<div class="portal-price-meta">' +
-                        '<span>listed: ' + Number(c.listed_count||0).toLocaleString('ru-RU') + '</span>' +
-                        '<span>supply: ' + Number(c.supply||0).toLocaleString('ru-RU') + '</span>' +
-                        (Number(c.day_volume||0) ? '<span>24h: ' + Number(c.day_volume).toFixed(2) + ' TON</span>' : '') +
-                    '</div>' +
-                '</div>' +
-                '<div class="portal-price-value"><b>' + (price>0 ? price.toFixed(3)+' TON' : '—') + '</b><small>floor</small></div>' +
+            var img=image
+              ? '<img class="portal-price-img" src="'+portalEsc(image)+'" alt="">'
+              : '<div class="portal-price-placeholder">🎁</div>';
+
+            var modelHtml='';
+            if(showModels){
+              modelHtml=selectedModels.map(function(m){
+                var mp=Number(m.floor_price||0);
+                return '<div class="portal-result-model'+(modelName&&String(m.name||'')===modelName?' match':'')+'">'+
+                    '<div>'+
+                      '<div class="portal-item-name">'+portalEsc(m.name||'Model')+'</div>'+
+                      '<div class="portal-item-meta">'+portalEsc(c.name||'Gift')+' · модель</div>'+
+                      actionButtons(c,m)+
+                    '</div>'+
+                    '<div class="portal-item-price">'+(mp>0?mp.toFixed(3)+' TON':'—')+'</div>'+
+                '</div>';
+              }).join('');
+            }
+
+            return '<div class="portal-result-card">'+
+              '<div class="portal-result-main">'+
+                img+
+                '<div>'+
+                  '<div class="portal-price-name">'+portalEsc(c.name||c.short_name||'Gift')+'</div>'+
+                  '<div class="portal-price-meta"><span>'+(models.length)+' моделей</span><span>'+Number(c.listed_count||0).toLocaleString('ru-RU')+' listed</span></div>'+
+                  actionButtons(c,null)+
+                '</div>'+
+                '<div class="portal-item-price">'+(price>0?price.toFixed(3)+' TON':'—')+'</div>'+
+              '</div>'+modelHtml+
             '</div>';
         }).join('');
+
+        var count=document.getElementById('portalCatalogCount');
+        if(count)count.textContent=positionCount.toLocaleString('ru-RU')+' позиций';
+
+        list.innerHTML=html||'<div class="portal-daily-empty">Ничего не найдено</div>';
     };
 
-    window.openPortalCollection = function(name){
-        switchPortalTab('listings');
-        var sel = document.getElementById('portalListingCollection');
-        if(sel){
-            var found = false;
-            for(var i=0;i<sel.options.length;i++){
-                if(sel.options[i].value === name){ sel.selectedIndex = i; found = true; break; }
-            }
-            if(!found){
-                var o = document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o); sel.value=name;
-            }
-        }
-        portalListingsOffset = 0;
-        loadPortalListings(true);
-    };
-
-    window.resetPortalListings = function(){
-        portalListingsOffset = 0;
-        loadPortalListings(true);
-    };
-
-    window.loadPortalListings = async function(force){
-        var list = document.getElementById('portalListingsList');
-        if(!list) return;
-        if(force) list.innerHTML = '<div class="loading">Загрузка актуальных листингов</div>';
-
-        var collection = (document.getElementById('portalListingCollection')||{}).value || '';
-        var sort = (document.getElementById('portalListingSort')||{}).value || 'price_asc';
-
+    async function loadPortalTargets(){
         try{
-            var url = '/api/portal/listings?admin_id=' + encodeURIComponent(ADMIN_ID) +
-                '&offset=' + encodeURIComponent(portalListingsOffset) +
-                '&limit=' + encodeURIComponent(portalListingsLimit) +
-                '&sort=' + encodeURIComponent(sort) +
-                '&collection=' + encodeURIComponent(collection);
-
-            var r = await fetch(url, {cache:'no-store'});
-            var d = await r.json();
-            if(!r.ok || d.success === false) throw new Error(d.error || 'Не удалось получить листинги');
-
-            var items = Array.isArray(d.items) ? d.items : [];
-            portalListingsHasMore = !!d.has_more;
-
-            var stamp = document.getElementById('portalListingsUpdatedAt');
-            if(stamp) stamp.textContent = 'live: ' + new Date().toLocaleTimeString('ru-RU');
-
-            var cnt = document.getElementById('portalListingsCount');
-            if(cnt) cnt.textContent = d.total ? ('всего ' + Number(d.total).toLocaleString('ru-RU')) : (items.length + ' на странице');
-
-            var pageText = document.getElementById('portalPageText');
-            if(pageText) pageText.textContent = 'стр. ' + (Math.floor(portalListingsOffset / portalListingsLimit) + 1);
-
-            var prev = document.getElementById('portalPrevBtn');
-            var next = document.getElementById('portalNextBtn');
-            if(prev) prev.disabled = portalListingsOffset <= 0;
-            if(next) next.disabled = !portalListingsHasMore;
-
-            if(!items.length){
-                list.innerHTML = '<div class="empty">Нет активных листингов.</div>';
-                return;
-            }
-
-            list.innerHTML = items.map(function(g){
-                var image = String(g.image || '');
-                var img = image ? '<img class="portal-listing-img" src="' + portalEsc(image) + '" alt="">' :
-                    '<div class="portal-price-placeholder" style="width:56px;height:56px">🎁</div>';
-                var chips = [];
-                if(g.model) chips.push('<span class="portal-chip">Model: '+portalEsc(g.model)+'</span>');
-                if(g.backdrop) chips.push('<span class="portal-chip">BG: '+portalEsc(g.backdrop)+'</span>');
-                if(g.symbol) chips.push('<span class="portal-chip">Symbol: '+portalEsc(g.symbol)+'</span>');
-                return '<div class="portal-listing-row">' +
-                    img +
-                    '<div style="min-width:0">' +
-                        '<div class="portal-listing-title">' + portalEsc(g.title || g.name || 'Gift') + '</div>' +
-                        '<div class="portal-listing-attrs">' + chips.join('') + '</div>' +
-                    '</div>' +
-                    '<div class="portal-listing-price"><b>' + (Number(g.price_ton||0)>0 ? Number(g.price_ton).toFixed(3)+' TON' : '—') + '</b><small>актуальная цена</small></div>' +
-                '</div>';
-            }).join('');
-
-            portalSetError('');
-        }catch(e){
-            list.innerHTML = '<div class="empty">Ошибка загрузки Portal.</div>';
-            portalSetError(e.message || String(e));
-        }
-    };
-
-    window.portalPrevPage = function(){
-        portalListingsOffset = Math.max(0, portalListingsOffset - portalListingsLimit);
-        loadPortalListings(true);
-    };
-
-    window.portalNextPage = function(){
-        if(!portalListingsHasMore) return;
-        portalListingsOffset += portalListingsLimit;
-        loadPortalListings(true);
-    };
-
-    window.loadPortalDashboard = async function(force){
-        await Promise.all([loadPortalStatus(), loadPortalCollections(!!force)]);
-        if(portalActiveTab === 'listings') await loadPortalListings(!!force);
-    };
-
-    function startPortalAutoRefresh(){
-        if(portalCatalogTimer) clearInterval(portalCatalogTimer);
-        if(portalListingsTimer) clearInterval(portalListingsTimer);
-        if(portalStatusTimer) clearInterval(portalStatusTimer);
-
-        portalStatusTimer = setInterval(function(){
-            if(currentSection === 'portal') loadPortalStatus();
-        }, 30000);
-
-        portalCatalogTimer = setInterval(function(){
-            if(currentSection === 'portal') loadPortalCollections(false);
-        }, 20000);
-
-        portalListingsTimer = setInterval(function(){
-            if(currentSection === 'portal' && portalActiveTab === 'listings') loadPortalListings(false);
-        }, 10000);
+            var r=await fetch('/api/admin/portal-targets?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var d=await r.json();
+            if(!r.ok||!d.success)throw new Error(d.error||'Ошибка targets');
+            portalTargets={cases:d.cases||[],modes:d.modes||[]};
+            renderPortalModePools();
+            return d;
+        }catch(e){portalSetError(e.message||String(e));return null;}
     }
 
-    document.addEventListener('DOMContentLoaded', startPortalAutoRefresh);
+    async function loadPortalModePools(){
+        try{
+            var r=await fetch('/api/admin/mode-gift-pools?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var d=await r.json();
+            if(!r.ok||!d.success)throw new Error(d.error||'Ошибка mode pools');
+            portalModePools=d.pools||{};
+            if(d.modes)portalTargets.modes=d.modes;
+            renderPortalModePools();
+            return d;
+        }catch(e){return null;}
+    }
+
+    function renderPortalModePools(){
+        var box=document.getElementById('portalModePools');
+        if(!box)return;
+        var modes=portalTargets.modes||[];
+        if(!modes.length){box.innerHTML='<div class="empty">Игровые режимы не найдены</div>';return;}
+        box.innerHTML=modes.map(function(m){
+            var count=(portalModePools[m.id]||[]).length;
+            if(m.pool_count!=null&&count===0)count=Number(m.pool_count||0);
+            return '<div class="portal-mode-pool-row"><b>'+portalEsc(m.name||m.id)+'</b><span>'+count+' подарков</span></div>';
+        }).join('');
+    }
+
+    async function portalDoAction(action,slug,modelName,extra){
+        var payload={admin_id:ADMIN_ID,action:action,short_name:slug,model_name:modelName||null};
+        Object.assign(payload,extra||{});
+        var r=await fetch('/api/admin/portal-item-action',{
+            method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+        });
+        var d=await r.json();
+        if(!r.ok||!d.success)throw new Error(d.error||'Ошибка');
+        showToast(d.message||'Готово','ok');
+        if(action==='mode'){await loadPortalModePools();await loadPortalTargets();}
+        return d;
+    }
+
+    async function openPortalCaseTarget(slug,modelName){
+        if(!portalTargets.cases.length)await loadPortalTargets();
+        var cases=portalTargets.cases||[];
+        if(!cases.length){showToast('Сначала создай кейс','err');return;}
+
+        var html='<div class="modal-title">Добавить в кейс</div>'+
+          '<div class="form-group"><label class="form-label">Шанс, %</label><input class="form-input" id="portalTargetChance" type="number" min="0.01" max="100" step="0.01" value="1"></div>'+
+          '<div class="portal-target-list">'+cases.map(function(c){
+            return '<button class="portal-target-btn" data-case-target="'+portalAttr(c.id)+'"><b>'+portalEsc(c.name||('Case '+c.id))+'</b><small>'+Number(c.gifts_count||0)+' подарков</small></button>';
+          }).join('')+'</div>';
+        openModal(html);
+
+        setTimeout(function(){
+            document.querySelectorAll('[data-case-target]').forEach(function(btn){
+                btn.onclick=async function(){
+                    var chance=Number((document.getElementById('portalTargetChance')||{}).value||1);
+                    try{
+                        await portalDoAction('case',slug,modelName,{case_id:btn.dataset.caseTarget,chance:chance});
+                        closeModal();
+                        if(typeof loadCasesList==='function')loadCasesList();
+                    }catch(e){showToast(e.message||'Ошибка','err');}
+                };
+            });
+        },0);
+    }
+
+    async function openPortalModeTarget(slug,modelName){
+        if(!portalTargets.modes.length)await loadPortalTargets();
+        var modes=portalTargets.modes||[];
+        if(!modes.length){showToast('Режимы не найдены','err');return;}
+
+        var html='<div class="modal-title">Добавить в режим</div>'+
+          '<div class="portal-target-list">'+modes.map(function(m){
+            var count=(portalModePools[m.id]||[]).length;
+            return '<button class="portal-target-btn" data-mode-target="'+portalAttr(m.id)+'"><b>'+portalEsc(m.name||m.id)+'</b><small>пул: '+count+'</small></button>';
+          }).join('')+'</div>';
+        openModal(html);
+
+        setTimeout(function(){
+            document.querySelectorAll('[data-mode-target]').forEach(function(btn){
+                btn.onclick=async function(){
+                    try{
+                        await portalDoAction('mode',slug,modelName,{mode_id:btn.dataset.modeTarget});
+                        closeModal();
+                    }catch(e){showToast(e.message||'Ошибка','err');}
+                };
+            });
+        },0);
+    }
+
+    document.addEventListener('click',function(e){
+        var btn=e.target.closest('[data-portal-action]');
+        if(!btn)return;
+        var action=btn.dataset.portalAction;
+        var slug=btn.dataset.slug||'';
+        var modelName=btn.dataset.model||'';
+
+        if(action==='catalog'){
+            portalDoAction('catalog',slug,modelName).catch(function(err){showToast(err.message||'Ошибка','err');});
+        }else if(action==='case'){
+            openPortalCaseTarget(slug,modelName);
+        }else if(action==='mode'){
+            openPortalModeTarget(slug,modelName);
+        }
+    });
+
+    window.loadPortalDashboard=async function(){
+        await Promise.all([
+            loadPortalStatus(),
+            loadPortalHourlyCatalog(),
+            loadPortalHourlyStatus(),
+            loadPortalTargets(),
+            loadPortalModePools()
+        ]);
+        startPortalDailyPolling(false);
+    };
+
+    window.startPortalDailyPolling=function(fast){
+        if(portalDailyPoll)clearInterval(portalDailyPoll);
+        var interval=fast?2500:60000;
+        portalDailyPoll=setInterval(async function(){
+            if(typeof currentSection!=='undefined'&&currentSection!=='portal')return;
+            var d=await loadPortalHourlyStatus();
+            if(d&&d.job&&d.job.running&&interval!==2500)startPortalDailyPolling(true);
+            else if(d&&d.job&&!d.job.running&&interval!==60000)startPortalDailyPolling(false);
+        },interval);
+    };
+
+    document.addEventListener('DOMContentLoaded',function(){startPortalDailyPolling(false);});
 })();
 </script>
 
