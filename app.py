@@ -169,18 +169,31 @@ fragment_cache_time = None
 fragment_models_cache = {}
 fragment_models_cache_time = {}
 
-# ─── Portals Marketplace Integration (v2, через aportalsmp) ─────────────
+# ─── Portals Marketplace Integration ───────────────────────────────────
+# Рекомендуемый пакет на Render: faportalsmp (импортируется как `aportalsmp`).
+# Поддерживаем и старую, и новую структуру пакета.
 try:
-    import aportalsmp
-    from aportalsmp.gifts import collections as _portal_collections_fn
-    from aportalsmp.gifts import search as _portal_search_fn
-    from aportalsmp.gifts import buy as _portal_buy_fn
-    from aportalsmp.gifts import transferGifts as _portal_transfer_fn
+    import aportalsmp as _portal_lib
+    try:
+        from aportalsmp.gifts import collections as _portal_collections_fn
+        from aportalsmp.gifts import search as _portal_search_fn
+        from aportalsmp.gifts import buy as _portal_buy_fn
+        from aportalsmp.gifts import transferGifts as _portal_transfer_fn
+    except Exception:
+        _portal_collections_fn = _portal_lib.collections
+        _portal_search_fn = _portal_lib.search
+        _portal_buy_fn = _portal_lib.buy
+        _portal_transfer_fn = _portal_lib.transferGifts
     _APORTALSMP_AVAILABLE = True
-    logger.info("✅ aportalsmp загружен")
-except ImportError as _ie:
+    logger.info("✅ Portal SDK загружен (aportalsmp/faportalsmp)")
+except Exception as _ie:
+    _portal_lib = None
+    _portal_collections_fn = None
+    _portal_search_fn = None
+    _portal_buy_fn = None
+    _portal_transfer_fn = None
     _APORTALSMP_AVAILABLE = False
-    logger.warning(f"⚠️ aportalsmp НЕ установлен: {_ie}. Установи: pip install aportalsmp")
+    logger.warning(f"⚠️ Portal SDK НЕ установлен: {_ie}. Добавь в requirements.txt: faportalsmp>=2.2.0,<3")
 
 import asyncio as _portal_asyncio
 
@@ -224,28 +237,39 @@ _portal_token_lock = threading.Lock()
 _portal_auth_lock = threading.Lock()
 
 
+def _portal_normalize_auth(raw):
+    """Нормализует Portal authData.
+
+    Portals ожидает Authorization в виде `tma query_id=...&user=...&...`.
+    Старый код отрезал `tma `, из-за чего авторизация могла не работать.
+    """
+    token = str(raw or '').strip()
+    if not token:
+        return ''
+    # Иногда копируют значение вместе с названием заголовка.
+    if token.lower().startswith('authorization:'):
+        token = token.split(':', 1)[1].strip()
+    # Если пользователь вставил только Telegram initData — добавляем схему tma.
+    if not token.lower().startswith('tma '):
+        token = 'tma ' + token
+    return 'tma ' + token[4:].strip()
+
+
 def _portal_get_token():
-    """Возвращает сохранённый initData токен Portal (кэш 30 сек)."""
+    """Возвращает Portal authData (env → persistent file) с кэшем 30 сек."""
     with _portal_token_lock:
         now = time.time()
         if _portal_token_cache['token'] and (now - _portal_token_cache['loaded_at']) < 30:
             return _portal_token_cache['token']
 
-        token = ''
-        # 1. env
-        token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
-        # 2. файл
+        token = _portal_normalize_auth(os.getenv('PORTAL_AUTH_TOKEN', ''))
         if not token:
             try:
                 if os.path.exists(PORTAL_TOKEN_FILE):
                     with open(PORTAL_TOKEN_FILE, 'r', encoding='utf-8') as f:
-                        token = f.read().strip()
+                        token = _portal_normalize_auth(f.read())
             except Exception as e:
                 logger.warning(f'Portal token file read failed: {e}')
-
-        # Нормализуем (убираем префикс tma)
-        if token.startswith('tma '):
-            token = token[4:].strip()
 
         _portal_token_cache['token'] = token
         _portal_token_cache['loaded_at'] = now
@@ -253,10 +277,10 @@ def _portal_get_token():
 
 
 def _portal_save_token(token):
-    """Сохраняет токен в файл + env."""
-    token = str(token or '').strip()
-    if token.startswith('tma '):
-        token = token[4:].strip()
+    """Сохраняет Portal authData на Persistent Disk + в env текущего процесса."""
+    token = _portal_normalize_auth(token)
+    if not token:
+        raise ValueError('Portal token пустой')
 
     os.makedirs(os.path.dirname(PORTAL_TOKEN_FILE), exist_ok=True)
     with open(PORTAL_TOKEN_FILE, 'w', encoding='utf-8') as f:
@@ -266,10 +290,11 @@ def _portal_save_token(token):
     with _portal_token_lock:
         _portal_token_cache['token'] = token
         _portal_token_cache['loaded_at'] = time.time()
+    return token
 
 
 def _portal_delete_token():
-    """Удаляет токен."""
+    """Удаляет сохранённый Portal authData."""
     try:
         if os.path.exists(PORTAL_TOKEN_FILE):
             os.remove(PORTAL_TOKEN_FILE)
@@ -280,14 +305,13 @@ def _portal_delete_token():
         _portal_token_cache['token'] = ''
         _portal_token_cache['loaded_at'] = 0
 
-
 def _portal_validate_token(token):
-    """Проверяет формат initData."""
+    """Проверяет формат Portal authData, не изменяя сохранённое значение."""
     if not token:
         return False, 'Токен пустой'
-    token = str(token).strip()
-    if token.startswith('tma '):
-        token = token[4:].strip()
+    token = _portal_normalize_auth(token)
+    token_body = token[4:].strip() if token.lower().startswith('tma ') else token
+    token = token_body
     if len(token) < 30:
         return False, 'Токен слишком короткий. Нужна ВСЯ строка initData из Telegram WebApp.'
     if 'user=' not in token:
@@ -343,6 +367,30 @@ def _portal_run_async(coro, timeout=30):
         return None, f'Таймаут {timeout} сек'
     except Exception as e:
         return None, str(e)
+
+
+def _portal_test_connection(token=None):
+    """Проверяет реальную авторизацию через Portal SDK."""
+    token = _portal_normalize_auth(token or _portal_get_token())
+    if not token:
+        return False, {'error': 'PORTAL_AUTH_TOKEN не задан'}
+    valid, err = _portal_validate_token(token)
+    if not valid:
+        return False, {'error': err}
+    if not _APORTALSMP_AVAILABLE or _portal_collections_fn is None:
+        return False, {'error': 'Portal SDK не установлен: добавь faportalsmp>=2.2.0,<3 в requirements.txt'}
+    try:
+        loop = _portal_asyncio.new_event_loop()
+        try:
+            result = loop.run_until_complete(
+                _portal_asyncio.wait_for(_portal_collections_fn(authData=token, limit=1), timeout=20)
+            )
+        finally:
+            loop.close()
+        items = _portal_extract_items(result)
+        return True, {'collections_count': len(items), 'message': 'Portal подключён'}
+    except Exception as e:
+        return False, {'error': str(e)}
 
 
 def _portal_extract_items(colls):
@@ -8141,8 +8189,13 @@ def start_portal_price_sync_loop():
                 if elapsed >= PORTAL_SYNC_INTERVAL_MINUTES:
                     logger.info(f"🔄 Starting Portal price sync (last sync: {int(elapsed)}m ago)...")
                     
-                    # Call the existing _portal_sync_floors function
-                    result = _portal_sync_floors()
+                    token = _portal_get_token()
+                    if not token:
+                        logger.info('ℹ️ Portal sync skipped: PORTAL_AUTH_TOKEN не задан')
+                        last_sync_time = now
+                        time.sleep(60)
+                        continue
+                    result = _portal_do_sync(token)
                     
                     if result.get('success'):
                         updated_count = result.get('updated', 0)
@@ -12009,40 +12062,31 @@ def portal_search_route():
 def _check_aportalsmp():
     if _APORTALSMP_AVAILABLE:
         return True, None
-    return False, 'Модуль aportalsmp не установлен. Установи: pip install aportalsmp'
+    return False, 'Portal SDK не установлен. Добавь в requirements.txt: faportalsmp>=2.2.0,<3'
 
 
 def _validate_portal_initdata_improved(token):
-    """Улучшенная проверка initData с понятными ошибками"""
+    """Проверка формата Portal authData с понятной ошибкой."""
     if not token:
         return False, 'Токен пустой'
-
-    token = str(token).strip()
-
-    if token.startswith('tma '):
-        token = token[4:].strip()
-
-    if len(token) < 30:
-        return False, 'Токен слишком короткий. Нужна ВСЯ строка initData. Открой Telegram Web -> F12 -> Console -> введи Telegram.WebApp.initData -> скопируй целиком.'
-
-    if 'user=' not in token:
-        return False, 'Не найдено "user=". Копируй именно initData, не hash отдельно. Строка должна начинаться с user=%7B%22id%22...'
-
-    if 'hash=' not in token:
-        return False, 'Не найдено "hash=". Скопируй ВСЮ строку initData включая hash= в конце.'
-
-    user_match = re.search(r'user=([^&]+)', token)
+    normalized = _portal_normalize_auth(token)
+    body = normalized[4:].strip() if normalized.lower().startswith('tma ') else normalized
+    if len(body) < 30:
+        return False, 'Portal authData слишком короткий. Нужна вся строка Authorization / initData.'
+    if 'user=' not in body:
+        return False, 'В Portal authData не найдено поле user=. Скопируй всю строку Authorization, начинающуюся с tma.'
+    if 'hash=' not in body:
+        return False, 'В Portal authData не найдено поле hash=. Скопируй строку целиком.'
+    user_match = re.search(r'user=([^&]+)', body)
     if not user_match:
-        return False, 'Некорректный формат поля "user="'
-
+        return False, 'Некорректное поле user='
     try:
         import urllib.parse
         decoded = urllib.parse.unquote(user_match.group(1))
         if not re.search(r'"id"\s*:\s*\d+', decoded):
-            return False, 'В поле "user" нет числового "id". Токен повреждён.'
+            return False, 'В поле user нет Telegram id. Токен повреждён.'
     except Exception:
-        return False, 'Не удалось распарсить поле "user"'
-
+        return False, 'Не удалось разобрать поле user в Portal authData'
     return True, None
 
 
@@ -12051,15 +12095,8 @@ _validate_portal_initdata = _validate_portal_initdata_improved
 @app.route('/api/portal/token', methods=['GET', 'POST', 'DELETE'])
 def portal_token():
     global _portal_auth_data
-    token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
-    token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
-    if not token:
-        try:
-            if os.path.exists(token_file):
-                with open(token_file, 'r', encoding='utf-8') as f:
-                    token = f.read().strip()
-        except Exception:
-            token = ''
+    token_file = PORTAL_TOKEN_FILE
+    token = _portal_get_token()
 
     if request.method == 'GET':
         try:
@@ -12079,9 +12116,7 @@ def portal_token():
             admin_id = data.get('admin_id')
             if str(admin_id) != str(ADMIN_ID):
                 return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-            if os.path.exists(token_file):
-                os.remove(token_file)
-            os.environ.pop('PORTAL_AUTH_TOKEN', None)
+            _portal_delete_token()
             _portal_auth_data = None
             return jsonify({'success': True, 'message': 'Токен удалён'})
         except Exception as e:
@@ -12102,29 +12137,13 @@ def portal_token():
         if not is_valid:
             return jsonify({'success': False, 'error': err, 'verified': False})
 
-        if token.startswith('tma '):
-            token = token[4:]
-
-        os.makedirs(os.path.dirname(token_file), exist_ok=True)
-        with open(token_file, 'w', encoding='utf-8') as f:
-            f.write(token)
-        os.environ['PORTAL_AUTH_TOKEN'] = token
-
+        token = _portal_save_token(token)
         _portal_auth_data = token
 
-        verified = False
-        collections_count = 0
-        try:
-            import asyncio
-            from aportalsmp.gifts import collections as portal_collections
-            loop = asyncio.new_event_loop()
-            colls = loop.run_until_complete(portal_collections(authData=token, limit=1))
-            loop.close()
-            collections_count = len(_extract_items(colls))
-            verified = True
-        except Exception as pe:
-            logger.warning(f'Portal token verify failed: {pe}')
-            verified = False
+        verified, verify_info = _portal_test_connection(token)
+        collections_count = int((verify_info or {}).get('collections_count', 0) or 0)
+        if not verified:
+            logger.warning(f"Portal token verify failed: {(verify_info or {}).get('error')}")
 
         return jsonify({
             'success': True,
@@ -12143,12 +12162,7 @@ def portal_auth_status():
     """Проверка статуса авторизации Portal."""
     global _portal_auth_data
     try:
-        token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
-        if not token:
-            token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
-            if os.path.exists(token_file):
-                with open(token_file, 'r', encoding='utf-8') as f:
-                    token = f.read().strip()
+        token = _portal_get_token()
 
         if not token:
             return jsonify({'authorized': False, 'has_token': False, 'error': 'Токен не задан'})
@@ -12157,31 +12171,23 @@ def portal_auth_status():
         if not is_valid:
             return jsonify({'authorized': False, 'has_token': True, 'error': err})
 
-        if token.startswith('tma '):
-            token = token[4:]
-
+        token = _portal_normalize_auth(token)
         _portal_auth_data = token
 
-        try:
-            import asyncio
-            from aportalsmp.gifts import collections as portal_collections
-            loop = asyncio.new_event_loop()
-            colls = loop.run_until_complete(portal_collections(authData=token, limit=1))
-            loop.close()
-            items = _extract_items(colls)
+        ok, details = _portal_test_connection(token)
+        if ok:
             return jsonify({
                 'authorized': True,
                 'has_token': True,
-                'user': {'first_name': 'Portal', 'username': 'user'},
-                'collections_count': len(items),
+                'user': {'first_name': 'Portal', 'username': 'connected'},
+                'collections_count': int((details or {}).get('collections_count', 0) or 0),
             })
-        except Exception as pe:
-            logger.warning(f'Portal auth-status failed: {pe}')
-            return jsonify({
-                'authorized': False,
-                'has_token': True,
-                'error': f'Ошибка проверки токена: {pe}'
-            })
+        logger.warning(f"Portal auth-status failed: {(details or {}).get('error')}")
+        return jsonify({
+            'authorized': False,
+            'has_token': True,
+            'error': str((details or {}).get('error') or 'Portal auth failed')
+        })
     except Exception as e:
         logger.error(f'portal_auth_status error: {e}')
         return jsonify({'authorized': False, 'has_token': False, 'error': str(e)})
@@ -12208,27 +12214,10 @@ def portal_save_token():
         _portal_save_token(token)
         _portal_auth_data = _portal_get_token()
 
-        # Быстрая реальная проверка через HTTP API; пустой список не означает,
-        # что токен не сохранён.
-        verified = False
-        warning = None
-        collections_count = 0
-        try:
-            ok, result, _status = _portal_request('GET', '/collections', params={'limit': 1, 'offset': 0}, timeout=12)
-            if ok:
-                verified = True
-                if isinstance(result, dict):
-                    for key in ('collections', 'items', 'result', 'data'):
-                        value = result.get(key)
-                        if isinstance(value, list):
-                            collections_count = len(value)
-                            break
-                elif isinstance(result, list):
-                    collections_count = len(result)
-            else:
-                warning = str(result)
-        except Exception as pe:
-            warning = str(pe)
+        # Реальная проверка через Portal SDK.
+        verified, verify_info = _portal_test_connection(_portal_get_token())
+        collections_count = int((verify_info or {}).get('collections_count', 0) or 0)
+        warning = None if verified else str((verify_info or {}).get('error') or 'Portal auth failed')
 
         response = {
             'success': True,
@@ -12257,15 +12246,7 @@ def portal_logout():
         if str(admin_id) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
 
-        token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
-        if os.path.exists(token_file):
-            try:
-                os.remove(token_file)
-            except Exception:
-                pass
-
-        os.environ.pop('PORTAL_AUTH_TOKEN', None)
-
+        _portal_delete_token()
         _portal_auth_data = None
 
         return jsonify({'success': True, 'message': 'Токен удалён'})
@@ -12286,32 +12267,12 @@ def portal_status_legacy():
         error_msg = None
 
         if token:
-            is_valid, err = _validate_portal_initdata(token)
-            if not is_valid:
-                error_msg = err
+            ok, test = _portal_test_connection(token)
+            connected = bool(ok)
+            if ok:
+                user_info = {'first_name': 'Portal', 'username': 'connected'}
             else:
-                # Сначала проверяем реальный Portal HTTP API. Это надёжнее,
-                # чем считать успешным пустой ответ aportalsmp.
-                try:
-                    ok, data, status = _portal_request('GET', '/collections', params={'limit': 1, 'offset': 0}, timeout=12)
-                    if ok:
-                        items = []
-                        if isinstance(data, dict):
-                            for key in ('collections', 'items', 'result', 'data'):
-                                value = data.get(key)
-                                if isinstance(value, list):
-                                    items = value
-                                    break
-                        elif isinstance(data, list):
-                            items = data
-                        connected = True
-                        user_info = {'first_name': 'Portal', 'username': 'user'}
-                        if not items:
-                            error_msg = 'Portal доступен, но вернул пустой список коллекций'
-                    else:
-                        error_msg = str(data)
-                except Exception as pe:
-                    error_msg = f'Проверка Portal не удалась: {pe}'
+                error_msg = str((test or {}).get('error') or 'Portal connection failed')
 
         total_collections = 0
         try:
@@ -12434,14 +12395,35 @@ def portal_connect():
         
         auth = _get_portal_auth()
         if not auth:
-            return jsonify({
-                'success': False,
-                'error': 'Не удалось авторизоваться. Проверьте PORTAL_AUTH_TOKEN или PORTAL_API_ID/PORTAL_API_HASH'
-            })
-        
-        return jsonify({'success': True, 'message': 'Portal подключён'})
+            return jsonify({'success': False, 'error': 'PORTAL_AUTH_TOKEN не задан'})
+        ok, details = _portal_test_connection(auth)
+        if not ok:
+            return jsonify({'success': False, **details})
+        return jsonify({'success': True, **details})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+
+@app.route('/api/portal/health', methods=['GET'])
+def portal_health():
+    """Безопасная диагностика Portal без выдачи полного authData."""
+    try:
+        admin_id = request.args.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        token = _portal_get_token()
+        ok, details = _portal_test_connection(token)
+        return jsonify({
+            'success': bool(ok),
+            'has_token': bool(token),
+            'token_preview': (token[:12] + '...') if token else '',
+            'sdk_available': bool(_APORTALSMP_AVAILABLE),
+            'sync_enabled': bool(PORTAL_SYNC_ENABLED),
+            'website_url': WEBSITE_URL,
+            **details,
+        }), (200 if ok else 503)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/portal/info', methods=['GET'])
@@ -12502,7 +12484,10 @@ def portal_info():
 def portal_sync_prices():
     """Admin endpoint: sync gift prices from Portal marketplace floors."""
     try:
-        result = _portal_sync_floors()
+        token = _portal_get_token()
+        if not token:
+            return jsonify({'success': False, 'error': 'PORTAL_AUTH_TOKEN не задан'}), 400
+        result = _portal_do_sync(token)
         return jsonify(result)
     except Exception as e:
         logger.error(f"Portal sync error: {e}")
@@ -22641,8 +22626,17 @@ def _lazy_init():
             start_ultimate_crash_loop()
         except Exception as e:
             logger.error(f"❌ Не удалось запустить Ultimate Crash loop: {e}")
-        # Portal auto-sync prices
+        # Portal connection + auto-sync
         try:
+            _pt = _portal_get_token()
+            if _pt:
+                _ok, _details = _portal_test_connection(_pt)
+                if _ok:
+                    logger.info(f"✅ Portal подключён: collections_test={_details.get('collections_count', 0)}")
+                else:
+                    logger.warning(f"⚠️ Portal auth не прошёл: {_details.get('error')}")
+            else:
+                logger.info("ℹ️ Portal не подключён: PORTAL_AUTH_TOKEN не задан")
             if PORTAL_SYNC_ENABLED:
                 start_portal_price_sync_loop()
             else:
