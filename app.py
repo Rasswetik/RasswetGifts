@@ -23674,6 +23674,27 @@ def setup_telegram_webhook():
             err = r.get('description', 'unknown')
             logger.warning(f'⚠️ Webhook не установлен: {err}')
             return False
+        # ─── Диагностика: сразу проверяем, что Telegram реально видит вебхук ───
+        # Логируем это явно в Render-логи, чтобы не проверять руками через
+        # браузер — если тут last_error_message не пустой, значит Telegram
+        # пытался достучаться и получил ошибку (таймаут, неверный SSL,
+        # 5xx от самого приложения и т.д.) — и именно поэтому бот "не отвечает".
+        try:
+            info = tg_api('getWebhookInfo')
+            if info.get('ok'):
+                res = info.get('result', {})
+                logger.info(
+                    f"🔎 WebhookInfo: url={res.get('url')} "
+                    f"pending_update_count={res.get('pending_update_count')} "
+                    f"last_error_message={res.get('last_error_message')} "
+                    f"last_error_date={res.get('last_error_date')}"
+                )
+                if res.get('last_error_message'):
+                    logger.warning(
+                        f"⚠️ Telegram сообщает об ошибке доставки апдейтов: {res.get('last_error_message')}"
+                    )
+        except Exception as _wi_e:
+            logger.warning(f'⚠️ Не удалось получить getWebhookInfo: {_wi_e}')
         # Команды бота
         tg_api('setMyCommands', commands=[
             {'command': 'start', 'description': 'Запустить бота'},
