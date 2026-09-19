@@ -26060,10 +26060,29 @@ def api_admin_leaderboard_distribute():
         return jsonify({'success': False, 'error': str(e)})
 
 
-# Webhook запускается из _lazy_init в отдельном фоне.
+# ─── Render fix: не ждём первый HTTP-запрос, чтобы поднять бота ───
+# Раньше _lazy_init() (регистрация вебхука + фоновые циклы) запускалась
+# только из @app.before_request, то есть только после ПЕРВОГО визита
+# на сайт. На Render (особенно free-тариф) это значит, что если
+# пользователь сразу пишет боту в Telegram, а сайт ещё никто не
+# открывал — апдейт придёт на ещё не зарегистрированный вебхук, и бот
+# промолчит. Поэтому запускаем инициализацию сразу при импорте модуля —
+# это отработает и при запуске через `python app.py`, и при запуске
+# через gunicorn (gunicorn просто импортирует app.py, не вызывая
+# app.run()), то есть в обоих случаях вебхук встанет сразу при старте
+# процесса, а не по факту первого запроса.
+try:
+    _ensure_init_started()
+except Exception as _e:
+    logger.error(f"❌ Не удалось запустить раннюю инициализацию: {_e}")
+
+# Webhook запускается из _lazy_init в отдельном фоне (см. выше).
 
 if __name__ == '__main__':
-    host = os.getenv('HOST', '127.0.0.1')
+    # На Render сервис ОБЯЗАН слушать 0.0.0.0 и порт из $PORT — иначе
+    # платформа не сможет достучаться до контейнера и деплой будет
+    # считаться "неживым", даже если процесс запустился.
+    host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', 5000))
     
     print("\n" + "=" * 60)
@@ -26085,4 +26104,9 @@ if __name__ == '__main__':
     print("🤖 Telegram бот:  webhook")
     print("\n⚡ Нажмите Ctrl+C для остановки\n")
     
-    app.run(host=host, port=port, debug=False, use_reloader=False)
+    # threaded=True критично для бота: без него Flask dev-сервер
+    # обрабатывает по одному запросу за раз, и пока выполняется долгий
+    # запрос (например, синк цен Portal/Fragment), апдейты от Telegram
+    # просто ждут в очереди — бот выглядит "зависшим". Для реальной
+    # прод-нагрузки на Render всё же лучше gunicorn (см. Procfile).
+    app.run(host=host, port=port, debug=False, use_reloader=False, threaded=True)
