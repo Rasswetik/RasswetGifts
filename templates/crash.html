@@ -678,6 +678,101 @@ body.bg-space{background-color:#020611;background-image:radial-gradient(circle a
 }
 </style>
 
+<style id="halloween-theme">
+/* ══════════════ HALLOWEEN EVENT THEME (фиолетовое оформление) ══════════════
+   Включается/выключается на лету через body.classList('halloween-mode'),
+   которое ставится в JS по флагу game.is_halloween, приходящему с сервера
+   (см. applyHalloweenTheme / poll status). Правит фон страницы, игровое
+   поле, кнопку ставки, историю коэффициентов и нижнюю навигацию. */
+body.halloween-mode{
+    background:#150a24;
+    background-image:radial-gradient(ellipse 100% 60% at 50% 0%, #2c1250 0%, #150a24 60%);
+}
+.halloween-mode .game-field{
+    background:#0d0618;
+    border-color:rgba(168,85,247,.35);
+    box-shadow:inset 0 0 90px rgba(147,51,234,.14),0 0 40px rgba(147,51,234,.18);
+}
+.halloween-mode .game-field::before{
+    background-image:linear-gradient(rgba(168,85,247,.24) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,.24) 1px,transparent 1px);
+    background-size:48px 48px;
+    opacity:.5;
+    animation:none;
+}
+.halloween-mode .game-field::after{
+    background:radial-gradient(circle at 26% 32%,rgba(147,51,234,.16),transparent 42%),radial-gradient(circle at 76% 68%,rgba(217,70,239,.12),transparent 38%),radial-gradient(circle at 55% 85%,rgba(255,140,0,.06),transparent 30%);
+    filter:blur(6px);
+}
+.halloween-mode .game-field.flying{
+    box-shadow:inset 0 0 100px rgba(168,85,247,.14),0 0 45px rgba(168,85,247,.18);
+    background-image:radial-gradient(ellipse at 50% 65%,rgba(168,85,247,.14),transparent 55%);
+}
+.halloween-mode .game-field.counting{
+    box-shadow:inset 0 0 120px rgba(216,180,254,.10),0 0 45px rgba(216,180,254,.10);
+}
+.halloween-mode #cdDisplay,
+.halloween-mode #cdDisplay.active{
+    text-shadow:0 0 26px rgba(216,180,254,.4),0 0 70px rgba(147,51,234,.22) !important;
+}
+.halloween-mode .coeff-box{
+    background:rgba(168,85,247,.18);
+    color:#E4C6FF;
+    border-color:rgba(168,85,247,.4);
+    text-shadow:0 0 18px rgba(168,85,247,.4);
+}
+.halloween-mode .coeff-box.crashed{
+    background:rgba(249,105,153,.2);
+    color:#F96999;
+    border-color:rgba(249,105,153,.35);
+}
+.halloween-mode .coeff-box.waiting{
+    background:rgba(168,85,247,.18);
+    color:#E4C6FF;
+}
+.halloween-mode .rocket-wrap img{
+    filter:drop-shadow(0 0 22px rgba(168,85,247,.55)) drop-shadow(0 0 46px rgba(147,51,234,.28));
+}
+.halloween-mode .rocket-wrap.flying:after{
+    background:linear-gradient(180deg,rgba(216,180,254,.75),rgba(147,51,234,.35),transparent);
+}
+.halloween-mode .action-btn{
+    background:linear-gradient(135deg,#7C3AED,#4C1D95);
+    border-color:rgba(168,85,247,.45);
+    box-shadow:0 8px 25px rgba(124,58,237,.35);
+}
+.halloween-mode .action-btn.state-cashout{
+    background:linear-gradient(135deg,#A855F7,#7C3AED);
+    color:#fff;
+    box-shadow:0 12px 35px rgba(168,85,247,.4);
+    border-color:rgba(168,85,247,.55);
+}
+.halloween-mode .action-btn.state-cancel{
+    background:linear-gradient(135deg,#E8527A,#C42247);
+}
+.halloween-mode .h-pill.mid{background:rgba(168,85,247,.14);color:#E4C6FF;border-color:rgba(168,85,247,.28)}
+.halloween-mode .h-pill.high,.halloween-mode .h-pill.mega{background:rgba(168,85,247,.2);color:#E9D5FF;border-color:rgba(168,85,247,.35)}
+.halloween-mode .bonus-badge{
+    background:linear-gradient(135deg,#A855F7,#6D28D9);
+    color:#fff;
+    box-shadow:0 4px 20px rgba(147,51,234,.6);
+}
+.halloween-mode .game-field.bonus-mode{
+    background:radial-gradient(ellipse at center, #3a1259 0%, #0d0618 100%);
+    border-color:rgba(216,180,254,.5);
+    box-shadow:inset 0 0 120px rgba(216,180,254,.16),0 0 60px rgba(168,85,247,.32);
+}
+.halloween-mode .action-btn.state-cashout.bonus-cashout{
+    background:linear-gradient(135deg,#D8B4FE 0%,#A855F7 50%,#7C3AED 100%);
+    color:#1a0a2e;
+    box-shadow:0 12px 45px rgba(168,85,247,.7);
+    border-color:rgba(216,180,254,.8);
+}
+.halloween-mode .bottom-nav{border-top-color:rgba(168,85,247,.18)}
+.halloween-mode .bottom-nav-item.active{background:rgba(124,58,237,.22);color:#D8B4FE}
+.halloween-mode .top-left .ping-pill{border-color:rgba(168,85,247,.35);background:rgba(168,85,247,.1);color:#D8B4FE}
+.halloween-mode .settings-btn-sm{display:none !important}
+</style>
+
 </head>
 <body>
 
@@ -894,6 +989,14 @@ var prevStatus = 'waiting';
 var targetMult = 5.0;
 var isBonusRound = false;
 
+/* ═══ HALLOWEEN EVENT ═══
+   Флаг приходит с сервера в game.is_halloween (см. /api/ultimate-crash/simple-status),
+   управляется админом через переключатель "Хэллоуин" события Witch Hat Party.
+   Пока флаг = true: фиолетовое оформление, ракета — призрак, кнопка выбора
+   скинов ракеты скрыта. */
+var HALLOWEEN_EVENT = false;
+var GHOST_IMAGE_SRC = '/static/ghost.gif';
+
 /* ═══ TIME-BASED MATH ═══ */
 var flyingStartedAt = 0;         // performance.now() когда ракета полетела (1.00x)
 var countingStartedAt = 0;       // performance.now() когда начался отсчёт
@@ -938,7 +1041,8 @@ var NON_BETTABLE_GIFT_IDS = [110, 111];
 var currentRocket = localStorage.getItem('crash_rocket') || 'crash';
 // Настройки визуала больше не выбираются пользователем: фон всегда "клетка"
 // (graph), эффекты — всегда сбалансированный режим, ракета не подменяется
-// подарком. Единственная настройка, оставшаяся в UI, — выбор скина ракеты.
+// подарком. Единственная настройка, оставшаяся в UI, — выбор скина ракеты
+// (и та скрывается на время хэллоуин-ивента).
 var showGifts = false;
 var autoWithdrawGuard = true;
 var crashBackground = 'graph';
@@ -1014,6 +1118,25 @@ function updatePingUI(ms){
     pill.classList.remove('medium','high');
     if(ms > 400) pill.classList.add('high');
     else if(ms > 150) pill.classList.add('medium');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HALLOWEEN THEME
+   ══════════════════════════════════════════════════════════════ */
+function setHalloweenMode(active){
+    active = !!active;
+    if(HALLOWEEN_EVENT === active) return;
+    HALLOWEEN_EVENT = active;
+    document.body.classList.toggle('halloween-mode', active);
+    applyRocket();
+    // Кнопка настроек (выбор скина ракеты) во время ивента не нужна —
+    // ракета зафиксирована как призрак.
+    var settingsBtn = document.querySelector('.settings-btn-sm');
+    if(settingsBtn) settingsBtn.style.display = active ? 'none' : '';
+    if(active){
+        var so = $('settingsOverlay');
+        if(so && so.classList.contains('show')) closeSettings();
+    }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1178,15 +1301,22 @@ async function registerAndLoad(){
 /* ══════════════════════════════════════════════════════════════
    ROCKET
    ══════════════════════════════════════════════════════════════ */
-function getRocketSrc(){ return '/static/gifs/rockets/' + currentRocket + '.gif'; }
+function getRocketSrc(){
+    if(HALLOWEEN_EVENT) return GHOST_IMAGE_SRC;
+    return '/static/gifs/rockets/' + currentRocket + '.gif';
+}
 function applyRocket(){
     var img = $('rocketImg');
     if(!img) return;
-    if(isBonusRound){
-        img.src = '/static/gifs/rockets/goldenplane.gif';
+    var newSrc;
+    if(HALLOWEEN_EVENT){
+        newSrc = GHOST_IMAGE_SRC;
+    } else if(isBonusRound){
+        newSrc = '/static/gifs/rockets/goldenplane.gif';
     } else {
-        img.src = getRocketSrc();
+        newSrc = getRocketSrc();
     }
+    if(img.getAttribute('src') !== newSrc) img.src = newSrc;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1482,6 +1612,9 @@ function applyServerState(d){
     srvCountdownOverride = 0;
     var srvBonus = !!g.is_bonus;
 
+    // Флаг хэллоуин-ивента применяется сразу, независимо от смены раунда.
+    setHalloweenMode(!!g.is_halloween);
+
     var isNewRound = (gameId !== 0) && (newGameId !== gameId);
 
     if(isNewRound){
@@ -1668,7 +1801,7 @@ function resetRoundState(){
     if(ri){
         ri.style.transform = '';
         var src = getRocketSrc();
-        if(ri.src.indexOf(currentRocket) === -1) ri.src = src;
+        if(ri.getAttribute('src') !== src) ri.src = src;
     }
 
     lastBetsHash = '';
@@ -2872,6 +3005,7 @@ function selectCrashBackground(kind){crashBackground=kind==='space'?'space':'gra
 function setCrashOptimization(v){crashOptimization=Number(v);localStorage.setItem('crash_optimization',String(crashOptimization));var labels=['Производительность','Баланс','Качество'];var el=$('optimValue');if(el)el.textContent=labels[crashOptimization]||labels[1];}
 function syncCrashVisualSettings(){applyCrashBackground();var r=$('optimRange');if(r)r.value=String(crashOptimization);setCrashOptimization(crashOptimization);}
 function openSettings(){
+    if(HALLOWEEN_EVENT) return; // на время ивента настройка скина ракеты недоступна
     syncCrashVisualSettings();
     var so = $('settingsOverlay');
     if(so) so.classList.add('show');
@@ -2895,6 +3029,10 @@ function toggleShowGiftsClick(){
 function renderSettings(){
     var rg = $('rocketGrid');
     if(!rg) return;
+    if(HALLOWEEN_EVENT){
+        rg.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px 10px;color:rgba(255,255,255,.55);font-size:13px;line-height:1.5">🎃<br>Во время Хэллоуин-ивента ракета зафиксирована — призрак!</div>';
+        return;
+    }
     rg.innerHTML = ROCKET_SLOTS.map(function(rid){
         var isActive = currentRocket === rid;
         var src = '/static/gifs/rockets/' + rid + '.gif';
@@ -3035,22 +3173,22 @@ document.addEventListener('DOMContentLoaded', function(){
 </script>
 
 <nav class="bottom-nav" aria-label="Основная навигация">
-    <a class="bottom-nav-item active" href="/">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z"/>
-            <path fill="currentColor" stroke="none" d="M5.26 17.242a.75.75 0 1 0-.897-1.203 5.243 5.243 0 0 0-2.05 5.022.75.75 0 0 0 .625.627 5.243 5.243 0 0 0 5.022-2.051.75.75 0 1 0-1.202-.897 3.744 3.744 0 0 1-3.008 1.51c0-1.23.592-2.323 1.51-3.008Z"/></svg>
-        <span>Краш</span>
+    <a class="bottom-nav-item" href="/profile">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/></svg>
+        <span>Профиль</span>
     </a>
     <a class="bottom-nav-item" href="/inventory">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M9.375 3a1.875 1.875 0 0 0 0 3.75h1.875v4.5H3.375A1.875 1.875 0 0 1 1.5 9.375v-.75c0-1.036.84-1.875 1.875-1.875h3.193A3.375 3.375 0 0 1 12 2.753a3.375 3.375 0 0 1 5.432 3.997h3.943c1.035 0 1.875.84 1.875 1.875v.75c0 1.036-.84 1.875-1.875 1.875H12.75v-4.5h1.875a1.875 1.875 0 1 0-1.875-1.875V6.75h-1.5V4.875C11.25 3.839 10.41 3 9.375 3ZM11.25 12.75H3v6.75a2.25 2.25 0 0 0 2.25 2.25h6v-9ZM12.75 12.75v9h6.75a2.25 2.25 0 0 0 2.25-2.25v-6.75h-9Z"/></svg>
-        <span>Кейсы</span>
+        <span>Апгрейды</span>
     </a>
     <a class="bottom-nav-item" href="/leaderboard">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M5.166 2.621v.858c-1.035.148-2.059.33-3.071.543a.75.75 0 0 0-.584.859 6.753 6.753 0 0 0 6.138 5.6 6.73 6.73 0 0 0 2.743 1.346A6.707 6.707 0 0 1 9.279 15H8.54c-1.036 0-1.875.84-1.875 1.875V19.5h-.75a2.25 2.25 0 0 0-2.25 2.25c0 .414.336.75.75.75h15a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-2.25-2.25h-.75v-2.625c0-1.036-.84-1.875-1.875-1.875h-.739a6.706 6.706 0 0 1-1.112-3.173 6.73 6.73 0 0 0 2.743-1.347 6.753 6.753 0 0 0 6.139-5.6.75.75 0 0 0-.585-.858 47.077 47.077 0 0 0-3.07-.543V2.62a.75.75 0 0 0-.658-.744 49.22 49.22 0 0 0-6.093-.377c-2.063 0-4.096.128-6.093.377a.75.75 0 0 0-.657.744Zm0 2.629c0 1.196.312 2.32.857 3.294A5.266 5.266 0 0 1 3.16 5.337a45.6 45.6 0 0 1 2.006-.343v.256Zm13.5 0v-.256c.674.1 1.343.214 2.006.343a5.265 5.265 0 0 1-2.863 3.207 6.72 6.72 0 0 0 .857-3.294Z"/></svg>
         <span>Сезон</span>
     </a>
-    <a class="bottom-nav-item" href="/profile">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/></svg>
-        <span>Профиль</span>
+    <a class="bottom-nav-item active" href="/">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" stroke="none" d="M9.315 7.584C12.195 3.883 16.695 1.5 21.75 1.5a.75.75 0 0 1 .75.75c0 5.056-2.383 9.555-6.084 12.436A6.75 6.75 0 0 1 9.75 22.5a.75.75 0 0 1-.75-.75v-4.131A15.838 15.838 0 0 1 6.382 15H2.25a.75.75 0 0 1-.75-.75 6.75 6.75 0 0 1 7.815-6.666ZM15 6.75a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Z"/>
+            <path fill="currentColor" stroke="none" d="M5.26 17.242a.75.75 0 1 0-.897-1.203 5.243 5.243 0 0 0-2.05 5.022.75.75 0 0 0 .625.627 5.243 5.243 0 0 0 5.022-2.051.75.75 0 1 0-1.202-.897 3.744 3.744 0 0 1-3.008 1.51c0-1.23.592-2.323 1.51-3.008Z"/></svg>
+        <span>Игры</span>
     </a>
 </nav>
 
