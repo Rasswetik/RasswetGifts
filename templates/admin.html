@@ -878,9 +878,9 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="portal-status-card">
             <div class="portal-market-head">
                 <div>
-                    <div style="font-weight:900;font-size:16px">Portal Market — Hourly Catalog</div>
+                    <div style="font-weight:900;font-size:16px">Portal Market — Каталог подарков</div>
                     <div style="font-size:10px;color:rgba(255,255,255,.45);margin-top:3px">
-                        Встроенный Portal Market: все коллекции, все модели и floor-цены. Полный sync раз в час.
+                        Встроенный Portal Market: все коллекции, все модели и floor-цены. Полный sync раз в 10 минут.
                     </div>
                 </div>
                 <span class="status-pill off" id="portalStatusPill"><span class="dot"></span><span id="portalStatusText">Проверка...</span></span>
@@ -892,7 +892,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 <div class="portal-market-stat"><small>Моделей</small><b id="portalModelsCountText">0</b></div>
                 <div class="portal-market-stat"><small>Последний sync</small><b id="portalDailyUpdatedText">никогда</b></div>
                 <div class="portal-market-stat"><small>Следующий sync</small><b id="portalNextUpdateText">—</b></div>
-                <div class="portal-market-stat"><small>Автообновление</small><b id="portalAutoText">каждый час</b></div>
+                <div class="portal-market-stat"><small>Автообновление</small><b id="portalAutoText">каждые 10 минут</b></div>
             </div>
 
             <div class="portal-live-note">
@@ -1157,7 +1157,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 /* ══════════════════════════════════════════════════════════════
    STATE
    ══════════════════════════════════════════════════════════════ */
-var ADMIN_ID = 5257227756;
+var ADMIN_ID = {{ admin_id|tojson }};
 var tg = window.Telegram && window.Telegram.WebApp;
 var currentTgUser = null;
 var adminVerified = false;
@@ -1489,7 +1489,7 @@ async function bindModeEditor(modeId,editMeta){
             giftSel.onchange=function(){
                 var c=catalog.find(function(x){return String(x.short_name||'')===String(giftSel.value||'');});
                 var models=c&&Array.isArray(c.models)?c.models:[];
-                modelSel.innerHTML='<option value="">Обычный подарок</option>'+models.map(function(m){return '<option value="'+escapeHtml(m.name||'')+'">'+escapeHtml(m.name||'Model')+(Number(m.floor_price||0)>0?' · '+Number(m.floor_price).toFixed(3)+' TON':'')+'</option>';}).join('');
+                modelSel.innerHTML='<option value="">Обычный подарок</option>'+models.map(function(m){return '<option value="'+escapeHtml(m.name||'')+'">'+escapeHtml(m.name||'Model')+(Number(m.floor_price||0)>0?' · '+Number(m.floor_price).toFixed(3)+' GRAM':'')+'</option>';}).join('');
             };
         }
     }catch(e){
@@ -2503,7 +2503,7 @@ async function openCaseModelPicker(baseGift, portalCatalog){
           '<button class="portal-target-btn" id="caseRandomModelBtn"><b>🎲 Случайная модель</b><small>Модель выбирается при выигрыше</small></button>' +
           (models.length ? models.map(function(m,i){
               var p=Number(m.floor_price||0);
-              return '<button class="portal-target-btn case-model-choice" data-model-index="'+i+'"><b>'+escapeHtml(m.name||'Model')+'</b><small>'+(p>0?p.toFixed(3)+' TON':'модель')+'</small></button>';
+              return '<button class="portal-target-btn case-model-choice" data-model-index="'+i+'"><b>'+escapeHtml(m.name||'Model')+'</b><small>'+(p>0?p.toFixed(3)+' GRAM':'модель')+'</small></button>';
           }).join('') : '<div class="empty">У этого подарка список моделей не найден. Можно выбрать случайную модель.</div>') +
         '</div>';
     openModal(html);
@@ -2706,14 +2706,14 @@ function renderPromoRow(p){
     var typeLabel = typeLabels[p.reward_type] || ('⭐ ' + (p.reward_type || 'stars'));
     
     var rewardInfo = '';
-    if(p.reward_type === 'stars') rewardInfo = '+' + (p.reward_stars || 0) + '⭐';
+    if(p.reward_type === 'stars') rewardInfo = '+' + formatTon(p.reward_stars || 0) + ' GRAM';
     else if(p.reward_type === 'tickets') rewardInfo = '+' + (p.reward_tickets || 0) + '🎫';
     else if(p.reward_type === 'stars+tickets') rewardInfo = '+' + (p.reward_stars || 0) + '⭐ +' + (p.reward_tickets || 0) + '🎫';
     else if(p.reward_type === 'crash_vip') rewardInfo = (p.reward_data && p.reward_data.days || '?') + ' дней';
     else if(p.reward_type === 'rocket') rewardInfo = (p.reward_data && p.reward_data.rocket_id) || '?';
     else if(p.reward_type === 'background') rewardInfo = (p.reward_data && p.reward_data.background_id) || '?';
-    else if(p.reward_type === 'wager') rewardInfo = (p.reward_data && p.reward_data.amount || 0) + '⭐ x' + (p.reward_data && p.reward_data.multiplier || 0);
-    else if(p.reward_type === 'gift_challenge') rewardInfo = 'Цель: ' + (p.reward_data && p.reward_data.target_wager || 0) + '⭐';
+    else if(p.reward_type === 'wager') rewardInfo = formatTon(p.reward_data && p.reward_data.amount || 0) + ' GRAM x' + (p.reward_data && p.reward_data.multiplier || 0);
+    else if(p.reward_type === 'gift_challenge') rewardInfo = 'Цель: ' + formatTon(p.reward_data && p.reward_data.target_wager || 0) + ' GRAM';
     else if(p.reward_type === 'case_open') rewardInfo = 'Кейс #' + (p.reward_data && p.reward_data.case_id || '?');
     
     var usesInfo = (p.used_count || 0) + '/' + (p.max_uses || '∞');
@@ -3752,7 +3752,7 @@ if(tg){
             if(m)m.textContent=Number(d.total_models||job.models||0).toLocaleString('ru-RU');
             if(u)u.textContent=fmtTime(d.updated_at);
             if(n)n.textContent=d.next_update_at?fmtTime(d.next_update_at):'после первого sync';
-            if(a)a.textContent='каждые '+Number(d.interval_minutes||60)+' мин';
+            if(a)a.textContent='каждые '+Number(d.interval_minutes||10)+' мин';
 
             var wrap=document.getElementById('portalDailyProgress');
             var bar=document.getElementById('portalDailyProgressBar');
@@ -3896,7 +3896,7 @@ if(tg){
                       '<div class="portal-item-meta">'+portalEsc(c.name||'Gift')+' · модель</div>'+
                       actionButtons(c,m)+
                     '</div>'+
-                    '<div class="portal-item-price">'+(mp>0?mp.toFixed(3)+' TON':'—')+'</div>'+
+                    '<div class="portal-item-price">'+(mp>0?mp.toFixed(3)+' GRAM':'—')+'</div>'+
                 '</div>';
               }).join('');
             }
@@ -3909,7 +3909,7 @@ if(tg){
                   '<div class="portal-price-meta"><span>'+(models.length)+' моделей</span><span>'+Number(c.listed_count||0).toLocaleString('ru-RU')+' listed</span></div>'+
                   actionButtons(c,null)+
                 '</div>'+
-                '<div class="portal-item-price">'+(price>0?price.toFixed(3)+' TON':'—')+'</div>'+
+                '<div class="portal-item-price">'+(price>0?price.toFixed(3)+' GRAM':'—')+'</div>'+
               '</div>'+modelHtml+
             '</div>';
         }).join('');
@@ -4081,5 +4081,6 @@ if(tg){
 })();
 </script>
 
+<script src="/static/admin-upgrade.js"></script>
 </body>
 </html>
