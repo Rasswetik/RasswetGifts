@@ -12546,6 +12546,7 @@ def _portal_normalize_filter_group(raw):
                     rows.append({
                         'name': str(name),
                         'floor_price': round(_portal_floor_value(item), 6),
+                        'image': str(item.get('image') or item.get('photo_url') or item.get('image_url') or item.get('preview_url') or '').strip(),
                     })
 
     # Deduplicate case-insensitively and sort by name.
@@ -12654,71 +12655,145 @@ def _portal_all_collections():
 
 
 def _portal_apply_daily_snapshot_to_gifts(snapshot):
-    """Put Portal collection/model data into canonical gifts.json."""
+    """Import the complete Portal catalog into the canonical gifts catalog.
+
+    Important: Portal is the source of truth for discovery. A collection/model
+    that does not exist in gifts.json is CREATED automatically. Existing rows
+    are refreshed with the latest Portal name, image, collection floor and
+    model floors.
+    """
     try:
         collections = snapshot.get('collections') or []
         gifts = load_gifts()
         if not isinstance(gifts, list):
             gifts = []
 
-        by_slug = {}
-        for gift in gifts:
-            if not isinstance(gift, dict):
-                continue
-            slug = str(
-                gift.get('fragment_slug') or
-                _slugify_fragment_name(gift.get('name', ''))
-            ).strip().lower()
-            if slug:
-                by_slug[slug] = gift
+        def norm(value):
+            return re.sub(r'[^a-z0-9]+', '', str(value or '').strip().lower())
+
+        def ensure_item(key, payload):
+            nonlocal changed, added
+            target = None
+            for g in gifts:
+                if isinstance(g, dict) and str(g.get('gift_key') or '') == key:
+                    target = g
+                    break
+            if target is None:
+                # Also match legacy collection rows by slug/model.
+                slug = str(payload.get('fragment_slug') or '').strip().lower()
+                model = str(payload.get('model_name') or '').strip().lower()
+                for g in gifts:
+                    if not isinstance(g, dict):
+                        continue
+                    if str(g.get('fragment_slug') or '').strip().lower() != slug:
+                        continue
+                    if str(g.get('model_name') or '').strip().lower() == model:
+                        target = g
+                        break
+            if target is None:
+                max_id = 0
+                for g in gifts:
+                    try:
+                        max_id = max(max_id, int(g.get('id') or 0))
+                    except Exception:
+                        pass
+                target = {'id': max_id + 1}
+                gifts.append(target)
+                added += 1
+            before = dict(target)
+            target.update(payload)
+            if target != before:
+                changed += 1
+            return target
 
         changed = 0
         added = 0
         now_iso = datetime.utcnow().isoformat() + 'Z'
 
         for coll in collections:
-            slug = str(coll.get('short_name') or '').strip().lower()
+            if not isinstance(coll, dict):
+                continue
+            slug = str(coll.get('short_name') or coll.get('slug') or '').strip().lower()
             if not slug:
                 continue
+            name = str(coll.get('name') or coll.get('collection_name') or slug).strip()
+            image = str(
+                coll.get('photo_url') or coll.get('image') or coll.get('image_url') or
+                coll.get('preview_url') or _portal_collection_image_url(slug)
+            ).strip()
+            collection_floor = round(_portal_float(coll.get('floor_price')), 6)
 
-            target = by_slug.get(slug)
-            if target is None:
-                target = {
-                    'id': None,
-                    'name': coll.get('name') or slug,
-                    'fragment_slug': slug,
-                    'fragment_url': f'https://fragment.com/gifts/{slug}',
-                    'image': coll.get('photo_url') or _portal_collection_image_url(slug),
-                    'source': 'portal',
-                }
-                gifts.append(target)
-                by_slug[slug] = target
-                added += 1
-
-            new_values = {
-                'portal_price_ton': round(_portal_float(coll.get('floor_price')), 6),
+            # 1. Always create/update the collection-level gift.
+            collection_key = _build_case_custom_gift_id(name, fragment_slug=slug)
+            ensure_item(collection_key, {
+                'name': name,
+                'gift_key': collection_key,
+                'fragment_slug': slug,
+                'fragment_url': f'https://fragment.com/gifts/{slug}',
+                'image': image,
+                'source': 'portal',
+                'portal_source': True,
+                'portal_collection_name': name,
+                'portal_model_name': None,
+                'model_name': None,
+                'portal_price_ton': collection_floor,
+                'portal_collection_floor_ton': collection_floor,
                 'portal_models': coll.get('models') or [],
                 'portal_model_count': len(coll.get('models') or []),
+                'portal_backdrops': coll.get('backdrops') or [],
+                'portal_symbols': coll.get('symbols') or [],
                 'portal_listed_count': int(_portal_float(coll.get('listed_count'))),
                 'portal_supply': int(_portal_float(coll.get('supply'))),
                 'portal_day_volume': round(_portal_float(coll.get('day_volume')), 6),
                 'portal_updated_at': now_iso,
-            }
+                'value': max(1, int(round(collection_floor * 100))) if collection_floor > 0 else 1,
+            })
 
-            row_changed = False
-            for key, value in new_values.items():
-                if target.get(key) != value:
-                    target[key] = value
-                    row_changed = True
+            # 2. Create a real catalog item for EVERY new Portal model.
+            #    This is what makes newly discovered gifts usable in cases/modes
+            #    even when they never existed in the old gifts.json.
+            models = coll.get('models') or []
+            for model in models:
+                if isinstance(model, str):
+                    model = {'name': model, 'floor_price': 0}
+                if not isinstance(model, dict):
+                    continue
+                model_name = str(model.get('name') or model.get('value') or model.get('model') or '').strip()
+                if not model_name:
+                    continue
+                model_price = _portal_float(model.get('floor_price') or model.get('price') or model.get('floor'))
+                if model_price <= 0:
+                    model_price = collection_floor
+                model_image = str(
+                    model.get('image') or model.get('photo_url') or model.get('image_url') or
+                    model.get('preview_url') or image
+                ).strip()
+                display_name = f'{name} — {model_name}'
+                model_key = _build_case_custom_gift_id(display_name, fragment_slug=slug, model_name=model_name)
+                ensure_item(model_key, {
+                    'name': display_name,
+                    'gift_key': model_key,
+                    'fragment_slug': slug,
+                    'fragment_url': f'https://fragment.com/gifts/{slug}',
+                    'image': model_image,
+                    'source': 'portal',
+                    'portal_source': True,
+                    'portal_collection_name': name,
+                    'portal_model_name': model_name,
+                    'model_name': model_name,
+                    'portal_price_ton': round(model_price, 6),
+                    'portal_collection_floor_ton': collection_floor,
+                    'portal_model_floor_ton': round(model_price, 6),
+                    'portal_updated_at': now_iso,
+                    'value': max(1, int(round(model_price * 100))) if model_price > 0 else 1,
+                })
 
-            if row_changed:
-                changed += 1
-
-        save_gifts(gifts)
+        if not save_gifts(gifts):
+            raise RuntimeError('Не удалось сохранить импортированный Portal каталог')
         return {'changed': changed, 'added': added, 'total': len(gifts)}
 
     except Exception as e:
-        logger.error("Portal snapshot -> gifts.json failed: %s", e)
+        logger.exception('Portal snapshot -> gifts.json failed')
         return {'changed': 0, 'added': 0, 'total': 0, 'error': str(e)}
 
 
