@@ -11523,12 +11523,48 @@ _portal_working_base = None
 _portal_http_lock = threading.Lock()
 
 
+def _portal_call_with_hard_timeout(engine, kwargs, hard_timeout):
+    """Run one HTTP call on a background thread with an OS-level hard deadline.
+
+    ``requests``/``curl_cffi`` timeouts only cover socket read/connect and can
+    still hang indefinitely in some network conditions (stalled TLS handshake,
+    a proxy that swallows the connection, etc). That is what turned "нажимаю
+    коннект" into an endless spinner: the Flask worker thread was blocked
+    inside ``engine.request()`` with no way out. Running the call in its own
+    daemon thread and joining with a timeout guarantees this function always
+    returns within ``hard_timeout`` seconds, no matter what the underlying
+    library does. The daemon thread may keep the dead socket alive in the
+    background, but it can never block the caller again.
+    """
+    box = {}
+
+    def runner():
+        try:
+            box['resp'] = engine.request(**kwargs)
+        except Exception as e:
+            box['exc'] = e
+
+    t = threading.Thread(target=runner, daemon=True)
+    t.start()
+    t.join(hard_timeout)
+    if t.is_alive():
+        return None, TimeoutError(f'Portal не ответил за {hard_timeout:.0f} сек (запрос завис на уровне сети)')
+    if 'exc' in box:
+        return None, box['exc']
+    return box.get('resp'), None
+
+
 def _portal_request(method, path, token=None, json_body=None, params=None, timeout=15):
     """Call Portals using the same host/header format as the marketplace client.
 
     curl_cffi is preferred because Portals is behind browser-facing protection.
     Plain ``requests`` remains as a fallback, so the whole app can still start
     when curl_cffi is unavailable.
+
+    The whole call is bounded by an overall wall-clock deadline (on top of the
+    per-attempt hard timeout above) so a slow/blocked Portal endpoint can never
+    turn "Сохранить и подключить" into an infinite spinner — this function is
+    guaranteed to return within roughly ``PORTAL_REQUEST_DEADLINE`` seconds.
     """
     global _portal_working_base
 
@@ -11545,7 +11581,17 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
     last_error = 'Portal API недоступен'
     last_status = 0
 
+    # Hard cap on total time spent in this function, independent of how many
+    # bases/engines/attempts are left to try. Previously the worst case was
+    # 3 bases × 2 engines × 3 attempts × up to 12–25s each — several minutes
+    # that read as "бесконечное подключение" to the admin.
+    deadline = time.time() + min(45.0, max(20.0, timeout * 3))
+
     for base in bases:
+        if time.time() >= deadline:
+            last_error = last_error or 'Portal request timed out (общий лимит времени исчерпан)'
+            break
+
         url = base.rstrip('/') + clean_path
         host_root = base.split('/api', 1)[0].rstrip('/')
         headers = {
@@ -11565,7 +11611,11 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
         engines.append(('requests', http_requests))
 
         for engine_name, engine in engines:
-            for attempt in range(3):
+            if time.time() >= deadline:
+                break
+            for attempt in range(2):
+                if time.time() >= deadline:
+                    break
                 try:
                     kwargs = dict(
                         method=method,
@@ -11577,7 +11627,12 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                     )
                     if engine_name == 'curl_cffi':
                         kwargs['impersonate'] = 'chrome110'
-                    resp = engine.request(**kwargs)
+
+                    remaining = max(1.0, deadline - time.time())
+                    resp, err = _portal_call_with_hard_timeout(engine, kwargs, hard_timeout=min(timeout + 5, remaining))
+                    if err is not None:
+                        raise err
+
                     last_status = int(getattr(resp, 'status_code', 0) or 0)
 
                     if last_status == 200:
@@ -11603,14 +11658,19 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                             retry_after = float((getattr(resp, 'headers', {}) or {}).get('Retry-After') or 0)
                         except Exception:
                             retry_after = 0.0
-                        wait_for = min(6.0, max(0.8 * (attempt + 1), retry_after))
+                        wait_for = min(3.0, max(0.6 * (attempt + 1), retry_after))
                         last_error = f'Portal rate limit, повтор через {wait_for:.1f} сек'
+                        if time.time() + wait_for >= deadline:
+                            break
                         time.sleep(wait_for)
                         continue
 
                     if last_status >= 500:
                         last_error = f'Portal HTTP {last_status}'
-                        time.sleep(0.6 * (attempt + 1))
+                        wait_for = 0.5 * (attempt + 1)
+                        if time.time() + wait_for >= deadline:
+                            break
+                        time.sleep(wait_for)
                         continue
 
                     if last_status == 404:
@@ -11629,8 +11689,8 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
 
                 except Exception as e:
                     last_error = f'{engine_name}: {e}'
-                    if attempt < 2:
-                        time.sleep(0.4 * (attempt + 1))
+                    if attempt < 1 and time.time() + 0.4 < deadline:
+                        time.sleep(0.4)
                         continue
                     break
 
