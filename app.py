@@ -11882,6 +11882,14 @@ _portal_working_base = None
 _portal_http_lock = threading.Lock()
 
 
+def _portal_log(level, message, *args):
+    """Detailed Portal activity log; never log auth tokens."""
+    try:
+        getattr(logger, level)("PORTAL | " + str(message), *args)
+    except Exception:
+        pass
+
+
 def _portal_request(method, path, token=None, json_body=None, params=None, timeout=15):
     """Call Portals using the same host/header format as the marketplace client.
 
@@ -11894,6 +11902,8 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
     token = _portal_normalize_auth_token(token if token is not None else _portal_get_token())
     if not token:
         return False, 'Токен не задан. Сохрани Portal initData в админке.', 0
+
+    _portal_log('info', 'REQUEST start | %s %s | params=%s', method, path, params or {})
 
     clean_path = '/' + str(path or '').lstrip('/')
     bases = list(PORTAL_API_BASES)
@@ -11947,6 +11957,7 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                             break
                         with _portal_http_lock:
                             _portal_working_base = base
+                        _portal_log('info', 'REQUEST success | %s %s | status=%s | base=%s', method, clean_path, last_status, base)
                         return True, data, last_status
 
                     if last_status in (401, 403):
@@ -11954,6 +11965,7 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                         extra = ''
                         if engine_name == 'requests' and not _PORTAL_CURL_AVAILABLE:
                             extra = ' На сервере нет curl_cffi; установи его из requirements_portal.txt.'
+                        _portal_log('error', 'REQUEST auth/error | %s %s | status=%s | response=%s', method, clean_path, last_status, body)
                         return False, 'Portal Authorization недействителен/истёк или запрос заблокирован.' + extra + ((' Ответ: ' + body) if body else ''), last_status
 
                     if last_status == 429:
@@ -12827,6 +12839,7 @@ def _portal_build_daily_snapshot(force=False):
         return {'success': True, 'running': True, 'message': 'Daily sync already running'}
 
     try:
+        _portal_log('info', 'SYNC started | force=%s', force)
         _portal_daily_job_update(
             running=True,
             started_at=time.time(),
@@ -12841,8 +12854,10 @@ def _portal_build_daily_snapshot(force=False):
 
         ok, collections = _portal_all_collections()
         if not ok:
+            _portal_log('error', 'SYNC collections failed | %s', collections)
             raise RuntimeError(str(collections))
 
+        _portal_log('info', 'SYNC collections loaded | count=%s', len(collections))
         _portal_daily_job_update(total=len(collections))
 
         full = []
@@ -12865,11 +12880,14 @@ def _portal_build_daily_snapshot(force=False):
 
             filters = {'models': [], 'backdrops': [], 'symbols': []}
             if short_name:
+                _portal_log('info', 'COLLECTION | %s | short_name=%s', name, short_name)
                 fok, fdata = _portal_collection_filters(short_name)
                 if fok:
                     filters = fdata
+                    _portal_log('info', 'FILTERS loaded | %s | models=%s backdrops=%s symbols=%s', short_name, len(filters.get('models') or []), len(filters.get('backdrops') or []), len(filters.get('symbols') or []))
                 else:
                     filter_errors.append({'collection': name, 'error': str(fdata)[:180]})
+                    _portal_log('warning', 'FILTERS failed | %s | %s', short_name, fdata)
 
             row = dict(coll)
             row['models'] = filters.get('models') or []
@@ -12923,8 +12941,9 @@ def _portal_build_daily_snapshot(force=False):
             models=total_models,
         )
 
+        _portal_log('info', 'SYNC finished | collections=%s models=%s backdrops=%s symbols=%s filter_errors=%s', len(full), total_models, total_backdrops, total_symbols, len(filter_errors))
         logger.info(
-            "✅ Portal HOURLY full scan: %s collections, %s models, %s backdrops, %s symbols",
+            "✅ Portal full scan: %s collections, %s models, %s backdrops, %s symbols",
             len(full), total_models, total_backdrops, total_symbols
         )
 
