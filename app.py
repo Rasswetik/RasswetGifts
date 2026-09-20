@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# app.py - main application file
 from flask import Flask, render_template, render_template_string, request, jsonify, send_from_directory, redirect, make_response, g, has_request_context, send_file
 from jinja2 import TemplateNotFound
 import sqlite3
@@ -11804,8 +11806,8 @@ def withdraw_gift():
 # Токен храним в data/portal_token.txt и в переменной окружения
 # Используем официальный API portal-market.com
 PORTAL_API_BASES = [
-    'https://portals-market.com/api',
     'https://portal-market.com/api',
+    'https://portals-market.com/api',
     'https://portal-market.com/api/v1',
 ]
 _portal_working_base = None
