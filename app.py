@@ -34,13 +34,14 @@ try:
 except Exception:
     _portal_curl_requests = None
     _PORTAL_CURL_AVAILABLE = False
+# PostgreSQL-only build. SQLite fallback is intentionally disabled.
 try:
     from db_wrapper import USE_POSTGRES, get_connection as _pg_get_connection
-except Exception:
-    # Local Windows fallback: run on SQLite if db_wrapper.py is not present.
-    USE_POSTGRES = False
-    def _pg_get_connection():
-        raise RuntimeError('PostgreSQL is unavailable in local SQLite mode')
+except Exception as _db_import_error:
+    raise RuntimeError(f'PostgreSQL adapter is required: {_db_import_error}') from _db_import_error
+
+if not USE_POSTGRES:
+    raise RuntimeError('This build requires PostgreSQL. Set DATABASE_URL.')
 
 # Загружаем переменные окружени
 load_dotenv()
@@ -56,7 +57,7 @@ def _log_startup_config():
     logger.info(f'   ADMIN_ID: {ADMIN_ID}')
     logger.info(f'   TELEGRAM_BOT_TOKEN: {"✅ задан" if TELEGRAM_BOT_TOKEN else "❌ НЕ ЗАДАН"}')
     logger.info(f'   WEBSITE_URL: {WEBSITE_URL}')
-    logger.info(f'   DATABASE_URL: {"✅ postgres" if os.getenv("DATABASE_URL") else "⚠️ sqlite"}')
+    logger.info('   DATABASE: PostgreSQL (SQLite disabled)')
     logger.info(f'   PORTAL_AUTH_TOKEN: {"✅ задан" if PORTAL_AUTH_TOKEN else "❌ не задан"}')
     logger.info(f'   FRAGMENT_SYNC_ENABLED: {FRAGMENT_SYNC_ENABLED}')
     logger.info(f'   PORTAL_SYNC_ENABLED: {PORTAL_SYNC_ENABLED}')
@@ -3353,10 +3354,10 @@ def normalize_section_id(value):
 _db_ready = False
 _db_lock = threading.Lock()  # Один замок на все операции с БД
 
-# Путь к БД: если задан DB_DIR (persistent disk), используем его; иначе — data/ в проекте
+# PostgreSQL-only: DB_PATH is retained only for compatibility with dormant legacy code.
 _db_dir = PERSISTENT_DATA_DIR
 os.makedirs(_db_dir, exist_ok=True)
-DB_PATH = os.path.join(_db_dir, 'raswet_gifts.db')
+DB_PATH = ''
 
 def _quick_db_conn(timeout=5):
     """Fast DB connection for hot paths (status polling etc.)"""
@@ -4104,7 +4105,10 @@ def _create_all_tables(conn):
     # Верификация
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+        if USE_POSTGRES:
+            cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'")
+        else:
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         existing = {row[0] for row in cursor.fetchall()}
     except Exception as e:
         logger.error(f"❌ Не удалось прочитать список таблиц: {e}")
@@ -6181,10 +6185,8 @@ def api_ping():
 @app.route('/health')
 def health_check():
     """Health check endpoint for monitoring services (UptimeRobot, etc.)"""
-    db_type = 'postgres' if USE_POSTGRES else 'sqlite'
+    db_type = 'postgres'
     warning = None
-    if not USE_POSTGRES:
-        warning = 'CRITICAL: SQLite mode - data will be LOST on redeploy! Set DATABASE_URL!'
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
