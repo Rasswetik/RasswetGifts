@@ -1580,9 +1580,11 @@ def _write_fragment_catalog_to_local_gifts(fragment_gifts):
                 g['value'] = int(round(float(selected) * FRAGMENT_TON_RATE))
             elif fg.get('value') is not None and not g.get('value'):
                 g['value'] = int(round(float(fg.get('value') or 0)))
-            image = fg.get('market_image') or fg.get('black_image') or fg.get('onyx_black_image') or fg.get('image')
-            if image:
+            image = fg.get('image')
+            if image and not _is_variant_image(image, fg):
                 g['image'] = image
+            elif g.get('image') and _is_variant_image(g.get('image'), g):
+                g.pop('image', None)  # ранее затёртая картинка NFT — вернём основную при чтении
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(existing, f, ensure_ascii=False, indent=2)
@@ -2290,8 +2292,9 @@ def _load_fragment_gifts_with_variants(force_refresh=False, progress_callback=No
                         if variants.get(key): g[key] = variants[key]
                     market_image = g.get('black_image') or g.get('onyx_black_image') or g.get('image')
                     if market_image:
+                        # Black/Onyx PNG — картинка КОНКРЕТНОГО NFT. Хранится отдельно и
+                        # больше не затирает основную картинку подарка.
                         g['market_image'] = market_image
-                        g['image'] = market_image
                 except Exception as e:
                     logger.debug('Fragment variant worker failed: %s', e)
                 done += 1
@@ -2505,33 +2508,277 @@ def _normalize_local_gift_image(src):
         return img
     return '/static/gifs/gifts/' + img
 
-def build_fragment_first_gifts_catalog(force_refresh=False):
-    """Return the canonical gift catalog from data/gifts.json only.
+# ══════════════════════════════════════════════════════════════
+# ОСНОВНЫЕ ПОДАРКИ И МОДЕЛИ
+#   • «основной» подарок — коллекция целиком (Plush Pepe);
+#   • «модель» — вариант коллекции (Plush Pepe Rainbow) со своей ценой и PNG.
+# Краш, апгрейды, админка и списки подарков работают с ОСНОВНЫМИ подарками;
+# модели приходят отдельным полем `models` у каждого подарка, а в кейсы можно
+# добавлять и то, и другое.
+# ══════════════════════════════════════════════════════════════
+_VARIANT_IMAGE_MARKERS = ('/static/gifs/fragment/', 'nft.fragment.com/gift/')
+# PNG модели. Шаблон можно переопределить переменной окружения; пустое значение
+# отключает генерацию (тогда у модели остаётся картинка основного подарка).
+PORTAL_MODEL_IMAGE_TEMPLATE = os.getenv(
+    'PORTAL_MODEL_IMAGE_TEMPLATE',
+    'https://cdn.changes.tg/gifts/models/{collection}/png/{model}.png'
+)
+_DEFAULT_GIFT_IMAGE = '/static/img/default_gift.png'
 
-    Fragment/MRKT are ingestion sources only: their data is imported by the
-    admin sync job and persisted into gifts.json. Public/runtime features must
-    never fetch or merge a live Fragment catalog here.
+
+def _gift_is_model_entry(g):
+    """True для записей gifts.json, которые описывают МОДЕЛЬ, а не коллекцию."""
+    if not isinstance(g, dict):
+        return False
+    key = str(g.get('gift_key') or '').strip().lower()
+    return bool(
+        g.get('model_name') or g.get('portal_model_name') or g.get('model_random')
+        or key.startswith('fragment_model:')
+        or str(g.get('type') or '').lower() in ('model', 'fragment_model')
+    )
+
+
+def _gift_slug(g):
+    return str(
+        (g or {}).get('fragment_slug') or _slugify_fragment_name((g or {}).get('name', ''))
+    ).strip().lower()
+
+
+def _is_variant_image(url, g=None):
+    """Картинка конкретного NFT (Black/Onyx PNG и т.п.), а не превью коллекции."""
+    low = str(url or '').lower()
+    if not low:
+        return False
+    if any(m in low for m in _VARIANT_IMAGE_MARKERS):
+        return True
+    if g:
+        for k in ('black_image', 'onyx_black_image'):
+            v = _normalize_local_gift_image(g.get(k))
+            if v and v.lower() == low:
+                return True
+    return False
+
+
+def _gift_main_image(g):
+    """Картинка ОСНОВНОГО подарка — то же правило, что использует Crash:
+    локальный /static/… файл, иначе превью коллекции Fragment по slug.
+    Картинки случайных NFT / Black-Onyx PNG / моделей никогда не подставляются."""
+    g = g or {}
+    img = _normalize_local_gift_image(g.get('image'))
+    if img and img.startswith('/static/') and not _is_variant_image(img, g):
+        return img
+    slug = _gift_slug(g)
+    if slug:
+        return f'https://fragment.com/file/gifts/{slug}/thumb.webp'
+    if img and not _is_variant_image(img, g):
+        return img
+    return _DEFAULT_GIFT_IMAGE
+
+
+def _gift_image_fallbacks(g, main=None):
+    """Запасные адреса на случай, если основной PNG не загрузился."""
+    g = g or {}
+    main = main or _gift_main_image(g)
+    slug = _gift_slug(g)
+    cands = []
+    if slug:
+        cands.append(_portal_collection_image_url(slug))
+    img = _normalize_local_gift_image(g.get('image'))
+    if img and not _is_variant_image(img, g) and not img.startswith('data:'):
+        cands.append(img)
+    if slug:
+        cands.append(f'https://fragment.com/file/gifts/{slug}/thumb.webp')
+    cands.append(_DEFAULT_GIFT_IMAGE)
+    out = []
+    for c in cands:
+        if c and c != main and c not in out:
+            out.append(c)
+    return out
+
+
+def _apply_main_image(item):
+    """Проставляет основной PNG (+ запасные) в словарь подарка."""
+    main = _gift_main_image(item)
+    item['image'] = main
+    item['image_fallbacks'] = _gift_image_fallbacks(item, main)
+    return item
+
+
+def _model_entry_collection(item):
+    """Название коллекции для записи-модели ('Plush Pepe Rainbow' -> 'Plush Pepe')."""
+    coll = str(item.get('portal_collection_name') or '').strip()
+    if coll:
+        return _normalize_fragment_collection_name(coll)
+    name = _normalize_fragment_collection_name(item.get('name') or item.get('fragment_slug') or '')
+    mname = str(item.get('model_name') or item.get('portal_model_name') or '').strip()
+    if mname:
+        for sep in (' — ', ' - ', ' '):
+            suffix = sep + mname
+            if name.lower().endswith(suffix.lower()):
+                return name[:-len(suffix)].strip() or name
+    return name
+
+
+def _model_image_url(collection_name, model_name, explicit=None):
+    explicit = str(explicit or '').strip()
+    if explicit:
+        return explicit
+    tpl = PORTAL_MODEL_IMAGE_TEMPLATE
+    if not tpl or not collection_name or not model_name:
+        return ''
+    try:
+        from urllib.parse import quote
+        return tpl.format(
+            collection=quote(str(collection_name).strip(), safe=''),
+            model=quote(str(model_name).strip(), safe=''),
+        )
+    except Exception:
+        return ''
+
+
+_models_snapshot_cache = {'mtime': None, 'data': {}}
+
+
+def _snapshot_models_by_slug():
+    """slug -> [{'name','floor_price','image'}] из Portal-снимка (кэш по mtime файла)."""
+    try:
+        path = PORTAL_DAILY_SNAPSHOT_FILE
+        mtime = os.path.getmtime(path) if os.path.exists(path) else None
+    except Exception:
+        mtime = None
+    if mtime is not None and _models_snapshot_cache['mtime'] == mtime:
+        return _models_snapshot_cache['data']
+    data = {}
+    if mtime is not None:
+        snap = _portal_load_daily_snapshot() or {}
+        for coll in snap.get('collections') or []:
+            slug = str(coll.get('short_name') or '').strip().lower()
+            if slug:
+                data[slug] = [m for m in (coll.get('models') or []) if isinstance(m, dict)]
+    _models_snapshot_cache['mtime'] = mtime
+    _models_snapshot_cache['data'] = data
+    return data
+
+
+def _model_entries_by_slug(all_gifts=None):
+    out = {}
+    for g in (all_gifts if all_gifts is not None else (load_gifts_cached() or [])):
+        if _gift_is_model_entry(g):
+            out.setdefault(_gift_slug(g), []).append(g)
+    return out
+
+
+def _gift_models_for(base, snap_index=None, entries_index=None):
+    """ВСЕ модели одного подарка: название, цена (GRAM), PNG, ключи.
+
+    Источники (объединяются по названию модели): Portal-снимок, поле
+    portal_models у подарка, Getgems-модели и уже добавленные в каталог модели.
+    """
+    slug = _gift_slug(base)
+    coll_name = _normalize_fragment_collection_name(base.get('name') or slug)
+    snap_index = _snapshot_models_by_slug() if snap_index is None else snap_index
+    entries_index = _model_entries_by_slug() if entries_index is None else entries_index
+    base_value = _safe_int(base.get('value'), 0)
+    base_main = base.get('image') if base.get('image_fallbacks') is not None else _gift_main_image(base)
+
+    found = {}
+
+    def add(name, floor, image=None, entry=None):
+        name = str(name or '').strip()
+        if not name:
+            return
+        k = name.lower()
+        row = found.setdefault(k, {'name': name, 'floor': 0.0, 'image': '', 'entry': None})
+        try:
+            f = float(floor or 0)
+        except Exception:
+            f = 0.0
+        if f > 0 and (row['floor'] <= 0 or f < row['floor']):
+            row['floor'] = f
+        if image and not row['image']:
+            row['image'] = str(image).strip()
+        if entry is not None and row['entry'] is None:
+            row['entry'] = entry
+
+    def feed(rows):
+        if isinstance(rows, dict):
+            rows = [{'name': k, 'floor_price': _portal_floor_value(v),
+                     'image': (v.get('image') if isinstance(v, dict) else '')} for k, v in rows.items()]
+        for m in rows or []:
+            if isinstance(m, str):
+                add(m, 0)
+            elif isinstance(m, dict):
+                add(m.get('name') or m.get('model') or m.get('model_name'),
+                    m.get('floor_price') or m.get('floor') or m.get('price_ton') or m.get('price'),
+                    m.get('image') or m.get('photo_url') or m.get('png'))
+
+    feed(snap_index.get(slug))
+    feed(base.get('portal_models'))
+    feed(base.get('getgems_models'))
+    for e in entries_index.get(slug, []):
+        add(e.get('model_name') or e.get('portal_model_name'),
+            e.get('portal_price_ton') or (_safe_int(e.get('value'), 0) / 100.0),
+            e.get('model_image'), entry=e)
+
+    models = []
+    for row in found.values():
+        floor = row['floor']
+        entry = row['entry'] or {}
+        value = max(1, int(round(floor * 100))) if floor > 0 else (_safe_int(entry.get('value'), 0) or base_value)
+        img = _model_image_url(coll_name, row['name'], row['image'])
+        main = img or base_main
+        fbs = [x for x in [base_main] + list(base.get('image_fallbacks') or []) if x and x != main]
+        models.append({
+            'id': entry.get('id'),
+            'gift_key': entry.get('gift_key') or _build_case_custom_gift_id(
+                f'{coll_name} {row["name"]}', fragment_slug=slug, model_name=row['name']),
+            'name': f'{coll_name} {row["name"]}',
+            'model_name': row['name'],
+            'collection_name': coll_name,
+            'fragment_slug': slug,
+            'type': 'model',
+            'price_ton': round(floor, 6) if floor > 0 else round(value / 100.0, 6),
+            'value': value,
+            'price_gram': round(value / 100.0, 2),
+            'image': main,
+            'image_fallbacks': fbs,
+        })
+    models.sort(key=lambda m: (-m['value'], m['name'].lower()))
+    return models
+
+
+def build_fragment_first_gifts_catalog(force_refresh=False, include_models=False):
+    """Канонический каталог подарков из gifts.json.
+
+    По умолчанию — только ОСНОВНЫЕ подарки с основным PNG (модели и картинки
+    случайных NFT не попадают). `include_models=True` добавляет записи-модели
+    (нужно только кейсам). Fragment/MRKT — лишь источники импорта в gifts.json.
     """
     gifts = load_gifts_cached() or []
     result = []
     for g in gifts:
+        if not isinstance(g, dict):
+            continue
+        is_model = _gift_is_model_entry(g)
+        if is_model and not include_models:
+            continue
         item = dict(g)
         item['name'] = _normalize_fragment_collection_name(item.get('name') or 'Gift')
         item['value'] = _safe_int(item.get('value'), 0)
-        item['image'] = (
-            _normalize_local_gift_image(item.get('image'))
-            or item.get('market_image')
-            or item.get('black_image')
-            or item.get('onyx_black_image')
-            or '/static/img/default_gift.png'
-        )
-        item['fragment_slug'] = (
-            item.get('fragment_slug')
-            or _slugify_fragment_name(item.get('name', ''))
-        ).strip().lower()
+        item['fragment_slug'] = _gift_slug(item)
         if not item.get('fragment_url') and item['fragment_slug']:
             item['fragment_url'] = f"https://fragment.com/gifts/{item['fragment_slug']}"
         item['source'] = 'gifts.json'
+        if is_model:
+            coll = _model_entry_collection(item)
+            mname = item.get('model_name') or item.get('portal_model_name') or ''
+            base_main = _gift_main_image(item)
+            mimg = _model_image_url(coll, mname, item.get('model_image')) if mname else ''
+            item['image'] = mimg or base_main
+            item['image_fallbacks'] = [x for x in [base_main] + _gift_image_fallbacks(item, base_main)
+                                       if x and x != item['image']]
+        else:
+            _apply_main_image(item)
         result.append(item)
 
     result.sort(key=lambda x: float(x.get('value', 0) or 0), reverse=True)
@@ -2544,21 +2791,34 @@ def _canonicalize_case_gifts(case_gifts, catalog=None):
     their chances. Name/image/value/Fragment metadata always come from
     gifts.json. TON balance entries stay case-local because they are not gifts
     from the catalog.
+
+    ВАЖНО: записи-модели (Plush Pepe Rainbow) имеют тот же fragment_slug, что и
+    основной подарок. Раньше они затирали основной подарок в индексах по slug/
+    имени, и в кейсах вместо основной картинки показывалась картинка модели.
+    Теперь по slug/имени находятся только основные подарки, а модели — по
+    id / gift_key / (slug + название модели).
     """
     catalog = catalog if catalog is not None else (load_gifts_cached() or [])
     by_id = {}
     by_key = {}
     by_slug = {}
     by_name = {}
+    by_model = {}
     for g in catalog:
+        is_model = _gift_is_model_entry(g)
         if g.get('id') is not None:
             by_id[str(g.get('id'))] = g
-        for key in ('gift_key', 'fragment_slug'):
-            value = str(g.get(key) or '').strip().lower()
-            if value:
-                by_key[value] = g
+        gk = str(g.get('gift_key') or '').strip().lower()
+        if gk:
+            by_key[gk] = g
+        if is_model:
+            mname = str(g.get('model_name') or g.get('portal_model_name') or '').strip().lower()
+            if mname:
+                by_model[(_gift_slug(g), mname)] = g
+            continue
         slug = str(g.get('fragment_slug') or '').strip().lower()
         if slug:
+            by_key[slug] = g
             by_slug[slug] = g
         nk = _normalize_gift_name_for_match(g.get('name'))
         if nk:
@@ -2580,18 +2840,38 @@ def _canonicalize_case_gifts(case_gifts, catalog=None):
             result.append(normalized)
             continue
 
+        entry_model = str(entry.get('model_name') or entry.get('portal_model_name') or '').strip().lower()
+        is_random = bool(entry.get('model_random'))
         target_id = entry.get('id')
         target_str = str(target_id).strip().lower() if target_id is not None else ''
-        gift = by_id.get(target_str) or by_key.get(target_str)
-        if not gift:
-            slug = str(entry.get('fragment_slug') or '').strip().lower()
-            gift = by_slug.get(slug) if slug else None
-        if not gift:
-            nk = _normalize_gift_name_for_match(entry.get('name'))
-            gift = by_name.get(nk) if nk else None
+        gift = None
+        if entry_model and not is_random:
+            gift = by_key.get(str(entry.get('gift_key') or '').strip().lower()) or by_id.get(target_str)
+            if gift is not None and not _gift_is_model_entry(gift):
+                gift = None
+            if not gift:
+                gift = by_model.get((str(entry.get('fragment_slug') or '').strip().lower(), entry_model))
+        else:
+            gift = by_id.get(target_str) or by_key.get(target_str)
+            if gift is not None and _gift_is_model_entry(gift):
+                gift = None
+            if not gift:
+                slug = str(entry.get('fragment_slug') or '').strip().lower()
+                gift = by_slug.get(slug) if slug else None
+            if not gift:
+                nk = _normalize_gift_name_for_match(entry.get('name'))
+                gift = by_name.get(nk) if nk else None
 
         if gift:
             merged = dict(gift)
+            if _gift_is_model_entry(gift):
+                coll = _model_entry_collection(merged)
+                mname = merged.get('model_name') or merged.get('portal_model_name') or ''
+                base_main = _gift_main_image(merged)
+                merged['image'] = _model_image_url(coll, mname, merged.get('model_image')) or base_main
+                merged['image_fallbacks'] = [x for x in [base_main] if x and x != merged['image']]
+            else:
+                _apply_main_image(merged)
             # Chance/type/model selection are case configuration, not catalog metadata.
             merged['chance'] = entry.get('chance', 1)
             if entry.get('type'):
@@ -2609,9 +2889,40 @@ def _canonicalize_case_gifts(case_gifts, catalog=None):
             result.append(dict(entry))
     return result
 
-def build_full_catalog_with_models(force_refresh=False):
-    """Canonical runtime catalog. Models are only available when persisted in gifts.json."""
-    return build_fragment_first_gifts_catalog(force_refresh=force_refresh)
+def _refresh_case_gift_images(cases):
+    """Обновляет у наград кейсов ТОЛЬКО картинку (+ запасные адреса) по каталогу.
+
+    В сохранённых кейсах лежат старые картинки, среди которых попадаются
+    картинки случайных моделей/NFT. Основной подарок показывает основной PNG,
+    конкретная модель — PNG своей модели. Остальные поля награды не трогаем.
+    """
+    try:
+        catalog = load_gifts_cached() or []
+        for case in (cases or []):
+            gifts = case.get('gifts') if isinstance(case, dict) else None
+            if not isinstance(gifts, list) or not gifts:
+                continue
+            raw = [e for e in gifts if isinstance(e, dict)]
+            canon = _canonicalize_case_gifts(raw, catalog)
+            if len(canon) != len(raw):
+                continue
+            for r, c in zip(raw, canon):
+                if r.get('type') in ('ton_balance', 'gram_balance'):
+                    continue
+                if c.get('image'):
+                    r['image'] = c['image']
+                    r['image_fallbacks'] = c.get('image_fallbacks') or []
+    except Exception as e:
+        logger.warning(f'Case gift image refresh failed: {e}')
+    return cases
+
+
+def build_full_catalog_with_models(force_refresh=False, include_models=False):
+    """Runtime catalog for Crash / Upgrades: ТОЛЬКО основные подарки.
+
+    Имя историческое. Модели больше не подмешиваются (include_models=True
+    нужен только кейсам)."""
+    return build_fragment_first_gifts_catalog(force_refresh=force_refresh, include_models=include_models)
 
 def _resolve_case_gift_payload(gifts, selected_gift_info):
     """Resolve a case gift entry to a full gift dict.
@@ -2769,9 +3080,12 @@ def load_cases():
     except Exception as e:
         logger.warning(f'cases.json load failed: {e}')
     try:
-        _event_db_defaults(); conn = get_db_connection()
-        row = conn.execute('SELECT payload FROM event_configs WHERE id = ?', ('cases_catalog',)).fetchone()
-        conn.close()
+        _event_db_defaults(); conn = _own_db_connection()
+        try:
+            row = conn.execute('SELECT payload FROM event_configs WHERE id = ?', ('cases_catalog',)).fetchone()
+        finally:
+            try: conn.close()
+            except Exception: pass
         if row and row[0]:
             cases = json.loads(row[0]) if isinstance(row[0], str) else row[0]
             if isinstance(cases, list):
@@ -3436,6 +3750,20 @@ def get_db_connection():
     
     # Последняя попытка
     return sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
+
+
+def _own_db_connection():
+    """Соединение, которое принадлежит вызывающему коду.
+
+    В режиме PostgreSQL get_db_connection() отдаёт ОДНО соединение на весь
+    запрос (g._db_conn). Хелперы вида get_user_rtp_boost() / _get_site_profit_balance()
+    раньше брали это же соединение и закрывали его — после чего курсор роута
+    падал с «cursor already closed». Хелперы, которые сами закрывают
+    соединение, обязаны брать соединение отсюда.
+    """
+    if USE_POSTGRES:
+        return _pg_get_connection()
+    return get_db_connection()
 
 
 @app.teardown_request
@@ -5156,7 +5484,7 @@ def get_player_case_rtp_mode(user_id, conn=None):
     """Determine if a player should get boosted or nerfed case drops based on case-specific RTP."""
     close_conn = False
     if conn is None:
-        conn = get_db_connection()
+        conn = _own_db_connection()
         close_conn = True
     try:
         cursor = conn.cursor()
@@ -5199,7 +5527,7 @@ def get_user_rtp_boost(user_id, conn=None):
     """Get user's personal RTP boost (0-100). Default 40 means player can't lose more than 60%."""
     close_conn = False
     if conn is None:
-        conn = get_db_connection()
+        conn = _own_db_connection()
         close_conn = True
     try:
         cursor = conn.cursor()
@@ -5345,7 +5673,7 @@ def get_player_crash_stats(user_id, conn=None):
     """Get a player's crash game lifetime stats including net position"""
     close_conn = False
     if conn is None:
-        conn = get_db_connection()
+        conn = _own_db_connection()
         close_conn = True
     try:
         cursor = conn.cursor()
@@ -5482,31 +5810,35 @@ def _get_site_profit_balance():
             if now - _site_balance_cache['ts'] < _SITE_BALANCE_TTL:
                 return _site_balance_cache['value']
 
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
+        conn = _own_db_connection()
+        try:
+                cursor = conn.cursor()
 
-            # Total deposits (money in)
-            cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM deposits WHERE status = 'completed'")
-            total_deposits = cursor.fetchone()[0]
+                # Total deposits (money in)
+                cursor.execute("SELECT COALESCE(SUM(amount), 0) FROM deposits WHERE status = 'completed'")
+                total_deposits = cursor.fetchone()[0]
 
-            # Total star payments (money in)
-            cursor.execute('SELECT COALESCE(SUM(amount), 0) FROM stars_payments')
-            total_star_payments = cursor.fetchone()[0]
+                # Total star payments (money in)
+                cursor.execute('SELECT COALESCE(SUM(amount), 0) FROM stars_payments')
+                total_star_payments = cursor.fetchone()[0]
 
-            # Total gift deposits (money in)
-            cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM gift_deposits WHERE status = 'confirmed'")
-            total_gift_deposits = cursor.fetchone()[0]
+                # Total gift deposits (money in)
+                cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM gift_deposits WHERE status = 'confirmed'")
+                total_gift_deposits = cursor.fetchone()[0]
 
-            # Total withdrawals (money out)
-            cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM withdrawals WHERE status IN ('approved', 'completed', 'sent')")
-            total_withdrawals = cursor.fetchone()[0]
+                # Total withdrawals (money out)
+                cursor.execute("SELECT COALESCE(SUM(gift_value), 0) FROM withdrawals WHERE status IN ('approved', 'completed', 'sent')")
+                total_withdrawals = cursor.fetchone()[0]
 
-            # Crash game: total bets (money in) vs total wins (money out)
-            cursor.execute('SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets')
-            total_crash_bets = cursor.fetchone()[0]
+                # Crash game: total bets (money in) vs total wins (money out)
+                cursor.execute('SELECT COALESCE(SUM(bet_amount), 0) FROM ultimate_crash_bets')
+                total_crash_bets = cursor.fetchone()[0]
 
-            cursor.execute("SELECT COALESCE(SUM(win_amount), 0) FROM ultimate_crash_bets WHERE status = 'cashed_out'")
-            total_crash_wins = cursor.fetchone()[0]
+                cursor.execute("SELECT COALESCE(SUM(win_amount), 0) FROM ultimate_crash_bets WHERE status = 'cashed_out'")
+                total_crash_wins = cursor.fetchone()[0]
+        finally:
+            try: conn.close()
+            except Exception: pass
 
         # Site profit = external money in - external money out - crash net payout
         money_in = total_deposits + total_star_payments + total_gift_deposits
@@ -7824,7 +8156,7 @@ def ultimate_crash_cashout_simple():
 
         cached = get_crash_cache()
         if cached.get('status') != 'flying':
-            return jsonify({'success': False, 'error': 'Нет активной игры'})
+            return jsonify({'success': False, 'error': 'Нет активной игры', 'round_ended': True, 'code': 'round_ended'})
         cached_mult = cached.get('current_multiplier', 1.0)
 
         conn = get_db_connection()
@@ -7840,7 +8172,7 @@ def ultimate_crash_cashout_simple():
             game = cursor.fetchone()
             if not game:
                 conn.rollback(); conn.close()
-                return jsonify({'success': False, 'error': 'Нет активной игры'})
+                return jsonify({'success': False, 'error': 'Нет активной игры', 'round_ended': True, 'code': 'round_ended'})
 
             game_id = game[0]
             db_mult = float(game[1]) if game[1] else 1.0
@@ -9913,6 +10245,7 @@ def api_cases():
         seasonal = load_seasonal_case()
         if seasonal_case_is_active(seasonal):
             cases = [seasonal] + [c for c in cases if str(c.get('id')) != 'seasonal']
+        _refresh_case_gift_images(cases)
 
         def _is_public_season_case(c):
             section=str(c.get('section') or '').strip().lower()
@@ -9997,7 +10330,7 @@ def _case_gift_details(case):
     """Собирает подарки кейса, не падая на частично заполненных данных."""
     gifts_details = []
     try:
-        canonical_gifts = build_fragment_first_gifts_catalog() or []
+        canonical_gifts = build_fragment_first_gifts_catalog(include_models=True) or []
     except Exception as e:
         logger.warning(f"⚠️ Каталог подарков недоступен: {e}")
         canonical_gifts = []
@@ -10018,15 +10351,32 @@ def _case_gift_details(case):
 
             target_id = gift_info.get('id')
             target_id_str = str(target_id) if target_id is not None else ''
-            gift = next((g for g in canonical_gifts if
-                         (target_id is not None and str(g.get('id')) == target_id_str) or
-                         (target_id_str and str(g.get('gift_key') or '').lower() == target_id_str.lower()) or
-                         (target_id_str and str(g.get('fragment_slug') or '').lower() == target_id_str.lower())), None)
-            if not gift and gift_info.get('fragment_slug'):
-                slug = str(gift_info.get('fragment_slug')).strip().lower()
-                gift = next((g for g in canonical_gifts if str(g.get('fragment_slug') or '').lower() == slug), None)
+            entry_model = str(gift_info.get('model_name') or gift_info.get('portal_model_name') or '').strip().lower()
+            entry_slug = str(gift_info.get('fragment_slug') or '').strip().lower()
+            is_random = bool(gift_info.get('model_random'))
+            gift = None
+            if entry_model and not is_random:
+                # Конкретная модель: по id / gift_key, затем по slug + названию модели.
+                gk = str(gift_info.get('gift_key') or '').strip().lower()
+                gift = next((g for g in canonical_gifts if _gift_is_model_entry(g) and (
+                    (target_id is not None and str(g.get('id')) == target_id_str) or
+                    (gk and str(g.get('gift_key') or '').lower() == gk))), None)
+                if not gift and entry_slug:
+                    gift = next((g for g in canonical_gifts if _gift_is_model_entry(g)
+                                 and _gift_slug(g) == entry_slug
+                                 and str(g.get('model_name') or g.get('portal_model_name') or '').strip().lower() == entry_model), None)
+            else:
+                # Обычный подарок (или случайная модель): ТОЛЬКО основная запись коллекции,
+                # иначе вместо основной картинки подставлялась картинка какой-то модели.
+                gift = next((g for g in canonical_gifts if not _gift_is_model_entry(g) and (
+                    (target_id is not None and str(g.get('id')) == target_id_str) or
+                    (target_id_str and str(g.get('gift_key') or '').lower() == target_id_str.lower()) or
+                    (target_id_str and str(g.get('fragment_slug') or '').lower() == target_id_str.lower()))), None)
+                if not gift and entry_slug:
+                    gift = next((g for g in canonical_gifts if not _gift_is_model_entry(g)
+                                 and str(g.get('fragment_slug') or '').lower() == entry_slug), None)
             if not gift and gift_info.get('name'):
-                gift = {
+                gift = _apply_main_image({
                     'id': target_id or -1,
                     'name': gift_info.get('name', ''),
                     'image': gift_info.get('image', '/static/img/default_gift.png'),
@@ -10034,9 +10384,15 @@ def _case_gift_details(case):
                     'type': gift_info.get('type', 'gift'),
                     'fragment_slug': gift_info.get('fragment_slug', ''),
                     'model_name': gift_info.get('model_name', ''),
-                }
+                })
+                if entry_model and gift_info.get('image'):
+                    gift['image'] = gift_info.get('image')
             if gift:
-                gifts_details.append({**gift, 'chance': gift_info.get('chance', 1)})
+                _extra = {'chance': gift_info.get('chance', 1)}
+                if gift_info.get('model_random'):
+                    _extra['model_random'] = True
+                    _extra['model_count'] = gift_info.get('model_count')
+                gifts_details.append({**gift, **_extra})
             else:
                 logger.warning(f"⚠️ Подарок {target_id_str or '?'} не найден для кейса {case.get('id')}")
         except Exception as e:
@@ -10217,7 +10573,7 @@ def open_case():
                              (total_cost, user_id))
 
         won_gifts = []
-        gifts = build_fragment_first_gifts_catalog()
+        gifts = build_fragment_first_gifts_catalog(include_models=True)
         case['gifts'] = _canonicalize_case_gifts(case.get('gifts', []), gifts)
 
         # Real case odds: use exactly the chances configured for this case.
@@ -10459,7 +10815,7 @@ def open_case_single():
                              (case['cost'], user_id))
 
         # Выбор подарка
-        gifts = build_fragment_first_gifts_catalog()
+        gifts = build_fragment_first_gifts_catalog(include_models=True)
         case['gifts'] = _canonicalize_case_gifts(case.get('gifts', []), gifts)
         won_gift = None
         is_ton_balance = False
@@ -11010,7 +11366,7 @@ def update_gift_challenge_progress(user_id, wager_amount_stars, conn=None):
     When wager target is met, the gift becomes sellable/withdrawable."""
     close_conn = False
     if conn is None:
-        conn = get_db_connection()
+        conn = _own_db_connection()
         close_conn = True
     try:
         cursor = conn.cursor()
@@ -11072,7 +11428,7 @@ def update_user_wager_progress(user_id, wager_amount_stars, conn=None):
     When wagered_amount >= wager_requirement, wager is completed and bonus is unlocked."""
     close_conn = False
     if conn is None:
-        conn = get_db_connection()
+        conn = _own_db_connection()
         close_conn = True
     try:
         cursor = conn.cursor()
@@ -12488,14 +12844,23 @@ def _portal_floor_value(value):
 def _portal_normalize_filter_group(raw):
     """Return [{'name': ..., 'floor_price': ...}, ...] from dict/list API shapes."""
     rows = []
+    def _img(v):
+        if isinstance(v, dict):
+            for k in ('image', 'photo_url', 'preview_url', 'png', 'icon'):
+                if v.get(k):
+                    return str(v.get(k)).strip()
+        return ''
     if isinstance(raw, dict):
         for name, value in raw.items():
             if not name:
                 continue
-            rows.append({
+            row = {
                 'name': str(name),
                 'floor_price': round(_portal_floor_value(value), 6),
-            })
+            }
+            if _img(value):
+                row['image'] = _img(value)
+            rows.append(row)
     elif isinstance(raw, list):
         for item in raw:
             if isinstance(item, str):
@@ -12506,10 +12871,13 @@ def _portal_normalize_filter_group(raw):
                     item.get('model') or item.get('backdrop') or item.get('symbol')
                 )
                 if name:
-                    rows.append({
+                    row = {
                         'name': str(name),
                         'floor_price': round(_portal_floor_value(item), 6),
-                    })
+                    }
+                    if _img(item):
+                        row['image'] = _img(item)
+                    rows.append(row)
 
     # Deduplicate case-insensitively and sort by name.
     dedup = {}
@@ -12606,6 +12974,11 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
         by_slug = {}
         for gift in gifts:
             if not isinstance(gift, dict):
+                continue
+            # Записи-модели имеют тот же slug, что и коллекция. Раньше они
+            # перехватывали обновление: цена/картинка коллекции писались в
+            # модель, а основной подарок оставался со старыми данными.
+            if _gift_is_model_entry(gift):
                 continue
             slug = str(
                 gift.get('fragment_slug') or
@@ -13146,13 +13519,17 @@ def _portal_catalog_payload(collection, model=None):
     if price <= 0:
         price = _portal_float(collection.get('floor_price'))
 
-    display_name = coll_name if not model_name else f'{coll_name} — {model_name}'
+    display_name = coll_name if not model_name else f'{coll_name} {model_name}'
     gift_key = _build_case_custom_gift_id(display_name, fragment_slug=short_name, model_name=model_name or None)
+    _coll_img = str(collection.get('photo_url') or '').strip() or _portal_collection_image_url(short_name) or '/static/img/gift.png'
+    _model_img = _model_image_url(coll_name, model_name, (model or {}).get('image')) if model_name else ''
     return {
         'gift_key': gift_key,
         'name': display_name,
         'type': 'item',
-        'image': str(collection.get('photo_url') or '').strip() or '/static/img/gift.png',
+        'image': _model_img or _coll_img,
+        'image_fallbacks': ([_coll_img] if _model_img else []),
+        'model_image': _model_img or None,
         'value': max(1, int(round(price * 100))) if price > 0 else 1,
         'fragment_slug': short_name,
         'model_name': model_name or None,
@@ -13419,6 +13796,24 @@ def admin_portal_item_action():
         model_name = str(data.get('model_name') or '').strip() or None
         action = str(data.get('action') or 'catalog').strip().lower()
         collection, model = _portal_snapshot_find(short_name, model_name)
+        if not collection or (model_name and not model):
+            # Снимка Portal нет/он неполный — собираем подарок и модель из каталога gifts.json
+            _slug = re.sub(r'[^a-z0-9]+', '', short_name.lower())
+            _base = next((g for g in build_fragment_first_gifts_catalog(include_models=False)
+                          if _gift_slug(g) == _slug), None)
+            if _base is not None:
+                _models = _gift_models_for(_base)
+                collection = {
+                    'name': _base.get('name'), 'short_name': _slug,
+                    'photo_url': _base.get('image'),
+                    'floor_price': _safe_int(_base.get('value'), 0) / 100.0,
+                    'models': [{'name': m['model_name'], 'floor_price': m['price_ton'],
+                                'image': m['image']} for m in _models],
+                }
+                model = None
+                if model_name:
+                    model = next((m for m in collection['models']
+                                  if str(m['name']).strip().lower() == model_name.strip().lower()), None)
         if not collection:
             return jsonify({'success': False, 'error': 'Подарок не найден в Portal snapshot. Нажми «Обновить сейчас».'}), 404
         if model_name and not model:
@@ -19531,6 +19926,7 @@ def admin_cases_management():
         if request.method == 'GET':
             cases = load_cases()
             cases.sort(key=lambda x: x.get('display_order', 0))
+            _refresh_case_gift_images(cases)
             return jsonify({'success': True, 'cases': cases})
 
         elif request.method == 'POST':
@@ -19544,7 +19940,13 @@ def admin_cases_management():
                 except (TypeError, ValueError):
                     return jsonify({'success': False, 'error': 'Некорректный ID кейса'}), 400
             else:
-                new_id = max([int(case.get('id', 0)) for case in cases], default=0) + 1
+                _num_ids = []
+                for _c in cases:
+                    try:
+                        _num_ids.append(int(_c.get('id', 0)))
+                    except (TypeError, ValueError):
+                        pass  # нечисловые id (seasonal и т.п.) не мешают нумерации
+                new_id = max(_num_ids, default=0) + 1
 
             if any(str(case.get('id')) == str(new_id) for case in cases):
                 return jsonify({'success': False, 'error': 'Кейс с таким ID уже существует'})
@@ -19600,7 +20002,10 @@ def admin_cases_management():
                     conn.close()
 
                 logger.info(f"🛠️ Админ {admin_id} создал кейс: {new_case['name']}")
-                return jsonify({'success': True, 'message': 'Кейс успешно создан', 'case': new_case})
+                _resp_case = dict(new_case)
+                if data.get('event_section_id'):
+                    _resp_case['event_section_id'] = data.get('event_section_id')
+                return jsonify({'success': True, 'message': 'Кейс успешно создан', 'case': _resp_case})
             else:
                 return jsonify({'success': False, 'error': 'Ошибка сохранения кейса'})
 
@@ -19666,7 +20071,10 @@ def admin_cases_management():
                     conn.close()
 
                 logger.info(f"🛠️ Админ {admin_id} обновил кейс: {updated_case['name']}")
-                return jsonify({'success': True, 'message': 'Кейс успешно обновлен', 'case': updated_case})
+                _resp_case = dict(updated_case)
+                if data.get('event_section_id'):
+                    _resp_case['event_section_id'] = data.get('event_section_id')
+                return jsonify({'success': True, 'message': 'Кейс успешно обновлен', 'case': _resp_case})
             else:
                 return jsonify({'success': False, 'error': 'Ошибка сохранения кейса'})
 
@@ -19692,6 +20100,22 @@ def admin_cases_management():
                 conn.close()
 
                 logger.info(f"🛠️ Админ {admin_id} удалил кейс: {case_to_delete['name']}")
+                # Снимаем привязку удалённого кейса ко всем событиям, иначе в Event
+                # остаётся «Кейс #N не найден».
+                try:
+                    _evs = get_active_events()
+                    _changed = False
+                    for _ev in _evs.values():
+                        for _sec in (_ev.get('sections') or []):
+                            if _sec.get('type') == 'cases' and _sec.get('case_ids'):
+                                _keep = [x for x in _sec['case_ids'] if str(x) != str(case_id)]
+                                if len(_keep) != len(_sec['case_ids']):
+                                    _sec['case_ids'] = _keep
+                                    _changed = True
+                    if _changed:
+                        save_events(_evs)
+                except Exception as _ue:
+                    logger.warning(f'Event unbind after case delete failed: {_ue}')
                 return jsonify({'success': True, 'message': 'Кейс успешно удален'})
             else:
                 return jsonify({'success': False, 'error': 'Ошибка удаления кейса'})
@@ -21319,11 +21743,11 @@ def api_online_count():
 
 @app.route('/api/gifts-list', methods=['GET'])
 def api_gifts_list():
-    """Return the canonical gifts.json catalog for the UI.
+    """Каталог ОСНОВНЫХ подарков для UI (основной PNG, без записей-моделей).
 
-    Fragment/MRKT are used only by the admin import/sync jobs. Once imported,
-    all gift metadata (image/PNG variants, prices, slugs, etc.) is served from
-    gifts.json so the UI always sees the same persisted snapshot.
+    ?models=0 — только подарки (Crash, Upgrades);
+    без параметра / ?models=1 — у каждого подарка поле `models` со ВСЕМИ
+    моделями: название, цена в GRAM, PNG (+ запасные адреса картинок).
     """
     try:
         force_refresh = request.args.get('refresh', '0') in ('1', 'true', 'yes')
@@ -21333,21 +21757,26 @@ def api_gifts_list():
             gifts_cache = None
             gifts_cache_time = None
 
-        local_gifts = load_gifts_cached() or []
+        with_models = request.args.get('models', '1').strip().lower() not in ('0', 'false', 'no', '')
+        base = build_fragment_first_gifts_catalog(include_models=False)
+        snap_index = _snapshot_models_by_slug() if with_models else None
+        entries_index = _model_entries_by_slug() if with_models else None
         merged = []
-        for g in local_gifts:
-            item = dict(g)
+        for item in base:
+            item = dict(item)
             item['id'] = item.get('id')
             item['name'] = item.get('name') or 'Gift'
-            item['value'] = _safe_int(item.get('value'), 0)
-            item['image'] = _normalize_local_gift_image(item.get('image')) or item.get('market_image') or '/static/img/default_gift.png'
-            item['fragment_slug'] = (item.get('fragment_slug') or _slugify_fragment_name(item.get('name', ''))).strip().lower()
-            item['fragment_url'] = item.get('fragment_url') or (f"https://fragment.com/gifts/{item['fragment_slug']}" if item['fragment_slug'] else '')
-            item['source'] = item.get('source') or 'gifts.json'
+            if not item.get('image'):
+                item['image'] = _DEFAULT_GIFT_IMAGE
+            if with_models:
+                models = _gift_models_for(item, snap_index, entries_index)
+                item['models'] = models
+                item['model_count'] = len(models)
+            else:
+                item['model_count'] = int(item.get('portal_model_count') or 0)
+            item.pop('portal_models', None)
+            item.pop('getgems_models', None)
             merged.append(item)
-
-
-        # No live/persisted Fragment model merge here: public catalog is gifts.json only.
 
         payload = {
             'success': True,
@@ -21588,86 +22017,35 @@ def api_fragment_import_all():
         return jsonify({'success': False, 'error': str(e)})
 
 @app.route('/api/fragment-gift-models', methods=['GET'])
+@app.route('/api/gift-models', methods=['GET'])
 def api_fragment_gift_models():
-    """Return original gift and all available Fragment models for selected gift.
-    Uses disk-cached models first; falls back to live scraping if available."""
+    """Основной подарок + ВСЕ его модели (название, цена, PNG) из Portal-каталога."""
     try:
         raw_slug = request.args.get('slug', '')
         raw_name = request.args.get('name', '')
-        force_refresh = request.args.get('refresh', '0') in ('1', 'true', 'yes')
+        slug = _slugify_fragment_name(raw_slug) if raw_slug else _slugify_fragment_name(raw_name)
+        if not slug:
+            return jsonify({'success': False, 'error': 'slug is required', 'models': [], 'total_models': 0})
 
-        fragment_slug = _slugify_fragment_name(raw_slug) if raw_slug else _slugify_fragment_name(raw_name)
-        if not fragment_slug:
-            return jsonify({'success': False, 'error': 'slug is required'})
+        base = next((g for g in build_fragment_first_gifts_catalog(include_models=False)
+                     if _gift_slug(g) == slug), None)
+        if base is None:
+            base = _apply_main_image({'name': raw_name or slug, 'fragment_slug': slug, 'value': 0})
 
-        merged_catalog = build_fragment_first_gifts_catalog(force_refresh=force_refresh)
-        merged_item = next((g for g in merged_catalog if (g.get('fragment_slug') or '').strip().lower() == fragment_slug), None)
-
-        base_name = (
-            (merged_item or {}).get('name')
-            or raw_name
-            or fragment_slug
-        )
-        base_value = _safe_int((merged_item or {}).get('value'), 0)
-        base_image = (
-            (merged_item or {}).get('image')
-            or f'https://fragment.com/file/gifts/{fragment_slug}/thumb.webp'
-        )
-        original_id = (merged_item or {}).get('id')
-        if original_id is None:
-            original_id = _build_case_custom_gift_id(base_name, fragment_slug=fragment_slug)
-
+        models = _gift_models_for(base)
         original = {
-            'id': original_id,
-            'gift_key': _build_case_custom_gift_id(base_name, fragment_slug=fragment_slug),
-            'name': base_name,
-            'image': base_image,
-            'value': base_value,
+            'id': base.get('id'),
+            'gift_key': _build_case_custom_gift_id(base.get('name'), fragment_slug=slug),
+            'name': base.get('name'),
+            'image': base.get('image'),
+            'image_fallbacks': base.get('image_fallbacks') or [],
+            'value': _safe_int(base.get('value'), 0),
             'type': 'fragment_original',
-            'fragment_slug': fragment_slug,
-            'fragment_url': f'https://fragment.com/gifts/{fragment_slug}',
-            'fragment_price_ton': (merged_item or {}).get('fragment_price_ton'),
-            'getgems_floor_ton': (merged_item or {}).get('getgems_floor_ton')
+            'fragment_slug': slug,
+            'fragment_url': f'https://fragment.com/gifts/{slug}',
+            'fragment_price_ton': base.get('fragment_price_ton'),
         }
-
-        # 1) Try disk-cached models first (always available on PythonAnywhere)
-        cache_key = _fragment_model_cache_key(fragment_slug)
-        cached_models = fragment_models_cache.get(cache_key, []) if cache_key else []
-
-        if cached_models and not force_refresh:
-            models = cached_models
-        else:
-            # 2) Try live fetch (may fail on PythonAnywhere with no internet)
-            models = fetch_fragment_gift_models(
-                fragment_slug,
-                base_name=base_name,
-                base_value=base_value,
-                base_image=base_image,
-                force_refresh=force_refresh
-            )
-            # 3) Fall back to cached if live fetch returned nothing
-            if not models and cached_models:
-                models = cached_models
-
-        if not models and merged_item and str((merged_item or {}).get('source')) == 'local':
-            models = [{
-                'id': merged_item.get('id'),
-                'gift_key': _build_case_custom_gift_id(merged_item.get('name', base_name), fragment_slug=fragment_slug),
-                'name': merged_item.get('name', base_name),
-                'image': _normalize_local_gift_image(merged_item.get('image', base_image)) or base_image,
-                'value': _safe_int(merged_item.get('value'), base_value),
-                'type': 'local_fallback',
-                'fragment_slug': fragment_slug,
-                'fragment_url': f'https://fragment.com/gifts/{fragment_slug}',
-                'model_name': merged_item.get('name', base_name)
-            }]
-
-        return jsonify({
-            'success': True,
-            'original': original,
-            'models': models,
-            'total_models': len(models)
-        })
+        return jsonify({'success': True, 'original': original, 'models': models, 'total_models': len(models)})
     except Exception as e:
         logger.error(f"Fragment models API error: {e}")
         return jsonify({'success': False, 'error': str(e), 'models': [], 'total_models': 0})
@@ -22842,7 +23220,7 @@ def init_crates_tables(cursor=None):
     """Initialize crates tables"""
     own_conn = False
     if cursor is None:
-        conn = get_db_connection()
+        conn = _own_db_connection()
         cursor = conn.cursor()
         own_conn = True
     cursor.execute('''CREATE TABLE IF NOT EXISTS crates (
@@ -27272,22 +27650,29 @@ def api_admin_backgrounds_list():
 
 @app.route('/api/admin/get-gifts-list', methods=['GET'])
 def api_admin_gifts_list():
-    """Список подарков — только оригиналы из gifts.json (без моделей)"""
+    """Список ОСНОВНЫХ подарков (основной PNG). ?models=1 — плюс все модели каждого."""
     try:
-        # Return only local gifts from gifts.json (no fragment/model entries)
-        all_gifts = load_gifts_cached() or load_gifts()
+        with_models = request.args.get('models', '0').strip().lower() in ('1', 'true', 'yes')
+        snap_index = _snapshot_models_by_slug() if with_models else None
+        entries_index = _model_entries_by_slug() if with_models else None
         result = []
-        for g in all_gifts:
+        for g in build_fragment_first_gifts_catalog(include_models=False):
             gid = g.get('id') or g.get('gift_key') or g.get('fragment_slug') or ''
-            result.append({
+            row = {
                 'id': gid,
                 'gift_key': g.get('gift_key', ''),
                 'fragment_slug': g.get('fragment_slug', ''),
-                'name': _normalize_fragment_collection_name(g.get('name', 'Gift')),
+                'name': g.get('name', 'Gift'),
                 'value': g.get('value', 0),
                 'fragment_price_ton': g.get('fragment_price_ton'),
-                'image': g.get('image', '/static/img/gift.png')
-            })
+                'image': g.get('image') or '/static/img/gift.png',
+                'image_fallbacks': g.get('image_fallbacks') or [],
+                'model_count': int(g.get('portal_model_count') or 0),
+            }
+            if with_models:
+                row['models'] = _gift_models_for(g, snap_index, entries_index)
+                row['model_count'] = len(row['models'])
+            result.append(row)
         result.sort(key=lambda x: x.get('value', 0), reverse=True)
         return jsonify({'success': True, 'gifts': result})
     except Exception as e:
