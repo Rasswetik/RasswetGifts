@@ -2737,17 +2737,28 @@ def load_gifts():
     return []
 
 def save_gifts(gifts):
-    """Atomically persist the canonical gift catalog to both durable and legacy paths."""
+    """Persist the canonical gift catalog to disk and PostgreSQL."""
     try:
         if not isinstance(gifts, list):
             gifts = []
         _write_gifts_file(GIFTS_PERSISTENT_FILE, gifts)
-        # Keep the legacy file in sync for older endpoints/scripts.
         try:
             _write_gifts_file(os.path.join(PERSISTENT_DATA_DIR, 'gifts.json'), gifts)
         except Exception as e:
             logger.warning('Legacy gifts.json sync failed: %s', e)
-        logger.info('✅ Сохранено %s подарков', len(gifts))
+        # The current admin/API layer reads app_documents.gifts. Keep it in sync
+        # with Portal updates; otherwise prices change only on disk.
+        try:
+            with db(True) as con:
+                con.execute(
+                    'INSERT INTO app_documents(key,payload,updated_at) VALUES(?,?,?) '
+                    'ON CONFLICT(key) DO UPDATE SET payload=excluded.payload, updated_at=excluded.updated_at',
+                    ('gifts', json.dumps(gifts, ensure_ascii=False, allow_nan=False), time.time())
+                )
+        except Exception as e:
+            logger.error('❌ PostgreSQL gifts catalog sync failed: %s', e)
+            return False
+        logger.info('✅ Сохранено %s подарков (disk + PostgreSQL)', len(gifts))
         global gifts_cache, gifts_cache_time
         gifts_cache = None
         gifts_cache_time = None
@@ -8270,9 +8281,9 @@ def ultimate_crash_current_gift():
 # ==================== АВТОМАТИЗАЦИЯ ИГРОВОГО ЦИКЛА ====================
 
 def start_portal_price_sync_loop():
-    """Portal Market hourly sync loop.
+    """Portal Market automatic price sync loop.
 
-    Full prices + every collection model list are cached once per hour.
+    Full prices + every collection model list are refreshed on the configured interval.
     The snapshot is persisted, so an app restart does not force another
     expensive Portal scan if the last snapshot is still fresh.
     """
@@ -8303,7 +8314,7 @@ def start_portal_price_sync_loop():
                     )
                 else:
                     logger.warning(
-                        "⚠️ Portal hourly snapshot failed: %s",
+                        "⚠️ Portal sync failed: %s",
                         result.get('error', 'unknown error'),
                     )
 
@@ -12621,8 +12632,13 @@ def _portal_all_collections():
                 dedup[key] = item
         count = info.get('count', len(items))
         total = info.get('total')
-        if not items or len(dedup) == before:
-            return False, 'Portals: неполная или повторяющаяся страница; предыдущий каталог сохранён'
+        if not items:
+            break
+        if len(dedup) == before:
+            # Some Portal deployments ignore offset and repeat the same page.
+            if count < 5000:
+                break
+            return False, 'Portals: API повторяет страницу; предыдущий каталог сохранён'
         if count != len(items):
             return False, 'Portals: часть коллекций не удалось разобрать'
         if total is not None and len(dedup) >= total:
@@ -12711,7 +12727,7 @@ def _portal_build_daily_snapshot(force=False):
 
     A non-forced call never updates more often than PORTAL_SYNC_INTERVAL_MINUTES.
     """
-    interval_seconds = 600
+    interval_seconds = max(60, int(PORTAL_SYNC_INTERVAL_MINUTES * 60))
     now = time.time()
 
     current = _portal_load_daily_snapshot()
