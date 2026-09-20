@@ -34,7 +34,7 @@ try:
 except Exception:
     _portal_curl_requests = None
     _PORTAL_CURL_AVAILABLE = False
-# PostgreSQL-only build. SQLite fallback is intentionally disabled.
+# PostgreSQL-only build. SQLite fallback is intentionally disabled
 try:
     from db_wrapper import USE_POSTGRES, get_connection as _pg_get_connection
 except Exception as _db_import_error:
