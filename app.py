@@ -3507,6 +3507,15 @@ def _create_all_tables(conn):
             logger.warning(f"promo_codes.created_by BIGINT migration skipped: {_promo_mig}")
 
     tables_sql = {
+        # Shared JSON/document storage used by admin_services.getdoc()/putdoc().
+        # It must be created as part of the main schema initialization because
+        # admin_services is installed during app.py import, before its own
+        # additive-migration block can run.
+        'app_documents': '''CREATE TABLE IF NOT EXISTS app_documents (
+            key TEXT PRIMARY KEY,
+            payload TEXT NOT NULL,
+            updated_at DOUBLE PRECISION NOT NULL
+        )''',
         'event_configs': '''CREATE TABLE IF NOT EXISTS event_configs (
             id TEXT PRIMARY KEY,
             payload TEXT NOT NULL,
