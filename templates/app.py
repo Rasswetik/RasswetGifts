@@ -29,6 +29,12 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 import requests as http_requests
 try:
+    from curl_cffi import requests as _portal_curl_requests
+    _PORTAL_CURL_AVAILABLE = True
+except Exception:
+    _portal_curl_requests = None
+    _PORTAL_CURL_AVAILABLE = False
+try:
     from db_wrapper import USE_POSTGRES, get_connection as _pg_get_connection
 except Exception:
     # Local Windows fallback: run on SQLite if db_wrapper.py is not present.
@@ -230,17 +236,34 @@ _portal_token_lock = threading.Lock()
 _portal_auth_lock = threading.Lock()
 
 
+def _portal_normalize_auth_token(token):
+    """Keep the exact Portals Authorization format.
+
+    Portals expects Telegram Mini App auth as: ``Authorization: tma <initData>``.
+    Older builds removed ``tma `` before saving which made the embedded market
+    look disconnected even when the copied token itself was correct.
+    """
+    token = str(token or '').strip()
+    if not token:
+        return ''
+    if token.lower().startswith('tma '):
+        raw = token[4:].strip()
+        return ('tma ' + raw) if raw else ''
+    # A raw Telegram WebApp initData string is also accepted in the admin.
+    if 'hash=' in token and ('user=' in token or 'query_id=' in token or 'auth_date=' in token):
+        return 'tma ' + token
+    # Partner/API tokens, if used, are left untouched.
+    return token
+
+
 def _portal_get_token():
-    """Возвращает сохранённый initData токен Portal (кэш 30 сек)."""
+    """Return saved Portals auth token, always normalized for Authorization."""
     with _portal_token_lock:
         now = time.time()
         if _portal_token_cache['token'] and (now - _portal_token_cache['loaded_at']) < 30:
             return _portal_token_cache['token']
 
-        token = ''
-        # 1. env
         token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
-        # 2. файл
         if not token:
             try:
                 if os.path.exists(PORTAL_TOKEN_FILE):
@@ -249,20 +272,17 @@ def _portal_get_token():
             except Exception as e:
                 logger.warning(f'Portal token file read failed: {e}')
 
-        # Нормализуем (убираем префикс tma)
-        if token.startswith('tma '):
-            token = token[4:].strip()
-
+        token = _portal_normalize_auth_token(token)
         _portal_token_cache['token'] = token
         _portal_token_cache['loaded_at'] = now
         return token
 
 
 def _portal_save_token(token):
-    """Сохраняет токен в файл + env."""
-    token = str(token or '').strip()
-    if token.startswith('tma '):
-        token = token[4:].strip()
+    """Save Portal auth without stripping the required ``tma `` prefix."""
+    token = _portal_normalize_auth_token(token)
+    if not token:
+        raise ValueError('Portal token is empty')
 
     os.makedirs(os.path.dirname(PORTAL_TOKEN_FILE), exist_ok=True)
     with open(PORTAL_TOKEN_FILE, 'w', encoding='utf-8') as f:
@@ -525,6 +545,8 @@ def _portal_do_sync(token):
                     'fragment_url': f'https://fragment.com/gifts/{short_name}',
                     'image': preview,
                     'source': 'portal',
+                    'portal_price_ton': round(floor_price, 6) if floor_price > 0 else 0,
+                    'value': int(round(floor_price * 100)) if floor_price > 0 else 0,
                 }
                 if floor_price > 0:
                     item['fragment_price_ton'] = round(floor_price, 4)
@@ -583,11 +605,15 @@ def _portal_do_sync(token):
             if old_value != new_value:
                 updated += 1
 
-        with open(gifts_path, 'w', encoding='utf-8') as f:
-            if wrap_dict:
-                json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
-            else:
-                json.dump(gifts, f, ensure_ascii=False, indent=2)
+        # Save through the canonical writer so the persistent catalog and the
+        # legacy gifts.json can never diverge. Previously this endpoint only
+        # rewrote data/gifts.json while load_gifts() preferred the persistent
+        # copy, which is why the admin could show 0 price / missing images.
+        if not save_gifts(gifts):
+            return {'success': False, 'error': 'Не удалось сохранить канонический каталог подарков'}
+
+        portal_items = [dict(x) for x in gifts if isinstance(x, dict) and str(x.get('source') or '').lower() == 'portal']
+        mode_sync = _portal_sync_catalog_to_all_modes(portal_items)
 
         # Сброс кэшей
         global gifts_cache, gifts_cache_time
@@ -613,6 +639,7 @@ def _portal_do_sync(token):
             'updated': updated,
             'total': len(gifts),
             'collections': len(portal_catalog),
+            'mode_sync': mode_sync,
         }
     except Exception as e:
         logger.error(f'_portal_do_sync error: {e}')
@@ -3339,12 +3366,35 @@ def get_db_connection():
     """Получает соединение с базой данных с защитой от повреждений.
     При наличии DATABASE_URL использует PostgreSQL через db_wrapper."""
     global _db_ready
-    # Reuse a single connection per Flask request to avoid repeated pool get/put
+    # Reuse a single connection per Flask request to avoid repeated pool get/put.
+    # IMPORTANT: don't trust a private "_closed" flag to decide this — sqlite3
+    # connections don't expose it at all and psycopg2 exposes ".closed" (not
+    # "_closed"), so the old check always evaluated to "still open" even after
+    # some earlier code in the same request had already called conn.close().
+    # Handing back that dead connection is exactly what produced
+    # "cursor already closed" during gift upgrades. Probe the cached
+    # connection for real instead of guessing by attribute name.
     try:
         if has_request_context():
             cached = getattr(g, '_db_conn', None)
-            if cached is not None and not getattr(cached, '_closed', False):
-                return cached
+            if cached is not None:
+                is_closed = bool(getattr(cached, 'closed', False)) or bool(getattr(cached, '_closed', False))
+                if not is_closed:
+                    try:
+                        # Cheap liveness probe; raises if the connection is dead.
+                        probe = cached.cursor()
+                        try:
+                            probe.close()
+                        except Exception:
+                            pass
+                        return cached
+                    except Exception:
+                        is_closed = True
+                if is_closed:
+                    try:
+                        del g._db_conn
+                    except Exception:
+                        pass
     except Exception:
         pass
 
@@ -5918,18 +5968,21 @@ def start_ultimate_crash_loop():
                             spooky_multiplier = round(random.uniform(_s_min, _s_max), 2)
                             logger.info(f"👻 SPOOKY ROUND! hidden multiplier: {spooky_multiplier}x")
 
-                    # PostgreSQL does not provide sqlite's cursor.lastrowid.
-                    # Always fetch the generated id explicitly on PostgreSQL.
+                    # PostgreSQL через db_wrapper может не отдавать строку
+                    # RETURNING id (зависит от реализации курсора/драйвера).
+                    # Поэтому вставляем без RETURNING и получаем id отдельным
+                    # SELECT в той же транзакции. Так игра не падает сразу после
+                    # успешной INSERT.
                     if USE_POSTGRES:
+                        _inserted_with_seed = False
                         try:
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
-                                RETURNING id
                             """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                            _row = cursor.fetchone()
-                            new_game_id = int(_row[0]) if _row else 0
-                        except Exception:
+                            _inserted_with_seed = True
+                        except Exception as insert_err:
+                            logger.warning(f'⚠️ Crash PG insert with seed failed, retrying legacy columns: {insert_err}')
                             try:
                                 conn.rollback()
                             except Exception:
@@ -5938,10 +5991,47 @@ def start_ultimate_crash_loop():
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP)
-                                RETURNING id
                             """, (target_multiplier,))
+
+                        new_game_id = 0
+                        try:
+                            if _inserted_with_seed:
+                                cursor.execute(
+                                    "SELECT id FROM ultimate_crash_games WHERE seed_hash = ? ORDER BY id DESC LIMIT 1",
+                                    (_round_seed_hash,)
+                                )
+                            else:
+                                cursor.execute(
+                                    "SELECT id FROM ultimate_crash_games WHERE status = 'counting' AND target_multiplier = ? ORDER BY id DESC LIMIT 1",
+                                    (target_multiplier,)
+                                )
                             _row = cursor.fetchone()
-                            new_game_id = int(_row[0]) if _row else 0
+                            if _row:
+                                new_game_id = int(_row[0])
+                        except Exception as select_err:
+                            logger.warning(f'⚠️ Crash PG id lookup by row failed: {select_err}')
+
+                        # Если обёртка БД всё ещё не вернула строку, используем
+                        # PostgreSQL sequence для последнего INSERT этой сессии.
+                        if not new_game_id:
+                            try:
+                                cursor.execute('SELECT LASTVAL()')
+                                _row = cursor.fetchone()
+                                if _row:
+                                    new_game_id = int(_row[0])
+                            except Exception as lastval_err:
+                                logger.warning(f'⚠️ Crash PG LASTVAL failed: {lastval_err}')
+
+                        # Последний безопасный fallback: тот же connection/transaction
+                        # видит только что вставленную запись.
+                        if not new_game_id:
+                            try:
+                                cursor.execute("SELECT id FROM ultimate_crash_games ORDER BY id DESC LIMIT 1")
+                                _row = cursor.fetchone()
+                                if _row:
+                                    new_game_id = int(_row[0])
+                            except Exception as latest_err:
+                                logger.warning(f'⚠️ Crash PG latest-id lookup failed: {latest_err}')
                     else:
                         try:
                             cursor.execute("""
@@ -5956,7 +6046,7 @@ def start_ultimate_crash_loop():
                         new_game_id = cursor.lastrowid
 
                     if not new_game_id:
-                        raise RuntimeError('Crash game was inserted but its id was not returned')
+                        raise RuntimeError('Crash game insert succeeded, but the database did not expose its id')
                     conn.commit()
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 New game, target={target_multiplier}x, bonus={is_bonus}")
@@ -5970,7 +6060,7 @@ def start_ultimate_crash_loop():
                     live_flying_started_at = 0.0
                     update_crash_cache(new_game_id, 'counting', 1.0, target_multiplier, 5.0, is_bonus=is_bonus)
 
-                time.sleep(0.05)
+                time.sleep(0.24)
 
             except Exception as e:
                 err_msg = str(e)
@@ -7921,6 +8011,26 @@ def ultimate_crash_cashout_simple():
                         )
                     except Exception:
                         _cat_sorted = []
+
+                # Admin-configured Crash loot overrides the general catalog when present.
+                try:
+                    _mode_pool, _mode_cfg = _mode_runtime_pool('crash', bet_amount, current_mult)
+                    if _mode_cfg.get('enabled', True):
+                        if _mode_pool:
+                            _cat_sorted = sorted([
+                                {
+                                    'id': x.get('id'),
+                                    'name': x.get('name') or 'Gift',
+                                    'value': int(round(float(x.get('value', 0) or 0))),
+                                    'image': x.get('image') or '/static/img/default_gift.png',
+                                }
+                                for x in _mode_pool if float(x.get('value', 0) or 0) > 0
+                            ], key=lambda g: g.get('value', 0), reverse=True)
+                        elif not _mode_cfg.get('fallback_catalog', True):
+                            _cat_sorted = []
+                except Exception as _mode_loot_error:
+                    logger.warning('Crash mode loot pool error: %s', _mode_loot_error)
+
                 _cat_cache = {'ts': _now_cat_ts, 'sorted': _cat_sorted}
                 ultimate_crash_cashout_simple._catalog_cache = _cat_cache
             sorted_catalog = _cat_cache['sorted']
@@ -11748,22 +11858,19 @@ _portal_http_lock = threading.Lock()
 
 
 def _portal_request(method, path, token=None, json_body=None, params=None, timeout=15):
-    """Portal API request with automatic endpoint fallback.
+    """Call Portals using the same host/header format as the marketplace client.
 
-    The Telegram Mini App API has historically been served from
-    portals-market.com/api, while newer partner/API deployments may use
-    portal-market.com. We try the last working base first and fall back
-    automatically, so the admin panel does not depend on one hard-coded host.
+    curl_cffi is preferred because Portals is behind browser-facing protection.
+    Plain ``requests`` remains as a fallback, so the whole app can still start
+    when curl_cffi is unavailable.
     """
     global _portal_working_base
 
-    if token is None:
-        token = _portal_get_token()
+    token = _portal_normalize_auth_token(token if token is not None else _portal_get_token())
     if not token:
         return False, 'Токен не задан. Сохрани Portal initData в админке.', 0
 
     clean_path = '/' + str(path or '').lstrip('/')
-
     bases = list(PORTAL_API_BASES)
     if _portal_working_base in bases:
         bases.remove(_portal_working_base)
@@ -11777,57 +11884,94 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
         host_root = base.split('/api', 1)[0].rstrip('/')
         headers = {
             'Authorization': token,
-            'X-Auth-Data': token,
             'Accept': 'application/json, text/plain, */*',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/149 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9,ru;q=0.8',
             'Origin': host_root,
             'Referer': host_root + '/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/137.0.0.0 Safari/537.36',
         }
 
-        try:
-            resp = http_requests.request(
-                method,
-                url,
-                headers=headers,
-                json=json_body,
-                params=params,
-                timeout=timeout,
-            )
-            last_status = resp.status_code
+        # curl_cffi first (same approach used by the Portals Python client),
+        # then ordinary requests as a safe fallback.
+        engines = []
+        if _PORTAL_CURL_AVAILABLE and _portal_curl_requests is not None:
+            engines.append(('curl_cffi', _portal_curl_requests))
+        engines.append(('requests', http_requests))
 
-            if resp.status_code == 200:
+        for engine_name, engine in engines:
+            for attempt in range(3):
                 try:
-                    data = resp.json()
-                except Exception:
-                    last_error = f'Невалидный JSON от Portal: {resp.text[:200]}'
-                    continue
-                with _portal_http_lock:
-                    _portal_working_base = base
-                return True, data, resp.status_code
+                    kwargs = dict(
+                        method=method,
+                        url=url,
+                        headers=headers,
+                        json=json_body,
+                        params=params,
+                        timeout=timeout,
+                    )
+                    if engine_name == 'curl_cffi':
+                        kwargs['impersonate'] = 'chrome110'
+                    resp = engine.request(**kwargs)
+                    last_status = int(getattr(resp, 'status_code', 0) or 0)
 
-            if resp.status_code in (401, 403):
-                return False, 'Portal initData недействителен или истёк. Получи новый токен в Telegram WebApp.', resp.status_code
+                    if last_status == 200:
+                        try:
+                            data = resp.json()
+                        except Exception:
+                            last_error = f'Невалидный JSON от Portal: {str(getattr(resp, "text", ""))[:220]}'
+                            break
+                        with _portal_http_lock:
+                            _portal_working_base = base
+                        return True, data, last_status
 
-            # 404 on one base can simply mean that this API generation uses another base.
-            if resp.status_code == 404:
-                last_error = f'Endpoint {clean_path} не найден на {base}'
-                continue
+                    if last_status in (401, 403):
+                        body = str(getattr(resp, 'text', '') or '')[:220]
+                        extra = ''
+                        if engine_name == 'requests' and not _PORTAL_CURL_AVAILABLE:
+                            extra = ' На сервере нет curl_cffi; установи его из requirements_portal.txt.'
+                        return False, 'Portal Authorization недействителен/истёк или запрос заблокирован.' + extra + ((' Ответ: ' + body) if body else ''), last_status
 
-            try:
-                err_json = resp.json()
-                if isinstance(err_json, dict):
-                    last_error = str(err_json.get('error') or err_json.get('message') or err_json)[:300]
-                else:
-                    last_error = str(err_json)[:300]
-            except Exception:
-                last_error = (resp.text or f'HTTP {resp.status_code}')[:300]
+                    if last_status == 429:
+                        retry_after = 0.0
+                        try:
+                            retry_after = float((getattr(resp, 'headers', {}) or {}).get('Retry-After') or 0)
+                        except Exception:
+                            retry_after = 0.0
+                        wait_for = min(6.0, max(0.8 * (attempt + 1), retry_after))
+                        last_error = f'Portal rate limit, повтор через {wait_for:.1f} сек'
+                        time.sleep(wait_for)
+                        continue
 
-        except http_requests.exceptions.Timeout:
-            last_error = f'Portal timeout ({base})'
-        except http_requests.exceptions.ConnectionError as e:
-            last_error = f'Ошибка соединения с Portal ({base}): {e}'
-        except Exception as e:
-            last_error = f'Ошибка Portal ({base}): {e}'
+                    if last_status >= 500:
+                        last_error = f'Portal HTTP {last_status}'
+                        time.sleep(0.6 * (attempt + 1))
+                        continue
+
+                    if last_status == 404:
+                        last_error = f'Endpoint {clean_path} не найден на {base}'
+                        break
+
+                    try:
+                        err_json = resp.json()
+                        if isinstance(err_json, dict):
+                            last_error = str(err_json.get('error') or err_json.get('message') or err_json)[:300]
+                        else:
+                            last_error = str(err_json)[:300]
+                    except Exception:
+                        last_error = str(getattr(resp, 'text', '') or f'HTTP {last_status}')[:300]
+                    break
+
+                except Exception as e:
+                    last_error = f'{engine_name}: {e}'
+                    if attempt < 2:
+                        time.sleep(0.4 * (attempt + 1))
+                        continue
+                    break
+
+            # A 404 should try the next base, while transport/403 issues may
+            # still benefit from the fallback engine on the same base.
+            if last_status == 200:
+                break
 
     return False, last_error, last_status
 
@@ -11900,7 +12044,7 @@ def _portal_floors_map():
     # Known API shapes: dict of short_name -> floor, or wrapper object.
     raw = data
     if isinstance(data, dict):
-        for key in ('floors', 'collection_floors', 'data', 'result'):
+        for key in ('floorPrices', 'floor_prices', 'floors', 'collection_floors', 'data', 'result'):
             value = data.get(key)
             if isinstance(value, dict):
                 raw = value
@@ -12177,13 +12321,16 @@ def _portal_sync_floors():
         if not short_name:
             continue
 
+        floor_ton = round(_portal_float(c.get('floor_price')), 6)
         item = {
             'name': name,
             'fragment_slug': short_name,
             'fragment_url': f'https://fragment.com/gifts/{short_name}',
             'image': c.get('photo_url') or f'https://fragment.com/file/gifts/{short_name}/thumb.webp',
             'source': 'portal',
-            'portal_price_ton': round(_portal_float(c.get('floor_price')), 6),
+            'portal_price_ton': floor_ton,
+            'fragment_price_ton': floor_ton,
+            'value': int(round(floor_ton * 100)) if floor_ton > 0 else 0,
             'portal_listed_count': int(_portal_float(c.get('listed_count'))),
             'portal_day_volume': round(_portal_float(c.get('day_volume')), 6),
             'portal_supply': int(_portal_float(c.get('supply'))),
@@ -12229,17 +12376,32 @@ def _portal_sync_floors():
         changed = False
         for key in (
             'fragment_slug', 'fragment_url', 'image', 'portal_price_ton',
-            'portal_listed_count', 'portal_day_volume', 'portal_supply',
-            'portal_updated_at'
+            'fragment_price_ton', 'value', 'portal_listed_count',
+            'portal_day_volume', 'portal_supply', 'portal_updated_at'
         ):
             value = item.get(key)
+            # Не затираем нормальную старую цену нулём, если Portal временно
+            # вернул коллекцию без floor_price.
+            if key in ('value', 'fragment_price_ton', 'portal_price_ton') and _portal_float(value) <= 0 and _portal_float(target.get(key)) > 0:
+                continue
             if target.get(key) != value:
                 target[key] = value
                 changed = True
+        target['source'] = 'portal'
         if changed:
             updated += 1
 
-    save_gifts(gifts)
+    if not save_gifts(gifts):
+        return {'success': False, 'error': 'Не удалось сохранить каталог подарков после Portal sync'}
+
+    # Сразу обновляем внутреннее распределение подарков для всех игровых
+    # режимов. Ручного шага «В каталог» / «В режим» больше нет.
+    portal_items = []
+    for item in portal_catalog:
+        gift = by_slug.get(item['fragment_slug'])
+        if isinstance(gift, dict):
+            portal_items.append(dict(gift))
+    mode_sync = _portal_sync_catalog_to_all_modes(portal_items)
 
     global gifts_cache, gifts_cache_time
     gifts_cache = None
@@ -12260,9 +12422,10 @@ def _portal_sync_floors():
     except Exception:
         pass
 
+    sync_payload['mode_sync'] = mode_sync
     logger.info(
-        'Portal sync: обновлено %s, добавлено %s, коллекций %s',
-        updated, added, len(portal_catalog)
+        'Portal sync: обновлено %s, добавлено %s, коллекций %s, режимов синхронизировано %s',
+        updated, added, len(portal_catalog), mode_sync.get('synced', 0)
     )
     return {'success': True, **sync_payload}
 
@@ -12435,39 +12598,24 @@ def _portal_collection_filters(short_name):
 
 
 def _portal_all_collections():
-    """Fetch every Portal collection with pagination and deduplication."""
-    all_items = []
-    seen = set()
-    offset = 0
-    batch = 500
+    """Fetch the complete Portal collection list.
 
-    for _page in range(20):  # hard safety cap: 10k collections
-        ok, items = _portal_collections(limit=batch, offset=offset)
-        if not ok:
-            if all_items:
-                break
-            return False, items
+    The public Portals client documents ``collections?limit=...`` and does not
+    document offset pagination for this endpoint. Asking for a large limit is
+    therefore more reliable than repeatedly sending an ignored offset.
+    """
+    ok, items = _portal_collections(limit=5000, offset=0)
+    if not ok:
+        return False, items
 
-        if not items:
-            break
-
-        new_count = 0
-        for item in items:
-            key = str(
-                item.get('id') or item.get('short_name') or item.get('name') or ''
-            ).strip().lower()
-            if not key or key in seen:
-                continue
-            seen.add(key)
-            all_items.append(item)
-            new_count += 1
-
-        if len(items) < batch or new_count == 0:
-            break
-        offset += batch
-
-    all_items.sort(key=lambda x: str(x.get('name') or '').lower())
-    return True, all_items
+    dedup = {}
+    for item in items or []:
+        key = str(item.get('id') or item.get('short_name') or item.get('name') or '').strip().lower()
+        if key:
+            dedup[key] = item
+    rows = list(dedup.values())
+    rows.sort(key=lambda x: str(x.get('name') or '').lower())
+    return True, rows
 
 
 def _portal_apply_daily_snapshot_to_gifts(snapshot):
@@ -12507,13 +12655,37 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
                     'fragment_url': f'https://fragment.com/gifts/{slug}',
                     'image': coll.get('photo_url') or _portal_collection_image_url(slug),
                     'source': 'portal',
+                    'gift_key': f'portal_{slug}',
                 }
                 gifts.append(target)
                 by_slug[slug] = target
                 added += 1
 
+            floor_ton = round(_portal_float(coll.get('floor_price')), 6)
+            if floor_ton <= 0:
+                # Portal's /collections listing doesn't always carry a current
+                # floor_price for every collection (e.g. thin/new markets).
+                # We already fetched full per-model floors for the daily
+                # snapshot (coll['models']) — use the cheapest model instead
+                # of writing 0. This is exactly the gap that made bulk-synced
+                # gifts show "0" while the same gift, found and added
+                # manually via its specific model, showed a real price.
+                model_floors = [
+                    _portal_float(m.get('floor_price'))
+                    for m in (coll.get('models') or [])
+                    if isinstance(m, dict) and _portal_float(m.get('floor_price')) > 0
+                ]
+                if model_floors:
+                    floor_ton = round(min(model_floors), 6)
+            image_url = str(coll.get('photo_url') or '').strip() or _portal_collection_image_url(slug)
             new_values = {
-                'portal_price_ton': round(_portal_float(coll.get('floor_price')), 6),
+                # Canonical catalog fields: the Portal sync is the source of truth.
+                # Never leave value/image at their old zero/empty values when Portal
+                # has a floor and a preview.
+                'image': image_url,
+                'fragment_price_ton': floor_ton,
+                'value': int(round(floor_ton * 100)) if floor_ton > 0 else int(target.get('value') or 0),
+                'portal_price_ton': floor_ton,
                 'portal_models': coll.get('models') or [],
                 'portal_model_count': len(coll.get('models') or []),
                 'portal_listed_count': int(_portal_float(coll.get('listed_count'))),
@@ -12532,7 +12704,19 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
                 changed += 1
 
         save_gifts(gifts)
-        return {'changed': changed, 'added': added, 'total': len(gifts)}
+
+        # Portal sync is authoritative: immediately expose every synced gift in
+        # every game mode. There is no manual 'add to catalog / add to pool' step.
+        portal_items = []
+        for coll in collections:
+            slug = str(coll.get('short_name') or '').strip().lower()
+            if not slug:
+                continue
+            gift = by_slug.get(slug)
+            if gift:
+                portal_items.append(dict(gift))
+        mode_sync = _portal_sync_catalog_to_all_modes(portal_items)
+        return {'changed': changed, 'added': added, 'total': len(gifts), 'mode_sync': mode_sync}
 
     except Exception as e:
         logger.error("Portal snapshot -> gifts.json failed: %s", e)
@@ -12787,41 +12971,83 @@ def portal_daily_sync():
 
 # ─── PORTAL ADMIN INTEGRATION: catalog / cases / game modes ──────────────
 MODE_GIFT_POOLS_FILE = os.path.join(PERSISTENT_DATA_DIR, 'mode_gift_pools.json')
+MODE_LOOT_SETTINGS_FILE = os.path.join(PERSISTENT_DATA_DIR, 'mode_loot_settings.json')
 _mode_gift_pools_lock = threading.Lock()
 
 
-def _mode_gift_pools_load():
+def _json_file_load(path, default):
     try:
-        if not os.path.exists(MODE_GIFT_POOLS_FILE):
-            return {}
-        with open(MODE_GIFT_POOLS_FILE, 'r', encoding='utf-8') as f:
+        if not os.path.exists(path):
+            return json.loads(json.dumps(default))
+        with open(path, 'r', encoding='utf-8') as f:
             raw = json.load(f)
-        return raw if isinstance(raw, dict) else {}
+        return raw
     except Exception as e:
-        logger.warning("Mode gift pools read failed: %s", e)
-        return {}
+        logger.warning('JSON config read failed %s: %s', path, e)
+        return json.loads(json.dumps(default))
 
 
-def _mode_gift_pools_save(pools):
+def _json_file_save(path, payload):
     try:
-        os.makedirs(os.path.dirname(MODE_GIFT_POOLS_FILE), exist_ok=True)
-        tmp = MODE_GIFT_POOLS_FILE + '.tmp'
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        tmp = path + '.tmp'
         with open(tmp, 'w', encoding='utf-8') as f:
-            json.dump(pools if isinstance(pools, dict) else {}, f, ensure_ascii=False, indent=2)
+            json.dump(payload, f, ensure_ascii=False, indent=2)
             f.flush()
             try:
                 os.fsync(f.fileno())
             except Exception:
                 pass
-        os.replace(tmp, MODE_GIFT_POOLS_FILE)
+        os.replace(tmp, path)
         return True
     except Exception as e:
-        logger.error("Mode gift pools save failed: %s", e)
+        logger.error('JSON config save failed %s: %s', path, e)
         return False
 
 
+def _mode_gift_pools_load():
+    raw = _json_file_load(MODE_GIFT_POOLS_FILE, {})
+    return raw if isinstance(raw, dict) else {}
+
+
+def _mode_gift_pools_save(pools):
+    return _json_file_save(MODE_GIFT_POOLS_FILE, pools if isinstance(pools, dict) else {})
+
+
+def _mode_loot_settings_load():
+    raw = _json_file_load(MODE_LOOT_SETTINGS_FILE, {})
+    return raw if isinstance(raw, dict) else {}
+
+
+def _mode_loot_settings_save(settings):
+    return _json_file_save(MODE_LOOT_SETTINGS_FILE, settings if isinstance(settings, dict) else {})
+
+
+def _mode_loot_defaults():
+    return {
+        'enabled': True,
+        'strategy': 'weighted',
+        'fallback_catalog': True,
+    }
+
+
+def _mode_item_normalized(item):
+    row = dict(item or {})
+    row['enabled'] = bool(row.get('enabled', True))
+    try:
+        row['weight'] = max(0.0, float(row.get('weight', 1) or 0))
+    except Exception:
+        row['weight'] = 1.0
+    for key in ('min_bet', 'max_bet', 'min_multiplier', 'max_multiplier'):
+        try:
+            row[key] = max(0.0, float(row.get(key, 0) or 0))
+        except Exception:
+            row[key] = 0.0
+    return row
+
+
 def _portal_available_mode_targets():
-    """All admin-selectable game modes that can own a Portal reward pool."""
+    """All modes that can have their loot edited from admin."""
     rows = []
     seen = set()
 
@@ -12842,15 +13068,16 @@ def _portal_available_mode_targets():
                     'id': mode_id,
                     'name': str(item.get('name') or mode_id),
                     'path': str(item.get('path') or ''),
+                    'image': str(item.get('image') or ''),
+                    'visible': item.get('visible') is not False,
                     'source': 'games',
                 })
     except Exception as e:
-        logger.debug("Portal mode target games-ui error: %s", e)
+        logger.debug('Portal mode target games-ui error: %s', e)
 
-    # Event special modes are not necessarily present in Games UI.
     try:
         events = get_active_events() or {}
-        for _eid, event in events.items():
+        for event_id, event in events.items():
             if not isinstance(event, dict):
                 continue
             for sec in event.get('sections') or []:
@@ -12870,15 +13097,55 @@ def _portal_available_mode_targets():
                         'id': mode_id,
                         'name': str(item.get('name') or mode_id),
                         'path': str(item.get('path') or ''),
+                        'image': str(item.get('image') or ''),
+                        'visible': item.get('visible') is not False,
                         'source': 'event',
+                        'event_id': event_id,
                     })
     except Exception as e:
-        logger.debug("Portal mode target events error: %s", e)
+        logger.debug('Portal mode target events error: %s', e)
 
     pools = _mode_gift_pools_load()
+    settings = _mode_loot_settings_load()
     for row in rows:
         row['pool_count'] = len(pools.get(row['id']) or [])
+        cfg = _mode_loot_defaults()
+        cfg.update(settings.get(row['id']) or {})
+        row['loot_settings'] = cfg
     rows.sort(key=lambda x: str(x.get('name') or '').lower())
+    return rows
+
+
+def _portal_all_case_targets():
+    """Every editable case, including event cases and the seasonal case."""
+    rows = []
+    seen = set()
+    for case in load_cases() or []:
+        if not isinstance(case, dict):
+            continue
+        cid = str(case.get('id'))
+        if cid in seen:
+            continue
+        seen.add(cid)
+        rows.append({
+            'id': case.get('id'),
+            'name': case.get('name') or f'Case {cid}',
+            'gifts_count': len(case.get('gifts') or []),
+            'event_case': bool(case.get('event_case') or str(case.get('section') or '').lower() == 'event'),
+            'seasonal': False,
+        })
+    try:
+        seasonal = load_seasonal_case()
+        if isinstance(seasonal, dict):
+            rows.append({
+                'id': 'seasonal',
+                'name': seasonal.get('name') or 'Сезонный кейс',
+                'gifts_count': len(seasonal.get('gifts') or []),
+                'event_case': False,
+                'seasonal': True,
+            })
+    except Exception:
+        pass
     return rows
 
 
@@ -12890,17 +13157,12 @@ def _portal_snapshot_find(short_name, model_name=None):
     wanted = re.sub(r'[^a-z0-9]+', '', str(short_name or '').lower())
     collection = None
     for row in snapshot.get('collections') or []:
-        row_key = re.sub(
-            r'[^a-z0-9]+', '',
-            str(row.get('short_name') or row.get('name') or '').lower()
-        )
+        row_key = re.sub(r'[^a-z0-9]+', '', str(row.get('short_name') or row.get('name') or '').lower())
         if row_key == wanted:
             collection = row
             break
-
     if not collection:
         return None, None
-
     if not model_name:
         return collection, None
 
@@ -12912,33 +13174,23 @@ def _portal_snapshot_find(short_name, model_name=None):
 
 
 def _portal_catalog_payload(collection, model=None):
-    """Build a stable app gift record from the hourly Portal snapshot."""
     collection = collection or {}
     model = model or None
-
     coll_name = str(collection.get('name') or collection.get('short_name') or 'Gift').strip()
     short_name = str(collection.get('short_name') or '').strip().lower()
     model_name = str((model or {}).get('name') or '').strip()
 
-    price = _portal_float(
-        (model or {}).get('floor_price') if model else collection.get('floor_price')
-    )
+    price = _portal_float((model or {}).get('floor_price') if model else collection.get('floor_price'))
     if price <= 0:
         price = _portal_float(collection.get('floor_price'))
 
     display_name = coll_name if not model_name else f'{coll_name} — {model_name}'
-    gift_key = _build_case_custom_gift_id(
-        display_name,
-        fragment_slug=short_name,
-        model_name=model_name or None,
-    )
-
+    gift_key = _build_case_custom_gift_id(display_name, fragment_slug=short_name, model_name=model_name or None)
     return {
         'gift_key': gift_key,
         'name': display_name,
         'type': 'item',
         'image': str(collection.get('photo_url') or '').strip() or '/static/img/gift.png',
-        # Existing app displays catalog value / 100 as GRAM.
         'value': max(1, int(round(price * 100))) if price > 0 else 1,
         'fragment_slug': short_name,
         'model_name': model_name or None,
@@ -12959,12 +13211,9 @@ def _portal_upsert_catalog_item(collection, model=None):
 
     target = None
     for gift in gifts:
-        if not isinstance(gift, dict):
-            continue
-        if str(gift.get('gift_key') or '') == str(payload['gift_key']):
+        if isinstance(gift, dict) and str(gift.get('gift_key') or '') == str(payload['gift_key']):
             target = gift
             break
-
     if target is None:
         max_id = 0
         for gift in gifts:
@@ -12974,7 +13223,6 @@ def _portal_upsert_catalog_item(collection, model=None):
                 pass
         target = {'id': max_id + 1}
         gifts.append(target)
-
     target.update(payload)
     if not save_gifts(gifts):
         raise RuntimeError('Не удалось сохранить подарок в общий каталог')
@@ -12982,34 +13230,141 @@ def _portal_upsert_catalog_item(collection, model=None):
 
 
 def _portal_add_item_to_case(case_id, catalog_item, chance=1.0):
-    cases = load_cases()
-    case = next((x for x in cases if str(x.get('id')) == str(case_id)), None)
-    if not case:
-        raise RuntimeError('Кейс не найден')
-
-    rewards = case.setdefault('gifts', [])
-    key = str(catalog_item.get('gift_key') or catalog_item.get('id') or '')
-    existing = next(
-        (
-            x for x in rewards
-            if str(x.get('gift_key') or x.get('id') or '') == key
-        ),
-        None
-    )
-
     chance = max(0.01, min(100.0, float(chance or 1)))
     reward = dict(catalog_item)
     reward['chance'] = round(chance, 2)
     reward['type'] = 'gift'
+    key = str(reward.get('gift_key') or reward.get('id') or '')
 
+    if str(case_id) == 'seasonal':
+        case = load_seasonal_case()
+        rewards = case.setdefault('gifts', [])
+        existing = next((x for x in rewards if str(x.get('gift_key') or x.get('id') or '') == key), None)
+        if existing:
+            existing.update(reward)
+        else:
+            rewards.append(reward)
+        if not save_seasonal_case(case):
+            raise RuntimeError('Не удалось сохранить сезонный кейс')
+        return case
+
+    cases = load_cases()
+    case = next((x for x in cases if str(x.get('id')) == str(case_id)), None)
+    if not case:
+        raise RuntimeError('Кейс не найден')
+    rewards = case.setdefault('gifts', [])
+    existing = next((x for x in rewards if str(x.get('gift_key') or x.get('id') or '') == key), None)
     if existing:
         existing.update(reward)
     else:
         rewards.append(reward)
-
     if not save_cases(cases):
         raise RuntimeError('Не удалось сохранить кейс')
     return case
+
+
+def _portal_sync_catalog_to_all_modes(catalog_items):
+    """Expose the complete Portal catalog in every game mode in one bulk write.
+
+    The mode JSON is only an internal runtime representation; there is no
+    manual catalog/pool step for the administrator. We intentionally avoid
+    calling _portal_add_item_to_mode() once per gift because that would reload
+    and rewrite the JSON file thousands of times during a full Portal sync.
+    Existing per-item loot tuning is preserved.
+    """
+    source_items = [x for x in (catalog_items or []) if isinstance(x, dict)]
+    items = []
+    seen_keys = set()
+    for raw in source_items:
+        item = dict(raw)
+        key = str(item.get('gift_key') or '').strip()
+        if not key:
+            slug = str(
+                item.get('fragment_slug') or
+                item.get('short_name') or
+                item.get('name') or
+                ''
+            ).strip().lower()
+            key = f'portal_{slug}' if slug else ''
+        if not key or key in seen_keys:
+            continue
+        seen_keys.add(key)
+        item['gift_key'] = key
+        # Portal is the canonical source; keep the stable key in gifts/modes.
+        item['portal_source'] = True
+        items.append(item)
+
+    modes = _portal_available_mode_targets()
+    synced = 0
+    errors = []
+
+    try:
+        with _mode_gift_pools_lock:
+            pools = _mode_gift_pools_load()
+            if not isinstance(pools, dict):
+                pools = {}
+
+            for mode in modes:
+                mode_id = str(mode.get('id') or '').strip()
+                if not mode_id:
+                    continue
+
+                pool = pools.get(mode_id)
+                if not isinstance(pool, list):
+                    pool = []
+
+                by_key = {
+                    str(x.get('gift_key') or x.get('id') or ''): x
+                    for x in pool
+                    if isinstance(x, dict) and str(x.get('gift_key') or x.get('id') or '')
+                }
+
+                for item in items:
+                    key = str(item.get('gift_key') or '')
+                    try:
+                        normalized = _mode_item_normalized(item)
+                        existing = by_key.get(key)
+                        if existing is not None:
+                            tuning = {
+                                k: existing.get(k)
+                                for k in ('enabled', 'weight', 'min_bet', 'max_bet', 'min_multiplier', 'max_multiplier')
+                                if k in existing
+                            }
+                            existing.update(normalized)
+                            existing.update(tuning)
+                        else:
+                            normalized.update({
+                                'enabled': True,
+                                'weight': 1.0,
+                                'min_bet': 0.0,
+                                'max_bet': 0.0,
+                                'min_multiplier': 0.0,
+                                'max_multiplier': 0.0,
+                            })
+                            pool.append(normalized)
+                            by_key[key] = normalized
+                        synced += 1
+                    except Exception as exc:
+                        errors.append({
+                            'mode_id': mode_id,
+                            'gift_key': key,
+                            'error': str(exc),
+                        })
+
+                pools[mode_id] = pool
+
+            if modes and not _mode_gift_pools_save(pools):
+                raise RuntimeError('Не удалось сохранить синхронизацию подарков по режимам')
+    except Exception as exc:
+        logger.error('Portal bulk mode sync failed: %s', exc)
+        errors.append({'mode_id': '*', 'gift_key': '*', 'error': str(exc)})
+
+    return {
+        'modes': len(modes),
+        'items': len(items),
+        'synced': synced,
+        'errors': errors[:100],
+    }
 
 
 def _portal_add_item_to_mode(mode_id, catalog_item):
@@ -13022,17 +13377,58 @@ def _portal_add_item_to_mode(mode_id, catalog_item):
         pools = _mode_gift_pools_load()
         pool = pools.setdefault(mode_id, [])
         key = str(catalog_item.get('gift_key') or catalog_item.get('id') or '')
-        existing = next(
-            (x for x in pool if str(x.get('gift_key') or x.get('id') or '') == key),
-            None
-        )
+        existing = next((x for x in pool if str(x.get('gift_key') or x.get('id') or '') == key), None)
+        normalized = _mode_item_normalized(catalog_item)
         if existing:
-            existing.update(catalog_item)
+            # Keep existing loot tuning when Portal price/name refreshes.
+            tuning = {k: existing.get(k) for k in ('enabled','weight','min_bet','max_bet','min_multiplier','max_multiplier') if k in existing}
+            existing.update(normalized)
+            existing.update(tuning)
         else:
-            pool.append(dict(catalog_item))
+            normalized.update({'enabled': True, 'weight': 1.0, 'min_bet': 0.0, 'max_bet': 0.0, 'min_multiplier': 0.0, 'max_multiplier': 0.0})
+            pool.append(normalized)
         if not _mode_gift_pools_save(pools):
             raise RuntimeError('Не удалось сохранить пул режима')
     return len(pool)
+
+
+def _mode_runtime_pool(mode_id, bet_amount=0, multiplier=0):
+    pools = _mode_gift_pools_load()
+    settings_all = _mode_loot_settings_load()
+    settings = _mode_loot_defaults()
+    settings.update(settings_all.get(str(mode_id)) or {})
+    pool = []
+    for raw in pools.get(str(mode_id), []) or []:
+        item = _mode_item_normalized(raw)
+        if not item.get('enabled', True):
+            continue
+        min_bet = float(item.get('min_bet') or 0)
+        max_bet = float(item.get('max_bet') or 0)
+        min_x = float(item.get('min_multiplier') or 0)
+        max_x = float(item.get('max_multiplier') or 0)
+        if min_bet and float(bet_amount or 0) < min_bet:
+            continue
+        if max_bet and float(bet_amount or 0) > max_bet:
+            continue
+        if min_x and float(multiplier or 0) < min_x:
+            continue
+        if max_x and float(multiplier or 0) > max_x:
+            continue
+        pool.append(item)
+    return pool, settings
+
+
+def _mode_pick_loot(mode_id, bet_amount=0, multiplier=0):
+    pool, settings = _mode_runtime_pool(mode_id, bet_amount, multiplier)
+    if not settings.get('enabled', True) or not pool:
+        return None
+    strategy = str(settings.get('strategy') or 'weighted').lower()
+    if strategy == 'uniform':
+        return random.choice(pool)
+    weights = [max(0.0, float(x.get('weight') or 0)) for x in pool]
+    if not any(weights):
+        return random.choice(pool)
+    return random.choices(pool, weights=weights, k=1)[0]
 
 
 @app.route('/api/admin/portal-targets', methods=['GET'])
@@ -13041,17 +13437,9 @@ def admin_portal_targets():
         admin_id = request.args.get('admin_id')
         if str(admin_id) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-
-        cases = load_cases()
-        case_rows = [{
-            'id': c.get('id'),
-            'name': c.get('name') or f"Case {c.get('id')}",
-            'gifts_count': len(c.get('gifts') or []),
-        } for c in cases if isinstance(c, dict)]
-
         return jsonify({
             'success': True,
-            'cases': case_rows,
+            'cases': _portal_all_case_targets(),
             'modes': _portal_available_mode_targets(),
         })
     except Exception as e:
@@ -13060,7 +13448,6 @@ def admin_portal_targets():
 
 @app.route('/api/admin/portal-item-action', methods=['POST'])
 def admin_portal_item_action():
-    """Add a Portal collection/model directly to app catalog, a case, or a game mode pool."""
     try:
         data = request.get_json(silent=True) or {}
         if str(data.get('admin_id')) != str(ADMIN_ID):
@@ -13069,54 +13456,34 @@ def admin_portal_item_action():
         short_name = str(data.get('short_name') or '').strip()
         model_name = str(data.get('model_name') or '').strip() or None
         action = str(data.get('action') or 'catalog').strip().lower()
-
         collection, model = _portal_snapshot_find(short_name, model_name)
         if not collection:
-            return jsonify({'success': False, 'error': 'Подарок не найден в Portal snapshot'}), 404
+            return jsonify({'success': False, 'error': 'Подарок не найден в Portal snapshot. Нажми «Обновить сейчас».'}), 404
         if model_name and not model:
-            return jsonify({'success': False, 'error': 'Модель не найдена в Portal snapshot'}), 404
+            return jsonify({'success': False, 'error': 'Модель не найдена в Portal snapshot. Обнови Portal.'}), 404
 
         catalog_item = _portal_upsert_catalog_item(collection, model)
-
         if action == 'catalog':
-            return jsonify({
-                'success': True,
-                'message': 'Добавлено в общий каталог мини-апки',
-                'gift': catalog_item,
-            })
-
+            return jsonify({'success': True, 'message': 'Добавлено в общий каталог мини-апки', 'gift': catalog_item})
         if action == 'case':
             case_id = data.get('case_id')
             if case_id in (None, ''):
                 return jsonify({'success': False, 'error': 'case_id required'}), 400
-            chance = float(data.get('chance') or 1)
-            case = _portal_add_item_to_case(case_id, catalog_item, chance)
-            return jsonify({
-                'success': True,
-                'message': f"Добавлено в кейс «{case.get('name') or case_id}»",
-                'gift': catalog_item,
-            })
-
+            case = _portal_add_item_to_case(case_id, catalog_item, float(data.get('chance') or 1))
+            return jsonify({'success': True, 'message': f"Добавлено в кейс «{case.get('name') or case_id}»", 'gift': catalog_item})
         if action == 'mode':
             mode_id = str(data.get('mode_id') or '').strip()
             if not mode_id:
                 return jsonify({'success': False, 'error': 'mode_id required'}), 400
             count = _portal_add_item_to_mode(mode_id, catalog_item)
-            return jsonify({
-                'success': True,
-                'message': f'Добавлено в режим {mode_id}',
-                'gift': catalog_item,
-                'pool_count': count,
-            })
-
+            return jsonify({'success': True, 'message': f'Добавлено в режим {mode_id}', 'gift': catalog_item, 'pool_count': count})
         return jsonify({'success': False, 'error': 'Unknown action'}), 400
-
     except Exception as e:
-        logger.error("Portal admin item action failed: %s", e)
+        logger.error('Portal admin item action failed: %s', e)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/api/admin/mode-gift-pools', methods=['GET', 'DELETE'])
+@app.route('/api/admin/mode-gift-pools', methods=['GET', 'POST', 'DELETE'])
 def admin_mode_gift_pools():
     try:
         payload = request.get_json(silent=True) or {}
@@ -13124,23 +13491,63 @@ def admin_mode_gift_pools():
         if str(admin_id) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
 
-        pools = _mode_gift_pools_load()
+        with _mode_gift_pools_lock:
+            pools = _mode_gift_pools_load()
+            settings_all = _mode_loot_settings_load()
 
-        if request.method == 'DELETE':
-            mode_id = str(payload.get('mode_id') or '').strip()
-            gift_key = str(payload.get('gift_key') or '').strip()
-            if not mode_id or not gift_key:
-                return jsonify({'success': False, 'error': 'mode_id and gift_key required'}), 400
-            pool = pools.get(mode_id) or []
-            pools[mode_id] = [
-                x for x in pool
-                if str(x.get('gift_key') or x.get('id') or '') != gift_key
-            ]
-            _mode_gift_pools_save(pools)
+            if request.method == 'DELETE':
+                mode_id = str(payload.get('mode_id') or '').strip()
+                gift_key = str(payload.get('gift_key') or '').strip()
+                if not mode_id or not gift_key:
+                    return jsonify({'success': False, 'error': 'mode_id and gift_key required'}), 400
+                pools[mode_id] = [x for x in (pools.get(mode_id) or []) if str(x.get('gift_key') or x.get('id') or '') != gift_key]
+                if not _mode_gift_pools_save(pools):
+                    raise RuntimeError('Не удалось сохранить пул')
+
+            elif request.method == 'POST':
+                action = str(payload.get('action') or 'update_item').strip().lower()
+                mode_id = str(payload.get('mode_id') or '').strip()
+                if not mode_id:
+                    return jsonify({'success': False, 'error': 'mode_id required'}), 400
+
+                if action == 'update_mode':
+                    cfg = _mode_loot_defaults()
+                    cfg.update(settings_all.get(mode_id) or {})
+                    if 'enabled' in payload:
+                        cfg['enabled'] = bool(payload.get('enabled'))
+                    if 'fallback_catalog' in payload:
+                        cfg['fallback_catalog'] = bool(payload.get('fallback_catalog'))
+                    strategy = str(payload.get('strategy') or cfg.get('strategy') or 'weighted').lower()
+                    cfg['strategy'] = strategy if strategy in ('weighted', 'uniform') else 'weighted'
+                    settings_all[mode_id] = cfg
+                    if not _mode_loot_settings_save(settings_all):
+                        raise RuntimeError('Не удалось сохранить настройки режима')
+
+                elif action == 'update_item':
+                    gift_key = str(payload.get('gift_key') or '').strip()
+                    if not gift_key:
+                        return jsonify({'success': False, 'error': 'gift_key required'}), 400
+                    pool = pools.get(mode_id) or []
+                    item = next((x for x in pool if str(x.get('gift_key') or x.get('id') or '') == gift_key), None)
+                    if not item:
+                        return jsonify({'success': False, 'error': 'Лут не найден'}), 404
+                    if 'enabled' in payload:
+                        item['enabled'] = bool(payload.get('enabled'))
+                    for key in ('weight','min_bet','max_bet','min_multiplier','max_multiplier'):
+                        if key in payload:
+                            try:
+                                item[key] = max(0.0, float(payload.get(key) or 0))
+                            except Exception:
+                                item[key] = 0.0
+                    if not _mode_gift_pools_save(pools):
+                        raise RuntimeError('Не удалось сохранить лут')
+                else:
+                    return jsonify({'success': False, 'error': 'Unknown action'}), 400
 
         return jsonify({
             'success': True,
-            'pools': pools,
+            'pools': _mode_gift_pools_load(),
+            'settings': _mode_loot_settings_load(),
             'modes': _portal_available_mode_targets(),
         })
     except Exception as e:
@@ -13149,18 +13556,26 @@ def admin_mode_gift_pools():
 
 @app.route('/api/mode-gift-pool/<mode_id>', methods=['GET'])
 def public_mode_gift_pool(mode_id):
-    """Public read endpoint for game modes that use the admin-selected Portal reward pool."""
+    """Runtime loot config for any mode page."""
     try:
-        pools = _mode_gift_pools_load()
-        return jsonify({
-            'success': True,
-            'mode_id': mode_id,
-            'gifts': pools.get(str(mode_id), []) or [],
-        })
+        bet_amount = _portal_float(request.args.get('bet_amount'))
+        multiplier = _portal_float(request.args.get('multiplier'))
+        pool, settings = _mode_runtime_pool(mode_id, bet_amount, multiplier)
+        return jsonify({'success': True, 'mode_id': mode_id, 'settings': settings, 'gifts': pool})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/mode-gift-pool/<mode_id>/pick', methods=['GET'])
+def public_mode_gift_pick(mode_id):
+    """Weighted server-side preview/picker for a mode's configured loot."""
+    try:
+        bet_amount = _portal_float(request.args.get('bet_amount'))
+        multiplier = _portal_float(request.args.get('multiplier'))
+        item = _mode_pick_loot(mode_id, bet_amount, multiplier)
+        return jsonify({'success': True, 'mode_id': mode_id, 'gift': item})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 # ─── PORTAL API ROUTES ───
@@ -13168,6 +13583,62 @@ def public_mode_gift_pool(mode_id):
 
 
 
+
+
+
+@app.route('/api/portal/diagnostics', methods=['GET'])
+def portal_diagnostics():
+    """Safe admin diagnostic: never returns the auth token itself."""
+    try:
+        admin_id = request.args.get('admin_id')
+        if str(admin_id) != str(ADMIN_ID):
+            return jsonify({'success': False, 'error': 'Unauthorized'}), 403
+        token = _portal_get_token()
+        if not token:
+            return jsonify({'success': False, 'has_token': False, 'error': 'Portal initData не сохранён'}), 400
+
+        ok, data, status = _portal_request('GET', '/collections', params={'limit': 2}, timeout=15)
+        collection_count = 0
+        sample_short_name = ''
+        sample_name = ''
+        filter_ok = False
+        filter_error = None
+        model_count = 0
+        if ok:
+            rows = _portal_extract_array(data, ('collections','results','items','data'))
+            collection_count = len(rows)
+            if rows:
+                sample = rows[0] if isinstance(rows[0], dict) else {}
+                sample_short_name = str(sample.get('short_name') or sample.get('slug') or '').strip().lower()
+                sample_name = str(sample.get('name') or sample_short_name)
+                if sample_short_name:
+                    fok, fdata = _portal_collection_filters(sample_short_name)
+                    filter_ok = bool(fok)
+                    if fok:
+                        model_count = len((fdata or {}).get('models') or [])
+                    else:
+                        filter_error = str(fdata)
+
+        snapshot = _portal_load_daily_snapshot() or {}
+        return jsonify({
+            'success': bool(ok),
+            'has_token': True,
+            'token_has_tma_prefix': str(token).startswith('tma '),
+            'http_engine': 'curl_cffi' if _PORTAL_CURL_AVAILABLE else 'requests',
+            'api_base': _portal_working_base or PORTAL_API_BASES[0],
+            'collections_http_status': status,
+            'collections_probe_ok': bool(ok),
+            'collections_probe_count': collection_count,
+            'sample_collection': sample_name,
+            'filters_probe_ok': filter_ok,
+            'sample_models': model_count,
+            'filters_error': filter_error,
+            'snapshot_collections': int(snapshot.get('total_collections') or len(snapshot.get('collections') or [])),
+            'snapshot_models': int(snapshot.get('total_models') or 0),
+            'error': None if ok else str(data),
+        }), (200 if ok else 502)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/portal/catalog', methods=['GET'])
@@ -13358,8 +13829,7 @@ def portal_token():
         if not is_valid:
             return jsonify({'success': False, 'error': err, 'verified': False})
 
-        if token.startswith('tma '):
-            token = token[4:]
+        token = _portal_normalize_auth_token(token)
 
         os.makedirs(os.path.dirname(token_file), exist_ok=True)
         with open(token_file, 'w', encoding='utf-8') as f:
@@ -13413,8 +13883,7 @@ def portal_auth_status():
         if not is_valid:
             return jsonify({'authorized': False, 'has_token': True, 'error': err})
 
-        if token.startswith('tma '):
-            token = token[4:]
+        token = _portal_normalize_auth_token(token)
 
         _portal_auth_data = token
 
@@ -14255,6 +14724,11 @@ def pre_upgrade_gift():
 def upgrade_gift():
     """Upgrade a random gift to an NFT-linked gift. Accepts optional pre-determined nft_number."""
     conn = None
+    # Use a dedicated DB connection for the whole upgrade transaction. This
+    # avoids the request-cached cursor being closed/reused by another helper.
+    # NOTE: every early `return` below used to skip closing this connection,
+    # leaking a connection on every invalid-upgrade attempt. Each early
+    # return now closes it explicitly before returning.
     try:
         data = request.get_json()
         user_id = int(data.get('user_id', 0))
@@ -14262,7 +14736,7 @@ def upgrade_gift():
         if not user_id or not inventory_id:
             return jsonify({'success': False, 'error': 'Missing data'})
 
-        conn = get_db_connection()
+        conn = _quick_db_conn(timeout=30)
         cursor = conn.cursor()
 
         cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
