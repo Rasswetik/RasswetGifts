@@ -3492,19 +3492,65 @@ def _create_all_tables(conn):
         logger.warning(f"fragment_slug migration skipped: {_me}")
 
     # Telegram user/admin IDs exceed PostgreSQL's 32-bit INTEGER range.
-    # promo_codes.created_by is written with ADMIN_ID, so make that column
-    # BIGINT on existing PostgreSQL installations as well as fresh schemas.
+    # Existing databases may already have these columns as INTEGER, so migrate
+    # them to BIGINT before any authentication INSERT/UPDATE happens.
     if USE_POSTGRES:
         try:
-            conn.execute("ALTER TABLE promo_codes ALTER COLUMN created_by TYPE BIGINT")
-            conn.commit()
-            logger.info('Promo migration: promo_codes.created_by is BIGINT')
-        except Exception as _promo_mig:
+            _users_exists = conn.execute("SELECT to_regclass('users')").fetchone()[0]
+            if _users_exists is None:
+                # Fresh database: tables_sql below already uses BIGINT definitions.
+                _users_exists = False
+            if _users_exists:
+                # Save FK definitions that reference users, temporarily remove them,
+                # widen both the parent key and all user-id columns, then restore FKs.
+                fk_rows = conn.execute(
+                    """
+                    SELECT conrelid::regclass::text, conname, pg_get_constraintdef(oid)
+                    FROM pg_constraint
+                    WHERE contype = 'f'
+                      AND (conrelid = 'users'::regclass OR confrelid = 'users'::regclass)
+                    """
+                ).fetchall()
+
+                for table_name, conname, _definition in fk_rows:
+                    conn.execute(f'ALTER TABLE {table_name} DROP CONSTRAINT IF EXISTS "{conname}"')
+
+                # Parent Telegram ID.
+                conn.execute('ALTER TABLE users ALTER COLUMN id TYPE BIGINT USING id::BIGINT')
+
+                # Telegram/user identifiers stored throughout the schema.
+                id_columns = conn.execute(
+                    """
+                    SELECT table_name, column_name
+                    FROM information_schema.columns
+                    WHERE table_schema = current_schema()
+                      AND data_type = 'integer'
+                      AND column_name IN (
+                          'user_id', 'referrer_id', 'referred_id', 'referred_by',
+                          'admin_id', 'created_by'
+                      )
+                    """
+                ).fetchall()
+                for table_name, column_name in id_columns:
+                    conn.execute(
+                        f'ALTER TABLE "{table_name}" ALTER COLUMN "{column_name}" TYPE BIGINT USING "{column_name}"::BIGINT'
+                    )
+
+                # Restore the foreign keys exactly as they were.
+                for table_name, conname, definition in fk_rows:
+                    conn.execute(
+                        f'ALTER TABLE {table_name} ADD CONSTRAINT "{conname}" {definition}'
+                    )
+
+                conn.commit()
+                logger.info('Telegram/user ID migration: INTEGER -> BIGINT completed')
+        except Exception as _id_mig:
             try:
                 conn.rollback()
             except Exception:
                 pass
-            logger.warning(f"promo_codes.created_by BIGINT migration skipped: {_promo_mig}")
+            logger.error(f'❌ Telegram ID BIGINT migration failed: {_id_mig}')
+            raise
 
     tables_sql = {
         # Shared JSON/document storage used by admin_services.getdoc()/putdoc().
@@ -3522,7 +3568,7 @@ def _create_all_tables(conn):
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''',
         'users': '''CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
+            id BIGINT PRIMARY KEY,
             first_name TEXT,
             last_name TEXT,
             username TEXT,
@@ -3531,7 +3577,7 @@ def _create_all_tables(conn):
             balance_tickets INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             referral_code TEXT UNIQUE,
-            referred_by INTEGER,
+            referred_by BIGINT,
             referral_count INTEGER DEFAULT 0,
             total_earned_stars INTEGER DEFAULT 0,
             total_earned_tickets INTEGER DEFAULT 0,
@@ -3555,7 +3601,7 @@ def _create_all_tables(conn):
         )''',
         'inventory': '''CREATE TABLE IF NOT EXISTS inventory (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
+            user_id BIGINT,
             gift_id INTEGER,
             gift_name TEXT,
             gift_image TEXT,
@@ -3571,7 +3617,7 @@ def _create_all_tables(conn):
         )''',
         'user_history': '''CREATE TABLE IF NOT EXISTS user_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
+            user_id BIGINT,
             operation_type TEXT NOT NULL,
             amount INTEGER NOT NULL,
             description TEXT NOT NULL,
@@ -3587,8 +3633,8 @@ def _create_all_tables(conn):
         )''',
         'referrals': '''CREATE TABLE IF NOT EXISTS referrals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            referrer_id INTEGER,
-            referred_id INTEGER,
+            referrer_id BIGINT,
+            referred_id BIGINT,
             reward_claimed BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (referrer_id) REFERENCES users (id),
@@ -3597,7 +3643,7 @@ def _create_all_tables(conn):
         )''',
         'referral_rewards': '''CREATE TABLE IF NOT EXISTS referral_rewards (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            referrer_id INTEGER,
+            referrer_id BIGINT,
             reward_type TEXT NOT NULL,
             reward_amount INTEGER NOT NULL,
             description TEXT NOT NULL,
@@ -3606,7 +3652,7 @@ def _create_all_tables(conn):
         )''',
         'withdrawals': '''CREATE TABLE IF NOT EXISTS withdrawals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             inventory_id INTEGER NOT NULL,
             gift_name TEXT NOT NULL,
             gift_image TEXT NOT NULL,
@@ -3623,7 +3669,7 @@ def _create_all_tables(conn):
         )''',
         'deposits': '''CREATE TABLE IF NOT EXISTS deposits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             amount INTEGER NOT NULL,
             currency TEXT NOT NULL,
             status TEXT DEFAULT 'pending',
@@ -3649,7 +3695,7 @@ def _create_all_tables(conn):
         )''',
         'used_promo_codes': '''CREATE TABLE IF NOT EXISTS used_promo_codes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             promo_code_id INTEGER NOT NULL,
             used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id),
@@ -3658,7 +3704,7 @@ def _create_all_tables(conn):
         )''',
         'user_customizations': '''CREATE TABLE IF NOT EXISTS user_customizations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             item_type TEXT NOT NULL,
             item_id TEXT NOT NULL,
             source TEXT DEFAULT 'unlock',
@@ -3668,7 +3714,7 @@ def _create_all_tables(conn):
         )''',
         'user_discounts': '''CREATE TABLE IF NOT EXISTS user_discounts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             discount_type TEXT NOT NULL,
             discount_value INTEGER DEFAULT 0,
             case_id INTEGER,
@@ -3680,7 +3726,7 @@ def _create_all_tables(conn):
         )''',
         'user_wagers': '''CREATE TABLE IF NOT EXISTS user_wagers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             bonus_amount INTEGER DEFAULT 0,
             wager_requirement INTEGER DEFAULT 0,
             wagered_amount INTEGER DEFAULT 0,
@@ -3692,7 +3738,7 @@ def _create_all_tables(conn):
         )''',
         'user_levels': '''CREATE TABLE IF NOT EXISTS user_levels (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             level INTEGER DEFAULT 1,
             experience INTEGER DEFAULT 0,
             total_experience INTEGER DEFAULT 0,
@@ -3702,7 +3748,7 @@ def _create_all_tables(conn):
         )''',
         'level_history': '''CREATE TABLE IF NOT EXISTS level_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             old_level INTEGER,
             new_level INTEGER,
             experience_gained INTEGER,
@@ -3712,7 +3758,7 @@ def _create_all_tables(conn):
         )''',
         'win_history': '''CREATE TABLE IF NOT EXISTS win_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             user_name TEXT,
             gift_name TEXT,
             gift_image TEXT,
@@ -3723,7 +3769,7 @@ def _create_all_tables(conn):
         )''',
         'case_open_history': '''CREATE TABLE IF NOT EXISTS case_open_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             case_id INTEGER NOT NULL,
             case_name TEXT,
             gift_id INTEGER,
@@ -3748,7 +3794,7 @@ def _create_all_tables(conn):
         'ultimate_crash_bets': '''CREATE TABLE IF NOT EXISTS ultimate_crash_bets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             game_id INTEGER,
-            user_id INTEGER,
+            user_id BIGINT,
             bet_amount INTEGER DEFAULT 0,
             gift_value INTEGER DEFAULT 0,
             bet_type TEXT DEFAULT 'stars',
@@ -3781,7 +3827,7 @@ def _create_all_tables(conn):
         'crash_bets': '''CREATE TABLE IF NOT EXISTS crash_bets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             game_id INTEGER,
-            user_id INTEGER,
+            user_id BIGINT,
             bet_amount INTEGER DEFAULT 0,
             bet_type TEXT DEFAULT 'stars',
             gift_id INTEGER,
@@ -3812,11 +3858,11 @@ def _create_all_tables(conn):
             pages TEXT DEFAULT '[]',
             is_active BOOLEAN DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            admin_id INTEGER DEFAULT 0
+            admin_id BIGINT DEFAULT 0
         )''',
         'user_notifications': '''CREATE TABLE IF NOT EXISTS user_notifications (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             notification_id INTEGER NOT NULL,
             shown BOOLEAN DEFAULT FALSE,
             shown_at TIMESTAMP,
@@ -3832,7 +3878,7 @@ def _create_all_tables(conn):
         )''',
         'ton_payments': '''CREATE TABLE IF NOT EXISTS ton_payments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             ton_amount REAL NOT NULL,
             tx_hash TEXT,
             status TEXT DEFAULT 'pending',
@@ -3851,7 +3897,7 @@ def _create_all_tables(conn):
         )''',
         'news_reads': '''CREATE TABLE IF NOT EXISTS news_reads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             news_id INTEGER NOT NULL,
             reward_claimed BOOLEAN DEFAULT FALSE,
             read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -3871,7 +3917,7 @@ def _create_all_tables(conn):
         )''',
         'user_daily_progress': '''CREATE TABLE IF NOT EXISTS user_daily_progress (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             task_id INTEGER NOT NULL,
             progress INTEGER DEFAULT 0,
             completed BOOLEAN DEFAULT FALSE,
@@ -3883,7 +3929,7 @@ def _create_all_tables(conn):
         )''',
         'reward_claims': '''CREATE TABLE IF NOT EXISTS reward_claims (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             reward_type TEXT NOT NULL,
             reward_id TEXT NOT NULL,
             reward_stars INTEGER NOT NULL,
@@ -3907,7 +3953,7 @@ def _create_all_tables(conn):
         )''',
         'user_quest_progress': '''CREATE TABLE IF NOT EXISTS user_quest_progress (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             quest_id INTEGER NOT NULL,
             progress INTEGER DEFAULT 0,
             completed BOOLEAN DEFAULT FALSE,
@@ -3946,7 +3992,7 @@ def _create_all_tables(conn):
         )''',
         'shop_purchases': '''CREATE TABLE IF NOT EXISTS shop_purchases (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             deal_id INTEGER NOT NULL,
             price_paid INTEGER NOT NULL,
             currency TEXT DEFAULT 'stars',
@@ -3956,7 +4002,7 @@ def _create_all_tables(conn):
         )''',
         'gift_deposits': '''CREATE TABLE IF NOT EXISTS gift_deposits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             gift_name TEXT,
             gift_value INTEGER DEFAULT 0,
             gift_type TEXT DEFAULT 'regular',
@@ -3977,14 +4023,14 @@ def _create_all_tables(conn):
         )''',
         'stars_payments': '''CREATE TABLE IF NOT EXISTS stars_payments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             amount INTEGER NOT NULL,
             charge_id TEXT UNIQUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''',
         'sbp_payments': '''CREATE TABLE IF NOT EXISTS sbp_payments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             stars INTEGER NOT NULL,
             amount_rub REAL NOT NULL,
             status TEXT DEFAULT 'pending',
@@ -3998,7 +4044,7 @@ def _create_all_tables(conn):
             message TEXT DEFAULT '',
             image_url TEXT DEFAULT '',
             notif_type TEXT DEFAULT 'general',
-            target_user_id INTEGER DEFAULT NULL,
+            target_user_id BIGINT DEFAULT NULL,
             reward_type TEXT DEFAULT NULL,
             reward_data TEXT DEFAULT NULL,
             is_active BOOLEAN DEFAULT 1,
@@ -4017,7 +4063,7 @@ def _create_all_tables(conn):
         'leaderboard_history': '''CREATE TABLE IF NOT EXISTS leaderboard_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             period_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             position INTEGER NOT NULL,
             turnover INTEGER DEFAULT 0,
             reward_type TEXT,
@@ -4055,7 +4101,7 @@ def _create_all_tables(conn):
         )''',
         'promo_gift_challenges': '''CREATE TABLE IF NOT EXISTS promo_gift_challenges (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             promo_id INTEGER,
             gift_id INTEGER,
             gift_name TEXT,
@@ -4074,7 +4120,7 @@ def _create_all_tables(conn):
         )''',
         'ghost_road_sessions': '''CREATE TABLE IF NOT EXISTS ghost_road_sessions (
             token TEXT PRIMARY KEY,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             bet REAL NOT NULL,
             difficulty TEXT NOT NULL DEFAULT 'light',
             step INTEGER NOT NULL DEFAULT 0,
@@ -4286,7 +4332,7 @@ def _create_all_tables(conn):
         )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS user_bonuses (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             bonus_type TEXT NOT NULL,
             bonus_data TEXT NOT NULL DEFAULT '{}',
             source TEXT DEFAULT '',
@@ -4297,7 +4343,7 @@ def _create_all_tables(conn):
         )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS user_gift_index (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             gift_name TEXT NOT NULL,
             discovered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(user_id, gift_name)
@@ -4313,7 +4359,7 @@ def _create_all_tables(conn):
         )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS used_deposit_promos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             promo_id INTEGER NOT NULL,
             deposit_amount INTEGER DEFAULT 0,
             bonus_amount INTEGER DEFAULT 0,
@@ -4322,7 +4368,7 @@ def _create_all_tables(conn):
         )''')
         conn.execute('''CREATE TABLE IF NOT EXISTS notification_reads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             notification_id INTEGER NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(user_id, notification_id)
@@ -4333,7 +4379,7 @@ def _create_all_tables(conn):
             message TEXT DEFAULT '',
             image_url TEXT DEFAULT '',
             notif_type TEXT DEFAULT 'general',
-            target_user_id INTEGER DEFAULT NULL,
+            target_user_id BIGINT DEFAULT NULL,
             reward_type TEXT DEFAULT NULL,
             reward_data TEXT DEFAULT NULL,
             is_active BOOLEAN DEFAULT 1,
@@ -8970,7 +9016,7 @@ def get_user_customizations(user_id):
         # Создаём таблицу если не существует
         cursor.execute('''CREATE TABLE IF NOT EXISTS user_customizations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             item_type TEXT NOT NULL,
             item_id TEXT NOT NULL,
             source TEXT DEFAULT 'promo',
@@ -10652,7 +10698,7 @@ def activate_promo_for_case():
 
                 cursor.execute('''CREATE TABLE IF NOT EXISTS case_promo_uses (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
+                    user_id BIGINT NOT NULL,
                     case_id INTEGER NOT NULL,
                     promo_code TEXT NOT NULL,
                     used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -10797,7 +10843,7 @@ def activate_promo_for_case():
             # Создаём таблицу если не существует
             cursor.execute('''CREATE TABLE IF NOT EXISTS user_customizations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
+                user_id BIGINT NOT NULL,
                 item_type TEXT NOT NULL,
                 item_id TEXT NOT NULL,
                 source TEXT DEFAULT 'promo',
@@ -10820,7 +10866,7 @@ def activate_promo_for_case():
             # Создаём таблицу если не существует
             cursor.execute('''CREATE TABLE IF NOT EXISTS user_customizations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
+                user_id BIGINT NOT NULL,
                 item_type TEXT NOT NULL,
                 item_id TEXT NOT NULL,
                 source TEXT DEFAULT 'promo',
@@ -17947,7 +17993,7 @@ def api_get_news():
             cursor = conn.cursor()
             cursor.execute('''CREATE TABLE IF NOT EXISTS news_reads (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
+                user_id BIGINT NOT NULL,
                 news_id INTEGER NOT NULL,
                 reward_claimed BOOLEAN DEFAULT FALSE,
                 read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -18042,7 +18088,7 @@ def api_claim_news_reward():
         # Создаём таблицу если нет
         cursor.execute('''CREATE TABLE IF NOT EXISTS news_reads (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             news_id INTEGER NOT NULL,
             reward_claimed BOOLEAN DEFAULT FALSE,
             read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -21599,7 +21645,7 @@ def api_gift_deposits_history():
         cursor = conn.cursor()
         cursor.execute('''CREATE TABLE IF NOT EXISTS gift_deposits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             gift_name TEXT NOT NULL,
             gift_value INTEGER NOT NULL,
             gift_type TEXT DEFAULT 'regular',
@@ -21694,7 +21740,7 @@ def process_gift_deposit():
         # Log the deposit
         cursor.execute('''CREATE TABLE IF NOT EXISTS gift_deposits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             gift_name TEXT NOT NULL,
             gift_value INTEGER NOT NULL,
             gift_type TEXT DEFAULT 'regular',
@@ -22105,7 +22151,7 @@ def get_shop_deals():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
         cursor.execute('''CREATE TABLE IF NOT EXISTS shop_purchases (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id BIGINT NOT NULL,
             deal_id INTEGER NOT NULL, price_paid INTEGER NOT NULL,
             currency TEXT DEFAULT 'stars', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
@@ -22569,7 +22615,7 @@ def admin_shop_purchases():
             return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
         conn = get_db_connection(); cursor = conn.cursor()
         cursor.execute('''CREATE TABLE IF NOT EXISTS shop_purchases (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, deal_id INTEGER NOT NULL,
+            id INTEGER PRIMARY KEY AUTOINCREMENT, user_id BIGINT NOT NULL, deal_id INTEGER NOT NULL,
             price_paid INTEGER NOT NULL, currency TEXT DEFAULT 'stars', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )''')
         conn.commit()
@@ -23291,7 +23337,7 @@ def get_crash_quests():
             conn.rollback()
         cursor.execute('''CREATE TABLE IF NOT EXISTS user_quest_progress (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             quest_id INTEGER NOT NULL,
             progress INTEGER DEFAULT 0,
             completed BOOLEAN DEFAULT FALSE,
@@ -24949,7 +24995,7 @@ def handle_message(msg):
                 # Create table if not exists (with dedup fields)
                 cursor.execute('''CREATE TABLE IF NOT EXISTS gift_deposits (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_id INTEGER NOT NULL,
+                    user_id BIGINT NOT NULL,
                     gift_name TEXT NOT NULL,
                     gift_value INTEGER NOT NULL,
                     gift_type TEXT DEFAULT 'regular',
@@ -25044,7 +25090,7 @@ def handle_successful_payment(msg):
         # Dedup check by charge id
         cursor.execute('''CREATE TABLE IF NOT EXISTS stars_payments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             amount INTEGER NOT NULL,
             charge_id TEXT UNIQUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -26414,7 +26460,7 @@ def api_admin_sbp_payments():
         # Создаем таблицу если не существует
         cursor.execute('''CREATE TABLE IF NOT EXISTS sbp_payments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
+            user_id BIGINT NOT NULL,
             stars INTEGER NOT NULL,
             amount_rub REAL NOT NULL,
             status TEXT DEFAULT 'pending',
@@ -28874,7 +28920,7 @@ _register_bundled_module('admin_services', (
     "        threading.Thread(target=media_loop,name='gift-png-cache',daemon=True).start()\n"
     '\n'
     '    with db(True) as con:\n'
-    "        con.execute('CREATE TABLE IF NOT EXISTS case_code_redemptions(user_id INTEGER,case_id TEXT,code TEXT,PRIMARY KEY(user_id,case_id,code))')\n"
+    "        con.execute('CREATE TABLE IF NOT EXISTS case_code_redemptions(user_id BIGINT,case_id TEXT,code TEXT,PRIMARY KEY(user_id,case_id,code))')\n"
     '\n'
     '    @api_errors\n'
     '    def open_case():\n'
