@@ -84,7 +84,29 @@ def _set_cached_balance(user_id, balance):
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY') or secrets.token_hex(32)
 
+@app.get('/healthz')
+def healthz():
+    return jsonify({'ok': True, 'status': 'healthy'}), 200
+
+@app.get('/health')
+def health():
+    return jsonify({'ok': True, 'status': 'healthy'}), 200
+
 # Конфигурация
+def _env_int(name, default):
+    try:
+        return int(str(os.getenv(name, default)).strip())
+    except (TypeError, ValueError):
+        logger.warning("Некорректный %s=%r; используется %s", name, os.getenv(name), default)
+        return int(default)
+
+def _env_float(name, default):
+    try:
+        return float(str(os.getenv(name, default)).strip())
+    except (TypeError, ValueError):
+        logger.warning("Некорректный %s=%r; используется %s", name, os.getenv(name), default)
+        return float(default)
+
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 # Единая точка для всех файлов с данными, которые должны переживать рестарт/редеплой.
 # Если на хостинге подключён постоянный диск, укажите переменную окружения DB_DIR
@@ -93,7 +115,7 @@ BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 # а не в папку рядом с кодом, которая стирается при каждом деплое.
 PERSISTENT_DATA_DIR = os.environ.get('DB_DIR', os.path.join(BASE_PATH, 'data'))
 os.makedirs(PERSISTENT_DATA_DIR, exist_ok=True)
-ADMIN_ID = int(os.getenv('ADMIN_ID', '5257227756'))
+ADMIN_ID = _env_int('ADMIN_ID', 5257227756)
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '').strip()
 WEBSITE_URL = os.getenv('WEBSITE_URL', 'https://rasswetgifts.onrender.com').strip().rstrip('/')
 TG_API = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}'
@@ -106,13 +128,13 @@ gifts_cache = None
 gifts_cache_time = None
 CACHE_DURATION = 600  # 10 минут кэш подарков
 FRAGMENT_SYNC_ENABLED = os.getenv('FRAGMENT_SYNC_ENABLED', '1') != '0'
-FRAGMENT_SYNC_TIMEOUT = float(os.getenv('FRAGMENT_SYNC_TIMEOUT', '12'))
-FRAGMENT_API_RETRIES = int(os.getenv('FRAGMENT_API_RETRIES', '3'))
-FRAGMENT_PRICE_WORKERS = int(os.getenv('FRAGMENT_PRICE_WORKERS', '2'))
-FRAGMENT_SYNC_MAX = int(os.getenv('FRAGMENT_SYNC_MAX', '5000'))
-FRAGMENT_PRICE_FETCH_LIMIT = int(os.getenv('FRAGMENT_PRICE_FETCH_LIMIT', '0'))
-FRAGMENT_TON_RATE = int(os.getenv('FRAGMENT_TON_RATE', '100'))
-FRAGMENT_CACHE_DURATION = int(os.getenv('FRAGMENT_CACHE_DURATION', '900'))
+FRAGMENT_SYNC_TIMEOUT = _env_float('FRAGMENT_SYNC_TIMEOUT', 12)
+FRAGMENT_API_RETRIES = _env_int('FRAGMENT_API_RETRIES', 3)
+FRAGMENT_PRICE_WORKERS = _env_int('FRAGMENT_PRICE_WORKERS', 2)
+FRAGMENT_SYNC_MAX = _env_int('FRAGMENT_SYNC_MAX', 5000)
+FRAGMENT_PRICE_FETCH_LIMIT = _env_int('FRAGMENT_PRICE_FETCH_LIMIT', 0)
+FRAGMENT_TON_RATE = _env_int('FRAGMENT_TON_RATE', 100)
+FRAGMENT_CACHE_DURATION = _env_int('FRAGMENT_CACHE_DURATION', 900)
 FRAGMENT_ONLY_CATALOG = os.getenv('FRAGMENT_ONLY_CATALOG', '1') != '0'
 FRAGMENT_ALLOW_LOCAL_ON_FAILURE = os.getenv('FRAGMENT_ALLOW_LOCAL_ON_FAILURE', '1') != '0'
 FRAGMENT_FETCH_BASE = str(os.getenv('FRAGMENT_FETCH_BASE', '') or '').strip().rstrip('/')
@@ -134,8 +156,8 @@ GIFTS_PERSISTENT_FILE = os.path.join(PERSISTENT_DATA_DIR, 'gifts_catalog_persist
 MRKT_API_BASE = 'https://api.tgmrkt.io/api/v1'
 MRKT_TOKEN_FILE = os.path.join(PERSISTENT_DATA_DIR, 'mrkt_token.json')
 MRKT_REFERER = 'https://cdn.tgmrkt.io/'
-MRKT_SYNC_TIMEOUT = int(os.getenv('MRKT_SYNC_TIMEOUT', '12'))
-MRKT_SYNC_WORKERS = int(os.getenv('MRKT_SYNC_WORKERS', '8'))
+MRKT_SYNC_TIMEOUT = _env_int('MRKT_SYNC_TIMEOUT', 12)
+MRKT_SYNC_WORKERS = _env_int('MRKT_SYNC_WORKERS', 8)
 
 # Getgems public API: collection floor prices + metadata. The public docs expose
 # the gift price list without requiring an MRKT-style user token.
@@ -144,7 +166,7 @@ MRKT_SYNC_WORKERS = int(os.getenv('MRKT_SYNC_WORKERS', '8'))
 # still keeping the provider isolated as Getgems source data in our catalog.
 GETGEMS_API_BASE = os.getenv('GETGEMS_API_BASE', 'https://giftasset.gifts').strip().rstrip('/')
 GETGEMS_LEGACY_API_BASE = os.getenv('GETGEMS_LEGACY_API_BASE', '').strip().rstrip('/')
-GETGEMS_TIMEOUT = float(os.getenv('GETGEMS_TIMEOUT', '20'))
+GETGEMS_TIMEOUT = _env_float('GETGEMS_TIMEOUT', 20)
 GETGEMS_ENABLED = os.getenv('GETGEMS_ENABLED', '1') != '0'
 GETGEMS_API_KEY = str(os.getenv('GETGEMS_API_KEY', '') or '').strip()
 GETGEMS_PRICE_ENDPOINT = '/v1/gifts/get_gifts_price_list'
@@ -28696,7 +28718,12 @@ def install(n):
 
 
 _install_admin_services = install
-_install_admin_services(globals())
+try:
+    _install_admin_services(globals())
+except Exception:
+    # Gunicorn must still be able to import app:app even if an optional
+    # admin-service patch is broken. The full traceback remains in Render logs.
+    logger.exception("❌ Ошибка установки дополнительных admin-сервисов; WSGI-приложение продолжает запуск")
 
 # ─── Render fix: не ждём первый HTTP-запрос, чтобы поднять бота ───
 # Раньше _lazy_init() (регистрация вебхука + фоновые циклы) запускалась
@@ -28718,6 +28745,10 @@ except Exception as _e:
 # Webhook запускается из _lazy_init в отдельном фоне (см. выше).
 
 if __name__ == '__main__':
+    # Этот блок используется только при `python app.py`.
+    # Render запускает WSGI через `gunicorn app:app`, поэтому Gunicorn
+    # сам владеет портом и этот блок при деплое не выполняется.
+    #
     # На Render сервис ОБЯЗАН слушать 0.0.0.0 и порт из $PORT — иначе
     # платформа не сможет достучаться до контейнера и деплой будет
     # считаться "неживым", даже если процесс запустился.
