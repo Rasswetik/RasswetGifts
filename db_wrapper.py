@@ -1,246 +1,212 @@
-"""
-Database abstraction layer — supports both SQLite and PostgreSQL.
-
-When DATABASE_URL is set (PostgreSQL), all connections go through psycopg2
-with automatic query translation (? → %s, SQLite syntax → PG syntax).
-Otherwise falls back to SQLite in data/raswet_gifts.db.
-"""
+# PostgreSQL adapter for the Rasswet/Goshangifts Flask application.
+# SQLite is intentionally NOT supported in production.
 import os
 import re
-import sqlite3
-import logging
-import time
 import threading
-import uuid
-import traceback
-from functools import lru_cache
+import psycopg2
 
-logger = logging.getLogger(__name__)
+DATABASE_URL = (os.getenv('DATABASE_URL') or '').strip()
+if not DATABASE_URL:
+    raise RuntimeError(
+        'DATABASE_URL is required. This build uses PostgreSQL only; SQLite has been disabled.'
+    )
 
-DATABASE_URL = os.environ.get('DATABASE_URL', '')
-USE_POSTGRES = bool(DATABASE_URL)
+USE_POSTGRES = True
 
-# Connection pool sizing can be tuned via environment variables
-PG_MIN_CONN = int(os.environ.get('PG_MIN_CONN', '5'))
-PG_MAX_CONN = int(os.environ.get('PG_MAX_CONN', '30'))
-# How long to wait (seconds) when acquiring the pool semaphore
-PG_SEM_TIMEOUT = int(os.environ.get('PG_SEM_TIMEOUT', '30'))
-# Pre-warm pool on init? Set to '0' or 'false' to disable
-PG_PREWARM = os.environ.get('PG_PREWARM', '1').lower() not in ('0', 'false', 'no', 'n')
-
-# ⚠️ ВАЖНО: Логируем какая БД используется при импорте модуля
-if USE_POSTGRES:
-    print(f"🐘 DATABASE MODE: PostgreSQL (DATABASE_URL set)")
-    logger.info(f"🐘 Using PostgreSQL database")
-else:
-    print("⚠️ DATABASE MODE: SQLite (WARNING: Data will be LOST on redeploy!)")
-    print("⚠️ Set DATABASE_URL environment variable for persistent storage!")
-    logger.warning("⚠️ Using SQLite - data will be lost on redeploy!")
-
-# ── PostgreSQL support via psycopg2 ──────────────────────────────
-if USE_POSTGRES:
-    try:
-        import psycopg2
-        import psycopg2.extras
-        import psycopg2.pool
-        _pg_pool = None
-        _pg_semaphore = None
-        # Instrumentation: currently allocated connections
-        _pg_in_use = 0
-        print("✅ psycopg2 loaded successfully")
-    except ImportError:
-        print("❌ psycopg2 not installed, falling back to SQLite!")
-        logger.error("psycopg2 not installed, falling back to SQLite")
-        USE_POSTGRES = False
+_pool_lock = threading.Lock()
 
 
-@lru_cache(maxsize=2048)
-def _translate_query(sql):
-    """Convert SQLite-flavoured SQL to PostgreSQL-compatible SQL. Cached to avoid regex overhead."""
-    if not USE_POSTGRES:
+def _normalize_sql(sql: str) -> str:
+    """Convert the small SQLite SQL dialect subset used by the legacy app to PostgreSQL."""
+    if not isinstance(sql, str):
         return sql
-    # ? → %s parameter markers
-    out = sql.replace('?', '%s')
-    # id INTEGER PRIMARY KEY AUTOINCREMENT → id SERIAL PRIMARY KEY
-    out = re.sub(
-        r'\bid\s+INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT\b',
-        'id SERIAL PRIMARY KEY',
-        out, flags=re.IGNORECASE
-    )
-    # Remaining id INTEGER PRIMARY KEY (no autoincrement) → id BIGINT PRIMARY KEY
-    # These tables receive explicit IDs (e.g. users.id = telegram user_id)
-    out = re.sub(
-        r'\bid\s+INTEGER\s+PRIMARY\s+KEY\b',
-        'id BIGINT PRIMARY KEY',
-        out, flags=re.IGNORECASE
-    )
-    # Convert common *_id columns to BIGINT to safely hold large external ids (Telegram user ids)
-    def _replace_int_id(m):
-        name = m.group(1)
-        if name.lower().endswith('_id') and name.lower() != 'id':
-            return f"{name} BIGINT"
-        return m.group(0)
-    out = re.sub(r"\b([A-Za-z_][A-Za-z0-9_]*)\s+INTEGER\b", _replace_int_id, out, flags=re.IGNORECASE)
-    # datetime('now') → NOW()
-    out = re.sub(r"datetime\(\s*'now'\s*\)", 'NOW()', out, flags=re.IGNORECASE)
-    # datetime('now', '-N minutes') → NOW() - INTERVAL 'N minutes'
-    def _datetime_modifier(m):
+    s = sql
+
+    # SQLite placeholders -> psycopg2 placeholders.
+    s = s.replace('?', '%s')
+
+    # SQLite AUTOINCREMENT syntax -> PostgreSQL identity/sequence syntax.
+    s = re.sub(r'INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT', 'BIGSERIAL PRIMARY KEY', s, flags=re.I)
+
+    # SQLite boolean defaults written as 0/1.
+    s = re.sub(r'\bBOOLEAN\s+DEFAULT\s+1\b', 'BOOLEAN DEFAULT TRUE', s, flags=re.I)
+    s = re.sub(r'\bBOOLEAN\s+DEFAULT\s+0\b', 'BOOLEAN DEFAULT FALSE', s, flags=re.I)
+
+    # SQLite datetime('now', ...) helpers.
+    s = re.sub(r"datetime\(\s*'now'\s*\)", 'CURRENT_TIMESTAMP', s, flags=re.I)
+
+    def _dt_interval(m):
         sign = m.group(1)
-        num = m.group(2)
+        amount = m.group(2)
         unit = m.group(3)
-        if sign == '-':
-            return f"NOW() - INTERVAL '{num} {unit}'"
-        else:
-            return f"NOW() + INTERVAL '{num} {unit}'"
-    out = re.sub(
-        r"datetime\(\s*'now'\s*,\s*'([+-])(\d+)\s+(minutes?|hours?|days?|seconds?)'\s*\)",
-        _datetime_modifier, out, flags=re.IGNORECASE
+        # PostgreSQL accepts CURRENT_TIMESTAMP +/- INTERVAL '10 minutes'.
+        op = '+' if sign == '+' else '-'
+        return f"CURRENT_TIMESTAMP {op} INTERVAL '{amount} {unit}'"
+
+    s = re.sub(
+        r"datetime\(\s*'now'\s*,\s*'([+-])(\d+)\s+(seconds?|minutes?|hours?|days?|weeks?)'\s*\)",
+        _dt_interval,
+        s,
+        flags=re.I,
     )
-    # date('now') → CURRENT_DATE
-    out = re.sub(r"date\(\s*'now'\s*\)", 'CURRENT_DATE', out, flags=re.IGNORECASE)
-    # date('now','start of month') → date_trunc('month', CURRENT_TIMESTAMP)
-    out = re.sub(
-        r"date\(\s*'now'\s*,\s*'start of month'\s*\)",
-        "date_trunc('month', CURRENT_TIMESTAMP)",
-        out, flags=re.IGNORECASE
-    )
-    # INSERT OR IGNORE → INSERT ... ON CONFLICT DO NOTHING
-    _is_insert_or_ignore = bool(re.search(r'\bINSERT\s+OR\s+IGNORE\b', out, re.IGNORECASE))
-    # INSERT OR REPLACE → upsert with ON CONFLICT DO UPDATE
-    _replace_match = re.match(
-        r'\s*INSERT\s+OR\s+REPLACE\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\((.+)\)\s*;?\s*$',
-        out, re.IGNORECASE | re.DOTALL
-    )
-    if _replace_match:
-        _UPSERT_CONFLICT = {
-            'case_limits': 'case_id',
-            'crash_customizations': 'item_type, item_id',
-            'levels': 'level',
-        }
-        tbl = _replace_match.group(1).lower()
-        cols_str = _replace_match.group(2)
-        vals_str = _replace_match.group(3)
-        conflict_col = _UPSERT_CONFLICT.get(tbl)
-        if conflict_col:
-            cols = [c.strip() for c in cols_str.split(',')]
-            conflict_set = {c.strip() for c in conflict_col.split(',')}
-            update_cols = [c for c in cols if c not in conflict_set and c != 'id']
-            set_clause = ', '.join(f"{c} = EXCLUDED.{c}" for c in update_cols)
-            out = f"INSERT INTO {tbl} ({cols_str}) VALUES ({vals_str}) ON CONFLICT ({conflict_col}) DO UPDATE SET {set_clause}"
-        else:
-            out = re.sub(r'\bINSERT\s+OR\s+REPLACE\b', 'INSERT', out, flags=re.IGNORECASE)
-    else:
-        out = re.sub(r'\bINSERT\s+OR\s+REPLACE\b', 'INSERT', out, flags=re.IGNORECASE)
-    out = re.sub(r'\bINSERT\s+OR\s+IGNORE\b', 'INSERT', out, flags=re.IGNORECASE)
-    # Remove PRAGMA statements entirely
-    if re.match(r'^\s*PRAGMA\b', out, re.IGNORECASE):
-        return ''
-    # BEGIN / BEGIN IMMEDIATE → skip entirely on PG (autocommit=False auto-manages txns)
-    if re.match(r'^\s*BEGIN(\s+IMMEDIATE)?\s*;?\s*$', out, re.IGNORECASE):
-        return ''
-    # sqlite_master table listing → pg equivalent
-    if 'sqlite_master' in out.lower():
-        out = re.sub(
-            r"SELECT\s+name\s+FROM\s+sqlite_master\s+WHERE\s+type\s*=\s*'table'",
-            "SELECT tablename AS name FROM pg_tables WHERE schemaname = 'public'",
-            out, flags=re.IGNORECASE
+
+    # PRAGMA queries used by legacy health/migration code.
+    m = re.fullmatch(r'\s*PRAGMA\s+table_info\(([^)]+)\)\s*;?', s, flags=re.I)
+    if m:
+        table = m.group(1).strip().strip('"`')
+        return (
+            "SELECT ordinal_position - 1 AS cid, column_name AS name, data_type AS type, "
+            "CASE WHEN is_nullable = 'NO' THEN 1 ELSE 0 END AS notnull, "
+            "column_default AS dflt_value, "
+            "CASE WHEN EXISTS (SELECT 1 FROM pg_constraint c "
+            "JOIN pg_attribute a ON a.attrelid=c.conrelid AND a.attnum=ANY(c.conkey) "
+            "WHERE c.contype='p' AND c.conrelid=%s::regclass AND a.attname=columns.column_name) "
+            "THEN 1 ELSE 0 END AS pk "
+            "FROM information_schema.columns columns "
+            "WHERE table_schema='public' AND table_name=%s ORDER BY ordinal_position"
         )
-    # DATETIME (SQLite) -> TIMESTAMP (Postgres)
-    out = re.sub(r'\bDATETIME\b', 'TIMESTAMP', out, flags=re.IGNORECASE)
-    # BOOLEAN defaults in SQLite are often written as 0/1 — convert to TRUE/FALSE for Postgres
-    out = re.sub(r'\bBOOLEAN\b\s+DEFAULT\s+0\b', 'BOOLEAN DEFAULT FALSE', out, flags=re.IGNORECASE)
-    out = re.sub(r'\bBOOLEAN\b\s+DEFAULT\s+1\b', 'BOOLEAN DEFAULT TRUE', out, flags=re.IGNORECASE)
-    # Convert boolean-like assignments/comparisons (e.g. is_active = 0) to TRUE/FALSE
-    def _is_bool_col(name: str) -> bool:
-        return bool(re.search(r"^(?:is_|has_)", name, flags=re.IGNORECASE) or
-                    re.search(r"(?:active|enabled|visible|locked|bann?ed|deleted|upgrad|confirm|verify)", name, flags=re.IGNORECASE))
 
-    def _bool_replace(m):
-        col = m.group(1)
-        val = m.group(2)
-        if _is_bool_col(col):
-            return f"{col} = {'FALSE' if val == '0' else 'TRUE'}"
-        return m.group(0)
+    # SQLite's sqlite_master table list.
+    if re.search(r"sqlite_master", s, flags=re.I):
+        return "SELECT table_name AS name FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'"
 
-    out = re.sub(r"\b([A-Za-z_][A-Za-z0-9_]*)\b\s*=\s*(0|1)\b", _bool_replace, out, flags=re.IGNORECASE)
-    # SQLite uses "value" as string literal; PG treats "value" as identifier.
-    # Convert double-quoted values in DEFAULT, SET, WHERE clauses to single quotes.
-    # DEFAULT "word" patterns (e.g. DEFAULT "stars", DEFAULT "general")
-    out = re.sub(r'\bDEFAULT\s+"([^"]*)"', r"DEFAULT '\1'", out, flags=re.IGNORECASE)
-    # Match = "word" patterns (status = "crashed", etc.)
-    out = re.sub(r'''=\s*"([^"]*)"''', r"= '\1'", out)
-    # Append ON CONFLICT DO NOTHING for INSERT OR IGNORE queries
-    if _is_insert_or_ignore:
-        out = out.rstrip().rstrip(';') + ' ON CONFLICT DO NOTHING'
-    return out
+    # SQLite PRAGMA tuning commands are meaningless on PostgreSQL; make them harmless.
+    if re.match(r'\s*PRAGMA\s+', s, flags=re.I):
+        return 'SELECT 1'
+
+    # SQLite transaction command used by one promo endpoint.
+    if re.match(r'\s*BEGIN\s+IMMEDIATE\s*;?\s*$', s, flags=re.I):
+        return 'BEGIN'
+
+    # SQLite INSERT OR IGNORE -> PostgreSQL ON CONFLICT DO NOTHING.
+    if re.match(r'\s*INSERT\s+OR\s+IGNORE\s+', s, flags=re.I):
+        s = re.sub(r'\bINSERT\s+OR\s+IGNORE\s+', 'INSERT ', s, count=1, flags=re.I)
+        if not re.search(r'\bON\s+CONFLICT\b', s, flags=re.I):
+            s = s.rstrip().rstrip(';') + ' ON CONFLICT DO NOTHING'
+
+    return s
 
 
-class PgCursorWrapper:
-    """Wraps a psycopg2 cursor so it auto-translates queries."""
-    def __init__(self, real_cursor):
-        self._cur = real_cursor
+def _replace_or_replace(sql: str, conn):
+    """Translate SQLite INSERT OR REPLACE using the table primary key."""
+    if not re.match(r'\s*INSERT\s+OR\s+REPLACE\s+', sql, flags=re.I):
+        return _normalize_sql(sql)
 
-    def execute(self, sql, params=None):
-        translated = _translate_query(sql)
-        if not translated.strip():
-            return  # PRAGMA → skip
-        if params:
-            # psycopg2 wants tuples
-            if isinstance(params, list):
-                params = tuple(params)
-            self._cur.execute(translated, params)
-        else:
-            self._cur.execute(translated)
+    m = re.match(
+        r"\s*INSERT\s+OR\s+REPLACE\s+INTO\s+([\w.\"]+)\s*\(([^)]+)\)\s*VALUES\s*\((.*)\)\s*;?\s*$",
+        sql,
+        flags=re.I | re.S,
+    )
+    if not m:
+        return _normalize_sql(sql)
 
-    def executemany(self, sql, seq_of_params):
-        translated = _translate_query(sql)
-        if not translated.strip():
-            return
-        self._cur.executemany(translated, seq_of_params)
+    table = m.group(1).strip('"')
+    cols = [c.strip().strip('"') for c in m.group(2).split(',')]
+    values = m.group(3).strip()
 
-    def fetchone(self):
-        return self._cur.fetchone()
+    # Look up primary key columns.
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "SELECT a.attname "
+            "FROM pg_index i "
+            "JOIN pg_attribute a ON a.attrelid=i.indrelid AND a.attnum=ANY(i.indkey) "
+            "WHERE i.indrelid=%s::regclass AND i.indisprimary "
+            "ORDER BY array_position(i.indkey, a.attnum)",
+            (table,),
+        )
+        pk_cols = [r[0] for r in cur.fetchall()]
+    finally:
+        cur.close()
 
-    def fetchall(self):
-        return self._cur.fetchall()
+    if not pk_cols:
+        # Last-resort behavior: PostgreSQL has no generic REPLACE. Use INSERT
+        # and let a real constraint error surface rather than silently deleting data.
+        return _normalize_sql(sql.replace('INSERT OR REPLACE', 'INSERT', 1))
 
-    def fetchmany(self, size=None):
-        if size is not None:
-            return self._cur.fetchmany(size)
-        return self._cur.fetchmany()
+    normalized = _normalize_sql(
+        re.sub(r'^\s*INSERT\s+OR\s+REPLACE\s+', 'INSERT ', sql, count=1, flags=re.I)
+    )
+    normalized = normalized.rstrip().rstrip(';')
+    non_pk_cols = [c for c in cols if c.lower() not in {p.lower() for p in pk_cols}]
+    if non_pk_cols:
+        assignments = ', '.join(f'"{c}" = EXCLUDED."{c}"' for c in non_pk_cols)
+        return normalized + ' ON CONFLICT (' + ', '.join(f'"{p}"' for p in pk_cols) + ') DO UPDATE SET ' + assignments
+    return normalized + ' ON CONFLICT (' + ', '.join(f'"{p}"' for p in pk_cols) + ') DO NOTHING'
+
+
+class PGCursor:
+    def __init__(self, cursor, connection):
+        self._cursor = cursor
+        self._connection = connection
+        self._lastrowid = None
 
     @property
     def lastrowid(self):
-        # PostgreSQL doesn't have lastrowid the same way
-        # Use RETURNING id instead in queries; but for compat:
-        try:
-            self._cur.execute("SELECT lastval()")
-            return self._cur.fetchone()[0]
-        except Exception:
-            return None
+        return self._lastrowid
 
     @property
     def rowcount(self):
-        return self._cur.rowcount
+        return self._cursor.rowcount
 
-    @property
-    def description(self):
-        return self._cur.description
+    def execute(self, sql, params=None):
+        sql = str(sql)
+        sql2 = _replace_or_replace(sql, self._connection._conn) if re.match(r'\s*INSERT\s+OR\s+REPLACE\s+', sql, re.I) else _normalize_sql(sql)
+        self._cursor.execute(sql2, params)
+        self._lastrowid = None
+        if re.match(r'\s*INSERT\b', sql2, re.I):
+            # The application frequently uses cursor.lastrowid. Recover the
+            # sequence value only when the target table actually has a serial id.
+            m = re.match(r'\s*INSERT\s+(?:INTO)\s+([\w.\"]+)', sql2, re.I)
+            if m:
+                table = m.group(1).strip('"')
+                try:
+                    self._cursor.execute("SELECT pg_get_serial_sequence(%s, 'id')", (table,))
+                    seq_row = self._cursor.fetchone()
+                    if seq_row and seq_row[0]:
+                        self._cursor.execute("SELECT currval(%s)", (seq_row[0],))
+                        row = self._cursor.fetchone()
+                        self._lastrowid = row[0] if row else None
+                except Exception:
+                    # Never roll back the caller's successful INSERT merely
+                    # because lastrowid is unavailable.
+                    try:
+                        self._connection._conn.rollback()
+                    except Exception:
+                        pass
+                    self._cursor = self._connection._conn.cursor()
+        return self
+
+    def executemany(self, sql, seq_of_params):
+        self._cursor.executemany(_normalize_sql(sql), seq_of_params)
+        return self
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def fetchmany(self, size=None):
+        return self._cursor.fetchmany(size) if size else self._cursor.fetchmany()
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+    def __iter__(self):
+        return iter(self._cursor)
 
     def close(self):
-        self._cur.close()
+        return self._cursor.close()
+
+    def __getattr__(self, name):
+        return getattr(self._cursor, name)
 
 
-class PgConnectionWrapper:
-    """Wraps a psycopg2 connection to look like sqlite3.Connection."""
-    def __init__(self, pg_conn, semaphore=None, pool_key=None):
-        self._conn = pg_conn
-        self._semaphore = semaphore
-        self._pool_key = pool_key
+class PGConnection:
+    def __init__(self, conn):
+        self._conn = conn
         self._closed = False
 
     def cursor(self):
-        return PgCursorWrapper(self._conn.cursor())
+        return PGCursor(self._conn.cursor(), self)
 
     def execute(self, sql, params=None):
         cur = self.cursor()
@@ -248,220 +214,37 @@ class PgConnectionWrapper:
         return cur
 
     def commit(self):
-        self._conn.commit()
+        return self._conn.commit()
 
     def rollback(self):
-        self._conn.rollback()
+        return self._conn.rollback()
 
     def close(self):
-        if getattr(self, '_closed', False):
-            return
         self._closed = True
-        # Ensure any open transaction is rolled back before returning connection
-        if USE_POSTGRES and _pg_pool:
-            try:
-                self._conn.rollback()
-            except Exception:
-                # If rollback fails, continue to attempt returning/closing
-                pass
-            try:
-                # Return using the same key we used to get the connection
-                if getattr(self, '_pool_key', None) is not None:
-                    _pg_pool.putconn(self._conn, self._pool_key)
-                else:
-                    _pg_pool.putconn(self._conn)
-            except Exception:
-                try:
-                    self._conn.close()
-                except Exception:
-                    pass
-        else:
-            try:
-                self._conn.close()
-            except Exception:
-                pass
-
-        # Release semaphore slot if we acquired one
-        if getattr(self, '_semaphore', None):
-            try:
-                self._semaphore.release()
-            except Exception:
-                pass
-        # Instrumentation: decrement in-use counter and log
-        try:
-            global _pg_in_use
-            _pg_in_use = max(0, _pg_in_use - 1)
-        except Exception:
-            pass
-        try:
-            logger.debug(f"PG pool released: in_use={_pg_in_use}/{PG_MAX_CONN} thread={threading.current_thread().name}")
-        except Exception:
-            pass
+        return self._conn.close()
 
     def __enter__(self):
+        self._conn.__enter__()
         return self
 
-    def __exit__(self, *args):
-        self.close()
+    def __exit__(self, exc_type, exc, tb):
+        return self._conn.__exit__(exc_type, exc, tb)
 
-    def __del__(self):
-        # Safety: if object is garbage-collected without explicit close,
-        # try returning connection to pool to avoid leaks.
-        try:
-            # Ensure we properly close (which will also release semaphore)
-            try:
-                self.close()
-            except Exception:
-                pass
-        except Exception:
-            pass
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
 
 
-def _init_pg_pool():
-    """Initialize the PostgreSQL connection pool (called once)."""
-    global _pg_pool
-    if _pg_pool is not None:
-        return
+def get_connection():
+    kwargs = {
+        'connect_timeout': int(os.getenv('PG_CONNECT_TIMEOUT', '15')),
+        'application_name': os.getenv('PG_APPLICATION_NAME', 'goshangifts'),
+    }
+    conn = psycopg2.connect(DATABASE_URL, **kwargs)
+    # Render/Postgres benefits from TCP keepalives on long-running workers.
     try:
-        logger.info(f"Initializing PostgreSQL pool: min={PG_MIN_CONN} max={PG_MAX_CONN}")
-        _pg_pool = psycopg2.pool.ThreadedConnectionPool(
-            minconn=PG_MIN_CONN, maxconn=PG_MAX_CONN,
-            dsn=DATABASE_URL
-        )
-        logger.info(f"✅ PostgreSQL connection pool initialized (max={PG_MAX_CONN})")
-        # Semaphore to throttle simultaneous callers to at most PG_MAX_CONN
-        global _pg_semaphore
-        try:
-            _pg_semaphore = threading.BoundedSemaphore(PG_MAX_CONN)
-        except Exception:
-            _pg_semaphore = None
-        # Optionally pre-warm the pool to avoid first-connection latency
-        if PG_PREWARM:
-            try:
-                for i in range(max(1, PG_MIN_CONN)):
-                    k = uuid.uuid4().hex
-                    try:
-                        c = _pg_pool.getconn(k)
-                        try:
-                            c.autocommit = False
-                        except Exception:
-                            pass
-                        _pg_pool.putconn(c, k)
-                    except Exception as e:
-                        logger.warning(f"PG pool prewarm getconn failed: {e}")
-                logger.info(f"✅ Pre-warmed PG pool with {max(1, PG_MIN_CONN)} connections")
-            except Exception as e:
-                logger.warning(f"PG pool prewarm failed: {e}")
-    except Exception as e:
-        logger.error(f"❌ Failed to init PG pool: {e}")
-        raise
-
-
-def get_pg_connection():
-    """Get a PostgreSQL connection from the pool, wrapped for compatibility."""
-    if _pg_pool is None:
-        _init_pg_pool()
-    # Ensure semaphore exists (created during pool init). Fall back to no-semaphore if unavailable.
-    global _pg_semaphore
-    if _pg_semaphore is None:
-        try:
-            _pg_semaphore = threading.BoundedSemaphore(PG_MAX_CONN)
-        except Exception:
-            _pg_semaphore = None
-
-    # Acquire a slot to avoid spamming the pool when it's exhausted.
-    if _pg_semaphore:
-        acquired = _pg_semaphore.acquire(timeout=PG_SEM_TIMEOUT)
-        if not acquired:
-            logger.error("❌ Timeout waiting for DB connection slot (too many concurrent DB users)")
-            raise Exception("Timeout waiting for DB connection slot")
-
-    try:
-        # Try to get a healthy connection (retry if a bad/aborted conn is returned)
-        attempts = 0
-        while True:
-            pool_key = uuid.uuid4().hex
-            raw = _pg_pool.getconn(pool_key)
-            # Ensure no unfinished transactions remain
-            try:
-                raw.rollback()
-            except Exception:
-                pass
-
-            # Attempt to set autocommit / session state outside of transaction.
-            try:
-                raw.autocommit = False
-                break
-            except Exception as se:
-                # If setting session fails (e.g., set_session cannot be used inside a transaction),
-                # drop/close this connection and try another one.
-                logger.warning(f"PG conn session setup failed: {se}; refreshing connection (attempt {attempts+1})")
-                try:
-                    _pg_pool.putconn(raw, pool_key, close=True)
-                except Exception:
-                    try:
-                        raw.close()
-                    except Exception:
-                        pass
-                attempts += 1
-                if attempts >= 3:
-                    raise
-                time.sleep(0.1)
-
-        # Instrumentation: increment in-use counter and log
-        try:
-            global _pg_in_use
-            _pg_in_use += 1
-        except Exception:
-            pass
-        try:
-            logger.debug(f"PG pool acquired: in_use={_pg_in_use}/{PG_MAX_CONN} thread={threading.current_thread().name}")
-        except Exception:
-            pass
-        return PgConnectionWrapper(raw, semaphore=_pg_semaphore, pool_key=pool_key)
-    except Exception as e:
-        # Release semaphore if we failed to obtain a raw connection
-        if _pg_semaphore:
-            try:
-                _pg_semaphore.release()
-            except Exception:
-                pass
-        # Add stack for easier debugging of where acquisition failed
-        try:
-            st = ''.join(traceback.format_stack(limit=6))
-        except Exception:
-            st = ''
-        logger.error(f"❌ Failed to get conn from pool: {e}\n{st}")
-        raise
-
-
-# ── Public API ───────────────────────────────────────────────────
-
-def get_connection(db_path=None, timeout=30):
-    """
-    Drop-in replacement for sqlite3.connect() / get_db_connection().
-    When DATABASE_URL is set → PostgreSQL; otherwise → SQLite.
-    """
-    if USE_POSTGRES:
-        return get_pg_connection()
-    # SQLite fallback
-    return sqlite3.connect(db_path or 'data/raswet_gifts.db',
-                           timeout=timeout, check_same_thread=False,
-                           isolation_level='DEFERRED')
-
-
-def create_tables_pg(conn):
-    """Create all tables in PostgreSQL using PG-compatible DDL.
-    Called once during startup when USE_POSTGRES is True."""
-    cur = conn.cursor()
-    # The _create_all_tables in app.py will be called through the wrapper,
-    # which auto-translates SQLite DDL → PG DDL via _translate_query().
-    # This is just a safety check for PG-specific setup.
-    cur.execute("""
-        SELECT tablename FROM pg_tables 
-        WHERE schemaname = 'public'
-    """)
-    tables = {r[0] for r in cur.fetchall()}
-    conn.commit()
-    logger.info(f"PostgreSQL tables found: {len(tables)}")
-    return tables
+        cur = conn.cursor()
+        cur.execute("SET TIME ZONE 'UTC'")
+        cur.close()
+    except Exception:
+        conn.rollback()
+    return PGConnection(conn)
