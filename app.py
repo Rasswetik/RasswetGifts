@@ -5945,18 +5945,21 @@ def start_ultimate_crash_loop():
                             spooky_multiplier = round(random.uniform(_s_min, _s_max), 2)
                             logger.info(f"👻 SPOOKY ROUND! hidden multiplier: {spooky_multiplier}x")
 
-                    # PostgreSQL does not provide sqlite's cursor.lastrowid.
-                    # Always fetch the generated id explicitly on PostgreSQL.
+                    # PostgreSQL через db_wrapper может не отдавать строку
+                    # RETURNING id (зависит от реализации курсора/драйвера).
+                    # Поэтому вставляем без RETURNING и получаем id отдельным
+                    # SELECT в той же транзакции. Так игра не падает сразу после
+                    # успешной INSERT.
                     if USE_POSTGRES:
+                        _inserted_with_seed = False
                         try:
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
-                                RETURNING id
                             """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                            _row = cursor.fetchone()
-                            new_game_id = int(_row[0]) if _row else 0
-                        except Exception:
+                            _inserted_with_seed = True
+                        except Exception as insert_err:
+                            logger.warning(f'⚠️ Crash PG insert with seed failed, retrying legacy columns: {insert_err}')
                             try:
                                 conn.rollback()
                             except Exception:
@@ -5965,10 +5968,47 @@ def start_ultimate_crash_loop():
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP)
-                                RETURNING id
                             """, (target_multiplier,))
+
+                        new_game_id = 0
+                        try:
+                            if _inserted_with_seed:
+                                cursor.execute(
+                                    "SELECT id FROM ultimate_crash_games WHERE seed_hash = ? ORDER BY id DESC LIMIT 1",
+                                    (_round_seed_hash,)
+                                )
+                            else:
+                                cursor.execute(
+                                    "SELECT id FROM ultimate_crash_games WHERE status = 'counting' AND target_multiplier = ? ORDER BY id DESC LIMIT 1",
+                                    (target_multiplier,)
+                                )
                             _row = cursor.fetchone()
-                            new_game_id = int(_row[0]) if _row else 0
+                            if _row:
+                                new_game_id = int(_row[0])
+                        except Exception as select_err:
+                            logger.warning(f'⚠️ Crash PG id lookup by row failed: {select_err}')
+
+                        # Если обёртка БД всё ещё не вернула строку, используем
+                        # PostgreSQL sequence для последнего INSERT этой сессии.
+                        if not new_game_id:
+                            try:
+                                cursor.execute('SELECT LASTVAL()')
+                                _row = cursor.fetchone()
+                                if _row:
+                                    new_game_id = int(_row[0])
+                            except Exception as lastval_err:
+                                logger.warning(f'⚠️ Crash PG LASTVAL failed: {lastval_err}')
+
+                        # Последний безопасный fallback: тот же connection/transaction
+                        # видит только что вставленную запись.
+                        if not new_game_id:
+                            try:
+                                cursor.execute("SELECT id FROM ultimate_crash_games ORDER BY id DESC LIMIT 1")
+                                _row = cursor.fetchone()
+                                if _row:
+                                    new_game_id = int(_row[0])
+                            except Exception as latest_err:
+                                logger.warning(f'⚠️ Crash PG latest-id lookup failed: {latest_err}')
                     else:
                         try:
                             cursor.execute("""
@@ -5983,7 +6023,7 @@ def start_ultimate_crash_loop():
                         new_game_id = cursor.lastrowid
 
                     if not new_game_id:
-                        raise RuntimeError('Crash game was inserted but its id was not returned')
+                        raise RuntimeError('Crash game insert succeeded, but the database did not expose its id')
                     conn.commit()
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 New game, target={target_multiplier}x, bonus={is_bonus}")
@@ -12258,13 +12298,16 @@ def _portal_sync_floors():
         if not short_name:
             continue
 
+        floor_ton = round(_portal_float(c.get('floor_price')), 6)
         item = {
             'name': name,
             'fragment_slug': short_name,
             'fragment_url': f'https://fragment.com/gifts/{short_name}',
             'image': c.get('photo_url') or f'https://fragment.com/file/gifts/{short_name}/thumb.webp',
             'source': 'portal',
-            'portal_price_ton': round(_portal_float(c.get('floor_price')), 6),
+            'portal_price_ton': floor_ton,
+            'fragment_price_ton': floor_ton,
+            'value': int(round(floor_ton * 100)) if floor_ton > 0 else 0,
             'portal_listed_count': int(_portal_float(c.get('listed_count'))),
             'portal_day_volume': round(_portal_float(c.get('day_volume')), 6),
             'portal_supply': int(_portal_float(c.get('supply'))),
@@ -12310,17 +12353,32 @@ def _portal_sync_floors():
         changed = False
         for key in (
             'fragment_slug', 'fragment_url', 'image', 'portal_price_ton',
-            'portal_listed_count', 'portal_day_volume', 'portal_supply',
-            'portal_updated_at'
+            'fragment_price_ton', 'value', 'portal_listed_count',
+            'portal_day_volume', 'portal_supply', 'portal_updated_at'
         ):
             value = item.get(key)
+            # Не затираем нормальную старую цену нулём, если Portal временно
+            # вернул коллекцию без floor_price.
+            if key in ('value', 'fragment_price_ton', 'portal_price_ton') and _portal_float(value) <= 0 and _portal_float(target.get(key)) > 0:
+                continue
             if target.get(key) != value:
                 target[key] = value
                 changed = True
+        target['source'] = 'portal'
         if changed:
             updated += 1
 
-    save_gifts(gifts)
+    if not save_gifts(gifts):
+        return {'success': False, 'error': 'Не удалось сохранить каталог подарков после Portal sync'}
+
+    # Сразу обновляем внутреннее распределение подарков для всех игровых
+    # режимов. Ручного шага «В каталог» / «В режим» больше нет.
+    portal_items = []
+    for item in portal_catalog:
+        gift = by_slug.get(item['fragment_slug'])
+        if isinstance(gift, dict):
+            portal_items.append(dict(gift))
+    mode_sync = _portal_sync_catalog_to_all_modes(portal_items)
 
     global gifts_cache, gifts_cache_time
     gifts_cache = None
@@ -12341,9 +12399,10 @@ def _portal_sync_floors():
     except Exception:
         pass
 
+    sync_payload['mode_sync'] = mode_sync
     logger.info(
-        'Portal sync: обновлено %s, добавлено %s, коллекций %s',
-        updated, added, len(portal_catalog)
+        'Portal sync: обновлено %s, добавлено %s, коллекций %s, режимов синхронизировано %s',
+        updated, added, len(portal_catalog), mode_sync.get('synced', 0)
     )
     return {'success': True, **sync_payload}
 
@@ -12573,6 +12632,7 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
                     'fragment_url': f'https://fragment.com/gifts/{slug}',
                     'image': coll.get('photo_url') or _portal_collection_image_url(slug),
                     'source': 'portal',
+                    'gift_key': f'portal_{slug}',
                 }
                 gifts.append(target)
                 by_slug[slug] = target
@@ -13166,27 +13226,107 @@ def _portal_add_item_to_case(case_id, catalog_item, chance=1.0):
 
 
 def _portal_sync_catalog_to_all_modes(catalog_items):
-    """Make every Portal-synced gift immediately available in every game mode.
+    """Expose the complete Portal catalog in every game mode in one bulk write.
 
-    The mode JSON remains an internal runtime representation; admins no longer
-    need to manually add Portal gifts to individual pools. Existing per-item
-    tuning is preserved.
+    The mode JSON is only an internal runtime representation; there is no
+    manual catalog/pool step for the administrator. We intentionally avoid
+    calling _portal_add_item_to_mode() once per gift because that would reload
+    and rewrite the JSON file thousands of times during a full Portal sync.
+    Existing per-item loot tuning is preserved.
     """
-    items = [x for x in (catalog_items or []) if isinstance(x, dict)]
+    source_items = [x for x in (catalog_items or []) if isinstance(x, dict)]
+    items = []
+    seen_keys = set()
+    for raw in source_items:
+        item = dict(raw)
+        key = str(item.get('gift_key') or '').strip()
+        if not key:
+            slug = str(
+                item.get('fragment_slug') or
+                item.get('short_name') or
+                item.get('name') or
+                ''
+            ).strip().lower()
+            key = f'portal_{slug}' if slug else ''
+        if not key or key in seen_keys:
+            continue
+        seen_keys.add(key)
+        item['gift_key'] = key
+        # Portal is the canonical source; keep the stable key in gifts/modes.
+        item['portal_source'] = True
+        items.append(item)
+
     modes = _portal_available_mode_targets()
     synced = 0
     errors = []
-    for mode in modes:
-        mode_id = str(mode.get('id') or '').strip()
-        if not mode_id:
-            continue
-        for item in items:
-            try:
-                _portal_add_item_to_mode(mode_id, item)
-                synced += 1
-            except Exception as exc:
-                errors.append({'mode_id': mode_id, 'gift_key': item.get('gift_key') or item.get('fragment_slug'), 'error': str(exc)})
-    return {'modes': len(modes), 'items': len(items), 'synced': synced, 'errors': errors[:100]}
+
+    try:
+        with _mode_gift_pools_lock:
+            pools = _mode_gift_pools_load()
+            if not isinstance(pools, dict):
+                pools = {}
+
+            for mode in modes:
+                mode_id = str(mode.get('id') or '').strip()
+                if not mode_id:
+                    continue
+
+                pool = pools.get(mode_id)
+                if not isinstance(pool, list):
+                    pool = []
+
+                by_key = {
+                    str(x.get('gift_key') or x.get('id') or ''): x
+                    for x in pool
+                    if isinstance(x, dict) and str(x.get('gift_key') or x.get('id') or '')
+                }
+
+                for item in items:
+                    key = str(item.get('gift_key') or '')
+                    try:
+                        normalized = _mode_item_normalized(item)
+                        existing = by_key.get(key)
+                        if existing is not None:
+                            tuning = {
+                                k: existing.get(k)
+                                for k in ('enabled', 'weight', 'min_bet', 'max_bet', 'min_multiplier', 'max_multiplier')
+                                if k in existing
+                            }
+                            existing.update(normalized)
+                            existing.update(tuning)
+                        else:
+                            normalized.update({
+                                'enabled': True,
+                                'weight': 1.0,
+                                'min_bet': 0.0,
+                                'max_bet': 0.0,
+                                'min_multiplier': 0.0,
+                                'max_multiplier': 0.0,
+                            })
+                            pool.append(normalized)
+                            by_key[key] = normalized
+                        synced += 1
+                    except Exception as exc:
+                        errors.append({
+                            'mode_id': mode_id,
+                            'gift_key': key,
+                            'error': str(exc),
+                        })
+
+                pools[mode_id] = pool
+
+            if modes and not _mode_gift_pools_save(pools):
+                raise RuntimeError('Не удалось сохранить синхронизацию подарков по режимам')
+    except Exception as exc:
+        logger.error('Portal bulk mode sync failed: %s', exc)
+        errors.append({'mode_id': '*', 'gift_key': '*', 'error': str(exc)})
+
+    return {
+        'modes': len(modes),
+        'items': len(items),
+        'synced': synced,
+        'errors': errors[:100],
+    }
 
 
 def _portal_add_item_to_mode(mode_id, catalog_item):
