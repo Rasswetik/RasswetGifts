@@ -1544,7 +1544,7 @@ function renderEventSections(events){
    }
    fetch(url,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
      var c=d&&d.success?d.case:null;
-     if(!c){failRow('Кейс #'+id+' не найден в каталоге — обновите список кейсов');return}
+     if(!c){failRow('Кейс #'+id+' не найден — удалите привязку');return}
      row.innerHTML='<img src="'+escapeHtml(c.image||'/static/img/gift.png')+'" style="width:38px;height:38px;object-fit:contain;border-radius:8px"><span style="flex:1"><b>'+escapeHtml(c.name||'Кейс')+'</b><small style="display:block;color:rgba(255,255,255,.4)">'+(c.seasonal?'Сезонный':'Event')+' · можно редактировать</small></span><button class="btn btn-secondary btn-sm event-edit-case" type="button">Изменить</button><button class="event-remove-case" type="button">✕</button>';
      row.querySelector('.event-remove-case').onclick=function(){removeEventCase(row.dataset.sectionId,row.dataset.caseId)};
      var openEditor=function(){openEventCaseEditor(c,row.dataset.sectionId)};
@@ -2142,7 +2142,7 @@ function openCaseEditor(caseId, eventSectionId){
         $('ceImagePreview').innerHTML = '';
 
     } else {
-        var c = allCases.find(function(x){ return String(x.id) === String(caseId); });
+        var c = allCases.find(function(x){ return x.id === caseId; });
         if(!c){ showToast('Кейс не найден', 'err'); return; }
         currentCase = JSON.parse(JSON.stringify(c));
         if(eventSectionId) currentCase.event_section_id = eventSectionId;
@@ -2350,17 +2350,15 @@ async function openCaseModelPicker(baseGift, portalCatalog){
         return String(c.short_name||'').toLowerCase()===slug;
     });
 
-    // Always ask the model endpoint when a collection is opened. It enriches
-    // the Portal snapshot with model-specific price/image data (including local PNG
-    // previews when a matching Portal listing is available).
+    // If Portal snapshot has no model data, try the existing model endpoint as fallback.
     var models=coll&&Array.isArray(coll.models)?coll.models.slice():[];
-    if(slug){
+    if(!models.length && slug){
         try{
             var r=await fetch('/api/fragment-gift-models?slug='+encodeURIComponent(slug)+'&name='+encodeURIComponent(baseGift.name||'')+'&ts='+Date.now(),{cache:'no-store'});
             var d=await r.json();
-            if(r.ok&&d.success&&Array.isArray(d.models)&&d.models.length){
+            if(r.ok&&d.success&&Array.isArray(d.models)){
                 models=d.models.map(function(m){
-                    return {name:m.model_name||m.name||'Model',floor_price:Number(m.fragment_price_ton||m.portal_price_ton||m.value/100||0),image:m.image||'',_fragment:m};
+                    return {name:m.model_name||m.name||'Model',floor_price:Number(m.fragment_price_ton||m.portal_price_ton||0),_fragment:m};
                 });
             }
         }catch(e){}
@@ -2380,25 +2378,16 @@ async function openCaseModelPicker(baseGift, portalCatalog){
 
     var html =
         '<div class="modal-title">'+escapeHtml(cleanCaseGiftName(coll.name||baseGift.name||'Gift'))+'</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,.48);margin-bottom:10px">Можно добавить обычный подарок, случайную модель или конкретную модель.</div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,.48);margin-bottom:10px">Выбери вариант для кейса.</div>' +
         '<div class="portal-target-list">' +
-          '<button class="portal-target-btn" id="caseBaseGiftBtn"><b>🎁 Обычный подарок</b><small>Основное изображение и цена коллекции</small></button>' +
           '<button class="portal-target-btn" id="caseRandomModelBtn"><b>🎲 Случайная модель</b><small>Модель выбирается при выигрыше</small></button>' +
           (models.length ? models.map(function(m,i){
-              var p=Number(m.floor_price||m.portal_price_ton||0);
-              var img=m.image||m.photo_url||'/static/img/gift.png';
-              return '<button class="portal-target-btn case-model-choice" data-model-index="'+i+'"><span style="display:flex;align-items:center;gap:10px;text-align:left"><img src="'+escapeHtml(img)+'" onerror="this.src=\'/static/img/gift.png\'" style="width:42px;height:42px;object-fit:contain;border-radius:8px;background:rgba(0,0,0,.2)"><span><b style="display:block">'+escapeHtml(m.name||'Model')+'</b><small>'+(p>0?p.toFixed(3)+' TON':'модель')+'</small></span></span></button>';
-          }).join('') : '<div class="empty">У этого подарка список моделей не найден. Можно выбрать обычный подарок или случайную модель.</div>') +
+              var p=Number(m.floor_price||0);
+              return '<button class="portal-target-btn case-model-choice" data-model-index="'+i+'"><b>'+escapeHtml(m.name||'Model')+'</b><small>'+(p>0?p.toFixed(3)+' TON':'модель')+'</small></button>';
+          }).join('') : '<div class="empty">У этого подарка список моделей не найден. Можно выбрать случайную модель.</div>') +
         '</div>';
     openModal(html);
 
-    $('caseBaseGiftBtn').onclick=function(){
-        var gift=Object.assign({},baseGift);
-        gift.model_random=false; gift.model_name=''; gift.portal_model_name=''; gift.type='gift';
-        gift.image=baseGift.image||coll.photo_url||'/static/img/gift.png';
-        gift.value=Number(baseGift.value||Math.round(Number(coll.floor_price||0)*100)||0);
-        addCaseGiftEntry(gift);
-    };
     $('caseRandomModelBtn').onclick=function(){addCaseRandomModel(coll,baseGift);};
     document.querySelectorAll('.case-model-choice').forEach(function(btn){
         btn.onclick=function(){
@@ -3558,9 +3547,27 @@ if(tg){
         return portalDailyCatalog.find(function(c){return String(c.short_name||'').toLowerCase()===slug;})||null;
     }
 
+    // Belt-and-braces client-side timeout for every Portal call. Without this,
+    // if a request ever stalls (dead proxy connection, browser tab asleep on
+    // mobile, etc.) the button spinner ("Подключение...") would spin forever
+    // with no way to recover short of a page reload. Wrapping fetch in an
+    // AbortController guarantees the promise always settles within `ms`.
+    function portalFetch(url, opts, ms){
+        ms = ms || 30000;
+        var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        var id = ctrl ? setTimeout(function(){ctrl.abort();}, ms) : null;
+        var finalOpts = Object.assign({}, opts||{}, ctrl ? {signal: ctrl.signal} : {});
+        return fetch(url, finalOpts).catch(function(e){
+            if(e && e.name === 'AbortError'){
+                throw new Error('Portal не ответил за ' + Math.round(ms/1000) + ' сек — сервер завис или недоступен');
+            }
+            throw e;
+        }).finally(function(){ if(id) clearTimeout(id); });
+    }
+
     window.loadPortalStatus=async function(){
         try{
-            var r=await fetch('/api/portal/status?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var r=await portalFetch('/api/portal/status?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
             var d=await r.json();
             if(!r.ok||d.success===false)throw new Error(d.error||'Ошибка Portal');
             var connected=!!d.connected;
@@ -3582,10 +3589,10 @@ if(tg){
         if(!token){showToast('Вставь Portal initData / Authorization','err');return;}
         if(btn){btn.disabled=true;btn.textContent='⏳ Подключение...';}
         try{
-            var r=await fetch('/api/portal/save-token',{
+            var r=await portalFetch('/api/portal/save-token',{
                 method:'POST',headers:{'Content-Type':'application/json'},
                 body:JSON.stringify({admin_id:ADMIN_ID,token:token})
-            });
+            }, 50000);
             var d=await r.json();
             if(!r.ok||d.success===false)throw new Error(d.error||'Ошибка');
             if(input)input.value='';
@@ -3600,7 +3607,7 @@ if(tg){
     window.deletePortalToken=async function(){
         if(!confirm('Отключить Portal Market?'))return;
         try{
-            var r=await fetch('/api/portal/logout',{
+            var r=await portalFetch('/api/portal/logout',{
                 method:'POST',headers:{'Content-Type':'application/json'},
                 body:JSON.stringify({admin_id:ADMIN_ID})
             });
@@ -3615,10 +3622,10 @@ if(tg){
         var btn=document.getElementById('portalDailySyncTopBtn');
         if(btn){btn.disabled=true;btn.textContent='Запускаю...';}
         try{
-            var r=await fetch('/api/portal/daily-sync',{
+            var r=await portalFetch('/api/portal/daily-sync',{
                 method:'POST',headers:{'Content-Type':'application/json'},
                 body:JSON.stringify({admin_id:ADMIN_ID})
-            });
+            }, 50000);
             var d=await r.json();
             if(!r.ok||d.success===false)throw new Error(d.error||'Не удалось запустить обновление');
             showToast(d.message||'Полное обновление запущено','ok');
@@ -3629,7 +3636,7 @@ if(tg){
 
     async function loadPortalHourlyStatus(){
         try{
-            var r=await fetch('/api/portal/daily-status?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var r=await portalFetch('/api/portal/daily-status?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
             var d=await r.json();
             if(!r.ok||d.success===false)throw new Error(d.error||'Ошибка status');
             var job=d.job||{}, running=!!job.running;
@@ -3699,7 +3706,7 @@ if(tg){
         var list=document.getElementById('portalDailyCatalogList');
         if(list&&!portalDailyCatalog.length)list.innerHTML='<div class="loading">Загрузка Portal Market</div>';
         try{
-            var r=await fetch('/api/portal/daily-catalog?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var r=await portalFetch('/api/portal/daily-catalog?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
             var d=await r.json();
             if(!r.ok||d.success===false)throw new Error(d.error||'Не удалось загрузить каталог');
             portalDailyCatalog=Array.isArray(d.collections)?d.collections:[];
@@ -3872,7 +3879,7 @@ if(tg){
         var box=document.getElementById('portalDiagnostics');
         if(box){box.style.display='block';box.className='portal-diagnostics';box.textContent='Проверяю Portal API...';}
         try{
-            var r=await fetch('/api/portal/diagnostics?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'});
+            var r=await portalFetch('/api/portal/diagnostics?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'}, 50000);
             var d=await r.json();
             if(!r.ok||!d.success)throw Error(d.error||'Portal не отвечает');
             if(box){
