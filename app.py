@@ -34,7 +34,7 @@ try:
 except Exception:
     _portal_curl_requests = None
     _PORTAL_CURL_AVAILABLE = False
-# PostgreSQL-only build. SQLite fallback is intentionally disabled
+# PostgreSQL-only build. SQLite fallback is intentionally disabled.
 try:
     from db_wrapper import USE_POSTGRES, get_connection as _pg_get_connection
 except Exception as _db_import_error:
@@ -27864,7 +27864,6 @@ _register_bundled_module('admin_services', (
     'import os\n'
     'import re\n'
     'import secrets\n'
-    'import sqlite3\n'
     'import threading\n'
     'import time\n'
     'from concurrent.futures import ThreadPoolExecutor, as_completed\n'
@@ -27891,8 +27890,8 @@ _register_bundled_module('admin_services', (
     '\n'
     'def install(n):\n'
     "    app = n['app']\n"
-    "    if n['USE_POSTGRES'] or os.getenv('DATABASE_URL'):\n"
-    "        raise RuntimeError('This archive supports SQLite only. Set DB_DIR to a persistent volume and remove DATABASE_URL; no PostgreSQL adapter was supplied.')\n"
+    "    if not n.get('USE_POSTGRES') or not os.getenv('DATABASE_URL'):\n"
+    "        raise RuntimeError('PostgreSQL is required. Set DATABASE_URL in Render Environment.')\n"
     "    app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Strict',\n"
     "                      SESSION_COOKIE_SECURE=os.getenv('COOKIE_SECURE') == '1',\n"
     '                      MAX_CONTENT_LENGTH=16 * 1024 * 1024)\n'
@@ -27911,61 +27910,45 @@ _register_bundled_module('admin_services', (
     '\n'
     '    @contextmanager\n'
     '    def db(write=False):\n'
-    "        con = sqlite3.connect(n['DB_PATH'], timeout=5)\n"
-    '        con.row_factory = sqlite3.Row\n'
-    "        con.execute('PRAGMA busy_timeout=5000')\n"
-    "        con.execute('PRAGMA foreign_keys=ON')\n"
-    "        con.execute('PRAGMA synchronous=NORMAL')\n"
-    "        con.execute('PRAGMA temp_store=MEMORY')\n"
-    "        con.execute('PRAGMA cache_size=-16000')\n"
+    "        con = n['_pg_get_connection']()\n"
     '        try:\n'
     '            if write:\n'
-    "                con.execute('BEGIN IMMEDIATE')\n"
+    "                con.execute('BEGIN')\n"
     '            yield con\n'
     '            if write:\n'
     '                con.commit()\n'
     '        except Exception:\n'
-    '            con.rollback()\n'
+    '            try:\n'
+    '                con.rollback()\n'
+    '            except Exception:\n'
+    '                pass\n'
     '            raise\n'
     '        finally:\n'
-    '            con.close()\n'
+    '            try:\n'
+    '                con.close()\n'
+    '            except Exception:\n'
+    '                pass\n'
     '\n'
-    '    # Create legacy schema first, then additive migrations; never remove data.\n'
+    '    # PostgreSQL schema is created by the main application initializer.\n'
+    '    # This bundled service only performs PostgreSQL-safe additive migrations.\n'
     '    with db() as con:\n'
-    "        con.execute('PRAGMA journal_mode=WAL')\n"
     "        if not n['_create_all_tables'](con):\n"
-    "            raise RuntimeError('Could not initialize database')\n"
+    "            raise RuntimeError('Could not initialize PostgreSQL database')\n"
     '        con.commit()\n'
     '    with db(True) as con:\n'
-    '        # Older databases require inventory_id even after the gift is delivered.\n'
-    '        # Rebuild only this table, preserving columns, rows and custom indexes.\n'
-    "        withdrawal_cols = list(con.execute('PRAGMA table_info(withdrawals)'))\n"
-    "        if any(c[1] == 'inventory_id' and c[3] for c in withdrawal_cols):\n"
-    '            schema = con.execute("SELECT sql FROM sqlite_master WHERE type=\'table\' AND name=\'withdrawals\'").fetchone()[0]\n'
-    '            indexes = [r[0] for r in con.execute("SELECT sql FROM sqlite_master WHERE type=\'index\' AND tbl_name=\'withdrawals\' AND sql IS NOT NULL")]\n'
-    "            schema = schema.replace('inventory_id INTEGER NOT NULL', 'inventory_id INTEGER')\n"
-    "            schema = schema.replace('CREATE TABLE withdrawals', 'CREATE TABLE withdrawals_migrated', 1)\n"
-    "            schema = schema.replace('CREATE TABLE IF NOT EXISTS withdrawals', 'CREATE TABLE withdrawals_migrated', 1)\n"
-    '            con.execute(schema)\n'
-    '            columns = \',\'.join(\'"\' + c[1].replace(\'"\', \'""\') + \'"\' for c in withdrawal_cols)\n'
-    "            con.execute(f'INSERT INTO withdrawals_migrated ({columns}) SELECT {columns} FROM withdrawals')\n"
-    "            con.execute('DROP TABLE withdrawals')\n"
-    "            con.execute('ALTER TABLE withdrawals_migrated RENAME TO withdrawals')\n"
-    '            for sql in indexes:\n'
-    '                con.execute(sql)\n'
-    "        con.execute('CREATE TABLE IF NOT EXISTS app_documents (key TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at REAL NOT NULL)')\n"
-    "        con.execute('CREATE TABLE IF NOT EXISTS admin_audit (id INTEGER PRIMARY KEY, actor TEXT, action TEXT, target TEXT, created_at REAL)')\n"
-    "        con.execute('CREATE TABLE IF NOT EXISTS level_grants (user_id INTEGER, level INTEGER, PRIMARY KEY(user_id,level))')\n"
-    "        cols = {x[1] for x in con.execute('PRAGMA table_info(inventory)')}\n"
+    "        con.execute('CREATE TABLE IF NOT EXISTS app_documents (key TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at DOUBLE PRECISION NOT NULL)')\n"
+    "        con.execute('CREATE TABLE IF NOT EXISTS admin_audit (id BIGSERIAL PRIMARY KEY, actor TEXT, action TEXT, target TEXT, created_at DOUBLE PRECISION)')\n"
+    "        con.execute('CREATE TABLE IF NOT EXISTS level_grants (user_id BIGINT, level INTEGER, PRIMARY KEY(user_id,level))')\n"
     "        for col, kind in [('model_name','TEXT'), ('fragment_slug','TEXT'), ('gift_key','TEXT'), ('animation','TEXT')]:\n"
-    '            if col not in cols:\n'
-    "                con.execute(f'ALTER TABLE inventory ADD COLUMN {col} {kind}')\n"
+    "            con.execute(f'ALTER TABLE inventory ADD COLUMN IF NOT EXISTS {col} {kind}')\n"
     "        for name, table, columns in [('idx_inventory_user','inventory','user_id,is_withdrawing'),\n"
     "                                     ('idx_withdraw_status','withdrawals','status,created_at'),\n"
     "                                     ('idx_history_user','user_history','user_id,created_at')]:\n"
     "            con.execute(f'CREATE INDEX IF NOT EXISTS {name} ON {table}({columns})')\n"
     "        if not con.execute('SELECT 1 FROM levels LIMIT 1').fetchone():\n"
-    "            con.executemany('INSERT INTO levels(level,exp_required,reward_stars,reward_tickets) VALUES (:level,:exp_required,:reward_stars,:reward_tickets)', defaults)\n"
+    "            for level in defaults:\n"
+    "                con.execute('INSERT INTO levels(level,exp_required,reward_stars,reward_tickets) VALUES (%s,%s,%s,%s) ON CONFLICT (level) DO NOTHING',\n"
+    "                            (level['level'],level['exp_required'],level['reward_stars'],level['reward_tickets']))\n"
     "    n['_db_ready'] = True\n"
     "    n['safe_init_db'] = lambda *args, **kwargs: True\n"
     '\n'
