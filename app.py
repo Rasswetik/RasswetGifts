@@ -545,6 +545,8 @@ def _portal_do_sync(token):
                     'fragment_url': f'https://fragment.com/gifts/{short_name}',
                     'image': preview,
                     'source': 'portal',
+                    'portal_price_ton': round(floor_price, 6) if floor_price > 0 else 0,
+                    'value': int(round(floor_price * 100)) if floor_price > 0 else 0,
                 }
                 if floor_price > 0:
                     item['fragment_price_ton'] = round(floor_price, 4)
@@ -603,11 +605,15 @@ def _portal_do_sync(token):
             if old_value != new_value:
                 updated += 1
 
-        with open(gifts_path, 'w', encoding='utf-8') as f:
-            if wrap_dict:
-                json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
-            else:
-                json.dump(gifts, f, ensure_ascii=False, indent=2)
+        # Save through the canonical writer so the persistent catalog and the
+        # legacy gifts.json can never diverge. Previously this endpoint only
+        # rewrote data/gifts.json while load_gifts() preferred the persistent
+        # copy, which is why the admin could show 0 price / missing images.
+        if not save_gifts(gifts):
+            return {'success': False, 'error': 'Не удалось сохранить канонический каталог подарков'}
+
+        portal_items = [dict(x) for x in gifts if isinstance(x, dict) and str(x.get('source') or '').lower() == 'portal']
+        mode_sync = _portal_sync_catalog_to_all_modes(portal_items)
 
         # Сброс кэшей
         global gifts_cache, gifts_cache_time
@@ -633,6 +639,7 @@ def _portal_do_sync(token):
             'updated': updated,
             'total': len(gifts),
             'collections': len(portal_catalog),
+            'mode_sync': mode_sync,
         }
     except Exception as e:
         logger.error(f'_portal_do_sync error: {e}')
@@ -12571,8 +12578,16 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
                 by_slug[slug] = target
                 added += 1
 
+            floor_ton = round(_portal_float(coll.get('floor_price')), 6)
+            image_url = str(coll.get('photo_url') or '').strip() or _portal_collection_image_url(slug)
             new_values = {
-                'portal_price_ton': round(_portal_float(coll.get('floor_price')), 6),
+                # Canonical catalog fields: the Portal sync is the source of truth.
+                # Never leave value/image at their old zero/empty values when Portal
+                # has a floor and a preview.
+                'image': image_url,
+                'fragment_price_ton': floor_ton,
+                'value': int(round(floor_ton * 100)) if floor_ton > 0 else int(target.get('value') or 0),
+                'portal_price_ton': floor_ton,
                 'portal_models': coll.get('models') or [],
                 'portal_model_count': len(coll.get('models') or []),
                 'portal_listed_count': int(_portal_float(coll.get('listed_count'))),
@@ -12591,7 +12606,19 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
                 changed += 1
 
         save_gifts(gifts)
-        return {'changed': changed, 'added': added, 'total': len(gifts)}
+
+        # Portal sync is authoritative: immediately expose every synced gift in
+        # every game mode. There is no manual 'add to catalog / add to pool' step.
+        portal_items = []
+        for coll in collections:
+            slug = str(coll.get('short_name') or '').strip().lower()
+            if not slug:
+                continue
+            gift = by_slug.get(slug)
+            if gift:
+                portal_items.append(dict(gift))
+        mode_sync = _portal_sync_catalog_to_all_modes(portal_items)
+        return {'changed': changed, 'added': added, 'total': len(gifts), 'mode_sync': mode_sync}
 
     except Exception as e:
         logger.error("Portal snapshot -> gifts.json failed: %s", e)
@@ -13136,6 +13163,30 @@ def _portal_add_item_to_case(case_id, catalog_item, chance=1.0):
     if not save_cases(cases):
         raise RuntimeError('Не удалось сохранить кейс')
     return case
+
+
+def _portal_sync_catalog_to_all_modes(catalog_items):
+    """Make every Portal-synced gift immediately available in every game mode.
+
+    The mode JSON remains an internal runtime representation; admins no longer
+    need to manually add Portal gifts to individual pools. Existing per-item
+    tuning is preserved.
+    """
+    items = [x for x in (catalog_items or []) if isinstance(x, dict)]
+    modes = _portal_available_mode_targets()
+    synced = 0
+    errors = []
+    for mode in modes:
+        mode_id = str(mode.get('id') or '').strip()
+        if not mode_id:
+            continue
+        for item in items:
+            try:
+                _portal_add_item_to_mode(mode_id, item)
+                synced += 1
+            except Exception as exc:
+                errors.append({'mode_id': mode_id, 'gift_key': item.get('gift_key') or item.get('fragment_slug'), 'error': str(exc)})
+    return {'modes': len(modes), 'items': len(items), 'synced': synced, 'errors': errors[:100]}
 
 
 def _portal_add_item_to_mode(mode_id, catalog_item):
@@ -14495,6 +14546,8 @@ def pre_upgrade_gift():
 def upgrade_gift():
     """Upgrade a random gift to an NFT-linked gift. Accepts optional pre-determined nft_number."""
     conn = None
+    # Use a dedicated DB connection for the whole upgrade transaction. This
+    # avoids the request-cached cursor being closed/reused by another helper.
     try:
         data = request.get_json()
         user_id = int(data.get('user_id', 0))
@@ -14502,34 +14555,29 @@ def upgrade_gift():
         if not user_id or not inventory_id:
             return jsonify({'success': False, 'error': 'Missing data'})
 
-        conn = get_db_connection()
+        conn = _quick_db_conn(timeout=30)
         cursor = conn.cursor()
 
         cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ?', (inventory_id, user_id))
         raw = cursor.fetchone()
         if not raw:
-            conn.close()
             return jsonify({'success': False, 'error': 'Gift not found'})
         columns = [desc[0] for desc in cursor.description]
         gift = dict(zip(columns, raw))
 
         if gift.get('is_upgraded'):
-            conn.close()
             return jsonify({'success': False, 'error': 'Already upgraded'})
 
         if gift.get('crate_id'):
-            conn.close()
             return jsonify({'success': False, 'error': 'Cannot upgrade a crate'})
 
         # Non-upgradeable gifts (regular Telegram gifts)
         if gift.get('gift_id') in NON_UPGRADEABLE_GIFT_IDS:
-            conn.close()
             return jsonify({'success': False, 'error': 'Этот подарок нельзя улучшить'})
 
         # Check active challenge
         cursor.execute('SELECT id FROM promo_gift_challenges WHERE inventory_id = ? AND is_completed = FALSE', (inventory_id,))
         if cursor.fetchone():
-            conn.close()
             return jsonify({'success': False, 'error': 'Gift locked by challenge'})
 
         # Calculate dynamic upgrade cost (5% of gift value, min 0.3 TON, max 10 TON)
@@ -14540,7 +14588,6 @@ def upgrade_gift():
         cursor.execute('SELECT balance_stars FROM users WHERE id = ?', (user_id,))
         row = cursor.fetchone()
         if not row or row[0] < upgrade_cost:
-            conn.close()
             return jsonify({'success': False, 'error': 'Insufficient balance'})
 
         # Deduct cost
