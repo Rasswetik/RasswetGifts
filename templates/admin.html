@@ -878,9 +878,9 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="portal-status-card">
             <div class="portal-market-head">
                 <div>
-                    <div style="font-weight:900;font-size:16px">Portal Market — Каталог подарков</div>
+                    <div style="font-weight:900;font-size:16px">Portal Market — Hourly Catalog</div>
                     <div style="font-size:10px;color:rgba(255,255,255,.45);margin-top:3px">
-                        Встроенный Portal Market: все коллекции, все модели и floor-цены. Полный sync раз в 10 минут.
+                        Встроенный Portal Market: все коллекции, все модели и floor-цены. Полный sync раз в час.
                     </div>
                 </div>
                 <span class="status-pill off" id="portalStatusPill"><span class="dot"></span><span id="portalStatusText">Проверка...</span></span>
@@ -892,7 +892,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
                 <div class="portal-market-stat"><small>Моделей</small><b id="portalModelsCountText">0</b></div>
                 <div class="portal-market-stat"><small>Последний sync</small><b id="portalDailyUpdatedText">никогда</b></div>
                 <div class="portal-market-stat"><small>Следующий sync</small><b id="portalNextUpdateText">—</b></div>
-                <div class="portal-market-stat"><small>Автообновление</small><b id="portalAutoText">каждые 10 минут</b></div>
+                <div class="portal-market-stat"><small>Автообновление</small><b id="portalAutoText">каждый час</b></div>
             </div>
 
             <div class="portal-live-note">
@@ -1157,7 +1157,7 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 /* ══════════════════════════════════════════════════════════════
    STATE
    ══════════════════════════════════════════════════════════════ */
-var ADMIN_ID = {{ admin_id|tojson }};
+var ADMIN_ID = 5257227756;
 var tg = window.Telegram && window.Telegram.WebApp;
 var currentTgUser = null;
 var adminVerified = false;
@@ -1489,7 +1489,7 @@ async function bindModeEditor(modeId,editMeta){
             giftSel.onchange=function(){
                 var c=catalog.find(function(x){return String(x.short_name||'')===String(giftSel.value||'');});
                 var models=c&&Array.isArray(c.models)?c.models:[];
-                modelSel.innerHTML='<option value="">Обычный подарок</option>'+models.map(function(m){return '<option value="'+escapeHtml(m.name||'')+'">'+escapeHtml(m.name||'Model')+(Number(m.floor_price||0)>0?' · '+Number(m.floor_price).toFixed(3)+' GRAM':'')+'</option>';}).join('');
+                modelSel.innerHTML='<option value="">Обычный подарок</option>'+models.map(function(m){return '<option value="'+escapeHtml(m.name||'')+'">'+escapeHtml(m.name||'Model')+(Number(m.floor_price||0)>0?' · '+Number(m.floor_price).toFixed(3)+' TON':'')+'</option>';}).join('');
             };
         }
     }catch(e){
@@ -2016,7 +2016,7 @@ function renderUsers(users){
             '<div class="avatar">' + av + '</div>' +
             '<div class="info"><div class="name">' + escapeHtml(u.first_name || ('User ' + u.id)) + '</div>' +
             '<div class="meta"><span>ID: ' + u.id + '</span><span>@' + escapeHtml(u.username || '—') + '</span></div></div>' +
-            '<div class="right"><div class="value">💎 ' + formatTon(u.balance_stars) + ' GRAM</div></div>' +
+            '<div class="right"><div class="value">💎 ' + formatTon(u.balance_stars) + '</div></div>' +
             '</div>';
     }).join('');
 }
@@ -2036,8 +2036,8 @@ async function openUserModal(userId){
     var html =
         '<div class="modal-title">👤 ' + escapeHtml(currentUser.first_name || ('User ' + userId)) + '</div>' +
         '<div class="card"><div class="card-title">Баланс и уровень</div>' +
-        '<div class="form-group"><label class="form-label">Баланс, GRAM</label><input type="number" step="0.01" min="0" class="form-input" id="userBalanceInput" value="' + ((Number(currentUser.balance_stars || 0)/100).toFixed(2)) + '"></div>' +
-        '<div class="form-group"><label class="form-label">Уровень</label><input type="number" class="form-input" id="userLevelInput" min="1" value="' + (currentUser.level || 1) + '"></div>' +
+        '<div class="form-group"><label class="form-label">GRAM</label><input type="number" class="form-input" id="userBalanceInput" value="' + (currentUser.balance_stars || 0) + '"></div>' +
+        '<div class="form-group"><label class="form-label">Уровень</label><input type="number" class="form-input" id="userLevelInput" min="1" max="25" value="' + (currentUser.level || 1) + '"></div>' +
         '<button class="btn btn-success" onclick="saveUserData()">💾 Сохранить</button></div>' +
         '<div class="card"><div class="card-title">RTP буст (0–100)</div>' +
         '<div class="form-group"><input type="number" class="form-input" id="userRtpInput" min="0" max="100" value="40"></div>' +
@@ -2061,7 +2061,7 @@ async function saveUserData(){
     var bal = parseFloat($('userBalanceInput').value) || 0;
     var lvl = parseInt($('userLevelInput').value) || 1;
     try{
-        var r = await fetch('/api/admin/update-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: currentUser.id, balance_stars: Math.round(bal * 100), level: lvl}) });
+        var r = await fetch('/api/admin/update-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: currentUser.id, balance_stars: Math.round(bal), level: lvl}) });
         var d = await r.json();
         if(d.success){ showToast('Сохранено', 'ok'); closeModal(); loadUsers(); }
         else showToast(d.error || 'Ошибка', 'err');
@@ -2503,7 +2503,7 @@ async function openCaseModelPicker(baseGift, portalCatalog){
           '<button class="portal-target-btn" id="caseRandomModelBtn"><b>🎲 Случайная модель</b><small>Модель выбирается при выигрыше</small></button>' +
           (models.length ? models.map(function(m,i){
               var p=Number(m.floor_price||0);
-              return '<button class="portal-target-btn case-model-choice" data-model-index="'+i+'"><b>'+escapeHtml(m.name||'Model')+'</b><small>'+(p>0?p.toFixed(3)+' GRAM':'модель')+'</small></button>';
+              return '<button class="portal-target-btn case-model-choice" data-model-index="'+i+'"><b>'+escapeHtml(m.name||'Model')+'</b><small>'+(p>0?p.toFixed(3)+' TON':'модель')+'</small></button>';
           }).join('') : '<div class="empty">У этого подарка список моделей не найден. Можно выбрать случайную модель.</div>') +
         '</div>';
     openModal(html);
@@ -2706,14 +2706,14 @@ function renderPromoRow(p){
     var typeLabel = typeLabels[p.reward_type] || ('⭐ ' + (p.reward_type || 'stars'));
     
     var rewardInfo = '';
-    if(p.reward_type === 'stars') rewardInfo = '+' + formatTon(p.reward_stars || 0) + ' GRAM';
+    if(p.reward_type === 'stars') rewardInfo = '+' + (p.reward_stars || 0) + '⭐';
     else if(p.reward_type === 'tickets') rewardInfo = '+' + (p.reward_tickets || 0) + '🎫';
-    else if(p.reward_type === 'stars+tickets') rewardInfo = '+' + formatTon(p.reward_stars || 0) + ' GRAM +' + (p.reward_tickets || 0) + '🎫';
+    else if(p.reward_type === 'stars+tickets') rewardInfo = '+' + (p.reward_stars || 0) + '⭐ +' + (p.reward_tickets || 0) + '🎫';
     else if(p.reward_type === 'crash_vip') rewardInfo = (p.reward_data && p.reward_data.days || '?') + ' дней';
     else if(p.reward_type === 'rocket') rewardInfo = (p.reward_data && p.reward_data.rocket_id) || '?';
     else if(p.reward_type === 'background') rewardInfo = (p.reward_data && p.reward_data.background_id) || '?';
-    else if(p.reward_type === 'wager') rewardInfo = formatTon(p.reward_data && p.reward_data.amount || 0) + ' GRAM x' + (p.reward_data && p.reward_data.multiplier || 0);
-    else if(p.reward_type === 'gift_challenge') rewardInfo = 'Цель: ' + formatTon(p.reward_data && p.reward_data.target_wager || 0) + ' GRAM';
+    else if(p.reward_type === 'wager') rewardInfo = (p.reward_data && p.reward_data.amount || 0) + '⭐ x' + (p.reward_data && p.reward_data.multiplier || 0);
+    else if(p.reward_type === 'gift_challenge') rewardInfo = 'Цель: ' + (p.reward_data && p.reward_data.target_wager || 0) + '⭐';
     else if(p.reward_type === 'case_open') rewardInfo = 'Кейс #' + (p.reward_data && p.reward_data.case_id || '?');
     
     var usesInfo = (p.used_count || 0) + '/' + (p.max_uses || '∞');
@@ -3752,7 +3752,7 @@ if(tg){
             if(m)m.textContent=Number(d.total_models||job.models||0).toLocaleString('ru-RU');
             if(u)u.textContent=fmtTime(d.updated_at);
             if(n)n.textContent=d.next_update_at?fmtTime(d.next_update_at):'после первого sync';
-            if(a)a.textContent='каждые '+Number(d.interval_minutes||10)+' мин';
+            if(a)a.textContent='каждые '+Number(d.interval_minutes||60)+' мин';
 
             var wrap=document.getElementById('portalDailyProgress');
             var bar=document.getElementById('portalDailyProgressBar');
@@ -3896,7 +3896,7 @@ if(tg){
                       '<div class="portal-item-meta">'+portalEsc(c.name||'Gift')+' · модель</div>'+
                       actionButtons(c,m)+
                     '</div>'+
-                    '<div class="portal-item-price">'+(mp>0?mp.toFixed(3)+' GRAM':'—')+'</div>'+
+                    '<div class="portal-item-price">'+(mp>0?mp.toFixed(3)+' TON':'—')+'</div>'+
                 '</div>';
               }).join('');
             }
@@ -3909,7 +3909,7 @@ if(tg){
                   '<div class="portal-price-meta"><span>'+(models.length)+' моделей</span><span>'+Number(c.listed_count||0).toLocaleString('ru-RU')+' listed</span></div>'+
                   actionButtons(c,null)+
                 '</div>'+
-                '<div class="portal-item-price">'+(price>0?price.toFixed(3)+' GRAM':'—')+'</div>'+
+                '<div class="portal-item-price">'+(price>0?price.toFixed(3)+' TON':'—')+'</div>'+
               '</div>'+modelHtml+
             '</div>';
         }).join('');
@@ -4068,12 +4068,12 @@ if(tg){
 
     window.startPortalDailyPolling=function(fast){
         if(portalDailyPoll)clearInterval(portalDailyPoll);
-        var interval=fast?2500:600000;
+        var interval=fast?2500:60000;
         portalDailyPoll=setInterval(async function(){
             if(typeof currentSection!=='undefined'&&currentSection!=='portal')return;
             var d=await loadPortalHourlyStatus();
             if(d&&d.job&&d.job.running&&interval!==2500)startPortalDailyPolling(true);
-            else if(d&&d.job&&!d.job.running&&interval!==600000)startPortalDailyPolling(false);
+            else if(d&&d.job&&!d.job.running&&interval!==60000)startPortalDailyPolling(false);
         },interval);
     };
 
@@ -4081,218 +4081,5 @@ if(tg){
 })();
 </script>
 
-<script id="admin-upgrade-embedded-js">
-/* Admin 2026: authenticated requests, paginated catalog and explicit errors. */
-(function () {
-  'use strict';
-  let csrf = '', ready = false, offset = 0, total = 0, timer, generation = 0;
-  const nativeFetch = window.fetch.bind(window);
-  window.fetch = function (url, options = {}) {
-    const target = new URL(typeof url === 'string' ? url : url.url, location.href);
-    if (target.origin === location.origin && target.pathname.startsWith('/api/')) {
-      const headers = new Headers(options.headers || {});
-      if (csrf) headers.set('X-CSRF-Token', csrf);
-      if (window.Telegram?.WebApp?.initData) headers.set('X-Telegram-Init-Data', Telegram.WebApp.initData);
-      options = {...options, headers, credentials: 'same-origin'};
-    }
-    return nativeFetch(url, options);
-  };
-  async function api(url, data, method) {
-    const opts = data === undefined ? {} : {method: method || 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({admin_id: ADMIN_ID, ...data})};
-    opts.signal = AbortSignal.timeout(30000);
-    const response = await fetch(url, opts);
-    const result = await response.json();
-    if (!response.ok || result.success === false) throw Error(result.error || 'Не удалось выполнить запрос');
-    return result;
-  }
-  function el(tag, text, className) { const x = document.createElement(tag); if (text != null) x.textContent = text; if (className) x.className = className; return x; }
-  function button(text, fn) { const x = el('button', text, 'btn btn-sm'); x.type = 'button'; x.addEventListener('click', async () => { x.disabled = true; try { await fn(); } catch (e) { showToast(e.message, 'err'); } finally { x.disabled = false; } }); return x; }
-  function input(placeholder, type='text') { const x=el('input',null,'form-input');x.placeholder=placeholder;x.type=type;if(type==='number'){x.min=0;x.step='0.01';}return x; }
-  function select(options) {const x=el('select',null,'form-input'); for (const [value,text] of options){const o=el('option',text);o.value=value;x.append(o);}return x;}
-  function labeled(text, control) { const l=el('label',text,'form-group');l.append(control);return l;}
-  async function finishAuth(data) {csrf=data.csrf; ready=true; adminVerified=true; document.getElementById('adminLogin')?.remove(); return true;}
-  window.verifyAdminAccess = async function () {
-    try {
-      let response=await nativeFetch('/api/admin/session');let data=await response.json();
-      if(data.success)return finishAuth(data);
-      if(window.Telegram?.WebApp?.initData){
-        Telegram.WebApp.ready();Telegram.WebApp.expand();
-        data=await api('/api/admin/session',{initData:Telegram.WebApp.initData});return finishAuth(data);
-      }
-    } catch(e){ console.warn('Admin session unavailable'); }
-    document.getElementById('adminLoader')?.classList.add('hidden');
-    return new Promise(resolve=>{
-      const overlay=el('div',null);overlay.id='adminLogin';overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#141b2b;display:grid;place-items:center;padding:24px';
-      const form=el('form',null,'card');form.style.maxWidth='440px';
-      const token=input('Ключ администратора','password');token.autocomplete='current-password';token.required=true;
-      const error=el('p','');error.setAttribute('role','alert');
-      const submit=el('button','Войти','btn btn-success');submit.type='submit';
-      form.append(el('h2','Вход в админ-панель'),el('p','Откройте через Telegram администратора или введите ADMIN_ACCESS_TOKEN, заданный на сервере.'),token,error,submit);
-      form.addEventListener('submit',async e=>{e.preventDefault();submit.disabled=true;try{const data=await api('/api/admin/session',{token:token.value});token.value='';await finishAuth(data);resolve(true);}catch(err){error.textContent=err.message;}finally{submit.disabled=false;}});
-      overlay.append(form);document.body.append(overlay);token.focus();
-    });
-  };
-
-  const page=document.getElementById('page-portal');
-  const catalogBox=el('div',null,'card');catalogBox.id='unifiedCatalog';
-  const q=input('Название подарка'), model=input('Название модели');
-  const kind=select([['all','Все'],['gifts','Обычные подарки'],['models','Модели']]);
-  const source=select([['all','Все источники'],['portal','Portals'],['fragment','Fragment'],['manual','Ручные']]);
-  const availability=select([['all','Все, включая недоступные'],['available','С подтверждённой ценой GRAM']]);
-  const count=el('p','Каталог ещё не загружен');count.setAttribute('aria-live','polite');
-  const syncInfo=el('p','Цены: статус неизвестен');syncInfo.setAttribute('aria-live','polite');
-  const refreshNow=button('↻ Обновить цены сейчас',refreshCatalogNow);
-  const list=el('div');list.style.cssText='display:grid;gap:10px';
-  const filters=el('div',null,'portal-filter-grid');filters.append(labeled('Подарок',q),labeled('Модель',model),labeled('Тип',kind),labeled('Источник',source),labeled('Доступность',availability));
-  const prev=button('← Назад',()=>{offset=Math.max(0,offset-40);return loadCatalog();});
-  const next=button('Далее →',()=>{offset+=40;return loadCatalog();});
-  catalogBox.append(el('h3','Подарки и модели'),el('p','Выберите подарок и добавьте его в кейс, режим, маркет ивента или инвентарь. Цены указаны в GRAM.'),refreshNow,syncInfo,filters,count,list,prev,next);
-  page.querySelector('.portal-status-card').after(catalogBox);
-  ['portalGiftFilter','portalDailyCatalogList'].forEach(id=>document.getElementById(id)?.closest('.card')?.setAttribute('hidden',''));
-  // Avoid constructing thousands of hidden model DOM rows in the old renderer.
-  window.renderPortalDailyCatalog=function(){if(ready)loadCatalog();};
-  for(const control of [q,model,kind,source,availability])control.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>{offset=0;loadCatalog();},250);});
-
-
-  function formatSyncTime(ts){
-    if(!ts)return 'никогда';
-    try{return new Date(Number(ts)*1000).toLocaleString('ru-RU');}catch(_){return 'неизвестно';}
-  }
-  async function loadSyncStatus(){
-    if(!ready)return;
-    try{
-      const data=await api('/api/portal/daily-status?admin_id='+ADMIN_ID);
-      const running=!!data.job?.running;
-      syncInfo.textContent=running
-        ? `Цены обновляются… ${Number(data.job?.current||0)}/${Number(data.job?.total||0)}`
-        : `Последняя попытка: ${formatSyncTime(data.updated_at)} · интервал ${Number(data.interval_minutes||10)} мин${data.partial?' · часть цен не подтверждена':''}${data.job?.error?' · '+data.job.error:''}`;
-      refreshNow.disabled=running;
-      return data;
-    }catch(e){syncInfo.textContent='Статус цен: '+e.message;return null;}
-  }
-  async function refreshCatalogNow(){
-    const started=await api('/api/portal/daily-sync',{});
-    showToast(started.message||'Обновление запущено','ok');
-    refreshNow.disabled=true;
-    for(let i=0;i<45;i++){
-      await new Promise(r=>setTimeout(r,1000));
-      const status=await loadSyncStatus();
-      if(status && !status.job?.running){await loadCatalog();return;}
-    }
-    await loadCatalog();
-  }
-
-  async function loadCatalog(){
-    if(!ready)return;
-    const own=++generation;
-    try{
-      const args=new URLSearchParams({q:q.value,model:model.value,kind:kind.value,source:source.value,availability:availability.value,offset:String(offset),limit:'40'});
-      const data=await api('/api/admin/catalog?'+args);
-      if(own!==generation)return;
-      total=data.total;count.textContent=`${total} позиций · показаны ${total?offset+1:0}–${Math.min(total,offset+40)}`;
-      list.replaceChildren();prev.disabled=offset===0;next.disabled=offset+40>=total;
-      if(!data.items.length)list.append(el('p','Подарков нет. Подключите Portals и обновите каталог или добавьте подарок вручную.'));
-      for(const gift of data.items){
-        const row=el('div',null,'portal-result-card');const main=el('div',null,'portal-result-main');
-        const img=el('img');img.src=gift.image||'/static/img/gift.png';img.loading='lazy';img.alt=gift.name;img.style.cssText='width:52px;height:52px;object-fit:contain';img.onerror=()=>{img.onerror=null;img.src='/static/img/gift.png';};
-        const info=el('div');info.append(el('strong',gift.name),el('p',`${gift.source||'каталог'} · ${gift.model_name||'обычный подарок'}`));
-        const usable=gift.active!==false && gift.price_available!==false && Number(gift.value)>0;
-        main.append(img,info,el('strong',usable?(Number(gift.value)/100).toFixed(2)+' GRAM':'Цена GRAM не подтверждена','portal-item-price'));
-        if(gift.fragment_price_ton)info.append(el('p',`Fragment: ${gift.fragment_price_ton} TON · цена коллекции на странице продажи · ${gift.fragment_price_updated_at||'дата неизвестна'}`));
-        const actions=el('div',null,'btn-row');
-        for(const [action,title] of [['case','В кейс'],['mode','В режим'],['event','В ивент'],['inventory','В инвентарь']]){const b=button(title,()=>chooseTarget(gift,action));b.disabled=!usable;actions.append(b);}
-        if(usable && gift.source!=='manual')actions.append(button('Загрузить PNG',async()=>{await api('/api/admin/catalog/artwork',{gift_id:gift.id});await loadCatalog();}));
-        row.append(main,actions);list.append(row);
-      }
-    }catch(e){if(own===generation){count.textContent=e.message;list.replaceChildren();}}
-  }
-  window.openUnifiedCatalog=function(){showSection('portal');catalogBox.scrollIntoView({behavior:'smooth'});loadSyncStatus();loadCatalog();};
-  async function chooseTarget(gift,action){
-    const data=await api('/api/admin/portal-targets?admin_id='+ADMIN_ID);
-    const overlay=document.getElementById('modalOverlay'),body=document.getElementById('modalContent');body.replaceChildren();
-    body.append(el('h3',gift.name),el('p',`Цена: ${(gift.value/100).toFixed(2)} GRAM`));
-    let target,section,weight,price;
-    if(action==='case'||action==='mode'){
-      const rows=action==='case'?data.cases:data.modes;
-      target=select(rows.map(x=>[String(x.id),x.name]));body.append(labeled(action==='case'?'Кейс':'Режим',target));
-      if(action==='case'){weight=input('Вес выпадения','number');weight.value='1';body.append(labeled('Вес выпадения',weight));}
-    }else if(action==='inventory'){
-      target=input('Telegram ID пользователя','number');target.step='1';target.value=currentInvUserId||currentUser?.id||'';body.append(labeled('Пользователь',target));
-    }else{
-      const events=(await api('/api/admin/events?admin_id='+ADMIN_ID)).events;
-      target=select(Object.entries(events).map(([id,e])=>[id,e.name||id]));section=select([]);
-      function updateSections(){section.replaceChildren();for(const s of events[target.value].sections.filter(s=>s.type==='market')){const o=el('option',s.title);o.value=s.id;section.append(o);}}
-      target.onchange=updateSections;updateSections();price=input('Цена продажи','number');price.value=(gift.value/100).toFixed(2);
-      body.append(labeled('Ивент',target),labeled('Раздел',section),labeled('Цена продажи, GRAM',price),el('p','Добавляется один лот. Повторное добавление создаёт ещё один лот.'));
-    }
-    body.append(button('Добавить',async()=>{
-      const payload={gift_id:gift.id,action};
-      if(action==='case'){payload.case_id=target.value;payload.chance=weight.value;}
-      if(action==='mode')payload.mode_id=target.value;
-      if(action==='inventory')payload.user_id=target.value;
-      if(action==='event'){payload.event_id=target.value;payload.section_id=section.value;payload.price_gram=price.value;}
-      await api('/api/admin/catalog/action',payload);showToast('Подарок добавлен','ok');closeModal();
-      allGifts=[];modePortalCatalogCache=null;
-      if(action==='inventory'&&currentInvUserId)openInvUser(currentInvUserId);
-    }),button('Закрыть',()=>closeModal()));
-    overlay.classList.add('show');overlay.style.display='flex';
-  }
-  // Use the existing modal close convention and clear any inline display.
-  const originalClose=window.closeModal;
-  window.closeModal=function(){document.getElementById('modalOverlay').style.display='';originalClose();};
-
-  const manual=el('details',null,'card');manual.append(el('summary','Добавить подарок вручную'));
-  const name=input('Название'),manualModel=input('Модель (необязательно)'),price=input('Цена в GRAM','number'),image=input('HTTPS URL PNG или /static/...');
-  manual.append(labeled('Подарок',name),labeled('Модель',manualModel),labeled('Цена, GRAM',price),labeled('Изображение',image),button('Сохранить в каталог',async()=>{
-    await api('/api/admin/catalog/manual',{name:name.value,model_name:manualModel.value,price_gram:price.value,image:image.value});name.value='';showToast('Сохранено','ok');await loadCatalog();
-  }));catalogBox.after(manual);
-  const fragment=el('details',null,'card');fragment.append(el('summary','Импорт конкретного подарка Fragment'));
-  const url=input('https://fragment.com/gift/...'),fragmentPrice=input('Цена продажи в GRAM','number');
-  fragment.append(labeled('Ссылка',url),labeled('Цена, GRAM',fragmentPrice),el('p','Название, модель и изображение загружаются по ссылке. Цену продажи задаёте вы.'),button('Импортировать',async()=>{
-    await api('/api/admin/catalog/fragment',{url:url.value,price_gram:fragmentPrice.value});showToast('Подарок импортирован','ok');await loadCatalog();
-  }));manual.after(fragment);
-
-  // Entry points next to inventory, cases, modes and event management.
-  for(const id of ['page-inventory','page-cases','page-events','page-games-ui']){
-    const container=document.getElementById(id);if(container)container.querySelector('.section-header')?.append(button('Добавить подарок / модель',()=>window.openUnifiedCatalog()));
-  }
-  const origInv=window.openInvUser;
-  window.openInvUser=async function(uid){await origInv(uid);const panel=document.getElementById('invUserPanel');if(panel)panel.prepend(button('Добавить подарок / модель',()=>window.openUnifiedCatalog()));};
-
-  window.approveWithdrawal=async function(id){
-    const note=prompt('Подтверждение фактического перевода подарка: ссылка, ID операции или примечание');
-    if(!note?.trim())return;
-    try{
-      await api('/api/admin/update-withdrawal-status',{withdrawal_id:id,status:'processing'});
-      await api('/api/admin/update-withdrawal-status',{withdrawal_id:id,status:'approved',admin_notes:note});
-      showToast('Вывод подтверждён','ok');loadWithdrawals();
-    }catch(e){showToast(e.message,'err');}
-  };
-  window.rejectWithdrawal=async function(id){try{await api('/api/admin/update-withdrawal-status',{withdrawal_id:id,status:'rejected'});showToast('Отклонено; подарок разблокирован','ok');loadWithdrawals();}catch(e){showToast(e.message,'err');}};
-
-  // Level configuration was absent from the supplied navigation.
-  const levels=el('div',null,'section-page');levels.id='page-levels';levels.style.display='none';
-  const levelHeader=el('div',null,'section-header');levelHeader.append(el('h2','Уровни'),button('Обновить',loadLevels));
-  const levelList=el('div');levels.append(levelHeader,el('p','XP хранится целым числом. Изменение порога пересчитывает уровень по накопленному XP при чтении профиля.'),levelList);
-  document.getElementById('page-portal').parentElement.append(levels);SECTION_TITLES.levels='Уровни';
-  const tile=button('Уровни и награды',()=>{showSection('levels');loadLevels();});tile.classList.add('tile-btn');document.querySelector('.tiles-grid')?.append(tile);
-  async function loadLevels(){
-    try{
-      const data=await api('/api/admin/levels?admin_id='+ADMIN_ID);levelList.replaceChildren();
-      const create=button('Добавить уровень',()=>editLevel({level:Math.max(...data.levels.map(x=>x.level))+1,exp_required:0,reward_stars:0}));levelList.append(create);
-      for(const x of data.levels){const row=el('div',null,'card');row.append(el('strong',`Уровень ${x.level} · ${x.exp_required} XP · ${(x.reward_stars/100).toFixed(2)} GRAM`),button('Изменить',()=>editLevel(x)));if(x.level!==1)row.append(button('Удалить',async()=>{if(confirm('Удалить уровень?')){await api('/api/admin/levels/'+x.level,{},'DELETE');await loadLevels();}}));levelList.append(row);}
-    }catch(e){showToast(e.message,'err');}
-  }
-  function editLevel(x){
-    const body=document.getElementById('modalContent');body.replaceChildren(el('h3','Уровень '+x.level));
-    const xp=input('Порог XP','number');xp.step='1';xp.value=x.exp_required;
-    const reward=input('Награда GRAM','number');reward.value=(x.reward_stars/100).toFixed(2);
-    body.append(labeled('Порог XP',xp),labeled('Награда GRAM',reward),button('Сохранить',async()=>{await api('/api/admin/levels',{level:x.level,exp_required:Number(xp.value),reward_stars:Math.round(Number(reward.value)*100)});closeModal();await loadLevels();}),button('Закрыть',()=>closeModal()));document.getElementById('modalOverlay').classList.add('show');document.getElementById('modalOverlay').style.display='flex';
-  }
-  setInterval(()=>{if(ready&&!document.hidden&&currentSection==='portal'){loadSyncStatus();loadCatalog();}},600000);
-  setInterval(()=>{if(ready&&!document.hidden&&currentSection==='portal')loadSyncStatus();},30000);
-})();
-
-</script>
 </body>
 </html>
