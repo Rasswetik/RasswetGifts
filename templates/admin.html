@@ -2016,7 +2016,7 @@ function renderUsers(users){
             '<div class="avatar">' + av + '</div>' +
             '<div class="info"><div class="name">' + escapeHtml(u.first_name || ('User ' + u.id)) + '</div>' +
             '<div class="meta"><span>ID: ' + u.id + '</span><span>@' + escapeHtml(u.username || '—') + '</span></div></div>' +
-            '<div class="right"><div class="value">💎 ' + formatTon(u.balance_stars) + '</div></div>' +
+            '<div class="right"><div class="value">💎 ' + formatTon(u.balance_stars) + ' GRAM</div></div>' +
             '</div>';
     }).join('');
 }
@@ -2036,8 +2036,8 @@ async function openUserModal(userId){
     var html =
         '<div class="modal-title">👤 ' + escapeHtml(currentUser.first_name || ('User ' + userId)) + '</div>' +
         '<div class="card"><div class="card-title">Баланс и уровень</div>' +
-        '<div class="form-group"><label class="form-label">GRAM</label><input type="number" class="form-input" id="userBalanceInput" value="' + (currentUser.balance_stars || 0) + '"></div>' +
-        '<div class="form-group"><label class="form-label">Уровень</label><input type="number" class="form-input" id="userLevelInput" min="1" max="25" value="' + (currentUser.level || 1) + '"></div>' +
+        '<div class="form-group"><label class="form-label">Баланс, GRAM</label><input type="number" step="0.01" min="0" class="form-input" id="userBalanceInput" value="' + ((Number(currentUser.balance_stars || 0)/100).toFixed(2)) + '"></div>' +
+        '<div class="form-group"><label class="form-label">Уровень</label><input type="number" class="form-input" id="userLevelInput" min="1" value="' + (currentUser.level || 1) + '"></div>' +
         '<button class="btn btn-success" onclick="saveUserData()">💾 Сохранить</button></div>' +
         '<div class="card"><div class="card-title">RTP буст (0–100)</div>' +
         '<div class="form-group"><input type="number" class="form-input" id="userRtpInput" min="0" max="100" value="40"></div>' +
@@ -2061,7 +2061,7 @@ async function saveUserData(){
     var bal = parseFloat($('userBalanceInput').value) || 0;
     var lvl = parseInt($('userLevelInput').value) || 1;
     try{
-        var r = await fetch('/api/admin/update-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: currentUser.id, balance_stars: Math.round(bal), level: lvl}) });
+        var r = await fetch('/api/admin/update-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({user_id: currentUser.id, balance_stars: Math.round(bal * 100), level: lvl}) });
         var d = await r.json();
         if(d.success){ showToast('Сохранено', 'ok'); closeModal(); loadUsers(); }
         else showToast(d.error || 'Ошибка', 'err');
@@ -2708,7 +2708,7 @@ function renderPromoRow(p){
     var rewardInfo = '';
     if(p.reward_type === 'stars') rewardInfo = '+' + formatTon(p.reward_stars || 0) + ' GRAM';
     else if(p.reward_type === 'tickets') rewardInfo = '+' + (p.reward_tickets || 0) + '🎫';
-    else if(p.reward_type === 'stars+tickets') rewardInfo = '+' + (p.reward_stars || 0) + '⭐ +' + (p.reward_tickets || 0) + '🎫';
+    else if(p.reward_type === 'stars+tickets') rewardInfo = '+' + formatTon(p.reward_stars || 0) + ' GRAM +' + (p.reward_tickets || 0) + '🎫';
     else if(p.reward_type === 'crash_vip') rewardInfo = (p.reward_data && p.reward_data.days || '?') + ' дней';
     else if(p.reward_type === 'rocket') rewardInfo = (p.reward_data && p.reward_data.rocket_id) || '?';
     else if(p.reward_type === 'background') rewardInfo = (p.reward_data && p.reward_data.background_id) || '?';
@@ -4139,16 +4139,47 @@ if(tg){
   const kind=select([['all','Все'],['gifts','Обычные подарки'],['models','Модели']]);
   const source=select([['all','Все источники'],['portal','Portals'],['fragment','Fragment'],['manual','Ручные']]);
   const count=el('p','Каталог ещё не загружен');count.setAttribute('aria-live','polite');
+  const syncInfo=el('p','Цены: статус неизвестен');syncInfo.setAttribute('aria-live','polite');
+  const refreshNow=button('↻ Обновить цены сейчас',refreshCatalogNow);
   const list=el('div');list.style.cssText='display:grid;gap:10px';
   const filters=el('div',null,'portal-filter-grid');filters.append(labeled('Подарок',q),labeled('Модель',model),labeled('Тип',kind),labeled('Источник',source));
   const prev=button('← Назад',()=>{offset=Math.max(0,offset-40);return loadCatalog();});
   const next=button('Далее →',()=>{offset+=40;return loadCatalog();});
-  catalogBox.append(el('h3','Подарки и модели'),el('p','Выберите подарок и добавьте его в кейс, режим, маркет ивента или инвентарь. Цены указаны в GRAM.'),filters,count,list,prev,next);
+  catalogBox.append(el('h3','Подарки и модели'),el('p','Выберите подарок и добавьте его в кейс, режим, маркет ивента или инвентарь. Цены указаны в GRAM.'),refreshNow,syncInfo,filters,count,list,prev,next);
   page.querySelector('.portal-status-card').after(catalogBox);
   ['portalGiftFilter','portalDailyCatalogList'].forEach(id=>document.getElementById(id)?.closest('.card')?.setAttribute('hidden',''));
   // Avoid constructing thousands of hidden model DOM rows in the old renderer.
   window.renderPortalDailyCatalog=function(){if(ready)loadCatalog();};
   for(const control of [q,model,kind,source])control.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>{offset=0;loadCatalog();},250);});
+
+
+  function formatSyncTime(ts){
+    if(!ts)return 'никогда';
+    try{return new Date(Number(ts)*1000).toLocaleString('ru-RU');}catch(_){return 'неизвестно';}
+  }
+  async function loadSyncStatus(){
+    if(!ready)return;
+    try{
+      const data=await api('/api/portal/daily-status?admin_id='+ADMIN_ID);
+      const running=!!data.job?.running;
+      syncInfo.textContent=running
+        ? `Цены обновляются… ${Number(data.job?.current||0)}/${Number(data.job?.total||0)}`
+        : `Последнее обновление: ${formatSyncTime(data.updated_at)} · интервал ${Number(data.interval_minutes||10)} мин${data.partial?' · часть моделей временно со старой ценой':''}`;
+      refreshNow.disabled=running;
+      return data;
+    }catch(e){syncInfo.textContent='Статус цен: '+e.message;return null;}
+  }
+  async function refreshCatalogNow(){
+    const started=await api('/api/portal/daily-sync',{});
+    showToast(started.message||'Обновление запущено','ok');
+    refreshNow.disabled=true;
+    for(let i=0;i<45;i++){
+      await new Promise(r=>setTimeout(r,1000));
+      const status=await loadSyncStatus();
+      if(status && !status.job?.running){await loadCatalog();return;}
+    }
+    await loadCatalog();
+  }
 
   async function loadCatalog(){
     if(!ready)return;
@@ -4172,7 +4203,7 @@ if(tg){
       }
     }catch(e){if(own===generation){count.textContent=e.message;list.replaceChildren();}}
   }
-  window.openUnifiedCatalog=function(){showSection('portal');catalogBox.scrollIntoView({behavior:'smooth'});loadCatalog();};
+  window.openUnifiedCatalog=function(){showSection('portal');catalogBox.scrollIntoView({behavior:'smooth'});loadSyncStatus();loadCatalog();};
   async function chooseTarget(gift,action){
     const data=await api('/api/admin/portal-targets?admin_id='+ADMIN_ID);
     const overlay=document.getElementById('modalOverlay'),body=document.getElementById('modalContent');body.replaceChildren();
@@ -4255,9 +4286,9 @@ if(tg){
     const reward=input('Награда GRAM','number');reward.value=(x.reward_stars/100).toFixed(2);
     body.append(labeled('Порог XP',xp),labeled('Награда GRAM',reward),button('Сохранить',async()=>{await api('/api/admin/levels',{level:x.level,exp_required:Number(xp.value),reward_stars:Math.round(Number(reward.value)*100)});closeModal();await loadLevels();}),button('Закрыть',()=>closeModal()));document.getElementById('modalOverlay').classList.add('show');document.getElementById('modalOverlay').style.display='flex';
   }
-  setInterval(()=>{if(ready&&!document.hidden&&currentSection==='portal')loadCatalog();},600000);
+  setInterval(()=>{if(ready&&!document.hidden&&currentSection==='portal'){loadSyncStatus();loadCatalog();}},600000);
+  setInterval(()=>{if(ready&&!document.hidden&&currentSection==='portal')loadSyncStatus();},30000);
 })();
-
 </script>
 </body>
 </html>
