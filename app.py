@@ -3379,6 +3379,11 @@ def get_db_connection():
         pass
 
     if USE_POSTGRES:
+        # IMPORTANT: db_wrapper returns pooled PostgreSQL connections.
+        # Do not cache a pooled connection in Flask `g`: application code
+        # frequently calls conn.close(), which returns/closes the connection
+        # while `g` would still hold the stale object. A later cursor() then
+        # fails with: "cursor already closed".
         conn = _pg_get_connection()
         if not _db_ready:
             try:
@@ -3391,12 +3396,6 @@ def get_db_connection():
                     conn.rollback()
                 except Exception:
                     pass
-        # Cache connection on request context so multiple calls reuse it
-        try:
-            if has_request_context():
-                g._db_conn = conn
-        except Exception:
-            pass
         return conn
     
     for attempt in range(3):
@@ -3433,10 +3432,11 @@ def get_db_connection():
 
 @app.teardown_request
 def _close_request_db(exc=None):
-    """Close per-request cached DB connection (if any)."""
+    """Close only legacy request-scoped connections. PostgreSQL connections
+    are managed by db_wrapper/application code and must not be cached here."""
     try:
         conn = getattr(g, '_db_conn', None)
-        if conn:
+        if conn and not USE_POSTGRES:
             try:
                 conn.close()
             except Exception:
