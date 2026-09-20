@@ -2993,14 +2993,12 @@ def _normalize_witch_event_structure(obj):
         clean.append(sec)
     if special is None:
         special={'id':'special_mode','title':'Особые режимы','type':'mode','items':[]}
-    items=special.get('items') if isinstance(special.get('items'), list) else []
-    items=[x for x in items if isinstance(x,dict) and str(x.get('id'))!='ghost_road_mode']
-    # Preserve the administrator's visibility/name/image/path/unlock settings.
-    # The previous normalizer recreated the item with visible=True on every read,
-    # which made a hidden Ghost Road immediately reappear.
+    # Preserve the administrator's Ghost Road settings before filtering/rebuilding.
     old_items = special.get('items') if isinstance(special.get('items'), list) else []
     existing=next((x for x in old_items if isinstance(x,dict) and str(x.get('id'))=='ghost_road_mode'),None)
     existing = existing if isinstance(existing,dict) else {}
+    items=[x for x in old_items if isinstance(x,dict) and str(x.get('id'))!='ghost_road_mode']
+    # Reinsert the mandatory Ghost Road item while preserving admin settings.
     items.insert(0, {
         'id':'ghost_road_mode',
         'name':str(existing.get('name') or 'Ghost Road'),
@@ -9441,7 +9439,12 @@ def api_events():
                         from datetime import timezone; end=end.astimezone(timezone.utc).replace(tzinfo=None)
                     remaining=max(0,int((end-now).total_seconds()))
                 except Exception: pass
-            item['active']=bool(item.get('enabled') and remaining>0); item['remaining_seconds']=remaining; public.append(item)
+            # An enabled event without ends_at is intentionally active.
+            # Previously /api/events marked it inactive because remaining_seconds=0,
+            # while /api/events/witch-hat-party treated it correctly.
+            item['active']=bool(item.get('enabled') and (not item.get('ends_at') or remaining>0))
+            item['remaining_seconds']=remaining
+            public.append(item)
         return jsonify({'success':True,'events':public})
     except Exception as e: return jsonify({'success':False,'error':str(e)}),500
 
@@ -9460,6 +9463,9 @@ def api_ghost_road():
 def api_witch_hat_party():
     events=get_active_events()
     ev=events.get('witch_hat_party',EVENT_DEFAULTS['witch_hat_party'])
+    # Work on an isolated object: the response adds runtime lock fields and the
+    # normalizer may reorder sections/items. Never mutate EVENT_DEFAULTS in-place.
+    ev=json.loads(json.dumps(ev, ensure_ascii=False))
     try:
         if _sync_event_cases(ev):
             save_events(events)
@@ -11882,14 +11888,6 @@ _portal_working_base = None
 _portal_http_lock = threading.Lock()
 
 
-def _portal_log(level, message, *args):
-    """Detailed Portal activity log; never log auth tokens."""
-    try:
-        getattr(logger, level)("PORTAL | " + str(message), *args)
-    except Exception:
-        pass
-
-
 def _portal_request(method, path, token=None, json_body=None, params=None, timeout=15):
     """Call Portals using the same host/header format as the marketplace client.
 
@@ -11902,8 +11900,6 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
     token = _portal_normalize_auth_token(token if token is not None else _portal_get_token())
     if not token:
         return False, 'Токен не задан. Сохрани Portal initData в админке.', 0
-
-    _portal_log('info', 'REQUEST start | %s %s | params=%s', method, path, params or {})
 
     clean_path = '/' + str(path or '').lstrip('/')
     bases = list(PORTAL_API_BASES)
@@ -11957,7 +11953,6 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                             break
                         with _portal_http_lock:
                             _portal_working_base = base
-                        _portal_log('info', 'REQUEST success | %s %s | status=%s | base=%s', method, clean_path, last_status, base)
                         return True, data, last_status
 
                     if last_status in (401, 403):
@@ -11965,7 +11960,6 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                         extra = ''
                         if engine_name == 'requests' and not _PORTAL_CURL_AVAILABLE:
                             extra = ' На сервере нет curl_cffi; установи его из requirements_portal.txt.'
-                        _portal_log('error', 'REQUEST auth/error | %s %s | status=%s | response=%s', method, clean_path, last_status, body)
                         return False, 'Portal Authorization недействителен/истёк или запрос заблокирован.' + extra + ((' Ответ: ' + body) if body else ''), last_status
 
                     if last_status == 429:
@@ -12535,93 +12529,145 @@ def _portal_floor_value(value):
 
 
 def _portal_normalize_filter_group(raw):
-    """Return [{'name': ..., 'floor_price': ...}, ...] from dict/list API shapes."""
+    """Normalize Portal model/backdrop/symbol data from all known API shapes."""
     rows = []
+
+    def add(name, value=None):
+        name = str(name or '').strip()
+        if not name:
+            return
+        if isinstance(value, dict):
+            image = str(
+                value.get('image') or value.get('photo_url') or
+                value.get('image_url') or value.get('preview_url') or ''
+            ).strip()
+            price = _portal_float(
+                value.get('floor_price') or value.get('floorPrice') or
+                value.get('price') or value.get('floor') or value.get('min_price')
+            )
+        else:
+            image = ''
+            price = _portal_float(value)
+        rows.append({'name': name, 'floor_price': round(price, 6), 'image': image})
+
     if isinstance(raw, dict):
         for name, value in raw.items():
-            if not name:
+            if str(name).lower() in {
+                'models', 'model', 'backdrops', 'backgrounds', 'backdrop',
+                'symbols', 'symbol', 'data', 'items', 'results', 'values'
+            }:
                 continue
-            rows.append({
-                'name': str(name),
-                'floor_price': round(_portal_floor_value(value), 6),
-            })
+            add(name, value)
     elif isinstance(raw, list):
         for item in raw:
             if isinstance(item, str):
-                rows.append({'name': item, 'floor_price': 0})
+                add(item)
             elif isinstance(item, dict):
                 name = (
-                    item.get('name') or item.get('value') or
-                    item.get('model') or item.get('backdrop') or item.get('symbol')
+                    item.get('name') or item.get('value') or item.get('model') or
+                    item.get('model_name') or item.get('backdrop') or
+                    item.get('backdrop_name') or item.get('symbol') or
+                    item.get('symbol_name')
                 )
                 if name:
-                    rows.append({
-                        'name': str(name),
-                        'floor_price': round(_portal_floor_value(item), 6),
-                        'image': str(item.get('image') or item.get('photo_url') or item.get('image_url') or item.get('preview_url') or '').strip(),
-                    })
+                    add(name, item)
 
-    # Deduplicate case-insensitively and sort by name.
     dedup = {}
     for row in rows:
         key = str(row.get('name') or '').strip().lower()
-        if not key:
-            continue
         old = dedup.get(key)
         if old is None:
             dedup[key] = row
         else:
-            # Keep the smallest non-zero floor.
             old_p = _portal_float(old.get('floor_price'))
             new_p = _portal_float(row.get('floor_price'))
             if new_p > 0 and (old_p <= 0 or new_p < old_p):
                 dedup[key] = row
+            elif not old.get('image') and row.get('image'):
+                old['image'] = row['image']
 
     return sorted(dedup.values(), key=lambda x: str(x.get('name') or '').lower())
 
 
 def _portal_collection_filters(short_name):
-    """Get complete model/backdrop/symbol floors for one collection."""
+    """Get complete model/backdrop/symbol floors for one collection.
+
+    Portal has returned several response shapes. Do not require the
+    collection to be a top-level key if the response itself contains
+    models/backdrops/symbols.
+    """
     short_name = str(short_name or '').strip().lower()
     if not short_name:
         return False, 'empty short_name'
 
     ok, data, status = _portal_request(
-        'GET',
-        '/collections/filters',
-        params={'short_names': short_name},
-        timeout=25,
+        'GET', '/collections/filters',
+        params={'short_names': short_name}, timeout=25,
     )
     if not ok:
         return False, data
 
+    def has_groups(obj):
+        return isinstance(obj, dict) and any(
+            k in obj for k in (
+                'models', 'model', 'backdrops', 'backgrounds', 'backdrop',
+                'symbols', 'symbol'
+            )
+        )
+
     raw = data
-    if isinstance(data, dict):
+
+    if isinstance(data, dict) and not has_groups(data):
         floors = data.get('floor_prices')
         if isinstance(floors, dict):
-            # Exact key first, then normalized-key fallback.
-            raw = floors.get(short_name)
-            if raw is None:
-                wanted = re.sub(r'[^a-z0-9]+', '', short_name.lower())
-                for key, value in floors.items():
-                    if re.sub(r'[^a-z0-9]+', '', str(key).lower()) == wanted:
-                        raw = value
+            if has_groups(floors):
+                raw = floors
+            else:
+                candidate = floors.get(short_name)
+                if candidate is None:
+                    wanted = re.sub(r'[^a-z0-9]+', '', short_name)
+                    for key, value in floors.items():
+                        if re.sub(r'[^a-z0-9]+', '', str(key).lower()) == wanted:
+                            candidate = value
+                            break
+                if candidate is not None:
+                    raw = candidate
+
+        if not has_groups(raw):
+            for key in ('data', 'result', 'collection', 'collections', 'results', 'items'):
+                candidate = raw.get(key)
+                if has_groups(candidate):
+                    raw = candidate
+                    break
+                if isinstance(candidate, list):
+                    match = next((x for x in candidate if has_groups(x)), None)
+                    if match is not None:
+                        raw = match
                         break
 
-    if not isinstance(raw, dict) or not any(key in raw for key in ('models','model','backdrops','backgrounds','backdrop','symbols','symbol')):
+    if not has_groups(raw):
+        logger.warning(
+            'PORTAL | FILTERS unexpected | collection=%s | status=%s | keys=%s',
+            short_name, status,
+            list(data.keys())[:30] if isinstance(data, dict) else type(data).__name__
+        )
         return False, 'Portal filters returned an unexpected response'
 
-    return True, {
-        'models': _portal_normalize_filter_group(
-            raw.get('models') or raw.get('model') or {}
-        ),
+    result = {
+        'models': _portal_normalize_filter_group(raw.get('models') or raw.get('model') or []),
         'backdrops': _portal_normalize_filter_group(
-            raw.get('backdrops') or raw.get('backgrounds') or raw.get('backdrop') or {}
+            raw.get('backdrops') or raw.get('backgrounds') or raw.get('backdrop') or []
         ),
         'symbols': _portal_normalize_filter_group(
-            raw.get('symbols') or raw.get('symbol') or {}
+            raw.get('symbols') or raw.get('symbol') or []
         ),
     }
+
+    logger.info(
+        'PORTAL | FILTERS parsed | %s | models=%s backdrops=%s symbols=%s',
+        short_name, len(result['models']), len(result['backdrops']), len(result['symbols'])
+    )
+    return True, result
 
 
 def _portal_all_collections():
@@ -12839,7 +12885,6 @@ def _portal_build_daily_snapshot(force=False):
         return {'success': True, 'running': True, 'message': 'Daily sync already running'}
 
     try:
-        _portal_log('info', 'SYNC started | force=%s', force)
         _portal_daily_job_update(
             running=True,
             started_at=time.time(),
@@ -12854,10 +12899,8 @@ def _portal_build_daily_snapshot(force=False):
 
         ok, collections = _portal_all_collections()
         if not ok:
-            _portal_log('error', 'SYNC collections failed | %s', collections)
             raise RuntimeError(str(collections))
 
-        _portal_log('info', 'SYNC collections loaded | count=%s', len(collections))
         _portal_daily_job_update(total=len(collections))
 
         full = []
@@ -12880,14 +12923,11 @@ def _portal_build_daily_snapshot(force=False):
 
             filters = {'models': [], 'backdrops': [], 'symbols': []}
             if short_name:
-                _portal_log('info', 'COLLECTION | %s | short_name=%s', name, short_name)
                 fok, fdata = _portal_collection_filters(short_name)
                 if fok:
                     filters = fdata
-                    _portal_log('info', 'FILTERS loaded | %s | models=%s backdrops=%s symbols=%s', short_name, len(filters.get('models') or []), len(filters.get('backdrops') or []), len(filters.get('symbols') or []))
                 else:
                     filter_errors.append({'collection': name, 'error': str(fdata)[:180]})
-                    _portal_log('warning', 'FILTERS failed | %s | %s', short_name, fdata)
 
             row = dict(coll)
             row['models'] = filters.get('models') or []
@@ -12941,9 +12981,8 @@ def _portal_build_daily_snapshot(force=False):
             models=total_models,
         )
 
-        _portal_log('info', 'SYNC finished | collections=%s models=%s backdrops=%s symbols=%s filter_errors=%s', len(full), total_models, total_backdrops, total_symbols, len(filter_errors))
         logger.info(
-            "✅ Portal full scan: %s collections, %s models, %s backdrops, %s symbols",
+            "✅ Portal HOURLY full scan: %s collections, %s models, %s backdrops, %s symbols",
             len(full), total_models, total_backdrops, total_symbols
         )
 
