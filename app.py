@@ -12037,6 +12037,14 @@ def _portal_collections(limit=1000, offset=0):
         return False, data
 
     items = _portal_extract_array(data, ('collections', 'results', 'items', 'data'))
+    global _portal_collections_page
+    _portal_collections_page = {'count': len(items), 'total': None}
+    if isinstance(data, dict):
+        for key in ('total', 'total_count'):
+            value = data.get(key)
+            if isinstance(value, int) and not isinstance(value, bool) and value >= len(items):
+                _portal_collections_page['total'] = value
+                break
     floor_map = _portal_floors_map()
 
     result = []
@@ -12542,15 +12550,31 @@ def _portal_all_collections():
     document offset pagination for this endpoint. Asking for a large limit is
     therefore more reliable than repeatedly sending an ignored offset.
     """
-    ok, items = _portal_collections(limit=5000, offset=0)
-    if not ok:
-        return False, items
-
     dedup = {}
-    for item in items or []:
-        key = str(item.get('id') or item.get('short_name') or item.get('name') or '').strip().lower()
-        if key:
-            dedup[key] = item
+    offset = 0
+    for _page in range(100):
+        ok, items = _portal_collections(limit=5000, offset=offset)
+        if not ok:
+            return False, items
+        info = globals().get('_portal_collections_page', {})
+        before = len(dedup)
+        for item in items or []:
+            key = str(item.get('id') or item.get('short_name') or item.get('name') or '').strip().lower()
+            if key:
+                dedup[key] = item
+        count = info.get('count', len(items))
+        total = info.get('total')
+        if not items or len(dedup) == before:
+            return False, 'Portals: неполная или повторяющаяся страница; предыдущий каталог сохранён'
+        if count != len(items):
+            return False, 'Portals: часть коллекций не удалось разобрать'
+        if total is not None and len(dedup) >= total:
+            break
+        if total is None and count < 5000:
+            break
+        offset += count
+    else:
+        return False, 'Portals: превышен предел страниц; полнота каталога не подтверждена'
     rows = list(dedup.values())
     rows.sort(key=lambda x: str(x.get('name') or '').lower())
     return True, rows
@@ -21270,7 +21294,19 @@ def api_fragment_sync_prices():
         def worker():
             try:
                 gifts = _load_fragment_catalog_disk_cache() or load_gifts_cached() or []
+                # Fetch each collection once. Collection quotes must never be
+                # applied as prices of specific models or numbered gifts.
+                collections_by_slug = {}
+                for gift in gifts:
+                    slug = str(gift.get('fragment_slug') or '').strip().lower()
+                    if slug and slug not in collections_by_slug:
+                        collections_by_slug[slug] = {'fragment_slug':slug,
+                            'name':gift.get('portal_collection_name') or slug,
+                            'image':gift.get('image') or ''}
+                gifts = list(collections_by_slug.values())
                 total = len(gifts)
+                if not total:
+                    raise ValueError('Нет коллекций для проверки Fragment. Сначала загрузите каталог.')
                 updated = 0
                 failed = 0
                 _fragment_job_update(total=total, collections=total)
@@ -21313,7 +21349,9 @@ def api_fragment_sync_prices():
                     api_gifts_list._cache = {}
                 except Exception:
                     pass
-                _fragment_job_update(running=False, stage='done', current=total, total=total, collections=total, message=f'Готово: {updated}/{total} цен', finished_at=time.time())
+                _fragment_job_update(running=False, stage='done' if not failed else 'error', current=total, total=total, collections=total,
+                    error=f'Не подтверждены цены {failed}/{total} коллекций' if failed else None,
+                    message=f'Проверено: {updated}/{total} цен TON; это не цены GRAM', finished_at=time.time())
                 _fragment_job_log(f'Готово: обновлено {updated}/{total}; без доступного sale-лота: {failed}')
             except Exception as e:
                 logger.error('Fragment price sync failed: %s\n%s', e, traceback.format_exc())
@@ -27718,7 +27756,1299 @@ def api_admin_leaderboard_distribute():
 
 
 # ── Durable admin services (single source of truth) ─────────────────────
-# Kept in a separate module so fixes are not duplicated inside this 1MB file.
+# Bundled services keep separate namespaces; no helper files are needed.
+def _register_bundled_module(name, source):
+    import sys
+    import types
+    module = types.ModuleType(name)
+    module.__file__ = __file__
+    sys.modules[name] = module
+    exec(compile(source, '<embedded ' + name + '>', 'exec'), module.__dict__)
+    return module
+
+_register_bundled_module('market_integrations', (
+    '"""Strict Fragment sale-card parsing: never borrow a neighbouring price."""\n'
+    'import math\n'
+    'import re\n'
+    'from html.parser import HTMLParser\n'
+    '\n'
+    '\n'
+    'class SaleCards(HTMLParser):\n'
+    '    def __init__(self):\n'
+    '        super().__init__()\n'
+    '        self.card = None\n'
+    '        self.depth = 0\n'
+    '        self.rows = []\n'
+    '        self.tags = []\n'
+    '        self.amounts = []\n'
+    '\n'
+    '    def handle_starttag(self, tag, attrs):\n'
+    '        attrs = dict(attrs)\n'
+    "        if tag not in ('img','br','hr','input','meta','link','source','wbr','area','base','embed','param','track','col'):\n"
+    '            self.tags.append(tag)\n'
+    "        if tag == 'a':\n"
+    '            self.depth += 1\n'
+    "            if self.card is None and 'tm-grid-item' in attrs.get('class', '').split():\n"
+    "                match = re.fullmatch(r'(?:https://fragment\\.com)?(/gift/[a-z0-9_-]+-[1-9][0-9]*)', attrs.get('href', ''), re.I)\n"
+    '                if match:\n'
+    "                    self.card = {'href':match[1].lower(), 'depth':self.depth, 'text':[], 'prices':[]}\n"
+    '        if self.card is not None:\n'
+    "            classes = attrs.get('class', '').split()\n"
+    "            if 'icon-ton' in classes or 'icon-ton-amount' in classes:\n"
+    "                self.amounts.append({'depth':len(self.tags),'text':[]})\n"
+    "            for key in ('data-ton-price', 'data-price-ton'):\n"
+    '                if key in attrs:\n'
+    "                    self.card['prices'].append(attrs[key])\n"
+    '\n'
+    '    def handle_data(self, data):\n'
+    '        if self.card is not None:\n'
+    "            self.card['text'].append(data)\n"
+    '            for amount in self.amounts:\n'
+    "                amount['text'].append(data)\n"
+    '\n'
+    '    def handle_endtag(self, tag):\n'
+    '        if tag in self.tags:\n'
+    '            index=len(self.tags)-1-self.tags[::-1].index(tag)\n'
+    '            for amount in list(self.amounts):\n'
+    "                if amount['depth']>index:\n"
+    "                    text=''.join(amount['text']).strip()\n"
+    "                    if self.card is not None and re.fullmatch(r'[0-9][0-9,]*(?:\\.[0-9]+)?',text):\n"
+    "                        self.card['prices'].append(text)\n"
+    '                    self.amounts.remove(amount)\n'
+    '            del self.tags[index:]\n'
+    "        if tag != 'a':\n"
+    '            return\n'
+    "        if self.card and self.card['depth'] == self.depth:\n"
+    '            card = self.card\n'
+    "            text = ' '.join(card['text'])\n"
+    '            # Bids are not fixed sale quotes; GRAM is not TON.\n'
+    "            if not re.search(r'\\b(?:bid|bids|auction|gram)\\b', text, re.I):\n"
+    "                prices = list(card['prices'])\n"
+    "                prices.extend(re.findall(r'(?<![\\w.])([0-9][0-9,]*(?:\\.[0-9]+)?)\\s*TON\\b', text, re.I))\n"
+    '                values = set()\n'
+    '                for price in prices:\n'
+    '                    try:\n'
+    "                        value = float(price.replace(',', ''))\n"
+    '                        if math.isfinite(value) and value > 0:\n'
+    '                            values.add(value)\n'
+    '                    except ValueError:\n'
+    '                        pass\n'
+    '                if len(values) == 1:\n'
+    "                    self.rows.append((card['href'], values.pop()))\n"
+    '            self.card = None\n'
+    '        self.depth = max(0, self.depth - 1)\n'
+    '\n'
+    '\n'
+    'def fragment_sale_rows(html):\n'
+    '    parser = SaleCards()\n'
+    "    parser.feed(str(html or ''))\n"
+    '    parser.close()\n'
+    '    return sorted(set(parser.rows), key=lambda row:row[1])\n'
+))
+_register_bundled_module('admin_services', (
+    '"""Durable admin services for the supplied SQLite application.\n'
+    '\n'
+    'Installed once, before workers start. Legacy endpoint names remain compatible.\n'
+    'Money is integer minor units; one GRAM is 100 units. Current Portals catalog\n'
+    'numbers are treated as GRAM; PORTAL_GRAM_PER_TON remains a legacy compatibility\n'
+    'multiplier for custom adapters and defaults to 1.\n'
+    '"""\n'
+    'import copy\n'
+    'import hashlib\n'
+    'import hmac\n'
+    'import io\n'
+    'import json\n'
+    'import math\n'
+    'import os\n'
+    'import re\n'
+    'import secrets\n'
+    'import sqlite3\n'
+    'import threading\n'
+    'import time\n'
+    'from concurrent.futures import ThreadPoolExecutor, as_completed\n'
+    'from contextlib import contextmanager\n'
+    'from datetime import datetime, timezone\n'
+    'from decimal import Decimal, InvalidOperation, ROUND_HALF_UP\n'
+    'from functools import wraps\n'
+    'from pathlib import Path\n'
+    'from urllib.parse import parse_qsl, urlparse\n'
+    '\n'
+    'from flask import request, jsonify, session, g, send_from_directory\n'
+    'import requests\n'
+    '\n'
+    '\n'
+    'def minor(value):\n'
+    '    try:\n'
+    '        v = Decimal(str(value))\n'
+    "        if not v.is_finite() or v < 0 or v > Decimal('20000000'):\n"
+    '            raise ValueError()\n'
+    "        return int((v * 100).quantize(Decimal('1'), rounding=ROUND_HALF_UP))\n"
+    '    except (ValueError, InvalidOperation, TypeError):\n'
+    "        raise ValueError('Укажите неотрицательную сумму GRAM, не более 20 000 000')\n"
+    '\n'
+    '\n'
+    'def install(n):\n'
+    "    app = n['app']\n"
+    "    if n['USE_POSTGRES'] or os.getenv('DATABASE_URL'):\n"
+    "        raise RuntimeError('This archive supports SQLite only. Set DB_DIR to a persistent volume and remove DATABASE_URL; no PostgreSQL adapter was supplied.')\n"
+    "    app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE='Strict',\n"
+    "                      SESSION_COOKIE_SECURE=os.getenv('COOKIE_SECURE') == '1',\n"
+    '                      MAX_CONTENT_LENGTH=16 * 1024 * 1024)\n'
+    '    mutation_lock = threading.RLock()\n'
+    '    sync_lock = threading.Lock()\n'
+    '    worker_lock = threading.Lock()\n'
+    '    worker = None\n'
+    "    sync_interval = max(60, int(os.getenv('PORTAL_SYNC_INTERVAL_SECONDS', '600')))\n"
+    "    sync_workers = min(8, max(1, int(os.getenv('PORTAL_SYNC_WORKERS', '4'))))\n"
+    "    deactivate_legacy = os.getenv('PORTAL_DEACTIVATE_LEGACY_GIFTS', '1') != '0'\n"
+    "    defaults = [{'level': i, 'exp_required': (i-1)**2 * 1000,\n"
+    "                 'reward_stars': 0, 'reward_tickets': 0} for i in range(1, 51)]\n"
+    "    for key in ('ROCKET_NAMES', 'BG_NAMES', 'LEVEL_CRATES'):\n"
+    '        n.setdefault(key, {})\n'
+    "    n.setdefault('LEVEL_SYSTEM', defaults)\n"
+    '\n'
+    '    @contextmanager\n'
+    '    def db(write=False):\n'
+    "        con = sqlite3.connect(n['DB_PATH'], timeout=5)\n"
+    '        con.row_factory = sqlite3.Row\n'
+    "        con.execute('PRAGMA busy_timeout=5000')\n"
+    "        con.execute('PRAGMA foreign_keys=ON')\n"
+    "        con.execute('PRAGMA synchronous=NORMAL')\n"
+    "        con.execute('PRAGMA temp_store=MEMORY')\n"
+    "        con.execute('PRAGMA cache_size=-16000')\n"
+    '        try:\n'
+    '            if write:\n'
+    "                con.execute('BEGIN IMMEDIATE')\n"
+    '            yield con\n'
+    '            if write:\n'
+    '                con.commit()\n'
+    '        except Exception:\n'
+    '            con.rollback()\n'
+    '            raise\n'
+    '        finally:\n'
+    '            con.close()\n'
+    '\n'
+    '    # Create legacy schema first, then additive migrations; never remove data.\n'
+    '    with db() as con:\n'
+    "        con.execute('PRAGMA journal_mode=WAL')\n"
+    "        if not n['_create_all_tables'](con):\n"
+    "            raise RuntimeError('Could not initialize database')\n"
+    '        con.commit()\n'
+    '    with db(True) as con:\n'
+    '        # Older databases require inventory_id even after the gift is delivered.\n'
+    '        # Rebuild only this table, preserving columns, rows and custom indexes.\n'
+    "        withdrawal_cols = list(con.execute('PRAGMA table_info(withdrawals)'))\n"
+    "        if any(c[1] == 'inventory_id' and c[3] for c in withdrawal_cols):\n"
+    '            schema = con.execute("SELECT sql FROM sqlite_master WHERE type=\'table\' AND name=\'withdrawals\'").fetchone()[0]\n'
+    '            indexes = [r[0] for r in con.execute("SELECT sql FROM sqlite_master WHERE type=\'index\' AND tbl_name=\'withdrawals\' AND sql IS NOT NULL")]\n'
+    "            schema = schema.replace('inventory_id INTEGER NOT NULL', 'inventory_id INTEGER')\n"
+    "            schema = schema.replace('CREATE TABLE withdrawals', 'CREATE TABLE withdrawals_migrated', 1)\n"
+    "            schema = schema.replace('CREATE TABLE IF NOT EXISTS withdrawals', 'CREATE TABLE withdrawals_migrated', 1)\n"
+    '            con.execute(schema)\n'
+    '            columns = \',\'.join(\'"\' + c[1].replace(\'"\', \'""\') + \'"\' for c in withdrawal_cols)\n'
+    "            con.execute(f'INSERT INTO withdrawals_migrated ({columns}) SELECT {columns} FROM withdrawals')\n"
+    "            con.execute('DROP TABLE withdrawals')\n"
+    "            con.execute('ALTER TABLE withdrawals_migrated RENAME TO withdrawals')\n"
+    '            for sql in indexes:\n'
+    '                con.execute(sql)\n'
+    "        con.execute('CREATE TABLE IF NOT EXISTS app_documents (key TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at REAL NOT NULL)')\n"
+    "        con.execute('CREATE TABLE IF NOT EXISTS admin_audit (id INTEGER PRIMARY KEY, actor TEXT, action TEXT, target TEXT, created_at REAL)')\n"
+    "        con.execute('CREATE TABLE IF NOT EXISTS level_grants (user_id INTEGER, level INTEGER, PRIMARY KEY(user_id,level))')\n"
+    "        cols = {x[1] for x in con.execute('PRAGMA table_info(inventory)')}\n"
+    "        for col, kind in [('model_name','TEXT'), ('fragment_slug','TEXT'), ('gift_key','TEXT'), ('animation','TEXT')]:\n"
+    '            if col not in cols:\n'
+    "                con.execute(f'ALTER TABLE inventory ADD COLUMN {col} {kind}')\n"
+    "        for name, table, columns in [('idx_inventory_user','inventory','user_id,is_withdrawing'),\n"
+    "                                     ('idx_withdraw_status','withdrawals','status,created_at'),\n"
+    "                                     ('idx_history_user','user_history','user_id,created_at')]:\n"
+    "            con.execute(f'CREATE INDEX IF NOT EXISTS {name} ON {table}({columns})')\n"
+    "        if not con.execute('SELECT 1 FROM levels LIMIT 1').fetchone():\n"
+    "            con.executemany('INSERT INTO levels(level,exp_required,reward_stars,reward_tickets) VALUES (:level,:exp_required,:reward_stars,:reward_tickets)', defaults)\n"
+    "    n['_db_ready'] = True\n"
+    "    n['safe_init_db'] = lambda *args, **kwargs: True\n"
+    '\n'
+    '    def audit(con, action, target):\n'
+    "        con.execute('INSERT INTO admin_audit(actor,action,target,created_at) VALUES (?,?,?,?)',\n"
+    "                    (str(n['ADMIN_ID']), action, str(target), time.time()))\n"
+    '\n'
+    '    def getdoc(key, default=None, con=None):\n'
+    '        if con is None:\n'
+    '            with db() as conn:\n'
+    '                return getdoc(key, default, conn)\n'
+    "        row = con.execute('SELECT payload FROM app_documents WHERE key=?', (key,)).fetchone()\n"
+    '        return json.loads(row[0]) if row else copy.deepcopy(default)\n'
+    '\n'
+    '    def putdoc(key, payload, con=None):\n'
+    '        if con is None:\n'
+    '            with db(True) as conn:\n'
+    '                return putdoc(key, payload, conn)\n'
+    "        con.execute('INSERT INTO app_documents VALUES (?,?,?) ON CONFLICT(key) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at',\n"
+    '                    (key, json.dumps(payload, ensure_ascii=False, allow_nan=False), time.time()))\n'
+    '        return True\n'
+    '\n'
+    '    def bootstrap(key, paths, default, wrapper=None):\n'
+    '        if getdoc(key) is not None:\n'
+    '            return\n'
+    '        value = copy.deepcopy(default)\n'
+    '        # Existing DB is authoritative; import legacy JSON only on first migration.\n'
+    '        with db() as con:\n'
+    "            row = con.execute('SELECT payload FROM event_configs WHERE id=?', (key,)).fetchone()\n"
+    '        if row:\n'
+    '            value = json.loads(row[0])\n'
+    '        else:\n'
+    '            for path in paths:\n'
+    '                if Path(path).is_file():\n'
+    "                    raw = json.loads(Path(path).read_text(encoding='utf-8'))\n"
+    '                    value = raw.get(wrapper, raw) if wrapper and isinstance(raw, dict) else raw\n'
+    '                    break\n'
+    '        putdoc(key, value)\n'
+    '\n'
+    "    root = Path(n['PERSISTENT_DATA_DIR'])\n"
+    "    bootstrap('gifts', [n['GIFTS_PERSISTENT_FILE'],root/'gifts.json',Path(n['BASE_PATH'])/'data/gifts.json'], [], 'gifts')\n"
+    "    bootstrap('cases_catalog',[root/'cases.json'], [], 'cases')\n"
+    "    bootstrap('seasonal_case',[root/'seasonal_case.json'],n['SEASONAL_CASE_DEFAULT'],'case')\n"
+    "    bootstrap('case_sections',[root/'case_sections.json'],[],'sections')\n"
+    "    bootstrap('mode_gift_pools',[n['MODE_GIFT_POOLS_FILE']],{})\n"
+    "    bootstrap('mode_loot_settings',[n['MODE_LOOT_SETTINGS_FILE']],{})\n"
+    "    bootstrap('portal_snapshot',[n['PORTAL_DAILY_SNAPSHOT_FILE']],{})\n"
+    '    # Read legacy events exactly once; no remote calls in read endpoints.\n'
+    "    legacy = n['load_events']()\n"
+    "    bootstrap('events',[],legacy)\n"
+    "    for name, key in [('gifts','gifts'),('cases','cases_catalog'),('seasonal_case','seasonal_case'),\n"
+    "                      ('case_sections','case_sections'),('events','events')]:\n"
+    "        n['load_'+name] = lambda k=key: getdoc(k, [] if k in ('gifts','cases_catalog','case_sections') else {})\n"
+    "        n['save_'+name] = lambda value, k=key: putdoc(k, value)\n"
+    "    n['_mode_gift_pools_load'] = lambda: getdoc('mode_gift_pools',{})\n"
+    "    n['_mode_gift_pools_save'] = lambda value: putdoc('mode_gift_pools',value)\n"
+    "    n['_mode_loot_settings_load'] = lambda: getdoc('mode_loot_settings',{})\n"
+    "    n['_mode_loot_settings_save'] = lambda value: putdoc('mode_loot_settings',value)\n"
+    "    n['_portal_load_daily_snapshot'] = lambda: getdoc('portal_snapshot',{}) or None\n"
+    "    n['_portal_save_daily_snapshot'] = lambda value: putdoc('portal_snapshot',value)\n"
+    "    n['load_gifts_cached'] = lambda: getdoc('gifts',[])\n"
+    "    n['_sync_event_cases'] = lambda ev: False  # Explicit section membership must survive removals.\n"
+    '\n'
+    '    def active_events():\n'
+    "        events = getdoc('events',{})\n"
+    '        for ev in events.values():\n'
+    "            if ev.get('ends_at') and timestamp(ev['ends_at']) <= time.time():\n"
+    "                ev['enabled'] = False\n"
+    '        return events\n'
+    "    n['get_active_events'] = active_events\n"
+    '\n'
+    '    def timestamp(value):\n'
+    "        dt = datetime.fromisoformat(str(value).replace('Z','+00:00'))\n"
+    '        return (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).timestamp()\n'
+    '\n'
+    '    def reload_levels():\n'
+    '        with db() as con:\n'
+    "            n['LEVEL_SYSTEM'] = [dict(row) for row in con.execute('SELECT * FROM levels ORDER BY level')]\n"
+    "    n['_sync_levels_from_db'] = reload_levels\n"
+    '    reload_levels()\n'
+    '\n'
+    '    def reconcile_level(con, uid, delta=0):\n'
+    "        row = con.execute('SELECT experience,current_level FROM users WHERE id=?',(uid,)).fetchone()\n"
+    '        if row is None:\n'
+    "            raise ValueError('Пользователь не найден')\n"
+    '        xp, old = int(row[0] or 0) + max(0,int(delta)), int(row[1] or 1)\n'
+    "        levels = [dict(r) for r in con.execute('SELECT * FROM levels ORDER BY level')]\n"
+    "        reached = [x for x in levels if xp >= x['exp_required']]\n"
+    "        level = reached[-1]['level'] if reached else levels[0]['level']\n"
+    "        con.execute('UPDATE users SET experience=?,current_level=? WHERE id=?',(xp,level,uid))\n"
+    '        return xp,old,level,levels\n'
+    '\n'
+    "    def add_xp(uid, delta, reason=''):\n"
+    '        with db(True) as con:\n'
+    '            xp,old,new,levels = reconcile_level(con, uid,delta)\n'
+    "        return {'success':True,'old_level':old,'new_level':new,'total_exp':xp,'exp_gained':max(0,int(delta)),\n"
+    "                'level_up_events':[{'old_level':old,'new_level':new}] if new>old else [],\n"
+    "                'level_up_info':{'old_level':old,'new_level':new} if new>old else None}\n"
+    '\n'
+    '    def level_info(uid):\n'
+    '        with db(True) as con:\n'
+    '            xp,old,new,levels = reconcile_level(con,uid)\n'
+    "        current = next(x for x in levels if x['level']==new)\n"
+    "        nxt = next((x for x in levels if x['level']>new),None)\n"
+    "        return {'current_level':new,'experience':xp,'current_level_info':current,'next_level_info':nxt,\n"
+    "                'exp_to_next_level':max(0,nxt['exp_required']-xp) if nxt else 0,\n"
+    "                'progress_percentage':min(100,max(0,(xp-current['exp_required'])*100/max(1,nxt['exp_required']-current['exp_required']))) if nxt else 100}\n"
+    "    n['add_experience'],n['get_user_level_info'] = add_xp,level_info\n"
+    '\n'
+    '    # Signed Telegram identity or a server-side admin session. An admin_id is not authentication.\n'
+    '    def identity(raw):\n'
+    '        try:\n'
+    "            fields = dict(parse_qsl(str(raw or '').removeprefix('tma '),keep_blank_values=True))\n"
+    "            supplied = fields.pop('hash','')\n"
+    "            bot = n['TELEGRAM_BOT_TOKEN']\n"
+    "            if not bot or not supplied or abs(time.time()-int(fields.get('auth_date',0))) > 86400:\n"
+    '                return None\n'
+    "            secret = hmac.new(b'WebAppData',bot.encode(),hashlib.sha256).digest()\n"
+    "            check = '\\n'.join(f'{k}={fields[k]}' for k in sorted(fields))\n"
+    '            digest = hmac.new(secret,check.encode(),hashlib.sha256).hexdigest()\n'
+    "            return json.loads(fields['user']) if hmac.compare_digest(digest,supplied) else None\n"
+    '        except (ValueError,KeyError,TypeError):\n'
+    '            return None\n'
+    '\n'
+    '    def guard():\n'
+    '        path = request.path\n'
+    '        data = request.get_json(silent=True) or {}\n'
+    '        if not isinstance(data,dict):\n'
+    "            return jsonify(success=False,error='Ожидается JSON объект'),400\n"
+    "        admin_route = path.startswith(('/api/admin/','/api/portal/','/api/fragment/','/api/mrkt/','/api/getgems/','/api/marketplaces/'))\n"
+    "        if path == '/api/admin/session':\n"
+    '            return\n'
+    '        if admin_route:\n'
+    "            token = request.headers.get('X-Admin-Token','')\n"
+    "            expected = os.getenv('ADMIN_ACCESS_TOKEN','')\n"
+    "            user = identity(request.headers.get('X-Telegram-Init-Data','') or data.get('initData'))\n"
+    "            authorized = (session.get('admin_id') == n['ADMIN_ID'] or\n"
+    "                          bool(expected and hmac.compare_digest(token.encode('utf-8'),expected.encode('utf-8'))) or\n"
+    "                          bool(user and str(user.get('id'))==str(n['ADMIN_ID'])))\n"
+    '            if not authorized:\n'
+    "                return jsonify(success=False,error='Требуется вход администратора'),401\n"
+    "            if request.method not in ('GET','HEAD','OPTIONS') and session.get('admin_id') and not token and not user:\n"
+    "                if not hmac.compare_digest(request.headers.get('X-CSRF-Token','').encode('utf-8'),session.get('csrf','!').encode('utf-8')):\n"
+    "                    return jsonify(success=False,error='Обновите страницу: CSRF'),403\n"
+    "        elif path.startswith('/api/'):\n"
+    "            uid = data.get('user_id') or request.args.get('user_id') or (request.view_args or {}).get('user_id')\n"
+    '            if uid is not None:\n'
+    "                user = identity(request.headers.get('X-Telegram-Init-Data','') or data.get('initData'))\n"
+    "                if not user or str(user.get('id'))!=str(uid):\n"
+    "                    return jsonify(success=False,error='Требуется подписанная Telegram авторизация'),401\n"
+    '                with db() as con:\n'
+    "                    banned = con.execute('SELECT is_banned,ban_until FROM users WHERE id=?',(uid,)).fetchone()\n"
+    '                if banned and banned[0] and (not banned[1] or timestamp(banned[1]) > time.time()):\n'
+    "                    return jsonify(success=False,error='banned'),403\n"
+    '\n'
+    '    # Run auth before original initialization and handlers.\n'
+    '    app.before_request_funcs.setdefault(None,[]).insert(0,guard)\n'
+    '\n'
+    "    @app.route('/api/admin/session',methods=['GET','POST','DELETE'])\n"
+    '    def admin_session():\n'
+    "        if request.method=='DELETE':\n"
+    '            session.clear()\n'
+    '            return jsonify(success=True)\n'
+    "        if request.method=='POST':\n"
+    '            data=request.get_json(silent=True) or {}\n'
+    "            user=identity(data.get('initData'))\n"
+    "            token=str(data.get('token') or '')\n"
+    "            expected=os.getenv('ADMIN_ACCESS_TOKEN','')\n"
+    "            if not ((expected and hmac.compare_digest(token.encode('utf-8'),expected.encode('utf-8'))) or (user and str(user.get('id'))==str(n['ADMIN_ID']))):\n"
+    "                return jsonify(success=False,error='Неверный ключ или Telegram авторизация'),401\n"
+    "            session.clear(); session['admin_id']=n['ADMIN_ID']; session['csrf']=secrets.token_hex(24)\n"
+    "        return jsonify(success=session.get('admin_id')==n['ADMIN_ID'],csrf=session.get('csrf',''))\n"
+    '\n'
+    '    @app.teardown_request\n'
+    '    def close_owned(_error):\n'
+    "        for conn in getattr(g,'_owned_connections',[]):\n"
+    '            try: conn.close()\n'
+    '            except sqlite3.Error: pass\n'
+    '\n'
+    '    def replace(name, fn):\n'
+    '        n[name]=fn\n'
+    '        if name in app.view_functions:\n'
+    '            app.view_functions[name]=fn\n'
+    '\n'
+    '    def api_errors(fn):\n'
+    '        @wraps(fn)\n'
+    '        def run(*a,**kw):\n'
+    '            try:\n'
+    '                return fn(*a,**kw)\n'
+    '            except (ValueError,KeyError,TypeError,InvalidOperation) as e:\n'
+    '                return jsonify(success=False,error=str(e)),400\n'
+    '            except sqlite3.IntegrityError:\n'
+    "                return jsonify(success=False,error='Запись уже существует или операция уже выполнена'),409\n"
+    '            except sqlite3.OperationalError:\n'
+    "                n['logger'].exception('Database operation failed')\n"
+    "                return jsonify(success=False,error='База данных занята; повторите запрос'),503\n"
+    '        return run\n'
+    '\n'
+    '    # Serialize old read-modify-write admin handlers with new sync operations in the single worker.\n'
+    '    for rule in app.url_map.iter_rules():\n'
+    "        if rule.rule.startswith('/api/admin/') and set(rule.methods)&{'POST','PUT','DELETE'}:\n"
+    '            original=app.view_functions[rule.endpoint]\n'
+    '            @wraps(original)\n'
+    '            def locked(*a,_fn=original,**kw):\n'
+    '                with mutation_lock:\n'
+    '                    return _fn(*a,**kw)\n'
+    '            app.view_functions[rule.endpoint]=locked\n'
+    '\n'
+    "    quote_rate=Decimal(os.getenv('PORTAL_GRAM_PER_TON','1'))\n"
+    '    if not quote_rate.is_finite() or quote_rate<=0:\n'
+    "        raise ValueError('PORTAL_GRAM_PER_TON must be positive')\n"
+    '\n'
+    '    def gift_payload(coll,model=None):\n'
+    '        model=model or {}\n'
+    "        slug=str(coll['short_name']).lower()\n"
+    "        model_name=model.get('name')\n"
+    "        price=model.get('floor_price') if model_name else coll.get('floor_price')\n"
+    '        try: price=float(price or 0)\n'
+    '        except (ValueError,TypeError): price=0\n'
+    "        valid=math.isfinite(price) and 0<price<=20000000 and not coll.get('collection_stale')\n"
+    "        name=coll.get('name') or slug\n"
+    "        key='portal:'+slug+':'+str(model_name or '').strip().casefold()\n"
+    "        image=model.get('image') or model.get('photo_url') if model_name else (coll.get('photo_url') or n['_portal_collection_image_url'](slug))\n"
+    "        return {'gift_key':key,'name':name+((' — '+model_name) if model_name else ''),\n"
+    "                'type':'item','fragment_slug':slug,'portal_collection_name':name,\n"
+    "                'model_name':model_name,'portal_model_name':model_name,'portal_source':True,'source':'portal',\n"
+    "                'image':image or '/static/img/gift.png','animation':model.get('animation') or '',\n"
+    "                'value':minor(Decimal(str(price))*quote_rate) if valid else 0,\n"
+    "                'portal_price_ton':price if valid else None,'portal_price_gram':price if valid else None,'price_gram':float(Decimal(str(price))*quote_rate) if valid else None,\n"
+    "                'price_available':valid,'active':valid,'portal_updated_at':coll.get('updated_at'),\n"
+    "                'image_status':'available' if image else 'missing'}\n"
+    "    n['_portal_catalog_payload']=gift_payload\n"
+    '\n'
+    '    def apply_snapshot(snapshot):\n'
+    '        with mutation_lock,db(True) as con:\n'
+    "            old=getdoc('gifts',[],con)\n"
+    '            by_key={}\n'
+    "            max_id=max([int(x.get('id') or 0) for x in old if str(x.get('id') or '0').isdigit()] or [0])\n"
+    '            used_ids=set()\n'
+    '            for x in old:\n'
+    "                key=x.get('gift_key') or n['_build_case_custom_gift_id'](x.get('name',''),fragment_slug=x.get('fragment_slug'),model_name=x.get('model_name') or x.get('portal_model_name'))\n"
+    "                x['gift_key']=key\n"
+    "                if not x.get('id') or x['id'] in used_ids:\n"
+    "                    max_id+=1; x['id']=max_id\n"
+    "                used_ids.add(x['id']); by_key[key]=x\n"
+    "                source=str(x.get('source') or '').strip().lower()\n"
+    "                if source=='portal' or x.get('portal_source'):\n"
+    "                    x['active']=False\n"
+    "                elif deactivate_legacy and source not in ('manual','fragment'):\n"
+    '                    # Old bundled rows are kept for history/ID stability but are hidden\n'
+    '                    # from the live market after the first successful Portals snapshot.\n'
+    "                    x['active']=False\n"
+    "                    x['legacy_stale']=True\n"
+    '            changed=0\n'
+    "            for coll in snapshot['collections']:\n"
+    "                for model in [None]+coll.get('models',[]):\n"
+    '                    fresh=gift_payload(coll,model)\n'
+    "                    if model is not None and coll.get('models_stale'):\n"
+    '                        # Keep the last known model metadata/price for recovery and history,\n'
+    '                        # but do not expose it as a live market quote until that collection\n'
+    '                        # has a successful filters refresh again.\n'
+    "                        fresh['model_price_stale']=True\n"
+    "                        fresh['price_available']=False\n"
+    "                        fresh['active']=False\n"
+    "                    existing=by_key.get(fresh['gift_key'])\n"
+    '                    if existing is None:\n'
+    "                        max_id+=1; existing={'id':max_id}; old.append(existing);by_key[fresh['gift_key']]=existing\n"
+    '                    existing.update(fresh);changed+=1\n'
+    "            putdoc('gifts',old,con)\n"
+    "            putdoc('portal_snapshot',snapshot,con)\n"
+    '            # Refresh catalog-linked case/mode prices, retaining weights and manual event sale prices.\n'
+    "            for key in ('cases_catalog','mode_gift_pools'):\n"
+    "                doc=getdoc(key,[] if key=='cases_catalog' else {},con)\n"
+    "                pools=[x.get('gifts',[]) for x in doc] if key=='cases_catalog' else doc.values()\n"
+    '                for pool in pools:\n'
+    '                    for item in pool:\n'
+    "                        fresh=by_key.get(item.get('gift_key'))\n"
+    "                        if fresh and fresh.get('portal_source'):\n"
+    "                            for field in ('name','value','price_gram','portal_price_gram','portal_price_ton','image','animation',\n"
+    "                                          'price_available','active','portal_updated_at','fragment_slug',\n"
+    "                                          'model_name','portal_model_name','source','portal_source'):\n"
+    '                                item[field]=fresh.get(field)\n'
+    '                putdoc(key,doc,con)\n'
+    "        n['gifts_cache']=None; n['gifts_cache_time']=None\n"
+    "        return {'changed':changed,'total':len(old)}\n"
+    "    n['_portal_apply_daily_snapshot_to_gifts']=apply_snapshot\n"
+    '\n'
+    '    def sync(force=False):\n'
+    '        if not sync_lock.acquire(False):\n'
+    "            return {'success':True,'running':True}\n"
+    '        try:\n'
+    "            previous=getdoc('portal_snapshot',{})\n"
+    "            if not force and time.time()-previous.get('updated_at',0)<sync_interval:\n"
+    "                return {'success':True,'cached':True}\n"
+    "            if not n['_portal_get_token']():\n"
+    "                raise ValueError('Добавьте действующий Portals initData в настройках')\n"
+    "            n['_portal_daily_job_update'](running=True,started_at=time.time(),error='',current=0,total=0)\n"
+    "            ok,collections=n['_portal_all_collections']()\n"
+    '            if not ok or not collections:\n'
+    "                raise ValueError('Portals: '+str(collections or 'пустой ответ; предыдущий каталог сохранён'))\n"
+    "            n['_portal_daily_job_update'](total=len(collections))\n"
+    '            errors=[];completed=0\n'
+    "            old={x['short_name']:x for x in previous.get('collections',[])}\n"
+    "            missing=set(old)-{x['short_name'] for x in collections}\n"
+    '            # Bounded parallelism avoids a slow collection blocking the HTTP server.\n'
+    '            with ThreadPoolExecutor(max_workers=sync_workers) as pool:\n'
+    "                futures={pool.submit(n['_portal_collection_filters'],x['short_name']):x for x in collections}\n"
+    '                for future in as_completed(futures):\n'
+    '                    coll=futures[future]; completed+=1\n'
+    '                    try: ok,filters=future.result()\n'
+    '                    except Exception as e: ok,filters=False,str(e)\n'
+    "                    prior=old.get(coll['short_name'],{})\n"
+    "                    if str(prior.get('photo_url','')).startswith('/static/gift-media/'):\n"
+    "                        coll['photo_url']=prior['photo_url']\n"
+    "                    coll['updated_at']=datetime.now(timezone.utc).isoformat()\n"
+    '                    if ok:\n'
+    "                        for key in ('models','backdrops','symbols'):\n"
+    '                            coll[key]=filters.get(key,[])\n'
+    '                        # Preserve known model artwork; never substitute collection art for a model.\n'
+    "                        images={x['name']:x for x in prior.get('models',[])}\n"
+    "                        for model in coll['models']:\n"
+    "                            for field in ('image','photo_url','animation'):\n"
+    "                                if field in images.get(model['name'],{}): model[field]=images[model['name']][field]\n"
+    '                    else:\n'
+    "                        errors.append({'collection':coll['short_name'],'error':str(filters)[:180]})\n"
+    "                        coll['models']=copy.deepcopy(prior.get('models',[]))\n"
+    "                        coll['models_stale']=True\n"
+    "                    n['_portal_daily_job_update'](current=completed,collection=coll.get('name',''))\n"
+    '            # Keep the identity/media of missing collections until completeness\n'
+    '            # is confirmed. Their stale quotes must not be used for sales.\n'
+    '            for slug in sorted(missing):\n'
+    '                coll=copy.deepcopy(old[slug])\n'
+    '                coll.update(collection_stale=True,models_stale=True)\n'
+    '                collections.append(coll)\n'
+    "                errors.append({'collection':slug,'error':'Коллекция отсутствует в ответе; сохранена без активной цены'})\n"
+    '            for coll in collections:\n'
+    "                price=n['_portal_float'](coll.get('floor_price'))\n"
+    '                if not math.isfinite(price) or price<=0:\n'
+    "                    errors.append({'collection':coll['short_name'],'error':'Нет подтверждённой цены коллекции'})\n"
+    "            snapshot={'success':True,'updated_at':time.time(),'interval_minutes':sync_interval/60,'collections':collections,\n"
+    "                      'total_collections':len(collections),'total_models':sum(len(x.get('models',[])) for x in collections),\n"
+    "                      'filter_errors':errors,'partial':bool(errors),'currency':'GRAM','gram_per_ton':str(quote_rate)}\n"
+    '            result=apply_snapshot(snapshot)\n'
+    "            n['_portal_daily_job_update'](running=False,finished_at=time.time(),collections=len(collections),\n"
+    "                models=snapshot['total_models'],error=(f'Не обновлены модели {len(errors)} коллекций' if errors else ''))\n"
+    "            return {'success':True,**result,'partial':bool(errors)}\n"
+    '        except Exception as e:\n'
+    "            n['_portal_daily_job_update'](running=False,finished_at=time.time(),error=str(e)[:250])\n"
+    "            return {'success':False,'error':str(e)}\n"
+    '        finally:\n'
+    '            sync_lock.release()\n'
+    '\n'
+    '    def start_sync(force=True):\n'
+    '        nonlocal worker\n'
+    '        with worker_lock:\n'
+    '            if (worker and worker.is_alive()) or sync_lock.locked(): return False\n'
+    "            worker=threading.Thread(target=sync,kwargs={'force':force},name='portals-sync',daemon=True)\n"
+    '            worker.start()\n'
+    '        return True\n'
+    '\n'
+    '    def start_loop():\n'
+    '        def loop():\n'
+    '            while True:\n'
+    "                job=n['_portal_daily_job_snapshot']()\n"
+    "                retry_ok=not job.get('error') or time.time()-job.get('finished_at',0)>=60\n"
+    "                if retry_ok and n['_portal_get_token'](): start_sync(False)\n"
+    '                time.sleep(min(30, max(5, sync_interval//20)))\n'
+    "        threading.Thread(target=loop,name='portals-scheduler',daemon=True).start()\n"
+    "    n['_portal_build_daily_snapshot']=sync\n"
+    "    n['_portal_start_daily_sync']=start_sync\n"
+    "    n['start_portal_price_sync_loop']=start_loop\n"
+    '\n'
+    '    def sync_status():\n'
+    "        snapshot=getdoc('portal_snapshot',{}); updated=snapshot.get('updated_at',0)\n"
+    "        return jsonify(success=True,job=n['_portal_daily_job_snapshot'](),updated_at=updated,\n"
+    '            next_update_at=updated+sync_interval if updated else 0,interval_minutes=sync_interval/60,\n'
+    "            total_collections=snapshot.get('total_collections',0),total_models=snapshot.get('total_models',0),\n"
+    "            stale=not updated or time.time()-updated>sync_interval,partial=snapshot.get('partial',False),\n"
+    "            filter_errors=snapshot.get('filter_errors',[]),currency='GRAM')\n"
+    "    replace('portal_daily_status',sync_status)\n"
+    '\n'
+    "    @app.route('/api/admin/catalog')\n"
+    '    @api_errors\n'
+    '    def catalog():\n'
+    "        q=request.args.get('q','').strip().casefold(); model=request.args.get('model','').strip().casefold()\n"
+    "        kind=request.args.get('kind','all'); source=request.args.get('source','all')\n"
+    "        rows=getdoc('gifts',[])\n"
+    "        if request.args.get('availability','all')=='available':\n"
+    "            rows=[x for x in rows if x.get('active',True) and x.get('price_available',True) and int(x.get('value') or 0)>0]\n"
+    '        def searchable(x):\n'
+    "            return ' '.join(str(v or '') for v in (x.get('name'),x.get('portal_collection_name'),x.get('fragment_slug'),x.get('model_name'),x.get('portal_model_name'))).casefold()\n"
+    "        rows=[x for x in rows if (not q or q in searchable(x)) and (not model or model in str(x.get('model_name') or x.get('portal_model_name') or '').casefold())\n"
+    "              and (kind=='all' or bool(x.get('model_name') or x.get('portal_model_name'))==(kind=='models'))\n"
+    "              and (source=='all' or x.get('source')==source)]\n"
+    "        rows.sort(key=lambda x:(str(x.get('portal_collection_name') or x.get('name') or '').casefold(),str(x.get('model_name') or '').casefold(),int(x.get('value') or 0)))\n"
+    "        offset=max(0,int(request.args.get('offset',0))); limit=min(100,max(1,int(request.args.get('limit',40))))\n"
+    "        return jsonify(success=True,items=rows[offset:offset+limit],total=len(rows),offset=offset,currency='GRAM')\n"
+    '\n'
+    '    def find_gift(data):\n'
+    "        gift=next((x for x in getdoc('gifts',[]) if str(x.get('id'))==str(data.get('gift_id'))),None)\n"
+    "        if not gift and data.get('short_name'):\n"
+    "            c,m=n['_portal_snapshot_find'](data['short_name'],data.get('model_name'))\n"
+    "            if c and (not data.get('model_name') or m):\n"
+    "                key=gift_payload(c,m)['gift_key']\n"
+    "                gift=next((x for x in getdoc('gifts',[]) if x.get('gift_key')==key),None)\n"
+    "        if not gift: raise ValueError('Подарок не найден в каталоге')\n"
+    "        if not gift.get('active',True) or gift.get('value',0)<=0:\n"
+    "            raise ValueError('Нет актуальной цены подарка')\n"
+    "        if gift.get('portal_source'):\n"
+    "            snapshot=getdoc('portal_snapshot',{})\n"
+    "            coll=next((x for x in snapshot.get('collections',[]) if x['short_name']==gift.get('fragment_slug')), {})\n"
+    '            max_quote_age=max(1200, sync_interval * 2)\n'
+    "            if not snapshot or time.time()-snapshot.get('updated_at',0)>max_quote_age or (gift.get('model_name') and coll.get('models_stale')):\n"
+    "                raise ValueError('Цена устарела. Обновите Portals перед добавлением')\n"
+    '        return copy.deepcopy(gift)\n'
+    '\n'
+    '    def inventory_insert(con,uid,gift):\n'
+    "        if not con.execute('SELECT 1 FROM users WHERE id=?',(uid,)).fetchone(): raise ValueError('Пользователь не найден')\n"
+    "        cur=con.execute('INSERT INTO inventory(user_id,gift_id,gift_name,gift_image,gift_value,model_name,fragment_slug,gift_key,animation,nft_number) VALUES (?,?,?,?,?,?,?,?,?,?)',\n"
+    "            (uid,gift.get('id'),gift['name'],gift.get('image',''),int(gift['value']),gift.get('model_name'),gift.get('fragment_slug'),gift.get('gift_key'),gift.get('animation'),gift.get('number')))\n"
+    '        return cur.lastrowid\n'
+    '\n'
+    "    @app.route('/api/admin/catalog/action',methods=['POST'])\n"
+    '    @api_errors\n'
+    '    def catalog_action():\n'
+    "        data=request.get_json(); action=data.get('action')\n"
+    '        with mutation_lock:\n'
+    '            gift=find_gift(data)\n'
+    "            if action=='case':\n"
+    "                chance=float(data.get('chance',1))\n"
+    "                if not math.isfinite(chance) or not 0<chance<=100: raise ValueError('Вес от 0 до 100')\n"
+    "                n['_portal_add_item_to_case'](data['case_id'],gift,chance)\n"
+    "            elif action=='mode': n['_portal_add_item_to_mode'](data['mode_id'],gift)\n"
+    "            elif action=='inventory':\n"
+    '                with db(True) as con:\n'
+    "                    iid=inventory_insert(con,int(data['user_id']),gift);audit(con,'inventory_add',iid)\n"
+    "            elif action=='event':\n"
+    '                with db(True) as con:\n'
+    "                    events=getdoc('events',{},con); ev=events[data.get('event_id','witch_hat_party')]\n"
+    "                    sid=data.get('section_id','market')\n"
+    "                    sec=next((s for s in ev['sections'] if s['id']==sid and s['type']=='market'),None)\n"
+    "                    if sec is None: raise ValueError('Раздел маркета не найден')\n"
+    "                    price=minor(data['price_gram']) if data.get('price_gram') not in (None,'') else gift['value']\n"
+    "                    if price<=0: raise ValueError('Цена должна быть положительной')\n"
+    "                    gift.update(gift_url='catalog:'+secrets.token_hex(12),price_gram=price/100,price_stars=price,stock=1)\n"
+    "                    sec.setdefault('items',[]).append(gift); putdoc('events',events,con);audit(con,'event_add',gift['gift_url'])\n"
+    "            elif action!='catalog': raise ValueError('Неизвестное действие')\n"
+    "        return jsonify(success=True,gift=gift,message='Подарок добавлен')\n"
+    "    replace('admin_portal_item_action',catalog_action)\n"
+    '\n'
+    "    @app.route('/api/admin/catalog/manual',methods=['POST'])\n"
+    '    @api_errors\n'
+    '    def manual_gift():\n'
+    "        data=request.get_json(); name=str(data.get('name','')).strip()\n"
+    "        if not name or len(name)>160: raise ValueError('Введите название до 160 символов')\n"
+    "        value=minor(data.get('price_gram'))\n"
+    "        if not value: raise ValueError('Цена должна быть положительной')\n"
+    "        image=str(data.get('image') or '/static/img/gift.png')\n"
+    "        if not (image.startswith('/static/') or image.startswith('https://')): raise ValueError('Нужен HTTPS адрес PNG или /static/...')\n"
+    '        with mutation_lock,db(True) as con:\n'
+    "            gifts=getdoc('gifts',[],con); gid=max([int(x.get('id') or 0) for x in gifts] or [0])+1\n"
+    "            gift={'id':gid,'gift_key':'manual:'+secrets.token_hex(12),'name':name,'image':image,\n"
+    "                  'model_name':str(data.get('model_name') or '').strip() or None,'value':value,'price_gram':value/100,\n"
+    "                  'source':'manual','active':True,'price_available':True,'type':'item'}\n"
+    "            gifts.append(gift);putdoc('gifts',gifts,con);audit(con,'catalog_manual',gid)\n"
+    '        return jsonify(success=True,gift=gift)\n'
+    '\n'
+    "    @app.route('/api/admin/catalog/fragment',methods=['POST'])\n"
+    '    @api_errors\n'
+    '    def import_fragment():\n'
+    "        data=request.get_json(); slug,number=n['_parse_event_gift_url'](data.get('url'))\n"
+    "        value=minor(data.get('price_gram'))\n"
+    "        if not value: raise ValueError('Укажите цену продажи в GRAM')\n"
+    '        try:\n'
+    "            meta=n['_fetch_fragment_gift_metadata'](data.get('url'))\n"
+    '        except ValueError:\n'
+    "            return jsonify(success=False,error='Fragment не вернул метаданные. Подарок не добавлен'),502\n"
+    '        with mutation_lock,db(True) as con:\n'
+    "            gifts=getdoc('gifts',[],con); key=f'fragment:{slug}:{number}'\n"
+    "            gift=next((x for x in gifts if x.get('gift_key')==key),None)\n"
+    '            if gift is None:\n'
+    "                gift={'id':max([int(x.get('id') or 0) for x in gifts] or [0])+1};gifts.append(gift)\n"
+    "            gift.update(gift_key=key,name=meta.get('name') or f'{slug} #{number}',fragment_slug=slug,number=number,\n"
+    "                image=meta.get('image') or f'https://nft.fragment.com/gift/{slug}-{number}.webp',\n"
+    "                animation=meta.get('animation') or '',model_name=meta.get('model_name'),value=value,price_gram=value/100,\n"
+    "                source='fragment',price_source='manual',active=True,price_available=True,type='item')\n"
+    "            putdoc('gifts',gifts,con);audit(con,'fragment_import',key)\n"
+    '        return jsonify(success=True,gift=gift)\n'
+    '\n'
+    "    def market_read(event_id='witch_hat_party'):\n"
+    '        ev=active_events().get(event_id,{})\n'
+    '        items=[]\n'
+    "        if ev.get('enabled'):\n"
+    "            for sec in ev.get('sections',[]):\n"
+    "                if sec.get('type')!='market' or sec.get('visible') is False: continue\n"
+    "                if sec.get('unlock_at') and timestamp(sec['unlock_at'])>time.time(): continue\n"
+    "                for x in sec.get('items',[]):\n"
+    "                    row=dict(x);row['url']=row.get('gift_url') or row.get('url');items.append(row)\n"
+    "        return jsonify(success=True,items=items,sections=ev.get('sections',[]))\n"
+    "    replace('api_witch_hat_market',market_read)\n"
+    "    replace('api_ghost_road_market',lambda:market_read('ghost_road'))\n"
+    '\n'
+    '    def buy_event_market(event_id):\n'
+    "        data=request.get_json(silent=True) or {};uid=int(data['user_id']);url=str(data.get('gift_url') or '')\n"
+    "        if not url: raise ValueError('Подарок не указан')\n"
+    '        with mutation_lock,db(True) as con:\n'
+    "            events=getdoc('events',{},con);ev=events.get(event_id)\n"
+    "            if not ev: raise ValueError('Ивент не найден')\n"
+    "            if not ev.get('enabled') or (ev.get('ends_at') and timestamp(ev['ends_at'])<=time.time()): raise ValueError('Ивент завершён')\n"
+    '            sec=None;gift=None\n'
+    "            for section in ev.get('sections',[]):\n"
+    "                if section.get('type')!='market': continue\n"
+    "                for item in section.get('items',[]):\n"
+    "                    if str(item.get('gift_url') or item.get('url') or '')==url:\n"
+    '                        sec,gift=section,item;break\n'
+    '                if gift is not None: break\n'
+    "            if gift is None: return jsonify(success=False,error='Подарок уже продан или не найден'),409\n"
+    "            if sec.get('visible') is False or (sec.get('unlock_at') and timestamp(sec['unlock_at'])>time.time()): raise ValueError('Раздел ещё закрыт')\n"
+    "            if gift.get('unlock_at') and timestamp(gift['unlock_at'])>time.time(): raise ValueError('Подарок ещё закрыт')\n"
+    "            value=minor(gift.get('price_gram'))\n"
+    "            if value<=0: raise ValueError('Некорректная цена')\n"
+    "            changed=con.execute('UPDATE users SET balance_stars=balance_stars-? WHERE id=? AND balance_stars>=?',(value,uid,value)).rowcount\n"
+    "            if not changed: raise ValueError('Недостаточно GRAM')\n"
+    "            item=dict(gift);item['value']=value\n"
+    '            iid=inventory_insert(con,uid,item)\n'
+    "            sec['items'].remove(gift);putdoc('events',events,con)\n"
+    '            reconcile_level(con,uid,value)\n'
+    '            con.execute("INSERT INTO user_history(user_id,operation_type,amount,description) VALUES (?,\'event_market_buy\',?,?)",(uid,-value,gift.get(\'name\') or \'Подарок\'))\n'
+    "            balance=con.execute('SELECT balance_stars FROM users WHERE id=?',(uid,)).fetchone()[0]\n"
+    "        n['_user_balance_cache'].pop(uid,None);n['_user_cache'].pop(uid,None)\n"
+    '        return jsonify(success=True,event_id=event_id,inventory_id=iid,new_balance=balance,balance_gram=balance/100,\n'
+    "                       price_gram=value/100,gift_name=gift.get('name') or 'Подарок',gift_image=gift.get('image'))\n"
+    '\n'
+    '    @api_errors\n'
+    '    def event_buy():\n'
+    "        return buy_event_market('witch_hat_party')\n"
+    "    replace('api_witch_hat_market_buy',event_buy)\n"
+    '\n'
+    "    @app.route('/api/events/ghost-road/market/buy',methods=['POST'])\n"
+    '    @api_errors\n'
+    '    def api_ghost_road_market_buy_safe():\n'
+    "        return buy_event_market('ghost_road')\n"
+    '\n'
+    '    @api_errors\n'
+    '    def request_withdrawal():\n'
+    "        data=request.get_json();uid=int(data['user_id']);iid=int(data['gift_id'])\n"
+    '        with db(True) as con:\n'
+    "            item=con.execute('SELECT * FROM inventory WHERE id=? AND user_id=?',(iid,uid)).fetchone()\n"
+    "            if not item: raise ValueError('Подарок не найден')\n"
+    "            if item['is_withdrawing']:\n"
+    '                row=con.execute("SELECT id FROM withdrawals WHERE inventory_id=? AND status IN (\'pending\',\'processing\') ORDER BY id DESC LIMIT 1",(iid,)).fetchone()\n'
+    '                if row: return jsonify(success=True,withdrawal_id=row[0],already_requested=True)\n'
+    "                raise ValueError('Подарок заблокирован')\n"
+    "            if item['crate_id']: raise ValueError('Сначала откройте ящик')\n"
+    "            if con.execute('SELECT 1 FROM promo_gift_challenges WHERE inventory_id=? AND is_completed=0',(iid,)).fetchone():\n"
+    "                raise ValueError('Завершите отыгрыш подарка')\n"
+    "            user=con.execute('SELECT first_name,username,photo_url FROM users WHERE id=?',(uid,)).fetchone()\n"
+    "            if not user: raise ValueError('Пользователь не найден')\n"
+    "            con.execute('UPDATE inventory SET is_withdrawing=1 WHERE id=?',(iid,))\n"
+    '            cur=con.execute("INSERT INTO withdrawals(user_id,inventory_id,gift_name,gift_image,gift_value,telegram_username,user_photo_url,user_first_name,status) VALUES (?,?,?,?,?,?,?,?,\'pending\')",\n'
+    "                (uid,iid,item['gift_name'],item['gift_image'] or '',item['gift_value'],user['username'],user['photo_url'],user['first_name']))\n"
+    '            wid=cur.lastrowid\n'
+    '            con.execute("INSERT INTO user_history(user_id,operation_type,amount,description) VALUES (?,\'withdraw_request\',0,?)",(uid,f\'Заявка #{wid}\'))\n'
+    "        return jsonify(success=True,withdrawal_id=wid,message='Заявка на ручной вывод создана')\n"
+    "    replace('withdraw_gift',request_withdrawal)\n"
+    '\n'
+    '    @api_errors\n'
+    '    def withdrawal_status():\n'
+    "        data=request.get_json();wid=int(data['withdrawal_id']);status=data['status']\n"
+    "        transitions={'pending':{'processing','rejected'},'processing':{'approved','rejected','error'}}\n"
+    '        with db(True) as con:\n'
+    "            row=con.execute('SELECT * FROM withdrawals WHERE id=?',(wid,)).fetchone()\n"
+    "            if not row: raise ValueError('Заявка не найдена')\n"
+    "            if row['status']==status: return jsonify(success=True,unchanged=True)\n"
+    "            if status not in transitions.get(row['status'],set()):\n"
+    "                return jsonify(success=False,error='Недопустимый переход. Сначала возьмите заявку в обработку'),409\n"
+    "            notes=str(data.get('admin_notes') or '').strip()\n"
+    "            if status=='approved' and not notes: raise ValueError('Укажите подтверждение перевода: ссылку/ID операции или примечание')\n"
+    "            con.execute('UPDATE withdrawals SET status=?,admin_notes=?,processed_at=CURRENT_TIMESTAMP WHERE id=?',(status,notes,wid))\n"
+    "            if status=='approved':\n"
+    '                # Keep withdrawal snapshots, but detach every historical FK\n'
+    '                # before deleting the delivered inventory item.\n'
+    "                con.execute('UPDATE withdrawals SET inventory_id=NULL WHERE inventory_id=?',(row['inventory_id'],))\n"
+    "                if not con.execute('DELETE FROM inventory WHERE id=? AND user_id=? AND is_withdrawing=1',(row['inventory_id'],row['user_id'])).rowcount:\n"
+    "                    raise ValueError('Зарезервированный подарок не найден')\n"
+    "            elif status in ('rejected','error'):\n"
+    "                con.execute('UPDATE inventory SET is_withdrawing=0 WHERE id=? AND user_id=?',(row['inventory_id'],row['user_id']))\n"
+    "            audit(con,'withdraw_'+status,wid)\n"
+    '            con.execute("INSERT INTO user_history(user_id,operation_type,amount,description) VALUES (?,?,0,?)",(row[\'user_id\'],\'withdraw_\'+status,f\'Заявка #{wid}\'))\n'
+    "        return jsonify(success=True,message='Статус обновлён')\n"
+    "    replace('update_withdrawal_status',withdrawal_status)\n"
+    '\n'
+    '    @api_errors\n'
+    '    def inventory_add():\n'
+    '        data=request.get_json()\n'
+    "        if data.get('gift_id') or data.get('short_name'): gift=find_gift(data)\n"
+    '        else:\n'
+    "            value=int(data.get('gift_value',0));name=str(data.get('gift_name') or '').strip()\n"
+    "            if not name or value<0: raise ValueError('Нужны название и неотрицательная стоимость')\n"
+    "            gift={'name':name,'value':value,'image':str(data.get('gift_image') or '/static/img/gift.png')}\n"
+    '        with db(True) as con:\n'
+    "            iid=inventory_insert(con,int(data['user_id']),gift);audit(con,'inventory_add',iid)\n"
+    "        return jsonify(success=True,id=iid,message='Предмет добавлен')\n"
+    "    replace('admin_user_inventory_add',inventory_add)\n"
+    "    replace('admin_add_inventory_item',inventory_add)\n"
+    '\n'
+    '    @api_errors\n'
+    '    def inventory_edit(delete=False):\n'
+    "        data=request.get_json();iid=int(data.get('item_id') or data.get('inventory_id'))\n"
+    '        with db(True) as con:\n'
+    "            item=con.execute('SELECT * FROM inventory WHERE id=?',(iid,)).fetchone()\n"
+    "            if not item: raise ValueError('Предмет не найден')\n"
+    "            if data.get('user_id') and str(item['user_id'])!=str(data['user_id']): raise ValueError('Предмет другого пользователя')\n"
+    "            if item['is_withdrawing']: return jsonify(success=False,error='Предмет зарезервирован для вывода'),409\n"
+    '            if delete:\n'
+    "                con.execute('UPDATE withdrawals SET inventory_id=NULL WHERE inventory_id=?',(iid,))\n"
+    "                con.execute('DELETE FROM inventory WHERE id=?',(iid,))\n"
+    '            else:\n'
+    "                name=str(data.get('gift_name',item['gift_name'])).strip()\n"
+    "                value=int(data.get('gift_value',item['gift_value']))\n"
+    "                if not name or value<0: raise ValueError('Некорректное название или цена')\n"
+    "                con.execute('UPDATE inventory SET gift_name=?,gift_image=?,gift_value=? WHERE id=?',\n"
+    "                    (name,data.get('gift_image',item['gift_image']),value,iid))\n"
+    "            audit(con,'inventory_delete' if delete else 'inventory_edit',iid)\n"
+    "        return jsonify(success=True,message='Сохранено')\n"
+    "    replace('admin_user_inventory_edit',inventory_edit)\n"
+    "    replace('admin_user_inventory_delete',lambda:inventory_edit(True))\n"
+    "    replace('admin_remove_inventory_item',lambda:inventory_edit(True))\n"
+    '\n'
+    '    @api_errors\n'
+    '    def levels_save():\n'
+    "        data=request.get_json();level=int(data['level']);xp=int(data.get('exp_required',0));reward=int(data.get('reward_stars',0))\n"
+    "        if level<1 or xp<0 or reward<0 or (level==1 and xp!=0): raise ValueError('Уровень ≥1, XP ≥0; первый уровень — 0 XP')\n"
+    '        with db(True) as con:\n'
+    "            other=[dict(x) for x in con.execute('SELECT * FROM levels WHERE level!=? ORDER BY level',(level,))]\n"
+    "            if any((x['level']<level and x['exp_required']>=xp) or (x['level']>level and x['exp_required']<=xp) for x in other):\n"
+    "                raise ValueError('Пороги XP должны строго возрастать')\n"
+    "            con.execute('INSERT INTO levels(level,exp_required,reward_stars,reward_tickets) VALUES (?,?,?,0) ON CONFLICT(level) DO UPDATE SET exp_required=excluded.exp_required,reward_stars=excluded.reward_stars,reward_tickets=0',(level,xp,reward))\n"
+    '            con.execute("DELETE FROM level_rewards WHERE level=? AND description=\'admin_level_gram\'",(level,))\n'
+    '            if reward:\n'
+    '                con.execute("INSERT INTO level_rewards(level,reward_type,reward_data,description) VALUES (?,\'stars\',?,\'admin_level_gram\')",(level,json.dumps({\'amount\':reward})))\n'
+    "            audit(con,'level_save',level)\n"
+    '        reload_levels()\n'
+    '        return jsonify(success=True)\n'
+    "    replace('api_admin_levels_save',levels_save)\n"
+    '\n'
+    '    @api_errors\n'
+    '    def levels_delete(level_num):\n'
+    "        if level_num==1: raise ValueError('Первый уровень нельзя удалить')\n"
+    '        with db(True) as con:\n'
+    "            con.execute('DELETE FROM levels WHERE level=?',(level_num,));con.execute('DELETE FROM level_rewards WHERE level=?',(level_num,));audit(con,'level_delete',level_num)\n"
+    '        reload_levels();return jsonify(success=True)\n'
+    "    replace('api_admin_levels_delete',levels_delete)\n"
+    '\n'
+    '    @api_errors\n'
+    '    def admin_update_user_safe():\n'
+    '        data=request.get_json(silent=True) or {}\n'
+    "        uid=int(data.get('user_id'))\n"
+    "        balance=data.get('balance_stars')\n"
+    "        level=data.get('level')\n"
+    '        with mutation_lock,db(True) as con:\n'
+    "            current=con.execute('SELECT balance_stars,current_level,experience FROM users WHERE id=?',(uid,)).fetchone()\n"
+    "            if not current: raise ValueError('Пользователь не найден')\n"
+    '            updates=[];params=[]\n'
+    '            if balance is not None:\n'
+    '                balance=int(balance)\n'
+    "                if balance<0 or balance>2_000_000_000: raise ValueError('Баланс должен быть от 0 до 20 000 000 GRAM')\n"
+    "                updates.append('balance_stars=?');params.append(balance)\n"
+    '            if level is not None:\n'
+    '                level=int(level)\n'
+    "                target=con.execute('SELECT exp_required FROM levels WHERE level=?',(level,)).fetchone()\n"
+    "                if not target: raise ValueError('Такого уровня нет в настройках')\n"
+    "                if level!=int(current['current_level'] or 1):\n"
+    '                    # XP is canonical. Move it to the selected level threshold so\n'
+    '                    # the next reconciliation cannot immediately undo the admin edit.\n'
+    "                    updates.extend(('current_level=?','experience=?'));params.extend((level,int(target['exp_required'])))\n"
+    '            if updates:\n'
+    "                params.append(uid);con.execute('UPDATE users SET '+','.join(updates)+' WHERE id=?',params)\n"
+    "            audit(con,'user_update',uid)\n"
+    "        n['_user_balance_cache'].pop(uid,None);n['_user_cache'].pop(uid,None)\n"
+    "        return jsonify(success=True,message='Пользователь обновлён')\n"
+    "    replace('admin_update_user',admin_update_user_safe)\n"
+    '\n'
+    '    # Both activation URLs use the same extended implementation and same UNIQUE constraint.\n'
+    "    original_promo=n['activate_promo_for_case']\n"
+    '    @api_errors\n'
+    '    def activate_promo():\n'
+    "        data=request.get_json();uid=int(data['user_id'])\n"
+    '        with db() as con:\n'
+    "            if not con.execute('SELECT 1 FROM users WHERE id=?',(uid,)).fetchone(): raise ValueError('Пользователь не найден')\n"
+    "            row=con.execute('SELECT reward_type,reward_stars,reward_data,expires_at FROM promo_codes WHERE code=?',(str(data['promo_code']).strip().upper(),)).fetchone()\n"
+    "        allowed={'stars','gram','tickets','stars+tickets','crash_vip','case_discount','rocket','background','inventory_gift','wager','gift_challenge','case_open'}\n"
+    '        if row:\n'
+    "            if (row['reward_type'] or 'stars') not in allowed: raise ValueError('Неизвестный тип награды')\n"
+    "            if row['expires_at'] and timestamp(row['expires_at'])<=time.time(): raise ValueError('Срок действия промокода истёк')\n"
+    '        response=original_promo()\n'
+    '        res=response[0] if isinstance(response,tuple) else response\n'
+    '        payload=res.get_json()\n'
+    "        if payload.get('success'):\n"
+    "            n['_user_balance_cache'].pop(uid,None);n['_user_cache'].pop(uid,None)\n"
+    "            payload['currency']='GRAM';payload['reward_gram']=int(payload.get('reward_stars',0))/100\n"
+    "            if payload.get('reward_type') in ('stars','gram','stars+tickets'):\n"
+    '                payload[\'message\']=f"Промокод активирован: {payload[\'reward_gram\']:.2f} GRAM"\n'
+    '            return jsonify(payload)\n'
+    '        return response\n'
+    "    replace('activate_promo_for_case',activate_promo)\n"
+    "    replace('use_promo_code',activate_promo)\n"
+    '\n'
+    '    # Current legacy market API reads the same catalog; old/stale rows stay in history only.\n'
+    '    def runtime_catalog(force_refresh=False):\n'
+    "        return [x for x in getdoc('gifts',[]) if x.get('active',True) and x.get('price_available',True) and x.get('value',0)>0]\n"
+    "    n['build_full_catalog_with_models']=runtime_catalog\n"
+    "    n['build_fragment_first_gifts_catalog']=runtime_catalog\n"
+    '\n'
+    '    # PNG conversion only for known provider artwork; no arbitrary URL proxy or redirects.\n'
+    "    media_dir=root/'gift_media';media_dir.mkdir(exist_ok=True)\n"
+    "    media_hosts={'nft.fragment.com','fragment.com','cdn.portals-market.com','portals-market.com','portal-market.com'}\n"
+    '    def cache_png(url):\n'
+    '        parsed=urlparse(str(url))\n'
+    "        if parsed.scheme!='https' or parsed.hostname not in media_hosts or parsed.port not in (None,443):\n"
+    "            raise ValueError('Источник изображения не поддерживается')\n"
+    "        key=hashlib.sha256(url.encode()).hexdigest()+'.png';dest=media_dir/key\n"
+    '        if not dest.exists():\n'
+    '            response=requests.get(url,timeout=(3,8),stream=True,allow_redirects=False)\n'
+    "            if response.status_code!=200: raise ValueError('Изображение недоступно')\n"
+    '            raw=bytearray()\n'
+    '            with response:\n'
+    '                for chunk in response.iter_content(65536):\n'
+    '                    raw.extend(chunk)\n'
+    "                    if len(raw)>8*1024*1024: raise ValueError('Изображение слишком большое')\n"
+    '            from PIL import Image\n'
+    '            with Image.open(io.BytesIO(raw)) as img:\n'
+    "                if img.width*img.height>16000000: raise ValueError('Слишком большое разрешение')\n"
+    '                img.thumbnail((1024,1024))\n'
+    "                tmp=dest.with_name(dest.name+'.'+secrets.token_hex(6)+'.tmp')\n"
+    "                img.convert('RGBA').save(tmp,format='PNG');os.replace(tmp,dest)\n"
+    "        return '/static/gift-media/'+key\n"
+    '\n'
+    "    @app.route('/static/gift-media/<filename>')\n"
+    '    def gift_media(filename):\n'
+    "        if not re.fullmatch(r'[a-f0-9]{64}\\.png',filename): return '',404\n"
+    '        return send_from_directory(media_dir,filename,max_age=86400)\n'
+    '\n'
+    "    @app.route('/api/admin/catalog/artwork',methods=['POST'])\n"
+    '    @api_errors\n'
+    '    def artwork():\n'
+    '        data=request.get_json();gift=find_gift(data)\n'
+    '        return jsonify(success=True,image=hydrate_artwork(gift))\n'
+    '\n'
+    '    def hydrate_artwork(gift):\n'
+    "        image=gift.get('image')\n"
+    "        if gift.get('source')=='portal' and gift.get('model_name') and image=='/static/img/gift.png':\n"
+    "            coll,_=n['_portal_snapshot_find'](gift['fragment_slug'],gift['model_name'])\n"
+    "            if not isinstance(coll,dict) or not coll.get('name'):\n"
+    "                raise ValueError('Коллекция отсутствует в снимке Portals. Обновите каталог.')\n"
+    "            ok,result,_=n['_portal_request']('GET','/nfts/search',params={\n"
+    "                'filter_by_collections':coll['name'],'filter_by_models':gift['model_name'],'sort_by':'price asc','limit':20},timeout=8)\n"
+    "            if not ok: raise ValueError('Не удалось загрузить пример модели с Portals')\n"
+    "            rows=n['_portal_extract_array'](result,('results','nfts','items','gifts'))\n"
+    "            exemplar=next((x for x in rows if n['_portal_attr'](x,'model').casefold()==gift['model_name'].casefold()),None)\n"
+    "            if not exemplar: raise ValueError('Нет доступного изображения этой модели')\n"
+    "            image=exemplar.get('photo_url');gift['animation']=exemplar.get('animation_url') or ''\n"
+    "        if str(image).startswith('/static/gift-media/'): return image\n"
+    '        png=cache_png(image)\n'
+    '        with mutation_lock,db(True) as con:\n'
+    "            gifts=getdoc('gifts',[],con)\n"
+    '            for row in gifts:\n'
+    "                if row['id']==gift['id']: row.update(image=png,png=png,image_status='available',animation=gift.get('animation',''))\n"
+    "            putdoc('gifts',gifts,con)\n"
+    "            snapshot=getdoc('portal_snapshot',{},con)\n"
+    "            for coll in snapshot.get('collections',[]):\n"
+    "                if coll['short_name']==gift.get('fragment_slug'):\n"
+    "                    if gift.get('model_name'):\n"
+    "                        for model in coll.get('models',[]):\n"
+    "                            if model['name']==gift['model_name']: model.update(image=png,animation=gift.get('animation',''))\n"
+    "                    else: coll['photo_url']=png\n"
+    "            putdoc('portal_snapshot',snapshot,con)\n"
+    '        return png\n'
+    '\n'
+    "    @app.route('/api/admin/service-health')\n"
+    '    def service_health():\n'
+    '        start=time.perf_counter()\n'
+    "        with db() as con: con.execute('SELECT 1').fetchone()\n"
+    "        snap=getdoc('portal_snapshot',{})\n"
+    "        live=[x for x in getdoc('gifts',[]) if x.get('active',True) and x.get('price_available',True) and int(x.get('value') or 0)>0]\n"
+    '        return jsonify(success=True,db_ms=round((time.perf_counter()-start)*1000,2),\n'
+    "            currency='GRAM',interval_seconds=sync_interval,sync_workers=sync_workers,\n"
+    "            portal_connected=bool(n['_portal_get_token']()),catalog_items=len(live),\n"
+    "            catalog_updated_at=snap.get('updated_at'),catalog_partial=snap.get('partial',False))\n"
+    '\n'
+    '    # Exposed for focused transaction tests without network calls.\n'
+    "    n['_admin_services']={'db':db,'getdoc':getdoc,'putdoc':putdoc,'sync':sync,'apply_snapshot':apply_snapshot,\n"
+    "                          'minor':minor,'identity':identity,'level_info':level_info}\n"
+    '\n'
+    '    transport = threading.local()\n'
+    '    def portal_request(method,path,token=None,json_body=None,params=None,timeout=10):\n'
+    "        auth=n['_portal_normalize_auth_token'](token if token is not None else n['_portal_get_token']())\n"
+    "        if not auth: return False,'Portals initData не задан',0\n"
+    '\n'
+    "        configured=os.getenv('PORTAL_API_BASE','').strip().rstrip('/')\n"
+    '        candidates=[]\n'
+    '        if configured: candidates.append(configured)\n'
+    "        for base in n.get('PORTAL_API_BASES',[]):\n"
+    "            base=str(base or '').strip().rstrip('/')\n"
+    '            if base and base not in candidates: candidates.append(base)\n'
+    "        if not candidates: candidates=['https://portal-market.com/api','https://portals-market.com/api']\n"
+    "        current=n.get('_portal_working_base')\n"
+    '        if current in candidates:\n'
+    '            candidates.remove(current);candidates.insert(0,current)\n'
+    "        if any(not base.startswith('https://') for base in candidates):\n"
+    "            return False,'PORTAL_API_BASE должен использовать HTTPS',0\n"
+    '\n'
+    "        if not hasattr(transport,'clients'):\n"
+    '            transport.clients={}\n'
+    '        engines=[]\n'
+    "        if n.get('_PORTAL_CURL_AVAILABLE') and n.get('_portal_curl_requests') is not None:\n"
+    "            engines.append('curl')\n"
+    "        engines.append('requests')\n"
+    "        last_error='Portals недоступен; предыдущие данные сохранены';last_status=0\n"
+    '        for base in candidates:\n'
+    "            root=base.split('/api',1)[0].rstrip('/')\n"
+    "            headers={'Authorization':auth,'Accept':'application/json, text/plain, */*',\n"
+    "                     'Origin':root,'Referer':root+'/','User-Agent':'Mozilla/5.0 Chrome/137 Safari/537.36'}\n"
+    '            for engine in engines:\n'
+    '                key=(engine,base)\n'
+    '                try:\n'
+    '                    if key not in transport.clients:\n'
+    "                        if engine=='curl':\n"
+    "                            transport.clients[key]=n['_portal_curl_requests'].Session(impersonate='chrome110')\n"
+    '                        else:\n'
+    '                            transport.clients[key]=requests.Session()\n'
+    '                    client=transport.clients[key]\n'
+    "                    response=client.request(method,base+'/'+path.lstrip('/'),params=params,json=json_body,headers=headers,\n"
+    '                        timeout=min(max(float(timeout),1),10),allow_redirects=False)\n'
+    "                    status=int(getattr(response,'status_code',0) or 0);last_status=status\n"
+    '                    if status in (401,403):\n'
+    "                        return False,'Portals отклонил авторизацию или доступ. Обновите initData.',status\n"
+    '                    if status==429:\n'
+    "                        return False,'Лимит Portals. Снимок не перезаписан; повтор будет позже.',status\n"
+    '                    if status==404:\n'
+    "                        last_error=f'Portals endpoint {path} не найден на {base}'\n"
+    '                        break\n'
+    '                    if not 200<=status<300:\n'
+    "                        last_error=f'Portals HTTP {status}'\n"
+    '                        continue\n'
+    '                    result=response.json()\n'
+    '                    if not isinstance(result,(dict,list)):\n'
+    "                        return False,'Portals вернул некорректный JSON',status\n"
+    "                    n['_portal_working_base']=base\n"
+    '                    return True,result,status\n'
+    '                except Exception as exc:\n'
+    "                    last_error=f'Portals {engine}: {str(exc)[:160]}; предыдущие данные сохранены'\n"
+    '                    continue\n'
+    '        return False,last_error,last_status\n'
+    "    n['_portal_request']=portal_request\n"
+    '\n'
+    '    def portal_local_status():\n'
+    "        snapshot=getdoc('portal_snapshot',{});token=bool(n['_portal_get_token']());job=n['_portal_daily_job_snapshot']()\n"
+    "        return jsonify(success=True,has_token=token,connected=bool(token and snapshot.get('updated_at') and not job.get('error')),\n"
+    "            error=job.get('error'),info={'total_collections':snapshot.get('total_collections',0),\n"
+    "            'last_sync_ago': str(int(time.time()-snapshot['updated_at']))+' сек назад' if snapshot.get('updated_at') else 'никогда'},\n"
+    "            currency='GRAM',interval_minutes=sync_interval/60)\n"
+    "    replace('portal_status_legacy',portal_local_status)\n"
+    "    replace('portal_auth_status',portal_local_status)\n"
+    '\n'
+    '    @api_errors\n'
+    '    def token_endpoint():\n'
+    "        if request.method=='GET': return portal_local_status()\n"
+    '        data=request.get_json(silent=True) or {}\n'
+    "        if request.method=='DELETE' or request.endpoint=='portal_logout':\n"
+    "            n['_portal_delete_token']();return jsonify(success=True,message='Portals отключён')\n"
+    "        token=str(data.get('token') or data.get('initData') or data.get('auth_data') or '').strip()\n"
+    "        valid,error=n['_portal_validate_token'](token)\n"
+    '        if not valid: raise ValueError(error)\n'
+    "        n['_portal_save_token'](token)\n"
+    "        try: os.chmod(n['PORTAL_TOKEN_FILE'],0o600)\n"
+    '        except OSError: pass\n'
+    '        start_sync(True)\n'
+    "        return jsonify(success=True,has_token=True,message='Токен сохранён; обновление запущено в фоне')\n"
+    "    for name in ('portal_token','portal_save_token','portal_logout'): replace(name,token_endpoint)\n"
+    '\n'
+    '    @api_errors\n'
+    '    def sync_endpoint():\n'
+    "        if not n['_portal_get_token'](): raise ValueError('Сначала сохраните Portals initData')\n"
+    '        started=start_sync(True)\n'
+    "        return jsonify(success=True,started=started,message='Обновление запущено' if started else 'Обновление уже идёт')\n"
+    "    replace('portal_sync_prices',sync_endpoint)\n"
+    '\n'
+    "    old_claim=n['claim_reward']\n"
+    '    @api_errors\n'
+    '    def claim_reward():\n'
+    "        data=request.get_json();level_info(int(data['user_id']))\n"
+    '        with mutation_lock:\n'
+    '            result=old_claim()\n'
+    "        n['_user_balance_cache'].pop(int(data['user_id']),None)\n"
+    '        return result\n'
+    "    replace('claim_reward',claim_reward)\n"
+    '\n'
+    '    def media_loop():\n'
+    '        while True:\n'
+    "            snap=getdoc('portal_snapshot',{})\n"
+    "            if snap and time.time()-snap.get('updated_at',0)<max(1200, sync_interval * 2):\n"
+    "                attempts=getdoc('media_attempts',{})\n"
+    "                gifts=[x for x in getdoc('gifts',[]) if x.get('source') in ('portal','fragment') and x.get('active',True)\n"
+    "                       and not str(x.get('image','')).startswith('/static/gift-media/')\n"
+    "                       and time.time()-attempts.get(str(x['id']),0)>600]\n"
+    '                for gift in gifts[:20]:\n'
+    '                    try: hydrate_artwork(gift)\n'
+    "                    except Exception as e: n['logger'].info('Artwork unavailable for gift %s: %s',gift['id'],str(e)[:120])\n"
+    "                    attempts[str(gift['id'])]=time.time();putdoc('media_attempts',attempts)\n"
+    '                    time.sleep(1)\n'
+    '            time.sleep(10)\n'
+    "    if os.getenv('APP_TESTING')!='1' and os.getenv('AUTO_GIFT_PNG','1')=='1':\n"
+    "        threading.Thread(target=media_loop,name='gift-png-cache',daemon=True).start()\n"
+    '\n'
+    '    with db(True) as con:\n'
+    "        con.execute('CREATE TABLE IF NOT EXISTS case_code_redemptions(user_id INTEGER,case_id TEXT,code TEXT,PRIMARY KEY(user_id,case_id,code))')\n"
+    '\n'
+    '    @api_errors\n'
+    '    def open_case():\n'
+    "        data=request.get_json();uid=int(data['user_id']);ref=str(data['case_id'])\n"
+    "        quantity=1 if request.endpoint=='open_case_single' else int(data.get('quantity',1))\n"
+    "        if not 1<=quantity<=5: raise ValueError('Можно открыть от 1 до 5 кейсов')\n"
+    '        with mutation_lock,db(True) as con:\n'
+    "            cases=getdoc('cases_catalog',[],con)\n"
+    "            case=next((x for x in cases if ref in n['_case_ref_candidates'](x)),None)\n"
+    "            if ref=='seasonal':\n"
+    "                case=getdoc('seasonal_case',{},con)\n"
+    "                if not n['seasonal_case_is_active'](case): raise ValueError('Сезонный кейс закрыт')\n"
+    "            if case is None: raise ValueError('Кейс не найден')\n"
+    "            case_id=case['id']\n"
+    "            if case.get('open_date') and timestamp(case['open_date'])>time.time(): raise ValueError('Кейс ещё закрыт')\n"
+    "            if case.get('event_case'):\n"
+    "                events=getdoc('events',{},con)\n"
+    '                accessible=False\n'
+    '                for ev in events.values():\n'
+    "                    if not ev.get('enabled') or (ev.get('ends_at') and timestamp(ev['ends_at'])<=time.time()): continue\n"
+    "                    for sec in ev.get('sections',[]):\n"
+    "                        if str(case_id) in [str(x) for x in sec.get('case_ids',[])] and sec.get('visible',True) and not (sec.get('unlock_at') and timestamp(sec['unlock_at'])>time.time()): accessible=True\n"
+    "                if not accessible: raise ValueError('Кейс ивента закрыт')\n"
+    '            xp,old,current,levels=reconcile_level(con,uid)\n'
+    "            if current<int(case.get('required_level',1)): raise ValueError('Недостаточный уровень')\n"
+    "            free=bool(case.get('free'));promo=bool(case.get('promo'))\n"
+    '            if free:\n'
+    "                if quantity!=1: raise ValueError('Бесплатный кейс открывается по одному')\n"
+    "                remaining=n['_get_free_case_remaining_seconds'](con.cursor(),uid,case)\n"
+    "                if remaining>0: raise ValueError(f'Повторное открытие через {remaining} секунд')\n"
+    '            if promo:\n'
+    "                if quantity!=1: raise ValueError('Промокейс открывается по одному')\n"
+    "                code=str(data.get('promo_code') or '').strip().upper()\n"
+    "                embedded=next((x for x in case.get('promo_codes',[]) if str(x.get('code','')).upper()==code),None)\n"
+    "                stored=con.execute('SELECT * FROM promo_codes WHERE code=?',(code,)).fetchone()\n"
+    '                valid=bool(embedded)\n'
+    "                if embedded and embedded.get('expires_at') and timestamp(embedded['expires_at'])<=time.time(): valid=False\n"
+    "                if stored and stored['reward_type']=='case_open' and stored['is_active']:\n"
+    "                    meta=json.loads(stored['reward_data'] or '{}')\n"
+    "                    valid=str(meta.get('case_id',case_id))==str(case_id)\n"
+    "                    if stored['expires_at'] and timestamp(stored['expires_at'])<=time.time():valid=False\n"
+    "                    if valid and not con.execute('SELECT 1 FROM used_promo_codes WHERE user_id=? AND promo_code_id=?',(uid,stored['id'])).fetchone():\n"
+    "                        if stored['max_uses'] and stored['used_count']>=stored['max_uses']: valid=False\n"
+    '                        else:\n'
+    "                            con.execute('INSERT INTO used_promo_codes(user_id,promo_code_id) VALUES (?,?)',(uid,stored['id']))\n"
+    "                            con.execute('UPDATE promo_codes SET used_count=used_count+1 WHERE id=?',(stored['id'],))\n"
+    "                if not code or not valid: raise ValueError('Промокод не подходит или истёк')\n"
+    '                if embedded:\n'
+    "                    maximum=int(embedded.get('uses_left',0) or 0)\n"
+    "                    used=con.execute('SELECT COUNT(*) FROM case_code_redemptions WHERE case_id=? AND code=?',(str(case_id),code)).fetchone()[0]\n"
+    "                    if maximum and used>=maximum: raise ValueError('Лимит промокода исчерпан')\n"
+    "                con.execute('INSERT INTO case_code_redemptions VALUES (?,?,?)',(uid,str(case_id),code))\n"
+    "            cost=minor(case.get('cost',0)) if case.get('cost_type') in ('ton','gram') else int(case.get('cost',0))\n"
+    "            if cost<0: raise ValueError('Некорректная цена кейса')\n"
+    "            if case.get('cost_type')=='tickets': raise ValueError('Измените валюту кейса на GRAM в админке')\n"
+    '            charged=0 if free or promo else cost*quantity\n'
+    "            if not con.execute('UPDATE users SET balance_stars=balance_stars-? WHERE id=? AND balance_stars>=?',(charged,uid,charged)).rowcount:\n"
+    "                raise ValueError('Недостаточно GRAM')\n"
+    "            if case.get('limited'):\n"
+    "                row=con.execute('SELECT current_amount FROM case_limits WHERE case_id=?',(case_id,)).fetchone()\n"
+    "                left=int(row[0] if row else case.get('amount',0))\n"
+    "                if left<quantity: raise ValueError('Лимит кейса исчерпан')\n"
+    "                con.execute('INSERT INTO case_limits(case_id,current_amount) VALUES (?,?) ON CONFLICT(case_id) DO UPDATE SET current_amount=excluded.current_amount',(case_id,left-quantity))\n"
+    "            gifts=getdoc('gifts',[],con);by_id={str(x['id']):x for x in gifts};pool=[];weights=[]\n"
+    "            for entry in case.get('gifts',[]):\n"
+    "                weight=float(entry.get('chance',0))\n"
+    "                if not math.isfinite(weight) or weight<0: raise ValueError('Неверный вес подарка')\n"
+    '                if weight==0:continue\n'
+    "                if entry.get('type') in ('gram_balance','ton_balance'):\n"
+    "                    amount=minor(entry.get('gram_amount',entry.get('ton_amount',0)))\n"
+    "                    item={'id':-1,'name':'GRAM','image':'/static/img/gift.png','type':'gram_balance','value':amount}\n"
+    '                else:\n'
+    "                    item=by_id.get(str(entry.get('id') or entry.get('gift_id')))\n"
+    "                    if not item or not item.get('active',True) or item.get('price_available') is False:\n"
+    "                        raise ValueError('В кейсе есть недоступный подарок; обновите состав')\n"
+    '                pool.append(item);weights.append(weight)\n'
+    "            if not pool: raise ValueError('В кейсе нет подарков с положительным весом')\n"
+    '            import random\n'
+    '            wins=[]\n'
+    '            for _ in range(quantity):\n'
+    '                gift=copy.deepcopy(random.SystemRandom().choices(pool,weights=weights,k=1)[0])\n'
+    "                if gift.get('type')=='gram_balance':con.execute('UPDATE users SET balance_stars=balance_stars+? WHERE id=?',(gift['value'],uid))\n"
+    "                else:gift['inventory_id']=inventory_insert(con,uid,gift)\n"
+    "                con.execute('INSERT INTO case_open_history(user_id,case_id,case_name,gift_id,gift_name,gift_image,gift_value,cost,cost_type) VALUES (?,?,?,?,?,?,?,?,?)',\n"
+    "                    (uid,case_id,case['name'],gift['id'],gift['name'],gift['image'],gift['value'],charged//quantity,'stars'))\n"
+    "                con.execute('INSERT INTO win_history(user_id,user_name,gift_name,gift_image,gift_value,case_name) VALUES (?,?,?,?,?,?)',\n"
+    "                    (uid,str(uid),gift['name'],gift['image'],gift['value'],case['name']))\n"
+    '                wins.append(gift)\n'
+    "            con.execute('UPDATE users SET total_cases_opened=total_cases_opened+? WHERE id=?',(quantity,uid))\n"
+    '            _,old,new,_=reconcile_level(con,uid,charged)\n'
+    "            balance=con.execute('SELECT balance_stars,balance_tickets FROM users WHERE id=?',(uid,)).fetchone()\n"
+    "        n['_user_balance_cache'].pop(uid,None);n['_user_cache'].pop(uid,None)\n"
+    "        return jsonify(success=True,gift=wins[0],won_gifts=wins,new_balance={'stars':balance[0],'tickets':balance[1]},\n"
+    "                       balance_gram=balance[0]/100,exp_gained=charged,level_up={'old_level':old,'new_level':new} if new>old else None)\n"
+    "    replace('open_case',open_case)\n"
+    "    replace('open_case_single',open_case)\n"
+    '\n'
+    '    def fragment_metadata(gift_url):\n'
+    "        slug,number=n['_parse_event_gift_url'](gift_url)\n"
+    "        base=f'https://nft.fragment.com/gift/{slug}-{number}'\n"
+    '        try:\n'
+    "            response=requests.get(base+'.json',timeout=(3,8));response.raise_for_status();meta=response.json()\n"
+    "            if not isinstance(meta,dict) or not isinstance(meta.get('name'),str) or not meta['name'].strip():raise ValueError()\n"
+    "            attributes=meta.get('attributes') or []\n"
+    '            if not isinstance(attributes,list) or any(not isinstance(x,dict) for x in attributes):raise ValueError()\n'
+    '        except Exception:\n'
+    "            raise ValueError('Не удалось проверить подарок на Fragment. Повторите позже.')\n"
+    "        return {'gift_url':f'https://fragment.com/gift/{slug}-{number}','fragment_slug':slug,'number':number,\n"
+    "                'name':meta['name'],'image':meta.get('image') or base+'.webp',\n"
+    "                'animation':meta.get('animation_url') or '',\n"
+    "                'model_name':next((x.get('value') for x in attributes if str(x.get('trait_type') or x.get('type')).lower()=='model'),None),\n"
+    "                'source':'fragment','price_source':'manual','metadata_url':base+'.json'}\n"
+    "    n['_fetch_fragment_gift_metadata']=fragment_metadata\n"
+    '\n'
+    '    from market_integrations import fragment_sale_rows\n'
+    "    n['_parse_fragment_grid_prices']=fragment_sale_rows\n"
+    '\n'
+    '    def fragment_floor(slug):\n'
+    "        slug=str(slug or '').lower()\n"
+    "        if not re.fullmatch(r'[a-z0-9_-]+',slug):\n"
+    "            raise ValueError('Некорректная коллекция Fragment')\n"
+    "        response=requests.get(f'https://fragment.com/gifts/{slug}',params={'sort':'price_asc','filter':'sale'},\n"
+    '                              timeout=(3,10),allow_redirects=False)\n'
+    '        if response.status_code!=200:\n'
+    "            raise ValueError(f'Fragment HTTP {response.status_code}; цена не обновлена')\n"
+    '        rows=fragment_sale_rows(response.text)\n'
+    "        prices=[price for path,price in rows if n['_fragment_nft_path_from_listing'](path)[0]==slug]\n"
+    '        # This is only the minimum on the returned sale page, not proof that\n'
+    '        # every page/listing in the marketplace has been fetched.\n'
+    '        return min(prices) if prices else None\n'
+    "    n['_fetch_fragment_collection_price']=fragment_floor\n"
+    '\n'
+    '    def merge_fragment_quotes(rows):\n'
+    '        """Store collection TON quotes without overwriting model/manual GRAM prices."""\n'
+    '        added=0\n'
+    '        with mutation_lock,db(True) as con:\n'
+    "            gifts=getdoc('gifts',[],con)\n"
+    '            for incoming in rows:\n'
+    "                slug=str(incoming.get('fragment_slug') or '').lower()\n"
+    "                if not re.fullmatch(r'[a-z0-9_-]+',slug): continue\n"
+    "                if incoming.get('model_name') or incoming.get('portal_model_name') or incoming.get('number'): continue\n"
+    "                key='fragment-collection:'+slug\n"
+    "                gift=next((g for g in gifts if g.get('gift_key')==key),None)\n"
+    '                if gift is None:\n'
+    "                    gift={'id':max([int(g.get('id') or 0) for g in gifts] or [0])+1,\n"
+    "                          'gift_key':key,'name':incoming.get('name') or slug,'fragment_slug':slug,\n"
+    "                          'source':'fragment','price_source':'fragment_sale_page','type':'item',\n"
+    "                          'image':incoming.get('image') or '/static/img/gift.png',\n"
+    "                          'value':0,'price_gram':None,'active':False,'price_available':False}\n"
+    '                    gifts.append(gift);added+=1\n'
+    "                try: price=float(incoming.get('fragment_price_ton'))\n"
+    '                except (ValueError,TypeError): price=0\n'
+    '                if math.isfinite(price) and price>0:\n'
+    "                    gift.update(fragment_price_ton=price,fragment_price_updated_at=incoming.get('fragment_price_updated_at'),\n"
+    "                                quote_currency='TON',quote_scope='collection_sale_page')\n"
+    '                # A TON quote cannot become a GRAM sale price without a verified\n'
+    '                # exchange rate. Existing individual gift prices stay separate.\n'
+    "            putdoc('gifts',gifts,con)\n"
+    '        return added\n'
+    "    n['_write_fragment_catalog_to_local_gifts']=merge_fragment_quotes\n"
+    '\n'
+    "    old_rewards_info=n['get_rewards_info']\n"
+    '    @api_errors\n'
+    '    def rewards_info(user_id):\n'
+    '        level_info(user_id)\n'
+    '        return old_rewards_info(user_id)\n'
+    "    replace('get_rewards_info',rewards_info)\n"
+))
 from admin_services import install as _install_admin_services
 _install_admin_services(globals())
 
@@ -27741,35 +29071,23 @@ except Exception as _e:
 
 # Webhook запускается из _lazy_init в отдельном фоне (см. выше).
 
+
+# Embedded fallback artwork and compatibility URL for cached admin pages.
+@app.get('/static/img/gift.png')
+def _bundled_gift_image():
+    import base64
+    from flask import Response
+    return Response(base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAC30lEQVR4nO3dMU4bQRhA4XHEKWjcQw09JUeIlUtESomEkCgj5RLIOULu4NR0aZMuZyAFWmmxdvHuesYzf9772nh3xjPP68VYYbW+uHlJwvpQewKqywDgDADOAOAMAM4A4AwAzgDgDADOAOAMAM4A4AwAzgDgDADOAOAMAO6s9gRyeN5ej/7b5WZX9Py5xqhlFfUrYYc2ZcjcjZo7RsQQQgawZPM7UzbpmPNPHaMVoQI4dmP6xjYp1xhRIghzE5hz88fOl3OM3PMtJUQApRazf94SY0SI4L/4KSCl4UtupLeMWpq/B8jxI1jpm8ZDY7R8PxDiLWDI5WY3eWHnPHb/uBKPbUnTAUS/vHZafh5NBzBm6aut9Cs64lUgZADKxwDgDADOAOBCBrD0rnrOcUvGaPluf0zTAUS8qx7S8vNoOoD3PG+vJ7/i5jx2/7gSj21J8x8FpzRtcZf+LqA7bulHztG/LVQ8gI9ffxx9jrvz+wwzqePxz8PR5/j+5TbDTIaFeAvIsYg1RJh3iABSirGYfVHmGyaAlF4XNcLCRphjJ1QAnVYXOEqgfWG/EdRf6PduErvHLbmRnHpstE3vCxtAX+kNiLzBh4R8C1A+BgBnAHAGAGcAcAYAZwBwBgBnAHAGAFf8o+D9LzNcfX4qPeSw8/mH/Pr9N/88Jvj57dPJxvIKAGcAcAYAZwBwBgBnAHAGAGcAcAYAZwBwBgBnAHAGAGcAcAYAZwBwBgBnAHAGAGcAcAYAZwBwBgBnAHAGAGcAcAYAZwBwBgBnAHAGAGcAcAYAZwBwBgBnAHAGAGcAcAYAZwBwBgBnAHAGAGcAcAYAZwBwJw/glP8VekSnXh+vAHBVAvAqMKzGulS7AhjBW7XWo+pfD++edLU/I9OA2i+E1fri5qXqDFSVN4FwBgBnAHAGAGcAcAYAZwBwBgBnAHAGAGcAcAYAZwBwBgBnAHAGAGcAcAYAZwBwBgBnAHD/AKNtr+oSDanoAAAAAElFTkSuQmCC'), mimetype='image/png')
+
+@app.get('/static/admin-upgrade.js')
+def _bundled_admin_javascript():
+    from flask import Response
+    from pathlib import Path
+    page = Path(BASE_PATH, 'admin.html').read_text(encoding='utf-8')
+    match = re.search(r'<script id="admin-upgrade-embedded-js">(.*?)</script>', page, re.S)
+    return Response(match.group(1) if match else '', mimetype='application/javascript', status=200 if match else 404)
+
 if __name__ == '__main__':
-    # На Render сервис ОБЯЗАН слушать 0.0.0.0 и порт из $PORT — иначе
-    # платформа не сможет достучаться до контейнера и деплой будет
-    # считаться "неживым", даже если процесс запустился.
-    host = os.getenv('HOST', '0.0.0.0')
-    port = int(os.getenv('PORT', 5000))
-    
-    print("\n" + "=" * 60)
-    print("🎮 RasswetGifts — Запуск сервера")
-    print("=" * 60)
-    
-    # ⚠️ Проверка базы данных
-    if USE_POSTGRES:
-        print("🐘 База данных: PostgreSQL (данные сохраняются)")
-    else:
-        print("⚠️ " + "=" * 54 + " ⚠️")
-        print("⚠️  ВНИМАНИЕ: Используется SQLite!")
-        print("⚠️  Данные будут ПОТЕРЯНЫ при редеплое!")
-        print("⚠️  Установите DATABASE_URL для PostgreSQL!")
-        print("⚠️ " + "=" * 54 + " ⚠️")
-    
-    print(f"\n🚀 Flask сервер:  http://{host}:{port}")
-    print(f"🎰 Crash игра:    http://{host}:{port}/crash")
-    print("🤖 Telegram бот:  webhook")
-    print("\n⚡ Нажмите Ctrl+C для остановки\n")
-    
-    # threaded=True критично для бота: без него Flask dev-сервер
-    # обрабатывает по одному запросу за раз, и пока выполняется долгий
-    # запрос (например, синк цен Portal/Fragment), апдейты от Telegram
-    # просто ждут в очереди — бот выглядит "зависшим". Для реальной
-    # прод-нагрузки на Render всё же лучше gunicorn (см. Procfile).
-    app.run(host=host, port=port, debug=False, use_reloader=False, threaded=True)
+    from waitress import serve
+    serve(app, host=os.getenv('HOST', '0.0.0.0'), port=int(os.getenv('PORT', '5000')),
+          threads=8, connection_limit=100, channel_timeout=30)
