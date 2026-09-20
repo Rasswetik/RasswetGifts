@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, render_template_string, request, jsonify, send_from_directory, redirect, make_response, g, has_request_context, send_file
 from jinja2 import TemplateNotFound
 import sqlite3
