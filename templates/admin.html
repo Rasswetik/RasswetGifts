@@ -1535,6 +1535,15 @@ function renderEventSections(events){
  box.querySelectorAll('.mode-remove-item').forEach(function(b){b.onclick=function(){removeModeButton(b.dataset.sectionId,b.dataset.itemId)}});
  bindUnlockControls(box);
  box.querySelectorAll('.event-remove-gift').forEach(function(b){b.onclick=function(){if(b.dataset.giftUrl)removeEventGift(b.dataset.giftUrl);else removeEventMarket(b.dataset.fragmentSlug)}});
+ var _adminCasesPromise = null;
+ function adminCasesLookup(id){
+   if(!_adminCasesPromise){
+     _adminCasesPromise = fetch('/api/admin/cases?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'})
+       .then(function(r){return r.json()}).then(function(d){return (d&&d.success&&d.cases)||[]}).catch(function(){return []});
+     setTimeout(function(){_adminCasesPromise=null},3000);
+   }
+   return _adminCasesPromise.then(function(list){return list.find(function(x){return String(x.id)===String(id)})||null});
+ }
  box.querySelectorAll('.event-case-admin[data-case-id]').forEach(function(row){
    var id=row.dataset.caseId;
    var url='/api/cases/'+encodeURIComponent(id)+'?ts='+Date.now();
@@ -1542,10 +1551,8 @@ function renderEventSections(events){
      row.innerHTML='<span style="flex:1;color:#ff8099">'+escapeHtml(msg)+'</span><button class="event-remove-case" type="button">✕</button>';
      row.querySelector('.event-remove-case').onclick=function(){removeEventCase(row.dataset.sectionId,row.dataset.caseId)};
    }
-   fetch(url,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
-     var c=d&&d.success?d.case:null;
-     if(!c){failRow('Кейс #'+id+' не найден — удалите привязку');return}
-     row.innerHTML='<img src="'+escapeHtml(c.image||'/static/img/gift.png')+'" style="width:38px;height:38px;object-fit:contain;border-radius:8px"><span style="flex:1"><b>'+escapeHtml(c.name||'Кейс')+'</b><small style="display:block;color:rgba(255,255,255,.4)">'+(c.seasonal?'Сезонный':'Event')+' · можно редактировать</small></span><button class="btn btn-secondary btn-sm event-edit-case" type="button">Изменить</button><button class="event-remove-case" type="button">✕</button>';
+   function paintRow(c){
+     row.innerHTML='<img src="'+escapeHtml(c.image||'/static/img/gift.png')+'" style="width:38px;height:38px;object-fit:contain;border-radius:8px" onerror="this.src=\'/static/img/gift.png\'"><span style="flex:1"><b>'+escapeHtml(c.name||'Кейс')+'</b><small style="display:block;color:rgba(255,255,255,.4)">'+(c.seasonal?'Сезонный':'Event')+' · можно редактировать</small></span><button class="btn btn-secondary btn-sm event-edit-case" type="button">Изменить</button><button class="event-remove-case" type="button">✕</button>';
      row.querySelector('.event-remove-case').onclick=function(){removeEventCase(row.dataset.sectionId,row.dataset.caseId)};
      var openEditor=function(){openEventCaseEditor(c,row.dataset.sectionId)};
      row.querySelector('.event-edit-case').onclick=openEditor;
@@ -1553,7 +1560,19 @@ function renderEventSections(events){
      row.querySelector('span').onclick=openEditor;
      row.querySelector('img').style.cursor='pointer';
      row.querySelector('img').onclick=openEditor;
-   }).catch(function(){failRow('Кейс #'+id+': ошибка загрузки, обновите страницу')});
+   }
+   fetch(url,{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){
+     var c=d&&d.success?d.case:null;
+     if(c){paintRow(c);return}
+     // публичный API не отдал кейс — ищем среди всех кейсов админки
+     return adminCasesLookup(id).then(function(c2){
+       if(c2)paintRow(c2); else failRow('Кейс #'+id+' удалён — уберите привязку (✕)');
+     });
+   }).catch(function(){
+     adminCasesLookup(id).then(function(c2){
+       if(c2)paintRow(c2); else failRow('Кейс #'+id+': ошибка загрузки, обновите страницу');
+     });
+   });
  });
 }
 
@@ -1984,11 +2003,32 @@ async function loadGifts(){
     var el = $('giftGrid');
     if(el) el.innerHTML = '<div class="loading" style="grid-column:1/-1">Загрузка</div>';
     try{
-        var r = await fetch('/api/admin/get-gifts-list');
+        var r = await fetch('/api/admin/get-gifts-list?models=1');
         var d = await r.json();
-        if(d.success){ allGifts = d.gifts || []; renderGifts(allGifts); }
+        if(d.success){ allGifts = d.gifts || []; registerGiftImageFallbacks(allGifts); renderGifts(allGifts); }
     }catch(e){ if(el) el.innerHTML = '<div class="empty" style="grid-column:1/-1">Ошибка</div>'; }
 }
+/* Запасные картинки: если основной PNG не загрузился — пробуем следующие адреса */
+var _imgFbMap = {};
+function registerGiftImageFallbacks(list){
+    (list || []).forEach(function(g){
+        if(g && g.image && g.image_fallbacks && g.image_fallbacks.length) _imgFbMap[g.image] = g.image_fallbacks.slice();
+        (g && g.models || []).forEach(function(m){
+            if(m && m.image && m.image_fallbacks && m.image_fallbacks.length) _imgFbMap[m.image] = m.image_fallbacks.slice();
+        });
+    });
+}
+document.addEventListener('error', function(ev){
+    var t = ev.target;
+    if(!t || t.tagName !== 'IMG') return;
+    var cur = t.getAttribute('src') || '';
+    var tried = t.__tried || (t.__tried = {});
+    tried[cur] = 1;
+    var chain = _imgFbMap[cur] || [];
+    for(var i = 0; i < chain.length; i++){
+        if(!tried[chain[i]]){ t.src = chain[i]; return; }
+    }
+}, true);
 function renderGifts(gifts){
     var el = $('giftGrid');
     if(!el) return;
@@ -1999,7 +2039,7 @@ function renderGifts(gifts){
         return '<div class="gift-card">' +
             '<img class="gc-img" src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'">' +
             '<div class="gc-name">' + escapeHtml(g.name) + '</div>' +
-            '<div class="gc-price">' + ton + ' грамм</div>' +
+            '<div class="gc-price">' + ton + ' грамм' + (g.model_count ? ' · ' + g.model_count + ' мод.' : '') + '</div>' +
             '<div class="gc-actions">' +
             '<button class="gc-btn gc-btn-edit" onclick="editGift(' + g.id + ')">✎</button>' +
             '<button class="gc-btn gc-btn-del" onclick="deleteGift(' + g.id + ')">🗑</button>' +
@@ -2106,7 +2146,7 @@ async function loadCasesList(){
             el.innerHTML = allCases.map(function(c){
                 var img = c.image || '/static/img/gift.png';
                 var gifts_count = (c.gifts || []).length;
-                return '<div class="list-item" onclick="openCaseEditor(' + c.id + ')">' +
+                return '<div class="list-item" data-case-id="' + escapeHtml(String(c.id)) + '" onclick="openCaseEditor(this.dataset.caseId)">' +
                     '<div class="avatar" style="border-radius:10px;background:rgba(0,0,0,.3)"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
                     '<div class="info"><div class="name">' + escapeHtml(c.name) + '</div>' +
                     '<div class="meta">ID #' + escapeHtml(String(c.id)) + ' · 🎁 ' + gifts_count + ' · ' + ((Number(c.cost||0)/100).toFixed(2)) + ' GRAM</div></div>' +
@@ -2127,11 +2167,32 @@ function openEventCaseEditor(caseData,eventSectionId){
     var num=Number(id);
     openCaseEditor(isNaN(num)?id:num,eventSectionId);
 }
-function openCaseEditor(caseId, eventSectionId){
+function _findCaseLocal(caseId){
+    return allCases.find(function(x){ return String(x.id) === String(caseId); }) || null;
+}
+/* Кейс ищем локально, потом среди ВСЕХ кейсов на сервере, потом по публичному API —
+   раньше искали только в списке event-кейсов и получали «Кейс не найден». */
+async function _fetchCaseAnywhere(caseId){
+    try{
+        var r = await fetch('/api/admin/cases?admin_id=' + ADMIN_ID + '&ts=' + Date.now(), {cache:'no-store'});
+        var d = await r.json();
+        if(d && d.success){
+            var f = (d.cases || []).find(function(x){ return String(x.id) === String(caseId); });
+            if(f) return f;
+        }
+    }catch(e){}
+    try{
+        var r2 = await fetch('/api/cases/' + encodeURIComponent(caseId) + '?ts=' + Date.now(), {cache:'no-store'});
+        var d2 = await r2.json();
+        if(d2 && d2.success && d2.case) return d2.case;
+    }catch(e){}
+    return null;
+}
+async function openCaseEditor(caseId, eventSectionId){
     currentCase = null;
     caseGifts = [];
 
-    if(caseId === null){
+    if(caseId === null || caseId === undefined || caseId === ''){
         currentCase = { id: null, event_section_id: eventSectionId || null };
         $('caseEditorTitle').textContent = '➕ Новый кейс';
         $('ceDeleteBtn').style.display = 'none';
@@ -2142,11 +2203,20 @@ function openCaseEditor(caseId, eventSectionId){
         $('ceImagePreview').innerHTML = '';
 
     } else {
-        var c = allCases.find(function(x){ return x.id === caseId; });
+        var c = _findCaseLocal(caseId);
+        if(!c){
+            c = await _fetchCaseAnywhere(caseId);
+            if(c){
+                var ix = allCases.findIndex(function(x){ return String(x.id) === String(c.id); });
+                if(ix >= 0) allCases[ix] = c; else allCases.push(c);
+            }
+        }
         if(!c){ showToast('Кейс не найден', 'err'); return; }
         currentCase = JSON.parse(JSON.stringify(c));
         if(eventSectionId) currentCase.event_section_id = eventSectionId;
         caseGifts = (currentCase.gifts || []).map(function(g){ var x=Object.assign({},g); x.chance = Number.isFinite(Number(x.chance)) ? Number(x.chance) : 1; return x; });
+        registerGiftImageFallbacks(caseGifts);
+        caseGifts.forEach(function(g){ if(g.image && g.image_fallbacks && g.image_fallbacks.length) _imgFbMap[g.image] = g.image_fallbacks.slice(); });
         $('caseEditorTitle').textContent = '✎ ' + c.name;
         $('ceDeleteBtn').style.display = 'flex';
         $('ceName').value = c.name || '';
@@ -2262,6 +2332,14 @@ function addCaseGiftEntry(candidate){
     showToast('Подарок добавлен','ok');
 }
 
+function _caseTrimGift(g){
+    var x = Object.assign({}, g);
+    delete x.models; delete x._picker_key; delete x.model_count_hint;
+    return x;
+}
+function _giftPrice(v){ return (Number(v || 0) / 100).toFixed(2); }
+
+/* Модель: добавляем в общий каталог (получаем id) и кладём в кейс с PNG/ценой/названием модели */
 async function addCasePortalModel(collection, model){
     try{
         var r = await fetch('/api/admin/portal-item-action', {
@@ -2271,16 +2349,19 @@ async function addCasePortalModel(collection, model){
                 admin_id:ADMIN_ID,
                 action:'catalog',
                 short_name:collection.short_name,
-                model_name:model.name
+                model_name:model.model_name || model.name
             })
         });
         var d = await r.json();
         if(!r.ok || !d.success) throw Error(d.error || 'Не удалось добавить модель');
         var gift = Object.assign({}, d.gift || {});
-        gift.model_name = model.name;
-        gift.portal_model_name = model.name;
+        var mname = model.model_name || model.name;
+        gift.model_name = mname;
+        gift.portal_model_name = mname;
         gift.model_random = false;
         gift.type = 'gift';
+        if(model.image){ gift.image = model.image; gift.image_fallbacks = model.image_fallbacks || gift.image_fallbacks || []; }
+        if(gift.image && gift.image_fallbacks) _imgFbMap[gift.image] = gift.image_fallbacks.slice();
         if(!allGifts.some(function(x){return String(x.gift_key||x.id)===String(gift.gift_key||gift.id);})){
             allGifts.push(gift);
         }
@@ -2307,10 +2388,20 @@ function addCaseRandomModel(collection, baseGift){
     addCaseGiftEntry(gift);
 }
 
+function addCasePlainGift(baseGift){
+    var gift = _caseTrimGift(baseGift);
+    gift.model_name = '';
+    gift.portal_model_name = '';
+    gift.model_random = false;
+    gift.type = 'gift';
+    if(gift.image && gift.image_fallbacks) _imgFbMap[gift.image] = gift.image_fallbacks.slice();
+    addCaseGiftEntry(gift);
+}
+
 function renderCaseGiftBasePicker(items, portalCatalog){
     var html =
-        '<div class="modal-title">🎁 Обычный подарок</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,.48);margin-bottom:10px">Сначала выбери подарок. Затем откроется выбор конкретной модели или случайной модели.</div>' +
+        '<div class="modal-title">🎁 Добавить в кейс</div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,.48);margin-bottom:10px">Можно добавить обычный подарок или конкретную модель (у каждой — свой PNG, название и цена).</div>' +
         '<div class="search-wrap" style="margin-bottom:10px"><input class="search-input" id="caseGiftSearch" placeholder="Поиск подарка..."></div>' +
         '<div class="portal-target-list" id="caseGiftBaseList"></div>';
     openModal(html);
@@ -2320,24 +2411,26 @@ function renderCaseGiftBasePicker(items, portalCatalog){
         var box=$('caseGiftBaseList');
         var rows=items.filter(function(x){
             return !q || cleanCaseGiftName(x.name||'').toLowerCase().indexOf(q)!==-1;
-        });
-        box.innerHTML=rows.map(function(item,index){
+        }).slice(0, 200);
+        box.innerHTML=rows.map(function(item){
             var slug=String(item.fragment_slug||'').toLowerCase();
             var pc=portalCatalog.find(function(c){return String(c.short_name||'').toLowerCase()===slug;});
-            var count=pc&&Array.isArray(pc.models)?pc.models.length:Number(item.model_count||0);
-            return '<button class="portal-target-btn case-base-gift" data-index="'+index+'" data-key="'+escapeHtml(String(item._picker_key||''))+'">' +
-                '<span style="display:flex;align-items:center;gap:9px;min-width:0">' +
+            var count=Array.isArray(item.models)&&item.models.length?item.models.length:(pc&&Array.isArray(pc.models)?pc.models.length:Number(item.model_count||0));
+            return '<div class="portal-target-btn case-base-gift" data-key="'+escapeHtml(String(item._picker_key||''))+'">' +
+                '<span style="display:flex;align-items:center;gap:9px;min-width:0;flex:1">' +
                     '<img src="'+escapeHtml(item.image||'/static/img/gift.png')+'" style="width:38px;height:38px;object-fit:contain;border-radius:8px;background:rgba(0,0,0,.2)" onerror="this.src=\'/static/img/gift.png\'">' +
-                    '<span style="min-width:0"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(cleanCaseGiftName(item.name||'Gift'))+'</b><small>'+count+' моделей</small></span>' +
-                '</span><span>›</span></button>';
+                    '<span style="min-width:0"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(cleanCaseGiftName(item.name||'Gift'))+'</b><small>'+_giftPrice(item.value)+' GRAM · '+count+' моделей</small></span>' +
+                '</span>' +
+                '<span style="display:flex;gap:6px;flex:0 0 auto">' +
+                    '<button type="button" class="btn btn-success btn-sm case-add-plain" style="padding:8px 10px">+ Подарок</button>' +
+                    '<button type="button" class="btn btn-secondary btn-sm case-open-models" style="padding:8px 10px">Модели ›</button>' +
+                '</span></div>';
         }).join('') || '<div class="empty">Ничего не найдено</div>';
 
-        box.querySelectorAll('.case-base-gift').forEach(function(btn){
-            btn.onclick=function(){
-                var key=btn.dataset.key;
-                var item=items.find(function(x){return String(x._picker_key||'')===key;});
-                if(item) openCaseModelPicker(item,portalCatalog);
-            };
+        box.querySelectorAll('.case-base-gift').forEach(function(row){
+            var item=items.find(function(x){return String(x._picker_key||'')===row.dataset.key;});
+            row.querySelector('.case-add-plain').onclick=function(e){ e.stopPropagation(); if(item) addCasePlainGift(item); };
+            row.querySelector('.case-open-models').onclick=function(e){ e.stopPropagation(); if(item) openCaseModelPicker(item,portalCatalog); };
         });
     }
     $('caseGiftSearch').oninput=paint;
@@ -2350,19 +2443,21 @@ async function openCaseModelPicker(baseGift, portalCatalog){
         return String(c.short_name||'').toLowerCase()===slug;
     });
 
-    // If Portal snapshot has no model data, try the existing model endpoint as fallback.
-    var models=coll&&Array.isArray(coll.models)?coll.models.slice():[];
+    // ВСЕ модели подарка: название, цена (GRAM) и PNG приходят с сервера (Portal-каталог)
+    var models=Array.isArray(baseGift.models)?baseGift.models.slice():[];
     if(!models.length && slug){
         try{
-            var r=await fetch('/api/fragment-gift-models?slug='+encodeURIComponent(slug)+'&name='+encodeURIComponent(baseGift.name||'')+'&ts='+Date.now(),{cache:'no-store'});
+            var r=await fetch('/api/gift-models?slug='+encodeURIComponent(slug)+'&name='+encodeURIComponent(baseGift.name||'')+'&ts='+Date.now(),{cache:'no-store'});
             var d=await r.json();
-            if(r.ok&&d.success&&Array.isArray(d.models)){
-                models=d.models.map(function(m){
-                    return {name:m.model_name||m.name||'Model',floor_price:Number(m.fragment_price_ton||m.portal_price_ton||0),_fragment:m};
-                });
-            }
+            if(r.ok&&d.success&&Array.isArray(d.models)) models=d.models;
         }catch(e){}
     }
+    if(!models.length && coll && Array.isArray(coll.models)){
+        models=coll.models.map(function(m){
+            return {name:cleanCaseGiftName(baseGift.name||'')+' '+m.name,model_name:m.name,value:Math.max(1,Math.round(Number(m.floor_price||0)*100)),image:m.image||baseGift.image,image_fallbacks:[baseGift.image]};
+        });
+    }
+    registerGiftImageFallbacks([{models:models}]);
 
     if(!coll){
         coll={
@@ -2378,39 +2473,38 @@ async function openCaseModelPicker(baseGift, portalCatalog){
 
     var html =
         '<div class="modal-title">'+escapeHtml(cleanCaseGiftName(coll.name||baseGift.name||'Gift'))+'</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,.48);margin-bottom:10px">Выбери вариант для кейса.</div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,.48);margin-bottom:10px">Выбери, что добавить в кейс. Моделей: '+models.length+'.</div>' +
+        '<div class="search-wrap" style="margin-bottom:8px"><input class="search-input" id="caseModelSearch" placeholder="Поиск модели..."></div>' +
         '<div class="portal-target-list">' +
+          '<button class="portal-target-btn" id="casePlainBtn"><span style="display:flex;align-items:center;gap:9px"><img src="'+escapeHtml(baseGift.image||'/static/img/gift.png')+'" style="width:34px;height:34px;object-fit:contain" onerror="this.src=\'/static/img/gift.png\'"><span><b>Обычный подарок</b><small style="display:block">'+_giftPrice(baseGift.value)+' GRAM · основной PNG</small></span></span></button>' +
           '<button class="portal-target-btn" id="caseRandomModelBtn"><b>🎲 Случайная модель</b><small>Модель выбирается при выигрыше</small></button>' +
-          (models.length ? models.map(function(m,i){
-              var p=Number(m.floor_price||0);
-              return '<button class="portal-target-btn case-model-choice" data-model-index="'+i+'"><b>'+escapeHtml(m.name||'Model')+'</b><small>'+(p>0?p.toFixed(3)+' TON':'модель')+'</small></button>';
-          }).join('') : '<div class="empty">У этого подарка список моделей не найден. Можно выбрать случайную модель.</div>') +
+          '<div id="caseModelRows" style="display:flex;flex-direction:column;gap:7px"></div>' +
         '</div>';
     openModal(html);
 
+    function paintModels(){
+        var q=(($('caseModelSearch')&&$('caseModelSearch').value)||'').trim().toLowerCase();
+        var box=$('caseModelRows');
+        var list=models.map(function(m,i){return {m:m,i:i};}).filter(function(x){
+            return !q || String(x.m.model_name||x.m.name||'').toLowerCase().indexOf(q)!==-1;
+        });
+        box.innerHTML=list.length?list.map(function(x){
+            var m=x.m;
+            return '<button class="portal-target-btn case-model-choice" data-model-index="'+x.i+'">' +
+                '<span style="display:flex;align-items:center;gap:9px;min-width:0"><img src="'+escapeHtml(m.image||baseGift.image||'/static/img/gift.png')+'" style="width:34px;height:34px;object-fit:contain;border-radius:8px;background:rgba(0,0,0,.2)" onerror="this.src=\'/static/img/gift.png\'">' +
+                '<span style="min-width:0"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escapeHtml(m.name||m.model_name||'Model')+'</b><small>'+_giftPrice(m.value)+' GRAM</small></span></span><span>＋</span></button>';
+        }).join(''):'<div class="empty">Моделей не найдено. Можно добавить обычный подарок или случайную модель.</div>';
+        box.querySelectorAll('.case-model-choice').forEach(function(btn){
+            btn.onclick=function(){
+                var m=models[Number(btn.dataset.modelIndex)];
+                if(m) addCasePortalModel(coll,m);
+            };
+        });
+    }
+    $('caseModelSearch').oninput=paintModels;
+    paintModels();
+    $('casePlainBtn').onclick=function(){addCasePlainGift(baseGift);};
     $('caseRandomModelBtn').onclick=function(){addCaseRandomModel(coll,baseGift);};
-    document.querySelectorAll('.case-model-choice').forEach(function(btn){
-        btn.onclick=function(){
-            var m=models[Number(btn.dataset.modelIndex)];
-            if(!m)return;
-            if(m._fragment){
-                var fm=m._fragment;
-                addCaseGiftEntry({
-                    id:fm.id||fm.gift_key||null,
-                    gift_key:fm.gift_key||fm.id||'',
-                    name:cleanCaseGiftName(fm.name||baseGift.name||'Gift'),
-                    image:fm.image||baseGift.image||'/static/img/gift.png',
-                    value:Number(fm.value||baseGift.value||0),
-                    fragment_slug:slug,
-                    model_name:m.name,
-                    model_random:false,
-                    type:'gift'
-                });
-            }else{
-                addCasePortalModel(coll,m);
-            }
-        };
-    });
 }
 
 async function openGiftPicker(){
@@ -2420,6 +2514,7 @@ async function openGiftPicker(){
     }
 
     var portalCatalog=await loadCasePortalCatalog();
+    registerGiftImageFallbacks(allGifts);
 
     // Base gifts only: model-specific records are chosen on the next screen.
     var byKey={};
@@ -2510,7 +2605,8 @@ async function saveCase(){
 
     var payload = {
         admin_id: ADMIN_ID, name: name, slug: slug, cost: cost, cost_type: cost_type,
-        image: image, description: description, gifts: caseGifts, event_case: true, section: 'event', limited: false, amount: 0, display_order: (currentCase && currentCase.display_order) || 0, time: '24H', tags: ['event'], free: false, promo: false
+        image: image, description: description, gifts: caseGifts, event_case: true, section: 'event', limited: false, amount: 0, display_order: (currentCase && currentCase.display_order) || 0, time: '24H', tags: ['event'], free: false, promo: false,
+        event_section_id: (currentCase && currentCase.event_section_id) || null
     };
 
     try{
@@ -2525,7 +2621,9 @@ async function saveCase(){
         var d = await r.json().catch(function(){ return {success:false,error:'Сервер вернул некорректный ответ'}; });
         if(!r.ok && !d.error) d.error='HTTP '+r.status;
         if(d.success){
+            var keepSectionId = currentCase && currentCase.event_section_id;
             currentCase = d.case || currentCase;
+            if(keepSectionId && currentCase && !currentCase.event_section_id) currentCase.event_section_id = keepSectionId;
             var savedCaseId = currentCase && currentCase.id;
             var eventSectionId = currentCase && currentCase.event_section_id;
             if(savedCaseId && eventSectionId){
@@ -2553,7 +2651,7 @@ async function deleteCase(){
             body: JSON.stringify({admin_id: ADMIN_ID, id: currentCase.id})
         });
         var d = await r.json();
-        if(d.success){ showToast('Кейс удалён', 'ok'); showSection('events'); }
+        if(d.success){ showToast('Кейс удалён', 'ok'); showSection('events'); setTimeout(function(){ loadEvents(); }, 80); }
         else showToast(d.error || 'Ошибка', 'err');
     }catch(e){ showToast('Ошибка сети', 'err'); }
 }
