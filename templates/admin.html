@@ -521,17 +521,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
 .portal-mini-btn.case{color:#d8b4fe;border-color:rgba(168,85,247,.20);background:rgba(168,85,247,.07)}
 .portal-mini-btn.mode{color:#7dd3fc;border-color:rgba(56,189,248,.20);background:rgba(56,189,248,.07)}
 .portal-mini-btn.catalog{color:#86efac;border-color:rgba(34,197,94,.20);background:rgba(34,197,94,.07)}
-.portal-mode-pool-row{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:9px 10px;
-  border-bottom:1px solid rgba(255,255,255,.045);
-}
-.portal-mode-pool-row:last-child{border-bottom:0}
-.portal-mode-pool-row b{font-size:11px}
-.portal-mode-pool-row span{font-size:10px;color:#64f0bb;font-weight:850}
 .portal-target-list{
   display:flex;
   flex-direction:column;
@@ -738,13 +727,8 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
         <div class="section-header"><h2>Games — разделы</h2><button class="action-btn" onclick="loadGamesUIAdmin()">Обновить</button></div>
         <div class="card">
             <div class="card-title">Игры</div>
-            <div class="event-status">У каждого обычного режима есть кнопка «Редактировать». В ней можно менять название/картинку/путь и сразу настраивать лут.</div>
+            <div class="event-status">У каждого обычного режима есть кнопка «Редактировать». В ней можно менять название, картинку и путь страницы. Подарки и цены приходят автоматически из Portal.</div>
             <div id="gamesOtherAdmin" style="margin-top:12px"></div>
-        </div>
-        <div class="card" style="margin-top:14px">
-            <div class="card-title">🎁 Лут всех режимов</div>
-            <div class="event-status">Здесь видны обычные режимы и специальные режимы Event. Для каждого можно включить/выключить лут, настроить веса и ограничения, а также добавить любую модель из Portal.</div>
-            <div id="gameModeLootAdmin" style="margin-top:12px"><div class="loading">Загрузка режимов</div></div>
         </div>
         <div class="btn-row" style="margin-top:14px"><button class="btn btn-success" onclick="saveGamesUIAdmin()">💾 Сохранить Games</button></div>
     </div>
@@ -969,14 +953,6 @@ textarea.form-input{resize:vertical;min-height:80px;font-family:inherit}
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-title">🎮 Пулы подарков режимов</div>
-            <div style="font-size:10px;color:rgba(255,255,255,.45);line-height:1.5;margin-bottom:10px">
-                Кнопка «В режим» сохраняет выбранный подарок/модель в пул конкретного режима.
-                Для игровых страниц доступен API <b>/api/mode-gift-pool/&lt;mode_id&gt;</b>.
-            </div>
-            <div id="portalModePools"><div class="loading">Загрузка пулов</div></div>
-        </div>
     </div>
 
     <!-- PURCHASES -->
@@ -1344,12 +1320,9 @@ function selectPickerItem(idx){
 }
 
 /* ══════════════════════════════════════════════════════════════
-   GAMES UI + MODE LOOT EDITOR
+   GAMES UI
    ══════════════════════════════════════════════════════════════ */
 var gamesUIAdminData=null;
-var modeLootState={pools:{},settings:{},modes:[]};
-var modePortalCatalogCache=null;
-var currentModeEditorId=null;
 
 function renderGamesUIAdmin(cfg){
     gamesUIAdminData=JSON.parse(JSON.stringify(cfg||{sections:[]}));
@@ -1360,16 +1333,17 @@ function renderGamesUIAdmin(cfg){
     gamesUIAdminData.sections=[sec];
     $('gamesOtherAdmin').innerHTML=gamesSectionEditorHtml(sec);
 }
+
 function gamesSectionEditorHtml(sec){
     var html='<div class="games-ui-section" data-sec="games"><div class="games-ui-head"><strong>Игры</strong><span class="event-chip">основной экран</span></div><div class="games-ui-fields"><input class="form-input gui-title" value="'+escapeHtml(sec.title||'Игры')+'" placeholder="Название раздела" disabled><label class="games-ui-lock"><input class="gui-visible" type="checkbox" checked disabled> Показывать</label><input class="form-input gui-order" type="number" value="0" disabled></div><div class="games-ui-items">';
     html+='<div class="games-ui-item" data-item="event"><img src="/static/img/ghost_road.png" alt=""><div><b>Событие</b><div class="mini">/event/witch-hat-party · настраивается в Event</div></div><label class="games-ui-lock"><input type="checkbox" checked disabled> Всегда</label><button class="btn btn-secondary btn-sm" type="button" onclick="switchSection(\'events\')">Открыть Event</button></div>';
     (sec.items||[]).filter(function(it){return it.id!=='event'}).forEach(function(it){
-        var count=((modeLootState.pools||{})[it.id]||[]).length;
-        html+='<div class="games-ui-item" data-item="'+escapeHtml(it.id||'')+'"><img src="'+escapeHtml(it.image||'/static/img/gift.png')+'" alt=""><div><b>'+escapeHtml(it.name||it.id||'Режим')+'</b><div class="mini">'+escapeHtml(it.path||'#')+' · лут: '+count+'</div></div><div class="item-controls"><label class="games-ui-lock"><input class="gui-item-visible" type="checkbox" '+(it.visible!==false?'checked':'')+'> Показывать</label></div><button class="btn btn-secondary btn-sm" type="button" onclick="editGamesItem(this)">Редактировать</button></div>';
+        html+='<div class="games-ui-item" data-item="'+escapeHtml(it.id||'')+'"><img src="'+escapeHtml(it.image||'/static/img/gift.png')+'" alt=""><div><b>'+escapeHtml(it.name||it.id||'Режим')+'</b><div class="mini">'+escapeHtml(it.path||'#')+'</div></div><div class="item-controls"><label class="games-ui-lock"><input class="gui-item-visible" type="checkbox" '+(it.visible!==false?'checked':'')+'> Показывать</label></div><button class="btn btn-secondary btn-sm" type="button" onclick="editGamesItem(this)">Редактировать</button></div>';
     });
     html+='</div><div class="games-ui-actions"><button class="btn btn-secondary btn-sm" type="button" onclick="addGamesMode()">+ Добавить обычный режим</button></div></div>';
     return html;
 }
+
 function syncGamesUIFromDom(){
     if(!gamesUIAdminData)return;
     var sec=gamesUIAdminData.sections[0],el=document.querySelector('.games-ui-section[data-sec="games"]');
@@ -1379,15 +1353,18 @@ function syncGamesUIFromDom(){
         if(it&&id!=='event'){var cb=row.querySelector('.gui-item-visible');it.visible=cb?cb.checked:true;}
     });
 }
+
 function findGamesModeItem(id){
     var sec=gamesUIAdminData&&gamesUIAdminData.sections?gamesUIAdminData.sections[0]:null;
     return sec?(sec.items||[]).find(function(x){return x.id===id;}):null;
 }
+
 function editGamesItem(btn){
     syncGamesUIFromDom();
     var row=btn.closest('.games-ui-item'),id=row?row.dataset.item:'';
     if(id)openModeEditor(id,true);
 }
+
 function addGamesMode(){
     syncGamesUIFromDom();
     var sec=gamesUIAdminData.sections[0];
@@ -1396,18 +1373,16 @@ function addGamesMode(){
     renderGamesUIAdmin(gamesUIAdminData);
     openModeEditor(id,true);
 }
+
 async function loadGamesUIAdmin(){
     try{
-        var pair=await Promise.all([
-            fetch('/api/admin/games-ui?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'}).then(function(r){return r.json().then(function(d){return {r:r,d:d};});}),
-            loadModeLootState()
-        ]);
-        var rd=pair[0];
-        if(!rd.r.ok||!rd.d.success)throw Error(rd.d.error||'Ошибка');
-        renderGamesUIAdmin(rd.d.config);
-        renderAllModeLootAdmin();
+        var r=await fetch('/api/admin/games-ui?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'});
+        var d=await r.json();
+        if(!r.ok||!d.success)throw Error(d.error||'Ошибка');
+        renderGamesUIAdmin(d.config);
     }catch(e){showToast(e.message||'Ошибка загрузки Games','err');}
 }
+
 async function saveGamesUIAdmin(){
     try{
         syncGamesUIFromDom();
@@ -1418,133 +1393,38 @@ async function saveGamesUIAdmin(){
     }catch(e){showToast(e.message||'Ошибка сохранения Games','err');}
 }
 
-async function loadModeLootState(){
-    var r=await fetch('/api/admin/mode-gift-pools?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'});
-    var d=await r.json();
-    if(!r.ok||!d.success)throw Error(d.error||'Ошибка загрузки лута');
-    modeLootState={pools:d.pools||{},settings:d.settings||{},modes:d.modes||[]};
-    return modeLootState;
-}
-function renderAllModeLootAdmin(){
-    var box=$('gameModeLootAdmin');if(!box)return;
-    var modes=modeLootState.modes||[];
-    if(!modes.length){box.innerHTML='<div class="empty">Режимы не найдены</div>';return;}
-    box.innerHTML='<div class="mode-loot-list">'+modes.map(function(m){
-        var pool=(modeLootState.pools||{})[m.id]||[],cfg=Object.assign({enabled:true,strategy:'weighted'},(modeLootState.settings||{})[m.id]||{});
-        return '<div class="mode-loot-row"><img src="'+escapeHtml(m.image||'/static/img/gift.png')+'" onerror="this.src=\'/static/img/gift.png\'"><div><b>'+escapeHtml(m.name||m.id)+'</b><small>'+escapeHtml(m.path||m.id)+' · '+pool.length+' позиций · '+(cfg.enabled?'лут включён':'лут выключен')+'</small></div><button class="btn btn-secondary btn-sm mode-row-btn" onclick="openModeEditor(\''+escapeHtml(m.id)+'\',false)">Редактировать лут</button></div>';
-    }).join('')+'</div>';
-}
-
-async function ensureModePortalCatalog(){
-    if(Array.isArray(modePortalCatalogCache)&&modePortalCatalogCache.length)return modePortalCatalogCache;
-    var r=await fetch('/api/portal/daily-catalog?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'});
-    var d=await r.json();
-    if(!r.ok||d.success===false)throw Error(d.error||'Portal каталог не загружен');
-    modePortalCatalogCache=Array.isArray(d.collections)?d.collections:[];
-    return modePortalCatalogCache;
-}
-function modeById(id){return (modeLootState.modes||[]).find(function(x){return String(x.id)===String(id);})||null;}
-function modeSettings(id){return Object.assign({enabled:true,strategy:'weighted',fallback_catalog:true},(modeLootState.settings||{})[id]||{});}
-
-async function openModeEditor(modeId,editMeta){
-    currentModeEditorId=modeId;
-    try{await loadModeLootState();}catch(e){showToast(e.message||'Ошибка лута','err');return;}
-    var meta=findGamesModeItem(modeId)||modeById(modeId)||{id:modeId,name:modeId,image:'/static/img/gift.png',path:''};
-    var cfg=modeSettings(modeId),pool=(modeLootState.pools||{})[modeId]||[];
-    var metaHtml='';
-    if(editMeta&&findGamesModeItem(modeId)){
-        metaHtml='<div class="mode-editor-grid">'+
-          '<div class="form-group"><label class="form-label">Название</label><input class="form-input" id="modeEditName" value="'+escapeHtml(meta.name||'')+'"></div>'+
-          '<div class="form-group"><label class="form-label">ID</label><input class="form-input" value="'+escapeHtml(modeId)+'" disabled></div>'+
-          '<div class="form-group wide"><label class="form-label">Картинка</label><input class="form-input" id="modeEditImage" value="'+escapeHtml(meta.image||'')+'"></div>'+
-          '<div class="form-group wide"><label class="form-label">Путь страницы</label><input class="form-input" id="modeEditPath" value="'+escapeHtml(meta.path||'')+'"></div>'+
-          '<label class="games-ui-lock wide"><input id="modeEditVisible" type="checkbox" '+(meta.visible!==false?'checked':'')+'> Показывать режим</label>'+
-        '</div>';
-    }
-    var html='<div class="modal-title">🎮 '+escapeHtml(meta.name||modeId)+'</div>'+metaHtml+
-      '<div class="mode-loot-settings">'+
-        '<label class="games-ui-lock"><input id="modeLootEnabled" type="checkbox" '+(cfg.enabled!==false?'checked':'')+'> Лут режима включён</label>'+
-        '<label class="games-ui-lock"><input id="modeLootFallback" type="checkbox" '+(cfg.fallback_catalog!==false?'checked':'')+'> Если пул пуст — общий каталог</label>'+
-        '<div class="form-group"><label class="form-label">Выбор</label><select class="form-input" id="modeLootStrategy"><option value="weighted" '+(cfg.strategy!=='uniform'?'selected':'')+'>По весу</option><option value="uniform" '+(cfg.strategy==='uniform'?'selected':'')+'>Равномерно</option></select></div>'+
-        '<div class="form-group"><label class="form-label">Позиций</label><input class="form-input" value="'+pool.length+'" disabled></div>'+
-      '</div>'+ 
-      '<div class="mode-portal-add"><div class="form-label" style="margin-bottom:7px">Добавить из Portal Market</div><div class="mode-portal-add-grid"><div><label class="form-label">Подарок</label><select class="form-input" id="modePortalGift"></select></div><div><label class="form-label">Модель</label><select class="form-input" id="modePortalModel"><option value="">Обычный подарок</option></select></div><button class="btn btn-success" id="modePortalAddBtn" type="button">+ В лут</button></div></div>'+ 
-      '<div class="card-title" style="margin-top:12px">Лут режима</div><div id="modeLootItems">'+renderModeLootItemsHtml(modeId,pool)+'</div>'+ 
+function openModeEditor(modeId,editMeta){
+    var meta=findGamesModeItem(modeId)||{id:modeId,name:modeId,image:'/static/img/gift.png',path:''};
+    var html='<div class="modal-title">🎮 '+escapeHtml(meta.name||modeId)+'</div>'+
+      '<div class="mode-editor-grid">'+
+        '<div class="form-group"><label class="form-label">Название</label><input class="form-input" id="modeEditName" value="'+escapeHtml(meta.name||'')+'"></div>'+
+        '<div class="form-group"><label class="form-label">ID</label><input class="form-input" value="'+escapeHtml(modeId)+'" disabled></div>'+
+        '<div class="form-group wide"><label class="form-label">Картинка</label><input class="form-input" id="modeEditImage" value="'+escapeHtml(meta.image||'')+'"></div>'+
+        '<div class="form-group wide"><label class="form-label">Путь страницы</label><input class="form-input" id="modeEditPath" value="'+escapeHtml(meta.path||'')+'"></div>'+
+        '<label class="games-ui-lock wide"><input id="modeEditVisible" type="checkbox" '+(meta.visible!==false?'checked':'')+'> Показывать режим</label>'+
+      '</div>'+
+      '<div class="event-status" style="margin-top:10px">Подарки, изображения и цены синхронизируются автоматически из Portal.</div>'+
       '<div class="btn-row" style="margin-top:12px"><button class="btn btn-success" id="saveModeEditorBtn">💾 Сохранить</button><button class="btn btn-secondary" onclick="closeModal()">Закрыть</button></div>';
     openModal(html);
-    bindModeEditor(modeId,editMeta);
+    var saveBtn=$('saveModeEditorBtn');
+    if(saveBtn)saveBtn.onclick=function(){saveModeEditor(modeId,editMeta);};
 }
-function renderModeLootItemsHtml(modeId,pool){
-    if(!pool.length)return '<div class="empty" style="padding:18px">Лут пока пуст. Добавь подарок или модель из Portal выше.</div>';
-    return pool.map(function(raw){
-        var x=Object.assign({enabled:true,weight:1,min_bet:0,max_bet:0,min_multiplier:0,max_multiplier:0},raw||{}),key=String(x.gift_key||x.id||'');
-        return '<div class="mode-loot-item" data-loot-key="'+escapeHtml(key)+'"><img src="'+escapeHtml(x.image||'/static/img/gift.png')+'" onerror="this.src=\'/static/img/gift.png\'"><div><div class="mode-loot-item-title">'+escapeHtml(x.name||'Gift')+'</div><div class="mode-loot-item-sub">'+escapeHtml(x.portal_model_name||x.model_name||'обычный подарок')+' · '+((Number(x.value||0)/100).toFixed(2))+' GRAM</div><label class="games-ui-lock" style="margin-top:5px"><input class="loot-enabled" type="checkbox" '+(x.enabled!==false?'checked':'')+'> Включён</label></div><button class="btn btn-danger btn-sm" type="button" onclick="deleteModeLootItem(\''+escapeHtml(modeId)+'\',\''+escapeHtml(key)+'\')">✕</button><div class="mode-loot-tune"><label>Вес<input class="form-input loot-weight" type="number" min="0" step="0.1" value="'+Number(x.weight||0)+'"></label><label>Мин. ставка<input class="form-input loot-min-bet" type="number" min="0" step="0.1" value="'+Number(x.min_bet||0)+'"></label><label>Макс. ставка<input class="form-input loot-max-bet" type="number" min="0" step="0.1" value="'+Number(x.max_bet||0)+'"></label><label>Мин. X<input class="form-input loot-min-x" type="number" min="0" step="0.01" value="'+Number(x.min_multiplier||0)+'"></label><label>Макс. X<input class="form-input loot-max-x" type="number" min="0" step="0.01" value="'+Number(x.max_multiplier||0)+'"></label></div></div>';
-    }).join('');
-}
-async function bindModeEditor(modeId,editMeta){
-    try{
-        var catalog=await ensureModePortalCatalog(),giftSel=$('modePortalGift'),modelSel=$('modePortalModel');
-        if(giftSel){
-            giftSel.innerHTML='<option value="">Выбери подарок</option>'+catalog.map(function(c){return '<option value="'+escapeHtml(c.short_name||'')+'">'+escapeHtml(c.name||c.short_name||'Gift')+'</option>';}).join('');
-            giftSel.onchange=function(){
-                var c=catalog.find(function(x){return String(x.short_name||'')===String(giftSel.value||'');});
-                var models=c&&Array.isArray(c.models)?c.models:[];
-                modelSel.innerHTML='<option value="">Обычный подарок</option>'+models.map(function(m){return '<option value="'+escapeHtml(m.name||'')+'">'+escapeHtml(m.name||'Model')+(Number(m.floor_price||0)>0?' · '+Number(m.floor_price).toFixed(3)+' TON':'')+'</option>';}).join('');
-            };
-        }
-    }catch(e){
-        var giftSel=$('modePortalGift');if(giftSel)giftSel.innerHTML='<option value="">Portal не загружен</option>';
-    }
-    var addBtn=$('modePortalAddBtn');
-    if(addBtn)addBtn.onclick=async function(){
-        var slug=($('modePortalGift')||{}).value||'',model=($('modePortalModel')||{}).value||'';
-        if(!slug){showToast('Выбери подарок','err');return;}
-        addBtn.disabled=true;
-        try{
-            var r=await fetch('/api/admin/portal-item-action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,action:'mode',mode_id:modeId,short_name:slug,model_name:model||null})});
-            var d=await r.json();if(!r.ok||!d.success)throw Error(d.error||'Ошибка');
-            showToast(d.message||'Добавлено','ok');
-            await loadModeLootState();
-            await openModeEditor(modeId,editMeta);
-        }catch(e){showToast(e.message||'Ошибка','err');}
-        finally{addBtn.disabled=false;}
-    };
-    var saveBtn=$('saveModeEditorBtn');if(saveBtn)saveBtn.onclick=function(){saveModeEditor(modeId,editMeta);};
-}
+
 async function saveModeEditor(modeId,editMeta){
     try{
-        var requests=[];
-        if(editMeta){
-            var item=findGamesModeItem(modeId);
-            if(item){
-                item.name=(($('modeEditName')||{}).value||item.name||'').trim()||item.name;
-                item.image=(($('modeEditImage')||{}).value||item.image||'').trim()||item.image;
-                item.path=(($('modeEditPath')||{}).value||item.path||'').trim()||item.path;
-                item.visible=!!(($('modeEditVisible')||{}).checked);
-                syncGamesUIFromDom();
-                requests.push(fetch('/api/admin/games-ui',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,config:gamesUIAdminData})}).then(function(r){return r.json();}));
-            }
-        }
-        requests.push(fetch('/api/admin/mode-gift-pools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,action:'update_mode',mode_id:modeId,enabled:!!(($('modeLootEnabled')||{}).checked),fallback_catalog:!!(($('modeLootFallback')||{}).checked),strategy:(($('modeLootStrategy')||{}).value||'weighted')})}).then(function(r){return r.json();}));
-        document.querySelectorAll('#modeLootItems .mode-loot-item').forEach(function(row){
-            requests.push(fetch('/api/admin/mode-gift-pools',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,action:'update_item',mode_id:modeId,gift_key:row.dataset.lootKey,enabled:!!row.querySelector('.loot-enabled').checked,weight:Number(row.querySelector('.loot-weight').value||0),min_bet:Number(row.querySelector('.loot-min-bet').value||0),max_bet:Number(row.querySelector('.loot-max-bet').value||0),min_multiplier:Number(row.querySelector('.loot-min-x').value||0),max_multiplier:Number(row.querySelector('.loot-max-x').value||0)})}).then(function(r){return r.json();}));
-        });
-        var results=await Promise.all(requests);
-        var bad=results.find(function(d){return !d||d.success===false;});if(bad)throw Error(bad.error||'Ошибка сохранения');
-        showToast('Режим и лут сохранены','ok');
+        var item=findGamesModeItem(modeId);
+        if(!item)throw Error('Режим не найден');
+        item.name=(($('modeEditName')||{}).value||item.name||'').trim()||item.name;
+        item.image=(($('modeEditImage')||{}).value||item.image||'').trim()||item.image;
+        item.path=(($('modeEditPath')||{}).value||item.path||'').trim()||item.path;
+        item.visible=!!(($('modeEditVisible')||{}).checked);
+        syncGamesUIFromDom();
+        var r=await fetch('/api/admin/games-ui',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,config:gamesUIAdminData})});
+        var d=await r.json();if(!r.ok||!d.success)throw Error(d.error||'Ошибка сохранения');
+        showToast('Режим сохранён','ok');
         await loadGamesUIAdmin();
         closeModal();
     }catch(e){showToast(e.message||'Ошибка сохранения','err');}
-}
-async function deleteModeLootItem(modeId,giftKey){
-    if(!confirm('Удалить эту позицию из лута режима?'))return;
-    try{
-        var r=await fetch('/api/admin/mode-gift-pools',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,mode_id:modeId,gift_key:giftKey})});
-        var d=await r.json();if(!r.ok||!d.success)throw Error(d.error||'Ошибка');
-        await loadModeLootState();
-        var box=$('modeLootItems');if(box)box.innerHTML=renderModeLootItemsHtml(modeId,(modeLootState.pools||{})[modeId]||[]);
-        showToast('Удалено из лута','ok');
-    }catch(e){showToast(e.message||'Ошибка','err');}
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -3641,7 +3521,6 @@ if(tg){
     var portalDailyPoll = null;
     var portalLastJobRunning = false;
     var portalTargets = {cases:[], modes:[]};
-    var portalModePools = {};
 
     function portalEsc(v){
         return String(v == null ? '' : v).replace(/[&<>"']/g,function(c){
@@ -3834,7 +3713,6 @@ if(tg){
         var modelName=portalAttr(model?model.name:'');
         return '<div class="portal-item-actions">'+
           '<button class="portal-mini-btn case" data-portal-action="case" data-slug="'+slug+'" data-model="'+modelName+'">В кейс</button>'+
-          '<button class="portal-mini-btn mode" data-portal-action="mode" data-slug="'+slug+'" data-model="'+modelName+'">В режим</button>'+
         '</div>';
     }
 
@@ -3925,33 +3803,8 @@ if(tg){
             var d=await r.json();
             if(!r.ok||!d.success)throw new Error(d.error||'Ошибка targets');
             portalTargets={cases:d.cases||[],modes:d.modes||[]};
-            renderPortalModePools();
             return d;
         }catch(e){portalSetError(e.message||String(e));return null;}
-    }
-
-    async function loadPortalModePools(){
-        try{
-            var r=await fetch('/api/admin/mode-gift-pools?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
-            var d=await r.json();
-            if(!r.ok||!d.success)throw new Error(d.error||'Ошибка mode pools');
-            portalModePools=d.pools||{};
-            if(d.modes)portalTargets.modes=d.modes;
-            renderPortalModePools();
-            return d;
-        }catch(e){return null;}
-    }
-
-    function renderPortalModePools(){
-        var box=document.getElementById('portalModePools');
-        if(!box)return;
-        var modes=portalTargets.modes||[];
-        if(!modes.length){box.innerHTML='<div class="empty">Игровые режимы не найдены</div>';return;}
-        box.innerHTML=modes.map(function(m){
-            var count=(portalModePools[m.id]||[]).length;
-            if(m.pool_count!=null&&count===0)count=Number(m.pool_count||0);
-            return '<div class="portal-mode-pool-row"><b>'+portalEsc(m.name||m.id)+'</b><span>'+count+' подарков</span></div>';
-        }).join('');
     }
 
     async function portalDoAction(action,slug,modelName,extra){
@@ -3963,7 +3816,6 @@ if(tg){
         var d=await r.json();
         if(!r.ok||!d.success)throw new Error(d.error||'Ошибка');
         showToast(d.message||'Готово','ok');
-        if(action==='mode'){await loadPortalModePools();await loadPortalTargets();}
         return d;
     }
 
@@ -3993,30 +3845,6 @@ if(tg){
         },0);
     }
 
-    async function openPortalModeTarget(slug,modelName){
-        if(!portalTargets.modes.length)await loadPortalTargets();
-        var modes=portalTargets.modes||[];
-        if(!modes.length){showToast('Режимы не найдены','err');return;}
-
-        var html='<div class="modal-title">Добавить в режим</div>'+
-          '<div class="portal-target-list">'+modes.map(function(m){
-            var count=(portalModePools[m.id]||[]).length;
-            return '<button class="portal-target-btn" data-mode-target="'+portalAttr(m.id)+'"><b>'+portalEsc(m.name||m.id)+'</b><small>пул: '+count+'</small></button>';
-          }).join('')+'</div>';
-        openModal(html);
-
-        setTimeout(function(){
-            document.querySelectorAll('[data-mode-target]').forEach(function(btn){
-                btn.onclick=async function(){
-                    try{
-                        await portalDoAction('mode',slug,modelName,{mode_id:btn.dataset.modeTarget});
-                        closeModal();
-                    }catch(e){showToast(e.message||'Ошибка','err');}
-                };
-            });
-        },0);
-    }
-
     document.addEventListener('click',function(e){
         var btn=e.target.closest('[data-portal-action]');
         if(!btn)return;
@@ -4026,8 +3854,6 @@ if(tg){
 
         if(action==='case'){
             openPortalCaseTarget(slug,modelName);
-        }else if(action==='mode'){
-            openPortalModeTarget(slug,modelName);
         }
     });
 
@@ -4057,8 +3883,7 @@ if(tg){
             loadPortalStatus(),
             loadPortalHourlyCatalog(),
             loadPortalHourlyStatus(),
-            loadPortalTargets(),
-            loadPortalModePools()
+            loadPortalTargets()
         ]);
         startPortalDailyPolling(false);
     };
