@@ -10258,10 +10258,14 @@ def admin_events():
             ev=events[eid]
             if eid == 'witch_hat_party': _normalize_witch_event_structure(ev)
             elif eid == 'cases_event':
-                ev.setdefault('sections',[{'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'case_ids_explicit':True}])
-                for sec in ev['sections']:
+                sections=ev.setdefault('sections',[])
+                case_sections=[x for x in sections if isinstance(x,dict) and x.get('type')=='cases']
+                if not case_sections:
+                    sections.append({'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'case_ids_explicit':True,'visible':True,'order':0})
+                for sec in sections:
                     if isinstance(sec,dict) and sec.get('type')=='cases':
-                        sec['case_ids']=list(sec.get('case_ids') or [])
+                        sec['case_ids']=list(dict.fromkeys([str(x) for x in (sec.get('case_ids') or []) if str(x).strip()]))
+                        sec['case_ids_explicit']=True
             action=str(data.get('action') or 'toggle')
             if action=='update_settings':
                 for key in ('name','image','loading_gif'):
@@ -10401,7 +10405,9 @@ def admin_events():
                         for sec in _sections:
                             if sec.get('type')=='cases': sec['case_ids']=[v for v in (sec.get('case_ids') or []) if str(v)!=case_id]
                             if sec.get('type')=='cases': sec['case_ids_explicit']=True
-                        target.setdefault('case_ids',[]).append(case_id)
+                        target_ids=[str(v) for v in target.setdefault('case_ids',[])]
+                        if case_id not in target_ids:
+                            target['case_ids'].append(case_id)
                     else:
                         sec=next((x for x in _sections if str(x.get('id'))==section_id and x.get('type')=='cases'),None) or next((x for x in _sections if x.get('type')=='cases'),None)
                         if sec is None:
@@ -20473,6 +20479,23 @@ def admin_cases_management():
         if request.method == 'GET':
             cases = load_cases()
             cases.sort(key=lambda x: x.get('display_order', 0))
+            # The event manager only needs a compact case index. Returning full
+            # gifts for every case made the admin picker unnecessarily heavy.
+            if str(request.args.get('summary') or '').lower() in ('1','true','yes'):
+                compact=[]
+                for c in cases:
+                    if not isinstance(c,dict): continue
+                    compact.append({
+                        'id': c.get('id'),
+                        'name': c.get('name') or 'Кейс',
+                        'image': c.get('image') or '/static/img/gift.png',
+                        'cost': c.get('cost',0),
+                        'cost_type': c.get('cost_type','stars'),
+                        'section': c.get('section','other'),
+                        'event_case': bool(c.get('event_case',False)),
+                        'display_order': c.get('display_order',0),
+                    })
+                return jsonify({'success': True, 'cases': compact, 'count': len(compact), 'summary': True})
             return jsonify({'success': True, 'cases': cases})
 
         elif request.method == 'POST':
