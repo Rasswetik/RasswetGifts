@@ -15549,12 +15549,12 @@ def get_upgrade_possible_gifts():
 
         for gift in gifts:
             if gift.get('value', 0) > min_target_value:
-                base_chance = (current_value / gift['value']) * 100
-                displayed_chance = max(2, min(base_chance, 75))
+                chance_info = calculate_upgrade_chance(current_value, gift['value'], user_id=user_id)
+                displayed_chance = chance_info['displayed']
 
                 possible_gifts.append({
                     **gift,
-                    'upgrade_chance': round(displayed_chance, 1)
+                    'upgrade_chance': displayed_chance
                 })
 
         possible_gifts.sort(key=lambda x: x.get('value', 0))
