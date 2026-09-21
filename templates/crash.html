@@ -25,7 +25,7 @@ body{
     max-width:480px;margin:0 auto;
     min-height:100vh;display:flex;flex-direction:column;
     position:relative;padding-bottom:90px;
-    padding-top:calc(env(safe-area-inset-top,20px) + 40px);
+    padding-top:calc(env(safe-area-inset-top,0px) + 4vh);
 }
 .bottom-nav{
     position:fixed;bottom:0;left:50%;transform:translateX(-50%);
@@ -752,6 +752,23 @@ body.halloween-mode #crashSettingsBtn{opacity:.35;pointer-events:none}
 }
 </style>
 
+<style id="crash-mobile-4vh-optimize">
+@media(max-width:700px){
+  .container{padding-top:calc(env(safe-area-inset-top,0px) + 4vh)!important;padding-bottom:82px!important;}
+  .top-bar{padding-top:4px!important;padding-bottom:6px!important;}
+  .game-field{margin:0 10px!important;min-height:250px!important;border-radius:18px!important;}
+  .bet-area{padding:6px 10px 3px!important;}
+  .action-btn{min-height:52px!important;}
+  .history-section,.bets-section{padding-left:10px!important;padding-right:10px!important;}
+  .bets-list{max-height:230px!important;}
+  .action-btn .cb-gift-side{width:42px!important;height:42px!important;border-radius:10px!important;}
+}
+@media(max-width:400px){
+  .container{padding-top:calc(env(safe-area-inset-top,0px) + 4vh)!important;}
+  .game-field{min-height:235px!important;}
+  .action-btn .cb-gift-side{width:38px!important;height:38px!important;}
+}
+</style>
 </head>
 <body>
 
@@ -1023,6 +1040,8 @@ var savedBetAmount = localStorage.getItem('crash_bet_amount') || '';
 
 var _giftCatalog = null;
 var _giftCatalogBuckets = null;
+var _crashModelMap = Object.create(null);
+var _crashModelMapLoaded = false;
 var _giftImgCache = {};
 var _betGiftTickerTimer = null;
 var _betGiftTickerIndex = 0;
@@ -1273,6 +1292,31 @@ function applyRocket(){
 /* ══════════════════════════════════════════════════════════════
    GIFT CATALOG
    ══════════════════════════════════════════════════════════════ */
+async function ensureCashoutModelMap(){
+    if(_crashModelMapLoaded) return _crashModelMap;
+    _crashModelMapLoaded = true;
+    try{
+        var r = await fetch('/api/crash/cashout-models',{cache:'force-cache'});
+        var d = await r.json();
+        if(d && d.success && Array.isArray(d.models)){
+            d.models.forEach(function(m){
+                var key=String(m.slug||'').trim().toLowerCase();
+                if(key && m.image) _crashModelMap[key]=m;
+            });
+        }
+    }catch(e){}
+    return _crashModelMap;
+}
+function getCashoutGiftImage(g){
+    if(!g) return '/static/img/gift.png';
+    var model=String(g.model_name||g.portal_model_name||'').trim();
+    if(model) return getGiftImage(g);
+    var slug=String(g.fragment_slug||'').trim().toLowerCase();
+    var mapped=slug ? _crashModelMap[slug] : null;
+    if(mapped && mapped.image) return mapped.image;
+    return getGiftImage(g);
+}
+
 async function ensureGiftCatalog(){
     if(_giftCatalog) return _giftCatalog;
     try{
@@ -1877,7 +1921,7 @@ function updateActionButton(){
     if(_syncingWin){
         newState = 'syncing';
         var cgS = getAchievableGift(cashedOutBetAmt * servMult * (isBonusRound ? 2 : 1));
-        var cgiS = cgS ? getGiftImage(cgS) : '/static/img/gift.png';
+        var cgiS = cgS ? getCashoutGiftImage(cgS) : '/static/img/gift.png';
         html = '<img class="cb-gift-side empty" src="' + cgiS + '" alt="">'
             + '<div class="cb-center"><span class="cb-label">Syncing</span>'
             + '<span class="cb-win" style="font-size:14px">Please wait...</span></div>'
@@ -1886,7 +1930,7 @@ function updateActionButton(){
     } else if(status === 'crashed'){
         newState = 'crashed';
         var crashGift = cashedOutBetAmt > 0 ? getAchievableGift(cashedOutBetAmt * servMult) : null;
-        var crashImg = crashGift ? getGiftImage(crashGift) : '/static/img/gift.png';
+        var crashImg = crashGift ? getCashoutGiftImage(crashGift) : '/static/img/gift.png';
         html = '<img class="cb-gift-side empty" src="' + crashImg + '" alt="">'
             + '<div class="cb-center"><span class="cb-label">CRASH</span>'
             + '<span class="cb-win">' + (servMult || 1).toFixed(2) + 'x</span></div>'
@@ -1897,7 +1941,7 @@ function updateActionButton(){
         var bonusMult = isBonusRound ? 2 : 1;
         var curWin = Math.floor((betAmt || 0) * dispMult) * bonusMult;
         var achievable = getAchievableGift(curWin);
-        var giftSrc = achievable ? getGiftImage(achievable) : '/static/img/gift.png';
+        var giftSrc = achievable ? getCashoutGiftImage(achievable) : '/static/img/gift.png';
         var isEmpty = !achievable ? ' empty' : '';
 
         var label = isBonusRound ? '🏆 CASH OUT x2' : 'Cash OUT';
@@ -1931,7 +1975,7 @@ function updateActionButton(){
             if(winEl.textContent !== winText) winEl.textContent = winText;
         }
         var achievable2 = getAchievableGift(curWin2);
-        var giftSrc2 = achievable2 ? getGiftImage(achievable2) : '/static/img/gift.png';
+        var giftSrc2 = achievable2 ? getCashoutGiftImage(achievable2) : '/static/img/gift.png';
         var isEmpty2 = !achievable2;
         var lG = btn.querySelector('.cb-gift-side:first-child');
         var rG = btn.querySelector('.cb-gift-side:last-child');
@@ -2517,7 +2561,7 @@ async function doCashout(){
     var serverOk = false;
     var serverGifts = [];
     var ac = new AbortController();
-    var tId = setTimeout(function(){ ac.abort(); }, 6000);
+    var tId = setTimeout(function(){ ac.abort(); }, 4500);
 
     try{
         var r = await fetch('/api/ultimate-crash/cashout-simple', {
@@ -3070,7 +3114,7 @@ initFullscreen();
     await initAuth();
     applyRocket();
 
-    ensureGiftCatalog().catch(function(){});
+    Promise.all([ensureGiftCatalog(), ensureCashoutModelMap()]).catch(function(){});
 
     window._ldSet(80);
 
