@@ -63,6 +63,7 @@ def _log_startup_config():
     logger.info('═' * 50)
 
 
+
 # ─── Global state: _user_balance_cache ───
 _user_balance_cache = {}
 _user_cache = {}
@@ -214,6 +215,9 @@ def _track_crash_multiplier(mult):
         _last_crash_multipliers.append(float(mult))
         del _last_crash_multipliers[:-5]
 
+def _get_recent_max():
+    with _last_crash_lock:
+        return max(_last_crash_multipliers[-3:], default=0.0)
 
 _BOT_NAMES_RU = ['Алексей', 'Анна', 'Дмитрий', 'Елена', 'Иван', 'Мария', 'Михаил', 'Ольга', 'Сергей', 'Юлия']
 _BOT_NAMES_EN = ['Alex', 'Anna', 'Daniel', 'Emma', 'Jack', 'Liam', 'Olivia', 'Sophia', 'Max', 'Chloe']
@@ -290,6 +294,45 @@ def _portal_save_token(token):
         _portal_token_cache['loaded_at'] = time.time()
 
 
+def _portal_delete_token():
+    """Удаляет токен."""
+    try:
+        if os.path.exists(PORTAL_TOKEN_FILE):
+            os.remove(PORTAL_TOKEN_FILE)
+    except Exception as e:
+        logger.warning(f'Portal token delete failed: {e}')
+    os.environ.pop('PORTAL_AUTH_TOKEN', None)
+    with _portal_token_lock:
+        _portal_token_cache['token'] = ''
+        _portal_token_cache['loaded_at'] = 0
+
+
+def _portal_validate_token(token):
+    """Проверяет формат initData."""
+    if not token:
+        return False, 'Токен пустой'
+    token = str(token).strip()
+    if token.startswith('tma '):
+        token = token[4:].strip()
+    if len(token) < 30:
+        return False, 'Токен слишком короткий. Нужна ВСЯ строка initData из Telegram WebApp.'
+    if 'user=' not in token:
+        return False, 'Не найдено "user=". Открой portal-market.com в Telegram WebApp → Console → Telegram.WebApp.initData → скопируй ВСЮ строку.'
+    if 'hash=' not in token:
+        return False, 'Не найдено "hash=". Скопируй ВСЮ строку initData включая hash= в конце.'
+    m = re.search(r'user=([^&]+)', token)
+    if not m:
+        return False, 'Не удалось распарсить поле "user="'
+    try:
+        import urllib.parse
+        decoded = urllib.parse.unquote(m.group(1))
+        if not re.search(r'"id"\s*:\s*\d+', decoded):
+            return False, 'В поле "user" нет числового "id". Токен повреждён.'
+    except Exception:
+        return False, 'Не удалось распарсить поле "user"'
+    return True, None
+
+
 def _portal_collection_image_url(short_name):
     """Превью коллекции: https://portal-market.com/collection_previews/{slug}.webp"""
     if not short_name:
@@ -312,6 +355,20 @@ def _portal_nft_image_url(short_name, number):
     except (ValueError, TypeError):
         return ''
     return f'https://nft.fragment.com/gift/{slug}-{num}.large.jpg'
+
+
+def _portal_run_async(coro, timeout=30):
+    """Запускает async-функцию из sync-контекста."""
+    try:
+        loop = _portal_asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(_portal_asyncio.wait_for(coro, timeout=timeout))
+        finally:
+            loop.close()
+    except _portal_asyncio.TimeoutError:
+        return None, f'Таймаут {timeout} сек'
+    except Exception as e:
+        return None, str(e)
 
 
 def _portal_extract_items(colls):
@@ -354,6 +411,9 @@ _get_portal_auth = _portal_get_token
 def _portal_clean_name(name):
     return re.sub(r'\s+', ' ', str(name or '').strip())
 
+def _portal_fragment_url(short_name, number):
+    return _portal_nft_image_url(short_name, number)
+
 
 def _portal_extract_coll_fields(coll):
     """(short_name, floor_price_ton, name, photo_url) из объекта коллекции."""
@@ -393,7 +453,51 @@ def _portal_extract_coll_fields(coll):
     return short_name, floor_price, name, photo_url
 
 
+def _portal_extract_gift_fields(gift):
+    """(id, number, price_ton, model, backdrop, symbol) из NFT."""
+    if isinstance(gift, dict):
+        gid = gift.get('id') or ''
+        number = gift.get('number') or gift.get('tg_id') or gift.get('nft_number') or 0
+        price = 0.0
+        for key in ('price', 'floor_price', 'price_ton'):
+            if key in gift and gift[key] is not None:
+                try:
+                    price = float(gift[key])
+                    break
+                except (ValueError, TypeError):
+                    continue
+        model = str(gift.get('model') or '')
+        backdrop = str(gift.get('backdrop') or '')
+        symbol = str(gift.get('symbol') or '')
+    else:
+        gid = getattr(gift, 'id', '') or ''
+        number = getattr(gift, 'number', 0) or getattr(gift, 'tg_id', 0) or 0
+        price = 0.0
+        for attr in ('price', 'floor_price', 'price_ton'):
+            v = getattr(gift, attr, None)
+            if v is not None:
+                try:
+                    price = float(v)
+                    break
+                except (ValueError, TypeError):
+                    continue
+        model = str(getattr(gift, 'model', '') or '')
+        backdrop = str(getattr(gift, 'backdrop', '') or '')
+        symbol = str(getattr(gift, 'symbol', '') or '')
+
+    try:
+        number = int(number)
+    except (ValueError, TypeError):
+        number = 0
+
+    return gid, number, price, model, backdrop, symbol
+
+
 # ─── PORTAL ROUTES ───
+
+
+
+
 
 
 def _portal_do_sync(token):
@@ -542,6 +646,9 @@ def _portal_do_sync(token):
         return {'success': False, 'error': str(e)}
 
 
+
+
+
 @app.route('/api/portal/image-urls', methods=['GET'])
 def portal_image_urls_debug():
     """Отладка URL картинок."""
@@ -558,6 +665,48 @@ def portal_image_urls_debug():
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+
+
+
+
+
+
+def _load_crash_bots():
+    """ОТКЛЮЧЕНО НАВСЕГДА. Раньше подгружала конфиг фейковых ботов и
+    автосоздавала 100 ботов при первом запуске, чтобы игра выглядела
+    оживлённой. Ставки в crash-игре теперь показывают только реальных
+    пользователей."""
+    global _crash_bots_cache
+    _crash_bots_cache['enabled'] = False
+    _crash_bots_cache['bots'] = []
+    _crash_bots_cache['settings'] = {}
+    _crash_bots_cache['loaded'] = True
+
+
+def _seed_default_bots(conn, count=100):
+    """ОТКЛЮЧЕНО НАВСЕГДА — больше не создаёт фиктивных ботов."""
+    return
+
+
+def _generate_bot_bets(game_id, real_player_count):
+    """ОТКЛЮЧЕНО НАВСЕГДА — фиктивные ставки ботов больше не создаются."""
+    return
+
+
+def _process_bot_cashouts(game_id, current_mult):
+    """ОТКЛЮЧЕНО НАВСЕГДА."""
+    return
+
+
+def _crash_bots_on_crash(game_id):
+    """ОТКЛЮЧЕНО НАВСЕГДА."""
+    return
+
+
+def _get_bot_bets_for_api(game_id):
+    """ОТКЛЮЧЕНО НАВСЕГДА — API отдаёт только реальные ставки."""
+    return []
 
 
 def _sync_levels_from_db():
@@ -679,6 +828,12 @@ def update_crash_cache(game_id, status, current_mult, target_mult, time_remainin
 def get_admin_crash_control():
     with _admin_control_lock:
         return _admin_crash_control.copy()
+
+
+def set_admin_crash_control(key, value):
+    global _admin_crash_control
+    with _admin_control_lock:
+        _admin_crash_control[key] = value
 
 
 def refresh_crash_bet_cache(game_id, target_multiplier=5.0):
@@ -932,6 +1087,22 @@ def _normalize_gift_name_for_match(name):
     text = str(name or '').lower().replace('(random)', '').strip()
     return re.sub(r'[^a-z0-9]+', '', text)
 
+def _parse_fragment_price_ton(text):
+    if not text:
+        return None
+    floor_match = re.search(r'Floor[^0-9]{0,30}([0-9][0-9,]*(?:\.[0-9]+)?)', text, re.IGNORECASE)
+    if floor_match:
+        try:
+            return float(floor_match.group(1).replace(',', ''))
+        except Exception:
+            return None
+    ton_match = re.search(r'([0-9][0-9,]*(?:\.[0-9]+)?)\s*TON', text, re.IGNORECASE)
+    if ton_match:
+        try:
+            return float(ton_match.group(1).replace(',', ''))
+        except Exception:
+            return None
+    return None
 
 # ==================== MRKT MARKET ====================
 def _mrkt_load_token():
@@ -2280,6 +2451,10 @@ def fetch_fragment_gifts_catalog(force_refresh=False):
 def _fragment_model_cache_key(slug):
     return str(slug or '').strip().lower()
 
+def _extract_text_from_html(raw_text):
+    clean = re.sub(r'<[^>]+>', ' ', raw_text or '')
+    clean = html_lib.unescape(clean)
+    return re.sub(r'\s+', ' ', clean).strip()
 
 def _extract_fragment_markdown_collections(text):
     items = []
@@ -2970,6 +3145,9 @@ def save_events(events):
     except Exception as e:
         logger.error('Events DB save failed: %s',e); return False
 
+def _event_find_case(case_ref):
+    ref=str(case_ref or '').strip().lower()
+    return next((c for c in get_public_cases_with_seasonal() if str(c.get('id')).lower()==ref or _case_slug(c).lower()==ref or _slugify_case_name(c.get('name')).lower()==ref),None)
 
 def _parse_event_gift_url(value):
     """Parse a single collectible gift URL without requiring a collection name."""
@@ -4538,6 +4716,61 @@ def add_history_record(user_id, operation_type, amount, description, cursor=None
         logger.error(f"Ошибка добавления в историю: {e}")
         return False
 
+def add_win_history(user_id, user_name, gift_name, gift_image, gift_value, case_name):
+    """Добавляет запись в историю побед"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO win_history (user_id, user_name, gift_name, gift_image, gift_value, case_name)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (user_id, user_name, gift_name, gift_image, gift_value, case_name))
+
+        cursor.execute('''
+            DELETE FROM win_history
+            WHERE id NOT IN (
+                SELECT id FROM win_history
+                ORDER BY created_at DESC
+                LIMIT 50
+            )
+        ''')
+
+        conn.commit()
+        conn.close()
+        logger.info(f"📝 Добавлена запись в историю побед: {user_name} выиграл {gift_name}")
+        return True
+    except Exception as e:
+        logger.error(f"Ошибка добавления в историю побед: {e}")
+        return False
+
+def add_case_open_history(user_id, case_id, case_name, gift_id, gift_name, gift_image, gift_value, cost=0, cost_type='stars'):
+    """Добавляет запись в историю открытий кейсов"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO case_open_history (user_id, case_id, case_name, gift_id, gift_name, gift_image, gift_value, cost, cost_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, case_id, case_name, gift_id, gift_name, gift_image, gift_value, cost, cost_type))
+
+        cursor.execute('''
+            DELETE FROM case_open_history
+            WHERE id NOT IN (
+                SELECT id FROM case_open_history
+                ORDER BY created_at DESC
+                LIMIT 100
+            )
+        ''')
+
+        conn.commit()
+        conn.close()
+        logger.info(f"📝 Добавлена запись в историю открытий: {user_id} открыл {case_name}")
+        return True
+    except Exception as e:
+        logger.error(f"Ошибка добавления в историю открытий: {e}")
+        return False
 
 def _sorted_levels():
     """Возвращает уровни в гарантированном порядке."""
@@ -4688,6 +4921,61 @@ def get_user_level_info(user_id):
         logger.error(f'Ошибка получения информации об уровне: {e}')
         return None
 
+
+def update_case_limit(case_id):
+    """Обновляет лимит кейса (уменьшает на 1)"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cases = load_cases()
+        case = next((c for c in cases if c['id'] == case_id), None)
+
+        if not case:
+            conn.close()
+            return None
+
+        if not case.get('limited'):
+            conn.close()
+            return None
+
+        cursor.execute('SELECT current_amount FROM case_limits WHERE case_id = ?', (case_id,))
+        result = cursor.fetchone()
+
+        if not result:
+            try:
+                max_amount = int(case.get('amount', 0) or 0)
+            except Exception:
+                max_amount = 0
+            if max_amount > 0:
+                current_amount = max_amount - 1
+                cursor.execute('INSERT INTO case_limits (case_id, current_amount) VALUES (?, ?)',
+                             (case_id, current_amount))
+                conn.commit()
+                conn.close()
+                return current_amount
+            else:
+                conn.close()
+                return 0
+        else:
+            try:
+                current_amount = int(result[0] or 0)
+            except Exception:
+                current_amount = 0
+            if current_amount > 0:
+                new_amount = current_amount - 1
+                cursor.execute('UPDATE case_limits SET current_amount = ? WHERE case_id = ?', (new_amount, case_id))
+                conn.commit()
+                logger.info(f"📊 Лимит кейса {case_id} уменьшен: {current_amount} -> {new_amount}")
+                conn.close()
+                return new_amount
+            else:
+                conn.close()
+                return 0
+
+    except Exception as e:
+        logger.error(f"Ошибка обновления лимита кейса: {e}")
+        return None
 
 def get_case_limit(case_id):
     """Получает текущий лимит кейса"""
@@ -4896,6 +5184,40 @@ TARGET_RTP = 0.80  # 80% RTP target
 CASE_RTP_BOOST_THRESHOLD = 0.45   # Below 45% → boost player (better drops)
 CASE_RTP_NERF_THRESHOLD = 0.90    # Above 90% → nerf player (cheaper drops)
 
+def get_player_case_rtp_mode(user_id, conn=None):
+    """Determine if a player should get boosted or nerfed case drops based on case-specific RTP."""
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''SELECT COALESCE(SUM(cost), 0), COALESCE(SUM(gift_value), 0), COUNT(*)
+                         FROM case_open_history WHERE user_id = ?''', (user_id,))
+        row = cursor.fetchone()
+        total_spent = row[0] if row else 0
+        total_won = row[1] if row else 0
+        opens = row[2] if row else 0
+        if total_spent < 50 or opens < 5:  # Not enough data
+            if close_conn:
+                conn.close()
+            return 'normal'
+        case_rtp = total_won / total_spent if total_spent > 0 else 1.0
+        # Use per-user RTP boost
+        user_boost = get_user_rtp_boost(user_id, conn)
+        boost_threshold = max(CASE_RTP_BOOST_THRESHOLD, user_boost / 100.0)
+        if close_conn:
+            conn.close()
+        if case_rtp < boost_threshold:
+            return 'boost'
+        elif case_rtp > CASE_RTP_NERF_THRESHOLD:
+            return 'nerf'
+        return 'normal'
+    except Exception as e:
+        if close_conn:
+            try: conn.close()
+            except: pass
+        return 'normal'
 RTP_HARD_FLOOR = 0.70  # Never let a player's effective RTP exceed this floor 
 RTP_CHECK_INTERVAL = 5  # Re-evaluate every N games
 LARGE_BET_THRESHOLD = 100  # Stars threshold for "large bet" (1 TON)
@@ -5033,6 +5355,24 @@ def calculate_upgrade_chance(current_value, target_value, user_id=None, site_bal
     }
 
 
+def get_player_rtp_mode(user_id, conn=None):
+    """Determine if a player should be boosted or nerfed based on their RTP.
+    Uses per-user RTP boost from admin if set.
+    Returns: 'boost', 'nerf', or 'normal'
+    """
+    stats = get_player_crash_stats(user_id, conn)
+    if stats['total_wagered'] < 100:  # Not enough data
+        return 'normal', stats
+    # Check per-user RTP boost
+    user_boost = get_user_rtp_boost(user_id, conn)
+    boost_threshold = user_boost / 100.0  # e.g. 40 -> 0.40
+    rtp = stats['player_rtp']
+    if rtp < boost_threshold:
+        return 'boost', stats
+    elif rtp > RTP_NERF_THRESHOLD:
+        return 'nerf', stats
+    return 'normal', stats
+
 def get_player_crash_stats(user_id, conn=None):
     """Get a player's crash game lifetime stats including net position"""
     close_conn = False
@@ -5098,6 +5438,24 @@ def get_player_crash_stats(user_id, conn=None):
                 'player_rtp': 1.0, 'recent_rtp': 1.0, 'games_played': 0}
 
 
+def ai_adjust_target_multiplier(base_target, game_id, conn=None):
+    """УСТАРЕЛО И ОТКЛЮЧЕНО: раньше эта функция тайно меняла точку краша
+    в зависимости от того, кто и сколько поставил (буст проигрывающим-приманка,
+    снижение множителя для крупных ставок и выигрывающих игроков). Это было
+    нечестно по отношению к игрокам и введено в заблуждение относительно
+    честности игры. Функция оставлена как no-op для обратной совместимости
+    вызовов, но больше не изменяет результат раунда."""
+    return base_target
+
+
+def ai_should_force_crash(game_id, current_mult, conn=None):
+    """УСТАРЕЛО И ОТКЛЮЧЕНО: раньше эта функция принудительно обрушивала раунд
+    против конкретных игроков (крупные ставки, игроки с высоким RTP). Это было
+    манипуляцией исходом уже во время полёта. Отключено — раунд идёт до заранее
+    зафиксированного (и проверяемого) множителя, без вмешательства."""
+    return False
+
+
 # ============================================================
 # ЧЕСТНАЯ (PROVABLY FAIR) ГЕНЕРАЦИЯ МНОЖИТЕЛЯ КРАША
 # ------------------------------------------------------------
@@ -5144,6 +5502,7 @@ def generate_extreme_crash_multiplier():
     Новый код должен использовать generate_fair_crash_round(game_id)."""
     multiplier, _seed, _seed_hash = generate_fair_crash_round(random.randint(1, 1 << 30))
     return multiplier
+
 
 
 def _get_site_profit_balance():
@@ -5196,6 +5555,7 @@ def _get_site_profit_balance():
         # Fallback to last cached value if present
         with _site_balance_lock:
             return _site_balance_cache.get('value', 0)
+
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -6093,6 +6453,7 @@ def event_page_alias():
     return redirect('/event/witch-hat-party')
 
 
+
 @app.route('/inventory')
 def inventory_page():
     """Единая настоящая страница профиля/инвентаря."""
@@ -6946,6 +7307,7 @@ def get_telegram_user():
     except Exception as e:
         logger.error(f"❌ Ошибка получения пользователя: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
 
 
 # ==================== ДОПОЛНИТЕЛЬНЫЕ API ДЛЯ ULTIMATE CRASH ====================
@@ -8151,6 +8513,7 @@ def set_user_currency_mode():
     except Exception as e:
         logger.error(f"set_user_currency_mode error: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
 
 
 @app.route('/api/fragment-gift-details', methods=['GET'])
@@ -11523,48 +11886,12 @@ _portal_working_base = None
 _portal_http_lock = threading.Lock()
 
 
-def _portal_call_with_hard_timeout(engine, kwargs, hard_timeout):
-    """Run one HTTP call on a background thread with an OS-level hard deadline.
-
-    ``requests``/``curl_cffi`` timeouts only cover socket read/connect and can
-    still hang indefinitely in some network conditions (stalled TLS handshake,
-    a proxy that swallows the connection, etc). That is what turned "нажимаю
-    коннект" into an endless spinner: the Flask worker thread was blocked
-    inside ``engine.request()`` with no way out. Running the call in its own
-    daemon thread and joining with a timeout guarantees this function always
-    returns within ``hard_timeout`` seconds, no matter what the underlying
-    library does. The daemon thread may keep the dead socket alive in the
-    background, but it can never block the caller again.
-    """
-    box = {}
-
-    def runner():
-        try:
-            box['resp'] = engine.request(**kwargs)
-        except Exception as e:
-            box['exc'] = e
-
-    t = threading.Thread(target=runner, daemon=True)
-    t.start()
-    t.join(hard_timeout)
-    if t.is_alive():
-        return None, TimeoutError(f'Portal не ответил за {hard_timeout:.0f} сек (запрос завис на уровне сети)')
-    if 'exc' in box:
-        return None, box['exc']
-    return box.get('resp'), None
-
-
 def _portal_request(method, path, token=None, json_body=None, params=None, timeout=15):
     """Call Portals using the same host/header format as the marketplace client.
 
     curl_cffi is preferred because Portals is behind browser-facing protection.
     Plain ``requests`` remains as a fallback, so the whole app can still start
     when curl_cffi is unavailable.
-
-    The whole call is bounded by an overall wall-clock deadline (on top of the
-    per-attempt hard timeout above) so a slow/blocked Portal endpoint can never
-    turn "Сохранить и подключить" into an infinite spinner — this function is
-    guaranteed to return within roughly ``PORTAL_REQUEST_DEADLINE`` seconds.
     """
     global _portal_working_base
 
@@ -11581,17 +11908,7 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
     last_error = 'Portal API недоступен'
     last_status = 0
 
-    # Hard cap on total time spent in this function, independent of how many
-    # bases/engines/attempts are left to try. Previously the worst case was
-    # 3 bases × 2 engines × 3 attempts × up to 12–25s each — several minutes
-    # that read as "бесконечное подключение" to the admin.
-    deadline = time.time() + min(45.0, max(20.0, timeout * 3))
-
     for base in bases:
-        if time.time() >= deadline:
-            last_error = last_error or 'Portal request timed out (общий лимит времени исчерпан)'
-            break
-
         url = base.rstrip('/') + clean_path
         host_root = base.split('/api', 1)[0].rstrip('/')
         headers = {
@@ -11611,11 +11928,7 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
         engines.append(('requests', http_requests))
 
         for engine_name, engine in engines:
-            if time.time() >= deadline:
-                break
-            for attempt in range(2):
-                if time.time() >= deadline:
-                    break
+            for attempt in range(3):
                 try:
                     kwargs = dict(
                         method=method,
@@ -11627,12 +11940,7 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                     )
                     if engine_name == 'curl_cffi':
                         kwargs['impersonate'] = 'chrome110'
-
-                    remaining = max(1.0, deadline - time.time())
-                    resp, err = _portal_call_with_hard_timeout(engine, kwargs, hard_timeout=min(timeout + 5, remaining))
-                    if err is not None:
-                        raise err
-
+                    resp = engine.request(**kwargs)
                     last_status = int(getattr(resp, 'status_code', 0) or 0)
 
                     if last_status == 200:
@@ -11658,19 +11966,14 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                             retry_after = float((getattr(resp, 'headers', {}) or {}).get('Retry-After') or 0)
                         except Exception:
                             retry_after = 0.0
-                        wait_for = min(3.0, max(0.6 * (attempt + 1), retry_after))
+                        wait_for = min(6.0, max(0.8 * (attempt + 1), retry_after))
                         last_error = f'Portal rate limit, повтор через {wait_for:.1f} сек'
-                        if time.time() + wait_for >= deadline:
-                            break
                         time.sleep(wait_for)
                         continue
 
                     if last_status >= 500:
                         last_error = f'Portal HTTP {last_status}'
-                        wait_for = 0.5 * (attempt + 1)
-                        if time.time() + wait_for >= deadline:
-                            break
-                        time.sleep(wait_for)
+                        time.sleep(0.6 * (attempt + 1))
                         continue
 
                     if last_status == 404:
@@ -11689,8 +11992,8 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
 
                 except Exception as e:
                     last_error = f'{engine_name}: {e}'
-                    if attempt < 1 and time.time() + 0.4 < deadline:
-                        time.sleep(0.4)
+                    if attempt < 2:
+                        time.sleep(0.4 * (attempt + 1))
                         continue
                     break
 
@@ -12158,6 +12461,9 @@ def _portal_sync_floors():
         updated, added, len(portal_catalog), mode_sync.get('synced', 0)
     )
     return {'success': True, **sync_payload}
+
+
+
 
 
 # ─── PORTAL HOURLY FULL CATALOG ─────────────────────────────────────────
@@ -12687,6 +12993,9 @@ def portal_daily_sync():
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+
 
 
 # ─── PORTAL ADMIN INTEGRATION: catalog / cases / game modes ──────────────
@@ -13302,6 +13611,11 @@ def public_mode_gift_pick(mode_id):
 # ─── PORTAL API ROUTES ───
 
 
+
+
+
+
+
 @app.route('/api/portal/diagnostics', methods=['GET'])
 def portal_diagnostics():
     """Safe admin diagnostic: never returns the auth token itself."""
@@ -13442,6 +13756,17 @@ def portal_search_route():
         return jsonify({'success': True, 'gifts': gifts, 'floor_price_ton': floor})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+
+
+
+
+
+
+def _check_aportalsmp():
+    if _APORTALSMP_AVAILABLE:
+        return True, None
+    return False, 'Модуль aportalsmp не установлен. Установи: pip install aportalsmp'
 
 
 def _validate_portal_initdata_improved(token):
@@ -13810,6 +14135,57 @@ def portal_status_legacy():
             'aportalsmp_available': bool(globals().get('_APORTALSMP_AVAILABLE', False)),
             'error': str(e)
         })
+
+
+
+def portal_status():
+    """Статус подключения к Portal"""
+    try:
+        auth = _get_portal_auth()
+        connected = auth is not None
+        
+        # Считаем коллекции в кэше
+        total_collections = 0
+        try:
+            if os.path.exists(FRAGMENT_DISK_CACHE_FILE):
+                with open(FRAGMENT_DISK_CACHE_FILE, 'r', encoding='utf-8') as f:
+                    cache = json.load(f)
+                total_collections = len(cache.get('gifts', []))
+        except Exception:
+            pass
+        
+        # Последняя синхронизация
+        last_sync_ago = 'никогда'
+        last_updated = 0
+        try:
+            sync_file = os.path.join(PERSISTENT_DATA_DIR, 'portal_last_sync.json')
+            if os.path.exists(sync_file):
+                with open(sync_file, 'r', encoding='utf-8') as f:
+                    sd = json.load(f)
+                ts = sd.get('timestamp', 0)
+                if ts:
+                    diff = int(time.time() - ts)
+                    if diff < 60:
+                        last_sync_ago = f'{diff} сек назад'
+                    elif diff < 3600:
+                        last_sync_ago = f'{diff // 60} мин назад'
+                    else:
+                        last_sync_ago = f'{diff // 3600} ч назад'
+                    last_updated = sd.get('updated', 0)
+        except Exception:
+            pass
+        
+        return jsonify({
+            'success': True,
+            'connected': connected,
+            'info': {
+                'total_collections': total_collections,
+                'last_sync_ago': last_sync_ago,
+                'last_updated': last_updated,
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e), 'connected': False})
 
 
 @app.route('/api/portal/connect', methods=['POST'])
@@ -14780,6 +15156,9 @@ def get_user_upgrade_stats(user_id):
     except Exception as e:
         logger.error(f"❌ Ошибка получения статистики апгрейдов: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+
+
 
 
 @app.route('/api/upgrade-with-ton', methods=['POST'])
@@ -18313,6 +18692,7 @@ def admin_toggle_notification():
         return jsonify({'success': False, 'error': str(e)})
 
 
+
 # ══════════════════════════════════════════════════════════════
 # ADMIN ENDPOINTS (расширенная админка)
 # ══════════════════════════════════════════════════════════════
@@ -19751,6 +20131,8 @@ def admin_create_case():
     except Exception as e:
         logger.error(f"❌ Ошибка создания кейса: {e}")
         return jsonify({'success': False, 'error': str(e)})
+
+
 
 
 @app.route('/api/admin/add-gift-to-case', methods=['POST'])
@@ -22690,6 +23072,22 @@ def init_level_crates():
         logger.error(f"❌ Ошибка создания крейтов уровней: {e}")
 
 
+def _get_level_crate_id(crate_key):
+    """Получает ID крейта по ключу из LEVEL_CRATES"""
+    crate_data = LEVEL_CRATES.get(crate_key)
+    if not crate_data:
+        return None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM crates WHERE name = ?", (crate_data['name'],))
+        row = cursor.fetchone()
+        conn.close()
+        return row[0] if row else None
+    except:
+        return None
+
+
 # NOTE: avoid running DB initialization at import time (can race with pool init).
 # Crates/level seeding is performed during application lazy initialization (_lazy_init).
 
@@ -23994,6 +24392,55 @@ def admin_case_open_history():
 
 # ==================== ЗАПУСК ПРИЛОЖЕНИЯ ====================
 
+def save_ultimate_crash_history(game_id, final_multiplier):
+    """Сохраняет историю Ultimate Crash игры"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            INSERT INTO ultimate_crash_history (game_id, final_multiplier, finished_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+        ''', (game_id, final_multiplier))
+
+        conn.commit()
+        conn.close()
+        logger.info(f"📝 Сохранена история игры #{game_id}, множитель: {final_multiplier}x")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Ошибка сохранения истории игры: {e}")
+        return False
+
+def get_ultimate_crash_history(limit=10):
+    """Получает историю множителей"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT id, game_id, final_multiplier, finished_at
+            FROM ultimate_crash_history
+            ORDER BY finished_at DESC
+            LIMIT ?
+        ''', (limit,))
+
+        history = cursor.fetchall()
+        conn.close()
+
+        history_list = []
+        for item in history:
+            history_list.append({
+                'id': item[0],
+                'game_id': item[1],
+                'final_multiplier': float(item[2]),
+                'finished_at': item[3]
+            })
+
+        logger.info(f"📊 Загружено {len(history_list)} записей истории")
+        return history_list
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения истории: {e}")
+        return []
 
 # ==================== ЗАПУСК ПРИЛОЖЕНИЯ ====================
 
@@ -25311,6 +25758,8 @@ def api_user_gift_index():
         return jsonify({'success': False, 'error': str(e)})
 
 
+
+
 # ══════════════════════════════════════════════════════════════
 # UPGRADE ROULETTE SYSTEM (added by fix_upgrade_system.py)
 # ══════════════════════════════════════════════════════════════
@@ -25318,6 +25767,19 @@ def api_user_gift_index():
 # Запрещённые модели/фоны для ЦЕЛЕВОГО подарка
 _UPGRADE_FORBIDDEN_BACKDROPS = {'black', 'onyx', 'black diamond', 'onyx black', 'black onyx'}
 _UPGRADE_FORBIDDEN_MODELS = {'rare', 'legendary', 'mythic', 'epic'}
+
+
+def _upgrade_is_forbidden_attrs(gift):
+    """Проверяет, запрещены ли атрибуты подарка для целевого."""
+    if not gift:
+        return True
+    backdrop = str(gift.get('nft_backdrop') or '').strip().lower()
+    model = str(gift.get('nft_model') or '').strip().lower()
+    if backdrop in _UPGRADE_FORBIDDEN_BACKDROPS:
+        return True
+    if model in _UPGRADE_FORBIDDEN_MODELS:
+        return True
+    return False
 
 
 @app.route('/api/upgrade/prepare', methods=['POST'])
@@ -25710,6 +26172,9 @@ def api_upgrade_spin():
         return jsonify({'success': False, 'error': str(e)})
 
 
+
+
+
 # ══════════════════════════════════════════════════════════════
 # INVENTORY UPGRADE SYSTEM (added by fix_inventory_upgrade.py)
 # ══════════════════════════════════════════════════════════════
@@ -25717,6 +26182,17 @@ def api_upgrade_spin():
 # Запрещённые атрибуты для целевого номера
 _INV_UPGRADE_FORBIDDEN_BACKDROPS = {'black', 'onyx', 'black diamond', 'onyx black', 'black onyx'}
 _INV_UPGRADE_FORBIDDEN_MODELS = {'rare', 'legendary', 'mythic', 'epic'}
+
+
+def _inv_upgrade_is_forbidden(backdrop, model):
+    """True если атрибуты запрещены."""
+    bd = str(backdrop or '').strip().lower()
+    md = str(model or '').strip().lower()
+    if bd in _INV_UPGRADE_FORBIDDEN_BACKDROPS:
+        return True
+    if md in _INV_UPGRADE_FORBIDDEN_MODELS:
+        return True
+    return False
 
 
 @app.route('/api/inventory/upgrade-prepare', methods=['POST'])
@@ -26085,6 +26561,7 @@ def api_inv_upgrade_spin():
             try: conn.close()
             except: pass
         return jsonify({'success': False, 'error': str(e)})
+
 
 
 # ===== SBP DEPOSIT =====
