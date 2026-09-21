@@ -3135,6 +3135,7 @@ def get_public_cases_with_seasonal():
 
 # ─── Events ────────────────────────────────────────────────────────────────
 EVENTS_FILE = os.path.join(PERSISTENT_DATA_DIR, 'events.json')
+EVENT_CASE_POOLS_FILE = os.path.join(PERSISTENT_DATA_DIR, 'event_case_pools.json')
 GAME_UI_DEFAULTS = {
     # Public Games page: only the Event entry and ordinary game modes live here.
     # Event-specific content (special mode, event cases, market) belongs to the
@@ -3324,6 +3325,91 @@ def _event_db_defaults():
     except Exception as e:
         logger.warning('Event DB init failed: %s', e)
 
+def _load_event_case_pools():
+    """Load explicit event -> case-pool assignments independently of cases.json.
+
+    Case definitions live in cases.json. This file stores only which existing
+    cases an event is allowed to show. It prevents an event refresh/restart from
+    accidentally rebuilding the pool from the global case catalog.
+    """
+    try:
+        if not os.path.exists(EVENT_CASE_POOLS_FILE):
+            return {}
+        with open(EVENT_CASE_POOLS_FILE, 'r', encoding='utf-8') as f:
+            raw=json.load(f)
+        pools=raw.get('pools', raw) if isinstance(raw,dict) else {}
+        if not isinstance(pools,dict):
+            return {}
+        clean={}
+        for eid,pool in pools.items():
+            if not isinstance(pool,dict):
+                continue
+            ids=[]
+            for x in pool.get('case_ids') or []:
+                sx=str(x).strip()
+                if sx and sx not in ids:
+                    ids.append(sx)
+            clean[str(eid)]=ids
+        return clean
+    except Exception as e:
+        logger.warning('Event case pools JSON load failed: %s',e)
+        return {}
+
+def _save_event_case_pools(events):
+    """Persist only event case assignments; never writes case definitions here."""
+    pools={}
+    try:
+        for eid,ev in (events or {}).items():
+            if not isinstance(ev,dict):
+                continue
+            sections=ev.get('sections') if isinstance(ev.get('sections'),list) else []
+            sec=next((x for x in sections if isinstance(x,dict) and str(x.get('type') or '').lower()=='cases'),None)
+            if sec is None:
+                continue
+            ids=[]
+            for x in sec.get('case_ids') or []:
+                sx=str(x).strip()
+                if sx and sx not in ids:
+                    ids.append(sx)
+            pools[str(eid)]={'case_ids':ids,'updated_at':datetime.utcnow().isoformat(timespec='seconds')+'Z'}
+        tmp=EVENT_CASE_POOLS_FILE+'.tmp'
+        with open(tmp,'w',encoding='utf-8') as f:
+            json.dump({'pools':pools},f,ensure_ascii=False,indent=2)
+            f.flush()
+            try: os.fsync(f.fileno())
+            except Exception: pass
+        os.replace(tmp,EVENT_CASE_POOLS_FILE)
+        return True
+    except Exception as e:
+        logger.error('Event case pools JSON save failed: %s',e)
+        return False
+
+def _apply_event_case_pools(events):
+    """Overlay the dedicated event pools onto loaded event definitions."""
+    pools=_load_event_case_pools()
+    if not pools:
+        return events
+    changed=False
+    for eid,ids in pools.items():
+        ev=events.get(eid)
+        if not isinstance(ev,dict):
+            continue
+        sections=ev.setdefault('sections',[])
+        sec=next((x for x in sections if isinstance(x,dict) and str(x.get('type') or '').lower()=='cases'),None)
+        if sec is None:
+            sec={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[],'case_ids_explicit':True}
+            sections.insert(0,sec)
+        normalized=[]
+        for x in ids:
+            sx=str(x).strip()
+            if sx and sx not in normalized:
+                normalized.append(sx)
+        if [str(x) for x in (sec.get('case_ids') or [])] != normalized or not sec.get('case_ids_explicit'):
+            sec['case_ids']=normalized
+            sec['case_ids_explicit']=True
+            changed=True
+    return events
+
 def load_events():
     """Load event configuration from durable events.json, with DB recovery fallback."""
     try:
@@ -3337,7 +3423,7 @@ def load_events():
                     if isinstance(obj,dict):
                         if eid not in result: result[eid]={}
                         result[eid].update(obj)
-                return result
+                return _apply_event_case_pools(result)
     except Exception as e:
         logger.warning('Events JSON load failed: %s',e)
     try:
@@ -3349,9 +3435,9 @@ def load_events():
                 eid,payload=row[0],row[1]; obj=json.loads(payload) if isinstance(payload,str) else dict(payload)
                 if eid in result and isinstance(obj,dict): result[eid].update(obj)
             except Exception: pass
-        return result
+        return _apply_event_case_pools(result)
     except Exception as e:
-        logger.warning('Events DB load failed: %s',e); return json.loads(json.dumps(EVENT_DEFAULTS))
+        logger.warning('Events DB load failed: %s',e); return _apply_event_case_pools(json.loads(json.dumps(EVENT_DEFAULTS)))
 
 def save_events(events):
     if not isinstance(events,dict): events={}
@@ -3376,7 +3462,8 @@ def save_events(events):
         conn.commit(); conn.close(); db_ok=True
     except Exception as e:
         logger.warning('Events DB save failed: %s',e)
-    return json_ok or db_ok
+    pool_ok=_save_event_case_pools(events)
+    return json_ok or db_ok or pool_ok
 
 def _event_find_case(case_ref):
     ref=str(case_ref or '').strip().lower()
@@ -3470,39 +3557,27 @@ def _event_market_item_from_collection(collection):
     return {'collection':name,'fragment_slug':slug,'image':image,'floor_ton':round(float(floor),4) if floor is not None else None,'listings':listings}
 
 def _sync_event_cases(ev):
-    """One-time legacy migration for event-owned cases.
+    """Keep event case pools explicit; never auto-fill them from cases.json.
 
-    Modern event sections are authoritative: once an administrator has an
-    explicit case_ids list, refreshes must never rebuild it from the legacy
-    event_case flag. This keeps add/remove changes persistent.
+    Every case definition belongs to cases.json. An event only contains the
+    references that an administrator explicitly added to its case pool.
     """
     try:
         sections=ev.setdefault('sections',[])
-        sec=next((x for x in sections if isinstance(x,dict) and x.get('type')=='cases'),None)
+        sec=next((x for x in sections if isinstance(x,dict) and str(x.get('type') or '').lower()=='cases'),None)
         if sec is None:
-            sec={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[],'case_ids_explicit':False}
+            sec={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[],'case_ids_explicit':True}
             sections.insert(0,sec)
-        ids=[str(x) for x in (sec.get('case_ids') or [])]
-        # Explicit modern configuration, including an intentionally empty list.
-        if bool(sec.get('case_ids_explicit', False)):
-            return False
-        # If an old saved section already contains IDs, freeze that list as explicit.
-        if ids:
-            sec['case_ids_explicit']=True
             return True
-        all_cases=get_public_cases_with_seasonal()
-        auto_ids=[]
-        for c in all_cases:
-            section=str(c.get('section') or '').strip().lower()
-            tags=[str(x).strip().lower() for x in (c.get('tags') or [])]
-            if bool(c.get('event_case')) or section in ('event','witch_hat_party') or 'event' in tags or 'witch_hat_party' in tags:
-                auto_ids.append(str(c.get('id')))
-        if not auto_ids:
-            sec['case_ids_explicit']=True
-            return True
-        sec['case_ids']=auto_ids
+        ids=[]
+        for x in sec.get('case_ids') or []:
+            sx=str(x).strip()
+            if sx and sx not in ids:
+                ids.append(sx)
+        changed = [str(x) for x in (sec.get('case_ids') or [])] != ids or not bool(sec.get('case_ids_explicit',False))
+        sec['case_ids']=ids
         sec['case_ids_explicit']=True
-        return True
+        return changed
     except Exception:
         return False
 
@@ -10270,17 +10345,66 @@ def admin_events():
                     if item_id=='ghost_road_mode':
                         return jsonify({'success':False,'error':'Обязательную кнопку Ghost Road нельзя удалить'}),400
                     mode['items']=[x for x in items if str(x.get('id'))!=item_id]
-            elif action in ('add_case','remove_case'):
-                case_id=str(data.get('case_id') or '').strip(); section_id=str(data.get('section_id') or '').strip(); sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==section_id and x.get('type')=='cases'),None) or next((x for x in ev.setdefault('sections',[]) if x.get('type')=='cases'),None)
-                if sec is None: sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}; ev['sections'].insert(0,sec)
-                ids=sec.setdefault('case_ids',[])
-                if action=='add_case':
-                    if not _event_find_case(case_id): return jsonify({'success':False,'error':'Кейс не найден'}),404
-                    if case_id not in [str(x) for x in ids]: ids.append(case_id)
-                    sec['case_ids_explicit']=True
+            elif action in ('add_case','remove_case','move_case','add_case_section','update_case_section','remove_case_section'):
+                _sections=ev.setdefault('sections',[])
+                # Cases Coming uses explicit case sections only. Never auto-populate them.
+                if action=='add_case_section':
+                    title=str(data.get('title') or '').strip()
+                    if not title: return jsonify({'success':False,'error':'Введите название раздела'}),400
+                    sid=re.sub(r'[^a-z0-9_-]+','_',title.lower())[:40] or f'case_section_{int(time.time())}'
+                    base=sid; n=2
+                    while any(str(x.get('id'))==sid for x in _sections): sid=f'{base}_{n}'; n+=1
+                    _sections.append({'id':sid,'title':title,'type':'cases','case_ids':[],'case_ids_explicit':True,'visible':True,'order':len([x for x in _sections if x.get('type')=='cases'])})
+                elif action=='update_case_section':
+                    sid=str(data.get('section_id') or '').strip()
+                    sec=next((x for x in _sections if str(x.get('id'))==sid and x.get('type')=='cases'),None)
+                    if sec is None: return jsonify({'success':False,'error':'Раздел кейсов не найден'}),404
+                    title=str(data.get('title') or '').strip()
+                    if title: sec['title']=title
+                    if 'visible' in data: sec['visible']=bool(data.get('visible'))
+                    if 'order' in data:
+                        try: sec['order']=int(data.get('order'))
+                        except Exception: pass
+                elif action=='remove_case_section':
+                    sid=str(data.get('section_id') or '').strip()
+                    matches=[x for x in _sections if str(x.get('id'))==sid and x.get('type')=='cases']
+                    if not matches: return jsonify({'success':False,'error':'Раздел кейсов не найден'}),404
+                    sec=matches[0]
+                    # Keep the cases by moving them to another case section, if requested.
+                    target_id=str(data.get('move_to') or '').strip()
+                    target=next((x for x in _sections if str(x.get('id'))==target_id and x.get('type')=='cases' and str(x.get('id'))!=sid),None)
+                    if target is None and sec.get('case_ids'):
+                        target=next((x for x in _sections if x.get('type')=='cases' and str(x.get('id'))!=sid),None)
+                    if target is not None:
+                        target_ids=target.setdefault('case_ids',[])
+                        for cid in sec.get('case_ids') or []:
+                            if str(cid) not in [str(x) for x in target_ids]: target_ids.append(cid)
+                        target['case_ids_explicit']=True
+                    _sections[:]=[x for x in _sections if str(x.get('id'))!=sid]
+                    if not any(x.get('type')=='cases' for x in _sections):
+                        _sections.append({'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'case_ids_explicit':True,'visible':True,'order':0})
                 else:
-                    sec['case_ids']=[x for x in ids if str(x)!=case_id]
-                    sec['case_ids_explicit']=True
+                    case_id=str(data.get('case_id') or '').strip(); section_id=str(data.get('section_id') or '').strip()
+                    if not _event_find_case(case_id): return jsonify({'success':False,'error':'Кейс не найден'}),404
+                    if action=='move_case':
+                        target_id=str(data.get('target_section_id') or '').strip()
+                        source=next((x for x in _sections if x.get('type')=='cases' and str(case_id) in [str(v) for v in (x.get('case_ids') or [])]),None)
+                        target=next((x for x in _sections if x.get('type')=='cases' and str(x.get('id'))==target_id),None)
+                        if target is None: return jsonify({'success':False,'error':'Целевой раздел не найден'}),404
+                        for sec in _sections:
+                            if sec.get('type')=='cases': sec['case_ids']=[v for v in (sec.get('case_ids') or []) if str(v)!=case_id]
+                            if sec.get('type')=='cases': sec['case_ids_explicit']=True
+                        target.setdefault('case_ids',[]).append(case_id)
+                    else:
+                        sec=next((x for x in _sections if str(x.get('id'))==section_id and x.get('type')=='cases'),None) or next((x for x in _sections if x.get('type')=='cases'),None)
+                        if sec is None:
+                            sec={'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'case_ids_explicit':True,'visible':True,'order':0}; _sections.append(sec)
+                        ids=sec.setdefault('case_ids',[])
+                        if action=='add_case':
+                            if case_id not in [str(x) for x in ids]: ids.append(case_id)
+                        else:
+                            sec['case_ids']=[x for x in ids if str(x)!=case_id]
+                        sec['case_ids_explicit']=True
             elif action=='set_section_unlock':
                 # Открытие раздела по таймеру: часы + минуты от текущего момента.
                 _normalize_witch_event_structure(ev) if eid=='witch_hat_party' else None
