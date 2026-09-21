@@ -5956,6 +5956,22 @@ def start_ultimate_crash_loop():
 
                     # PostgreSQL does not provide sqlite's cursor.lastrowid.
                     # Always fetch the generated id explicitly on PostgreSQL.
+                    # Insert the round and ALWAYS resolve its id before committing.
+                    # Some PostgreSQL wrappers/cursors can execute RETURNING successfully
+                    # but expose the returned row in a non-standard shape. The old code
+                    # treated that as id=0 and restarted the loop, causing repeated
+                    # "Crash game was inserted but its id was not returned" errors.
+                    def _row_id(row):
+                        if row is None:
+                            return 0
+                        if isinstance(row, dict):
+                            return int(row.get('id') or row.get('ID') or 0)
+                        try:
+                            return int(row[0])
+                        except Exception:
+                            return 0
+
+                    new_game_id = 0
                     if USE_POSTGRES:
                         try:
                             cursor.execute("""
@@ -5963,9 +5979,9 @@ def start_ultimate_crash_loop():
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
                                 RETURNING id
                             """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                            _row = cursor.fetchone()
-                            new_game_id = int(_row[0]) if _row else 0
-                        except Exception:
+                            new_game_id = _row_id(cursor.fetchone())
+                        except Exception as pg_seed_err:
+                            logger.warning(f"⚠️ Crash insert with seed failed: {pg_seed_err}; retrying without seed columns")
                             try:
                                 conn.rollback()
                             except Exception:
@@ -5976,23 +5992,35 @@ def start_ultimate_crash_loop():
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP)
                                 RETURNING id
                             """, (target_multiplier,))
-                            _row = cursor.fetchone()
-                            new_game_id = int(_row[0]) if _row else 0
+                            new_game_id = _row_id(cursor.fetchone())
+                            if not new_game_id:
+                                # Last-resort lookup in this same transaction. There is
+                                # only one crash-loop writer, so this cannot select a
+                                # competing round from another game-loop instance.
+                                cursor.execute("SELECT id FROM ultimate_crash_games WHERE status = 'counting' ORDER BY id DESC LIMIT 1")
+                                new_game_id = _row_id(cursor.fetchone())
                     else:
                         try:
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
                             """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                        except Exception:
+                        except Exception as sqlite_seed_err:
+                            logger.warning(f"⚠️ Crash insert with seed failed: {sqlite_seed_err}; retrying without seed columns")
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP)
                             """, (target_multiplier,))
-                        new_game_id = cursor.lastrowid
+                        try:
+                            new_game_id = int(cursor.lastrowid or 0)
+                        except Exception:
+                            new_game_id = 0
+                        if not new_game_id:
+                            cursor.execute("SELECT id FROM ultimate_crash_games WHERE status = 'counting' ORDER BY id DESC LIMIT 1")
+                            new_game_id = _row_id(cursor.fetchone())
 
                     if not new_game_id:
-                        raise RuntimeError('Crash game was inserted but its id was not returned')
+                        raise RuntimeError('Crash game insert succeeded but the new game id could not be resolved')
                     conn.commit()
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 New game, target={target_multiplier}x, bonus={is_bonus}")
@@ -12528,8 +12556,19 @@ def _portal_collection_filters(short_name):
         return False, data
 
     raw = data
-    if isinstance(data, dict):
-        floors = data.get('floor_prices')
+    # Portal has returned several equivalent wrappers over time
+    # (data/result -> floor_prices -> collection slug). Unwrap them instead of
+    # assuming one exact response shape; otherwise the token is valid but the
+    # model list stays empty.
+    if isinstance(raw, dict):
+        for wrapper_key in ('data', 'result'):
+            wrapped = raw.get(wrapper_key)
+            if isinstance(wrapped, dict):
+                raw = wrapped
+                break
+
+    if isinstance(raw, dict):
+        floors = raw.get('floor_prices') or raw.get('floorPrices')
         if isinstance(floors, dict):
             # Exact key first, then normalized-key fallback.
             raw = floors.get(short_name)
@@ -12540,19 +12579,31 @@ def _portal_collection_filters(short_name):
                         raw = value
                         break
 
+    if isinstance(raw, list):
+        # Some responses return one collection row directly. Find the row that
+        # belongs to the requested short_name.
+        wanted = re.sub(r'[^a-z0-9]+', '', short_name.lower())
+        for row in raw:
+            if not isinstance(row, dict):
+                continue
+            row_slug = str(row.get('short_name') or row.get('slug') or row.get('collection') or '').strip().lower()
+            if re.sub(r'[^a-z0-9]+', '', row_slug) == wanted:
+                raw = row
+                break
+
     if not isinstance(raw, dict):
         return False, 'Portal filters returned an unexpected response'
 
+    # Accept both plural and singular field names, plus a few common nested
+    # shapes. The normalizer then produces the canonical [{name,floor_price}].
+    models_raw = raw.get('models') or raw.get('model') or raw.get('model_floors') or {}
+    backdrops_raw = raw.get('backdrops') or raw.get('backgrounds') or raw.get('backdrop') or raw.get('backdrop_floors') or {}
+    symbols_raw = raw.get('symbols') or raw.get('symbol') or raw.get('symbol_floors') or {}
+
     return True, {
-        'models': _portal_normalize_filter_group(
-            raw.get('models') or raw.get('model') or {}
-        ),
-        'backdrops': _portal_normalize_filter_group(
-            raw.get('backdrops') or raw.get('backgrounds') or raw.get('backdrop') or {}
-        ),
-        'symbols': _portal_normalize_filter_group(
-            raw.get('symbols') or raw.get('symbol') or {}
-        ),
+        'models': _portal_normalize_filter_group(models_raw),
+        'backdrops': _portal_normalize_filter_group(backdrops_raw),
+        'symbols': _portal_normalize_filter_group(symbols_raw),
     }
 
 
@@ -19209,17 +19260,35 @@ def get_withdrawals():
             ''', (status,))
 
         withdrawals = cursor.fetchall()
-        conn.close()
 
         withdrawals_list = []
         for w in withdrawals:
+            # The withdrawal row is the historical source of truth. For pending
+            # requests, inventory still exists and can provide the exact image/name
+            # selected by the user. Never substitute a random catalog gift here.
+            exact_image = w[4]
+            exact_name = w[3]
+            exact_value = w[5]
+            try:
+                if w[2]:
+                    cursor.execute(
+                        'SELECT gift_name, gift_image, gift_value FROM inventory WHERE id = ? AND user_id = ?',
+                        (w[2], w[1])
+                    )
+                    inv_row = cursor.fetchone()
+                    if inv_row:
+                        exact_name = inv_row[0] or exact_name
+                        exact_image = inv_row[1] or exact_image
+                        exact_value = inv_row[2] if inv_row[2] is not None else exact_value
+            except Exception:
+                pass
             withdrawals_list.append({
                 'id': w[0],
                 'user_id': w[1],
                 'inventory_id': w[2],
-                'gift_name': w[3],
-                'gift_image': w[4],
-                'gift_value': w[5],
+                'gift_name': exact_name,
+                'gift_image': exact_image,
+                'gift_value': exact_value,
                 'status': w[6],
                 'telegram_username': w[7],
                 'user_photo_url': w[8],
@@ -19229,6 +19298,7 @@ def get_withdrawals():
                 'admin_notes': w[12]
             })
 
+        conn.close()
         return jsonify({'success': True, 'withdrawals': withdrawals_list})
 
     except Exception as e:
