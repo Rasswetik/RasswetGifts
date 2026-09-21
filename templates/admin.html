@@ -2623,13 +2623,33 @@ function _caseBaseGiftBySlug(slug, name){
     return found || null;
 }
 
+function _caseGiftIdentity(gift){
+    gift = gift || {};
+    // A case may contain the same base gift multiple times as long as the
+    // selected variant is different. The unique key is therefore
+    // collection + variant, NOT gift_key/id (Portal uses the same gift_key
+    // for the base gift and its models).
+    var collection = String(
+        gift.fragment_slug ||
+        gift.portal_collection_short_name ||
+        gift.portal_collection_name ||
+        gift.gift_key ||
+        gift.id ||
+        gift.name || ''
+    ).trim().toLowerCase();
+
+    var isRandom = !!gift.model_random;
+    var model = String(gift.model_name || gift.portal_model_name || '').trim().toLowerCase();
+
+    if(isRandom) return collection + '|random';
+    if(model) return collection + '|model:' + model;
+    return collection + '|base';
+}
+
 function _caseGiftExists(candidate){
-    var key = String(candidate.gift_key || candidate.id || '');
+    var identity = _caseGiftIdentity(candidate);
     return caseGifts.some(function(g){
-        if(key && String(g.gift_key || g.id || '') === key) return true;
-        return String(g.fragment_slug || '') === String(candidate.fragment_slug || '') &&
-               String(g.model_name || '') === String(candidate.model_name || '') &&
-               !!g.model_random === !!candidate.model_random;
+        return _caseGiftIdentity(g) === identity;
     });
 }
 
