@@ -3610,7 +3610,8 @@ async function loadWithdrawals(status){
                 var actions = w.status === 'pending'
                     ? '<div class="btn-row" style="margin-top:8px"><button class="btn btn-success btn-sm" style="flex:1" onclick="approveWithdrawal(' + w.id + ')">✓</button><button class="btn btn-danger btn-sm" style="flex:1" onclick="rejectWithdrawal(' + w.id + ')">✗</button></div>'
                     : '';
-                return '<div class="card"><div style="display:flex;align-items:center;gap:10px"><div style="width:42px;height:42px;border-radius:12px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">🎁</div>' +
+                var giftImg = w.gift_image || '/static/img/gift.png';
+                return '<div class="card"><div style="display:flex;align-items:center;gap:10px"><div style="width:52px;height:52px;border-radius:12px;background:rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden"><img src="' + escapeHtml(giftImg) + '" alt="" style="width:100%;height:100%;object-fit:contain;padding:4px" onerror="this.onerror=null;this.src=\'/static/img/gift.png\'"></div>' +
                     '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">' + escapeHtml(w.gift_name || '—') + '</div>' +
                     '<div style="font-size:11px;color:rgba(255,255,255,.5)">@' + escapeHtml(w.telegram_username || '—') + '</div></div>' +
                     '<div style="text-align:right"><div style="font-weight:800;font-size:14px">' + formatTon(w.gift_value) + '</div>' +
