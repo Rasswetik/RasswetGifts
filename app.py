@@ -135,6 +135,13 @@ TON_RATE = 100
 FRAGMENT_DISK_CACHE_FILE = os.path.join(PERSISTENT_DATA_DIR, 'fragment_catalog_cache.json')
 # Durable canonical gift catalog. On Render, DB_DIR should point to Persistent Disk.
 GIFTS_PERSISTENT_FILE = os.path.join(PERSISTENT_DATA_DIR, 'gifts_catalog_persistent.json')
+# Portal catalog is sharded by collection.  One file contains the base gift
+# (price/image) and ALL of its models/backdrops/symbols.  This prevents a
+# single multi-megabyte JSON document and, more importantly, keeps Portal sync
+# memory bounded.
+PORTAL_GIFT_STORE_DIR = os.path.join(PERSISTENT_DATA_DIR, 'portal_gifts')
+PORTAL_GIFT_INDEX_FILE = os.path.join(PERSISTENT_DATA_DIR, 'portal_gifts_index.json')
+
 
 # MRKT marketplace (read/sync pricing). Token is supplied by the admin from
 # the MRKT web app and cached locally. The public MRKT documentation confirms
@@ -2851,7 +2858,7 @@ def load_gifts():
     # the hosting filesystem is ephemeral. Restore the same full catalog from DB.
     try:
         snap = _portal_load_daily_snapshot()
-        rows = snap.get('collections') if isinstance(snap, dict) else None
+        rows = _portal_snapshot_collections(snap) if isinstance(snap, dict) and snap.get('storage_mode') == 'sharded' else (snap.get('collections') if isinstance(snap, dict) else None)
         if isinstance(rows, list) and rows:
             restored = []
             next_id = 0
@@ -12825,14 +12832,157 @@ def _portal_ensure_snapshot_table(conn):
         pass
 
 
-def _portal_load_daily_snapshot():
-    """Load the last successful Portal snapshot from disk, then PostgreSQL/SQLite.
 
-    The database copy is the durable source of truth when the hosting filesystem
-    is ephemeral. Disk JSON is still written because it is useful for inspection
-    and for fast local recovery.
-    """
-    # 1) Disk JSON first (fast path).
+def _portal_gift_store_filename(short_name):
+    """Return a stable, filesystem-safe shard filename for one Portal collection."""
+    raw = str(short_name or '').strip().lower()
+    safe = re.sub(r'[^a-z0-9_-]+', '_', raw).strip('_')
+    if not safe:
+        safe = 'gift'
+    digest = hashlib.sha1(raw.encode('utf-8')).hexdigest()[:10]
+    return f'{safe[:80]}_{digest}.json'
+
+
+def _portal_write_collection_shard(collection):
+    """Atomically save exactly one Portal collection and all its models."""
+    os.makedirs(PORTAL_GIFT_STORE_DIR, exist_ok=True)
+    slug = str(collection.get('short_name') or '').strip().lower()
+    if not slug:
+        raise ValueError('Portal collection has no short_name')
+    payload = dict(collection)
+    payload['_storage_version'] = 2
+    payload['_saved_at'] = time.time()
+    filename = _portal_gift_store_filename(slug)
+    path = os.path.join(PORTAL_GIFT_STORE_DIR, filename)
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, ensure_ascii=False, separators=(',', ':'))
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except Exception:
+            pass
+    os.replace(tmp, path)
+    return filename
+
+
+def _portal_read_collection_shard(short_name_or_filename):
+    """Read one collection shard without loading the whole Portal catalog."""
+    value = str(short_name_or_filename or '').strip()
+    if not value:
+        return None
+    filename = value if value.endswith('.json') else _portal_gift_store_filename(value)
+    path = os.path.join(PORTAL_GIFT_STORE_DIR, os.path.basename(filename))
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else None
+    except Exception as e:
+        logger.warning('Portal gift shard read failed %s: %s', path, e)
+        return None
+
+
+def _portal_write_shard_index(entries, updated_at=None):
+    """Write only a compact index; it contains no model arrays."""
+    os.makedirs(os.path.dirname(PORTAL_GIFT_INDEX_FILE), exist_ok=True)
+    index = {
+        'version': 2,
+        'updated_at': float(updated_at or time.time()),
+        'total_collections': len(entries),
+        'collections': entries,
+    }
+    tmp = PORTAL_GIFT_INDEX_FILE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(index, f, ensure_ascii=False, separators=(',', ':'))
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except Exception:
+            pass
+    os.replace(tmp, PORTAL_GIFT_INDEX_FILE)
+    return index
+
+
+def _portal_load_shard_index():
+    try:
+        with open(PORTAL_GIFT_INDEX_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        rows = data.get('collections') if isinstance(data, dict) else None
+        return data if isinstance(data, dict) and isinstance(rows, list) else None
+    except Exception:
+        return None
+
+
+def _portal_snapshot_collections(snapshot=None):
+    """Materialize collections only when a caller explicitly needs the full admin view."""
+    snap = snapshot or {}
+    if str(snap.get('storage_mode') or '') == 'sharded':
+        rows = []
+        for entry in snap.get('collections_index') or []:
+            shard = _portal_read_collection_shard(entry.get('file') or entry.get('short_name'))
+            if shard:
+                rows.append(shard)
+        return rows
+    return list(snap.get('collections') or [])
+
+
+def _portal_shard_manifest_snapshot(base_snapshot):
+    """Convert a full in-memory snapshot into a tiny manifest after sharding."""
+    index = _portal_load_shard_index() or {}
+    return {
+        'success': True,
+        'storage_mode': 'sharded',
+        'updated_at': base_snapshot.get('updated_at'),
+        'updated_at_iso': base_snapshot.get('updated_at_iso'),
+        'interval_minutes': base_snapshot.get('interval_minutes'),
+        'total_collections': base_snapshot.get('total_collections', 0),
+        'total_models': base_snapshot.get('total_models', 0),
+        'total_backdrops': base_snapshot.get('total_backdrops', 0),
+        'total_symbols': base_snapshot.get('total_symbols', 0),
+        'filter_errors': base_snapshot.get('filter_errors') or [],
+        'collections_index': index.get('collections') or [],
+        'logs': base_snapshot.get('logs') or [],
+        'shard_index_file': os.path.basename(PORTAL_GIFT_INDEX_FILE),
+    }
+
+
+def _portal_load_daily_snapshot():
+    """Load a lightweight Portal manifest; individual collections live in shard files."""
+    # Sharded disk index is the preferred source.
+    try:
+        index = _portal_load_shard_index()
+        if index and index.get('collections'):
+            # The index itself is authoritative for collection count and file names.
+            manifest = {
+                'success': True,
+                'storage_mode': 'sharded',
+                'updated_at': index.get('updated_at', 0),
+                'total_collections': int(index.get('total_collections') or len(index.get('collections') or [])),
+                'collections_index': index.get('collections') or [],
+            }
+            # Restore aggregate counters from the last lightweight snapshot if available.
+            for path in (
+                PORTAL_DAILY_SNAPSHOT_FILE,
+                os.path.join(PERSISTENT_DATA_DIR, 'portal_source_snapshot.json'),
+            ):
+                try:
+                    if not os.path.exists(path):
+                        continue
+                    with open(path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    if isinstance(data, dict):
+                        for key in ('updated_at_iso','interval_minutes','total_models','total_backdrops',
+                                    'total_symbols','filter_errors','logs','gifts_json'):
+                            if key in data:
+                                manifest[key] = data[key]
+                        break
+                except Exception:
+                    pass
+            return manifest
+    except Exception as e:
+        logger.warning('Portal shard index read failed: %s', e)
+
+    # Backward-compatible legacy full snapshot fallback.
     for path in (
         PORTAL_DAILY_SNAPSHOT_FILE,
         os.path.join(PERSISTENT_DATA_DIR, 'portal_source_snapshot.json'),
@@ -12847,8 +12997,8 @@ def _portal_load_daily_snapshot():
         except Exception as e:
             logger.warning("Portal snapshot read failed %s: %s", path, e)
 
-    # 2) Durable DB copy. This survives Render redeploys/restarts when the
-    # filesystem is not backed by a Persistent Disk.
+    # Durable DB fallback for older deployments. New sharded syncs deliberately
+    # do not put the huge model catalog into the database.
     conn = None
     try:
         conn = get_db_connection()
@@ -12856,76 +13006,20 @@ def _portal_load_daily_snapshot():
         row = conn.execute('SELECT payload FROM portal_snapshots WHERE id = ?', ('daily',)).fetchone()
         if row and row[0]:
             data = json.loads(row[0]) if isinstance(row[0], str) else row[0]
-            if isinstance(data, dict) and isinstance(data.get('collections'), list) and data.get('collections'):
-                # Rehydrate the JSON copy as well, but never fail the read if disk is read-only.
-                try:
-                    _portal_save_daily_snapshot_file_only(data)
-                except Exception:
-                    pass
-                return data
+            if isinstance(data, dict):
+                if data.get('storage_mode') == 'sharded':
+                    return data
+                if isinstance(data.get('collections'), list) and data.get('collections'):
+                    return data
     except Exception as e:
         logger.warning("Portal DB snapshot read failed: %s", e)
     finally:
-        # Do not close Flask request-owned connections here.
         try:
             if conn is not None and not has_request_context():
                 conn.close()
         except Exception:
             pass
-    return None
-
-
-def _portal_save_daily_snapshot_file_only(snapshot):
-    os.makedirs(os.path.dirname(PORTAL_DAILY_SNAPSHOT_FILE), exist_ok=True)
-    tmp = PORTAL_DAILY_SNAPSHOT_FILE + '.tmp'
-    with open(tmp, 'w', encoding='utf-8') as f:
-        json.dump(snapshot, f, ensure_ascii=False, indent=2)
-        f.flush()
-        try:
-            os.fsync(f.fileno())
-        except Exception:
-            pass
-    os.replace(tmp, PORTAL_DAILY_SNAPSHOT_FILE)
-
-
-def _portal_save_daily_snapshot(snapshot):
-    """Persist a successful Portal snapshot to JSON AND the application DB."""
-    saved_disk = False
-    saved_db = False
-    try:
-        _portal_save_daily_snapshot_file_only(snapshot)
-        saved_disk = True
-    except Exception as e:
-        logger.error("Portal daily snapshot file save failed: %s", e)
-
-    conn = None
-    try:
-        conn = get_db_connection()
-        _portal_ensure_snapshot_table(conn)
-        payload = json.dumps(snapshot, ensure_ascii=False, separators=(',', ':'))
-        conn.execute(
-            'INSERT INTO portal_snapshots (id, payload, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) '
-            'ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=CURRENT_TIMESTAMP',
-            ('daily', payload)
-        )
-        conn.commit()
-        saved_db = True
-    except Exception as e:
-        try:
-            if conn is not None:
-                conn.rollback()
-        except Exception:
-            pass
-        logger.error("Portal DB snapshot save failed: %s", e)
-    finally:
-        try:
-            if conn is not None and not has_request_context():
-                conn.close()
-        except Exception:
-            pass
-
-    return bool(saved_disk or saved_db)
-
+    return {}
 
 def _portal_floor_value(value):
     """Normalize Portal filter floor value to a number."""
@@ -13110,6 +13204,18 @@ def _portal_all_collections():
     # complete source snapshot instead of overwriting the catalog with zero.
     try:
         snap = _portal_load_daily_snapshot()
+        if isinstance(snap, dict) and snap.get('storage_mode') == 'sharded':
+            cached_rows = []
+            for entry in snap.get('collections_index') or []:
+                cached_rows.append({
+                    'short_name': entry.get('short_name'),
+                    'name': entry.get('name'),
+                    'floor_price': entry.get('floor_price', 0),
+                    'photo_url': entry.get('photo_url') or '',
+                })
+            if cached_rows:
+                logger.warning('Portal returned 0 collections; using saved shard index (%s collections)', len(cached_rows))
+                return True, cached_rows
         cached_rows = snap.get('collections') if isinstance(snap, dict) else None
         if isinstance(cached_rows, list) and cached_rows:
             logger.warning('Portal returned 0 collections; using saved durable snapshot (%s collections)', len(cached_rows))
@@ -13120,14 +13226,15 @@ def _portal_all_collections():
 
 
 def _portal_apply_daily_snapshot_to_gifts(snapshot):
-    """Persist Portal collections AND every model into the durable catalog.
+    """Persist Portal data as one file per collection.
 
-    Portal is the price source. Fragment/Changes are image sources. Existing
-    rows are updated in-place, so a browser refresh or server restart does not
-    erase the catalog.
+    Example:
+      data/portal_gifts/plushpepperjimson_<hash>.json
+    contains the collection price/image plus every model and its price.
+    No giant in-memory gifts list is required during Portal sync.
     """
     try:
-        collections = snapshot.get('collections') or []
+        collections = _portal_snapshot_collections(snapshot)
         if not collections:
             return {
                 'changed': 0, 'added': 0, 'removed_models': 0,
@@ -13136,249 +13243,226 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
                 'error': 'Portal returned 0 gift collections; existing catalog was preserved',
             }
 
-        gifts = load_gifts() or []
-        by_key = {}
-        next_id = 0
-        for gift in gifts:
-            if not isinstance(gift, dict):
-                continue
-            try:
-                next_id = max(next_id, int(gift.get('id') or 0))
-            except Exception:
-                pass
-            key = str(gift.get('gift_key') or '').strip().lower()
-            if key:
-                by_key[key] = gift
-            slug = str(gift.get('fragment_slug') or '').strip().lower()
-            if slug and not gift.get('model_name'):
-                by_key.setdefault(f'fragment_gift:{slug}', gift)
-
-        changed = 0
-        added = 0
-        model_count = 0
+        os.makedirs(PORTAL_GIFT_STORE_DIR, exist_ok=True)
+        index_entries = []
+        total_models = total_backdrops = total_symbols = 0
         now_iso = datetime.utcnow().isoformat() + 'Z'
 
-        # Cache Fragment collection metadata once; it is only a fallback for
-        # names/images. Portal remains the price source.
-        fragment_items = _load_fragment_catalog_disk_cache() or []
-        if not fragment_items:
-            try:
-                fragment_items = fetch_fragment_gifts_catalog(force_refresh=False) or []
-            except Exception as e:
-                logger.warning('Fragment catalog image lookup failed: %s', e)
-                fragment_items = []
-        fragment_by_slug = {
-            str(x.get('fragment_slug') or '').strip().lower(): x
-            for x in fragment_items if isinstance(x, dict) and x.get('fragment_slug')
-        }
-
-        def upsert(payload):
-            nonlocal next_id, changed, added
-            key = str(payload.get('gift_key') or '').strip().lower()
-            target = by_key.get(key)
-            if target is None:
-                next_id += 1
-                target = {'id': next_id}
-                gifts.append(target)
-                by_key[key] = target
-                added += 1
-            before = dict(target)
-            target.update(payload)
-            if target != before:
-                changed += 1
-            return target
-
+        # Write each collection independently. If one collection is malformed,
+        # the other hundreds/thousands of collections are still durable.
         for coll in collections:
             if not isinstance(coll, dict):
                 continue
             slug = str(coll.get('short_name') or '').strip().lower()
             if not slug:
                 continue
-            coll_name = _normalize_fragment_collection_name(
-                str(coll.get('name') or slug)
-            )
-            portal_price = _portal_float(
-                coll.get('floor_price') or coll.get('price') or coll.get('portal_price_ton')
-            )
-            frag = fragment_by_slug.get(slug) or {}
-            collection_image = str(
-                coll.get('photo_url') or coll.get('image') or frag.get('image') or
-                f'https://fragment.com/file/gifts/{slug}/thumb.webp'
-            ).strip()
-
-            upsert({
-                'gift_key': _build_case_custom_gift_id(coll_name, fragment_slug=slug, model_name=None),
-                'name': coll_name,
-                'fragment_slug': slug,
-                'fragment_url': f'https://fragment.com/gifts/{slug}',
-                'source': 'portal',
-                'portal_source': True,
-                'portal_price_ton': round(portal_price, 6),
-                'portal_collection_floor_ton': round(portal_price, 6),
-                'portal_updated_at': now_iso,
-                'image': collection_image,
-                'value': max(1, int(round(portal_price * FRAGMENT_TON_RATE))) if portal_price > 0 else int(frag.get('value') or 0),
+            row = dict(coll)
+            row['short_name'] = slug
+            row['_portal_saved_at'] = now_iso
+            filename = _portal_write_collection_shard(row)
+            models = row.get('models') if isinstance(row.get('models'), list) else []
+            backdrops = row.get('backdrops') if isinstance(row.get('backdrops'), list) else []
+            symbols = row.get('symbols') if isinstance(row.get('symbols'), list) else []
+            total_models += len(models)
+            total_backdrops += len(backdrops)
+            total_symbols += len(symbols)
+            index_entries.append({
+                'short_name': slug,
+                'name': str(row.get('name') or slug),
+                'file': filename,
+                'floor_price': row.get('floor_price', 0),
+                'model_count': len(models),
+                'backdrop_count': len(backdrops),
+                'symbol_count': len(symbols),
+                'photo_url': row.get('photo_url') or row.get('image') or '',
             })
 
-            # Models: name + price are from Portal; image is the high-quality
-            # Changes/Fragment model artwork. Never use a random NFT image.
-            for model in coll.get('models') or []:
-                if not isinstance(model, dict):
-                    continue
-                model_name = str(model.get('name') or '').strip()
-                if not model_name:
-                    continue
-                model_count += 1
-                model_price = _portal_float(
-                    model.get('floor_price') or model.get('price') or model.get('value')
-                )
-                if model_price <= 0:
-                    model_price = portal_price
-                model_image = str(
-                    model.get('image') or model.get('image_url') or model.get('photo_url') or
-                    model.get('preview') or model.get('preview_url') or model.get('url') or ''
-                ).strip()
-                if not model_image or not re.match(r'^https?://', model_image, re.I):
-                    model_image = _portal_model_image_url(coll_name, model_name, slug)
-                fallbacks = _portal_model_fragment_fallback(slug, model_name)
-                # Changes CDN is the preferred high-quality source. Fragment
-                # model PNGs remain the fallback if a Changes file is missing.
-                changes_url = _portal_model_image_url(coll_name, model_name, slug)
-                if changes_url:
-                    image_fallbacks = [changes_url] + [x for x in fallbacks if x != changes_url]
-                    # Store the Changes URL as the primary image for consistent
-                    # high-resolution rendering; the UI already rotates through
-                    # image_fallbacks on error.
-                    model_image = changes_url
-                else:
-                    image_fallbacks = fallbacks
+        index = _portal_write_shard_index(
+            index_entries,
+            updated_at=float(snapshot.get('updated_at') or time.time()),
+        )
 
-                payload = {
-                    'gift_key': _build_case_custom_gift_id(coll_name, fragment_slug=slug, model_name=model_name),
-                    'name': f'{coll_name} — {model_name}',
+        # Build the legacy gifts.json compatibility file without keeping the
+        # complete flattened Portal catalog in RAM. Non-Portal gifts are copied
+        # from the previous catalog; Portal entries are streamed one by one.
+        old_gifts = load_gifts() or []
+        preserved = [
+            g for g in old_gifts
+            if isinstance(g, dict) and not bool(g.get('portal_source'))
+        ]
+
+        tmp_paths = [
+            GIFTS_PERSISTENT_FILE + '.tmp',
+            os.path.join(PERSISTENT_DATA_DIR, 'gifts.json') + '.tmp',
+        ]
+        portal_total = 0
+        added = 0
+        changed = 0
+
+        def iter_portal_flat_rows():
+            nonlocal portal_total
+            for entry in index_entries:
+                coll = _portal_read_collection_shard(entry['file'])
+                if not coll:
+                    continue
+                slug = str(coll.get('short_name') or '').strip().lower()
+                coll_name = _normalize_fragment_collection_name(str(coll.get('name') or slug))
+                price = _portal_float(coll.get('floor_price') or coll.get('price') or coll.get('portal_price_ton'))
+                image = str(coll.get('photo_url') or coll.get('image') or
+                            (f'https://fragment.com/file/gifts/{slug}/thumb.webp' if slug else '/static/img/gift.png')).strip()
+                portal_total += 1
+                yield {
+                    'id': f'portal:{slug}',
+                    'gift_key': _build_case_custom_gift_id(coll_name, fragment_slug=slug, model_name=None),
+                    'name': coll_name,
+                    'type': 'item',
                     'fragment_slug': slug,
                     'fragment_url': f'https://fragment.com/gifts/{slug}',
-                    'model_name': model_name,
-                    'portal_model_name': model_name,
-                    'portal_collection_name': coll_name,
+                    'source': 'portal',
                     'portal_source': True,
-                    'source': 'portal_model',
-                    'portal_price_ton': round(model_price, 6),
-                    'portal_model_floor_ton': round(model_price, 6),
-                    'portal_collection_floor_ton': round(portal_price, 6),
+                    'portal_price_ton': round(price, 6),
+                    'portal_collection_floor_ton': round(price, 6),
                     'portal_updated_at': now_iso,
-                    'image': model_image or '/static/img/gift.png',
-                    'image_fallbacks': image_fallbacks,
-                    'value': max(1, int(round(model_price * FRAGMENT_TON_RATE))) if model_price > 0 else 1,
-                    'rarity_per_mille': model.get('rarity_per_mille') or model.get('rarityPermille'),
+                    'image': image,
+                    'value': max(1, int(round(price * FRAGMENT_TON_RATE))) if price > 0 else 0,
                 }
-                upsert(payload)
+                for model in coll.get('models') or []:
+                    if not isinstance(model, dict):
+                        continue
+                    mn = str(model.get('name') or '').strip()
+                    if not mn:
+                        continue
+                    mp = _portal_float(model.get('floor_price') or model.get('price') or model.get('value'))
+                    if mp <= 0:
+                        mp = price
+                    changes = _portal_model_image_url(coll_name, mn, slug)
+                    raw = str(model.get('image') or model.get('image_url') or model.get('photo_url') or
+                               model.get('preview') or model.get('preview_url') or model.get('url') or '').strip()
+                    fallbacks = [x for x in [raw] + _portal_model_fragment_fallback(slug, mn) if x and x != changes]
+                    portal_total += 1
+                    yield {
+                        'id': f'portal:{slug}:{_slugify_fragment_name(mn)}',
+                        'gift_key': _build_case_custom_gift_id(coll_name, fragment_slug=slug, model_name=mn),
+                        'name': f'{coll_name} — {mn}',
+                        'type': 'item',
+                        'fragment_slug': slug,
+                        'fragment_url': f'https://fragment.com/gifts/{slug}',
+                        'model_name': mn,
+                        'portal_model_name': mn,
+                        'portal_collection_name': coll_name,
+                        'source': 'portal_model',
+                        'portal_source': True,
+                        'portal_price_ton': round(mp, 6),
+                        'portal_model_floor_ton': round(mp, 6),
+                        'portal_collection_floor_ton': round(price, 6),
+                        'portal_updated_at': now_iso,
+                        'image': changes or raw or (fallbacks[0] if fallbacks else '/static/img/gift.png'),
+                        'image_fallbacks': fallbacks,
+                        'value': max(1, int(round(mp * FRAGMENT_TON_RATE))) if mp > 0 else 1,
+                        'rarity_per_mille': model.get('rarity_per_mille') or model.get('rarityPermille'),
+                    }
 
-        if not save_gifts(gifts):
-            raise RuntimeError('Не удалось сохранить Portal-каталог')
+        # Stream JSON so there is never a second giant list in memory.
+        for path in tmp_paths:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write('{"gifts":[')
+                first = True
+                for gift in preserved:
+                    if not first: f.write(',')
+                    f.write(json.dumps(gift, ensure_ascii=False, separators=(',', ':')))
+                    first = False
+                for gift in iter_portal_flat_rows():
+                    if not first: f.write(',')
+                    f.write(json.dumps(gift, ensure_ascii=False, separators=(',', ':')))
+                    first = False
+                f.write(']}')
+                f.flush()
+                try:
+                    os.fsync(f.fileno())
+                except Exception:
+                    pass
 
-        persisted = load_gifts()
-        if len(persisted) < len(gifts):
-            raise RuntimeError(
-                f'Каталог не подтвердился после сохранения: записано {len(gifts)}, прочитано {len(persisted)}'
-            )
+        os.replace(tmp_paths[0], GIFTS_PERSISTENT_FILE)
+        os.replace(tmp_paths[1], os.path.join(PERSISTENT_DATA_DIR, 'gifts.json'))
+
+        global gifts_cache, gifts_cache_time
+        gifts_cache = None
+        gifts_cache_time = None
+        try:
+            api_gifts_list._cache = {}
+        except Exception:
+            pass
 
         return {
             'changed': changed,
             'added': added,
             'removed_models': 0,
-            'total': len(persisted),
-            'portal_collections': len(collections),
-            'portal_models': model_count,
+            'total': len(preserved) + portal_total,
+            'portal_collections': len(index_entries),
+            'portal_models': total_models,
+            'storage_mode': 'per_collection_files',
+            'store_dir': os.path.basename(PORTAL_GIFT_STORE_DIR),
         }
     except Exception as e:
-        logger.error("Portal snapshot -> gifts catalog failed: %s", e, exc_info=True)
+        logger.error("Portal snapshot -> sharded gifts catalog failed: %s", e, exc_info=True)
         return {
             'changed': 0, 'added': 0, 'removed_models': 0,
             'total': len(load_gifts() or []), 'error': str(e)
         }
 
-def _portal_build_daily_snapshot(force=False):
-    """Build or reuse the complete Portal hourly snapshot.
 
-    A non-forced call never updates more often than PORTAL_SYNC_INTERVAL_MINUTES.
-    """
+def _portal_build_daily_snapshot(force=False):
+    """Build the Portal catalog with bounded memory and per-collection persistence."""
     interval_seconds = max(3600, int(PORTAL_SYNC_INTERVAL_MINUTES) * 60)
     now = time.time()
-
     current = _portal_load_daily_snapshot()
-    if (
-        not force and current and
-        now - float(current.get('updated_at') or 0) < interval_seconds
-    ):
+    if not force and current and now - float(current.get('updated_at') or 0) < interval_seconds:
         return {
-            'success': True,
-            'cached': True,
-            'collections': len(current.get('collections') or []),
+            'success': True, 'cached': True,
+            'collections': int(current.get('total_collections') or len(current.get('collections_index') or [])),
             'models': int(current.get('total_models') or 0),
             'updated_at': current.get('updated_at'),
         }
 
     token = _portal_get_token()
     if not token:
-        logger.warning('❌ Portal sync failed: токен не задан')
         return {'success': False, 'error': 'Portal token/initData не задан. Сохраните токен в админке.'}
 
-    # Проверяем валидность токена перед началом синхронизации
     is_valid, err = _validate_portal_initdata(token)
     if not is_valid:
-        logger.warning(f'❌ Portal sync failed: токен невалиден - {err}')
         return {'success': False, 'error': f'Токен Portal невалиден: {err}'}
 
-    # Only one heavy full scan at a time.
     if not _portal_daily_lock.acquire(blocking=False):
         return {'success': True, 'running': True, 'message': 'Daily sync already running'}
 
     try:
         _portal_daily_job_update(
-            running=True,
-            started_at=time.time(),
-            finished_at=0,
-            current=0,
-            total=0,
-            collection='',
-            error='',
-            collections=0,
-            models=0,
-            logs=[],
+            running=True, started_at=time.time(), finished_at=0, current=0,
+            total=0, collection='', error='', collections=0, models=0, logs=[]
         )
         _portal_daily_job_log('Старт полной загрузки Portal Market')
 
         ok, collections = _portal_all_collections()
         if not ok:
             raise RuntimeError(str(collections))
+        total = len(collections)
+        _portal_daily_job_update(total=total)
+        _portal_daily_job_log(f'Portal: получено коллекций — {total}')
 
-        _portal_daily_job_update(total=len(collections))
-        _portal_daily_job_log(f'Portal: получено коллекций — {len(collections)}')
-
-        full = []
-        total_models = 0
-        total_backdrops = 0
-        total_symbols = 0
+        # Never retain the full model catalog in memory.
+        manifest_entries = []
+        total_models = total_backdrops = total_symbols = 0
         filter_errors = []
 
+        os.makedirs(PORTAL_GIFT_STORE_DIR, exist_ok=True)
         for idx, coll in enumerate(collections, 1):
             name = str(coll.get('name') or coll.get('short_name') or 'Gift').strip()
+            _portal_daily_job_update(current=idx, total=total, collection=name, collections=idx-1, models=0)
 
-            _portal_daily_job_update(
-                current=idx,
-                total=len(collections),
-                collection=name,
-                collections=idx - 1,
-                models=0,
-            )
-
-            # Keep ALL Portal attributes. If the collection response does not
-            # include models, fetch /collections/filters for this collection.
             row = dict(coll)
             for attr_key in ('models', 'backdrops', 'symbols'):
-                group = row.get(attr_key)
-                if not isinstance(group, list):
+                if not isinstance(row.get(attr_key), list):
                     row[attr_key] = []
 
             if not row.get('models') or not row.get('backdrops') or not row.get('symbols'):
@@ -13389,10 +13473,7 @@ def _portal_build_daily_snapshot(force=False):
                             if not row.get(attr_key) and isinstance(filters.get(attr_key), list):
                                 row[attr_key] = filters[attr_key]
                     elif not ok_filters:
-                        filter_errors.append({
-                            'collection': name,
-                            'error': str(filters),
-                        })
+                        filter_errors.append({'collection': name, 'error': str(filters)})
                 except Exception as filter_err:
                     filter_errors.append({'collection': name, 'error': str(filter_err)})
 
@@ -13402,105 +13483,85 @@ def _portal_build_daily_snapshot(force=False):
             total_models += row['model_count']
             total_backdrops += row['backdrop_count']
             total_symbols += row['symbol_count']
-            full.append(row)
 
+            filename = _portal_write_collection_shard(row)
+            manifest_entries.append({
+                'short_name': str(row.get('short_name') or '').strip().lower(),
+                'name': name,
+                'file': filename,
+                'floor_price': row.get('floor_price', 0),
+                'model_count': row['model_count'],
+                'backdrop_count': row['backdrop_count'],
+                'symbol_count': row['symbol_count'],
+                'photo_url': row.get('photo_url') or row.get('image') or '',
+            })
             _portal_daily_job_update(collections=idx, models=total_models)
-            if idx == 1 or idx == len(collections) or idx % 25 == 0:
-                _portal_daily_job_log(
-                    f'Portal: {idx}/{len(collections)} · {name} · моделей {total_models}'
-                )
-            time.sleep(0.05)
+            if idx == 1 or idx == total or idx % 25 == 0:
+                _portal_daily_job_log(f'Portal: {idx}/{total} · {name} · моделей {total_models}')
+            # Give the server a scheduling point between collections.
+            time.sleep(0.01)
 
+        updated_at = time.time()
+        _portal_write_shard_index(manifest_entries, updated_at=updated_at)
         snapshot = {
             'success': True,
-            'updated_at': time.time(),
+            'storage_mode': 'sharded',
+            'updated_at': updated_at,
             'updated_at_iso': datetime.utcnow().isoformat() + 'Z',
             'interval_minutes': int(PORTAL_SYNC_INTERVAL_MINUTES),
-            'total_collections': len(full),
+            'total_collections': total,
             'total_models': total_models,
             'total_backdrops': total_backdrops,
             'total_symbols': total_symbols,
             'filter_errors': filter_errors[:100],
-            'collections': full,
+            'collections_index': manifest_entries,
             'logs': list((_portal_daily_job_snapshot().get('logs') or [])[-200:]),
         }
 
-        if not _portal_save_daily_snapshot(snapshot):
-            raise RuntimeError('Не удалось сохранить portal_daily_snapshot.json')
-
-        # One durable source snapshot: after the first successful Portal sync
-        # the next process/browser restart can restore the complete catalog even
-        # if Portal is temporarily empty/unavailable.
-        try:
-            source_snapshot = os.path.join(PERSISTENT_DATA_DIR, 'portal_source_snapshot.json')
-            _write_json_atomic = globals().get('_write_json_atomic')
-            if _write_json_atomic:
-                _write_json_atomic(source_snapshot, snapshot)
-            else:
-                tmp = source_snapshot + '.tmp'
-                with open(tmp, 'w', encoding='utf-8') as sf:
-                    json.dump(snapshot, sf, ensure_ascii=False, indent=2)
-                    sf.flush()
-                    try: os.fsync(sf.fileno())
-                    except Exception: pass
-                os.replace(tmp, source_snapshot)
-        except Exception as snap_err:
-            logger.warning('Portal source snapshot backup failed: %s', snap_err)
-
-        _portal_daily_job_log('Сохраняю полный каталог Portal: коллекции + модели')
+        _portal_daily_job_log('Проверяю и сохраняю шардированный каталог Portal')
         gift_result = _portal_apply_daily_snapshot_to_gifts(snapshot)
         snapshot['gifts_json'] = gift_result
-        _portal_daily_job_log(
-            f"Каталог сохранён: всего {gift_result.get('total', 0)}, "
-            f"добавлено {gift_result.get('added', 0)}"
-        )
-        _portal_save_daily_snapshot(snapshot)
+
+        # Store only the lightweight manifest in the snapshot file/DB.
+        manifest_snapshot = _portal_shard_manifest_snapshot(snapshot)
+        manifest_snapshot['gifts_json'] = gift_result
+        if not _portal_save_daily_snapshot(manifest_snapshot):
+            raise RuntimeError('Не удалось сохранить Portal manifest')
+
+        # Keep the legacy source-snapshot filename, but it now contains only the
+        # manifest. The actual gift data is in portal_gifts/*.json.
+        try:
+            path = os.path.join(PERSISTENT_DATA_DIR, 'portal_source_snapshot.json')
+            tmp = path + '.tmp'
+            with open(tmp, 'w', encoding='utf-8') as sf:
+                json.dump(manifest_snapshot, sf, ensure_ascii=False, separators=(',', ':'))
+                sf.flush()
+                try: os.fsync(sf.fileno())
+                except Exception: pass
+            os.replace(tmp, path)
+        except Exception as e:
+            logger.warning('Portal manifest backup failed: %s', e)
 
         _portal_daily_job_update(
-            running=False,
-            finished_at=time.time(),
-            current=len(full),
-            total=len(full),
-            collection='',
-            error='',
-            collections=len(full),
-            models=total_models,
+            running=False, finished_at=time.time(), current=total, total=total,
+            collection='', error='', collections=total, models=total_models
         )
-
-        logger.info(
-            "✅ Portal HOURLY full scan: %s collections, %s models, %s backdrops, %s symbols",
-            len(full), total_models, total_backdrops, total_symbols
-        )
-
+        logger.info('Portal sync OK: %s collections, %s models, %s backdrops, %s symbols (sharded)',
+                    total, total_models, total_backdrops, total_symbols)
         return {
-            'success': True,
-            'cached': False,
-            'collections': len(full),
-            'models': total_models,
-            'backdrops': total_backdrops,
-            'symbols': total_symbols,
-            'updated_at': snapshot['updated_at'],
-            'gifts_json': gift_result,
+            'success': True, 'cached': False, 'collections': total,
+            'models': total_models, 'backdrops': total_backdrops,
+            'symbols': total_symbols, 'updated_at': updated_at,
+            'gifts_json': gift_result, 'storage_mode': 'per_collection_files'
         }
-
     except Exception as e:
         error_msg = str(e)
-        # Улучшенные сообщения об ошибках
         if 'Authorization' in error_msg or 'недействителен' in error_msg or 'истёк' in error_msg:
             error_msg = '⚠️ Токен Portal истёк или недействителен. Обновите initData в разделе Portal выше.'
-            logger.error("❌ Portal sync failed: auth error - %s", e)
         elif 'токен не задан' in error_msg or 'token' in error_msg.lower():
             error_msg = '❌ Токен Portal не задан. Сохраните initData в разделе Portal выше.'
-            logger.error("❌ Portal sync failed: no token")
-        else:
-            logger.error("❌ Portal hourly full scan failed: %s", e)
-
-        _portal_daily_job_update(
-            running=False,
-            finished_at=time.time(),
-            error=error_msg,
-            collection='',
-        )
+        logger.error('❌ Portal hourly full scan failed: %s', e, exc_info=True)
+        _portal_daily_job_update(running=False, finished_at=time.time(), error=error_msg, collection='')
         _portal_daily_job_log(error_msg, level='error')
         return {'success': False, 'error': error_msg}
     finally:
@@ -13542,9 +13603,20 @@ def portal_daily_catalog():
                 'collections': [],
             })
 
-        # Enrich model rows for admin pickers: high-quality Changes PNG first,
-        # Fragment model paths as fallback. Prices stay exactly from Portal.
+        # Sharded storage: keep the default response compact. The admin can
+        # request a single collection's full file with ?short_name=... or the
+        # legacy all-model payload with ?include_models=1.
         out = json.loads(json.dumps(snapshot))
+        include_models = request.args.get('include_models', '0').lower() in ('1', 'true', 'yes')
+        requested_slug = request.args.get('short_name', '').strip().lower()
+        if out.get('storage_mode') == 'sharded':
+            if requested_slug:
+                one = _portal_read_collection_shard(requested_slug)
+                out['collections'] = [one] if one else []
+            elif include_models:
+                out['collections'] = _portal_snapshot_collections(snapshot)
+            else:
+                out['collections'] = list(snapshot.get('collections_index') or [])
         for coll in out.get('collections') or []:
             if not isinstance(coll, dict): continue
             coll_name = str(coll.get('name') or coll.get('short_name') or 'Gift').strip()
@@ -13806,11 +13878,20 @@ def _portal_snapshot_find(short_name, model_name=None):
 
     wanted = re.sub(r'[^a-z0-9]+', '', str(short_name or '').lower())
     collection = None
-    for row in snapshot.get('collections') or []:
-        row_key = re.sub(r'[^a-z0-9]+', '', str(row.get('short_name') or row.get('name') or '').lower())
-        if row_key == wanted:
-            collection = row
-            break
+
+    if snapshot.get('storage_mode') == 'sharded':
+        for entry in snapshot.get('collections_index') or []:
+            row_key = re.sub(r'[^a-z0-9]+', '', str(entry.get('short_name') or entry.get('name') or '').lower())
+            if row_key == wanted:
+                collection = _portal_read_collection_shard(entry.get('file') or entry.get('short_name'))
+                break
+    else:
+        for row in snapshot.get('collections') or []:
+            row_key = re.sub(r'[^a-z0-9]+', '', str(row.get('short_name') or row.get('name') or '').lower())
+            if row_key == wanted:
+                collection = row
+                break
+
     if not collection:
         return None, None
     if not model_name:
