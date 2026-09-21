@@ -552,9 +552,8 @@ def _portal_do_sync(token):
                     continue
                 seen_slugs.add(short_name)
 
-                # Portal gives the collection name/price only. The visible
-                # gift artwork is always the Fragment collection artwork.
-                preview = f'https://fragment.com/file/gifts/{short_name}/thumb.webp'
+                # Превью коллекции — всегда строим сами
+                preview = photo_url or _portal_collection_image_url(short_name)
 
                 item = {
                     'name': name or short_name,
@@ -620,8 +619,11 @@ def _portal_do_sync(token):
             if old_value != new_value:
                 updated += 1
 
-        if not save_gifts(gifts):
-            return {'success': False, 'error': 'Не удалось сохранить каталог подарков'}
+        with open(gifts_path, 'w', encoding='utf-8') as f:
+            if wrap_dict:
+                json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
+            else:
+                json.dump(gifts, f, ensure_ascii=False, indent=2)
 
         # Сброс кэшей
         global gifts_cache, gifts_cache_time
@@ -1587,10 +1589,8 @@ def _write_fragment_catalog_to_local_gifts(fragment_gifts):
                 g['value'] = int(round(float(selected) * FRAGMENT_TON_RATE))
             elif fg.get('value') is not None and not g.get('value'):
                 g['value'] = int(round(float(fg.get('value') or 0)))
-            # ``image`` is the MAIN collection/gift artwork used by the site.
-            # Market/black/Onyx assets are auxiliary listing/variant images and
-            # must never replace the main gift PNG/preview. Otherwise cases,
-            # catalog and inventory start showing a random model PNG.
+            # The main catalog image is always Fragment's base gift image.
+            # Variant PNGs are stored separately and are not used as the main image.
             image = fg.get('image')
             if image:
                 g['image'] = image
@@ -2299,11 +2299,12 @@ def _load_fragment_gifts_with_variants(force_refresh=False, progress_callback=No
                     g, variants = fut.result()
                     for key in ('black_image','onyx_black_image','black_nft_number','onyx_black_nft_number'):
                         if variants.get(key): g[key] = variants[key]
-                    market_image = g.get('black_image') or g.get('onyx_black_image') or g.get('image')
-                    if market_image:
-                        # Keep variant artwork separately. Never overwrite the
-                        # canonical collection image used by cases/catalog/inventory.
-                        g['market_image'] = market_image
+                    # Keep the ORIGINAL Fragment gift image as the main image.
+                    # Black/Onyx PNGs are variants only and must never replace
+                    # the base gift artwork shown in the catalog.
+                    base_image = g.get('image')
+                    if base_image:
+                        g['market_image'] = base_image
                 except Exception as e:
                     logger.debug('Fragment variant worker failed: %s', e)
                 done += 1
@@ -2527,20 +2528,23 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
     gifts = load_gifts_cached() or []
     result = []
     for g in gifts:
+        # Public catalog contains only base gift collections. Old model rows
+        # from previous syncs are ignored even before the next Portal cleanup.
+        if g.get('model_name') or g.get('portal_model_name') or str(g.get('gift_key') or '').startswith('fragment_model:'):
+            continue
         item = dict(g)
         item['name'] = _normalize_fragment_collection_name(item.get('name') or 'Gift')
         item['value'] = _safe_int(item.get('value'), 0)
+        # Main image is the original Fragment collection artwork. Variant
+        # PNGs (Black/Onyx/model) are never used as the public gift image.
+        item['image'] = (
+            _normalize_local_gift_image(item.get('image'))
+            or '/static/img/default_gift.png'
+        )
         item['fragment_slug'] = (
             item.get('fragment_slug')
             or _slugify_fragment_name(item.get('name', ''))
         ).strip().lower()
-        # The visible gift artwork is always the original Fragment collection
-        # image. Never fall back to Portal model/Black/Onyx PNGs here.
-        fragment_image = (
-            item.get('fragment_image')
-            or (f'https://fragment.com/file/gifts/{item["fragment_slug"]}/thumb.webp' if item['fragment_slug'] else '')
-        )
-        item['image'] = str(fragment_image or '/static/img/default_gift.png').strip()
         if not item.get('fragment_url') and item['fragment_slug']:
             item['fragment_url'] = f"https://fragment.com/gifts/{item['fragment_slug']}"
         item['source'] = 'gifts.json'
@@ -2727,6 +2731,7 @@ def load_gifts():
         os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'gifts.json'),
     ]
     seen = set()
+    fallback_empty = None
     for file_path in paths:
         if not file_path or file_path in seen:
             continue
@@ -2734,14 +2739,21 @@ def load_gifts():
         gifts = _read_gifts_file(file_path)
         if gifts is None:
             continue
-        logger.info('Загружено %s подарков из %s', len(gifts), file_path)
-        # Bootstrap the durable copy once, without changing its contents later.
-        if file_path != GIFTS_PERSISTENT_FILE and not os.path.exists(GIFTS_PERSISTENT_FILE):
-            try:
-                _write_gifts_file(GIFTS_PERSISTENT_FILE, gifts)
-            except Exception as e:
-                logger.warning('Persistent gift catalog bootstrap failed: %s', e)
-        return gifts
+        # An empty persistent file must never hide a real non-empty catalog in
+        # the legacy/backup location. This was the reason Portal gifts could
+        # be saved and then appear as 0 after a refresh.
+        if gifts:
+            logger.info('Загружено %s подарков из %s', len(gifts), file_path)
+            if file_path != GIFTS_PERSISTENT_FILE:
+                try:
+                    _write_gifts_file(GIFTS_PERSISTENT_FILE, gifts)
+                except Exception as e:
+                    logger.warning('Persistent gift catalog bootstrap failed: %s', e)
+            return gifts
+        if fallback_empty is None:
+            fallback_empty = gifts
+    logger.info('Каталог подарков пуст во всех доступных копиях')
+    return fallback_empty or []
     logger.warning('Файл gifts.json не найден и persistent gift catalog пуст')
     return []
 
@@ -3369,91 +3381,26 @@ os.makedirs(_db_dir, exist_ok=True)
 DB_PATH = os.path.join(_db_dir, 'raswet_gifts.db')
 
 def _quick_db_conn(timeout=5):
-    """Fast DB connection for hot paths (status polling etc.).
-
-    PostgreSQL may hand back a pooled object that another request already
-    closed, so use the same live-connection check as the normal DB path.
-    """
+    """Fast DB connection for hot paths (status polling etc.)"""
     if USE_POSTGRES:
-        return _pg_get_live_connection()
+        return _pg_get_connection()
     return sqlite3.connect(DB_PATH, timeout=timeout, check_same_thread=False)
 
-def _pg_connection_is_alive(conn):
-    """Cheap health-check for pooled PostgreSQL connections.
-
-    Some deployments return the same pooled connection object after another
-    handler has closed it. Reusing that object causes the browser-visible
-    ``connection already closed`` error. Never trust a cached/pooled object
-    until a tiny query succeeds.
-    """
-    if conn is None:
-        return False
-    try:
-        cur = conn.cursor()
-        cur.execute('SELECT 1')
-        try:
-            cur.fetchone()
-        except Exception:
-            pass
-        try:
-            cur.close()
-        except Exception:
-            pass
-        return True
-    except Exception:
-        return False
-
-
-def _pg_get_live_connection():
-    """Get a live PostgreSQL connection and recover a stale pooled one."""
-    last_error = None
-    for _attempt in range(3):
-        try:
-            conn = _pg_get_connection()
-            if _pg_connection_is_alive(conn):
-                return conn
-            try:
-                conn.close()
-            except Exception:
-                pass
-        except Exception as e:
-            last_error = e
-
-        # db_wrapper implementations differ between deployments. If it
-        # exposes an explicit reset/close hook, use it before asking for a new
-        # connection. Missing hooks are harmless.
-        try:
-            import db_wrapper as _dbw
-            for _hook_name in ('reset_connection', 'reset_pool', 'close_connection', 'close_pool'):
-                _hook = getattr(_dbw, _hook_name, None)
-                if callable(_hook):
-                    try:
-                        _hook()
-                    except TypeError:
-                        pass
-                    except Exception:
-                        pass
-                    break
-        except Exception:
-            pass
-        time.sleep(0.15)
-
-    if last_error:
-        raise last_error
-    raise RuntimeError('PostgreSQL connection could not be established')
-
-
 def get_db_connection():
-    """Получает живое соединение с БД.
-
-    PostgreSQL connections are health-checked before use so a connection that
-    was closed by another request is never handed back to Flask. SQLite keeps
-    the existing short-lived connection model.
-    """
+    """Получает соединение с базой данных с защитой от повреждений.
+    При наличии DATABASE_URL использует PostgreSQL через db_wrapper."""
     global _db_ready
+    # Reuse a single connection per Flask request to avoid repeated pool get/put
+    try:
+        if has_request_context():
+            cached = getattr(g, '_db_conn', None)
+            if cached is not None and not getattr(cached, '_closed', False):
+                return cached
+    except Exception:
+        pass
 
     if USE_POSTGRES:
-        conn = _pg_get_live_connection()
+        conn = _pg_get_connection()
         if not _db_ready:
             try:
                 _create_all_tables(conn)
@@ -3465,6 +3412,12 @@ def get_db_connection():
                     conn.rollback()
                 except Exception:
                     pass
+        # Cache connection on request context so multiple calls reuse it
+        try:
+            if has_request_context():
+                g._db_conn = conn
+        except Exception:
+            pass
         return conn
     
     for attempt in range(3):
@@ -6018,22 +5971,6 @@ def start_ultimate_crash_loop():
 
                     # PostgreSQL does not provide sqlite's cursor.lastrowid.
                     # Always fetch the generated id explicitly on PostgreSQL.
-                    # Insert the round and ALWAYS resolve its id before committing.
-                    # Some PostgreSQL wrappers/cursors can execute RETURNING successfully
-                    # but expose the returned row in a non-standard shape. The old code
-                    # treated that as id=0 and restarted the loop, causing repeated
-                    # "Crash game was inserted but its id was not returned" errors.
-                    def _row_id(row):
-                        if row is None:
-                            return 0
-                        if isinstance(row, dict):
-                            return int(row.get('id') or row.get('ID') or 0)
-                        try:
-                            return int(row[0])
-                        except Exception:
-                            return 0
-
-                    new_game_id = 0
                     if USE_POSTGRES:
                         try:
                             cursor.execute("""
@@ -6041,9 +5978,9 @@ def start_ultimate_crash_loop():
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
                                 RETURNING id
                             """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                            new_game_id = _row_id(cursor.fetchone())
-                        except Exception as pg_seed_err:
-                            logger.warning(f"⚠️ Crash insert with seed failed: {pg_seed_err}; retrying without seed columns")
+                            _row = cursor.fetchone()
+                            new_game_id = int(_row[0]) if _row else 0
+                        except Exception:
                             try:
                                 conn.rollback()
                             except Exception:
@@ -6054,35 +5991,23 @@ def start_ultimate_crash_loop():
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP)
                                 RETURNING id
                             """, (target_multiplier,))
-                            new_game_id = _row_id(cursor.fetchone())
-                            if not new_game_id:
-                                # Last-resort lookup in this same transaction. There is
-                                # only one crash-loop writer, so this cannot select a
-                                # competing round from another game-loop instance.
-                                cursor.execute("SELECT id FROM ultimate_crash_games WHERE status = 'counting' ORDER BY id DESC LIMIT 1")
-                                new_game_id = _row_id(cursor.fetchone())
+                            _row = cursor.fetchone()
+                            new_game_id = int(_row[0]) if _row else 0
                     else:
                         try:
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
                             """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                        except Exception as sqlite_seed_err:
-                            logger.warning(f"⚠️ Crash insert with seed failed: {sqlite_seed_err}; retrying without seed columns")
+                        except Exception:
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP)
                             """, (target_multiplier,))
-                        try:
-                            new_game_id = int(cursor.lastrowid or 0)
-                        except Exception:
-                            new_game_id = 0
-                        if not new_game_id:
-                            cursor.execute("SELECT id FROM ultimate_crash_games WHERE status = 'counting' ORDER BY id DESC LIMIT 1")
-                            new_game_id = _row_id(cursor.fetchone())
+                        new_game_id = cursor.lastrowid
 
                     if not new_game_id:
-                        raise RuntimeError('Crash game insert succeeded but the new game id could not be resolved')
+                        raise RuntimeError('Crash game was inserted but its id was not returned')
                     conn.commit()
                     _cleanup_user_bets_cache()
                     logger.info(f"🆕 New game, target={target_multiplier}x, bonus={is_bonus}")
@@ -12618,19 +12543,8 @@ def _portal_collection_filters(short_name):
         return False, data
 
     raw = data
-    # Portal has returned several equivalent wrappers over time
-    # (data/result -> floor_prices -> collection slug). Unwrap them instead of
-    # assuming one exact response shape; otherwise the token is valid but the
-    # model list stays empty.
-    if isinstance(raw, dict):
-        for wrapper_key in ('data', 'result'):
-            wrapped = raw.get(wrapper_key)
-            if isinstance(wrapped, dict):
-                raw = wrapped
-                break
-
-    if isinstance(raw, dict):
-        floors = raw.get('floor_prices') or raw.get('floorPrices')
+    if isinstance(data, dict):
+        floors = data.get('floor_prices')
         if isinstance(floors, dict):
             # Exact key first, then normalized-key fallback.
             raw = floors.get(short_name)
@@ -12641,178 +12555,102 @@ def _portal_collection_filters(short_name):
                         raw = value
                         break
 
-    if isinstance(raw, list):
-        # Some responses return one collection row directly. Find the row that
-        # belongs to the requested short_name.
-        wanted = re.sub(r'[^a-z0-9]+', '', short_name.lower())
-        for row in raw:
-            if not isinstance(row, dict):
-                continue
-            row_slug = str(row.get('short_name') or row.get('slug') or row.get('collection') or '').strip().lower()
-            if re.sub(r'[^a-z0-9]+', '', row_slug) == wanted:
-                raw = row
-                break
-
     if not isinstance(raw, dict):
         return False, 'Portal filters returned an unexpected response'
 
-    # Accept both plural and singular field names, plus a few common nested
-    # shapes. The normalizer then produces the canonical [{name,floor_price}].
-    models_raw = raw.get('models') or raw.get('model') or raw.get('model_floors') or {}
-    backdrops_raw = raw.get('backdrops') or raw.get('backgrounds') or raw.get('backdrop') or raw.get('backdrop_floors') or {}
-    symbols_raw = raw.get('symbols') or raw.get('symbol') or raw.get('symbol_floors') or {}
-
     return True, {
-        'models': _portal_normalize_filter_group(models_raw),
-        'backdrops': _portal_normalize_filter_group(backdrops_raw),
-        'symbols': _portal_normalize_filter_group(symbols_raw),
+        'models': _portal_normalize_filter_group(
+            raw.get('models') or raw.get('model') or {}
+        ),
+        'backdrops': _portal_normalize_filter_group(
+            raw.get('backdrops') or raw.get('backgrounds') or raw.get('backdrop') or {}
+        ),
+        'symbols': _portal_normalize_filter_group(
+            raw.get('symbols') or raw.get('symbol') or {}
+        ),
     }
 
 
 def _portal_all_collections():
-    """Fetch the Portal gift collections without ever replacing a good catalog by an empty response.
+    """Fetch the complete Portal collection list.
 
-    The app already has the working ``aportalsmp`` collections call. Use it as
-    the primary source for the gift list and keep the direct HTTP endpoint as a
-    fallback. Only real collections are returned here; models/backdrops/symbols
-    are not turned into catalog items.
+    The public Portals client documents ``collections?limit=...`` and does not
+    document offset pagination for this endpoint. Asking for a large limit is
+    therefore more reliable than repeatedly sending an ignored offset.
     """
-    token = _portal_get_token()
-    candidates = []
-
-    # Primary: the same Portal client call that was already working in the old
-    # sync route. Try a large limit first, then the known-safe 500 limit.
-    if _APORTALSMP_AVAILABLE and token:
-        for limit in (5000, 1000, 500):
-            try:
-                loop = _portal_asyncio.new_event_loop()
-                try:
-                    result = loop.run_until_complete(
-                        _portal_asyncio.wait_for(
-                            _portal_collections_fn(authData=token, limit=limit),
-                            timeout=60
-                        )
-                    )
-                finally:
-                    loop.close()
-                raw = _portal_extract_items(result)
-                if raw:
-                    candidates = raw
-                    logger.info('Portal collections via aportalsmp: %s (limit=%s)', len(raw), limit)
-                    break
-            except Exception as e:
-                logger.warning('Portal aportalsmp collections failed (limit=%s): %s', limit, e)
-
-    # Fallback: direct HTTP API. Do not use an invalid 5000 limit if the API
-    # rejects it; try ordinary page sizes instead.
-    if not candidates:
-        for limit in (1000, 500, 250):
-            ok, items = _portal_collections(limit=limit, offset=0)
-            if ok and items:
-                candidates = items
-                logger.info('Portal collections via HTTP: %s (limit=%s)', len(items), limit)
-                break
-            logger.warning('Portal HTTP collections returned no items (limit=%s): %s', limit, items if not ok else 'empty')
-
-    if not candidates:
-        # Never return a fake empty success. The caller must keep the previous
-        # catalog/snapshot intact instead of wiping gifts.json.
-        return False, 'Portal вернул 0 коллекций'
+    ok, items = _portal_collections(limit=5000, offset=0)
+    if not ok:
+        return False, items
 
     dedup = {}
-    for item in candidates:
-        short_name, floor_price, name, photo_url = _portal_extract_coll_fields(item)
-        if not short_name:
-            continue
-        key = short_name.lower()
-        row = {
-            'id': (item.get('id') if isinstance(item, dict) else getattr(item, 'id', '')) or '',
-            'name': name or short_name,
-            'short_name': short_name,
-            'floor_price': round(float(floor_price or 0), 6),
-            # IMPORTANT: this is only Portal metadata. The public image is
-            # replaced with Fragment artwork later in _portal_apply...
-            'photo_url': photo_url,
-        }
-        if isinstance(item, dict):
-            row.update({
-                'supply': int(_portal_float(item.get('supply') or item.get('total_supply'))),
-                'listed_count': int(_portal_float(item.get('listed_count') or item.get('listed') or item.get('listings_count'))),
-                'day_volume': round(_portal_float(item.get('day_volume') or item.get('daily_volume') or item.get('volume_24h') or item.get('volume24h')), 6),
-            })
-        dedup[key] = row
-
+    for item in items or []:
+        key = str(item.get('id') or item.get('short_name') or item.get('name') or '').strip().lower()
+        if key:
+            dedup[key] = item
     rows = list(dedup.values())
     rows.sort(key=lambda x: str(x.get('name') or '').lower())
-    if not rows:
-        return False, 'Portal вернул коллекции без short_name'
     return True, rows
 
 
 def _portal_apply_daily_snapshot_to_gifts(snapshot):
-    """Sync ONLY gift collections into the canonical catalog.
+    """Persist ONLY Portal gift collections into the canonical catalog.
 
-    Source split is intentional:
-      - Portal -> collection name + current floor price.
-      - Fragment -> the visible/main gift artwork.
-      - Portal models are metadata only and are NOT created as separate gifts.
-
-    This prevents model PNGs from replacing the original gift artwork and keeps
-    the catalog limited to actual gifts/collections for the current stage.
+    Portal supplies the collection name and current price. Fragment supplies
+    the main gift image. Models/backdrops/symbols are metadata only and are
+    never materialized as separate gifts.
     """
     try:
         collections = snapshot.get('collections') or []
         if not collections:
-            # A failed Portal response must NEVER erase the existing catalog.
-            logger.warning('Portal snapshot is empty; keeping existing gifts catalog untouched')
             return {
-                'changed': 0, 'added': 0, 'removed_models': 0,
-                'total': len(load_gifts() or []), 'portal_collections': 0,
-                'portal_models': 0, 'skipped_empty': True,
+                'changed': 0,
+                'added': 0,
+                'removed_models': 0,
+                'total': len(load_gifts() or []),
+                'portal_collections': 0,
+                'portal_models': 0,
+                'error': 'Portal returned 0 gift collections; existing catalog was preserved',
             }
 
-        gifts = load_gifts()
-        if not isinstance(gifts, list):
-            gifts = []
-
-        # Fragment supplies the visible/main artwork. If its live page is
-        # temporarily unavailable, use its deterministic collection thumbnail;
-        # Portal artwork is deliberately never used as the main image.
-        try:
-            fragment_items = fetch_fragment_gifts_catalog(force_refresh=False) or []
-        except Exception as e:
-            logger.warning('Fragment image catalog unavailable during Portal sync: %s', e)
-            fragment_items = []
-        fragment_by_slug = {
-            str(x.get('fragment_slug') or '').strip().lower(): x
-            for x in fragment_items
-            if isinstance(x, dict) and str(x.get('fragment_slug') or '').strip()
-        }
-
-        by_key = {}
-        by_slug = {}
-        next_id = 0
+        gifts = load_gifts() or []
+        # Keep only actual collection gifts. Remove old model-generated rows from
+        # the canonical catalog so they can no longer appear in the UI.
         cleaned = []
         removed_models = 0
         for gift in gifts:
             if not isinstance(gift, dict):
                 continue
-            gift_key = str(gift.get('gift_key') or '').strip().lower()
-            # The current catalog intentionally contains collections only.
-            if gift_key.startswith('fragment_model:') or gift.get('model_name') or gift.get('portal_model_name'):
+            key = str(gift.get('gift_key') or '').strip().lower()
+            if gift.get('model_name') or gift.get('portal_model_name') or key.startswith('fragment_model:'):
                 removed_models += 1
                 continue
+            cleaned.append(gift)
+        gifts = cleaned
+
+        # Load Fragment collection thumbnails once. This is the only source used
+        # for the main image in the Portal catalog.
+        fragment_items = _load_fragment_catalog_disk_cache() or []
+        if not fragment_items:
+            try:
+                fragment_items = fetch_fragment_gifts_catalog(force_refresh=False) or []
+            except Exception as e:
+                logger.warning('Fragment catalog image lookup failed: %s', e)
+                fragment_items = []
+        fragment_by_slug = {
+            str(x.get('fragment_slug') or '').strip().lower(): x
+            for x in fragment_items if isinstance(x, dict) and x.get('fragment_slug')
+        }
+
+        by_slug = {}
+        next_id = 0
+        for gift in gifts:
             try:
                 next_id = max(next_id, int(gift.get('id') or 0))
             except Exception:
                 pass
-            cleaned.append(gift)
-            if gift_key:
-                by_key[gift_key] = gift
             slug = str(gift.get('fragment_slug') or '').strip().lower()
             if slug:
                 by_slug[slug] = gift
-        gifts = cleaned
 
         changed = 0
         added = 0
@@ -12825,66 +12663,71 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
             if not slug:
                 continue
 
-            base_name = str(coll.get('name') or slug).strip()
-            base_key = _build_case_custom_gift_id(base_name, fragment_slug=slug, model_name=None)
-            target = by_key.get(base_key) or by_slug.get(slug)
+            frag = fragment_by_slug.get(slug) or {}
+            target = by_slug.get(slug)
             if target is None:
                 next_id += 1
                 target = {'id': next_id}
                 gifts.append(target)
                 added += 1
 
-            # Main image MUST come from Fragment, never Portal model/photo data.
-            fragment_item = fragment_by_slug.get(slug) or {}
-            fragment_image = str(fragment_item.get('image') or '').strip()
-            if not fragment_image or 'fragment.com' not in fragment_image.lower():
-                fragment_image = f'https://fragment.com/file/gifts/{slug}/thumb.webp'
-            base_price = _portal_float(coll.get('floor_price'))
-            old_value = _safe_int(target.get('value'), 0)
+            name = _normalize_fragment_collection_name(
+                str(coll.get('name') or frag.get('name') or slug)
+            )
+            portal_price = _portal_float(
+                coll.get('floor_price') or coll.get('price') or coll.get('portal_price_ton')
+            )
+            fragment_image = str(frag.get('image') or '').strip()
+            # If Fragment already has a saved image on the existing row, preserve
+            # it. Do not fall back to Portal model/variant PNGs.
+            if not fragment_image:
+                fragment_image = str(target.get('image') or '').strip()
 
             payload = {
-                'gift_key': base_key,
-                'name': base_name,
+                'gift_key': _build_case_custom_gift_id(name, fragment_slug=slug, model_name=None),
+                'name': name,
                 'fragment_slug': slug,
                 'fragment_url': f'https://fragment.com/gifts/{slug}',
-                'image': fragment_image or '/static/img/gift.png',
                 'source': 'portal',
                 'portal_source': True,
-                # Portal is the source for name/price; model rows are not gifts.
-                'portal_price_ton': round(base_price, 6),
-                'portal_collection_floor_ton': round(base_price, 6),
-                'portal_model_count': 0,
-                'portal_listed_count': int(_portal_float(coll.get('listed_count'))),
-                'portal_supply': int(_portal_float(coll.get('supply'))),
-                'portal_day_volume': round(_portal_float(coll.get('day_volume')), 6),
+                'portal_price_ton': round(portal_price, 6),
+                'portal_collection_floor_ton': round(portal_price, 6),
                 'portal_updated_at': now_iso,
             }
-            if base_price > 0:
-                payload['value'] = max(1, int(round(base_price * FRAGMENT_TON_RATE)))
-            elif old_value > 0:
-                payload['value'] = old_value
+            if fragment_image:
+                payload['image'] = fragment_image
+            if portal_price > 0:
+                payload['value'] = max(1, int(round(portal_price * FRAGMENT_TON_RATE)))
 
             before = dict(target)
             target.update(payload)
             if target != before:
                 changed += 1
-            by_key[base_key] = target
             by_slug[slug] = target
 
         if not save_gifts(gifts):
-            raise RuntimeError('Не удалось сохранить Portal-каталог подарков')
+            raise RuntimeError('Не удалось сохранить Portal-каталог')
+
+        # Verify the exact file that the runtime will read. Never report success
+        # if persistence produced an empty catalog.
+        persisted = load_gifts()
+        if len(persisted) < len(gifts):
+            raise RuntimeError(
+                f'Каталог не подтвердился после сохранения: записано {len(gifts)}, прочитано {len(persisted)}'
+            )
 
         return {
             'changed': changed,
             'added': added,
             'removed_models': removed_models,
-            'total': len(gifts),
+            'total': len(persisted),
             'portal_collections': len(collections),
             'portal_models': 0,
         }
     except Exception as e:
-        logger.error('Portal snapshot -> gifts catalog failed: %s', e)
-        return {'changed': 0, 'added': 0, 'removed_models': 0, 'total': 0, 'portal_collections': 0, 'portal_models': 0, 'error': str(e)}
+        logger.error("Portal snapshot -> gifts catalog failed: %s", e, exc_info=True)
+        return {'changed': 0, 'added': 0, 'removed_models': 0, 'total': len(load_gifts() or []), 'error': str(e)}
+
 
 def _portal_build_daily_snapshot(force=False):
     """Build or reuse the complete Portal hourly snapshot.
@@ -12896,9 +12739,8 @@ def _portal_build_daily_snapshot(force=False):
 
     current = _portal_load_daily_snapshot()
     if (
-        not force and current and isinstance(current.get('collections'), list)
-        and current.get('collections')
-        and now - float(current.get('updated_at') or 0) < interval_seconds
+        not force and current and
+        now - float(current.get('updated_at') or 0) < interval_seconds
     ):
         return {
             'success': True,
@@ -12953,20 +12795,18 @@ def _portal_build_daily_snapshot(force=False):
 
         for idx, coll in enumerate(collections, 1):
             name = str(coll.get('name') or coll.get('short_name') or 'Gift').strip()
-            short_name = str(coll.get('short_name') or '').strip().lower()
 
             _portal_daily_job_update(
                 current=idx,
                 total=len(collections),
                 collection=name,
                 collections=idx - 1,
-                models=total_models,
+                models=0,
             )
 
-            # Current stage: Portal sync imports ONLY gift collections.
-            # Models/backdrops/symbols are intentionally not loaded into the
-            # gift catalog, so a partial Portal filter response can never
-            # create incomplete model lists or replace the main gift PNG.
+            # IMPORTANT: Portal sync is gift-collection-only. Do not request
+            # /collections/filters here; that endpoint contains models/backdrops/
+            # symbols and was the reason model PNGs started appearing as gifts.
             row = dict(coll)
             row['models'] = []
             row['backdrops'] = []
@@ -12976,16 +12816,11 @@ def _portal_build_daily_snapshot(force=False):
             row['symbol_count'] = 0
             full.append(row)
 
-            _portal_daily_job_update(
-                collections=idx,
-                models=total_models,
-            )
+            _portal_daily_job_update(collections=idx, models=0)
             if idx == 1 or idx == len(collections) or idx % 25 == 0:
                 _portal_daily_job_log(
-                    f'Portal: {idx}/{len(collections)} · {name} · моделей {total_models}'
+                    f'Portal: {idx}/{len(collections)} · {name} · подарков'
                 )
-
-            # Be polite to Portal; this runs only once a day.
             time.sleep(0.05)
 
         snapshot = {
@@ -13005,7 +12840,7 @@ def _portal_build_daily_snapshot(force=False):
         if not _portal_save_daily_snapshot(snapshot):
             raise RuntimeError('Не удалось сохранить portal_daily_snapshot.json')
 
-        _portal_daily_job_log('Сохраняю каталог подарков: коллекции Portal + изображения Fragment')
+        _portal_daily_job_log('Сохраняю каталог Portal: только подарки-коллекции')
         gift_result = _portal_apply_daily_snapshot_to_gifts(snapshot)
         snapshot['gifts_json'] = gift_result
         _portal_daily_job_log(
@@ -13390,11 +13225,7 @@ def _portal_catalog_payload(collection, model=None):
         'gift_key': gift_key,
         'name': display_name,
         'type': 'item',
-        # The public/catalog image is always the main collection artwork.
-        # A selected model may have its own PNG, but that is not the gift image
-        # that should be shown throughout cases/inventory/withdrawals.
-        'image': collection_image or '/static/img/gift.png',
-        'portal_model_image': model_image,
+        'image': model_image or collection_image or '/static/img/gift.png',
         'value': max(1, int(round(price * 100))) if price > 0 else 1,
         'fragment_slug': short_name,
         'model_name': model_name or None,
@@ -19367,35 +19198,17 @@ def get_withdrawals():
             ''', (status,))
 
         withdrawals = cursor.fetchall()
+        conn.close()
 
         withdrawals_list = []
         for w in withdrawals:
-            # The withdrawal row is the historical source of truth. For pending
-            # requests, inventory still exists and can provide the exact image/name
-            # selected by the user. Never substitute a random catalog gift here.
-            exact_image = w[4]
-            exact_name = w[3]
-            exact_value = w[5]
-            try:
-                if w[2]:
-                    cursor.execute(
-                        'SELECT gift_name, gift_image, gift_value FROM inventory WHERE id = ? AND user_id = ?',
-                        (w[2], w[1])
-                    )
-                    inv_row = cursor.fetchone()
-                    if inv_row:
-                        exact_name = inv_row[0] or exact_name
-                        exact_image = inv_row[1] or exact_image
-                        exact_value = inv_row[2] if inv_row[2] is not None else exact_value
-            except Exception:
-                pass
             withdrawals_list.append({
                 'id': w[0],
                 'user_id': w[1],
                 'inventory_id': w[2],
-                'gift_name': exact_name,
-                'gift_image': exact_image,
-                'gift_value': exact_value,
+                'gift_name': w[3],
+                'gift_image': w[4],
+                'gift_value': w[5],
                 'status': w[6],
                 'telegram_username': w[7],
                 'user_photo_url': w[8],
@@ -19405,7 +19218,6 @@ def get_withdrawals():
                 'admin_notes': w[12]
             })
 
-        conn.close()
         return jsonify({'success': True, 'withdrawals': withdrawals_list})
 
     except Exception as e:
@@ -21705,20 +21517,19 @@ def api_fragment_import_variants():
 
 @app.route('/api/fragment/import-models', methods=['POST'])
 def api_fragment_import_models():
-    """Models are intentionally disabled while the catalog is gift-only."""
     try:
         data = request.get_json(silent=True) or {}
         if str(data.get('admin_id')) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
         gifts = fetch_fragment_gifts_catalog(force_refresh=False) or []
-        return jsonify({
-            'success': True,
-            'skipped': True,
-            'collections': len(gifts),
-            'models': 0,
-            'market_models_added': 0,
-            'message': 'Импорт моделей отключён: сейчас загружаются только подарки.'
-        })
+        total = 0; loaded = 0
+        for gift in gifts:
+            slug = str(gift.get('fragment_slug') or '').strip().lower()
+            if not slug: continue
+            models = fetch_fragment_gift_models(slug, base_name=gift.get('name') or slug, base_value=_safe_int(gift.get('value'), 0), base_image=gift.get('image') or '', force_refresh=True)
+            loaded += 1; total += len(models or [])
+        _save_fragment_catalog_disk_cache(gifts)
+        return jsonify({'success': True, 'collections': loaded, 'models': total, 'market_models_added': 0})
     except Exception as e:
         logger.error(f'Fragment models import error: {e}\n{traceback.format_exc()}')
         return jsonify({'success': False, 'error': str(e)})
