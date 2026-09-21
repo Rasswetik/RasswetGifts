@@ -3547,27 +3547,9 @@ if(tg){
         return portalDailyCatalog.find(function(c){return String(c.short_name||'').toLowerCase()===slug;})||null;
     }
 
-    // Belt-and-braces client-side timeout for every Portal call. Without this,
-    // if a request ever stalls (dead proxy connection, browser tab asleep on
-    // mobile, etc.) the button spinner ("Подключение...") would spin forever
-    // with no way to recover short of a page reload. Wrapping fetch in an
-    // AbortController guarantees the promise always settles within `ms`.
-    function portalFetch(url, opts, ms){
-        ms = ms || 30000;
-        var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-        var id = ctrl ? setTimeout(function(){ctrl.abort();}, ms) : null;
-        var finalOpts = Object.assign({}, opts||{}, ctrl ? {signal: ctrl.signal} : {});
-        return fetch(url, finalOpts).catch(function(e){
-            if(e && e.name === 'AbortError'){
-                throw new Error('Portal не ответил за ' + Math.round(ms/1000) + ' сек — сервер завис или недоступен');
-            }
-            throw e;
-        }).finally(function(){ if(id) clearTimeout(id); });
-    }
-
     window.loadPortalStatus=async function(){
         try{
-            var r=await portalFetch('/api/portal/status?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var r=await fetch('/api/portal/status?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
             var d=await r.json();
             if(!r.ok||d.success===false)throw new Error(d.error||'Ошибка Portal');
             var connected=!!d.connected;
@@ -3589,10 +3571,10 @@ if(tg){
         if(!token){showToast('Вставь Portal initData / Authorization','err');return;}
         if(btn){btn.disabled=true;btn.textContent='⏳ Подключение...';}
         try{
-            var r=await portalFetch('/api/portal/save-token',{
+            var r=await fetch('/api/portal/save-token',{
                 method:'POST',headers:{'Content-Type':'application/json'},
                 body:JSON.stringify({admin_id:ADMIN_ID,token:token})
-            }, 50000);
+            });
             var d=await r.json();
             if(!r.ok||d.success===false)throw new Error(d.error||'Ошибка');
             if(input)input.value='';
@@ -3607,7 +3589,7 @@ if(tg){
     window.deletePortalToken=async function(){
         if(!confirm('Отключить Portal Market?'))return;
         try{
-            var r=await portalFetch('/api/portal/logout',{
+            var r=await fetch('/api/portal/logout',{
                 method:'POST',headers:{'Content-Type':'application/json'},
                 body:JSON.stringify({admin_id:ADMIN_ID})
             });
@@ -3622,10 +3604,10 @@ if(tg){
         var btn=document.getElementById('portalDailySyncTopBtn');
         if(btn){btn.disabled=true;btn.textContent='Запускаю...';}
         try{
-            var r=await portalFetch('/api/portal/daily-sync',{
+            var r=await fetch('/api/portal/daily-sync',{
                 method:'POST',headers:{'Content-Type':'application/json'},
                 body:JSON.stringify({admin_id:ADMIN_ID})
-            }, 50000);
+            });
             var d=await r.json();
             if(!r.ok||d.success===false)throw new Error(d.error||'Не удалось запустить обновление');
             showToast(d.message||'Полное обновление запущено','ok');
@@ -3636,7 +3618,7 @@ if(tg){
 
     async function loadPortalHourlyStatus(){
         try{
-            var r=await portalFetch('/api/portal/daily-status?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var r=await fetch('/api/portal/daily-status?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
             var d=await r.json();
             if(!r.ok||d.success===false)throw new Error(d.error||'Ошибка status');
             var job=d.job||{}, running=!!job.running;
@@ -3706,7 +3688,7 @@ if(tg){
         var list=document.getElementById('portalDailyCatalogList');
         if(list&&!portalDailyCatalog.length)list.innerHTML='<div class="loading">Загрузка Portal Market</div>';
         try{
-            var r=await portalFetch('/api/portal/daily-catalog?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
+            var r=await fetch('/api/portal/daily-catalog?admin_id='+encodeURIComponent(ADMIN_ID),{cache:'no-store'});
             var d=await r.json();
             if(!r.ok||d.success===false)throw new Error(d.error||'Не удалось загрузить каталог');
             portalDailyCatalog=Array.isArray(d.collections)?d.collections:[];
@@ -3879,7 +3861,7 @@ if(tg){
         var box=document.getElementById('portalDiagnostics');
         if(box){box.style.display='block';box.className='portal-diagnostics';box.textContent='Проверяю Portal API...';}
         try{
-            var r=await portalFetch('/api/portal/diagnostics?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'}, 50000);
+            var r=await fetch('/api/portal/diagnostics?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'});
             var d=await r.json();
             if(!r.ok||!d.success)throw Error(d.error||'Portal не отвечает');
             if(box){
