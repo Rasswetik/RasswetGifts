@@ -825,9 +825,6 @@ body{background-image:radial-gradient(ellipse 100% 70% at 50% 0%,#263a54 0%,#1b2
 }
 </style>
 
-<style id="case-category-admin-v1">
-.case-category-admin-add{display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:12px}.case-section-admin-list{display:flex;flex-direction:column;gap:8px}.case-section-admin-row{display:grid;grid-template-columns:1fr 130px auto;gap:8px;align-items:center;padding:10px 11px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(145,190,235,.10)}.case-section-admin-row .section-name{font-weight:800}.case-section-admin-row .section-id{font-size:10px;color:rgba(255,255,255,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.case-section-admin-actions{display:flex;gap:6px;justify-content:flex-end}.case-section-admin-actions button{min-width:70px}@media(max-width:700px){.case-category-admin-add{grid-template-columns:1fr}.case-section-admin-row{grid-template-columns:1fr}.case-section-admin-actions{justify-content:stretch}.case-section-admin-actions button{flex:1}}
-</style>
 </head>
 <body>
 
@@ -1016,23 +1013,10 @@ body{background-image:radial-gradient(ellipse 100% 70% at 50% 0%,#263a54 0%,#1b2
     <!-- EVENT CASES ONLY -->
     <div class="section-page" id="page-cases" style="display:none">
         <div class="section-header">
-            <h2>Кейсы</h2>
-            <button class="action-btn" onclick="openCaseEditor(null)">+ Добавить кейс</button>
+            <h2>🎃 Event-кейсы</h2>
+            <button class="action-btn" onclick="openAddCaseFlow()">+ Добавить кейс</button>
         </div>
-
-        <div class="card case-category-admin-card">
-            <div class="card-title">Категории кейсов</div>
-            <div class="case-category-admin-add">
-                <input class="form-input" id="newCaseSectionName" placeholder="Название категории, например Новинки">
-                <button class="btn btn-primary" onclick="addCaseSection()">+ Добавить</button>
-            </div>
-            <div id="caseSectionList" class="case-section-admin-list"><div class="loading">Загрузка категорий</div></div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">Все кейсы</div>
-            <div id="casesList"><div class="loading">Загрузка</div></div>
-        </div>
+        <div id="casesList"><div class="loading">Загрузка</div></div>
     </div>
 
     <!-- CASE EDITOR -->
@@ -1049,7 +1033,6 @@ body{background-image:radial-gradient(ellipse 100% 70% at 50% 0%,#263a54 0%,#1b2
             <div class="form-group"><label class="form-label">Изображение кейса</label><input type="text" class="form-input" id="ceImage" placeholder="/static/gifs/cases/...">
                 <input type="file" id="ceImageFile" accept="image/png,image/jpeg,image/webp,image/gif" style="margin-top:8px;width:100%" onchange="uploadCaseImage()">
                 <div id="ceImagePreview" style="margin-top:8px"></div></div>
-            <div class="form-group"><label class="form-label">Категория</label><select class="form-input" id="ceSection"><option value="other">Другие</option></select><div style="font-size:10px;color:rgba(255,255,255,.42);margin-top:5px">Категория определяет блок, в котором кейс будет показан на странице кейсов.</div></div>
         </div>
 
         <div class="card">
@@ -1487,7 +1470,7 @@ function showSection(name){
         if(name === 'games-ui') loadGamesUIAdmin();
         if(name === 'users') loadUsers();
         if(name === 'gifts') loadGifts();
-        if(name === 'cases') { loadCaseSectionsAdmin(); loadCasesList(); }
+        if(name === 'cases') loadCasesList();
         if(name === 'promo'){ loadPromoCodes(); onPromoTypeChange(); }
         if(name === 'portal'){ loadPortalDashboard(); }
         if(name === 'purchases') loadPurchasesAdmin();
@@ -2495,71 +2478,6 @@ async function syncFragmentSalePrices(evt){
 /* ══════════════════════════════════════════════════════════════
    CASES
    ══════════════════════════════════════════════════════════════ */
-async function loadCaseSectionsAdmin(){
-    var el=$('caseSectionList');
-    if(el) el.innerHTML='<div class="loading">Загрузка категорий</div>';
-    try{
-        var r=await fetch('/api/admin/case-sections?admin_id='+ADMIN_ID);
-        var d=await r.json();
-        if(!d.success) throw new Error(d.error||'Ошибка');
-        window.caseSectionsAdmin=d.sections||[];
-        renderCaseSectionAdminList();
-        fillCaseSectionSelect();
-    }catch(e){ if(el) el.innerHTML='<div class="empty">Не удалось загрузить категории</div>'; }
-}
-function renderCaseSectionAdminList(){
-    var el=$('caseSectionList'); if(!el)return;
-    var list=window.caseSectionsAdmin||[];
-    if(!list.length){el.innerHTML='<div class="empty">Категорий пока нет. Создай первую.</div>';return;}
-    el.innerHTML=list.map(function(sec){
-        var sid=escapeHtml(JSON.stringify(String(sec.id||'')));
-        var canDelete=String(sec.id)!=='other';
-        return '<div class="case-section-admin-row" data-section-id="'+escapeHtml(sec.id)+'">'+
-          '<div><div class="section-name">'+escapeHtml(sec.name||sec.id)+'</div><div class="section-id">ID: '+escapeHtml(sec.id)+'</div></div>'+
-          '<div class="section-id">Порядок #'+escapeHtml(String(sec.order||0))+'</div>'+
-          '<div class="case-section-admin-actions">'+
-            '<button class="btn btn-secondary btn-sm" onclick="renameCaseSection('+sid+')">Изменить</button>'+
-            (canDelete?'<button class="btn btn-danger btn-sm" onclick="deleteCaseSection('+sid+')">Удалить</button>':'<button class="btn btn-secondary btn-sm" disabled>Основная</button>')+
-          '</div></div>';
-    }).join('');
-}
-function fillCaseSectionSelect(selected){
-    var el=$('ceSection'); if(!el)return;
-    var list=window.caseSectionsAdmin||[];
-    var current=selected!=null?String(selected):String(el.value||'other');
-    var html='<option value="other">Другие</option>';
-    list.forEach(function(sec){if(String(sec.id)==='other')return; html+='<option value="'+escapeHtml(sec.id)+'">'+escapeHtml(sec.name||sec.id)+'</option>';});
-    el.innerHTML=html;
-    el.value=list.some(function(x){return String(x.id)===current;})?current:'other';
-}
-async function addCaseSection(){
-    var input=$('newCaseSectionName'); var name=(input&&input.value||'').trim();
-    if(!name){showToast('Введите название категории','err');return;}
-    try{
-        var r=await fetch('/api/admin/case-sections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,name:name})});
-        var d=await r.json(); if(!d.success)throw new Error(d.error||'Ошибка');
-        if(input)input.value=''; window.caseSectionsAdmin=d.sections||[]; renderCaseSectionAdminList(); fillCaseSectionSelect(d.section&&d.section.id); showToast('Категория добавлена','ok');
-    }catch(e){showToast(e.message||'Ошибка добавления','err');}
-}
-async function renameCaseSection(id){
-    var sec=(window.caseSectionsAdmin||[]).find(function(x){return String(x.id)===String(id);}); if(!sec)return;
-    var name=prompt('Новое название категории:',sec.name||''); if(name===null)return; name=name.trim(); if(!name)return;
-    try{
-        var r=await fetch('/api/admin/case-sections',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,id:id,name:name})});
-        var d=await r.json(); if(!d.success)throw new Error(d.error||'Ошибка');
-        window.caseSectionsAdmin=d.sections||[]; renderCaseSectionAdminList(); fillCaseSectionSelect(); showToast('Категория изменена','ok');
-    }catch(e){showToast(e.message||'Ошибка изменения','err');}
-}
-async function deleteCaseSection(id){
-    var sec=(window.caseSectionsAdmin||[]).find(function(x){return String(x.id)===String(id);}); if(!sec)return;
-    if(!confirm('Удалить категорию «'+(sec.name||id)+'»? Кейсы будут перенесены в «Другие».'))return;
-    try{
-        var r=await fetch('/api/admin/case-sections',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,id:id})});
-        var d=await r.json(); if(!d.success)throw new Error(d.error||'Ошибка');
-        window.caseSectionsAdmin=d.sections||[]; renderCaseSectionAdminList(); fillCaseSectionSelect('other'); loadCasesList(); showToast('Категория удалена','ok');
-    }catch(e){showToast(e.message||'Ошибка удаления','err');}
-}
-
 async function loadCasesList(){
     var el = $('casesList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
@@ -2567,19 +2485,16 @@ async function loadCasesList(){
         var r = await fetch('/api/admin/cases?admin_id=' + ADMIN_ID);
         var d = await r.json();
         if(d.success){
-            allCases = d.cases || [];
-            allCases.sort(function(a,b){return Number(a.display_order||0)-Number(b.display_order||0);});
-            if(!allCases.length){ el.innerHTML = '<div class="empty">Кейсов пока нет. Создайте первый.</div>'; return; }
+            allCases = (d.cases || []).filter(function(c){ return !!c.event_case || String(c.section||'').toLowerCase()==='event' || (Array.isArray(c.tags) && c.tags.some(function(t){ return String(t).toLowerCase()==='event'; })); });
+            if(!allCases.length){ el.innerHTML = '<div class="empty">Event-кейсов пока нет. Создайте первый из Event.</div>'; return; }
             el.innerHTML = allCases.map(function(c){
                 var img = c.image || '/static/img/gift.png';
                 var gifts_count = (c.gifts || []).length;
-                var sec=(window.caseSectionsAdmin||[]).find(function(x){return String(x.id)===String(c.section||'other');});
-                var secName=sec?sec.name:(c.section||'Другие');
-                return '<div class="list-item" onclick="openCaseEditor(' + JSON.stringify(c.id) + ')">' +
+                return '<div class="list-item" onclick="openCaseEditor(' + c.id + ')">' +
                     '<div class="avatar" style="border-radius:10px;background:rgba(0,0,0,.3)"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
                     '<div class="info"><div class="name">' + escapeHtml(c.name) + '</div>' +
-                    '<div class="meta">' + escapeHtml(secName) + ' · ID #' + escapeHtml(String(c.id)) + ' · подарков: ' + gifts_count + ' · ' + ((Number(c.cost||0)/100).toFixed(2)) + ' GRAM</div></div>' +
-                    '<div class="right" style="color:#7CAEFF;font-weight:800">Изменить</div>' +
+                    '<div class="meta">ID #' + escapeHtml(String(c.id)) + ' · 🎁 ' + gifts_count + ' · ' + ((Number(c.cost||0)/100).toFixed(2)) + ' GRAM</div></div>' +
+                    '<div class="right" style="color:#7CAEFF;font-weight:800">✎</div>' +
                     '</div>';
             }).join('');
         }
@@ -2602,7 +2517,7 @@ function openCaseEditor(caseId, eventSectionId, eventId){
     caseGifts = [];
 
     if(caseId === null){
-        currentCase = { id: null, event_section_id: eventSectionId || null, event_id: eventId || null };
+        currentCase = { id: null, event_section_id: eventSectionId || null, event_id: eventId || 'witch_hat_party' };
         $('caseEditorTitle').textContent = '➕ Новый кейс';
         $('ceDeleteBtn').style.display = 'none';
         $('ceName').value = '';
@@ -2610,7 +2525,6 @@ function openCaseEditor(caseId, eventSectionId, eventId){
         $('ceImage').value = '';
         $('ceImageFile').value = '';
         $('ceImagePreview').innerHTML = '';
-        fillCaseSectionSelect('other');
 
     } else {
         var c = allCases.find(function(x){ return x.id === caseId; });
@@ -2618,7 +2532,6 @@ function openCaseEditor(caseId, eventSectionId, eventId){
         currentCase = JSON.parse(JSON.stringify(c));
         if(eventSectionId) currentCase.event_section_id = eventSectionId;
         if(eventId) currentCase.event_id = eventId;
-        if(!eventId && c.event_case) currentCase.event_id = 'witch_hat_party';
         caseGifts = (currentCase.gifts || []).map(function(g){ var x=Object.assign({},g); x.chance = Number.isFinite(Number(x.chance)) ? Number(x.chance) : 1; return x; });
         $('caseEditorTitle').textContent = '✎ ' + c.name;
         $('ceDeleteBtn').style.display = 'flex';
@@ -2627,7 +2540,6 @@ function openCaseEditor(caseId, eventSectionId, eventId){
         $('ceImage').value = c.image || '';
         $('ceImageFile').value = '';
         $('ceImagePreview').innerHTML = c.image ? '<img src="' + escapeHtml(c.image) + '" style="width:90px;height:90px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.25)">' : '';
-        fillCaseSectionSelect(c.section || 'other');
 
     }
 
@@ -2652,7 +2564,7 @@ function renderCaseGifts(){
         var modelLabel = '';
         if(!isTon){
             if(g.model_random){
-                modelLabel = 'Случайная модель';
+                modelLabel = 'Обычный подарок';
             }else if(g.model_name || g.portal_model_name){
                 modelLabel = 'Модель: ' + (g.model_name || g.portal_model_name);
             }else{
@@ -2726,10 +2638,8 @@ function _caseGiftIdentity(gift){
         gift.name || ''
     ).trim().toLowerCase();
 
-    var isRandom = !!gift.model_random;
     var model = String(gift.model_name || gift.portal_model_name || '').trim().toLowerCase();
 
-    if(isRandom) return collection + '|random';
     if(model) return collection + '|model:' + model;
     return collection + '|base';
 }
@@ -2793,9 +2703,12 @@ function addCaseRandomModel(collection, baseGift){
     gift.image = collection.photo_url || gift.image || '/static/img/gift.png';
     gift.fragment_slug = collection.short_name || gift.fragment_slug || '';
     gift.value = gift.value || Math.max(1, Math.round(Number(collection.floor_price || 0) * 100));
-    gift.model_random = true;
-    gift.model_name = '';
-    gift.portal_model_name = '';
+    // "Обычный подарок" = исходная коллекция без модели.
+    // Никакого случайного выбора модели при открытии кейса.
+    delete gift.model_name;
+    delete gift.portal_model_name;
+    gift.model_random = false;
+    gift.gift_key = (baseGift && (baseGift.gift_key || baseGift.id)) || ('portal-base-' + String(collection.short_name || 'gift'));
     gift.portal_collection_name = collection.name || gift.name;
     gift.model_count = (collection.models || []).length;
     gift.type = 'gift';
@@ -2805,7 +2718,7 @@ function addCaseRandomModel(collection, baseGift){
 function renderCaseGiftBasePicker(items, portalCatalog){
     var html =
         '<div class="modal-title">🎁 Обычный подарок</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,.48);margin-bottom:10px">Сначала выбери подарок. Затем откроется выбор конкретной модели или случайной модели.</div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,.48);margin-bottom:10px">Сначала выбери подарок. Затем откроется выбор конкретной модели или обычного подарка.</div>' +
         '<div class="search-wrap" style="margin-bottom:10px"><input class="search-input" id="caseGiftSearch" placeholder="Поиск подарка..."></div>' +
         '<div class="portal-target-list" id="caseGiftBaseList"></div>';
     openModal(html);
@@ -3028,11 +2941,9 @@ async function saveCase(){
     if(!name){ showToast('Введите название', 'err'); return; }
     if(!caseGifts.length){ showToast('Добавьте хотя бы один подарок', 'err'); return; }
 
-    var selectedSection = ($('ceSection') && $('ceSection').value) || (currentCase && currentCase.section) || 'other';
-    var isEventEditor = !!(currentCase && currentCase.event_id);
     var payload = {
         admin_id: ADMIN_ID, name: name, slug: slug, cost: cost, cost_type: cost_type,
-        image: image, description: description, gifts: caseGifts, event_case: isEventEditor, section: isEventEditor ? 'event' : selectedSection, limited: false, amount: 0, display_order: (currentCase && currentCase.display_order) || 0, time: '24H', tags: isEventEditor ? ['event'] : [], free: false, promo: false
+        image: image, description: description, gifts: caseGifts, event_case: true, section: 'event', limited: false, amount: 0, display_order: (currentCase && currentCase.display_order) || 0, time: '24H', tags: ['event'], free: false, promo: false
     };
 
     try{
