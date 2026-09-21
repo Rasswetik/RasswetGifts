@@ -1589,7 +1589,11 @@ def _write_fragment_catalog_to_local_gifts(fragment_gifts):
                 g['value'] = int(round(float(selected) * FRAGMENT_TON_RATE))
             elif fg.get('value') is not None and not g.get('value'):
                 g['value'] = int(round(float(fg.get('value') or 0)))
-            image = fg.get('market_image') or fg.get('black_image') or fg.get('onyx_black_image') or fg.get('image')
+            # ``image`` is the MAIN collection/gift artwork used by the site.
+            # Market/black/Onyx assets are auxiliary listing/variant images and
+            # must never replace the main gift PNG/preview. Otherwise cases,
+            # catalog and inventory start showing a random model PNG.
+            image = fg.get('image')
             if image:
                 g['image'] = image
         os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -2299,8 +2303,9 @@ def _load_fragment_gifts_with_variants(force_refresh=False, progress_callback=No
                         if variants.get(key): g[key] = variants[key]
                     market_image = g.get('black_image') or g.get('onyx_black_image') or g.get('image')
                     if market_image:
+                        # Keep variant artwork separately. Never overwrite the
+                        # canonical collection image used by cases/catalog/inventory.
                         g['market_image'] = market_image
-                        g['image'] = market_image
                 except Exception as e:
                     logger.debug('Fragment variant worker failed: %s', e)
                 done += 1
@@ -2527,17 +2532,17 @@ def build_fragment_first_gifts_catalog(force_refresh=False):
         item = dict(g)
         item['name'] = _normalize_fragment_collection_name(item.get('name') or 'Gift')
         item['value'] = _safe_int(item.get('value'), 0)
-        item['image'] = (
-            _normalize_local_gift_image(item.get('image'))
-            or item.get('market_image')
-            or item.get('black_image')
-            or item.get('onyx_black_image')
-            or '/static/img/default_gift.png'
-        )
         item['fragment_slug'] = (
             item.get('fragment_slug')
             or _slugify_fragment_name(item.get('name', ''))
         ).strip().lower()
+        # The visible gift artwork is always the original Fragment collection
+        # image. Never fall back to Portal model/Black/Onyx PNGs here.
+        fragment_image = (
+            item.get('fragment_image')
+            or (f'https://fragment.com/file/gifts/{item["fragment_slug"]}/thumb.webp' if item['fragment_slug'] else '')
+        )
+        item['image'] = str(fragment_image or '/static/img/default_gift.png').strip()
         if not item.get('fragment_url') and item['fragment_slug']:
             item['fragment_url'] = f"https://fragment.com/gifts/{item['fragment_slug']}"
         item['source'] = 'gifts.json'
@@ -3371,21 +3376,82 @@ def _quick_db_conn(timeout=5):
         return _pg_get_connection()
     return sqlite3.connect(DB_PATH, timeout=timeout, check_same_thread=False)
 
-def get_db_connection():
-    """Получает соединение с базой данных с защитой от повреждений.
-    При наличии DATABASE_URL использует PostgreSQL через db_wrapper."""
-    global _db_ready
-    # Reuse a single connection per Flask request to avoid repeated pool get/put
+def _pg_connection_is_alive(conn):
+    """Cheap health-check for pooled PostgreSQL connections.
+
+    Some deployments return the same pooled connection object after another
+    handler has closed it. Reusing that object causes the browser-visible
+    ``connection already closed`` error. Never trust a cached/pooled object
+    until a tiny query succeeds.
+    """
+    if conn is None:
+        return False
     try:
-        if has_request_context():
-            cached = getattr(g, '_db_conn', None)
-            if cached is not None and not getattr(cached, '_closed', False):
-                return cached
+        cur = conn.cursor()
+        cur.execute('SELECT 1')
+        try:
+            cur.fetchone()
+        except Exception:
+            pass
+        try:
+            cur.close()
+        except Exception:
+            pass
+        return True
     except Exception:
-        pass
+        return False
+
+
+def _pg_get_live_connection():
+    """Get a live PostgreSQL connection and recover a stale pooled one."""
+    last_error = None
+    for _attempt in range(3):
+        try:
+            conn = _pg_get_connection()
+            if _pg_connection_is_alive(conn):
+                return conn
+            try:
+                conn.close()
+            except Exception:
+                pass
+        except Exception as e:
+            last_error = e
+
+        # db_wrapper implementations differ between deployments. If it
+        # exposes an explicit reset/close hook, use it before asking for a new
+        # connection. Missing hooks are harmless.
+        try:
+            import db_wrapper as _dbw
+            for _hook_name in ('reset_connection', 'reset_pool', 'close_connection', 'close_pool'):
+                _hook = getattr(_dbw, _hook_name, None)
+                if callable(_hook):
+                    try:
+                        _hook()
+                    except TypeError:
+                        pass
+                    except Exception:
+                        pass
+                    break
+        except Exception:
+            pass
+        time.sleep(0.15)
+
+    if last_error:
+        raise last_error
+    raise RuntimeError('PostgreSQL connection could not be established')
+
+
+def get_db_connection():
+    """Получает живое соединение с БД.
+
+    PostgreSQL connections are health-checked before use so a connection that
+    was closed by another request is never handed back to Flask. SQLite keeps
+    the existing short-lived connection model.
+    """
+    global _db_ready
 
     if USE_POSTGRES:
-        conn = _pg_get_connection()
+        conn = _pg_get_live_connection()
         if not _db_ready:
             try:
                 _create_all_tables(conn)
@@ -3397,12 +3463,6 @@ def get_db_connection():
                     conn.rollback()
                 except Exception:
                     pass
-        # Cache connection on request context so multiple calls reuse it
-        try:
-            if has_request_context():
-                g._db_conn = conn
-        except Exception:
-            pass
         return conn
     
     for attempt in range(3):
@@ -12629,11 +12689,15 @@ def _portal_all_collections():
 
 
 def _portal_apply_daily_snapshot_to_gifts(snapshot):
-    """Materialize every Portal collection AND every model into the canonical catalog.
+    """Sync ONLY gift collections into the canonical catalog.
 
-    Each runtime gift gets a stable key, image, Portal price in TON and value in
-    site stars/GRAM units. Keeping this catalog on the persistent disk makes the
-    same gifts available to every game mode after a process restart.
+    Source split is intentional:
+      - Portal -> collection name + current floor price.
+      - Fragment -> the visible/main gift artwork.
+      - Portal models are metadata only and are NOT created as separate gifts.
+
+    This prevents model PNGs from replacing the original gift artwork and keeps
+    the catalog limited to actual gifts/collections for the current stage.
     """
     try:
         collections = snapshot.get('collections') or []
@@ -12641,140 +12705,112 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
         if not isinstance(gifts, list):
             gifts = []
 
+        # Build the Fragment image map first. If Fragment is temporarily
+        # unavailable, the deterministic Fragment thumbnail URL is still used.
+        fragment_items = fetch_fragment_gifts_catalog(force_refresh=False) or []
+        fragment_by_slug = {
+            str(x.get('fragment_slug') or '').strip().lower(): x
+            for x in fragment_items
+            if isinstance(x, dict) and str(x.get('fragment_slug') or '').strip()
+        }
+
         by_key = {}
         by_slug = {}
         next_id = 0
+        cleaned = []
+        removed_models = 0
         for gift in gifts:
             if not isinstance(gift, dict):
+                continue
+            gift_key = str(gift.get('gift_key') or '').strip().lower()
+            # The current catalog intentionally contains collections only.
+            if gift_key.startswith('fragment_model:') or gift.get('model_name') or gift.get('portal_model_name'):
+                removed_models += 1
                 continue
             try:
                 next_id = max(next_id, int(gift.get('id') or 0))
             except Exception:
                 pass
-            key = str(gift.get('gift_key') or '').strip()
-            if key:
-                by_key[key] = gift
+            cleaned.append(gift)
+            if gift_key:
+                by_key[gift_key] = gift
             slug = str(gift.get('fragment_slug') or '').strip().lower()
-            if slug and not gift.get('model_name') and not gift.get('portal_model_name'):
+            if slug:
                 by_slug[slug] = gift
+        gifts = cleaned
 
         changed = 0
         added = 0
         now_iso = datetime.utcnow().isoformat() + 'Z'
 
         for coll in collections:
+            if not isinstance(coll, dict):
+                continue
             slug = str(coll.get('short_name') or '').strip().lower()
             if not slug:
                 continue
 
-            # Base collection gift.
-            base_key = _build_case_custom_gift_id(
-                str(coll.get('name') or slug),
-                fragment_slug=slug,
-                model_name=None,
-            )
+            base_name = str(coll.get('name') or slug).strip()
+            base_key = _build_case_custom_gift_id(base_name, fragment_slug=slug, model_name=None)
             target = by_key.get(base_key) or by_slug.get(slug)
             if target is None:
                 next_id += 1
                 target = {'id': next_id}
                 gifts.append(target)
                 added += 1
-            base_image = str(
-                coll.get('photo_url') or coll.get('image') or
-                _portal_collection_image_url(slug)
+
+            # Main image MUST come from Fragment, never Portal model/photo data.
+            fragment_item = fragment_by_slug.get(slug) or {}
+            fragment_image = str(
+                fragment_item.get('image') or
+                f'https://fragment.com/file/gifts/{slug}/thumb.webp'
             ).strip()
             base_price = _portal_float(coll.get('floor_price'))
-            base_payload = {
+            old_value = _safe_int(target.get('value'), 0)
+
+            payload = {
                 'gift_key': base_key,
-                'name': coll.get('name') or slug,
+                'name': base_name,
                 'fragment_slug': slug,
                 'fragment_url': f'https://fragment.com/gifts/{slug}',
-                'image': base_image or '/static/img/gift.png',
+                'image': fragment_image or '/static/img/gift.png',
                 'source': 'portal',
                 'portal_source': True,
+                # Portal is the source for name/price; model rows are not gifts.
                 'portal_price_ton': round(base_price, 6),
                 'portal_collection_floor_ton': round(base_price, 6),
-                'portal_models': coll.get('models') or [],
-                'portal_model_count': len(coll.get('models') or []),
+                'portal_model_count': 0,
                 'portal_listed_count': int(_portal_float(coll.get('listed_count'))),
                 'portal_supply': int(_portal_float(coll.get('supply'))),
                 'portal_day_volume': round(_portal_float(coll.get('day_volume')), 6),
                 'portal_updated_at': now_iso,
             }
             if base_price > 0:
-                base_payload['value'] = max(1, int(round(base_price * FRAGMENT_TON_RATE)))
-            if target.get('value') and base_price <= 0:
-                base_payload['value'] = target.get('value')
-            row_changed = any(target.get(k) != v for k, v in base_payload.items())
-            target.update(base_payload)
-            if row_changed:
+                payload['value'] = max(1, int(round(base_price * FRAGMENT_TON_RATE)))
+            elif old_value > 0:
+                payload['value'] = old_value
+
+            before = dict(target)
+            target.update(payload)
+            if target != before:
                 changed += 1
             by_key[base_key] = target
             by_slug[slug] = target
 
-            # Model-level gifts: every model becomes a first-class runtime gift.
-            for model in (coll.get('models') or []):
-                if not isinstance(model, dict):
-                    continue
-                model_name = str(model.get('name') or '').strip()
-                if not model_name:
-                    continue
-                model_key = _build_case_custom_gift_id(
-                    f"{coll.get('name') or slug} — {model_name}",
-                    fragment_slug=slug,
-                    model_name=model_name,
-                )
-                model_price = _portal_float(
-                    model.get('floor_price') or model.get('floor') or model.get('price')
-                )
-                model_image = str(
-                    model.get('image') or model.get('image_url') or
-                    model.get('photo_url') or model.get('preview') or
-                    model.get('preview_url') or base_image or '/static/img/gift.png'
-                ).strip()
-                target = by_key.get(model_key)
-                if target is None:
-                    next_id += 1
-                    target = {'id': next_id}
-                    gifts.append(target)
-                    added += 1
-                model_payload = {
-                    'gift_key': model_key,
-                    'name': f"{coll.get('name') or slug} — {model_name}",
-                    'fragment_slug': slug,
-                    'fragment_url': f'https://fragment.com/gifts/{slug}',
-                    'image': model_image,
-                    'source': 'portal',
-                    'portal_source': True,
-                    'model_name': model_name,
-                    'portal_model_name': model_name,
-                    'portal_collection_name': coll.get('name') or slug,
-                    'portal_price_ton': round(model_price, 6),
-                    'portal_collection_floor_ton': round(base_price, 6),
-                    'portal_updated_at': now_iso,
-                }
-                if model_price > 0:
-                    model_payload['value'] = max(1, int(round(model_price * FRAGMENT_TON_RATE)))
-                before = dict(target)
-                target.update(model_payload)
-                if target != before:
-                    changed += 1
-                by_key[model_key] = target
-
         if not save_gifts(gifts):
-            raise RuntimeError('Не удалось сохранить Portal-каталог')
+            raise RuntimeError('Не удалось сохранить Portal-каталог подарков')
+
         return {
             'changed': changed,
             'added': added,
+            'removed_models': removed_models,
             'total': len(gifts),
             'portal_collections': len(collections),
-            'portal_models': int(snapshot.get('total_models') or 0),
+            'portal_models': 0,
         }
-
     except Exception as e:
-        logger.error("Portal snapshot -> gifts catalog failed: %s", e)
-        return {'changed': 0, 'added': 0, 'total': 0, 'error': str(e)}
-
+        logger.error('Portal snapshot -> gifts catalog failed: %s', e)
+        return {'changed': 0, 'added': 0, 'removed_models': 0, 'total': 0, 'portal_collections': 0, 'portal_models': 0, 'error': str(e)}
 
 def _portal_build_daily_snapshot(force=False):
     """Build or reuse the complete Portal hourly snapshot.
@@ -12852,26 +12888,18 @@ def _portal_build_daily_snapshot(force=False):
                 models=total_models,
             )
 
-            filters = {'models': [], 'backdrops': [], 'symbols': []}
-            if short_name:
-                fok, fdata = _portal_collection_filters(short_name)
-                if fok:
-                    filters = fdata
-                else:
-                    filter_errors.append({'collection': name, 'error': str(fdata)[:180]})
-
+            # Current stage: Portal sync imports ONLY gift collections.
+            # Models/backdrops/symbols are intentionally not loaded into the
+            # gift catalog, so a partial Portal filter response can never
+            # create incomplete model lists or replace the main gift PNG.
             row = dict(coll)
-            row['models'] = filters.get('models') or []
-            row['backdrops'] = filters.get('backdrops') or []
-            row['symbols'] = filters.get('symbols') or []
-            row['model_count'] = len(row['models'])
-            row['backdrop_count'] = len(row['backdrops'])
-            row['symbol_count'] = len(row['symbols'])
+            row['models'] = []
+            row['backdrops'] = []
+            row['symbols'] = []
+            row['model_count'] = 0
+            row['backdrop_count'] = 0
+            row['symbol_count'] = 0
             full.append(row)
-
-            total_models += row['model_count']
-            total_backdrops += row['backdrop_count']
-            total_symbols += row['symbol_count']
 
             _portal_daily_job_update(
                 collections=idx,
@@ -12902,7 +12930,7 @@ def _portal_build_daily_snapshot(force=False):
         if not _portal_save_daily_snapshot(snapshot):
             raise RuntimeError('Не удалось сохранить portal_daily_snapshot.json')
 
-        _portal_daily_job_log('Сохраняю полный каталог: коллекции + все модели')
+        _portal_daily_job_log('Сохраняю каталог подарков: коллекции Portal + изображения Fragment')
         gift_result = _portal_apply_daily_snapshot_to_gifts(snapshot)
         snapshot['gifts_json'] = gift_result
         _portal_daily_job_log(
@@ -13287,7 +13315,11 @@ def _portal_catalog_payload(collection, model=None):
         'gift_key': gift_key,
         'name': display_name,
         'type': 'item',
-        'image': model_image or collection_image or '/static/img/gift.png',
+        # The public/catalog image is always the main collection artwork.
+        # A selected model may have its own PNG, but that is not the gift image
+        # that should be shown throughout cases/inventory/withdrawals.
+        'image': collection_image or '/static/img/gift.png',
+        'portal_model_image': model_image,
         'value': max(1, int(round(price * 100))) if price > 0 else 1,
         'fragment_slug': short_name,
         'model_name': model_name or None,
@@ -21598,19 +21630,20 @@ def api_fragment_import_variants():
 
 @app.route('/api/fragment/import-models', methods=['POST'])
 def api_fragment_import_models():
+    """Models are intentionally disabled while the catalog is gift-only."""
     try:
         data = request.get_json(silent=True) or {}
         if str(data.get('admin_id')) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
         gifts = fetch_fragment_gifts_catalog(force_refresh=False) or []
-        total = 0; loaded = 0
-        for gift in gifts:
-            slug = str(gift.get('fragment_slug') or '').strip().lower()
-            if not slug: continue
-            models = fetch_fragment_gift_models(slug, base_name=gift.get('name') or slug, base_value=_safe_int(gift.get('value'), 0), base_image=gift.get('image') or '', force_refresh=True)
-            loaded += 1; total += len(models or [])
-        _save_fragment_catalog_disk_cache(gifts)
-        return jsonify({'success': True, 'collections': loaded, 'models': total, 'market_models_added': 0})
+        return jsonify({
+            'success': True,
+            'skipped': True,
+            'collections': len(gifts),
+            'models': 0,
+            'market_models_added': 0,
+            'message': 'Импорт моделей отключён: сейчас загружаются только подарки.'
+        })
     except Exception as e:
         logger.error(f'Fragment models import error: {e}\n{traceback.format_exc()}')
         return jsonify({'success': False, 'error': str(e)})
