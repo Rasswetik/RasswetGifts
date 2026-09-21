@@ -7817,18 +7817,48 @@ def ultimate_crash_cashout_simple():
         try:
             cursor.execute('BEGIN IMMEDIATE')
 
+            # Берём именно активную ставку пользователя, а не последнюю flying-игру.
+            # Иначе при смене раунда между кликом клиента и запросом к серверу
+            # получается рассинхрон: сервер смотрит уже новую игру и отвечает
+            # «Активная ставка не найдена», хотя ставка пользователя есть.
             cursor.execute('''
-                SELECT id, current_multiplier FROM ultimate_crash_games
-                WHERE status = 'flying' ORDER BY id DESC LIMIT 1
-            ''')
+                SELECT id, game_id, bet_amount, bet_type, gift_data, gift_name, gift_image
+                FROM ultimate_crash_bets
+                WHERE user_id = ? AND status = 'active'
+                ORDER BY created_at DESC, id DESC LIMIT 1
+            ''', (user_id,))
+            bet = cursor.fetchone()
+            if not bet:
+                conn.rollback(); conn.close()
+                return jsonify({'success': False, 'error': 'Активная ставка не найдена'})
+
+            bet_id, game_id, bet_amount, bet_type, gift_data_raw, bet_gift_name, bet_gift_image = bet
+
+            # Проверяем состояние именно раунда, в который была поставлена ставка.
+            cursor.execute('''
+                SELECT status, current_multiplier, target_multiplier
+                FROM ultimate_crash_games WHERE id = ? LIMIT 1
+            ''', (game_id,))
             game = cursor.fetchone()
             if not game:
-                conn.rollback(); conn.close()
-                return jsonify({'success': False, 'error': 'Нет активной игры'})
+                cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE id = ? AND status = 'active'", (bet_id,))
+                conn.commit()
+                conn.close()
+                _user_bets_cache.pop((get_crash_cache().get('id'), str(user_id)), None)
+                return jsonify({'success': False, 'error': 'Раунд ставки уже завершён'})
 
-            game_id = game[0]
+            game_status = str(game[0] or '').lower()
+            if game_status != 'flying':
+                if game_status in ('crashed', 'finished', 'ended'):
+                    cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE id = ? AND status = 'active'", (bet_id,))
+                    conn.commit()
+                else:
+                    conn.rollback()
+                conn.close()
+                return jsonify({'success': False, 'error': 'Раунд ставки уже завершён'})
+
             db_mult = float(game[1]) if game[1] else 1.0
-            server_mult = max(db_mult, cached_mult)
+            server_mult = max(db_mult, cached_mult if get_crash_cache().get('id') == game_id else 1.0)
 
             current_mult = server_mult
             if client_mult is not None:
@@ -7838,19 +7868,6 @@ def ultimate_crash_cashout_simple():
                         current_mult = cm
                 except (ValueError, TypeError):
                     pass
-
-            cursor.execute('''
-                SELECT id, bet_amount, bet_type, gift_data, gift_name, gift_image
-                FROM ultimate_crash_bets
-                WHERE game_id = ? AND user_id = ? AND status = 'active'
-                ORDER BY created_at DESC LIMIT 1
-            ''', (game_id, user_id))
-            bet = cursor.fetchone()
-            if not bet:
-                conn.rollback(); conn.close()
-                return jsonify({'success': False, 'error': 'Активная ставка не найдена'})
-
-            bet_id, bet_amount, bet_type, gift_data_raw, bet_gift_name, bet_gift_image = bet
 
             # 👻 Проверяем спуки-раунд (хэллоуин): скрытый коэффициент, который
             # умножает выплату при кэшауте. Источник истины — только БД,
@@ -12041,10 +12058,32 @@ def _portal_collections(limit=1000, offset=0):
         'limit': limit,
         'offset': offset,
     }, timeout=20)
+
+    # Portal HTTP API can occasionally reject browser-like requests even when
+    # the same Telegram initData still works through aportalsmp.  Keep the
+    # direct HTTP path as primary, but transparently fall back to the client
+    # library so the Portal catalog does not become empty.
+    if not ok:
+        try:
+            if globals().get('_APORTALSMP_AVAILABLE') and globals().get('_portal_collections_fn'):
+                token = _portal_get_token()
+                raw = _portal_run_async(_portal_collections_fn(authData=token, limit=min(limit, 5000)), timeout=45)
+                if isinstance(raw, tuple) and len(raw) == 2 and raw[1]:
+                    raw = None
+                if raw is not None:
+                    items = _portal_extract_items(raw)
+                    if items:
+                        data = items
+                        ok = True
+        except Exception as e:
+            logger.warning('Portal collections library fallback failed: %s', e)
+
     if not ok:
         return False, data
 
     items = _portal_extract_array(data, ('collections', 'results', 'items', 'data'))
+    if not items and isinstance(data, list):
+        items = data
     floor_map = _portal_floors_map()
 
     result = []
@@ -12075,15 +12114,22 @@ def _portal_collections(limit=1000, offset=0):
             volume = _portal_float(coll.get('volume') or coll.get('total_volume'))
             market_cap = _portal_float(coll.get('market_cap') or coll.get('marketCap'))
 
+            photo_url = str(
+                coll.get('photo_url') or coll.get('image') or
+                coll.get('preview_url') or ''
+            ).strip()
+            # Portal sometimes omits the collection preview. Use Fragment's
+            # canonical thumbnail as a deterministic fallback so a valid Portal
+            # gift never arrives at the frontend without an image.
+            if not photo_url and short_name:
+                photo_url = f'https://fragment.com/file/gifts/{short_name}/thumb.webp'
+
             result.append({
                 'id': coll.get('id') or coll.get('collection_id') or '',
                 'name': name or short_name,
                 'short_name': short_name,
                 'floor_price': round(floor, 6) if floor > 0 else 0,
-                'photo_url': str(
-                    coll.get('photo_url') or coll.get('image') or
-                    coll.get('preview_url') or ''
-                ).strip(),
+                'photo_url': photo_url,
                 'supply': int(_portal_float(coll.get('supply') or coll.get('total_supply'))),
                 'listed_count': int(_portal_float(
                     coll.get('listed_count') or coll.get('listed') or coll.get('listings_count')
@@ -16195,33 +16241,34 @@ def ultimate_crash_cashout():
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        # Находим ставку пользователя первой. При смене раунда latest flying game
+        # может уже отличаться от game_id ставки и старый код ошибочно писал
+        # «Активная ставка не найдена».
         cursor.execute('''
-            SELECT id, current_multiplier FROM ultimate_crash_games
-            WHERE status = 'flying'
-            ORDER BY id DESC LIMIT 1
-        ''')
-
-        game = cursor.fetchone()
-
-        if not game:
-            conn.close()
-            return jsonify({'success': False, 'error': 'Нет активной игры'})
-
-        game_id, current_mult = game[0], float(game[1]) if game[1] else 1.0
-
-        cursor.execute('''
-            SELECT id, bet_amount FROM ultimate_crash_bets
-            WHERE game_id = ? AND user_id = ? AND status = 'active'
-            ORDER BY created_at DESC LIMIT 1
-        ''', (game_id, user_id))
-
+            SELECT id, game_id, bet_amount FROM ultimate_crash_bets
+            WHERE user_id = ? AND status = 'active'
+            ORDER BY created_at DESC, id DESC LIMIT 1
+        ''', (user_id,))
         bet = cursor.fetchone()
-
         if not bet:
             conn.close()
             return jsonify({'success': False, 'error': 'Активная ставка не найдена'})
 
-        bet_id, bet_amount = bet
+        bet_id, game_id, bet_amount = bet
+
+        cursor.execute('''
+            SELECT status, current_multiplier FROM ultimate_crash_games
+            WHERE id = ? LIMIT 1
+        ''', (game_id,))
+        game = cursor.fetchone()
+        if not game or str(game[0] or '').lower() != 'flying':
+            if game and str(game[0] or '').lower() in ('crashed', 'finished', 'ended'):
+                cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE id = ? AND status = 'active'", (bet_id,))
+                conn.commit()
+            conn.close()
+            return jsonify({'success': False, 'error': 'Раунд ставки уже завершён'})
+
+        current_mult = float(game[1]) if game[1] else 1.0
 
         final_multiplier = min(cashout_multiplier, current_mult)
         win_amount = int(bet_amount * final_multiplier)
@@ -16658,33 +16705,34 @@ def cashout_final():
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        # Находим ставку пользователя первой. При смене раунда latest flying game
+        # может уже отличаться от game_id ставки и старый код ошибочно писал
+        # «Активная ставка не найдена».
         cursor.execute('''
-            SELECT id, current_multiplier FROM ultimate_crash_games
-            WHERE status = 'flying'
-            ORDER BY id DESC LIMIT 1
-        ''')
-
-        game = cursor.fetchone()
-
-        if not game:
-            conn.close()
-            return jsonify({'success': False, 'error': 'Нет активной игры'})
-
-        game_id, current_mult = game[0], float(game[1]) if game[1] else 1.0
-
-        cursor.execute('''
-            SELECT id, bet_amount FROM ultimate_crash_bets
-            WHERE game_id = ? AND user_id = ? AND status = 'active'
-            ORDER BY created_at DESC LIMIT 1
-        ''', (game_id, user_id))
-
+            SELECT id, game_id, bet_amount FROM ultimate_crash_bets
+            WHERE user_id = ? AND status = 'active'
+            ORDER BY created_at DESC, id DESC LIMIT 1
+        ''', (user_id,))
         bet = cursor.fetchone()
-
         if not bet:
             conn.close()
             return jsonify({'success': False, 'error': 'Активная ставка не найдена'})
 
-        bet_id, bet_amount = bet
+        bet_id, game_id, bet_amount = bet
+
+        cursor.execute('''
+            SELECT status, current_multiplier FROM ultimate_crash_games
+            WHERE id = ? LIMIT 1
+        ''', (game_id,))
+        game = cursor.fetchone()
+        if not game or str(game[0] or '').lower() != 'flying':
+            if game and str(game[0] or '').lower() in ('crashed', 'finished', 'ended'):
+                cursor.execute("UPDATE ultimate_crash_bets SET status = 'lost' WHERE id = ? AND status = 'active'", (bet_id,))
+                conn.commit()
+            conn.close()
+            return jsonify({'success': False, 'error': 'Раунд ставки уже завершён'})
+
+        current_mult = float(game[1]) if game[1] else 1.0
 
         win_amount = int(bet_amount * current_mult)
 
