@@ -246,38 +246,23 @@ _portal_auth_lock = threading.Lock()
 
 
 def _portal_normalize_auth_token(token):
-    """Normalize both legacy TMA auth and current Portals partner keys.
+    """Keep the exact Portals Authorization format.
 
-    Legacy Telegram Mini App auth is stored as ``tma <initData>``.
-    Current Portals Partner API keys are stored as ``partners <token>``.
-    The admin may also receive a copied header like ``Authorization: ...``.
+    Portals expects Telegram Mini App auth as: ``Authorization: tma <initData>``.
+    Older builds removed ``tma `` before saving which made the embedded market
+    look disconnected even when the copied token itself was correct.
     """
     token = str(token or '').strip()
     if not token:
         return ''
-
-    # Allow the exact value copied from DevTools headers.
-    if token.lower().startswith('authorization:'):
-        token = token.split(':', 1)[1].strip()
-
-    # Normalize common scheme prefixes.
-    if token.lower().startswith('bearer '):
-        token = token[7:].strip()
-
-    if token.lower().startswith('partners '):
-        raw = token[9:].strip()
-        return ('partners ' + raw) if raw else ''
-
     if token.lower().startswith('tma '):
         raw = token[4:].strip()
         return ('tma ' + raw) if raw else ''
-
     # A raw Telegram WebApp initData string is also accepted in the admin.
     if 'hash=' in token and ('user=' in token or 'query_id=' in token or 'auth_date=' in token):
         return 'tma ' + token
-
-    # Otherwise treat it as a current Portals Partner API key.
-    return 'partners ' + token
+    # Partner/API tokens, if used, are left untouched.
+    return token
 
 
 def _portal_get_token():
@@ -11829,26 +11814,10 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
 
     token = _portal_normalize_auth_token(token if token is not None else _portal_get_token())
     if not token:
-        return False, 'Ключ Portal не задан. Вставь Partner API key или Telegram tma initData.', 0
+        return False, 'Токен не задан. Сохрани Portal initData в админке.', 0
 
-    is_partner = token.lower().startswith('partners ')
     clean_path = '/' + str(path or '').lstrip('/')
-
-    if is_partner:
-        # Current Portals Partner API.
-        partner_path_map = {
-            '/collections': '/partners/collections/preview',
-            '/collections/floors': '/partners/collections/floors',
-            '/nfts/search': '/partners/nfts/search',
-            '/gifts/search': '/partners/nfts/search',
-        }
-        clean_path = partner_path_map.get(clean_path, clean_path)
-        bases = [
-            'https://portal-market.com',
-            'https://portals-market.com',
-        ]
-    else:
-        bases = list(PORTAL_API_BASES)
+    bases = list(PORTAL_API_BASES)
     if _portal_working_base in bases:
         bases.remove(_portal_working_base)
         bases.insert(0, _portal_working_base)
@@ -13699,21 +13668,13 @@ def _validate_portal_initdata_improved(token):
     if not token:
         return False, 'Токен пустой'
 
-    token = _portal_normalize_auth_token(token)
-
-    # Current Partner API key. The current Portals SDK sends it as
-    # ``Authorization: partners <token>``.
-    if token.lower().startswith('partners '):
-        raw = token[9:].strip()
-        if len(raw) < 10:
-            return False, 'Ключ Partner API слишком короткий.'
-        return True, None
+    token = str(token).strip()
 
     if token.startswith('tma '):
         token = token[4:].strip()
 
     if len(token) < 30:
-        return False, 'Токен слишком короткий. Для Telegram-режима нужна ВСЯ строка initData, для Partner API можно вставить сам ключ.'
+        return False, 'Токен слишком короткий. Нужна ВСЯ строка initData. Открой Telegram Web -> F12 -> Console -> введи Telegram.WebApp.initData -> скопируй целиком.'
 
     if 'user=' not in token:
         return False, 'Не найдено "user=". Копируй именно initData, не hash отдельно. Строка должна начинаться с user=%7B%22id%22...'
@@ -13891,12 +13852,7 @@ def portal_save_token():
         warning = None
         collections_count = 0
         try:
-            verify_path = '/collections'
-            verify_params = {'limit': 1, 'offset': 0}
-            if _portal_get_token().lower().startswith('partners '):
-                verify_path = '/partners/collections/preview'
-                verify_params = {}
-            ok, result, _status = _portal_request('GET', verify_path, params=verify_params, timeout=12)
+            ok, result, _status = _portal_request('GET', '/collections', params={'limit': 1, 'offset': 0}, timeout=12)
             if ok:
                 verified = True
                 if isinstance(result, dict):
