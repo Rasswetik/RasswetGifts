@@ -859,6 +859,10 @@ body{background-image:radial-gradient(ellipse 100% 70% at 50% 0%,#263a54 0%,#1b2
                     <div class="tile-icon"><img src="/static/img/gift.png" alt=""></div>
                     <div><div class="tile-text">Подарки</div><div class="tile-sub">Каталог и цены</div></div>
                 </button>
+                <button class="tile-btn tile-purple" onclick="showSection('cases')">
+                    <div class="tile-icon"><img src="/static/img/case.png" onerror="this.onerror=null;this.src='/static/img/gift.png'" alt=""></div>
+                    <div><div class="tile-text">Управление кейсами</div><div class="tile-sub">Создание и редактирование всех кейсов</div></div>
+                </button>
                 <button class="tile-btn tile-pink" onclick="showSection('promo')">
                     <div class="tile-icon"><img src="/static/img/promo.png" onerror="this.onerror=null;this.src='/static/img/gift.png'" alt=""></div>
                     <div><div class="tile-text">Промокоды</div><div class="tile-sub">CRUD и настройки</div></div>
@@ -1015,26 +1019,35 @@ body{background-image:radial-gradient(ellipse 100% 70% at 50% 0%,#263a54 0%,#1b2
         <div id="giftGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
     </div>
 
-    <!-- EVENT CASES ONLY -->
+    <!-- CASE MANAGEMENT -->
     <div class="section-page" id="page-cases" style="display:none">
         <div class="section-header">
-            <h2>🎃 Event-кейсы</h2>
-            <button class="action-btn" onclick="openAddCaseFlow()">+ Добавить кейс</button>
+            <h2>Управление кейсами</h2>
+            <div class="btn-row"><button class="action-btn" onclick="loadCasesList()">Обновить</button><button class="btn btn-success" onclick="openCaseEditor(null)">+ Создать кейс</button></div>
         </div>
-        <div id="casesList"><div class="loading">Загрузка</div></div>
+        <div class="card">
+            <div class="card-title">Все кейсы сайта</div>
+            <div class="event-sub" style="margin-bottom:10px">Здесь находятся все кейсы из cases.json. Создание и редактирование сохраняются в постоянный JSON-файл.</div>
+            <div class="search-wrap"><input type="text" class="search-input" id="caseManagementSearch" placeholder="Поиск по названию или ID..." oninput="renderManagedCases()"></div>
+            <div id="casesList"><div class="loading">Загрузка</div></div>
+        </div>
     </div>
 
     <!-- CASE EDITOR -->
     <div class="section-page" id="page-case-editor" style="display:none">
         <div class="section-header">
             <h2 id="caseEditorTitle">Новый кейс</h2>
-            <button class="action-btn" onclick="showSection('events')">← Назад</button>
+            <button class="action-btn" onclick="showSection('cases')">← К списку кейсов</button>
         </div>
 
         <div class="card">
             <div class="card-title">Основное</div>
             <div class="form-group"><label class="form-label">Название</label><input type="text" class="form-input" id="ceName" placeholder="Starter"></div>
             <div class="form-group"><label class="form-label">Цена, GRAM</label><input type="number" class="form-input" id="ceCost" placeholder="1.00" min="0" step="0.01"></div>
+            <div class="event-editor-grid">
+              <div class="form-group"><label class="form-label">Тип кейса</label><select class="form-input" id="ceEventCase"><option value="0">Обычный кейс</option><option value="1">Event-кейс</option></select></div>
+              <div class="form-group"><label class="form-label">Раздел</label><input class="form-input" id="ceSection" value="other" placeholder="other"></div>
+            </div>
             <div class="form-group"><label class="form-label">Изображение кейса</label><input type="text" class="form-input" id="ceImage" placeholder="/static/gifs/cases/...">
                 <input type="file" id="ceImageFile" accept="image/png,image/jpeg,image/webp,image/gif" style="margin-top:8px;width:100%" onchange="uploadCaseImage()">
                 <div id="ceImagePreview" style="margin-top:8px"></div></div>
@@ -1448,7 +1461,7 @@ function goBackOrMenu(){
 var currentSection = 'home';
 var SECTION_TITLES = {
     home: 'Главное меню', events: 'Events',
-    users: '👥 Пользователи', gifts: '🎁 Подарки', cases: '🎃 Кейсы',
+    users: '👥 Пользователи', gifts: '🎁 Подарки', cases: 'Управление кейсами',
     'case-editor': 'Кейс',
     promo: '🎟️ Промокоды',
     leaderboard: '🏆 Лидерборд',
@@ -2115,7 +2128,7 @@ async function openAddCaseFlow(sectionId){
         if(defaultCaseSection) sectionId = String(defaultCaseSection.id || '');
     }
     try{
-        var r = await fetch('/api/cases?ts='+Date.now(), {cache:'no-store'});
+        var r = await fetch('/api/admin/cases?admin_id='+encodeURIComponent(ADMIN_ID)+'&summary=1&ts='+Date.now(), {cache:'no-store'});
         var d = await r.json();
         if(!d.success) throw Error(d.error || 'Не удалось загрузить кейсы');
         var cases = d.cases || [];
@@ -2514,27 +2527,32 @@ async function syncFragmentSalePrices(evt){
 /* ══════════════════════════════════════════════════════════════
    CASES
    ══════════════════════════════════════════════════════════════ */
+var managedCasesCache=[];
+function renderManagedCases(){
+    var el=$('casesList'); if(!el)return;
+    var q=String(($('caseManagementSearch')&&$('caseManagementSearch').value)||'').trim().toLowerCase();
+    var list=managedCasesCache.filter(function(c){return !q||String(c.name||'').toLowerCase().indexOf(q)!==-1||String(c.id).indexOf(q)!==-1;});
+    if(!list.length){el.innerHTML='<div class="empty">Кейсы не найдены</div>';return;}
+    el.innerHTML=list.map(function(c){
+      var img=c.image||'/static/img/gift.png';
+      var count=Array.isArray(c.gifts)?c.gifts.length:0;
+      var type=c.event_case?'Event':'Обычный';
+      return '<div class="list-item" onclick="openCaseEditor('+JSON.stringify(c.id)+')">'+
+        '<div class="avatar" style="border-radius:10px;background:rgba(0,0,0,.3)"><img src="'+escapeHtml(img)+'" onerror="this.src=\'/static/img/gift.png\'"></div>'+
+        '<div class="info"><div class="name">'+escapeHtml(c.name||'Без названия')+'</div>'+
+        '<div class="meta">ID #'+escapeHtml(String(c.id))+' · '+escapeHtml(type)+' · '+escapeHtml(String(c.section||'other'))+' · '+count+' наград</div></div>'+
+        '<div class="right" style="color:#7CAEFF;font-weight:800">Изменить</div></div>';
+    }).join('');
+}
 async function loadCasesList(){
-    var el = $('casesList');
-    if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
+    var el=$('casesList'); if(el)el.innerHTML='<div class="loading">Загрузка всех кейсов</div>';
     try{
-        var r = await fetch('/api/admin/cases?admin_id=' + ADMIN_ID);
-        var d = await r.json();
-        if(d.success){
-            allCases = (d.cases || []).filter(function(c){ return !!c.event_case || String(c.section||'').toLowerCase()==='event' || (Array.isArray(c.tags) && c.tags.some(function(t){ return String(t).toLowerCase()==='event'; })); });
-            if(!allCases.length){ el.innerHTML = '<div class="empty">Event-кейсов пока нет. Создайте первый из Event.</div>'; return; }
-            el.innerHTML = allCases.map(function(c){
-                var img = c.image || '/static/img/gift.png';
-                var gifts_count = (c.gifts || []).length;
-                return '<div class="list-item" onclick="openCaseEditor(' + c.id + ')">' +
-                    '<div class="avatar" style="border-radius:10px;background:rgba(0,0,0,.3)"><img src="' + escapeHtml(img) + '" onerror="this.src=\'/static/img/gift.png\'"></div>' +
-                    '<div class="info"><div class="name">' + escapeHtml(c.name) + '</div>' +
-                    '<div class="meta">ID #' + escapeHtml(String(c.id)) + ' · 🎁 ' + gifts_count + ' · ' + ((Number(c.cost||0)/100).toFixed(2)) + ' GRAM</div></div>' +
-                    '<div class="right" style="color:#7CAEFF;font-weight:800">✎</div>' +
-                    '</div>';
-            }).join('');
-        }
-    }catch(e){ if(el) el.innerHTML = '<div class="empty">Ошибка</div>'; }
+      var r=await fetch('/api/admin/cases?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'}),d=await r.json();
+      if(!d.success)throw Error(d.error||'Ошибка загрузки');
+      managedCasesCache=Array.isArray(d.cases)?d.cases:[];
+      allCases=managedCasesCache.slice();
+      renderManagedCases();
+    }catch(e){if(el)el.innerHTML='<div class="empty">'+escapeHtml(e.message||'Ошибка загрузки кейсов')+'</div>';}
 }
 
 function openEventCaseEditor(caseData,eventSectionId,eventId){
@@ -2561,6 +2579,8 @@ function openCaseEditor(caseId, eventSectionId, eventId){
         $('ceImage').value = '';
         $('ceImageFile').value = '';
         $('ceImagePreview').innerHTML = '';
+        if($('ceEventCase')) $('ceEventCase').value='0';
+        if($('ceSection')) $('ceSection').value='other';
 
     } else {
         var c = allCases.find(function(x){ return x.id === caseId; });
@@ -2576,6 +2596,8 @@ function openCaseEditor(caseId, eventSectionId, eventId){
         $('ceImage').value = c.image || '';
         $('ceImageFile').value = '';
         $('ceImagePreview').innerHTML = c.image ? '<img src="' + escapeHtml(c.image) + '" style="width:90px;height:90px;object-fit:contain;border-radius:12px;background:rgba(0,0,0,.25)">' : '';
+        if($('ceEventCase')) $('ceEventCase').value=c.event_case?'1':'0';
+        if($('ceSection')) $('ceSection').value=c.section||((c.event_case)?'event':'other');
 
     }
 
@@ -2977,9 +2999,11 @@ async function saveCase(){
     if(!name){ showToast('Введите название', 'err'); return; }
     if(!caseGifts.length){ showToast('Добавьте хотя бы один подарок', 'err'); return; }
 
+    var isEvent = !!($('ceEventCase') && $('ceEventCase').value === '1');
+    var section = (($('ceSection') && $('ceSection').value) || (isEvent ? 'event' : 'other')).trim() || (isEvent ? 'event' : 'other');
     var payload = {
         admin_id: ADMIN_ID, name: name, slug: slug, cost: cost, cost_type: cost_type,
-        image: image, description: description, gifts: caseGifts, event_case: true, section: 'event', limited: false, amount: 0, display_order: (currentCase && currentCase.display_order) || 0, time: '24H', tags: ['event'], free: false, promo: false
+        image: image, description: description, gifts: caseGifts, event_case: isEvent, section: section, limited: !!(currentCase&&currentCase.limited), amount: Number(currentCase&&currentCase.amount||0), display_order: (currentCase && currentCase.display_order) || 0, time: (currentCase&&currentCase.time)||'24H', tags: Array.isArray(currentCase&&currentCase.tags)?currentCase.tags:[], free: !!(currentCase&&currentCase.free), promo: !!(currentCase&&currentCase.promo), promo_codes: Array.isArray(currentCase&&currentCase.promo_codes)?currentCase.promo_codes:[]
     };
 
     try{
