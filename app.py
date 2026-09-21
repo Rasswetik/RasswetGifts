@@ -2708,8 +2708,16 @@ def build_runtime_gifts_catalog(source=None, max_models=RUNTIME_MODELS_PER_COLLE
 
 
 def build_full_catalog_with_models(force_refresh=False):
-    """Canonical runtime catalog. Models are only available when persisted in gifts.json."""
-    return build_fragment_first_gifts_catalog(force_refresh=force_refresh)
+    """Runtime catalog used by gameplay.
+
+    Keep the full Portal/model catalog on disk for admin/case tooling, but do
+    not materialize every model for Upgrade/Crash. A collection contributes
+    its normal/base gift plus only a small number of representative models.
+    """
+    try:
+        return build_runtime_gifts_catalog(max_models=RUNTIME_MODELS_PER_COLLECTION)
+    except Exception:
+        return build_fragment_first_gifts_catalog(force_refresh=force_refresh)
 
 def _resolve_case_gift_payload(gifts, selected_gift_info):
     """Resolve a case gift entry to a full gift dict.
@@ -6374,92 +6382,91 @@ def start_ultimate_crash_loop():
                             logger.info(f"👻 SPOOKY ROUND! hidden multiplier: {spooky_multiplier}x")
 
                     # PostgreSQL does not provide sqlite's cursor.lastrowid.
-                    # The production DB may be on an older schema without seed_hash/seed.
-                    # Never leave the transaction aborted while trying to discover the id:
-                    # each compatibility fallback rolls back first and uses RETURNING id.
+                    # RETURNING id is preferred. Some deployed schemas/drivers,
+                    # however, can execute the INSERT without giving us the
+                    # returned row. In that case commit the successful INSERT
+                    # and resolve the just-created row by its creation timestamp
+                    # and target instead of using currval() (which can fail after
+                    # an aborted transaction).
                     new_game_id = 0
                     insert_succeeded = False
+
                     if USE_POSTGRES:
-                        # Preferred: full provably-fair columns.
-                        try:
-                            cursor.execute("""
-                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
+                        insert_variants = [
+                            ("full", """
+                                INSERT INTO ultimate_crash_games
+                                    (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
                                 RETURNING id
-                            """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                            _row = cursor.fetchone()
-                            new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                            insert_succeeded = bool(new_game_id)
-                        except Exception as _pf_err:
-                            logger.warning(f"⚠️ Crash INSERT with provably-fair columns failed: {_pf_err}; using legacy-compatible INSERT")
+                            """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash)),
+                            ("compat", """
+                                INSERT INTO ultimate_crash_games
+                                    (status, target_multiplier, start_time, is_bonus, spooky_multiplier)
+                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
+                                RETURNING id
+                            """, (target_multiplier, bool(is_bonus), spooky_multiplier)),
+                            ("minimal", """
+                                INSERT INTO ultimate_crash_games
+                                    (status, target_multiplier, start_time)
+                                VALUES ('counting', ?, CURRENT_TIMESTAMP)
+                                RETURNING id
+                            """, (target_multiplier,)),
+                        ]
+                        for label, sql, params in insert_variants:
                             try:
-                                conn.rollback()
-                            except Exception:
-                                pass
-                            cursor = conn.cursor()
-                            # Compatible with older ultimate_crash_games schemas.
-                            try:
-                                cursor.execute("""
-                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier)
-                                    VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
-                                    RETURNING id
-                                """, (target_multiplier, bool(is_bonus), spooky_multiplier))
+                                cursor.execute(sql, params)
                                 _row = cursor.fetchone()
-                                new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                                insert_succeeded = bool(new_game_id)
-                            except Exception as _compat_err:
-                                logger.warning(f"⚠️ Crash compatible INSERT failed: {_compat_err}; using minimal schema")
+                                if _row and _row[0] is not None:
+                                    new_game_id = int(_row[0])
+                                insert_succeeded = True
+                                break
+                            except Exception as _insert_err:
+                                logger.warning(f"⚠️ Crash {label} INSERT failed: {_insert_err}")
                                 try:
                                     conn.rollback()
                                 except Exception:
                                     pass
                                 cursor = conn.cursor()
-                                cursor.execute("""
-                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                                    VALUES ('counting', ?, CURRENT_TIMESTAMP)
-                                    RETURNING id
-                                """, (target_multiplier,))
-                                _row = cursor.fetchone()
-                                new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                                insert_succeeded = bool(new_game_id)
-                    else:
-                        try:
-                            cursor.execute("""
-                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
-                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
-                            """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                        except Exception:
-                            try:
-                                conn.rollback()
-                            except Exception:
-                                pass
-                            cursor = conn.cursor()
-                            try:
-                                cursor.execute("""
-                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier)
-                                    VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
-                                """, (target_multiplier, bool(is_bonus), spooky_multiplier))
-                            except Exception:
-                                try:
-                                    conn.rollback()
-                                except Exception:
-                                    pass
-                                cursor = conn.cursor()
-                                cursor.execute("""
-                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                                    VALUES ('counting', ?, CURRENT_TIMESTAMP)
-                                """, (target_multiplier,))
-                        new_game_id = cursor.lastrowid
-                        insert_succeeded = bool(new_game_id)
 
-                    # IMPORTANT: do not run seed_hash/currval lookups after a legacy
-                    # INSERT. The missing seed_hash column was the original failure
-                    # and those lookups were aborting the transaction again.
-                    if not new_game_id and insert_succeeded:
-                        try:
-                            conn.commit()
-                        except Exception:
-                            pass
+                        if insert_succeeded and not new_game_id:
+                            # The INSERT may have succeeded even when the driver
+                            # did not expose RETURNING. Commit first, then resolve
+                            # the newest counting row. No currval() and no seed_hash
+                            # lookup are used here.
+                            try:
+                                conn.commit()
+                            except Exception:
+                                pass
+                            try:
+                                cursor = conn.cursor()
+                                cursor.execute(
+                                    "SELECT id FROM ultimate_crash_games WHERE status = 'counting' AND target_multiplier = ? ORDER BY id DESC LIMIT 1",
+                                    (target_multiplier,)
+                                )
+                                _row = cursor.fetchone()
+                                new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
+                            except Exception as _lookup_err:
+                                logger.error(f"❌ Crash inserted but id lookup failed: {_lookup_err}")
+
+                    else:
+                        for sql, params in (
+                            ("INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash) VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)", (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash)),
+                            ("INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier) VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)", (target_multiplier, bool(is_bonus), spooky_multiplier)),
+                            ("INSERT INTO ultimate_crash_games (status, target_multiplier, start_time) VALUES ('counting', ?, CURRENT_TIMESTAMP)", (target_multiplier,)),
+                        ):
+                            try:
+                                cursor.execute(sql, params)
+                                insert_succeeded = True
+                                break
+                            except Exception as _insert_err:
+                                try:
+                                    conn.rollback()
+                                except Exception:
+                                    pass
+                                cursor = conn.cursor()
+                        if insert_succeeded:
+                            new_game_id = int(getattr(cursor, 'lastrowid', 0) or 0)
+
                     if not new_game_id:
                         raise RuntimeError('Crash game was inserted but its id was not returned')
                     conn.commit()
@@ -16458,7 +16465,7 @@ def get_upgrade_possible_gifts():
 
         current_value = result[0]
         # Crash gift display uses the canonical gifts.json catalog.
-        gifts = build_runtime_gifts_catalog()
+        gifts = build_runtime_gifts_catalog(max_models=0)
 
         if not gifts:
             return jsonify({'success': False, 'error': 'Не удалось загрузить подарки'})
@@ -16476,8 +16483,9 @@ def get_upgrade_possible_gifts():
                     'upgrade_chance': displayed_chance
                 })
 
+        # Не обрезаем список до 15: апгрейд должен видеть весь доступный
+        # каталог основных подарков, а не только первые несколько позиций.
         possible_gifts.sort(key=lambda x: x.get('value', 0))
-        possible_gifts = possible_gifts[:15]
 
         return jsonify({
             'success': True,
@@ -26643,7 +26651,7 @@ def api_upgrade_prepare():
 
         # Загружаем каталог
         try:
-            catalog = build_runtime_gifts_catalog()
+            catalog = build_runtime_gifts_catalog(max_models=0)
         except Exception:
             catalog = None
         if not catalog:
@@ -26802,7 +26810,7 @@ def api_upgrade_spin():
 
         # Каталог
         try:
-            catalog = build_full_catalog_with_models()
+            catalog = build_runtime_gifts_catalog(max_models=0)
         except Exception:
             catalog = None
         if not catalog:
