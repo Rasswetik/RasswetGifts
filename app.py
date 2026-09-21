@@ -6320,7 +6320,9 @@ def start_ultimate_crash_loop():
                             """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
                             _row = cursor.fetchone()
                             new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                            insert_succeeded = bool(new_game_id)
+                            # Some PostgreSQL drivers execute INSERT ... RETURNING but
+                            # expose no returned row. The INSERT itself still succeeded.
+                            insert_succeeded = True
                         except Exception as _pf_err:
                             logger.warning(f"⚠️ Crash INSERT with provably-fair columns failed: {_pf_err}; using legacy-compatible INSERT")
                             try:
@@ -6391,13 +6393,33 @@ def start_ultimate_crash_loop():
                     # sequence or a trigger.
                     if not new_game_id and insert_succeeded:
                         try:
+                            # RETURNING may be swallowed by an older psycopg/proxy.
+                            # Find the row created by this loop without currval()/lastrowid.
                             cursor = conn.cursor()
-                            cursor.execute("SELECT id FROM ultimate_crash_games WHERE status = 'counting' ORDER BY id DESC LIMIT 1")
+                            cursor.execute("""
+                                SELECT id
+                                FROM ultimate_crash_games
+                                WHERE status = 'counting'
+                                  AND target_multiplier = ?
+                                  AND start_time >= CURRENT_TIMESTAMP - INTERVAL '10 seconds'
+                                ORDER BY id DESC
+                                LIMIT 1
+                            """, (target_multiplier,))
                             _row = cursor.fetchone()
                             if _row and _row[0] is not None:
                                 new_game_id = int(_row[0])
                         except Exception as _id_lookup_err:
                             logger.warning(f"⚠️ Crash inserted but fallback id lookup failed: {_id_lookup_err}")
+                            # Final compatibility path for a few PostgreSQL proxies that
+                            # reject the interval expression: use a plain recent-row lookup.
+                            try:
+                                cursor = conn.cursor()
+                                cursor.execute("SELECT id FROM ultimate_crash_games WHERE status = 'counting' ORDER BY id DESC LIMIT 1")
+                                _row = cursor.fetchone()
+                                if _row and _row[0] is not None:
+                                    new_game_id = int(_row[0])
+                            except Exception as _id_lookup_err2:
+                                logger.warning(f"⚠️ Crash final id lookup failed: {_id_lookup_err2}")
                     if not new_game_id:
                         try:
                             conn.rollback()
@@ -10313,6 +10335,54 @@ def admin_events():
                     if item_id=='ghost_road_mode':
                         return jsonify({'success':False,'error':'Обязательную кнопку Ghost Road нельзя удалить'}),400
                     mode['items']=[x for x in items if str(x.get('id'))!=item_id]
+            elif action in ('add_case_section','update_case_section','remove_case_section'):
+                # Cases Coming has its own manual section list. Do not derive it
+                # from cases.json or auto-sync it from another event.
+                sections = ev.setdefault('sections', [])
+                case_sections = [x for x in sections if isinstance(x, dict) and x.get('type') == 'cases']
+                if action == 'add_case_section':
+                    title = str(data.get('title') or '').strip()
+                    if not title:
+                        return jsonify({'success':False,'error':'Введите название раздела'}),400
+                    base = re.sub(r'[^a-z0-9_-]+','_', title.lower())[:40] or ('cases_section_' + secrets.token_hex(4))
+                    sid = base
+                    n = 2
+                    existing = {str(x.get('id')) for x in case_sections}
+                    while sid in existing:
+                        sid = f'{base}_{n}'; n += 1
+                    max_order = max([int(x.get('order', 0) or 0) for x in case_sections] or [0])
+                    sections.append({'id':sid,'title':title,'type':'cases','case_ids':[],'order':max_order+1,'visible':True})
+                elif action == 'update_case_section':
+                    sid = str(data.get('section_id') or '').strip()
+                    sec = next((x for x in case_sections if str(x.get('id')) == sid), None)
+                    if sec is None:
+                        return jsonify({'success':False,'error':'Раздел не найден'}),404
+                    if 'title' in data:
+                        title = str(data.get('title') or '').strip()
+                        if not title:
+                            return jsonify({'success':False,'error':'Введите название раздела'}),400
+                        sec['title'] = title
+                    if 'visible' in data: sec['visible'] = bool(data.get('visible'))
+                    if 'order' in data:
+                        try: sec['order'] = int(data.get('order'))
+                        except Exception: pass
+                else:
+                    sid = str(data.get('section_id') or '').strip()
+                    sec = next((x for x in case_sections if str(x.get('id')) == sid), None)
+                    if sec is None:
+                        return jsonify({'success':False,'error':'Раздел не найден'}),404
+                    # Removing a section must not delete its cases. Preserve them
+                    # by moving them into the first remaining Cases section.
+                    remaining = [x for x in case_sections if x is not sec]
+                    moved = [str(x) for x in (sec.get('case_ids') or [])]
+                    if moved and remaining:
+                        target = min(remaining, key=lambda x:int(x.get('order',0) or 0))
+                        target_ids = target.setdefault('case_ids',[])
+                        for cid in moved:
+                            if cid not in [str(x) for x in target_ids]: target_ids.append(cid)
+                    ev['sections'] = [x for x in sections if x is not sec]
+                    if not any(isinstance(x,dict) and x.get('type')=='cases' for x in ev['sections']):
+                        ev['sections'].append({'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'order':1,'visible':True})
             elif action in ('add_case','remove_case'):
                 case_id=str(data.get('case_id') or '').strip(); section_id=str(data.get('section_id') or '').strip(); sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==section_id and x.get('type')=='cases'),None) or next((x for x in ev.setdefault('sections',[]) if x.get('type')=='cases'),None)
                 if sec is None: sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}; ev['sections'].insert(0,sec)
