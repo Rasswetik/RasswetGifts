@@ -362,6 +362,57 @@ img{display:block}
 
 .event-card.is-hidden{display:none!important}
 
+.cases-event-card{
+    grid-column:1/-1;
+    height:190px;
+    display:block;
+    border:1px solid rgba(168,85,247,.72);
+    background:#12091b;
+    box-shadow:0 16px 50px rgba(112,54,170,.22),inset 0 0 0 1px rgba(255,255,255,.04);
+    cursor:pointer;
+}
+.cases-event-card.is-hidden{display:none!important}
+.cases-event-card:before{
+    background-image:url('/static/img/banner_case.png');
+    background-size:cover;
+    background-position:center;
+    filter:saturate(1.03) contrast(1.04);
+}
+.cases-event-card:after{
+    z-index:-1;
+    background:linear-gradient(90deg,rgba(13,5,22,.92) 0%,rgba(20,8,31,.68) 40%,rgba(20,8,31,.18) 78%,rgba(20,8,31,.30) 100%);
+}
+.cases-event-content{
+    position:absolute;
+    inset:0;
+    z-index:5;
+    display:flex;
+    align-items:flex-end;
+    padding:22px 25px;
+    pointer-events:none;
+}
+.cases-event-title{
+    color:#fff;
+    font-size:34px;
+    line-height:1;
+    font-weight:950;
+    letter-spacing:-.8px;
+    text-transform:uppercase;
+    text-shadow:0 3px 18px rgba(0,0,0,.82);
+}
+.cases-event-subtitle{
+    display:inline-flex;
+    margin-top:9px;
+    padding:6px 10px;
+    border-radius:9px;
+    color:#ead8ff;
+    background:rgba(126,64,190,.28);
+    border:1px solid rgba(216,176,255,.25);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.4px;
+}
+
 .event-card:before{
     background-image:url("/static/img/banner_witchparty.webp");
     background-size:cover;
@@ -560,6 +611,10 @@ img{display:block}
     .game-subtitle{font-size:11px;margin-top:7px}
 
     .event-card{grid-column:1;height:178px}
+    .cases-event-card{grid-column:1;height:178px}
+    .cases-event-content{padding:18px 17px}
+    .cases-event-title{font-size:26px}
+    .cases-event-subtitle{font-size:10px;margin-top:8px;padding:6px 8px}
     .event-hamsters{right:1%;width:210px}
     .event-hamster{width:92px}
     .event-hamster-1{right:88px}
@@ -905,6 +960,14 @@ img{display:block}
                 </div>
             </div>
         </button>
+        <button class="game-card cases-event-card is-hidden" id="casesEventCard" onclick="goTo('/cases')" aria-label="Cases">
+            <div class="cases-event-content">
+                <div>
+                    <div class="cases-event-title">CASES IS COMING</div>
+                    <div class="cases-event-subtitle" id="casesEventStatus">Ивент активен</div>
+                </div>
+            </div>
+        </button>
         <button class="game-card crash" onclick="goTo('/crash')" aria-label="Crash">
             <div class="game-card-content">
                 <div class="game-name">Crash</div>
@@ -1135,6 +1198,26 @@ async function loadHalloweenEvent(){
     }
 }
 
+async function loadCasesEvent(){
+    var card=$('casesEventCard');
+    if(!card) return;
+    try{
+        var r=await fetch('/api/events/cases?ts='+Date.now(),{cache:'no-store'});
+        var d=await r.json();
+        var e=d.event||{};
+        var active=!!e.active;
+        card.classList.toggle('is-hidden',!active);
+        if(active){
+            var status=$('casesEventStatus');
+            if(status) status.textContent='Ивент активен';
+            var crashCard=document.querySelector('.game-card.crash');
+            if(crashCard && card.parentNode) card.parentNode.insertBefore(card,crashCard);
+        }
+    }catch(e){
+        setTimeout(loadCasesEvent,3000);
+    }
+}
+
 async function initGames(){
     var auth = null;
 
@@ -1171,6 +1254,7 @@ async function initGames(){
 
     loadTopBar();
     loadHalloweenEvent();
+    loadCasesEvent();
 }
 
 document.addEventListener('DOMContentLoaded',initGames);
