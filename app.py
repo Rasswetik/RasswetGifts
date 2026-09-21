@@ -2717,29 +2717,22 @@ def _resolve_case_gift_payload(gifts, selected_gift_info):
     if not selected_gift_info or selected_gift_info.get('type') in ('ton_balance', 'gram_balance'):
         return None
 
-    # Case editor can store a collection with "random model".
-    # Resolve a concrete Portal model only when this reward actually wins.
+    # "Обычный подарок" / "Random" в интерфейсе означает исходную
+    # коллекцию БЕЗ модели. Никогда не выбираем модель случайно на выдаче.
+    # Старые записи, где model_random=true, также принудительно трактуем как
+    # оригинальный подарок коллекции.
     if selected_gift_info.get('model_random'):
-        _random_slug = str(selected_gift_info.get('fragment_slug') or '').strip().lower()
-        if _random_slug:
+        base_slug = str(selected_gift_info.get('fragment_slug') or '').strip().lower()
+        if base_slug:
             try:
-                _collection, _unused = _portal_snapshot_find(_random_slug, None)
-                _models = (_collection or {}).get('models') or []
-                if _collection and _models:
-                    _picked_model = random.choice(_models)
-                    try:
-                        # Materialize the selected model into the canonical catalog
-                        # so inventory/withdrawal code receives a stable integer gift id.
-                        return _portal_upsert_catalog_item(_collection, _picked_model)
-                    except Exception:
-                        _payload = _portal_catalog_payload(_collection, _picked_model)
-                        _payload['id'] = -1
-                        return _payload
-            except Exception as _random_model_error:
-                logger.warning(
-                    'Random Portal model resolve failed for %s: %s',
-                    _random_slug, _random_model_error
-                )
+                base_catalog = build_runtime_gifts_catalog()
+                base_item = next((x for x in base_catalog
+                                  if str(x.get('fragment_slug') or '').strip().lower() == base_slug
+                                  and not (x.get('model_name') or x.get('portal_model_name'))), None)
+                if base_item:
+                    return dict(base_item)
+            except Exception as _base_resolve_error:
+                logger.warning('Base gift resolve failed for %s: %s', base_slug, _base_resolve_error)
 
     target_id = selected_gift_info.get('id')
     target_id_str = str(target_id) if target_id is not None else ''
@@ -2769,7 +2762,7 @@ def _resolve_case_gift_payload(gifts, selected_gift_info):
         'gift_key': selected_gift_info.get('gift_key'),
         'fragment_slug': selected_gift_info.get('fragment_slug'),
         'model_name': selected_gift_info.get('model_name'),
-        'model_random': bool(selected_gift_info.get('model_random')),
+        'model_random': False,
         'type': selected_gift_info.get('type', 'gift')
     }
 
@@ -3167,7 +3160,7 @@ EVENT_DEFAULTS = {
             {'id':'special_mode','title':'Особый режим','type':'mode','items':[
                 {'id':'ghost_road_mode','name':'Ghost Road','subtitle':'','image':'/static/img/ghost_road.png','path':'/event/ghost-road','size':'small','visible':True}
             ]},
-            {'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[]},
+            {'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[],'case_ids_explicit':True},
             {'id':'market','title':'Маркет','type':'market','items':[]}
         ]
     },
@@ -3175,7 +3168,7 @@ EVENT_DEFAULTS = {
         'id': 'cases_event', 'name': 'Cases',
         'image': '', 'enabled': False, 'ends_at': None,
         'sections': [
-            {'id':'cases','title':'Кейсы','type':'cases','case_ids':[]}
+            {'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'case_ids_explicit':True}
         ]
     },
     'witch_hat_party': {
@@ -3240,9 +3233,11 @@ def _normalize_witch_event_structure(obj):
     })
     special['id']='special_mode'; special['title']='Особые режимы'; special['type']='mode'; special['items']=items
     if cases is None:
-        cases={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[]}
+        cases={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[],'case_ids_explicit':True}
     else:
-        cases['id']='event_cases'; cases['title']=cases.get('title') or 'Кейсы события'; cases['type']='cases'; cases['case_ids']=list(cases.get('case_ids') or [])
+        existing_ids=list(cases.get('case_ids') or [])
+        cases['id']='event_cases'; cases['title']=cases.get('title') or 'Кейсы события'; cases['type']='cases'; cases['case_ids']=existing_ids
+        cases['case_ids_explicit']=bool(cases.get('case_ids_explicit', bool(existing_ids)))
     if market is None:
         market={'id':'market','title':'Маркет','type':'market','items':[]}
     else:
@@ -3475,28 +3470,39 @@ def _event_market_item_from_collection(collection):
     return {'collection':name,'fragment_slug':slug,'image':image,'floor_ton':round(float(floor),4) if floor is not None else None,'listings':listings}
 
 def _sync_event_cases(ev):
-    """Attach cases explicitly marked for Event to the first case section."""
+    """One-time legacy migration for event-owned cases.
+
+    Modern event sections are authoritative: once an administrator has an
+    explicit case_ids list, refreshes must never rebuild it from the legacy
+    event_case flag. This keeps add/remove changes persistent.
+    """
     try:
-        all_cases = get_public_cases_with_seasonal()
+        sections=ev.setdefault('sections',[])
+        sec=next((x for x in sections if isinstance(x,dict) and x.get('type')=='cases'),None)
+        if sec is None:
+            sec={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[],'case_ids_explicit':False}
+            sections.insert(0,sec)
+        ids=[str(x) for x in (sec.get('case_ids') or [])]
+        # Explicit modern configuration, including an intentionally empty list.
+        if bool(sec.get('case_ids_explicit', False)):
+            return False
+        # If an old saved section already contains IDs, freeze that list as explicit.
+        if ids:
+            sec['case_ids_explicit']=True
+            return True
+        all_cases=get_public_cases_with_seasonal()
         auto_ids=[]
         for c in all_cases:
             section=str(c.get('section') or '').strip().lower()
             tags=[str(x).strip().lower() for x in (c.get('tags') or [])]
             if bool(c.get('event_case')) or section in ('event','witch_hat_party') or 'event' in tags or 'witch_hat_party' in tags:
                 auto_ids.append(str(c.get('id')))
-        if not auto_ids: return False
-        sections=ev.setdefault('sections',[])
-        sec=next((x for x in sections if x.get('type')=='cases'),None)
-        if sec is None:
-            sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}
-            sections.insert(0,sec)
-        ids=[str(x) for x in sec.get('case_ids',[])]
-        changed=False
-        for cid in auto_ids:
-            if cid not in ids: ids.append(cid); changed=True
-        sec['case_ids']=ids
-        return changed
-        return changed
+        if not auto_ids:
+            sec['case_ids_explicit']=True
+            return True
+        sec['case_ids']=auto_ids
+        sec['case_ids_explicit']=True
+        return True
     except Exception:
         return False
 
@@ -6699,13 +6705,13 @@ def crash_page():
 
 @app.route('/index')
 def index():
-    """Главная страница кейсов (алиас)"""
-    return render_template('index.html')
+    """Legacy alias for the Cases event page."""
+    return redirect('/cases')
 
 @app.route('/case')
 def case_main_page():
-    """Страница списка кейсов."""
-    return render_template('index.html', initial_case_id=None)
+    """Witch Hat Party case list. Individual cases remain /case/<slug>."""
+    return render_template('index.html', initial_case_id=None, case_source='witch_hat_party')
 
 def _serve_case_template():
     """Единый шаблон страницы кейса (корень проекта или templates/)."""
@@ -6733,8 +6739,8 @@ def case_detail_page(case_slug):
 
 @app.route('/cases')
 def cases_page():
-    """Страница кейсов (алиас)"""
-    return render_template('index.html', initial_case_id=None)
+    """Dedicated Cases event page. It shows only cases attached to cases_event."""
+    return render_template('index.html', initial_case_id=None, case_source='cases_event')
 
 @app.route('/event/ghost-road')
 def ghost_road_page():
@@ -9851,6 +9857,9 @@ def api_cases_event():
     try:
         events = get_active_events()
         ev = events.get('cases_event', EVENT_DEFAULTS['cases_event']) or {}
+        for _sec in (ev.get('sections') or []):
+            if isinstance(_sec,dict) and _sec.get('type')=='cases' and 'case_ids_explicit' not in _sec:
+                _sec['case_ids_explicit']=True
         end = None
         remaining = 0
         if ev.get('ends_at'):
@@ -10167,7 +10176,7 @@ def admin_events():
             ev=events[eid]
             if eid == 'witch_hat_party': _normalize_witch_event_structure(ev)
             elif eid == 'cases_event':
-                ev.setdefault('sections',[{'id':'cases','title':'Кейсы','type':'cases','case_ids':[]}])
+                ev.setdefault('sections',[{'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'case_ids_explicit':True}])
                 for sec in ev['sections']:
                     if isinstance(sec,dict) and sec.get('type')=='cases':
                         sec['case_ids']=list(sec.get('case_ids') or [])
@@ -10268,7 +10277,10 @@ def admin_events():
                 if action=='add_case':
                     if not _event_find_case(case_id): return jsonify({'success':False,'error':'Кейс не найден'}),404
                     if case_id not in [str(x) for x in ids]: ids.append(case_id)
-                else: sec['case_ids']=[x for x in ids if str(x)!=case_id]
+                    sec['case_ids_explicit']=True
+                else:
+                    sec['case_ids']=[x for x in ids if str(x)!=case_id]
+                    sec['case_ids_explicit']=True
             elif action=='set_section_unlock':
                 # Открытие раздела по таймеру: часы + минуты от текущего момента.
                 _normalize_witch_event_structure(ev) if eid=='witch_hat_party' else None
@@ -10365,8 +10377,31 @@ def api_cases():
         other_cases=[c for c in cases if not _is_public_season_case(c)]
         cases=season_cases+other_cases
 
+        # The public Cases page is event-owned. Never mix its cards with the
+        # Witch Hat Party cards or the legacy global case catalog.
+        event_id = str(request.args.get('event') or '').strip().lower()
+        if event_id in ('cases_event', 'witch_hat_party'):
+            events = get_active_events()
+            ev = events.get(event_id, EVENT_DEFAULTS.get(event_id, {})) or {}
+            if event_id == 'witch_hat_party':
+                _normalize_witch_event_structure(ev)
+                if _sync_event_cases(ev):
+                    try: save_events(events)
+                    except Exception: pass
+            sections = ev.get('sections') if isinstance(ev.get('sections'), list) else []
+            case_sec = next((x for x in sections if isinstance(x, dict) and str(x.get('type') or '').lower() == 'cases'), None)
+            ids = [str(x) for x in (case_sec or {}).get('case_ids', [])]
+            by_ref = {}
+            for c in cases:
+                for ref in _case_ref_candidates(c): by_ref[str(ref).lower()] = c
+            selected = []
+            for ref in ids:
+                c = by_ref.get(str(ref).lower())
+                if c and c not in selected: selected.append(c)
+            cases = selected
+
         logger.info(f"✅ Загружено {len(cases)} кейсов")
-        return jsonify({'success': True, 'cases': cases})
+        return jsonify({'success': True, 'cases': cases, 'event': event_id or None})
 
     except Exception as e:
         logger.error(f"❌ Критическая ошибка получения кейсов: {e}")
@@ -15890,7 +15925,7 @@ def upgrade_with_ton():
         if bet_amount >= target_value:
             return jsonify({'success': False, 'error': 'Ставка должна быть меньше цены цели'})
 
-        conn = get_db_connection()
+        conn = _quick_db_conn(timeout=30)
         cursor = conn.cursor()
 
         cursor.execute('SELECT balance_stars, first_name FROM users WHERE id = ?', (user_id,))
@@ -16041,7 +16076,7 @@ def upgrade_gift_fast():
         if not gifts:
             return jsonify({'success': False, 'error': 'Не удалось загрузить список подарков'})
 
-        conn = get_db_connection()
+        conn = _quick_db_conn(timeout=30)
         cursor = conn.cursor()
 
         cursor.execute('SELECT gift_id, gift_name, gift_value FROM inventory WHERE id = ? AND user_id = ?',
@@ -16173,7 +16208,7 @@ def upgrade_gift_chance():
         if not target_gift:
             return jsonify({'success': False, 'error': 'Целевой подарок не найден'})
 
-        conn = get_db_connection()
+        conn = _quick_db_conn(timeout=30)
         cursor = conn.cursor()
 
         try:
@@ -16287,7 +16322,7 @@ def get_upgrade_possible_gifts():
         current_gift_id = data['current_gift_id']
         user_id = data['user_id']
 
-        conn = get_db_connection()
+        conn = _quick_db_conn(timeout=30)
         cursor = conn.cursor()
         cursor.execute('SELECT gift_value FROM inventory WHERE id = ? AND user_id = ?',
                      (current_gift_id, user_id))
@@ -16361,7 +16396,7 @@ def upgrade_multi_gifts():
         if target_value <= 0:
             return jsonify({'success': False, 'error': 'Некорректная цена цели'})
 
-        conn = get_db_connection()
+        conn = _quick_db_conn(timeout=30)
         cursor = conn.cursor()
 
         try:
@@ -20412,7 +20447,7 @@ def admin_cases_management():
                 'image': image_url,
                 'cost': data['cost'],
                 'cost_type': data['cost_type'],
-                'section': 'event' if data.get('event_case') else normalize_section_id(data.get('section', cases[case_index].get('section', 'other'))),
+                'section': 'event' if bool(data.get('event_case', cases[case_index].get('event_case', False))) else normalize_section_id(data.get('section', cases[case_index].get('section', 'other'))),
                 'required_level': data.get('required_level', 1),
                 'limited': data.get('limited', False),
                 'amount': data.get('amount', 0),
@@ -20429,6 +20464,11 @@ def admin_cases_management():
                 'event_case': bool(data.get('event_case', cases[case_index].get('event_case', False)))
             }
 
+            # Do not silently detach an Event case when an older admin form does not
+            # send the event_case checkbox. Existing Event ownership is persistent.
+            if cases[case_index].get('event_case') and 'event_case' not in data:
+                updated_case['event_case'] = True
+                updated_case['section'] = 'event'
             cases[case_index] = updated_case
 
             if save_cases(cases):
