@@ -711,6 +711,7 @@ body.halloween-mode .bottom-nav{background:rgba(23,10,34,.96);border-color:rgba(
 body.halloween-mode .bottom-nav-item.active{background:rgba(168,85,247,.2);color:#d8b4fe}
 body.halloween-mode .rocket-wrap img{filter:drop-shadow(0 0 28px rgba(192,132,252,.65)) drop-shadow(0 0 60px rgba(139,92,246,.38))!important}
 body.halloween-mode #crashSettingsBtn{opacity:.35;pointer-events:none}
+.simple-win-model{margin-top:5px;color:rgba(255,255,255,.68);font-size:13px;font-weight:700}
 </style>
 <style id="bottom-nav-halloween-mode">
 .bottom-nav.halloween-nav{
@@ -2506,6 +2507,11 @@ async function doCashout(){
         bodyData.preferred_gift_name = autoWithdrawGift.name || '';
         bodyData.preferred_gift_image = autoWithdrawGift.image || '';
         bodyData.preferred_gift_value = autoWithdrawGift.value || 0;
+        bodyData.preferred_gift_model_name = autoWithdrawGift.model_name || autoWithdrawGift.portal_model_name || '';
+        bodyData.preferred_gift_portal_model_name = autoWithdrawGift.portal_model_name || autoWithdrawGift.model_name || '';
+        bodyData.preferred_gift_key = autoWithdrawGift.gift_key || '';
+        bodyData.preferred_gift_fragment_slug = autoWithdrawGift.fragment_slug || '';
+        bodyData.preferred_gift_collection_name = autoWithdrawGift.portal_collection_name || '';
     }
 
     var serverOk = false;
@@ -2547,10 +2553,13 @@ async function doCashout(){
         var isGiftBet = savedGiftData && savedGiftData.length > 0;
 
         window._lastCrashStarRemainder = Number(d.star_remainder || d.star_difference || 0);
+        // The server is the source of truth for the final payout and the exact
+        // gift/model variant that was inserted into inventory.
+        var serverWinAmount = Number(d.win_amount || instantWin);
         if(isBonusRound){
-            showWinSheetBonus(localMult, instantWin, isGiftBet ? savedGiftData[0] : null, serverGifts);
+            showWinSheetBonus(localMult, serverWinAmount, isGiftBet ? savedGiftData[0] : null, serverGifts);
         } else {
-            showWinSheet(localMult, instantWin, serverGifts, isGiftBet ? savedGiftData : null);
+            showWinSheet(localMult, serverWinAmount, serverGifts, isGiftBet ? savedGiftData : null);
         }
     } else {
         cashedOut = false;
@@ -2575,18 +2584,17 @@ function showWinSheet(mult, winAmount, serverGifts, giftData){
     var betTon = starsToTon(betStars);
     var winTon = starsToTon(winAmount);
 
-    // Показываем ТОЛЬКО реально выданный подарок с сервера. Если сервер
-    // не вернул подарок — это выигрыш в TON, и мы честно показываем TON,
-    // а не «примерный» подарок из каталога.
+    // Only the server-awarded item is displayed. This prevents the result sheet
+    // from showing a base collection gift when a specific Portal model was won.
     var gift = (serverGifts && serverGifts.length) ? serverGifts[0] : null;
     var isCurrencyWin = !gift;
-
     var image = isCurrencyWin
         ? '/static/img/ton.png'
-        : ((gift.image || gift.gift_image) || '/static/img/gift.png');
+        : ((gift.model_image || gift.image || gift.gift_image) || '/static/img/gift.png');
     var imageFallback = isCurrencyWin ? '/static/img/gram.png' : '/static/img/gift.png';
     var name = isCurrencyWin ? 'TON' : (gift.name || gift.gift_name || 'Выигрыш');
-    var giftValueStars = isCurrencyWin ? Number(winAmount || 0) : (gift.value ? Number(gift.value) : Number(winAmount || 0));
+    var modelName = !isCurrencyWin ? (gift.model_name || gift.portal_model_name || '') : '';
+    var giftValueStars = isCurrencyWin ? Number(winAmount || 0) : Number(gift.value || gift.gift_value || 0);
     var stakeGift = (giftData && giftData.length) ? giftData[0] : null;
     var stakeLabel = stakeGift
         ? ((stakeGift.name || stakeGift.gift_name || 'Подарок') + ' • ' + formatCrashMoney(stakeGift.value || betStars))
@@ -2596,6 +2604,9 @@ function showWinSheet(mult, winAmount, serverGifts, giftData){
     var balanceHtml = balanceBonusStars > 0
         ? '<div class="win-balance-bonus">+ ' + starsToTon(balanceBonusStars).toFixed(2) + ' GRAM на баланс</div>'
         : '';
+    var modelHtml = modelName
+        ? '<div class="simple-win-model">Модель: ' + escapeHtmlCrash(modelName) + '</div>'
+        : '';
 
     content.innerHTML = ''
         + '<div class="simple-win-card">'
@@ -2604,6 +2615,7 @@ function showWinSheet(mult, winAmount, serverGifts, giftData){
         +     '<img src="' + image + '" alt="" onerror="this.onerror=null;this.src=\'' + imageFallback + '\'">'
         +   '</div>'
         +   '<div class="simple-win-name">' + escapeHtmlCrash(name) + '</div>'
+        +   modelHtml
         +   '<div class="simple-win-value">' + formatCrashMoney(giftValueStars) + '</div>'
         +   '<div class="simple-win-stats">'
         +     '<div><span>Сумма ставки</span><b>' + escapeHtmlCrash(stakeLabel) + '</b></div>'
@@ -2614,7 +2626,6 @@ function showWinSheet(mult, winAmount, serverGifts, giftData){
     var wo = $('winOverlay');
     if(wo) wo.classList.add('show');
 }
-
 function showWinSheetBonus(mult, winAmount, originalGift, serverGifts){
     // Тот же чистый экран, без длинной бонусной карточки.
     showWinSheet(mult, winAmount, originalGift ? [originalGift] : [], serverGifts || []);
@@ -2778,6 +2789,11 @@ function saveAutoWithdrawGift(){
             name: autoWithdrawGift.name || '',
             image: autoWithdrawGift.image || '',
             value: autoWithdrawGift.value || 0,
+            model_name: autoWithdrawGift.model_name || '',
+            portal_model_name: autoWithdrawGift.portal_model_name || '',
+            gift_key: autoWithdrawGift.gift_key || '',
+            fragment_slug: autoWithdrawGift.fragment_slug || '',
+            portal_collection_name: autoWithdrawGift.portal_collection_name || '',
             coeff: autoWithdrawGift.coeff || 0
         }));
     }catch(e){}
@@ -2886,6 +2902,11 @@ function applyAutoWithdraw(){
         name: _autowdSelected.name,
         image: getGiftImage(_autowdSelected),
         value: _autowdSelected.value,
+        model_name: _autowdSelected.model_name || _autowdSelected.portal_model_name || '',
+        portal_model_name: _autowdSelected.portal_model_name || _autowdSelected.model_name || '',
+        gift_key: _autowdSelected.gift_key || '',
+        fragment_slug: _autowdSelected.fragment_slug || '',
+        portal_collection_name: _autowdSelected.portal_collection_name || '',
         coeff: coeff
     };
     saveAutoWithdrawGift();
