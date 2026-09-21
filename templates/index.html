@@ -1669,6 +1669,25 @@ body:before{opacity:.24!important;background-image:linear-gradient(rgba(112,148,
 }
 @media(max-width:390px){.case-grid{gap:8px!important}.case-art{height:136px!important}}
 </style>
+<style id="cases-layout-final-v3">
+/* Final Cases layout: live feed first, no page-level Cases heading, correct prices. */
+.cases-page{width:min(1380px,calc(100% - 64px))!important;margin:0 auto!important;padding:18px 0 118px!important}
+.live-feed-top{margin:0 0 42px!important;padding:14px 16px!important}
+.cases-hero{display:none!important}
+.cases-title{display:none!important}
+.cases-categories{gap:42px!important}
+.case-category-head{margin:0 0 22px!important;padding:0 2px!important}
+.case-category-title{font-size:22px!important;line-height:1.1!important}
+.case-grid{gap:18px!important}
+.case-card-price{margin-top:8px!important}
+@media(max-width:700px){
+ .cases-page{width:100%!important;padding:16px 12px calc(105px + env(safe-area-inset-bottom))!important}
+ .live-feed-top{margin:0 0 36px!important;padding:11px!important}
+ .cases-categories{gap:34px!important}
+ .case-category-head{margin:0 0 16px!important}
+ .case-category-title{font-size:18px!important}
+}
+</style>
 </head>
 <body>
     <!-- LOADER -->
@@ -1760,15 +1779,7 @@ body:before{opacity:.24!important;background-image:linear-gradient(rgba(112,148,
 
     <!-- MAIN -->
 <main class="cases-page" id="mainApp">
-    <section class="cases-hero">
-        <h1 class="cases-title" id="casesPageTitle">Cases</h1>
-    </section>
-
-    <div class="cases-categories" id="casesContainer">
-        <div class="cases-loading">Загрузка кейсов…</div>
-    </div>
-
-    <section class="live-feed-section" aria-label="Последние выигрыши">
+    <section class="live-feed-section live-feed-top" aria-label="Последние выигрыши">
         <div class="live-feed-head">
             <div class="live-title"><span class="live-dot"></span><b>LIVE</b><span>Последние выигрыши</span></div>
             <span class="live-status" id="onlineCount">0</span>
@@ -1777,6 +1788,11 @@ body:before{opacity:.24!important;background-image:linear-gradient(rgba(112,148,
             <div class="live-feed-track" id="feedTrack"></div>
         </div>
     </section>
+
+    <div class="cases-categories" id="casesContainer">
+        <div class="cases-loading">Загрузка кейсов…</div>
+    </div>
+
 </main>
 
 <!-- МОБИЛЬНАЯ НИЖНЯЯ НАВИГАЦИЯ -->
@@ -2391,7 +2407,7 @@ let caseSections = [];
                 html += '<div class="case-grid">';
                 html += list.map(c => {
                     const image = c.image || c.png || c.png_image || '/static/img/gift.png';
-                    const price = Number(c.cost || 0) / 100;
+                    const price = Number(c.cost || 0);
                     const free = Number(c.cost || 0) <= 0 || c.free || c.promo;
                     const name = escapeHtml(c.name || 'Кейс');
                     return '<article class="case-plate" role="link" tabindex="0" data-case-ref="'+escapeHtml(String(c.slug || c.id || c.name || 'case'))+'" aria-label="'+name+'">'+
