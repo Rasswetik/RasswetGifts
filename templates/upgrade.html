@@ -56,10 +56,10 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 .loading-progress{width:220px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
 .loading-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,#24C38E,#10b981);border-radius:2px;transition:width .3s ease}
 .halloween-active .loading-screen{background:radial-gradient(circle at 50% 45%,#2a0c37 0%,#16071e 45%,#09040d 100%)}
-.halloween-active .loading-wheel .ld-green{stroke:url(#halloweenLoadingGrad)!important;filter:drop-shadow(0 0 18px rgba(245,132,31,.45))}
+.halloween-active .loading-wheel .ld-green{stroke:url(#halloweenLoadingGrad)!important;filter:drop-shadow(0 0 18px rgba(168,85,247,.65))}
 .halloween-active .loading-wheel .ld-ring{stroke:#24102d}
-.halloween-active .loading-progress-bar{background:linear-gradient(90deg,#f97316,#c084fc,#a855f7)}
-.halloween-active .loading-text{color:rgba(255,218,190,.72)}
+.halloween-active .loading-progress-bar{background:linear-gradient(90deg,#7c3aed,#a855f7,#c084fc)}
+.halloween-active .loading-text{color:rgba(230,210,255,.78)}
 .loading-arrow{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:10;filter:drop-shadow(0 4px 12px rgba(0,0,0,.8))}
 
 /* TOP BAR — desktop mirrors Games */
@@ -797,32 +797,34 @@ body.epic-mode .wheel-green-arc{
 .halloween-active .modal-sheet,
 .halloween-active .settings-modal,
 .halloween-active .deposit-modal{
-    background:linear-gradient(180deg,#29170d 0%,#120907 100%);
-    border-color:rgba(249,115,22,.30);
-    box-shadow:0 24px 70px rgba(0,0,0,.72),0 0 45px rgba(110,35,145,.15);
+    background:linear-gradient(180deg,#241333 0%,#100719 100%);
+    border-color:rgba(168,85,247,.38);
+    box-shadow:0 24px 70px rgba(0,0,0,.72),0 0 45px rgba(168,85,247,.20);
 }
 .halloween-active .modal-title,
 .halloween-active .modal-title-inline,
 .halloween-active .settings-title,
-.halloween-active .deposit-title{color:#f5e8ff}
+.halloween-active .deposit-title{color:#f3e8ff}
 .halloween-active .modal-search,
 .halloween-active .bet-tabs,
 .halloween-active .bet-balance-card,
 .halloween-active .sound-row{
-    background:rgba(249,115,22,.08);border-color:rgba(168,85,247,.25);
+    background:rgba(139,92,246,.10);border-color:rgba(168,85,247,.30);
 }
+.halloween-active .modal-search:focus{border-color:rgba(192,132,252,.75);background:rgba(139,92,246,.16)}
+.halloween-active .bet-tab.active{background:rgba(168,85,247,.22);color:#d8b4ff;box-shadow:inset 0 0 0 1px rgba(192,132,252,.45)}
 .halloween-active .modal-item{
-    background:linear-gradient(180deg,rgba(139,92,246,.15),rgba(55,14,70,.18));
-    border-color:rgba(249,115,22,.30);
+    background:linear-gradient(180deg,rgba(139,92,246,.18),rgba(55,14,70,.24));
+    border-color:rgba(168,85,247,.32);
 }
 .halloween-active .modal-item.selected{
-    border-color:rgba(245,143,49,.9);
-    box-shadow:0 0 0 1px rgba(245,143,49,.35),0 0 22px rgba(245,132,31,.22);
+    border-color:rgba(192,132,252,.95);
+    box-shadow:0 0 0 1px rgba(192,132,252,.4),0 0 24px rgba(168,85,247,.30);
 }
-.halloween-active .modal-item-price{color:#ffc47d;background:rgba(168,85,247,.13);border-color:rgba(192,132,252,.28)}
+.halloween-active .modal-item-price{color:#d9b7ff;background:rgba(168,85,247,.16);border-color:rgba(192,132,252,.32)}
 .halloween-active .bet-place-btn{
-    background:linear-gradient(135deg,#a855f7,#7c3aed 62%,#f97316);
-    box-shadow:0 8px 25px rgba(124,58,237,.38);
+    background:linear-gradient(135deg,#a855f7,#7c3aed 62%,#6d28d9);
+    box-shadow:0 8px 25px rgba(124,58,237,.42);
 }
 .halloween-active .ios-switch.on{background:#a855f7}
 .halloween-active .toast{
@@ -874,10 +876,6 @@ body.epic-mode .wheel-green-arc{
     .top-left{display:flex}
     .upgrade-wrap{width:100%;max-width:480px;padding:4px 14px calc(var(--safe-bottom) + 92px);gap:12px}
     .halloween-decor{inset:calc(62px + 4vh) 0 0}
-    .halloween-decor .pumpkin{font-size:36px}
-    .halloween-decor .ghost{font-size:40px}
-    .pumpkin.p1{left:-4px;top:8%}.pumpkin.p2{right:-2px;top:47%;font-size:31px}.pumpkin.p3{left:6%;bottom:11%;font-size:28px}
-    .ghost.g1{right:2%;top:7%}.ghost.g2{left:-5px;top:60%;font-size:31px}
 }
 
 @media(max-width:380px){
@@ -1304,9 +1302,11 @@ function getGiftImage(g){
 }
 
 function calcChance(betValue, targetValue){
-    if(!betValue || !targetValue || targetValue <= 0) return 0;
-    var ch = (betValue / targetValue) * 100;
-    return Math.max(1, Math.min(ch, 92));
+    if(!betValue || !targetValue || targetValue <= 0 || targetValue <= betValue) return 0;
+    // Must exactly match the server's DISPLAYED chance. The real chance is
+    // intentionally separate; the wheel must visually represent this value.
+    var ch = (Number(betValue) / Number(targetValue)) * 100;
+    return Math.round(Math.max(2, Math.min(ch, 90)) * 100) / 100;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2088,7 +2088,14 @@ async function doUpgrade(){
     var rotator = $('wheelRotator');
     var greenArc = $('greenArc');
     var goldArc = $('goldArc');
-    if(!rotator || !greenArc) return;
+    if(!rotator || !greenArc){
+        isSpinning = false;
+        if(btn) btn.disabled = false;
+        if(bolt) bolt.disabled = false;
+        if(txt) txt.textContent = 'Апгрейд';
+        showToast('Колесо не загрузилось', 'err');
+        return;
+    }
 
     rotator.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
     greenArc.style.transition = 'transform 0.5s cubic-bezier(.4,0,.6,1)';
@@ -2109,7 +2116,9 @@ async function doUpgrade(){
                     target_gift_id: targetGift.fragment_slug || targetGift.id
                 })
             });
-            result = await r.json();
+            var rText = await r.text();
+            try { result = JSON.parse(rText); } catch(_e) { result = {success:false, error:'Сервер вернул некорректный ответ'}; }
+            if(!r.ok && result.success !== true) result.success = false;
         } else if(selectedGift.type === 'gift'){
             var r2 = await fetch('/api/upgrade-multi', {
                 method: 'POST',
@@ -2120,7 +2129,9 @@ async function doUpgrade(){
                     target_gift_id: targetGift.fragment_slug || targetGift.id
                 })
             });
-            result = await r2.json();
+            var r2Text = await r2.text();
+            try { result = JSON.parse(r2Text); } catch(_e2) { result = {success:false, error:'Сервер вернул некорректный ответ'}; }
+            if(!r2.ok && result.success !== true) result.success = false;
         } else {
             result = {success:false, error:'Неизвестный тип ставки'};
         }
