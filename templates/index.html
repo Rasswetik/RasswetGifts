@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#1A1E2A">
-    <title>Rfts - Кейсы</title>
+    <title>Rasswet Gifts - Кейсы</title>
     <link rel="icon" type="image/png" href="/static/img/logo.png">
     <link rel="stylesheet" href="/static/css/global.css">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -1691,13 +1691,12 @@ body:before{opacity:.24!important;background-image:linear-gradient(rgba(112,148,
 <style id="cases-top-final-v4">
 /* Cases feed is directly below the top balance/navigation bar on every device. */
 .cases-page{padding-top:8px!important}
-.live-feed-top{margin:0 0 48px!important}
-/* The supplied logo asset can contain a white matte. Multiply removes the white matte visually on the dark header. */
-.logo-btn,.logo-btn img,.mobile-logo-btn,.mobile-logo-btn img{background:transparent!important}
-.logo-btn img,.mobile-logo-btn img{mix-blend-mode:multiply!important}
+.live-feed-top{margin:0 0 64px!important}
+/* Верхний левый логотип на странице кейсов не используется. */
+.logo-btn,.logo-btn img,.mobile-logo-btn,.mobile-logo-btn img{display:none!important}
 @media(max-width:700px){
  .cases-page{padding-top:8px!important}
- .live-feed-top{margin:0 0 44px!important}
+ .live-feed-top{margin:0 0 56px!important}
 }
 </style>
 </head>
@@ -1711,10 +1710,6 @@ body:before{opacity:.24!important;background-image:linear-gradient(rgba(112,148,
 <header class="top-bar">
 
     <div class="desktop-left">
-        <button class="logo-btn" onclick="goTo('/games')" aria-label="Игры">
-            <img src="/static/img/logo.png" alt="Rasswet Gifts">
-        </button>
-
         <nav class="main-nav">
 
             <!-- ПРОФИЛЬ -->
@@ -2254,15 +2249,13 @@ let caseSections = [];
         async function loadCases() {
             try {
                 const source = String(CASE_SOURCE || 'cases_event');
-                const [casesRes, sectionsRes] = await Promise.all([
-                    fetch('/api/cases?event=' + encodeURIComponent(source) + '&ts=' + Date.now(), {cache:'no-store'}),
-                    fetch('/api/case-sections?ts=' + Date.now(), {cache:'no-store'})
-                ]);
+                const casesRes = await fetch('/api/cases?event=' + encodeURIComponent(source) + '&user_id=' + encodeURIComponent(userId || '') + '&ts=' + Date.now(), {cache:'no-store'});
                 const data = await casesRes.json();
-                const secData = await sectionsRes.json().catch(() => ({success:false,sections:[]}));
                 if (data.success && Array.isArray(data.cases)) {
                     allCases = data.cases.slice().sort((a,b) => Number(a.display_order||0)-Number(b.display_order||0));
-                    caseSections = Array.isArray(secData.sections) ? secData.sections.slice() : [];
+                    // Разделы приходят только из настроек выбранного ивента.
+                    // Общий case_sections.json больше не используется для этой страницы.
+                    caseSections = Array.isArray(data.sections) ? data.sections.slice() : [];
                     const title = $('casesPageTitle');
                     if (title) title.textContent = source === 'witch_hat_party' ? 'Case' : 'Cases';
                     renderCases();
@@ -2420,12 +2413,15 @@ let caseSections = [];
                 html += list.map(c => {
                     const image = c.image || c.png || c.png_image || '/static/img/gift.png';
                     const price = Number(c.cost || 0);
-                    const free = Number(c.cost || 0) <= 0 || c.free || c.promo;
+                    const isPromo = !!c.promo;
+                    const isDaily = !!c.free && !isPromo;
+                    const free = isDaily;
                     const name = escapeHtml(c.name || 'Кейс');
-                    return '<article class="case-plate" role="link" tabindex="0" data-case-ref="'+escapeHtml(String(c.slug || c.id || c.name || 'case'))+'" aria-label="'+name+'">'+
+                    let cardLabel = isPromo ? 'Промокод' : (isDaily ? formatCooldown(Number(c.cooldown_seconds || 0)) : '<img src="/static/img/ton.png" alt="">'+formatTon(price));
+                    return '<article class="case-plate '+(isPromo?'case-promo-card ':'')+(isDaily?'case-daily-card':'')+'" role="link" tabindex="0" data-case-ref="'+escapeHtml(String(c.slug || c.id || c.name || 'case'))+'" aria-label="'+name+'">'+
                         '<div class="case-art"><img src="'+escapeHtml(image)+'" alt="" loading="lazy" onerror="this.src=\'/static/img/gift.png\'"></div>'+
                         '<div class="case-card-info"><div class="case-card-name">'+name+'</div>'+ 
-                        '<div class="case-card-price '+(free?'case-free':'')+'">'+(free?'Бесплатно':'<img src="/static/img/ton.png" alt="">'+formatTon(price))+'</div></div></article>';
+                        '<div class="case-card-price '+(free?'case-free':'')+(isPromo?' case-promo':'')+'">'+cardLabel+'</div></div></article>';
                 }).join('');
                 html += '</div></section>';
             });
@@ -2492,6 +2488,40 @@ let caseSections = [];
             }
         }
 
+        let dailyCountdownTimer = null;
+        let dailyCountdownEndsAt = 0;
+        function formatCooldown(sec) {
+            sec = Math.max(0, Math.floor(Number(sec || 0)));
+            const h = Math.floor(sec / 3600);
+            const m = Math.floor((sec % 3600) / 60);
+            const s = sec % 60;
+            return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        }
+        function stopDailyCountdown() {
+            if (dailyCountdownTimer) { clearInterval(dailyCountdownTimer); dailyCountdownTimer = null; }
+            dailyCountdownEndsAt = 0;
+        }
+        function startDailyCountdown(seconds) {
+            stopDailyCountdown();
+            dailyCountdownEndsAt = Date.now() + Math.max(0, Number(seconds || 0)) * 1000;
+            const tick = () => {
+                const left = Math.max(0, Math.ceil((dailyCountdownEndsAt - Date.now()) / 1000));
+                const btn = $('openCaseBtn');
+                if (!btn) return;
+                if (left > 0) {
+                    btn.disabled = true;
+                    btn.textContent = 'Следующее открытие через ' + formatCooldown(left);
+                } else {
+                    stopDailyCountdown();
+                    btn.disabled = false;
+                    btn.textContent = 'Открыть бесплатно';
+                    if (currentCase) currentCase.cooldown_seconds = 0;
+                }
+            };
+            tick();
+            dailyCountdownTimer = setInterval(tick, 1000);
+        }
+
         function renderModal() {
             if (!currentCase) return;
             
@@ -2509,6 +2539,8 @@ let caseSections = [];
 
             const rawGifts = currentCase.gifts_details || currentCase.gifts || [];
             const isPromoCase = currentCase.promo === true;
+            const isDailyCase = currentCase.free === true && !isPromoCase;
+            stopDailyCountdown();
             
             // Sort gifts by price (expensive first)
             const gifts = [...rawGifts].sort((a, b) => getGiftPrice(b) - getGiftPrice(a));
@@ -2517,7 +2549,10 @@ let caseSections = [];
             $('modalWin').style.display = 'none';
             $('sliderWrap').style.display = 'block';
             const openBtn = $('openCaseBtn');
-            if (openBtn) { openBtn.disabled = false; openBtn.textContent = 'Открыть кейс'; }
+            if (openBtn) {
+                openBtn.disabled = false;
+                openBtn.textContent = isDailyCase ? 'Открыть бесплатно' : 'Открыть кейс';
+            }
             $('rouletteWrap').style.display = 'none';
             $('rouletteWrap').classList.remove('won');
             $('contentsSection').style.display = 'block';
@@ -2546,6 +2581,10 @@ let caseSections = [];
             } else {
                 $('promoInputWrap').style.display = 'none';
                 $('sliderWrap').style.display = 'block';
+                if (isDailyCase) {
+                    const remaining = Number(currentCase.cooldown_seconds || 0);
+                    if (remaining > 0) startDailyCountdown(remaining);
+                }
             }
             
             if (!gifts.length) {
@@ -2785,6 +2824,8 @@ let caseSections = [];
                 catch (_) { throw new Error('Сервер вернул HTTP ' + res.status); }
                 if (!res.ok && !data.success) throw new Error(data.error || ('HTTP ' + res.status));
                 if (data.success) {
+                    stopDailyCountdown();
+                    if (currentCase && currentCase.free) currentCase.cooldown_seconds = 86400;
                     userBalance = data.new_balance ? data.new_balance.stars : (userBalance - totalCostInStars);
                     $('balVal').textContent = formatTon(starsToTon(userBalance));
                     runSpinRoulette(data.won_gifts || [data.won_gift]);
