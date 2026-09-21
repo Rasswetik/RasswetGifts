@@ -11829,7 +11829,7 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
         engines.append(('requests', http_requests))
 
         for engine_name, engine in engines:
-            for attempt in range(3):
+            for attempt in range(2):
                 try:
                     kwargs = dict(
                         method=method,
@@ -11867,14 +11867,14 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                             retry_after = float((getattr(resp, 'headers', {}) or {}).get('Retry-After') or 0)
                         except Exception:
                             retry_after = 0.0
-                        wait_for = min(6.0, max(0.8 * (attempt + 1), retry_after))
+                        wait_for = min(3.0, max(0.6 * (attempt + 1), retry_after))
                         last_error = f'Portal rate limit, повтор через {wait_for:.1f} сек'
                         time.sleep(wait_for)
                         continue
 
                     if last_status >= 500:
                         last_error = f'Portal HTTP {last_status}'
-                        time.sleep(0.6 * (attempt + 1))
+                        time.sleep(0.4 * (attempt + 1))
                         continue
 
                     if last_status == 404:
@@ -12474,7 +12474,7 @@ def _portal_collection_filters(short_name):
         'GET',
         '/collections/filters',
         params={'short_names': short_name},
-        timeout=25,
+        timeout=12,
     )
     if not ok:
         return False, data
@@ -12732,9 +12732,21 @@ def _portal_build_daily_snapshot(force=False):
     if not token:
         return {'success': False, 'error': 'Portal token/initData не задан'}
 
-    # Only one heavy full scan at a time.
+    # Only one heavy full scan at a time — but don't let a crashed/hung
+    # previous run block every future click forever (a lock that's been
+    # "running" for 20+ minutes is stuck, not legitimately busy).
     if not _portal_daily_lock.acquire(blocking=False):
-        return {'success': True, 'running': True, 'message': 'Daily sync already running'}
+        job = _portal_daily_job_snapshot()
+        started = float(job.get('started_at') or 0)
+        stale = job.get('running') and started and (time.time() - started) > 1200
+        if stale:
+            logger.warning("⚠️ Portal daily sync lock looked stuck for >20min, forcing release")
+            try:
+                _portal_daily_lock.release()
+            except Exception:
+                pass
+        if not stale or not _portal_daily_lock.acquire(blocking=False):
+            return {'success': True, 'running': True, 'message': 'Daily sync already running'}
 
     try:
         _portal_daily_job_update(
@@ -12761,46 +12773,67 @@ def _portal_build_daily_snapshot(force=False):
         total_symbols = 0
         filter_errors = []
 
-        for idx, coll in enumerate(collections, 1):
+        # Serial scanning (one HTTP call per collection, waiting for each to
+        # finish) is what made this look "endless" for large catalogs — a few
+        # hundred collections at 1-3s each easily adds up to many minutes,
+        # and any Portal rate-limiting/retries multiplied that further.
+        # Fetch collections concurrently instead, with a hard overall time
+        # budget so a broken/rate-limited Portal endpoint can never hang the
+        # sync forever — it just finishes with whatever it managed to get and
+        # reports the rest as filter_errors.
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        results_by_idx = {}
+        progress_lock = threading.Lock()
+        completed = 0
+        total_count = len(collections)
+        deadline = time.time() + max(180, min(1200, total_count * 3))
+
+        def fetch_one(idx, coll):
             name = str(coll.get('name') or coll.get('short_name') or 'Gift').strip()
             short_name = str(coll.get('short_name') or '').strip().lower()
-
-            _portal_daily_job_update(
-                current=idx,
-                total=len(collections),
-                collection=name,
-                collections=idx - 1,
-                models=total_models,
-            )
-
             filters = {'models': [], 'backdrops': [], 'symbols': []}
+            err = None
             if short_name:
-                fok, fdata = _portal_collection_filters(short_name)
-                if fok:
-                    filters = fdata
+                if time.time() >= deadline:
+                    err = {'collection': name, 'error': 'Пропущено: превышен лимит времени сканирования'}
                 else:
-                    filter_errors.append({'collection': name, 'error': str(fdata)[:180]})
-
+                    fok, fdata = _portal_collection_filters(short_name)
+                    if fok:
+                        filters = fdata
+                    else:
+                        err = {'collection': name, 'error': str(fdata)[:180]}
             row = dict(coll)
+            row['name'] = name
             row['models'] = filters.get('models') or []
             row['backdrops'] = filters.get('backdrops') or []
             row['symbols'] = filters.get('symbols') or []
             row['model_count'] = len(row['models'])
             row['backdrop_count'] = len(row['backdrops'])
             row['symbol_count'] = len(row['symbols'])
-            full.append(row)
+            return idx, row, err
 
-            total_models += row['model_count']
-            total_backdrops += row['backdrop_count']
-            total_symbols += row['symbol_count']
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            futures = {executor.submit(fetch_one, idx, coll): idx for idx, coll in enumerate(collections, 1)}
+            for future in as_completed(futures):
+                idx, row, err = future.result()
+                with progress_lock:
+                    results_by_idx[idx] = row
+                    if err:
+                        filter_errors.append(err)
+                    completed += 1
+                    total_models = sum(len(r.get('models') or []) for r in results_by_idx.values())
+                    total_backdrops = sum(len(r.get('backdrops') or []) for r in results_by_idx.values())
+                    total_symbols = sum(len(r.get('symbols') or []) for r in results_by_idx.values())
+                    _portal_daily_job_update(
+                        current=completed,
+                        total=total_count,
+                        collection=row.get('name') or '',
+                        collections=completed,
+                        models=total_models,
+                    )
 
-            _portal_daily_job_update(
-                collections=idx,
-                models=total_models,
-            )
-
-            # Be polite to Portal; this runs only once a day.
-            time.sleep(0.05)
+        full = [results_by_idx[i] for i in sorted(results_by_idx.keys())]
 
         snapshot = {
             'success': True,
