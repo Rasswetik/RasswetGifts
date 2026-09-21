@@ -6339,7 +6339,7 @@ def start_ultimate_crash_loop():
                                 """, (target_multiplier, bool(is_bonus), spooky_multiplier))
                                 _row = cursor.fetchone()
                                 new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                                insert_succeeded = bool(new_game_id)
+                                insert_succeeded = True
                             except Exception as _compat_err:
                                 logger.warning(f"⚠️ Crash compatible INSERT failed: {_compat_err}; using minimal schema")
                                 try:
@@ -6354,7 +6354,7 @@ def start_ultimate_crash_loop():
                                 """, (target_multiplier,))
                                 _row = cursor.fetchone()
                                 new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                                insert_succeeded = bool(new_game_id)
+                                insert_succeeded = True
                     else:
                         try:
                             cursor.execute("""
@@ -6383,7 +6383,7 @@ def start_ultimate_crash_loop():
                                     VALUES ('counting', ?, CURRENT_TIMESTAMP)
                                 """, (target_multiplier,))
                         new_game_id = cursor.lastrowid
-                        insert_succeeded = bool(new_game_id)
+                        insert_succeeded = True
 
                     # Some older PostgreSQL drivers/proxies execute INSERT successfully
                     # but return no row for RETURNING, while SQLite exposes no Postgres
