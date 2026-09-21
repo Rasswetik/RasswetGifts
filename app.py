@@ -7541,7 +7541,7 @@ def ultimate_crash_place_bet_gift():
         cursor = conn.cursor()
 
         # Fetch ALL inventory columns for full gift restore on cashout
-        cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ? AND is_withdrawing = 0', (inventory_id, user_id))
+        cursor.execute('SELECT * FROM inventory WHERE id = ? AND user_id = ? AND is_withdrawing IS FALSE', (inventory_id, user_id))
         raw = cursor.fetchone()
 
         if not raw:
@@ -7678,7 +7678,7 @@ def ultimate_crash_place_bet_multi_gift():
         cursor.execute(f'''
             SELECT id, gift_name, gift_image, gift_value, gift_id,
                    is_upgraded, nft_number, crate_id, crate_name, crate_image
-            FROM inventory WHERE id IN ({placeholders}) AND user_id = ? AND is_withdrawing = 0
+            FROM inventory WHERE id IN ({placeholders}) AND user_id = ? AND is_withdrawing IS FALSE
         ''', inventory_ids + [user_id])
         gifts = cursor.fetchall()
 
@@ -11513,9 +11513,9 @@ def sell_all_gifts():
         _has_crate_col = True
 
         if _has_crate_col:
-            cursor.execute('SELECT id, gift_name, gift_value FROM inventory WHERE user_id = ? AND is_withdrawing = FALSE AND (crate_id IS NULL OR crate_id = 0)', (user_id,))
+            cursor.execute('SELECT id, gift_name, gift_value FROM inventory WHERE user_id = ? AND is_withdrawing IS FALSE AND (crate_id IS NULL OR crate_id = 0)', (user_id,))
         else:
-            cursor.execute('SELECT id, gift_name, gift_value FROM inventory WHERE user_id = ? AND is_withdrawing = FALSE', (user_id,))
+            cursor.execute('SELECT id, gift_name, gift_value FROM inventory WHERE user_id = ? AND is_withdrawing IS FALSE', (user_id,))
         gifts = cursor.fetchall()
 
         if not gifts:
