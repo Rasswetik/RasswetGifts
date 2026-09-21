@@ -599,23 +599,26 @@ body.epic-mode .wheel-green-arc{
 /* UPGRADE RESULT — stable shared result card, including Halloween */
 .center-result{
     width:136px;height:136px;
-    flex-direction:column;gap:5px;
+    flex-direction:column;gap:0;
     overflow:visible;border-radius:24px;
     background:rgba(8,14,27,.92);
     border:1px solid rgba(255,255,255,.10);
     box-shadow:0 18px 50px rgba(0,0,0,.45),0 0 35px rgba(36,195,142,.18);
     padding:10px;
 }
-.center-result img{width:82px;height:82px;padding:0;object-fit:contain!important;border-radius:18px!important;flex:0 0 auto}
-.center-result .result-name{max-width:116px;font-size:11px;font-weight:800;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-.center-result .result-value{font-size:10px;font-weight:800;color:#9fb2ca}
+.center-result img{width:112px;height:112px;padding:0;object-fit:contain!important;border-radius:18px!important;flex:0 0 auto}
 .center-result.win{width:150px;height:150px}
+.center-result.win img{width:126px;height:126px}
 .center-result.gold{border-color:rgba(255,215,0,.42);box-shadow:0 18px 55px rgba(0,0,0,.5),0 0 45px rgba(255,185,45,.28)}
 .center-result.fail{width:104px;height:104px}
+.result-fail-mark{position:relative;width:42px;height:42px;display:block}
+.result-fail-mark:before,.result-fail-mark:after{content:"";position:absolute;left:20px;top:1px;width:3px;height:40px;border-radius:3px;background:#ff3064;box-shadow:0 0 14px rgba(255,48,100,.55)}
+.result-fail-mark:before{transform:rotate(45deg)}
+.result-fail-mark:after{transform:rotate(-45deg)}
 .halloween-active .center-result{background:linear-gradient(180deg,rgba(38,13,51,.96),rgba(15,7,23,.96));border-color:rgba(168,85,247,.32);box-shadow:0 18px 55px rgba(0,0,0,.58),0 0 40px rgba(168,85,247,.22)}
-.halloween-active .center-result.win{border-color:rgba(245,132,31,.55);box-shadow:0 18px 60px rgba(0,0,0,.6),0 0 48px rgba(245,132,31,.30),0 0 80px rgba(168,85,247,.18)}
+.halloween-active .center-result.win{border-color:rgba(245,132,31,.55);box-shadow:0 18px 60px rgba(0,0,0,.6),0 0 48px rgba(245,132,31,.30),0 0 80px rgba(249,115,22,.12)}
 .halloween-active .center-result .result-value{color:#ffc27d}
-@media(max-width:700px){.center-result{width:116px;height:116px}.center-result.win{width:128px;height:128px}.center-result img{width:68px;height:68px}.center-result .result-name{max-width:100px;font-size:10px}}
+@media(max-width:700px){.center-result{width:116px;height:116px}.center-result.win{width:128px;height:128px}.center-result img{width:92px;height:92px}.center-result .result-name{max-width:100px;font-size:10px}}
 
 /* TOAST */
 .toast{position:fixed;bottom:calc(var(--safe-bottom) + 92px);left:50%;transform:translateX(-50%) translateY(16px);background:rgba(11,17,32,.96);border:1px solid rgba(99,160,255,.25);backdrop-filter:blur(10px);padding:12px 20px;border-radius:14px;font-size:13px;font-weight:700;z-index:9999;opacity:0;visibility:hidden;transition:all .3s;max-width:90%;text-align:center;display:flex;align-items:center;gap:8px;justify-content:center;box-shadow:0 12px 40px rgba(0,0,0,.5)}
@@ -630,45 +633,42 @@ body.epic-mode .wheel-green-arc{
    Активируется только когда Event Witch Hat Party включён.
    Телефон сохраняет прежнюю компоновку; меняется только оформление.
    ══════════════════════════════════════════════════════════════ */
-.halloween-decor{
+ .halloween-decor{
     position:fixed;inset:76px 0 0;pointer-events:none;z-index:1;overflow:hidden;display:none;
 }
 .halloween-active .halloween-decor{display:block}
-.halloween-decor .pumpkin,
-.halloween-decor .ghost{
-    position:absolute;user-select:none;filter:drop-shadow(0 10px 22px rgba(0,0,0,.42));
+.halloween-web{
+    position:absolute;width:170px;height:170px;opacity:.72;
+    border-radius:50%;
+    background:
+        radial-gradient(circle at center,transparent 0 18px,rgba(249,115,22,.38) 19px 20px,transparent 21px 38px,rgba(249,115,22,.28) 39px 40px,transparent 41px 62px,rgba(249,115,22,.20) 63px 64px,transparent 65px),
+        repeating-conic-gradient(from 0deg,rgba(249,115,22,.32) 0deg 1deg,transparent 1deg 30deg);
+    filter:drop-shadow(0 0 12px rgba(249,115,22,.14));
 }
-.halloween-decor .pumpkin{font-size:54px;animation:witchPumpkinFloat 4.8s ease-in-out infinite}
-.halloween-decor .ghost{font-size:58px;opacity:.72;animation:witchGhostFloat 6.2s ease-in-out infinite}
-.pumpkin.p1{left:2.5%;top:10%}.pumpkin.p2{right:3%;top:44%;font-size:46px;animation-delay:-2s}
-.pumpkin.p3{left:8%;bottom:9%;font-size:38px;animation-delay:-3.2s}
-.ghost.g1{right:8%;top:8%;animation-delay:-1.4s}.ghost.g2{left:2%;top:57%;font-size:45px;animation-delay:-3.7s}
-@keyframes witchPumpkinFloat{
-    0%,100%{transform:translate3d(0,5px,0) rotate(-3deg)}
-    50%{transform:translate3d(7px,-10px,0) rotate(3deg)}
-}
-@keyframes witchGhostFloat{
-    0%,100%{transform:translate3d(0,8px,0) rotate(-2deg);opacity:.58}
-    50%{transform:translate3d(-9px,-13px,0) rotate(2deg);opacity:.86}
-}
+.halloween-web:before,.halloween-web:after{content:"";position:absolute;inset:0;border-radius:50%;}
+.halloween-web:before{background:repeating-conic-gradient(from 15deg,transparent 0deg 14deg,rgba(249,115,22,.20) 14deg 15deg);}
+.halloween-web:after{background:radial-gradient(circle at center,transparent 0 78px,rgba(249,115,22,.18) 79px 80px,transparent 81px);}
+.web-left{left:-78px;top:4px}.web-right{right:-82px;top:17%}.web-bottom{right:10%;bottom:-112px;width:210px;height:210px;opacity:.42}
+.halloween-orb{position:absolute;width:5px;height:5px;border-radius:50%;background:#fb923c;box-shadow:0 0 18px rgba(249,115,22,.85);opacity:.75}
+.orb-1{left:16%;top:23%}.orb-2{right:18%;top:69%;width:4px;height:4px}
 .halloween-active body{
     background:
-        radial-gradient(700px 500px at 8% 40%,rgba(113,45,145,.24),transparent 70%),
-        radial-gradient(700px 500px at 94% 65%,rgba(168,85,247,.17),transparent 70%),
-        linear-gradient(180deg,#12051c 0%,#08040d 100%);
+        radial-gradient(700px 500px at 8% 40%,rgba(249,115,22,.18),transparent 70%),
+        radial-gradient(700px 500px at 94% 65%,rgba(168,85,247,.10),transparent 70%),
+        linear-gradient(180deg,#160a08 0%,#090507 100%);
 }
 .halloween-active body:before{
     opacity:.32;
     background-image:
-        linear-gradient(rgba(168,85,247,.07) 1px,transparent 1px),
-        linear-gradient(90deg,rgba(168,85,247,.07) 1px,transparent 1px);
+        linear-gradient(rgba(249,115,22,.07) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(249,115,22,.07) 1px,transparent 1px);
 }
 .halloween-active .top-bar{
     background:rgba(18,7,28,.97);
-    border-bottom-color:rgba(168,85,247,.25);
+    border-bottom-color:rgba(249,115,22,.25);
 }
 .halloween-active .nav-btn.active{
-    color:#dfb7ff;background:rgba(139,92,246,.18);
+    color:#ffd0a3;background:rgba(249,115,22,.13);
     box-shadow:inset 0 0 0 1px rgba(168,85,247,.38),0 4px 18px rgba(139,92,246,.12);
 }
 .halloween-active .page-title{color:#f0dcff}
@@ -797,8 +797,8 @@ body.epic-mode .wheel-green-arc{
 .halloween-active .modal-sheet,
 .halloween-active .settings-modal,
 .halloween-active .deposit-modal{
-    background:linear-gradient(180deg,#251033 0%,#12091a 100%);
-    border-color:rgba(192,119,255,.28);
+    background:linear-gradient(180deg,#29170d 0%,#120907 100%);
+    border-color:rgba(249,115,22,.30);
     box-shadow:0 24px 70px rgba(0,0,0,.72),0 0 45px rgba(110,35,145,.15);
 }
 .halloween-active .modal-title,
@@ -809,11 +809,11 @@ body.epic-mode .wheel-green-arc{
 .halloween-active .bet-tabs,
 .halloween-active .bet-balance-card,
 .halloween-active .sound-row{
-    background:rgba(139,92,246,.09);border-color:rgba(192,119,255,.25);
+    background:rgba(249,115,22,.08);border-color:rgba(249,115,22,.25);
 }
 .halloween-active .modal-item{
     background:linear-gradient(180deg,rgba(139,92,246,.15),rgba(55,14,70,.18));
-    border-color:rgba(192,119,255,.28);
+    border-color:rgba(249,115,22,.30);
 }
 .halloween-active .modal-item.selected{
     border-color:rgba(245,143,49,.9);
@@ -910,11 +910,11 @@ body{background:radial-gradient(circle at 50% -10%,rgba(88,166,255,.16),transpar
 </head>
 <body>
 <div class="halloween-decor" aria-hidden="true">
-    <span class="pumpkin p1">🎃</span>
-    <span class="pumpkin p2">🎃</span>
-    <span class="pumpkin p3">🎃</span>
-    <span class="ghost g1">👻</span>
-    <span class="ghost g2">👻</span>
+    <div class="halloween-web web-left"></div>
+    <div class="halloween-web web-right"></div>
+    <div class="halloween-web web-bottom"></div>
+    <span class="halloween-orb orb-1"></span>
+    <span class="halloween-orb orb-2"></span>
 </div>
 
 <canvas class="confetti-canvas" id="confettiCanvas"></canvas>
@@ -1290,6 +1290,15 @@ function getGiftImage(g){
     var key = 'g_' + (g.id || g.gift_key || g.fragment_slug || g.image || 'x');
     if(_imgCache[key]) return _imgCache[key];
     var img = g.image || '/static/img/gift.png';
+    var slug = String(g.fragment_slug || '').trim().toLowerCase();
+    // Prefer Fragment artwork over a low-resolution locally uploaded PNG when
+    // this is a real Fragment collection. For a concrete NFT URL, use the large render.
+    if(slug && /^\/static\/gifs\/gifts\//i.test(img)){
+        img = 'https://fragment.com/file/gifts/' + encodeURIComponent(slug) + '/thumb.webp';
+    }
+    if(/^https?:\/\/nft\.fragment\.com\/gift\/.+\.webp(?:$|\?)/i.test(img)){
+        img = img.replace(/\.webp(?:$|\?)/i, '.large.jpg');
+    }
     _imgCache[key] = img;
     return img;
 }
@@ -1847,7 +1856,7 @@ function _selectInventoryGift(it){
         wrap.classList.remove('gram-icon');
         wrap.classList.toggle('upgraded', isUpgradedGift(selectedGift));
     }
-    $('leftGiftImg').src = it.gift_image || '/static/img/gift.png';
+    $('leftGiftImg').src = getGiftImage({id: it.id, name: it.gift_name, image: it.gift_image, fragment_slug: it.fragment_slug});
     $('leftGiftName').textContent = it.gift_name;
     $('leftGiftValue').textContent = formatGram(it.gift_value);
 
@@ -1981,7 +1990,7 @@ function _selectTarget(g){
     $('rightCard').classList.add('has-item');
     var wrap = $('rightGiftImgWrap');
     if(wrap){ wrap.classList.toggle('upgraded', isUpgradedGift(g)); }
-    $('rightGiftImg').src = g.image;
+    $('rightGiftImg').src = getGiftImage(g);
     $('rightGiftName').textContent = g.name;
     $('rightGiftValue').textContent = formatGram(g.value);
     var chEl = $('rightChance');
@@ -2135,6 +2144,14 @@ async function doUpgrade(){
     }
 
     var serverWin = !!result.upgrade_success;
+    // The server is the source of truth for the displayed chance.
+    // Sync the wheel with the exact value returned by the upgrade endpoint.
+    if (result.chance != null && isFinite(Number(result.chance))) {
+        currentChance = Math.max(0, Math.min(90, Number(result.chance)));
+        var chanceEl = $('chancePct');
+        if(chanceEl) chanceEl.textContent = currentChance.toFixed(2) + '%';
+        drawGreenArc(currentChance, true);
+    }
     var willShowGold = Math.random() < GOLD_APPEAR_CHANCE;
     var goldRoll = Math.random() < GOLD_WIN_CHANCE;
     var goldWin = willShowGold && goldRoll && serverWin;
@@ -2337,26 +2354,14 @@ function showSpinResult(isWin, isGold, isEpic, resultGift){
                This prevents Halloween/animation timing from showing a stale target. */
             var gift = resultGift || targetGift || null;
             var img = document.createElement('img');
-            img.src = (gift && gift.image) ? gift.image : '/static/img/star2.png';
+            img.src = gift ? getGiftImage(gift) : '/static/img/star2.png';
             img.onerror = function(){ this.onerror = null; this.src = '/static/img/star2.png'; };
             centerResult.appendChild(img);
             if(gift && isUpgradedGift(gift)) centerResult.classList.add('upgraded');
-            if(gift && gift.name){
-                var name = document.createElement('div');
-                name.className = 'result-name';
-                name.textContent = gift.name;
-                centerResult.appendChild(name);
-            }
-            if(gift && gift.value != null){
-                var value = document.createElement('div');
-                value.className = 'result-value';
-                value.textContent = Number(gift.value).toLocaleString('ru-RU') + ' ⭐';
-                centerResult.appendChild(value);
-            }
             centerResult.classList.add(isGold ? 'gold' : 'win');
         } else {
             centerResult.classList.add('fail');
-            centerResult.innerHTML = '😢';
+            centerResult.innerHTML = '<span class=\"result-fail-mark\" aria-hidden=\"true\"></span>';
         }
         centerResult.classList.add('show');
     }
