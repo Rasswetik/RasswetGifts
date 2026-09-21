@@ -3028,7 +3028,7 @@ def save_cases(cases):
     try:
         file_path = _cases_legacy_json_path()
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        tmp_path = file_path + '.tmp'
+        tmp_path = file_path + f'.tmp.{os.getpid()}.{threading.get_ident()}.{secrets.token_hex(4)}'
         with open(tmp_path, 'w', encoding='utf-8') as f:
             json.dump({'cases': cases}, f, ensure_ascii=False, indent=2)
             f.flush()
@@ -20506,6 +20506,16 @@ def admin_cases_management():
         if request.method == 'GET':
             cases = load_cases()
             cases.sort(key=lambda x: x.get('display_order', 0))
+            if request.args.get('summary') == '1':
+                summary=[]
+                for c in cases:
+                    summary.append({
+                        'id': c.get('id'), 'name': c.get('name',''), 'slug': c.get('slug',''),
+                        'image': c.get('image',''), 'cost': c.get('cost',0), 'cost_type': c.get('cost_type','stars'),
+                        'section': c.get('section','other'), 'event_case': bool(c.get('event_case',False)),
+                        'gifts_count': len(c.get('gifts') or []) if isinstance(c.get('gifts'),list) else 0
+                    })
+                return jsonify({'success': True, 'cases': summary})
             return jsonify({'success': True, 'cases': cases})
 
         elif request.method == 'POST':
@@ -20605,29 +20615,31 @@ def admin_cases_management():
                 except:
                     open_date = None
 
-            updated_case = {
+            old_case = dict(cases[case_index])
+            updated_case = dict(old_case)
+            updated_case.update({
                 'id': case_id,
                 'name': data['name'],
                 'slug': _slugify_case_name(data.get('slug') or data['name']),
                 'image': image_url,
                 'cost': data['cost'],
                 'cost_type': data['cost_type'],
-                'section': 'event' if data.get('event_case') else normalize_section_id(data.get('section', cases[case_index].get('section', 'other'))),
-                'required_level': data.get('required_level', 1),
-                'limited': data.get('limited', False),
-                'amount': data.get('amount', 0),
-                'description': data.get('description', ''),
-                'display_order': data.get('display_order', cases[case_index].get('display_order', 0)),
-                'tags': data.get('tags', []),
-                'glow_effect': data.get('glow_effect', 'none'),
+                'section': 'event' if data.get('event_case') else normalize_section_id(data.get('section', old_case.get('section', 'other'))),
+                'required_level': data.get('required_level', old_case.get('required_level', 1)),
+                'limited': data.get('limited', old_case.get('limited', False)),
+                'amount': data.get('amount', old_case.get('amount', 0)),
+                'description': data.get('description', old_case.get('description', '')),
+                'display_order': data.get('display_order', old_case.get('display_order', 0)),
+                'tags': data.get('tags', old_case.get('tags', [])),
+                'glow_effect': data.get('glow_effect', old_case.get('glow_effect', 'none')),
                 'open_date': open_date,
-                'free': data.get('free', cases[case_index].get('free', False)),
-                'promo': data.get('promo', cases[case_index].get('promo', False)),
-                'time': data.get('time', cases[case_index].get('time', '24H')),
-                'promo_codes': data.get('promo_codes', cases[case_index].get('promo_codes', [])),
-                'gifts': data.get('gifts', []),
-                'event_case': bool(data.get('event_case', cases[case_index].get('event_case', False)))
-            }
+                'free': data.get('free', old_case.get('free', False)),
+                'promo': data.get('promo', old_case.get('promo', False)),
+                'time': data.get('time', old_case.get('time', '24H')),
+                'promo_codes': data.get('promo_codes', old_case.get('promo_codes', [])),
+                'gifts': data.get('gifts', old_case.get('gifts', [])),
+                'event_case': bool(data.get('event_case', old_case.get('event_case', False)))
+            })
 
             cases[case_index] = updated_case
 
@@ -20660,6 +20672,22 @@ def admin_cases_management():
             cases = [case for case in cases if str(case.get('id')) != str(case_id)]
 
             if save_cases(cases):
+                # Remove deleted case from every event section so no stale IDs remain.
+                try:
+                    events = get_active_events() or {}
+                    changed = False
+                    for ev in events.values():
+                        if not isinstance(ev, dict): continue
+                        for sec in ev.get('sections') or []:
+                            if not isinstance(sec, dict): continue
+                            ids = sec.get('case_ids')
+                            if isinstance(ids, list):
+                                new_ids=[x for x in ids if str(x) != str(case_id)]
+                                if new_ids != ids:
+                                    sec['case_ids']=new_ids; changed=True
+                    if changed: save_events(events)
+                except Exception as cleanup_err:
+                    logger.warning('Не удалось очистить ссылки удалённого кейса из events: %s', cleanup_err)
                 conn = get_db_connection()
                 cursor = conn.cursor()
                 cursor.execute('DELETE FROM case_limits WHERE case_id = ?', (case_id,))
