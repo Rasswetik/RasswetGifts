@@ -2989,30 +2989,54 @@ def _cases_legacy_json_path():
     return os.path.join(PERSISTENT_DATA_DIR, 'cases.json')
 
 def load_cases():
-    """Load cases from the persistent JSON file first; DB is only a recovery fallback."""
+    """Load the case catalog with the database as the durable source of truth.
+
+    cases.json is still maintained as a human-readable backup/export, but it can
+    live on an ephemeral filesystem on Render. Reading a stale JSON file first
+    caused newly created cases to disappear after a process restart.
+    """
     file_path = _cases_legacy_json_path()
+
+    # 1) Durable DB copy first. Every admin create/edit/delete writes this copy.
+    try:
+        _event_db_defaults(); conn = get_db_connection()
+        row = conn.execute('SELECT payload FROM event_configs WHERE id = ?', ('cases_catalog',)).fetchone()
+        try: conn.close()
+        except Exception: pass
+        if row and row[0]:
+            cases = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+            if isinstance(cases, list):
+                # Refresh the JSON mirror after restart so the on-disk file is
+                # brought back in sync with the durable database copy.
+                try:
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    tmp_path = file_path + f'.restore.{os.getpid()}.{threading.get_ident()}.{secrets.token_hex(4)}'
+                    with open(tmp_path, 'w', encoding='utf-8') as f:
+                        json.dump({'cases': cases}, f, ensure_ascii=False, indent=2)
+                        f.flush()
+                        try: os.fsync(f.fileno())
+                        except Exception: pass
+                    os.replace(tmp_path, file_path)
+                except Exception as mirror_err:
+                    logger.warning('Не удалось восстановить cases.json из БД: %s', mirror_err)
+                return cases
+    except Exception as e:
+        logger.warning(f'Cases DB load failed: {e}')
+
+    # 2) First boot / migration fallback: import the existing JSON into DB.
     try:
         if os.path.exists(file_path):
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             cases = data.get('cases', []) if isinstance(data, dict) else data
             if isinstance(cases, list):
-                # JSON is the durable source of truth. An empty list is valid too.
+                try: save_cases(cases)
+                except Exception: pass
                 return cases
     except Exception as e:
         logger.warning(f'cases.json load failed: {e}')
-    try:
-        _event_db_defaults(); conn = get_db_connection()
-        row = conn.execute('SELECT payload FROM event_configs WHERE id = ?', ('cases_catalog',)).fetchone()
-        conn.close()
-        if row and row[0]:
-            cases = json.loads(row[0]) if isinstance(row[0], str) else row[0]
-            if isinstance(cases, list):
-                save_cases(cases)
-                return cases
-    except Exception as e:
-        logger.warning(f'Cases DB load failed: {e}')
-    logger.warning('Кейсы не найдены ни в cases.json, ни в БД — возвращён пустой список')
+
+    logger.warning('Кейсы не найдены ни в БД, ни в cases.json — возвращён пустой список')
     return []
 
 def save_cases(cases):
@@ -3034,6 +3058,12 @@ def save_cases(cases):
             f.flush()
             try: os.fsync(f.fileno())
             except Exception: pass
+        # Keep a last-known-good JSON backup as an additional recovery path.
+        if os.path.exists(file_path):
+            try:
+                shutil.copy2(file_path, file_path + '.bak')
+            except Exception:
+                pass
         os.replace(tmp_path, file_path)
         json_ok = True
         logger.info(f"✅ Сохранено {len(cases)} кейсов в {file_path}")
@@ -6586,7 +6616,7 @@ def _serve_crash_html():
 
     ui_patch = r"""
 <style id="crash-ui-patch">
-body{padding-top:calc(env(safe-area-inset-top,0px) + 12px)!important}
+@media(max-width:700px){body{padding-top:0!important}.container{padding-top:calc(env(safe-area-inset-top,0px) + 4vh)!important}.top-bar{padding-top:4px!important;padding-bottom:6px!important}.game-field{margin-left:10px!important;margin-right:10px!important}.bet-area{padding:6px 10px 3px!important}.action-btn{min-height:52px!important}}
 .history-section{padding-top:4px!important;padding-bottom:8px!important}
 .history-scroll{display:flex!important;flex-wrap:nowrap!important;gap:6px!important;overflow-x:auto!important}
 .history-scroll .coeff-box{min-width:52px!important;width:52px!important;height:32px!important;padding:0 8px!important;font-size:12px!important;border-radius:10px!important;flex:0 0 52px!important}
@@ -6595,6 +6625,21 @@ body{padding-top:calc(env(safe-area-inset-top,0px) + 12px)!important}
 #settingsSkinPane{display:block!important}
 .settings-mode{display:none!important}
 </style>
+<script id="crash-model-map-patch-js">
+(function(){
+  function loadModels(){
+    try{
+      fetch('/api/crash/cashout-models',{cache:'force-cache'}).then(function(r){return r.json()}).then(function(d){
+        if(!d||!d.success||!Array.isArray(d.models))return;
+        window.__crashModelMap=Object.create(null);
+        d.models.forEach(function(m){var k=String(m.slug||'').toLowerCase();if(k&&m.image)window.__crashModelMap[k]=m.image;});
+        window.__crashModelMapLoaded=true;
+      }).catch(function(){});
+    }catch(e){}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',loadModels);else loadModels();
+})();
+</script>
 <script id="crash-ui-patch-js">
 (function(){
   try{localStorage.setItem('crash_show_gifts','off')}catch(e){}
@@ -22319,6 +22364,41 @@ def api_online_count():
         return jsonify({'count': 0})
 
 # ============================================================
+
+@app.route('/api/crash/cashout-models', methods=['GET'])
+def crash_cashout_models():
+    """Return a tiny model-image map for Crash cashout buttons.
+
+    The full Portal model catalog stays on disk/admin. Gameplay receives at most
+    one representative model per collection, keeping the Crash page fast.
+    """
+    try:
+        snapshot = _portal_load_daily_snapshot() or {}
+        result = []
+        for coll in snapshot.get('collections') or []:
+            if not isinstance(coll, dict):
+                continue
+            slug = str(coll.get('short_name') or '').strip().lower()
+            if not slug:
+                continue
+            models = [m for m in (coll.get('models') or []) if isinstance(m, dict) and str(m.get('name') or '').strip()]
+            if not models:
+                continue
+            models.sort(key=lambda m: (float(m.get('floor_price') or m.get('value') or 10**12), str(m.get('name') or '').lower()))
+            m = models[0]
+            name = str(coll.get('name') or coll.get('short_name') or 'Gift').strip()
+            model_name = str(m.get('name') or '').strip()
+            image = str(m.get('image') or m.get('image_url') or m.get('photo_url') or '').strip()
+            if not image:
+                image = _portal_model_image_url(name, model_name, slug)
+            if not image:
+                continue
+            result.append({'slug': slug, 'model_name': model_name, 'image': image})
+        return jsonify({'success': True, 'models': result})
+    except Exception as e:
+        logger.warning('Crash model map failed: %s', e)
+        return jsonify({'success': True, 'models': []})
+
 
 @app.route('/api/gifts-list', methods=['GET'])
 def api_gifts_list():
