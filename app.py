@@ -552,8 +552,9 @@ def _portal_do_sync(token):
                     continue
                 seen_slugs.add(short_name)
 
-                # Превью коллекции — всегда строим сами
-                preview = photo_url or _portal_collection_image_url(short_name)
+                # Portal gives the collection name/price only. The visible
+                # gift artwork is always the Fragment collection artwork.
+                preview = f'https://fragment.com/file/gifts/{short_name}/thumb.webp'
 
                 item = {
                     'name': name or short_name,
@@ -619,11 +620,8 @@ def _portal_do_sync(token):
             if old_value != new_value:
                 updated += 1
 
-        with open(gifts_path, 'w', encoding='utf-8') as f:
-            if wrap_dict:
-                json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
-            else:
-                json.dump(gifts, f, ensure_ascii=False, indent=2)
+        if not save_gifts(gifts):
+            return {'success': False, 'error': 'Не удалось сохранить каталог подарков'}
 
         # Сброс кэшей
         global gifts_cache, gifts_cache_time
@@ -3371,9 +3369,13 @@ os.makedirs(_db_dir, exist_ok=True)
 DB_PATH = os.path.join(_db_dir, 'raswet_gifts.db')
 
 def _quick_db_conn(timeout=5):
-    """Fast DB connection for hot paths (status polling etc.)"""
+    """Fast DB connection for hot paths (status polling etc.).
+
+    PostgreSQL may hand back a pooled object that another request already
+    closed, so use the same live-connection check as the normal DB path.
+    """
     if USE_POSTGRES:
-        return _pg_get_connection()
+        return _pg_get_live_connection()
     return sqlite3.connect(DB_PATH, timeout=timeout, check_same_thread=False)
 
 def _pg_connection_is_alive(conn):
@@ -12668,23 +12670,82 @@ def _portal_collection_filters(short_name):
 
 
 def _portal_all_collections():
-    """Fetch the complete Portal collection list.
+    """Fetch the Portal gift collections without ever replacing a good catalog by an empty response.
 
-    The public Portals client documents ``collections?limit=...`` and does not
-    document offset pagination for this endpoint. Asking for a large limit is
-    therefore more reliable than repeatedly sending an ignored offset.
+    The app already has the working ``aportalsmp`` collections call. Use it as
+    the primary source for the gift list and keep the direct HTTP endpoint as a
+    fallback. Only real collections are returned here; models/backdrops/symbols
+    are not turned into catalog items.
     """
-    ok, items = _portal_collections(limit=5000, offset=0)
-    if not ok:
-        return False, items
+    token = _portal_get_token()
+    candidates = []
+
+    # Primary: the same Portal client call that was already working in the old
+    # sync route. Try a large limit first, then the known-safe 500 limit.
+    if _APORTALSMP_AVAILABLE and token:
+        for limit in (5000, 1000, 500):
+            try:
+                loop = _portal_asyncio.new_event_loop()
+                try:
+                    result = loop.run_until_complete(
+                        _portal_asyncio.wait_for(
+                            _portal_collections_fn(authData=token, limit=limit),
+                            timeout=60
+                        )
+                    )
+                finally:
+                    loop.close()
+                raw = _portal_extract_items(result)
+                if raw:
+                    candidates = raw
+                    logger.info('Portal collections via aportalsmp: %s (limit=%s)', len(raw), limit)
+                    break
+            except Exception as e:
+                logger.warning('Portal aportalsmp collections failed (limit=%s): %s', limit, e)
+
+    # Fallback: direct HTTP API. Do not use an invalid 5000 limit if the API
+    # rejects it; try ordinary page sizes instead.
+    if not candidates:
+        for limit in (1000, 500, 250):
+            ok, items = _portal_collections(limit=limit, offset=0)
+            if ok and items:
+                candidates = items
+                logger.info('Portal collections via HTTP: %s (limit=%s)', len(items), limit)
+                break
+            logger.warning('Portal HTTP collections returned no items (limit=%s): %s', limit, items if not ok else 'empty')
+
+    if not candidates:
+        # Never return a fake empty success. The caller must keep the previous
+        # catalog/snapshot intact instead of wiping gifts.json.
+        return False, 'Portal вернул 0 коллекций'
 
     dedup = {}
-    for item in items or []:
-        key = str(item.get('id') or item.get('short_name') or item.get('name') or '').strip().lower()
-        if key:
-            dedup[key] = item
+    for item in candidates:
+        short_name, floor_price, name, photo_url = _portal_extract_coll_fields(item)
+        if not short_name:
+            continue
+        key = short_name.lower()
+        row = {
+            'id': (item.get('id') if isinstance(item, dict) else getattr(item, 'id', '')) or '',
+            'name': name or short_name,
+            'short_name': short_name,
+            'floor_price': round(float(floor_price or 0), 6),
+            # IMPORTANT: this is only Portal metadata. The public image is
+            # replaced with Fragment artwork later in _portal_apply...
+            'photo_url': photo_url,
+        }
+        if isinstance(item, dict):
+            row.update({
+                'supply': int(_portal_float(item.get('supply') or item.get('total_supply'))),
+                'listed_count': int(_portal_float(item.get('listed_count') or item.get('listed') or item.get('listings_count'))),
+                'day_volume': round(_portal_float(item.get('day_volume') or item.get('daily_volume') or item.get('volume_24h') or item.get('volume24h')), 6),
+            })
+        dedup[key] = row
+
     rows = list(dedup.values())
     rows.sort(key=lambda x: str(x.get('name') or '').lower())
+    if not rows:
+        return False, 'Portal вернул коллекции без short_name'
     return True, rows
 
 
@@ -12701,13 +12762,27 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
     """
     try:
         collections = snapshot.get('collections') or []
+        if not collections:
+            # A failed Portal response must NEVER erase the existing catalog.
+            logger.warning('Portal snapshot is empty; keeping existing gifts catalog untouched')
+            return {
+                'changed': 0, 'added': 0, 'removed_models': 0,
+                'total': len(load_gifts() or []), 'portal_collections': 0,
+                'portal_models': 0, 'skipped_empty': True,
+            }
+
         gifts = load_gifts()
         if not isinstance(gifts, list):
             gifts = []
 
-        # Build the Fragment image map first. If Fragment is temporarily
-        # unavailable, the deterministic Fragment thumbnail URL is still used.
-        fragment_items = fetch_fragment_gifts_catalog(force_refresh=False) or []
+        # Fragment supplies the visible/main artwork. If its live page is
+        # temporarily unavailable, use its deterministic collection thumbnail;
+        # Portal artwork is deliberately never used as the main image.
+        try:
+            fragment_items = fetch_fragment_gifts_catalog(force_refresh=False) or []
+        except Exception as e:
+            logger.warning('Fragment image catalog unavailable during Portal sync: %s', e)
+            fragment_items = []
         fragment_by_slug = {
             str(x.get('fragment_slug') or '').strip().lower(): x
             for x in fragment_items
@@ -12761,10 +12836,9 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
 
             # Main image MUST come from Fragment, never Portal model/photo data.
             fragment_item = fragment_by_slug.get(slug) or {}
-            fragment_image = str(
-                fragment_item.get('image') or
-                f'https://fragment.com/file/gifts/{slug}/thumb.webp'
-            ).strip()
+            fragment_image = str(fragment_item.get('image') or '').strip()
+            if not fragment_image or 'fragment.com' not in fragment_image.lower():
+                fragment_image = f'https://fragment.com/file/gifts/{slug}/thumb.webp'
             base_price = _portal_float(coll.get('floor_price'))
             old_value = _safe_int(target.get('value'), 0)
 
@@ -12822,8 +12896,9 @@ def _portal_build_daily_snapshot(force=False):
 
     current = _portal_load_daily_snapshot()
     if (
-        not force and current and
-        now - float(current.get('updated_at') or 0) < interval_seconds
+        not force and current and isinstance(current.get('collections'), list)
+        and current.get('collections')
+        and now - float(current.get('updated_at') or 0) < interval_seconds
     ):
         return {
             'success': True,
