@@ -91,7 +91,16 @@ BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 # (например, на Render это точка монтирования диска) — тогда ВСЕ файлы ниже
 # (кейсы, сезонный кейс, токен MRKT, кэш Fragment и т.д.) будут писаться туда,
 # а не в папку рядом с кодом, которая стирается при каждом деплое.
-PERSISTENT_DATA_DIR = os.environ.get('DB_DIR', os.path.join(BASE_PATH, 'data'))
+# Persistent state: prefer an explicitly configured DB_DIR. On Render, if a
+# Persistent Disk is mounted at /var/data, use it automatically so Portal/MRKT
+# tokens and catalog snapshots survive restarts/redeploys.
+_configured_data_dir = str(os.environ.get('DB_DIR') or '').strip()
+if _configured_data_dir:
+    PERSISTENT_DATA_DIR = _configured_data_dir
+elif os.path.isdir('/var/data') and os.access('/var/data', os.W_OK):
+    PERSISTENT_DATA_DIR = '/var/data'
+else:
+    PERSISTENT_DATA_DIR = os.path.join(BASE_PATH, 'data')
 os.makedirs(PERSISTENT_DATA_DIR, exist_ok=True)
 ADMIN_ID = 5257227756
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '').strip()
@@ -279,14 +288,21 @@ def _portal_get_token():
 
 
 def _portal_save_token(token):
-    """Save Portal auth without stripping the required ``tma `` prefix."""
+    """Persist Portal auth atomically so a process restart cannot lose it."""
     token = _portal_normalize_auth_token(token)
     if not token:
         raise ValueError('Portal token is empty')
 
     os.makedirs(os.path.dirname(PORTAL_TOKEN_FILE), exist_ok=True)
-    with open(PORTAL_TOKEN_FILE, 'w', encoding='utf-8') as f:
+    tmp = PORTAL_TOKEN_FILE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
         f.write(token)
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except Exception:
+            pass
+    os.replace(tmp, PORTAL_TOKEN_FILE)
     os.environ['PORTAL_AUTH_TOKEN'] = token
 
     with _portal_token_lock:
@@ -1593,7 +1609,7 @@ def _mrkt_sync_prices_to_fragment_catalog(progress_callback=None):
     token = _mrkt_load_token()
     if not token:
         return {'success': False, 'error': 'MRKT token не установлен'}
-    gifts = _load_fragment_catalog_disk_cache() or fetch_fragment_gifts_catalog(force_refresh=False) or []
+    gifts = load_gifts() or _load_fragment_catalog_disk_cache() or fetch_fragment_gifts_catalog(force_refresh=False) or []
     if not gifts:
         return {'success': False, 'error': 'Fragment-каталог пуст'}
     total = len(gifts)
@@ -11829,7 +11845,7 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
         engines.append(('requests', http_requests))
 
         for engine_name, engine in engines:
-            for attempt in range(2):
+            for attempt in range(3):
                 try:
                     kwargs = dict(
                         method=method,
@@ -11867,14 +11883,14 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                             retry_after = float((getattr(resp, 'headers', {}) or {}).get('Retry-After') or 0)
                         except Exception:
                             retry_after = 0.0
-                        wait_for = min(3.0, max(0.6 * (attempt + 1), retry_after))
+                        wait_for = min(6.0, max(0.8 * (attempt + 1), retry_after))
                         last_error = f'Portal rate limit, повтор через {wait_for:.1f} сек'
                         time.sleep(wait_for)
                         continue
 
                     if last_status >= 500:
                         last_error = f'Portal HTTP {last_status}'
-                        time.sleep(0.4 * (attempt + 1))
+                        time.sleep(0.6 * (attempt + 1))
                         continue
 
                     if last_status == 404:
@@ -12362,17 +12378,35 @@ _portal_daily_job = {
     'error': '',
     'collections': 0,
     'models': 0,
+    'logs': [],
 }
+
+
+def _portal_daily_job_log(message, level='info'):
+    entry = {
+        'ts': time.time(),
+        'level': str(level or 'info'),
+        'message': str(message),
+    }
+    with _portal_daily_job_lock:
+        logs = list(_portal_daily_job.get('logs') or [])
+        logs.append(entry)
+        _portal_daily_job['logs'] = logs[-200:]
+        _portal_daily_job['last_message'] = str(message)
 
 
 def _portal_daily_job_update(**kwargs):
     with _portal_daily_job_lock:
         _portal_daily_job.update(kwargs)
+    if 'message' in kwargs and kwargs.get('message'):
+        _portal_daily_job_log(kwargs.get('message'))
 
 
 def _portal_daily_job_snapshot():
     with _portal_daily_job_lock:
-        return dict(_portal_daily_job)
+        snap = dict(_portal_daily_job)
+        snap['logs'] = list(_portal_daily_job.get('logs') or [])
+        return snap
 
 
 def _portal_load_daily_snapshot():
@@ -12440,10 +12474,20 @@ def _portal_normalize_filter_group(raw):
                     item.get('model') or item.get('backdrop') or item.get('symbol')
                 )
                 if name:
-                    rows.append({
+                    row = {
                         'name': str(name),
                         'floor_price': round(_portal_floor_value(item), 6),
-                    })
+                    }
+                    # Some Portal responses expose a preview/png URL on the
+                    # model row. Keep it instead of discarding it.
+                    image = (
+                        item.get('image') or item.get('image_url') or
+                        item.get('photo_url') or item.get('preview') or
+                        item.get('preview_url') or item.get('url')
+                    )
+                    if image:
+                        row['image'] = str(image)
+                    rows.append(row)
 
     # Deduplicate case-insensitively and sort by name.
     dedup = {}
@@ -12474,7 +12518,7 @@ def _portal_collection_filters(short_name):
         'GET',
         '/collections/filters',
         params={'short_names': short_name},
-        timeout=12,
+        timeout=25,
     )
     if not ok:
         return False, data
@@ -12530,22 +12574,33 @@ def _portal_all_collections():
 
 
 def _portal_apply_daily_snapshot_to_gifts(snapshot):
-    """Put Portal collection/model data into canonical gifts.json."""
+    """Materialize every Portal collection AND every model into the canonical catalog.
+
+    Each runtime gift gets a stable key, image, Portal price in TON and value in
+    site stars/GRAM units. Keeping this catalog on the persistent disk makes the
+    same gifts available to every game mode after a process restart.
+    """
     try:
         collections = snapshot.get('collections') or []
         gifts = load_gifts()
         if not isinstance(gifts, list):
             gifts = []
 
+        by_key = {}
         by_slug = {}
+        next_id = 0
         for gift in gifts:
             if not isinstance(gift, dict):
                 continue
-            slug = str(
-                gift.get('fragment_slug') or
-                _slugify_fragment_name(gift.get('name', ''))
-            ).strip().lower()
-            if slug:
+            try:
+                next_id = max(next_id, int(gift.get('id') or 0))
+            except Exception:
+                pass
+            key = str(gift.get('gift_key') or '').strip()
+            if key:
+                by_key[key] = gift
+            slug = str(gift.get('fragment_slug') or '').strip().lower()
+            if slug and not gift.get('model_name') and not gift.get('portal_model_name'):
                 by_slug[slug] = gift
 
         changed = 0
@@ -12557,27 +12612,33 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
             if not slug:
                 continue
 
-            target = by_slug.get(slug)
+            # Base collection gift.
+            base_key = _build_case_custom_gift_id(
+                str(coll.get('name') or slug),
+                fragment_slug=slug,
+                model_name=None,
+            )
+            target = by_key.get(base_key) or by_slug.get(slug)
             if target is None:
-                target = {
-                    'id': None,
-                    'name': coll.get('name') or slug,
-                    'fragment_slug': slug,
-                    'fragment_url': f'https://fragment.com/gifts/{slug}',
-                    # See _portal_catalog_payload: the base collection preview
-                    # is the true "original" gift image, not photo_url (which
-                    # can be a specific model's render).
-                    'image': _portal_collection_image_url(slug) or coll.get('photo_url') or '',
-                    'source': 'portal',
-                }
+                next_id += 1
+                target = {'id': next_id}
                 gifts.append(target)
-                by_slug[slug] = target
                 added += 1
-
-            new_values = {
-                'name': coll.get('name') or target.get('name') or slug,
-                'image': _portal_collection_image_url(slug) or coll.get('photo_url') or target.get('image') or '',
-                'portal_price_ton': round(_portal_float(coll.get('floor_price')), 6),
+            base_image = str(
+                coll.get('photo_url') or coll.get('image') or
+                _portal_collection_image_url(slug)
+            ).strip()
+            base_price = _portal_float(coll.get('floor_price'))
+            base_payload = {
+                'gift_key': base_key,
+                'name': coll.get('name') or slug,
+                'fragment_slug': slug,
+                'fragment_url': f'https://fragment.com/gifts/{slug}',
+                'image': base_image or '/static/img/gift.png',
+                'source': 'portal',
+                'portal_source': True,
+                'portal_price_ton': round(base_price, 6),
+                'portal_collection_floor_ton': round(base_price, 6),
                 'portal_models': coll.get('models') or [],
                 'portal_model_count': len(coll.get('models') or []),
                 'portal_listed_count': int(_portal_float(coll.get('listed_count'))),
@@ -12585,126 +12646,79 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
                 'portal_day_volume': round(_portal_float(coll.get('day_volume')), 6),
                 'portal_updated_at': now_iso,
             }
-
-            row_changed = False
-            for key, value in new_values.items():
-                if target.get(key) != value:
-                    target[key] = value
-                    row_changed = True
-
+            if base_price > 0:
+                base_payload['value'] = max(1, int(round(base_price * FRAGMENT_TON_RATE)))
+            if target.get('value') and base_price <= 0:
+                base_payload['value'] = target.get('value')
+            row_changed = any(target.get(k) != v for k, v in base_payload.items())
+            target.update(base_payload)
             if row_changed:
                 changed += 1
+            by_key[base_key] = target
+            by_slug[slug] = target
 
-        save_gifts(gifts)
-        return {'changed': changed, 'added': added, 'total': len(gifts)}
-
-    except Exception as e:
-        logger.error("Portal snapshot -> gifts.json failed: %s", e)
-        return {'changed': 0, 'added': 0, 'total': 0, 'error': str(e)}
-
-
-def _portal_sync_all_to_catalog_and_modes(snapshot):
-    """Автоматически кладёт КАЖДЫЙ подарок Portal в общий каталог и во ВСЕ
-    игровые режимы, без ручных нажатий «В режим» по одному.
-
-    - Каталог (gifts_catalog_persistent.json через load_gifts/save_gifts) и
-      пулы режимов (mode_gift_pools.json) — обычные файлы на постоянном диске
-      (PERSISTENT_DATA_DIR), поэтому подарки переживают перезапуск процесса.
-    - При повторном sync цена/название/картинка подарка обновляются, а уже
-      настроенные админом enabled/weight/min_bet/max_bet и т.д. в конкретном
-      режиме — сохраняются как есть (не сбрасываются на дефолт).
-    - Картинка берётся из _portal_catalog_payload — это базовая картинка
-      коллекции, а не картинка какой-то одной случайной модели.
-    """
-    result = {'catalog_items': 0, 'catalog_added': 0, 'modes': [], 'errors': []}
-    try:
-        collections = [c for c in (snapshot.get('collections') or []) if isinstance(c, dict) and c.get('short_name')]
-        mode_ids = [m['id'] for m in _portal_available_mode_targets()]
-
-        # 1) Один проход: положить/обновить каждый подарок в общем каталоге.
-        gifts = load_gifts()
-        if not isinstance(gifts, list):
-            gifts = []
-        by_key = {}
-        max_id = 0
-        for g in gifts:
-            if not isinstance(g, dict):
-                continue
-            if g.get('gift_key'):
-                by_key[str(g['gift_key'])] = g
-            try:
-                max_id = max(max_id, int(g.get('id') or 0))
-            except Exception:
-                pass
-
-        catalog_items = []
-        for coll in collections:
-            try:
-                payload = _portal_catalog_payload(coll, None)
-            except Exception as e:
-                result['errors'].append(f"payload {coll.get('short_name')}: {e}")
-                continue
-            key = payload['gift_key']
-            target = by_key.get(key)
-            if target is None:
-                max_id += 1
-                target = {'id': max_id}
-                gifts.append(target)
-                by_key[key] = target
-                result['catalog_added'] += 1
-            target.update(payload)
-            catalog_items.append(target)
-            result['catalog_items'] += 1
+            # Model-level gifts: every model becomes a first-class runtime gift.
+            for model in (coll.get('models') or []):
+                if not isinstance(model, dict):
+                    continue
+                model_name = str(model.get('name') or '').strip()
+                if not model_name:
+                    continue
+                model_key = _build_case_custom_gift_id(
+                    f"{coll.get('name') or slug} — {model_name}",
+                    fragment_slug=slug,
+                    model_name=model_name,
+                )
+                model_price = _portal_float(
+                    model.get('floor_price') or model.get('floor') or model.get('price')
+                )
+                model_image = str(
+                    model.get('image') or model.get('image_url') or
+                    model.get('photo_url') or model.get('preview') or
+                    model.get('preview_url') or base_image or '/static/img/gift.png'
+                ).strip()
+                target = by_key.get(model_key)
+                if target is None:
+                    next_id += 1
+                    target = {'id': next_id}
+                    gifts.append(target)
+                    added += 1
+                model_payload = {
+                    'gift_key': model_key,
+                    'name': f"{coll.get('name') or slug} — {model_name}",
+                    'fragment_slug': slug,
+                    'fragment_url': f'https://fragment.com/gifts/{slug}',
+                    'image': model_image,
+                    'source': 'portal',
+                    'portal_source': True,
+                    'model_name': model_name,
+                    'portal_model_name': model_name,
+                    'portal_collection_name': coll.get('name') or slug,
+                    'portal_price_ton': round(model_price, 6),
+                    'portal_collection_floor_ton': round(base_price, 6),
+                    'portal_updated_at': now_iso,
+                }
+                if model_price > 0:
+                    model_payload['value'] = max(1, int(round(model_price * FRAGMENT_TON_RATE)))
+                before = dict(target)
+                target.update(model_payload)
+                if target != before:
+                    changed += 1
+                by_key[model_key] = target
 
         if not save_gifts(gifts):
-            result['errors'].append('Не удалось сохранить общий каталог')
-
-        # 2) Один проход: разложить каждый подарок по каждому режиму.
-        with _mode_gift_pools_lock:
-            pools = _mode_gift_pools_load()
-            for mode_id in mode_ids:
-                pool = pools.setdefault(mode_id, [])
-                pool_by_key = {str(x.get('gift_key') or x.get('id') or ''): x for x in pool}
-                added_here = 0
-                for item in catalog_items:
-                    key = str(item.get('gift_key') or item.get('id') or '')
-                    if not key:
-                        continue
-                    normalized = _mode_item_normalized(item)
-                    existing = pool_by_key.get(key)
-                    if existing:
-                        # Не трогаем ручную настройку лута — обновляем только
-                        # то, что реально пришло с Portal (цена/картинка/имя).
-                        tuning = {
-                            k: existing.get(k) for k in
-                            ('enabled', 'weight', 'min_bet', 'max_bet', 'min_multiplier', 'max_multiplier')
-                            if k in existing
-                        }
-                        existing.update(normalized)
-                        existing.update(tuning)
-                    else:
-                        normalized.update({
-                            'enabled': True, 'weight': 1.0,
-                            'min_bet': 0.0, 'max_bet': 0.0,
-                            'min_multiplier': 0.0, 'max_multiplier': 0.0,
-                        })
-                        pool.append(normalized)
-                        pool_by_key[key] = normalized
-                        added_here += 1
-                result['modes'].append({'mode_id': mode_id, 'pool_count': len(pool), 'added': added_here})
-
-            if not _mode_gift_pools_save(pools):
-                result['errors'].append('Не удалось сохранить пулы режимов')
+            raise RuntimeError('Не удалось сохранить Portal-каталог')
+        return {
+            'changed': changed,
+            'added': added,
+            'total': len(gifts),
+            'portal_collections': len(collections),
+            'portal_models': int(snapshot.get('total_models') or 0),
+        }
 
     except Exception as e:
-        logger.error("Portal auto sync -> modes failed: %s", e)
-        result['errors'].append(str(e))
-
-    logger.info(
-        "✅ Portal auto-sync: каталог %s (+%s новых), режимов обновлено %s",
-        result['catalog_items'], result['catalog_added'], len(result['modes']),
-    )
-    return result
+        logger.error("Portal snapshot -> gifts catalog failed: %s", e)
+        return {'changed': 0, 'added': 0, 'total': 0, 'error': str(e)}
 
 
 def _portal_build_daily_snapshot(force=False):
@@ -12732,21 +12746,9 @@ def _portal_build_daily_snapshot(force=False):
     if not token:
         return {'success': False, 'error': 'Portal token/initData не задан'}
 
-    # Only one heavy full scan at a time — but don't let a crashed/hung
-    # previous run block every future click forever (a lock that's been
-    # "running" for 20+ minutes is stuck, not legitimately busy).
+    # Only one heavy full scan at a time.
     if not _portal_daily_lock.acquire(blocking=False):
-        job = _portal_daily_job_snapshot()
-        started = float(job.get('started_at') or 0)
-        stale = job.get('running') and started and (time.time() - started) > 1200
-        if stale:
-            logger.warning("⚠️ Portal daily sync lock looked stuck for >20min, forcing release")
-            try:
-                _portal_daily_lock.release()
-            except Exception:
-                pass
-        if not stale or not _portal_daily_lock.acquire(blocking=False):
-            return {'success': True, 'running': True, 'message': 'Daily sync already running'}
+        return {'success': True, 'running': True, 'message': 'Daily sync already running'}
 
     try:
         _portal_daily_job_update(
@@ -12759,13 +12761,16 @@ def _portal_build_daily_snapshot(force=False):
             error='',
             collections=0,
             models=0,
+            logs=[],
         )
+        _portal_daily_job_log('Старт полной загрузки Portal Market')
 
         ok, collections = _portal_all_collections()
         if not ok:
             raise RuntimeError(str(collections))
 
         _portal_daily_job_update(total=len(collections))
+        _portal_daily_job_log(f'Portal: получено коллекций — {len(collections)}')
 
         full = []
         total_models = 0
@@ -12773,67 +12778,50 @@ def _portal_build_daily_snapshot(force=False):
         total_symbols = 0
         filter_errors = []
 
-        # Serial scanning (one HTTP call per collection, waiting for each to
-        # finish) is what made this look "endless" for large catalogs — a few
-        # hundred collections at 1-3s each easily adds up to many minutes,
-        # and any Portal rate-limiting/retries multiplied that further.
-        # Fetch collections concurrently instead, with a hard overall time
-        # budget so a broken/rate-limited Portal endpoint can never hang the
-        # sync forever — it just finishes with whatever it managed to get and
-        # reports the rest as filter_errors.
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-
-        results_by_idx = {}
-        progress_lock = threading.Lock()
-        completed = 0
-        total_count = len(collections)
-        deadline = time.time() + max(180, min(1200, total_count * 3))
-
-        def fetch_one(idx, coll):
+        for idx, coll in enumerate(collections, 1):
             name = str(coll.get('name') or coll.get('short_name') or 'Gift').strip()
             short_name = str(coll.get('short_name') or '').strip().lower()
+
+            _portal_daily_job_update(
+                current=idx,
+                total=len(collections),
+                collection=name,
+                collections=idx - 1,
+                models=total_models,
+            )
+
             filters = {'models': [], 'backdrops': [], 'symbols': []}
-            err = None
             if short_name:
-                if time.time() >= deadline:
-                    err = {'collection': name, 'error': 'Пропущено: превышен лимит времени сканирования'}
+                fok, fdata = _portal_collection_filters(short_name)
+                if fok:
+                    filters = fdata
                 else:
-                    fok, fdata = _portal_collection_filters(short_name)
-                    if fok:
-                        filters = fdata
-                    else:
-                        err = {'collection': name, 'error': str(fdata)[:180]}
+                    filter_errors.append({'collection': name, 'error': str(fdata)[:180]})
+
             row = dict(coll)
-            row['name'] = name
             row['models'] = filters.get('models') or []
             row['backdrops'] = filters.get('backdrops') or []
             row['symbols'] = filters.get('symbols') or []
             row['model_count'] = len(row['models'])
             row['backdrop_count'] = len(row['backdrops'])
             row['symbol_count'] = len(row['symbols'])
-            return idx, row, err
+            full.append(row)
 
-        with ThreadPoolExecutor(max_workers=6) as executor:
-            futures = {executor.submit(fetch_one, idx, coll): idx for idx, coll in enumerate(collections, 1)}
-            for future in as_completed(futures):
-                idx, row, err = future.result()
-                with progress_lock:
-                    results_by_idx[idx] = row
-                    if err:
-                        filter_errors.append(err)
-                    completed += 1
-                    total_models = sum(len(r.get('models') or []) for r in results_by_idx.values())
-                    total_backdrops = sum(len(r.get('backdrops') or []) for r in results_by_idx.values())
-                    total_symbols = sum(len(r.get('symbols') or []) for r in results_by_idx.values())
-                    _portal_daily_job_update(
-                        current=completed,
-                        total=total_count,
-                        collection=row.get('name') or '',
-                        collections=completed,
-                        models=total_models,
-                    )
+            total_models += row['model_count']
+            total_backdrops += row['backdrop_count']
+            total_symbols += row['symbol_count']
 
-        full = [results_by_idx[i] for i in sorted(results_by_idx.keys())]
+            _portal_daily_job_update(
+                collections=idx,
+                models=total_models,
+            )
+            if idx == 1 or idx == len(collections) or idx % 25 == 0:
+                _portal_daily_job_log(
+                    f'Portal: {idx}/{len(collections)} · {name} · моделей {total_models}'
+                )
+
+            # Be polite to Portal; this runs only once a day.
+            time.sleep(0.05)
 
         snapshot = {
             'success': True,
@@ -12846,20 +12834,19 @@ def _portal_build_daily_snapshot(force=False):
             'total_symbols': total_symbols,
             'filter_errors': filter_errors[:100],
             'collections': full,
+            'logs': list((_portal_daily_job_snapshot().get('logs') or [])[-200:]),
         }
 
         if not _portal_save_daily_snapshot(snapshot):
             raise RuntimeError('Не удалось сохранить portal_daily_snapshot.json')
 
+        _portal_daily_job_log('Сохраняю полный каталог: коллекции + все модели')
         gift_result = _portal_apply_daily_snapshot_to_gifts(snapshot)
         snapshot['gifts_json'] = gift_result
-
-        # Автоматически кладём каждый подарок в общий каталог и во все
-        # игровые режимы — без этого шага подарки лежали только в
-        # portal_daily_snapshot.json и не попадали в реальные режимы игры.
-        mode_sync_result = _portal_sync_all_to_catalog_and_modes(snapshot)
-        snapshot['mode_sync'] = mode_sync_result
-
+        _portal_daily_job_log(
+            f"Каталог сохранён: всего {gift_result.get('total', 0)}, "
+            f"добавлено {gift_result.get('added', 0)}"
+        )
         _portal_save_daily_snapshot(snapshot)
 
         _portal_daily_job_update(
@@ -12887,7 +12874,6 @@ def _portal_build_daily_snapshot(force=False):
             'symbols': total_symbols,
             'updated_at': snapshot['updated_at'],
             'gifts_json': gift_result,
-            'mode_sync': mode_sync_result,
         }
 
     except Exception as e:
@@ -12965,7 +12951,9 @@ def portal_daily_status():
             'total_models': int((snapshot or {}).get('total_models') or 0),
             'total_backdrops': int((snapshot or {}).get('total_backdrops') or 0),
             'total_symbols': int((snapshot or {}).get('total_symbols') or 0),
-            'mode_sync': (snapshot or {}).get('mode_sync'),
+            'total_catalog_gifts': len(load_gifts() or []),
+            'snapshot_gifts': (snapshot or {}).get('gifts_json') or {},
+            'snapshot_logs': (snapshot or {}).get('logs') or [],
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -13131,13 +13119,15 @@ def _portal_available_mode_targets():
     except Exception as e:
         logger.debug('Portal mode target events error: %s', e)
 
-    pools = _mode_gift_pools_load()
+    catalog_count = len(load_gifts() or [])
     settings = _mode_loot_settings_load()
     for row in rows:
-        row['pool_count'] = len(pools.get(row['id']) or [])
+        row['pool_count'] = catalog_count
+        row['catalog_count'] = catalog_count
         cfg = _mode_loot_defaults()
         cfg.update(settings.get(row['id']) or {})
         row['loot_settings'] = cfg
+        row['loot_source'] = 'global_catalog'
     rows.sort(key=lambda x: str(x.get('name') or '').lower())
     return rows
 
@@ -13212,17 +13202,19 @@ def _portal_catalog_payload(collection, model=None):
 
     display_name = coll_name if not model_name else f'{coll_name} — {model_name}'
     gift_key = _build_case_custom_gift_id(display_name, fragment_slug=short_name, model_name=model_name or None)
-    # Always prefer the generic collection preview (the base gift icon) over
-    # whatever Portal's API happened to return in photo_url — that field has
-    # been observed to sometimes point at one specific model's NFT render
-    # instead of the neutral base gift image.
-    base_image = (short_name and _portal_collection_image_url(short_name)) or ''
-    image = base_image or str(collection.get('photo_url') or '').strip() or '/static/img/gift.png'
+    model_image = (
+        str((model or {}).get('image') or (model or {}).get('image_url') or
+            (model or {}).get('photo_url') or (model or {}).get('preview') or
+            (model or {}).get('preview_url') or '').strip()
+    )
+    collection_image = str(
+        collection.get('photo_url') or collection.get('image') or ''
+    ).strip()
     return {
         'gift_key': gift_key,
         'name': display_name,
         'type': 'item',
-        'image': image,
+        'image': model_image or collection_image or '/static/img/gift.png',
         'value': max(1, int(round(price * 100))) if price > 0 else 1,
         'fragment_slug': short_name,
         'model_name': model_name or None,
@@ -13296,40 +13288,36 @@ def _portal_add_item_to_case(case_id, catalog_item, chance=1.0):
 
 
 def _portal_add_item_to_mode(mode_id, catalog_item):
+    """Legacy compatibility: every canonical gift is already in every mode."""
     mode_id = str(mode_id or '').strip()
     allowed = {x['id'] for x in _portal_available_mode_targets()}
     if mode_id not in allowed:
         raise RuntimeError('Игровой режим не найден')
+    if not isinstance(catalog_item, dict):
+        raise RuntimeError('Подарок не найден')
+    return len(load_gifts() or [])
 
-    with _mode_gift_pools_lock:
-        pools = _mode_gift_pools_load()
-        pool = pools.setdefault(mode_id, [])
-        key = str(catalog_item.get('gift_key') or catalog_item.get('id') or '')
-        existing = next((x for x in pool if str(x.get('gift_key') or x.get('id') or '') == key), None)
-        normalized = _mode_item_normalized(catalog_item)
-        if existing:
-            # Keep existing loot tuning when Portal price/name refreshes.
-            tuning = {k: existing.get(k) for k in ('enabled','weight','min_bet','max_bet','min_multiplier','max_multiplier') if k in existing}
-            existing.update(normalized)
-            existing.update(tuning)
-        else:
-            normalized.update({'enabled': True, 'weight': 1.0, 'min_bet': 0.0, 'max_bet': 0.0, 'min_multiplier': 0.0, 'max_multiplier': 0.0})
-            pool.append(normalized)
-        if not _mode_gift_pools_save(pools):
-            raise RuntimeError('Не удалось сохранить пул режима')
-    return len(pool)
 
 
 def _mode_runtime_pool(mode_id, bet_amount=0, multiplier=0):
-    pools = _mode_gift_pools_load()
+    """Return the full canonical catalog for every game mode.
+
+    There is intentionally no manual per-mode gift pool anymore. Portal/market
+    sync writes every collection and model to the persistent catalog, and all
+    modes consume that same catalog after restart.
+    """
     settings_all = _mode_loot_settings_load()
     settings = _mode_loot_defaults()
     settings.update(settings_all.get(str(mode_id)) or {})
+
+    gifts = load_gifts() or []
     pool = []
-    for raw in pools.get(str(mode_id), []) or []:
-        item = _mode_item_normalized(raw)
-        if not item.get('enabled', True):
+    for raw in gifts:
+        if not isinstance(raw, dict) or not raw.get('name'):
             continue
+        item = _mode_item_normalized(raw)
+        # Catalog items are globally enabled; keep old numeric constraints only
+        # when explicitly present in a legacy row.
         min_bet = float(item.get('min_bet') or 0)
         max_bet = float(item.get('max_bet') or 0)
         min_x = float(item.get('min_multiplier') or 0)
@@ -13342,7 +13330,10 @@ def _mode_runtime_pool(mode_id, bet_amount=0, multiplier=0):
             continue
         if max_x and float(multiplier or 0) > max_x:
             continue
+        item['enabled'] = True
+        item['weight'] = max(0.000001, float(item.get('weight') or 1))
         pool.append(item)
+
     return pool, settings
 
 
@@ -13472,11 +13463,16 @@ def admin_mode_gift_pools():
                 else:
                     return jsonify({'success': False, 'error': 'Unknown action'}), 400
 
+        catalog = load_gifts() or []
         return jsonify({
             'success': True,
-            'pools': _mode_gift_pools_load(),
+            'pools': {},  # deprecated: modes use the full global catalog
             'settings': _mode_loot_settings_load(),
             'modes': _portal_available_mode_targets(),
+            'global_catalog_count': len(catalog),
+            'global_catalog_updated_at': max(
+                [str(x.get('portal_updated_at') or '') for x in catalog if isinstance(x, dict)] or ['']
+            ),
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -13706,15 +13702,8 @@ _validate_portal_initdata = _validate_portal_initdata_improved
 @app.route('/api/portal/token', methods=['GET', 'POST', 'DELETE'])
 def portal_token():
     global _portal_auth_data
-    token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
-    token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
-    if not token:
-        try:
-            if os.path.exists(token_file):
-                with open(token_file, 'r', encoding='utf-8') as f:
-                    token = f.read().strip()
-        except Exception:
-            token = ''
+    token_file = PORTAL_TOKEN_FILE
+    token = _portal_get_token()
 
     if request.method == 'GET':
         try:
@@ -13734,9 +13723,7 @@ def portal_token():
             admin_id = data.get('admin_id')
             if str(admin_id) != str(ADMIN_ID):
                 return jsonify({'success': False, 'error': 'Unauthorized'}), 403
-            if os.path.exists(token_file):
-                os.remove(token_file)
-            os.environ.pop('PORTAL_AUTH_TOKEN', None)
+            _portal_delete_token()
             _portal_auth_data = None
             return jsonify({'success': True, 'message': 'Токен удалён'})
         except Exception as e:
@@ -13759,11 +13746,7 @@ def portal_token():
 
         token = _portal_normalize_auth_token(token)
 
-        os.makedirs(os.path.dirname(token_file), exist_ok=True)
-        with open(token_file, 'w', encoding='utf-8') as f:
-            f.write(token)
-        os.environ['PORTAL_AUTH_TOKEN'] = token
-
+        _portal_save_token(token)
         _portal_auth_data = token
 
         verified = False
@@ -13797,12 +13780,7 @@ def portal_auth_status():
     """Проверка статуса авторизации Portal."""
     global _portal_auth_data
     try:
-        token = os.getenv('PORTAL_AUTH_TOKEN', '').strip()
-        if not token:
-            token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
-            if os.path.exists(token_file):
-                with open(token_file, 'r', encoding='utf-8') as f:
-                    token = f.read().strip()
+        token = _portal_get_token()
 
         if not token:
             return jsonify({'authorized': False, 'has_token': False, 'error': 'Токен не задан'})
@@ -13917,17 +13895,8 @@ def portal_logout():
         if str(admin_id) != str(ADMIN_ID):
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
 
-        token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'portal_token.txt')
-        if os.path.exists(token_file):
-            try:
-                os.remove(token_file)
-            except Exception:
-                pass
-
-        os.environ.pop('PORTAL_AUTH_TOKEN', None)
-
+        _portal_delete_token()
         _portal_auth_data = None
-
         return jsonify({'success': True, 'message': 'Токен удалён'})
     except Exception as e:
         logger.error(f'portal_logout error: {e}')
