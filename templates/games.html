@@ -611,7 +611,94 @@ img{display:block}
     .game-subtitle{font-size:11px;margin-top:7px}
 
     .event-card{grid-column:1;height:178px}
-    .cases-event-card{grid-column:1;height:178px}
+    /* CASES IS COMING — золотая светящаяся рамка */
+    .cases-event-card{
+        position:relative;
+        isolation:isolate;
+        overflow:hidden;
+        border:1px solid rgba(255,215,92,.95);
+        background:#160f05;
+        box-shadow:
+            0 0 0 1px rgba(255,193,7,.18),
+            0 0 18px rgba(255,193,7,.28),
+            0 14px 45px rgba(255,177,0,.16),
+            inset 0 0 28px rgba(255,193,7,.06);
+    }
+
+    .cases-event-card::before{
+        content:"";
+        position:absolute;
+        inset:-2px;
+        z-index:-2;
+        border-radius:inherit;
+        background:
+            linear-gradient(120deg,
+                transparent 0%,
+                transparent 28%,
+                rgba(255,244,176,.95) 42%,
+                #ffc400 50%,
+                rgba(255,244,176,.95) 58%,
+                transparent 72%,
+                transparent 100%);
+        background-size:240% 100%;
+        animation:casesGoldBorder 3.2s linear infinite;
+        padding:1px;
+        -webkit-mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+        -webkit-mask-composite:xor;
+        mask-composite:exclude;
+        pointer-events:none;
+    }
+
+    .cases-event-card::after{
+        content:"";
+        position:absolute;
+        inset:0;
+        z-index:-3;
+        border-radius:inherit;
+        background:
+            radial-gradient(circle at 15% 50%,rgba(255,193,7,.14),transparent 38%),
+            linear-gradient(90deg,rgba(35,19,3,.92),rgba(25,13,2,.68) 55%,rgba(20,10,2,.32));
+        pointer-events:none;
+    }
+
+    .cases-event-card > .cases-event-content{
+        position:relative;
+        z-index:2;
+    }
+
+    @keyframes casesGoldBorder{
+        0%{background-position:240% 0;filter:brightness(.95)}
+        45%{filter:brightness(1.25)}
+        100%{background-position:-40% 0;filter:brightness(1)}
+    }
+
+    .cases-event-card:hover{
+        border-color:#ffe58a;
+        box-shadow:
+            0 0 0 1px rgba(255,215,92,.3),
+            0 0 28px rgba(255,193,7,.48),
+            0 18px 55px rgba(255,177,0,.22),
+            inset 0 0 32px rgba(255,193,7,.09);
+    }
+
+    .cases-event-card:active{transform:scale(.992)}
+
+    .cases-event-title{
+        color:#fff7d1;
+        text-shadow:
+            0 0 8px rgba(255,204,64,.35),
+            0 3px 18px rgba(0,0,0,.82);
+    }
+
+    .cases-event-subtitle{
+        color:#ffe9a3;
+        background:rgba(184,126,0,.20);
+        border-color:rgba(255,218,105,.30);
+    }
+
+grid-column:1;height:178px}
     .cases-event-content{padding:18px 17px}
     .cases-event-title{font-size:26px}
     .cases-event-subtitle{font-size:10px;margin-top:8px;padding:6px 8px}
@@ -961,6 +1048,7 @@ img{display:block}
             </div>
         </button>
         <button class="game-card cases-event-card is-hidden" id="casesEventCard" onclick="goTo('/cases')" aria-label="Cases">
+            <div class="cases-event-bg" aria-hidden="true"></div>
             <div class="cases-event-content">
                 <div>
                     <div class="cases-event-title">CASES IS COMING</div>
