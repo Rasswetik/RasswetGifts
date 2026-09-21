@@ -2847,6 +2847,39 @@ def load_gifts():
         except Exception as e:
             logger.warning('Portal snapshot fallback failed (%s): %s', snap_path, e)
 
+    # Final durable fallback: snapshot may live only in PostgreSQL/SQLite when
+    # the hosting filesystem is ephemeral. Restore the same full catalog from DB.
+    try:
+        snap = _portal_load_daily_snapshot()
+        rows = snap.get('collections') if isinstance(snap, dict) else None
+        if isinstance(rows, list) and rows:
+            restored = []
+            next_id = 0
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                slug = str(row.get('short_name') or row.get('fragment_slug') or row.get('slug') or '').strip().lower()
+                if not slug:
+                    continue
+                name = str(row.get('name') or slug).strip()
+                price = _portal_float(row.get('floor_price') or row.get('portal_price_ton') or row.get('price'))
+                next_id += 1
+                restored.append({'id':next_id,'gift_key':_build_case_custom_gift_id(name,fragment_slug=slug,model_name=None),'name':name,'fragment_slug':slug,'fragment_url':f'https://fragment.com/gifts/{slug}','image':str(row.get('photo_url') or row.get('image') or f'https://fragment.com/file/gifts/{slug}/thumb.webp'),'source':'portal','portal_source':True,'portal_price_ton':price,'value':max(1,int(round(price*FRAGMENT_TON_RATE))) if price>0 else 0})
+                for model in row.get('models') or []:
+                    if not isinstance(model,dict): continue
+                    model_name=str(model.get('name') or '').strip()
+                    if not model_name: continue
+                    model_price=_portal_float(model.get('floor_price') or model.get('price') or price)
+                    next_id += 1
+                    model_img=str(model.get('image') or model.get('image_url') or model.get('photo_url') or '').strip() or _portal_model_image_url(name,model_name,slug)
+                    restored.append({'id':next_id,'gift_key':_build_case_custom_gift_id(name,fragment_slug=slug,model_name=model_name),'name':f'{name} — {model_name}','fragment_slug':slug,'fragment_url':f'https://fragment.com/gifts/{slug}','model_name':model_name,'portal_model_name':model_name,'portal_collection_name':name,'source':'portal_model','portal_source':True,'portal_price_ton':model_price,'value':max(1,int(round(model_price*FRAGMENT_TON_RATE))) if model_price>0 else 1,'image':model_img,'image_fallbacks':_portal_model_fragment_fallback(slug,model_name)})
+            if restored:
+                save_gifts(restored)
+                logger.info('Восстановлено %s подарков из durable Portal DB snapshot', len(restored))
+                return restored
+    except Exception as e:
+        logger.warning('Portal DB catalog fallback failed: %s', e)
+
     logger.info('Каталог подарков пуст во всех доступных копиях')
     return fallback_empty or []
 
@@ -3054,6 +3087,13 @@ EVENT_DEFAULTS = {
             ]},
             {'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[]},
             {'id':'market','title':'Маркет','type':'market','items':[]}
+        ]
+    },
+    'cases_event': {
+        'id': 'cases_event', 'name': 'Cases',
+        'image': '', 'enabled': False, 'ends_at': None,
+        'sections': [
+            {'id':'cases','title':'Кейсы','type':'cases','case_ids':[]}
         ]
     },
     'witch_hat_party': {
@@ -3397,6 +3437,19 @@ def load_game_ui_config():
         # Event is a mandatory Games entry. Keep it first even if an old saved config
         # accidentally removed it; its visibility is controlled only by the Event setting.
         items.insert(0, {'id':'event','name':event_name,'image':event_image,'path':'/event/witch-hat-party','visible':event_visible,'mandatory':True})
+        # CASES event: appears only while enabled. It uses the dedicated banner
+        # artwork and opens the existing index/cases page.
+        try:
+            cases_ev = get_active_events().get('cases_event', EVENT_DEFAULTS['cases_event']) or {}
+            if bool(cases_ev.get('enabled')):
+                items.insert(1, {
+                    'id':'cases_event', 'name':'CASES IS COMING',
+                    'image':'/static/img/banner_case.png', 'path':'/cases',
+                    'visible':True, 'mandatory':False, 'size':'high',
+                    'event_id':'cases_event'
+                })
+        except Exception:
+            pass
         clean['sections'][0]['id']='games'; clean['sections'][0]['title']=clean['sections'][0].get('title') or 'Игры'; clean['sections'][0]['visible']=True
         return clean
     except Exception as e:
@@ -3640,6 +3693,11 @@ def _create_all_tables(conn):
 
     tables_sql = {
         'event_configs': '''CREATE TABLE IF NOT EXISTS event_configs (
+            id TEXT PRIMARY KEY,
+            payload TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''',
+        'portal_snapshots': '''CREATE TABLE IF NOT EXISTS portal_snapshots (
             id TEXT PRIMARY KEY,
             payload TEXT NOT NULL,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -6066,19 +6124,23 @@ def start_ultimate_crash_loop():
                     # PostgreSQL does not provide sqlite's cursor.lastrowid.
                     # Always fetch the generated id explicitly on PostgreSQL.
                     if USE_POSTGRES:
-                        # Some PostgreSQL pool/cursor wrappers used on Render can
-                        # execute INSERT ... RETURNING successfully but expose an
-                        # empty fetchone(). Do NOT roll the transaction back and do
-                        # NOT create a second round. Recover the id from the same
-                        # PostgreSQL session/sequence first.
+                        # PostgreSQL: do not treat a missing fetchone() as a failed INSERT.
+                        # Some Render/db_wrapper cursor adapters execute RETURNING correctly
+                        # but expose the returned row only through a second fetch path.
+                        new_game_id = 0
+                        insert_succeeded = False
                         try:
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
                                 RETURNING id
                             """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                            _row = cursor.fetchone()
-                            new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
+                            insert_succeeded = True
+                            try:
+                                _row = cursor.fetchone()
+                                new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
+                            except Exception as _fetch_err:
+                                logger.warning(f"⚠️ Crash RETURNING fetch failed after successful INSERT: {_fetch_err}")
                         except Exception as _pg_insert_err:
                             logger.warning(f"⚠️ Crash INSERT with provably-fair columns failed: {_pg_insert_err}; retrying compatible INSERT")
                             try:
@@ -6086,26 +6148,48 @@ def start_ultimate_crash_loop():
                             except Exception:
                                 pass
                             cursor = conn.cursor()
-                            cursor.execute("""
-                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                                VALUES ('counting', ?, CURRENT_TIMESTAMP)
-                            """, (target_multiplier,))
-                            new_game_id = 0
-
-                        # LASTVAL() is reliable on PostgreSQL even when a wrapper
-                        # loses the RETURNING row. It refers to the sequence value
-                        # generated by the INSERT in this exact DB session.
-                        if not new_game_id:
                             try:
-                                cursor.execute('SELECT LASTVAL()')
+                                cursor.execute("""
+                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
+                                    VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
+                                """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
+                            except Exception:
+                                try:
+                                    conn.rollback()
+                                except Exception:
+                                    pass
+                                cursor = conn.cursor()
+                                cursor.execute("""
+                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
+                                    VALUES ('counting', ?, CURRENT_TIMESTAMP)
+                                """, (target_multiplier,))
+                            insert_succeeded = True
+
+                        # First choice: exact round seed. This works even when the
+                        # cursor wrapper drops RETURNING/LASTVAL support.
+                        if insert_succeeded and not new_game_id:
+                            try:
+                                cursor.execute(
+                                    'SELECT id FROM ultimate_crash_games WHERE seed_hash = ? ORDER BY id DESC LIMIT 1',
+                                    (_round_seed_hash,)
+                                )
                                 _row = cursor.fetchone()
                                 new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                            except Exception as _lastval_err:
-                                logger.warning(f"⚠️ Crash LASTVAL() failed: {_lastval_err}")
+                            except Exception as _seed_lookup_err:
+                                logger.warning(f"⚠️ Crash seed id lookup failed: {_seed_lookup_err}")
 
-                        # Final same-transaction lookup. This is only a safety net;
-                        # it never creates another game.
-                        if not new_game_id:
+                        # Second choice: PostgreSQL sequence value from this exact session.
+                        if insert_succeeded and not new_game_id:
+                            try:
+                                cursor.execute("SELECT currval(pg_get_serial_sequence('ultimate_crash_games','id'))")
+                                _row = cursor.fetchone()
+                                new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
+                            except Exception as _currval_err:
+                                logger.warning(f"⚠️ Crash currval() failed: {_currval_err}")
+
+                        # Third choice: newest counting round matching this target, still
+                        # inside the same transaction, so we never create a duplicate.
+                        if insert_succeeded and not new_game_id:
                             try:
                                 cursor.execute(
                                     "SELECT id FROM ultimate_crash_games WHERE status = 'counting' AND target_multiplier = ? ORDER BY id DESC LIMIT 1",
@@ -6115,18 +6199,6 @@ def start_ultimate_crash_loop():
                                 new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
                             except Exception:
                                 pass
-                    else:
-                        try:
-                            cursor.execute("""
-                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
-                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
-                            """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                        except Exception:
-                            cursor.execute("""
-                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
-                                VALUES ('counting', ?, CURRENT_TIMESTAMP)
-                            """, (target_multiplier,))
-                        new_game_id = cursor.lastrowid
 
                     # If LASTVAL() was unavailable, recover by the round seed.
                     # Keep this after the INSERT recovery so we never insert a duplicate.
@@ -6576,8 +6648,39 @@ def ghost_road_game_page():
 
 @app.route('/games')
 def games_page():
-    """Страница выбора игр"""
-    return render_template('games.html')
+    """Страница выбора игр. Cases event gets a large visual tile when enabled."""
+    try:
+        page = render_template('games.html')
+    except Exception:
+        return render_template('games.html')
+    # The existing Games template is intentionally left intact. This small
+    # patch makes the new Cases event tile visually large regardless of which
+    # card class the current template uses. The tile is only present when the
+    # /api/games-ui configuration includes banner_case.png.
+    patch = r"""
+<style id="cases-event-games-patch">
+.cases-event-card{grid-column:span 2!important;min-height:220px!important;}
+.cases-event-card img{max-width:100%!important;max-height:100%!important;object-fit:contain!important;}
+@media(max-width:640px){.cases-event-card{grid-column:1/-1!important;min-height:180px!important;}}
+</style>
+<script id="cases-event-games-patch-js">
+(function(){
+ function apply(){
+   try{
+     var img=document.querySelector('img[src*="banner_case.png"]');
+     if(!img)return;
+     var card=img.closest('a,button,[role=button],.game-card,.game-item,.mode-card,.tile,.game-tile')||img.parentElement&&img.parentElement.parentElement;
+     if(card)card.classList.add('cases-event-card');
+   }catch(e){}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',apply);else apply();
+ setTimeout(apply,200);setTimeout(apply,1000);
+})();
+</script>
+"""
+    if '</head>' in page and 'cases-event-games-patch' not in page:
+        page = page.replace('</head>', patch + '</head>', 1)
+    return make_response(page, 200, {'Content-Type':'text/html; charset=utf-8'})
 
 @app.route('/market')
 def market_page():
@@ -7943,12 +8046,13 @@ def ultimate_crash_cashout_simple():
             return jsonify({'success': False, 'error': 'ID пользователя не указан'})
 
         cached = get_crash_cache()
-        if cached.get('status') != 'flying':
-            return jsonify({'success': False, 'error': 'Нет активной игры'})
-        cached_mult = cached.get('current_multiplier', 1.0)
+        cached_mult = float(cached.get('current_multiplier', 1.0) or 1.0)
 
         conn = get_db_connection()
         cursor = conn.cursor()
+
+        # The in-memory crash cache can briefly lag the DB after a reconnect.
+        # The user's active bet and its game row are the source of truth.
 
         try:
             cursor.execute('BEGIN IMMEDIATE')
@@ -9577,6 +9681,28 @@ def api_witch_hat_party():
             item['locked']=bool(i_locked); item['unlock_in']=int(i_left)
     return jsonify({'success':True,'event':ev})
 
+@app.route('/api/events/cases')
+def api_cases_event():
+    try:
+        events = get_active_events()
+        ev = events.get('cases_event', EVENT_DEFAULTS['cases_event']) or {}
+        end = None
+        remaining = 0
+        if ev.get('ends_at'):
+            try:
+                end = datetime.fromisoformat(str(ev['ends_at']).replace('Z','+00:00'))
+                if end.tzinfo:
+                    from datetime import timezone
+                    end = end.astimezone(timezone.utc).replace(tzinfo=None)
+                remaining = max(0, int((end - datetime.utcnow()).total_seconds()))
+            except Exception:
+                end = None
+        ev['active'] = bool(ev.get('enabled') and (end is None or remaining > 0))
+        ev['remaining_seconds'] = remaining
+        return jsonify({'success': True, 'event': ev})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/events/ghost-road/market')
 def api_ghost_road_market():
     try:
@@ -9795,13 +9921,23 @@ def api_games_ui():
     try:
         cfg=load_game_ui_config()
         sections=sorted([x for x in cfg.get('sections',[]) if isinstance(x,dict)], key=lambda x:int(x.get('order',0)))
-        # The Event button is controlled from Witch Hat Party settings, not from a separate Games editor.
+        # Event buttons are controlled by their corresponding event settings.
         try:
-            witch=get_active_events().get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party'])
+            active_events=get_active_events() or {}
+            witch=active_events.get('witch_hat_party', EVENT_DEFAULTS['witch_hat_party'])
+            cases_ev=active_events.get('cases_event', EVENT_DEFAULTS['cases_event'])
             for sec in sections:
+                if not isinstance(sec,dict): continue
+                sec['items']=[x for x in (sec.get('items') or []) if str(x.get('id')) != 'cases_event']
                 for item in sec.get('items',[]) or []:
                     if str(item.get('id'))=='event':
                         item['visible']=bool(witch.get('event_button_visible',True))
+                if sec.get('id')=='games' and bool(cases_ev.get('enabled')):
+                    sec['items'].insert(1, {
+                        'id':'cases_event','name':'CASES IS COMING',
+                        'image':'/static/img/banner_case.png','path':'/cases',
+                        'visible':True,'size':'high','event_id':'cases_event'
+                    })
         except Exception:
             pass
         now=datetime.utcnow()
@@ -9861,10 +9997,15 @@ def admin_events():
         if str(admin_id)!=str(ADMIN_ID): return jsonify({'success':False,'error':'Доступ запрещён'}),403
         events=get_active_events(); eid=str(data.get('event_id') or 'witch_hat_party')
         if eid not in events: return jsonify({'success':False,'error':'Ивент не найден'}),404
-        if _sync_event_cases(events[eid]): save_events(events)
+        if eid != 'cases_event' and _sync_event_cases(events[eid]): save_events(events)
         if request.method=='POST':
             ev=events[eid]
             if eid == 'witch_hat_party': _normalize_witch_event_structure(ev)
+            elif eid == 'cases_event':
+                ev.setdefault('sections',[{'id':'cases','title':'Кейсы','type':'cases','case_ids':[]}])
+                for sec in ev['sections']:
+                    if isinstance(sec,dict) and sec.get('type')=='cases':
+                        sec['case_ids']=list(sec.get('case_ids') or [])
             action=str(data.get('action') or 'toggle')
             if action=='update_settings':
                 for key in ('name','image','loading_gif'):
@@ -12671,35 +12812,119 @@ def _portal_daily_job_snapshot():
         return snap
 
 
-def _portal_load_daily_snapshot():
+def _portal_ensure_snapshot_table(conn):
+    """Ensure the durable Portal snapshot table exists on existing databases too."""
+    conn.execute("""CREATE TABLE IF NOT EXISTS portal_snapshots (
+        id TEXT PRIMARY KEY,
+        payload TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
     try:
-        if not os.path.exists(PORTAL_DAILY_SNAPSHOT_FILE):
-            return None
-        with open(PORTAL_DAILY_SNAPSHOT_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        if isinstance(data, dict) and isinstance(data.get('collections'), list):
-            return data
+        conn.commit()
+    except Exception:
+        pass
+
+
+def _portal_load_daily_snapshot():
+    """Load the last successful Portal snapshot from disk, then PostgreSQL/SQLite.
+
+    The database copy is the durable source of truth when the hosting filesystem
+    is ephemeral. Disk JSON is still written because it is useful for inspection
+    and for fast local recovery.
+    """
+    # 1) Disk JSON first (fast path).
+    for path in (
+        PORTAL_DAILY_SNAPSHOT_FILE,
+        os.path.join(PERSISTENT_DATA_DIR, 'portal_source_snapshot.json'),
+    ):
+        try:
+            if not os.path.exists(path):
+                continue
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            if isinstance(data, dict) and isinstance(data.get('collections'), list) and data.get('collections'):
+                return data
+        except Exception as e:
+            logger.warning("Portal snapshot read failed %s: %s", path, e)
+
+    # 2) Durable DB copy. This survives Render redeploys/restarts when the
+    # filesystem is not backed by a Persistent Disk.
+    conn = None
+    try:
+        conn = get_db_connection()
+        _portal_ensure_snapshot_table(conn)
+        row = conn.execute('SELECT payload FROM portal_snapshots WHERE id = ?', ('daily',)).fetchone()
+        if row and row[0]:
+            data = json.loads(row[0]) if isinstance(row[0], str) else row[0]
+            if isinstance(data, dict) and isinstance(data.get('collections'), list) and data.get('collections'):
+                # Rehydrate the JSON copy as well, but never fail the read if disk is read-only.
+                try:
+                    _portal_save_daily_snapshot_file_only(data)
+                except Exception:
+                    pass
+                return data
     except Exception as e:
-        logger.warning("Portal daily snapshot read failed: %s", e)
+        logger.warning("Portal DB snapshot read failed: %s", e)
+    finally:
+        # Do not close Flask request-owned connections here.
+        try:
+            if conn is not None and not has_request_context():
+                conn.close()
+        except Exception:
+            pass
     return None
 
 
+def _portal_save_daily_snapshot_file_only(snapshot):
+    os.makedirs(os.path.dirname(PORTAL_DAILY_SNAPSHOT_FILE), exist_ok=True)
+    tmp = PORTAL_DAILY_SNAPSHOT_FILE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(snapshot, f, ensure_ascii=False, indent=2)
+        f.flush()
+        try:
+            os.fsync(f.fileno())
+        except Exception:
+            pass
+    os.replace(tmp, PORTAL_DAILY_SNAPSHOT_FILE)
+
+
 def _portal_save_daily_snapshot(snapshot):
+    """Persist a successful Portal snapshot to JSON AND the application DB."""
+    saved_disk = False
+    saved_db = False
     try:
-        os.makedirs(os.path.dirname(PORTAL_DAILY_SNAPSHOT_FILE), exist_ok=True)
-        tmp = PORTAL_DAILY_SNAPSHOT_FILE + '.tmp'
-        with open(tmp, 'w', encoding='utf-8') as f:
-            json.dump(snapshot, f, ensure_ascii=False, indent=2)
-            f.flush()
-            try:
-                os.fsync(f.fileno())
-            except Exception:
-                pass
-        os.replace(tmp, PORTAL_DAILY_SNAPSHOT_FILE)
-        return True
+        _portal_save_daily_snapshot_file_only(snapshot)
+        saved_disk = True
     except Exception as e:
-        logger.error("Portal daily snapshot save failed: %s", e)
-        return False
+        logger.error("Portal daily snapshot file save failed: %s", e)
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        _portal_ensure_snapshot_table(conn)
+        payload = json.dumps(snapshot, ensure_ascii=False, separators=(',', ':'))
+        conn.execute(
+            'INSERT INTO portal_snapshots (id, payload, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) '
+            'ON CONFLICT(id) DO UPDATE SET payload=excluded.payload, updated_at=CURRENT_TIMESTAMP',
+            ('daily', payload)
+        )
+        conn.commit()
+        saved_db = True
+    except Exception as e:
+        try:
+            if conn is not None:
+                conn.rollback()
+        except Exception:
+            pass
+        logger.error("Portal DB snapshot save failed: %s", e)
+    finally:
+        try:
+            if conn is not None and not has_request_context():
+                conn.close()
+        except Exception:
+            pass
+
+    return bool(saved_disk or saved_db)
 
 
 def _portal_floor_value(value):
@@ -12883,21 +13108,14 @@ def _portal_all_collections():
 
     # Portal can return a transient empty response. Reuse the last successful
     # complete source snapshot instead of overwriting the catalog with zero.
-    for snap_path in (
-        os.path.join(PERSISTENT_DATA_DIR, 'portal_source_snapshot.json'),
-        os.path.join(PERSISTENT_DATA_DIR, 'portal_daily_snapshot.json'),
-    ):
-        try:
-            if not os.path.exists(snap_path):
-                continue
-            with open(snap_path, 'r', encoding='utf-8') as sf:
-                snap = json.load(sf)
-            cached_rows = snap.get('collections') if isinstance(snap, dict) else None
-            if isinstance(cached_rows, list) and cached_rows:
-                logger.warning('Portal returned 0 collections; using saved snapshot %s (%s collections)', snap_path, len(cached_rows))
-                return True, cached_rows
-        except Exception as snap_err:
-            logger.warning('Portal source snapshot read failed: %s', snap_err)
+    try:
+        snap = _portal_load_daily_snapshot()
+        cached_rows = snap.get('collections') if isinstance(snap, dict) else None
+        if isinstance(cached_rows, list) and cached_rows:
+            logger.warning('Portal returned 0 collections; using saved durable snapshot (%s collections)', len(cached_rows))
+            return True, cached_rows
+    except Exception as snap_err:
+        logger.warning('Portal durable snapshot fallback failed: %s', snap_err)
     return True, []
 
 
@@ -13023,11 +13241,15 @@ def _portal_apply_daily_snapshot_to_gifts(snapshot):
                 if not model_image or not re.match(r'^https?://', model_image, re.I):
                     model_image = _portal_model_image_url(coll_name, model_name, slug)
                 fallbacks = _portal_model_fragment_fallback(slug, model_name)
-                # If Portal explicitly gave a URL, still expose the Changes CDN
-                # as the preferred high-quality fallback chain.
+                # Changes CDN is the preferred high-quality source. Fragment
+                # model PNGs remain the fallback if a Changes file is missing.
                 changes_url = _portal_model_image_url(coll_name, model_name, slug)
-                if changes_url and model_image != changes_url:
+                if changes_url:
                     image_fallbacks = [changes_url] + [x for x in fallbacks if x != changes_url]
+                    # Store the Changes URL as the primary image for consistent
+                    # high-resolution rendering; the UI already rotates through
+                    # image_fallbacks on error.
+                    model_image = changes_url
                 else:
                     image_fallbacks = fallbacks
 
@@ -13320,7 +13542,23 @@ def portal_daily_catalog():
                 'collections': [],
             })
 
-        return jsonify(snapshot)
+        # Enrich model rows for admin pickers: high-quality Changes PNG first,
+        # Fragment model paths as fallback. Prices stay exactly from Portal.
+        out = json.loads(json.dumps(snapshot))
+        for coll in out.get('collections') or []:
+            if not isinstance(coll, dict): continue
+            coll_name = str(coll.get('name') or coll.get('short_name') or 'Gift').strip()
+            slug = str(coll.get('short_name') or '').strip().lower()
+            for model in coll.get('models') or []:
+                if not isinstance(model, dict): continue
+                mn = str(model.get('name') or '').strip()
+                if not mn: continue
+                changes = _portal_model_image_url(coll_name, mn, slug)
+                raw = str(model.get('image') or model.get('image_url') or model.get('photo_url') or model.get('preview') or model.get('preview_url') or model.get('url') or '').strip()
+                fallbacks = [x for x in [raw] + _portal_model_fragment_fallback(slug, mn) if x and x != changes]
+                model['image'] = changes or raw or (fallbacks[0] if fallbacks else '')
+                model['image_fallbacks'] = fallbacks
+        return jsonify(out)
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
@@ -13598,19 +13836,29 @@ def _portal_catalog_payload(collection, model=None):
 
     display_name = coll_name if not model_name else f'{coll_name} — {model_name}'
     gift_key = _build_case_custom_gift_id(display_name, fragment_slug=short_name, model_name=model_name or None)
-    model_image = (
-        str((model or {}).get('image') or (model or {}).get('image_url') or
-            (model or {}).get('photo_url') or (model or {}).get('preview') or
-            (model or {}).get('preview_url') or '').strip()
-    )
-    collection_image = str(
-        collection.get('photo_url') or collection.get('image') or ''
+    # Model artwork: Changes CDN is the preferred high-quality source.
+    # Portal remains the source of the model price. Fragment URLs are exposed
+    # as browser fallbacks when the Changes PNG is unavailable.
+    changes_url = _portal_model_image_url(coll_name, model_name, short_name) if model_name else ''
+    raw_model_image = str(
+        (model or {}).get('image') or (model or {}).get('image_url') or
+        (model or {}).get('photo_url') or (model or {}).get('preview') or
+        (model or {}).get('preview_url') or (model or {}).get('url') or ''
     ).strip()
+    fragment_fallbacks = _portal_model_fragment_fallback(short_name, model_name) if model_name else []
+    if model_name:
+        image = changes_url or raw_model_image or (fragment_fallbacks[0] if fragment_fallbacks else '') or '/static/img/gift.png'
+        image_fallbacks = [x for x in [raw_model_image] + fragment_fallbacks if x and x != image]
+    else:
+        collection_image = str(collection.get('photo_url') or collection.get('image') or '').strip()
+        image = collection_image or f'https://fragment.com/file/gifts/{short_name}/thumb.webp' if short_name else '/static/img/gift.png'
+        image_fallbacks = []
     return {
         'gift_key': gift_key,
         'name': display_name,
         'type': 'item',
-        'image': model_image or collection_image or '/static/img/gift.png',
+        'image': image,
+        'image_fallbacks': image_fallbacks,
         'value': max(1, int(round(price * 100))) if price > 0 else 1,
         'fragment_slug': short_name,
         'model_name': model_name or None,
