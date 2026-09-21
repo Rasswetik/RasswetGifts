@@ -3620,26 +3620,39 @@ def get_active_events():
     return events
 
 def load_case_sections():
-    """Загружает список разделов кейсов"""
+    """Загружает список категорий кейсов из persistent JSON."""
     try:
         file_path = os.path.join(PERSISTENT_DATA_DIR, 'case_sections.json')
         if not os.path.exists(file_path):
             return []
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            sections = data.get('sections', []) if isinstance(data, dict) else []
-            sections.sort(key=lambda x: x.get('order', 0))
-            return sections
+        sections = data.get('sections', []) if isinstance(data, dict) else []
+        clean = []
+        for idx, sec in enumerate(sections):
+            if not isinstance(sec, dict):
+                continue
+            sid = normalize_section_id(sec.get('id') or sec.get('name') or 'other')
+            name = str(sec.get('name') or sid).strip()
+            clean.append({'id': sid, 'name': name, 'order': int(sec.get('order', idx + 1) or idx + 1)})
+        clean.sort(key=lambda x: (x.get('order', 0), x.get('name', '')))
+        return clean
     except Exception as e:
         logger.error(f"❌ Ошибка загрузки разделов кейсов: {e}")
         return []
 
 def save_case_sections(sections):
-    """Сохраняет список разделов кейсов"""
+    """Атомарно сохраняет категории кейсов в persistent JSON."""
     try:
         file_path = os.path.join(PERSISTENT_DATA_DIR, 'case_sections.json')
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump({'sections': sections}, f, ensure_ascii=False, indent=2)
+        tmp_path = file_path + '.tmp'
+        payload = {'sections': sections, 'updated_at': datetime.utcnow().isoformat(timespec='seconds') + 'Z'}
+        with open(tmp_path, 'w', encoding='utf-8') as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+            f.flush()
+            try: os.fsync(f.fileno())
+            except Exception: pass
+        os.replace(tmp_path, file_path)
         return True
     except Exception as e:
         logger.error(f"❌ Ошибка сохранения разделов кейсов: {e}")
@@ -3680,10 +3693,24 @@ def get_db_connection():
                 # psycopg exposes `closed`; after a route called conn.close()
                 # the request cache could therefore hand the next operation a
                 # dead connection/cursor and produce `cursor already closed`.
+                # psycopg/psycopg2 expose `closed` differently; some wrappers
+                # expose only `_closed`. Treat any non-zero/non-false closed state
+                # as unusable. Also make a cheap cursor probe when possible so a
+                # stale pooled connection never leaks a dead cursor into upgrades.
                 is_closed = bool(getattr(cached, 'closed', False)) or bool(getattr(cached, '_closed', False))
+                if not is_closed:
+                    try:
+                        if USE_POSTGRES:
+                            _probe = cached.cursor()
+                            _probe.execute('SELECT 1')
+                            try: _probe.close()
+                            except Exception: pass
+                    except Exception:
+                        is_closed = True
                 if not is_closed:
                     return cached
                 try:
+                    g._db_conn = None
                     del g._db_conn
                 except Exception:
                     pass
@@ -6266,27 +6293,61 @@ def start_ultimate_crash_loop():
                             logger.info(f"👻 SPOOKY ROUND! hidden multiplier: {spooky_multiplier}x")
 
                     # PostgreSQL does not provide sqlite's cursor.lastrowid.
-                    # Always fetch the generated id explicitly on PostgreSQL.
+                    # The production DB may be on an older schema without seed_hash/seed.
+                    # Never leave the transaction aborted while trying to discover the id:
+                    # each compatibility fallback rolls back first and uses RETURNING id.
+                    new_game_id = 0
+                    insert_succeeded = False
                     if USE_POSTGRES:
-                        # PostgreSQL: do not treat a missing fetchone() as a failed INSERT.
-                        # Some Render/db_wrapper cursor adapters execute RETURNING correctly
-                        # but expose the returned row only through a second fetch path.
-                        new_game_id = 0
-                        insert_succeeded = False
+                        # Preferred: full provably-fair columns.
                         try:
                             cursor.execute("""
                                 INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
                                 RETURNING id
                             """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
-                            insert_succeeded = True
+                            _row = cursor.fetchone()
+                            new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
+                            insert_succeeded = bool(new_game_id)
+                        except Exception as _pf_err:
+                            logger.warning(f"⚠️ Crash INSERT with provably-fair columns failed: {_pf_err}; using legacy-compatible INSERT")
                             try:
+                                conn.rollback()
+                            except Exception:
+                                pass
+                            cursor = conn.cursor()
+                            # Compatible with older ultimate_crash_games schemas.
+                            try:
+                                cursor.execute("""
+                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier)
+                                    VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
+                                    RETURNING id
+                                """, (target_multiplier, bool(is_bonus), spooky_multiplier))
                                 _row = cursor.fetchone()
                                 new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                            except Exception as _fetch_err:
-                                logger.warning(f"⚠️ Crash RETURNING fetch failed after successful INSERT: {_fetch_err}")
-                        except Exception as _pg_insert_err:
-                            logger.warning(f"⚠️ Crash INSERT with provably-fair columns failed: {_pg_insert_err}; retrying compatible INSERT")
+                                insert_succeeded = bool(new_game_id)
+                            except Exception as _compat_err:
+                                logger.warning(f"⚠️ Crash compatible INSERT failed: {_compat_err}; using minimal schema")
+                                try:
+                                    conn.rollback()
+                                except Exception:
+                                    pass
+                                cursor = conn.cursor()
+                                cursor.execute("""
+                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
+                                    VALUES ('counting', ?, CURRENT_TIMESTAMP)
+                                    RETURNING id
+                                """, (target_multiplier,))
+                                _row = cursor.fetchone()
+                                new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
+                                insert_succeeded = bool(new_game_id)
+                    else:
+                        try:
+                            cursor.execute("""
+                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
+                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
+                            """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
+                        except Exception:
                             try:
                                 conn.rollback()
                             except Exception:
@@ -6294,9 +6355,9 @@ def start_ultimate_crash_loop():
                             cursor = conn.cursor()
                             try:
                                 cursor.execute("""
-                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
-                                    VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
-                                """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
+                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier)
+                                    VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
+                                """, (target_multiplier, bool(is_bonus), spooky_multiplier))
                             except Exception:
                                 try:
                                     conn.rollback()
@@ -6307,57 +6368,17 @@ def start_ultimate_crash_loop():
                                     INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
                                     VALUES ('counting', ?, CURRENT_TIMESTAMP)
                                 """, (target_multiplier,))
-                            insert_succeeded = True
+                        new_game_id = cursor.lastrowid
+                        insert_succeeded = bool(new_game_id)
 
-                        # First choice: exact round seed. This works even when the
-                        # cursor wrapper drops RETURNING/LASTVAL support.
-                        if insert_succeeded and not new_game_id:
-                            try:
-                                cursor.execute(
-                                    'SELECT id FROM ultimate_crash_games WHERE seed_hash = ? ORDER BY id DESC LIMIT 1',
-                                    (_round_seed_hash,)
-                                )
-                                _row = cursor.fetchone()
-                                new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                            except Exception as _seed_lookup_err:
-                                logger.warning(f"⚠️ Crash seed id lookup failed: {_seed_lookup_err}")
-
-                        # Second choice: PostgreSQL sequence value from this exact session.
-                        if insert_succeeded and not new_game_id:
-                            try:
-                                cursor.execute("SELECT currval(pg_get_serial_sequence('ultimate_crash_games','id'))")
-                                _row = cursor.fetchone()
-                                new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                            except Exception as _currval_err:
-                                logger.warning(f"⚠️ Crash currval() failed: {_currval_err}")
-
-                        # Third choice: newest counting round matching this target, still
-                        # inside the same transaction, so we never create a duplicate.
-                        if insert_succeeded and not new_game_id:
-                            try:
-                                cursor.execute(
-                                    "SELECT id FROM ultimate_crash_games WHERE status = 'counting' AND target_multiplier = ? ORDER BY id DESC LIMIT 1",
-                                    (target_multiplier,)
-                                )
-                                _row = cursor.fetchone()
-                                new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                            except Exception:
-                                pass
-
-                    # If LASTVAL() was unavailable, recover by the round seed.
-                    # Keep this after the INSERT recovery so we never insert a duplicate.
-                    if USE_POSTGRES and not new_game_id:
+                    # IMPORTANT: do not run seed_hash/currval lookups after a legacy
+                    # INSERT. The missing seed_hash column was the original failure
+                    # and those lookups were aborting the transaction again.
+                    if not new_game_id and insert_succeeded:
                         try:
-                            cursor.execute(
-                                'SELECT id FROM ultimate_crash_games WHERE seed_hash = ? ORDER BY id DESC LIMIT 1',
-                                (_round_seed_hash,)
-                            )
-                            _row = cursor.fetchone()
-                            if _row and _row[0] is not None:
-                                new_game_id = int(_row[0])
+                            conn.commit()
                         except Exception:
                             pass
-
                     if not new_game_id:
                         raise RuntimeError('Crash game was inserted but its id was not returned')
                     conn.commit()
@@ -23215,7 +23236,7 @@ def admin_seasonal_case():
         logger.error('Seasonal case admin error: %s', e)
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/admin/case-sections', methods=['GET', 'POST', 'DELETE'])
+@app.route('/api/admin/case-sections', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_case_sections():
     """Управление разделами кейсов"""
     try:
@@ -23245,6 +23266,26 @@ def admin_case_sections():
             if not save_case_sections(sections):
                 return jsonify({'success': False, 'error': 'Ошибка сохранения разделов'})
             return jsonify({'success': True, 'section': new_section, 'sections': sections})
+
+        if request.method == 'PUT':
+            section_id = normalize_section_id(payload.get('id'))
+            new_name = str(payload.get('name') or '').strip()
+            if not section_id or not new_name:
+                return jsonify({'success': False, 'error': 'Укажите категорию и новое название'}), 400
+            sections = load_case_sections()
+            target = next((x for x in sections if x.get('id') == section_id), None)
+            if not target:
+                return jsonify({'success': False, 'error': 'Категория не найдена'}), 404
+            target['name'] = new_name
+            if payload.get('order') is not None:
+                try: target['order'] = int(payload.get('order'))
+                except Exception: pass
+            sections.sort(key=lambda x: (int(x.get('order', 0) or 0), str(x.get('name') or '')))
+            for idx, sec in enumerate(sections, 1):
+                sec['order'] = idx
+            if not save_case_sections(sections):
+                return jsonify({'success': False, 'error': 'Ошибка сохранения категорий'}), 500
+            return jsonify({'success': True, 'section': target, 'sections': sections})
 
         if request.method == 'DELETE':
             section_id = normalize_section_id(payload.get('id'))
