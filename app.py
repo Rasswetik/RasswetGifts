@@ -727,6 +727,10 @@ def _get_bot_bets_for_api(game_id):
     return []
 
 
+# Safe default; populated from the levels table during startup.
+# The previous build could call /api/user/<id> before this symbol existed.
+LEVEL_SYSTEM = []
+
 def _sync_levels_from_db():
     """Синхронизирует уровни с БД без потери дополнительных полей конфигурации.
 
@@ -2708,16 +2712,8 @@ def build_runtime_gifts_catalog(source=None, max_models=RUNTIME_MODELS_PER_COLLE
 
 
 def build_full_catalog_with_models(force_refresh=False):
-    """Runtime catalog used by gameplay.
-
-    Keep the full Portal/model catalog on disk for admin/case tooling, but do
-    not materialize every model for Upgrade/Crash. A collection contributes
-    its normal/base gift plus only a small number of representative models.
-    """
-    try:
-        return build_runtime_gifts_catalog(max_models=RUNTIME_MODELS_PER_COLLECTION)
-    except Exception:
-        return build_fragment_first_gifts_catalog(force_refresh=force_refresh)
+    """Canonical runtime catalog. Models are only available when persisted in gifts.json."""
+    return build_fragment_first_gifts_catalog(force_refresh=force_refresh)
 
 def _resolve_case_gift_payload(gifts, selected_gift_info):
     """Resolve a case gift entry to a full gift dict.
@@ -2725,22 +2721,29 @@ def _resolve_case_gift_payload(gifts, selected_gift_info):
     if not selected_gift_info or selected_gift_info.get('type') in ('ton_balance', 'gram_balance'):
         return None
 
-    # "Обычный подарок" / "Random" в интерфейсе означает исходную
-    # коллекцию БЕЗ модели. Никогда не выбираем модель случайно на выдаче.
-    # Старые записи, где model_random=true, также принудительно трактуем как
-    # оригинальный подарок коллекции.
+    # Case editor can store a collection with "random model".
+    # Resolve a concrete Portal model only when this reward actually wins.
     if selected_gift_info.get('model_random'):
-        base_slug = str(selected_gift_info.get('fragment_slug') or '').strip().lower()
-        if base_slug:
+        _random_slug = str(selected_gift_info.get('fragment_slug') or '').strip().lower()
+        if _random_slug:
             try:
-                base_catalog = build_runtime_gifts_catalog()
-                base_item = next((x for x in base_catalog
-                                  if str(x.get('fragment_slug') or '').strip().lower() == base_slug
-                                  and not (x.get('model_name') or x.get('portal_model_name'))), None)
-                if base_item:
-                    return dict(base_item)
-            except Exception as _base_resolve_error:
-                logger.warning('Base gift resolve failed for %s: %s', base_slug, _base_resolve_error)
+                _collection, _unused = _portal_snapshot_find(_random_slug, None)
+                _models = (_collection or {}).get('models') or []
+                if _collection and _models:
+                    _picked_model = random.choice(_models)
+                    try:
+                        # Materialize the selected model into the canonical catalog
+                        # so inventory/withdrawal code receives a stable integer gift id.
+                        return _portal_upsert_catalog_item(_collection, _picked_model)
+                    except Exception:
+                        _payload = _portal_catalog_payload(_collection, _picked_model)
+                        _payload['id'] = -1
+                        return _payload
+            except Exception as _random_model_error:
+                logger.warning(
+                    'Random Portal model resolve failed for %s: %s',
+                    _random_slug, _random_model_error
+                )
 
     target_id = selected_gift_info.get('id')
     target_id_str = str(target_id) if target_id is not None else ''
@@ -2770,7 +2773,7 @@ def _resolve_case_gift_payload(gifts, selected_gift_info):
         'gift_key': selected_gift_info.get('gift_key'),
         'fragment_slug': selected_gift_info.get('fragment_slug'),
         'model_name': selected_gift_info.get('model_name'),
-        'model_random': False,
+        'model_random': bool(selected_gift_info.get('model_random')),
         'type': selected_gift_info.get('type', 'gift')
     }
 
@@ -2793,13 +2796,21 @@ def _read_gifts_file(path):
 
 def _write_gifts_file(path, gifts):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = path + '.tmp'
-    with open(tmp, 'w', encoding='utf-8') as f:
-        json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
-        f.flush()
-        try: os.fsync(f.fileno())
+    # Use a per-writer temporary file. Several Portal/background workers can
+    # save the catalog at the same time; a shared '.tmp' file caused one writer
+    # to replace/delete the other writer's temp file and produced ENOENT.
+    tmp = f"{path}.{os.getpid()}.{threading.get_ident()}.tmp"
+    try:
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump({'gifts': gifts}, f, ensure_ascii=False, indent=2)
+            f.flush()
+            try: os.fsync(f.fileno())
+            except Exception: pass
+        os.replace(tmp, path)
+    finally:
+        try:
+            if os.path.exists(tmp): os.remove(tmp)
         except Exception: pass
-    os.replace(tmp, path)
 
 def load_gifts():
     """Load the canonical gift catalog from the durable copy first.
@@ -3143,7 +3154,6 @@ def get_public_cases_with_seasonal():
 
 # ─── Events ────────────────────────────────────────────────────────────────
 EVENTS_FILE = os.path.join(PERSISTENT_DATA_DIR, 'events.json')
-EVENT_CASE_POOLS_FILE = os.path.join(PERSISTENT_DATA_DIR, 'event_case_pools.json')
 GAME_UI_DEFAULTS = {
     # Public Games page: only the Event entry and ordinary game modes live here.
     # Event-specific content (special mode, event cases, market) belongs to the
@@ -3169,7 +3179,7 @@ EVENT_DEFAULTS = {
             {'id':'special_mode','title':'Особый режим','type':'mode','items':[
                 {'id':'ghost_road_mode','name':'Ghost Road','subtitle':'','image':'/static/img/ghost_road.png','path':'/event/ghost-road','size':'small','visible':True}
             ]},
-            {'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[],'case_ids_explicit':True},
+            {'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[]},
             {'id':'market','title':'Маркет','type':'market','items':[]}
         ]
     },
@@ -3177,7 +3187,7 @@ EVENT_DEFAULTS = {
         'id': 'cases_event', 'name': 'Cases',
         'image': '', 'enabled': False, 'ends_at': None,
         'sections': [
-            {'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'case_ids_explicit':True}
+            {'id':'cases','title':'Кейсы','type':'cases','case_ids':[]}
         ]
     },
     'witch_hat_party': {
@@ -3242,11 +3252,9 @@ def _normalize_witch_event_structure(obj):
     })
     special['id']='special_mode'; special['title']='Особые режимы'; special['type']='mode'; special['items']=items
     if cases is None:
-        cases={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[],'case_ids_explicit':True}
+        cases={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[]}
     else:
-        existing_ids=list(cases.get('case_ids') or [])
-        cases['id']='event_cases'; cases['title']=cases.get('title') or 'Кейсы события'; cases['type']='cases'; cases['case_ids']=existing_ids
-        cases['case_ids_explicit']=bool(cases.get('case_ids_explicit', bool(existing_ids)))
+        cases['id']='event_cases'; cases['title']=cases.get('title') or 'Кейсы события'; cases['type']='cases'; cases['case_ids']=list(cases.get('case_ids') or [])
     if market is None:
         market={'id':'market','title':'Маркет','type':'market','items':[]}
     else:
@@ -3333,91 +3341,6 @@ def _event_db_defaults():
     except Exception as e:
         logger.warning('Event DB init failed: %s', e)
 
-def _load_event_case_pools():
-    """Load explicit event -> case-pool assignments independently of cases.json.
-
-    Case definitions live in cases.json. This file stores only which existing
-    cases an event is allowed to show. It prevents an event refresh/restart from
-    accidentally rebuilding the pool from the global case catalog.
-    """
-    try:
-        if not os.path.exists(EVENT_CASE_POOLS_FILE):
-            return {}
-        with open(EVENT_CASE_POOLS_FILE, 'r', encoding='utf-8') as f:
-            raw=json.load(f)
-        pools=raw.get('pools', raw) if isinstance(raw,dict) else {}
-        if not isinstance(pools,dict):
-            return {}
-        clean={}
-        for eid,pool in pools.items():
-            if not isinstance(pool,dict):
-                continue
-            ids=[]
-            for x in pool.get('case_ids') or []:
-                sx=str(x).strip()
-                if sx and sx not in ids:
-                    ids.append(sx)
-            clean[str(eid)]=ids
-        return clean
-    except Exception as e:
-        logger.warning('Event case pools JSON load failed: %s',e)
-        return {}
-
-def _save_event_case_pools(events):
-    """Persist only event case assignments; never writes case definitions here."""
-    pools={}
-    try:
-        for eid,ev in (events or {}).items():
-            if not isinstance(ev,dict):
-                continue
-            sections=ev.get('sections') if isinstance(ev.get('sections'),list) else []
-            sec=next((x for x in sections if isinstance(x,dict) and str(x.get('type') or '').lower()=='cases'),None)
-            if sec is None:
-                continue
-            ids=[]
-            for x in sec.get('case_ids') or []:
-                sx=str(x).strip()
-                if sx and sx not in ids:
-                    ids.append(sx)
-            pools[str(eid)]={'case_ids':ids,'updated_at':datetime.utcnow().isoformat(timespec='seconds')+'Z'}
-        tmp=EVENT_CASE_POOLS_FILE+'.tmp'
-        with open(tmp,'w',encoding='utf-8') as f:
-            json.dump({'pools':pools},f,ensure_ascii=False,indent=2)
-            f.flush()
-            try: os.fsync(f.fileno())
-            except Exception: pass
-        os.replace(tmp,EVENT_CASE_POOLS_FILE)
-        return True
-    except Exception as e:
-        logger.error('Event case pools JSON save failed: %s',e)
-        return False
-
-def _apply_event_case_pools(events):
-    """Overlay the dedicated event pools onto loaded event definitions."""
-    pools=_load_event_case_pools()
-    if not pools:
-        return events
-    changed=False
-    for eid,ids in pools.items():
-        ev=events.get(eid)
-        if not isinstance(ev,dict):
-            continue
-        sections=ev.setdefault('sections',[])
-        sec=next((x for x in sections if isinstance(x,dict) and str(x.get('type') or '').lower()=='cases'),None)
-        if sec is None:
-            sec={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[],'case_ids_explicit':True}
-            sections.insert(0,sec)
-        normalized=[]
-        for x in ids:
-            sx=str(x).strip()
-            if sx and sx not in normalized:
-                normalized.append(sx)
-        if [str(x) for x in (sec.get('case_ids') or [])] != normalized or not sec.get('case_ids_explicit'):
-            sec['case_ids']=normalized
-            sec['case_ids_explicit']=True
-            changed=True
-    return events
-
 def load_events():
     """Load event configuration from durable events.json, with DB recovery fallback."""
     try:
@@ -3431,7 +3354,7 @@ def load_events():
                     if isinstance(obj,dict):
                         if eid not in result: result[eid]={}
                         result[eid].update(obj)
-                return _apply_event_case_pools(result)
+                return result
     except Exception as e:
         logger.warning('Events JSON load failed: %s',e)
     try:
@@ -3443,9 +3366,9 @@ def load_events():
                 eid,payload=row[0],row[1]; obj=json.loads(payload) if isinstance(payload,str) else dict(payload)
                 if eid in result and isinstance(obj,dict): result[eid].update(obj)
             except Exception: pass
-        return _apply_event_case_pools(result)
+        return result
     except Exception as e:
-        logger.warning('Events DB load failed: %s',e); return _apply_event_case_pools(json.loads(json.dumps(EVENT_DEFAULTS)))
+        logger.warning('Events DB load failed: %s',e); return json.loads(json.dumps(EVENT_DEFAULTS))
 
 def save_events(events):
     if not isinstance(events,dict): events={}
@@ -3470,8 +3393,7 @@ def save_events(events):
         conn.commit(); conn.close(); db_ok=True
     except Exception as e:
         logger.warning('Events DB save failed: %s',e)
-    pool_ok=_save_event_case_pools(events)
-    return json_ok or db_ok or pool_ok
+    return json_ok or db_ok
 
 def _event_find_case(case_ref):
     ref=str(case_ref or '').strip().lower()
@@ -3565,26 +3487,27 @@ def _event_market_item_from_collection(collection):
     return {'collection':name,'fragment_slug':slug,'image':image,'floor_ton':round(float(floor),4) if floor is not None else None,'listings':listings}
 
 def _sync_event_cases(ev):
-    """Keep event case pools explicit; never auto-fill them from cases.json.
-
-    Every case definition belongs to cases.json. An event only contains the
-    references that an administrator explicitly added to its case pool.
-    """
+    """Attach cases explicitly marked for Event to the first case section."""
     try:
+        all_cases = get_public_cases_with_seasonal()
+        auto_ids=[]
+        for c in all_cases:
+            section=str(c.get('section') or '').strip().lower()
+            tags=[str(x).strip().lower() for x in (c.get('tags') or [])]
+            if bool(c.get('event_case')) or section in ('event','witch_hat_party') or 'event' in tags or 'witch_hat_party' in tags:
+                auto_ids.append(str(c.get('id')))
+        if not auto_ids: return False
         sections=ev.setdefault('sections',[])
-        sec=next((x for x in sections if isinstance(x,dict) and str(x.get('type') or '').lower()=='cases'),None)
+        sec=next((x for x in sections if x.get('type')=='cases'),None)
         if sec is None:
-            sec={'id':'event_cases','title':'Кейсы события','type':'cases','case_ids':[],'case_ids_explicit':True}
+            sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}
             sections.insert(0,sec)
-            return True
-        ids=[]
-        for x in sec.get('case_ids') or []:
-            sx=str(x).strip()
-            if sx and sx not in ids:
-                ids.append(sx)
-        changed = [str(x) for x in (sec.get('case_ids') or [])] != ids or not bool(sec.get('case_ids_explicit',False))
+        ids=[str(x) for x in sec.get('case_ids',[])]
+        changed=False
+        for cid in auto_ids:
+            if cid not in ids: ids.append(cid); changed=True
         sec['case_ids']=ids
-        sec['case_ids_explicit']=True
+        return changed
         return changed
     except Exception:
         return False
@@ -6382,92 +6305,104 @@ def start_ultimate_crash_loop():
                             logger.info(f"👻 SPOOKY ROUND! hidden multiplier: {spooky_multiplier}x")
 
                     # PostgreSQL does not provide sqlite's cursor.lastrowid.
-                    # RETURNING id is preferred. Some deployed schemas/drivers,
-                    # however, can execute the INSERT without giving us the
-                    # returned row. In that case commit the successful INSERT
-                    # and resolve the just-created row by its creation timestamp
-                    # and target instead of using currval() (which can fail after
-                    # an aborted transaction).
+                    # The production DB may be on an older schema without seed_hash/seed.
+                    # Never leave the transaction aborted while trying to discover the id:
+                    # each compatibility fallback rolls back first and uses RETURNING id.
                     new_game_id = 0
                     insert_succeeded = False
-
                     if USE_POSTGRES:
-                        insert_variants = [
-                            ("full", """
-                                INSERT INTO ultimate_crash_games
-                                    (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
+                        # Preferred: full provably-fair columns.
+                        try:
+                            cursor.execute("""
+                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
                                 VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
                                 RETURNING id
-                            """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash)),
-                            ("compat", """
-                                INSERT INTO ultimate_crash_games
-                                    (status, target_multiplier, start_time, is_bonus, spooky_multiplier)
-                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
-                                RETURNING id
-                            """, (target_multiplier, bool(is_bonus), spooky_multiplier)),
-                            ("minimal", """
-                                INSERT INTO ultimate_crash_games
-                                    (status, target_multiplier, start_time)
-                                VALUES ('counting', ?, CURRENT_TIMESTAMP)
-                                RETURNING id
-                            """, (target_multiplier,)),
-                        ]
-                        for label, sql, params in insert_variants:
+                            """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
+                            _row = cursor.fetchone()
+                            new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
+                            insert_succeeded = bool(new_game_id)
+                        except Exception as _pf_err:
+                            logger.warning(f"⚠️ Crash INSERT with provably-fair columns failed: {_pf_err}; using legacy-compatible INSERT")
                             try:
-                                cursor.execute(sql, params)
-                                _row = cursor.fetchone()
-                                if _row and _row[0] is not None:
-                                    new_game_id = int(_row[0])
-                                insert_succeeded = True
-                                break
-                            except Exception as _insert_err:
-                                logger.warning(f"⚠️ Crash {label} INSERT failed: {_insert_err}")
-                                try:
-                                    conn.rollback()
-                                except Exception:
-                                    pass
-                                cursor = conn.cursor()
-
-                        if insert_succeeded and not new_game_id:
-                            # The INSERT may have succeeded even when the driver
-                            # did not expose RETURNING. Commit first, then resolve
-                            # the newest counting row. No currval() and no seed_hash
-                            # lookup are used here.
-                            try:
-                                conn.commit()
+                                conn.rollback()
                             except Exception:
                                 pass
+                            cursor = conn.cursor()
+                            # Compatible with older ultimate_crash_games schemas.
                             try:
-                                cursor = conn.cursor()
-                                cursor.execute(
-                                    "SELECT id FROM ultimate_crash_games WHERE status = 'counting' AND target_multiplier = ? ORDER BY id DESC LIMIT 1",
-                                    (target_multiplier,)
-                                )
+                                cursor.execute("""
+                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier)
+                                    VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
+                                    RETURNING id
+                                """, (target_multiplier, bool(is_bonus), spooky_multiplier))
                                 _row = cursor.fetchone()
                                 new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
-                            except Exception as _lookup_err:
-                                logger.error(f"❌ Crash inserted but id lookup failed: {_lookup_err}")
-
-                    else:
-                        for sql, params in (
-                            ("INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash) VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)", (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash)),
-                            ("INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier) VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)", (target_multiplier, bool(is_bonus), spooky_multiplier)),
-                            ("INSERT INTO ultimate_crash_games (status, target_multiplier, start_time) VALUES ('counting', ?, CURRENT_TIMESTAMP)", (target_multiplier,)),
-                        ):
-                            try:
-                                cursor.execute(sql, params)
-                                insert_succeeded = True
-                                break
-                            except Exception as _insert_err:
+                                insert_succeeded = bool(new_game_id)
+                            except Exception as _compat_err:
+                                logger.warning(f"⚠️ Crash compatible INSERT failed: {_compat_err}; using minimal schema")
                                 try:
                                     conn.rollback()
                                 except Exception:
                                     pass
                                 cursor = conn.cursor()
-                        if insert_succeeded:
-                            new_game_id = int(getattr(cursor, 'lastrowid', 0) or 0)
+                                cursor.execute("""
+                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
+                                    VALUES ('counting', ?, CURRENT_TIMESTAMP)
+                                    RETURNING id
+                                """, (target_multiplier,))
+                                _row = cursor.fetchone()
+                                new_game_id = int(_row[0]) if _row and _row[0] is not None else 0
+                                insert_succeeded = bool(new_game_id)
+                    else:
+                        try:
+                            cursor.execute("""
+                                INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier, seed_hash)
+                                VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?, ?)
+                            """, (target_multiplier, bool(is_bonus), spooky_multiplier, _round_seed_hash))
+                        except Exception:
+                            try:
+                                conn.rollback()
+                            except Exception:
+                                pass
+                            cursor = conn.cursor()
+                            try:
+                                cursor.execute("""
+                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time, is_bonus, spooky_multiplier)
+                                    VALUES ('counting', ?, CURRENT_TIMESTAMP, ?, ?)
+                                """, (target_multiplier, bool(is_bonus), spooky_multiplier))
+                            except Exception:
+                                try:
+                                    conn.rollback()
+                                except Exception:
+                                    pass
+                                cursor = conn.cursor()
+                                cursor.execute("""
+                                    INSERT INTO ultimate_crash_games (status, target_multiplier, start_time)
+                                    VALUES ('counting', ?, CURRENT_TIMESTAMP)
+                                """, (target_multiplier,))
+                        new_game_id = cursor.lastrowid
+                        insert_succeeded = bool(new_game_id)
 
+                    # Some older PostgreSQL drivers/proxies execute INSERT successfully
+                    # but return no row for RETURNING, while SQLite exposes no Postgres
+                    # RETURNING in the legacy path. Recover the id from the row created
+                    # by this game loop on the SAME connection before giving up. Do not
+                    # use currval(), because the production schema may use a different
+                    # sequence or a trigger.
+                    if not new_game_id and insert_succeeded:
+                        try:
+                            cursor = conn.cursor()
+                            cursor.execute("SELECT id FROM ultimate_crash_games WHERE status = 'counting' ORDER BY id DESC LIMIT 1")
+                            _row = cursor.fetchone()
+                            if _row and _row[0] is not None:
+                                new_game_id = int(_row[0])
+                        except Exception as _id_lookup_err:
+                            logger.warning(f"⚠️ Crash inserted but fallback id lookup failed: {_id_lookup_err}")
                     if not new_game_id:
+                        try:
+                            conn.rollback()
+                        except Exception:
+                            pass
                         raise RuntimeError('Crash game was inserted but its id was not returned')
                     conn.commit()
                     _cleanup_user_bets_cache()
@@ -6787,13 +6722,13 @@ def crash_page():
 
 @app.route('/index')
 def index():
-    """Legacy alias for the Cases event page."""
-    return redirect('/cases')
+    """Главная страница кейсов (алиас)"""
+    return render_template('index.html')
 
 @app.route('/case')
 def case_main_page():
-    """Witch Hat Party case list. Individual cases remain /case/<slug>."""
-    return render_template('index.html', initial_case_id=None, case_source='witch_hat_party')
+    """Страница списка кейсов."""
+    return render_template('index.html', initial_case_id=None)
 
 def _serve_case_template():
     """Единый шаблон страницы кейса (корень проекта или templates/)."""
@@ -6821,8 +6756,8 @@ def case_detail_page(case_slug):
 
 @app.route('/cases')
 def cases_page():
-    """Dedicated Cases event page. It shows only cases attached to cases_event."""
-    return render_template('index.html', initial_case_id=None, case_source='cases_event')
+    """Страница кейсов (алиас)"""
+    return render_template('index.html', initial_case_id=None)
 
 @app.route('/event/ghost-road')
 def ghost_road_page():
@@ -9939,9 +9874,6 @@ def api_cases_event():
     try:
         events = get_active_events()
         ev = events.get('cases_event', EVENT_DEFAULTS['cases_event']) or {}
-        for _sec in (ev.get('sections') or []):
-            if isinstance(_sec,dict) and _sec.get('type')=='cases' and 'case_ids_explicit' not in _sec:
-                _sec['case_ids_explicit']=True
         end = None
         remaining = 0
         if ev.get('ends_at'):
@@ -10258,14 +10190,10 @@ def admin_events():
             ev=events[eid]
             if eid == 'witch_hat_party': _normalize_witch_event_structure(ev)
             elif eid == 'cases_event':
-                sections=ev.setdefault('sections',[])
-                case_sections=[x for x in sections if isinstance(x,dict) and x.get('type')=='cases']
-                if not case_sections:
-                    sections.append({'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'case_ids_explicit':True,'visible':True,'order':0})
-                for sec in sections:
+                ev.setdefault('sections',[{'id':'cases','title':'Кейсы','type':'cases','case_ids':[]}])
+                for sec in ev['sections']:
                     if isinstance(sec,dict) and sec.get('type')=='cases':
-                        sec['case_ids']=list(dict.fromkeys([str(x) for x in (sec.get('case_ids') or []) if str(x).strip()]))
-                        sec['case_ids_explicit']=True
+                        sec['case_ids']=list(sec.get('case_ids') or [])
             action=str(data.get('action') or 'toggle')
             if action=='update_settings':
                 for key in ('name','image','loading_gif'):
@@ -10356,68 +10284,14 @@ def admin_events():
                     if item_id=='ghost_road_mode':
                         return jsonify({'success':False,'error':'Обязательную кнопку Ghost Road нельзя удалить'}),400
                     mode['items']=[x for x in items if str(x.get('id'))!=item_id]
-            elif action in ('add_case','remove_case','move_case','add_case_section','update_case_section','remove_case_section'):
-                _sections=ev.setdefault('sections',[])
-                # Cases Coming uses explicit case sections only. Never auto-populate them.
-                if action=='add_case_section':
-                    title=str(data.get('title') or '').strip()
-                    if not title: return jsonify({'success':False,'error':'Введите название раздела'}),400
-                    sid=re.sub(r'[^a-z0-9_-]+','_',title.lower())[:40] or f'case_section_{int(time.time())}'
-                    base=sid; n=2
-                    while any(str(x.get('id'))==sid for x in _sections): sid=f'{base}_{n}'; n+=1
-                    _sections.append({'id':sid,'title':title,'type':'cases','case_ids':[],'case_ids_explicit':True,'visible':True,'order':len([x for x in _sections if x.get('type')=='cases'])})
-                elif action=='update_case_section':
-                    sid=str(data.get('section_id') or '').strip()
-                    sec=next((x for x in _sections if str(x.get('id'))==sid and x.get('type')=='cases'),None)
-                    if sec is None: return jsonify({'success':False,'error':'Раздел кейсов не найден'}),404
-                    title=str(data.get('title') or '').strip()
-                    if title: sec['title']=title
-                    if 'visible' in data: sec['visible']=bool(data.get('visible'))
-                    if 'order' in data:
-                        try: sec['order']=int(data.get('order'))
-                        except Exception: pass
-                elif action=='remove_case_section':
-                    sid=str(data.get('section_id') or '').strip()
-                    matches=[x for x in _sections if str(x.get('id'))==sid and x.get('type')=='cases']
-                    if not matches: return jsonify({'success':False,'error':'Раздел кейсов не найден'}),404
-                    sec=matches[0]
-                    # Keep the cases by moving them to another case section, if requested.
-                    target_id=str(data.get('move_to') or '').strip()
-                    target=next((x for x in _sections if str(x.get('id'))==target_id and x.get('type')=='cases' and str(x.get('id'))!=sid),None)
-                    if target is None and sec.get('case_ids'):
-                        target=next((x for x in _sections if x.get('type')=='cases' and str(x.get('id'))!=sid),None)
-                    if target is not None:
-                        target_ids=target.setdefault('case_ids',[])
-                        for cid in sec.get('case_ids') or []:
-                            if str(cid) not in [str(x) for x in target_ids]: target_ids.append(cid)
-                        target['case_ids_explicit']=True
-                    _sections[:]=[x for x in _sections if str(x.get('id'))!=sid]
-                    if not any(x.get('type')=='cases' for x in _sections):
-                        _sections.append({'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'case_ids_explicit':True,'visible':True,'order':0})
-                else:
-                    case_id=str(data.get('case_id') or '').strip(); section_id=str(data.get('section_id') or '').strip()
+            elif action in ('add_case','remove_case'):
+                case_id=str(data.get('case_id') or '').strip(); section_id=str(data.get('section_id') or '').strip(); sec=next((x for x in ev.setdefault('sections',[]) if str(x.get('id'))==section_id and x.get('type')=='cases'),None) or next((x for x in ev.setdefault('sections',[]) if x.get('type')=='cases'),None)
+                if sec is None: sec={'id':'special_cases','title':'Особые кейсы','type':'cases','case_ids':[]}; ev['sections'].insert(0,sec)
+                ids=sec.setdefault('case_ids',[])
+                if action=='add_case':
                     if not _event_find_case(case_id): return jsonify({'success':False,'error':'Кейс не найден'}),404
-                    if action=='move_case':
-                        target_id=str(data.get('target_section_id') or '').strip()
-                        source=next((x for x in _sections if x.get('type')=='cases' and str(case_id) in [str(v) for v in (x.get('case_ids') or [])]),None)
-                        target=next((x for x in _sections if x.get('type')=='cases' and str(x.get('id'))==target_id),None)
-                        if target is None: return jsonify({'success':False,'error':'Целевой раздел не найден'}),404
-                        for sec in _sections:
-                            if sec.get('type')=='cases': sec['case_ids']=[v for v in (sec.get('case_ids') or []) if str(v)!=case_id]
-                            if sec.get('type')=='cases': sec['case_ids_explicit']=True
-                        target_ids=[str(v) for v in target.setdefault('case_ids',[])]
-                        if case_id not in target_ids:
-                            target['case_ids'].append(case_id)
-                    else:
-                        sec=next((x for x in _sections if str(x.get('id'))==section_id and x.get('type')=='cases'),None) or next((x for x in _sections if x.get('type')=='cases'),None)
-                        if sec is None:
-                            sec={'id':'cases','title':'Кейсы','type':'cases','case_ids':[],'case_ids_explicit':True,'visible':True,'order':0}; _sections.append(sec)
-                        ids=sec.setdefault('case_ids',[])
-                        if action=='add_case':
-                            if case_id not in [str(x) for x in ids]: ids.append(case_id)
-                        else:
-                            sec['case_ids']=[x for x in ids if str(x)!=case_id]
-                        sec['case_ids_explicit']=True
+                    if case_id not in [str(x) for x in ids]: ids.append(case_id)
+                else: sec['case_ids']=[x for x in ids if str(x)!=case_id]
             elif action=='set_section_unlock':
                 # Открытие раздела по таймеру: часы + минуты от текущего момента.
                 _normalize_witch_event_structure(ev) if eid=='witch_hat_party' else None
@@ -10514,31 +10388,8 @@ def api_cases():
         other_cases=[c for c in cases if not _is_public_season_case(c)]
         cases=season_cases+other_cases
 
-        # The public Cases page is event-owned. Never mix its cards with the
-        # Witch Hat Party cards or the legacy global case catalog.
-        event_id = str(request.args.get('event') or '').strip().lower()
-        if event_id in ('cases_event', 'witch_hat_party'):
-            events = get_active_events()
-            ev = events.get(event_id, EVENT_DEFAULTS.get(event_id, {})) or {}
-            if event_id == 'witch_hat_party':
-                _normalize_witch_event_structure(ev)
-                if _sync_event_cases(ev):
-                    try: save_events(events)
-                    except Exception: pass
-            sections = ev.get('sections') if isinstance(ev.get('sections'), list) else []
-            case_sec = next((x for x in sections if isinstance(x, dict) and str(x.get('type') or '').lower() == 'cases'), None)
-            ids = [str(x) for x in (case_sec or {}).get('case_ids', [])]
-            by_ref = {}
-            for c in cases:
-                for ref in _case_ref_candidates(c): by_ref[str(ref).lower()] = c
-            selected = []
-            for ref in ids:
-                c = by_ref.get(str(ref).lower())
-                if c and c not in selected: selected.append(c)
-            cases = selected
-
         logger.info(f"✅ Загружено {len(cases)} кейсов")
-        return jsonify({'success': True, 'cases': cases, 'event': event_id or None})
+        return jsonify({'success': True, 'cases': cases})
 
     except Exception as e:
         logger.error(f"❌ Критическая ошибка получения кейсов: {e}")
@@ -13183,6 +13034,14 @@ def _portal_load_daily_snapshot():
                 return data
         except Exception as e:
             logger.warning("Portal snapshot read failed %s: %s", path, e)
+            # A truncated JSON snapshot is not a source of truth. Move it aside
+            # so the durable DB snapshot can be used without repeated parse errors.
+            try:
+                bad_path = path + '.corrupt'
+                if os.path.exists(bad_path): os.remove(bad_path)
+                os.replace(path, bad_path)
+            except Exception:
+                pass
 
     # 2) Durable DB copy. This survives Render redeploys/restarts when the
     # filesystem is not backed by a Persistent Disk.
@@ -13214,15 +13073,20 @@ def _portal_load_daily_snapshot():
 
 def _portal_save_daily_snapshot_file_only(snapshot):
     os.makedirs(os.path.dirname(PORTAL_DAILY_SNAPSHOT_FILE), exist_ok=True)
-    tmp = PORTAL_DAILY_SNAPSHOT_FILE + '.tmp'
-    with open(tmp, 'w', encoding='utf-8') as f:
-        json.dump(snapshot, f, ensure_ascii=False, indent=2)
-        f.flush()
+    tmp = f"{PORTAL_DAILY_SNAPSHOT_FILE}.{os.getpid()}.{threading.get_ident()}.tmp"
+    try:
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(snapshot, f, ensure_ascii=False, indent=2)
+            f.flush()
+            try:
+                os.fsync(f.fileno())
+            except Exception:
+                pass
+        os.replace(tmp, PORTAL_DAILY_SNAPSHOT_FILE)
+    finally:
         try:
-            os.fsync(f.fileno())
-        except Exception:
-            pass
-    os.replace(tmp, PORTAL_DAILY_SNAPSHOT_FILE)
+            if os.path.exists(tmp): os.remove(tmp)
+        except Exception: pass
 
 
 def _portal_save_daily_snapshot(snapshot):
@@ -16062,7 +15926,7 @@ def upgrade_with_ton():
         if bet_amount >= target_value:
             return jsonify({'success': False, 'error': 'Ставка должна быть меньше цены цели'})
 
-        conn = _quick_db_conn(timeout=30)
+        conn = get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute('SELECT balance_stars, first_name FROM users WHERE id = ?', (user_id,))
@@ -16213,7 +16077,7 @@ def upgrade_gift_fast():
         if not gifts:
             return jsonify({'success': False, 'error': 'Не удалось загрузить список подарков'})
 
-        conn = _quick_db_conn(timeout=30)
+        conn = get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute('SELECT gift_id, gift_name, gift_value FROM inventory WHERE id = ? AND user_id = ?',
@@ -16345,7 +16209,7 @@ def upgrade_gift_chance():
         if not target_gift:
             return jsonify({'success': False, 'error': 'Целевой подарок не найден'})
 
-        conn = _quick_db_conn(timeout=30)
+        conn = get_db_connection()
         cursor = conn.cursor()
 
         try:
@@ -16459,7 +16323,7 @@ def get_upgrade_possible_gifts():
         current_gift_id = data['current_gift_id']
         user_id = data['user_id']
 
-        conn = _quick_db_conn(timeout=30)
+        conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT gift_value FROM inventory WHERE id = ? AND user_id = ?',
                      (current_gift_id, user_id))
@@ -16471,7 +16335,7 @@ def get_upgrade_possible_gifts():
 
         current_value = result[0]
         # Crash gift display uses the canonical gifts.json catalog.
-        gifts = build_runtime_gifts_catalog(max_models=0)
+        gifts = build_runtime_gifts_catalog()
 
         if not gifts:
             return jsonify({'success': False, 'error': 'Не удалось загрузить подарки'})
@@ -16489,9 +16353,8 @@ def get_upgrade_possible_gifts():
                     'upgrade_chance': displayed_chance
                 })
 
-        # Не обрезаем список до 15: апгрейд должен видеть весь доступный
-        # каталог основных подарков, а не только первые несколько позиций.
         possible_gifts.sort(key=lambda x: x.get('value', 0))
+        possible_gifts = possible_gifts[:15]
 
         return jsonify({
             'success': True,
@@ -16534,7 +16397,7 @@ def upgrade_multi_gifts():
         if target_value <= 0:
             return jsonify({'success': False, 'error': 'Некорректная цена цели'})
 
-        conn = _quick_db_conn(timeout=30)
+        conn = get_db_connection()
         cursor = conn.cursor()
 
         try:
@@ -20479,23 +20342,6 @@ def admin_cases_management():
         if request.method == 'GET':
             cases = load_cases()
             cases.sort(key=lambda x: x.get('display_order', 0))
-            # The event manager only needs a compact case index. Returning full
-            # gifts for every case made the admin picker unnecessarily heavy.
-            if str(request.args.get('summary') or '').lower() in ('1','true','yes'):
-                compact=[]
-                for c in cases:
-                    if not isinstance(c,dict): continue
-                    compact.append({
-                        'id': c.get('id'),
-                        'name': c.get('name') or 'Кейс',
-                        'image': c.get('image') or '/static/img/gift.png',
-                        'cost': c.get('cost',0),
-                        'cost_type': c.get('cost_type','stars'),
-                        'section': c.get('section','other'),
-                        'event_case': bool(c.get('event_case',False)),
-                        'display_order': c.get('display_order',0),
-                    })
-                return jsonify({'success': True, 'cases': compact, 'count': len(compact), 'summary': True})
             return jsonify({'success': True, 'cases': cases})
 
         elif request.method == 'POST':
@@ -20602,7 +20448,7 @@ def admin_cases_management():
                 'image': image_url,
                 'cost': data['cost'],
                 'cost_type': data['cost_type'],
-                'section': 'event' if bool(data.get('event_case', cases[case_index].get('event_case', False))) else normalize_section_id(data.get('section', cases[case_index].get('section', 'other'))),
+                'section': 'event' if data.get('event_case') else normalize_section_id(data.get('section', cases[case_index].get('section', 'other'))),
                 'required_level': data.get('required_level', 1),
                 'limited': data.get('limited', False),
                 'amount': data.get('amount', 0),
@@ -20619,11 +20465,6 @@ def admin_cases_management():
                 'event_case': bool(data.get('event_case', cases[case_index].get('event_case', False)))
             }
 
-            # Do not silently detach an Event case when an older admin form does not
-            # send the event_case checkbox. Existing Event ownership is persistent.
-            if cases[case_index].get('event_case') and 'event_case' not in data:
-                updated_case['event_case'] = True
-                updated_case['section'] = 'event'
             cases[case_index] = updated_case
 
             if save_cases(cases):
@@ -26674,7 +26515,7 @@ def api_upgrade_prepare():
 
         # Загружаем каталог
         try:
-            catalog = build_runtime_gifts_catalog(max_models=0)
+            catalog = build_runtime_gifts_catalog()
         except Exception:
             catalog = None
         if not catalog:
@@ -26833,7 +26674,7 @@ def api_upgrade_spin():
 
         # Каталог
         try:
-            catalog = build_runtime_gifts_catalog(max_models=0)
+            catalog = build_full_catalog_with_models()
         except Exception:
             catalog = None
         if not catalog:
