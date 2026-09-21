@@ -8336,6 +8336,37 @@ def ultimate_crash_cashout_simple():
             user_row = cursor.fetchone()
             user_name = user_row[0] if user_row else f'User_{user_id}'
 
+            def _cashout_gift_payload(source, image_override=None):
+                """Build the exact gift variant that was actually awarded.
+
+                Keep Portal model metadata all the way to the client so the win
+                sheet cannot accidentally show the collection/base gift when a
+                specific model variant was inserted into inventory.
+                """
+                source = dict(source or {})
+                model_name = (source.get('model_name') or source.get('portal_model_name') or '').strip()
+                image = image_override or source.get('image') or source.get('gift_image') or '/static/img/default_gift.png'
+                if model_name and (not image or image == '/static/img/default_gift.png'):
+                    fallbacks = source.get('image_fallbacks') or []
+                    if fallbacks:
+                        image = fallbacks[0]
+                if image and str(image).startswith('data:'):
+                    image = '/static/img/default_gift.png'
+                payload = {
+                    'id': source.get('id'),
+                    'name': source.get('name') or source.get('gift_name') or 'Gift',
+                    'image': image,
+                    'value': int(round(float(source.get('value', source.get('gift_value', 0)) or 0))),
+                    'gift_key': source.get('gift_key'),
+                    'fragment_slug': source.get('fragment_slug'),
+                    'model_name': model_name or None,
+                    'portal_model_name': source.get('portal_model_name') or model_name or None,
+                    'portal_collection_name': source.get('portal_collection_name'),
+                    'model_image': image if model_name else None,
+                    'image_fallbacks': list(source.get('image_fallbacks') or []),
+                }
+                return payload
+
             awarded_gifts = []
             remaining_value = win_amount
             has_upgraded_original = False
@@ -8352,12 +8383,18 @@ def ultimate_crash_cashout_simple():
                 pref_name = str(data.get('preferred_gift_name') or '').strip()
                 pref_image = data.get('preferred_gift_image') or '/static/img/gift.png'
                 pref_value = int(data.get('preferred_gift_value', 0) or 0)
+                pref_model_name = str(data.get('preferred_gift_model_name') or data.get('preferred_gift_portal_model_name') or '').strip()
                 if pref_name and pref_value > 0:
                     preferred_gift = {
                         'id': pref_id,
                         'name': pref_name,
                         'image': pref_image if pref_image and not pref_image.startswith('data:') else '/static/img/gift.png',
                         'value': pref_value,
+                        'model_name': pref_model_name or None,
+                        'portal_model_name': pref_model_name or None,
+                        'gift_key': data.get('preferred_gift_key'),
+                        'fragment_slug': data.get('preferred_gift_fragment_slug'),
+                        'portal_collection_name': data.get('preferred_gift_collection_name'),
                     }
 
             if preferred_gift and bet_type != 'gift' and remaining_value >= preferred_gift.get('value', 0):
@@ -8383,11 +8420,8 @@ def ultimate_crash_cashout_simple():
                 except Exception:
                     pass
 
-                awarded_gifts.append({
-                    'name': preferred_gift['name'],
-                    'image': pref_image,
-                    'value': pref_value,
-                })
+                preferred_awarded = _cashout_gift_payload(preferred_gift, image_override=pref_image)
+                awarded_gifts.append(preferred_awarded)
                 remaining_value -= pref_value
 
             # === Fill remaining value with gifts from catalog (cached 30s), but always fall back to local gifts ===
@@ -8424,12 +8458,11 @@ def ultimate_crash_cashout_simple():
                     if _mode_cfg.get('enabled', True):
                         if _mode_pool:
                             _cat_sorted = sorted([
-                                {
-                                    'id': x.get('id'),
-                                    'name': x.get('name') or 'Gift',
-                                    'value': int(round(float(x.get('value', 0) or 0))),
-                                    'image': x.get('image') or '/static/img/default_gift.png',
-                                }
+                                dict(x,
+                                     id=x.get('id'),
+                                     name=x.get('name') or 'Gift',
+                                     value=int(round(float(x.get('value', 0) or 0))),
+                                     image=x.get('image') or '/static/img/default_gift.png')
                                 for x in _mode_pool if float(x.get('value', 0) or 0) > 0
                             ], key=lambda g: g.get('value', 0), reverse=True)
                         elif not _mode_cfg.get('fallback_catalog', True):
@@ -8477,11 +8510,7 @@ def ultimate_crash_cashout_simple():
                     except Exception:
                         pass
 
-                    awarded_gifts.append({
-                        'name': fallback_best['name'],
-                        'image': g_image,
-                        'value': g_value,
-                    })
+                    awarded_gifts.append(_cashout_gift_payload(fallback_best, image_override=g_image))
                     remaining_value = max(0, remaining_value - g_value)
 
             if sorted_catalog and remaining_value >= 5:
@@ -8527,26 +8556,25 @@ def ultimate_crash_cashout_simple():
                     except Exception:
                         pass
 
-                    awarded_gifts.append({
-                        'name': best_gift['name'],
-                        'image': g_image,
-                        'value': g_value
-                    })
+                    awarded_gifts.append(_cashout_gift_payload(best_gift, image_override=g_image))
                     remaining_value -= g_value
 
-            # Any small leftover → stars
-            if remaining_value > 0:
+            # Exact remainder is compensation credited directly to the user's balance.
+            # It is NEVER converted into another small gift.
+            balance_compensation = max(0, int(remaining_value or 0))
+            remaining_value = balance_compensation
+            if balance_compensation > 0:
                 cursor.execute('''
                     UPDATE users SET balance_stars = balance_stars + ?, total_earned_stars = total_earned_stars + ?
                     WHERE id = ?
-                ''', (remaining_value, remaining_value, user_id))
+                ''', (balance_compensation, balance_compensation, user_id))
 
             # History
             desc_parts = []
             for ag in awarded_gifts:
                 desc_parts.append(ag['name'])
-            if remaining_value > 0:
-                desc_parts.append(f'{remaining_value}⭐')
+            if balance_compensation > 0:
+                desc_parts.append(f'{balance_compensation}⭐')
             cursor.execute('''
                 INSERT INTO user_history (user_id, operation_type, amount, description)
                 VALUES (?, 'ultimate_crash_win', ?, ?)
@@ -8589,8 +8617,9 @@ def ultimate_crash_cashout_simple():
             'multiplier': current_mult,
             'new_balance': new_balance,
             'awarded_gifts': awarded_gifts,
-            'star_remainder': remaining_value if remaining_value > 0 else 0,
-            'balance_delta_stars': remaining_value if remaining_value > 0 else 0,
+            'star_remainder': balance_compensation,
+            'balance_delta_stars': balance_compensation,
+            'balance_compensation_stars': balance_compensation,
             'has_upgraded_original': has_upgraded_original,
             'is_bonus_round': bool(is_bonus_round),
             'spooky_multiplier': bonus_mult if is_bonus_round else 1.0,
