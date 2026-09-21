@@ -1289,8 +1289,6 @@ function getGiftImage(g){
     if(_imgCache[key]) return _imgCache[key];
     var img = g.image || '/static/img/gift.png';
     var slug = String(g.fragment_slug || '').trim().toLowerCase();
-    // Prefer Fragment artwork over a low-resolution locally uploaded PNG when
-    // this is a real Fragment collection. For a concrete NFT URL, use the large render.
     if(slug && /^\/static\/gifs\/gifts\//i.test(img)){
         img = 'https://fragment.com/file/gifts/' + encodeURIComponent(slug) + '/thumb.webp';
     }
@@ -1299,6 +1297,30 @@ function getGiftImage(g){
     }
     _imgCache[key] = img;
     return img;
+}
+
+function bindGiftImage(imgEl, gift){
+    if(!imgEl) return;
+    var urls = [];
+    var primary = getGiftImage(gift);
+    if(primary) urls.push(primary);
+    if(gift && Array.isArray(gift.image_fallbacks)){
+        gift.image_fallbacks.forEach(function(u){ if(u && urls.indexOf(u) < 0) urls.push(u); });
+    }
+    var slug = String((gift && gift.fragment_slug) || '').trim().toLowerCase();
+    if(slug && gift && gift.model_name){
+        var model = encodeURIComponent(String(gift.model_name));
+        urls.push('https://fragment.com/file/gifts/' + encodeURIComponent(slug) + '/models/' + model + '.png');
+        urls.push('https://fragment.com/file/gifts/' + encodeURIComponent(slug) + '/' + model + '.png');
+    }
+    urls.push('/static/img/gift.png');
+    var idx = 0;
+    imgEl.onerror = function(){
+        idx += 1;
+        if(idx < urls.length){ imgEl.src = urls[idx]; }
+        else { imgEl.onerror = null; }
+    };
+    imgEl.src = urls[0];
 }
 
 function calcChance(betValue, targetValue){
@@ -1856,7 +1878,7 @@ function _selectInventoryGift(it){
         wrap.classList.remove('gram-icon');
         wrap.classList.toggle('upgraded', isUpgradedGift(selectedGift));
     }
-    $('leftGiftImg').src = getGiftImage({id: it.id, name: it.gift_name, image: it.gift_image, fragment_slug: it.fragment_slug});
+    bindGiftImage($('leftGiftImg'), {id: it.id, name: it.gift_name, image: it.gift_image, fragment_slug: it.fragment_slug, model_name: it.model_name, image_fallbacks: it.image_fallbacks});
     $('leftGiftName').textContent = it.gift_name;
     $('leftGiftValue').textContent = formatGram(it.gift_value);
 
@@ -1990,7 +2012,7 @@ function _selectTarget(g){
     $('rightCard').classList.add('has-item');
     var wrap = $('rightGiftImgWrap');
     if(wrap){ wrap.classList.toggle('upgraded', isUpgradedGift(g)); }
-    $('rightGiftImg').src = getGiftImage(g);
+    bindGiftImage($('rightGiftImg'), g);
     $('rightGiftName').textContent = g.name;
     $('rightGiftValue').textContent = formatGram(g.value);
     var chEl = $('rightChance');
@@ -2020,7 +2042,7 @@ function updateWheel(){
         syncTurboButton();
         return;
     }
-    if(pct){ pct.textContent = currentChance.toFixed(2) + '%'; pct.classList.add('visible'); }
+    if(pct){ pct.textContent = currentChance.toFixed(1) + '%'; pct.classList.add('visible'); }
     if(center) center.classList.remove('hidden-pct');
     if(btn) btn.disabled = false;
     var txt2 = $('upgradeBtnText');
@@ -2160,7 +2182,7 @@ async function doUpgrade(){
     if (result.chance != null && isFinite(Number(result.chance))) {
         currentChance = Math.max(0, Math.min(90, Number(result.chance)));
         var chanceEl = $('chancePct');
-        if(chanceEl) chanceEl.textContent = currentChance.toFixed(2) + '%';
+        if(chanceEl) chanceEl.textContent = currentChance.toFixed(1) + '%';
         drawGreenArc(currentChance, true);
     }
     var willShowGold = Math.random() < GOLD_APPEAR_CHANCE;
@@ -2370,7 +2392,7 @@ function showSpinResult(isWin, isGold, isEpic, resultGift){
                This prevents Halloween/animation timing from showing a stale target. */
             var gift = resultGift || targetGift || null;
             var img = document.createElement('img');
-            img.src = gift ? getGiftImage(gift) : '/static/img/star2.png';
+            if(gift){ bindGiftImage(img, gift); } else { img.src = '/static/img/star2.png'; }
             img.onerror = function(){ this.onerror = null; this.src = '/static/img/star2.png'; };
             centerResult.appendChild(img);
             if(gift && isUpgradedGift(gift)) centerResult.classList.add('upgraded');
