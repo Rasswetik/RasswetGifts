@@ -10388,46 +10388,93 @@ def admin_events():
 
 @app.route('/api/cases')
 def api_cases():
-    """Получение всех кейсов с актуальными лимитами"""
+    """Публичный список кейсов только из явно добавленных в выбранный event-разделов."""
     try:
-        logger.info("📦 Загрузка кейсов из файла...")
+        event_id = str(request.args.get('event') or 'cases_event').strip()
+        user_id = str(request.args.get('user_id') or '').strip()
 
-        data_path = os.path.join(PERSISTENT_DATA_DIR)
-        file_path = os.path.join(data_path, 'cases.json')
-
-        logger.info(f"📁 Путь к файлу: {file_path}")
-
-        if not os.path.exists(file_path):
-            logger.error(f"❌ Файл cases.json не найден")
-            return jsonify({'success': True, 'cases': []})
-
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            cases = data.get('cases', [])
-
+        # Загружаем все сохранённые кейсы, но НИКОГДА не публикуем их целиком.
+        # На странице /cases показываются только case_ids, которые администратор
+        # добавил в case-раздел выбранного события.
+        all_cases = load_cases() or []
         seasonal = load_seasonal_case()
         if seasonal_case_is_active(seasonal):
-            cases = [seasonal] + [c for c in cases if str(c.get('id')) != 'seasonal']
+            all_cases = [seasonal] + [c for c in all_cases if str(c.get('id')) != 'seasonal']
 
-        def _is_public_season_case(c):
-            section=str(c.get('section') or '').strip().lower()
-            tags=[str(x).strip().lower() for x in (c.get('tags') or [])]
-            return bool(c.get('seasonal')) or str(c.get('id')).lower()=='seasonal' or section in ('season','seasonal') or 'season' in tags
-        season_cases=[c for c in cases if _is_public_season_case(c)]
-        other_cases=[c for c in cases if not _is_public_season_case(c)]
-        cases=season_cases+other_cases
+        events = get_active_events() or {}
+        event = events.get(event_id)
+        if not isinstance(event, dict):
+            event = EVENT_DEFAULTS.get(event_id, {}) or {}
 
-        logger.info(f"✅ Загружено {len(cases)} кейсов")
-        return jsonify({'success': True, 'cases': cases})
+        event_sections = [
+            sec for sec in (event.get('sections') or [])
+            if isinstance(sec, dict) and str(sec.get('type') or '').lower() == 'cases'
+        ]
 
+        # Если разделов/ID нет — пустая страница. Никаких автоподхватов из cases.json.
+        allowed_ids = []
+        for sec in event_sections:
+            for cid in (sec.get('case_ids') or []):
+                key = str(cid).strip()
+                if key and key not in allowed_ids:
+                    allowed_ids.append(key)
+
+        by_ref = {}
+        for c in all_cases:
+            if not isinstance(c, dict):
+                continue
+            refs = {str(c.get('id')).strip(), str(_case_slug(c) or '').strip()}
+            refs.discard('')
+            for ref in refs:
+                by_ref[ref.lower()] = c
+
+        cases = []
+        seen = set()
+        for cid in allowed_ids:
+            c = by_ref.get(cid.lower())
+            if not c:
+                continue
+            key = str(c.get('id') if c.get('id') is not None else _case_slug(c)).lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            payload = _build_case_payload(c)
+            cases.append(payload)
+
+        # Daily Case: сервер сразу отдаёт оставшееся время до следующего открытия.
+        if user_id:
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                for c in cases:
+                    if c.get('free') and not c.get('promo'):
+                        c['cooldown_seconds'] = _get_free_case_remaining_seconds(cursor, user_id, c)
+                    else:
+                        c['cooldown_seconds'] = 0
+            except Exception as e:
+                logger.warning('Case cooldown preload failed: %s', e)
+
+        # Секции возвращаем только из event-конфига и только те, где есть
+        # реально найденные кейсы. Порядок полностью соответствует админке.
+        sections_payload = []
+        visible_ids = {str(c.get('id')).lower() for c in cases}
+        for idx, sec in enumerate(event_sections):
+            ids = [str(x).strip() for x in (sec.get('case_ids') or [])]
+            if not any(str(x).lower() in visible_ids for x in ids):
+                continue
+            sections_payload.append({
+                'id': str(sec.get('id') or 'section_' + str(idx)),
+                'name': str(sec.get('title') or sec.get('name') or 'Раздел').strip(),
+                'order': int(sec.get('order', idx + 1) or idx + 1),
+                'case_ids': ids,
+            })
+
+        logger.info('Cases event=%s: %s cases from %s explicit ids', event_id, len(cases), len(allowed_ids))
+        return jsonify({'success': True, 'cases': cases, 'sections': sections_payload, 'event': event_id})
     except Exception as e:
         logger.error(f"❌ Критическая ошибка получения кейсов: {e}")
         logger.error(f"❌ Трассировка: {traceback.format_exc()}")
-        return jsonify({
-            'success': False,
-            'cases': [],
-            'error': 'Внутренняя ошибка сервера'
-        })
+        return jsonify({'success': False, 'cases': [], 'sections': [], 'error': 'Внутренняя ошибка сервера'})
 
 @app.route('/api/case-sections')
 def api_case_sections():
@@ -10595,7 +10642,16 @@ def api_case_detail(case_ref):
         if not case:
             logger.error(f"❌ Кейс '{ref}' не найден!")
             return jsonify({'success': False, 'error': 'Кейс не найден'}), 404
-        return jsonify({'success': True, 'case': _build_case_payload(case)})
+        payload = _build_case_payload(case)
+        payload['cooldown_seconds'] = 0
+        user_id = str(request.args.get('user_id') or '').strip()
+        if user_id and payload.get('free') and not payload.get('promo'):
+            try:
+                conn = get_db_connection()
+                payload['cooldown_seconds'] = _get_free_case_remaining_seconds(conn.cursor(), user_id, payload)
+            except Exception as e:
+                logger.warning('Case detail cooldown failed: %s', e)
+        return jsonify({'success': True, 'case': payload})
     except Exception as e:
         logger.error(f"❌ Ошибка получения деталей кейса {case_ref}: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -10607,7 +10663,16 @@ def api_case_detail_by_slug(case_slug):
         case = _resolve_case_ref(case_slug)
         if not case:
             return jsonify({'success': False, 'error': 'Кейс не найден'}), 404
-        return jsonify({'success': True, 'case': _build_case_payload(case)})
+        payload = _build_case_payload(case)
+        payload['cooldown_seconds'] = 0
+        user_id = str(request.args.get('user_id') or '').strip()
+        if user_id and payload.get('free') and not payload.get('promo'):
+            try:
+                conn = get_db_connection()
+                payload['cooldown_seconds'] = _get_free_case_remaining_seconds(conn.cursor(), user_id, payload)
+            except Exception as e:
+                logger.warning('Case slug cooldown failed: %s', e)
+        return jsonify({'success': True, 'case': payload})
     except Exception as e:
         logger.error(f"❌ Ошибка получения кейса по slug: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -10893,7 +10958,7 @@ def open_case_single():
             cursor_check = conn_check.cursor()
             cursor_check.execute('''SELECT id FROM used_promo_codes 
                 WHERE user_id = ? AND promo_code_id = ?''', 
-                (user_id, promo_item.get('id', promo_code)))
+                (user_id, int(promo_item.get('id')) if str(promo_item.get('id') or '').isdigit() else -1))
             already_used = cursor_check.fetchone()
             conn_check.close()
             if already_used:
@@ -11057,7 +11122,7 @@ def open_case_single():
                 pconn.execute('''INSERT OR IGNORE INTO used_promo_codes 
                     (user_id, promo_code_id, used_at)
                     VALUES (?, ?, CURRENT_TIMESTAMP)''', 
-                    (user_id, promo_code))
+                    (user_id, int(promo_item.get('id')) if str(promo_item.get('id') or '').isdigit() else -1))
                 pconn.commit()
                 pconn.close()
             except:
