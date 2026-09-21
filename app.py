@@ -11875,6 +11875,10 @@ def _portal_request(method, path, token=None, json_body=None, params=None, timeo
                         extra = ''
                         if engine_name == 'requests' and not _PORTAL_CURL_AVAILABLE:
                             extra = ' На сервере нет curl_cffi; установи его из requirements_portal.txt.'
+
+                        # Логируем ошибку авторизации для отладки
+                        logger.warning(f'❌ Portal Auth Failed: HTTP {last_status} | Engine: {engine_name} | Base: {base} | Body: {body[:100]}')
+
                         return False, 'Portal Authorization недействителен/истёк или запрос заблокирован.' + extra + ((' Ответ: ' + body) if body else ''), last_status
 
                     if last_status == 429:
@@ -12744,7 +12748,14 @@ def _portal_build_daily_snapshot(force=False):
 
     token = _portal_get_token()
     if not token:
-        return {'success': False, 'error': 'Portal token/initData не задан'}
+        logger.warning('❌ Portal sync failed: токен не задан')
+        return {'success': False, 'error': 'Portal token/initData не задан. Сохраните токен в админке.'}
+
+    # Проверяем валидность токена перед началом синхронизации
+    is_valid, err = _validate_portal_initdata(token)
+    if not is_valid:
+        logger.warning(f'❌ Portal sync failed: токен невалиден - {err}')
+        return {'success': False, 'error': f'Токен Portal невалиден: {err}'}
 
     # Only one heavy full scan at a time.
     if not _portal_daily_lock.acquire(blocking=False):
@@ -12877,14 +12888,25 @@ def _portal_build_daily_snapshot(force=False):
         }
 
     except Exception as e:
+        error_msg = str(e)
+        # Улучшенные сообщения об ошибках
+        if 'Authorization' in error_msg or 'недействителен' in error_msg or 'истёк' in error_msg:
+            error_msg = '⚠️ Токен Portal истёк или недействителен. Обновите initData в разделе Portal выше.'
+            logger.error("❌ Portal sync failed: auth error - %s", e)
+        elif 'токен не задан' in error_msg or 'token' in error_msg.lower():
+            error_msg = '❌ Токен Portal не задан. Сохраните initData в разделе Portal выше.'
+            logger.error("❌ Portal sync failed: no token")
+        else:
+            logger.error("❌ Portal hourly full scan failed: %s", e)
+
         _portal_daily_job_update(
             running=False,
             finished_at=time.time(),
-            error=str(e),
+            error=error_msg,
             collection='',
         )
-        logger.error("❌ Portal hourly full scan failed: %s", e)
-        return {'success': False, 'error': str(e)}
+        _portal_daily_job_log(error_msg, level='error')
+        return {'success': False, 'error': error_msg}
     finally:
         _portal_daily_lock.release()
 
@@ -13940,11 +13962,19 @@ def portal_status_legacy():
                         connected = True
                         user_info = {'first_name': 'Portal', 'username': 'user'}
                         if not items:
-                            error_msg = 'Portal доступен, но вернул пустой список коллекций'
+                            error_msg = 'Portal доступен, но вернул пустой список коллекций. Попробуйте запустить синхронизацию.'
+                        logger.info(f'✅ Portal connection test successful. Collections returned: {len(items)}')
                     else:
-                        error_msg = str(data)
+                        # Улучшенная обработка ошибок авторизации
+                        if status in (401, 403):
+                            error_msg = '⚠️ Токен Portal истёк или недействителен. Получите новый initData из Portal Market.'
+                            logger.warning(f'❌ Portal auth failed: HTTP {status}')
+                        else:
+                            error_msg = str(data)
+                            logger.warning(f'❌ Portal request failed: HTTP {status} - {data}')
                 except Exception as pe:
                     error_msg = f'Проверка Portal не удалась: {pe}'
+                    logger.error(f'❌ Portal connection test exception: {pe}')
 
         total_collections = 0
         try:
