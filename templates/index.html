@@ -1708,6 +1708,50 @@ body:before{opacity:.24!important;background-image:linear-gradient(rgba(112,148,
   .cases-page,.case-grid,.cases-categories{transform:translateZ(0);}
 }
 </style>
+<style id="index-games-layout-final-v13">
+/* INDEX / CASES — same navigation geometry as Games */
+@media(max-width:700px){
+  /* Move ONLY the upper account bar down, never the bottom navigation. */
+  header.top-bar{
+    margin-top:4vh!important;
+    transform:none!important;
+  }
+
+  /* Bottom page-switching buttons: exactly the Games position/size. */
+  nav.bottom-nav{
+    display:grid!important;
+    position:fixed!important;
+    left:10px!important;
+    right:10px!important;
+    bottom:calc(8px + env(safe-area-inset-bottom))!important;
+    width:auto!important;
+    max-width:none!important;
+    height:66px!important;
+    min-height:66px!important;
+    margin:0!important;
+    padding:6px!important;
+    grid-template-columns:repeat(4,1fr)!important;
+    gap:4px!important;
+    transform:none!important;
+    z-index:4000!important;
+  }
+  nav.bottom-nav .bottom-nav-btn{
+    min-width:0!important;
+    width:100%!important;
+    height:auto!important;
+    min-height:54px!important;
+    margin:0!important;
+    padding:4px 2px!important;
+    border-radius:15px!important;
+  }
+
+  /* Content starts below the moved header, but bottom nav stays fixed. */
+  main.cases-page{
+    padding-top:calc(25px + 4vh)!important;
+    padding-bottom:calc(88px + env(safe-area-inset-bottom))!important;
+  }
+}
+</style>
 </head>
 <body>
     <!-- LOADER -->
@@ -2345,6 +2389,12 @@ let caseSections = [];
             return val.toFixed(2).replace('.', ',');
         }
 
+        // Prices in the admin/catalog are already stored in TON.
+        // Display the value as-is; payment logic converts TON to internal stars where needed.
+        function casePriceToTon(rawCost) {
+            return Number(rawCost || 0);
+        }
+
         var lastFeedIds = [];
 
         function renderFeed(wins) {
@@ -2421,7 +2471,7 @@ let caseSections = [];
                 html += '<div class="case-grid">';
                 html += list.map(c => {
                     const image = c.image || c.png || c.png_image || '/static/img/gift.png';
-                    const price = Number(c.cost || 0);
+                    const price = casePriceToTon(c.cost);
                     const isPromo = !!c.promo;
                     const isDaily = !!c.free && !isPromo;
                     const free = isDaily;
@@ -2454,7 +2504,7 @@ let caseSections = [];
             selectedQty = q;
             document.querySelectorAll('.qty-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.qty) === q));
             if (currentCase) {
-                const price = (currentCase.cost || 0) * q;
+                const price = casePriceToTon(currentCase.cost) * q;
                 $('modalPrice').querySelector('span').textContent = formatTon(price);
                 $('caseDetailPrice').querySelector('span').textContent = formatTon(price);
             }
@@ -2534,7 +2584,7 @@ let caseSections = [];
         function renderModal() {
             if (!currentCase) return;
             
-            const price = (currentCase.cost || 0) * selectedQty;
+            const price = casePriceToTon(currentCase.cost) * selectedQty;
             $('modalName').textContent = currentCase.name || 'Кейс';
             $('modalPrice').querySelector('span').textContent = formatTon(price);
             $('caseDetailPrice').querySelector('span').textContent = formatTon(price);
@@ -3437,5 +3487,12 @@ let caseSections = [];
 
   /* Keep prices readable on small screens. */
   #caseModal .case-detail-price,#caseModal .modal-price{font-variant-numeric:tabular-nums;white-space:nowrap!important}
+}
+</style>
+
+<style id="mobile-top-panel-position-fix">
+@media(max-width:700px){
+  header.top-bar{margin-top:4vh!important;}
+  .bottom-nav{bottom:26px!important;}
 }
 </style>
