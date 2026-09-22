@@ -3167,17 +3167,51 @@ async function loadFreebets(){
             var reward=f.reward_type==='grams'?('💎 '+(Number(f.reward_amount||0)/100).toFixed(2)+' GRAM'):('🎁 '+(g.name||'Подарок'));
             var link=f.link||('https://t.me/'+encodeURIComponent(d.bot_username||'')+'?start=freebet_'+encodeURIComponent(f.code));
             var state=f.is_active?'🟢 Активен':'⚪ Выключен';
-            return '<div class="promo-row"><div class="promo-row-head"><div class="promo-row-code">'+escapeHtml(f.code)+'</div><div class="promo-row-type">FREEBET</div></div><div class="promo-row-meta"><span>'+escapeHtml(reward)+'</span><span>👥 '+f.used_count+'/'+f.max_uses+'</span><span>'+state+'</span></div><div class="promo-row-actions"><button class="btn btn-secondary btn-sm" onclick="copyFreebetLink('+JSON.stringify(link)+')">🔗 Копировать ссылку</button><button class="btn '+(f.is_active?'btn-warn':'btn-success')+' btn-sm" onclick="toggleFreebet('+f.id+','+(!f.is_active)+')">'+(f.is_active?'⏸ Выкл':'▶ Вкл')+'</button><button class="btn btn-danger btn-sm" onclick="deleteFreebet('+f.id+')">🗑 Удалить</button></div></div>';
+            return '<div class="promo-row"><div class="promo-row-head"><div class="promo-row-code">'+escapeHtml(f.code)+'</div><div class="promo-row-type">FREEBET</div></div><div class="promo-row-meta"><span>'+escapeHtml(reward)+'</span><span>👥 '+f.used_count+'/'+f.max_uses+'</span><span>'+state+'</span></div><div class="promo-row-actions"><button type="button" class="btn btn-secondary btn-sm" onclick="copyFreebetLink(this, '+JSON.stringify(link)+'); return false;">🔗 Копировать ссылку</button><button class="btn '+(f.is_active?'btn-warn':'btn-success')+' btn-sm" onclick="toggleFreebet('+f.id+','+(!f.is_active)+')">'+(f.is_active?'⏸ Выкл':'▶ Вкл')+'</button><button class="btn btn-danger btn-sm" onclick="deleteFreebet('+f.id+')">🗑 Удалить</button></div></div>';
         }).join('')||'<div class="empty">🎟️ Freebet пока нет</div>';
     }catch(e){el.innerHTML='<div class="empty">Ошибка загрузки</div>';}
 }
 
-async function copyFreebetLink(link){
+async function copyFreebetLink(button, link){
+    link=String(link||'').trim();
+    if(!link){showToast('Ссылка пустая','err');return false;}
     try{
-        if(navigator.clipboard&&window.isSecureContext){ await navigator.clipboard.writeText(link); }
-        else { var ta=document.createElement('textarea'); ta.value=link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+        if(navigator.clipboard && typeof navigator.clipboard.writeText==='function'){
+            await navigator.clipboard.writeText(link);
+        }else{
+            var ta=document.createElement('textarea');
+            ta.value=link;
+            ta.setAttribute('readonly','');
+            ta.style.position='fixed';
+            ta.style.left='-9999px';
+            ta.style.top='0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            ta.setSelectionRange(0,ta.value.length);
+            var ok=document.execCommand('copy');
+            ta.remove();
+            if(!ok) throw new Error('copy failed');
+        }
+        var old=button&&button.innerHTML;
+        if(button){button.innerHTML='✓ Скопировано';setTimeout(function(){button.innerHTML=old||'🔗 Копировать ссылку';},1200);}
         showToast('🔗 Ссылка скопирована','ok');
-    }catch(e){ showToast('Не удалось скопировать ссылку','err'); }
+    }catch(e){
+        try{
+            var input=document.createElement('input');
+            input.value=link;
+            input.style.position='fixed';
+            input.style.left='8px';
+            input.style.top='8px';
+            input.style.zIndex='99999';
+            document.body.appendChild(input);
+            input.focus();
+            input.select();
+            showToast('Скопируйте ссылку через Ctrl+C','err');
+            setTimeout(function(){input.remove();},4000);
+        }catch(_){showToast('Не удалось скопировать ссылку','err');}
+    }
+    return false;
 }
 async function toggleFreebet(id,active){var r=await fetch('/api/admin/freebets',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,id:id,is_active:active})});var d=await r.json();showToast(d.success?'Сохранено':(d.error||'Ошибка'),d.success?'ok':'err');loadFreebets();}
 async function deleteFreebet(id){if(!confirm('Удалить Freebet?'))return;var r=await fetch('/api/admin/freebets',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,id:id})});var d=await r.json();showToast(d.success?'Удалён':(d.error||'Ошибка'),d.success?'ok':'err');loadFreebets();}
