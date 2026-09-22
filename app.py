@@ -2612,6 +2612,16 @@ def _canonicalize_case_gifts(case_gifts, catalog=None):
             result.append(normalized)
             continue
 
+        # Legacy/old admin data could store RANDOM as if it were a real model.
+        # In the case editor RANDOM means exactly the base/original gift.
+        _legacy_model = str(entry.get('model_name') or entry.get('portal_model_name') or '').strip()
+        _legacy_random = _legacy_model.lower() in ('random', 'rand') or 'random' in str(entry.get('name') or '').lower()
+        if _legacy_random:
+            entry = dict(entry)
+            entry.pop('model_name', None)
+            entry.pop('portal_model_name', None)
+            entry['model_random'] = False
+
         target_id = entry.get('id')
         target_str = str(target_id).strip().lower() if target_id is not None else ''
         gift = by_id.get(target_str) or by_key.get(target_str)
@@ -21209,8 +21219,16 @@ def _freebet_row(row):
 
 def _freebet_public(row):
     d=_freebet_row(row); gift=(d['reward_data'] or {}).get('gift') or {}
-    if d['reward_type']=='grams': d.update(name='GRAM',image='/static/img/gram.png',reward_label=f"{int(d['reward_amount'])/100:.2f} GRAM")
-    else: d.update(name=gift.get('name') or 'Подарок',image=gift.get('image') or '/static/img/gift.png',reward_label=gift.get('name') or 'Подарок')
+    if d['reward_type']=='grams':
+        label = f"💎 {int(d['reward_amount'])/100:.2f} GRAM"
+        d.update(name='💎 GRAM', image='/static/img/gram.png', reward_label=label)
+    else:
+        name = gift.get('name') or 'Подарок'
+        nft_number = gift.get('nft_number')
+        label = f"🎁 {name}"
+        if nft_number:
+            label = f"💎 {name} #{nft_number}"
+        d.update(name=name, image=gift.get('image') or '/static/img/gift.png', reward_label=label)
     return d
 
 @app.route('/api/admin/freebets', methods=['GET','POST','PUT','DELETE'])
@@ -21220,7 +21238,13 @@ def admin_freebets_management():
         if not admin_id or int(admin_id)!=ADMIN_ID: return jsonify({'success':False,'error':'Доступ запрещен'}),403
         conn=get_db_connection(); cur=conn.cursor()
         if request.method=='GET':
-            cur.execute('SELECT id,code,reward_type,reward_amount,reward_data,max_uses,used_count,created_at,expires_at,is_active FROM freebets ORDER BY created_at DESC'); rows=cur.fetchall(); conn.close(); return jsonify({'success':True,'freebets':[_freebet_row(x) for x in rows]})
+            cur.execute('SELECT id,code,reward_type,reward_amount,reward_data,max_uses,used_count,created_at,expires_at,is_active FROM freebets ORDER BY created_at DESC'); rows=cur.fetchall(); conn.close(); bot_username = tg_get_bot_username() or 'Goshangifts_sup_bot'
+            freebets = []
+            for x in rows:
+                item = _freebet_row(x)
+                item['link'] = f'https://t.me/{bot_username}?start=freebet_{quote_plus(item["code"])}'
+                freebets.append(item)
+            return jsonify({'success':True,'freebets':freebets,'bot_username':bot_username})
         if request.method=='POST':
             code=str(data.get('code') or '').strip().upper() or ('FREEBET_'+''.join(random.choice(string.ascii_uppercase+string.digits) for _ in range(8)))
             rtype=str(data.get('reward_type') or 'grams').lower(); amount=int(data.get('reward_amount') or 0); rd=data.get('reward_data') or {}
@@ -21233,7 +21257,7 @@ def admin_freebets_management():
             cur.execute('SELECT id FROM freebets WHERE code=?',(code,))
             if cur.fetchone(): conn.close(); return jsonify({'success':False,'error':'Freebet с таким кодом уже существует'}),409
             cur.execute('INSERT INTO freebets(code,reward_type,reward_amount,reward_data,max_uses,expires_at,created_by) VALUES(?,?,?,?,?,?,?)',(code,rtype,amount,json.dumps(rd,ensure_ascii=False),max_uses,expires,ADMIN_ID)); fid=cur.lastrowid; conn.commit(); conn.close()
-            return jsonify({'success':True,'freebet':{'id':fid,'code':code,'reward_type':rtype,'reward_amount':amount,'max_uses':max_uses,'expires_at':expires,'link':f'https://t.me/Goshangifts_sup_bot?start=freebet_{quote_plus(code)}'}})
+            return jsonify({'success':True,'freebet':{'id':fid,'code':code,'reward_type':rtype,'reward_amount':amount,'max_uses':max_uses,'expires_at':expires,'link':f"https://t.me/{tg_get_bot_username() or 'Goshangifts_sup_bot'}?start=freebet_{quote_plus(code)}"}})
         fid=int(data.get('id') or 0)
         if request.method=='PUT':
             active=bool(data.get('is_active',True)); cur.execute('UPDATE freebets SET is_active=? WHERE id=?',(active,fid)); changed=cur.rowcount; conn.commit(); conn.close(); return jsonify({'success':bool(changed),'is_active':active,'error':None if changed else 'Freebet не найден'})
@@ -21259,6 +21283,8 @@ def freebet_claim():
     conn=None
     try:
         data=request.get_json(silent=True) or {}; uid=int(data.get('user_id') or 0); code=str(data.get('code') or '').strip().upper()
+        if uid <= 0:
+            return jsonify({'success':False,'error':'Не удалось определить Telegram-пользователя. Откройте Freebet из бота.'})
         conn=get_db_connection(); cur=conn.cursor(); cur.execute('SELECT id,code,reward_type,reward_amount,reward_data,max_uses,used_count,expires_at,is_active FROM freebets WHERE code=?',(code,)); row=cur.fetchone()
         if not row: return jsonify({'success':False,'error':'Freebet не найден'})
         fid,_,rtype,amount,rjson,maxuses,usedcount,expires,active=row
@@ -25680,6 +25706,24 @@ def tg_api(method, **kwargs):
         logger.error(f"TG API {method} exception: {e}")
         return {'ok': False}
 
+_bot_username_cache = {'username': '', 'ts': 0}
+
+def tg_get_bot_username(force=False):
+    """Return the username of the bot represented by TELEGRAM_BOT_TOKEN."""
+    now = time.time()
+    if not force and _bot_username_cache.get('username') and now - _bot_username_cache.get('ts', 0) < 300:
+        return _bot_username_cache['username']
+    try:
+        result = tg_api('getMe')
+        username = str((result.get('result') or {}).get('username') or '').strip().lstrip('@')
+        if username:
+            _bot_username_cache['username'] = username
+            _bot_username_cache['ts'] = now
+            return username
+    except Exception as e:
+        logger.warning('Не удалось определить username бота: %s', e)
+    return _bot_username_cache.get('username') or ''
+
 def tg_send(chat_id, text, parse_mode='HTML', reply_markup=None):
     kw = {'chat_id': chat_id, 'text': text, 'parse_mode': parse_mode}
     if reply_markup:
@@ -25793,8 +25837,11 @@ def handle_start(msg):
             try:
                 conn=get_db_connection(); cur=conn.cursor(); cur.execute('SELECT code,is_active,max_uses,used_count FROM freebets WHERE code=?',(free_code,)); fr=cur.fetchone(); conn.close()
                 if fr and fr[1] and (int(fr[2] or 1)<=0 or int(fr[3] or 0)<int(fr[2] or 1)):
-                    tg_send(chat_id,'Freebet доступен. Чтобы получить награду, нажмите кнопку ниже.',reply_markup={'inline_keyboard':[[{'text':'Забрать Freebet','web_app':{'url':f'{WEBSITE_URL}/games?freebet={quote_plus(free_code)}'}}]]})
-                else: tg_send(chat_id,'Freebet уже активирован или больше недоступен.')
+                    tg_send(chat_id,
+                            '🎁 <b>Фрибет получен!</b>\n\n🔥 Награда уже готова к активации.\n👇 Нажми кнопку ниже, чтобы забрать её.',
+                            reply_markup={'inline_keyboard':[[{'text':'👇 Активировать фрибет','web_app':{'url':f'{WEBSITE_URL}/games?freebet={quote_plus(free_code)}'}}]]})
+                else:
+                    tg_send(chat_id,'❌ <b>Фрибет не найден или уже закончен.</b>\n\nПроверьте ссылку или попросите новую.')
                 return
             except Exception as e: logger.error(f'Freebet start error: {e}')
     
