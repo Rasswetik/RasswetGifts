@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1C2233">
 <meta name="app-version" content="admin-2026-09-12-v2">
-<title>Admin — Rasswet Gi • Mangement</title>
+<title>Admin — Rasswet Gi • Management</title>
 <link rel="icon" type="image/png" href="/static/img/logo.png">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
@@ -875,6 +875,10 @@ body{background-image:radial-gradient(ellipse 100% 70% at 50% 0%,#263a54 0%,#1b2
                     <div class="tile-icon"><img src="/static/img/case.png" onerror="this.onerror=null;this.src='/static/img/gift.png'" alt=""></div>
                     <div><div class="tile-text">Управление кейсами</div><div class="tile-sub">Создание и редактирование всех кейсов</div></div>
                 </button>
+                <button class="tile-btn tile-pink" onclick="showSection('freebets')">
+                    <div class="tile-icon"><img src="/static/img/gift.png" alt=""></div>
+                    <div><div class="tile-text">Freebet</div><div class="tile-sub">Создание и ссылки Freebet</div></div>
+                </button>
                 <button class="tile-btn tile-pink" onclick="showSection('promo')">
                     <div class="tile-icon"><img src="/static/img/promo.png" onerror="this.onerror=null;this.src='/static/img/gift.png'" alt=""></div>
                     <div><div class="tile-text">Промокоды</div><div class="tile-sub">CRUD и настройки</div></div>
@@ -1079,6 +1083,24 @@ body{background-image:radial-gradient(ellipse 100% 70% at 50% 0%,#263a54 0%,#1b2
             <button class="btn btn-success" onclick="saveCase()">💾 Сохранить</button>
             <button class="btn btn-danger" onclick="deleteCase()" id="ceDeleteBtn" style="display:none">🗑 Удалить</button>
         </div>
+    </div>
+
+    <!-- FREEBETS -->
+    <div class="section-page" id="page-freebets" style="display:none">
+        <div class="section-header"><h2>Freebet</h2><button class="action-btn" onclick="loadFreebets()">Обновить</button></div>
+        <div class="card">
+            <div class="card-title">Создать Freebet</div>
+            <div class="form-group"><label class="form-label">Код (пусто = авто)</label><input class="form-input" id="freebetCode" placeholder="FREEBET_ABC123"></div>
+            <div class="form-group"><label class="form-label">Что получит пользователь</label>
+                <select class="form-input" id="freebetType" onchange="freebetTypeChange()">
+                    <option value="grams">GRAM на баланс</option><option value="gift">Подарок</option><option value="fragment_gift">Подарок Fragment (1 активация)</option>
+                </select>
+            </div>
+            <div id="freebetDynamic"></div>
+            <div class="form-row"><div class="form-group"><label class="form-label">Макс. активаций</label><input class="form-input" type="number" id="freebetMaxUses" value="1" min="1"></div><div class="form-group"><label class="form-label">Срок, дней (0 = без срока)</label><input class="form-input" type="number" id="freebetExpires" value="0" min="0"></div></div>
+            <button class="btn btn-success" onclick="createFreebet()">Создать Freebet</button>
+        </div>
+        <div class="card"><div class="card-title">Созданные Freebet</div><div id="freebetsList"><div class="loading">Загрузка</div></div></div>
     </div>
 
     <!-- PROMO -->
@@ -1475,7 +1497,7 @@ var SECTION_TITLES = {
     home: 'Главное меню', events: 'Events',
     users: '👥 Пользователи', gifts: '🎁 Подарки', cases: 'Управление кейсами',
     'case-editor': 'Кейс',
-    promo: '🎟️ Промокоды',
+    promo: '🎟️ Промокоды', freebets: 'Freebet',
     leaderboard: '🏆 Лидерборд',
     withdrawals: '💸 Выводы',
     sbp: '💳 СБП', inventory: '🎒 Инвентарь', history: '📜 История',
@@ -1502,6 +1524,7 @@ function showSection(name){
         if(name === 'gifts') loadGifts();
         if(name === 'cases') loadCasesList();
         if(name === 'promo'){ loadPromoCodes(); onPromoTypeChange(); }
+        if(name === 'freebets'){ loadFreebets(); freebetTypeChange(); }
         if(name === 'portal'){ loadPortalDashboard(); }
         if(name === 'purchases') loadPurchasesAdmin();
         if(name === 'inventory') searchInvUser();
@@ -3066,6 +3089,40 @@ async function deleteCase(){
 /* ══════════════════════════════════════════════════════════════
    PROMO CODES — ПОЛНЫЙ CRUD
    ══════════════════════════════════════════════════════════════ */
+var _freebetPickedGift=null;
+function freebetTypeChange(){
+    var type=$('freebetType').value, box=$('freebetDynamic');
+    if(type==='grams'){
+        box.innerHTML='<div class="form-group"><label class="form-label">Сумма GRAM</label><input class="form-input" id="freebetAmount" type="number" min="0.01" step="0.01" value="1"></div>';
+        return;
+    }
+    box.innerHTML='<div class="form-group"><label class="form-label">Подарок / модель</label><button class="btn btn-secondary" type="button" onclick="pickFreebetGift()">Выбрать подарок</button><div id="freebetGiftPreview" style="margin-top:10px"></div></div>';
+}
+async function pickFreebetGift(){
+    if(!allGifts.length) await loadGifts();
+    openPicker('Выбрать награду Freebet',allGifts,function(item){
+        _freebetPickedGift=item;
+        var p=$('freebetGiftPreview');
+        if(p) p.innerHTML='<div class="nft-preview"><img src="'+escapeHtml(item.image||'/static/img/gift.png')+'"><div class="nft-info"><div class="nft-name">'+escapeHtml(item.name||'Подарок')+'</div><div class="nft-meta">Награда Freebet</div></div></div>';
+    });
+}
+async function createFreebet(){
+    var type=$('freebetType').value, code=($('freebetCode').value||'').trim().toUpperCase();
+    var maxUses=Math.max(1,parseInt($('freebetMaxUses').value)||1), days=Math.max(0,parseInt($('freebetExpires').value)||0), amount=0, reward_data={};
+    if(type==='grams'){ amount=Math.round((parseFloat($('freebetAmount').value)||0)*100); if(amount<=0){showToast('Укажите сумму GRAM','err');return;} }
+    else { if(!_freebetPickedGift){showToast('Выберите подарок','err');return;} reward_data={gift:{id:_freebetPickedGift.id,name:_freebetPickedGift.name,image:_freebetPickedGift.image,value:_freebetPickedGift.value,price:_freebetPickedGift.value,price_gram:_freebetPickedGift.value,nft_number:_freebetPickedGift.nft_number,model:_freebetPickedGift.model||_freebetPickedGift.nft_model,symbol:_freebetPickedGift.symbol||_freebetPickedGift.nft_symbol,backdrop:_freebetPickedGift.backdrop||_freebetPickedGift.nft_backdrop,model_rarity:_freebetPickedGift.model_rarity,nft_model_price:_freebetPickedGift.nft_model_price}}; }
+    if(type==='fragment_gift') maxUses=1;
+    try{var r=await fetch('/api/admin/freebets',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,code:code,reward_type:type,reward_amount:amount,reward_data:reward_data,max_uses:maxUses,expires_days:days})});var d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');showToast('Freebet создан','ok');$('freebetCode').value='';_freebetPickedGift=null;loadFreebets();}catch(e){showToast(e.message||'Ошибка','err');}
+}
+async function loadFreebets(){
+    var el=$('freebetsList'); if(!el)return; el.innerHTML='<div class="loading">Загрузка</div>';
+    try{var r=await fetch('/api/admin/freebets?admin_id='+ADMIN_ID+'&ts='+Date.now(),{cache:'no-store'}),d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');
+        el.innerHTML=(d.freebets||[]).map(function(f){var g=(f.reward_data||{}).gift||{};var reward=f.reward_type==='grams'?((Number(f.reward_amount||0)/100).toFixed(2)+' GRAM'):(g.name||'Подарок');var link='https://t.me/Goshangifts_sup_bot?start=freebet_'+encodeURIComponent(f.code);return '<div class="promo-row"><div class="promo-row-head"><div class="promo-row-code">'+escapeHtml(f.code)+'</div><div class="promo-row-type">Freebet</div></div><div class="promo-row-meta"><span>'+escapeHtml(reward)+'</span><span>'+f.used_count+'/'+f.max_uses+'</span><span>'+(f.is_active?'Активен':'Выключен')+'</span></div><div class="promo-row-actions"><button class="btn btn-secondary btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('+JSON.stringify(link)+');showToast(\'Ссылка скопирована\',\'ok\')">Ссылка</button><button class="btn '+(f.is_active?'btn-warn':'btn-success')+' btn-sm" onclick="toggleFreebet('+f.id+','+(!f.is_active)+')">'+(f.is_active?'Выкл':'Вкл')+'</button><button class="btn btn-danger btn-sm" onclick="deleteFreebet('+f.id+')">Удалить</button></div></div>';}).join('')||'<div class="empty">Freebet пока нет</div>';
+    }catch(e){el.innerHTML='<div class="empty">Ошибка загрузки</div>';}
+}
+async function toggleFreebet(id,active){var r=await fetch('/api/admin/freebets',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,id:id,is_active:active})});var d=await r.json();showToast(d.success?'Сохранено':(d.error||'Ошибка'),d.success?'ok':'err');loadFreebets();}
+async function deleteFreebet(id){if(!confirm('Удалить Freebet?'))return;var r=await fetch('/api/admin/freebets',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,id:id})});var d=await r.json();showToast(d.success?'Удалён':(d.error||'Ошибка'),d.success?'ok':'err');loadFreebets();}
+
 async function loadPromoCodes(){
     var el = $('promoCodesList');
     if(el) el.innerHTML = '<div class="loading">Загрузка</div>';
