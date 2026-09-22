@@ -837,6 +837,23 @@ body{background-image:radial-gradient(ellipse 100% 70% at 50% 0%,#263a54 0%,#1b2
   .top-bar{margin-top:4vh!important;}
 }
 </style>
+
+<style id="admin-redesign-2026">
+:root{--admin-bg:#0b1020;--admin-surface:rgba(20,29,48,.88);--admin-border:rgba(255,255,255,.09);--admin-accent:#6ea8ff;--admin-accent2:#8b7cff}
+body{background:radial-gradient(900px 500px at 50% -100px,rgba(74,103,180,.24),transparent 65%),#0b1020!important}
+.top-bar{max-width:1180px!important;padding:18px 22px!important;margin:0 auto!important;background:rgba(11,16,32,.82)!important;border-bottom:1px solid var(--admin-border)!important;border-radius:0 0 18px 18px;box-shadow:0 10px 35px rgba(0,0,0,.22)}
+.container{max-width:1180px!important;padding:24px 22px 48px!important}
+.tiles-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:14px!important}
+.tile-btn{min-height:148px!important;border-radius:22px!important;padding:20px!important}
+.card,.list-item,.promo-row,.portal-status-card{background:var(--admin-surface)!important;border-color:var(--admin-border)!important;box-shadow:0 12px 35px rgba(0,0,0,.16)}
+.section-header h2{font-size:24px!important;letter-spacing:-.3px}
+.search-input,.form-input{background:rgba(255,255,255,.045)!important;border-color:rgba(255,255,255,.1)!important}
+.tabs{background:rgba(255,255,255,.035)!important;border:1px solid var(--admin-border)}
+.tab-btn.active{background:linear-gradient(135deg,rgba(110,168,255,.2),rgba(139,124,255,.16))!important;color:#dce9ff!important}
+.gift-card{border-color:rgba(110,168,255,.15)!important;background:linear-gradient(180deg,rgba(110,168,255,.08),rgba(255,255,255,.025))!important}
+@media(max-width:900px){.tiles-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.container{padding:18px 14px 36px!important}.top-bar{border-radius:0!important}}
+@media(max-width:560px){.tiles-grid{grid-template-columns:1fr 1fr!important}.tile-btn{min-height:124px!important;padding:16px!important}.section-header h2{font-size:20px!important}}
+</style>
 </head>
 <body>
 
@@ -2572,7 +2589,7 @@ function renderManagedCases(){
       var img=c.image||'/static/img/gift.png';
       var count=Array.isArray(c.gifts)?c.gifts.length:0;
       var type=c.event_case?'Event':'Обычный';
-      return '<div class="list-item" onclick="openCaseEditor('+JSON.stringify(c.id)+')">'+
+      return '<div class="list-item" onclick="openCaseEditorLazy('+JSON.stringify(c.id)+')">'+
         '<div class="avatar" style="border-radius:10px;background:rgba(0,0,0,.3)"><img src="'+escapeHtml(img)+'" onerror="this.src=\'/static/img/gift.png\'"></div>'+
         '<div class="info"><div class="name">'+escapeHtml(c.name||'Без названия')+'</div>'+
         '<div class="meta">ID #'+escapeHtml(String(c.id))+' · '+escapeHtml(type)+' · '+escapeHtml(String(c.section||'other'))+' · '+count+' наград</div></div>'+
@@ -2582,7 +2599,7 @@ function renderManagedCases(){
 async function loadCasesList(){
     var el=$('casesList'); if(el)el.innerHTML='<div class="loading">Загрузка всех кейсов</div>';
     try{
-      var r=await fetch('/api/admin/cases?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'}),d=await r.json();
+      var r=await fetch('/api/admin/cases?admin_id='+encodeURIComponent(ADMIN_ID)+'&summary=1&ts='+Date.now(),{cache:'no-store'}),d=await r.json();
       if(!d.success)throw Error(d.error||'Ошибка загрузки');
       managedCasesCache=Array.isArray(d.cases)?d.cases:[];
       allCases=managedCasesCache.slice();
@@ -2600,6 +2617,22 @@ function openEventCaseEditor(caseData,eventSectionId,eventId){
     if(idx>=0)allCases[idx]=copy; else allCases.push(copy);
     var num=Number(id);
     openCaseEditor(isNaN(num)?id:num,eventSectionId,eventId);
+}
+async function openCaseEditorLazy(caseId,eventSectionId,eventId){
+    var c=allCases.find(function(x){return String(x.id)===String(caseId);});
+    if(!c){showToast('Кейс не найден','err');return;}
+    if(!Array.isArray(c.gifts)){
+        showToast('Загружаю кейс…','ok');
+        try{
+            var r=await fetch('/api/admin/cases?admin_id='+encodeURIComponent(ADMIN_ID)+'&ts='+Date.now(),{cache:'no-store'});
+            var d=await r.json();
+            var full=(d.cases||[]).find(function(x){return String(x.id)===String(caseId);});
+            if(!full)throw Error('Кейс не найден');
+            var idx=allCases.findIndex(function(x){return String(x.id)===String(caseId);});
+            if(idx>=0)allCases[idx]=full;
+        }catch(e){showToast(e.message||'Не удалось загрузить кейс','err');return;}
+    }
+    openCaseEditor(caseId,eventSectionId,eventId);
 }
 function openCaseEditor(caseId, eventSectionId, eventId){
     currentCase = null;
@@ -2623,7 +2656,7 @@ function openCaseEditor(caseId, eventSectionId, eventId){
         currentCase = JSON.parse(JSON.stringify(c));
         if(eventSectionId) currentCase.event_section_id = eventSectionId;
         if(eventId) currentCase.event_id = eventId;
-        caseGifts = (currentCase.gifts || []).map(function(g){ var x=Object.assign({},g); x.chance = Number.isFinite(Number(x.chance)) ? Number(x.chance) : 1; return x; });
+        caseGifts = (currentCase.gifts || []).map(function(g){ var x=normalizeCaseGiftModel(g); x.chance = Number.isFinite(Number(x.chance)) ? Number(x.chance) : 1; return x; });
         $('caseEditorTitle').textContent = '✎ ' + c.name;
         $('ceDeleteBtn').style.display = 'flex';
         $('ceName').value = c.name || '';
@@ -2638,6 +2671,16 @@ function openCaseEditor(caseId, eventSectionId, eventId){
 
     renderCaseGifts();
     showSection('case-editor');
+}
+function normalizeCaseGiftModel(g){
+    if(!g || typeof g!=='object') return g;
+    var x=Object.assign({},g);
+    var model=String(x.model_name||x.portal_model_name||'').trim().toLowerCase();
+    if(model==='random'||model==='rand'||String(x.name||'').toLowerCase().includes('(random)')){
+        delete x.model_name; delete x.portal_model_name; x.model_random=false;
+        x.name=cleanCaseGiftName(x.name||'Gift');
+    }
+    return x;
 }
 function cleanCaseGiftName(name){
     return String(name || 'Gift').replace(/\s*\(Random\)\s*/ig,' ').replace(/\s{2,}/g,' ').trim();
@@ -2749,7 +2792,7 @@ function addCaseGiftEntry(candidate){
         showToast('Этот вариант уже есть в кейсе','err');
         return;
     }
-    candidate = Object.assign({}, candidate);
+    candidate = normalizeCaseGiftModel(Object.assign({}, candidate));
     candidate.name = cleanCaseGiftName(candidate.name || 'Gift');
     candidate.chance = Number.isFinite(Number(candidate.chance)) ? Number(candidate.chance) : 1;
     candidate.type = candidate.type || 'gift';
@@ -2801,6 +2844,7 @@ function addCaseRandomModel(collection, baseGift){
     delete gift.model_name;
     delete gift.portal_model_name;
     gift.model_random = false;
+    gift.model = null;
     gift.gift_key = (baseGift && (baseGift.gift_key || baseGift.id)) || ('portal-base-' + String(collection.short_name || 'gift'));
     gift.portal_collection_name = collection.name || gift.name;
     gift.model_count = (collection.models || []).length;
@@ -2945,7 +2989,8 @@ async function openGiftPicker(){
         await loadGifts();
     }
 
-    var portalCatalog=await loadCasePortalCatalog();
+    var portalCatalog=Array.isArray(_casePortalCatalogCache)?_casePortalCatalogCache:[];
+    loadCasePortalCatalog().catch(function(){});
 
     // Base gifts only: model-specific records are chosen on the next screen.
     var byKey={};
@@ -3117,8 +3162,22 @@ async function createFreebet(){
 async function loadFreebets(){
     var el=$('freebetsList'); if(!el)return; el.innerHTML='<div class="loading">Загрузка</div>';
     try{var r=await fetch('/api/admin/freebets?admin_id='+ADMIN_ID+'&ts='+Date.now(),{cache:'no-store'}),d=await r.json();if(!d.success)throw Error(d.error||'Ошибка');
-        el.innerHTML=(d.freebets||[]).map(function(f){var g=(f.reward_data||{}).gift||{};var reward=f.reward_type==='grams'?((Number(f.reward_amount||0)/100).toFixed(2)+' GRAM'):(g.name||'Подарок');var link='https://t.me/Goshangifts_sup_bot?start=freebet_'+encodeURIComponent(f.code);return '<div class="promo-row"><div class="promo-row-head"><div class="promo-row-code">'+escapeHtml(f.code)+'</div><div class="promo-row-type">Freebet</div></div><div class="promo-row-meta"><span>'+escapeHtml(reward)+'</span><span>'+f.used_count+'/'+f.max_uses+'</span><span>'+(f.is_active?'Активен':'Выключен')+'</span></div><div class="promo-row-actions"><button class="btn btn-secondary btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText('+JSON.stringify(link)+');showToast(\'Ссылка скопирована\',\'ok\')">Ссылка</button><button class="btn '+(f.is_active?'btn-warn':'btn-success')+' btn-sm" onclick="toggleFreebet('+f.id+','+(!f.is_active)+')">'+(f.is_active?'Выкл':'Вкл')+'</button><button class="btn btn-danger btn-sm" onclick="deleteFreebet('+f.id+')">Удалить</button></div></div>';}).join('')||'<div class="empty">Freebet пока нет</div>';
+        el.innerHTML=(d.freebets||[]).map(function(f){
+            var g=(f.reward_data||{}).gift||{};
+            var reward=f.reward_type==='grams'?('💎 '+(Number(f.reward_amount||0)/100).toFixed(2)+' GRAM'):('🎁 '+(g.name||'Подарок'));
+            var link=f.link||('https://t.me/'+encodeURIComponent(d.bot_username||'')+'?start=freebet_'+encodeURIComponent(f.code));
+            var state=f.is_active?'🟢 Активен':'⚪ Выключен';
+            return '<div class="promo-row"><div class="promo-row-head"><div class="promo-row-code">'+escapeHtml(f.code)+'</div><div class="promo-row-type">FREEBET</div></div><div class="promo-row-meta"><span>'+escapeHtml(reward)+'</span><span>👥 '+f.used_count+'/'+f.max_uses+'</span><span>'+state+'</span></div><div class="promo-row-actions"><button class="btn btn-secondary btn-sm" onclick="copyFreebetLink('+JSON.stringify(link)+')">🔗 Копировать ссылку</button><button class="btn '+(f.is_active?'btn-warn':'btn-success')+' btn-sm" onclick="toggleFreebet('+f.id+','+(!f.is_active)+')">'+(f.is_active?'⏸ Выкл':'▶ Вкл')+'</button><button class="btn btn-danger btn-sm" onclick="deleteFreebet('+f.id+')">🗑 Удалить</button></div></div>';
+        }).join('')||'<div class="empty">🎟️ Freebet пока нет</div>';
     }catch(e){el.innerHTML='<div class="empty">Ошибка загрузки</div>';}
+}
+
+async function copyFreebetLink(link){
+    try{
+        if(navigator.clipboard&&window.isSecureContext){ await navigator.clipboard.writeText(link); }
+        else { var ta=document.createElement('textarea'); ta.value=link; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); }
+        showToast('🔗 Ссылка скопирована','ok');
+    }catch(e){ showToast('Не удалось скопировать ссылку','err'); }
 }
 async function toggleFreebet(id,active){var r=await fetch('/api/admin/freebets',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,id:id,is_active:active})});var d=await r.json();showToast(d.success?'Сохранено':(d.error||'Ошибка'),d.success?'ok':'err');loadFreebets();}
 async function deleteFreebet(id){if(!confirm('Удалить Freebet?'))return;var r=await fetch('/api/admin/freebets',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin_id:ADMIN_ID,id:id})});var d=await r.json();showToast(d.success?'Удалён':(d.error||'Ошибка'),d.success?'ok':'err');loadFreebets();}
