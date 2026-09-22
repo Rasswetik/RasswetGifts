@@ -21255,108 +21255,322 @@ def add_gift_to_case():
 
 # ========================= FREEBETS =========================
 def _freebet_row(row):
-    try: data=json.loads(row[4]) if row[4] else {}
-    except Exception: data={}
-    return {'id':row[0],'code':row[1],'reward_type':row[2] or 'grams','reward_amount':row[3] or 0,'reward_data':data,'max_uses':row[5] or 1,'used_count':row[6] or 0,'created_at':row[7],'expires_at':row[8],'is_active':bool(row[9])}
+    try:
+        data = json.loads(row[4]) if row[4] else {}
+        if not isinstance(data, dict):
+            data = {}
+    except Exception:
+        data = {}
+    return {
+        'id': row[0], 'code': str(row[1] or '').upper(),
+        'reward_type': row[2] or 'grams', 'reward_amount': int(row[3] or 0),
+        'reward_data': data, 'max_uses': int(row[5] or 1),
+        'used_count': int(row[6] or 0), 'created_at': row[7],
+        'expires_at': row[8], 'is_active': bool(row[9]),
+    }
 
 def _freebet_public(row):
-    d=_freebet_row(row); gift=(d['reward_data'] or {}).get('gift') or {}
-    if d['reward_type']=='grams':
-        label = f"💎 {int(d['reward_amount'])/100:.2f} GRAM"
+    d = _freebet_row(row)
+    gift = (d['reward_data'] or {}).get('gift') or {}
+    if d['reward_type'] == 'grams':
+        label = f"💎 {int(d['reward_amount']) / 100:.2f} GRAM"
         d.update(name='💎 GRAM', image='/static/img/gram.png', reward_label=label)
     else:
         name = gift.get('name') or 'Подарок'
         nft_number = gift.get('nft_number')
-        label = f"🎁 {name}"
-        if nft_number:
-            label = f"💎 {name} #{nft_number}"
+        label = f"🎁 {name}" + (f" #{nft_number}" if nft_number else '')
         d.update(name=name, image=gift.get('image') or '/static/img/gift.png', reward_label=label)
     return d
 
-@app.route('/api/admin/freebets', methods=['GET','POST','PUT','DELETE'])
+def _freebet_ensure_tables(conn):
+    # _create_all_tables() normally creates these at startup. This is only a
+    # safety net for an already-running installation/migration.
+    cur = conn.cursor()
+    if USE_POSTGRES:
+        cur.execute('''CREATE TABLE IF NOT EXISTS freebets (
+            id BIGSERIAL PRIMARY KEY,
+            code TEXT UNIQUE NOT NULL,
+            reward_type TEXT NOT NULL DEFAULT 'grams',
+            reward_amount BIGINT DEFAULT 0,
+            reward_data TEXT DEFAULT NULL,
+            max_uses BIGINT DEFAULT 1,
+            used_count BIGINT DEFAULT 0,
+            created_by BIGINT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP,
+            is_active BOOLEAN DEFAULT TRUE
+        )''')
+        cur.execute('''CREATE TABLE IF NOT EXISTS used_freebets (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL,
+            freebet_id BIGINT NOT NULL REFERENCES freebets(id),
+            used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, freebet_id)
+        )''')
+    else:
+        cur.execute('''CREATE TABLE IF NOT EXISTS freebets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT UNIQUE NOT NULL,
+            reward_type TEXT NOT NULL DEFAULT 'grams',
+            reward_amount INTEGER DEFAULT 0,
+            reward_data TEXT DEFAULT NULL,
+            max_uses INTEGER DEFAULT 1,
+            used_count INTEGER DEFAULT 0,
+            created_by BIGINT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP,
+            is_active BOOLEAN DEFAULT TRUE
+        )''')
+        cur.execute('''CREATE TABLE IF NOT EXISTS used_freebets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id BIGINT NOT NULL,
+            freebet_id INTEGER NOT NULL,
+            used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (freebet_id) REFERENCES freebets (id),
+            UNIQUE(user_id, freebet_id)
+        )''')
+    conn.commit()
+
+def _freebet_sync_counters(conn):
+    cur = conn.cursor()
+    cur.execute('''UPDATE freebets SET used_count = (
+        SELECT COUNT(*) FROM used_freebets uf WHERE uf.freebet_id = freebets.id
+    )''')
+    conn.commit()
+
+@app.route('/api/admin/freebets', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_freebets_management():
+    conn = None
     try:
-        data=request.get_json(silent=True) or {}; admin_id=request.args.get('admin_id') or data.get('admin_id')
-        if not admin_id or int(admin_id)!=ADMIN_ID: return jsonify({'success':False,'error':'Доступ запрещен'}),403
-        conn=get_db_connection(); cur=conn.cursor()
-        if request.method=='GET':
-            cur.execute('SELECT id,code,reward_type,reward_amount,reward_data,max_uses,used_count,created_at,expires_at,is_active FROM freebets ORDER BY created_at DESC'); rows=cur.fetchall(); conn.close(); bot_username = tg_get_bot_username() or 'Goshangifts_sup_bot'
+        data = request.get_json(silent=True) or {}
+        admin_id = request.args.get('admin_id') or data.get('admin_id')
+        if not admin_id or int(admin_id) != ADMIN_ID:
+            return jsonify({'success': False, 'error': 'Доступ запрещен'}), 403
+        conn = get_db_connection()
+        _freebet_ensure_tables(conn)
+        _freebet_sync_counters(conn)
+        cur = conn.cursor()
+
+        if request.method == 'GET':
+            cur.execute('''SELECT id, code, reward_type, reward_amount, reward_data,
+                max_uses, used_count, created_at, expires_at, is_active
+                FROM freebets ORDER BY created_at DESC''')
+            rows = cur.fetchall()
+            bot_username = tg_get_bot_username() or 'Goshangifts_sup_bot'
             freebets = []
-            for x in rows:
-                item = _freebet_row(x)
+            for row in rows:
+                item = _freebet_row(row)
                 item['link'] = f'https://t.me/{bot_username}?start=freebet_{quote_plus(item["code"])}'
                 freebets.append(item)
-            return jsonify({'success':True,'freebets':freebets,'bot_username':bot_username})
-        if request.method=='POST':
-            code=str(data.get('code') or '').strip().upper() or ('FREEBET_'+''.join(random.choice(string.ascii_uppercase+string.digits) for _ in range(8)))
-            rtype=str(data.get('reward_type') or 'grams').lower(); amount=int(data.get('reward_amount') or 0); rd=data.get('reward_data') or {}
-            if rtype not in ('grams','gift','fragment_gift'): return jsonify({'success':False,'error':'Неизвестный тип награды'}),400
-            if rtype=='grams' and amount<=0: return jsonify({'success':False,'error':'Укажите сумму GRAM'}),400
-            if rtype!='grams' and not (rd.get('gift') or {}).get('name'): return jsonify({'success':False,'error':'Выберите подарок'}),400
-            max_uses=max(1,int(data.get('max_uses') or 1))
-            if rtype=='fragment_gift': max_uses=1
-            days=max(0,int(data.get('expires_days') or 0)); expires=(datetime.now()+timedelta(days=days)).isoformat() if days else None
-            cur.execute('SELECT id FROM freebets WHERE code=?',(code,))
-            if cur.fetchone(): conn.close(); return jsonify({'success':False,'error':'Freebet с таким кодом уже существует'}),409
-            cur.execute('INSERT INTO freebets(code,reward_type,reward_amount,reward_data,max_uses,expires_at,created_by) VALUES(?,?,?,?,?,?,?)',(code,rtype,amount,json.dumps(rd,ensure_ascii=False),max_uses,expires,ADMIN_ID)); fid=cur.lastrowid; conn.commit(); conn.close()
-            return jsonify({'success':True,'freebet':{'id':fid,'code':code,'reward_type':rtype,'reward_amount':amount,'max_uses':max_uses,'expires_at':expires,'link':f"https://t.me/{tg_get_bot_username() or 'Goshangifts_sup_bot'}?start=freebet_{quote_plus(code)}"}})
-        fid=int(data.get('id') or 0)
-        if request.method=='PUT':
-            active=bool(data.get('is_active',True)); cur.execute('UPDATE freebets SET is_active=? WHERE id=?',(active,fid)); changed=cur.rowcount; conn.commit(); conn.close(); return jsonify({'success':bool(changed),'is_active':active,'error':None if changed else 'Freebet не найден'})
-        cur.execute('DELETE FROM freebets WHERE id=?',(fid,)); changed=cur.rowcount; conn.commit(); conn.close(); return jsonify({'success':bool(changed),'error':None if changed else 'Freebet не найден'})
-    except Exception as e:
-        logger.error('Freebet admin error: %s',e,exc_info=True); return jsonify({'success':False,'error':str(e)}),500
+            return jsonify({'success': True, 'freebets': freebets, 'bot_username': bot_username})
 
-@app.route('/api/freebet/info')
-def freebet_info():
-    try:
-        code=str(request.args.get('code') or '').strip().upper(); uid=int(request.args.get('user_id') or 0)
-        conn=get_db_connection(); cur=conn.cursor(); cur.execute('SELECT id,code,reward_type,reward_amount,reward_data,max_uses,used_count,created_at,expires_at,is_active FROM freebets WHERE code=?',(code,)); row=cur.fetchone()
-        if not row: conn.close(); return jsonify({'success':False,'error':'Freebet не найден'})
-        d=_freebet_public(row); cur.execute('SELECT id FROM used_freebets WHERE user_id=? AND freebet_id=?',(uid,row[0])); used=bool(cur.fetchone()); d['already_used']=used; d['expired']=False
-        if row[8]:
-            try: d['expired']=datetime.now()>datetime.fromisoformat(str(row[8]).replace('Z','+00:00'))
-            except Exception: pass
-        d['available']=bool(row[9]) and not used and not d['expired'] and (int(row[5] or 1)<=0 or int(row[6] or 0)<int(row[5] or 1)); conn.close(); return jsonify({'success':True,'freebet':d})
-    except Exception as e: return jsonify({'success':False,'error':str(e)}),500
-
-@app.route('/api/freebet/claim', methods=['POST'])
-def freebet_claim():
-    conn=None
-    try:
-        data=request.get_json(silent=True) or {}; uid=int(data.get('user_id') or 0); code=str(data.get('code') or '').strip().upper()
-        if uid <= 0:
-            return jsonify({'success':False,'error':'Не удалось определить Telegram-пользователя. Откройте Freebet из бота.'})
-        conn=get_db_connection(); cur=conn.cursor(); cur.execute('SELECT id,code,reward_type,reward_amount,reward_data,max_uses,used_count,expires_at,is_active FROM freebets WHERE code=?',(code,)); row=cur.fetchone()
-        if not row: return jsonify({'success':False,'error':'Freebet не найден'})
-        fid,_,rtype,amount,rjson,maxuses,usedcount,expires,active=row
-        if not active or (int(maxuses or 1)>0 and int(usedcount or 0)>=int(maxuses or 1)): return jsonify({'success':False,'error':'Freebet уже активирован'})
-        if expires:
+        if request.method == 'POST':
+            code = str(data.get('code') or '').strip().upper()
+            if not code:
+                code = 'FREEBET_' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+            rtype = str(data.get('reward_type') or 'grams').lower()
             try:
-                if datetime.now()>datetime.fromisoformat(str(expires).replace('Z','+00:00')): return jsonify({'success':False,'error':'Срок Freebet истёк'})
-            except Exception: pass
-        cur.execute('SELECT id FROM used_freebets WHERE user_id=? AND freebet_id=?',(uid,fid,))
-        if cur.fetchone(): return jsonify({'success':False,'error':'Freebet уже активирован'})
-        # Reserve one activation atomically before delivering the reward. This prevents two users from claiming a one-use Freebet simultaneously.
-        cur.execute('UPDATE freebets SET used_count=used_count+1 WHERE id=? AND (max_uses<=0 OR used_count<max_uses)',(fid,))
-        if cur.rowcount != 1: return jsonify({'success':False,'error':'Freebet уже активирован'})
-        rd=json.loads(rjson) if rjson else {}
-        if rtype=='grams':
-            cur.execute('UPDATE users SET balance_stars=balance_stars+?, total_earned_stars=total_earned_stars+? WHERE id=?',(int(amount),int(amount),uid)); reward={'type':'grams','name':'GRAM','image':'/static/img/gram.png','label':f'{int(amount)/100:.2f} GRAM'}
-        else:
-            g=rd.get('gift') or {}; name=g.get('name') or 'Подарок'; image=g.get('image') or '/static/img/gift.png'; value_gram=float(g.get('price_gram',0) or 0)
-            value=int(round(value_gram*100)) if value_gram>0 else int(round(float(g.get('value',g.get('price',0)) or 0)))
-            cur.execute('''INSERT INTO inventory(user_id,gift_id,gift_name,gift_image,gift_value,nft_number,nft_model,nft_symbol,nft_backdrop,nft_model_rarity,nft_symbol_rarity,nft_backdrop_rarity,nft_model_price,nft_symbol_price,nft_backdrop_price) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',(uid,int(g.get('id') or 0),name,image,value,g.get('nft_number'),g.get('model'),g.get('symbol'),g.get('backdrop'),g.get('model_rarity'),g.get('symbol_rarity'),g.get('backdrop_rarity'),g.get('model_price'),g.get('symbol_price'),g.get('backdrop_price'))); reward={'type':rtype,'name':name,'image':image,'label':name}
-        cur.execute('INSERT INTO used_freebets(user_id,freebet_id) VALUES(?,?)',(uid,fid)); conn.commit(); return jsonify({'success':True,'message':'Freebet успешно активирован','reward':reward})
+                amount = int(data.get('reward_amount') or 0)
+            except (TypeError, ValueError):
+                amount = 0
+            rd = data.get('reward_data') or {}
+            if not isinstance(rd, dict):
+                rd = {}
+            if rtype not in ('grams', 'gift', 'fragment_gift'):
+                return jsonify({'success': False, 'error': 'Неизвестный тип награды'}), 400
+            if rtype == 'grams' and amount <= 0:
+                return jsonify({'success': False, 'error': 'Укажите сумму GRAM'}), 400
+            if rtype != 'grams' and not (rd.get('gift') or {}).get('name'):
+                return jsonify({'success': False, 'error': 'Выберите подарок'}), 400
+            try:
+                max_uses = max(1, int(data.get('max_uses') or 1))
+            except (TypeError, ValueError):
+                max_uses = 1
+            if rtype == 'fragment_gift':
+                max_uses = 1
+            try:
+                days = max(0, int(data.get('expires_days') or 0))
+            except (TypeError, ValueError):
+                days = 0
+            expires = (datetime.now() + timedelta(days=days)).isoformat() if days else None
+
+            cur.execute('SELECT id FROM freebets WHERE UPPER(code)=UPPER(?) LIMIT 1', (code,))
+            if cur.fetchone():
+                return jsonify({'success': False, 'error': 'Freebet с таким кодом уже существует'}), 409
+            cur.execute('''INSERT INTO freebets
+                (code, reward_type, reward_amount, reward_data, max_uses, used_count, expires_at, created_by, is_active)
+                VALUES (?, ?, ?, ?, ?, 0, ?, ?, TRUE)''',
+                (code, rtype, amount, json.dumps(rd, ensure_ascii=False), max_uses, expires, ADMIN_ID))
+            conn.commit()
+            cur.execute('''SELECT id, code, reward_type, reward_amount, reward_data,
+                max_uses, used_count, created_at, expires_at, is_active
+                FROM freebets WHERE UPPER(code)=UPPER(?) LIMIT 1''', (code,))
+            created = cur.fetchone()
+            bot_username = tg_get_bot_username() or 'Goshangifts_sup_bot'
+            return jsonify({'success': True, 'freebet': {
+                **_freebet_row(created),
+                'link': f'https://t.me/{bot_username}?start=freebet_{quote_plus(code)}'
+            }})
+
+        fid = int(data.get('id') or 0)
+        if request.method == 'PUT':
+            active = bool(data.get('is_active', True))
+            cur.execute('UPDATE freebets SET is_active=? WHERE id=?', (active, fid))
+            changed = cur.rowcount
+            conn.commit()
+            return jsonify({'success': bool(changed), 'is_active': active,
+                            'error': None if changed else 'Freebet не найден'})
+        cur.execute('DELETE FROM freebets WHERE id=?', (fid,))
+        changed = cur.rowcount
+        conn.commit()
+        return jsonify({'success': bool(changed), 'error': None if changed else 'Freebet не найден'})
     except Exception as e:
         if conn:
             try: conn.rollback()
             except Exception: pass
-        logger.error('Freebet claim error: %s',e,exc_info=True); return jsonify({'success':False,'error':str(e)}),500
-    finally:
+        logger.error('Freebet admin error: %s', e, exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/freebet/info')
+def freebet_info():
+    conn = None
+    try:
+        code = str(request.args.get('code') or '').strip().upper()
+        uid = int(request.args.get('user_id') or 0)
+        if not code:
+            return jsonify({'success': False, 'error': 'Freebet не найден'}), 404
+        conn = get_db_connection()
+        _freebet_ensure_tables(conn)
+        cur = conn.cursor()
+        cur.execute('''SELECT id, code, reward_type, reward_amount, reward_data,
+            max_uses, used_count, created_at, expires_at, is_active
+            FROM freebets WHERE UPPER(code)=UPPER(?) LIMIT 1''', (code,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'success': False, 'error': 'Freebet не найден'}), 404
+        fid = int(row[0])
+        cur.execute('SELECT COUNT(*) FROM used_freebets WHERE freebet_id=?', (fid,))
+        actual_used = int((cur.fetchone() or [0])[0] or 0)
+        if int(row[6] or 0) != actual_used:
+            cur.execute('UPDATE freebets SET used_count=? WHERE id=?', (actual_used, fid))
+            conn.commit()
+            row = list(row); row[6] = actual_used; row = tuple(row)
+        cur.execute('SELECT id FROM used_freebets WHERE user_id=? AND freebet_id=? LIMIT 1', (uid, fid))
+        already_used = cur.fetchone() is not None
+        expired = False
+        if row[8]:
+            try:
+                expiry = datetime.fromisoformat(str(row[8]).replace('Z', '+00:00'))
+                if expiry.tzinfo:
+                    from datetime import timezone
+                    expiry = expiry.astimezone(timezone.utc).replace(tzinfo=None)
+                expired = datetime.utcnow() >= expiry
+            except Exception as exc:
+                logger.warning('Freebet %s expiration parse failed: %s', code, exc)
+        max_uses = int(row[5] or 1)
+        available = bool(row[9]) and not already_used and not expired and (max_uses <= 0 or actual_used < max_uses)
+        d = _freebet_public(row)
+        d.update(used_count=actual_used, already_used=already_used, expired=expired, available=available)
+        return jsonify({'success': True, 'freebet': d})
+    except Exception as e:
+        logger.error('Freebet info error: %s', e, exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/freebet/claim', methods=['POST'])
+def freebet_claim():
+    conn = None
+    try:
+        data = request.get_json(silent=True) or {}
+        try: uid = int(data.get('user_id') or 0)
+        except (TypeError, ValueError): uid = 0
+        code = str(data.get('code') or '').strip().upper()
+        if uid <= 0:
+            return jsonify({'success': False, 'error': 'Не удалось определить Telegram-пользователя. Откройте Freebet из бота.'}), 400
+        if not code:
+            return jsonify({'success': False, 'error': 'Freebet не найден'}), 404
+
+        conn = get_db_connection()
+        _freebet_ensure_tables(conn)
+        cur = conn.cursor()
+        if USE_POSTGRES:
+            cur.execute('''SELECT id, code, reward_type, reward_amount, reward_data,
+                max_uses, used_count, expires_at, is_active
+                FROM freebets WHERE UPPER(code)=UPPER(%s) LIMIT 1 FOR UPDATE''', (code,))
+        else:
+            cur.execute('''SELECT id, code, reward_type, reward_amount, reward_data,
+                max_uses, used_count, expires_at, is_active
+                FROM freebets WHERE UPPER(code)=UPPER(?) LIMIT 1''', (code,))
+        row = cur.fetchone()
+        if not row:
+            return jsonify({'success': False, 'error': 'Freebet не найден'}), 404
+        fid, _, rtype, amount, rjson, maxuses, _, expires, active = row
+        cur.execute('SELECT COUNT(*) FROM used_freebets WHERE freebet_id=?', (fid,))
+        actual_used = int((cur.fetchone() or [0])[0] or 0)
+        cur.execute('UPDATE freebets SET used_count=? WHERE id=?', (actual_used, fid))
+
+        if not bool(active):
+            conn.rollback()
+            return jsonify({'success': False, 'error': 'Freebet отключён'})
+        if int(maxuses or 1) > 0 and actual_used >= int(maxuses):
+            conn.rollback()
+            return jsonify({'success': False, 'error': 'Лимит активаций Freebet исчерпан'})
+        if expires:
+            try:
+                expiry = datetime.fromisoformat(str(expires).replace('Z', '+00:00'))
+                if expiry.tzinfo:
+                    from datetime import timezone
+                    expiry = expiry.astimezone(timezone.utc).replace(tzinfo=None)
+                if datetime.utcnow() >= expiry:
+                    conn.rollback()
+                    return jsonify({'success': False, 'error': 'Срок Freebet истёк'})
+            except Exception as exc:
+                logger.warning('Freebet %s expiration parse failed during claim: %s', code, exc)
+        cur.execute('SELECT id FROM used_freebets WHERE user_id=? AND freebet_id=? LIMIT 1', (uid, fid))
+        if cur.fetchone():
+            conn.rollback()
+            return jsonify({'success': False, 'error': 'Вы уже активировали этот Freebet'})
+
+        try: rd = json.loads(rjson) if rjson else {}
+        except Exception: rd = {}
+        if not isinstance(rd, dict): rd = {}
+
+        if rtype == 'grams':
+            cur.execute('''UPDATE users SET balance_stars=balance_stars+?, total_earned_stars=total_earned_stars+? WHERE id=?''',
+                        (int(amount), int(amount), uid))
+            if cur.rowcount != 1:
+                raise RuntimeError(f'Пользователь {uid} не найден при активации Freebet')
+            reward = {'type': 'grams', 'name': 'GRAM', 'image': '/static/img/gram.png',
+                      'label': f'{int(amount) / 100:.2f} GRAM'}
+        else:
+            gift = rd.get('gift') or {}
+            name = gift.get('name') or 'Подарок'
+            image = gift.get('image') or '/static/img/gift.png'
+            value_gram = float(gift.get('price_gram', 0) or 0)
+            value = int(round(value_gram * 100)) if value_gram > 0 else int(round(float(gift.get('value', gift.get('price', 0)) or 0)))
+            cur.execute('''INSERT INTO inventory(
+                user_id, gift_id, gift_name, gift_image, gift_value,
+                nft_number, nft_model, nft_symbol, nft_backdrop,
+                nft_model_rarity, nft_symbol_rarity, nft_backdrop_rarity,
+                nft_model_price, nft_symbol_price, nft_backdrop_price
+            ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            (uid, int(gift.get('id') or 0), name, image, value, gift.get('nft_number'),
+             gift.get('model'), gift.get('symbol'), gift.get('backdrop'),
+             gift.get('model_rarity'), gift.get('symbol_rarity'), gift.get('backdrop_rarity'),
+             gift.get('model_price'), gift.get('symbol_price'), gift.get('backdrop_price')))
+            reward = {'type': rtype, 'name': name, 'image': image, 'label': name}
+
+        cur.execute('INSERT INTO used_freebets(user_id, freebet_id) VALUES(?, ?)', (uid, fid))
+        cur.execute('UPDATE freebets SET used_count=? WHERE id=?', (actual_used + 1, fid))
+        conn.commit()
+        logger.info('Freebet claimed: code=%s user_id=%s freebet_id=%s used=%s/%s', code, uid, fid, actual_used + 1, maxuses)
+        return jsonify({'success': True, 'message': 'Freebet успешно активирован', 'reward': reward,
+                        'used_count': actual_used + 1, 'max_uses': int(maxuses or 1)})
+    except Exception as e:
         if conn:
-            try: conn.close()
+            try: conn.rollback()
             except Exception: pass
+        logger.error('Freebet claim error: %s', e, exc_info=True)
+        return jsonify({'success': False, 'error': 'Не удалось активировать Freebet. Попробуйте ещё раз.'}), 500
 
 @app.route('/api/admin/promo-codes', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_promo_codes_management():
