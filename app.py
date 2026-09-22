@@ -4050,6 +4050,27 @@ def _create_all_tables(conn):
             FOREIGN KEY (promo_code_id) REFERENCES promo_codes (id),
             UNIQUE(user_id, promo_code_id)
         )''',
+        'freebets': '''CREATE TABLE IF NOT EXISTS freebets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            code TEXT UNIQUE NOT NULL,
+            reward_type TEXT NOT NULL DEFAULT 'grams',
+            reward_amount INTEGER DEFAULT 0,
+            reward_data TEXT DEFAULT NULL,
+            max_uses INTEGER DEFAULT 1,
+            used_count INTEGER DEFAULT 0,
+            created_by BIGINT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMP,
+            is_active BOOLEAN DEFAULT TRUE
+        )''',
+        'used_freebets': '''CREATE TABLE IF NOT EXISTS used_freebets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            freebet_id INTEGER NOT NULL,
+            used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (freebet_id) REFERENCES freebets (id),
+            UNIQUE(user_id, freebet_id)
+        )''',
         'user_customizations': '''CREATE TABLE IF NOT EXISTS user_customizations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -6913,6 +6934,22 @@ def games_page():
     # card class the current template uses. The tile is only present when the
     # /api/games-ui configuration includes banner_case.png.
     patch = r"""
+<style id="freebet-games-ui">
+#freebetOverlay{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,7,14,.78);backdrop-filter:blur(12px)}
+#freebetOverlay.show{display:flex}.freebet-box{width:min(390px,calc(100vw - 36px));border-radius:24px;padding:26px 22px 22px;text-align:center;background:linear-gradient(180deg,#172235,#0d1420);border:1px solid rgba(255,255,255,.1);box-shadow:0 24px 80px rgba(0,0,0,.45)}
+.freebet-box img{width:150px;height:150px;object-fit:contain;display:block;margin:0 auto 14px}.freebet-title{font-size:24px;font-weight:800;color:#fff}.freebet-name{font-size:15px;color:rgba(255,255,255,.62);margin-top:6px}.freebet-btn{width:100%;border:0;border-radius:14px;padding:14px;margin-top:20px;font-size:16px;font-weight:800;background:#fff;color:#111;cursor:pointer}.freebet-status{margin-top:12px;font-size:13px;color:rgba(255,255,255,.58);min-height:18px}
+</style>
+<script id="freebet-games-ui-js">
+(function(){
+ function esc(v){return String(v==null?'':v).replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]});}
+ function add(){if(document.getElementById('freebetOverlay'))return;var q=new URLSearchParams(location.search),code=(q.get('freebet')||'').trim().toUpperCase();if(!code)return;var ov=document.createElement('div');ov.id='freebetOverlay';ov.innerHTML='<div class="freebet-box"><img id="freebetImg" src="/static/img/gift.png"><div class="freebet-title">Freebet</div><div class="freebet-name" id="freebetName">Загрузка...</div><button class="freebet-btn" id="freebetClaimBtn">Забрать</button><div class="freebet-status" id="freebetStatus"></div></div>';document.body.appendChild(ov);ov.classList.add('show');
+   var name=window.userId||null; function load(){fetch('/api/freebet/info?code='+encodeURIComponent(code)+'&user_id='+encodeURIComponent(window.userId||0),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){if(!d.success)throw Error(d.error||'Freebet не найден');var f=d.freebet;document.getElementById('freebetImg').src=f.image||'/static/img/gift.png';document.getElementById('freebetName').textContent=f.reward_label||f.name||'Награда';if(f.already_used||!f.available){document.getElementById('freebetClaimBtn').disabled=true;document.getElementById('freebetStatus').textContent=f.already_used?'Freebet уже активирован':'Freebet больше недоступен';}}).catch(function(e){document.getElementById('freebetName').textContent='';document.getElementById('freebetStatus').textContent=e.message||'Ошибка';});}
+   document.getElementById('freebetClaimBtn').onclick=function(){var b=this;b.disabled=true;document.getElementById('freebetStatus').textContent='Активация...';fetch('/api/freebet/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:window.userId||0,code:code})}).then(function(r){return r.json()}).then(function(d){if(!d.success){document.getElementById('freebetStatus').textContent=d.error||'Freebet уже активирован';b.disabled=true;return}document.getElementById('freebetStatus').textContent='Freebet успешно активирован';b.textContent='Получено';try{if(typeof window.loadTopBar==='function')window.loadTopBar();}catch(e){}}).catch(function(){document.getElementById('freebetStatus').textContent='Ошибка сети';b.disabled=false;});};
+   var tries=0;(function wait(){if(window.userId){load();return}if(tries++<30)setTimeout(wait,300);else load();})();
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();
+})();
+</script>
 <style id="cases-event-games-patch">
 .cases-event-card{grid-column:span 2!important;min-height:220px!important;}
 .cases-event-card img{max-width:100%!important;max-height:100%!important;object-fit:contain!important;}
@@ -21164,6 +21201,95 @@ def add_gift_to_case():
         return jsonify({'success': False, 'error': str(e)})
 
 
+# ========================= FREEBETS =========================
+def _freebet_row(row):
+    try: data=json.loads(row[4]) if row[4] else {}
+    except Exception: data={}
+    return {'id':row[0],'code':row[1],'reward_type':row[2] or 'grams','reward_amount':row[3] or 0,'reward_data':data,'max_uses':row[5] or 1,'used_count':row[6] or 0,'created_at':row[7],'expires_at':row[8],'is_active':bool(row[9])}
+
+def _freebet_public(row):
+    d=_freebet_row(row); gift=(d['reward_data'] or {}).get('gift') or {}
+    if d['reward_type']=='grams': d.update(name='GRAM',image='/static/img/gram.png',reward_label=f"{int(d['reward_amount'])/100:.2f} GRAM")
+    else: d.update(name=gift.get('name') or 'Подарок',image=gift.get('image') or '/static/img/gift.png',reward_label=gift.get('name') or 'Подарок')
+    return d
+
+@app.route('/api/admin/freebets', methods=['GET','POST','PUT','DELETE'])
+def admin_freebets_management():
+    try:
+        data=request.get_json(silent=True) or {}; admin_id=request.args.get('admin_id') or data.get('admin_id')
+        if not admin_id or int(admin_id)!=ADMIN_ID: return jsonify({'success':False,'error':'Доступ запрещен'}),403
+        conn=get_db_connection(); cur=conn.cursor()
+        if request.method=='GET':
+            cur.execute('SELECT id,code,reward_type,reward_amount,reward_data,max_uses,used_count,created_at,expires_at,is_active FROM freebets ORDER BY created_at DESC'); rows=cur.fetchall(); conn.close(); return jsonify({'success':True,'freebets':[_freebet_row(x) for x in rows]})
+        if request.method=='POST':
+            code=str(data.get('code') or '').strip().upper() or ('FREEBET_'+''.join(random.choice(string.ascii_uppercase+string.digits) for _ in range(8)))
+            rtype=str(data.get('reward_type') or 'grams').lower(); amount=int(data.get('reward_amount') or 0); rd=data.get('reward_data') or {}
+            if rtype not in ('grams','gift','fragment_gift'): return jsonify({'success':False,'error':'Неизвестный тип награды'}),400
+            if rtype=='grams' and amount<=0: return jsonify({'success':False,'error':'Укажите сумму GRAM'}),400
+            if rtype!='grams' and not (rd.get('gift') or {}).get('name'): return jsonify({'success':False,'error':'Выберите подарок'}),400
+            max_uses=max(1,int(data.get('max_uses') or 1))
+            if rtype=='fragment_gift': max_uses=1
+            days=max(0,int(data.get('expires_days') or 0)); expires=(datetime.now()+timedelta(days=days)).isoformat() if days else None
+            cur.execute('SELECT id FROM freebets WHERE code=?',(code,))
+            if cur.fetchone(): conn.close(); return jsonify({'success':False,'error':'Freebet с таким кодом уже существует'}),409
+            cur.execute('INSERT INTO freebets(code,reward_type,reward_amount,reward_data,max_uses,expires_at,created_by) VALUES(?,?,?,?,?,?,?)',(code,rtype,amount,json.dumps(rd,ensure_ascii=False),max_uses,expires,ADMIN_ID)); fid=cur.lastrowid; conn.commit(); conn.close()
+            return jsonify({'success':True,'freebet':{'id':fid,'code':code,'reward_type':rtype,'reward_amount':amount,'max_uses':max_uses,'expires_at':expires,'link':f'https://t.me/Goshangifts_sup_bot?start=freebet_{quote_plus(code)}'}})
+        fid=int(data.get('id') or 0)
+        if request.method=='PUT':
+            active=bool(data.get('is_active',True)); cur.execute('UPDATE freebets SET is_active=? WHERE id=?',(active,fid)); changed=cur.rowcount; conn.commit(); conn.close(); return jsonify({'success':bool(changed),'is_active':active,'error':None if changed else 'Freebet не найден'})
+        cur.execute('DELETE FROM freebets WHERE id=?',(fid,)); changed=cur.rowcount; conn.commit(); conn.close(); return jsonify({'success':bool(changed),'error':None if changed else 'Freebet не найден'})
+    except Exception as e:
+        logger.error('Freebet admin error: %s',e,exc_info=True); return jsonify({'success':False,'error':str(e)}),500
+
+@app.route('/api/freebet/info')
+def freebet_info():
+    try:
+        code=str(request.args.get('code') or '').strip().upper(); uid=int(request.args.get('user_id') or 0)
+        conn=get_db_connection(); cur=conn.cursor(); cur.execute('SELECT id,code,reward_type,reward_amount,reward_data,max_uses,used_count,created_at,expires_at,is_active FROM freebets WHERE code=?',(code,)); row=cur.fetchone()
+        if not row: conn.close(); return jsonify({'success':False,'error':'Freebet не найден'})
+        d=_freebet_public(row); cur.execute('SELECT id FROM used_freebets WHERE user_id=? AND freebet_id=?',(uid,row[0])); used=bool(cur.fetchone()); d['already_used']=used; d['expired']=False
+        if row[8]:
+            try: d['expired']=datetime.now()>datetime.fromisoformat(str(row[8]).replace('Z','+00:00'))
+            except Exception: pass
+        d['available']=bool(row[9]) and not used and not d['expired'] and (int(row[5] or 1)<=0 or int(row[6] or 0)<int(row[5] or 1)); conn.close(); return jsonify({'success':True,'freebet':d})
+    except Exception as e: return jsonify({'success':False,'error':str(e)}),500
+
+@app.route('/api/freebet/claim', methods=['POST'])
+def freebet_claim():
+    conn=None
+    try:
+        data=request.get_json(silent=True) or {}; uid=int(data.get('user_id') or 0); code=str(data.get('code') or '').strip().upper()
+        conn=get_db_connection(); cur=conn.cursor(); cur.execute('SELECT id,code,reward_type,reward_amount,reward_data,max_uses,used_count,expires_at,is_active FROM freebets WHERE code=?',(code,)); row=cur.fetchone()
+        if not row: return jsonify({'success':False,'error':'Freebet не найден'})
+        fid,_,rtype,amount,rjson,maxuses,usedcount,expires,active=row
+        if not active or (int(maxuses or 1)>0 and int(usedcount or 0)>=int(maxuses or 1)): return jsonify({'success':False,'error':'Freebet уже активирован'})
+        if expires:
+            try:
+                if datetime.now()>datetime.fromisoformat(str(expires).replace('Z','+00:00')): return jsonify({'success':False,'error':'Срок Freebet истёк'})
+            except Exception: pass
+        cur.execute('SELECT id FROM used_freebets WHERE user_id=? AND freebet_id=?',(uid,fid,))
+        if cur.fetchone(): return jsonify({'success':False,'error':'Freebet уже активирован'})
+        # Reserve one activation atomically before delivering the reward. This prevents two users from claiming a one-use Freebet simultaneously.
+        cur.execute('UPDATE freebets SET used_count=used_count+1 WHERE id=? AND (max_uses<=0 OR used_count<max_uses)',(fid,))
+        if cur.rowcount != 1: return jsonify({'success':False,'error':'Freebet уже активирован'})
+        rd=json.loads(rjson) if rjson else {}
+        if rtype=='grams':
+            cur.execute('UPDATE users SET balance_stars=balance_stars+?, total_earned_stars=total_earned_stars+? WHERE id=?',(int(amount),int(amount),uid)); reward={'type':'grams','name':'GRAM','image':'/static/img/gram.png','label':f'{int(amount)/100:.2f} GRAM'}
+        else:
+            g=rd.get('gift') or {}; name=g.get('name') or 'Подарок'; image=g.get('image') or '/static/img/gift.png'; value_gram=float(g.get('price_gram',0) or 0)
+            value=int(round(value_gram*100)) if value_gram>0 else int(round(float(g.get('value',g.get('price',0)) or 0)))
+            cur.execute('''INSERT INTO inventory(user_id,gift_id,gift_name,gift_image,gift_value,nft_number,nft_model,nft_symbol,nft_backdrop,nft_model_rarity,nft_symbol_rarity,nft_backdrop_rarity,nft_model_price,nft_symbol_price,nft_backdrop_price) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',(uid,int(g.get('id') or 0),name,image,value,g.get('nft_number'),g.get('model'),g.get('symbol'),g.get('backdrop'),g.get('model_rarity'),g.get('symbol_rarity'),g.get('backdrop_rarity'),g.get('model_price'),g.get('symbol_price'),g.get('backdrop_price'))); reward={'type':rtype,'name':name,'image':image,'label':name}
+        cur.execute('INSERT INTO used_freebets(user_id,freebet_id) VALUES(?,?)',(uid,fid)); conn.commit(); return jsonify({'success':True,'message':'Freebet успешно активирован','reward':reward})
+    except Exception as e:
+        if conn:
+            try: conn.rollback()
+            except Exception: pass
+        logger.error('Freebet claim error: %s',e,exc_info=True); return jsonify({'success':False,'error':str(e)}),500
+    finally:
+        if conn:
+            try: conn.close()
+            except Exception: pass
+
 @app.route('/api/admin/promo-codes', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def admin_promo_codes_management():
     """Управление промокодами"""
@@ -25662,6 +25788,15 @@ def handle_start(msg):
                     logger.info(f"👥 Реферал через бота: {uid} -> {ref_code}")
                 except Exception as e:
                     logger.error(f"❌ Ошибка реферала через бота: {e}")
+        elif param.lower().startswith('freebet_'):
+            free_code=param.split('_',1)[1].strip().upper()
+            try:
+                conn=get_db_connection(); cur=conn.cursor(); cur.execute('SELECT code,is_active,max_uses,used_count FROM freebets WHERE code=?',(free_code,)); fr=cur.fetchone(); conn.close()
+                if fr and fr[1] and (int(fr[2] or 1)<=0 or int(fr[3] or 0)<int(fr[2] or 1)):
+                    tg_send(chat_id,'Freebet доступен. Чтобы получить награду, нажмите кнопку ниже.',reply_markup={'inline_keyboard':[[{'text':'Забрать Freebet','web_app':{'url':f'{WEBSITE_URL}/games?freebet={quote_plus(free_code)}'}}]]})
+                else: tg_send(chat_id,'Freebet уже активирован или больше недоступен.')
+                return
+            except Exception as e: logger.error(f'Freebet start error: {e}')
     
     welcome_text = (
         "🎉 Привет, на связи команда GOSHANGIFTS и теперь ты в нашей большой семье! 🎁\n\n"
