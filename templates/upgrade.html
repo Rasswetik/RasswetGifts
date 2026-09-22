@@ -931,6 +931,14 @@ html,body{width:100%;max-width:100%;overflow-x:hidden!important}
   .select-card{border-radius:18px}
 }
 </style>
+<style id="upgrade-mobile-top-panel-fix">
+@media(max-width:700px){
+  header.top-bar{margin-top:4vh!important;}
+}
+</style>
+<style id="upgrade-percent-alignment-fix">
+.select-chance,.wheel-center-pct{font-variant-numeric:tabular-nums;display:inline-flex;justify-content:center;align-items:center;text-align:center;min-width:72px;white-space:nowrap;letter-spacing:0!important;}
+</style>
 </head>
 <body>
 <div class="halloween-decor" aria-hidden="true">
@@ -1720,10 +1728,9 @@ function setGramPreset(mode){
 }
 
 function formatPresetValue(v){
-    if(v >= 100) return Math.floor(v).toString();
-    if(v >= 10) return v.toFixed(1).replace(/\.0$/, '');
-    if(v >= 1) return (Math.round(v * 100) / 100).toString().replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
-    return v.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+    var n = Number(v || 0);
+    if(!isFinite(n)) n = 0;
+    return n.toFixed(n >= 10 ? 1 : 2).replace(/\.?0+$/, '');
 }
 
 function updateGramConfirmBtn(){
@@ -1926,13 +1933,25 @@ async function loadPossibleTargets(){
         });
         var d2 = await r2.json();
         if(!d2.success) return;
-        possibleTargets = [];
-        (d2.possible_gifts || []).forEach(function(g){
-            if(g.value > selectedGift.value && g.value <= selectedGift.value * 100){
-                possibleTargets.push(g);
-            }
+        var rawTargets = Array.isArray(d2.possible_gifts) ? d2.possible_gifts : [];
+        // Prefer canonical/base gifts. Keep only a small occasional sample of models.
+        var baseTargets = rawTargets.filter(function(g){ return !isUpgradedGift(g); });
+        var modelTargets = rawTargets.filter(function(g){ return isUpgradedGift(g); });
+        var filtered = baseTargets.filter(function(g){
+            return Number(g.value||0) > Number(selectedGift.value||0) && Number(g.value||0) <= Number(selectedGift.value||0) * 100;
         });
-        possibleTargets.sort(function(a, b){ return a.value - b.value; });
+        var modelFiltered = modelTargets.filter(function(g){
+            return Number(g.value||0) > Number(selectedGift.value||0) && Number(g.value||0) <= Number(selectedGift.value||0) * 100;
+        });
+        // One model for roughly every 5 base choices, capped at 2 models.
+        modelFiltered.sort(function(a,b){ return Number(a.value||0)-Number(b.value||0); });
+        var modelCount = Math.min(2, Math.max(0, Math.floor(filtered.length / 5)));
+        if(modelCount){
+            var step = Math.max(1, Math.floor(modelFiltered.length / modelCount));
+            for(var mi=0; mi<modelCount; mi++){ if(modelFiltered[mi*step]) filtered.push(modelFiltered[mi*step]); }
+        }
+        filtered.sort(function(a, b){ return Number(a.value||0) - Number(b.value||0); });
+        possibleTargets = filtered.slice(0, 18);
     }catch(e){}
 }
 
