@@ -6953,9 +6953,51 @@ def games_page():
 (function(){
  function esc(v){return String(v==null?'':v).replace(/[&<>\"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]});}
  function add(){if(document.getElementById('freebetOverlay'))return;var q=new URLSearchParams(location.search),code=(q.get('freebet')||'').trim().toUpperCase();if(!code)return;var ov=document.createElement('div');ov.id='freebetOverlay';ov.innerHTML='<div class="freebet-box"><img id="freebetImg" src="/static/img/gift.png"><div class="freebet-title">Freebet</div><div class="freebet-name" id="freebetName">Загрузка...</div><button class="freebet-btn" id="freebetClaimBtn">Забрать</button><div class="freebet-status" id="freebetStatus"></div></div>';document.body.appendChild(ov);ov.classList.add('show');
-   var name=window.userId||null; function load(){fetch('/api/freebet/info?code='+encodeURIComponent(code)+'&user_id='+encodeURIComponent(window.userId||0),{cache:'no-store'}).then(function(r){return r.json()}).then(function(d){if(!d.success)throw Error(d.error||'Freebet не найден');var f=d.freebet;document.getElementById('freebetImg').src=f.image||'/static/img/gift.png';document.getElementById('freebetName').textContent=f.reward_label||f.name||'Награда';if(f.already_used||!f.available){document.getElementById('freebetClaimBtn').disabled=true;document.getElementById('freebetStatus').textContent=f.already_used?'Freebet уже активирован':'Freebet больше недоступен';}}).catch(function(e){document.getElementById('freebetName').textContent='';document.getElementById('freebetStatus').textContent=e.message||'Ошибка';});}
-   document.getElementById('freebetClaimBtn').onclick=function(){var b=this;b.disabled=true;document.getElementById('freebetStatus').textContent='Активация...';fetch('/api/freebet/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:window.userId||0,code:code})}).then(function(r){return r.json()}).then(function(d){if(!d.success){document.getElementById('freebetStatus').textContent=d.error||'Freebet уже активирован';b.disabled=true;return}document.getElementById('freebetStatus').textContent='Freebet успешно активирован';b.textContent='Получено';try{if(typeof window.loadTopBar==='function')window.loadTopBar();}catch(e){}}).catch(function(){document.getElementById('freebetStatus').textContent='Ошибка сети';b.disabled=false;});};
-   var tries=0;(function wait(){if(window.userId){load();return}if(tries++<30)setTimeout(wait,300);else load();})();
+   function getFreebetUserId(){
+     var uid=window.userId||null;
+     if(!uid){
+       try{
+         var tg=window.Telegram&&Telegram.WebApp;
+         if(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user) uid=tg.initDataUnsafe.user.id;
+       }catch(e){}
+     }
+     if(!uid){
+       try{ uid=new URLSearchParams(location.search).get('user_id')||null; }catch(e){}
+     }
+     if(uid) window.userId=uid;
+     return uid||0;
+   }
+   try{if(window.Telegram&&Telegram.WebApp){Telegram.WebApp.ready();Telegram.WebApp.expand();}}catch(e){}
+   function load(){
+     var uid=getFreebetUserId();
+     fetch('/api/freebet/info?code='+encodeURIComponent(code)+'&user_id='+encodeURIComponent(uid),{cache:'no-store'})
+       .then(function(r){return r.json()})
+       .then(function(d){
+         if(!d.success)throw Error(d.error||'Freebet не найден');
+         var f=d.freebet;
+         document.getElementById('freebetImg').src=f.image||'/static/img/gift.png';
+         document.getElementById('freebetName').textContent=f.reward_label||f.name||'Награда';
+         if(f.already_used||!f.available){
+           document.getElementById('freebetClaimBtn').disabled=true;
+           document.getElementById('freebetStatus').textContent=f.already_used?'Freebet уже активирован':'Freebet больше недоступен';
+         }
+       })
+       .catch(function(e){document.getElementById('freebetName').textContent='';document.getElementById('freebetStatus').textContent=e.message||'Ошибка';});
+   }
+   document.getElementById('freebetClaimBtn').onclick=function(){
+     var b=this,uid=getFreebetUserId();
+     if(!uid){document.getElementById('freebetStatus').textContent='Откройте фрибет через кнопку в Telegram.';return;}
+     b.disabled=true;document.getElementById('freebetStatus').textContent='Активация...';
+     fetch('/api/freebet/claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:uid,code:code})})
+       .then(function(r){return r.json()})
+       .then(function(d){
+         if(!d.success){document.getElementById('freebetStatus').textContent=d.error||'Freebet уже активирован';b.disabled=true;return;}
+         document.getElementById('freebetStatus').textContent='Freebet успешно активирован';b.textContent='Получено';
+         try{if(typeof window.loadTopBar==='function')window.loadTopBar();}catch(e){}
+       })
+       .catch(function(){document.getElementById('freebetStatus').textContent='Ошибка сети';b.disabled=false;});
+   };
+   var tries=0;(function wait(){if(getFreebetUserId()){load();return}if(tries++<30)setTimeout(wait,300);else load();})();
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',add);else add();
 })();
@@ -25833,17 +25875,49 @@ def handle_start(msg):
                 except Exception as e:
                     logger.error(f"❌ Ошибка реферала через бота: {e}")
         elif param.lower().startswith('freebet_'):
-            free_code=param.split('_',1)[1].strip().upper()
-            try:
-                conn=get_db_connection(); cur=conn.cursor(); cur.execute('SELECT code,is_active,max_uses,used_count FROM freebets WHERE code=?',(free_code,)); fr=cur.fetchone(); conn.close()
-                if fr and fr[1] and (int(fr[2] or 1)<=0 or int(fr[3] or 0)<int(fr[2] or 1)):
-                    tg_send(chat_id,
-                            '🎁 <b>Фрибет получен!</b>\n\n🔥 Награда уже готова к активации.\n👇 Нажми кнопку ниже, чтобы забрать её.',
-                            reply_markup={'inline_keyboard':[[{'text':'👇 Активировать фрибет','web_app':{'url':f'{WEBSITE_URL}/games?freebet={quote_plus(free_code)}'}}]]})
-                else:
-                    tg_send(chat_id,'❌ <b>Фрибет не найден или уже закончен.</b>\n\nПроверьте ссылку или попросите новую.')
+            # Telegram deep-link payload должен быть разобран без зависимости
+            # от регистра и без ложного "не найден" при кратковременной
+            # блокировке/занятости БД. Сам код сохраняем в исходном виде
+            # (после нормализации), а ссылку для WebApp строим из него же.
+            free_code = param[len('freebet_'):].strip().upper()
+            fr = None
+            last_error = None
+            for attempt in range(3):
+                conn = None
+                try:
+                    conn = get_db_connection()
+                    cur = conn.cursor()
+                    cur.execute('''SELECT code,is_active,max_uses,used_count
+                                   FROM freebets
+                                   WHERE UPPER(code)=UPPER(?)
+                                   LIMIT 1''', (free_code,))
+                    fr = cur.fetchone()
+                    break
+                except Exception as e:
+                    last_error = e
+                    logger.warning('Freebet start DB read attempt %s/3 failed for %r: %s', attempt + 1, free_code, e)
+                    time.sleep(0.15 * (attempt + 1))
+                finally:
+                    if conn:
+                        try:
+                            conn.close()
+                        except Exception:
+                            pass
+
+            if last_error and fr is None:
+                logger.error('Freebet start DB read failed after retries for %r: %s', free_code, last_error, exc_info=True)
+                tg_send(chat_id,'⚠️ <b>Временная ошибка.</b>\n\nНе удалось проверить фрибет. Попробуйте открыть ссылку ещё раз через несколько секунд.')
                 return
-            except Exception as e: logger.error(f'Freebet start error: {e}')
+
+            if fr and bool(fr[1]) and (int(fr[2] or 1) <= 0 or int(fr[3] or 0) < int(fr[2] or 1)):
+                tg_send(chat_id,
+                        '🎁 <b>Фрибет получен!</b>\n\n🔥 Награда уже готова к активации.\n👇 Нажми кнопку ниже, чтобы забрать её.',
+                        reply_markup={'inline_keyboard':[[{'text':'👇 Активировать фрибет','web_app':{'url':f'{WEBSITE_URL}/games?freebet={quote_plus(free_code)}'}}]]})
+            elif fr:
+                tg_send(chat_id,'❌ <b>Фрибет уже закончен.</b>\n\nЛимит активаций исчерпан или фрибет отключён.')
+            else:
+                tg_send(chat_id,'❌ <b>Фрибет не найден.</b>\n\nПроверьте ссылку или попросите новую.')
+            return
     
     welcome_text = (
         "🎉 Привет, на связи команда GOSHANGIFTS и теперь ты в нашей большой семье! 🎁\n\n"
